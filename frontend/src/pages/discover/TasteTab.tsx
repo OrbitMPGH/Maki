@@ -52,7 +52,7 @@ import { DiscoverDetailModal } from '../../components/discover/DiscoverDetailMod
 import { DiscoverRailRow, type OpenItem } from '../../components/ui/DiscoverRail'
 import { sectionSource } from '../../api/shortlist'
 import { SectionHeader } from '../../components/ui/SectionHeader'
-import { StatTile } from '../../components/ui/StatTile'
+import { FigureStrip } from '../../components/ui/FigureStrip'
 import { SeriesLink, SeriesThumb } from '../stats/SeriesLink'
 import { buildFiltersFromProfile, hasAnyFilter } from './tasteFilters'
 import { Panel } from '../../components/ui/Panel'
@@ -94,13 +94,15 @@ function TasteSkeleton() {
     <Stack gap="md" aria-hidden inert>
       <SignalsCard />
       <SectionHeader icon={IconClock} title={t`How you read`} />
-      <SimpleGrid cols={{ base: 2, md: 4 }} spacing="md">
-        <StatTile label={t`You finish`} value="" loading />
-        <StatTile label={t`Typical chapter`} value="" loading />
-        <StatTile label={t`You bail around`} value="" loading />
-        <StatTile label={t`Biggest day`} value="" loading />
-      </SimpleGrid>
-      <SectionHeader icon={IconCompass} title={t`What you read, grouped`} />
+      <FigureStrip
+        loading
+        className="taste-figures"
+        figures={[t`You finish`, t`Typical chapter`, t`You bail around`, t`Biggest day`].map((label) => ({
+          label,
+          value: 0,
+        }))}
+      />
+      <SectionHeader icon={IconCompass} title={t`Recurring themes`} />
       {[0, 1, 2].map((i) => (
         <Panel key={i} p="md">
           <Group justify="space-between" mb="sm">
@@ -147,10 +149,11 @@ function GroupCard({
   // The bands sit higher than they did for the old k-means groups. A group defined by a tag its
   // members all carry starts out tight - the simulated library's twelve run 0.74 to 0.87 - so the
   // old 0.72 floor called every one of them "very tight" and said nothing.
-  const coherenceWord = coherence >= 0.84 ? t`very tight` : coherence >= 0.76 ? t`consistent` : t`loose`
+  const coherenceWord =
+    coherence >= 0.84 ? t`very alike` : coherence >= 0.76 ? t`fairly alike` : t`loosely related`
   const summary = plural(size, {
-    one: `# series, ${shareLabel} of this view, ${coherenceWord}`,
-    other: `# series, ${shareLabel} of this view, ${coherenceWord}`,
+    one: `# series (${shareLabel}), ${coherenceWord}`,
+    other: `# series (${shareLabel}), ${coherenceWord}`,
   })
 
   return (
@@ -251,28 +254,34 @@ function BehaviourSection({ behaviour }: { behaviour: ReadingBehaviour }) {
 
   return (
     <>
-      <SimpleGrid cols={{ base: 2, md: 4 }} spacing="md">
-        <StatTile
-          label={t`You finish`}
-          value={behaviour.finishRate === null ? '-' : percent(behaviour.finishRate)}
-        />
-        <StatTile
-          label={t`Typical chapter`}
-          value={pace === null ? '-' : formatReadingTime(pace)}
-        />
-        <StatTile
-          label={t`You bail around`}
-          value={stopPercent === null ? '-' : t`${stopPercent} in`}
-        />
-        <StatTile
-          label={t`Biggest day`}
-          value={
-            biggestDayCount === null
-              ? '-'
-              : plural(biggestDayCount, { one: '# chapter', other: '# chapters' })
-          }
-        />
-      </SimpleGrid>
+      <FigureStrip
+        className="taste-figures"
+        figures={[
+          {
+            label: t`You finish`,
+            value: behaviour.finishRate === null ? '-' : percent(behaviour.finishRate),
+            zero: behaviour.finishRate === null,
+          },
+          {
+            label: t`Typical chapter`,
+            value: pace === null ? '-' : formatReadingTime(pace),
+            zero: pace === null,
+          },
+          {
+            label: t`You bail around`,
+            value: stopPercent === null ? '-' : t`${stopPercent} in`,
+            zero: stopPercent === null,
+          },
+          {
+            label: t`Biggest day`,
+            value:
+              biggestDayCount === null
+                ? '-'
+                : plural(biggestDayCount, { one: '# chapter', other: '# chapters' }),
+            zero: biggestDayCount === null,
+          },
+        ]}
+      />
 
       <Text c="var(--ink-3)" size="xs" mt={6}>
         {readSummary}{' '}
@@ -618,7 +627,7 @@ export function TasteTab() {
 
       <SectionHeader
         icon={IconCompass}
-        title={t`What you read, grouped`}
+        title={t`Recurring themes`}
         count={insights?.groups.length ? insights.groups.length : undefined}
         action={
           <SegmentedControl

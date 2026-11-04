@@ -1,5 +1,6 @@
 import { Trans, Plural } from '@lingui/react/macro'
 import type { MidwaySeriesDto } from '../../api/stats'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { formatNumber, formatReadingTime } from '../../format'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
 
@@ -23,11 +24,7 @@ function MidwayHint({ held, etaSeconds }: { held: number; etaSeconds: number | n
  */
 export function MidwayList({ items, emptyText }: { items: MidwaySeriesDto[]; emptyText: string }) {
   if (items.length === 0) {
-    return (
-      <p className="stats-row-sub" style={{ margin: 0 }}>
-        {emptyText}
-      </p>
-    )
+    return <EmptyState compact mood="asleep" title={emptyText} />
   }
 
   return (

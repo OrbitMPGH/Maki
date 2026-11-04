@@ -42,8 +42,9 @@ import { MetaList } from '../ui/MetaList'
 import { queueStatusVisual, statusColor } from '../ui/status'
 import { FileQualityBadge } from './FileQualityBadge'
 import { HoverTooltip } from './HoverTooltip'
-import { LightActionIcon, LightBadge, LightGroup, LightStack, LightSwitch, LightText } from './lightMantine'
+import { LightActionIcon, LightBadge, LightGroup, LightSwitch, LightText } from './lightMantine'
 import { chapterLabel, readStateOf, type FileOrigin } from './chapterTable'
+import { displayChapterTitle } from '../../lib/chapterTitle'
 
 /** Stable for the page's lifetime (see `useStableActions`), so rows never re-render over a handler. */
 export type ChapterRowActions = {
@@ -245,7 +246,7 @@ export const ChapterRow = memo(function ChapterRow({
         </Table.Td>
         <Table.Td>
           <LightText c="var(--ink-3)" lineClamp={1}>
-            {c.title}
+            {displayChapterTitle(c)}
           </LightText>
         </Table.Td>
         <Table.Td className="chapter-released">
@@ -263,15 +264,17 @@ export const ChapterRow = memo(function ChapterRow({
           ) : (
               (() => {
                 const origin = fileOrigin(c.fileSourceName, c.fileReleaseName)
+                // Side by side, wrapping only when the column is too narrow: stacked, the two
+                // pills made every row about 61px tall for one line of data.
                 return (
-                    <LightStack gap={4}>
+                    <LightGroup gap={4} wrap="wrap">
                       <HoverTooltip label={origin.hint} withArrow disabled={!origin.hint}>
                         <LightBadge variant={origin.scraped ? 'light' : 'outline'} color="var(--neutral)">
                           {origin.label}
                         </LightBadge>
                       </HoverTooltip>
                       <FileQualityBadge quality={c.fileQuality} />
-                    </LightStack>
+                    </LightGroup>
                 )
               })()
           )}
@@ -418,11 +421,12 @@ export const ChapterRow = memo(function ChapterRow({
                   <LightActionIcon
                       variant={read ? 'light' : 'subtle'}
                       color={read ? 'var(--ok)' : 'gray'}
+                      data-row-action={read ? undefined : ''}
                       loading={readPending}
                       onClick={() => actions.setRead(c.id, !read)}
                       aria-label={t`Toggle read state of ${chapterLbl}`}
                   >
-                    {!read ? <IconEye size={17} /> : <IconEyeOff size={17} />}
+                    {!read ? <IconEye size={19} /> : <IconEyeOff size={19} />}
                   </LightActionIcon>
                 </HoverTooltip>
             )}
@@ -434,7 +438,7 @@ export const ChapterRow = memo(function ChapterRow({
                       color="brand"
                       aria-label={t`Read ${chapterLbl}`}
                   >
-                    <IconBook size={17} />
+                    <IconBook size={19} />
                   </LightActionIcon>
                 </HoverTooltip>
             )}
@@ -443,10 +447,11 @@ export const ChapterRow = memo(function ChapterRow({
                   <LightActionIcon
                       variant="subtle"
                       color="var(--neutral)"
+                      data-row-action=""
                       onClick={() => actions.link(c.id)}
                       aria-label={t`Link ${chapterLbl} to a file`}
                   >
-                    <IconLink size={17} />
+                    <IconLink size={19} />
                   </LightActionIcon>
                 </HoverTooltip>
             )}
@@ -462,7 +467,7 @@ export const ChapterRow = memo(function ChapterRow({
                       }}
                       aria-label={t`Download ${chapterLbl}`}
                   >
-                    <IconDownload size={17} />
+                    <IconDownload size={19} />
                   </LightActionIcon>
                 </HoverTooltip>
             )}
@@ -472,9 +477,10 @@ export const ChapterRow = memo(function ChapterRow({
                     <ActionIcon
                         variant="subtle"
                         color="var(--neutral)"
+                        data-row-action=""
                         aria-label={t`More actions for ${chapterLbl}`}
                     >
-                      <IconDotsVertical size={17} />
+                      <IconDotsVertical size={19} />
                     </ActionIcon>
                   </Menu.Target>
                   <Menu.Dropdown>
@@ -663,7 +669,7 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
               withArrow
           >
             <Switch
-                size="xs"
+                size="sm"
                 checked={allWanted}
                 classNames={mixed ? { track: 'chapter-span-wanted-mixed' } : undefined}
                 thumbIcon={mixed ? <IconMinus size={10} /> : undefined}
@@ -727,8 +733,8 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
             {readTracking && (
                 <Menu shadow="md" position="bottom-end" withinPortal>
                   <Menu.Target>
-                    <ActionIcon variant="subtle" color="var(--neutral)" aria-label={t`Actions for ${spanLabel}`}>
-                      <IconDotsVertical size={17} />
+                    <ActionIcon variant="subtle" color="var(--neutral)" data-row-action="" aria-label={t`Actions for ${spanLabel}`}>
+                      <IconDotsVertical size={19} />
                     </ActionIcon>
                   </Menu.Target>
                   <Menu.Dropdown>
@@ -764,10 +770,11 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
               <ActionIcon
                   variant="subtle"
                   color="var(--neutral)"
+                  data-row-action=""
                   onClick={() => actions.toggleSpanFold(span.key)}
                   aria-label={t`Expand ${spanLabel}`}
               >
-                <IconChevronDown size={17} />
+                <IconChevronDown size={19} />
               </ActionIcon>
             </Tooltip>
           </Group>

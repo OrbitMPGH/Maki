@@ -7,7 +7,7 @@ import { useLibraryComposition, useLibraryGrowth } from '../../../api/hooks'
 import type { LibraryCompositionTotals } from '../../../api/hooks'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { Panel } from '../../../components/ui/Panel'
-import { StatTile } from '../../../components/ui/StatTile'
+import { FigureStrip } from '../../../components/ui/FigureStrip'
 import { TagChip, TagChips } from '../../../components/ui/TagChip'
 import { formatBytes, formatNumber, formatPercent, formatStatsBucket } from '../../../format'
 import { ChartSkeleton } from '../ChartSkeleton'
@@ -25,33 +25,20 @@ function fileCount(n: number): string {
 
 function TotalsTiles({ totals }: { totals?: LibraryCompositionTotals }) {
   const { t } = useLingui()
-  const loading = !totals
-  const count = (n: number | undefined) => formatNumber(n ?? 0)
+  const bytes = totals?.totalBytes ?? 0
   return (
-    <SimpleGrid cols={{ base: 2, sm: 3, lg: 6 }} spacing="sm">
-      <StatTile label={t`Series`} value={count(totals?.seriesCount)} loading={loading} />
-      <StatTile
-        label={t`Chapters`}
-        value={count(totals?.chapterCount)}
-        loading={loading}
-      />
-      <StatTile
-        label={t`Downloaded`}
-        value={count(totals?.downloadedChapterCount)}
-        loading={loading}
-      />
-      <StatTile
-        label={t`Disk used`}
-        value={formatBytes(totals?.totalBytes ?? 0)}
-        loading={loading}
-      />
-      <StatTile label={t`Monitored`} value={count(totals?.monitoredCount)} loading={loading} />
-      <StatTile
-        label={t`Completed`}
-        value={count(totals?.completedCount)}
-        loading={loading}
-      />
-    </SimpleGrid>
+    <FigureStrip
+      loading={!totals}
+      className="stats-figures"
+      figures={[
+        { label: t`Series`, value: totals?.seriesCount ?? 0 },
+        { label: t`Chapters`, value: totals?.chapterCount ?? 0 },
+        { label: t`Downloaded`, value: totals?.downloadedChapterCount ?? 0 },
+        { label: t`Disk used`, value: formatBytes(bytes), zero: bytes === 0 },
+        { label: t`Monitored`, value: totals?.monitoredCount ?? 0 },
+        { label: t`Completed`, value: totals?.completedCount ?? 0 },
+      ]}
+    />
   )
 }
 
@@ -242,9 +229,7 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
                 />
               </>
             ) : (
-              <Text c="var(--ink-3)" size="sm">
-                {t`Nothing to show yet.`}
-              </Text>
+              <EmptyState compact mood="asleep" title={t`Nothing to show yet.`} />
             )}
           </Panel>
 
@@ -283,9 +268,7 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
           <Panel p="md">
             <p className="stats-panel-title">{t`Biggest on disk`}</p>
             {stats.largest.length === 0 ? (
-              <Text c="var(--ink-3)" size="sm">
-                {t`Nothing downloaded yet.`}
-              </Text>
+              <EmptyState compact mood="asleep" title={t`Nothing downloaded yet.`} />
             ) : (
               <ul className="stats-rows">
                 {stats.largest.map((s) => {

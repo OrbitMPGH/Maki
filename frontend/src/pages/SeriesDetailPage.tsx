@@ -24,6 +24,7 @@ import {
   Radio,
   SegmentedControl,
   Select,
+  Spoiler,
   Stack,
   Table,
   Tabs,
@@ -42,6 +43,7 @@ import {
   IconDownload,
   IconEye,
   IconEyeCheck,
+  IconHistory,
   IconLink,
   IconLinkOff,
   IconListCheck,
@@ -246,7 +248,7 @@ const CHAPTER_COLUMNS_STORAGE_KEY = 'series-chapter-columns'
 const CHAPTER_COLUMNS = {
   chapter: { width: 200, min: 110 },
   released: { width: 120, min: 90 },
-  source: { width: 190, min: 100 },
+  source: { width: 220, min: 100 },
   status: { width: 240, min: 140 },
 }
 // The Wanted and actions columns hold fixed-size controls, and Title takes whatever is left, down
@@ -2304,7 +2306,21 @@ function SeriesDetailBody() {
                   <Trans>Synopsis</Trans>
                   {series.lockedFields.includes('overview') && <>{' '}<MetadataLock /></>}
                 </Title>
-                {series.overview ? (
+                {series.overview && isMobile ? (
+                    // About four lines on a phone, where the whole text pushed the sources and tags
+                    // several screens down. The panel beside Sources has the room on a laptop.
+                    <Spoiler
+                        mt="sm"
+                        maxHeight={96}
+                        showLabel={t`Show more`}
+                        hideLabel={t`Show less`}
+                        attributes={{ content: { 'aria-label': t`Synopsis` } }}
+                    >
+                      <Text size="sm" c="var(--ink-3)" style={{ lineHeight: 1.66 }}>
+                        {cleanSynopsis(series.overview)}
+                      </Text>
+                    </Spoiler>
+                ) : series.overview ? (
                     <Text size="sm" mt="sm" c="var(--ink-3)" style={{ lineHeight: 1.66, maxWidth: '75ch' }}>
                       {cleanSynopsis(series.overview)}
                     </Text>
@@ -2482,9 +2498,14 @@ function SeriesDetailBody() {
                     <Title order={2} size="h3" fz="var(--type-subhead)">
                       <Trans>Metadata</Trans>
                     </Title>
-                    <Anchor component="button" type="button" size="xs" c="var(--ink-3)" onClick={() => setMetadataHistoryOpen(true)}>
+                    <Button
+                      variant="default"
+                      size="compact-sm"
+                      leftSection={<IconHistory size={14} />}
+                      onClick={() => setMetadataHistoryOpen(true)}
+                    >
                       <Trans>History</Trans>
-                    </Anchor>
+                    </Button>
                   </Group>
                   <div className="series-records">
                     {series.originalTitle && (
@@ -2536,7 +2557,7 @@ function SeriesDetailBody() {
                     )}
                     {series.rootFolderPath && (
                         <RecordRow label={t`Folder`}>
-                          <MonoValue value={series.rootFolderPath} copy c="var(--ink-3)" />
+                          <MonoValue value={series.rootFolderPath} copy wrap c="var(--ink-3)" />
                         </RecordRow>
                     )}
                   </div>
@@ -2724,7 +2745,8 @@ function SeriesDetailBody() {
                   )}
                 </Group>
                 {chapters && chapters.length > 0 && (
-                    <Group gap="xs" wrap="wrap">
+                    // One row on a phone: the filter takes what the fixed-width controls leave.
+                    <Group gap="xs" wrap={isMobile ? 'nowrap' : 'wrap'} w={isMobile ? '100%' : undefined}>
                       {isMobile ? (
                           <Select
                               size="xs"
@@ -2733,7 +2755,7 @@ function SeriesDetailBody() {
                               value={chapterFilter}
                               onChange={(value) => value && setChapterFilter(value)}
                               allowDeselect={false}
-                              w={150}
+                              style={{ flex: 1, minWidth: 0 }}
                           />
                       ) : (
                           <SegmentedControl
@@ -2763,9 +2785,20 @@ function SeriesDetailBody() {
                           value={chapterPageSizePreference}
                           onChange={setChapterPageSize}
                           allowDeselect={false}
-                          w={isMobile ? 100 : 108}
+                          className="page-size-select"
+                          style={{ '--label-ch': Math.max(...chapterPageSizeOptions.map((o) => o.label.length)) }}
                       />
-                      {!selectMode && (
+                      {!selectMode && isMobile && (
+                          <ActionIcon
+                              size="input-xs"
+                              variant="default"
+                              aria-label={t`Select`}
+                              onClick={() => setSelectMode(true)}
+                          >
+                            <IconListCheck size={16} />
+                          </ActionIcon>
+                      )}
+                      {!selectMode && !isMobile && (
                           <Button
                               size="xs"
                               variant="default"
@@ -3114,7 +3147,8 @@ function SeriesDetailBody() {
                         <Table
                             className="chapter-table"
                             highlightOnHover
-                            verticalSpacing="xs"
+                            // 6px around the 32px row buttons lands a one-line row on the cells' 48px floor.
+                            verticalSpacing={6}
                             aria-busy={chapterRowsLoading || undefined}
                         >
                           <Table.Thead>

@@ -383,7 +383,7 @@ export function RelinkFilesModal({
                   borderRadius: 'var(--radius-surface)',
                   background: 'color-mix(in srgb, var(--surface-2) 46%, transparent)',
                   opacity: isFetching ? 0.7 : 1,
-                  transition: 'opacity 0.2s',
+                  transition: 'opacity var(--dur-medium) var(--ease)',
                 }}
               >
                 <ScrollArea.Autosize mah={220}>

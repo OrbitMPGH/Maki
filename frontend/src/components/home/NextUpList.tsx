@@ -1,7 +1,7 @@
 import { memo, useCallback, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { VisuallyHidden } from '@mantine/core'
-import { IconPlayerPlayFilled } from '../../lib/icons'
+import { IconBookFilled } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { HomeReadingItem } from '../../api/hooks'
@@ -72,7 +72,7 @@ const NextUpRow = memo(function NextUpRow({ item }: { item: HomeReadingItem }) {
   const hasProgress = item.pageCount > 0
   const resumePct = hasProgress ? Math.min(100, (item.page / item.pageCount) * 100) : 0
   const started = item.page > 0
-  const lastRead = relativeTime(item.lastReadAt)
+  const lastRead = relativeTime(item.lastReadAt, 'narrow')
   const { seriesTitle, chapterLabel, unreadChapters } = item
   const style = item.coverAccent ? ({ '--series-accent': item.coverAccent } as CSSProperties) : undefined
 
@@ -105,7 +105,7 @@ const NextUpRow = memo(function NextUpRow({ item }: { item: HomeReadingItem }) {
         </span>
       </span>
       <span className="next-up-play" aria-hidden>
-        <IconPlayerPlayFilled size={12} />
+        <IconBookFilled size={12} />
       </span>
     </Link>
   )

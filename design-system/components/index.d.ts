@@ -32,38 +32,32 @@ export declare function SectionHeader(props: {
   chevron?: boolean
 }): JSX.Element
 
-/** Compact metric tile: label, value in the display face, optional delta. */
-export declare function StatTile(props: {
-  label: string
-  value: ReactNode
-  /** Fractional change vs the previous period. null means the baseline was zero. */
-  delta?: number | null
-  deltaLabel?: string
-  /** For metrics where up is bad. */
-  invertDelta?: boolean
-  hint?: string
-  loading?: boolean
-}): JSX.Element
-
 export interface Figure {
   label: string
-  value: number
+  /** A count, formatted by the strip, or a value the caller already formatted. */
+  value: number | ReactNode
   /** Only coloured while non-zero. */
   tone?: 'ok' | 'warn' | 'danger' | 'info'
+  /** Whether a formatted value stands for nothing, so it greys out like a zero count. */
+  zero?: boolean
+  /** Fractional change vs the previous period (0.12 is +12%), as a chip beside the value. Hidden on a zero. */
+  delta?: number
+  /** A dimmed line under the label. */
+  hint?: ReactNode
 }
 
-/** A row of labelled counts in one ruled strip. */
+/** Every row of figures in the app: equal cells in one ruled strip. */
 export declare function FigureStrip(props: {
   figures: Figure[]
+  /** Drops the strip's own border and surface inside a panel. */
   flush?: boolean
+  /** Keeps the labels and blanks the numbers. */
   loading?: boolean
+  /** Shrinks to one short line when every figure is zero. */
+  quietWhenZero?: boolean
+  /** What the deltas compare against; the chips' tooltip. */
+  deltaLabel?: string
   className?: string
-  /** `panel` is the shadowed headline row for the top of a page. */
-  variant?: 'default' | 'panel'
-  /** A node in its own divider cell between figures. */
-  middle?: ReactNode
-  /** How many figures come before `middle`. Default: centred. */
-  middleAfter?: number
 }): JSX.Element
 
 export interface DisclosureProps {
@@ -117,6 +111,8 @@ export declare function EmptyState(props: {
   actionTo?: string
   onAction?: () => void
   compact?: boolean
+  /** Sits in a dashed outline of the table it stands in for. */
+  framed?: boolean
   /** The whole page is empty: centred, over empty cover slots or a lone blank cover. */
   art?: 'shelf' | 'missing'
   /** The mascot beside the text of the inline form. */

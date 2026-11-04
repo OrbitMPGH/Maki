@@ -46,6 +46,7 @@ const ICONS = {
   IconBellPlus: 'bell-simple',
   IconBellRinging: 'bell-ringing',
   IconBook: 'book-open',
+  IconBookFilled: 'book-open:fill',
   IconBook2: 'book',
   IconBookmark: 'bookmark-simple',
   IconBookmarkFilled: 'bookmark-simple:fill',

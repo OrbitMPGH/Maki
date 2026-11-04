@@ -11,6 +11,7 @@ import { ChartSkeleton } from '../ChartSkeleton'
 import { HourMatrix } from '../charts/HourMatrix'
 import { ReadingHeatmap } from '../ReadingHeatmap'
 import { StatsInsight } from '../StatsSection'
+import { MIN_SITTINGS, MIN_TIMED_SECONDS } from '../sampleSize'
 import type { StatsSectionProps } from './types'
 
 /** Sum of the 24 hourly buckets belonging to one weekday. */
@@ -37,7 +38,9 @@ export default function RhythmSection({ userId, range, windowLabel }: StatsSecti
 
   const insight = useMemo(() => {
     const rhythm = insights?.rhythm
-    if (!rhythm || rhythm.totalSeconds === 0 || rhythm.primeStartHour === null) return null
+    const sittingCount = insights?.sittings?.count ?? 0
+    if (!rhythm || rhythm.primeStartHour === null) return null
+    if (rhythm.totalSeconds < MIN_TIMED_SECONDS || sittingCount < MIN_SITTINGS) return null
 
     const start = formatHour(rhythm.primeStartHour)
     const end = formatHour((rhythm.primeStartHour + 3) % 24)

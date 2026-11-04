@@ -1,8 +1,9 @@
 import { memo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { IconPlayerPlayFilled } from '../../lib/icons'
+import { IconBookFilled } from '../../lib/icons'
 import type { HomeRecentSeriesItem } from '../../api/hooks'
 import { Rail } from '../ui/Rail'
+import { coverChapterLabel } from '../../lib/chapterLabel'
 import { relativeTime } from '../ui/time'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -36,7 +37,7 @@ function ReadNextButton({ chapterId }: { chapterId: number }) {
       aria-label={t`Read next chapter`}
       onClick={() => navigate(`/read/${chapterId}`)}
     >
-      <IconPlayerPlayFilled size={10} />
+      <IconBookFilled size={10} />
     </button>
   )
 }
@@ -58,8 +59,8 @@ const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesIt
         <div className="cover-corners">
           {item.newestChapterLabel && (
             <div className="cover-corner cover-corner-left">
-              <span className="cover-chapter">
-                <span>{item.newestChapterLabel}</span>
+              <span className="cover-chapter" title={item.newestChapterLabel}>
+                <span>{coverChapterLabel(item.newestChapterLabel)}</span>
               </span>
             </div>
           )}

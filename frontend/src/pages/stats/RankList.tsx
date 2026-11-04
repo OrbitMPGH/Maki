@@ -1,5 +1,6 @@
 import { Group, Stack, Text } from '@mantine/core'
 import type { Icon } from '../../lib/icons'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { Panel } from '../../components/ui/Panel'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
 
@@ -14,7 +15,7 @@ export interface RankItem {
 /**
  * A ranked series list: cover, position, title, value.
  *
- * One component for all three rankings (most read, time spent, barely touched) — they only ever
+ * One component for all three rankings (most read, time spent, barely touched): they only ever
  * differed in how the right-hand cell was formatted, and keeping two near-identical tables around
  * is how they drift apart.
  */
@@ -23,11 +24,14 @@ export function RankList({
   title,
   items,
   emptyText,
+  emptyMood = 'asleep',
 }: {
   icon: Icon
   title: string
   items: RankItem[]
   emptyText: string
+  /** `pleased` when an empty list is good news ("Barely touched"). */
+  emptyMood?: 'asleep' | 'pleased'
 }) {
   return (
     <Panel p="md">
@@ -36,9 +40,7 @@ export function RankList({
         <Text fw={650}>{title}</Text>
       </Group>
       {items.length === 0 ? (
-        <Text c="var(--ink-3)" size="sm">
-          {emptyText}
-        </Text>
+        <EmptyState compact mood={emptyMood} title={emptyText} />
       ) : (
         <Stack gap={0}>
           {items.map((item, i) => (

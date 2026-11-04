@@ -1,8 +1,9 @@
 import { Center, Group, Loader, Modal, ScrollArea, Stack, Text, TextInput } from '@mantine/core'
 import { useDisclosure, useHotkeys, useOs } from '@mantine/hooks'
 import { IconAdjustments, IconArchive, IconBooks, IconPlus, IconSearch, IconSend } from '../lib/icons'
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { fuzzyFilter, titleIndex } from '../lib/fuzzySearch'
+import { DUR, EASE_CSS, pacedMs } from '../lib/motion'
 import { useNavigate } from 'react-router-dom'
 import { useSeries } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
@@ -33,6 +34,20 @@ type Result =
   | { kind: 'search'; key: string; label: string; sub: string; path: string }
 
 const MAX_SERIES_RESULTS = 8
+
+/**
+ * Wraps the parts of `label` that match a term in <mark>. The plain parts stay bare text nodes
+ * rather than spans (Mantine's Highlight wraps them), because the accessible name drops the space at
+ * the edge of a span and the row would be announced as "PaperMoon Detective".
+ */
+function markMatches(label: string, terms: string[]): ReactNode {
+  if (terms.length === 0) return label
+  const escaped = [...terms]
+    .sort((a, b) => b.length - a.length)
+    .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const parts = label.split(new RegExp(`(${escaped.join('|')})`, 'gi'))
+  return parts.map((part, i) => (i % 2 === 1 ? <mark key={i}>{part}</mark> : part))
+}
 
 /** The search pill. `icon` is the bare circle the phone's top bar has room for. */
 export function CommandPaletteTrigger({
@@ -203,6 +218,14 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
     setSelected(0)
   }, [results.length])
 
+  // The whole query first, then its words, since a fuzzy or multi-word match rarely contains the
+  // query as typed. A typo match highlights nothing, which is honest about what matched.
+  const highlightTerms = useMemo(() => {
+    const typed = query.trim()
+    if (!typed) return []
+    return [typed, ...typed.split(/\s+/).filter((w) => w.length > 1)]
+  }, [query])
+
   // Only a keyboard move scrolls: a mouse hover is already on a visible row, and scrolling under
   // the pointer would make the list chase it.
   useEffect(() => {
@@ -247,7 +270,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
         radius="md"
         size="lg"
         centered
-        transitionProps={{ transition: 'pop', duration: 120 }}
+        transitionProps={{ transition: 'pop', duration: pacedMs(DUR.fast), timingFunction: EASE_CSS }}
         zIndex={1100}
         attributes={{ content: { 'aria-label': t`Search` } }}
       >
@@ -271,7 +294,13 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
             py={4}
             style={{ borderBottom: '1px solid var(--border)' }}
           />
-          <ScrollArea.Autosize mah="min(360px, 60dvh)" type="auto" viewportRef={listRef}>
+          <ScrollArea.Autosize
+            mah="min(360px, 60dvh)"
+            type="auto"
+            scrollbars="y"
+            viewportRef={listRef}
+            className="command-palette-list"
+          >
             <Stack gap={2} p="xs" id={listId} role={results.length > 0 ? 'listbox' : undefined}>
               {results.length === 0 && (
                 // On a cold cache the library is still loading, so an empty list is not an answer yet.
@@ -324,7 +353,8 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
                   )}
                   <Stack gap={0} style={{ minWidth: 0 }}>
                     <Text size="sm" fw={600} truncate>
-                      {r.label}
+                      {/* The fallback's label is the query itself, so marking it would mark all of it. */}
+                      {r.kind === 'search' ? r.label : markMatches(r.label, highlightTerms)}
                     </Text>
                     <Text size="xs" c="var(--ink-3)" truncate>
                       {r.sub}

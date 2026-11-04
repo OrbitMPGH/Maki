@@ -6,17 +6,23 @@ import { useCopyText } from './useCopyText'
 
 const NUMBER_TOKEN = /(?<=^|[\s_\-[(./\\])(?:vol(?:ume)?\.?|ch(?:apter)?\.?|v|c)\s?\d/gi
 const MAX_TAIL = 32
+const MAX_LONG_TAIL = 48
 
 /**
  * What stays when the middle goes. Release names put the volume or chapter number in the middle
  * and tags at the end, so the tail starts at the first number token that leaves at most 32
- * characters ("v01 (2022) (Digital).cbz"). Without one it is the extension and eight characters
+ * characters ("v01 (2022) (Digital).cbz"). Failing that, the last token that leaves at most 48,
+ * so one more tag ("(f2)") does not swap the volume for the extension and leave a column of
+ * names that differ only where they are cut. Without one it is the extension and eight characters
  * before it, or the last six characters of an id or path.
  */
 export function splitForTruncation(value: string): [head: string, tail: string] {
+  let longTail = -1
   for (const m of value.matchAll(NUMBER_TOKEN)) {
     if (m.index > 0 && value.length - m.index <= MAX_TAIL) return [value.slice(0, m.index), value.slice(m.index)]
+    if (m.index > 0 && value.length - m.index <= MAX_LONG_TAIL) longTail = m.index
   }
+  if (longTail > 0) return [value.slice(0, longTail), value.slice(longTail)]
   const ext = /\.[A-Za-z0-9]{1,5}$/.exec(value)?.[0] ?? ''
   const keep = ext ? ext.length + 8 : 6
   if (value.length <= Math.max(keep + 4, 16)) return [value, '']
@@ -46,7 +52,7 @@ function watchSize(el: Element, onResize: () => void) {
  * A machine string (file name, path, source id) on one line. When its column is too narrow it loses
  * its middle, so the start and the extension stay readable; the full value is in a tooltip and,
  * with `copy`, one click away. With `copy` the button is the single tab stop and shows the tooltip
- * on focus; without it the clipped value itself is focusable. It never wraps, so a table holding one needs a min width and scrolls
+ * on focus; without it the clipped value itself is focusable. Unless `wrap` is set it never wraps, so a table holding one needs a min width and scrolls
  * as a whole. `full` is what the tooltip shows and the button copies when the label is shorter, a
  * file name standing for its path. `minWidth` stops a table column collapsing to the tail.
  */
@@ -57,6 +63,7 @@ export function MonoValue({
   copy,
   focusable = true,
   minWidth,
+  wrap,
   fz,
   c,
 }: {
@@ -67,6 +74,8 @@ export function MonoValue({
   /** False when the row already has a control to tab to and hover, the title and the DOM text are enough. */
   focusable?: boolean
   minWidth?: CSSProperties['minWidth']
+  /** Wraps onto more lines (breaking anywhere) instead of losing its middle, for a cell with height to spare. */
+  wrap?: boolean
   fz?: CSSProperties['fontSize']
   c?: CSSProperties['color']
 }) {
@@ -76,7 +85,7 @@ export function MonoValue({
   const [opened, setOpened] = useState(false)
   const [clipped, setClipped] = useState(false)
   const whole = full ?? value
-  const [head, tail] = splitForTruncation(value)
+  const [head, tail] = wrap ? [value, ''] : splitForTruncation(value)
   // Clipped, or standing for something longer: only then is there anything to reveal. The value
   // takes focus for that only when it has no copy button, which reveals the same tooltip on focus,
   // so a table of values has one tab stop per row. The full text is in the DOM either way.
@@ -108,7 +117,7 @@ export function MonoValue({
   )
 
   return (
-    <span className="mono-value" style={{ minWidth, fontSize: fz, color: c }}>
+    <span className="mono-value" data-wrap={wrap || undefined} style={{ minWidth, fontSize: fz, color: c }}>
       <Tooltip label={whole} opened={opened} withArrow multiline maw={520} classNames={{ tooltip: 'mono-value-tip' }}>
         {href ? (
           <a

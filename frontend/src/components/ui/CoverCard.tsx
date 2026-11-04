@@ -1,7 +1,6 @@
 import { memo } from 'react'
 import {
   IconBellOff,
-  IconCheck,
   IconDeviceMobileCheck,
   IconDownload,
   IconEyeOff,
@@ -68,12 +67,21 @@ export const CoverCard = memo(function CoverCard({
   )
   const { readChapterCount } = series
   // No total at all means no source has listed a chapter yet; "0 of ?" left that to be guessed.
+  // With the "N new" pill beside it the long form ran out of room ("30 of ..."), so it goes compact.
+  const showsNew = offline !== 'unavailable' && unread !== null && unread > 0
   const countLabel =
     total > 0
-      ? t`${have} of ${total}`
+      ? showsNew
+        ? (
+            <>
+              {have}
+              <span className="cover-count-total">/{total}</span>
+            </>
+          )
+        : t`${have} of ${total}`
       : have > 0
         ? plural(have, { one: '# chapter', other: '# chapters' })
-        : t`No chapters listed`
+        : t`No chapters`
   const savedTip = t`Saved on this device`
   const countTip = nothingWanted
     ? plural(total, {
@@ -145,7 +153,7 @@ export const CoverCard = memo(function CoverCard({
                 {countLabel}
               </span>
             )}
-            {offline !== 'unavailable' && unread !== null && unread > 0 && (
+            {showsNew && (
               <span className="cover-new">{plural(unread, { one: '# new', other: '# new' })}</span>
             )}
           </div>
@@ -166,9 +174,7 @@ export const CoverCard = memo(function CoverCard({
                 role="img"
                 aria-label={readTip}
                 style={{ '--ring-pct': `${readPct}%` } as React.CSSProperties}
-              >
-                {unread === 0 && <IconCheck size={16} className="cover-ring-check" />}
-              </span>
+              />
             )}
             {downloadTip && (
               <span className="cover-state" data-tone="info" data-tip={downloadTip} role="img" aria-label={downloadTip}>

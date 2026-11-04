@@ -2,16 +2,16 @@ import { errorText } from '../../api/errorText'
 import { useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import {
-  Alert, Badge, Button, Card, Collapse, Group, Loader, Paper, SimpleGrid, Stack, Text, Tooltip,
+  Alert, Badge, Button, Card, Collapse, Group, Loader, Paper, Stack, Text, Tooltip,
 } from '@mantine/core'
-import { IconCompass } from '../../lib/icons'
+import { IconArrowBackUp, IconCompass, IconThumbDown, IconThumbUp } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { AvoidanceLabel, FeedbackActivity, FeedbackLabData } from '../../api/recommendationFeedback'
 import { useFeedbackLab, useUndoFeedback } from '../../api/recommendationFeedback'
 import { SectionHeader } from '../../components/ui/SectionHeader'
-import { StatTile } from '../../components/ui/StatTile'
+import { FigureStrip } from '../../components/ui/FigureStrip'
 import { SeriesThumb } from '../stats/SeriesLink'
-import { formatDate, formatDecimal, formatTime } from '../../format'
+import { formatDate, formatDecimal, formatRecentDate, formatTime } from '../../format'
 import { ManageSignalsModal } from './ManageSignalsModal'
 import { AnimeSignalsSection } from './AnimeSignalsSection'
 import { MetaList } from '../../components/ui/MetaList'
@@ -129,10 +129,10 @@ export function SignalsCard() {
         title={t`What shapes your recommendations`}
         action={
           <Group gap="xs">
-            <Button variant="subtle" size="compact-sm" onClick={() => setHowItWorks((v) => !v)}>
+            <Button variant="default" size="compact-sm" aria-expanded={howItWorks} onClick={() => setHowItWorks((v) => !v)}>
               <Trans>How signals work</Trans>
             </Button>
-            <Button variant="outline" size="compact-sm" onClick={() => setManage('titles')}>
+            <Button variant="default" size="compact-sm" onClick={() => setManage('titles')}>
               <Trans>Manage signals</Trans>
             </Button>
           </Group>
@@ -141,8 +141,8 @@ export function SignalsCard() {
       <Stack gap="md">
         <Text size="sm" c="var(--ink-3)">
           <Trans>
-            Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch
-            one title each.
+            Your shelf, ratings, reading and thumbs decide what gets recommended. Hide, dismiss and
+            seen elsewhere only take that one title out.
           </Trans>
         </Text>
 
@@ -198,34 +198,36 @@ export function SignalsCard() {
 
         {lab && summary && (
           <>
-            <SimpleGrid cols={{ base: 2, md: 4 }} spacing="sm">
-              <StatTile
-                label={t`titles on the shelf`}
-                value={summary.visibleShelf}
-                hint={t`${adds} added by you, ${excluded} excluded from taste`}
-              />
-              <StatTile
-                label={t`read`}
-                value={summary.readSources}
-                hint={t`${rated} rated`}
-              />
-              <StatTile
-                label={t`thumbs up / down`}
-                hint={t`${pushingDown} kept out of your taste`}
-                value={
-                  <>
-                    <Text span inherit c="var(--ok)">{summary.liked}</Text>
-                    <Text span inherit c="var(--ink-3)" mx={8}>/</Text>
-                    <Text span inherit c="var(--danger)">{summary.disliked}</Text>
-                  </>
-                }
-              />
-              <StatTile
-                label={t`hidden or dismissed`}
-                value={suppressed}
-                hint={t`${exposed} seen elsewhere`}
-              />
-            </SimpleGrid>
+            <FigureStrip
+              className="taste-figures"
+              figures={[
+                {
+                  label: t`Titles on the shelf`,
+                  value: summary.visibleShelf,
+                  hint: t`${adds} added by you, ${excluded} excluded from taste`,
+                },
+                { label: t`Read`, value: summary.readSources, hint: t`${rated} rated` },
+                {
+                  label: t`Thumbs up / down`,
+                  hint: t`${pushingDown} pushing similar titles down`,
+                  zero: summary.liked + summary.disliked === 0,
+                  value: (
+                    <>
+                      <Text span inherit c="var(--ok)" className="taste-thumb">
+                        <IconThumbUp size="0.85em" aria-hidden />
+                        {summary.liked}
+                      </Text>
+                      <Text span inherit c="var(--ink-3)" mx={8}>/</Text>
+                      <Text span inherit c="var(--danger)" className="taste-thumb">
+                        <IconThumbDown size="0.85em" aria-hidden />
+                        {summary.disliked}
+                      </Text>
+                    </>
+                  ),
+                },
+                { label: t`Hidden or dismissed`, value: suppressed, hint: t`${exposed} seen elsewhere` },
+              ]}
+            />
 
             {lab.avoids.length > 0 && <AvoidRow avoids={lab.avoids} />}
 
@@ -247,7 +249,7 @@ export function SignalsCard() {
                 <Text size="sm" fw={600}>
                   <Trans>Recent feedback</Trans>
                 </Text>
-                <Button size="xs" variant="subtle" onClick={() => setManage('titles')}>
+                <Button size="compact-sm" variant="default" onClick={() => setManage('titles')}>
                   <Trans>Show all</Trans>
                 </Button>
               </Group>
@@ -272,16 +274,22 @@ export function SignalsCard() {
                         <Text size="sm" fw={500} truncate>
                           {item.title ?? untitled(item.mangaBakaId)}
                         </Text>
-                        <Group gap={6} wrap="nowrap" mt={2}>
+                        {/* Wraps rather than truncating: on a phone the pill's date was cut mid-way. */}
+                        <Group gap={6} wrap="wrap" mt={2}>
                           <ActionPill item={item} />
-                          <Text size="xs" c="var(--ink-3)" truncate>
-                            <MetaList inline items={[phrase(item.action), formatTime(item.occurredAtUtc)]} />
+                          <Text size="xs" c="var(--ink-3)">
+                            <MetaList
+                              inline
+                              items={[!dismissalEnded(item) && phrase(item.action), formatTime(item.occurredAtUtc)]}
+                            />
                           </Text>
                         </Group>
                       </div>
-                      {newestPerTitle.has(item.id) && UNDOABLE.includes(item.action) && (
+                      {newestPerTitle.has(item.id) && UNDOABLE.includes(item.action) && !dismissalEnded(item) && (
                         <Button
-                          size="xs" variant="subtle"
+                          size="xs" variant="default"
+                          leftSection={<IconArrowBackUp size={16} />}
+                          style={{ flexShrink: 0 }}
                           loading={undo.isPending && undo.variables?.eventId === item.id}
                           onClick={() => void undoItem(item)}
                         >
@@ -375,6 +383,11 @@ function AvoidRow({ avoids }: { avoids: AvoidanceLabel[] }) {
   )
 }
 
+/** A dismissal past its date: the title is back in the running, so the row must not read as active. */
+function dismissalEnded(item: FeedbackActivity): boolean {
+  return item.action === 'dismiss' && item.dismissedUntilUtc != null && new Date(item.dismissedUntilUtc).getTime() <= Date.now()
+}
+
 function dayOf(item?: FeedbackActivity): string {
   return item ? new Date(item.occurredAtUtc).toDateString() : ''
 }
@@ -397,7 +410,8 @@ function ActionPill({ item }: { item: FeedbackActivity }) {
       case 'dislike': return [t`👎 Disliked`, 'var(--danger)']
       case 'hide': return [t`Hidden`, 'var(--warn)']
       case 'dismiss': {
-        const until = item.dismissedUntilUtc ? formatDate(item.dismissedUntilUtc) : ''
+        const until = item.dismissedUntilUtc ? formatRecentDate(item.dismissedUntilUtc) : ''
+        if (dismissalEnded(item)) return [t`Dismissal ended ${until}`, 'var(--neutral)']
         return [until ? t`Dismissed until ${until}` : t`Dismissed`, 'var(--warn)']
       }
       case 'mark-exposed': return [t`Seen elsewhere`, 'var(--info)']

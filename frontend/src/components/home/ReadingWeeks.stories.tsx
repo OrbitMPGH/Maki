@@ -45,7 +45,7 @@ export const ReadToday: Story = {
   render: (args) => <ContinueHero items={continueReading} glance={<ReadingWeeks {...args} />} />,
   play: async ({ canvas }) => {
     const glance = await canvas.findByRole('region', { name: 'Last 5 weeks' })
-    await expect(within(glance).getByText('Today counts. Best: 31 days')).toBeVisible()
+    await expect(within(glance).getByText('You read today. Longest streak: 31 days')).toBeVisible()
   },
 }
 

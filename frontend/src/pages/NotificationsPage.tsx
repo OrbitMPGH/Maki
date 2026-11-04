@@ -11,7 +11,7 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core'
-import { IconSettings, IconX } from '../lib/icons'
+import { IconChecks, IconSettings, IconTrash, IconX } from '../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { I18n } from '@lingui/core'
@@ -148,25 +148,24 @@ export default function NotificationsPage() {
               <ActionIcon
                 component={Link}
                 to="/settings?tab=preferences&s=notification-prefs"
-                variant="subtle"
-                color="var(--neutral)"
+                variant="default"
+                size="lg"
                 aria-label={t`Notification settings`}
               >
                 <IconSettings size={18} />
               </ActionIcon>
             </Tooltip>
             <Button
-              variant="light"
-              size="xs"
+              variant="default"
+              leftSection={<IconChecks size={16} />}
               disabled={unread === 0}
               onClick={() => markAll.mutate()}
             >
               <Trans>Mark all read</Trans>
             </Button>
             <Button
-              variant="subtle"
-              color="var(--danger)"
-              size="xs"
+              variant="default"
+              leftSection={<IconTrash size={16} />}
               disabled={all.length === 0 && !unreadOnly}
               onClick={() => setClearing(true)}
             >
@@ -215,7 +214,9 @@ export default function NotificationsPage() {
         />
       ) : items.length === 0 ? (
         <EmptyState
-          mood={unreadOnly || category ? undefined : 'pleased'}
+          compact
+          framed
+          mood={olderMayMatch || unreadOnly || category ? 'asking' : 'pleased'}
           title={
             olderMayMatch
               ? t`None in the latest notifications`
@@ -318,7 +319,8 @@ function Row({
         className="inbox-row"
       >
         <Group gap="sm" wrap="nowrap" align="flex-start">
-          <Box mt={2}>
+          {/* A fixed slot, so a row with a level icon starts its text where a row with a cover does. */}
+          <Box mt={2} w={34} style={{ flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
             <NotificationVisual item={item} size={34} />
           </Box>
           <Stack gap={2} style={{ minWidth: 0 }}>
@@ -333,7 +335,7 @@ function Row({
                   disagree with it ("yesterday" under Monday, 34 hours on), so those rows give the
                   clock time instead. */}
               {new Date(item.createdAt).toDateString() === new Date().toDateString()
-                ? relativeTime(item.createdAt)
+                ? relativeTime(item.createdAt, 'narrow')
                 : formatTime(item.createdAt)}
             </Text>
           </Stack>

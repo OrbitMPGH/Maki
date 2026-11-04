@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Badge, Group, SimpleGrid, Stack, Text } from '@mantine/core'
 import { animate, motion, useReducedMotion } from 'motion/react'
+import { CINEMATIC, EASE, paced } from '../../lib/motion'
 import { Trans, Plural } from '@lingui/react/macro'
 import type { ActivityStats } from '../../api/hooks'
 import { formatNumber, formatReadingTime, monthName } from '../../format'
@@ -14,7 +15,7 @@ function Reveal({ children, delay = 0 }: { children: ReactNode; delay?: number }
     <motion.div
       initial={reduced ? false : { opacity: 0, y: 26 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.55, ease: 'easeOut' }}
+      transition={{ delay, duration: paced(CINEMATIC.fade), ease: EASE }}
     >
       {children}
     </motion.div>
@@ -30,8 +31,8 @@ function useCountUp(target: number): number {
       return
     }
     const controls = animate(0, target, {
-      duration: 1.6,
-      ease: 'easeOut',
+      duration: paced(CINEMATIC.countUp),
+      ease: EASE,
       onUpdate: (v) => setValue(Math.round(v)),
     })
     return () => controls.stop()

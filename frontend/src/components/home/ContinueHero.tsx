@@ -1,7 +1,7 @@
 import { memo, type CSSProperties, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Skeleton } from '@mantine/core'
-import { IconPlayerPlay, IconPlayerTrackNext } from '../../lib/icons'
+import { IconBook, IconPlayerTrackNext } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { HomeReadingItem } from '../../api/hooks'
@@ -111,7 +111,7 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
   const resumePct = hasProgress ? Math.min(100, (item.page / item.pageCount) * 100) : 0
   // page 0 means the chapter was never opened, so "Resume" would be a lie.
   const started = item.page > 0
-  const lastRead = relativeTime(item.lastReadAt)
+  const lastRead = relativeTime(item.lastReadAt, 'narrow')
   const { seriesTitle, chapterLabel, unreadChapters, pageCount } = item
   const pageNumber = item.page + 1
 
@@ -183,7 +183,7 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
           )}
 
           <div className="continue-hero-actions">
-            <Button component={Link} to={`/read/${item.chapterId}`} leftSection={<IconPlayerPlay size={16} />}>
+            <Button component={Link} to={`/read/${item.chapterId}`} leftSection={<IconBook size={16} />}>
               {started ? <Trans>Resume</Trans> : <Trans>Start chapter</Trans>}
             </Button>
             <Button component={Link} to={`/series/${item.seriesId}`} variant="default">

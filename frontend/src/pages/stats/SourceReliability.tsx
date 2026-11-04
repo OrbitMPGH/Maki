@@ -3,6 +3,7 @@ import { Progress, Table, Text } from '@mantine/core'
 import { useLingui } from '@lingui/react/macro'
 import type { SourceReliabilityDto } from '../../api/stats'
 import type { SourceUsage } from '../../api/hooks'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { formatBytes, formatNumber, formatPercent, formatReadingTime } from '../../format'
 import { PROTOCOL_LABELS, useNameLabel } from './labels'
 
@@ -60,25 +61,24 @@ export function SourceReliability({
   const { t } = useLingui()
   const nameLabel = useNameLabel()
   const rows = useMemo(() => mergeRows(sources, reliability), [sources, reliability])
+  // Without a queue record in the last 30 days both columns were n/a from top to bottom.
+  const showSuccess = rows.some((r) => r.completed + r.failed > 0)
+  const showWait = rows.some((r) => r.medianSecondsToComplete !== null)
 
   if (rows.length === 0) {
-    return (
-      <Text c="var(--ink-3)" size="sm">
-        {t`Nothing downloaded yet.`}
-      </Text>
-    )
+    return <EmptyState compact mood="asleep" title={t`Nothing downloaded yet.`} />
   }
 
   return (
-    <Table.ScrollContainer minWidth={520}>
+    <Table.ScrollContainer minWidth={showSuccess || showWait ? 520 : 0}>
       <Table verticalSpacing={6} withRowBorders={false} style={{ whiteSpace: 'nowrap' }}>
         <Table.Thead>
           <Table.Tr>
             <Table.Th>{t`Source`}</Table.Th>
             <Table.Th style={{ textAlign: 'right' }}>{t`Files`}</Table.Th>
             <Table.Th style={{ textAlign: 'right' }}>{t`Size`}</Table.Th>
-            <Table.Th style={{ textAlign: 'right' }}>{t`Success`}</Table.Th>
-            <Table.Th style={{ textAlign: 'right' }}>{t`Median wait`}</Table.Th>
+            {showSuccess && <Table.Th style={{ textAlign: 'right' }}>{t`Success`}</Table.Th>}
+            {showWait && <Table.Th style={{ textAlign: 'right' }}>{t`Median wait`}</Table.Th>}
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -101,34 +101,38 @@ export function SourceReliability({
                     {formatBytes(r.bytes)}
                   </Text>
                 </Table.Td>
-                <Table.Td style={{ textAlign: 'right' }}>
-                  {successRate === null ? (
-                    <Text size="sm" c="var(--ink-3)">
-                      {t`n/a`}
-                    </Text>
-                  ) : (
-                    <div>
-                      <Text size="sm" fw={600} className="tnum" c={low ? 'var(--warn)' : undefined}>
-                        {formatPercent(successRate)}
+                {showSuccess && (
+                  <Table.Td style={{ textAlign: 'right' }}>
+                    {successRate === null ? (
+                      <Text size="sm" c="var(--ink-3)">
+                        {t`n/a`}
                       </Text>
-                      <Progress
-                        value={successRate * 100}
-                        size={4}
-                        radius="xl"
-                        color={low ? 'var(--warn)' : 'var(--brand)'}
-                        mt={4}
-                        aria-label={t`Success rate`}
-                      />
-                    </div>
-                  )}
-                </Table.Td>
-                <Table.Td style={{ textAlign: 'right' }}>
-                  <Text size="sm" c="var(--ink-3)" className="tnum">
-                    {r.medianSecondsToComplete == null
-                      ? t`n/a`
-                      : formatReadingTime(r.medianSecondsToComplete)}
-                  </Text>
-                </Table.Td>
+                    ) : (
+                      <div>
+                        <Text size="sm" fw={600} className="tnum" c={low ? 'var(--warn)' : undefined}>
+                          {formatPercent(successRate)}
+                        </Text>
+                        <Progress
+                          value={successRate * 100}
+                          size={4}
+                          radius="xl"
+                          color={low ? 'var(--warn)' : 'var(--brand)'}
+                          mt={4}
+                          aria-label={t`Success rate`}
+                        />
+                      </div>
+                    )}
+                  </Table.Td>
+                )}
+                {showWait && (
+                  <Table.Td style={{ textAlign: 'right' }}>
+                    <Text size="sm" c="var(--ink-3)" className="tnum">
+                      {r.medianSecondsToComplete == null
+                        ? t`n/a`
+                        : formatReadingTime(r.medianSecondsToComplete)}
+                    </Text>
+                  </Table.Td>
+                )}
               </Table.Tr>
             )
           })}

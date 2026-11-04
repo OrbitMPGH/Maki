@@ -1,7 +1,8 @@
 import { useLayoutEffect } from 'react'
 import { UNSAFE_createBrowserHistory, useLocation } from 'react-router-dom'
 import { holdTint, tintSettled } from './coverTint'
-import { motionEnabled, motionPace, prefersReducedMotion } from './motionPrefs'
+import { DUR, EASE_CSS, pacedMs } from './motion'
+import { motionEnabled, motionPace, prefersReducedMotion, syncMotionPace } from './motionPrefs'
 import { pageScroller } from './pageScroll'
 
 /**
@@ -30,8 +31,6 @@ export const appHistory = UNSAFE_createBrowserHistory({ v5Compat: true })
 // A lazy route can hold the commit back while its chunk loads, and the series poster waits on its
 // data. Past this the transition gives up waiting and the new page arrives whenever it is ready.
 const COMMIT_TIMEOUT_MS = 400
-
-const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)'
 
 const disabled = () => !motionEnabled('pageTransitions') || prefersReducedMotion()
 
@@ -168,7 +167,7 @@ function rise(fade: boolean, drift = true) {
     from.opacity = 0
     to.opacity = 1
   }
-  main.animate([from, to], { duration: 250 * motionPace(), easing: EASE })
+  main.animate([from, to], { duration: 250 * motionPace(), easing: EASE_CSS })
 }
 
 /**
@@ -229,13 +228,13 @@ function flyCover(
     target.style.removeProperty('visibility')
     if (restorePosition) scroller.style.removeProperty('position')
     // The card underneath carries its title and badges, which the copy doesn't; a short fade hands over.
-    ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140 * motionPace(), easing: 'ease-out' }).finished.finally(() => ghost.remove())
+    ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: pacedMs(DUR.base), easing: EASE_CSS }).finished.finally(() => ghost.remove())
   }
   return {
     decoded: ghost.decode().catch(() => {}),
     start: () => {
       ghost.style.transform = 'none'
-      ghost.animate([{ transform: launch }, { transform: 'none' }], { duration: 440 * motionPace(), easing: EASE }).finished.finally(end)
+      ghost.animate([{ transform: launch }, { transform: 'none' }], { duration: 440 * motionPace(), easing: EASE_CSS }).finished.finally(end)
     },
     cancel: () => {
       ghost.remove()
@@ -269,7 +268,7 @@ function holdCover(cover: HTMLElement, at: DOMRect): (fade: boolean) => void {
   document.body.append(held)
   return (fade) => {
     if (!fade) return held.remove()
-    held.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140 * motionPace(), easing: 'ease-out' }).finished.finally(() => held.remove())
+    held.animate([{ opacity: 1 }, { opacity: 0 }], { duration: pacedMs(DUR.base), easing: EASE_CSS }).finished.finally(() => held.remove())
   }
 }
 
@@ -298,6 +297,8 @@ appHistory.listen = (listener) =>
     const from = shownPath
     const to = update.location.pathname
     shownPath = to
+    // Another tab may have flipped "Faster animations" since; the fade's length in theme.css keys off it.
+    syncMotionPace()
     if (from === to || (isReader(from) && isReader(to)) || disabled()) {
       listener(update)
       return
@@ -319,10 +320,6 @@ appHistory.listen = (listener) =>
       return
     }
 
-    // The cross-fade's length lives in theme.css, keyed off this.
-    const root = document.documentElement
-    if (motionEnabled('fastMotion')) root.dataset.motion = 'fast'
-    else delete root.dataset.motion
     let flight: ReturnType<typeof flyCover> = null
     let settled = 0
     // Set once the browser skips the transition: a hidden tab, or another navigation cutting in. The

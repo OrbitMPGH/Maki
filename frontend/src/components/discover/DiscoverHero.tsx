@@ -20,6 +20,7 @@ import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
 import { useLabel } from '../../i18n-context'
 import { formatFixedDecimal } from '../../format'
 import { onRovingKeyDown } from '../../lib/rovingFocus'
+import { CINEMATIC, EASE, paced } from '../../lib/motion'
 import { MetaList } from '../ui/MetaList'
 
 /** How long one pick holds the band before the next takes it. */
@@ -213,7 +214,7 @@ export function DiscoverHero({
           initial={reducedMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={reducedMotion ? undefined : { opacity: 0 }}
-          transition={{ duration: 0.55, ease: 'easeOut' }}
+          transition={{ duration: paced(CINEMATIC.fade), ease: EASE }}
         >
           <HeroBackdrop coverUrl={cover} />
         </motion.div>
@@ -226,7 +227,7 @@ export function DiscoverHero({
             className="discover-hero-feature"
             initial={reducedMotion ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: paced(CINEMATIC.enter), ease: EASE }}
           >
             <Group align="flex-start" gap={26} wrap="nowrap" className="discover-hero-feature-row">
             {cover && (

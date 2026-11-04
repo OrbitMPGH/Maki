@@ -1,7 +1,6 @@
 import {type ReactNode, useMemo} from 'react'
 import {
     ActionIcon,
-    Alert,
     Box,
     Divider,
     Group,
@@ -12,7 +11,8 @@ import {
     Stack,
     Text,
     Title,
-    Tooltip
+    Tooltip,
+    VisuallyHidden,
 } from '@mantine/core'
 import { IconAlertTriangle, IconArrowLeft, IconBook, IconCheck, IconDownload, IconX } from '../../lib/icons'
 import { Link } from 'react-router-dom'
@@ -140,6 +140,19 @@ export function SeriesHero({
     const notWanted = progress.nothingWanted ? 0 : Math.max(0, series.knownChapterCount - totalCount)
     const readCount = series.readChapterCount ?? 0
     const { highest = 0, total: listed = 0, missing = 0 } = sourceGap ?? {}
+    const gapExplanation = series.lockedFields.includes('totalChapters') ? (
+        <Trans>
+            Your sources only reach chapter {highest}, but the total you set is {listed}. Roughly{' '}
+            <Plural value={missing} one="# chapter" other="# chapters" /> can't be downloaded from the
+            sources linked here. Link another source to close the gap.
+        </Trans>
+    ) : (
+        <Trans>
+            Your sources only reach chapter {highest}, but MangaBaka lists {listed}. Roughly{' '}
+            <Plural value={missing} one="# chapter" other="# chapters" /> can't be downloaded from the
+            sources linked here. Link another source to close the gap.
+        </Trans>
+    )
 
     // One quiet line of facts rather than a row of coloured pills: none of these is a state anyone
     // acts on, so none of them earns a colour.
@@ -372,8 +385,9 @@ export function SeriesHero({
                             <Progress
                                 mt={12}
                                 value={progress.pct}
-                                // Warn wins while a source gap exists, a separate claim the alert below already spells out.
-                                color={sourceGap ? 'var(--warn)' : progress.complete ? 'var(--ok)' : 'var(--brand)'}
+                                // Never amber, even with a source gap: amber is kept for warnings, and the gap
+                                // has its own line below.
+                                color={progress.complete ? 'var(--ok)' : 'var(--brand)'}
                                 radius="xl"
                                 aria-label={t`Download progress`}
                             />
@@ -428,48 +442,24 @@ export function SeriesHero({
                             )}
                         </Box>
 
+                        {/* One line, not a card: a one-chapter gap was the loudest block on the page.
+                            The explanation is a hover or tap away. */}
                         {sourceGap && (
-                            <Alert
-                                mt="md"
-                                color="var(--warn)"
-                                variant="light"
-                                radius="md"
-                                icon={<IconAlertTriangle size={16} />}
+                            <Tooltip
+                                label={gapExplanation}
+                                withArrow
+                                multiline
+                                w={280}
+                                events={{ hover: true, focus: true, touch: true }}
                             >
-                                <Text size="xs" c="var(--ink-3)" style={{ lineHeight: 1.55 }}>
-                                    {series.lockedFields.includes('totalChapters') ? (
-                                        <Trans>
-                                            Your sources only reach chapter{' '}
-                                            <Text span fw={600} c="var(--ink)" className="tnum">
-                                                {highest}
-                                            </Text>
-                                            , but the total you set is{' '}
-                                            <Text span fw={600} c="var(--ink)" className="tnum">
-                                                {listed}
-                                            </Text>
-                                            . Roughly{' '}
-                                            <Plural value={missing} one="# chapter" other="# chapters" /> can't be
-                                            downloaded from the sources linked here. Link another source to close
-                                            the gap.
-                                        </Trans>
-                                    ) : (
-                                        <Trans>
-                                            Your sources only reach chapter{' '}
-                                            <Text span fw={600} c="var(--ink)" className="tnum">
-                                                {highest}
-                                            </Text>
-                                            , but MangaBaka lists{' '}
-                                            <Text span fw={600} c="var(--ink)" className="tnum">
-                                                {listed}
-                                            </Text>
-                                            . Roughly{' '}
-                                            <Plural value={missing} one="# chapter" other="# chapters" /> can't be
-                                            downloaded from the sources linked here. Link another source to close
-                                            the gap.
-                                        </Trans>
-                                    )}
+                                <Text size="xs" className="series-source-gap tnum" tabIndex={0}>
+                                    <IconAlertTriangle size={14} aria-hidden />
+                                    <span>
+                                        <Trans>Sources reach ch. {highest} of {listed}</Trans>
+                                        <VisuallyHidden>. {gapExplanation}</VisuallyHidden>
+                                    </span>
                                 </Text>
-                            </Alert>
+                            </Tooltip>
                         )}
                     </Paper>
                     {/* After the panel, not inside the title column: once the panel stacks, the tabs

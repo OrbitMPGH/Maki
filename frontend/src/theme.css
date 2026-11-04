@@ -98,10 +98,10 @@
   --type-subhead: 1rem;
   --type-body: 0.9375rem;
   --type-meta: 0.8125rem;
-  /* The floor for anything read. Only badges go under it. */
+  /* The floor for anything read, badges included. */
   --type-micro: 0.75rem;
   --type-label: 0.8125rem;
-  --type-badge: 0.6875rem;
+  --type-badge: 0.75rem;
 
   /* Weight scale. Same rule as the type scale: a weight between two steps belongs on one of them. */
   --fw-regular: 400;
@@ -129,14 +129,18 @@
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
   /* One tight layer: a few hundred posters each casting a wide blur made scrolling and hover slow. */
   --shadow-cover: 0 1px 2px rgba(0, 0, 0, 0.45);
-  --shadow-cover-hover: 0 4px 8px -4px rgba(0, 0, 0, 0.6);
+  --shadow-cover-hover: 0 14px 26px -12px rgba(0, 0, 0, 0.8);
   --cover-rim: rgba(255, 255, 255, 0.09);
-  --cover-rim-hover: rgba(255, 255, 255, 0.18);
+  /* The accent, so the pointed-at card stands out in a grid of rims; selection is the full accent. */
+  --cover-rim-hover: color-mix(in srgb, var(--brand) 70%, transparent);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Symmetric, for anything that loops: an expo-out start snaps on every repeat. Spinners stay linear. */
+  --ease-loop: cubic-bezier(0.45, 0, 0.55, 1);
   --dur-fast: 0.12s;
   --dur-base: 0.15s;
   --dur-medium: 0.18s;
   --dur-slow: 0.35s;
+  /* Mirrored in lib/motion.ts for script and Mantine's overlays; change both together. */
 
   --font-display: 'Bricolage Grotesque Variable', 'Onest Variable', ui-sans-serif, -apple-system,
     'Segoe UI', Roboto, sans-serif;
@@ -158,6 +162,20 @@
 .page-header .mantine-Title-root {
   font-size: var(--type-page-title);
   line-height: 1.15;
+}
+/* One title row on every page: 44px, the tallest header control, with the title and the actions
+   centred in it. Bottom-aligning to the actions put Library, Discover and Health titles at three
+   heights. A description takes back the row's slack, so it stays close under the title. */
+.page-header-title > .mantine-Title-root {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+.page-header-title > .mantine-Title-root + * {
+  margin-top: calc((var(--type-page-title) * 1.15 - 44px) / 2);
+}
+.page-header-actions {
+  min-height: 44px;
 }
 
 .cover-title,
@@ -268,6 +286,17 @@
 :root :is(.mantine-focus-auto, .mantine-focus-always):focus-visible {
   outline-color: var(--focus-ring);
 }
+/* Mantine's disabled label (dark-3 / gray-5) sat at 2.7:1 and under 2:1 on its own fill, so a
+   disabled "Sync now" could not be read at all. The flat fill and missing border still mark it off. */
+:root[data-mantine-color-scheme='dark'],
+:root[data-mantine-color-scheme='light'] {
+  --mantine-color-disabled-color: var(--ink-4);
+}
+/* That fill is --surface, the card colour, so inside a card a disabled button lost its shape and
+   read as a label. A dashed edge keeps it a control without passing for an enabled one. */
+.mantine-Button-root:is(:disabled, [data-disabled]):not([data-loading], [data-variant='subtle'], [data-variant='transparent']) {
+  border: 1px dashed var(--border-strong);
+}
 :root[data-accent='plum'] {
   --brand: #b84cbc;
   --brand-hover: #9e3aa3;
@@ -361,7 +390,7 @@
   --shadow-cover: none;
   --shadow-cover-hover: none;
   --cover-rim: rgba(255, 255, 255, 0.16);
-  --cover-rim-hover: rgba(255, 255, 255, 0.3);
+  --cover-rim-hover: color-mix(in srgb, var(--brand) 75%, transparent);
 }
 
 /* --- Light theme --------------------------------------------------------- */
@@ -403,7 +432,7 @@
   --tier-6: #a83660;
   --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
   --shadow-cover: 0 1px 2px rgba(20, 24, 40, 0.14);
-  --shadow-cover-hover: 0 4px 8px -4px rgba(20, 24, 40, 0.25);
+  --shadow-cover-hover: 0 14px 26px -12px rgba(20, 24, 40, 0.4);
   --cover-rim: rgba(20, 24, 40, 0.1);
   --cover-rim-hover: rgba(20, 24, 40, 0.18);
   --surface-raised: #ffffff;
@@ -570,6 +599,22 @@ body {
 [data-mantine-color-scheme='dark'] .mantine-Switch-input:not(:checked) + .mantine-Switch-track {
   box-shadow: inset 0 0 0 1px var(--border-strong);
 }
+/* Switch and Checkbox animate in their own stylesheet at 100 to 150ms on the stock `ease`; put them
+   on the house curve and scale like everything else. Collapse, SegmentedControl and the toasts take
+   theirs from props in theme.ts. */
+.mantine-Switch-track,
+.mantine-Switch-thumb,
+.mantine-Switch-trackLabel,
+.mantine-Checkbox-input,
+.mantine-Checkbox-icon {
+  transition-duration: var(--dur-base);
+  transition-timing-function: var(--ease);
+}
+/* Mantine sets the toast's curve inline, an overshooting bezier that bounces each toast in; only
+   !important reaches past an inline style. The third value is the max-height collapse. */
+.mantine-Notifications-notification {
+  transition-timing-function: var(--ease), var(--ease), linear !important;
+}
 
 /* Overlays sit on the raised layer in both themes. Previously these were dark-only,
    so light overlays fell through to the blanket rule and rendered at the same
@@ -627,7 +672,6 @@ body {
 .figure,
 .figure-strip-n,
 .hero-stat-n,
-.stats-figure-n,
 .stats-fact-value {
   font-family: var(--font-display);
   font-weight: var(--fw-bold);
@@ -639,6 +683,9 @@ body {
 /* --- Meta lists ------------------------------------------------------------ */
 /* Short facts in a row, split by a hairline rather than a centre dot (MetaList). Inherits size and
    colour from where it sits. A hairline never appears inside a title the way a comma can. */
+/* Every item draws the hairline before it, and the list starts one hairline early with that strip
+   clipped off, so whichever item opens a wrapped line takes its hairline with it instead of starting
+   the line with a stray "|". The clip keeps 0.6em of room on that side for a focus ring. */
 .meta-list {
   display: flex;
   flex-wrap: wrap;
@@ -646,15 +693,17 @@ body {
   row-gap: 2px;
   min-width: 0;
   margin: 0;
+  margin-inline-start: calc(-1.2em - 1px);
   padding: 0;
   list-style: none;
+  clip-path: inset(-8px -8px -8px calc(0.6em + 1px));
 }
 .meta-list > li {
   display: inline-flex;
   align-items: center;
   min-width: 0;
 }
-.meta-list > * + *::before {
+.meta-list > *::before {
   content: '';
   flex-shrink: 0;
   width: 1px;
@@ -668,7 +717,14 @@ body {
 .meta-list-inline > * {
   display: inline;
 }
-.meta-list-inline > * + *::before {
+.meta-list-inline {
+  margin-inline-start: 0;
+  clip-path: none;
+}
+.meta-list-inline > :first-child::before {
+  content: none;
+}
+.meta-list-inline > *::before {
   display: inline-block;
   vertical-align: -0.1em;
 }
@@ -740,7 +796,7 @@ body {
     radial-gradient(circle closest-side, currentColor 90%, transparent) 0 100% / 0.28em 0.28em no-repeat,
     radial-gradient(circle closest-side, currentColor 90%, transparent) 0.36em 100% / 0.28em 0.28em no-repeat,
     radial-gradient(circle closest-side, currentColor 90%, transparent) 0.72em 100% / 0.28em 0.28em no-repeat;
-  animation: pending-dots 1.05s ease-in-out infinite;
+  animation: pending-dots 1.05s var(--ease-loop) infinite;
 }
 .pending-label {
   display: inline-grid;
@@ -824,19 +880,19 @@ body {
 .nav-collapsed .mantine-AppShell-main {
   --page-gutter-start: var(--page-gutter-end);
 }
-/* Capped pages centre their column, and the uneven gutter would push it off centre. */
-.mantine-AppShell-main:has(.surface-frame--wide) {
-  --page-gutter-end: var(--app-shell-padding);
-}
 /* Page changes cross-fade (lib/pageTransition.ts). Old and new share one timing, which keeps the
    sidebar and header, identical on both sides, perfectly still while the content swaps. */
 ::view-transition-group(root) {
-  animation-duration: 0.2s;
+  animation-duration: var(--dur-medium);
   animation-timing-function: var(--ease);
 }
-/* "Faster animations" under Settings > Appearance; the script scales the rise and the cover to match. */
-:root[data-motion='fast']::view-transition-group(root) {
-  animation-duration: 0.11s;
+/* "Faster animations" under Settings > Appearance: every token at FAST_PACE (0.55) in
+   lib/motionPrefs.ts, which scales the script's motion to match. */
+:root[data-motion='fast'] {
+  --dur-fast: 0.066s;
+  --dur-base: 0.083s;
+  --dur-medium: 0.099s;
+  --dur-slow: 0.193s;
 }
 /* Laid out for real while a page transition captures the new page (settleLayout in
    lib/pageTransition.ts); their guessed heights otherwise shift everything below them afterwards. */
@@ -906,6 +962,23 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .app-header-row {
   padding-inline: max(var(--mantine-spacing-md), env(safe-area-inset-left, 0px))
     max(var(--mantine-spacing-md), env(safe-area-inset-right, 0px));
+}
+/* Gives way to the actions, so a long series title ends in an ellipsis rather than pushing the
+   bell off the screen. */
+.app-header-lead {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.app-header-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: var(--type-section);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.015em;
+  color: var(--ink-hi);
 }
 
 /* Below Mantine's `sm` breakpoint the navbar stops being a column and becomes an overlay drawer,
@@ -1399,8 +1472,28 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+/* Autosize sizes its content to min-content, and a nowrap title then widened the list past a phone
+   screen with a sideways scrollbar. Titles truncate inside the panel instead. */
+.command-palette-list .mantine-ScrollArea-content {
+  min-width: 0 !important;
+}
+/* The keyboard's row has to stand out from a list of near-identical rows, so it takes the accent the
+   active nav link uses, plus an edge bar that does not depend on telling two tints apart. */
 .command-palette-item[data-active='true'] {
-  background: var(--surface-hover);
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+.command-palette-item[data-active='true'] > svg {
+  color: var(--brand-fg);
+}
+/* The matched part of a result: accent text rather than a highlighter block, which would fight the
+   active row's tint. */
+.command-palette-item mark {
+  background: transparent;
+  color: var(--brand-fg);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 /* One notification in the bell dropdown or on the notifications page. The whole row is a button,
@@ -1597,12 +1690,16 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   container-type: inline-size;
   transition:
     transform var(--dur-medium) var(--ease),
-    border-color var(--dur-medium) var(--ease);
+    border-color var(--dur-medium) var(--ease),
+    box-shadow var(--dur-medium) var(--ease);
 }
 .cover-card:hover {
   transform: translateY(-4px);
   border-color: var(--cover-rim-hover);
-  box-shadow: var(--shadow-cover-hover);
+  /* A second pixel of rim outside the border: over busy art a hairline alone was easy to miss. */
+  box-shadow:
+    0 0 0 1px var(--cover-rim-hover),
+    var(--shadow-cover-hover);
 }
 .cover-card[data-selected='true'] {
   border-color: var(--brand);
@@ -1746,6 +1843,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     opacity: 0.7;
   }
 }
+/* A phone's three-column card has room for the ring and one disc, and touch shows the eye and bell
+   all the time, so three marks wrapped onto a second row. The hollow status disc already says "not
+   monitored"; the eye and bell stay on the series page and in the list view. */
+@container (max-width: 8rem) {
+  .cover-corner-right > .cover-badge-circle {
+    display: none;
+  }
+}
 /* Unread count / all-read marker. The progress ring beside these is easy to miss at grid
    density; a number is not, and it is the one thing you scan a library for. */
 .cover-badge-unread {
@@ -1802,15 +1907,13 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
 }
-.cover-ring[data-complete]::before {
-  background: var(--ok);
+/* Read-through is a closed brand ring with a tinted centre and no glyph: a check here sat beside the
+   Completed status check in the other corner, and two checks on one cover read as one fact twice. */
+.cover-ring[data-complete] {
+  background: color-mix(in srgb, var(--brand) 32%, rgba(6, 7, 11, 0.78));
 }
-.cover-ring-check {
-  --tone: var(--ok);
-  position: absolute;
-  inset: 0;
-  margin: auto;
-  color: var(--tone);
+.cover-ring[data-complete]::before {
+  background: var(--brand);
 }
 /* Icon chip on a cover: download state beside the ring, publication status top-right. */
 .cover-state {
@@ -1821,7 +1924,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: rgba(6, 7, 11, 0.62);
+  background: rgba(6, 7, 11, 0.84);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
   color: var(--tone);
 }
@@ -1874,7 +1977,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--tone-on, #fff);
 }
 .cover-state[data-tone='status'][data-unmonitored] {
-  background: rgba(6, 7, 11, 0.62);
+  background: rgba(6, 7, 11, 0.84);
   box-shadow:
     inset 0 0 0 1.5px var(--tone),
     0 2px 6px rgba(0, 0, 0, 0.35);
@@ -1892,8 +1995,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     0 2px 6px rgba(0, 0, 0, 0.35);
   color: var(--lift);
 }
-[data-theme='light'] .cover-state:not([data-tone='status']),
-[data-theme='light'] .cover-ring-check {
+[data-theme='light'] .cover-state:not([data-tone='status']) {
   color: color-mix(in srgb, var(--tone) 55%, white);
 }
 /* Selection tick in bulk mode, purely decorative: the whole card is the hit target. */
@@ -1981,6 +2083,36 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 .cover-title + .cover-row {
   margin-top: 5px;
+}
+/* On a narrow card "Resume" lost the race to the count pill ("Resu..."). The play chip in the corner
+   already says the card opens the reader, so the word steps aside before it truncates. */
+.cover-meta {
+  container-type: inline-size;
+}
+@container (max-width: 9.5rem) {
+  .cover-row:has(> .cover-new) > .cover-row-verb {
+    display: none;
+  }
+  .cover-row:has(> .cover-row-verb) {
+    justify-content: flex-start;
+  }
+}
+/* Same race on a library card ("175..." beside "106 new"): past a laptop-width card the count keeps
+   what was downloaded and drops the total, which the progress bar above it already shows. */
+@container (max-width: 11rem) {
+  .cover-count-total {
+    display: none;
+  }
+}
+/* A phone's three-column card (about 87px of footer) cannot fit both even then ("1.." beside "106
+   new"), so the pill keeps the row and the bar above stands in for the downloaded count. */
+@container (max-width: 6.5rem) {
+  .cover-row:has(> .cover-new) > :first-child:not(.cover-new) {
+    display: none;
+  }
+  .cover-row:has(> .cover-new) {
+    justify-content: flex-start;
+  }
 }
 .cover-row > [data-nothing-wanted] {
   color: rgba(255, 255, 255, 0.5);
@@ -2158,27 +2290,31 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .discover-rail:hover {
   scrollbar-color: var(--border-strong) transparent;
 }
+/* On a side with more to scroll, the 6px gutter is masked out too, so the cards stop at the content
+   edge and the fade ends there. A side at rest keeps the gutter for the focus ring and rank badge. */
 .discover-rail[data-fade-start] {
-  --rail-fade-start: 24px;
+  --rail-fade-start: 48px;
+  --rail-edge-start: 6px;
 }
 .discover-rail[data-fade-end] {
-  --rail-fade-end: 24px;
+  --rail-fade-end: 48px;
+  --rail-edge-end: 6px;
 }
 .discover-rail[data-fade-start],
 .discover-rail[data-fade-end] {
   -webkit-mask-image: linear-gradient(
     to right,
-    transparent,
-    #000 var(--rail-fade-start),
-    #000 calc(100% - var(--rail-fade-end)),
-    transparent
+    transparent var(--rail-edge-start, 0px),
+    #000 calc(var(--rail-edge-start, 0px) + var(--rail-fade-start)),
+    #000 calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end)),
+    transparent calc(100% - var(--rail-edge-end, 0px))
   );
   mask-image: linear-gradient(
     to right,
-    transparent,
-    #000 var(--rail-fade-start),
-    #000 calc(100% - var(--rail-fade-end)),
-    transparent
+    transparent var(--rail-edge-start, 0px),
+    #000 calc(var(--rail-edge-start, 0px) + var(--rail-fade-start)),
+    #000 calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end)),
+    transparent calc(100% - var(--rail-edge-end, 0px))
   );
 }
 .discover-card:has(.discover-card-action:focus-visible) {
@@ -2289,7 +2425,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   border-radius: 5px;
   background: var(--surface-hover);
   color: var(--ink-hi);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: var(--fw-bold);
   line-height: 1;
 }
@@ -2924,7 +3060,9 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .reading-card:hover > .cover-card {
   transform: translateY(-4px);
   border-color: var(--cover-rim-hover);
-  box-shadow: var(--shadow-cover-hover);
+  box-shadow:
+    0 0 0 1px var(--cover-rim-hover),
+    var(--shadow-cover-hover);
 }
 .reading-card-menu {
   position: absolute;
@@ -3113,12 +3251,13 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   bottom: 9px;
   z-index: 1;
 }
-/* Status disc, word and year on the left, the chapter count right-aligned. */
+/* Status disc, word and year on the left, the chapter count right-aligned. The gap is wide enough
+   that a year and a count never read as one figure ("2019 203 ch."); the year drops out first. */
 .discover-sub {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 14px;
   min-height: 16px;
   margin-top: 5px;
   white-space: nowrap;
@@ -3336,12 +3475,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
    (.discover-rail, .discover-rail-item) are shared with Home, the series page's related rows and
    two more surfaces, so nothing here touches them. */
 
-/* The header's buttons (44px) show on Discover and Recommended only. Without them the row shrank to
-   the title's height and the tabs and everything under them jumped 13px up on Your Taste, so the
-   row keeps their height on every tab. */
-.discover-page-header {
-  min-height: 44px;
-}
 /* The full-bleed hero reaches into the tab row's bottom margin. Keep the controls above that
    overlap so their whole visible area remains clickable. */
 .discover-page-tabs {
@@ -3526,6 +3659,27 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   border-radius: var(--radius-hero);
   background: var(--surface-2);
   box-shadow: var(--shadow-object);
+}
+/* The sources-gap note under the Downloads meter: an amber mark and one line. As a filled card it
+   was the loudest block on the page for what is often a one-chapter gap; the why is in its tooltip. */
+.series-source-gap {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  width: fit-content;
+  margin-top: var(--mantine-spacing-sm);
+  color: var(--ink-2);
+  cursor: help;
+}
+.series-source-gap > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--warn);
+}
+.series-source-gap:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+  border-radius: var(--radius-2xs);
 }
 /* The quiet stand-in for the download button once every wanted chapter is on disk. Button height,
    so the action row keeps its line. */
@@ -4171,7 +4325,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   min-width: 0;
 }
 .auth-panel {
-  animation: auth-panel-in 0.3s var(--ease) both;
+  animation: auth-panel-in var(--dur-slow) var(--ease) both;
 }
 /* Opaque, so the form reads the same over any art. */
 [data-mantine-color-scheme] .auth-panel {
@@ -4404,7 +4558,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .setup-stage-inner {
   max-width: 44rem;
   margin-inline: auto;
-  animation: setup-stage-in 0.32s var(--ease) both;
+  animation: setup-stage-in var(--dur-slow) var(--ease) both;
 }
 .setup-eyebrow {
   font-size: var(--type-meta);
@@ -4900,7 +5054,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 /* Inline-flex and `fit-content` so the target is the arrow and the word, not the full width of
    the hero: a link as wide as the band sends a stray click halfway across the page back to it. */
-.series-hero-back {
+.series-hero-back,
+.page-back-link {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -4910,8 +5065,16 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   transition: color var(--dur-base) var(--ease);
 
 }
-.series-hero-back:hover {
+.series-hero-back:hover,
+.page-back-link:hover {
   color: var(--ink-hi);
+}
+/* Roles as labels on the name, then the count, on the description line under the title. */
+.creator-header-meta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
 }
 
 .series-hero-content {
@@ -4925,23 +5088,25 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   margin-top: var(--mantine-spacing-md);
 }
 @media (min-width: 68.8125em) {
-  /* The empty first and last rows take whatever the panel is taller by, so the title and tabs stay
-     one block centred against it rather than splitting around the extra height. */
+  /* The panel's top sits on the poster's top, so the band has one top line. Centred against the
+     title block it started above the poster whenever it was the taller of the two. The empty last
+     row takes whatever the panel is taller by, below the tabs. */
   .series-hero:not([data-compact]) .series-hero-content {
-    grid-template-rows: 1fr auto auto 1fr;
+    grid-template-rows: auto auto 1fr;
     row-gap: 0;
   }
   .series-hero:not([data-compact]) .series-hero-row {
     grid-column: 1;
-    grid-row: 2;
+    grid-row: 1;
   }
   .series-hero:not([data-compact]) .series-hero-panel {
     grid-column: 2;
     grid-row: 1 / -1;
+    align-self: start;
   }
   .series-hero:not([data-compact]) .series-hero-tabs {
     grid-column: 1;
-    grid-row: 3;
+    grid-row: 2;
     margin-top: var(--mantine-spacing-xl);
   }
   .series-hero:not([data-compact]) .series-hero-content:has(.series-hero-poster) .series-hero-tabs {
@@ -5394,6 +5559,13 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .tag-chip.spoiler-tag > .tag-dot {
   filter: none;
 }
+/* The eye-off mark is the visible "this is hidden on purpose", so it is never blurred. */
+.spoiler-tag > .spoiler-tag-glyph {
+  flex-shrink: 0;
+  margin-inline-start: -2px;
+  color: var(--ink-3);
+  filter: none;
+}
 /* Same shape as a chip so the row stays even, but it is a control: brand text, no dot. */
 .tag-more {
   padding: 3px 10px;
@@ -5430,6 +5602,56 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 .series-tabs::-webkit-scrollbar {
   display: none;
+}
+/* lib/scrollFades.ts marks the edges with more content past them, so a clipped strip reads as
+   scrollable instead of cut off. A fade alone read as a label cut mid-word ("Short", "D"), so the
+   far end also gets a chevron: a sticky `::after` painted in the ink, and a matching chevron layer in
+   the mask that lets it through the faded edge. Both are drawn without a background, so the strip
+   works on any ground. The bottom 1px layer keeps a rail's hairline from fading with the labels. */
+:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row) {
+  --strip-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='m184.49 136.49l-80 80a12 12 0 0 1-17-17L159 128L87.51 56.49a12 12 0 1 1 17-17l80 80a12 12 0 0 1-.02 17'/%3E%3C/svg%3E");
+}
+:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row):is([data-fade-start], [data-fade-end]) {
+  --fade-start: 0px;
+  --fade-end: 0px;
+  mask:
+    linear-gradient(to right, transparent 0, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent 100%),
+    linear-gradient(#000, #000) bottom / 100% 1px no-repeat;
+}
+:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row)[data-fade-start] {
+  --fade-start: 2rem;
+}
+:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row)[data-fade-end] {
+  --fade-end: 3.5rem;
+  mask:
+    linear-gradient(to right, transparent 0, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent calc(100% - 1.25rem)),
+    linear-gradient(#000, #000) bottom / 100% 1px no-repeat,
+    var(--strip-chevron) right calc(50% - var(--strip-cue-lift, 0px)) / 1rem 1rem no-repeat;
+}
+/* Always present so showing it never changes the scroll width; it takes no room (the negative margin
+   cancels its width) and only shows once the strip overflows. */
+:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row)::after {
+  content: '';
+  position: sticky;
+  inset-inline-end: 0;
+  flex: 0 0 1rem;
+  align-self: stretch;
+  margin-inline-start: -1rem;
+  margin-bottom: calc(2 * var(--strip-cue-lift, 0px));
+  background: var(--ink-2);
+  mask: var(--strip-chevron) center / 1rem 1rem no-repeat;
+  visibility: hidden;
+  pointer-events: none;
+}
+:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row)[data-fade-end]::after {
+  visibility: visible;
+}
+/* A tab's label sits above its underline padding; centre the chevron on the label, not the row. */
+.series-tabs {
+  --strip-cue-lift: 6.5px;
+}
+.sub-tabs {
+  --strip-cue-lift: 5px;
 }
 .series-tab {
   color: var(--ink-3);
@@ -5498,6 +5720,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
    reads like the chapters of a page; the accent icon and the rule give each one a colour and a line
    to its action, the way a tag bucket's name runs into its count in the Discover modal. */
 .section-header {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -5598,7 +5821,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   flex-shrink: 0;
   gap: 6px;
   opacity: 0;
-  transition: opacity 0.15s var(--ease);
+  transition: opacity var(--dur-base) var(--ease);
 }
 .section-header-arrows:empty {
   display: none;
@@ -5610,6 +5833,27 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 @media (hover: none) {
   .section-header-arrows {
     opacity: 1;
+  }
+}
+/* With no action beside them, the arrows float over the end of the rule rather than reserve their
+   width while hidden, so the rule reaches the content edge and only gives way while they show. */
+.section-header-end:not(:has(> .section-header-action)) {
+  position: absolute;
+  inset-inline-end: 0;
+  top: 50%;
+  translate: 0 -50%;
+}
+.section-header-rule {
+  transition: margin-inline-end var(--dur-base) var(--ease);
+}
+.section-header:has(> .section-header-end:not(:has(> .section-header-action)) > .section-header-arrows:is([data-hover], :focus-within))
+  > .section-header-rule {
+  margin-inline-end: 76px;
+}
+@media (hover: none) {
+  .section-header:has(> .section-header-end:not(:has(> .section-header-action)) > .section-header-arrows:not(:empty))
+    > .section-header-rule {
+    margin-inline-end: 76px;
   }
 }
 .rail-arrow {
@@ -5625,8 +5869,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   box-shadow: var(--shadow-card);
   cursor: pointer;
   transition:
-    color 0.12s var(--ease),
-    border-color 0.12s var(--ease);
+    color var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
 }
 .rail-arrow:hover:not(:disabled) {
   border-color: var(--border-strong);
@@ -5647,15 +5891,66 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 @media (max-width: 36em) {
   .section-header {
     flex-wrap: wrap;
+    align-items: flex-start;
     row-gap: 6px;
   }
+  /* The title gives way to the action rather than the action dropping to a row of its own: the lead
+     shrinks to an 11rem floor and wraps inside it, and only an action too wide for that moves under. */
   .section-header-lead {
+    flex: 1 1 11rem;
     max-width: 100%;
+  }
+  .section-header-action .mantine-Button-root {
+    padding-inline: 6px;
+  }
+  /* A heading is the one thing on a phone row that must read in full, so it wraps instead of
+     ellipsising. The lead turns into running text so the count follows the last word rather than
+     the far edge of a wrapped title's box, and the icon hangs beside the first line. */
+  .section-header-lead {
+    display: block;
+    position: relative;
+    padding-inline-start: 31px;
+    line-height: 1.2;
+  }
+  .section-header-lead > .section-header-icon {
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0;
+    height: calc(var(--type-section-title) * 1.2);
+  }
+  .section-header-title {
+    display: inline;
+    overflow: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .section-header-lead > :is(.section-header-count, .section-header-tag) {
+    display: inline-block;
+    margin-inline-start: 10px;
+  }
+  /* Plain inline with no space before it, so there is no break between the last word and the count
+     and the two wrap as one; an inline-block left a break there and stranded the count on its own line. */
+  .section-header-lead > .section-header-count {
+    display: inline;
+    white-space: nowrap;
+  }
+  .continue-tray .section-header-lead {
+    padding-inline-start: 24px;
+    font-size: var(--type-meta);
+  }
+  .continue-tray .section-header-lead > .section-header-icon {
+    height: calc(var(--type-meta) * 1.2);
+  }
+  .continue-tray .section-header-lead > .section-header-count {
+    margin-inline-start: 8px;
   }
   .section-header-rule {
     display: none;
   }
-  .section-header-end {
+  .section-header-end,
+  .section-header-end:not(:has(> .section-header-action)) {
+    position: static;
+    translate: none;
     max-width: 100%;
     margin-left: auto;
   }
@@ -5766,6 +6061,11 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .empty-state-mark {
   display: flex;
   flex: none;
+}
+/* Holds the place of the table it stands in for: the dashed outline the app uses for an empty slot. */
+.empty-state[data-framed] {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-card);
 }
 
 /* The whole page is empty: centred in what's left of the viewport, over a picture of covers. */
@@ -6025,6 +6325,30 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
     flex: none;
     overflow-y: visible;
   }
+  /* The series page keeps a small poster, floated so only the title's first lines give way to it
+     and everything under them gets the full width back. Without one the only picture on the page
+     was the blurred backdrop. `flow-root` holds the float when the text is the shorter side. */
+  .series-hero:not([data-compact]) .series-hero-row {
+    display: flow-root;
+  }
+  .series-hero:not([data-compact]) .series-hero-row > .mantine-Stack-root {
+    display: block;
+  }
+  /* A meta list is a flex box, which steps clear of the float and so loses the negative start
+     margin that hides its leading hairline. Its wrapper steps clear instead, and the list keeps it. */
+  .series-hero:not([data-compact]) .series-hero-row div:has(> .meta-list) {
+    display: flow-root;
+  }
+  .series-hero:not([data-compact]) .series-hero-poster {
+    display: block;
+    float: inline-start;
+    width: 76px;
+    height: 114px;
+    margin-block: 4px 8px;
+    margin-inline-end: 14px;
+    border-radius: var(--radius-cover);
+    box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.8);
+  }
 }
 
 /* --- Tables inside a panel ------------------------------------------------ */
@@ -6053,11 +6377,31 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
 }
 /* A disabled account or a file gone from disk reads quieter through the muted ink rather than
    opacity, which faded its words under 4.5:1. Pictures and icons still fade. */
-tr[data-muted] > td {
+tr[data-muted] > td,
+tr[data-muted] .status-dot {
   color: var(--ink-3);
 }
-tr[data-muted] :is(img, svg, .mantine-Avatar-root) {
+tr[data-muted] :is(img, svg, .mantine-Avatar-root):not(.mantine-ActionIcon-root *) {
   opacity: 0.55;
+}
+/* A row's own icon buttons (mark read, more, lock, delete). In the neutral grey every row read as
+   disabled, so they sit at the secondary ink and brighten with the row under the pointer or focus.
+   Delete stays neutral until it is the one hovered, so a table is not a column of red bins. */
+[data-row-action]:not(:disabled, [data-disabled]) {
+  color: var(--ink-2);
+}
+tr:is(:hover, :focus-within) [data-row-action]:not(:disabled, [data-disabled]),
+[data-row-action]:not(:disabled, [data-disabled]):is(:hover, :focus-visible, [aria-expanded='true']) {
+  color: var(--ink-hi);
+}
+[data-row-action='danger']:not(:disabled, [data-disabled]):is(:hover, :focus-visible) {
+  color: var(--danger-fg);
+}
+/* The chapter and file rows' icon buttons take a 32px target around a 19px glyph; at Mantine's
+   28px default they sat 30px apart and were easy to miss. A button given its own size keeps it,
+   since that sets the variable inline. */
+:is(.chapter-table, .series-files-table) td .mantine-ActionIcon-root {
+  --ai-size: 32px;
 }
 
 /* A table standing on the page gets a panel for its edge. The panel clips, so the header band and
@@ -6231,7 +6575,7 @@ tr[data-muted] :is(img, svg, .mantine-Avatar-root) {
   border-radius: 1px;
   background: var(--border);
   opacity: 0;
-  transition: opacity 120ms ease, background-color 120ms ease;
+  transition: opacity var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease);
 }
 thead th:hover > .column-resize-handle::after,
 .column-resize-handle:focus-visible::after {
@@ -6389,9 +6733,17 @@ body.column-resizing * {
   align-items: center;
   gap: 6px;
 }
+/* The title gets a line of its own under the number: beside the switch, number and row actions it
+   had about 70px on a phone and every title cut to its first word. */
 .chapter-rows-list .chapter-table tbody td:nth-child(3) {
-  order: 1;
-  flex: 1 1 0;
+  order: 2;
+  flex: 1 1 100%;
+}
+.chapter-rows-list .chapter-table tbody td:nth-child(3):not(:has(*:not(:empty))) {
+  display: none;
+}
+.chapter-rows-list .chapter-table tbody td:nth-child(3) .mantine-Text-root {
+  --text-line-clamp: 2 !important;
 }
 .chapter-rows-list .chapter-table tbody td:nth-child(7) {
   order: 1;
@@ -6431,10 +6783,117 @@ body.column-resizing * {
   display: none;
 }
 
-/* --- Stat tiles ---------------------------------------------------------- */
-.stat-tile {
-  position: relative;
-  overflow: hidden;
+/* --- Series files on a phone ---------------------------------------------- */
+/* Eight columns at a 880px minimum scrolled sideways inside a 350px panel, clipping the file name
+   to "Call... 0.." and the status to "Missing from di". Below the tablet width each file becomes a
+   row: the name and its actions on the first line, the parsed label, status, mapping, size and
+   quality wrapping under it. */
+@media (max-width: 47.9375em) {
+  .series-files-panel .mantine-TableScrollContainer-scrollContainer .mantine-ScrollArea-viewport {
+    overflow-x: visible;
+  }
+  .series-files-panel .mantine-TableScrollContainer-scrollContainerInner {
+    min-width: 0 !important;
+  }
+  .series-files-table,
+  .series-files-table tbody {
+    display: block;
+    width: 100%;
+  }
+  .series-files-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .series-files-table tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .series-files-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+  .series-files-table tbody tr::before {
+    content: '';
+    order: 2;
+    flex-basis: 100%;
+    height: 0;
+  }
+  .series-files-table tbody td {
+    display: block;
+    width: auto !important;
+    height: auto !important;
+    min-width: 0;
+    padding: 0 !important;
+    border: 0 !important;
+  }
+  .series-files-table .files-cell-select {
+    order: 1;
+    flex: none;
+  }
+  .series-files-table .files-cell-name {
+    order: 1;
+    flex: 1 1 0;
+  }
+  .series-files-table .files-cell-actions {
+    order: 1;
+    flex: none;
+    margin-inline-start: auto;
+  }
+  .series-files-table :is(.files-cell-parsed, .files-cell-status, .files-cell-mapped, .files-cell-size, .files-cell-quality) {
+    order: 3;
+  }
+  .series-files-table .files-cell-mapped {
+    flex: 1 1 8rem;
+    max-width: 100%;
+  }
+  /* The name, its copy button and the mapping are single-line and lose their middle or end inside
+     the row; without a floor of 0 their nowrap width pushed the row actions off the panel. */
+  .series-files-table :is(.files-cell-name, .files-cell-mapped) * {
+    min-width: 0;
+  }
+  .series-files-table .files-cell-name > .mantine-Group-root {
+    overflow: hidden;
+  }
+  .series-files-table .files-cell-mapped:not(:has(*:not(:empty))) {
+    display: none;
+  }
+  /* Cut to one line, every name in a series read "Call of th... 0n) (f2).cbz". The row has room
+     for a few lines, so the name wraps (anywhere: release names are one long token) and shows in
+     full up to three lines. */
+  .series-files-table .files-cell-name > .mantine-Group-root {
+    align-items: flex-start;
+  }
+  .series-files-table .files-cell-name .mono-value {
+    flex: 1 1 auto;
+    align-items: flex-start;
+  }
+  .series-files-table .files-cell-name .mono-value-text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .series-files-table .files-cell-name :is(.mono-value-head, .mono-value-tail) {
+    display: inline;
+    max-width: none;
+    overflow: visible;
+  }
+}
+
+/* The Taste tab's "3 / 1": the glyph says which side is which, not only green against red. */
+.taste-thumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
 }
 
 /* --- Misc ---------------------------------------------------------------- */
@@ -6452,7 +6911,7 @@ body.column-resizing * {
   border-radius: 50%;
   background: var(--ok);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--ok) 40%, transparent);
-  animation: pulse 1.8s infinite;
+  animation: pulse 1.8s var(--ease-loop) infinite;
 }
 @keyframes pulse {
   0% {
@@ -6520,11 +6979,21 @@ body.column-resizing * {
 }
 
 /* --- Stats: the period figures row ----------------------------------------- */
-/* The band's figure grammar in a panel: one number per cell, hairlines instead of gaps, the change
-   against the previous window as a chip beside the number rather than a fourth line under it. */
-.stats-figures {
-  display: grid;
+/* Six figures in fixed thirds and halves below desktop, so a wrapped strip never leaves one cell
+   alone on its last row. */
+.figure-strip.stats-figures {
   grid-template-columns: repeat(6, minmax(0, 1fr));
+  margin-bottom: 0;
+}
+/* Taste's four figures carry formatted values ("12 chapters", "45% in"): four across, then two. */
+.figure-strip.taste-figures {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 0;
+}
+@media (max-width: 61.9375em) {
+  .figure-strip.taste-figures {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .chart-skeleton {
   display: flex;
@@ -6539,68 +7008,17 @@ body.column-resizing * {
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 }
-.stats-figure {
-  display: grid;
-  gap: 4px;
-  padding: 18px 20px;
-  min-width: 0;
-  border-inline-start: 1px solid var(--hairline);
-}
-.stats-figure:first-child {
-  border-inline-start: none;
-}
-.stats-figure-value {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-}
-.stats-figure-n {
-  color: var(--ink-hi);
-  font-size: var(--type-figure);
-  font-weight: var(--fw-bold);
-  line-height: 1.05;
-}
-.stats-figure-delta {
-  padding: 2px 7px;
-  border-radius: var(--radius-control);
-  font-size: var(--type-label);
-  font-weight: var(--fw-bold);
-  white-space: nowrap;
-  color: var(--ink-3);
-  background: var(--surface-2);
-}
-.stats-figure-delta[data-tone='up'] {
-  color: var(--ok);
-  background: var(--ok-soft);
-}
-/* No rule for `down`: a quieter month is not a failure, and red here read like a broken download. */
-.stats-figure-l {
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-}
-
 @media (max-width: 61.9375em) {
-  .stats-figures {
+  .figure-strip.stats-figures {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .stats-figure:nth-child(3n + 1) {
-    border-inline-start: none;
   }
 }
 
 /* A phone gets two figures per row, and the rank rows drop the thumbnail and put the value under
    the title: at 360px a cover, a title and a right-aligned number leave the title two words wide. */
 @media (max-width: 47.9375em) {
-  .stats-figures {
+  .figure-strip.stats-figures {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .stats-figure {
-    padding: 14px 16px;
-  }
-  .stats-figure:nth-child(2n + 1) {
-    border-inline-start: none;
   }
   .page-tabs {
     gap: 22px;
@@ -6646,17 +7064,47 @@ body.column-resizing * {
 
 /* Scrolls sideways on a phone rather than pushing the page wider; `min-width: 0` overrides a flex item's content-sized default minimum. */
 .stats-range {
+  display: flex;
   max-width: 100%;
   min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
 }
+.stats-range > * {
+  flex-shrink: 0;
+}
 .stats-range::-webkit-scrollbar {
   display: none;
 }
+/* RangeControl gives each preset a full and a short label. Six full ones need about 470px, so a phone
+   shows the short ones ("30d", "Month") and the row fits instead of scrolling a word in half. */
+.stats-range-short {
+  display: none;
+}
+@media (max-width: 36em) {
+  .stats-range-full {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .stats-range-short {
+    display: inline;
+  }
+}
 
-/* Bleeds to the shell's padding so it reads as a strip under the header, not a card. Solid
+/* The ground bleeds to the shell's padding so content never shows beside it while pinned, but the
+   hairline is drawn on the content column, where every other page's tab rule sits. Solid
    background rather than a blur: content scrolls under it on every frame. */
+.stats-rail,
+.stats-rail-bar {
+  --stats-rail-ground:
+    linear-gradient(var(--hairline), var(--hairline)) center bottom / calc(100% - 2 * var(--mantine-spacing-lg)) 1px
+      no-repeat border-box,
+    var(--app-bg);
+}
 .stats-rail {
   position: sticky;
   top: var(--app-shell-header-offset, 58px);
@@ -6667,16 +7115,46 @@ body.column-resizing * {
   gap: 0 var(--mantine-spacing-md);
   margin: 0 calc(-1 * var(--mantine-spacing-lg)) var(--mantine-spacing-lg);
   padding-inline: var(--mantine-spacing-lg);
-  background: var(--app-bg);
-  border-bottom: 1px solid var(--hairline);
+  background: var(--stats-rail-ground);
+  border-bottom: 1px solid transparent;
 }
-.stats-rail-links {
+.stats-rail-bar {
   display: flex;
   flex: 1 1 auto;
-  gap: 2px;
+  min-width: 0;
+}
+.stats-rail-links {
+  /* The links' offset parent, so StatsRail measures a link against the strip's own scroll. */
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  gap: 24px;
   min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
+}
+/* A phone pins only the links. The rail stops being a box, so the bar is pinned against the page
+   and the window picker under it scrolls away with the content. */
+@media (max-width: 36em) {
+  .stats-rail {
+    display: contents;
+  }
+  .stats-rail-bar {
+    position: sticky;
+    top: var(--app-shell-header-offset, 58px);
+    z-index: 20;
+    margin-inline: calc(-1 * var(--mantine-spacing-lg));
+    padding-inline: var(--mantine-spacing-lg);
+    background: var(--stats-rail-ground);
+    border-bottom: 1px solid transparent;
+  }
+  .stats-rail .stats-rail-end {
+    margin-bottom: var(--mantine-spacing-lg);
+    padding-block: 10px 0;
+  }
+  .stats-layout .stats-section {
+    scroll-margin-top: calc(var(--app-shell-header-offset, 58px) + 3.5rem);
+  }
 }
 .stats-rail-links::-webkit-scrollbar {
   display: none;
@@ -6714,7 +7192,7 @@ body.column-resizing * {
   align-items: center;
   gap: 7px;
   margin-bottom: -1px;
-  padding: 11px 12px;
+  padding: 11px 0;
   border-bottom: 2px solid transparent;
   color: var(--ink-3);
   font-size: var(--type-meta);
@@ -6781,6 +7259,9 @@ body.column-resizing * {
 }
 .stats-grid-side {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+}
+.stats-grid-main[data-empty] {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 /* A panel's own title and the one line under it that says what is being counted. */
@@ -7368,12 +7849,18 @@ body.column-resizing * {
   object-fit: cover;
   border-radius: var(--radius-surface);
 }
+/* The centre, where every slide's text sits, is held dark enough that the brightest cover in the
+   wall (a yellow or white one) still leaves the small eyebrow and subtitle above 7:1; the edges keep
+   the art. The text shadow is the second line of defence for a lockup taller than the pool. */
 .rewind-scrim {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 60% 55% at 50% 50%, rgba(11, 13, 18, 0.55), rgba(11, 13, 18, 0.2) 70%, transparent),
+    radial-gradient(ellipse 46% 40% at 50% 50%, rgba(11, 13, 18, 0.82), rgba(11, 13, 18, 0.55) 55%, rgba(11, 13, 18, 0.15) 100%),
     linear-gradient(180deg, rgba(11, 13, 18, 0.55), rgba(11, 13, 18, 0.1) 35%, rgba(11, 13, 18, 0.1) 65%, rgba(11, 13, 18, 0.8));
+}
+.rewind-overlay:has(> .rewind-stage) .rewind-slide {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 0 18px rgba(11, 13, 18, 0.85);
 }
 .rewind-slide,
 .rewind-progress,
@@ -7468,7 +7955,7 @@ body.reader-open {
   max-width: 92vw;
   border-radius: var(--mantine-radius-xs);
   background: rgba(255, 255, 255, 0.05);
-  animation: reader-page-pulse 1.6s ease-in-out infinite;
+  animation: reader-page-pulse 1.6s var(--ease-loop) infinite;
 }
 @keyframes reader-page-pulse {
   50% {
@@ -7678,7 +8165,7 @@ body.reader-open {
   background: rgba(255, 255, 255, 0.38);
 }
 .reader-scrub-segment[data-upscaling] {
-  animation: reader-scrub-upscaling 1.2s var(--ease) infinite alternate;
+  animation: reader-scrub-upscaling 1.2s var(--ease-loop) infinite alternate;
 }
 @keyframes reader-scrub-upscaling {
   to {
@@ -7910,7 +8397,7 @@ body.reader-open {
 .reader-enhance-status[data-phase='queued'] .reader-enhance-status-fill,
 .reader-enhance-status[data-phase='working'] .reader-enhance-status-fill {
   width: 35%;
-  animation: reader-enhance-sweep 1.4s var(--ease) infinite;
+  animation: reader-enhance-sweep 1.4s var(--ease-loop) infinite;
 }
 .reader-enhance-status[data-phase='queued'] .reader-enhance-status-fill {
   opacity: 0.45;
@@ -7956,7 +8443,7 @@ body.reader-open {
 .reader-enhance-line[data-phase='queued'] .reader-enhance-line-fill,
 .reader-enhance-line[data-phase='working'] .reader-enhance-line-fill {
   width: 25%;
-  animation: reader-enhance-line-sweep 1.8s var(--ease) infinite;
+  animation: reader-enhance-line-sweep 1.8s var(--ease-loop) infinite;
 }
 .reader-enhance-line[data-phase='queued'] .reader-enhance-line-fill {
   opacity: 0.4;
@@ -9348,7 +9835,7 @@ body.reader-open {
 /* Found. A single ring pulse, then it sits there wearing its "Found" badge until the real row
    arrives. Modelled on .settings-flash: brief, one shot, no lingering highlight. */
 .source-row-found > td {
-  animation: source-row-found 900ms ease-out 1;
+  animation: source-row-found 900ms var(--ease) 1;
 }
 @keyframes source-row-found {
   0% {
@@ -9363,7 +9850,7 @@ body.reader-open {
    dropped on animationend - a <tr> cannot animate its own height, so the rows below close the gap
    in one step once this is invisible. */
 .source-row-leaving > td {
-  animation: source-row-leaving 340ms ease-in 1s forwards 1;
+  animation: source-row-leaving var(--dur-slow) ease-in 1s forwards 1;
 }
 @keyframes source-row-leaving {
   0% {
@@ -9411,12 +9898,9 @@ body.reader-open {
 }
 
 /* --- Operational density --------------------------------------------------- */
-/* Pages people run the server from, not browse: a smaller header, tighter rows, figures in a strip
-   rather than tiles. The cinematic scale stays on the content pages. */
-.page-header[data-compact] .mantine-Title-root {
-  font-size: var(--type-feature);
-  line-height: 1.2;
-}
+/* Pages people run the server from, not browse: a smaller description, tighter rows, figures in a
+   strip rather than tiles. The title keeps the content pages' size, since a second size moved the
+   baseline between sidebar items. The cinematic scale stays on the content pages. */
 .page-header[data-compact] .mantine-Text-root {
   font-size: var(--type-meta);
 }
@@ -9467,11 +9951,14 @@ body.reader-open {
   white-space: pre;
   color: inherit;
 }
+/* A source id that opens the source's page. In the accent, a column of ids read as a column of
+   errors; it is reference data, so it stays muted and only the hovered one lights up. */
 a.mono-value-text {
-  color: var(--brand);
+  color: var(--ink-3);
   text-decoration: none;
 }
 a.mono-value-text:hover {
+  color: var(--ink-hi);
   text-decoration: underline;
 }
 span.mono-value-text:focus-visible,
@@ -9496,6 +9983,18 @@ span.mono-value-text:focus-visible,
   max-width: calc(100% - 6ch);
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* `wrap`: a path in a record row has height to spare and reads better whole than cut. */
+.mono-value[data-wrap] {
+  align-items: flex-start;
+}
+.mono-value[data-wrap] .mono-value-text {
+  display: inline;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mono-value[data-wrap] .mono-value-head {
+  overflow: visible;
 }
 .mono-value-tip {
   font-family: var(--mantine-font-family-monospace);
@@ -9551,6 +10050,8 @@ tr:hover .mono-value-copy {
    column fall on the strip's own edge and are clipped, so a wrapped row never starts with a rule. */
 .figure-strip-item {
   display: grid;
+  /* A hint line makes one cell taller; the others keep their lines together at the top. */
+  align-content: start;
   gap: 3px;
   padding: 0.7rem 1.1rem;
   box-shadow:
@@ -9566,11 +10067,48 @@ tr:hover .mono-value-copy {
 .figure-strip-item[data-zero] .figure-strip-n {
   color: var(--ink-4);
 }
+/* Every count zero: one short line, number beside its label, so the strip stops outweighing the
+   empty state below it. */
+.figure-strip[data-quiet] .figure-strip-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0.45rem 1.1rem;
+}
+.figure-strip[data-quiet] .figure-strip-n {
+  font-size: var(--type-body);
+}
 .figure-strip-l {
   color: var(--ink-3);
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
 }
+.figure-strip-hint {
+  color: var(--ink-3);
+  font-size: var(--type-micro);
+}
+/* The change against the previous window, as a chip beside the number rather than a line under it. */
+.figure-strip-value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  min-width: 0;
+}
+.figure-strip-delta {
+  padding: 2px 7px;
+  border-radius: var(--radius-control);
+  font-size: var(--type-label);
+  font-weight: var(--fw-bold);
+  white-space: nowrap;
+  color: var(--ink-3);
+  background: var(--surface-2);
+}
+.figure-strip-delta[data-tone='up'] {
+  color: var(--ok);
+  background: var(--ok-soft);
+}
+/* No rule for `down`: a quieter month is not a failure, and red here read like a broken download. */
 
 .status-dot {
   display: inline-flex;
@@ -9590,7 +10128,7 @@ tr:hover .mono-value-copy {
   background: var(--dot);
 }
 .status-dot[data-live]::before {
-  animation: status-dot-pulse 1.6s var(--ease) infinite;
+  animation: status-dot-pulse 1.6s var(--ease-loop) infinite;
 }
 @keyframes status-dot-pulse {
   0% {
@@ -9731,6 +10269,33 @@ tr:hover .mono-value-copy {
   }
   .import-step-hint {
     display: none;
+  }
+  /* Five steps in a phone row left each label about 60px, and "What to convert" broke over three
+     lines. Past three steps only the current one is named; the rest keep their number. */
+  .import-steps[data-many] .import-step:not([data-state='current']) .import-step-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .import-steps[data-many] {
+    display: flex;
+    gap: 4px;
+  }
+  .import-steps[data-many] .import-step {
+    flex: none;
+    padding: 6px;
+  }
+  .import-steps[data-many] .import-step[data-state='current'] {
+    flex: 1 1 auto;
+    flex-direction: row;
+    justify-content: center;
+    gap: 8px;
+  }
+  .import-steps[data-many] .import-step[data-state='current'] .import-step-text {
+    min-width: 0;
   }
   .import-root-select {
     min-width: 100%;
@@ -10350,6 +10915,19 @@ button.import-plan-folder-head:hover {
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
 }
+/* Sized to its longest option in the active language ("100 / page", "100 / Seite"). The wrapper takes
+   the field's font size so `ch` measures the text the field shows; the 44px is the field's start
+   padding plus the chevron's section. */
+.page-size-select {
+  flex-shrink: 0;
+  width: calc(var(--label-ch, 10) * 1ch + 44px);
+  font-size: var(--mantine-font-size-xs);
+}
+@media (pointer: coarse) {
+  .page-size-select {
+    font-size: 1rem;
+  }
+}
 /* Long chapter lists: the toolbar and search (and then the selection actions) stay pinned to the
    top so picking rows far down never means scrolling back up. Only one of the two is sticky at a
    time. The app header is only there on phones; everywhere else the variable is 0. */
@@ -10421,7 +10999,7 @@ button.import-plan-folder-head:hover {
   gap: 12px;
   padding: 9px 14px;
   border-top: 1px solid var(--border);
-  transition: opacity 0.2s;
+  transition: opacity var(--dur-medium) var(--ease);
 }
 .relink-row.is-off {
   opacity: 0.55;
@@ -10443,7 +11021,7 @@ button.import-plan-folder-head:hover {
   place-content: center;
   cursor: pointer;
   padding: 0;
-  transition: background-color 0.25s, border-color 0.25s, color 0.25s;
+  transition: background-color var(--dur-medium) var(--ease), border-color var(--dur-medium) var(--ease), color var(--dur-medium) var(--ease);
 }
 .relink-cell.is-move {
   background: var(--mantine-primary-color-filled);
@@ -10529,7 +11107,7 @@ button.import-plan-folder-head:hover {
 .relink-row.import-review-row {
   grid-template-columns: 24px minmax(0, 0.8fr) minmax(0, 1fr) 112px 64px;
   grid-template-areas: 'tick name range effect size';
-  transition: opacity 0.2s, background-color 0.2s;
+  transition: opacity var(--dur-medium) var(--ease), background-color var(--dur-medium) var(--ease);
 }
 .import-review-row.is-lit {
   background: color-mix(in srgb, var(--brand) 7%, transparent);
@@ -10829,6 +11407,25 @@ button.import-plan-folder-head:hover {
   gap: var(--mantine-spacing-xs);
   margin-top: 20px;
 }
+/* A phone fits all three on one row once the buttons share the width; wrapping left the menu
+   alone on a second row. */
+@media (max-width: 30em) {
+  .continue-hero-actions {
+    flex-wrap: nowrap;
+  }
+  .continue-hero-actions > .mantine-Button-root {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding-inline: 12px;
+  }
+  .continue-hero-actions .mantine-Button-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .continue-hero-actions > .continue-hero-menu {
+    flex: none;
+  }
+}
 
 /* Wide: the glance is a card in a column of its own on the right. With Next up beside it the hero
    is narrower than its container, so the glance stays under the lead until the wider query below. */
@@ -11044,11 +11641,23 @@ button.import-plan-folder-head:hover {
 .scrobble-recent-table thead th:nth-child(1) {
   width: 24%;
 }
+/* The date takes its own width on one line; at a fixed 150px it broke before the time. */
 .scrobble-recent-table thead th:nth-child(3) {
-  width: 150px;
+  width: 1%;
+}
+.scrobble-recent-table :is(th, td):nth-child(3) {
+  white-space: nowrap;
 }
 .scrobble-recent-table td {
   vertical-align: top;
+}
+.scrobble-not-updated {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.scrobble-not-updated > svg {
+  flex: none;
 }
 .scrobble-result-cell {
   container-type: inline-size;
@@ -11074,7 +11683,8 @@ button.import-plan-folder-head:hover {
     padding-left: 10px;
     border-left: 2px solid var(--border-strong);
   }
-  .scrobble-result-line[data-exception] .scrobble-result-what {
+  /* Scoped one level deeper so it outranks the two-column rule below it in the file. */
+  .scrobble-result .scrobble-result-line[data-exception] .scrobble-result-what {
     padding-left: 0;
     border-left: 0;
   }
@@ -11206,6 +11816,11 @@ button.import-plan-folder-head:hover {
 .settings-section .settings-field-row {
   align-items: flex-start;
 }
+/* With no hint under any input the row lines up on the inputs instead, so a label that wraps to two
+   lines ("Path as the download client reports it") no longer drops its input below its neighbours. */
+.settings-section .settings-field-row:not(:has(.mantine-InputWrapper-description)) {
+  align-items: flex-end;
+}
 .panel-table .sticky-end-cell {
   position: sticky;
   right: 0;
@@ -11214,6 +11829,41 @@ button.import-plan-folder-head:hover {
 /* One width for every settings number field; the label and hint keep the full column. */
 .settings-number-field {
   max-width: 12rem;
+}
+/* The field grid every settings card shares: quarter tracks at the md gap, so a pair of fields
+   (`data-pairs`) lands on the same two x positions as the cards' `Group grow` rows, and a field,
+   field, button row lands on the quarters between them. */
+.settings-field-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--mantine-spacing-lg) var(--mantine-spacing-md);
+  align-items: start;
+}
+.settings-field-grid[data-align='end'] {
+  align-items: end;
+}
+.settings-field-grid[data-pairs] > * {
+  grid-column: span 2;
+}
+.settings-field-grid > .mantine-Button-root {
+  justify-self: start;
+}
+@media (max-width: 61.9375em) {
+  .settings-field-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .settings-field-grid[data-pairs] > * {
+    grid-column: auto;
+  }
+}
+@media (max-width: 35.9375em) {
+  .settings-field-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* One column puts the button under the fields, where FieldAction's blank label is only a gap. */
+  .settings-field-grid > .mantine-InputWrapper-root:has(> .settings-field-action) > .mantine-InputWrapper-label {
+    display: none;
+  }
 }
 .health-op-head {
   display: flex;
@@ -11359,8 +12009,43 @@ button.import-plan-folder-head:hover {
     min-height: 44px;
   }
 }
-.scrobble-connections-setup {
-  margin-left: 4px;
+/* Six trackers stacked one per row took two phone screens before the review list. Two columns, the
+   state under the name, keep them to three short rows. */
+@media (max-width: 30em) {
+  .scrobble-connections {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .scrobble-connection {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'icon name dot'
+      'state state state';
+    align-items: center;
+    justify-items: start;
+    gap: 2px 6px;
+    padding-block: 7px;
+    text-align: start;
+    white-space: normal;
+  }
+  .scrobble-connection > :first-child {
+    grid-area: icon;
+  }
+  .scrobble-connection > :nth-child(2) {
+    grid-area: name;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .scrobble-connection > .scrobble-connection-dot {
+    grid-area: dot;
+  }
+  .scrobble-connection > .scrobble-connection-state {
+    grid-area: state;
+    font-size: var(--type-label);
+  }
 }
 .scrobble-log {
   margin: 0;
@@ -11416,8 +12101,35 @@ button.import-plan-folder-head:hover {
   .scrobble-review-input {
     width: 100%;
   }
-  .scrobble-recent-table thead th:nth-child(1) {
-    width: 36%;
+  /* Two columns left the title a word wide ("Solo / Leveling"). Each sync becomes a block instead:
+     the series on its own line, the result under it. */
+  .scrobble-recent-table,
+  .scrobble-recent-table tbody {
+    display: block;
+    width: 100%;
+  }
+  .scrobble-recent-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .scrobble-recent-table tbody tr {
+    display: grid;
+    gap: 8px;
+    padding: 12px var(--mantine-spacing-md);
+    border-bottom: 1px solid var(--hairline);
+  }
+  .scrobble-recent-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+  .panel-table.scrobble-recent-table tbody td:not([data-priority='low']) {
+    display: block;
+    height: auto;
+    padding: 0;
+    border: 0;
   }
   /* Service and timestamp are recoverable from the row itself; series, progress
      and status are what the table is read for. */
@@ -12117,7 +12829,7 @@ button.import-plan-folder-head:hover {
 }
 .preview-chapter-button[data-indeterminate]::before {
   width: 40%;
-  animation: preview-chapter-sweep 1.4s var(--ease) infinite;
+  animation: preview-chapter-sweep 1.4s var(--ease-loop) infinite;
 }
 .preview-chapter-button[data-working] .mantine-Button-inner {
   position: relative;

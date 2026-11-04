@@ -34,7 +34,16 @@ export function RangeControl({
           size={size}
           value={preset}
           onChange={(v) => onPresetChange(v as RangePreset)}
-          data={RANGE_OPTIONS.map((option) => ({ value: option.value, label: label(option.label) }))}
+          data={RANGE_OPTIONS.map((option) => ({
+            value: option.value,
+            // theme.css swaps in the short form on a phone; the full one stays the accessible name.
+            label: (
+              <>
+                <span className="stats-range-full">{label(option.label)}</span>
+                <span className="stats-range-short" aria-hidden>{label(option.short)}</span>
+              </>
+            ),
+          }))}
           aria-label={t`Time range`}
         />
       </div>

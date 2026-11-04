@@ -2,7 +2,7 @@ import { errorText } from '../../api/errorText'
 import { useNavigate } from 'react-router-dom'
 import { ActionIcon, Button, Group, Menu, Text } from '@mantine/core'
 import { notifications } from '../../lib/toast'
-import { IconBook, IconDots, IconEyeOff } from '../../lib/icons'
+import { IconArrowRight, IconDots, IconEyeOff } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useHideHomeReading, type HomeReadingItem } from '../../api/hooks'
 
@@ -78,7 +78,7 @@ export function ReadingCardMenu({
         </ActionIcon>
       </Menu.Target>
       <Menu.Dropdown>
-        <Menu.Item leftSection={<IconBook size={16} />} onClick={() => navigate(`/series/${seriesId}`)}>
+        <Menu.Item leftSection={<IconArrowRight size={16} />} onClick={() => navigate(`/series/${seriesId}`)}>
           <Trans>Open series</Trans>
         </Menu.Item>
         <Menu.Divider />

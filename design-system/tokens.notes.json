@@ -246,7 +246,7 @@
     {
       "name": "spacing-md",
       "value": "1rem",
-      "usage": "StatTile padding, compact panel padding, operational pages."
+      "usage": "Compact panel padding, operational pages."
     },
     {
       "name": "spacing-lg",
@@ -327,21 +327,12 @@
             "usage": "The product name beside the mark in the navbar."
           },
           {
-            "name": "stat-value",
-            "fontSize": "26px",
-            "lineHeight": 1.1,
-            "fontWeight": 700,
-            "letterSpacing": "-0.02em",
-            "sample": "1,284",
-            "usage": "The number in a StatTile: the .figure class at 26px. Always tabular figures."
-          },
-          {
             "name": "figure",
             "lineHeight": 1.05,
             "fontWeight": 700,
             "letterSpacing": "-0.02em",
             "sample": "342",
-            "usage": "The .figure class: counts in a FigureStrip, the hero figures, Stats period figures and the level. Display face at 700, tabular figures.",
+            "usage": "The .figure class: every FigureStrip (operational counts, Stats and Taste figures), the hero figures and the level. Display face at 700, tabular figures.",
             "fontSizeVar": "type-figure"
           }
         ]
@@ -452,10 +443,11 @@
     ]
   },
   "motion": {
-    "--ease": "a quick start and a long settle",
+    "--ease": "a quick start and a long settle; lib/motion.ts mirrors it and the durations for script, motion/react and Mantine overlays",
+    "--ease-loop": "symmetric ease-in-out for anything that repeats: pending dots, live-status pulses, skeleton pulses and indeterminate sweeps. Spinners and bars that follow real time stay linear",
     "--dur-fast": "tooltips, small fades, filters",
-    "--dur-base": "hover colour and background",
-    "--dur-medium": "cards lifting, posters moving",
+    "--dur-base": "hover colour and background, menus, popovers and hover cards",
+    "--dur-medium": "cards lifting, posters moving, modals and drawers",
     "--dur-slow": "cover art scaling on hover"
   },
   "meta": {
@@ -486,7 +478,6 @@
       "PageHeader": "frontend/src/components/ui/PageHeader.tsx",
       "Panel": "frontend/src/components/ui/Panel.tsx",
       "SectionHeader": "frontend/src/components/ui/SectionHeader.tsx",
-      "StatTile": "frontend/src/components/ui/StatTile.tsx",
       "FigureStrip": "frontend/src/components/ui/FigureStrip.tsx",
       "StatusDot": "frontend/src/components/ui/StatusDot.tsx",
       "TagChip": "frontend/src/components/ui/TagChip.tsx",

@@ -2,7 +2,6 @@ import { errorText } from '../api/errorText'
 import { useEffect, useState } from 'react'
 import {
   Alert,
-  Anchor,
   Box,
   Button,
   Group,
@@ -16,7 +15,7 @@ import {
   Tooltip,
   VisuallyHidden,
 } from '@mantine/core'
-import { IconHistory, IconListDetails, IconRefresh, IconUserQuestion } from '../lib/icons'
+import { IconAlertTriangle, IconHistory, IconListDetails, IconRefresh, IconSettings, IconUserQuestion } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
@@ -170,6 +169,13 @@ function TrackerMarks({ services, connections }: { services: string[]; connectio
 }
 
 function Progress({ outcome }: { outcome: SyncOutcome }) {
+  if (outcome.chapter === 0 && !outcome.volume) {
+    return (
+      <Text span size="sm" fw={600} c="var(--ink-3)">
+        <Trans>Not started</Trans>
+      </Text>
+    )
+  }
   return (
     <Text span size="sm" fw={600} className="tnum">
       {outcome.volume ? (
@@ -235,7 +241,9 @@ function RecentSyncResult({
               <li key={o.services.join()} className="scrobble-result-line" data-exception>
                 <span className="scrobble-result-what">
                   <Text span size="sm" c="var(--ink-2)" className="tnum">
-                    {o.volume ? (
+                    {o.chapter === 0 && !o.volume ? (
+                      <Trans>Not started</Trans>
+                    ) : o.volume ? (
                       <Trans>
                         ch. {o.chapter}, vol. {o.volume}
                       </Trans>
@@ -290,7 +298,8 @@ function FailureLine({
   return (
     <li className="scrobble-result-line" data-exception>
       <span className="scrobble-result-what">
-        <Text span size="sm" fw={600} c="var(--danger)">
+        <Text span size="sm" fw={600} c="var(--danger-fg)" className="scrobble-not-updated">
+          <IconAlertTriangle size={15} aria-hidden />
           <Trans>Not updated</Trans>
         </Text>
       </span>
@@ -300,7 +309,7 @@ function FailureLine({
           {serviceLabel(connections, service)}
         </Text>
         {error && (
-          <Button size="compact-xs" variant="subtle" color="var(--neutral)" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+          <Button size="compact-xs" variant="default" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
             {open ? <Trans>Hide details</Trans> : <Trans>Details</Trans>}
           </Button>
         )}
@@ -573,9 +582,20 @@ export default function ScrobblePage() {
       }
       actions={
         <>
+          {/* Up here rather than after the tracker chips, where it trailed whichever row they
+              wrapped to. */}
+          {isAdmin && (
+            <Button component={Link} to={TRACKER_SETTINGS} variant="default" leftSection={<IconSettings size={16} />}>
+              <Trans>Set up trackers</Trans>
+            </Button>
+          )}
           {/* data-disabled rather than disabled: a disabled button gets no hover or focus, so the
               tooltip saying why could never show. */}
-          <Tooltip label={t`Connect a tracker first`} disabled={anyTrackerConnected}>
+          <Tooltip
+            label={t`Connect a tracker first`}
+            disabled={anyTrackerConnected}
+            events={{ hover: true, focus: true, touch: true }}
+          >
             <Button
               leftSection={<IconRefresh size={16} />}
               loading={syncNow.isPending || data?.running}
@@ -630,11 +650,6 @@ export default function ScrobblePage() {
         {data
           ? data.connections.map((c) => <ConnectionChip key={c.service} connection={c} />)
           : Array.from({ length: 6 }, (_, i) => <Skeleton key={i} h={28} w={110} radius="xl" aria-hidden />)}
-        {isAdmin && (
-          <Anchor component={Link} to={TRACKER_SETTINGS} size="sm" className="scrobble-connections-setup">
-            <Trans>Set up trackers</Trans>
-          </Anchor>
-        )}
       </div>
 
       <Stack gap="xl" mt="lg">
@@ -654,7 +669,7 @@ export default function ScrobblePage() {
               ))}
             </Stack>
           ) : (
-            <EmptyState compact mood="pleased" title={t`Nothing needs review.`} />
+            <EmptyState compact framed mood="pleased" title={t`Nothing needs review.`} />
           )}
         </Stack>
 
@@ -707,7 +722,7 @@ export default function ScrobblePage() {
               </Table.ScrollContainer>
             </Panel>
           ) : (
-            <EmptyState compact mood="asleep" title={t`No syncs yet.`} />
+            <EmptyState compact framed mood="asleep" title={t`No syncs yet.`} />
           )}
         </Stack>
 

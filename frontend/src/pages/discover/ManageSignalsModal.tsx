@@ -19,7 +19,7 @@ import { useAnimeSignals, useSyncAnimeSignals } from '../../api/animeSignals'
 import { AnimeSignalRow, AnimeSignalsStatusLine, useAnimeRoleFilters } from './AnimeSignalsSection'
 import type { RoleFilter } from './AnimeSignalsSection'
 import { SeriesThumb } from '../stats/SeriesLink'
-import { formatDate } from '../../format'
+import { formatRecentDate } from '../../format'
 import { useLabel } from '../../i18n-context'
 
 /** Wire values of a feedback state's `exposure` field, labeled for display. */
@@ -422,7 +422,8 @@ function SignalRow({ row, busy, onClear, onExclude }: {
   const exposure = state?.exposure ?? []
   const rating = row.rating
   const media = exposure.map((value) => label(EXPOSURE_LABELS[value] ?? value)).join(', ')
-  const until = state?.dismissedUntilUtc ? formatDate(state.dismissedUntilUtc) : ''
+  const until = state?.dismissedUntilUtc ? formatRecentDate(state.dismissedUntilUtc) : ''
+  const dismissalEnded = state?.dismissedUntilUtc != null && new Date(state.dismissedUntilUtc).getTime() <= Date.now()
   const id = row.id
   const title = row.title || t`Catalogue title ${id}`
 
@@ -484,7 +485,10 @@ function SignalRow({ row, busy, onClear, onExclude }: {
               onClear={() => onClear(row, 'clear-suppression')} />
           )}
           {suppression === 'dismissed' && (
-            <Pill color="var(--warn)" label={t`Dismissed until ${until}`} clear={t`Restore this title`}
+            <Pill
+              color={dismissalEnded ? 'var(--neutral)' : 'var(--warn)'}
+              label={dismissalEnded ? t`Dismissal ended ${until}` : t`Dismissed until ${until}`}
+              clear={t`Restore this title`}
               onClear={() => onClear(row, 'clear-suppression')} />
           )}
           {exposure.length > 0 && (

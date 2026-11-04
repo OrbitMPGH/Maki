@@ -282,7 +282,7 @@ function SkipRow({ skip, trackerLabel }: { skip: ImportListSkipDto; trackerLabel
           )}
         </Group>
         <Text size="xs" c="var(--ink-3)" style={{ flexShrink: 0 }}>
-          {relativeTime(createdAt)}
+          {relativeTime(createdAt, 'narrow')}
         </Text>
       </Group>
       <Group gap="xs" mt="xs">

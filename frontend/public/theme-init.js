@@ -25,6 +25,8 @@
     }
     background = localStorage.getItem('maki-background') || background
     accent = localStorage.getItem('maki-accent') || accent
+    // "Faster animations" (lib/motionPrefs.ts), which shortens every --dur-* token in theme.css.
+    if (localStorage.getItem('maki-fast-motion') === 'on') document.documentElement.dataset.motion = 'fast'
   } catch (e) {}
   var light =
     background === 'light' || background === 'paper' || (background === 'system' && !matchMedia('(prefers-color-scheme: dark)').matches)

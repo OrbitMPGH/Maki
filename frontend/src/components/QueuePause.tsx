@@ -91,7 +91,7 @@ export function QueuePauseButton() {
 
   return (
     <>
-      <Button variant="light" leftSection={<IconPlayerPause size={16} />} onClick={openDialog}>
+      <Button variant="default" leftSection={<IconPlayerPause size={16} />} onClick={openDialog}>
         <Trans>Pause downloads</Trans>
       </Button>
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   Alert,
   Button,
@@ -9,9 +9,9 @@ import {
   Stack,
   Text,
 } from '@mantine/core'
-import { IconAdjustmentsHorizontal, IconBell, IconBellCheck } from '../lib/icons'
+import { IconAdjustmentsHorizontal, IconArrowLeft, IconBell, IconBellCheck } from '../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import { plural } from '@lingui/core/macro'
+import { msg, plural } from '@lingui/core/macro'
 import {
   useCreator,
   useRootFolders,
@@ -42,11 +42,13 @@ import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { TagChip } from '../components/ui/TagChip'
 import { useViewPrefs, ViewPrefsControls } from '../components/ui/viewPrefs'
 import { useDocumentTitle } from '../lib/documentTitle'
-import { usePageLabel } from '../lib/navHistory'
+import { useBackTarget, usePageLabel } from '../lib/navHistory'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
 import { useLabel } from '../i18n-context'
 
 const PAGE_SIZE = 60
+// Creator links come from Discover's detail card, so a page opened cold walks back there.
+const DISCOVER_FALLBACK = { to: '/discover', label: msg`Discover` }
 const MAX_WORKS = 600
 
 /**
@@ -78,6 +80,13 @@ export default function CreatorPage() {
   // Named for the back link on any series opened from this page.
   usePageLabel(decoded)
   useDocumentTitle(decoded)
+  const back = useBackTarget(DISCOVER_FALLBACK)
+  const backLink = (
+    <Text component={Link} to={back.to} onClick={back.onClick} className="page-back-link" mb="sm" size="sm" fw={600}>
+      <IconArrowLeft size={16} />
+      {renderLabel(back.label)}
+    </Text>
+  )
 
   const prefs = useViewPrefs('discover')
   // Scoped per creator, so coming back to Junji Ito restores his filters and not the ones left on
@@ -155,6 +164,7 @@ export default function CreatorPage() {
   if (decoded.length === 0) {
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
+        {backLink}
         <PageHeader title={t`Creator`} />
         <EmptyState
           art="missing"
@@ -171,6 +181,7 @@ export default function CreatorPage() {
     const notFound = error instanceof ApiError && error.status === 404
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
+        {backLink}
         <PageHeader title={decoded} />
         {notFound ? (
           <EmptyState
@@ -198,37 +209,41 @@ export default function CreatorPage() {
 
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
+      {backLink}
       <PageHeader
         title={data?.name ?? decoded}
+        // The roles sit with the name they describe; beside Follow they read as more buttons.
         description={
           data ? (
-            <Plural value={workCount} one="# title in the catalogue" other="# titles in the catalogue" />
+            <span className="creator-header-meta">
+              {data.roles.map((r) => (
+                <TagChip key={r} size="sm">
+                  {renderLabel(CREDIT_ROLE_LABELS[r] ?? r)}
+                </TagChip>
+              ))}
+              <span>
+                <Plural value={workCount} one="# title in the catalogue" other="# titles in the catalogue" />
+              </span>
+            </span>
           ) : undefined
         }
         actions={
-          <Group gap="xs">
-            {data && (
-              <Button
-                variant={follow.following ? 'light' : 'default'}
-                leftSection={follow.following ? <IconBellCheck size={16} /> : <IconBell size={16} />}
-                loading={follow.pending}
-                disabled={!follow.ready}
-                onClick={follow.toggle}
-                title={
-                  follow.following
-                    ? t`Stop showing their new titles on Home and Discover`
-                    : t`Show their newest titles in a rail on Home and Discover`
-                }
-              >
-                {follow.following ? t`Following` : t`Follow`}
-              </Button>
-            )}
-            {(data?.roles ?? []).map((r) => (
-              <TagChip key={r} size="sm">
-                {renderLabel(CREDIT_ROLE_LABELS[r] ?? r)}
-              </TagChip>
-            ))}
-          </Group>
+          data && (
+            <Button
+              variant={follow.following ? 'light' : 'default'}
+              leftSection={follow.following ? <IconBellCheck size={16} /> : <IconBell size={16} />}
+              loading={follow.pending}
+              disabled={!follow.ready}
+              onClick={follow.toggle}
+              title={
+                follow.following
+                  ? t`Stop showing their new titles on Home and Discover`
+                  : t`Show their newest titles in a rail on Home and Discover`
+              }
+            >
+              {follow.following ? t`Following` : t`Follow`}
+            </Button>
+          )
         }
       />
 

@@ -1,5 +1,6 @@
 import { useState, type CSSProperties } from 'react'
-import { Tooltip } from '@mantine/core'
+import { Tooltip, VisuallyHidden } from '@mantine/core'
+import { IconEyeOff } from '../lib/icons'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -75,14 +76,19 @@ export function TagBuckets({ tags }: { tags: MangaBakaTag[] }) {
                     tabIndex={isSpoiler ? 0 : undefined}
                   >
                     <i className="tag-dot" />
+                    {/* Unblurred, so a hidden tag reads as hidden on purpose rather than as a
+                        rendering fault, and named for screen readers, which read through the blur. */}
+                    {isSpoiler && <IconEyeOff size={12} className="spoiler-tag-glyph" aria-hidden />}
+                    {isSpoiler && <VisuallyHidden>{t`Spoiler:`}</VisuallyHidden>}
                     <span>{name}</span>
                   </span>
                 )
-                // Spoiler tags always get a tooltip hint; others only when described.
+                // Spoiler tags always get a tooltip hint; others only when described. Focus reveals
+                // as well as hover, and a tap focuses the chip, so touch screens can reveal it too.
                 const tip = isSpoiler
                   ? description
                     ? t`Spoiler: ${description}`
-                    : t`Spoiler. Hover to reveal.`
+                    : t`Spoiler. Hover or tap to reveal.`
                   : description
                 return tip ? (
                   <Tooltip

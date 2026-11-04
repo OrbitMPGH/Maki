@@ -9,6 +9,7 @@ import {
   IconHeartFilled,
   IconPlus,
   IconIntersect,
+  IconLibrary,
   IconStar,
   IconStarFilled,
   IconUsers,
@@ -231,7 +232,7 @@ export const RecommendationCard = memo(function RecommendationCard({
 
         {owned ? (
           <span className="discover-corner" data-tip={t`In library`} aria-hidden="true">
-            <IconCheck size={16} />
+            <IconLibrary size={16} />
           </span>
         ) : saved ? (
           <span className="discover-corner" data-saved="true" data-tip={t`On your shortlist`} aria-hidden="true">
@@ -516,7 +517,7 @@ export const EngineCard = memo(function EngineCard({
 
         {owned ? (
           <span className="discover-corner" data-tip={t`In library`} aria-hidden="true">
-            <IconCheck size={16} />
+            <IconLibrary size={16} />
           </span>
         ) : saved ? (
           <span className="discover-corner" data-saved="true" data-tip={t`On your shortlist`} aria-hidden="true">

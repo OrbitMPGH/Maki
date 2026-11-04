@@ -52,7 +52,7 @@ import { useLanguageSync } from './i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { navSections, isActive, type NavItem } from './nav'
-import { DocumentTitle, DocumentTitleProvider } from './lib/documentTitle'
+import { DocumentTitle, DocumentTitleProvider, usePageName } from './lib/documentTitle'
 import { lazyRoute, preloadRoutes } from './lib/routePreload'
 import { SoFarSyncAskDialog } from './components/SoFarSyncAskDialog'
 // Home and Library stay eagerly imported: "/" resolves to one of the two on every cold load
@@ -258,6 +258,29 @@ function LiveEvents() {
   return null
 }
 
+// True once the page's own heading has scrolled up under the top bar (or the page has none), so
+// the bar names the page only when the big title is out of sight rather than saying it twice.
+function usePageTitleAway(active: boolean, pathname: string) {
+  const [away, setAway] = useState(false)
+  useEffect(() => {
+    if (!active) return
+    const check = () => {
+      const heading = document.querySelector('main h1')
+      setAway(!heading || heading.getBoundingClientRect().bottom < 64)
+    }
+    // A lazy route renders its heading a moment after the path changes; checking at once would
+    // flash the name in before the heading exists.
+    setAway(false)
+    const settle = window.setTimeout(check, 400)
+    document.addEventListener('scroll', check, { capture: true, passive: true })
+    return () => {
+      window.clearTimeout(settle)
+      document.removeEventListener('scroll', check, { capture: true })
+    }
+  }, [active, pathname])
+  return away
+}
+
 function AppShellRoutes() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -377,6 +400,8 @@ function AppShellRoutes() {
   const healthIssues = health?.length ?? 0
   const healthTone = health?.some((h) => h.severity === 'error') ? 'danger' : 'warn'
   const [paletteOpened, { open: openPalette, close: closePalette }] = useDisclosure(false)
+  const pageName = usePageName()
+  const titleAway = usePageTitleAway(phone, location.pathname)
 
   useEffect(() => {
     // Send anyone sitting on a page that has just become unavailable back through "/", which
@@ -450,7 +475,7 @@ function AppShellRoutes() {
           bell, so the page starts at the top edge of the window. */}
       <AppShell.Header className="app-header" hiddenFrom={navCollapsed ? undefined : 'sm'}>
         <Group h="100%" className="app-header-row" justify="space-between" wrap="nowrap">
-          <Group gap="sm" wrap="nowrap">
+          <Group gap="sm" wrap="nowrap" className="app-header-lead">
             <Burger
               ref={burgerRef}
               opened={opened}
@@ -463,9 +488,15 @@ function AppShellRoutes() {
               aria-expanded={opened}
               aria-controls="app-navbar"
             />
-            <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
-              <IconBrandMark />
-            </span>
+            {/* A phone has no sidebar to show where you are, so the bar names the page instead of
+                repeating the logo the drawer already carries. */}
+            {phone && pageName && titleAway ? (
+              <span className="app-header-title">{pageName}</span>
+            ) : (
+              <span className="brand-mark" role="img" aria-label={t`Manga manager`} title={t`Manga manager`}>
+                <IconBrandMark />
+              </span>
+            )}
             {navCollapsed && (
               <Group component="nav" gap={4} wrap="nowrap" visibleFrom="sm" aria-label={t`Quick links`}>
                 {quickItems.map((item) => (

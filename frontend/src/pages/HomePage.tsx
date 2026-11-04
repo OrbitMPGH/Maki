@@ -9,7 +9,7 @@ import {
   IconFlame,
   IconFolderDown,
   IconLayoutDashboard,
-  IconPlayerPlay,
+  IconBook,
   IconPlus,
   IconCompass,
 } from '../lib/icons'
@@ -318,7 +318,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
         {/* Without a hero to ride in, the glance is a strip above the rail. */}
         {!heroOn('continue') && glanceNode}
         {!heroOn('continue') && (
-          <SectionHeader icon={IconPlayerPlay} title={t`Continue reading`} count={continueReading.length} />
+          <SectionHeader icon={IconBook} title={t`Continue reading`} count={continueReading.length} />
         )}
         {heroOn('continue') ? (
           <ContinueHero items={continueReading} glance={glanceNode} queue={queueOf('continue')} />

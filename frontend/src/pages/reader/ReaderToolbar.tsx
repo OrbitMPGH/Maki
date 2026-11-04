@@ -217,7 +217,7 @@ export default function ReaderToolbar({
                   <Group gap={6} wrap="nowrap" align="center" style={{ minWidth: 0 }}>
                     <Progress
                       value={(chaptersRead / manifest.seriesChapterCount) * 100}
-                      color="var(--info)"
+                      color="var(--brand)"
                       radius="xl"
                       size="xs"
                       w={64}

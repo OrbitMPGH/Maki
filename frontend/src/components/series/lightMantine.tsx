@@ -192,22 +192,23 @@ export function LightActionIcon({ color, variant, to, onClick, loading, children
 }
 
 // Switch's own root class, which sets these, is not public: `Switch.classes.root` is the shared
-// inline-input root. Values are Mantine's xs size and defaults.
-const SWITCH_XS: Vars = {
-  '--switch-height': 'calc(1rem * var(--mantine-scale))',
-  '--switch-width': 'calc(2rem * var(--mantine-scale))',
-  '--switch-thumb-size': 'calc(0.75rem * var(--mantine-scale))',
-  '--switch-label-font-size': 'calc(0.3125rem * var(--mantine-scale))',
-  '--switch-track-label-padding': 'calc(0.125rem * var(--mantine-scale))',
+// inline-input root. Values are Mantine's sm size and defaults: at xs a row's Wanted switch was a
+// 32 x 16 target, too small to hit reliably.
+const SWITCH_SM: Vars = {
+  '--switch-height': 'calc(1.25rem * var(--mantine-scale))',
+  '--switch-width': 'calc(2.375rem * var(--mantine-scale))',
+  '--switch-thumb-size': 'calc(0.875rem * var(--mantine-scale))',
+  '--switch-label-font-size': 'calc(0.375rem * var(--mantine-scale))',
+  '--switch-track-label-padding': 'calc(0.15625rem * var(--mantine-scale))',
   '--switch-radius': 'calc(62.5rem * var(--mantine-scale))',
   '--switch-color': 'var(--mantine-primary-color-filled)',
   '--switch-disabled-color': 'var(--mantine-color-disabled)',
-  '--label-fz': 'var(--mantine-font-size-xs)',
-  '--label-lh': 'var(--label-lh-xs)',
+  '--label-fz': 'var(--mantine-font-size-sm)',
+  '--label-lh': 'var(--label-lh-sm)',
   position: 'relative',
 }
 
-/** `<Switch size="xs">` with no label. */
+/** `<Switch size="sm">` with no label. */
 export function LightSwitch({ checked, disabled, onChange, 'aria-label': ariaLabel }: {
   checked: boolean
   disabled: boolean
@@ -218,10 +219,10 @@ export function LightSwitch({ checked, disabled, onChange, 'aria-label': ariaLab
   return (
       <div
           className={cx(Switch.classes.root, 'mantine-Switch-root')}
-          data-size="xs"
+          data-size="sm"
           data-label-position="right"
           data-checked={state}
-          style={SWITCH_XS}
+          style={SWITCH_SM}
       >
         <label className={cx(Switch.classes.body, 'mantine-Switch-body')}>
           <input

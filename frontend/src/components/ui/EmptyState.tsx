@@ -20,6 +20,10 @@ type Mood = 'asleep' | 'asking' | 'pleased'
  *
  * `mood` puts the mascot beside the text of the inline form (asleep for an empty queue or list,
  * pleased when there is nothing left to deal with, asking when it needs something from you).
+ *
+ * `framed` is for a section whose content is a table or list: the inline form sits in a dashed
+ * outline of the space the rows would fill, so the state holds the table's place on the page
+ * instead of floating above blank space. Inside a card that stays, leave it off: the card is the frame.
  */
 export function EmptyState({
   title,
@@ -28,6 +32,7 @@ export function EmptyState({
   actionTo,
   onAction,
   compact,
+  framed,
   art,
   mood,
   code,
@@ -43,6 +48,7 @@ export function EmptyState({
   actionTo?: string
   onAction?: () => void
   compact?: boolean
+  framed?: boolean
   art?: Art
   mood?: Mood
   /** Printed on the `missing` cover: the id or path that led nowhere. */
@@ -117,11 +123,21 @@ export function EmptyState({
         ))}
     </>
   )
-  const py = compact ? 'sm' : 'xl'
+  const py = framed ? 'lg' : compact ? 'sm' : 'xl'
+  const px = framed ? 'lg' : undefined
 
   if (mood) {
     return (
-      <Group className="empty-state" data-compact={compact || undefined} gap={16} wrap="nowrap" align="center" py={py}>
+      <Group
+        className="empty-state"
+        data-compact={compact || undefined}
+        data-framed={framed || undefined}
+        gap={16}
+        wrap="nowrap"
+        align="center"
+        py={py}
+        px={px}
+      >
         <span className="empty-state-mark">
           <IconBrandMark mood={mood} size={56} />
         </span>
@@ -133,7 +149,15 @@ export function EmptyState({
   }
 
   return (
-    <Stack className="empty-state" data-compact={compact || undefined} align="flex-start" gap={4} py={py}>
+    <Stack
+      className="empty-state"
+      data-compact={compact || undefined}
+      data-framed={framed || undefined}
+      align="flex-start"
+      gap={4}
+      py={py}
+      px={px}
+    >
       {lines}
     </Stack>
   )

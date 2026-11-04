@@ -44,7 +44,10 @@ export const Completed: Story = {
 export const DownloadingAndBehind: Story = {
   args: { series: ironPetal },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('60 of 88')).toBeVisible()
+    // Compact beside an "N new" pill, the long form otherwise.
+    await expect(
+      await canvas.findByText((_, el) => el?.tagName === 'SPAN' && /^60( of |\/)88$/.test(el.textContent ?? '')),
+    ).toBeVisible()
     // The download holds the corner until it ends; the read ring waits.
     await expect(canvas.queryByRole('img', { name: /downloaded read$/ })).toBeNull()
   },
@@ -89,7 +92,7 @@ export const NoChaptersListed: Story = {
     series: { ...graveRobber, totalChapters: null, wantedChapterCount: 0, knownChapterCount: 0, chapterFileCount: 0, readChapterCount: null },
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('No chapters listed')).toBeVisible()
+    await expect(await canvas.findByText('No chapters')).toBeVisible()
   },
 }
 

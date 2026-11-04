@@ -3,7 +3,7 @@ import { useEffect, useReducer, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
-import { Box, Button, Checkbox, Group, MultiSelect, Select, SimpleGrid, Stack, Switch, Text } from '@mantine/core'
+import { Box, Button, Checkbox, Group, MultiSelect, Select, Stack, Switch, Text } from '@mantine/core'
 import { IconAdjustments } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
@@ -292,7 +292,7 @@ export function DownloadQueueSection() {
         )
       }}
     >
-      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" verticalSpacing="lg" mb="lg">
+      <Box className="settings-field-grid" data-pairs mb="lg">
         <SettingsNumberInput
           label={t`Concurrent chapter downloads`}
           min={1}
@@ -325,7 +325,7 @@ export function DownloadQueueSection() {
           value={bulkHoldThreshold}
           onChange={setBulkHoldThreshold}
         />
-      </SimpleGrid>
+      </Box>
       <Switch
         label={t`Check quiet series less often`}
         checked={adaptiveRefresh}
@@ -378,7 +378,7 @@ export function SmartDownloadSection() {
         )
       }
     >
-      <Group align="flex-end" className="settings-field-row">
+      <Box className="settings-field-grid" data-pairs data-align="end">
         <SettingsNumberInput
           label={t`Fetch more when unread chapters drop to`}
           min={1}
@@ -393,7 +393,7 @@ export function SmartDownloadSection() {
           value={smartDownloadChapters}
           onChange={setSmartDownloadChapters}
         />
-      </Group>
+      </Box>
     </SettingsSection>
   )
 }

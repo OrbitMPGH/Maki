@@ -1,8 +1,7 @@
 import { AnimatePresence, motion, useIsPresent, useReducedMotion } from 'motion/react'
 import { useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react'
+import { DUR, EASE, paced } from '../../lib/motion'
 
-const EASE = [0.32, 0.72, 0, 1] as const
-const DURATION = 0.34
 const SHIFT = 24
 
 function Pane({
@@ -18,6 +17,7 @@ function Pane({
 }) {
   // The page sliding out stays mounted for the animation; inert keeps focus and arrow keys off it.
   const present = useIsPresent()
+  const slide = { duration: paced(DUR.slow), ease: EASE }
   return (
     <motion.div
       ref={ref}
@@ -31,12 +31,12 @@ function Pane({
         center: {
           x: 0,
           opacity: 1,
-          transition: still ? { duration: 0 } : { x: { duration: DURATION, ease: EASE }, opacity: { duration: 0.22, delay: 0.05 } },
+          transition: still ? { duration: 0 } : { x: slide, opacity: { duration: paced(DUR.medium), delay: paced(0.05) } },
         },
         exit: (d: number) => ({
           x: `${d * -SHIFT}%`,
           opacity: 0,
-          transition: still ? { duration: 0 } : { x: { duration: DURATION, ease: EASE }, opacity: { duration: 0.12 } },
+          transition: still ? { duration: 0 } : { x: slide, opacity: { duration: paced(DUR.fast) } },
         }),
       }}
       initial="enter"
@@ -82,7 +82,7 @@ export function DrillPanes({
     <motion.div
       initial={false}
       animate={{ height: height === undefined ? 'auto' : height + bleed * 2 }}
-      transition={{ duration: reduce ? 0 : DURATION, ease: EASE }}
+      transition={{ duration: reduce ? 0 : paced(DUR.slow), ease: EASE }}
       style={{ overflow: 'clip', margin: -bleed, padding: bleed }}
     >
       <div ref={innerRef} style={{ position: 'relative' }}>

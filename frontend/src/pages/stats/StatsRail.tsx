@@ -84,7 +84,7 @@ export function StatsRail({ end }: { end?: ReactNode }) {
     const rail = railRef.current
     const link = rail?.querySelector<HTMLElement>(`[data-section="${active}"]`)
     if (!rail || !link) return
-    // The rail is sticky, so it is the link's offset parent.
+    // The strip is positioned, so it is the link's offset parent and offsetLeft is in its scroll space.
     const left = link.offsetLeft
     if (left < rail.scrollLeft || left + link.offsetWidth > rail.scrollLeft + rail.clientWidth) {
       rail.scrollTo({ left: Math.max(0, left - 16) })
@@ -93,6 +93,8 @@ export function StatsRail({ end }: { end?: ReactNode }) {
 
   return (
     <div className="stats-rail">
+      {/* Its own box so a phone can pin the links alone and let the window picker scroll away. */}
+      <div className="stats-rail-bar">
       <nav ref={railRef} className="stats-rail-links" aria-label={t`Stats sections`}>
         {STATS_SECTIONS.map((s) => {
         const SectionIcon = s.icon
@@ -125,7 +127,8 @@ export function StatsRail({ end }: { end?: ReactNode }) {
         )
       })}
       </nav>
-      {end && <div className="stats-rail-end">{end}</div>}
+      </div>
+      {end &&<div className="stats-rail-end">{end}</div>}
     </div>
   )
 }

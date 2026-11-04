@@ -446,6 +446,7 @@ export default function ActivityPage() {
       <QueuePauseBanner canManage={canManageQueue} />
       <FigureStrip
         loading={!queue && !queueQuery.isError}
+        quietWhenZero
         figures={[
           { label: t`In progress`, value: stats.active, tone: 'info' },
           { label: t`Queued`, value: stats.queued },
@@ -463,9 +464,12 @@ export default function ActivityPage() {
       ) : queueItems.length === 0 ? (
         <EmptyState
           compact
+          framed
           mood="asleep"
           title={t`Nothing in the queue`}
-          description={t`Queued and downloading chapters show up here. Trigger a search from a series page or the library.`}
+          description={t`Queued and downloading chapters show up here. Start a download from a series page or the library.`}
+          actionLabel={t`Open library`}
+          actionTo="/library"
         />
       ) : (
         <Panel p={0} className="table-panel">
@@ -746,6 +750,7 @@ export default function ActivityPage() {
         ) : history.items.length === 0 ? (
           <EmptyState
             compact
+            framed
             title={t`No history yet`}
             description={t`Completed and cancelled downloads show up here.`}
           />
@@ -882,6 +887,7 @@ export default function ActivityPage() {
           ) : upgradesUnset ? (
             <EmptyState
               compact
+              framed
               mood="asking"
               title={t`Upgrades are not set up yet`}
               description={t`Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here.`}
@@ -961,6 +967,7 @@ export default function ActivityPage() {
               {upgradesQuiet && (
                 <EmptyState
                   compact
+                  framed
                   mood="pleased"
                   title={t`Every file meets its cutoff`}
                   description={t`Nothing has needed an upgrade yet. Files the upgrader replaces show up here.`}
@@ -979,6 +986,7 @@ export default function ActivityPage() {
                 ) : upgradeHistory.rows.length === 0 ? (
                   <EmptyState
                     compact
+                    framed
                     title={t`No upgrades yet`}
                     description={t`Files replaced by the automatic upgrader show up here.`}
                   />
@@ -1166,6 +1174,7 @@ export default function ActivityPage() {
                 ) : !upgradesSummary.profilesConfigured ? (
                   <EmptyState
                     compact
+                    framed
                     title={t`No quality profile assigned yet`}
                     description={
                       <Trans>
@@ -1180,6 +1189,7 @@ export default function ActivityPage() {
                 ) : cutoffUnmet.total === 0 ? (
                   <EmptyState
                     compact
+                    framed
                     title={t`Every file meets its cutoff`}
                     description={t`Nothing downloaded falls short of the quality profile assigned to it.`}
                   />

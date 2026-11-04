@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { ActionIcon } from '@mantine/core'
 import { IconPlayerPauseFilled, IconPlayerPlayFilled, IconX } from '../../lib/icons'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { CINEMATIC, EASE, paced } from '../../lib/motion'
 import { useLingui } from '@lingui/react/macro'
 import type { ActivityStats } from '../../api/hooks'
 import { buildSlides } from './slides'
@@ -136,7 +137,7 @@ export function RewindIntro({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: reduced ? 0 : 0.9, ease: 'easeOut' }}
+            transition={{ duration: reduced ? 0 : paced(CINEMATIC.backdrop), ease: EASE }}
           >
             {slide.mosaic ? (
               <motion.div
@@ -220,7 +221,7 @@ export function RewindIntro({
           initial={reduced ? false : { opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           exit={reduced ? undefined : { opacity: 0, y: -40 }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
+          transition={{ duration: paced(CINEMATIC.enter), ease: EASE }}
         >
           {slide.node}
         </motion.div>

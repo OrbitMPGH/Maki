@@ -168,7 +168,7 @@ function NotificationRow({
           {/* fz, not size: `size` takes a token ("xs"), and a raw number there resolves against
               --mantine-line-height-{n}, which does not exist and lands as line-height: 100px. */}
           <Text fz="var(--type-micro)" lh={1.5} c="var(--ink-4)">
-            {relativeTime(item.createdAt)}
+            {relativeTime(item.createdAt, 'narrow')}
           </Text>
         </Stack>
       </Group>

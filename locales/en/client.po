@@ -1305,8 +1305,12 @@ msgid "{lone, plural, one {# file with no number} other {# files with no number}
 msgstr "{lone, plural, one {# file with no number} other {# files with no number}}"
 
 #: src/components/home/ReadingWeeks.tsx
-msgid "{longestStreak, plural, one {Today counts. Best: # day} other {Today counts. Best: # days}}"
-msgstr "{longestStreak, plural, one {Today counts. Best: # day} other {Today counts. Best: # days}}"
+#~ msgid "{longestStreak, plural, one {Today counts. Best: # day} other {Today counts. Best: # days}}"
+#~ msgstr "{longestStreak, plural, one {Today counts. Best: # day} other {Today counts. Best: # days}}"
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "{longestStreak, plural, one {You read today. Longest streak: # day} other {You read today. Longest streak: # days}}"
+msgstr "{longestStreak, plural, one {You read today. Longest streak: # day} other {You read today. Longest streak: # days}}"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "{markerLabel} Anime adaptation ends here"
@@ -1372,6 +1376,14 @@ msgstr "{misses, plural, one {Failing: # miss in a row} other {Failing: # misses
 #: src/api/upgrades.ts
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 msgstr "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
+
+#: src/components/SeriesFilesSection.tsx
+msgid "{missingCount, plural, one {The file listed for this series is missing from disk.} other {All # files listed for this series are missing from disk.}}"
+msgstr "{missingCount, plural, one {The file listed for this series is missing from disk.} other {All # files listed for this series are missing from disk.}}"
+
+#: src/components/SeriesFilesSection.tsx
+msgid "{missingCount} of {fileCount} files listed for this series are missing from disk."
+msgstr "{missingCount} of {fileCount} files listed for this series are missing from disk."
 
 #: src/components/SourceMappingsSection.tsx
 msgid "{missingSnapshotNames} must record a chapter snapshot before Maki can safely clean the list. Later source removals use the stored snapshots and make no source requests."
@@ -1559,8 +1571,12 @@ msgid "{profileCount, plural, one {Scored in # profile} other {Scored in # profi
 msgstr "{profileCount, plural, one {Scored in # profile} other {Scored in # profiles}}"
 
 #: src/pages/discover/FeedbackLab.tsx
-msgid "{pushingDown} kept out of your taste"
-msgstr "{pushingDown} kept out of your taste"
+#~ msgid "{pushingDown} kept out of your taste"
+#~ msgstr "{pushingDown} kept out of your taste"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "{pushingDown} pushing similar titles down"
+msgstr "{pushingDown} pushing similar titles down"
 
 #: src/pages/settings/PageConversionSection.tsx
 msgid "{queued, plural, one {# file waiting to be converted. A chapter someone is reading is converted once they stop.} other {# files waiting to be converted. A chapter someone is reading is converted once they stop.}}"
@@ -1877,8 +1893,12 @@ msgid "{siteName} languages"
 msgstr "{siteName} languages"
 
 #: src/pages/discover/TasteTab.tsx
-msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
-msgstr "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
+msgid "{size, plural, one {# series ({shareLabel}), {coherenceWord}} other {# series ({shareLabel}), {coherenceWord}}}"
+msgstr "{size, plural, one {# series ({shareLabel}), {coherenceWord}} other {# series ({shareLabel}), {coherenceWord}}}"
+
+#: src/pages/discover/TasteTab.tsx
+#~ msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
+#~ msgstr "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
 
 #: src/components/pageconversion/CompareStep.tsx
 msgid "{size}, {percent} of the original"
@@ -2396,6 +2416,10 @@ msgstr "<0>{seriesCount, plural, one {# series} other {# series}}</0> and <1>{di
 msgid "<0>{sub}</0> lists sub-chapters (1.1, 1.2, …) where <1>{whole}</1> lists whole chapters for the same content, so both appear as separate rows below."
 msgstr "<0>{sub}</0> lists sub-chapters (1.1, 1.2, …) where <1>{whole}</1> lists whole chapters for the same content, so both appear as separate rows below."
 
+#: src/pages/stats/sections/ReadingSection.tsx
+msgid "<0>{time}</0> of reading<1>, no chapter finished yet.</1>"
+msgstr "<0>{time}</0> of reading<1>, no chapter finished yet.</1>"
+
 #: src/pages/discover/FeedbackLab.tsx
 msgid "<0>Excluded from taste</0> keeps a shelf title out of the ranking. Reading history is untouched."
 msgstr "<0>Excluded from taste</0> keeps a shelf title out of the ranking. Reading history is untouched."
@@ -2499,6 +2523,11 @@ msgstr "100 / page"
 msgid "12 months"
 msgstr "12 months"
 
+#. Abbreviated "12 months", a Stats range button on a phone
+#: src/pages/stats/StatsRange.ts
+msgid "12m"
+msgstr "12m"
+
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "18+"
 msgstr "18+"
@@ -2515,6 +2544,11 @@ msgstr "25 / page"
 msgid "30 days"
 msgstr "30 days"
 
+#. Abbreviated "30 days", a Stats range button on a phone
+#: src/pages/stats/StatsRange.ts
+msgid "30d"
+msgstr "30d"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "50 / page"
 msgstr "50 / page"
@@ -2526,6 +2560,11 @@ msgstr "75 / page"
 #: src/pages/stats/StatsRange.ts
 msgid "90 days"
 msgstr "90 days"
+
+#. Abbreviated "90 days", a Stats range button on a phone
+#: src/pages/stats/StatsRange.ts
+msgid "90d"
+msgstr "90d"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
@@ -3028,6 +3067,7 @@ msgstr "Aggregator"
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/stats/StatsRange.ts
 msgid "All"
 msgstr "All"
 
@@ -4786,6 +4826,10 @@ msgstr "Checked, not converted"
 msgid "Checking for a new metadata snapshot"
 msgstr "Checking for a new metadata snapshot"
 
+#: src/pages/HealthPage.tsx
+#~ msgid "Checks on your server and library files, and the repairs you approve."
+#~ msgstr "Checks on your server and library files, and the repairs you approve."
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Chinese"
@@ -4806,6 +4850,10 @@ msgstr "Choose a match"
 #: src/pages/ImportPage.tsx
 msgid "Choose a root folder"
 msgstr "Choose a root folder"
+
+#: src/pages/ImportPage.tsx
+msgid "Choose a root folder first"
+msgstr "Choose a root folder first"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Choose Register / Login. The username is your OPDS token, the part of the feed URL after <0>{feedPath}</0>. Type anything as the password; Maki doesn't use it."
@@ -5225,8 +5273,8 @@ msgid "Consider disabling one of the two source mappings; the warning clears on 
 msgstr "Consider disabling one of the two source mappings; the warning clears on the next refresh."
 
 #: src/pages/discover/TasteTab.tsx
-msgid "consistent"
-msgstr "consistent"
+#~ msgid "consistent"
+#~ msgstr "consistent"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Contained in a volume/compilation file"
@@ -6244,6 +6292,7 @@ msgstr "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, 
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
+#: src/pages/CreatorPage.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Discover"
@@ -6288,6 +6337,11 @@ msgstr "Dismiss for 30 days"
 #: src/pages/NotificationsPage.tsx
 msgid "Dismiss notification"
 msgstr "Dismiss notification"
+
+#: src/pages/discover/FeedbackLab.tsx
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Dismissal ended {until}"
+msgstr "Dismissal ended {until}"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Dismissed"
@@ -6830,6 +6884,10 @@ msgstr "Enter the API key in the app, or any username with the API key as the pa
 msgid "Enter your authenticator code"
 msgstr "Enter your authenticator code"
 
+#: src/components/settings/AccountSection.tsx
+msgid "Enter your current password first"
+msgstr "Enter your current password first"
+
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Entries already on your lists are never changed."
 msgstr "Entries already on your lists are never changed."
@@ -7168,6 +7226,10 @@ msgstr "Failed to update tags: {detail}"
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Fair quality"
 msgstr "Fair quality"
+
+#: src/pages/discover/TasteTab.tsx
+msgid "fairly alike"
+msgstr "fairly alike"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Fallback"
@@ -8099,8 +8161,12 @@ msgid "Hidden list saved"
 msgstr "Hidden list saved"
 
 #: src/pages/discover/FeedbackLab.tsx
-msgid "hidden or dismissed"
-msgstr "hidden or dismissed"
+#~ msgid "hidden or dismissed"
+#~ msgstr "hidden or dismissed"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "Hidden or dismissed"
+msgstr "Hidden or dismissed"
 
 #: src/pages/HomePage.tsx
 msgid "Hidden while progression is switched off."
@@ -8327,6 +8393,10 @@ msgstr "Identical pixels."
 #: src/pages/HealthPage.tsx
 msgid "Identical to another file"
 msgstr "Identical to another file"
+
+#: src/components/SeriesFilesSection.tsx
+msgid "If they are in the folder under other names, Relink files finds them."
+msgstr "If they are in the folder under other names, Relink files finds them."
 
 #: src/components/ImportListsSection.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -9597,12 +9667,16 @@ msgid "Looking up chapters…"
 msgstr "Looking up chapters…"
 
 #: src/pages/discover/TasteTab.tsx
-msgid "loose"
-msgstr "loose"
+#~ msgid "loose"
+#~ msgstr "loose"
 
 #: src/components/import/ImportPlanModal.tsx
 msgid "loose page images"
 msgstr "loose page images"
+
+#: src/pages/discover/TasteTab.tsx
+msgid "loosely related"
+msgstr "loosely related"
 
 #: src/components/pageconversion/labels.ts
 msgid "Lossless"
@@ -10304,6 +10378,7 @@ msgid "Monitoring: {modeLabel}"
 msgstr "Monitoring: {modeLabel}"
 
 #: src/pages/stats/RangeControl.tsx
+#: src/pages/stats/StatsRange.ts
 msgid "Month"
 msgstr "Month"
 
@@ -10561,6 +10636,10 @@ msgstr "Name not recognised"
 #: src/components/pageconversion/RuleCard.tsx
 msgid "Name of rule {number}"
 msgstr "Name of rule {number}"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Name the key first"
+msgstr "Name the key first"
 
 #: src/pages/SetupAccountPage.tsx
 msgid "Name your reverse proxy under Trusted proxies, or rate limiting and the audit log will see the proxy instead of the client."
@@ -10872,8 +10951,8 @@ msgid "No activity yet."
 msgstr "No activity yet."
 
 #: src/pages/stats/sections/ReadingSection.tsx
-msgid "no baseline"
-msgstr "no baseline"
+#~ msgid "no baseline"
+#~ msgstr "no baseline"
 
 #: src/components/series/UpgradeNowResultModal.tsx
 msgid "No better copy found"
@@ -10915,12 +10994,16 @@ msgstr "No chapter reads from this file, so there is nothing to download in its 
 msgid "no chapter with this number in the series"
 msgstr "no chapter with this number in the series"
 
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
+msgid "No chapters"
+msgstr "No chapters"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "No chapters known."
 msgstr "No chapters known."
 
 #: src/components/series/SeriesHero.tsx
-#: src/components/ui/CoverCard.tsx
 msgid "No chapters listed"
 msgstr "No chapters listed"
 
@@ -10939,6 +11022,10 @@ msgstr "no chapters matched"
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "No chapters read in this period."
 msgstr "No chapters read in this period."
+
+#: src/pages/HealthPage.tsx
+#~ msgid "No checks have run yet"
+#~ msgstr "No checks have run yet"
 
 #: src/pages/HealthPage.tsx
 msgid "No checks have run yet. Use Check now."
@@ -11171,6 +11258,10 @@ msgstr "No reading time recorded."
 msgid "No reading tracked yet"
 msgstr "No reading tracked yet"
 
+#: src/components/releases/UpcomingView.tsx
+msgid "No release estimates yet"
+msgstr "No release estimates yet"
+
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "No release-year data yet"
 msgstr "No release-year data yet"
@@ -11370,9 +11461,10 @@ msgstr "None in the latest notifications"
 msgid "None linked"
 msgstr "None linked"
 
+#: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
-msgid "None listed"
-msgstr "None listed"
+#~ msgid "None listed"
+#~ msgstr "None listed"
 
 #: src/components/series/RestoreSeriesDialog.tsx
 msgid "None of the removed chapters are still wanted, so nothing would be downloaded."
@@ -11607,6 +11699,10 @@ msgstr "Not set up yet."
 #: src/pages/ScrobblePage.tsx
 msgid "Not set up yet. An admin can add it in Settings."
 msgstr "Not set up yet. An admin can add it in Settings."
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not started"
+msgstr "Not started"
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Not supported on this device"
@@ -11879,8 +11975,8 @@ msgid "Nothing to pick up yet"
 msgstr "Nothing to pick up yet"
 
 #: src/components/releases/UpcomingView.tsx
-msgid "Nothing to place yet"
-msgstr "Nothing to place yet"
+#~ msgid "Nothing to place yet"
+#~ msgstr "Nothing to place yet"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Nothing to profile yet"
@@ -12340,6 +12436,7 @@ msgid "Open health"
 msgstr "Open health"
 
 #: src/components/import/MihonSummary.tsx
+#: src/pages/ActivityPage.tsx
 msgid "Open library"
 msgstr "Open library"
 
@@ -13281,8 +13378,12 @@ msgid "Queued a volume release"
 msgstr "Queued a volume release"
 
 #: src/pages/ActivityPage.tsx
-msgid "Queued and downloading chapters show up here. Trigger a search from a series page or the library."
-msgstr "Queued and downloading chapters show up here. Trigger a search from a series page or the library."
+msgid "Queued and downloading chapters show up here. Start a download from a series page or the library."
+msgstr "Queued and downloading chapters show up here. Start a download from a series page or the library."
+
+#: src/pages/ActivityPage.tsx
+#~ msgid "Queued and downloading chapters show up here. Trigger a search from a series page or the library."
+#~ msgstr "Queued and downloading chapters show up here. Trigger a search from a series page or the library."
 
 #: src/api/upgrades.ts
 msgid "Queued for download"
@@ -13440,8 +13541,8 @@ msgid "Reached for {ratioValue} more than owning it would predict, across {serie
 msgstr "Reached for {ratioValue} more than owning it would predict, across {seriesPhrase}"
 
 #: src/pages/discover/FeedbackLab.tsx
-msgid "read"
-msgstr "read"
+#~ msgid "read"
+#~ msgstr "read"
 
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -13827,6 +13928,10 @@ msgstr "Recovery code"
 #: src/components/TagBuckets.tsx
 msgid "Recurrent"
 msgstr "Recurrent"
+
+#: src/pages/discover/TasteTab.tsx
+msgid "Recurring themes"
+msgstr "Recurring themes"
 
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/registry.ts
@@ -16191,6 +16296,7 @@ msgstr "Show folders"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/ActivityFeed.tsx
 msgid "Show less"
 msgstr "Show less"
@@ -16202,6 +16308,7 @@ msgstr "Show less"
 #: src/components/rails/CustomRailSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/HomePage.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "Show more"
 msgstr "Show more"
 
@@ -16668,6 +16775,10 @@ msgstr "Sources"
 msgid "Sources disagree on chapter numbering"
 msgstr "Sources disagree on chapter numbering"
 
+#: src/components/series/SeriesHero.tsx
+msgid "Sources reach ch. {highest} of {listed}"
+msgstr "Sources reach ch. {highest} of {listed}"
+
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Space"
 msgstr "Space"
@@ -16732,12 +16843,20 @@ msgid "Split into two pages"
 msgstr "Split into two pages"
 
 #: src/components/TagBuckets.tsx
+msgid "Spoiler:"
+msgstr "Spoiler:"
+
+#: src/components/TagBuckets.tsx
 msgid "Spoiler: {description}"
 msgstr "Spoiler: {description}"
 
 #: src/components/TagBuckets.tsx
-msgid "Spoiler. Hover to reveal."
-msgstr "Spoiler. Hover to reveal."
+msgid "Spoiler. Hover or tap to reveal."
+msgstr "Spoiler. Hover or tap to reveal."
+
+#: src/components/TagBuckets.tsx
+#~ msgid "Spoiler. Hover to reveal."
+#~ msgstr "Spoiler. Hover to reveal."
 
 #: src/components/CatalogueFilters.tsx
 msgid "Sports"
@@ -17493,6 +17612,10 @@ msgstr "The most explicit rating shown outside your own library."
 msgid "The most popular titles in the MangaBaka catalogue."
 msgstr "The most popular titles in the MangaBaka catalogue."
 
+#: src/components/settings/AccountSection.tsx
+msgid "The new password needs at least 10 characters"
+msgstr "The new password needs at least 10 characters"
+
 #: src/components/discover/discoverSectionDefs.ts
 #: src/components/home/homeSectionDefs.ts
 msgid "The newest titles from the creators and studios you follow. Empty until you follow someone."
@@ -18112,8 +18235,12 @@ msgid "Thumbs up"
 msgstr "Thumbs up"
 
 #: src/pages/discover/FeedbackLab.tsx
-msgid "thumbs up / down"
-msgstr "thumbs up / down"
+#~ msgid "thumbs up / down"
+#~ msgstr "thumbs up / down"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "Thumbs up / down"
+msgstr "Thumbs up / down"
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Thumbs up. This title now steers your recommendations, and it will not be recommended back to you."
@@ -18220,8 +18347,12 @@ msgid "Titles from"
 msgstr "Titles from"
 
 #: src/pages/discover/FeedbackLab.tsx
-msgid "titles on the shelf"
-msgstr "titles on the shelf"
+#~ msgid "titles on the shelf"
+#~ msgstr "titles on the shelf"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "Titles on the shelf"
+msgstr "Titles on the shelf"
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Titles you want to come back to. Nothing here is downloaded or counted in your taste until you add it."
@@ -18981,6 +19112,10 @@ msgstr "Use at least {MIN_PASSWORD_LENGTH} characters"
 msgid "Use best quality first"
 msgstr "Use best quality first"
 
+#: src/pages/HealthPage.tsx
+#~ msgid "Use Check now to run them."
+#~ msgstr "Use Check now to run them."
+
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Use for taste"
 msgstr "Use for taste"
@@ -19179,8 +19314,12 @@ msgid "Version {0} to {1}. These parts of the definition change:"
 msgstr "Version {0} to {1}. These parts of the definition change:"
 
 #: src/pages/discover/TasteTab.tsx
-msgid "very tight"
-msgstr "very tight"
+msgid "very alike"
+msgstr "very alike"
+
+#: src/pages/discover/TasteTab.tsx
+#~ msgid "very tight"
+#~ msgstr "very tight"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Vietnamese"
@@ -19508,8 +19647,8 @@ msgid "What you read"
 msgstr "What you read"
 
 #: src/pages/discover/TasteTab.tsx
-msgid "What you read, grouped"
-msgstr "What you read, grouped"
+#~ msgid "What you read, grouped"
+#~ msgstr "What you read, grouped"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "What you've read"
@@ -19972,8 +20111,12 @@ msgid "Your requests"
 msgstr "Your requests"
 
 #: src/pages/discover/FeedbackLab.tsx
-msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
-msgstr "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
+#~ msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
+#~ msgstr "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "Your shelf, ratings, reading and thumbs decide what gets recommended. Hide, dismiss and seen elsewhere only take that one title out."
+msgstr "Your shelf, ratings, reading and thumbs decide what gets recommended. Hide, dismiss and seen elsewhere only take that one title out."
 
 #: src/components/ImportListsSection.tsx
 msgid "Your shortlist is full."
@@ -19984,12 +20127,20 @@ msgid "Your source changes have not been saved. Closing now discards them."
 msgstr "Your source changes have not been saved. Closing now discards them."
 
 #: src/components/series/SeriesHero.tsx
-msgid "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
-msgstr "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgid "Your sources only reach chapter {highest}, but MangaBaka lists {listed}. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr "Your sources only reach chapter {highest}, but MangaBaka lists {listed}. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
 
 #: src/components/series/SeriesHero.tsx
-msgid "Your sources only reach chapter <0>{highest}</0>, but the total you set is <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
-msgstr "Your sources only reach chapter <0>{highest}</0>, but the total you set is <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgid "Your sources only reach chapter {highest}, but the total you set is {listed}. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr "Your sources only reach chapter {highest}, but the total you set is {listed}. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+
+#: src/components/series/SeriesHero.tsx
+#~ msgid "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+#~ msgstr "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+
+#: src/components/series/SeriesHero.tsx
+#~ msgid "Your sources only reach chapter <0>{highest}</0>, but the total you set is <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+#~ msgstr "Your sources only reach chapter <0>{highest}</0>, but the total you set is <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
 
 #: src/components/SeriesTagsEditor.tsx
 #: src/pages/LibraryPage.tsx

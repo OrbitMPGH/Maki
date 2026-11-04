@@ -102,7 +102,10 @@ export function ReadingWeeks({
     currentStreak === 0
       ? t`Read a chapter to start a streak`
       : weeks.readToday
-        ? plural(longestStreak, { one: 'Today counts. Best: # day', other: 'Today counts. Best: # days' })
+        ? plural(longestStreak, {
+            one: 'You read today. Longest streak: # day',
+            other: 'You read today. Longest streak: # days',
+          })
         : t`Read today to keep it going`
 
   return (

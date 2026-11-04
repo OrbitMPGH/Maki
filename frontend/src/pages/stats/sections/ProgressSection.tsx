@@ -17,6 +17,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import { useAchievements, useProgressSummary, useLeaderboard } from '../../../api/hooks'
 import { useAuth } from '../../../auth/AuthProvider'
 import type { ReadingGoal } from '../../../api/hooks'
+import { EmptyState } from '../../../components/ui/EmptyState'
 import { Panel } from '../../../components/ui/Panel'
 import { formatNumber } from '../../../format'
 import { useLabel } from '../../../i18n-context'
@@ -246,9 +247,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
               ))}
             </ul>
           ) : (
-            <p className="stats-row-sub" style={{ margin: 0 }}>
-              {t`No goals set yet.`}
-            </p>
+            <EmptyState compact mood="asleep" title={t`No goals set yet.`} />
           )}
         </Panel>
 
@@ -293,9 +292,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
                 </Table.Tbody>
               </Table>
             ) : (
-              <p className="stats-row-sub" style={{ margin: 0 }}>
-                {t`No one else on this instance has opted in yet.`}
-              </p>
+              <EmptyState compact mood="asleep" title={t`No one else on this instance has opted in yet.`} />
             )}
           </Panel>
         )}

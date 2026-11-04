@@ -46,7 +46,7 @@ Two families. **Bricolage Grotesque** (`display`) is for names and figures: page
 
 - Display: `display` (series hero, Rewind), `route`, `page-title` (every `PageHeader`), `section-title` (every `SectionHeader`), `wordmark`. All at 700 with -0.025em tracking (-0.02em for section titles).
 - Headings: `h1` to `h4`, Mantine's Title scale (1.9rem 800, 1.5rem 800, 1.2rem 700, 1rem 700).
-- Roles: pick the tier by what the text is, not how big you want it. `body` (0.9375rem, Mantine `sm`) is the default. `meta` (0.8125rem, Mantine `xs`) for labels, chips and status words, `micro` (0.75rem) is the floor for anything read (counts, table headers), `label` for sentence-case labels over figures, `badge-text` for badges only. `figure` and `stat-value` for numbers.
+- Roles: pick the tier by what the text is, not how big you want it. `body` (0.9375rem, Mantine `sm`) is the default. `meta` (0.8125rem, Mantine `xs`) for labels, chips and status words, `micro` (0.75rem) is the floor for anything read (counts, table headers), `label` for sentence-case labels over figures, `badge-text` for badges only. `figure` for numbers.
 - Figures (strips, stat tiles, the hero figures and the level) set in the display face through the `.figure` class: 700, -0.02em, tabular. Sizes stay per call site. Their labels are sentence case at `meta` size in `ink-3`.
 - The same scale is exposed as CSS variables (`type-display` through `type-badge`); the three largest are fluid `clamp()` values. If no tier fits, the scale gains a tier; call sites never get an off-scale size.
 - Weights come from six steps: `fw-regular` 400, `fw-medium` 500, `fw-semibold` 600, `fw-strong` 650, `fw-bold` 700, `fw-heavy` 800. A weight between two steps belongs on one of them.
@@ -55,10 +55,11 @@ Two families. **Bricolage Grotesque** (`display`) is for names and figures: page
 
 ## Space and layout
 
-- Spacing is Mantine's default scale: `spacing-xs` 10px, `spacing-sm` 12px, `spacing-md` 16px, `spacing-lg` 20px, `spacing-xl` 32px. Panels and modals pad at `spacing-lg`; stat tiles and operational pages at `spacing-md`; a `SectionHeader` sits `spacing-xl` below the previous section and `spacing-sm` above its content.
+- Spacing is Mantine's default scale: `spacing-xs` 10px, `spacing-sm` 12px, `spacing-md` 16px, `spacing-lg` 20px, `spacing-xl` 32px. Panels and modals pad at `spacing-lg`; operational pages at `spacing-md`; a `SectionHeader` sits `spacing-xl` below the previous section and `spacing-sm` above its content.
 - `SectionHeader`: the count is plain tabular text in `ink-4` (no pill), the rule is a flat 1px `border`, and the action is a `subtle` button in `ink-3` that can end in a chevron.
-- `FigureStrip` has a `panel` variant for a page's headline row: a shadowed `surface` card with 27px figures, and an optional middle cell between them (Home puts the level there). `StatTile` has no coloured rail and no icon; the number carries it.
+- Every row of figures is a `FigureStrip`: equal cells in one bordered strip, number over label, an optional delta chip beside the number and a hint line under the label. Library, Health, Activity, the import plan, Stats and Discover's Taste tab all use it; there are no separate stat tiles.
 - `EmptyState` takes a `mood` for the inline form: the mascot at 56px beside the text (asleep for an empty queue or list, pleased when nothing is left to deal with, asking when it needs something from you). Page-level `art` states are unchanged.
+- One rule for a section with nothing to list: `EmptyState compact` with a mood. When it stands in for a table or list that has no card of its own (Activity, Scrobble, Import, Health, Requests, Notifications), add `framed` so the dashed outline holds the table's place. Inside a card that stays (Stats panels, a settings section), leave the frame off; the card is the frame.
 - `CoverCard` shows its monitor eye and mute bell only on hover or focus where there is a real pointer, and always on touch. A library with fewer than 12 series ends its grid in a dashed add cell.
 - Settings sections put the title in the display face and its explanation above the panel; the panel holds only the fields, and the content column is no longer capped.
 - Standard pages cap at `content-wide` (72rem); reading text at `content-prose` (42rem). Editorial sections breathe by `section-space`.
@@ -78,6 +79,7 @@ Two families. **Bricolage Grotesque** (`display`) is for names and figures: page
 
 {{MOTION}}
 - Cover cards lift 4px on hover and the art scales to 1.05. A `StatusDot` pulses for work in flight.
+- "Faster animations" (Settings > Appearance) sets `data-motion="fast"` on the root, which redefines every `--dur-*` at 0.55 of its length; script motion scales by the same factor.
 - Everything that moves stops under `prefers-reduced-motion`.
 
 ## Focus and states

@@ -48,10 +48,10 @@ export const SignInReader: Story = {
 export const ChangePassword: Story = {
   play: async ({ canvas, userEvent }) => {
     const change = await canvas.findByRole('button', { name: 'Change' })
-    await waitFor(() => expect(change).toBeDisabled())
+    await waitFor(() => expect(change).toHaveAttribute('aria-disabled', 'true'))
     await userEvent.type(await canvas.findByLabelText('Current'), 'old-password')
     await userEvent.type(await canvas.findByLabelText('New'), 'a-much-longer-password')
-    await waitFor(() => expect(change).toBeEnabled())
+    await waitFor(() => expect(change).toHaveAttribute('aria-disabled', 'false'))
     await userEvent.click(change)
     await expect(await within(document.body).findByText('Password changed. Other devices have been signed out.')).toBeVisible()
   },
@@ -61,7 +61,13 @@ export const ChangePasswordTooShort: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.type(await canvas.findByLabelText('Current'), 'old-password')
     await userEvent.type(await canvas.findByLabelText('New'), 'short')
-    await waitFor(() => expect(canvas.getByRole('button', { name: 'Change' })).toBeDisabled())
+    const change = canvas.getByRole('button', { name: 'Change' })
+    await waitFor(() => expect(change).toHaveAttribute('aria-disabled', 'true'))
+    // A disabled button gets no hover, so the reason only shows because it stays enabled underneath.
+    await userEvent.hover(change)
+    await expect(
+      await within(document.body).findByText('The new password needs at least 10 characters'),
+    ).toBeVisible()
   },
 }
 
@@ -176,7 +182,7 @@ export const ApiKeysEmpty: Story = {
   render: () => <ApiKeysSection />,
   parameters: { msw: settingsMsw(http.get(api('/account/apikeys'), () => HttpResponse.json([]))) },
   play: async ({ canvas }) => {
-    await waitFor(() => expect(canvas.getByRole('button', { name: 'Create' })).toBeDisabled())
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Create' })).toHaveAttribute('aria-disabled', 'true'))
     await expect(canvas.queryByRole('table')).toBeNull()
   },
 }
