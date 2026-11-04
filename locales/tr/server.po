@@ -626,15 +626,13 @@ msgstr ""
 
 #. English: The name is required and can be at most 60 characters.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.nameInvalid"
-msgstr "Ad zorunludur ve en fazla 60 karakter olabilir."
+msgstr "İsim koymak gereklidir ve en fazla 60 karakter olabilir."
 
 #. English: The base URL must be an http or https address on a domain name, with no path, such as https://example.com.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.baseUrlInvalid"
-msgstr "Temel URL, bir alan adındaki http ya da https adresi olmalı, yolu olmadan, ör. https://example.com."
+msgstr "Temel URL, https://example.com gibi, bir alan adı üzerinde yer alan ve yol içermeyen bir http veya https adresi olmalıdır."
 
 #. English: The language must be one language code, such as en or pt-BR.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
