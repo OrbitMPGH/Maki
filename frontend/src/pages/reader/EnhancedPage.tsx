@@ -36,6 +36,8 @@ export interface EnhancedPageProps {
   box: HTMLElement | null
   /** Draw positioned over `box` (the continuous strip) instead of filling the parent (RegionPage's frame). */
   overlay?: boolean
+  /** The page waits off screen for a turn, in a box that fills the viewport, so it is not measured. */
+  standby?: boolean
   /** True while the canvas is showing, so the host can hide its image. */
   onShowing: (showing: boolean) => void
 }
@@ -62,6 +64,7 @@ export default function EnhancedPage({
   priority,
   box,
   overlay = false,
+  standby = false,
   onShowing,
 }: EnhancedPageProps) {
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -89,7 +92,7 @@ export default function EnhancedPage({
 
   const measure = useRef(() => {})
   measure.current = () => {
-    if (!box) return
+    if (!box || standby) return
     const next = measureTarget(box, rotate, { width: image.naturalWidth, height: image.naturalHeight }, region)
     if (!next) return
     scope.noteSize(image.naturalWidth * region.w, image.naturalHeight * region.h, next)
@@ -99,9 +102,10 @@ export default function EnhancedPage({
 
   // Measured before the first paint, so a page turn can swap in a ready upscale without showing
   // the plain page first, then again only once a resize has settled, so turning a phone does not
-  // flip pages between enhanced and plain on the way round.
+  // flip pages between enhanced and plain on the way round. A page leaving standby is measured
+  // here at once, before the swap paints.
   useLayoutEffect(() => {
-    if (!box) return
+    if (!box || standby) return
     measure.current()
     let first = true
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -119,7 +123,7 @@ export default function EnhancedPage({
       observer.disconnect()
       clearTimeout(timer)
     }
-  }, [box, rotate, regionId, image])
+  }, [box, rotate, regionId, image, standby])
 
   useEffect(() => {
     if (soft) measure.current()
