@@ -18,15 +18,22 @@ public readonly record struct UpscaleTile(
 }
 
 /// <summary>
-/// Tiles with a reflected context pad, inferred one at a time and stitched back by their interiors.
+/// Tiles with a reflected context pad, inferred independently and stitched back by their interiors.
 /// Each axis takes as many tiles as fixed <see cref="TileSize"/> tiles would, split into equal spans,
-/// and every tile of a page shares one context size: ORT plans memory per input shape, and a page
-/// of equal tiles measured 9% faster with 60 MB less peak than 384 px tiles plus a remainder.
+/// and every tile of a page shares one context size: ORT plans memory per input shape.
+///
+/// <para>
+/// Tiles are small so several run at once inside the memory one large tile took (a worker's
+/// activations scale with its tile's area), and so blank margins, gutters and bubble interiors
+/// become whole flat tiles that skip the model: about 20% of a sampled page at 96 to 192 px against
+/// 12% at 384. A 12 px pad matches 16 px within 2 levels on SPAN-S; the extra context of a small
+/// tile costs less than the parallelism gains.
+/// </para>
 /// </summary>
 public static class UpscaleTiling
 {
-    public const int TileSize = 384;
-    public const int ContextPad = 16;
+    public const int TileSize = 96;
+    public const int ContextPad = 12;
 
     public static int RoundUp(int value, int multiple) =>
         multiple <= 1 ? value : (value + multiple - 1) / multiple * multiple;

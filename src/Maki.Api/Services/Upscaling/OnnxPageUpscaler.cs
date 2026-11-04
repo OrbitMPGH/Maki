@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using Maki.Core.Configuration;
 using Maki.Core.Images;
@@ -12,6 +13,14 @@ namespace Maki.Api.Services.Upscaling;
 /// Runs pages through the downloaded upscale models on the CPU. One <see cref="InferenceSession"/> per
 /// model, loaded on first use and dropped by <see cref="ReleaseIfIdle"/>. Decode and encode take
 /// <see cref="ImageWorkGate"/>; inference does not, the caller bounds it.
+///
+/// <para>
+/// A page's tiles go to up to <see cref="UpscaleOptions.Threads"/> workers, each running one tile at
+/// a time on one thread and taking the next when it is done. ORT's own threading splits every layer
+/// of a tile into equal chunks and waits for the slowest, which on a CPU with efficiency cores is
+/// the slow core at every layer; independent tiles balance themselves. Each worker holds its tile's
+/// activations, so the count is capped by <see cref="WorkerBudgetBytes"/>.
+/// </para>
 /// </summary>
 public sealed class OnnxPageUpscaler(
     UpscaleModelCatalog catalog,
@@ -19,7 +28,17 @@ public sealed class OnnxPageUpscaler(
     IAppSettings settings,
     ILogger<OnnxPageUpscaler> logger) : IPageUpscaler, IDisposable
 {
+    /// <summary>What the workers of one run may hold in activations, about what one 384 px tile took.</summary>
+    internal const long WorkerBudgetBytes = 240L << 20;
+
+    /// <summary>
+    /// A worker's peak per context pixel: SPAN-S measured 22 MB on 120 px contexts (fp32 activations
+    /// of 48 channels in ORT's blocked layout), Real-ESRGAN 18 MB.
+    /// </summary>
+    private const int WorkerBytesPerPixel = 1600;
+
     private readonly object _gate = new();
+    private readonly Lock _hooks = new();
     private readonly Dictionary<UpscaleModelId, LoadedModel> _sessions = [];
 
     /// <summary>Called after each tile with its index. Tests only.</summary>
@@ -174,10 +193,10 @@ public sealed class OnnxPageUpscaler(
     /// </param>
     internal StitchedPage Run(Raster source, UpscaleModelInfo info, int threads, bool luma, CancellationToken ct)
     {
-        var loaded = Acquire(info, threads);
+        var loaded = Acquire(info);
         try
         {
-            return RunTiles(loaded, source, info, luma, ct);
+            return RunTiles(loaded, source, info, threads, luma, ct);
         }
         finally
         {
@@ -185,7 +204,8 @@ public sealed class OnnxPageUpscaler(
         }
     }
 
-    private StitchedPage RunTiles(LoadedModel loaded, Raster source, UpscaleModelInfo info, bool luma, CancellationToken ct)
+    private StitchedPage RunTiles(
+        LoadedModel loaded, Raster source, UpscaleModelInfo info, int threads, bool luma, CancellationToken ct)
     {
         var tiles = UpscaleTiling.Plan(source.Width, source.Height,
             multiple: info.Adapter == UpscaleAdapter.Plain4xThenHalve ? 1 : 4);
@@ -199,51 +219,123 @@ public sealed class OnnxPageUpscaler(
         }
 
         var output = new byte[width * height * bands];
-        using var buffers = new TileBuffers(loaded, tiles, info.ModelScale, scale);
-        using var runOptions = new RunOptions();
-        using var cancel = ct.Register(() => runOptions.Terminate = true);
+        var page = new StitchedPage(output, width, height, bands);
+        var pending = new List<int>(tiles.Count);
         for (var i = 0; i < tiles.Count; i++)
         {
-            ct.ThrowIfCancellationRequested();
-            var tile = tiles[i];
-            if (FlatValue(source, tile) is { } flat && KeepsFlat(info, flat))
+            if (FlatValue(source, tiles[i]) is { } flat && KeepsFlat(info, flat))
             {
-                FillTile(tile, scale, output, width, bands, flat);
-                TileSkipped?.Invoke(i);
-                TileCompleted?.Invoke(i);
-                continue;
+                FillTile(tiles[i], scale, output, width, bands, flat);
+                Report(TileSkipped, i);
+                Report(TileCompleted, i);
             }
-
-            buffers.Fill(source, tile);
-            try
+            else
             {
-                loaded.Session.RunWithBinding(runOptions, buffers.Bind(tile));
+                pending.Add(i);
             }
-            catch (OnnxRuntimeException) when (ct.IsCancellationRequested)
-            {
-                throw new OperationCanceledException(ct);
-            }
-
-            var (rgb, tileWidth, tileHeight) = buffers.Read(tile);
-            if (info.ModelScale != scale)
-            {
-                var halved = buffers.Resized;
-                (tileWidth, tileHeight) = ImageWorkGate.RunAsync(
-                    () => Task.FromResult(ImageCodec.ResizeRgb(rgb, tileWidth, tileHeight, (double)scale / info.ModelScale, halved)),
-                    ct).GetAwaiter().GetResult();
-                if ((tileWidth, tileHeight) != (tile.ContextWidth * scale, tile.ContextHeight * scale))
-                {
-                    throw new InvalidDataException($"Resizing a tile gave {tileWidth}x{tileHeight}.");
-                }
-
-                rgb = halved;
-            }
-
-            StitchTile(rgb, tileWidth, tile, scale, output, width, bands);
-            TileCompleted?.Invoke(i);
         }
 
-        return new StitchedPage(output, width, height, bands);
+        var workers = Math.Min(Math.Min(threads, MaxWorkers(tiles[0])), pending.Count);
+        if (workers == 0)
+        {
+            return page;
+        }
+
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var next = -1;
+        Exception? failure = null;
+
+        void Work()
+        {
+            try
+            {
+                using var buffers = new TileBuffers(loaded, tiles, info.ModelScale, scale);
+                using var runOptions = new RunOptions();
+                using var terminate = stop.Token.Register(() => runOptions.Terminate = true);
+                while (!stop.IsCancellationRequested)
+                {
+                    var n = Interlocked.Increment(ref next);
+                    if (n >= pending.Count)
+                    {
+                        return;
+                    }
+
+                    RunTile(loaded, buffers, runOptions, source, info, tiles[pending[n]], output, width, bands, stop.Token);
+                    Report(TileCompleted, pending[n]);
+                }
+            }
+            catch (Exception ex)
+            {
+                Interlocked.CompareExchange(ref failure, ex, null);
+                stop.Cancel();
+            }
+        }
+
+        var helpers = new Task[workers - 1];
+        for (var i = 0; i < helpers.Length; i++)
+        {
+            helpers[i] = Task.Factory.StartNew(Work, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+        }
+
+        Work();
+        Task.WaitAll(helpers);
+        ct.ThrowIfCancellationRequested();
+        if (failure is not null)
+        {
+            ExceptionDispatchInfo.Throw(failure);
+        }
+
+        return page;
+    }
+
+    /// <summary>How many tiles of this shape may run at once inside <see cref="WorkerBudgetBytes"/>.</summary>
+    internal static int MaxWorkers(UpscaleTile tile) =>
+        (int)Math.Max(1, WorkerBudgetBytes / ((long)tile.ContextWidth * tile.ContextHeight * WorkerBytesPerPixel));
+
+    private static void RunTile(
+        LoadedModel loaded, TileBuffers buffers, RunOptions runOptions, Raster source, UpscaleModelInfo info,
+        UpscaleTile tile, byte[] output, int width, int bands, CancellationToken ct)
+    {
+        var scale = info.OutputScale;
+        buffers.Fill(source, tile);
+        try
+        {
+            loaded.Session.RunWithBinding(runOptions, buffers.Bind(tile));
+        }
+        catch (OnnxRuntimeException) when (ct.IsCancellationRequested)
+        {
+            throw new OperationCanceledException(ct);
+        }
+
+        var (rgb, tileWidth, tileHeight) = buffers.Read(tile);
+        if (info.ModelScale != scale)
+        {
+            var halved = buffers.Resized;
+            (tileWidth, tileHeight) = ImageWorkGate.RunAsync(
+                () => Task.FromResult(ImageCodec.ResizeRgb(rgb, tileWidth, tileHeight, (double)scale / info.ModelScale, halved)),
+                ct).GetAwaiter().GetResult();
+            if ((tileWidth, tileHeight) != (tile.ContextWidth * scale, tile.ContextHeight * scale))
+            {
+                throw new InvalidDataException($"Resizing a tile gave {tileWidth}x{tileHeight}.");
+            }
+
+            rgb = halved;
+        }
+
+        StitchTile(rgb, tileWidth, tile, scale, output, width, bands);
+    }
+
+    private void Report(Action<int>? hook, int tile)
+    {
+        if (hook is null)
+        {
+            return;
+        }
+
+        lock (_hooks)
+        {
+            hook(tile);
+        }
     }
 
     /// <summary>
@@ -486,20 +578,13 @@ public sealed class OnnxPageUpscaler(
     private static byte ToByte(float value) =>
         value > 0f ? value < 1f ? (byte)(value * 255f + 0.5f) : (byte)255 : (byte)0;
 
-    private LoadedModel Acquire(UpscaleModelInfo info, int threads)
+    private LoadedModel Acquire(UpscaleModelInfo info)
     {
         lock (_gate)
         {
-            if (_sessions.TryGetValue(info.Id, out var loaded) && loaded.Threads != threads && loaded.InUse == 0)
+            if (!_sessions.TryGetValue(info.Id, out var loaded))
             {
-                _sessions.Remove(info.Id);
-                loaded.Session.Dispose();
-                loaded = null;
-            }
-
-            if (loaded is null)
-            {
-                loaded = Load(info, threads);
+                loaded = Load(info);
                 _sessions[info.Id] = loaded;
             }
 
@@ -530,18 +615,19 @@ public sealed class OnnxPageUpscaler(
         }
     }
 
-    private LoadedModel Load(UpscaleModelInfo info, int threads)
+    /// <summary>One intra-op thread: the workers of <see cref="RunTiles"/> are the parallelism.</summary>
+    private LoadedModel Load(UpscaleModelInfo info)
     {
         InferenceSession? session = null;
         try
         {
-            using var options = OnnxMemoryOptions.Create(threads, fixedShapes: true);
+            using var options = OnnxMemoryOptions.Create(intraOpThreads: 1, fixedShapes: true);
             session = new InferenceSession(store.PathOf(info.Id), options);
             var output = session.OutputNames[0];
             var inputType = ElementType(session.InputMetadata[info.InputName]);
             var outputType = ElementType(session.OutputMetadata[output]);
-            logger.LogInformation("Loaded upscale model {Model} ({Type}, {Threads} thread(s))", info.Id, inputType, threads);
-            return new LoadedModel(session, info.InputName, output, inputType, outputType, threads);
+            logger.LogInformation("Loaded upscale model {Model} ({Type})", info.Id, inputType);
+            return new LoadedModel(session, info.InputName, output, inputType, outputType);
         }
         catch (Exception ex)
         {
@@ -562,14 +648,13 @@ public sealed class OnnxPageUpscaler(
 
     private sealed class LoadedModel(
         InferenceSession session, string inputName, string outputName, TensorElementType inputType,
-        TensorElementType outputType, int threads)
+        TensorElementType outputType)
     {
         public InferenceSession Session { get; } = session;
         public string InputName { get; } = inputName;
         public string OutputName { get; } = outputName;
         public TensorElementType InputType { get; } = inputType;
         public TensorElementType OutputType { get; } = outputType;
-        public int Threads { get; } = threads;
         public int InUse { get; set; }
         public DateTime LastUsedUtc { get; set; } = DateTime.UtcNow;
         public bool Retired { get; set; }

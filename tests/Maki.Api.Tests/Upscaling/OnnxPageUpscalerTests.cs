@@ -81,7 +81,30 @@ public class OnnxPageUpscalerTests : IDisposable
 
         var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.SpanS), threads: 2, luma: false, CancellationToken.None);
 
-        Assert.Equal(12, tiles);
+        Assert.Equal(10 * 14, tiles);
+        AssertNearest2x(source, page);
+    }
+
+    [Fact]
+    public void Workers_are_capped_by_the_memory_budget()
+    {
+        var tile = UpscaleTiling.Plan(96, 96, multiple: 4).Single();
+
+        Assert.Equal(10, OnnxPageUpscaler.MaxWorkers(tile));
+        Assert.Equal(1, OnnxPageUpscaler.MaxWorkers(tile with { ContextWidth = 4000, ContextHeight = 4000 }));
+    }
+
+    [Fact]
+    public void More_threads_than_tiles_still_upscales_every_tile_once()
+    {
+        using var upscaler = NewUpscaler();
+        var source = Pattern(150, 100);
+        var tiles = new List<int>();
+        upscaler.TileCompleted = tiles.Add;
+
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.SpanS), threads: 16, luma: false, CancellationToken.None);
+
+        Assert.Equal([0, 1, 2, 3], tiles.Order());
         AssertNearest2x(source, page);
     }
 
@@ -101,8 +124,8 @@ public class OnnxPageUpscalerTests : IDisposable
 
         var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.SpanS), threads: 2, luma: false, CancellationToken.None);
 
-        // Rows of 325 px with 360 px contexts: the first row reads y -16 to 343, the second 309 to 668.
-        Assert.Equal([0, 1, 2, 3, 4, 5], skipped);
+        // Ten columns, rows of 93 px with 12 px of context: row 6 reads y 546 to 663, row 7 639 to 756.
+        Assert.Equal(Enumerable.Range(0, 7 * 10), skipped);
         AssertNearest2x(source, page);
     }
 
@@ -119,7 +142,7 @@ public class OnnxPageUpscalerTests : IDisposable
 
         var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.RealEsrganAv3), threads: 2, luma: true, CancellationToken.None);
 
-        Assert.Equal(skips ? 1 : 0, skipped);
+        Assert.Equal(skips ? 3 * 3 : 0, skipped);
         Assert.All(page.Pixels, v => Assert.Equal(level, v));
     }
 
@@ -274,7 +297,8 @@ public class OnnxPageUpscalerTests : IDisposable
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             upscaler.UpscaleAsync(Pattern(900, 1300).EncodePng(), "span-s", cts.Token));
 
-        Assert.Equal(1, tiles);
+        // Each of the two workers finishes at most the tile it was on.
+        Assert.InRange(tiles, 1, 2);
     }
 
     [Fact]
