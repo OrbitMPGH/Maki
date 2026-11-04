@@ -34,9 +34,10 @@ export const Opened: Story = {
     const body = within(canvasElement.ownerDocument.body)
     const input = await body.findByRole('combobox', { name: INPUT_NAME })
     await waitFor(() => expect(input).toHaveFocus())
-    // With nothing typed the palette lists every page.
+    // With nothing typed the palette lists every page, Notifications included.
     await waitFor(async () => expect(await body.findByRole('option', { name: /Library/ })).toBeVisible())
-    await waitFor(() => expect(body.getAllByRole('option')).toHaveLength(ALL_ITEMS.length))
+    await waitFor(() => expect(body.getAllByRole('option')).toHaveLength(ALL_ITEMS.length + 1))
+    await expect(body.getByRole('option', { name: /Notifications/ })).toBeVisible()
   },
 }
 
@@ -118,11 +119,13 @@ export const LibraryStillLoading: Story = {
   },
 }
 
-export const NoMatches: Story = {
+// Notifications has no sidebar item, so it is listed even when the caller passes no pages.
+export const NotificationsWithoutNavItems: Story = {
   args: { navItems: [] },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: /^Search/ }))
     const body = within(canvasElement.ownerDocument.body)
-    await waitFor(async () => expect(await body.findByText('No matches.')).toBeVisible())
+    await waitFor(async () => expect(await body.findByRole('option', { name: /Notifications/ })).toBeVisible())
+    await waitFor(() => expect(body.getAllByRole('option')).toHaveLength(1))
   },
 }

@@ -487,7 +487,7 @@ function SignalRow({ row, busy, onClear, onExclude }: {
           {suppression === 'dismissed' && (
             <Pill
               color={dismissalEnded ? 'var(--neutral)' : 'var(--warn)'}
-              label={dismissalEnded ? t`Dismissal ended ${until}` : t`Dismissed until ${until}`}
+              label={dismissalEnded ? t`Back in recommendations since ${until}` : t`Dismissed until ${until}`}
               clear={t`Restore this title`}
               onClear={() => onClear(row, 'clear-suppression')} />
           )}

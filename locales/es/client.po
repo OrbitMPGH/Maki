@@ -862,6 +862,10 @@ msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters dow
 msgstr "{chaptersDownloaded, plural, one {capítulo descargado} many {capítulos descargados} other {capítulos descargados}}"
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "{chaptersHave}/{chaptersCounted} downloaded"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{chaptersLeft} at your paged pace, {basis}."
 msgstr "{chaptersLeft} a tu ritmo por páginas, {basis}."
@@ -2246,9 +2250,17 @@ msgid "{seriesAdded, plural, one {series added} other {series added}}"
 msgstr "{seriesAdded, plural, one {serie añadida} many {series añadidas} other {series añadidas}}"
 
 #: src/pages/reader/ReaderToolbar.tsx
+msgid "{seriesChapterCount, plural, one {{chaptersRead} read of # downloaded} other {{chaptersRead} read of # downloaded}}"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
-msgid "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
-msgstr "{seriesChapterCount, plural, one {{chaptersRead}/# capítulo leído} many {{chaptersRead}/# capítulos leídos} other {{chaptersRead}/# capítulos leídos}}"
+#~ msgid "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
+#~ msgstr "{seriesChapterCount, plural, one {{chaptersRead}/# capítulo leído} many {{chaptersRead}/# capítulos leídos} other {{chaptersRead}/# capítulos leídos}}"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "{seriesChapterCount, plural, one {read all # downloaded} other {read all # downloaded}}"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/TagManagerModal.tsx
@@ -3808,8 +3820,8 @@ msgstr "Todas son opcionales. Maki descarga de sus propias fuentes sin ninguna d
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
-msgid "all read"
-msgstr "todos leídos"
+#~ msgid "all read"
+#~ msgstr "todos leídos"
 
 #: src/components/QueueActions.tsx
 #, fuzzy
@@ -4614,6 +4626,14 @@ msgstr "Evitado"
 #, fuzzy
 msgid "Back"
 msgstr "Atrás"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "back in recommendations since {until}"
+msgstr ""
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Back in recommendations since {until}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -5760,6 +5780,18 @@ msgstr "Capítulos que se buscan cada vez"
 #, fuzzy
 msgid "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
 msgstr "Los capítulos cuyo archivo tenga alguna de estas calidades se muestran tal cual. Un volumen digital suele estar ya limpio."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters with no file on disk, leaving out files that were deleted on purpose."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters with Wanted switched on, downloaded or not."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Chapters you want that aren't on disk yet."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -7716,8 +7748,8 @@ msgstr "Descartar notificación"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
-msgid "Dismissal ended {until}"
-msgstr ""
+#~ msgid "Dismissal ended {until}"
+#~ msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -12223,6 +12255,10 @@ msgstr "Marcado como ya leído o visto. Tu perfil de gustos no cambió."
 msgid "Marked ch. 1 to {to} watched"
 msgstr "Marcados como vistos los capítulos del 1 al {to}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Marked wanted ({wantedFilterCount})"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Marked watched, not read. Doesn't count toward reading stats"
@@ -14696,6 +14732,7 @@ msgstr "Ajustes de notificaciones"
 msgid "Notification URLs"
 msgstr "URL de notificación"
 
+#: src/components/CommandPalette.tsx
 #: src/components/NotificationBell.tsx
 #: src/components/settings/NotificationPrefsSection.tsx
 #: src/nav.ts
@@ -19500,6 +19537,10 @@ msgstr "Formato de carpeta de series"
 msgid "Series has no root folder"
 msgstr "La serie no tiene carpeta raíz"
 
+#: src/pages/LibraryPage.tsx
+msgid "Series Maki keeps checking for new chapters."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Series moved"
@@ -20864,6 +20905,10 @@ msgstr "Suwayomi"
 #, fuzzy
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
 msgstr "suwayomi, tachidesk, mihon, tachiyomi, extensiones, fuentes de extensiones, más fuentes, graphql, 4567"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -23812,8 +23857,8 @@ msgstr "Solicitados"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Wanted ({wantedFilterCount})"
-msgstr "Solicitados ({wantedFilterCount})"
+#~ msgid "Wanted ({wantedFilterCount})"
+#~ msgstr "Solicitados ({wantedFilterCount})"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

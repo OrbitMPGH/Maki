@@ -368,7 +368,7 @@ export function DiscoverDetailModal({
                           <Tooltip key={r.source} label={r.source} withArrow zIndex={1001}>
                             <Badge
                               size="sm"
-                              variant="outline"
+                              variant="light"
                               color="var(--neutral)"
                               leftSection={
                                 <MetadataSiteIcon

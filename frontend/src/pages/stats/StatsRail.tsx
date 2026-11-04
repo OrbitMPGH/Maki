@@ -97,7 +97,6 @@ export function StatsRail({ end }: { end?: ReactNode }) {
       <div className="stats-rail-bar">
       <nav ref={railRef} className="stats-rail-links" aria-label={t`Stats sections`}>
         {STATS_SECTIONS.map((s) => {
-        const SectionIcon = s.icon
         const isActive = active === s.key
         return (
           <UnstyledButton
@@ -120,7 +119,6 @@ export function StatsRail({ end }: { end?: ReactNode }) {
               )
             }}
           >
-            <SectionIcon size={16} aria-hidden />
             {renderLabel(s.label)}
             {s.railChip && !singleUser && <span className="stats-rail-chip">{renderLabel(s.railChip)}</span>}
           </UnstyledButton>

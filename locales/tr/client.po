@@ -862,6 +862,10 @@ msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters dow
 msgstr "{chaptersDownloaded, plural, one {bölüm indirildi} other {bölüm indirildi}}"
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "{chaptersHave}/{chaptersCounted} downloaded"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{chaptersLeft} at your paged pace, {basis}."
 msgstr "Sayfalı okuma hızınızla {chaptersLeft} kaldı, {basis}."
@@ -2246,9 +2250,17 @@ msgid "{seriesAdded, plural, one {series added} other {series added}}"
 msgstr "{seriesAdded, plural, one {seri eklendi} other {seri eklendi}}"
 
 #: src/pages/reader/ReaderToolbar.tsx
+msgid "{seriesChapterCount, plural, one {{chaptersRead} read of # downloaded} other {{chaptersRead} read of # downloaded}}"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
-msgid "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
-msgstr "{seriesChapterCount, plural, one {{chaptersRead} / # bölüm okundu} other {{chaptersRead} / # bölüm okundu}}"
+#~ msgid "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
+#~ msgstr "{seriesChapterCount, plural, one {{chaptersRead} / # bölüm okundu} other {{chaptersRead} / # bölüm okundu}}"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "{seriesChapterCount, plural, one {read all # downloaded} other {read all # downloaded}}"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/TagManagerModal.tsx
@@ -3808,8 +3820,8 @@ msgstr "Tüm araçlar isteğe bağlıdır. Maki bunlar olmadan da kendi kaynakla
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
-msgid "all read"
-msgstr "tümü okundu"
+#~ msgid "all read"
+#~ msgstr "tümü okundu"
 
 #: src/components/QueueActions.tsx
 #, fuzzy
@@ -4614,6 +4626,14 @@ msgstr "Kaçınıldı"
 #, fuzzy
 msgid "Back"
 msgstr "Geri"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "back in recommendations since {until}"
+msgstr ""
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Back in recommendations since {until}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -5760,6 +5780,18 @@ msgstr "Her seferinde alınacak bölüm sayısı"
 #, fuzzy
 msgid "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
 msgstr "Bu kalitelerden birine sahip dosyası olan bölümler olduğu gibi gösterilir. Dijital cilt genelde zaten temizdir."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters with no file on disk, leaving out files that were deleted on purpose."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters with Wanted switched on, downloaded or not."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Chapters you want that aren't on disk yet."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -7716,8 +7748,8 @@ msgstr "Bildirimi kapat"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
-msgid "Dismissal ended {until}"
-msgstr ""
+#~ msgid "Dismissal ended {until}"
+#~ msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -12223,6 +12255,10 @@ msgstr "Zaten okunmuş veya görülmüş olarak işaretlendi. Zevk profiliniz de
 msgid "Marked ch. 1 to {to} watched"
 msgstr "1. bölümden {to}. bölüme kadar izlendi olarak işaretlendi"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Marked wanted ({wantedFilterCount})"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Marked watched, not read. Doesn't count toward reading stats"
@@ -14696,6 +14732,7 @@ msgstr "Bildirim ayarları"
 msgid "Notification URLs"
 msgstr "Bildirim URL'leri"
 
+#: src/components/CommandPalette.tsx
 #: src/components/NotificationBell.tsx
 #: src/components/settings/NotificationPrefsSection.tsx
 #: src/nav.ts
@@ -19500,6 +19537,10 @@ msgstr "Seri klasör biçimi"
 msgid "Series has no root folder"
 msgstr "Serinin kök klasörü yok"
 
+#: src/pages/LibraryPage.tsx
+msgid "Series Maki keeps checking for new chapters."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Series moved"
@@ -20864,6 +20905,10 @@ msgstr "Suwayomi"
 #, fuzzy
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
 msgstr "suwayomi, tachidesk, mihon, tachiyomi, eklentiler, eklenti kaynakları, daha fazla kaynak, graphql, 4567"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -23812,8 +23857,8 @@ msgstr "İsteniyor"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Wanted ({wantedFilterCount})"
-msgstr "İsteniyor ({wantedFilterCount})"
+#~ msgid "Wanted ({wantedFilterCount})"
+#~ msgstr "İsteniyor ({wantedFilterCount})"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

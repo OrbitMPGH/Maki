@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plural } from '@lingui/react/macro'
 
-/** Fade in, hold, fade out. Kept in step with the `reader-chapter-banner` animation in theme.css. */
+/** Fade in, hold, fade out. Kept in step with `--dur-banner` in theme.css. */
 const SHOW_MS = 2400
 
 /**

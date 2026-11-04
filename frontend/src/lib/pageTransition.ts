@@ -1,8 +1,8 @@
 import { useLayoutEffect } from 'react'
 import { UNSAFE_createBrowserHistory, useLocation } from 'react-router-dom'
 import { holdTint, tintSettled } from './coverTint'
-import { DUR, EASE_CSS, pacedMs } from './motion'
-import { motionEnabled, motionPace, prefersReducedMotion, syncMotionPace } from './motionPrefs'
+import { DUR, EASE_CSS, PAGE, pacedMs } from './motion'
+import { motionEnabled, prefersReducedMotion, syncMotionPace } from './motionPrefs'
 import { pageScroller } from './pageScroll'
 
 /**
@@ -167,7 +167,7 @@ function rise(fade: boolean, drift = true) {
     from.opacity = 0
     to.opacity = 1
   }
-  main.animate([from, to], { duration: 250 * motionPace(), easing: EASE_CSS })
+  main.animate([from, to], { duration: pacedMs(PAGE.rise), easing: EASE_CSS })
 }
 
 /**
@@ -234,7 +234,7 @@ function flyCover(
     decoded: ghost.decode().catch(() => {}),
     start: () => {
       ghost.style.transform = 'none'
-      ghost.animate([{ transform: launch }, { transform: 'none' }], { duration: 440 * motionPace(), easing: EASE_CSS }).finished.finally(end)
+      ghost.animate([{ transform: launch }, { transform: 'none' }], { duration: pacedMs(PAGE.coverFlight), easing: EASE_CSS }).finished.finally(end)
     },
     cancel: () => {
       ghost.remove()

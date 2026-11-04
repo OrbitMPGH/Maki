@@ -5,8 +5,7 @@ import { formatNumber, formatReadingTime } from '../../format'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
 
 /** The right-hand small line: how much is left, and how long it would take at your own pace. */
-function MidwayHint({ held, etaSeconds }: { held: number; etaSeconds: number | null }) {
-  const left = held
+function MidwayHint({ left, etaSeconds }: { left: number; etaSeconds: number | null }) {
   if (etaSeconds === null) {
     return <Plural value={left} one="# left" other="# left" />
   }
@@ -20,7 +19,7 @@ function MidwayHint({ held, etaSeconds }: { held: number; etaSeconds: number | n
 
 /**
  * Series read partway through: how far in, and roughly how much is left. One list, shared because
- * "mid-way" only ever means read/held against a meter, whatever panel it sits in.
+ * "mid-way" only ever means read against downloaded on a meter, whatever panel it sits in.
  */
 export function MidwayList({ items, emptyText }: { items: MidwaySeriesDto[]; emptyText: string }) {
   if (items.length === 0) {
@@ -30,10 +29,10 @@ export function MidwayList({ items, emptyText }: { items: MidwaySeriesDto[]; emp
   return (
     <ul className="stats-rows">
       {items.map((item) => {
-        const total = item.read + item.held
+        const total = Math.max(item.read, item.held)
         const pct = total > 0 ? (item.read / total) * 100 : 0
         return (
-          <li className="stats-row" key={item.seriesId}>
+          <li className="stats-row stats-row-midway" key={item.seriesId}>
             <SeriesThumb url={item.coverUrl} alt={item.title} seriesId={item.seriesId} />
             <div style={{ minWidth: 0 }}>
               <div className="stats-row-title">
@@ -46,7 +45,7 @@ export function MidwayList({ items, emptyText }: { items: MidwaySeriesDto[]; emp
             <div className="stats-row-value tnum">
               {formatNumber(item.read)} / {formatNumber(total)}
               <small>
-                <MidwayHint held={item.held} etaSeconds={item.etaSeconds} />
+                <MidwayHint left={total - item.read} etaSeconds={item.etaSeconds} />
               </small>
             </div>
           </li>

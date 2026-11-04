@@ -12,7 +12,7 @@ import {
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { IconAlertTriangle, IconBell, IconBellOff, IconCircleCheck } from '../lib/icons'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   useInbox,
   useInboxPrefs,
@@ -36,6 +36,8 @@ export function NotificationBell({ position = 'bottom-end' }: { position?: 'bott
   const { t } = useLingui()
   const [opened, { toggle, close }] = useDisclosure(false)
   const navigate = useNavigate()
+  // The page has no sidebar item, so the bell is what marks it as the current place.
+  const onPage = useLocation().pathname.startsWith('/notifications')
 
   const { data: unread } = useInboxUnread()
   useInboxPrefs()
@@ -75,6 +77,8 @@ export function NotificationBell({ position = 'bottom-end' }: { position?: 'bott
             <ActionIcon
               variant="subtle"
               color="var(--neutral)"
+              className="notification-bell"
+              data-active={onPage || undefined}
               aria-label={
                 count > 0
                   ? plural(count, { one: 'Notifications, # unread', other: 'Notifications, # unread' })

@@ -1,6 +1,6 @@
 import { Center, Group, Loader, Modal, ScrollArea, Stack, Text, TextInput } from '@mantine/core'
 import { useDisclosure, useHotkeys, useOs } from '@mantine/hooks'
-import { IconAdjustments, IconArchive, IconBooks, IconPlus, IconSearch, IconSend } from '../lib/icons'
+import { IconAdjustments, IconArchive, IconBell, IconBooks, IconPlus, IconSearch, IconSend } from '../lib/icons'
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { fuzzyFilter, titleIndex } from '../lib/fuzzySearch'
 import { DUR, EASE_CSS, pacedMs } from '../lib/motion'
@@ -167,6 +167,22 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
           ]
         : []
 
+    // Reached from the bell rather than the sidebar, and open to every signed-in user.
+    const notificationsLabel = _(msg`Notifications`)
+    const notificationsNav =
+      !q || notificationsLabel.toLowerCase().includes(q)
+        ? [
+            {
+              kind: 'nav' as const,
+              key: 'nav-/notifications',
+              label: notificationsLabel,
+              sub: _(msg`Page`),
+              icon: IconBell,
+              path: '/notifications',
+            },
+          ]
+        : []
+
     // Individual settings, not just the Settings page: a card is only reachable now if you know
     // which tab it sits under, and searching is the answer to that. Filtered by what the caller may
     // actually see, so a non-admin is never sent to a tab that doesn't exist for them.
@@ -211,7 +227,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
         ]
       : []
 
-    return [...navMatches, ...archivedNav, ...settingMatches, ...seriesMatches, ...searchFallback]
+    return [...navMatches, ...notificationsNav, ...archivedNav, ...settingMatches, ...seriesMatches, ...searchFallback]
   }, [query, navItems, series, seriesTitles, visibleSettings, canAdd, renderLabel, _, i18n.locale])
 
   useEffect(() => {

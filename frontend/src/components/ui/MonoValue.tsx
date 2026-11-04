@@ -13,8 +13,9 @@ const MAX_LONG_TAIL = 48
  * and tags at the end, so the tail starts at the first number token that leaves at most 32
  * characters ("v01 (2022) (Digital).cbz"). Failing that, the last token that leaves at most 48,
  * so one more tag ("(f2)") does not swap the volume for the extension and leave a column of
- * names that differ only where they are cut. Without one it is the extension and eight characters
- * before it, or the last six characters of an id or path.
+ * names that differ only where they are cut. Without one it is the last segment of a path, so a
+ * folder keeps its own name ("X:\library\...\Series"), then the extension and eight characters
+ * before it, or the last six characters of an id.
  */
 export function splitForTruncation(value: string): [head: string, tail: string] {
   let longTail = -1
@@ -23,6 +24,10 @@ export function splitForTruncation(value: string): [head: string, tail: string] 
     if (m.index > 0 && value.length - m.index <= MAX_LONG_TAIL) longTail = m.index
   }
   if (longTail > 0) return [value.slice(0, longTail), value.slice(longTail)]
+  const lastSeparator = Math.max(value.lastIndexOf('/'), value.lastIndexOf('\\'))
+  if (value.length > 24 && lastSeparator > 0 && lastSeparator < value.length - 1 && value.length - lastSeparator <= MAX_LONG_TAIL) {
+    return [value.slice(0, lastSeparator), value.slice(lastSeparator)]
+  }
   const ext = /\.[A-Za-z0-9]{1,5}$/.exec(value)?.[0] ?? ''
   const keep = ext ? ext.length + 8 : 6
   if (value.length <= Math.max(keep + 4, 16)) return [value, '']
@@ -63,6 +68,7 @@ export function MonoValue({
   copy,
   focusable = true,
   minWidth,
+  tailCh,
   wrap,
   fz,
   c,
@@ -74,6 +80,8 @@ export function MonoValue({
   /** False when the row already has a control to tab to and hover, the title and the DOM text are enough. */
   focusable?: boolean
   minWidth?: CSSProperties['minWidth']
+  /** Characters kept for the tail, the longest tail in the column, so every row loses its middle at the same place. */
+  tailCh?: number
   /** Wraps onto more lines (breaking anywhere) instead of losing its middle, for a cell with height to spare. */
   wrap?: boolean
   fz?: CSSProperties['fontSize']
@@ -112,7 +120,11 @@ export function MonoValue({
       <span ref={headRef} className="mono-value-head" data-split={tail ? true : undefined}>
         {head}
       </span>
-      {tail && <span className="mono-value-tail">{tail}</span>}
+      {tail && (
+        <span className="mono-value-tail" style={tailCh ? { minWidth: `min(${tailCh}ch, 100% - 6ch)` } : undefined}>
+          {tail}
+        </span>
+      )}
     </>
   )
 

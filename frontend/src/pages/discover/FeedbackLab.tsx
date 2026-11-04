@@ -2,9 +2,11 @@ import { errorText } from '../../api/errorText'
 import { useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import {
-  Alert, Badge, Button, Card, Collapse, Group, Loader, Paper, Stack, Text, Tooltip,
+  ActionIcon, Alert, Badge, Button, Card, Collapse, Group, Loader, Paper, Stack, Text, Tooltip,
 } from '@mantine/core'
-import { IconArrowBackUp, IconCompass, IconThumbDown, IconThumbUp } from '../../lib/icons'
+import {
+  IconAdjustmentsHorizontal, IconArrowBackUp, IconCompass, IconHelpCircle, IconThumbDown, IconThumbUp,
+} from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { AvoidanceLabel, FeedbackActivity, FeedbackLabData } from '../../api/recommendationFeedback'
 import { useFeedbackLab, useUndoFeedback } from '../../api/recommendationFeedback'
@@ -128,13 +130,33 @@ export function SignalsCard() {
         icon={IconCompass}
         title={t`What shapes your recommendations`}
         action={
-          <Group gap="xs">
-            <Button variant="default" size="compact-sm" aria-expanded={howItWorks} onClick={() => setHowItWorks((v) => !v)}>
+          <Group gap="xs" wrap="nowrap">
+            <Button visibleFrom="xs" variant="default" size="compact-sm" aria-expanded={howItWorks} onClick={() => setHowItWorks((v) => !v)}>
               <Trans>How signals work</Trans>
             </Button>
-            <Button variant="default" size="compact-sm" onClick={() => setManage('titles')}>
+            <Button visibleFrom="xs" variant="default" size="compact-sm" onClick={() => setManage('titles')}>
               <Trans>Manage signals</Trans>
             </Button>
+            {/* A phone keeps both on the title row as icons; as words they dropped to a line of their own. */}
+            <ActionIcon
+              hiddenFrom="xs"
+              variant="default"
+              size="lg"
+              aria-label={t`How signals work`}
+              aria-expanded={howItWorks}
+              onClick={() => setHowItWorks((v) => !v)}
+            >
+              <IconHelpCircle size={18} />
+            </ActionIcon>
+            <ActionIcon
+              hiddenFrom="xs"
+              variant="default"
+              size="lg"
+              aria-label={t`Manage signals`}
+              onClick={() => setManage('titles')}
+            >
+              <IconAdjustmentsHorizontal size={18} />
+            </ActionIcon>
           </Group>
         }
       />
@@ -280,7 +302,7 @@ export function SignalsCard() {
                           <Text size="xs" c="var(--ink-3)">
                             <MetaList
                               inline
-                              items={[!dismissalEnded(item) && phrase(item.action), formatTime(item.occurredAtUtc)]}
+                              items={[phrase(item), formatTime(item.occurredAtUtc)]}
                             />
                           </Text>
                         </Group>
@@ -411,7 +433,7 @@ function ActionPill({ item }: { item: FeedbackActivity }) {
       case 'hide': return [t`Hidden`, 'var(--warn)']
       case 'dismiss': {
         const until = item.dismissedUntilUtc ? formatRecentDate(item.dismissedUntilUtc) : ''
-        if (dismissalEnded(item)) return [t`Dismissal ended ${until}`, 'var(--neutral)']
+        if (dismissalEnded(item)) return [t`Dismissed`, 'var(--neutral)']
         return [until ? t`Dismissed until ${until}` : t`Dismissed`, 'var(--warn)']
       }
       case 'mark-exposed': return [t`Seen elsewhere`, 'var(--info)']
@@ -459,8 +481,12 @@ function ShelfPhrase({ item }: { item: ShelfPadItem }) {
 /** The short "what it did" phrase beside an action's badge. */
 function usePhrase() {
   const { t } = useLingui()
-  return (action: string): string => {
-    switch (action) {
+  return (item: FeedbackActivity): string => {
+    if (dismissalEnded(item)) {
+      const until = formatRecentDate(item.dismissedUntilUtc!)
+      return t`back in recommendations since ${until}`
+    }
+    switch (item.action) {
       case 'like': return t`counts toward your taste`
       case 'dislike': return t`no longer steers your taste`
       case 'hide':

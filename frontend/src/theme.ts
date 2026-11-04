@@ -475,7 +475,8 @@ const themeBase: MantineThemeOverride = {
     // Menu and HoverCard render a Popover and inherit this.
     Popover: { defaultProps: (): Partial<PopoverProps> => ({ transitionProps: overlayTransition(DUR.base) }) },
     Tooltip: { defaultProps: (): Partial<TooltipProps> => ({ transitionProps: overlayTransition(DUR.fast) }) },
-    // Off Mantine's stock 200ms `ease` too: a height change and a sliding indicator are layout, so slow.
+    // Off Mantine's stock 200ms `ease` too. A height change is layout, so slow; the segmented
+    // indicator is clicked often enough that slow reads as lag.
     Collapse: {
       defaultProps: (): Partial<CollapseProps> => ({
         transitionDuration: pacedMs(DUR.slow),
@@ -484,7 +485,7 @@ const themeBase: MantineThemeOverride = {
     },
     SegmentedControl: {
       defaultProps: (): Partial<SegmentedControlProps> => ({
-        transitionDuration: pacedMs(DUR.slow),
+        transitionDuration: pacedMs(DUR.medium),
         transitionTimingFunction: EASE_CSS,
       }),
     },

@@ -862,6 +862,10 @@ msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters dow
 msgstr "{chaptersDownloaded, plural, other {다운로드한 챕터}}"
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "{chaptersHave}/{chaptersCounted} downloaded"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{chaptersLeft} at your paged pace, {basis}."
 msgstr "페이지 보기 속도로 {chaptersLeft}, {basis}."
@@ -2246,9 +2250,17 @@ msgid "{seriesAdded, plural, one {series added} other {series added}}"
 msgstr "{seriesAdded, plural, other {시리즈 추가됨}}"
 
 #: src/pages/reader/ReaderToolbar.tsx
+msgid "{seriesChapterCount, plural, one {{chaptersRead} read of # downloaded} other {{chaptersRead} read of # downloaded}}"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
-msgid "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
-msgstr "{seriesChapterCount, plural, other {{chaptersRead}/#챕터 읽음}}"
+#~ msgid "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
+#~ msgstr "{seriesChapterCount, plural, other {{chaptersRead}/#챕터 읽음}}"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "{seriesChapterCount, plural, one {read all # downloaded} other {read all # downloaded}}"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/TagManagerModal.tsx
@@ -3808,8 +3820,8 @@ msgstr "모두 선택 사항입니다. 이 도구가 없어도 Maki 자체 소�
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
-msgid "all read"
-msgstr "모두 읽음"
+#~ msgid "all read"
+#~ msgstr "모두 읽음"
 
 #: src/components/QueueActions.tsx
 #, fuzzy
@@ -4614,6 +4626,14 @@ msgstr "회피됨"
 #, fuzzy
 msgid "Back"
 msgstr "뒤로"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "back in recommendations since {until}"
+msgstr ""
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Back in recommendations since {until}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -5760,6 +5780,18 @@ msgstr "매번 가져올 챕터 수"
 #, fuzzy
 msgid "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
 msgstr "파일 품질이 이 중 하나인 챕터는 그대로 표시합니다. 디지털 권은 보통 이미 깔끔합니다."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters with no file on disk, leaving out files that were deleted on purpose."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters with Wanted switched on, downloaded or not."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Chapters you want that aren't on disk yet."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -7716,8 +7748,8 @@ msgstr "알림 닫기"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
-msgid "Dismissal ended {until}"
-msgstr ""
+#~ msgid "Dismissal ended {until}"
+#~ msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -12223,6 +12255,10 @@ msgstr "이미 읽었거나 본 것으로 표시했습니다. 취향 프로필�
 msgid "Marked ch. 1 to {to} watched"
 msgstr "1화부터 {to}화까지 시청 완료로 표시됨"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Marked wanted ({wantedFilterCount})"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Marked watched, not read. Doesn't count toward reading stats"
@@ -14696,6 +14732,7 @@ msgstr "알림 설정"
 msgid "Notification URLs"
 msgstr "알림 URL"
 
+#: src/components/CommandPalette.tsx
 #: src/components/NotificationBell.tsx
 #: src/components/settings/NotificationPrefsSection.tsx
 #: src/nav.ts
@@ -19500,6 +19537,10 @@ msgstr "시리즈 폴더 형식"
 msgid "Series has no root folder"
 msgstr "시리즈에 루트 폴더가 없습니다"
 
+#: src/pages/LibraryPage.tsx
+msgid "Series Maki keeps checking for new chapters."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Series moved"
@@ -20864,6 +20905,10 @@ msgstr "Suwayomi"
 #, fuzzy
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
 msgstr "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567, 확장, 확장 소스, 소스 추가"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -23812,8 +23857,8 @@ msgstr "원함"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Wanted ({wantedFilterCount})"
-msgstr "원함 ({wantedFilterCount})"
+#~ msgid "Wanted ({wantedFilterCount})"
+#~ msgstr "원함 ({wantedFilterCount})"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

@@ -474,7 +474,7 @@ export function SourceMappingsSection({
             <Table.Thead>
             <Table.Tr>
               <Table.Th><Trans>Source</Trans></Table.Th>
-              <Table.Th w={84}><Trans>Languages</Trans></Table.Th>
+              <Table.Th w={96}><Trans>Languages</Trans></Table.Th>
               <Table.Th w={84}><Trans>Priority</Trans></Table.Th>
               <Table.Th w={120}><Trans>Quality</Trans></Table.Th>
               {/* Icon-only: the label survives for assistive tech via VisuallyHidden. */}
@@ -482,7 +482,7 @@ export function SourceMappingsSection({
                 <VisuallyHidden><Trans>Enabled</Trans></VisuallyHidden>
                 <IconPower size={16} style={{ opacity: 0.7 }} aria-hidden />
               </Table.Th>
-              <Table.Th w={36}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
+              <Table.Th w={48}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
             </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -615,17 +615,20 @@ export function SourceMappingsSection({
                   </Tooltip>
                 </Table.Td>
                 <Table.Td>
-                  <ActionIcon
-                    variant="subtle"
-                    color="var(--danger)"
-                    onClick={() => {
-                      setRemoving(m)
-                      setDeleteFiles(false)
-                    }}
-                    aria-label={t`Remove mapping`}
-                  >
-                    <IconTrash size={16} />
-                  </ActionIcon>
+                  <Tooltip label={t`Remove mapping`} withArrow>
+                    <ActionIcon
+                      variant="subtle"
+                      color="var(--danger)"
+                      data-row-action="danger"
+                      onClick={() => {
+                        setRemoving(m)
+                        setDeleteFiles(false)
+                      }}
+                      aria-label={t`Remove mapping`}
+                    >
+                      <IconTrash size={19} />
+                    </ActionIcon>
+                  </Tooltip>
                 </Table.Td>
               </Table.Tr>
               )
@@ -1215,13 +1218,13 @@ function MappingLanguages({
         </Tooltip>
         <Popover.Target>
           <ActionIcon
-            size="xs"
             variant="subtle"
             color="var(--ink-3)"
+            data-row-action
             aria-label={t`Change chapter languages for ${sourceName}`}
             style={{ flexShrink: 0 }}
           >
-            <IconPencil size={12} />
+            <IconPencil size={18} />
           </ActionIcon>
         </Popover.Target>
       </Group>

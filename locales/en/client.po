@@ -718,6 +718,10 @@ msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters dow
 msgstr "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters downloaded}}"
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "{chaptersHave}/{chaptersCounted} downloaded"
+msgstr "{chaptersHave}/{chaptersCounted} downloaded"
+
+#: src/pages/SeriesDetailPage.tsx
 msgid "{chaptersLeft} at your paged pace, {basis}."
 msgstr "{chaptersLeft} at your paged pace, {basis}."
 
@@ -1844,8 +1848,16 @@ msgid "{seriesAdded, plural, one {series added} other {series added}}"
 msgstr "{seriesAdded, plural, one {series added} other {series added}}"
 
 #: src/pages/reader/ReaderToolbar.tsx
-msgid "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
-msgstr "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
+msgid "{seriesChapterCount, plural, one {{chaptersRead} read of # downloaded} other {{chaptersRead} read of # downloaded}}"
+msgstr "{seriesChapterCount, plural, one {{chaptersRead} read of # downloaded} other {{chaptersRead} read of # downloaded}}"
+
+#: src/pages/reader/ReaderToolbar.tsx
+#~ msgid "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
+#~ msgstr "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "{seriesChapterCount, plural, one {read all # downloaded} other {read all # downloaded}}"
+msgstr "{seriesChapterCount, plural, one {read all # downloaded} other {read all # downloaded}}"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/TagManagerModal.tsx
@@ -3129,8 +3141,8 @@ msgid "All optional. Maki downloads from its own sources without any of these. O
 msgstr "All optional. Maki downloads from its own sources without any of these. Open one to fill it in."
 
 #: src/pages/reader/ReaderToolbar.tsx
-msgid "all read"
-msgstr "all read"
+#~ msgid "all read"
+#~ msgstr "all read"
 
 #: src/components/QueueActions.tsx
 msgid "All reasons"
@@ -3789,6 +3801,14 @@ msgstr "Avoided"
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Back"
 msgstr "Back"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "back in recommendations since {until}"
+msgstr "back in recommendations since {until}"
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Back in recommendations since {until}"
+msgstr "Back in recommendations since {until}"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "back in the running"
@@ -4735,6 +4755,18 @@ msgstr "Chapters to fetch each time"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
 msgstr "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters with no file on disk, leaving out files that were deleted on purpose."
+msgstr "Chapters with no file on disk, leaving out files that were deleted on purpose."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters with Wanted switched on, downloaded or not."
+msgstr "Chapters with Wanted switched on, downloaded or not."
+
+#: src/pages/LibraryPage.tsx
+msgid "Chapters you want that aren't on disk yet."
+msgstr "Chapters you want that aren't on disk yet."
 
 #: src/components/CatalogueFilters.tsx
 msgid "Chapters, year, minimum rating"
@@ -6340,8 +6372,8 @@ msgstr "Dismiss notification"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
-msgid "Dismissal ended {until}"
-msgstr "Dismissal ended {until}"
+#~ msgid "Dismissal ended {until}"
+#~ msgstr "Dismissal ended {until}"
 
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Dismissed"
@@ -10034,6 +10066,10 @@ msgstr "Marked as already read or seen. Your taste profile was not changed."
 msgid "Marked ch. 1 to {to} watched"
 msgstr "Marked ch. 1 to {to} watched"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Marked wanted ({wantedFilterCount})"
+msgstr "Marked wanted ({wantedFilterCount})"
+
 #: src/components/series/ChapterTableRows.tsx
 msgid "Marked watched, not read. Doesn't count toward reading stats"
 msgstr "Marked watched, not read. Doesn't count toward reading stats"
@@ -12052,6 +12088,7 @@ msgstr "Notification settings"
 msgid "Notification URLs"
 msgstr "Notification URLs"
 
+#: src/components/CommandPalette.tsx
 #: src/components/NotificationBell.tsx
 #: src/components/settings/NotificationPrefsSection.tsx
 #: src/nav.ts
@@ -15999,6 +16036,10 @@ msgstr "Series folder format"
 msgid "Series has no root folder"
 msgstr "Series has no root folder"
 
+#: src/pages/LibraryPage.tsx
+msgid "Series Maki keeps checking for new chapters."
+msgstr "Series Maki keeps checking for new chapters."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Series moved"
 msgstr "Series moved"
@@ -17119,6 +17160,10 @@ msgstr "Suwayomi"
 #: src/pages/settings/registry.ts
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
 msgstr "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
+msgstr "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
 
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Switch reading direction"
@@ -19534,8 +19579,8 @@ msgid "Wanted"
 msgstr "Wanted"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "Wanted ({wantedFilterCount})"
-msgstr "Wanted ({wantedFilterCount})"
+#~ msgid "Wanted ({wantedFilterCount})"
+#~ msgstr "Wanted ({wantedFilterCount})"
 
 #: src/pages/HealthPage.tsx
 msgid "Wanted chapters may be downloaded again by existing automation."

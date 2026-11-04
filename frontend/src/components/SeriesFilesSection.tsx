@@ -27,7 +27,7 @@ import { useLabel } from '../i18n-context'
 import { isPdfFile } from '../lib/files'
 import { fileStatusVisual, statusToken } from './ui/status'
 import { StatusDot } from './ui/StatusDot'
-import { MonoValue } from './ui/MonoValue'
+import { MonoValue, splitForTruncation } from './ui/MonoValue'
 import { Panel } from './ui/Panel'
 import { useAuth } from '../auth/AuthProvider'
 import { LinkFileToChaptersModal } from './LinkFileToChaptersModal'
@@ -104,6 +104,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const unlinkedOnDisk = files?.filter((f) => f.onDisk && f.status !== 'linked').length ?? 0
   const missingCount = files?.filter((f) => f.status === 'missing').length ?? 0
   const fileCount = files?.length ?? 0
+  const fileNameTailCh = Math.max(0, ...(files ?? []).map((f) => splitForTruncation(f.fileName)[1].length))
   // When most of the folder is gone it is one problem, not twenty: one banner says so and the rows
   // stop repeating it in red.
   const mostlyMissing = missingCount >= 2 && missingCount >= fileCount * 0.8
@@ -333,7 +334,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             ) : (
                               <IconFileZip size={16} style={{ flexShrink: 0 }} />
                             )}
-                            <MonoValue value={f.fileName} full={f.relativePath} copy />
+                            <MonoValue value={f.fileName} full={f.relativePath} tailCh={fileNameTailCh} copy />
                           </Group>
                         </Table.Td>
                         <Table.Td className="files-cell-parsed">

@@ -1512,7 +1512,7 @@ function SeriesDetailBody() {
   const chapterFilterData = chapters
       ? [
         { value: 'all', label: t`All` },
-        { value: 'wanted', label: t`Wanted (${wantedFilterCount})` },
+        { value: 'wanted', label: t`Marked wanted (${wantedFilterCount})` },
         { value: 'missing', label: t`Missing (${missingFilterCount})` },
         { value: 'downloaded', label: t`Have (${downloadedFilterCount})` },
         ...(canFilterUnread
@@ -1529,6 +1529,24 @@ function SeriesDetailBody() {
             : []),
       ]
       : []
+  const { have: chaptersHave, total: chaptersCounted } = progress
+  const wantedColumnTip = t`Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way.`
+  const chapterFilterTips: Record<string, string> = {
+    wanted: t`Chapters with Wanted switched on, downloaded or not.`,
+    missing: t`Chapters with no file on disk, leaving out files that were deleted on purpose.`,
+  }
+  const chapterSegmentData = chapterFilterData.map((o) =>
+      chapterFilterTips[o.value]
+          ? {
+            value: o.value,
+            label: (
+                <Tooltip label={chapterFilterTips[o.value]} withArrow multiline maw={260}>
+                  <span>{o.label}</span>
+                </Tooltip>
+            ),
+          }
+          : o,
+  )
 
   const queueNext = (count: number) => {
     downloadNext.mutate(
@@ -2728,6 +2746,7 @@ function SeriesDetailBody() {
               <Group
                   className="series-detail-chapter-toolbar"
                   justify="space-between"
+                  align="baseline"
                   wrap="wrap"
                   gap="sm"
               >
@@ -2735,7 +2754,7 @@ function SeriesDetailBody() {
                   <Title order={2} size="h3"><Trans>Chapters</Trans></Title>
                   {chapters && (
                       <Text size="sm" c="var(--ink-3)" className="tnum">
-                        {progress.have}/{progress.total}
+                        <Trans>{chaptersHave}/{chaptersCounted} downloaded</Trans>
                       </Text>
                   )}
                   {chapters && readTracking && progress.have > 0 && (
@@ -2763,7 +2782,7 @@ function SeriesDetailBody() {
                               size="xs"
                               value={chapterFilter}
                               onChange={setChapterFilter}
-                              data={chapterFilterData}
+                              data={chapterSegmentData}
                           />
                       )}
                       <Tooltip label={chapterSort === 'asc' ? t`Oldest first` : t`Newest first`} withArrow>
@@ -3153,7 +3172,11 @@ function SeriesDetailBody() {
                         >
                           <Table.Thead>
                             <Table.Tr>
-                              <Table.Th w={CHAPTER_WANTED_COLUMN_WIDTH}><Trans>Wanted</Trans></Table.Th>
+                              <Table.Th w={CHAPTER_WANTED_COLUMN_WIDTH}>
+                                <Tooltip label={wantedColumnTip} withArrow multiline maw={280} events={TOOLTIP_EVENTS}>
+                                  <span className="column-hint" tabIndex={0}><Trans>Wanted</Trans></span>
+                                </Tooltip>
+                              </Table.Th>
                               <Table.Th w={chapterColumnWidths.chapter}>
                                 <Trans>Chapter</Trans>
                                 {!chapterRowsAsList && (

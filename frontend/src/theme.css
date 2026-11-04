@@ -15,7 +15,9 @@
   --ink: #dee2e6;
   --ink-2: #c7cad4;
   --ink-3: #b1b7c3;
-  --ink-4: #9098a8;
+  --ink-4: #9aa1b0;
+  /* The edge of a field or an off switch: 3:1 against the card it sits on, which --border is not. */
+  --border-control: color-mix(in srgb, var(--ink-4) 65%, transparent);
   --hairline: var(--border);
   --mantine-color-dimmed: var(--ink-3);
   --rating: #f5c518;
@@ -99,7 +101,7 @@
   --type-body: 0.9375rem;
   --type-meta: 0.8125rem;
   /* The floor for anything read, badges included. */
-  --type-micro: 0.75rem;
+  --type-micro: 0.78125rem;
   --type-label: 0.8125rem;
   --type-badge: 0.75rem;
 
@@ -141,6 +143,13 @@
   --dur-medium: 0.18s;
   --dur-slow: 0.35s;
   /* Mirrored in lib/motion.ts for script and Mantine's overlays; change both together. */
+  /* One period for every pulse and loading sweep, so two on screen keep time. */
+  --dur-loop: 1.6s;
+  /* One-shot cues: a row that just resolved, a settings card a link pointed at, the reader's
+     chapter banner (ChapterBanner.tsx holds it for the same time). */
+  --dur-flash: 0.9s;
+  --dur-highlight: 1.8s;
+  --dur-banner: 2.4s;
 
   --font-display: 'Bricolage Grotesque Variable', 'Onest Variable', ui-sans-serif, -apple-system,
     'Segoe UI', Roboto, sans-serif;
@@ -293,9 +302,12 @@
   --mantine-color-disabled-color: var(--ink-4);
 }
 /* That fill is --surface, the card colour, so inside a card a disabled button lost its shape and
-   read as a label. A dashed edge keeps it a control without passing for an enabled one. */
+   read as a label. A flat grey slab with no edge keeps its shape but reads as off; a dashed edge
+   here looked like an empty slot. Translucent so it shows on any card or modal. */
 .mantine-Button-root:is(:disabled, [data-disabled]):not([data-loading], [data-variant='subtle'], [data-variant='transparent']) {
-  border: 1px dashed var(--border-strong);
+  border-color: transparent;
+  background: color-mix(in srgb, var(--ink-4) 16%, transparent);
+  box-shadow: none;
 }
 :root[data-accent='plum'] {
   --brand: #b84cbc;
@@ -324,7 +336,7 @@
   --ink: #e3e1dc;
   --ink-2: #c6c4bf;
   --ink-3: #b0aea9;
-  --ink-4: #8d8b86;
+  --ink-4: #9a9893;
   --neutral: #a3a19c;
 }
 :root[data-ground='moss'] {
@@ -406,6 +418,7 @@
   --ink-2: #3d4454;
   --ink-3: #454c5d;
   --ink-4: #606879;
+  --border-control: color-mix(in srgb, var(--ink-4) 75%, transparent);
   --brand-fg: #4553e6;
   --brand-fg-on-art: #b8c1ff;
   --ok: #237b36;
@@ -595,9 +608,18 @@ body {
   ) {
   background-color: var(--surface);
 }
-/* Unchecked Switch track: box-shadow instead of border so the thumb doesn't shift on toggle, and it still applies to an uncontrolled switch with no `data-checked`. */
-[data-mantine-color-scheme='dark'] .mantine-Switch-input:not(:checked) + .mantine-Switch-track {
-  box-shadow: inset 0 0 0 1px var(--border-strong);
+/* A field's background is the card's, so its border is all that shows where it is. Error and
+   success keep Mantine's colours, and focus still takes the accent. */
+:root[data-mantine-color-scheme] .mantine-Input-wrapper[data-variant='default']:not([data-error]):not([data-success]) {
+  --input-bd: var(--border-control);
+}
+/* Off: a grey knob in a faint track with an edge, so it can't pass for on (the accent track with a
+   white knob). Box-shadow instead of border so the thumb doesn't shift on toggle, and it still
+   applies to an uncontrolled switch with no `data-checked`. */
+.mantine-Switch-input:not(:checked, :disabled, [data-disabled]) + .mantine-Switch-track {
+  --switch-bg: color-mix(in srgb, var(--ink-4) 12%, transparent);
+  --switch-thumb-bg: var(--ink-4);
+  box-shadow: inset 0 0 0 1px var(--border-control);
 }
 /* Switch and Checkbox animate in their own stylesheet at 100 to 150ms on the stock `ease`; put them
    on the house curve and scale like everything else. Collapse, SegmentedControl and the toasts take
@@ -796,7 +818,7 @@ body {
     radial-gradient(circle closest-side, currentColor 90%, transparent) 0 100% / 0.28em 0.28em no-repeat,
     radial-gradient(circle closest-side, currentColor 90%, transparent) 0.36em 100% / 0.28em 0.28em no-repeat,
     radial-gradient(circle closest-side, currentColor 90%, transparent) 0.72em 100% / 0.28em 0.28em no-repeat;
-  animation: pending-dots 1.05s var(--ease-loop) infinite;
+  animation: pending-dots var(--dur-loop) var(--ease-loop) infinite;
 }
 .pending-label {
   display: inline-grid;
@@ -887,12 +909,15 @@ body {
   animation-timing-function: var(--ease);
 }
 /* "Faster animations" under Settings > Appearance: every token at FAST_PACE (0.55) in
-   lib/motionPrefs.ts, which scales the script's motion to match. */
+   lib/motionPrefs.ts, which scales the script's motion to match. The loop period and the chapter
+   banner keep theirs: a faster pulse reads as alarm, not speed, and the banner is reading time. */
 :root[data-motion='fast'] {
   --dur-fast: 0.066s;
   --dur-base: 0.083s;
   --dur-medium: 0.099s;
   --dur-slow: 0.193s;
+  --dur-flash: 0.495s;
+  --dur-highlight: 0.99s;
 }
 /* Laid out for real while a page transition captures the new page (settleLayout in
    lib/pageTransition.ts); their guessed heights otherwise shift everything below them afterwards. */
@@ -1067,8 +1092,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   translate: -8px 0;
   visibility: hidden;
   transition:
-    opacity var(--dur-fast) ease-in,
-    translate var(--dur-fast) ease-in,
+    opacity var(--dur-fast) var(--ease),
+    translate var(--dur-fast) var(--ease),
     visibility 0s var(--dur-fast);
 }
 .app-header-link {
@@ -1096,6 +1121,12 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--ink-hi);
 }
 .app-header-link[data-active='true'] svg {
+  color: var(--brand-fg);
+}
+/* The active nav item's tint, on the bell, while /notifications is open. */
+.notification-bell[data-active],
+.notification-bell[data-active]:hover {
+  background-color: color-mix(in srgb, var(--brand) 13%, transparent);
   color: var(--brand-fg);
 }
 .app-header-search .command-palette-trigger {
@@ -1546,7 +1577,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 
 .settings-flash {
   border-radius: var(--mantine-radius-md);
-  animation: settings-flash 1.8s var(--ease);
+  animation: settings-flash var(--dur-highlight) var(--ease);
 }
 @keyframes settings-flash {
   0%,
@@ -2267,7 +2298,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   overflow-y: hidden;
   margin: -6px -6px -12px;
   padding: 6px 6px 20px;
-  scroll-padding-inline: 30px;
+  scroll-padding-inline: 30px calc(clamp(56px, 12vw, 104px) + 8px);
   scrollbar-width: thin;
   scrollbar-color: transparent transparent;
   content-visibility: auto;
@@ -2296,8 +2327,10 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   --rail-fade-start: 48px;
   --rail-edge-start: 6px;
 }
+/* The end fade is longer and eased, and clears fully a little before the edge: a short linear one
+   left the last card readable to its cut, which looked clipped rather than continued. */
 .discover-rail[data-fade-end] {
-  --rail-fade-end: 48px;
+  --rail-fade-end: clamp(56px, 12vw, 104px);
   --rail-edge-end: 6px;
 }
 .discover-rail[data-fade-start],
@@ -2307,14 +2340,16 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     transparent var(--rail-edge-start, 0px),
     #000 calc(var(--rail-edge-start, 0px) + var(--rail-fade-start)),
     #000 calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end)),
-    transparent calc(100% - var(--rail-edge-end, 0px))
+    rgb(0 0 0 / 0.4) calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end) * 0.45),
+    transparent calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end) * 0.1)
   );
   mask-image: linear-gradient(
     to right,
     transparent var(--rail-edge-start, 0px),
     #000 calc(var(--rail-edge-start, 0px) + var(--rail-fade-start)),
     #000 calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end)),
-    transparent calc(100% - var(--rail-edge-end, 0px))
+    rgb(0 0 0 / 0.4) calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end) * 0.45),
+    transparent calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end) * 0.1)
   );
 }
 .discover-card:has(.discover-card-action:focus-visible) {
@@ -2433,7 +2468,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: color-mix(in srgb, var(--surface-hover) 45%, transparent);
 }
 .reading-weeks-day[data-empty] {
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink-3) 45%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink-3) 60%, transparent);
 }
 .reading-weeks-day[data-today] {
   box-shadow: inset 0 0 0 1.5px var(--brand-fg);
@@ -6400,7 +6435,7 @@ tr:is(:hover, :focus-within) [data-row-action]:not(:disabled, [data-disabled]),
 /* The chapter and file rows' icon buttons take a 32px target around a 19px glyph; at Mantine's
    28px default they sat 30px apart and were easy to miss. A button given its own size keeps it,
    since that sets the variable inline. */
-:is(.chapter-table, .series-files-table) td .mantine-ActionIcon-root {
+:is(.chapter-table, .series-files-table, .sources-table) td .mantine-ActionIcon-root {
   --ai-size: 32px;
 }
 
@@ -6911,7 +6946,7 @@ body.column-resizing * {
   border-radius: 50%;
   background: var(--ok);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--ok) 40%, transparent);
-  animation: pulse 1.8s var(--ease-loop) infinite;
+  animation: pulse var(--dur-loop) var(--ease-loop) infinite;
 }
 @keyframes pulse {
   0% {
@@ -7033,6 +7068,24 @@ body.column-resizing * {
   .stats-rank-row > :last-child {
     margin-inline-start: auto;
   }
+  /* Mid-way: the count goes under the meter, so the title gets the row's full width. */
+  .stats-row.stats-row-midway {
+    grid-template-columns: auto minmax(0, 1fr);
+    row-gap: 4px;
+  }
+  .stats-row-midway > .stats-thumb {
+    grid-row: span 2;
+  }
+  .stats-row-midway > .stats-row-value {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 8px;
+    text-align: start;
+  }
+  .stats-row-midway > .stats-row-value small {
+    display: inline;
+  }
   .stats-thumb-lg {
     width: 34px;
     height: 48px;
@@ -7123,15 +7176,49 @@ body.column-resizing * {
   flex: 1 1 auto;
   min-width: 0;
 }
+/* Content scrolls under the pinned bar. A short fade below its rule makes that read as intended
+   rather than as a heading cut in half. On a phone only the bar is pinned, so it carries the fade. */
+.stats-rail::after,
+.stats-rail-bar::after,
+.series-detail-chapter-head[data-sticky]::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 1px);
+  height: 14px;
+  background: linear-gradient(var(--app-bg), transparent);
+  pointer-events: none;
+}
+.stats-rail-bar::after {
+  display: none;
+}
+/* At rest the chapter table sits 8px under the toolbar, so the fade must not reach it. */
+.series-detail-chapter-head[data-sticky]::after {
+  top: 100%;
+  height: 8px;
+}
+@media (max-width: 36em) {
+  .stats-rail::after {
+    display: none;
+  }
+  .stats-rail-bar::after {
+    display: block;
+  }
+}
 .stats-rail-links {
   /* The links' offset parent, so StatsRail measures a link against the strip's own scroll. */
   position: relative;
   display: flex;
   flex: 1 1 auto;
-  gap: 24px;
+  gap: 32px;
   min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
+}
+@media (max-width: 47.9375em) {
+  .stats-rail-links {
+    gap: 24px;
+  }
 }
 /* A phone pins only the links. The rail stops being a box, so the bar is pinned against the page
    and the window picker under it scrolls away with the content. */
@@ -7195,13 +7282,13 @@ body.column-resizing * {
   padding: 11px 0;
   border-bottom: 2px solid transparent;
   color: var(--ink-3);
-  font-size: var(--type-meta);
+  font-size: var(--type-body);
   font-weight: var(--fw-semibold);
   white-space: nowrap;
   transition: color var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease);
 }
 .stats-rail-link:hover {
-  color: var(--ink);
+  color: var(--ink-2);
 }
 .stats-rail-link.is-active {
   border-bottom-color: var(--brand);
@@ -7348,6 +7435,12 @@ body.column-resizing * {
   align-items: center;
   padding: 8px 0;
   border-top: 1px solid var(--hairline);
+}
+/* Mid-way rows share one value width, so their meters end in one column. */
+@media (min-width: 48em) {
+  .stats-row-midway > .stats-row-value {
+    min-width: 11.5rem;
+  }
 }
 .stats-row:first-child {
   padding-top: 0;
@@ -7955,7 +8048,7 @@ body.reader-open {
   max-width: 92vw;
   border-radius: var(--mantine-radius-xs);
   background: rgba(255, 255, 255, 0.05);
-  animation: reader-page-pulse 1.6s var(--ease-loop) infinite;
+  animation: reader-page-pulse var(--dur-loop) var(--ease-loop) infinite;
 }
 @keyframes reader-page-pulse {
   50% {
@@ -8165,7 +8258,7 @@ body.reader-open {
   background: rgba(255, 255, 255, 0.38);
 }
 .reader-scrub-segment[data-upscaling] {
-  animation: reader-scrub-upscaling 1.2s var(--ease-loop) infinite alternate;
+  animation: reader-scrub-upscaling calc(var(--dur-loop) / 2) var(--ease-loop) infinite alternate;
 }
 @keyframes reader-scrub-upscaling {
   to {
@@ -8310,7 +8403,7 @@ body.reader-open {
 /* Held still first, then faded, ending with HINT_LINGER_MS in ContinuousView. */
 .reader-next-chapter-hint[data-leaving] {
   opacity: 0;
-  transition-delay: 420ms;
+  transition-delay: calc(0.6s - var(--dur-medium));
 }
 .reader-ring {
   position: relative;
@@ -8397,11 +8490,11 @@ body.reader-open {
 .reader-enhance-status[data-phase='queued'] .reader-enhance-status-fill,
 .reader-enhance-status[data-phase='working'] .reader-enhance-status-fill {
   width: 35%;
-  animation: reader-enhance-sweep 1.4s var(--ease-loop) infinite;
+  animation: reader-enhance-sweep var(--dur-loop) var(--ease-loop) infinite;
 }
 .reader-enhance-status[data-phase='queued'] .reader-enhance-status-fill {
   opacity: 0.45;
-  animation-duration: 2.4s;
+  animation-duration: calc(var(--dur-loop) * 1.5);
 }
 .reader-enhance-status[data-phase='loading'] .reader-enhance-status-fill {
   width: 85%;
@@ -8443,11 +8536,11 @@ body.reader-open {
 .reader-enhance-line[data-phase='queued'] .reader-enhance-line-fill,
 .reader-enhance-line[data-phase='working'] .reader-enhance-line-fill {
   width: 25%;
-  animation: reader-enhance-line-sweep 1.8s var(--ease-loop) infinite;
+  animation: reader-enhance-line-sweep var(--dur-loop) var(--ease-loop) infinite;
 }
 .reader-enhance-line[data-phase='queued'] .reader-enhance-line-fill {
   opacity: 0.4;
-  animation-duration: 3s;
+  animation-duration: calc(var(--dur-loop) * 1.5);
 }
 .reader-enhance-line[data-phase='loading'] .reader-enhance-line-fill {
   width: 85%;
@@ -8980,7 +9073,7 @@ body.reader-open {
   position: absolute;
   top: calc(56px + var(--safe-top) + 12px);
   z-index: 3;
-  animation: reader-chapter-banner 2400ms var(--ease) both;
+  animation: reader-chapter-banner var(--dur-banner) var(--ease) both;
 }
 
 /* End of chapter. The cover, blurred far past recognition, is the only colour on the screen: the
@@ -9255,6 +9348,40 @@ body.reader-open {
     animation: none !important;
     opacity: 1;
     transform: none;
+  }
+  /* Busy indicators get a still form rather than whatever frame the global rule freezes on: the
+     button dots rest as an ellipsis, sweeps fill their track dimmed, the spinner turns dotted. */
+  .mantine-Button-root[data-loading] .mantine-Button-label:not(:has(.pending-label))::after,
+  .mantine-Button-root[data-loading] .pending-label-busy::after,
+  .pulse-dot,
+  .reader-scrub-segment[data-upscaling],
+  .reader-enhance-status-fill,
+  .reader-enhance-line-fill,
+  .reader-compare-button[data-busy]::after,
+  .preview-chapter-button[data-indeterminate]::before {
+    animation: none !important;
+  }
+  .reader-scrub-segment[data-upscaling] {
+    background: rgba(255, 255, 255, 0.27);
+  }
+  .reader-enhance-status[data-phase='working'] .reader-enhance-status-fill,
+  .reader-enhance-line[data-phase='working'] .reader-enhance-line-fill,
+  .preview-chapter-button[data-indeterminate]::before {
+    opacity: 0.6;
+  }
+  .reader-enhance-status[data-phase='queued'] .reader-enhance-status-fill,
+  .reader-enhance-status[data-phase='working'] .reader-enhance-status-fill,
+  .reader-enhance-line[data-phase='queued'] .reader-enhance-line-fill,
+  .reader-enhance-line[data-phase='working'] .reader-enhance-line-fill,
+  .preview-chapter-button[data-indeterminate]::before {
+    width: 100%;
+  }
+  .reader-compare-button[data-busy]::after {
+    border-style: dotted;
+    border-color: var(--brand);
+  }
+  .reader-compare[data-phase='queued'] .reader-compare-button[data-busy]::after {
+    border-color: color-mix(in srgb, var(--brand) 45%, transparent);
   }
 }
 
@@ -9835,7 +9962,7 @@ body.reader-open {
 /* Found. A single ring pulse, then it sits there wearing its "Found" badge until the real row
    arrives. Modelled on .settings-flash: brief, one shot, no lingering highlight. */
 .source-row-found > td {
-  animation: source-row-found 900ms var(--ease) 1;
+  animation: source-row-found var(--dur-flash) var(--ease) 1;
 }
 @keyframes source-row-found {
   0% {
@@ -9850,7 +9977,7 @@ body.reader-open {
    dropped on animationend - a <tr> cannot animate its own height, so the rows below close the gap
    in one step once this is invisible. */
 .source-row-leaving > td {
-  animation: source-row-leaving var(--dur-slow) ease-in 1s forwards 1;
+  animation: source-row-leaving var(--dur-slow) var(--ease) 1s forwards 1;
 }
 @keyframes source-row-leaving {
   0% {
@@ -10022,10 +10149,10 @@ tr:hover .mono-value-copy {
 .sources-table td {
   padding-inline: 8px;
 }
-/* The panel-table header size, so translated labels fit the fixed columns. */
+/* Translated labels that outgrow the fixed columns end in an ellipsis rather than wrapping. */
 .sources-table thead th {
   overflow: hidden;
-  font-size: var(--type-micro);
+  font-size: var(--type-label);
   font-weight: var(--fw-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -10033,6 +10160,7 @@ tr:hover .mono-value-copy {
 
 .figure-strip {
   display: grid;
+  container: figure-strip / inline-size;
   grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
   margin-bottom: var(--mantine-spacing-lg);
   overflow: hidden;
@@ -10045,6 +10173,13 @@ tr:hover .mono-value-copy {
   border: 0;
   border-radius: 0;
   background: transparent;
+}
+/* Under three 8.5rem tracks the strip is two columns, so an odd last figure takes the whole row
+   instead of leaving an empty cell beside it. */
+@container figure-strip (width < 25.5rem) {
+  .figure-strip:not(.import-plan-figures) > .figure-strip-item:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
 }
 /* Hairlines drawn as shadows up and to the left of every cell. The ones on the first row and
    column fall on the strip's own edge and are clipped, so a wrapped row never starts with a rule. */
@@ -10128,7 +10263,7 @@ tr:hover .mono-value-copy {
   background: var(--dot);
 }
 .status-dot[data-live]::before {
-  animation: status-dot-pulse 1.6s var(--ease-loop) infinite;
+  animation: status-dot-pulse var(--dur-loop) var(--ease-loop) infinite;
 }
 @keyframes status-dot-pulse {
   0% {
@@ -11156,6 +11291,19 @@ button.import-plan-folder-head:hover {
 .series-detail-chapter-table thead th {
   background: color-mix(in srgb, var(--surface-2) 46%, transparent);
 }
+/* A label with a plain-words tooltip: a column header or a figure that names something internal. */
+.column-hint {
+  justify-self: start;
+  text-decoration: underline dotted;
+  text-decoration-color: var(--ink-4);
+  text-underline-offset: 3px;
+  cursor: help;
+}
+.column-hint:focus-visible {
+  outline: 2px solid var(--mantine-primary-color-filled);
+  outline-offset: 2px;
+  border-radius: var(--radius-2xs);
+}
 .series-detail-files .file-table,
 .series-detail-source-panel .source-table,
 .series-detail-overview .scrobble-table {
@@ -11982,15 +12130,49 @@ button.import-plan-folder-head:hover {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+/* Equal columns, the state under the name: six across on a wide screen, three or two below, so a
+   free wrap never leaves one tracker alone on a second line. */
 .scrobble-connections {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   margin-top: var(--mantine-spacing-xs);
 }
+@media (min-width: 80em) {
+  .scrobble-connections {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
 .scrobble-connection {
-  gap: 6px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'icon name dot'
+    'state state state';
+  align-items: center;
+  justify-items: start;
+  gap: 2px 6px;
+  padding-block: 7px;
+  text-align: start;
+  white-space: normal;
+}
+.scrobble-connection > :first-child {
+  grid-area: icon;
+}
+.scrobble-connection > :nth-child(2) {
+  grid-area: name;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.scrobble-connection > .scrobble-connection-dot {
+  grid-area: dot;
+}
+.scrobble-connection > .scrobble-connection-state {
+  grid-area: state;
+  font-size: var(--type-label);
 }
 .scrobble-connection-dot {
   width: 7px;
@@ -12009,42 +12191,10 @@ button.import-plan-folder-head:hover {
     min-height: 44px;
   }
 }
-/* Six trackers stacked one per row took two phone screens before the review list. Two columns, the
-   state under the name, keep them to three short rows. */
+/* Six trackers stacked one per row took two phone screens before the review list. */
 @media (max-width: 30em) {
   .scrobble-connections {
-    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .scrobble-connection {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas:
-      'icon name dot'
-      'state state state';
-    align-items: center;
-    justify-items: start;
-    gap: 2px 6px;
-    padding-block: 7px;
-    text-align: start;
-    white-space: normal;
-  }
-  .scrobble-connection > :first-child {
-    grid-area: icon;
-  }
-  .scrobble-connection > :nth-child(2) {
-    grid-area: name;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .scrobble-connection > .scrobble-connection-dot {
-    grid-area: dot;
-  }
-  .scrobble-connection > .scrobble-connection-state {
-    grid-area: state;
-    font-size: var(--type-label);
   }
 }
 .scrobble-log {
@@ -12829,7 +12979,7 @@ button.import-plan-folder-head:hover {
 }
 .preview-chapter-button[data-indeterminate]::before {
   width: 40%;
-  animation: preview-chapter-sweep 1.4s var(--ease-loop) infinite;
+  animation: preview-chapter-sweep var(--dur-loop) var(--ease-loop) infinite;
 }
 .preview-chapter-button[data-working] .mantine-Button-inner {
   position: relative;

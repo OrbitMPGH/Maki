@@ -28,6 +28,13 @@ export const Default: Story = {
 export const Pausing: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
+    await body.findByRole('button', { name: 'Close Rewind' })
+    // Under reduced motion (as the test runner emulates) slides never advance on their own, so
+    // there is nothing to pause.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      await expect(body.queryByRole('button', { name: /Pause Rewind|Resume Rewind/ })).toBeNull()
+      return
+    }
     const pause = await body.findByRole('button', { name: 'Pause Rewind' })
     await userEvent.click(pause)
     await waitFor(() => expect(body.getByRole('button', { name: 'Resume Rewind' })).toHaveAttribute('aria-pressed', 'true'))

@@ -862,6 +862,10 @@ msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters dow
 msgstr "{chaptersDownloaded, plural, other {已下载章节}}"
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "{chaptersHave}/{chaptersCounted} downloaded"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{chaptersLeft} at your paged pace, {basis}."
 msgstr "按你翻页阅读的速度，还剩 {chaptersLeft}，{basis}。"
@@ -2246,9 +2250,17 @@ msgid "{seriesAdded, plural, one {series added} other {series added}}"
 msgstr "{seriesAdded, plural, other {已添加系列}}"
 
 #: src/pages/reader/ReaderToolbar.tsx
+msgid "{seriesChapterCount, plural, one {{chaptersRead} read of # downloaded} other {{chaptersRead} read of # downloaded}}"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
-msgid "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
-msgstr "{seriesChapterCount, plural, other {已读 {chaptersRead}/# 个章节}}"
+#~ msgid "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
+#~ msgstr "{seriesChapterCount, plural, other {已读 {chaptersRead}/# 个章节}}"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "{seriesChapterCount, plural, one {read all # downloaded} other {read all # downloaded}}"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/TagManagerModal.tsx
@@ -3808,8 +3820,8 @@ msgstr "全部为可选项。即使不配置这些，Maki 也能通过自带来�
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
-msgid "all read"
-msgstr "全部已读"
+#~ msgid "all read"
+#~ msgstr "全部已读"
 
 #: src/components/QueueActions.tsx
 #, fuzzy
@@ -4614,6 +4626,14 @@ msgstr "已避开"
 #, fuzzy
 msgid "Back"
 msgstr "返回"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "back in recommendations since {until}"
+msgstr ""
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Back in recommendations since {until}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -5760,6 +5780,18 @@ msgstr "每次获取的章节数"
 #, fuzzy
 msgid "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
 msgstr "文件具有这些质量之一的章节将保持原样显示。数字版卷通常已经很干净。"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters with no file on disk, leaving out files that were deleted on purpose."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters with Wanted switched on, downloaded or not."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Chapters you want that aren't on disk yet."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -7716,8 +7748,8 @@ msgstr "忽略通知"
 
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
-msgid "Dismissal ended {until}"
-msgstr ""
+#~ msgid "Dismissal ended {until}"
+#~ msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -12223,6 +12255,10 @@ msgstr "已标记为已读或看过。你的品味资料没有改变。"
 msgid "Marked ch. 1 to {to} watched"
 msgstr "已将第 1 到 {to} 章标记为已看过"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Marked wanted ({wantedFilterCount})"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Marked watched, not read. Doesn't count toward reading stats"
@@ -14696,6 +14732,7 @@ msgstr "通知设置"
 msgid "Notification URLs"
 msgstr "通知 URL"
 
+#: src/components/CommandPalette.tsx
 #: src/components/NotificationBell.tsx
 #: src/components/settings/NotificationPrefsSection.tsx
 #: src/nav.ts
@@ -19500,6 +19537,10 @@ msgstr "系列文件夹格式"
 msgid "Series has no root folder"
 msgstr "系列没有根文件夹"
 
+#: src/pages/LibraryPage.tsx
+msgid "Series Maki keeps checking for new chapters."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Series moved"
@@ -20864,6 +20905,10 @@ msgstr "Suwayomi"
 #, fuzzy
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
 msgstr "suwayomi, tachidesk, mihon, tachiyomi, 扩展, 扩展来源, 更多来源, graphql, 4567"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -23812,8 +23857,8 @@ msgstr "想要"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Wanted ({wantedFilterCount})"
-msgstr "想要（{wantedFilterCount}）"
+#~ msgid "Wanted ({wantedFilterCount})"
+#~ msgstr "想要（{wantedFilterCount}）"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

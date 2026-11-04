@@ -4,6 +4,7 @@ import { Notifications } from '@mantine/notifications'
 import { notifications } from './lib/toast'
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { unstable_HistoryRouter as HistoryRouter } from 'react-router-dom'
+import { MotionConfig } from 'motion/react'
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 // Bundled rather than linked from a font CDN: a self-hosted instance may have no internet, and
@@ -157,7 +158,10 @@ createRoot(document.getElementById('root')!).render(
         <QueryClientProvider client={queryClient}>
           <HistoryRouter history={appHistory}>
             <PageTransitionCommit />
-            <App />
+            {/* Every motion/react animation follows the OS reduced-motion setting, opted in or not. */}
+            <MotionConfig reducedMotion="user">
+              <App />
+            </MotionConfig>
           </HistoryRouter>
         </QueryClientProvider>
       </AppThemeProvider>

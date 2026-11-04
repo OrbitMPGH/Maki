@@ -1539,9 +1539,9 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             className="library-index-metrics"
             figures={archivedScope ? archivedFigures : [
               { label: t`Series`, value: stats.total },
-              { label: t`Monitored`, value: stats.monitored },
+              { label: t`Monitored`, value: stats.monitored, tip: t`Series Maki keeps checking for new chapters.` },
               { label: t`On disk`, value: stats.downloaded, tone: 'ok' },
-              { label: t`Missing`, value: stats.missing, tone: 'warn' },
+              { label: t`Missing`, value: stats.missing, tone: 'warn', tip: t`Chapters you want that aren't on disk yet.` },
               ...(stats.inQueue > 0 ? [{ label: t`In queue`, value: stats.inQueue, tone: 'info' as const }] : []),
             ]}
           />

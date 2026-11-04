@@ -20,11 +20,11 @@ import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
 import { useLabel } from '../../i18n-context'
 import { formatFixedDecimal } from '../../format'
 import { onRovingKeyDown } from '../../lib/rovingFocus'
-import { CINEMATIC, EASE, paced } from '../../lib/motion'
+import { CINEMATIC, DWELL, EASE, paced } from '../../lib/motion'
 import { MetaList } from '../ui/MetaList'
 
 /** How long one pick holds the band before the next takes it. */
-const ROTATE_MS = 5000
+const ROTATE_MS = DWELL.heroPick * 1000
 
 /**
  * How many picks the list carries. The list is the tallest thing in the band, so this number is
@@ -318,7 +318,7 @@ export function DiscoverHero({
                   <Tooltip key={r.source} label={r.source} withArrow>
                     <Badge
                       size="sm"
-                      variant="outline"
+                      variant="light"
                       color="var(--neutral)"
                       leftSection={
                         <MetadataSiteIcon

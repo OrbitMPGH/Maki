@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Skeleton } from '@mantine/core'
+import { Skeleton, Tooltip } from '@mantine/core'
 import { formatNumber, formatSignedPercent } from '../../format'
 
 export interface Figure {
@@ -14,6 +14,8 @@ export interface Figure {
   delta?: number
   /** A dimmed line under the label, for a related count the figure does not headline. */
   hint?: ReactNode
+  /** What the label means, in plain words, as a tooltip on the label. */
+  tip?: string
 }
 
 /**
@@ -78,7 +80,15 @@ export function FigureStrip({
             ) : (
               n
             )}
-            <span className="figure-strip-l">{f.label}</span>
+            {f.tip ? (
+              <Tooltip label={f.tip} withArrow multiline maw={260} events={{ hover: true, focus: true, touch: true }}>
+                <span className="figure-strip-l column-hint" tabIndex={0}>
+                  {f.label}
+                </span>
+              </Tooltip>
+            ) : (
+              <span className="figure-strip-l">{f.label}</span>
+            )}
             {f.hint && !loading && <span className="figure-strip-hint">{f.hint}</span>}
           </div>
         )

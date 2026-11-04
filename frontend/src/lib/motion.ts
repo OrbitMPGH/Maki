@@ -13,15 +13,23 @@ export const EASE_CSS = 'cubic-bezier(0.16, 1, 0.3, 1)'
 
 /** `--ease-loop`, the symmetric curve for anything that repeats (pulses, sweeps). Spinners stay linear. */
 export const EASE_LOOP = [0.45, 0, 0.55, 1] as const
+/** `--ease-loop` as a CSS timing function, also for a blend that must not snap (the cover tint). */
+export const EASE_LOOP_CSS = 'cubic-bezier(0.45, 0, 0.55, 1)'
 
 /** `--dur-*`, in seconds. */
 export const DUR = { fast: 0.12, base: 0.15, medium: 0.18, slow: 0.35 } as const
+
+/** Page changes (lib/pageTransition.ts): the new page's rise, and a cover flying into the poster. */
+export const PAGE = { rise: 0.25, coverFlight: 0.44 } as const
 
 /**
  * Rewind and the Discover hero stage a slide or a backdrop rather than answer a click, so they run
  * longer than the UI scale. They still take the house curve.
  */
 export const CINEMATIC = { enter: 0.4, fade: 0.55, backdrop: 0.9, countUp: 1.6 } as const
+
+/** How long a Rewind slide and a Discover hero pick stay up, in seconds. Reading time, so never paced. */
+export const DWELL = { rewindSlide: 6, heroPick: 5 } as const
 
 /** A duration in seconds at the current pace: shorter under "Faster animations". */
 export const paced = (seconds: number) => seconds * motionPace()

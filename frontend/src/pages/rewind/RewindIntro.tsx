@@ -3,12 +3,12 @@ import { createPortal } from 'react-dom'
 import { ActionIcon } from '@mantine/core'
 import { IconPlayerPauseFilled, IconPlayerPlayFilled, IconX } from '../../lib/icons'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { CINEMATIC, EASE, paced } from '../../lib/motion'
+import { CINEMATIC, DWELL, EASE, EASE_LOOP, paced } from '../../lib/motion'
 import { useLingui } from '@lingui/react/macro'
 import type { ActivityStats } from '../../api/hooks'
 import { buildSlides } from './slides'
 
-const SLIDE_MS = 6000
+const SLIDE_MS = DWELL.rewindSlide * 1000
 
 /**
  * Fullscreen story-style overlay (Spotify-Wrapped feel): segmented progress bar,
@@ -49,14 +49,15 @@ export function RewindIntro({
     elapsed.current = 0
   }, [index])
   useEffect(() => {
-    if (isLast || paused) return
+    // Under reduced motion nothing moves on its own: the reader taps or presses through.
+    if (isLast || paused || reduced) return
     const started = performance.now()
     const timer = setTimeout(next, Math.max(0, SLIDE_MS - elapsed.current))
     return () => {
       clearTimeout(timer)
       elapsed.current += performance.now() - started
     }
-  }, [index, isLast, next, paused])
+  }, [index, isLast, next, paused, reduced])
 
   // Focus moves into the overlay while it is open and goes back to the Play button afterwards.
   useEffect(() => {
@@ -144,7 +145,7 @@ export function RewindIntro({
                 className="rewind-mosaic"
                 initial={reduced ? false : { y: 0 }}
                 animate={reduced ? undefined : { y: -120 }}
-                transition={{ duration: SLIDE_MS / 1000 + 2, ease: 'linear' }}
+                transition={{ duration: DWELL.rewindSlide + 2, ease: EASE_LOOP }}
               >
                 {Array.from({ length: 54 }, (_, i) => (
                   <img key={i} src={slide.mosaic![i % slide.mosaic!.length]} alt="" />
@@ -156,7 +157,7 @@ export function RewindIntro({
                 style={{ backgroundImage: `url("${slide.backdrop}")` }}
                 initial={reduced ? false : { scale: 1.12 }}
                 animate={{ scale: 1 }}
-                transition={{ duration: SLIDE_MS / 1000 + 1, ease: 'easeOut' }}
+                transition={{ duration: DWELL.rewindSlide + 1, ease: EASE }}
               />
             )}
             <div className="rewind-scrim" />
@@ -183,7 +184,7 @@ export function RewindIntro({
       </div>
 
       <div className="rewind-controls">
-        {!isLast && (
+        {!isLast && !reduced && (
           <ActionIcon
             ref={pauseRef}
             variant="subtle"

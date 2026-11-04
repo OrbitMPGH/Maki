@@ -17,7 +17,7 @@ import {
 } from '../../lib/icons'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Trans, Plural, useLingui } from '@lingui/react/macro'
+import { Plural, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { PrefsSource, ReaderManifest } from '../../api/reader'
 import type { ReadingProfile } from '../../api/readingProfiles'
@@ -228,11 +228,11 @@ export default function ReaderToolbar({
                       {/* Named, since the bottom bar's bare page count sits right under it. */}
                       {chaptersRead < seriesChapterCount ? (
                         plural(seriesChapterCount, {
-                          one: `${chaptersRead}/# chapter read`,
-                          other: `${chaptersRead}/# chapters read`,
+                          one: `${chaptersRead} read of # downloaded`,
+                          other: `${chaptersRead} read of # downloaded`,
                         })
                       ) : (
-                        <Trans>all read</Trans>
+                        <Plural value={seriesChapterCount} one="read all # downloaded" other="read all # downloaded" />
                       )}
                       {moreInSeries && (
                         <>

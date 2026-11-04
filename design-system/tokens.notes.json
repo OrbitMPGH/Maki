@@ -7,6 +7,7 @@
     "surface-hover": "Hover fill on interactive rows and chips.",
     "border": "Default 1px border on cards, panels, tables and the shell.",
     "border-strong": "Emphasised border: hovered cards, chip outlines, scrollbar thumb.",
+    "border-control": "Edge of a control whose fill is the card's: text fields and the off switch track. ink-4 at 65% (75% in Light), 3.2:1 or better against surface and surface-2 on every ground.",
     "hairline": "Row dividers inside tables and lists. An alias of border.",
     "line-soft": "Softer divider: border at 76%.",
     "cover-rim": "Edge of a poster cover: translucent, so it vanishes over bright art and shows where the scrimmed foot meets the page.",
@@ -18,7 +19,7 @@
     "ink": "Body copy on app-bg, surface and surface-2.",
     "ink-2": "Secondary copy: chip labels, status words, compact empty states.",
     "ink-3": "Secondary text (Mantine dimmed maps here): descriptions, figure and field labels, meta lines. One step below ink-2.",
-    "ink-4": "Tertiary text: timestamps, zero counts, the sidebar group labels. Reads 4.5:1 on surface in both schemes (4.54:1 in dark).",
+    "ink-4": "Tertiary text: timestamps, zero counts, the sidebar group labels. Reads 6:1 or better on surface in every dark ground (5.1:1 on surface-hover) and 5.6:1 in Light.",
     "brand": "The single accent: progress fills, selected borders, focus outlines, unread badges. Blush by default. A fill and border colour, not body text; brand-fg is the text form.",
     "brand-hover": "Hover state for fills in brand.",
     "brand-on": "Text and icons on a brand fill where the fill is brand itself (the play corner). Near-black on dark Blush (6.85:1), white on Light Blush (4.7:1); Emerald and Amber flip to near-black. White on Indigo brand is only 3.5:1, so anything carrying small text sits on the Mantine primary fill with primary-on instead.",
@@ -448,7 +449,11 @@
     "--dur-fast": "tooltips, small fades, filters",
     "--dur-base": "hover colour and background, menus, popovers and hover cards",
     "--dur-medium": "cards lifting, posters moving, modals and drawers",
-    "--dur-slow": "cover art scaling on hover"
+    "--dur-slow": "cover art scaling on hover",
+    "--dur-loop": "the one period for every pulse and indeterminate sweep, so two on screen keep time; a queued sweep runs at 1.5 times it. Not shortened by Faster animations",
+    "--dur-flash": "a one-shot tint on something that just resolved, like a source row that found a match",
+    "--dur-highlight": "the ring on a settings card a link pointed at",
+    "--dur-banner": "the reader's chapter banner from fade-in to fade-out; ChapterBanner.tsx holds it as long. Reading time, so not shortened by Faster animations"
   },
   "meta": {
     "source": "github",
