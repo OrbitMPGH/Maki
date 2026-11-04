@@ -4,7 +4,7 @@ import { animate, motion, useReducedMotion } from 'motion/react'
 import { CINEMATIC, EASE, paced } from '../../lib/motion'
 import { Trans, Plural } from '@lingui/react/macro'
 import type { ActivityStats } from '../../api/hooks'
-import { formatNumber, formatReadingTime, monthName } from '../../format'
+import { formatNumber, formatTimeSpent, monthName } from '../../format'
 import { GENRE_LABELS } from '../../components/CatalogueFilters'
 import { useLabel } from '../../i18n-context'
 
@@ -181,7 +181,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
 
   if (t.readingSeconds > 0) {
     const topByTime = stats.topByTime[0]
-    const topByTimeSpent = topByTime ? formatReadingTime(topByTime.seconds) : ''
+    const topByTimeSpent = topByTime ? formatTimeSpent(topByTime.seconds) : ''
     const topByTimeTitle = topByTime ? topByTime.title : ''
     slides.push({
       key: 'time',
@@ -190,7 +190,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
         <Stack align="center" gap="xs">
           <Poster url={topByTime?.coverUrl ?? null} />
           <Reveal>
-            <Text className="rewind-title">{formatReadingTime(t.readingSeconds)}</Text>
+            <Text className="rewind-title">{formatTimeSpent(t.readingSeconds)}</Text>
             <Text className="rewind-caption">
               <Trans comment="Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts">spent in the reader</Trans>
             </Text>
@@ -444,7 +444,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
                 {
                   id: 'in-the-reader',
                   value: t.readingSeconds,
-                  shown: formatReadingTime(t.readingSeconds),
+                  shown: formatTimeSpent(t.readingSeconds),
                 },
                 { id: 'downloaded', value: t.chaptersDownloaded },
                 { id: 'series-added', value: t.seriesAdded },

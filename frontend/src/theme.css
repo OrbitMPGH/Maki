@@ -1787,7 +1787,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .cover-scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(6, 7, 11, 0.92) 0, rgba(6, 7, 11, 0.4) 40%, transparent 62%);
+  background: linear-gradient(to top, rgba(6, 7, 11, 0.92) 0, rgba(6, 7, 11, 0.58) 40%, transparent 66%);
   pointer-events: none;
 }
 .cover-placeholder {
@@ -4206,6 +4206,12 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   .discover-hero-strip {
     margin-top: 8px;
   }
+  /* Stacked, the band is taller than the 70%-wide art, which then ended on a hard top and bottom
+     edge mid-band. Filling the band leaves the scrims to do the fading. */
+  .discover-hero .series-hero-art {
+    background-size: cover;
+    background-position: 70% 20%;
+  }
 }
 @media (max-width: 47.9375em) {
   .discover-loading-hero {
@@ -5741,6 +5747,17 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     linear-gradient(#000, #000) bottom / 100% 1px no-repeat,
     var(--strip-chevron) right calc(50% - var(--strip-cue-lift, 0px)) / 1rem 1rem no-repeat;
 }
+/* On a phone the last tab is often half on screen, and a short fade still left "Sh" readable as a
+   cut word. A longer fade that is mostly gone by its middle and clear before the chevron. */
+@media (max-width: 47.9375em) {
+  :is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row)[data-fade-end] {
+    --fade-end: 6.5rem;
+    mask:
+      linear-gradient(to right, transparent 0, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), rgb(0 0 0 / 0.25) calc(100% - 4rem), transparent calc(100% - 2rem)),
+      linear-gradient(#000, #000) bottom / 100% 1px no-repeat,
+      var(--strip-chevron) right calc(50% - var(--strip-cue-lift, 0px)) / 1rem 1rem no-repeat;
+  }
+}
 /* Always present so showing it never changes the scroll width; it takes no room (the negative margin
    cancels its width) and only shows once the strip overflows. */
 :is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row)::after {
@@ -6516,6 +6533,20 @@ tr:is(:hover, :focus-within) [data-row-action]:not(:disabled, [data-disabled]),
 :is(.chapter-table, .series-files-table, .sources-table) td .mantine-ActionIcon-root {
   --ai-size: 32px;
 }
+/* Every icon-only row action shows its 32px shape under the pointer and on keyboard focus, whatever
+   colour it carries, so a row of glyphs reads as buttons. The light variant keeps its own tint. */
+:is(.chapter-table, .series-files-table, .sources-table) td .mantine-ActionIcon-root[data-variant='subtle']:not(:disabled, [data-disabled], [data-loading]):is(:hover, :focus-visible, [aria-expanded='true']) {
+  background-color: color-mix(in srgb, var(--ink) 11%, transparent);
+}
+:is(.chapter-table, .series-files-table, .sources-table) td .mantine-ActionIcon-root:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+/* The copy button beside a file name is a row action too; the negative margin keeps the row height. */
+.series-files-table td .mono-value-copy {
+  --ai-size-xs: 32px;
+  margin-block: -6px;
+}
 
 /* A table standing on the page gets a panel for its edge. The panel clips, so the header band and
    the last row keep its corners. */
@@ -7252,9 +7283,7 @@ body.column-resizing * {
   min-width: 0;
 }
 /* Content scrolls under the pinned bar. A short fade below its rule makes that read as intended
-   rather than as a heading cut in half. On a phone only the bar is pinned, so it carries the fade. */
-.stats-rail::after,
-.stats-rail-bar::after,
+   rather than as a heading cut in half. */
 .series-detail-chapter-head[data-sticky]::after {
   content: '';
   position: absolute;
@@ -7264,21 +7293,10 @@ body.column-resizing * {
   background: linear-gradient(var(--app-bg), transparent);
   pointer-events: none;
 }
-.stats-rail-bar::after {
-  display: none;
-}
 /* At rest the chapter table sits 8px under the toolbar, so the fade must not reach it. */
 .series-detail-chapter-head[data-sticky]::after {
   top: 100%;
   height: 8px;
-}
-@media (max-width: 36em) {
-  .stats-rail::after {
-    display: none;
-  }
-  .stats-rail-bar::after {
-    display: block;
-  }
 }
 .stats-rail-links {
   /* The links' offset parent, so StatsRail measures a link against the strip's own scroll. */

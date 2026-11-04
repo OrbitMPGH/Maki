@@ -1286,6 +1286,10 @@ msgstr "{fileCount, plural, other {파일 #개}}"
 msgid "{fileCount, plural, one {# single file} other {# single files}}"
 msgstr "{fileCount, plural, other {단일 챕터 파일 #개}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk} other {# chapters have no file on disk}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{fileName} replaced {filesText}"
@@ -1408,8 +1412,12 @@ msgstr "{haveCount} / {totalCount, plural, other {# 챕터}} 목록에 있지만
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
-msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
-msgstr "{haveCount} / {totalCount, plural, other {원하는 챕터 #개}}"
+#~ msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+#~ msgstr "{haveCount} / {totalCount, plural, other {원하는 챕터 #개}}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{haveCount} / {totalCount, plural, one {# wanted} other {# wanted}}"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #, fuzzy
@@ -3006,6 +3014,10 @@ msgstr "<0>싫어요</0>와 4점 이하 평가는 유지한 작품보다 거부�
 #, fuzzy
 msgid "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
 msgstr "<0>좋아요</0>는 취향에 반영됩니다. 비슷한 작품의 순위가 올라갑니다."
+
+#: src/format.ts
+msgid "<1m"
+msgstr ""
 
 #: src/pages/stats/charts/LeanBars.tsx
 #, fuzzy
@@ -5797,6 +5809,10 @@ msgstr "매번 가져올 챕터 수"
 #, fuzzy
 msgid "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
 msgstr "파일 품질이 이 중 하나인 챕터는 그대로 표시합니다. 디지털 권은 보통 이미 깔끔합니다."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters whose file the last health scan couldn't find on disk."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Chapters with no file on disk, leaving out files that were deleted on purpose."
@@ -8965,6 +8981,14 @@ msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "File is gone from disk"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "File missing"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "File missing ({fileMissingFilterCount})"
 msgstr ""
 
 #: src/pages/ActivityPage.tsx
@@ -16731,6 +16755,10 @@ msgstr "최근 {daysSoFar}일 중 {daysRead}일 읽음"
 msgid "Read on {daysRead} of the last {daysSoFar} days."
 msgstr "최근 {daysSoFar}일 중 {daysRead}일 읽었습니다."
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Read or watched"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Read slowly over a long span"
@@ -21522,6 +21550,10 @@ msgstr "최근 90일"
 msgid "The last check could not list the sample series. The site's layout may have changed. Edit the definition to check."
 msgstr "마지막 확인에서 샘플 시리즈 목록을 가져오지 못했습니다. 사이트 구조가 바뀌었을 수 있습니다. 확인하려면 정의를 수정하세요."
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "The last health scan couldn't find this file on disk. Relink files finds it if it was moved or renamed."
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
 msgid "The layout could not be loaded."
@@ -23946,6 +23978,10 @@ msgstr "시청함"
 #, fuzzy
 msgid "Watched chapters don't count toward your reading stats. If you have a connected tracker, this moves the manga entry there to the same chapter."
 msgstr "시청 완료로 표시한 챕터는 읽기 통계에 포함되지 않습니다. 연결된 트래커가 있으면 그곳의 만화 항목도 같은 챕터로 이동합니다."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Watched in the anime"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy

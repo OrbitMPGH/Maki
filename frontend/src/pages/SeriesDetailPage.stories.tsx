@@ -10,6 +10,8 @@ import {
   providerDetail,
   seriesConversionRestorable,
   seriesDto,
+  chaptersFor,
+  scenarios,
   seriesMsw,
   torrentProposal,
 } from '../../.storybook/mocks/series'
@@ -194,6 +196,31 @@ export const ChapterFilterMissing: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('radio', { name: /^Missing/ }))
     await expect(await canvas.findByText(/Ch\.17\b/)).toBeVisible()
+  },
+}
+
+const filesGone = seriesMsw(
+  http.get(api('/chapter'), () =>
+    HttpResponse.json(chaptersFor(1, { ...scenarios[1].shape, fileMissing: Array.from({ length: 40 }, (_, i) => i + 1) })),
+  ),
+)
+
+export const ChapterFilesMissing: Story = {
+  parameters: { msw: filesGone, ...at(1, '?tab=chapters') },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await expect(await canvas.findByText(/chapters have no file on disk/)).toBeVisible()
+    await userEvent.click(await canvas.findByRole('radio', { name: /^File missing/ }))
+    await waitFor(() => expect(canvas.getAllByText('File missing').length).toBeGreaterThan(5))
+    await userEvent.click(canvas.getAllByRole('button', { name: 'Relink files' })[0])
+    await expect(await body(canvasElement).findByRole('dialog')).toBeVisible()
+  },
+}
+
+export const ChapterFilesMissingPhone: Story = {
+  globals: { viewport: { value: 'mobile1', isRotated: false } },
+  parameters: { viewport: { defaultViewport: 'mobile1' }, msw: filesGone, ...at(1, '?tab=chapters') },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/chapters have no file on disk/)).toBeVisible()
   },
 }
 

@@ -322,6 +322,8 @@ export interface ChapterDto {
   fileRemovedAt: string | null
   /** The removal was read file cleanup's, which also turned Wanted off. False while the chapter has a file. */
   fileAutoRemoved: boolean
+  /** The last health scan found this chapter's file gone from disk. It still has a file record, so `hasFile` stays true. */
+  fileMissing: boolean
   /** When read file cleanup will delete this chapter's file, or null when it isn't scheduled. */
   fileDeleteDueAt: string | null
   filePath: string | null

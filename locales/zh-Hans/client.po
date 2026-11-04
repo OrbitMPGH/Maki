@@ -1286,6 +1286,10 @@ msgstr "{fileCount, plural, other {# 个文件}}"
 msgid "{fileCount, plural, one {# single file} other {# single files}}"
 msgstr "{fileCount, plural, other {# 个单独的文件}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk} other {# chapters have no file on disk}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{fileName} replaced {filesText}"
@@ -1408,8 +1412,12 @@ msgstr "{haveCount} / {totalCount, plural, other {# 个章节}}已列出，但�
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
-msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
-msgstr "{haveCount} / {totalCount, plural, other {# 个想要的章节}}"
+#~ msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+#~ msgstr "{haveCount} / {totalCount, plural, other {# 个想要的章节}}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{haveCount} / {totalCount, plural, one {# wanted} other {# wanted}}"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #, fuzzy
@@ -3006,6 +3014,10 @@ msgstr "<0>点踩</0> 和 4 分及以下的评分会降低与被你拒绝的标�
 #, fuzzy
 msgid "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
 msgstr "<0>点赞</0> 会计入你的品味。相似标题的排名会更高。"
+
+#: src/format.ts
+msgid "<1m"
+msgstr ""
 
 #: src/pages/stats/charts/LeanBars.tsx
 #, fuzzy
@@ -5797,6 +5809,10 @@ msgstr "每次获取的章节数"
 #, fuzzy
 msgid "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
 msgstr "文件具有这些质量之一的章节将保持原样显示。数字版卷通常已经很干净。"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters whose file the last health scan couldn't find on disk."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Chapters with no file on disk, leaving out files that were deleted on purpose."
@@ -8965,6 +8981,14 @@ msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "File is gone from disk"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "File missing"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "File missing ({fileMissingFilterCount})"
 msgstr ""
 
 #: src/pages/ActivityPage.tsx
@@ -16731,6 +16755,10 @@ msgstr "最近 {daysSoFar} 天中有 {daysRead} 天在阅读"
 msgid "Read on {daysRead} of the last {daysSoFar} days."
 msgstr "最近 {daysSoFar} 天中有 {daysRead} 天在阅读。"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Read or watched"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Read slowly over a long span"
@@ -21522,6 +21550,10 @@ msgstr "过去 90 天"
 msgid "The last check could not list the sample series. The site's layout may have changed. Edit the definition to check."
 msgstr "上次检查无法列出示例系列。网站的布局可能已经改变。请编辑定义后再检查。"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "The last health scan couldn't find this file on disk. Relink files finds it if it was moved or renamed."
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
 msgid "The layout could not be loaded."
@@ -23946,6 +23978,10 @@ msgstr "已看过"
 #, fuzzy
 msgid "Watched chapters don't count toward your reading stats. If you have a connected tracker, this moves the manga entry there to the same chapter."
 msgstr "标记为已看过的章节不会计入阅读统计。如果你连接了追踪器，其中的漫画记录也会更新到同一章节。"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Watched in the anime"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy

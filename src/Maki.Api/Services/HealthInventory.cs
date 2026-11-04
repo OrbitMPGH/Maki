@@ -20,6 +20,25 @@ public static class HealthInventory
     };
 
     /// <summary>
+    /// The series' <c>ChapterFile</c> ids the last health scan found gone from disk (<c>Size &lt; 0</c>),
+    /// read from the inventory rather than the disk. A row only counts while it still names the record's
+    /// path in the series' root, so a relink or move reads as present before the next scan catches up.
+    /// </summary>
+    public static async Task<HashSet<int>> MissingChapterFilesAsync(MakiDbContext db, int seriesId, CancellationToken ct)
+    {
+        var rows = await db.HealthFiles.AsNoTracking()
+            .Where(h => !h.Removed && h.Size < 0 && h.ChapterFileId != null)
+            .Join(db.ChapterFiles.Where(f => f.SeriesId == seriesId), h => h.ChapterFileId, f => (int?)f.Id,
+                (h, f) => new { f.Id, HealthPath = h.RelativePath, FilePath = f.RelativePath, h.RootFolderId })
+            .Where(x => db.Series.Any(s => s.Id == seriesId && s.RootFolderId == x.RootFolderId))
+            .ToListAsync(ct);
+        return rows
+            .Where(x => KeyComparer.Equals(LibraryPaths.ComparisonKey(x.HealthPath), LibraryPaths.ComparisonKey(x.FilePath)))
+            .Select(x => x.Id)
+            .ToHashSet();
+    }
+
+    /// <summary>
     /// Repoints the series' live rows at <paramref name="destinationId"/> without saving. A path the
     /// destination already holds keeps that row and retires the moving one. Every entity it attaches,
     /// changes or adds goes into <paramref name="touched"/>, also when it throws, so the caller can detach them.

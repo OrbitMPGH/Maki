@@ -23,7 +23,7 @@ import {
   formatHour,
   formatNumber,
   formatPercent,
-  formatReadingTime,
+  formatTimeSpent,
   formatStatsBucket,
 } from '../../../format'
 import { ActivityFeed } from '../ActivityFeed'
@@ -127,7 +127,7 @@ function ReadingInsight({
   // Time without a finished chapter: the full sentence came out as "0 chapters across 0 reading
   // days, most of it after 9:00 AM. Down 100% on the period before."
   if (totals.chaptersRead === 0) {
-    const time = formatReadingTime(totals.readingSeconds)
+    const time = formatTimeSpent(totals.readingSeconds)
     return (
       <StatsInsight>
         <Trans>
@@ -248,7 +248,7 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
     {
       zero: activity.totals.readingSeconds === 0,
       label: t`Time read`,
-      value: formatReadingTime(activity.totals.readingSeconds),
+      value: formatTimeSpent(activity.totals.readingSeconds),
       delta: compare('readingSeconds'),
     },
     {
@@ -376,7 +376,7 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
               <RankList
                 icon={IconClock}
                 title={t`Where the time went`}
-                items={activity.topByTime.map((s) => ({ ...s, value: formatReadingTime(s.seconds) }))}
+                items={activity.topByTime.map((s) => ({ ...s, value: formatTimeSpent(s.seconds) }))}
                 emptyText={t`No reading time recorded.`}
               />
             )}

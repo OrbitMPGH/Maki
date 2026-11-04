@@ -19,8 +19,11 @@ export const EASE_LOOP_CSS = 'cubic-bezier(0.45, 0, 0.55, 1)'
 /** `--dur-*`, in seconds. */
 export const DUR = { fast: 0.12, base: 0.15, medium: 0.18, slow: 0.35 } as const
 
-/** Page changes (lib/pageTransition.ts): the new page's rise, and a cover flying into the poster. */
-export const PAGE = { rise: 0.25, coverFlight: 0.44 } as const
+/**
+ * Page changes (lib/pageTransition.ts): the new page's rise, and a cover flying into the poster. The
+ * rise runs alongside the view-transition cross-fade (`--dur-medium` in theme.css), so it matches it.
+ */
+export const PAGE = { rise: DUR.medium, coverFlight: 0.44 } as const
 
 /**
  * Rewind and the Discover hero stage a slide or a backdrop rather than answer a click, so they run

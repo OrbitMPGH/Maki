@@ -65,13 +65,13 @@ export function FigureStrip({
               <div className="figure-strip-n">
                 <Skeleton h="0.8em" w="2.4em" my="0.125em" />
               </div>
-            ) : f.delta !== undefined && !zero ? (
-              // "-100%" beside a 0 would repeat the 0 as an alarm, hence the zero check.
+            ) : f.delta !== undefined && Math.round(f.delta * 100) !== 0 && !zero ? (
+              // "-100%" beside a 0 would repeat the 0 as an alarm, and "0%" beside "5/30" reads as a share.
               <div className="figure-strip-value">
                 {n}
                 <span
                   className="figure-strip-delta tnum"
-                  data-tone={Math.round(f.delta * 100) === 0 ? 'flat' : f.delta > 0 ? 'up' : 'down'}
+                  data-tone={f.delta > 0 ? 'up' : 'down'}
                   title={deltaLabel}
                 >
                   {formatSignedPercent(f.delta)}

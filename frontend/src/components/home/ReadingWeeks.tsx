@@ -4,7 +4,7 @@ import { IconFlame } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { HeatmapDay, ProgressSummary, ReadingGoal } from '../../api/hooks'
-import { formatDate, formatNumber, formatReadingTime, monthName, weekdayName } from '../../format'
+import { formatDate, formatNumber, formatTimeSpent, monthName, weekdayName } from '../../format'
 import { useLabel } from '../../i18n-context'
 import { HEAT_SHADES, heatLevel } from '../../pages/stats/ReadingHeatmap'
 import { GOAL_LABELS, metricProgress } from '../../pages/stats/sections/ProgressSection'
@@ -208,7 +208,7 @@ export function ReadingWeeks({
             </span>
           </div>
           <div className="reading-weeks-fig">
-            <span className="reading-weeks-n figure tnum">{formatReadingTime(weeks.seconds)}</span>
+            <span className="reading-weeks-n figure tnum">{formatTimeSpent(weeks.seconds)}</span>
             <span className="reading-weeks-l">
               <Trans>Time read</Trans>
             </span>

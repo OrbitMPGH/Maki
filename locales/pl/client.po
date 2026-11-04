@@ -1286,6 +1286,10 @@ msgstr "{fileCount, plural, one {# plik} few {# pliki} many {# plików} other {#
 msgid "{fileCount, plural, one {# single file} other {# single files}}"
 msgstr "{fileCount, plural, one {# pojedynczy plik} few {# pojedyncze pliki} many {# pojedynczych plików} other {# pojedynczego pliku}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk} other {# chapters have no file on disk}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{fileName} replaced {filesText}"
@@ -1408,8 +1412,12 @@ msgstr "{haveCount} / {totalCount, plural, one {# rozdział} few {# rozdziały} 
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
-msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
-msgstr "{haveCount} / {totalCount, plural, one {# rozdział do pobrania} few {# rozdziały do pobrania} many {# rozdziałów do pobrania} other {# rozdziału do pobrania}}"
+#~ msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+#~ msgstr "{haveCount} / {totalCount, plural, one {# rozdział do pobrania} few {# rozdziały do pobrania} many {# rozdziałów do pobrania} other {# rozdziału do pobrania}}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{haveCount} / {totalCount, plural, one {# wanted} other {# wanted}}"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #, fuzzy
@@ -3006,6 +3014,10 @@ msgstr "<0>Kciuk w dół</0> i oceny 4 lub niższe obniżają pozycję tytułów
 #, fuzzy
 msgid "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
 msgstr "<0>Kciuk w górę</0> wpływa na Twój gust. Podobne tytuły zajmują wyższe miejsca w rankingu."
+
+#: src/format.ts
+msgid "<1m"
+msgstr ""
 
 #: src/pages/stats/charts/LeanBars.tsx
 #, fuzzy
@@ -5797,6 +5809,10 @@ msgstr "Rozdziały pobierane za każdym razem"
 #, fuzzy
 msgid "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
 msgstr "Rozdziały, których plik ma jedną z tych jakości, są pokazywane bez zmian. Cyfrowy tom zwykle jest już czysty."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters whose file the last health scan couldn't find on disk."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Chapters with no file on disk, leaving out files that were deleted on purpose."
@@ -8965,6 +8981,14 @@ msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "File is gone from disk"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "File missing"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "File missing ({fileMissingFilterCount})"
 msgstr ""
 
 #: src/pages/ActivityPage.tsx
@@ -16731,6 +16755,10 @@ msgstr "Czytano w {daysRead} z ostatnich {daysSoFar} dni"
 msgid "Read on {daysRead} of the last {daysSoFar} days."
 msgstr "Czytano w {daysRead} z ostatnich {daysSoFar} dni."
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Read or watched"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Read slowly over a long span"
@@ -21522,6 +21550,10 @@ msgstr "ostatnie 90 dni"
 msgid "The last check could not list the sample series. The site's layout may have changed. Edit the definition to check."
 msgstr "Ostatnie sprawdzenie nie mogło wylistować serii próbnej. Układ strony mógł się zmienić. Edytuj definicję, aby sprawdzić."
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "The last health scan couldn't find this file on disk. Relink files finds it if it was moved or renamed."
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
 msgid "The layout could not be loaded."
@@ -23946,6 +23978,10 @@ msgstr "Obejrzane"
 #, fuzzy
 msgid "Watched chapters don't count toward your reading stats. If you have a connected tracker, this moves the manga entry there to the same chapter."
 msgstr "Oznaczone jako obejrzane rozdziały nie wliczają się do statystyk czytania. Jeśli połączono tracker, wpis mangi w nim zostanie przesunięty do tego samego rozdziału."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Watched in the anime"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy

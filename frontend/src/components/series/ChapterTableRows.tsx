@@ -5,6 +5,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { ActionIcon, Badge, Group, Loader, Menu, Progress, Skeleton, Switch, Table, Text, Tooltip } from '@mantine/core'
 import {
+  IconAlertTriangle,
   IconBook,
   IconChevronDown,
   IconCircleCheck,
@@ -39,7 +40,7 @@ import type { AnimeMarker, AnimeSpan } from '../../lib/animeCoverage'
 import { onPressKey, pressable } from '../../lib/pressable'
 import type { PickChapter } from '../SourceCompareModal'
 import { MetaList } from '../ui/MetaList'
-import { queueStatusVisual, statusColor } from '../ui/status'
+import { queueStatusVisual } from '../ui/status'
 import { FileQualityBadge } from './FileQualityBadge'
 import { HoverTooltip } from './HoverTooltip'
 import { LightActionIcon, LightBadge, LightGroup, LightSwitch, LightText } from './lightMantine'
@@ -178,7 +179,7 @@ export const ChapterRow = memo(function ChapterRow({
           <LightGroup gap={6} wrap="nowrap">
             {c.fileVolume !== null && !c.isOneShot && c.number !== null && (
                 <HoverTooltip label={t`Contained in a volume/compilation file`} withArrow>
-                  <LightBadge color="var(--watched)" className="tnum chapter-label">
+                  <LightBadge color="var(--neutral)" variant="outline" className="tnum chapter-label">
                     <Trans>Vol. {fileVolume}</Trans>
                   </LightBadge>
                 </HoverTooltip>
@@ -269,11 +270,11 @@ export const ChapterRow = memo(function ChapterRow({
                 return (
                     <LightGroup gap={4} wrap="wrap">
                       <HoverTooltip label={origin.hint} withArrow disabled={!origin.hint}>
-                        <LightBadge variant={origin.scraped ? 'light' : 'outline'} color="var(--neutral)">
+                        <LightBadge variant="outline" color="var(--neutral)">
                           {origin.label}
                         </LightBadge>
                       </HoverTooltip>
-                      <FileQualityBadge quality={c.fileQuality} />
+                      <FileQualityBadge quality={c.fileQuality} neutral />
                     </LightGroup>
                 )
               })()
@@ -286,6 +287,9 @@ export const ChapterRow = memo(function ChapterRow({
                 (() => {
                   const visual = queueStatusVisual(queueItem.status)
                   const failure = queueErrorMessage(queueItem, renderLabel)
+                  const queueTone = queueItem.status === 'Failed'
+                      ? 'var(--danger)'
+                      : queueItem.status === 'AwaitingImport' ? 'var(--warn)' : 'brand'
                   return (
                       <Tooltip
                         label={failure ?? renderLabel(visual.label)}
@@ -299,13 +303,13 @@ export const ChapterRow = memo(function ChapterRow({
                                   w={72}
                                   radius="xl"
                                   animated={queueItem.status === 'Downloading'}
-                                  color={queueItem.status === 'Failed' ? 'var(--danger)' : 'brand'}
+                                  color={queueTone}
                                   aria-label={t`Download progress`}
                               />
                           )}
                           <Badge
                               size="sm"
-                              color={statusColor(visual.color)}
+                              color={queueTone}
                               variant="light"
                               leftSection={<visual.Icon size={12} />}
                               className="tnum"
@@ -318,6 +322,17 @@ export const ChapterRow = memo(function ChapterRow({
                       </Tooltip>
                   )
                 })()
+            ) : c.hasFile && c.fileMissing ? (
+                <HoverTooltip
+                    label={t`The last health scan couldn't find this file on disk. Relink files finds it if it was moved or renamed.`}
+                    withArrow
+                    multiline
+                    w={280}
+                >
+                  <LightBadge color="var(--warn)" leftSection={<IconAlertTriangle size={12} />}>
+                    <Trans>File missing</Trans>
+                  </LightBadge>
+                </HoverTooltip>
             ) : c.hasFile ? (
                 <>
                   <LightBadge color="var(--ok)" leftSection={<IconCircleCheck size={12} />}>
@@ -637,7 +652,7 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
   const { label: spanLabel } = span
   const total = rows.length
   const downloaded = rows.filter((c) => c.hasFile)
-  const downloadedCount = downloaded.length
+  const downloadedCount = downloaded.filter((c) => !c.fileMissing).length
   const states = downloaded.map((c) => readStateOf(readProgress.get(c.id)))
   const watchedCount = states.filter((st) => st.watched).length
   const readCount = states.filter((st) => st.read && !st.watched).length
@@ -719,13 +734,22 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
         <Table.Td />
         <Table.Td>
           {downloaded.length > 0 && (
-              <Progress
-                  value={(done / downloaded.length) * 100}
-                  color={watchedCount > readCount ? 'var(--watched)' : 'var(--ok)'}
-                  size="sm"
-                  radius="xl"
-                  aria-label={t`Reading progress`}
-              />
+              <div>
+                <Text size="xs" fw={600} c="var(--ink-3)" mb={4}>
+                  {watchedCount > 0 && readCount === 0
+                      ? <Trans>Watched in the anime</Trans>
+                      : readCount > 0 && watchedCount === 0
+                          ? <Trans>Read</Trans>
+                          : <Trans>Read or watched</Trans>}
+                </Text>
+                <Progress
+                    value={(done / downloaded.length) * 100}
+                    color={watchedCount > readCount ? 'var(--watched)' : 'var(--ok)'}
+                    size="sm"
+                    radius="xl"
+                    aria-label={t`Reading progress`}
+                />
+              </div>
           )}
         </Table.Td>
         <Table.Td onClick={(e) => e.stopPropagation()}>

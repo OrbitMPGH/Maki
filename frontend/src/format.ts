@@ -271,3 +271,12 @@ export function formatReadingTime(seconds: number): string {
   if (hours === 0) return m(minutes)
   return minutes === 0 ? h(hours) : `${h(hours)} ${m(minutes)}`
 }
+
+/**
+ * Time spent reading, as a total: "4h 20m", "35m", "<1m". Seconds only matter for a pace or a
+ * timer; as a total, "4s" reads like a bug. Use `formatReadingTime` where seconds carry meaning.
+ */
+export function formatTimeSpent(seconds: number): string {
+  if (seconds > 0 && seconds < 60) return t`<1m`
+  return formatReadingTime(seconds)
+}

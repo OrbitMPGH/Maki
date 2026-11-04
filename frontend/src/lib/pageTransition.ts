@@ -358,7 +358,6 @@ appHistory.listen = (listener) =>
         if (outgoing && opening) incoming = await posterReady(deadline)
         else if (outgoing && leaving) incoming = linkedCover(leaving)
         if (fromRect && incoming && !skipped) flight = flyCover(fromRect, incoming)
-        if (!flight) rise(false)
         // The flight's image, and the new cover's tint so it can ease in with the cross-fade.
         await Promise.race([
           Promise.all([flight?.decoded, tintSettled()]),
@@ -369,7 +368,9 @@ appHistory.listen = (listener) =>
     })
     transition.ready.then(
       () => {
-        flight?.start()
+        // The drift starts with the cross-fade so the two land together.
+        if (flight) flight.start()
+        else rise(false)
         releaseTint()
       },
       () => {

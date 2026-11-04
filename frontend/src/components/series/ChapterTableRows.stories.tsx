@@ -167,6 +167,15 @@ export const InsideVolumeFile: Story = {
   args: { chapter: { ...byNumber(8), fileVolume: '1' } },
 }
 
+export const FileMissing: Story = {
+  args: { chapter: { ...byNumber(8), fileVolume: '1', fileMissing: true } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('File missing')).toBeVisible()
+    await expect(canvas.queryByText('Downloaded')).toBeNull()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /Want/ })).toBeEnabled())
+  },
+}
+
 export const ImportedFile: Story = {
   args: { chapter: { ...byNumber(9), fileSourceName: 'import' } },
 }

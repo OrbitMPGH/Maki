@@ -1066,6 +1066,10 @@ msgstr "{fileCount, plural, one {# file} other {# files}}"
 msgid "{fileCount, plural, one {# single file} other {# single files}}"
 msgstr "{fileCount, plural, one {# single file} other {# single files}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk} other {# chapters have no file on disk}}"
+msgstr "{fileMissingFilterCount, plural, one {# chapter has no file on disk} other {# chapters have no file on disk}}"
+
 #: src/pages/ActivityPage.tsx
 msgid "{fileName} replaced {filesText}"
 msgstr "{fileName} replaced {filesText}"
@@ -1164,8 +1168,12 @@ msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} li
 msgstr "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} listed, none wanted"
 
 #: src/components/series/SeriesHero.tsx
-msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
-msgstr "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+#~ msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+#~ msgstr "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{haveCount} / {totalCount, plural, one {# wanted} other {# wanted}}"
+msgstr "{haveCount} / {totalCount, plural, one {# wanted} other {# wanted}}"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "{hits} of the last {checked} chapters came out inside the window drawn for them."
@@ -2472,6 +2480,10 @@ msgstr "<0>Thumbs down</0> and ratings of 4 or under push down titles that are c
 #: src/pages/discover/FeedbackLab.tsx
 msgid "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
 msgstr "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
+
+#: src/format.ts
+msgid "<1m"
+msgstr "<1m"
 
 #: src/pages/stats/charts/LeanBars.tsx
 msgid "−{abs} pt"
@@ -4772,6 +4784,10 @@ msgstr "Chapters to fetch each time"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
 msgstr "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters whose file the last health scan couldn't find on disk."
+msgstr "Chapters whose file the last health scan couldn't find on disk."
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Chapters with no file on disk, leaving out files that were deleted on purpose."
@@ -7374,6 +7390,14 @@ msgstr "File changed outside Maki"
 #: src/pages/HealthPage.tsx
 msgid "File is gone from disk"
 msgstr "File is gone from disk"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "File missing"
+msgstr "File missing"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "File missing ({fileMissingFilterCount})"
+msgstr "File missing ({fileMissingFilterCount})"
 
 #: src/pages/ActivityPage.tsx
 msgid "File name"
@@ -13734,6 +13758,10 @@ msgstr "Read on {daysRead} of the last {daysSoFar} days"
 msgid "Read on {daysRead} of the last {daysSoFar} days."
 msgstr "Read on {daysRead} of the last {daysSoFar} days."
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Read or watched"
+msgstr "Read or watched"
+
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Read slowly over a long span"
 msgstr "Read slowly over a long span"
@@ -17673,6 +17701,10 @@ msgstr "the last 90 days"
 msgid "The last check could not list the sample series. The site's layout may have changed. Edit the definition to check."
 msgstr "The last check could not list the sample series. The site's layout may have changed. Edit the definition to check."
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "The last health scan couldn't find this file on disk. Relink files finds it if it was moved or renamed."
+msgstr "The last health scan couldn't find this file on disk. Relink files finds it if it was moved or renamed."
+
 #: src/components/layout/PageLayoutEditor.tsx
 msgid "The layout could not be loaded."
 msgstr "The layout could not be loaded."
@@ -19661,6 +19693,10 @@ msgstr "Watched"
 #: src/components/series/AnimeResumeCallout.tsx
 msgid "Watched chapters don't count toward your reading stats. If you have a connected tracker, this moves the manga entry there to the same chapter."
 msgstr "Watched chapters don't count toward your reading stats. If you have a connected tracker, this moves the manga entry there to the same chapter."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Watched in the anime"
+msgstr "Watched in the anime"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Watching"

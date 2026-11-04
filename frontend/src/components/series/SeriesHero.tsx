@@ -121,13 +121,17 @@ export function SeriesHero({
         [chapters],
     )
 
+    // The server counts a file the health scan found missing as obtained; the Chapters tab does not.
+    const fileMissing = useMemo(() => (chapters ?? []).filter((c) => c.fileMissing).length, [chapters])
     const progress = useMemo(
         () =>
             seriesProgressVisual(
-                series ?? { wantedChapterCount: 0, knownChapterCount: 0, chapterFileCount: 0, readChapterCount: null },
+                series
+                    ? { ...series, chapterFileCount: Math.max(0, series.chapterFileCount - fileMissing) }
+                    : { wantedChapterCount: 0, knownChapterCount: 0, chapterFileCount: 0, readChapterCount: null },
                 readTracking,
             ),
-        [series, readTracking],
+        [series, readTracking, fileMissing],
     )
 
     // Hoisted out of the JSX below: Lingui names a placeholder after the expression only when that
@@ -407,7 +411,7 @@ export function SeriesHero({
                                     ) : notWanted > 0 ? (
                                         <Trans>
                                             {haveCount} /{' '}
-                                            <Plural value={totalCount} one="# wanted chapter" other="# wanted chapters" />
+                                            <Plural value={totalCount} one="# wanted" other="# wanted" />
                                         </Trans>
                                     ) : (
                                         <Trans>

@@ -231,6 +231,7 @@ const CHAPTER_FILTERS = [
   'all',
   'wanted',
   'missing',
+  'fileMissing',
   'downloaded',
   'unread',
   'main',
@@ -364,7 +365,8 @@ const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
   all: () => true,
   wanted: (c) => c.wanted,
   missing: (c) => !c.hasFile && !c.fileRemovedAt,
-  downloaded: (c) => c.hasFile,
+  fileMissing: (c) => c.hasFile && c.fileMissing,
+  downloaded: (c) => c.hasFile && !c.fileMissing,
   specials: isSpecial,
   // A one-shot has no number and counts as main, matching NewChapterMonitorMode.MainOnly.
   main: (c) => !isSpecial(c),
@@ -1497,6 +1499,7 @@ function SeriesDetailBody() {
     })
   const wantedFilterCount = chapters?.filter(chapterFilters.wanted).length ?? 0
   const missingFilterCount = chapters?.filter(chapterFilters.missing).length ?? 0
+  const fileMissingFilterCount = chapters?.filter(chapterFilters.fileMissing).length ?? 0
   const downloadedFilterCount = chapters?.filter(chapterFilters.downloaded).length ?? 0
   const unreadFilterCount = chapters?.filter(filters.unread).length ?? 0
   const specialsFilterCount = chapters?.filter(chapterFilters.specials).length ?? 0
@@ -1514,6 +1517,9 @@ function SeriesDetailBody() {
         { value: 'all', label: t`All` },
         { value: 'wanted', label: t`Marked wanted (${wantedFilterCount})` },
         { value: 'missing', label: t`Missing (${missingFilterCount})` },
+        ...(fileMissingFilterCount > 0
+            ? [{ value: 'fileMissing', label: t`File missing (${fileMissingFilterCount})` }]
+            : []),
         { value: 'downloaded', label: t`Have (${downloadedFilterCount})` },
         ...(canFilterUnread
             ? [{ value: 'unread', label: t`Unread (${unreadFilterCount})` }]
@@ -1529,11 +1535,15 @@ function SeriesDetailBody() {
             : []),
       ]
       : []
-  const { have: chaptersHave, total: chaptersCounted } = progress
+  const { total: chaptersCounted } = progress
+  // The server counts a chapter whose file vanished from disk as obtained; the heading sits next to
+  // the "no file on disk" count, so it leaves those out.
+  const chaptersHave = Math.max(0, progress.have - fileMissingFilterCount)
   const wantedColumnTip = t`Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way.`
   const chapterFilterTips: Record<string, string> = {
     wanted: t`Chapters with Wanted switched on, downloaded or not.`,
     missing: t`Chapters with no file on disk, leaving out files that were deleted on purpose.`,
+    fileMissing: t`Chapters whose file the last health scan couldn't find on disk.`,
   }
   const chapterSegmentData = chapterFilterData.map((o) =>
       chapterFilterTips[o.value]
@@ -2761,6 +2771,25 @@ function SeriesDetailBody() {
                       <Badge size="sm" variant="light" color="var(--ok)" className="tnum">
                         <Trans>{readFilterCount} read</Trans>
                       </Badge>
+                  )}
+                  {fileMissingFilterCount > 0 && (
+                      <Group gap="xs" wrap="nowrap" align="center" role="status">
+                        <Group gap={6} wrap="nowrap" align="center">
+                          <IconAlertTriangle size={16} style={{ flexShrink: 0, color: 'var(--warn)' }} />
+                          <Text size="sm" c="var(--warn)" className="tnum">
+                            <Plural
+                                value={fileMissingFilterCount}
+                                one="# chapter has no file on disk"
+                                other="# chapters have no file on disk"
+                            />
+                          </Text>
+                        </Group>
+                        {canEditMetadata && (
+                            <Button size="xs" variant="default" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
+                              <Trans>Relink files</Trans>
+                            </Button>
+                        )}
+                      </Group>
                   )}
                 </Group>
                 {chapters && chapters.length > 0 && (
