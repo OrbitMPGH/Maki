@@ -58,7 +58,16 @@ const sinceTrim = new Map<string, number>()
 export async function store(cacheName: string, url: string, res: Response, cap?: number): Promise<void> {
   try {
     const cache = await caches.open(cacheName)
-    await cache.put(url, res)
+    try {
+      await cache.put(url, res)
+    } catch (err) {
+      // The overshoot reached the quota: trim now so the next store fits. This copy is lost.
+      if (cap !== undefined && err instanceof DOMException && err.name === 'QuotaExceededError') {
+        sinceTrim.set(cacheName, 0)
+        await trimTo(cache, cap)
+      }
+      return
+    }
     if (cap === undefined) return
     const count = (sinceTrim.get(cacheName) ?? TRIM_EVERY - 1) + 1
     if (count < TRIM_EVERY) {
@@ -66,9 +75,13 @@ export async function store(cacheName: string, url: string, res: Response, cap?:
       return
     }
     sinceTrim.set(cacheName, 0)
-    const keys = await cache.keys()
-    for (const key of keys.slice(0, Math.max(0, keys.length - cap))) await cache.delete(key)
+    await trimTo(cache, cap)
   } catch {
-    // Quota or a body that could not be read; the response already went to the page.
+    // A body that could not be read; the response already went to the page.
   }
+}
+
+async function trimTo(cache: Cache, cap: number): Promise<void> {
+  const keys = await cache.keys()
+  for (const key of keys.slice(0, Math.max(0, keys.length - cap))) await cache.delete(key)
 }

@@ -64,7 +64,8 @@ export function holdPage(src: string): Promise<string | null> {
   entry.pending = fetch(src, { credentials: 'same-origin' })
     .then((res) => (res.ok && res.headers.get('content-type')?.startsWith('image/') ? res.blob() : null))
     .then((blob) => {
-      if (!blob || entries.get(src) !== entry) {
+      // A page bigger than the whole cap would be trimmed straight away; it loads from its own URL.
+      if (!blob || blob.size > MAX_BYTES || entries.get(src) !== entry) {
         if (entries.get(src) === entry) entries.delete(src)
         return null
       }

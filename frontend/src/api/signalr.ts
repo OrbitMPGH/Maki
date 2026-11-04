@@ -239,6 +239,10 @@ export function useLiveEvents() {
 
     const unsubscribe = subscribe((conn) => {
       liveConn = conn
+      // These stop polling once the socket is up, so whatever changed between their first fetch and
+      // the handlers below being registered would otherwise stay missed.
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-pause'] })
       listen(conn, 'queueUpdated', (item: QueueItemDto) => {
         const isDone = item.status === 'Completed' || item.status === 'Cancelled'
         // Only the paged lists ['queue', page, pageSize] and the per-series ['queue', 'series', id]

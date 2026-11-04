@@ -2267,8 +2267,9 @@ export function useSeriesQueue(seriesId: number) {
 }
 
 /**
- * Per-status counts for the shell badge, so it doesn't poll a whole queue page. Admins get every
- * queue change over the socket, which refetches this, so they only poll while it is down.
+ * Per-status counts for the shell badge, so it doesn't poll a whole queue page. Admins get item
+ * changes over the socket, which refetch this, so they poll slowly. Bulk removes (clear, remove
+ * failed, a single remove) send no event, so the slow poll still catches those.
  */
 export function useQueueSummary() {
   const pushed = useAuth().can('Admin')
@@ -2276,7 +2277,7 @@ export function useQueueSummary() {
   return useQuery({
     queryKey: ['queue-summary'],
     queryFn: () => api<QueueSummaryDto>('/queue/summary'),
-    refetchInterval: !pushed ? 10_000 : connected ? false : 60_000,
+    refetchInterval: !pushed ? 10_000 : connected ? 120_000 : 60_000,
   })
 }
 

@@ -66,10 +66,20 @@ public class CoverService(
 
         try
         {
+            var stamp = File.GetLastWriteTimeUtc(cover);
             var bytes = await File.ReadAllBytesAsync(cover, ct);
-            await ImageWorkGate.RunAsync(
-                () => Task.FromResult(WriteSmallPoster(seriesId, bytes)), ImageWorkGate.Weigh(bytes), ct);
-            return small;
+            var poster = await ImageWorkGate.RunAsync(
+                () => Task.FromResult(SmallPoster(bytes)), ImageWorkGate.Weigh(bytes), ct);
+            lock (PosterLock(seriesId))
+            {
+                // A store that replaced cover.jpg meanwhile wrote its own small poster, and this one is older.
+                if (File.GetLastWriteTimeUtc(cover) == stamp)
+                {
+                    WriteSmallPoster(seriesId, poster);
+                }
+            }
+
+            return File.Exists(small) ? small : null;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -78,10 +88,20 @@ public class CoverService(
         }
     }
 
-    private string WriteSmallPoster(int seriesId, byte[] source)
+    /// <summary>
+    /// Held around writing cover.jpg and cover-sm.jpg, so two stores for one series cannot leave one's
+    /// small poster beside the other's poster. Striped by id rather than one lock per series.
+    /// </summary>
+    private static readonly object[] PosterLocks = Enumerable.Range(0, 64).Select(_ => new object()).ToArray();
+
+    private static object PosterLock(int seriesId) => PosterLocks[(uint)seriesId % (uint)PosterLocks.Length];
+
+    private static byte[] SmallPoster(byte[] source) =>
+        ImageCodec.JpegThumbnail(source, SmallPosterWidth, 85, enlarge: false);
+
+    private void WriteSmallPoster(int seriesId, byte[] poster)
     {
         var target = SmallCoverPathFor(seriesId);
-        var poster = ImageCodec.JpegThumbnail(source, SmallPosterWidth, 85, enlarge: false);
         var temp = $"{target}.{Guid.NewGuid():N}.tmp";
         try
         {
@@ -100,8 +120,6 @@ public class CoverService(
 
             throw;
         }
-
-        return target;
     }
 
     /// <summary>
@@ -183,43 +201,59 @@ public class CoverService(
     private string SavePoster(int seriesId, byte[] source)
     {
         var poster = ImageCodec.JpegThumbnail(source, PosterWidth, 90, enlarge: false);
-        var target = CoverPathFor(seriesId);
-        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-        var temp = $"{target}.{Guid.NewGuid():N}.tmp";
+        byte[]? small = null;
         try
         {
-            File.WriteAllBytes(temp, poster);
-            if (SameBytes(temp, target))
-            {
-                // Keeps the write time, which is what the cover URL's cache-buster follows.
-                File.Delete(temp);
-            }
-            else
-            {
-                File.Move(temp, target, overwrite: true);
-                CoverVersionCache.Set(target, File.GetLastWriteTimeUtc(target).Ticks);
-            }
-        }
-        catch
-        {
-            try
-            {
-                File.Delete(temp);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-            }
-
-            throw;
-        }
-
-        try
-        {
-            WriteSmallPoster(seriesId, source);
+            small = SmallPoster(source);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogWarning(ex, "Could not write the small cover for series {SeriesId}", seriesId);
+            logger.LogWarning(ex, "Could not make the small cover for series {SeriesId}", seriesId);
+        }
+
+        var target = CoverPathFor(seriesId);
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        var temp = $"{target}.{Guid.NewGuid():N}.tmp";
+        lock (PosterLock(seriesId))
+        {
+            try
+            {
+                File.WriteAllBytes(temp, poster);
+                if (SameBytes(temp, target))
+                {
+                    // Keeps the write time, which is what the cover URL's cache-buster follows.
+                    File.Delete(temp);
+                }
+                else
+                {
+                    File.Move(temp, target, overwrite: true);
+                    CoverVersionCache.Set(target, File.GetLastWriteTimeUtc(target).Ticks);
+                }
+            }
+            catch
+            {
+                try
+                {
+                    File.Delete(temp);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                }
+
+                throw;
+            }
+
+            if (small is not null)
+            {
+                try
+                {
+                    WriteSmallPoster(seriesId, small);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                {
+                    logger.LogWarning(ex, "Could not write the small cover for series {SeriesId}", seriesId);
+                }
+            }
         }
 
         return target;

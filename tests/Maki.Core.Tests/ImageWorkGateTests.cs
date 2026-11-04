@@ -42,6 +42,13 @@ public class ImageWorkGateTests
     [InlineData(4, 2)]
     public async Task Avif_encodes_take_half_the_limit_rounded_up(int limit, int avifAtOnce)
     {
+        // The limit clamps to the core count, so a small runner gets a lower one than asked.
+        if (limit > ImageWorkGate.MaxConversionLimit)
+        {
+            limit = ImageWorkGate.MaxConversionLimit;
+            avifAtOnce = (limit + 1) / 2;
+        }
+
         ImageWorkGate.SetConversionLimit(limit);
         try
         {
