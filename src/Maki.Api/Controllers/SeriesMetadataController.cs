@@ -2,6 +2,7 @@ using Maki.Api.Auth;
 using Maki.Api.Dtos;
 using Maki.Api.Localization;
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Maki.Core.Security;
@@ -77,8 +78,9 @@ public class SeriesMetadataController(
 
     /// <summary>The series' metadata changes, newest first, capped at the latest <see cref="HistoryLimit"/>.</summary>
     [HttpGet("history")]
-    public async Task<IActionResult> History(int id, CancellationToken ct)
+    public async Task<IActionResult> History(int id, CancellationToken ct, [FromServices] IAppSettings? appSettings = null)
     {
+        var loginNamesVisible = await UserNameVisibility.LoginNamesVisibleAsync(appSettings, ct);
         if (!await db.Series.AnyAsync(s => s.Id == id, ct))
         {
             return NotFound();
@@ -105,7 +107,7 @@ public class SeriesMetadataController(
             r.Change.Source == MetadataChangeSource.User ? "user" : "refresh",
             r.Editor is null || r.Change.UserId is not { } editorId
                 ? null
-                : UserNameVisibility.For(currentUser, editorId, r.Editor.DisplayName, r.Editor.UserName),
+                : UserNameVisibility.For(currentUser, editorId, r.Editor.DisplayName, r.Editor.UserName, loginNamesVisible),
             DateTime.SpecifyKind(r.Change.ChangedAtUtc, DateTimeKind.Utc))));
     }
 

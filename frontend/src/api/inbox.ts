@@ -32,6 +32,7 @@ export type InboxEventType =
   | 'volumeUpgraded'
   | 'accountSecurity'
   | 'seriesStatusChanged'
+  | 'noteReply'
   | 'customSourceUpdated'
 
 export type InboxLevel = 'info' | 'warning' | 'error'
@@ -132,6 +133,12 @@ export const INBOX_CATEGORIES: {
     multiUserOnly: true,
   },
   {
+    id: 'notes',
+    label: msg`Notes`,
+    types: ['noteReply'],
+    multiUserOnly: true,
+  },
+  {
     id: 'system',
     label: msg`System`,
     types: ['healthIssue', 'updateAvailable', 'importFinished', 'backupFinished', 'customSourceUpdated'],
@@ -171,6 +178,7 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
   volumeUpgraded: msg`Volume upgraded`,
   accountSecurity: msg`Account security`,
   seriesStatusChanged: msg`Series status changed`,
+  noteReply: msg`Replies to your notes`,
   customSourceUpdated: msg`Custom source updated by its repository`,
 }
 
@@ -182,6 +190,7 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
 export const INBOX_TYPE_DESCRIPTIONS: Partial<Record<InboxEventType, MessageDescriptor>> = {
   followedCreatorRelease: msg`Follow someone from their creator page.`,
   upgradeRestoreFailed: msg`The file is waiting in the trash folder.`,
+  noteReply: msg`Someone replied in a thread you wrote or joined.`,
 }
 
 /** Only ever admin-visible, so the settings card hides these for everyone else. */

@@ -26,6 +26,8 @@ import {
   useUnlinkUserOidc,
   useUpdateUser,
   useUserMode,
+  useLoginNames,
+  useSetLoginNames,
   useUsers,
   type Permission,
   type SaveUserBody,
@@ -124,10 +126,36 @@ function UserModeSwitch() {
   )
 }
 
+/**
+ * Login names are hidden from everyone but admins and their owner, since one is half of a password
+ * login. A household that knows each other can show them instead of "Another reader".
+ */
+function LoginNamesSwitch() {
+  const { t } = useLinguiMacro()
+  const { data: setting } = useLoginNames()
+  const save = useSetLoginNames()
+
+  const checked = save.isPending && save.variables !== undefined ? save.variables : setting?.visible
+
+  return (
+    <div id="setting-login-names" className="settings-inline-target">
+      {setting && (
+        <Switch
+          checked={checked}
+          disabled={save.isPending}
+          onChange={(e) => save.mutate(e.currentTarget.checked)}
+          label={t`Show login names to everyone`}
+          description={t`Readers without a display name appear under their login name on shared notes, the leaderboard and edit history, instead of "Another reader". Anyone who can sign in then sees every username.`}
+        />
+      )}
+    </div>
+  )
+}
+
 export function UsersSection() {
   const renderLabel = useLabel()
   const { data: users } = useUsers()
-  const { me } = useAuth()
+  const { me, singleUser } = useAuth()
   const [editing, setEditing] = useState<UserSummary | 'new' | null>(null)
   const [deleting, setDeleting] = useState<UserSummary | null>(null)
   const remove = useDeleteUser()
@@ -145,6 +173,7 @@ export function UsersSection() {
       panelProps={{ p: 'md' }}
     >
       <UserModeSwitch />
+      {!singleUser && <LoginNamesSwitch />}
 
       <Table.ScrollContainer minWidth={576}>
         <Table className="panel-table ops-table">

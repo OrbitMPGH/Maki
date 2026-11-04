@@ -11,6 +11,7 @@ const meta = {
     urls: pageUrlsFor(1132, 18, true),
     page: 5,
     bookmarks: new Set<number>([3, 9]),
+    notedPages: new Set<number>([1, 9]),
     onSelect: fn(),
     rtl: true,
   },
@@ -32,6 +33,8 @@ export const RightToLeft: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Go to page 6' })).toHaveAttribute('aria-current', 'true'))
     await expect(await canvas.findByRole('button', { name: 'Go to page 4 (bookmarked)' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Go to page 2 (has notes)' })).toHaveAttribute('data-noted', 'true')
+    await expect(await canvas.findByRole('button', { name: 'Go to page 10 (bookmarked, has notes)' })).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Go to page 8' }))
     await waitFor(() => expect(args.onSelect).toHaveBeenCalledWith(7))
   },

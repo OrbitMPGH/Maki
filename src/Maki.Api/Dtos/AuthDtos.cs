@@ -40,7 +40,8 @@ public record MeDto(
     bool TwoFactorEnabled,
     bool OidcLinked,
     string? OidcUserName,
-    bool SingleUser);
+    bool SingleUser,
+    bool LoginNamesVisible);
 
 public record UserSummaryDto(
     int Id,

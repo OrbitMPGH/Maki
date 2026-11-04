@@ -107,6 +107,8 @@ import {
   useSetChaptersState,
   type ChapterReadState,
 } from '../api/reader'
+import { useSeriesNoteCounts } from '../api/notes'
+import NotesPanel from '../components/notes/NotesPanel'
 import { useApplyAnimeResume, useDismissAnimeResume, useSeriesAnimeResume } from '../api/animeResume'
 import { useCreateSeriesRequest } from '../api/requests'
 import { altTitleLabel, readableTitles } from '../api/titles'
@@ -514,6 +516,12 @@ function SeriesDetailBody() {
       (c: ChapterDto) => readStateOf(readProgress.get(c.id)),
       [readProgress],
   )
+  const { data: noteCountRows } = useSeriesNoteCounts(seriesId)
+  const noteCounts = useMemo(
+      () => new Map((noteCountRows ?? []).map((n) => [n.chapterId, n])),
+      [noteCountRows],
+  )
+  const [notesPanel, setNotesPanel] = useState<{ chapterId: number; open: boolean } | null>(null)
   const canSaveOffline = pwaSupported()
   const { records: offlineRecords, progress: offlineProgress } = useOfflineChapters()
   const offlineSaved = useMemo(
@@ -680,6 +688,15 @@ function SeriesDetailBody() {
   const [chapterPage, setChapterPage] = useState(1)
   const [selectMode, setSelectMode] = useState(false)
   const [selected, setSelected] = useState<Set<number>>(new Set())
+  // Only notes the viewer can see; other people's private notes are not announced.
+  const selectedNoteCount = useMemo(() => {
+    let total = 0
+    for (const id of selected) {
+      const counts = noteCounts.get(id)
+      if (counts) total += counts.total
+    }
+    return total
+  }, [selected, noteCounts])
   // Chapter ids the link dialog is working on; null keeps it closed. Set from the selection
   // bar or from a single missing row's link button.
   const [linkChapterIds, setLinkChapterIds] = useState<number[] | null>(null)
@@ -1362,6 +1379,7 @@ function SeriesDetailBody() {
     deleteFile: (chapterId) => setDeleteFileIds([chapterId]),
     saveOffline: (chapterId) => void saveChaptersOffline([{ chapterId, seriesId }]),
     removeOffline: (chapterId) => void removeChaptersOffline([chapterId]),
+    openNotes: (chapterId) => setNotesPanel({ chapterId, open: true }),
     toggleSpanFold,
     setMarkerRef,
   })
@@ -1503,6 +1521,8 @@ function SeriesDetailBody() {
   const cutoffUnmetFilterCount = chapters?.filter(chapterFilters.cutoffUnmet).length ?? 0
   const skippedFilterCount = chapters?.filter(filters.skipped).length ?? 0
   const selectedCount = selected.size
+  const notesChapter = notesPanel ? chapters?.find((c) => c.id === notesPanel.chapterId) : undefined
+  const notesChapterRead = notesChapter ? readStateFor(notesChapter) : null
   const visibleAllCount = visibleChapters.length
   const visibleMainCount = visibleMain.length
   const visibleSpecialsCount = visibleSpecials.length
@@ -2998,6 +3018,15 @@ function SeriesDetailBody() {
                   <Trans>Use this to clean up chapters pulled in by a wrong source match.</Trans>{' '}
                   <Trans>Fix or remove the source mapping first, or a refresh will bring them right back.</Trans>
                 </Text>
+                {selectedNoteCount > 0 && (
+                  <Text size="sm">
+                    <Plural
+                      value={selectedNoteCount}
+                      one="# note on the selected chapters will be deleted."
+                      other="# notes on the selected chapters will be deleted."
+                    />
+                  </Text>
+                )}
                 <Text size="sm" c="var(--danger)">
                   <Trans>Removed chapter rows and their read history cannot be restored.</Trans>
                 </Text>
@@ -3180,6 +3209,7 @@ function SeriesDetailBody() {
                                           key={c.id}
                                           chapter={c}
                                           progress={readProgress.get(c.id)}
+                                          noteCounts={noteCounts.get(c.id)}
                                           queueItem={queueByChapterId.get(c.id)}
                                           selectMode={selectMode}
                                           selected={selectMode && selected.has(c.id)}
@@ -3379,6 +3409,18 @@ function SeriesDetailBody() {
                 chapter={pickChapter}
                 opened
                 onClose={() => setPickChapter(null)}
+            />
+        )}
+
+        {notesPanel && notesChapter && (
+            <NotesPanel
+                key={notesChapter.id}
+                opened={notesPanel.open}
+                onClose={() => setNotesPanel({ ...notesPanel, open: false })}
+                chapterId={notesChapter.id}
+                seriesId={seriesId}
+                chapterLabel={chapterLabel(notesChapter)}
+                spoilerGuard={!(notesChapterRead?.read || notesChapterRead?.watched)}
             />
         )}
 

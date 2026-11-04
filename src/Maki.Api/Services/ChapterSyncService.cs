@@ -601,7 +601,7 @@ public class ChapterSyncService(
     /// <summary>
     /// Locked and preview rows synced before sources stopped listing them (Suwayomi's 🔒, 💴 and
     /// "(Preview)" labels). Once no source links one, it can never be fetched and only inflates the
-    /// series' chapter count. A row with a file, a removed file, a reader or a live download stays.
+    /// series' chapter count. A row with a file, a removed file, a reader, a note or a live download stays.
     /// </summary>
     private async Task DropUnlistedLockedAsync(int seriesId, List<Chapter> existing, ReadRows reads, CancellationToken ct)
     {
@@ -642,13 +642,14 @@ public class ChapterSyncService(
     }
 
     /// <summary>
-    /// Every reader's progress and bookmarks on the series, loaded only once a merge needs them.
+    /// Every reader's progress, bookmarks and notes on the series, loaded only once a merge needs them.
     /// Unfiltered, since a sync started from one user's request must not drop another user's reads.
     /// </summary>
     private sealed class ReadRows(MakiDbContext db, int seriesId)
     {
         private List<ChapterProgress>? _progress;
         private List<ReaderBookmark>? _bookmarks;
+        private List<ChapterNote>? _notes;
 
         /// <summary>Whether one row can absorb the other without dropping a file or a reader's progress.</summary>
         public async Task<bool> CanMergeAsync(Chapter a, Chapter b, CancellationToken ct)
@@ -670,7 +671,8 @@ public class ChapterSyncService(
 
         public async Task<bool> HasReadsAsync(Chapter chapter, CancellationToken ct) =>
             (await ProgressAsync(ct)).Any(p => p.ChapterId == chapter.Id) ||
-            (await BookmarksAsync(ct)).Any(b => b.ChapterId == chapter.Id);
+            (await BookmarksAsync(ct)).Any(b => b.ChapterId == chapter.Id) ||
+            (await NotesAsync(ct)).Any(n => n.ChapterId == chapter.Id);
 
         public async Task MoveAsync(Chapter from, Chapter to, CancellationToken ct)
         {
@@ -693,11 +695,21 @@ public class ChapterSyncService(
                     mark.ChapterId = to.Id;
                 }
             }
+
+            foreach (var note in (await NotesAsync(ct)).Where(n => n.ChapterId == from.Id))
+            {
+                note.ChapterId = to.Id;
+            }
         }
 
         private async Task<List<ReaderBookmark>> BookmarksAsync(CancellationToken ct) =>
             _bookmarks ??= await db.ReaderBookmarks.IgnoreQueryFilters()
                 .Where(b => b.SeriesId == seriesId)
+                .ToListAsync(ct);
+
+        private async Task<List<ChapterNote>> NotesAsync(CancellationToken ct) =>
+            _notes ??= await db.ChapterNotes.IgnoreQueryFilters()
+                .Where(n => n.SeriesId == seriesId)
                 .ToListAsync(ct);
 
         private async Task<List<ChapterProgress>> ProgressAsync(CancellationToken ct) =>

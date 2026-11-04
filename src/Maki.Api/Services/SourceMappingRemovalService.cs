@@ -188,7 +188,7 @@ public class SourceMappingRemovalService(
     /// Chapters no remaining mapping supports that this removal still has no business deleting: ones
     /// the removed mapping never listed (a source delisted them, they were adopted from disk, or only
     /// a disabled mapping lists them) that hold a file from a source other than the removed one, or
-    /// somebody's reading state. The row going takes every user's progress and bookmarks with it.
+    /// somebody's reading state or notes. The row going takes every user's progress, bookmarks and notes with it.
     /// A chapter the removed mapping did list is its own to remove, as before.
     /// </summary>
     private async Task<HashSet<int>> KeptWithoutSupportAsync(
@@ -209,6 +209,11 @@ public class SourceMappingRemovalService(
             .Concat(await db.ReaderBookmarks.IgnoreQueryFilters()
                 .Where(b => b.SeriesId == seriesId)
                 .Select(b => b.ChapterId)
+                .Distinct()
+                .ToListAsync(ct))
+            .Concat(await db.ChapterNotes.IgnoreQueryFilters()
+                .Where(n => n.SeriesId == seriesId)
+                .Select(n => n.ChapterId)
                 .Distinct()
                 .ToListAsync(ct))
             .ToHashSet();

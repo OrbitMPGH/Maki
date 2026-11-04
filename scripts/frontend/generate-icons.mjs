@@ -157,6 +157,7 @@ const ICONS = {
   IconMoon: 'moon',
   IconMoonStars: 'moon-stars',
   IconMountain: 'mountains',
+  IconNote: 'note',
   IconPackage: 'package',
   IconPackageImport: 'arrow-square-in',
   IconPackages: 'stack',

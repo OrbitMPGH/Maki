@@ -7694,6 +7694,22 @@ body.reader-open {
 .reader-scrub-segment[data-hover][data-lit] {
   background: color-mix(in srgb, var(--mantine-primary-color-filled) 70%, #fff);
 }
+/* A page with a note gets a dot above its segment, inside the scrubber's top padding. */
+.reader-scrub-segment[data-noted] {
+  position: relative;
+}
+.reader-scrub-segment[data-noted]::after {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--brand);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
 /* Covers the page(s) on screen. With a gap, segment i starts at i * (track + gap) / count. The
    minimum width keeps it findable in a long chapter whose segments are a pixel or two wide. */
 .reader-scrub-thumb {
@@ -12825,4 +12841,459 @@ button.shortlist-title:hover {
 }
 .shortlist-compare tbody tr:last-child > * {
   border-bottom: 0;
+}
+/* --- Chapter notes -------------------------------------------------------- */
+/* Page markers live on the thumbnails and the slider, never on the page art itself. */
+.reader-strip-item[data-noted='true']::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  z-index: 1;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--brand);
+  box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.6);
+}
+
+.notes-drawer {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.notes-drawer .mantine-Drawer-header {
+  flex: 0 0 auto;
+}
+.notes-drawer-title {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.notes-drawer-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+}
+.notes-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  padding: 0 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  outline: none;
+}
+.notes-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.notes-empty {
+  padding-block: 12px;
+}
+.notes-compose {
+  flex: 0 0 auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.note-thread {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+}
+.note-thread[data-highlight] {
+  border-color: var(--brand);
+}
+.note-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.note-replies {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-inline-start: 6px;
+  padding-inline-start: 12px;
+  border-inline-start: 2px solid var(--border);
+}
+.note-author {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.note-page-chip {
+  cursor: pointer;
+}
+.note-actions {
+  margin-inline-start: -6px;
+}
+.note-body {
+  font-size: var(--type-body);
+  line-height: 1.45;
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.note-body a {
+  color: var(--brand-fg);
+  text-decoration: underline;
+}
+.note-spoiler {
+  border-radius: var(--radius-2xs);
+}
+.note-spoiler:not([data-revealed]) {
+  cursor: pointer;
+  background: var(--surface-hover);
+}
+.note-spoiler:not([data-revealed]):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+.note-spoiler-content {
+  filter: blur(5px);
+  user-select: none;
+  pointer-events: none;
+}
+.note-fold {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--type-meta);
+  text-align: start;
+  cursor: pointer;
+}
+.note-fold-action {
+  flex: none;
+  color: var(--brand-fg);
+}
+.chapter-notes-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--type-micro);
+  font-variant-numeric: tabular-nums;
+}
+.reader-end-notes {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding-top: 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.reader-end-note-item {
+  display: grid;
+  gap: 2px;
+  max-width: 52ch;
+  color: rgba(255, 255, 255, 0.82);
+}
+.reader-end-note-head {
+  font-size: var(--type-micro);
+  color: rgba(255, 255, 255, 0.5);
+}
+.reader-end-note-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+.reader-end-notes .note-body {
+  color: inherit;
+}
+.reader-end-notes .note-body a {
+  color: #fff;
+}
+.reader-end-notes .note-spoiler:not([data-revealed]) {
+  background: rgba(255, 255, 255, 0.14);
+}
+.chapter-notes-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+.chapter-notes-button:hover {
+  background: var(--surface-hover);
+}
+.chapter-notes-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+.chapter-notes-count[data-kind='mine'] {
+  color: var(--brand-fg);
+}
+.chapter-notes-count[data-kind='shared'] {
+  color: var(--info);
+}
+
+/* Notes outside the bottom sheet: the reader's dropdown, the series page popover, the margin beside
+   the page and the page tabs. `.notes-surface` marks them so the reader's keys leave them alone. */
+.notes-dropdown {
+  display: flex;
+  flex-direction: column;
+  max-height: min(640px, calc(100dvh - 120px));
+  overflow: hidden;
+  color: var(--ink);
+}
+.notes-dropdown .notes-panel {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+  padding: 12px 14px;
+}
+.notes-dropdown-fixed {
+  position: fixed;
+  top: calc(60px + var(--safe-top));
+  right: 12px;
+  width: min(460px, calc(100vw - 24px));
+  max-height: min(720px, calc(100dvh - 76px - var(--safe-top)));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+}
+.notes-dropdown-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.notes-dropdown-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chapter-notes-anchor {
+  display: inline-flex;
+}
+
+/* The margin sits on the reader's own background, which is dark in every theme, so its loose text
+   takes fixed light colours; the cards are app surfaces like the reader's other popovers. Empty
+   margin lets taps through to the page. */
+.notes-margin {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-inline-start: 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  pointer-events: none;
+}
+.notes-margin > * {
+  pointer-events: auto;
+}
+.notes-strip-column {
+  position: absolute;
+  top: 0;
+  z-index: 1;
+  height: 0;
+  pointer-events: none;
+}
+.notes-strip-group {
+  position: absolute;
+  left: 24px;
+  right: 0;
+  display: grid;
+  gap: 12px;
+  pointer-events: auto;
+}
+.notes-strip-add {
+  position: absolute;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 2;
+  display: grid;
+  justify-items: start;
+}
+.notes-strip-add .notes-margin-compose {
+  width: 100%;
+}
+.notes-margin-group {
+  display: grid;
+  gap: 8px;
+}
+.notes-margin-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 30px;
+  font-size: var(--type-micro);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+.notes-margin-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.24);
+  border-radius: var(--radius-control);
+  background: none;
+  color: rgba(255, 255, 255, 0.72);
+  font: inherit;
+  font-size: var(--type-meta);
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+}
+.notes-margin-add:hover {
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #fff;
+}
+.notes-margin-card {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+.notes-margin-card:hover {
+  border-color: var(--border-strong);
+}
+.notes-margin-card[data-anchored]::before,
+.notes-margin-open[data-anchored]::before {
+  content: '';
+  position: absolute;
+  top: 19px;
+  right: 100%;
+  width: 24px;
+  height: 1px;
+  background: color-mix(in srgb, var(--brand) 70%, transparent);
+}
+.notes-margin-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink-3);
+  font: inherit;
+  font-size: var(--type-micro);
+  text-align: start;
+  cursor: pointer;
+}
+.notes-margin-author {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink-hi);
+  font-weight: var(--fw-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.notes-margin-show {
+  margin-inline-start: auto;
+  color: var(--brand-fg);
+}
+.notes-margin-text {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.notes-margin-text .note-body {
+  font-size: var(--type-meta);
+}
+.notes-margin-replies {
+  font-size: var(--type-micro);
+  color: var(--brand-fg);
+}
+.notes-margin-open {
+  position: relative;
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+}
+.notes-margin-open .note-thread {
+  width: 100%;
+  border-color: color-mix(in srgb, var(--brand) 55%, var(--border));
+}
+.notes-margin-less {
+  color: rgba(255, 255, 255, 0.7);
+}
+.notes-margin-compose {
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--brand) 55%, var(--border));
+  border-radius: var(--radius-card);
+  background: var(--surface);
+  color: var(--ink);
+}
+.notes-margin-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 0 0;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  background: none;
+  color: rgba(255, 255, 255, 0.68);
+  font: inherit;
+  font-size: var(--type-meta);
+  cursor: pointer;
+}
+.notes-margin-section:hover {
+  color: #fff;
+}
+.notes-margin-add:focus-visible,
+.notes-margin-card-head:focus-visible,
+.notes-margin-section:focus-visible,
+.notes-page-tab:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.notes-page-tabs {
+  position: absolute;
+  top: calc(72px + var(--safe-top));
+  right: 0;
+  z-index: 3;
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+.notes-page-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 12px 0 10px;
+  border: 1px solid var(--border-strong);
+  border-right: 0;
+  border-radius: var(--radius-control) 0 0 var(--radius-control);
+  background: var(--surface);
+  color: var(--ink-hi);
+  box-shadow: inset 3px 0 0 var(--brand);
+  font: inherit;
+  font-size: var(--type-meta);
+  cursor: pointer;
 }

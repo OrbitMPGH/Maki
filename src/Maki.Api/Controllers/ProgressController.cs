@@ -297,8 +297,9 @@ public class ProgressController(
     /// </para>
     /// </summary>
     [HttpGet("leaderboard")]
-    public async Task<IActionResult> Leaderboard(CancellationToken ct)
+    public async Task<IActionResult> Leaderboard(CancellationToken ct, [FromServices] IAppSettings? appSettings = null)
     {
+        var loginNamesVisible = await UserNameVisibility.LoginNamesVisibleAsync(appSettings, ct);
         var users = await db.Users
             .Where(u => !u.Disabled && !u.PendingSetup)
             .Select(u => new { u.Id, u.UserName, u.DisplayName })
@@ -324,7 +325,7 @@ public class ProgressController(
 
             rows.Add(new LeaderboardRowDto(
                 user.Id,
-                UserNameVisibility.For(currentUser, user.Id, user.DisplayName, user.UserName),
+                UserNameVisibility.For(currentUser, user.Id, user.DisplayName, user.UserName, loginNamesVisible),
                 level,
                 snapshot.ChaptersRead + snapshot.VolumesRead,
                 snapshot.CurrentStreak));

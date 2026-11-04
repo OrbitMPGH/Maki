@@ -57,9 +57,11 @@ export interface Me {
   oidcUserName: string | null
   /** Effective single-user mode: the setting is on and only one account is enabled. */
   singleUser: boolean
+  /** An admin made login names visible to everyone wherever no display name is set. */
+  loginNamesVisible: boolean
 }
 
-export interface UserSummary extends Omit<Me, 'oidcUserName' | 'singleUser'> {
+export interface UserSummary extends Omit<Me, 'oidcUserName' | 'singleUser' | 'loginNamesVisible'> {
   disabled: boolean
   pendingSetup: boolean
   createdAt: string
@@ -420,6 +422,28 @@ export function useSetUserMode() {
     onSuccess: (mode) => {
       qc.setQueryData(USER_MODE_KEY, mode)
       void qc.invalidateQueries({ queryKey: ME_QUERY_KEY })
+    },
+  })
+}
+
+const LOGIN_NAMES_KEY = ['settings', 'loginnames'] as const
+
+export function useLoginNames() {
+  return useQuery({
+    queryKey: LOGIN_NAMES_KEY,
+    queryFn: () => api<{ visible: boolean }>('/settings/loginnames'),
+  })
+}
+
+export function useSetLoginNames() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (visible: boolean) =>
+      api<{ visible: boolean }>('/settings/loginnames', { method: 'PUT', body: JSON.stringify({ visible }) }),
+    onSuccess: (setting) => {
+      qc.setQueryData(LOGIN_NAMES_KEY, setting)
+      void qc.invalidateQueries({ queryKey: ME_QUERY_KEY })
+      void qc.invalidateQueries({ queryKey: ['notes'] })
     },
   })
 }

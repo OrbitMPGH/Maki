@@ -307,6 +307,7 @@ public class UsersController(
         }
 
         var name = user.UserName ?? string.Empty;
+        await ChapterNoteCleanup.ForgetAuthorAsync(db, user.Id, ct);
         db.Users.Remove(user);
         await db.SaveChangesAsync(ct);
         snapshots.Evict(id);

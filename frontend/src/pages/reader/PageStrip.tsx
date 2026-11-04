@@ -12,6 +12,7 @@ export default function PageStrip({
   urls,
   page,
   bookmarks,
+  notedPages,
   onSelect,
   rtl,
 }: {
@@ -19,6 +20,8 @@ export default function PageStrip({
   page: number
   /** Bookmarked page indices, marked here so a bookmark is findable, not just settable. */
   bookmarks: Set<number>
+  /** Pages carrying a note, marked the same way. */
+  notedPages: ReadonlySet<number>
   onSelect: (page: number) => void
   rtl: boolean
 }) {
@@ -34,6 +37,7 @@ export default function PageStrip({
       {urls.map((src, index) => {
         const pageNumber = index + 1
         const bookmarked = bookmarks.has(index)
+        const noted = notedPages.has(index)
         return (
           <button
             key={src}
@@ -42,8 +46,17 @@ export default function PageStrip({
             className="reader-strip-item"
             data-current={index === page}
             data-bookmarked={bookmarked}
+            data-noted={noted}
             onClick={() => onSelect(index)}
-            aria-label={bookmarked ? t`Go to page ${pageNumber} (bookmarked)` : t`Go to page ${pageNumber}`}
+            aria-label={
+              bookmarked && noted
+                ? t`Go to page ${pageNumber} (bookmarked, has notes)`
+                : bookmarked
+                  ? t`Go to page ${pageNumber} (bookmarked)`
+                  : noted
+                    ? t`Go to page ${pageNumber} (has notes)`
+                    : t`Go to page ${pageNumber}`
+            }
             aria-current={index === page}
           >
             <img src={src} alt="" loading="lazy" decoding="async" draggable={false} />

@@ -32,13 +32,17 @@ export interface ReadingClock {
  *
  * `enabled` follows the same gate as the position writer, so an incognito sitting is not timed
  * either. Whatever is banked when it flips off stays banked and is simply never sent.
+ *
+ * `paused` stops the count without ending the sitting, for a sheet that covers the page (typing a
+ * note counts as activity, but nobody is looking at a page).
  */
-export function useReadingClock(enabled: boolean): ReadingClock {
+export function useReadingClock(enabled: boolean, paused = false): ReadingClock {
   const millis = useRef(0)
   const lastActivity = useRef(Date.now())
   const lastAccrual = useRef(Date.now())
   const running = useRef(false)
   const active = useRef(false)
+  const pausedRef = useRef(paused)
 
   /**
    * Credits the stretch since the last accrual, if it was spent reading. Both the timer and the
@@ -56,11 +60,20 @@ export function useReadingClock(enabled: boolean): ReadingClock {
     if (
       running.current &&
       active.current &&
+      !pausedRef.current &&
       now - lastActivity.current < IDLE_MS
     ) {
       millis.current += Math.min(elapsed, TICK_MS)
     }
   }, [])
+
+  // Credit what came before the change under the old state, then start a clean interval.
+  useEffect(() => {
+    if (pausedRef.current === paused) return
+    accrue()
+    pausedRef.current = paused
+    lastAccrual.current = Date.now()
+  }, [paused, accrue])
 
   useEffect(() => {
     if (!enabled) return

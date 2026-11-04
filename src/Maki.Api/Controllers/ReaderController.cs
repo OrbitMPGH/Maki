@@ -219,6 +219,11 @@ public class ReaderController(
             .Where(f => f.Id == slice.ChapterFileId)
             .Select(f => f.Tier)
             .FirstOrDefaultAsync(ct);
+        // Drawn with the first paint, so the toolbar badge and the page markers need no second request.
+        var notePages = await db.ChapterNotes
+            .Where(n => n.ChapterId == id && n.ParentId == null && n.DeletedAt == null)
+            .Select(n => n.PageIndex)
+            .ToListAsync(ct);
 
         return Ok(new
         {
@@ -247,7 +252,9 @@ public class ReaderController(
             autoProfileId = resolved.AutoProfileId,
             pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion),
             tier = QualitySnapshot.TierName(tier),
-            enhanceServer
+            enhanceServer,
+            noteCount = notePages.Count,
+            notedPages = notePages.OfType<int>().Where(p => p < slice.PageCount).Distinct().Order().ToList()
         });
     }
 

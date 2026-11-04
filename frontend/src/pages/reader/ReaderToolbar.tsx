@@ -10,12 +10,13 @@ import {
   IconLayoutGrid,
   IconMaximize,
   IconMinimize,
+  IconNote,
   IconSquareHalf,
   IconZoomIn,
   IconZoomOut,
   IconZoomReset,
 } from '../../lib/icons'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -56,6 +57,9 @@ export default function ReaderToolbar({
   bookmarked,
   bookmarkDisabled,
   onToggleBookmark,
+  noteCount,
+  notesOpen,
+  onToggleNotes,
   stripOpen,
   onToggleStrip,
   visible,
@@ -100,6 +104,10 @@ export default function ReaderToolbar({
   /** Offline: a toggle cannot be queued and replayed safely. */
   bookmarkDisabled: boolean
   onToggleBookmark: () => void
+  /** Visible notes on this chapter, from the manifest. */
+  noteCount: number
+  notesOpen: boolean
+  onToggleNotes: () => void
   stripOpen: boolean
   onToggleStrip: () => void
   visible: boolean
@@ -179,6 +187,8 @@ export default function ReaderToolbar({
   const seriesProgressTooltip = moreInSeries
     ? t`${chaptersRead} of ${seriesChapterCount} downloaded chapters read, ${seriesWantedCount} in the series`
     : t`${chaptersRead} of ${seriesChapterCount} downloaded chapters read`
+
+  const notedPages = useMemo(() => new Set(manifest.notedPages ?? []), [manifest.notedPages])
 
   // Clicks on the bars must not fall through to the page-turn zones behind them.
   const stop = (event: React.MouseEvent) => event.stopPropagation()
@@ -305,6 +315,25 @@ export default function ReaderToolbar({
               <IconEyeOff size={18} opacity={0.7} />
             </Tooltip>
           )}
+          <Tooltip label={t`Notes`} withArrow zIndex={OVERLAY_Z}>
+            <ActionIcon
+              variant={notesOpen ? 'light' : 'subtle'}
+              color="gray"
+              w="auto"
+              miw={28}
+              px={noteCount > 0 ? 6 : 0}
+              onClick={onToggleNotes}
+              aria-label={noteCount > 0 ? t`Notes (${noteCount})` : t`Notes`}
+              aria-expanded={notesOpen}
+            >
+              <IconNote size={18} />
+              {noteCount > 0 && (
+                <span className="tnum" style={{ marginInlineStart: 4, fontSize: 12 }}>
+                  {noteCount}
+                </span>
+              )}
+            </ActionIcon>
+          </Tooltip>
           <Tooltip
             label={
               bookmarkDisabled
@@ -358,6 +387,7 @@ export default function ReaderToolbar({
             onSeek={onSeek}
             enhanced={enhancedPages}
             upscaling={upscalingPages}
+            noted={notedPages}
             thumbs={thumbs}
           />
 

@@ -5,6 +5,7 @@ import { notifications } from '../lib/toast'
 import { isPageScrolling } from '../lib/pageScrolling'
 import { api } from './client'
 import { inboxPrefsQuery, type InboxPush } from './inbox'
+import { refreshNotes } from './notes'
 import type { SourceMatchProgress, SourceMatchState } from './hooks'
 import { createSeriesListRefresher } from './seriesListPatch'
 import type { QueueHistoryDto, QueueItemDto, QueuePauseDto } from './types'
@@ -216,6 +217,7 @@ export function useLiveEvents() {
         ['queue-history'],
         ['queue-pause'],
         ['inbox'],
+        ['notes'],
         ['series'],
         ['chapters'],
         ['sourcemappings'],
@@ -361,6 +363,11 @@ export function useLiveEvents() {
         seriesList.mark(seriesId)
         scheduleSeriesRefresh()
         void queryClient.invalidateQueries({ queryKey: ['home'] })
+      })
+
+      // Only ids travel: the text and the author come back through the filtered endpoints.
+      listen(conn, 'chapterNotesChanged', ({ seriesId, chapterId }: { seriesId: number; chapterId: number }) => {
+        refreshNotes(queryClient, seriesId, chapterId)
       })
 
       listen(conn, 'updateAvailable', () => {
