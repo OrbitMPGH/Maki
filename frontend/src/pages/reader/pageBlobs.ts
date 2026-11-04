@@ -8,7 +8,14 @@
  * mounted.
  */
 
-const MAX_BYTES = 96 * 1024 * 1024
+/** Scaled by the device's reported memory where the browser reports it; Safari does not, and keeps the top cap. */
+function blobCap(): number {
+  const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory
+  const mb = memory === undefined ? 96 : memory <= 2 ? 32 : memory <= 4 ? 64 : 96
+  return mb * 1024 * 1024
+}
+
+const MAX_BYTES = blobCap()
 
 interface Entry {
   objectUrl: string | null
@@ -57,7 +64,8 @@ export function holdPage(src: string): Promise<string | null> {
   entry.pending = fetch(src, { credentials: 'same-origin' })
     .then((res) => (res.ok && res.headers.get('content-type')?.startsWith('image/') ? res.blob() : null))
     .then((blob) => {
-      if (!blob || entries.get(src) !== entry) {
+      // A page bigger than the whole cap would be trimmed straight away; it loads from its own URL.
+      if (!blob || blob.size > MAX_BYTES || entries.get(src) !== entry) {
         if (entries.get(src) === entry) entries.delete(src)
         return null
       }

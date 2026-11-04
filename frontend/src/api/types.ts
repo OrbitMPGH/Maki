@@ -30,8 +30,11 @@ export interface SeriesDto {
   /**
    * Other primary titles from the provider with the language each is written in, for the
    * "show more" expander next to `originalTitle` and as the pool `displayTitle` comes from.
+   * Not on library list rows, which carry `altTitleNames` instead.
    */
-  altTitles: LocalizedTitle[]
+  altTitles?: LocalizedTitle[]
+  /** The same titles as bare names, for title search. Library list rows only. */
+  altTitleNames?: string[]
   status: string
   /**
    * manga | manhwa | manhua | oel | other, or null on a series whose metadata hasn't been refreshed
@@ -76,7 +79,8 @@ export interface SeriesDto {
   aniListId: number | null
   malId: number | null
   kitsuId: number | null
-  links: MetadataLink[]
+  /** Not on library list rows. */
+  links?: MetadataLink[]
   /** "subChapterSource|wholeChapterSource" when sources disagree on numbering. */
   numberingClash: string | null
   added: string

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import {
   keepPreviousData,
   useInfiniteQuery,
@@ -11,6 +11,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import { ApiError, api, getInitialize, xsrfHeader } from './client'
 import { useSaveSettingsRecord } from './settingsRecord'
 import { useAuth } from '../auth/AuthProvider'
+import { useHubConnected } from './signalr'
 import type { AnimeResume } from './animeResume'
 import { affectedKeys } from './recommendationFeedback'
 import type { RequestSummaryDto, SourceReliabilityDto } from './stats'
@@ -125,43 +126,7 @@ export function useLibraryStats(): LibraryStats {
   }, [series])
 }
 
-const hasActiveSeries = (list: SeriesDto[]) => activeSeries(list).length > 0
-
-/**
- * Whether the library holds any active series. A boolean rather than the list, so a page that only
- * needs to know doesn't re-render each time a download refreshes the counts on it.
- */
-export function useHasLibrary() {
-  return useQuery({ ...seriesListQuery, select: hasActiveSeries })
-}
-
-// Plain objects, not Maps: React Query shares a select result that comes out equal to the last
-// one, so the lookups below keep their identity while a download only changes counts.
-const idsByMangaBaka = (list: SeriesDto[]) => {
-  const ids: Record<number, number> = {}
-  for (const s of list) if (s.mangaBakaId != null) ids[s.mangaBakaId] = s.id
-  return ids
-}
-const coversByMangaBaka = (list: SeriesDto[]) => {
-  const covers: Record<number, string> = {}
-  for (const s of list) if (s.mangaBakaId != null && s.coverUrl) covers[s.mangaBakaId] = s.coverUrl
-  return covers
-}
-
-/** Maps a catalogue (MangaBaka) item to the library series id that owns it, or null. */
-export function useSeriesIdLookup() {
-  const { data: ids } = useQuery({ ...seriesListQuery, select: idsByMangaBaka })
-  return useCallback((item: RecommendationItem) => ids?.[Number(item.providerId)] ?? null, [ids])
-}
-
-/** Maps a MangaBaka id to the poster of the library series that owns it, or null. */
-export function useLibraryCoverLookup() {
-  const { data: covers } = useQuery({ ...seriesListQuery, select: coversByMangaBaka })
-  return useCallback(
-    (mangaBakaId: string | null | undefined) => (mangaBakaId ? covers?.[Number(mangaBakaId)] ?? null : null),
-    [covers],
-  )
-}
+export { useHasLibrary, useLibraryCoverLookup, useSeriesIdLookup } from './seriesLookup'
 
 // When each series was first seen waiting on its match or link, for the polling backoff below.
 const pendingSince = new Map<number, number>()
@@ -2301,12 +2266,18 @@ export function useSeriesQueue(seriesId: number) {
   })
 }
 
-/** Per-status counts for the shell badge, so it doesn't poll a whole queue page. */
+/**
+ * Per-status counts for the shell badge, so it doesn't poll a whole queue page. Admins get item
+ * changes over the socket, which refetch this, so they poll slowly. Bulk removes (clear, remove
+ * failed, a single remove) send no event, so the slow poll still catches those.
+ */
 export function useQueueSummary() {
+  const pushed = useAuth().can('Admin')
+  const connected = useHubConnected()
   return useQuery({
     queryKey: ['queue-summary'],
     queryFn: () => api<QueueSummaryDto>('/queue/summary'),
-    refetchInterval: 10_000,
+    refetchInterval: !pushed ? 10_000 : connected ? 120_000 : 60_000,
   })
 }
 
@@ -2421,12 +2392,17 @@ export function useRemoveFailedQueue() {
   })
 }
 
-/** Pushed by `queuePauseChanged` (see `signalr.ts`), so the poll is only the fallback for a missed event. */
+/**
+ * Pushed by `queuePauseChanged` (see `signalr.ts`) to everyone who may pause, so they only poll
+ * while the socket is down; a reconnect refetches it.
+ */
 export function useQueuePause() {
+  const pushed = useAuth().can('ManageDownloadQueue')
+  const connected = useHubConnected()
   return useQuery({
     queryKey: ['queue-pause'],
     queryFn: ({ signal }) => api<QueuePauseDto>('/queue/pause', { signal }),
-    refetchInterval: 30_000,
+    refetchInterval: !pushed ? 30_000 : connected ? false : 60_000,
   })
 }
 
@@ -4093,6 +4069,8 @@ export function useSourcePriority(enabled = true) {
     queryKey: ['settings', 'sources', 'priority'],
     queryFn: () => api<SourcePrioritySettings>('/settings/sources/priority'),
     enabled,
+    // Changes only through its own save, which writes the cache.
+    staleTime: 5 * 60 * 1000,
   })
 }
 
@@ -4174,6 +4152,9 @@ export function useRootFolders() {
     queryKey: ['rootfolders'],
     queryFn: () => api<RootFolder[]>('/rootfolder'),
     enabled: can('AddSeries'),
+    // Mounted by some twenty components, often several per page. Edits invalidate it; only the
+    // free space and the reachable flag move on their own, and a couple of minutes is fine for those.
+    staleTime: 2 * 60 * 1000,
   })
 }
 

@@ -977,6 +977,7 @@ public class ChapterDownloadProcessor(
     {
         logger.LogWarning("Root folder {Path} is not available; queue item {Id} will try again later",
             rootFolder.Path, item.Id);
+        HealthWriteProbe.Shared.Expire();
         item.Status = QueueStatus.RateLimited;
         item.SetError(RootFolderUnavailableKey);
         item.NextAttempt = queue.NextRetryAttempt(1);
@@ -1151,6 +1152,7 @@ public class ChapterDownloadProcessor(
     private async Task FailAsync(
         DownloadQueueItem item, string key, CancellationToken ct, bool permanent = false, string? detail = null)
     {
+        if (key == DownloadFailureReason.Disk) HealthWriteProbe.Shared.Expire();
         item.Status = QueueStatus.Failed;
         item.SetError(key, detail: detail);
         if (permanent)

@@ -20,7 +20,7 @@ namespace Maki.Sources.MangaFire;
 /// Series id is "{hid}-{slug}" (the tail of /title/ URLs); the hid is the part before the first '-'.
 /// Pages are served plain, with no tile scrambling.
 /// </summary>
-public class MangaFireSource(MangaFireBrowser browser) : ISource
+public class MangaFireSource(MangaFireBrowser browser) : ISource, INewestFirstChapterSource
 {
     private const string SourceName = "mangafire";
 
@@ -97,11 +97,32 @@ public class MangaFireSource(MangaFireBrowser browser) : ISource
         // where each item carries its own code — there is no way to ask the site for a subset.
         var requested = languages.Count == 1 ? languages[0] : MangaFireBrowser.AllLanguages;
 
-        var (rawItems, languageMatched) = await browser.ChaptersAsync(sourceSeriesId, requested, ct);
+        var (rawItems, languageMatched, _) = await browser.ChaptersAsync(sourceSeriesId, requested, ct);
         EnsureLanguageMatched(languageMatched, requested);
 
         return BuildChapters(sourceSeriesId, rawItems, languages);
     }
+
+    /// <summary>
+    /// The list is sorted by number, newest first, so every new chapter is on the first pages. The
+    /// pager stops at the first page whose wanted chapters are all known (<see cref="KnownChapters.CoversPage"/>).
+    /// </summary>
+    public async Task<ChapterListing> ListNewChaptersAsync(
+        string sourceSeriesId, string? languageFilter, KnownChapters known, CancellationToken ct = default)
+    {
+        var languages = SiteLanguageCodes.Parse(languageFilter);
+        var requested = languages.Count == 1 ? languages[0] : MangaFireBrowser.AllLanguages;
+
+        var (rawItems, languageMatched, complete) = await browser.ChaptersAsync(sourceSeriesId, requested, ct,
+            page => PageIsKnown(sourceSeriesId, page, languages, known));
+        EnsureLanguageMatched(languageMatched, requested);
+
+        return new ChapterListing(BuildChapters(sourceSeriesId, rawItems, languages), complete);
+    }
+
+    internal static bool PageIsKnown(
+        string sourceSeriesId, IReadOnlyList<string> page, IReadOnlyList<string> languages, KnownChapters known) =>
+        known.CoversPage(BuildChapters(sourceSeriesId, page, languages));
 
     /// <summary>
     /// The switch failed, so the list is still whatever language was loaded before the attempt, not

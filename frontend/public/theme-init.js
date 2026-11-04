@@ -58,3 +58,36 @@
   var meta = document.querySelector('meta[name="theme-color"]')
   if (meta) meta.setAttribute('content', bar)
 })()
+
+// Starts the resolved language's catalogue downloading beside the main chunk instead of after it.
+// The build lists each catalogue's file in a meta tag; the pick mirrors resolveInitialLocale in
+// i18n.ts (stored choice, then the browser's list, then English).
+;(function () {
+  try {
+    var meta = document.querySelector('meta[name="maki-catalogs"]')
+    if (!meta) return
+    var files = JSON.parse(meta.getAttribute('content') || '{}')
+    var codes = Object.keys(files)
+    var match = function (tag) {
+      var wanted = typeof tag === 'string' ? tag.trim().toLowerCase() : ''
+      if (!wanted) return null
+      var primary = wanted.split('-')[0]
+      var i
+      for (i = 0; i < codes.length; i++) if (codes[i].toLowerCase() === wanted) return codes[i]
+      for (i = 0; i < codes.length; i++) if (codes[i].split('-')[0].toLowerCase() === primary) return codes[i]
+      return null
+    }
+    var code = null
+    try {
+      code = match(localStorage.getItem('maki-language'))
+    } catch (e) {}
+    var tags = navigator.languages || [navigator.language]
+    for (var i = 0; !code && i < tags.length; i++) code = match(tags[i])
+    var href = files[code || 'en']
+    if (!href) return
+    var link = document.createElement('link')
+    link.rel = 'modulepreload'
+    link.href = href
+    document.head.appendChild(link)
+  } catch (e) {}
+})()

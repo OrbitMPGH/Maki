@@ -426,6 +426,13 @@ public class ReaderController(
             return StatusCode(StatusCodes.Status304NotModified);
         }
 
+        // The browser keeps the page as immutable, so the server rarely reads it again; without this its
+        // pages stay in the container's page cache up to the upscale cache cap.
+        Response.OnCompleted(() =>
+        {
+            PageCache.DropAfterScan(cached);
+            return Task.CompletedTask;
+        });
         return PhysicalFile(cached, UpscaleCache.ContentType(cached), lastModified: null, entityTag: etag, enableRangeProcessing: false);
     }
 

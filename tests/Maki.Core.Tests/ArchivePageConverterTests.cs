@@ -276,6 +276,22 @@ public class ArchivePageConverterTests : IDisposable
     }
 
     [Fact]
+    public async Task The_probe_answers_from_pages_encoded_together()
+    {
+        static (string, byte[])[] Pages(int seed, int quality) =>
+            [.. Enumerable.Range(0, 6).Select(i => ($"{i:000}.jpg", Scan(600, 900, seed + i).EncodeJpeg(quality)))];
+
+        var high = new PageConversionSettings(PageConversionFormat.Webp, PageConversionStop.High, false);
+        var broken = Pages(320, 95);
+        broken[2] = ("002.jpg", broken[2].Item2[..20_000]);
+
+        Assert.True(await ArchivePageConverter.ProbeAsync(Cbz("shrinks.cbz", Pages(300, 95)), Avif, CancellationToken.None));
+        Assert.False(await ArchivePageConverter.ProbeAsync(Cbz("stays.cbz", Pages(310, 95)),
+            new PageConversionSettings(PageConversionFormat.Webp, PageConversionStop.Lossless, false), CancellationToken.None));
+        Assert.True(await ArchivePageConverter.ProbeAsync(Cbz("broken.cbz", broken), high, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task A_broken_page_ahead_of_pages_still_encoding_leaves_no_partial()
     {
         var entries = Enumerable.Range(0, ImageWorkGate.Parallelism * 3)

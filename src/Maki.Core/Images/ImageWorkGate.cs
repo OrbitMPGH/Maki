@@ -48,11 +48,32 @@ public static class ImageWorkGate
     /// <summary>
     /// Page conversion encodes count against their own limit instead of <see cref="Parallelism"/>, so
     /// an admin can give the pass more cores than reading needs, and a reader's decode never queues
-    /// behind seconds of AV1. They still take the pixel budget, which is what bounds memory.
+    /// behind seconds of AV1. Their memory is bounded by <see cref="ConversionBudgetMegabytes"/>.
     /// </summary>
     private static readonly WeightedGate Conversions = new(Parallelism);
 
+    /// <summary>
+    /// Encoder memory all conversion encodes share: a gigabyte, or a quarter of what the runtime may use
+    /// when a container limit makes that lower. An encode costs far more than its pixels (an AVIF page
+    /// about 50 bytes per pixel), so the reader's pixel budget let four AVIF encoders reach 2.7 GB.
+    /// </summary>
+    public static readonly int ConversionBudgetMegabytes = (int)Math.Clamp(
+        GC.GetGCMemoryInfo().TotalAvailableMemoryBytes / 4 / (1 << 20), 64, 1024);
+
+    private static readonly WeightedGate ConversionMemory = new(ConversionBudgetMegabytes);
+
+    /// <summary>
+    /// An AVIF encode runs on <see cref="ImageCodec.EncoderThreads"/> threads, so AVIF pages also take
+    /// one of half the limit, rounded up. WebP is single-threaded and keeps one page per permit.
+    /// </summary>
+    private static readonly WeightedGate AvifConversions = new(AvifLimit(Parallelism));
+
     private static int _conversionLimit = Parallelism;
+
+    private static int AvifLimit(int limit) => (limit + 1) / 2;
+
+    /// <summary>How many encodes of one kind run at once at the current limit.</summary>
+    public static int ConversionsInFlight(bool avif) => avif ? AvifLimit(ConversionLimit) : ConversionLimit;
 
     /// <summary>The highest conversion limit an admin can set.</summary>
     public static int MaxConversionLimit => Math.Max(Environment.ProcessorCount, 1);
@@ -66,20 +87,34 @@ public static class ImageWorkGate
         var next = Math.Clamp(limit ?? Parallelism, 1, MaxConversionLimit);
         var previous = Interlocked.Exchange(ref _conversionLimit, next);
         Conversions.Resize(next - previous);
+        AvifConversions.Resize(AvifLimit(next) - AvifLimit(previous));
     }
 
-    /// <summary>A page conversion encode: one of <see cref="ConversionLimit"/>, plus its pixel weight.</summary>
-    public static async Task<T> RunConversionAsync<T>(Func<T> work, int megapixels, CancellationToken ct)
+    /// <summary>
+    /// A page conversion encode: one of <see cref="ConversionLimit"/>, for an AVIF page also one of
+    /// <see cref="ConversionsInFlight"/>, plus its encoder memory. A page heavier than the whole budget
+    /// runs alone.
+    /// </summary>
+    public static async Task<T> RunConversionAsync<T>(Func<T> work, ConversionWeight weight, CancellationToken ct)
     {
-        megapixels = Math.Clamp(megapixels, 1, BudgetMegapixels);
-        await Conversions.WaitAsync(1, ct);
+        var megabytes = Math.Clamp(weight.Megabytes, 1, ConversionBudgetMegabytes);
+        var taken = new List<(WeightedGate Gate, int Weight)>(3);
         try
         {
-            await Pixels.WaitAsync(megapixels, ct);
+            if (weight.Avif)
+            {
+                await AvifConversions.WaitAsync(1, ct);
+                taken.Add((AvifConversions, 1));
+            }
+
+            await Conversions.WaitAsync(1, ct);
+            taken.Add((Conversions, 1));
+            await ConversionMemory.WaitAsync(megabytes, ct);
+            taken.Add((ConversionMemory, megabytes));
         }
         catch
         {
-            Conversions.Release(1);
+            ReleaseAll(taken);
             throw;
         }
 
@@ -90,9 +125,41 @@ public static class ImageWorkGate
         }
         finally
         {
-            Conversions.Release(1);
-            Pixels.Release(megapixels);
+            ReleaseAll(taken);
             Left();
+        }
+    }
+
+    /// <summary>
+    /// Peak encoder memory per pixel, measured on 1.8 to 16 MP pages at one thread and rounded up:
+    /// AVIF 24 to 49, lossless WebP 23 to 37, lossy WebP 12 to 24 with sharp YUV and about two thirds
+    /// of that without. A page of fewer than three bands never gets sharp YUV; whether an RGB page is
+    /// grey is only known after the decode, so it is charged as colour.
+    /// </summary>
+    public static int BytesPerPixel(PageEncoding encoding, bool sharpYuv) => encoding switch
+    {
+        PageEncoding.Avif => 50,
+        PageEncoding.LosslessWebp => 36,
+        _ => sharpYuv ? 24 : 16
+    };
+
+    /// <summary>What encoding a page of this size costs: its megapixels times <see cref="BytesPerPixel"/>, plus 10 MB.</summary>
+    public static ConversionWeight WeighConversion(int width, int height, int bands, PageEncoding encoding)
+    {
+        var megabytes = (long)width * height * BytesPerPixel(encoding, bands >= 3) / (1 << 20) + EncodeOverheadMegabytes;
+        return new ConversionWeight((int)Math.Clamp(megabytes, 1, ConversionBudgetMegabytes), encoding == PageEncoding.Avif);
+    }
+
+    /// <summary>The weight of a page that is not decoded, or whose header does not parse.</summary>
+    public static readonly ConversionWeight LightConversion = new(EncodeOverheadMegabytes, false);
+
+    private const int EncodeOverheadMegabytes = 10;
+
+    private static void ReleaseAll(List<(WeightedGate Gate, int Weight)> taken)
+    {
+        foreach (var (gate, weight) in taken)
+        {
+            gate.Release(weight);
         }
     }
 
@@ -194,3 +261,6 @@ public static class ImageWorkGate
         }
     }
 }
+
+/// <summary>What one conversion encode takes from <see cref="ImageWorkGate"/>: encoder memory, and whether it is AVIF.</summary>
+public readonly record struct ConversionWeight(int Megabytes, bool Avif);

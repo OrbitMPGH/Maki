@@ -100,4 +100,29 @@ public class ArtifactBuildGateTests
         (await check.WaitAsync(TimeSpan.FromSeconds(5), CancellationToken.None)).Dispose();
         Assert.Equal(1, gate.Collections);
     }
+
+    [Fact]
+    public async Task IdleWaitCompletesAtOnceWhenNothingHoldsTheGate()
+    {
+        await Gate().WaitUntilIdleAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(5));
+    }
+
+    [Fact]
+    public async Task IdleWaitHoldsUntilTheLastQueuedBuildIsDone()
+    {
+        var gate = Gate();
+        var first = await gate.EnterAsync("first", CancellationToken.None);
+        var second = gate.EnterAsync("second", CancellationToken.None);
+
+        var idle = gate.WaitUntilIdleAsync(CancellationToken.None);
+        Assert.False(idle.IsCompleted);
+
+        first.Dispose();
+        var lease = await second.WaitAsync(TimeSpan.FromSeconds(5), CancellationToken.None);
+        await Task.Delay(50);
+        Assert.False(idle.IsCompleted);
+
+        lease.Dispose();
+        await idle.WaitAsync(TimeSpan.FromSeconds(5));
+    }
 }

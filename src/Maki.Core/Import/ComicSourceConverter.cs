@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.IO.Compression;
 using Maki.Core.Reading;
 using Maki.Core.Storage;
@@ -14,6 +15,55 @@ public static class ComicSourceConverter
 {
     /// <summary>Zip entries are separated with "/" by spec; a RAR written on Windows is not.</summary>
     private const char Backslash = (char)92;
+
+    /// <summary>
+    /// How many archives are decompressed at once, whatever the import's own concurrency. Each open
+    /// LZMA or RAR decoder holds a window the size of the archive's dictionary: eight solid 7z files
+    /// with a 256 MB dictionary measured 2,061 MB of heap repacked together.
+    /// </summary>
+    internal const int MaxConcurrentRepacks = 2;
+
+    private static readonly BlockingCollection<(Action Work, TaskCompletionSource Done)> RepackQueue = new();
+
+    private static int _repackLanesStarted;
+
+    /// <summary>
+    /// Runs <paramref name="work"/> on one of <see cref="MaxConcurrentRepacks"/> long-lived threads and
+    /// waits for it. A semaphore alone is not enough: SharpCompress rents the window from the shared
+    /// array pool, which parks a returned array in the returning thread's own slot, so eight pool
+    /// threads taking turns two at a time still kept eight windows (2 GB) for up to a minute. On
+    /// fixed threads the pool hands the same two back.
+    /// </summary>
+    internal static void RunOnRepackLane(Action work)
+    {
+        if (Interlocked.Exchange(ref _repackLanesStarted, 1) == 0)
+        {
+            for (var i = 0; i < MaxConcurrentRepacks; i++)
+            {
+                new Thread(RepackLane) { IsBackground = true, Name = "Maki archive repack" }.Start();
+            }
+        }
+
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        RepackQueue.Add((work, done));
+        done.Task.GetAwaiter().GetResult();
+    }
+
+    private static void RepackLane()
+    {
+        foreach (var (work, done) in RepackQueue.GetConsumingEnumerable())
+        {
+            try
+            {
+                work();
+                done.SetResult();
+            }
+            catch (Exception ex)
+            {
+                done.SetException(ex);
+            }
+        }
+    }
 
     /// <summary>
     /// Writes <paramref name="source"/> to <paramref name="targetPath"/>, hardlinking instead of
@@ -158,16 +208,19 @@ public static class ComicSourceConverter
                 }
                 else
                 {
-                    // A nested archive has to come out to its own file first: SharpCompress reads
-                    // from a stream, and the RAR reader needs one it can seek.
-                    var readFrom = source.Path;
-                    if (source.Entry is not null)
+                    RunOnRepackLane(() =>
                     {
-                        scratch = ExtractToTemp(source.Path, source.Entry);
-                        readFrom = scratch;
-                    }
+                        // A nested archive has to come out to its own file first: SharpCompress
+                        // reads from a stream, and the RAR reader needs one it can seek.
+                        var readFrom = source.Path;
+                        if (source.Entry is not null)
+                        {
+                            scratch = ExtractToTemp(source.Path, source.Entry);
+                            readFrom = scratch;
+                        }
 
-                    CopyImages(readFrom, archive);
+                        CopyImages(readFrom, archive);
+                    });
                 }
             }
 
