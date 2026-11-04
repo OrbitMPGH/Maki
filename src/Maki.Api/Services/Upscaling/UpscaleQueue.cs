@@ -41,8 +41,8 @@ public sealed class UpscaleJob(UpscaleWorkKey key, ReaderService.PageSlice slice
 /// waiting on it. Each reader has a FIFO lane of at most <see cref="MaxPendingPerUser"/> pages, and
 /// lanes are served round robin, so one reader paging fast cannot starve another. A job nobody
 /// waits on any more is dropped before it starts. One already running finishes and lands in the
-/// cache, unless its last reader moved to another chapter or model: then it is abandoned, so the
-/// first page there does not wait out a page nobody will look at.
+/// cache, unless its last reader paged past it or moved to another chapter or model: then it is
+/// abandoned, so the page they turned to does not wait out one nobody will look at.
 /// </summary>
 public sealed class UpscaleQueue
 {
@@ -63,10 +63,11 @@ public sealed class UpscaleQueue
 
     /// <summary>
     /// Makes <paramref name="items"/> this reader's pending work, current page first. Their pending
-    /// pages of another chapter or model are dropped, and so are older pending pages behind the
-    /// lowest page asked for in this chapter: the reader paged past them before they were done.
-    /// Older pages ahead of it stay behind the new ones while there is room under the cap. Returns
-    /// a state per item (only the first <see cref="MaxPendingPerUser"/> items are taken).
+    /// pages of another chapter or model are dropped, and so are older pages behind the lowest page
+    /// asked for in this chapter: the reader paged past them before they were done. A running one
+    /// is abandoned when nobody else waits on it. Older pages ahead stay behind the new ones while
+    /// there is room under the cap. Returns a state per item (only the first
+    /// <see cref="MaxPendingPerUser"/> items are taken).
     /// </summary>
     public IReadOnlyList<UpscaleJobState> Replace(
         int userId, int chapterId, string model, IReadOnlyList<UpscaleRequestItem> items)
@@ -130,7 +131,7 @@ public sealed class UpscaleQueue
             foreach (var job in _jobs.Values)
             {
                 if (job.Working && !requested.Contains(job.Key) && job.Waiters.TryGetValue(userId, out var target)
-                    && (target.ChapterId != chapterId || job.Key.Model != model))
+                    && (target.ChapterId != chapterId || job.Key.Model != model || target.Page < floor))
                 {
                     job.Waiters.Remove(userId);
                     if (job.Waiters.Count == 0)

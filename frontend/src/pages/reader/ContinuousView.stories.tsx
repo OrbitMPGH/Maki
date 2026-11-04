@@ -207,7 +207,7 @@ export const Enhanced: Story = {
     const a = original.getBoundingClientRect()
     const b = enhanced.getBoundingClientRect()
     await expect(Math.abs(a.top - b.top) + Math.abs(a.left - b.left) + Math.abs(a.width - b.width)).toBeLessThan(2)
-    const range = (args.onEnhanceRange as Mock<(pages: number[], beyond: number) => void>).mock.lastCall?.[0] ?? []
+    const range = (args.onEnhanceRange as Mock<(pages: number[], beyond: number, server: number[]) => void>).mock.lastCall?.[0] ?? []
     await expect(canvasElement.querySelectorAll('canvas.reader-enhanced').length).toBeLessThanOrEqual(range.length)
 
     compareKey('keydown')
@@ -227,7 +227,7 @@ export const Enhanced: Story = {
 export const EnhanceRangeRunsFarOnShortPages: Story = {
   args: { enhance: 'always', enhanceMethod: 'a4k-s', fit: 'original', scale: 25 },
   play: async ({ args }) => {
-    const lastCall = () => (args.onEnhanceRange as Mock<(pages: number[], beyond: number) => void>).mock.lastCall
+    const lastCall = () => (args.onEnhanceRange as Mock<(pages: number[], beyond: number, server: number[]) => void>).mock.lastCall
     await waitFor(() => expect(lastCall()?.[0]).toEqual(Array.from({ length: 12 }, (_, i) => i)))
     await waitFor(() => expect(lastCall()?.[1]).toBeGreaterThan(0))
   },
@@ -237,6 +237,6 @@ export const EnhanceRangeRunsFarOnShortPages: Story = {
 export const EnhanceRangeStaysShortOnTallPages: Story = {
   args: { enhance: 'always', enhanceMethod: 'a4k-s', fit: 'original', scale: 400 },
   play: async ({ args }) => {
-    await waitFor(() => expect(args.onEnhanceRange).toHaveBeenLastCalledWith([0, 1], 0))
+    await waitFor(() => expect(args.onEnhanceRange).toHaveBeenLastCalledWith([0, 1], 0, [0, 1]))
   },
 }

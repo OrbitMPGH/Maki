@@ -92,15 +92,31 @@ public class UpscaleQueueTests
     }
 
     [Fact]
-    public void A_running_page_is_kept_while_its_reader_stays_in_the_chapter_or_another_reader_waits()
+    public void Paging_past_the_running_page_abandons_it()
     {
-        _queue.Replace(1, 1, "span-s", [Item(0)]);
+        _queue.Replace(1, 1, "span-s", [Item(0), Item(1), Item(2)]);
         var running = _queue.TryDequeue()!;
 
-        _queue.Replace(1, 1, "span-s", [Item(3), Item(4)]);
-        Assert.False(running.Abandoned.IsCancellationRequested);
+        _queue.Replace(1, 1, "span-s", [Item(2), Item(3)]);
 
-        _queue.Replace(2, 1, "span-s", [Item(0)]);
+        Assert.True(running.Abandoned.IsCancellationRequested);
+        _queue.Complete(running, UpscaleOutcome.Failed, UpscaleReasons.Abandoned);
+        Assert.Equal([2, 3], DrainPages());
+    }
+
+    [Fact]
+    public void A_running_page_is_kept_while_it_is_still_ahead_or_another_reader_waits()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(4)]);
+        var running = _queue.TryDequeue()!;
+
+        _queue.Replace(1, 1, "span-s", [Item(3), Item(5)]);
+        Assert.False(running.Abandoned.IsCancellationRequested);
+        _queue.Replace(1, 1, "span-s", []);
+        Assert.False(running.Abandoned.IsCancellationRequested);
+        _queue.Replace(1, 1, "span-s", [Item(4)]);
+
+        _queue.Replace(2, 1, "span-s", [Item(4)]);
         _queue.Replace(1, 2, "realesrgan-av3", [Item(7, chapterId: 2, fileId: 2, model: "realesrgan-av3")]);
         Assert.False(running.Abandoned.IsCancellationRequested);
         Assert.Equal([2], _queue.Complete(running, UpscaleOutcome.Ready, null).Select(w => w.Key));

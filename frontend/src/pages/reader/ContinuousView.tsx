@@ -53,14 +53,16 @@ const NO_RANGE: number[] = []
  * displayed device pixels against the engine's budget rather than in pages, so a chapter of a few
  * very tall slices runs a page or two ahead and one of many short slices runs far down the strip.
  * The pages either side of the current one are always in. `beyond` is how many pages past the last
- * one the ahead share still covers, counted at the size of the pages ahead.
+ * one the ahead share still covers, counted at the size of the pages ahead. `server` is the range
+ * without the pages behind that have left the screen: the server's one worker would otherwise spend
+ * a tall slice's seconds on a page already read while the next one waits.
  */
 function enhanceRange(
   elements: (HTMLImageElement | null)[],
   page: number,
   count: number,
-): { range: number[]; beyond: number } {
-  if (count === 0) return { range: NO_RANGE, beyond: 0 }
+): { range: number[]; beyond: number; server: number[] } {
+  if (count === 0) return { range: NO_RANGE, beyond: 0, server: NO_RANGE }
   const dpr = window.devicePixelRatio || 1
   const pixels = (index: number) => {
     const rect = elements[index]?.getBoundingClientRect()
@@ -84,14 +86,17 @@ function enhanceRange(
     const fits = typical > 0 ? Math.floor(Math.max(0, left) / typical) : ENHANCE_MAX_PAGES
     beyond = Math.min(ENHANCE_MAX_PAGES, Math.max(page === count - 1 ? 1 : 0, fits))
   }
+  const server = [...range]
   left = budget * (1 - ENHANCE_AHEAD_SHARE)
   for (let index = page - 1; index >= 0 && range.length < ENHANCE_MAX_PAGES; index--) {
     const size = pixels(index)
     if (index < page - 1 && size > left) break
     range.push(index)
     left -= size
+    const rect = elements[index]?.getBoundingClientRect()
+    if (rect && rect.bottom > 0 && rect.top < window.innerHeight) server.push(index)
   }
-  return { range, beyond }
+  return { range, beyond, server }
 }
 
 // How close to the true bottom counts as "at the bottom": scrollHeight/clientHeight are
@@ -305,10 +310,11 @@ export default function ContinuousView({
   /** The pages `auto` enhances: shown at 1.2x their size or more as measured on screen, or soft. */
   onStretched?: (pages: ReadonlySet<number>) => void
   /**
-   * The pages being enhanced, current first, then ahead, then behind; what the server is asked for.
-   * `beyond` is how many of the next chapter's pages the window would reach past the last one.
+   * The pages being enhanced, current first, then ahead, then behind. `beyond` is how many of the
+   * next chapter's pages the window would reach past the last one. `server` is what the server is
+   * asked for: the same pages minus those behind that are off screen.
    */
-  onEnhanceRange?: (pages: number[], beyond: number) => void
+  onEnhanceRange?: (pages: number[], beyond: number, server: number[]) => void
 }) {
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])
@@ -360,6 +366,7 @@ export default function ContinuousView({
   )
   const [range, setRange] = useState<number[]>(NO_RANGE)
   const [beyond, setBeyond] = useState(0)
+  const [serverRange, setServerRange] = useState<number[]>(NO_RANGE)
   const inRange = useMemo(() => new Set(range), [range])
   const isEager = (index: number) => index < 3 || Math.abs(index - page) <= 2 || inRange.has(index)
   useEffect(() => {
@@ -368,8 +375,8 @@ export default function ContinuousView({
   const rangeRef = useRef(onEnhanceRange)
   rangeRef.current = onEnhanceRange
   useEffect(() => {
-    rangeRef.current?.(range, beyond)
-  }, [range, beyond])
+    rangeRef.current?.(range, beyond, serverRange)
+  }, [range, beyond, serverRange])
 
   // Set by the sentinel effect below; image load handlers re-run it once a page settles.
   const reportEnd = useRef<() => void>(() => {})
@@ -387,15 +394,15 @@ export default function ContinuousView({
     if (!enhanceOn) {
       setRange(NO_RANGE)
       setBeyond(0)
+      setServerRange(NO_RANGE)
       return
     }
     const update = () => {
       const next = enhanceRange(pages.current, Math.min(page, urls.length - 1), urls.length)
-      setRange((previous) =>
-        previous.length === next.range.length && previous.every((index, at) => index === next.range[at])
-          ? previous
-          : next.range,
-      )
+      const same = (previous: number[], pages: number[]) =>
+        previous.length === pages.length && previous.every((index, at) => index === pages[at]) ? previous : pages
+      setRange((previous) => same(previous, next.range))
+      setServerRange((previous) => same(previous, next.server))
       setBeyond(next.beyond)
     }
     update()

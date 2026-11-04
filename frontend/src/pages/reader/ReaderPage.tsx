@@ -248,14 +248,14 @@ export default function ReaderPage() {
     : null
   // The strip sizes its own range from the pages' pixels, so the server follows it there.
   const [stripRange, setStripRange] = useState<{ pages: number[]; beyond: number }>({ pages: [], beyond: 0 })
-  const onEnhanceRange = useCallback((pages: number[], beyond: number) => setStripRange({ pages, beyond }), [])
+  const onEnhanceRange = useCallback(
+    (_pages: number[], beyond: number, server: number[]) => setStripRange({ pages: server, beyond }),
+    [],
+  )
   const enhanceWindow = useMemo(() => {
     if (!serverModel) return []
     if (mode !== 'vertical') return preloadPages.length > 0 ? preloadPages : (spreads[spreadIndex] ?? [])
-    // The server's one worker never spends a slice's seconds on pages already scrolled past. The one
-    // just above can still be on screen, so it stays.
-    const [first] = stripRange.pages
-    return stripRange.pages.filter((index) => index >= first - 1)
+    return stripRange.pages
   }, [serverModel, mode, preloadPages, spreads, spreadIndex, stripRange])
   // A window that runs past the last page carries on into the next chapter's first pages.
   const nextChapterId = current?.nextChapterId ?? null
