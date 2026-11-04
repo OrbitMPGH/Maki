@@ -126,19 +126,29 @@ export function SeriesHero({
     const progress = useMemo(
         () =>
             seriesProgressVisual(
-                series
-                    ? { ...series, chapterFileCount: Math.max(0, series.chapterFileCount - fileMissing) }
-                    : { wantedChapterCount: 0, knownChapterCount: 0, chapterFileCount: 0, readChapterCount: null },
+                series ?? { wantedChapterCount: 0, knownChapterCount: 0, chapterFileCount: 0, readChapterCount: null },
                 readTracking,
             ),
-        [series, readTracking, fileMissing],
+        [series, readTracking],
+    )
+    // Downloads alone leaves those chapters out; reading progress still counts them.
+    const downloads = useMemo(
+        () =>
+            fileMissing === 0
+                ? progress
+                : seriesProgressVisual(
+                      { ...series, chapterFileCount: Math.max(0, series.chapterFileCount - fileMissing) },
+                      readTracking,
+                  ),
+        [progress, series, readTracking, fileMissing],
     )
 
     // Hoisted out of the JSX below: Lingui names a placeholder after the expression only when that
     // expression is a plain identifier, so `progress.have` would extract as {0} and tell a translator
     // nothing about what goes in the slot. The defaults on the gap are never rendered, since every
     // use of them sits behind `sourceGap &&`; they are here to keep the destructure typed as numbers.
-    const { have: haveCount, total: totalCount } = progress
+    const { have: haveCount } = progress
+    const totalCount = downloads.total
     // The total is the wanted chapters, so a series with unwanted ones read 100% here while the
     // Chapters tab counted everything listed. Named, and the rest counted, so the two agree.
     const notWanted = progress.nothingWanted ? 0 : Math.max(0, series.knownChapterCount - totalCount)
@@ -388,10 +398,10 @@ export function SeriesHero({
                             </Group>
                             <Progress
                                 mt={12}
-                                value={progress.pct}
+                                value={downloads.pct}
                                 // Never amber, even with a source gap: amber is kept for warnings, and the gap
                                 // has its own line below.
-                                color={progress.complete ? 'var(--ok)' : 'var(--brand)'}
+                                color={downloads.complete ? 'var(--ok)' : 'var(--brand)'}
                                 radius="xl"
                                 aria-label={t`Download progress`}
                             />
@@ -400,29 +410,17 @@ export function SeriesHero({
                                     {/* Two whole messages rather than one with a clause appended: a
                                         fragment glued onto a translated sentence lands in the wrong place
                                         in any language that does not order it the way English does. */}
-                                    {series.knownChapterCount === 0 ? (
-                                        <Trans>No chapters listed</Trans>
-                                    ) : progress.nothingWanted ? (
-                                        <Trans>
-                                            {haveCount} /{' '}
-                                            <Plural value={totalCount} one="# chapter" other="# chapters" />{' '}
-                                            listed, none wanted
-                                        </Trans>
-                                    ) : notWanted > 0 ? (
-                                        <Trans>
-                                            {haveCount} /{' '}
-                                            <Plural value={totalCount} one="# wanted" other="# wanted" />
-                                        </Trans>
-                                    ) : (
-                                        <Trans>
-                                            {haveCount} /{' '}
-                                            <Plural value={totalCount} one="# chapter" other="# chapters" />
-                                        </Trans>
-                                    )}
+                                    <DownloadsCount
+                                        haveCount={downloads.have}
+                                        totalCount={totalCount}
+                                        nothingWanted={downloads.nothingWanted}
+                                        notWanted={notWanted}
+                                        noneListed={series.knownChapterCount === 0}
+                                    />
                                 </Text>
                                 {series.knownChapterCount > 0 && (
                                     <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
-                                        {Math.round(progress.pct)}%
+                                        {Math.round(downloads.pct)}%
                                     </Text>
                                 )}
                             </Group>
@@ -480,6 +478,46 @@ export function SeriesHero({
 }
 
 /** The band's own shape while the series loads, so the page lands in place instead of jumping from a spinner. */
+/** The Downloads line. Its own component so its counts keep the names the catalogue knows them by. */
+function DownloadsCount({
+    haveCount,
+    totalCount,
+    nothingWanted,
+    notWanted,
+    noneListed,
+}: {
+    haveCount: number
+    totalCount: number
+    nothingWanted: boolean
+    notWanted: number
+    noneListed: boolean
+}) {
+    if (noneListed) return <Trans>No chapters listed</Trans>
+    if (nothingWanted) {
+        return (
+            <Trans>
+                {haveCount} /{' '}
+                <Plural value={totalCount} one="# chapter" other="# chapters" />{' '}
+                listed, none wanted
+            </Trans>
+        )
+    }
+    if (notWanted > 0) {
+        return (
+            <Trans>
+                {haveCount} /{' '}
+                <Plural value={totalCount} one="# wanted" other="# wanted" />
+            </Trans>
+        )
+    }
+    return (
+        <Trans>
+            {haveCount} /{' '}
+            <Plural value={totalCount} one="# chapter" other="# chapters" />
+        </Trans>
+    )
+}
+
 export function SeriesHeroSkeleton() {
     return (
         <div aria-hidden>

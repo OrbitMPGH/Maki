@@ -5751,9 +5751,9 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
    cut word. A longer fade that is mostly gone by its middle and clear before the chevron. */
 @media (max-width: 47.9375em) {
   :is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row)[data-fade-end] {
-    --fade-end: 6.5rem;
+    --fade-end: 5rem;
     mask:
-      linear-gradient(to right, transparent 0, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), rgb(0 0 0 / 0.25) calc(100% - 4rem), transparent calc(100% - 2rem)),
+      linear-gradient(to right, transparent 0, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), rgb(0 0 0 / 0.25) calc(100% - 3.25rem), transparent calc(100% - 1.75rem)),
       linear-gradient(#000, #000) bottom / 100% 1px no-repeat,
       var(--strip-chevron) right calc(50% - var(--strip-cue-lift, 0px)) / 1rem 1rem no-repeat;
   }
