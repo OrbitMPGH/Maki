@@ -22,7 +22,6 @@ import {
   Pagination,
   Paper,
   Radio,
-  SegmentedControl,
   Select,
   Spoiler,
   Stack,
@@ -60,6 +59,7 @@ import {
 } from '../lib/icons'
 import { useMediaQuery } from '@mantine/hooks'
 import { notifications } from '../lib/toast'
+import { onRovingKeyDown } from '../lib/rovingFocus'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   useChapters,
@@ -201,7 +201,7 @@ import { isUnfinished } from '../lib/lucky'
 import { activeSeries } from '../lib/series'
 import { showRestoreResult } from '../components/series/restoreToast'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
-import { cleanSynopsis } from '../lib/synopsis'
+import { cleanSynopsis, splitSynopsis } from '../lib/synopsis'
 import { useIncognitoOptions } from '../components/ui/incognito'
 import { useSeriesNotificationOptions } from '../components/ui/seriesNotifications'
 import { scrollBehavior } from '../lib/scrollBehavior'
@@ -1470,6 +1470,22 @@ function SeriesDetailBody() {
   const status = seriesStatusVisual(series.status)
   const contentRating = contentRatingVisual(series.contentRating)
   const altTitles = readableTitles(series.altTitles, i18n.locale)
+  const synopsis = splitSynopsis(cleanSynopsis(series.overview))
+  const synopsisSource = synopsis.source
+  const synopsisExtras = (synopsis.notes.length > 0 || synopsisSource) && (
+      <div className="series-synopsis-extras">
+        {synopsis.notes.length > 0 && (
+            <ul className="series-synopsis-notes">
+              {synopsis.notes.map((note, i) => <li key={i}>{note}</li>)}
+            </ul>
+        )}
+        {synopsisSource && (
+            <Text size="xs" c="var(--ink-4)">
+              <Trans>Source: {synopsisSource}</Trans>
+            </Text>
+        )}
+      </div>
+  )
   const seriesTitle = series.title
   const scanSeriesForUpgrades = () =>
     runUpgradeScan.mutate(seriesId, {
@@ -1545,18 +1561,29 @@ function SeriesDetailBody() {
     missing: t`Chapters with no file on disk, leaving out files that were deleted on purpose.`,
     fileMissing: t`Chapters whose file the last health scan couldn't find on disk.`,
   }
-  const chapterSegmentData = chapterFilterData.map((o) =>
-      chapterFilterTips[o.value]
-          ? {
-            value: o.value,
-            label: (
-                <Tooltip label={chapterFilterTips[o.value]} withArrow multiline maw={260}>
-                  <span>{o.label}</span>
-                </Tooltip>
-            ),
-          }
-          : o,
-  )
+  const chapterFilterChips = chapterFilterData.map((o) => {
+    const active = o.value === chapterFilter
+    const chip = (
+        <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            tabIndex={active ? 0 : -1}
+            className="tag-chip tnum"
+            data-interactive
+            data-active={active || undefined}
+            onClick={() => setChapterFilter(o.value)}
+        >
+          {o.label}
+        </button>
+    )
+    return chapterFilterTips[o.value] ? (
+        <Tooltip key={o.value} label={chapterFilterTips[o.value]} withArrow multiline maw={260}>
+          {chip}
+        </Tooltip>
+    ) : chip
+  })
 
   const queueNext = (count: number) => {
     downloadNext.mutate(
@@ -2345,13 +2372,17 @@ function SeriesDetailBody() {
                         attributes={{ content: { 'aria-label': t`Synopsis` } }}
                     >
                       <Text size="sm" c="var(--ink-3)" style={{ lineHeight: 1.66 }}>
-                        {cleanSynopsis(series.overview)}
+                        {synopsis.body}
                       </Text>
+                      {synopsisExtras}
                     </Spoiler>
                 ) : series.overview ? (
-                    <Text size="sm" mt="sm" c="var(--ink-3)" style={{ lineHeight: 1.66, maxWidth: '75ch' }}>
-                      {cleanSynopsis(series.overview)}
-                    </Text>
+                    <>
+                      <Text size="sm" mt="sm" c="var(--ink-3)" style={{ lineHeight: 1.66, maxWidth: '75ch' }}>
+                        {synopsis.body}
+                      </Text>
+                      {synopsisExtras}
+                    </>
                 ) : (
                     <Text size="sm" mt="sm" c="var(--ink-3)">
                       <Trans>No synopsis yet.</Trans> <Trans>Refresh metadata to fetch one.</Trans>
@@ -2549,12 +2580,16 @@ function SeriesDetailBody() {
                           {altTitles.map(altTitleLabel).join(', ')}
                         </RecordRow>
                     )}
-                    {series.authorStory && (
+                    {series.authorStory && sameCreators(series.authorStory, series.authorArt) ? (
+                        <RecordRow label={t`Story and art`}>
+                          <CreatorNames role="author" names={series.authorStory} />
+                        </RecordRow>
+                    ) : series.authorStory && (
                         <RecordRow label={t`Story`}>
                           <CreatorNames role="author" names={series.authorStory} />
                         </RecordRow>
                     )}
-                    {series.authorArt && (
+                    {series.authorArt && !sameCreators(series.authorStory, series.authorArt) && (
                         <RecordRow label={t`Art`}>
                           <CreatorNames role="artist" names={series.authorArt} />
                         </RecordRow>
@@ -2806,13 +2841,14 @@ function SeriesDetailBody() {
                               style={{ flex: 1, minWidth: 0 }}
                           />
                       ) : (
-                          <SegmentedControl
+                          <div
+                              className="chapter-filter-chips"
+                              role="radiogroup"
                               aria-label={t`Filter chapters`}
-                              size="xs"
-                              value={chapterFilter}
-                              onChange={setChapterFilter}
-                              data={chapterSegmentData}
-                          />
+                              onKeyDown={onRovingKeyDown}
+                          >
+                            {chapterFilterChips}
+                          </div>
                       )}
                       <Tooltip label={chapterSort === 'asc' ? t`Oldest first` : t`Newest first`} withArrow>
                         <ActionIcon
@@ -3511,6 +3547,15 @@ function ReadTimeEstimateText({ estimate }: { estimate: ReadTimeEstimate }) {
 }
 
 /** A comma-separated credit, each name linking to that creator's page. */
+const creatorKey = (names: string | null | undefined) =>
+  (names ?? '').split(',').map((n) => n.trim().toLowerCase()).filter(Boolean).sort().join('|')
+
+/** Story and art credit the same people, so the Metadata panel shows one row for both. */
+function sameCreators(story: string | null | undefined, art: string | null | undefined) {
+  const key = creatorKey(story)
+  return key !== '' && key === creatorKey(art)
+}
+
 function CreatorNames({
                         role,
                         names,

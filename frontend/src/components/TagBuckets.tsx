@@ -34,6 +34,7 @@ const MAX_TAGS_PER_BUCKET = 18
  */
 export function TagBuckets({ tags }: { tags: MangaBakaTag[] }) {
   const [expanded, setExpanded] = useState<string[]>([])
+  const [revealed, setRevealed] = useState<string[]>([])
   const { t } = useLingui()
   const label = useLabel()
 
@@ -70,25 +71,45 @@ export function TagBuckets({ tags }: { tags: MangaBakaTag[] }) {
             <div className="tag-chips">
               {shown.map((tag) => {
                 const { description, isSpoiler, name } = tag
-                const chip = (
-                  <span
-                    className={isSpoiler ? 'tag-chip spoiler-tag' : 'tag-chip'}
-                    tabIndex={isSpoiler ? 0 : undefined}
+                const isRevealed = revealed.includes(name)
+                // A spoiler shows a readable "Spoiler" placeholder (a blurred name read as a
+                // rendering fault) until a click, tap or Enter/Space swaps in the name.
+                const chip = isSpoiler ? (
+                  <button
+                    type="button"
+                    className="tag-chip spoiler-tag"
+                    data-interactive
+                    data-revealed={isRevealed || undefined}
+                    aria-pressed={isRevealed}
+                    onClick={() =>
+                      setRevealed((r) => (isRevealed ? r.filter((n) => n !== name) : [...r, name]))
+                    }
                   >
                     <i className="tag-dot" />
-                    {/* Unblurred, so a hidden tag reads as hidden on purpose rather than as a
-                        rendering fault, and named for screen readers, which read through the blur. */}
-                    {isSpoiler && <IconEyeOff size={12} className="spoiler-tag-glyph" aria-hidden />}
-                    {isSpoiler && <VisuallyHidden>{t`Spoiler:`}</VisuallyHidden>}
+                    <IconEyeOff size={12} className="spoiler-tag-glyph" aria-hidden />
+                    {isRevealed ? (
+                      <>
+                        <VisuallyHidden>{t`Spoiler:`} </VisuallyHidden>
+                        <span>{name}</span>
+                      </>
+                    ) : (
+                      <span>{t`Spoiler`}</span>
+                    )}
+                  </button>
+                ) : (
+                  <span className="tag-chip">
+                    <i className="tag-dot" />
                     <span>{name}</span>
                   </span>
                 )
-                // Spoiler tags always get a tooltip hint; others only when described. Focus reveals
-                // as well as hover, and a tap focuses the chip, so touch screens can reveal it too.
+                // Spoiler tags always get a hint; the description waits until the name is shown,
+                // since it gives the tag away.
                 const tip = isSpoiler
-                  ? description
-                    ? t`Spoiler: ${description}`
-                    : t`Spoiler. Hover or tap to reveal.`
+                  ? isRevealed
+                    ? description
+                      ? t`Spoiler: ${description}`
+                      : t`Spoiler tag. Click to hide it again.`
+                    : t`Spoiler tag. Click to reveal it.`
                   : description
                 return tip ? (
                   <Tooltip

@@ -129,7 +129,7 @@ function Advanced({ value, onApply, label }: { value: unknown; onApply: (section
             maxRows={18}
             spellCheck={false}
             aria-label={label}
-            styles={{ input: { fontFamily: 'var(--mantine-font-family-monospace)', fontSize: 12 } }}
+            styles={{ input: { fontFamily: 'var(--mantine-font-family-monospace)', fontSize: 'var(--type-micro)' } }}
             error={invalid ? t`This is not valid JSON.` : undefined}
           />
           <Group justify="flex-end">
@@ -624,7 +624,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
               maxRows={24}
               spellCheck={false}
               aria-label={t`Definition`}
-              styles={{ input: { fontFamily: 'var(--mantine-font-family-monospace)', fontSize: 12 } }}
+              styles={{ input: { fontFamily: 'var(--mantine-font-family-monospace)', fontSize: 'var(--type-micro)' } }}
               error={parseJson(jsonText).invalid ? t`This is not valid JSON.` : undefined}
             />
           </Stack>

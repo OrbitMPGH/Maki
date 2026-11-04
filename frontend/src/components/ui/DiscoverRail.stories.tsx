@@ -259,3 +259,19 @@ export const EngineRail: Story = {
     await waitFor(() => expect(canvasElement.querySelectorAll('.engine-why-seed').length).toBe(2))
   },
 }
+
+const sharedSeedPicks = [40, 41, 42, 43, 44].map((n) =>
+  catalogueItem(n, { coRead: true, coReadWithTitle: 'Lanterns Over Kasumi', becauseOfTitle: null, authorMatch: false }),
+)
+
+/** Every pick pairs with the same series, so the rail says it once and the cards keep their tags. */
+export const EngineRailSharedReason: Story = {
+  parameters: { layout: 'padded' },
+  decorators: [(Story) => <div style={{ width: '100%' }}><Story /></div>],
+  render: (args) => <EngineRailRow items={sharedSeedPicks} seriesIdFor={() => null} onOpen={args.onOpen} />,
+  play: async ({ canvas, canvasElement }) => {
+    await expect(await canvas.findByText('Readers who finished Lanterns Over Kasumi also finished these')).toBeVisible()
+    await expect(canvas.queryByText('Fans of')).toBeNull()
+    await waitFor(() => expect(canvasElement.querySelectorAll('.engine-chip').length).toBeGreaterThan(0))
+  },
+}

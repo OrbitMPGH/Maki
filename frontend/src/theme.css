@@ -100,10 +100,10 @@
   --type-subhead: 1rem;
   --type-body: 0.9375rem;
   --type-meta: 0.8125rem;
-  /* The floor for anything read, badges included. */
-  --type-micro: 0.78125rem;
+  /* The floor for read text. Badge type sits half a pixel under it and nothing goes lower. */
+  --type-micro: 0.8125rem;
   --type-label: 0.8125rem;
-  --type-badge: 0.75rem;
+  --type-badge: 0.78125rem;
 
   /* Weight scale. Same rule as the type scale: a weight between two steps belongs on one of them. */
   --fw-regular: 400;
@@ -1679,15 +1679,17 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: var(--mantine-primary-color-filled);
   color: var(--mantine-primary-color-contrast);
 }
-/* Mantine's xs and sm badges and its xs pills set 9 and 10px type, under the floor every other label keeps. */
+/* Mantine's badges up to md and its pills up to sm set 9 to 12px type, under the floor every other label keeps. */
 .mantine-Badge-root {
   --badge-fz-xs: var(--type-badge);
   --badge-fz-sm: var(--type-badge);
+  --badge-fz-md: var(--type-badge);
   text-transform: none;
   letter-spacing: 0;
 }
 .mantine-Pill-root {
   --pill-fz-xs: var(--type-badge);
+  --pill-fz-sm: var(--type-badge);
 }
 /* Mantine puts white on any colour it was handed as a CSS variable; on warn that is 2.3:1. */
 .count-indicator[data-tone='warn'] > .mantine-Indicator-indicator {
@@ -1772,10 +1774,10 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   height: 100%;
   object-fit: cover;
   transition:
-    top var(--dur-slow) var(--ease),
-    left var(--dur-slow) var(--ease),
-    width var(--dur-slow) var(--ease),
-    height var(--dur-slow) var(--ease);
+    top var(--dur-medium) var(--ease),
+    left var(--dur-medium) var(--ease),
+    width var(--dur-medium) var(--ease),
+    height var(--dur-medium) var(--ease);
 }
 .cover-card:hover .cover-poster img,
 .reading-card:hover > .cover-card .cover-poster img {
@@ -2247,7 +2249,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   pointer-events: none;
   /* Mantine's own fade, to the millisecond. Opacity is compositor-only (no layout, no repaint),
      and there is exactly one of these nodes in the app, so the cost doesn't grow with the grid.
-     The global prefers-reduced-motion rule below already neutralises it. */
+     The global prefers-reduced-motion rule keeps it: a fade is not movement. */
   opacity: 0;
   transition: opacity var(--dur-fast) var(--ease);
   backface-visibility: hidden;
@@ -3505,6 +3507,35 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   gap: 4px;
   overflow: hidden;
 }
+/* The reason every card in a rail shares, said once above it instead of on each card. */
+.engine-rail-reason {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 0 var(--mantine-spacing-sm);
+  font-size: var(--type-label);
+  line-height: 1.3;
+  color: var(--ink-2);
+}
+.engine-rail-reason svg {
+  flex: none;
+  color: var(--brand-fg, #b8c1ff);
+}
+.engine-rail-reason img {
+  flex: none;
+  width: 20px;
+  height: 30px;
+  border-radius: 3px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--hairline);
+}
+.engine-rail-reason-text {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .engine-chip {
   padding: 2px 6px;
   border-radius: var(--radius-control);
@@ -4298,20 +4329,11 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   }
 }
 
-/* Spoiler tags (MangaBaka's is_spoiler): blur the label until hover/focus reveals it. */
-.spoiler-tag {
-  cursor: help;
-}
-.spoiler-tag > * {
-  filter: blur(4.5px);
-  transition: filter var(--dur-fast) var(--ease);
-  user-select: none;
-}
-.spoiler-tag:hover > *,
-.spoiler-tag:focus-visible > *,
-.spoiler-tag:focus-within > * {
-  filter: none;
-  user-select: auto;
+/* Spoiler tags (MangaBaka's is_spoiler): a dashed "Spoiler" placeholder until clicked, then the name. */
+.tag-chip.spoiler-tag:not([data-revealed]) {
+  border-style: dashed;
+  background: none;
+  color: var(--ink-3);
 }
 
 /* --- Auth frame (sign-in, first-run setup) ----------------------------- */
@@ -5201,7 +5223,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   grid-template-columns: minmax(0, 2fr) minmax(18rem, 0.6fr);
 }
 /* The tabs follow the Progress panel in the markup so a stacked band reads title, progress, tabs.
-   Side by side, the panel spans both rows and the tabs line up under the title, past the poster. */
+   Side by side, the panel spans both rows and the tabs start at the page edge, on the content they switch. */
 .series-hero-tabs {
   min-width: 0;
   margin-top: var(--mantine-spacing-md);
@@ -5227,9 +5249,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     grid-column: 1;
     grid-row: 2;
     margin-top: var(--mantine-spacing-xl);
-  }
-  .series-hero:not([data-compact]) .series-hero-content:has(.series-hero-poster) .series-hero-tabs {
-    padding-left: calc(224px + 32px);
   }
 }
 
@@ -5673,17 +5692,10 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .tag-browser-footer {
   border-top: 1px solid var(--border);
 }
-/* The blur is for the tag's name. A 6px dot rendered through it is just a smudge, and it gives
-   away nothing anyway. */
-.tag-chip.spoiler-tag > .tag-dot {
-  filter: none;
-}
-/* The eye-off mark is the visible "this is hidden on purpose", so it is never blurred. */
 .spoiler-tag > .spoiler-tag-glyph {
   flex-shrink: 0;
   margin-inline-start: -2px;
   color: var(--ink-3);
-  filter: none;
 }
 /* Same shape as a chip so the row stays even, but it is a control: brand text, no dot. */
 .tag-more {
@@ -6547,6 +6559,15 @@ tr:is(:hover, :focus-within) [data-row-action]:not(:disabled, [data-disabled]),
   --ai-size-xs: 32px;
   margin-block: -6px;
 }
+/* A status longer than its column ("Missing from disk", or a longer translation) ran into the
+   mapping beside it. It wraps under its dot instead, with a gap before the next column. */
+.series-files-table .files-cell-status {
+  padding-inline-end: 16px;
+}
+.series-files-table .files-cell-status .status-dot {
+  white-space: normal;
+  line-height: 1.25;
+}
 
 /* A table standing on the page gets a panel for its edge. The panel clips, so the header band and
    the last row keep its corners. */
@@ -7117,6 +7138,21 @@ body.column-resizing * {
   width: 18px;
   text-align: right;
   flex-shrink: 0;
+}
+.stats-rank-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  min-width: 0;
+}
+.stats-rank-empty > svg {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+.stats-rank-empty-text {
+  flex: 1 1 12rem;
+  min-width: 0;
 }
 
 /* --- Stats: the period figures row ----------------------------------------- */
@@ -9421,12 +9457,16 @@ body.reader-open {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Reduced motion means no movement, not no change. Opacity and colour keep their authored fades;
+     transform, translate, size and position cut. Durations map onto this list by position, so
+     visibility sits third to keep the 0s slot the three-part fade-out rules give it. */
   *,
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
+    transition-property: opacity, background-color, visibility, color, border-color, outline-color,
+      text-decoration-color, fill, stroke, box-shadow !important;
   }
   .cover-card:hover,
   .reading-card:hover > .cover-card,
@@ -11008,6 +11048,16 @@ button.import-plan-folder-head:hover {
   font-size: var(--type-micro);
   color: var(--ink-4);
 }
+/* The Chapters filter as the Library's filter chips, one radio group, as tall as the xs controls beside it. */
+.chapter-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.chapter-filter-chips > .tag-chip {
+  min-height: 1.875rem;
+  padding-block: 0;
+}
 .library-selection-bar {
   padding: 0.875rem 1.125rem;
 }
@@ -11136,6 +11186,22 @@ button.import-plan-folder-head:hover {
 .series-detail-surface .series-detail-chapter-table {
   border-radius: var(--radius-surface);
   box-shadow: none;
+}
+/* The provider's notes and "(Source: X)" credit, split off the synopsis so they stop reading as
+   part of the story text. */
+.series-synopsis-extras {
+  max-width: 75ch;
+  margin-top: 10px;
+}
+.series-synopsis-notes {
+  margin: 0 0 6px;
+  padding-inline-start: 1.1em;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  line-height: 1.55;
+}
+.series-synopsis-notes li + li {
+  margin-top: 2px;
 }
 /* --- Panel (components/ui/Panel.tsx) --- */
 

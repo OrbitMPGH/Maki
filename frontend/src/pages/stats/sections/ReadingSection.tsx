@@ -289,6 +289,36 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
   const timelineEmpty = timelineData.every((p) => (metric === 'time' ? p.Hours === 0 : p.Chapters === 0))
 
   const midway = standing?.midway ?? []
+  const chapterCount = ({ count }: { count: number }) => plural(count, { one: '# ch.', other: '# ch.' })
+  const ranks = [
+    {
+      key: 'most',
+      icon: IconBook2,
+      title: t`Most read`,
+      items: activity.topRead.map((s) => ({ ...s, value: chapterCount(s) })),
+      emptyText: t`No chapters finished in this period.`,
+    },
+    ...(activity.topByTime.length > 0
+      ? [
+          {
+            key: 'time',
+            icon: IconClock,
+            title: t`Where the time went`,
+            items: activity.topByTime.map((s) => ({ ...s, value: formatTimeSpent(s.seconds) })),
+            emptyText: t`No reading time recorded.`,
+          },
+        ]
+      : []),
+    {
+      key: 'least',
+      icon: IconHourglassLow,
+      title: t`Barely touched`,
+      items: activity.leastRead.map((s) => ({ ...s, value: chapterCount(s) })),
+      emptyText: t`Everything you started, you kept reading.`,
+    },
+  ]
+  const filledRanks = ranks.filter((r) => r.items.length > 0)
+  const emptyRanks = ranks.filter((r) => r.items.length === 0)
   const hasFeed =
     activity.finished.length + activity.added.length + activity.removed.length + activity.dropped.length > 0
 
@@ -362,35 +392,20 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
 
         <div>
           <SectionHeader icon={IconTrophy} title={t`What you read`} />
-          <SimpleGrid cols={{ base: 1, lg: activity.topByTime.length > 0 ? 3 : 2 }} spacing="lg">
-            <RankList
-              icon={IconBook2}
-              title={t`Most read`}
-              items={activity.topRead.map((s) => {
-                const { count } = s
-                return { ...s, value: plural(count, { one: '# ch.', other: '# ch.' }) }
-              })}
-              emptyText={t`No chapters finished in this period.`}
-            />
-            {activity.topByTime.length > 0 && (
-              <RankList
-                icon={IconClock}
-                title={t`Where the time went`}
-                items={activity.topByTime.map((s) => ({ ...s, value: formatTimeSpent(s.seconds) }))}
-                emptyText={t`No reading time recorded.`}
-              />
-            )}
-            <RankList
-              icon={IconHourglassLow}
-              title={t`Barely touched`}
-              items={activity.leastRead.map((s) => {
-                const { count } = s
-                return { ...s, value: plural(count, { one: '# ch.', other: '# ch.' }) }
-              })}
-              emptyText={t`Everything you started, you kept reading.`}
-              emptyMood="pleased"
-            />
-          </SimpleGrid>
+          {filledRanks.length > 0 && (
+            <SimpleGrid cols={{ base: 1, lg: filledRanks.length }} spacing="lg">
+              {filledRanks.map(({ key, ...rank }) => (
+                <RankList key={key} {...rank} />
+              ))}
+            </SimpleGrid>
+          )}
+          {emptyRanks.length > 0 && (
+            <SimpleGrid cols={{ base: 1, lg: emptyRanks.length }} spacing="lg" mt={filledRanks.length > 0 ? 'lg' : 0}>
+              {emptyRanks.map(({ key, ...rank }) => (
+                <RankList key={key} {...rank} />
+              ))}
+            </SimpleGrid>
+          )}
         </div>
 
         {hasFeed && (

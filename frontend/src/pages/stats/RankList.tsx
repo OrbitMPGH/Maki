@@ -1,6 +1,5 @@
 import { Group, Stack, Text } from '@mantine/core'
 import type { Icon } from '../../lib/icons'
-import { EmptyState } from '../../components/ui/EmptyState'
 import { Panel } from '../../components/ui/Panel'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
 
@@ -24,41 +23,45 @@ export function RankList({
   title,
   items,
   emptyText,
-  emptyMood = 'asleep',
 }: {
   icon: Icon
   title: string
   items: RankItem[]
   emptyText: string
-  /** `pleased` when an empty list is good news ("Barely touched"). */
-  emptyMood?: 'asleep' | 'pleased'
 }) {
+  // An empty ranking is one line: a full-height card around one sentence left tall blank boxes
+  // beside the lists that had something.
+  if (items.length === 0) {
+    return (
+      <Panel p="sm" px="md" className="stats-rank-empty">
+        <RankIcon size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
+        <Text fw={650} style={{ flexShrink: 0 }}>{title}</Text>
+        <Text size="sm" c="var(--ink-3)" className="stats-rank-empty-text">{emptyText}</Text>
+      </Panel>
+    )
+  }
   return (
     <Panel p="md">
       <Group gap={8} mb="xs" wrap="nowrap">
         <RankIcon size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
         <Text fw={650}>{title}</Text>
       </Group>
-      {items.length === 0 ? (
-        <EmptyState compact mood={emptyMood} title={emptyText} />
-      ) : (
-        <Stack gap={0}>
-          {items.map((item, i) => (
-            <div className="stats-rank-row" key={`${item.seriesId ?? item.title}-${i}`}>
-              <Text c="var(--ink-3)" fw={700} size="sm" className="tnum stats-rank-num">
-                {i + 1}
-              </Text>
-              <SeriesThumb url={item.coverUrl} alt={item.title} seriesId={item.seriesId} />
-              <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
-                <SeriesLink id={item.seriesId} title={item.title} />
-              </Text>
-              <Text size="sm" fw={600} className="tnum" style={{ flexShrink: 0 }}>
-                {item.value}
-              </Text>
-            </div>
-          ))}
-        </Stack>
-      )}
+      <Stack gap={0}>
+        {items.map((item, i) => (
+          <div className="stats-rank-row" key={`${item.seriesId ?? item.title}-${i}`}>
+            <Text c="var(--ink-3)" fw={700} size="sm" className="tnum stats-rank-num">
+              {i + 1}
+            </Text>
+            <SeriesThumb url={item.coverUrl} alt={item.title} seriesId={item.seriesId} />
+            <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
+              <SeriesLink id={item.seriesId} title={item.title} />
+            </Text>
+            <Text size="sm" fw={600} className="tnum" style={{ flexShrink: 0 }}>
+              {item.value}
+            </Text>
+          </div>
+        ))}
+      </Stack>
     </Panel>
   )
 }

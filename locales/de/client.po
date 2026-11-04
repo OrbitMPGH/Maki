@@ -4657,8 +4657,8 @@ msgid "Back"
 msgstr "Zurück"
 
 #: src/pages/discover/FeedbackLab.tsx
-msgid "back in recommendations since {until}"
-msgstr ""
+#~ msgid "back in recommendations since {until}"
+#~ msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Back in recommendations since {until}"
@@ -16830,6 +16830,10 @@ msgid "Readers like you also recommended this"
 msgstr "Leser wie du haben dies ebenfalls empfohlen"
 
 #: src/components/ui/DiscoverRail.tsx
+msgid "Readers who finished {finished} also finished these"
+msgstr ""
+
+#: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Readers who finished {finished} also finished this"
 msgstr "Leser, die {finished} beendet haben, haben auch diesen Titel beendet"
@@ -20541,6 +20545,10 @@ msgstr ""
 msgid "Source state"
 msgstr "Quellenstatus"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Source: {synopsisSource}"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -20646,6 +20654,18 @@ msgid "Split into two pages"
 msgstr "In zwei Seiten aufteilen"
 
 #: src/components/TagBuckets.tsx
+msgid "Spoiler"
+msgstr ""
+
+#: src/components/TagBuckets.tsx
+msgid "Spoiler tag. Click to hide it again."
+msgstr ""
+
+#: src/components/TagBuckets.tsx
+msgid "Spoiler tag. Click to reveal it."
+msgstr ""
+
+#: src/components/TagBuckets.tsx
 msgid "Spoiler:"
 msgstr ""
 
@@ -20655,8 +20675,8 @@ msgid "Spoiler: {description}"
 msgstr "Spoiler: {description}"
 
 #: src/components/TagBuckets.tsx
-msgid "Spoiler. Hover or tap to reveal."
-msgstr ""
+#~ msgid "Spoiler. Hover or tap to reveal."
+#~ msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -20925,6 +20945,10 @@ msgstr "Speichert Kapitelseiten in einem kleineren Bildformat."
 #, fuzzy
 msgid "Story"
 msgstr "Story"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Story and art"
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -21965,6 +21989,10 @@ msgstr "Diese werden nie erneut konvertiert."
 #, fuzzy
 msgid "These are shown once. They are stored hashed, so nobody (including you) can read them back. Keep them somewhere you can reach without your authenticator."
 msgstr "Diese werden einmalig angezeigt. Sie werden gehasht gespeichert, sodass niemand (auch du nicht) sie zurücklesen kann. Bewahre sie an einem Ort auf, den du ohne deinen Authenticator erreichen kannst."
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "These feel like {becauseOfTitle}"
+msgstr ""
 
 #: src/components/PermanentDeleteFallback.tsx
 #, fuzzy
@@ -23113,6 +23141,10 @@ msgstr "Nicht unterstützter Dateityp"
 #, fuzzy
 msgid "Untagged only"
 msgstr "Nur ohne Tag"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "until {until}, now back in recommendations"
+msgstr ""
 
 #: src/components/QueuePause.tsx
 #, fuzzy

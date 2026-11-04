@@ -484,7 +484,8 @@ function usePhrase() {
   return (item: FeedbackActivity): string => {
     if (dismissalEnded(item)) {
       const until = formatRecentDate(item.dismissedUntilUtc!)
-      return t`back in recommendations since ${until}`
+      // Reads on from the "Dismissed" pill; the row's own date heading is when it was dismissed.
+      return t`until ${until}, now back in recommendations`
     }
     switch (item.action) {
       case 'like': return t`counts toward your taste`
