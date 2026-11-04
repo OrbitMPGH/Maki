@@ -11,7 +11,7 @@
     "hairline": "Row dividers inside tables and lists. An alias of border.",
     "line-soft": "Softer divider: border at 76%.",
     "cover-rim": "Edge of a poster cover: translucent, so it vanishes over bright art and shows where the scrimmed foot meets the page.",
-    "cover-rim-hover": "Cover edge on hover.",
+    "cover-rim-hover": "Cover edge on hover, 2px on the card (never the image). An alias of focus-ring, so a pointed-at cover reads as strongly as a focused one; a selected cover takes a third pixel in brand.",
     "surface-raised": "Overlays (modals, drawers, menus, popovers) and .layer-raised. Dark lightens, light stays near-white and casts shadow-raised.",
     "surface-sunken": "Recessed wells (.layer-sunken): inset lists, code, empty tracks. app-bg in dark, a warm grey in light.",
     "border-raised": "Border on the raised layer.",
@@ -26,7 +26,7 @@
     "brand-fg": "Brand-tinted text and icons on the surfaces: section-header icons and counts, engine reasons, links in prose, and every Mantine Anchor. Blush reads 10.3:1 on dark surface, Light uses a deeper blush (5.7:1, 4.9:1 on its own 10% tint). On cover art use brand-fg-on-art.",
     "focus-ring": "Keyboard focus outline on every control, Mantine's included. brand on dark grounds, brand-fg on Light and Paper, where Emerald and Amber fills drop to 2.4:1 against the page. Keeps 3:1 or better on every ground and accent.",
     "brand-fg-on-art": "Brand-tinted text over cover art under the dark scrim (Discover reason lines, the Resume label on Home cards). The scrim stays dark in Light, so Light keeps the pale blush here.",
-    "brand-glow": "Text selection, the unread inbox tint and the ring on the active import step. Never a text colour, and not a halo: selected cards take a 1px brand ring only.",
+    "brand-glow": "Text selection, the unread inbox tint and the ring on the active import step. Never a text colour, and not a halo: selected cards take a 2px brand ring only.",
     "primary": "Mantine primary fill (filled Button, Switch, active Tabs, the unread badge, the add corner): the brand palette at primaryShade, dark 5 and light 6. Rose steps to 6 because its shade 5 only reaches 4:1 under white; Blush fills at 3 in dark, where it is pale, and 6 in light.",
     "primary-hover": "Hover on a primary fill: one shade darker.",
     "primary-on": "Label and icon colour on a primary fill. Mantine autoContrast picks it: black on dark Blush, Emerald and Amber, white on Light, Indigo and Rose. Every pair clears 4.5:1.",
@@ -453,7 +453,9 @@
     "--dur-loop": "the one period for every pulse and indeterminate sweep, so two on screen keep time; a queued sweep runs at 1.5 times it. Not shortened by Faster animations",
     "--dur-flash": "a one-shot tint on something that just resolved, like a source row that found a match",
     "--dur-highlight": "the ring on a settings card a link pointed at",
-    "--dur-banner": "the reader's chapter banner from fade-in to fade-out; ChapterBanner.tsx holds it as long. Reading time, so not shortened by Faster animations"
+    "--dur-banner": "the reader's chapter banner from fade-in to fade-out; ChapterBanner.tsx holds it as long. Reading time, so not shortened by Faster animations",
+    "--dur-linger": "how long the reader's upscale line stays after it finishes; a failed one stays twice as long",
+    "--dur-spin": "one turn of a spinner; a queued spinner takes twice as long. Not shortened by Faster animations"
   },
   "meta": {
     "source": "github",

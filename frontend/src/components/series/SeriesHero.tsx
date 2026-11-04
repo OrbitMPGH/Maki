@@ -341,7 +341,7 @@ export function SeriesHero({
                         </Stack>
                     </Group>
                     <Paper withBorder radius="lg" p="lg" className="series-hero-panel">
-                        <Title order={2} size="h3" fz="var(--type-section)">
+                        <Title order={2} size="h3" fz="var(--type-section)" lh={1}>
                             <Trans>Progress</Trans>
                         </Title>
 
@@ -360,7 +360,7 @@ export function SeriesHero({
                                     radius="xl"
                                     aria-label={t`Reading progress`}
                                 />
-                                <Group justify="space-between" align="flex-start" wrap="nowrap" mt={9}>
+                                <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm" mt={9}>
                                     <Text size="sm" c="var(--ink-2)" className="tnum" style={{ flex: 1, minWidth: 0 }}>
                                         <Trans>
                                             {readCount} /{' '}
@@ -391,7 +391,7 @@ export function SeriesHero({
                                 radius="xl"
                                 aria-label={t`Download progress`}
                             />
-                            <Group justify="space-between" align="flex-start" wrap="nowrap" mt={9}>
+                            <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm" mt={9}>
                                 <Text size="sm" c="var(--ink-2)" className="tnum" style={{ flex: 1, minWidth: 0 }}>
                                     {/* Two whole messages rather than one with a clause appended: a
                                         fragment glued onto a translated sentence lands in the wrong place
@@ -455,7 +455,11 @@ export function SeriesHero({
                                 <Text size="xs" className="series-source-gap tnum" tabIndex={0}>
                                     <IconAlertTriangle size={14} aria-hidden />
                                     <span>
-                                        <Trans>Sources reach ch. {highest} of {listed}</Trans>
+                                        {series.lockedFields.includes('totalChapters') ? (
+                                            <Trans>Sources end at ch. {highest}; your total is {listed}</Trans>
+                                        ) : (
+                                            <Trans>Sources end at ch. {highest}; MangaBaka lists {listed}</Trans>
+                                        )}
                                         <VisuallyHidden>. {gapExplanation}</VisuallyHidden>
                                     </span>
                                 </Text>

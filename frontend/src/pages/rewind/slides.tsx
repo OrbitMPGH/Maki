@@ -15,7 +15,7 @@ function Reveal({ children, delay = 0 }: { children: ReactNode; delay?: number }
     <motion.div
       initial={reduced ? false : { opacity: 0, y: 26 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: paced(CINEMATIC.fade), ease: EASE }}
+      transition={{ delay: paced(delay), duration: paced(CINEMATIC.fade), ease: EASE }}
     >
       {children}
     </motion.div>

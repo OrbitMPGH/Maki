@@ -1,5 +1,5 @@
 import { errorText } from '../api/errorText'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -11,6 +11,7 @@ import {
   Group,
   Image,
   Loader,
+  Menu,
   Modal,
   MultiSelect,
   NumberInput,
@@ -30,6 +31,7 @@ import {
 import {
   IconAlertTriangle,
   IconColumns,
+  IconDots,
   IconRuler,
   IconExternalLink,
   IconLink,
@@ -93,6 +95,8 @@ const ORIGIN_LABELS: Record<string, MessageDescriptor> = {
   CrossId: msg`Cross-id`,
   Manual: msg`Manual`,
 }
+
+const menuHint = { display: 'block', mt: 2, size: 'xs', fw: 400, lh: 1.4, c: 'var(--ink-3)' } as const
 
 const ORIGIN_COLORS: Record<string, string> = {
   TitleSearch: 'var(--info)',
@@ -172,6 +176,7 @@ export function SourceMappingsSection({
   const failedNames = failedSources.map(sourceLabel).join(', ')
   const [modalOpen, setModalOpen] = useState(false)
   const [compareOpen, setCompareOpen] = useState(false)
+  const hintId = useId()
   const [sourceName, setSourceName] = useState<string | null>(null)
   const [query, setQuery] = useState(seriesTitle)
   const otherEnglishTitles = useMemo(() => englishSearchTitles(altTitles, seriesTitle), [altTitles, seriesTitle])
@@ -302,6 +307,27 @@ export function SourceMappingsSection({
             </Tooltip>
           )}
           <Tooltip
+            label={t`Auto-matching is still running. It'll be free in a moment.`}
+            withArrow
+            disabled={!matching}
+          >
+            <Box component="span" display="inline-flex">
+              <Button
+                size="xs"
+                variant="light"
+                leftSection={<IconLink size={16} />}
+                disabled={matching || nothingLeftToMatch}
+                onClick={() => {
+                  setSourceName(unmappedSources?.[0]?.name ?? null)
+                  setQuery(seriesTitle)
+                  setModalOpen(true)
+                }}
+              >
+                <Trans>Link source</Trans>
+              </Button>
+            </Box>
+          </Tooltip>
+          <Tooltip
             label={
               matching
                 ? t`Auto-matching is already running.`
@@ -333,76 +359,45 @@ export function SourceMappingsSection({
               </Button>
             </Box>
           </Tooltip>
-          <Tooltip
-            label={
-              matching
-                ? t`Auto-matching is still running. It'll be free in a moment.`
-                : comparable < 2
-                  ? t`Needs at least two enabled sources to compare.`
-                  : t`Fetch a sample of the same chapter from each source and rank them by scan quality.`
-            }
-            withArrow
-            multiline
-            w={240}
-          >
-            <Box component="span" display="inline-flex">
-              <Button
-                size="xs"
-                variant="default"
+          <Menu position="bottom-end" width={280} withinPortal>
+            <Menu.Target>
+              <ActionIcon variant="default" size={30} aria-label={t`More source actions`}>
+                {scouting || measureSources.isPending ? <Loader size={12} /> : <IconDots size={16} />}
+              </ActionIcon>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
                 leftSection={<IconColumns size={16} />}
                 disabled={matching || comparable < 2}
                 onClick={() => setCompareOpen(true)}
+                aria-describedby={`${hintId}-compare`}
               >
                 <Trans>Compare</Trans>
-              </Button>
-            </Box>
-          </Tooltip>
-          <Tooltip
-            label={
-              matching
-                ? t`Auto-matching is still running. It'll be free in a moment.`
-                : scout && !scout.running
-                  ? t`Sample a few pages from three chapters on every enabled source and update each source's quality. Last run measured ${scoutMeasured} of ${scoutPlanned} samples.`
-                  : t`Sample a few pages from three chapters on every enabled source and update each source's quality.`
-            }
-            withArrow
-            multiline
-            w={260}
-          >
-            <Box component="span" display="inline-flex">
-              <Button
-                size="xs"
-                variant="default"
-                leftSection={scouting ? <Loader size={12} /> : <IconRuler size={16} />}
-                disabled={matching || scouting || (mappings?.length ?? 0) === 0}
-                loading={measureSources.isPending}
+                <Text component="span" id={`${hintId}-compare`} aria-hidden {...menuHint}>
+                  {matching
+                    ? t`Auto-matching is still running. It'll be free in a moment.`
+                    : comparable < 2
+                      ? t`Needs at least two enabled sources to compare.`
+                      : t`Fetch a sample of the same chapter from each source and rank them by scan quality.`}
+                </Text>
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconRuler size={16} />}
+                disabled={matching || scouting || measureSources.isPending || (mappings?.length ?? 0) === 0}
                 onClick={() => measureSources.mutate()}
+                aria-describedby={`${hintId}-measure`}
               >
                 {scouting ? <Trans>Measuring…</Trans> : <Trans>Measure</Trans>}
-              </Button>
-            </Box>
-          </Tooltip>
-          <Tooltip
-            label={t`Auto-matching is still running. It'll be free in a moment.`}
-            withArrow
-            disabled={!matching}
-          >
-            <Box component="span" display="inline-flex">
-              <Button
-                size="xs"
-                variant="light"
-                leftSection={<IconLink size={16} />}
-                disabled={matching || nothingLeftToMatch}
-                onClick={() => {
-                  setSourceName(unmappedSources?.[0]?.name ?? null)
-                  setQuery(seriesTitle)
-                  setModalOpen(true)
-                }}
-              >
-                <Trans>Link source</Trans>
-              </Button>
-            </Box>
-          </Tooltip>
+                <Text component="span" id={`${hintId}-measure`} aria-hidden {...menuHint}>
+                  {matching
+                    ? t`Auto-matching is still running. It'll be free in a moment.`
+                    : scout && !scout.running
+                      ? t`Sample a few pages from three chapters on every enabled source and update each source's quality. Last run measured ${scoutMeasured} of ${scoutPlanned} samples.`
+                      : t`Sample a few pages from three chapters on every enabled source and update each source's quality.`}
+                </Text>
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </Group>
       </Group>
 

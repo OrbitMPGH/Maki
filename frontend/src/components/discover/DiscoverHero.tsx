@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
-import { Badge, Box, Button, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
+import { ActionIcon, Badge, Box, Button, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconArrowRight, IconPlus, IconStar } from '../../lib/icons'
+import {
+  IconArrowRight,
+  IconPlayerPauseFilled,
+  IconPlayerPlayFilled,
+  IconPlus,
+  IconStar,
+} from '../../lib/icons'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -128,10 +134,11 @@ export function DiscoverHero({
   const picks = items.slice(0, stacked ? PICKS_NARROW : shortViewport ? PICKS_SHORT : PICKS)
   const [activeIndex, setActive] = useState(0)
   const [paused, setPaused] = useState(false)
+  const [userPaused, setUserPaused] = useState(false)
   const [autoRotate, setAutoRotate] = useState(true)
   const [heroEl, setHeroEl] = useState<HTMLDivElement | null>(null)
   const watched = useWatched(heroEl)
-  const halted = paused || !watched
+  const halted = paused || userPaused || !watched
   const reducedMotion = useReducedMotion()
   // Called up here, unconditionally, rather than after the `if (!item) return null` below: both are
   // hooks, and the rule holds even though `item` is never actually undefined once Discover is the
@@ -324,7 +331,7 @@ export function DiscoverHero({
                         <MetadataSiteIcon
                           site={r.source.toLowerCase()}
                           monogram={r.source.slice(0, 2).toUpperCase()}
-                          size={11}
+                          size={13}
                         />
                       }
                     >
@@ -394,9 +401,22 @@ export function DiscoverHero({
                 <Trans>Also for you</Trans>
               </Text>
               {canAutoRotate && (
-                <Text className="discover-hero-strip-mode">
-                  {paused ? <Trans>Paused</Trans> : <Trans>Auto</Trans>}
-                </Text>
+                <div className="discover-hero-strip-controls">
+                  <Text className="discover-hero-strip-mode">
+                    {paused || userPaused ? <Trans>Paused</Trans> : <Trans>Auto</Trans>}
+                  </Text>
+                  <ActionIcon
+                    className="discover-hero-pause"
+                    variant="subtle"
+                    color="var(--ink-2)"
+                    size={26}
+                    aria-label={userPaused ? t`Resume rotating picks` : t`Pause rotating picks`}
+                    aria-pressed={userPaused}
+                    onClick={() => setUserPaused((p) => !p)}
+                  >
+                    {userPaused ? <IconPlayerPlayFilled size={14} /> : <IconPlayerPauseFilled size={14} />}
+                  </ActionIcon>
+                </div>
               )}
             </div>
             <div

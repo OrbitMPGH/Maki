@@ -926,8 +926,12 @@ msgid "{created, plural, one {# series added} other {# series added}}"
 msgstr "{created, plural, one {# series added} other {# series added}}"
 
 #: src/components/home/ReadingWeeks.tsx
-msgid "{currentStreak, plural, one {# day streak} other {# day streak}}"
-msgstr "{currentStreak, plural, one {# day streak} other {# day streak}}"
+#~ msgid "{currentStreak, plural, one {# day streak} other {# day streak}}"
+#~ msgstr "{currentStreak, plural, one {# day streak} other {# day streak}}"
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "{currentStreak, plural, one {Current streak: # day} other {Current streak: # days}}"
+msgstr "{currentStreak, plural, one {Current streak: # day} other {Current streak: # days}}"
 
 #: src/pages/stats/ActivityFeed.tsx
 msgid "{cycles, plural, one {re-added #×} other {re-added #×}}"
@@ -2017,8 +2021,8 @@ msgid "{stopKind, select, early {When you stop, it is usually early in, around {
 msgstr "{stopKind, select, early {When you stop, it is usually early in, around {stopPointPct} of the way through.} midway {When you stop, it is usually midway in, around {stopPointPct} of the way through.} late {When you stop, it is usually late in, around {stopPointPct} of the way through.} other {}}"
 
 #: src/pages/discover/TasteTab.tsx
-msgid "{stopPercent} in"
-msgstr "{stopPercent} in"
+#~ msgid "{stopPercent} in"
+#~ msgstr "{stopPercent} in"
 
 #: src/components/TagBrowserModal.tsx
 msgid "{subtags, plural, one {# subtag} other {# subtags}}"
@@ -7523,8 +7527,8 @@ msgid "Find match"
 msgstr "Find match"
 
 #: src/pages/HomePage.tsx
-msgid "Find more"
-msgstr "Find more"
+#~ msgid "Find more"
+#~ msgstr "Find more"
 
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Find search"
@@ -8340,6 +8344,10 @@ msgstr "How a two-page spread shows in the Single layout."
 #: src/pages/discover/TasteTab.tsx
 msgid "How close each quarter sat to where you started."
 msgstr "How close each quarter sat to where you started."
+
+#: src/pages/discover/TasteTab.tsx
+msgid "How far into a series you get before you stop reading it, for the series you did not finish."
+msgstr "How far into a series you get before you stop reading it, for the series you did not finish."
 
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "How far through a series you were when it stalled."
@@ -10477,6 +10485,10 @@ msgstr "More queue actions"
 msgid "More recommendation feedback actions"
 msgstr "More recommendation feedback actions"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "More source actions"
+msgstr "More source actions"
+
 #: src/components/AppearanceAnnouncementModal.tsx
 msgid "More ways to make Maki yours"
 msgstr "More ways to make Maki yours"
@@ -11035,6 +11047,10 @@ msgstr "no chapter with this number in the series"
 msgid "No chapters"
 msgstr "No chapters"
 
+#: src/pages/stats/sections/ReadingSection.tsx
+msgid "No chapters finished in this period."
+msgstr "No chapters finished in this period."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "No chapters known."
 msgstr "No chapters known."
@@ -11056,8 +11072,8 @@ msgid "no chapters matched"
 msgstr "no chapters matched"
 
 #: src/pages/stats/sections/ReadingSection.tsx
-msgid "No chapters read in this period."
-msgstr "No chapters read in this period."
+#~ msgid "No chapters read in this period."
+#~ msgstr "No chapters read in this period."
 
 #: src/pages/HealthPage.tsx
 #~ msgid "No checks have run yet"
@@ -11576,8 +11592,8 @@ msgid "Not checked yet"
 msgstr "Not checked yet"
 
 #: src/components/ui/status.tsx
-msgid "Not configured"
-msgstr "Not configured"
+#~ msgid "Not configured"
+#~ msgstr "Not configured"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
@@ -11727,6 +11743,10 @@ msgstr "Not scanned"
 #: src/components/SetupWizard.tsx
 msgid "Not set"
 msgstr "Not set"
+
+#: src/components/ui/status.tsx
+msgid "Not set up"
+msgstr "Not set up"
 
 #: src/pages/ScrobblePage.tsx
 msgid "Not set up yet."
@@ -12881,6 +12901,10 @@ msgstr "Pause downloads"
 #: src/pages/rewind/RewindIntro.tsx
 msgid "Pause Rewind"
 msgstr "Pause Rewind"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Pause rotating picks"
+msgstr "Pause rotating picks"
 
 #: src/components/pageconversion/StartStep.tsx
 msgid "Pause the running pass and restart it with the new settings?"
@@ -14883,6 +14907,10 @@ msgstr "Resume at"
 msgid "Resume Rewind"
 msgstr "Resume Rewind"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "Resume rotating picks"
+msgstr "Resume rotating picks"
+
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Resumed since you saved it"
 msgstr "Resumed since you saved it"
@@ -16817,8 +16845,16 @@ msgid "Sources disagree on chapter numbering"
 msgstr "Sources disagree on chapter numbering"
 
 #: src/components/series/SeriesHero.tsx
-msgid "Sources reach ch. {highest} of {listed}"
-msgstr "Sources reach ch. {highest} of {listed}"
+msgid "Sources end at ch. {highest}; MangaBaka lists {listed}"
+msgstr "Sources end at ch. {highest}; MangaBaka lists {listed}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Sources end at ch. {highest}; your total is {listed}"
+msgstr "Sources end at ch. {highest}; your total is {listed}"
+
+#: src/components/series/SeriesHero.tsx
+#~ msgid "Sources reach ch. {highest} of {listed}"
+#~ msgstr "Sources reach ch. {highest} of {listed}"
 
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "Space"
@@ -19740,6 +19776,10 @@ msgstr "Where to go next"
 msgid "Where you stop"
 msgstr "Where you stop"
 
+#: src/pages/discover/TasteTab.tsx
+msgid "Where you usually stop"
+msgstr "Where you usually stop"
+
 #: src/components/SetupWizard.tsx
 msgid "Where your manga is stored. If you use Kavita, point it at the same place."
 msgstr "Where your manga is stored. If you use Kavita, point it at the same place."
@@ -19917,8 +19957,8 @@ msgid "You are signed in over plain HTTP. Once Maki restarts it will refuse sign
 msgstr "You are signed in over plain HTTP. Once Maki restarts it will refuse sign-in at this address, and getting back in needs a TLS proxy in front of Maki or an edit to the database."
 
 #: src/pages/discover/TasteTab.tsx
-msgid "You bail around"
-msgstr "You bail around"
+#~ msgid "You bail around"
+#~ msgstr "You bail around"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "You can add series, but no root folder has been granted to you yet. Ask an admin to grant you one, or to add this title."

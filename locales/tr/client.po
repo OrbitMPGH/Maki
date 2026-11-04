@@ -1118,8 +1118,12 @@ msgstr "{created, plural, one {# seri eklendi} other {# seri eklendi}}"
 
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
-msgid "{currentStreak, plural, one {# day streak} other {# day streak}}"
-msgstr "{currentStreak, plural, one {# günlük okuma zinciri} other {# günlük okuma zinciri}}"
+#~ msgid "{currentStreak, plural, one {# day streak} other {# day streak}}"
+#~ msgstr "{currentStreak, plural, one {# günlük okuma zinciri} other {# günlük okuma zinciri}}"
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "{currentStreak, plural, one {Current streak: # day} other {Current streak: # days}}"
+msgstr ""
 
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
@@ -2450,8 +2454,8 @@ msgstr "{stopKind, select, early {Okumayı genellikle serinin başlarında, %{st
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
-msgid "{stopPercent} in"
-msgstr "{stopPercent} içinde"
+#~ msgid "{stopPercent} in"
+#~ msgstr "{stopPercent} içinde"
 
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
@@ -9151,8 +9155,8 @@ msgstr "Eşleşme bul"
 
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Find more"
-msgstr "Daha fazla bul"
+#~ msgid "Find more"
+#~ msgstr "Daha fazla bul"
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -10149,6 +10153,10 @@ msgstr ""
 #, fuzzy
 msgid "How close each quarter sat to where you started."
 msgstr "Her çeyreğin başladığınız yere ne kadar yakın olduğu."
+
+#: src/pages/discover/TasteTab.tsx
+msgid "How far into a series you get before you stop reading it, for the series you did not finish."
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -12760,6 +12768,10 @@ msgstr "Kuyruk için daha fazla işlem"
 msgid "More recommendation feedback actions"
 msgstr "Daha fazla öneri geri bildirim işlemi"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "More source actions"
+msgstr ""
+
 #: src/components/AppearanceAnnouncementModal.tsx
 #, fuzzy
 msgid "More ways to make Maki yours"
@@ -13439,6 +13451,10 @@ msgstr "seride bu numarada bir bölüm yok"
 msgid "No chapters"
 msgstr ""
 
+#: src/pages/stats/sections/ReadingSection.tsx
+msgid "No chapters finished in this period."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "No chapters known."
@@ -13466,8 +13482,8 @@ msgstr "eşleşen bölüm yok"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
-msgid "No chapters read in this period."
-msgstr "Bu dönemde okunan bölüm yok."
+#~ msgid "No chapters read in this period."
+#~ msgstr "Bu dönemde okunan bölüm yok."
 
 #: src/pages/HealthPage.tsx
 #~ msgid "No checks have run yet"
@@ -14105,8 +14121,8 @@ msgstr "Henüz kontrol edilmedi"
 
 #: src/components/ui/status.tsx
 #, fuzzy
-msgid "Not configured"
-msgstr "Yapılandırılmadı"
+#~ msgid "Not configured"
+#~ msgstr "Yapılandırılmadı"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
@@ -14289,6 +14305,10 @@ msgstr "Taranmadı"
 #, fuzzy
 msgid "Not set"
 msgstr "Ayarlanmadı"
+
+#: src/components/ui/status.tsx
+msgid "Not set up"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -15696,6 +15716,10 @@ msgstr "İndirmeleri duraklat"
 #, fuzzy
 msgid "Pause Rewind"
 msgstr "Rewind'ı duraklat"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Pause rotating picks"
+msgstr ""
 
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
@@ -18136,6 +18160,10 @@ msgstr "Şu saatte devam et"
 msgid "Resume Rewind"
 msgstr "Rewind'a devam et"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "Resume rotating picks"
+msgstr ""
+
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Resumed since you saved it"
 msgstr ""
@@ -20488,8 +20516,16 @@ msgid "Sources disagree on chapter numbering"
 msgstr "Kaynaklar bölüm numaralandırması konusunda hemfikir değil"
 
 #: src/components/series/SeriesHero.tsx
-msgid "Sources reach ch. {highest} of {listed}"
+msgid "Sources end at ch. {highest}; MangaBaka lists {listed}"
 msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "Sources end at ch. {highest}; your total is {listed}"
+msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+#~ msgid "Sources reach ch. {highest} of {listed}"
+#~ msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -24055,6 +24091,10 @@ msgstr "Sonraki adım"
 msgid "Where you stop"
 msgstr "Nerede bıraktın"
 
+#: src/pages/discover/TasteTab.tsx
+msgid "Where you usually stop"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Where your manga is stored. If you use Kavita, point it at the same place."
@@ -24272,8 +24312,8 @@ msgstr "Düz HTTP üzerinden oturum açtınız. Maki yeniden başladığında bu
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
-msgid "You bail around"
-msgstr "Genellikle bıraktığınız yer"
+#~ msgid "You bail around"
+#~ msgstr "Genellikle bıraktığınız yer"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy

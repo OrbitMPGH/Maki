@@ -328,7 +328,8 @@ export function CatalogueBrowser({
             />
             <Tooltip.Group openDelay={200}>
               <SegmentedControl
-                size="md"
+                size="xs"
+                className="catalogue-search-mode"
                 value={mode}
                 onChange={(v) => {
                   setMode(v as SearchMode)

@@ -51,7 +51,7 @@ import { RouteErrorBoundary } from './components/RouteErrorBoundary'
 import { useLanguageSync } from './i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
-import { navSections, isActive, type NavItem } from './nav'
+import { navSections, isActive, isInSection, type NavItem } from './nav'
 import { DocumentTitle, DocumentTitleProvider, usePageName } from './lib/documentTitle'
 import { lazyRoute, preloadRoutes } from './lib/routePreload'
 import { SoFarSyncAskDialog } from './components/SoFarSyncAskDialog'
@@ -134,14 +134,15 @@ function NavLinks({
           {section.items.map((item) => {
             const count = badges?.[item.path]?.count ?? 0
             const tone = badges?.[item.path]?.tone
-            const active = isActive(item, pathname)
+            const current = isActive(item, pathname)
+            const active = isInSection(item, pathname)
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 className="nav-link"
                 data-active={active}
-                aria-current={active ? 'page' : undefined}
+                aria-current={current ? 'page' : active ? 'true' : undefined}
                 onClick={onNavigate}
               >
                 <item.icon size={18} className="nav-icon" />
@@ -504,7 +505,7 @@ function AppShellRoutes() {
                     key={item.path}
                     to={item.path}
                     className="app-header-link"
-                    data-active={isActive(item, location.pathname)}
+                    data-active={isInSection(item, location.pathname)}
                   >
                     <item.icon size={18} />
                     {_(item.label)}

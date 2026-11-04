@@ -39,6 +39,7 @@ import {
 } from '../api/hooks'
 import { useCustomRails } from '../api/customRails'
 import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
+import type { CatalogueSeed } from '../components/CatalogueBrowser'
 import { PageLayoutEditor, PageLayoutEditorLoading } from '../components/layout/PageLayoutEditor'
 import { useLayoutEditMode } from '../components/layout/useLayoutEditMode'
 import { reconcileLayout, sectionVisible } from '../components/layout/pageLayout'
@@ -64,18 +65,14 @@ import { useConnectivity } from '../lib/connectivity'
 import { pwaSupported, workerControlsPage } from '../lib/pwa/serviceWorker'
 import { useOfflineChapters } from '../pwa/offlineChapters'
 
-/** How many catalogue picks each borrowed Discover rail shows before "Find more". */
+/** How many catalogue picks each borrowed Discover rail shows before "Show more". */
 const RAIL_SIZE = 20
 
-function FindMore() {
+/** Opens the rail's own longer list, the same place Discover's "Show more" for that rail goes. */
+function ShowMoreLink({ to, state }: { to: string; state?: { catalogueSeed: CatalogueSeed } }) {
   return (
-    <Button
-      component={Link}
-      to="/discover"
-      variant="subtle"
-      size="compact-sm"
-    >
-      <Trans>Find more</Trans>
+    <Button component={Link} to={to} state={state} variant="subtle" size="compact-sm">
+      <Trans>Show more</Trans>
     </Button>
   )
 }
@@ -385,7 +382,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
     ) : (
       youMightLike.length > 0 && (
         <>
-          <SectionHeader icon={IconCompass} title={t`You might like`} action={<FindMore />} chevron />
+          <SectionHeader icon={IconCompass} title={t`You might like`} action={<ShowMoreLink to="/discover/recommended" />} chevron />
           <EngineRailRow
             items={youMightLike}
             seriesIdFor={seriesIdFor}
@@ -401,7 +398,10 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
     ) : (
       popular.length > 0 && (
         <>
-          <SectionHeader icon={IconFlame} title={t`Currently popular`} action={<FindMore />} chevron />
+          <SectionHeader icon={IconFlame} title={t`Currently popular`}
+            action={<ShowMoreLink to="/add" state={{ catalogueSeed: { sort: 'popular', filters: {} } }} />}
+            chevron
+          />
           <DiscoverRailRow
             items={popular.slice(0, RAIL_SIZE)}
             seriesIdFor={seriesIdFor}

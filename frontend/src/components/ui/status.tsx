@@ -299,11 +299,11 @@ export function trackerStatusVisual(status: string): StatusVisual {
   }
 }
 
-/** A tracker connection's dot/state: connected, configured but not connected, or not configured. */
+/** A tracker connection's dot/state: connected, set up but not connected, or not set up. */
 export function trackerConnectionVisual(connected: boolean, configured: boolean): StatusVisual {
   if (connected) return { color: 'green', label: msg`Connected`, Icon: IconLink }
   if (configured) return { color: 'red', label: msg`Not connected`, Icon: IconLinkOff }
-  return { color: 'gray', label: msg`Not configured`, Icon: IconLinkOff }
+  return { color: 'gray', label: msg`Not set up`, Icon: IconLinkOff }
 }
 
 /** A library file's link state against the series' chapters. */

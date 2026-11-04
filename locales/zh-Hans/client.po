@@ -1118,8 +1118,12 @@ msgstr "{created, plural, other {已添加 # 个系列}}"
 
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
-msgid "{currentStreak, plural, one {# day streak} other {# day streak}}"
-msgstr "{currentStreak, plural, other {连续阅读 # 天}}"
+#~ msgid "{currentStreak, plural, one {# day streak} other {# day streak}}"
+#~ msgstr "{currentStreak, plural, other {连续阅读 # 天}}"
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "{currentStreak, plural, one {Current streak: # day} other {Current streak: # days}}"
+msgstr ""
 
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
@@ -2450,8 +2454,8 @@ msgstr "{stopKind, select, early {你通常会在系列前段停下，大约读�
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
-msgid "{stopPercent} in"
-msgstr "位于 {stopPercent}"
+#~ msgid "{stopPercent} in"
+#~ msgstr "位于 {stopPercent}"
 
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
@@ -9151,8 +9155,8 @@ msgstr "查找匹配"
 
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Find more"
-msgstr "查看更多"
+#~ msgid "Find more"
+#~ msgstr "查看更多"
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -10149,6 +10153,10 @@ msgstr ""
 #, fuzzy
 msgid "How close each quarter sat to where you started."
 msgstr "每个季度与你开始时的位置有多接近。"
+
+#: src/pages/discover/TasteTab.tsx
+msgid "How far into a series you get before you stop reading it, for the series you did not finish."
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -12760,6 +12768,10 @@ msgstr "更多队列操作"
 msgid "More recommendation feedback actions"
 msgstr "更多推荐反馈操作"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "More source actions"
+msgstr ""
+
 #: src/components/AppearanceAnnouncementModal.tsx
 #, fuzzy
 msgid "More ways to make Maki yours"
@@ -13439,6 +13451,10 @@ msgstr "系列中没有此编号的章节"
 msgid "No chapters"
 msgstr ""
 
+#: src/pages/stats/sections/ReadingSection.tsx
+msgid "No chapters finished in this period."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "No chapters known."
@@ -13466,8 +13482,8 @@ msgstr "没有匹配的章节"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
-msgid "No chapters read in this period."
-msgstr "此时间段没有已读章节。"
+#~ msgid "No chapters read in this period."
+#~ msgstr "此时间段没有已读章节。"
 
 #: src/pages/HealthPage.tsx
 #~ msgid "No checks have run yet"
@@ -14105,8 +14121,8 @@ msgstr "尚未检查"
 
 #: src/components/ui/status.tsx
 #, fuzzy
-msgid "Not configured"
-msgstr "尚未配置"
+#~ msgid "Not configured"
+#~ msgstr "尚未配置"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
@@ -14289,6 +14305,10 @@ msgstr "未扫描"
 #, fuzzy
 msgid "Not set"
 msgstr "未设置"
+
+#: src/components/ui/status.tsx
+msgid "Not set up"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -15696,6 +15716,10 @@ msgstr "暂停下载"
 #, fuzzy
 msgid "Pause Rewind"
 msgstr "暂停 Rewind"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Pause rotating picks"
+msgstr ""
 
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
@@ -18136,6 +18160,10 @@ msgstr "恢复于"
 msgid "Resume Rewind"
 msgstr "恢复 Rewind"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "Resume rotating picks"
+msgstr ""
+
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Resumed since you saved it"
 msgstr ""
@@ -20488,8 +20516,16 @@ msgid "Sources disagree on chapter numbering"
 msgstr "来源的章节编号不一致"
 
 #: src/components/series/SeriesHero.tsx
-msgid "Sources reach ch. {highest} of {listed}"
+msgid "Sources end at ch. {highest}; MangaBaka lists {listed}"
 msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "Sources end at ch. {highest}; your total is {listed}"
+msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+#~ msgid "Sources reach ch. {highest} of {listed}"
+#~ msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -24055,6 +24091,10 @@ msgstr "接下来前往哪里"
 msgid "Where you stop"
 msgstr "停下的位置"
 
+#: src/pages/discover/TasteTab.tsx
+msgid "Where you usually stop"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Where your manga is stored. If you use Kavita, point it at the same place."
@@ -24272,8 +24312,8 @@ msgstr "你当前通过普通 HTTP 登录。Maki 重启后，将拒绝在此地�
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
-msgid "You bail around"
-msgstr "你通常在这里弃读"
+#~ msgid "You bail around"
+#~ msgstr "你通常在这里弃读"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy

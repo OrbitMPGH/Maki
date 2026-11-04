@@ -1118,8 +1118,12 @@ msgstr "{created, plural, other {#件のシリーズを追加しました}}"
 
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
-msgid "{currentStreak, plural, one {# day streak} other {# day streak}}"
-msgstr "{currentStreak, plural, other {#日連続}}"
+#~ msgid "{currentStreak, plural, one {# day streak} other {# day streak}}"
+#~ msgstr "{currentStreak, plural, other {#日連続}}"
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "{currentStreak, plural, one {Current streak: # day} other {Current streak: # days}}"
+msgstr ""
 
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
@@ -2450,8 +2454,8 @@ msgstr "{stopKind, select, early {読むのをやめるのは通常早い段階�
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
-msgid "{stopPercent} in"
-msgstr "{stopPercent}まで"
+#~ msgid "{stopPercent} in"
+#~ msgstr "{stopPercent}まで"
 
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
@@ -9151,8 +9155,8 @@ msgstr "一致候補を探す"
 
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Find more"
-msgstr "さらに検索"
+#~ msgid "Find more"
+#~ msgstr "さらに検索"
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -10149,6 +10153,10 @@ msgstr ""
 #, fuzzy
 msgid "How close each quarter sat to where you started."
 msgstr "各四半期が開始地点にどれだけ近かったか。"
+
+#: src/pages/discover/TasteTab.tsx
+msgid "How far into a series you get before you stop reading it, for the series you did not finish."
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -12760,6 +12768,10 @@ msgstr "キューの他の操作"
 msgid "More recommendation feedback actions"
 msgstr "おすすめフィードバックのその他の操作"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "More source actions"
+msgstr ""
+
 #: src/components/AppearanceAnnouncementModal.tsx
 #, fuzzy
 msgid "More ways to make Maki yours"
@@ -13439,6 +13451,10 @@ msgstr "シリーズにこの番号の章がありません"
 msgid "No chapters"
 msgstr ""
 
+#: src/pages/stats/sections/ReadingSection.tsx
+msgid "No chapters finished in this period."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "No chapters known."
@@ -13466,8 +13482,8 @@ msgstr "一致する章はありません"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
-msgid "No chapters read in this period."
-msgstr "この期間に読んだ章はありません。"
+#~ msgid "No chapters read in this period."
+#~ msgstr "この期間に読んだ章はありません。"
 
 #: src/pages/HealthPage.tsx
 #~ msgid "No checks have run yet"
@@ -14105,8 +14121,8 @@ msgstr "未確認"
 
 #: src/components/ui/status.tsx
 #, fuzzy
-msgid "Not configured"
-msgstr "未設定"
+#~ msgid "Not configured"
+#~ msgstr "未設定"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
@@ -14289,6 +14305,10 @@ msgstr "未スキャン"
 #, fuzzy
 msgid "Not set"
 msgstr "未設定"
+
+#: src/components/ui/status.tsx
+msgid "Not set up"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -15696,6 +15716,10 @@ msgstr "ダウンロードを一時停止"
 #, fuzzy
 msgid "Pause Rewind"
 msgstr "Rewindを一時停止"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Pause rotating picks"
+msgstr ""
 
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
@@ -18136,6 +18160,10 @@ msgstr "再開時刻"
 msgid "Resume Rewind"
 msgstr "Rewindを再開"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "Resume rotating picks"
+msgstr ""
+
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Resumed since you saved it"
 msgstr ""
@@ -20488,8 +20516,16 @@ msgid "Sources disagree on chapter numbering"
 msgstr "ソース間で章番号が一致しません"
 
 #: src/components/series/SeriesHero.tsx
-msgid "Sources reach ch. {highest} of {listed}"
+msgid "Sources end at ch. {highest}; MangaBaka lists {listed}"
 msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "Sources end at ch. {highest}; your total is {listed}"
+msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+#~ msgid "Sources reach ch. {highest} of {listed}"
+#~ msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -24055,6 +24091,10 @@ msgstr "次にすること"
 msgid "Where you stop"
 msgstr "中断位置"
 
+#: src/pages/discover/TasteTab.tsx
+msgid "Where you usually stop"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Where your manga is stored. If you use Kavita, point it at the same place."
@@ -24272,8 +24312,8 @@ msgstr "平文のHTTPでサインインしています。Makiを再起動する�
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
-msgid "You bail around"
-msgstr "このあたりで離脱"
+#~ msgid "You bail around"
+#~ msgstr "このあたりで離脱"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy

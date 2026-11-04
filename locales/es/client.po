@@ -1118,8 +1118,12 @@ msgstr "{created, plural, one {# serie añadida} many {# series añadidas} other
 
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
-msgid "{currentStreak, plural, one {# day streak} other {# day streak}}"
-msgstr "{currentStreak, plural, one {racha de # día} many {racha de # días} other {racha de # días}}"
+#~ msgid "{currentStreak, plural, one {# day streak} other {# day streak}}"
+#~ msgstr "{currentStreak, plural, one {racha de # día} many {racha de # días} other {racha de # días}}"
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "{currentStreak, plural, one {Current streak: # day} other {Current streak: # days}}"
+msgstr ""
 
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
@@ -2450,8 +2454,8 @@ msgstr "{stopKind, select, early {Cuando dejas de leer, suele ser al principio, 
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
-msgid "{stopPercent} in"
-msgstr "en {stopPercent}"
+#~ msgid "{stopPercent} in"
+#~ msgstr "en {stopPercent}"
 
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
@@ -9151,8 +9155,8 @@ msgstr "Buscar coincidencia"
 
 #: src/pages/HomePage.tsx
 #, fuzzy
-msgid "Find more"
-msgstr "Buscar más"
+#~ msgid "Find more"
+#~ msgstr "Buscar más"
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -10149,6 +10153,10 @@ msgstr ""
 #, fuzzy
 msgid "How close each quarter sat to where you started."
 msgstr "Qué tan cerca estuvo cada trimestre del punto donde empezaste."
+
+#: src/pages/discover/TasteTab.tsx
+msgid "How far into a series you get before you stop reading it, for the series you did not finish."
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -12760,6 +12768,10 @@ msgstr "Más acciones de la cola"
 msgid "More recommendation feedback actions"
 msgstr "Más acciones de valoración de recomendaciones"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "More source actions"
+msgstr ""
+
 #: src/components/AppearanceAnnouncementModal.tsx
 #, fuzzy
 msgid "More ways to make Maki yours"
@@ -13439,6 +13451,10 @@ msgstr "no hay ningún capítulo con este número en la serie"
 msgid "No chapters"
 msgstr ""
 
+#: src/pages/stats/sections/ReadingSection.tsx
+msgid "No chapters finished in this period."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "No chapters known."
@@ -13466,8 +13482,8 @@ msgstr "no coincidieron capítulos"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
-msgid "No chapters read in this period."
-msgstr "No se han leído capítulos en este periodo."
+#~ msgid "No chapters read in this period."
+#~ msgstr "No se han leído capítulos en este periodo."
 
 #: src/pages/HealthPage.tsx
 #~ msgid "No checks have run yet"
@@ -14105,8 +14121,8 @@ msgstr "Aún no comprobado"
 
 #: src/components/ui/status.tsx
 #, fuzzy
-msgid "Not configured"
-msgstr "Sin configurar"
+#~ msgid "Not configured"
+#~ msgstr "Sin configurar"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
@@ -14289,6 +14305,10 @@ msgstr "No analizado"
 #, fuzzy
 msgid "Not set"
 msgstr "No configurado"
+
+#: src/components/ui/status.tsx
+msgid "Not set up"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -15696,6 +15716,10 @@ msgstr "Pausar descargas"
 #, fuzzy
 msgid "Pause Rewind"
 msgstr "Pausar Rewind"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "Pause rotating picks"
+msgstr ""
 
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
@@ -18136,6 +18160,10 @@ msgstr "Reanudar a las"
 msgid "Resume Rewind"
 msgstr "Reanudar Rewind"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "Resume rotating picks"
+msgstr ""
+
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Resumed since you saved it"
 msgstr ""
@@ -20488,8 +20516,16 @@ msgid "Sources disagree on chapter numbering"
 msgstr "Las fuentes no coinciden en la numeración de capítulos"
 
 #: src/components/series/SeriesHero.tsx
-msgid "Sources reach ch. {highest} of {listed}"
+msgid "Sources end at ch. {highest}; MangaBaka lists {listed}"
 msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "Sources end at ch. {highest}; your total is {listed}"
+msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+#~ msgid "Sources reach ch. {highest} of {listed}"
+#~ msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -24055,6 +24091,10 @@ msgstr "Qué hacer a continuación"
 msgid "Where you stop"
 msgstr "Dónde lo dejas"
 
+#: src/pages/discover/TasteTab.tsx
+msgid "Where you usually stop"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Where your manga is stored. If you use Kavita, point it at the same place."
@@ -24272,8 +24312,8 @@ msgstr "Has iniciado sesión por HTTP sin cifrar. Cuando Maki se reinicie, recha
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
-msgid "You bail around"
-msgstr "Abandonas alrededor de"
+#~ msgid "You bail around"
+#~ msgstr "Abandonas alrededor de"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy

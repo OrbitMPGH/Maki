@@ -31,7 +31,7 @@ export const WithAction: Story = {
     chevron: true,
     action: (
       <Anchor component={Link} to="/discover/recommended" size="sm">
-        Find more
+        Show more
       </Anchor>
     ),
   },

@@ -669,6 +669,18 @@ public sealed class ActivityStatsTests : IDisposable
     }
 
     [Fact]
+    public async Task DaysActiveCountsReadingTimeWithoutAFinishedChapter()
+    {
+        AddEvent(StatsEventType.ChaptersRead, new DateTime(2026, 5, 1, 12, 0, 0, DateTimeKind.Utc), 1);
+        AddEvent(StatsEventType.ReadingTime, new DateTime(2026, 5, 1, 13, 0, 0, DateTimeKind.Utc), 300);
+        AddEvent(StatsEventType.ReadingTime, new DateTime(2026, 5, 2, 12, 0, 0, DateTimeKind.Utc), 120);
+
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        Assert.Equal(2, stats.Totals.DaysActive);
+    }
+
+    [Fact]
     public async Task TimelineCarriesReadingSecondsPerBucket()
     {
         AddEvent(StatsEventType.ReadingTime, new DateTime(2026, 3, 4, 12, 0, 0, DateTimeKind.Utc), 600);

@@ -331,7 +331,7 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
                     ? t`No activity in ${windowLabel}.`
                     : metric === 'time'
                       ? t`No reading time recorded.`
-                      : t`No chapters read in this period.`
+                      : t`No chapters finished in this period.`
                 }
               />
             ) : (
@@ -370,7 +370,7 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
                 const { count } = s
                 return { ...s, value: plural(count, { one: '# ch.', other: '# ch.' }) }
               })}
-              emptyText={t`No chapters read in this period.`}
+              emptyText={t`No chapters finished in this period.`}
             />
             {activity.topByTime.length > 0 && (
               <RankList

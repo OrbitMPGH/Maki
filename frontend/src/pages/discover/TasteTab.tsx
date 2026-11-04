@@ -97,7 +97,7 @@ function TasteSkeleton() {
       <FigureStrip
         loading
         className="taste-figures"
-        figures={[t`You finish`, t`Typical chapter`, t`You bail around`, t`Biggest day`].map((label) => ({
+        figures={[t`You finish`, t`Typical chapter`, t`Where you usually stop`, t`Biggest day`].map((label) => ({
           label,
           value: 0,
         }))}
@@ -268,9 +268,10 @@ function BehaviourSection({ behaviour }: { behaviour: ReadingBehaviour }) {
             zero: pace === null,
           },
           {
-            label: t`You bail around`,
-            value: stopPercent === null ? '-' : t`${stopPercent} in`,
+            label: t`Where you usually stop`,
+            value: stopPercent === null ? '-' : stopPercent,
             zero: stopPercent === null,
+            tip: t`How far into a series you get before you stop reading it, for the series you did not finish.`,
           },
           {
             label: t`Biggest day`,

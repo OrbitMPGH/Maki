@@ -107,6 +107,8 @@ export function ReadingWeeks({
             other: 'You read today. Longest streak: # days',
           })
         : t`Read today to keep it going`
+  // Wide screens show the badge as a bare number beside "Longest streak", so the tip names which streak it is.
+  const currentStreakLabel = plural(currentStreak, { one: 'Current streak: # day', other: 'Current streak: # days' })
 
   return (
     <section
@@ -137,7 +139,8 @@ export function ReadingWeeks({
               role="img"
               className="reading-weeks-streak tnum"
               data-lit={weeks.readToday || undefined}
-              aria-label={plural(currentStreak, { one: '# day streak', other: '# day streak' })}
+              aria-label={currentStreakLabel}
+              data-tip={currentStreakLabel}
             >
               <IconFlame size={16} aria-hidden />
               {formatNumber(currentStreak)}
@@ -163,9 +166,10 @@ export function ReadingWeeks({
             const level = cell.future ? 0 : heatLevel(cell.chapters, cell.seconds)
             const shade = level > 0 ? HEAT_SHADES[level] : undefined
             const mark = cell.today ? String(Number(cell.date.slice(8))) : cell.monthStart ? monthName(cell.monthStart, 'short') : null
+            const monthMark = (!cell.today && cell.monthStart !== null) || undefined
             if (cell.future) {
               return (
-                <span key={cell.date} className="reading-weeks-day" data-future>
+                <span key={cell.date} className="reading-weeks-day" data-future data-month={monthMark}>
                   {mark}
                 </span>
               )
@@ -186,6 +190,7 @@ export function ReadingWeeks({
                 data-tip={label}
                 className="reading-weeks-day"
                 data-today={cell.today || undefined}
+                data-month={monthMark}
                 data-empty={level === 0 || undefined}
                 style={shade ? { background: shade } : undefined}
               >
