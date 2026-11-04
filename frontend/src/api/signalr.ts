@@ -8,7 +8,7 @@ import { inboxPrefsQuery, type InboxPush } from './inbox'
 import { refreshNotes } from './notes'
 import type { SourceMatchProgress, SourceMatchState } from './hooks'
 import { createSeriesListRefresher } from './seriesListPatch'
-import type { QueueHistoryDto, QueueItemDto, QueuePauseDto } from './types'
+import type { ChapterDto, QueueHistoryDto, QueueItemDto, QueuePauseDto } from './types'
 
 let connection: HubConnection | null = null
 let connectionPromise: Promise<HubConnection> | null = null
@@ -180,6 +180,55 @@ export function useLiveEvents() {
     let seriesTimer: ReturnType<typeof setTimeout> | null = null
     const importedSeries = new Set<number>()
 
+    // A finished download leaves the series queue at once, but its chapter row only gets the file
+    // when flushSeriesRefresh refetches the chapters, so the row read Missing in between. The item's
+    // last state stays on the series queue until a chapter list with the file lands, re-added if a
+    // queue poll drops it first. The timeout covers a list nobody refetches (page closed).
+    const held = new Map<number, Map<number, QueueItemDto>>()
+    const heldTimers = new Map<number, ReturnType<typeof setTimeout>>()
+    const releaseHeld = (seriesId: number, itemIds: number[]) => {
+      const items = held.get(seriesId)
+      if (!items || itemIds.length === 0) return
+      for (const id of itemIds) {
+        items.delete(id)
+        clearTimeout(heldTimers.get(id))
+        heldTimers.delete(id)
+      }
+      if (items.size === 0) held.delete(seriesId)
+      const drop = new Set(itemIds)
+      queryClient.setQueryData<QueueHistoryDto>(['queue', 'series', seriesId], (old) =>
+        old && Array.isArray(old.items) ? { ...old, items: old.items.filter((q) => !drop.has(q.id)) } : old,
+      )
+    }
+    const holdCompleted = (item: QueueItemDto, shown: QueueItemDto) => {
+      let items = held.get(item.seriesId)
+      if (!items) held.set(item.seriesId, (items = new Map()))
+      items.set(item.id, shown)
+      clearTimeout(heldTimers.get(item.id))
+      heldTimers.set(item.id, setTimeout(() => releaseHeld(item.seriesId, [item.id]), 30_000))
+    }
+    const unsubscribeCache = queryClient.getQueryCache().subscribe((event) => {
+      if (event.type !== 'updated' || event.action.type !== 'success') return
+      const [root, a, b] = event.query.queryKey as unknown[]
+      if (root === 'chapters' && typeof a === 'number') {
+        const items = held.get(a)
+        if (!items) return
+        const withFile = new Set(
+          (event.query.state.data as ChapterDto[] | undefined)?.filter((c) => c.hasFile).map((c) => c.id),
+        )
+        releaseHeld(a, [...items.values()].filter((q) => withFile.has(q.chapterId)).map((q) => q.id))
+      } else if (root === 'queue' && a === 'series' && typeof b === 'number') {
+        const items = held.get(b)
+        const data = event.query.state.data as QueueHistoryDto | undefined
+        if (!items || !data || !Array.isArray(data.items)) return
+        const present = new Set(data.items.map((q) => q.id))
+        const missing = [...items.values()].filter((q) => !present.has(q.id))
+        if (missing.length > 0) {
+          queryClient.setQueryData<QueueHistoryDto>(['queue', 'series', b], { ...data, items: [...missing, ...data.items] })
+        }
+      }
+    })
+
     // A bulk download fires one chapterImported per chapter. The library list is the heaviest thing
     // they touch, so every event just marks work as pending and one timer refreshes it every few
     // seconds. Refetching it parses the whole list and re-renders the page showing it, so a flush
@@ -272,7 +321,16 @@ export function useLiveEvents() {
           queryKey: ['queue'],
           predicate: (q) => typeof q.queryKey[1] === 'number',
         }, patch)
-        queryClient.setQueryData<QueueHistoryDto>(['queue', 'series', item.seriesId], patch)
+        const seriesKey = ['queue', 'series', item.seriesId]
+        const shown = queryClient.getQueryData<QueueHistoryDto>(seriesKey)?.items?.find((q) => q.id === item.id)
+        const chapter = queryClient
+          .getQueryData<ChapterDto[]>(['chapters', item.seriesId])
+          ?.find((c) => c.id === item.chapterId)
+        if (item.status === 'Completed' && shown && chapter && !chapter.hasFile) {
+          holdCompleted(item, shown)
+        } else {
+          queryClient.setQueryData<QueueHistoryDto>(seriesKey, patch)
+        }
         if (isDone) {
           // The item moved into history, so refresh the paginated history feed.
           void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
@@ -419,6 +477,8 @@ export function useLiveEvents() {
       reconnectListeners.delete(onReconnected)
       if (summaryTimer !== null) clearTimeout(summaryTimer)
       if (seriesTimer !== null) clearTimeout(seriesTimer)
+      unsubscribeCache()
+      for (const timer of heldTimers.values()) clearTimeout(timer)
       for (const [name, handler] of registered) liveConn?.off(name, handler)
     }
   }, [queryClient])
