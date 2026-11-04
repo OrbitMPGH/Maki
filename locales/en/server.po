@@ -408,8 +408,8 @@ msgstr "There is nothing to register. Enter your OPDS token as the username and 
 msgid "error.libraryFilters.nameRequired"
 msgstr "Name is required"
 
-#: src/Maki.Api/Controllers/DiscoverFiltersController.cs
 #. {max} is how many saved filters one person may keep.
+#: src/Maki.Api/Controllers/DiscoverFiltersController.cs
 msgid "error.discoverFilters.tooMany"
 msgstr "You can keep at most {max} saved filters"
 
