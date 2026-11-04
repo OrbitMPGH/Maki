@@ -11771,10 +11771,6 @@ msgid "Notes need a connection"
 msgstr "Notes need a connection"
 
 #: src/components/series/ChapterTableRows.tsx
-#~ msgid "Notes on {chapterLbl}: {mine} yours, {shared} shared"
-#~ msgstr "Notes on {chapterLbl}: {mine} yours, {shared} shared"
-
-#: src/components/series/ChapterTableRows.tsx
 msgid "Notes on {name}: {mine} yours, {shared} shared"
 msgstr "Notes on {name}: {mine} yours, {shared} shared"
 
