@@ -3,8 +3,11 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: hand-authored\n"
+"X-Generator: Weblate 2026.11.1.dev0\n"
 "Language: fr\n"
+"PO-Revision-Date: 2026-11-04 22:03+0000\n"
+"Language-Team: French <https://hosted.weblate.org/projects/maki/maki-backend/fr/>\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
 
 #. 500 — ResetAuthenticatorKeyAsync/GetAuthenticatorKeyAsync returned nothing, which is not
 #. expected to happen in practice.
@@ -613,366 +616,311 @@ msgstr "Vous pouvez enregistrer au maximum {max} rails"
 #. {schema} is the definition format number the file says it uses.
 #. English: This definition uses format {schema}, which this version of Maki can't read. Update Maki or use a definition made for this version.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.schemaUnsupported"
-msgstr "Cette définition utilise le format {schema}, que cette version de Maki ne peut pas lire. Mettez Maki à jour ou utilisez une définition faite pour cette version."
+msgstr ""
 
 #. English: The id must be 2 to 40 lowercase letters, digits or hyphens, starting with a letter or digit.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.idInvalid"
-msgstr "L'identifiant doit faire de 2 à 40 caractères : lettres minuscules, chiffres ou tirets, en commençant par une lettre ou un chiffre."
+msgstr ""
 
 #. English: The name is required and can be at most 60 characters.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.nameInvalid"
-msgstr "Le nom est obligatoire et peut faire 60 caractères au maximum."
+msgstr ""
 
 #. English: The base URL must be an http or https address on a domain name, with no path, such as https://example.com.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.baseUrlInvalid"
-msgstr "L'URL de base doit être une adresse http ou https sur un nom de domaine, sans chemin, comme https://example.com."
+msgstr ""
 
 #. English: The language must be one language code, such as en or pt-BR.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.languageInvalid"
-msgstr "La langue doit être un seul code de langue, comme en ou pt-BR."
+msgstr ""
 
 #. {field} is the definition field name, such as kind or chapters.date.format, and is never translated.
 #. English: The value of {field} is not one Maki knows.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.fieldInvalid"
-msgstr "La valeur de {field} n'est pas une valeur connue de Maki."
+msgstr ""
 
 #. English: The request spacing must be between {min} and {max} milliseconds.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.intervalInvalid"
-msgstr "L'espacement des requêtes doit être compris entre {min} et {max} millisecondes."
+msgstr ""
 
 #. {header} is an HTTP header name and is never translated.
 #. English: The header {header} can't be set by a definition.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.headerRefused"
-msgstr "L'en-tête {header} ne peut pas être défini par une définition."
+msgstr ""
 
 #. English: "{host}" is not a domain name.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.coverHostInvalid"
-msgstr "« {host} » n'est pas un nom de domaine."
+msgstr ""
 
 #. English: Give either a search or a catalogue page, not both.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.searchAndCatalogue"
-msgstr "Indiquez une recherche ou une page de catalogue, pas les deux."
+msgstr ""
 
 #. {engine} is an engine name such as madara and is never translated.
 #. English: A definition that uses the {engine} engine leaves out the search, catalogue, series, chapters and pages sections.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.engineSections"
-msgstr "Une définition qui utilise le moteur {engine} omet les sections recherche, catalogue, série, chapitres et pages."
+msgstr ""
 
 #. English: A repository address is a full http:// or https:// URL on a public host.
 #: src/Maki.Sources/Custom/CustomRepositoryStore.cs
-#, fuzzy
 msgid "error.customRepository.urlInvalid"
-msgstr "L'adresse d'un dépôt doit être une URL http:// ou https:// complète sur un hôte public."
+msgstr ""
 
 #. {url} is the address Maki tried and {reason} is what the site or the connection said, untranslated.
 #. English: Maki could not read {url}: {reason}
 #: src/Maki.Sources/Custom/CustomRepositoryStore.cs
-#, fuzzy
 msgid "error.customRepository.fetchFailed"
-msgstr "Maki n'a pas pu lire {url} : {reason}"
+msgstr ""
 
 #. {url} is an address and {reason} is the JSON parser's message, untranslated.
 #. English: {url} is not a repository index: {reason}
 #: src/Maki.Sources/Custom/CustomRepositoryStore.cs
-#, fuzzy
 msgid "error.customRepository.indexInvalid"
-msgstr "{url} n'est pas un index de dépôt : {reason}"
+msgstr ""
 
 #. {url} is an address; {max} is a number of kilobytes.
 #. English: {url} is larger than {max} KB.
 #: src/Maki.Sources/Custom/CustomRepositoryStore.cs
-#, fuzzy
 msgid "error.customRepository.tooLarge"
-msgstr "{url} fait plus de {max} Ko."
+msgstr ""
 
 #. English: That repository is already added.
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "error.customRepository.exists"
-msgstr "Ce dépôt est déjà ajouté."
+msgstr ""
 
 #. English: There is no repository with that address.
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "error.customRepository.notFound"
-msgstr "Aucun dépôt ne correspond à cette adresse."
+msgstr ""
 
 #. {id} is a custom source id and is never translated.
 #. English: The repository has no definition called {id}.
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "error.customRepository.entryNotFound"
-msgstr "Le dépôt ne contient aucune définition nommée {id}."
+msgstr ""
 
 #. {id} is a custom source id and is never translated.
 #. English: The file the repository serves for {id} does not match its checksum, so it was not used.
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "error.customRepository.hashMismatch"
-msgstr "Le fichier que le dépôt fournit pour {id} ne correspond pas à sa somme de contrôle, il n'a donc pas été utilisé."
+msgstr ""
 
 #. {id} is a custom source id and is never translated.
 #. English: The repository's file for {id} defines a source with another id.
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "error.customRepository.idMismatch"
-msgstr "Le fichier du dépôt pour {id} définit une source avec un autre identifiant."
+msgstr ""
 
 #. {id} is a custom source id and is never translated.
 #. English: A custom source called {id} already exists and was not installed from this repository.
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "error.customRepository.idTaken"
-msgstr "Une source personnalisée nommée {id} existe déjà et n'a pas été installée depuis ce dépôt."
+msgstr ""
 
 #. {id} is a custom source id and is never translated.
 #. English: {id} needs a newer version of Maki.
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "error.customRepository.needsNewerMaki"
-msgstr "{id} nécessite une version plus récente de Maki."
+msgstr ""
 
 #. {id} is a custom source id and {reason} is what the validator or parser said, untranslated.
 #. English: The repository's definition of {id} is not valid: {reason}
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "error.customRepository.definitionInvalid"
-msgstr "La définition de {id} dans le dépôt n'est pas valide : {reason}"
+msgstr ""
 
 #. English: The definition did not pass its test against the site, so it was not installed.
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "error.customRepository.installTestFailed"
-msgstr "La définition n'a pas réussi son test sur le site, elle n'a donc pas été installée."
+msgstr ""
 
 #. {id} is a custom source id and is never translated.
 #. English: An update of {id} did not pass its test against the site, so it waits for you.
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "error.customRepository.testFailed"
-msgstr "Une mise à jour de {id} n'a pas réussi son test sur le site, elle attend donc votre accord."
+msgstr ""
 
 #. {id} is a custom source id and is never translated.
 #. English: An update of {id} could change which chapters its linked series have, so it waits for you.
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "error.customRepository.updateNeedsReview"
-msgstr "Une mise à jour de {id} pourrait modifier les chapitres des séries liées, elle attend donc votre accord."
+msgstr ""
 
 #. English: Only a repository served over https can keep its sources up to date on its own.
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "error.customRepository.autoUpdateNeedsHttps"
-msgstr "Seul un dépôt servi en https peut tenir ses sources à jour de lui-même."
+msgstr ""
 
 #. {id} is a custom source id and is never translated.
 #. English: {id} has no update waiting.
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "error.customRepository.noUpdate"
-msgstr "{id} n'a aucune mise à jour en attente."
+msgstr ""
 
 #. {id} is a custom source id and is never translated.
 #. English: There is no earlier version of {id} to go back to.
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "error.customRepository.nothingToRevert"
-msgstr "Il n'existe aucune version antérieure de {id} vers laquelle revenir."
+msgstr ""
 
 #. {id} is a custom source id and is never translated.
 #. English: An update of {id} waits for you: its file isn't served over https with a checksum, so it isn't applied on its own.
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "error.customRepository.autoUpdateUnsafe"
-msgstr "Une mise à jour de {id} attend votre accord : son fichier n'est pas servi en https avec une somme de contrôle, elle n'est donc pas appliquée seule."
+msgstr ""
 
 #. {id} is a custom source id and is never translated.
 #. English: {id} changed while this was running, so nothing was saved. Look at it again and retry.
 #: src/Maki.Api/Services/CustomSourceService.cs
-#, fuzzy
 msgid "error.customSource.changedMeanwhile"
-msgstr "{id} a changé pendant cette opération, rien n'a donc été enregistré. Vérifiez-le à nouveau et réessayez."
+msgstr ""
 
 #. English: Paste the full address of a series page on the site, starting with https://.
 #: src/Maki.Api/Services/CustomSourceProbe.cs
-#, fuzzy
 msgid "error.customSource.probe.urlInvalid"
-msgstr "Collez l'adresse complète d'une page de série du site, en commençant par https://."
+msgstr ""
 
 #. {host} is a domain name and is never translated.
 #. English: The chapter page has to be on {host}, like the series page.
 #: src/Maki.Api/Services/CustomSourceProbe.cs
-#, fuzzy
 msgid "error.customSource.probe.otherHost"
-msgstr "La page du chapitre doit être sur {host}, comme la page de la série."
+msgstr ""
 
 #. English: Maki reads the series id from the last part of the address, and this address has none. Paste the series page's own address.
 #: src/Maki.Api/Services/CustomSourceProbe.cs
-#, fuzzy
 msgid "error.customSource.probe.seriesUrlShape"
-msgstr "Maki lit l'identifiant de la série dans la dernière partie de l'adresse, et celle-ci n'en a pas. Collez l'adresse propre à la page de la série."
+msgstr ""
 
 #. {url} is the address Maki tried and {reason} is what the site or the connection said, untranslated.
 #. English: Maki could not read {url}: {reason}
 #: src/Maki.Api/Services/CustomSourceProbe.cs
-#, fuzzy
 msgid "error.customSource.probe.fetchFailed"
-msgstr "Maki n'a pas pu lire {url} : {reason}"
+msgstr ""
 
 #. {field} is the definition field name and is never translated.
 #. English: {field} is required.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.fieldRequired"
-msgstr "{field} est obligatoire."
+msgstr ""
 
 #. {field} is the definition field name and {placeholder} a template placeholder such as seriesId in braces; neither is translated.
 #. English: {field} must contain {placeholder}.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.templatePlaceholder"
-msgstr "{field} doit contenir {placeholder}."
+msgstr ""
 
 #. {field} is the definition field name and {host} the site's domain; neither is translated.
 #. English: {field} must point at {host}.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.templateHost"
-msgstr "{field} doit pointer vers {host}."
+msgstr ""
 
 #. {field} is the definition field name and is never translated.
 #. English: {field} needs exactly one of css, regex or json.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.listExtractorShape"
-msgstr "{field} demande exactement un des éléments css, regex ou json."
+msgstr ""
 
 #. {field} is the definition field name and is never translated.
 #. English: {field} reads something its list items don't have, or mixes a fixed value with other settings.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.fieldExtractorShape"
-msgstr "{field} lit quelque chose que ses éléments de liste n'ont pas, ou mélange une valeur fixe avec d'autres réglages."
+msgstr ""
 
 #. {field} is the definition field name and {selector} the CSS selector; neither is translated.
 #. English: {field}: "{selector}" is not a valid CSS selector.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.cssInvalid"
-msgstr "{field} : « {selector} » n'est pas un sélecteur CSS valide."
+msgstr ""
 
 #. {field} is the definition field name and {pattern} the regular expression; neither is translated.
 #. English: {field}: "{pattern}" is not a valid regular expression.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.regexInvalid"
-msgstr "{field} : « {pattern} » n'est pas une expression régulière valide."
+msgstr ""
 
 #. {field} is the definition field name and {path} the JSON path; neither is translated.
 #. English: {field}: "{path}" is not a valid JSON path. Use dot segments with [*] or [n].
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.jsonPathInvalid"
-msgstr "{field} : « {path} » n'est pas un chemin JSON valide. Utilisez des segments avec des points, [*] ou [n]."
+msgstr ""
 
 #. English: A source with search needs a sample search query.
 #: src/Maki.Sources/Custom/CustomSourceValidator.cs
-#, fuzzy
 msgid "error.customSource.sampleQueryRequired"
-msgstr "Une source avec recherche a besoin d'une requête de recherche d'exemple."
+msgstr ""
 
 #. {max} is a size in kilobytes.
 #. English: The definition is larger than {max} KB.
 #: src/Maki.Api/Services/CustomSourceService.cs
-#, fuzzy
 msgid "error.customSource.tooLarge"
-msgstr "La définition fait plus de {max} Ko."
+msgstr ""
 
 #. {detail} is the JSON parser's own message and is never translated.
 #. English: The definition is not valid JSON for a custom source: {detail}
 #: src/Maki.Api/Services/CustomSourceService.cs
-#, fuzzy
 msgid "error.customSource.jsonInvalid"
-msgstr "La définition n'est pas du JSON valide pour une source personnalisée : {detail}"
+msgstr ""
 
 #. {source} is the name of the source that already covers this site, never translated.
 #. English: {source} already covers this site.
 #: src/Maki.Api/Services/CustomSourceService.cs
-#, fuzzy
 msgid "error.customSource.hostTaken"
-msgstr "{source} couvre déjà ce site."
+msgstr ""
 
 #. {id} is a custom source id, never translated.
 #. English: There is no custom source "{id}".
 #: src/Maki.Api/Controllers/CustomSourcesController.cs
-#, fuzzy
 msgid "error.customSource.notFound"
-msgstr "Il n'existe aucune source personnalisée « {id} »."
+msgstr ""
 
 #. English: The id in the definition does not match the one being saved.
 #: src/Maki.Api/Controllers/CustomSourcesController.cs
-#, fuzzy
 msgid "error.customSource.idMismatch"
-msgstr "L'identifiant dans la définition ne correspond pas à celui en cours d'enregistrement."
+msgstr ""
 
 #. {count} is how many series are linked to the source.
 #. English: This change could give {count, plural, one {# linked series} other {# linked series}} new chapter rows that download again. Check the differences, then save again to confirm.
 #: src/Maki.Api/Controllers/CustomSourcesController.cs
-#, fuzzy
 msgid "error.customSource.identityChange"
-msgstr "Ce changement pourrait donner à {count, plural, one {# série liée} many {# séries liées} other {# séries liées}} de nouvelles lignes de chapitres qui se téléchargeront à nouveau. Vérifiez les différences, puis enregistrez de nouveau pour confirmer."
+msgstr ""
 
 #. English: The search results do not include the sample series.
 #: src/Maki.Api/Services/CustomSourceTester.cs
-#, fuzzy
 msgid "error.customSource.test.sampleNotInSearch"
-msgstr "Les résultats de recherche n'incluent pas la série d'exemple."
+msgstr ""
 
 #. English: The sample series URL does not match the series URL template.
 #: src/Maki.Api/Services/CustomSourceTester.cs
-#, fuzzy
 msgid "error.customSource.test.sampleSeriesUnresolved"
-msgstr "L'adresse de la série d'exemple ne correspond pas au modèle d'adresse des séries."
+msgstr ""
 
 #. English: The chapter URL template does not rebuild the links the chapter list shows.
 #: src/Maki.Api/Services/CustomSourceTester.cs
-#, fuzzy
 msgid "error.customSource.test.urlTemplateMismatch"
-msgstr "Le modèle d'adresse des chapitres ne reconstruit pas les liens affichés dans la liste des chapitres."
+msgstr ""
 
 #. English: The sample chapter URL is not in the chapter list.
 #: src/Maki.Api/Services/CustomSourceTester.cs
-#, fuzzy
 msgid "error.customSource.test.sampleChapterNotListed"
-msgstr "L'adresse du chapitre d'exemple ne figure pas dans la liste des chapitres."
+msgstr ""
 
 #. English: The first page did not come back as an image.
 #: src/Maki.Api/Services/CustomSourceTester.cs
-#, fuzzy
 msgid "error.customSource.test.notAnImage"
-msgstr "La première page n'est pas revenue sous forme d'image."
+msgstr ""
 
 #. {title} is the metadata provider's title for the series, not translated.
 #. English: "{title}" is already in the library with downloaded files. Delete it first if you want to re-import from scratch.
@@ -1416,29 +1364,25 @@ msgstr "Choisissez d'abord un format de conversion des pages"
 #. A page conversion rule that cannot be saved: an unknown action, kind of release or page format, a convert rule without a quality, a size or bits-per-pixel bound of zero or less, or more than 50 rules.
 #. English: One of the rules is not valid. Check its conditions and what it does.
 #: src/Maki.Api/Controllers/PageConversionController.cs
-#, fuzzy
 msgid "error.pageConversion.ruleInvalid"
-msgstr "L'une des règles n'est pas valide. Vérifiez ses conditions et ce qu'elle fait."
+msgstr ""
 
 #. English: Choose Smallest, Compact, Balanced, High or Lossless
 #: src/Maki.Api/Controllers/PageConversionController.cs
-#, fuzzy
 msgid "error.pageConversion.stopInvalid"
-msgstr "Choisissez Le plus petit, Compact, Équilibré, Élevé ou Sans perte"
+msgstr ""
 
 #. {max} is the server's core count.
 #. English: Pages converted at once must be between 1 and {max}
 #: src/Maki.Api/Controllers/PageConversionController.cs
-#, fuzzy
 msgid "error.pageConversion.parallelInvalid"
-msgstr "Les pages converties en même temps doivent être comprises entre 1 et {max}"
+msgstr ""
 
 #. Undoing a series' page conversion with both "convert again" and "set this series to Never" chosen.
 #. English: Choose either to convert the files again or to set the series to Never, not both
 #: src/Maki.Api/Controllers/SeriesController.cs
-#, fuzzy
 msgid "error.pageConversion.undoConflict"
-msgstr "Choisissez soit de reconvertir les fichiers, soit de régler la série sur Jamais, pas les deux"
+msgstr ""
 
 #. English: Other previews are loading right now. Try again in a moment.
 #: src/Maki.Api/Controllers/PreviewController.cs
@@ -2024,16 +1968,14 @@ msgstr "Le dossier racine est utilisé par une ou plusieurs séries"
 #. Every series left in the folder is archived, so the user has to delete or move them before the folder can go. {count} is how many.
 #. English: {count, plural, one {# archived series still uses} other {# archived series still use}} this folder. Delete or move them first.
 #: src/Maki.Api/Controllers/RootFolderController.cs
-#, fuzzy
 msgid "error.rootFolder.inUseArchived"
-msgstr "{count, plural, one {# série archivée utilise encore} many {# séries archivées utilisent encore} other {# séries archivées utilisent encore}} ce dossier. Supprimez-les ou déplacez-les d'abord."
+msgstr ""
 
 #. {path} is the folder the folder picker tried to open.
 #. English: Maki can't read this folder: {path}
 #: src/Maki.Api/Controllers/RootFolderController.cs
-#, fuzzy
 msgid "error.rootFolder.notReadable"
-msgstr "Maki ne peut pas lire ce dossier : {path}"
+msgstr ""
 
 #. English: Path is required
 #: src/Maki.Api/Controllers/RootFolderController.cs
@@ -2081,9 +2023,8 @@ msgstr "État d'authentification incohérent ou session expirée, réessayez la 
 #. The OAuth callback reached a browser signed in to a different Maki account (or none) than the one that started the connection.
 #. English: This connection was started from another account. Sign in as that account and connect again
 #: src/Maki.Api/Controllers/ScrobbleController.cs
-#, fuzzy
 msgid "error.scrobble.oauthUserMismatch"
-msgstr "Cette connexion a été lancée depuis un autre compte. Connectez-vous avec ce compte, puis reconnectez-le"
+msgstr ""
 
 #. Reused for every "no such tracker/service name" case on the scrobble endpoints (Match, SetPreferences, StartRatingImport, AuthStart, the OAuth callback, Disconnect).
 #. English: unknown service
@@ -2150,9 +2091,8 @@ msgstr "Source inconnue : {sourceName}"
 #. Archiving waits while a download is being written, or while a library import is still matching or linking the series.
 #. English: Series has a download or import in progress. Wait for it to finish before archiving.
 #: src/Maki.Api/Services/SeriesArchiveService.cs
-#, fuzzy
 msgid "error.series.activeDownloadArchive"
-msgstr "La série a un téléchargement ou un import en cours. Attendez qu'il se termine avant d'archiver."
+msgstr ""
 
 #. English: Series has a download in progress. Wait for it to finish before deleting.
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -2194,16 +2134,14 @@ msgstr "La série se trouve déjà dans ce dossier racine"
 #. Refresh, search and download tools refuse an archived series, since it no longer talks to its sources.
 #. English: This series is archived. Restore it to the library first.
 #: src/Maki.Api/Controllers/SeriesController.cs
-#, fuzzy
 msgid "error.series.archived"
-msgstr "Cette série est archivée. Restaurez-la d'abord dans la bibliothèque."
+msgstr ""
 
 #. Adding or approving a series that is already in the library as an archived one; the client offers Restore.
 #. English: This series is archived. Restore it instead.
 #: src/Maki.Api/Controllers/SeriesController.cs
-#, fuzzy
 msgid "error.series.archivedExists"
-msgstr "Cette série est archivée. Restaurez-la plutôt."
+msgstr ""
 
 #. {folder} is an absolute filesystem path and is never translated.
 #. English: Destination folder already exists: {folder}
@@ -2247,15 +2185,13 @@ msgstr "La note doit être comprise entre 1 et 10, ou null pour l'effacer"
 
 #. English: There is no "so far" rating to keep
 #: src/Maki.Api/Controllers/SeriesController.cs
-#, fuzzy
 msgid "error.series.noProvisionalRating"
-msgstr "Il n'y a aucune note « pour l'instant » à conserver"
+msgstr ""
 
 #. English: You finished this series, so it takes a final rating rather than a "so far" one
 #: src/Maki.Api/Controllers/SeriesController.cs
-#, fuzzy
 msgid "error.series.provisionalOnFinished"
-msgstr "Vous avez terminé cette série, elle demande donc une note définitive et non une note « pour l'instant »"
+msgstr ""
 
 #. English: Series not found on metadata provider
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -2306,9 +2242,8 @@ msgstr "Le nettoyage des fichiers lus doit être Par défaut, Activé ou Désact
 
 #. English: Page conversion must be Default, Never, Smallest, Compact, Balanced, High or Lossless
 #: src/Maki.Api/Controllers/SeriesController.cs
-#, fuzzy
 msgid "error.series.invalidPageConversion"
-msgstr "La conversion des pages doit être Par défaut, Jamais, Le plus petit, Compact, Équilibré, Élevé ou Sans perte"
+msgstr ""
 
 #. English: No files selected
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -2324,9 +2259,8 @@ msgstr "La série n'a pas de dossier racine"
 
 #. English: This series is not archived.
 #: src/Maki.Api/Services/SeriesArchiveService.cs
-#, fuzzy
 msgid "error.series.notArchived"
-msgstr "Cette série n'est pas archivée."
+msgstr ""
 
 #. Shown when a series create/move request names a root folder id that doesn't exist.
 #. English: Root folder not found
@@ -3042,59 +2976,50 @@ msgstr "{file} a été mis en attente pour examen : {reason, select, fewer_pages
 
 #. English: Server page enhancement is turned off on this server.
 #: src/Maki.Api/Controllers/ReaderController.cs
-#, fuzzy
 msgid "error.enhance.disabled"
-msgstr "L'amélioration des pages par le serveur est désactivée sur ce serveur."
+msgstr ""
 
 #. The reader asked for a server model the admin has not enabled or that has not finished downloading.
 #. English: This enhancement model is not available on the server.
 #: src/Maki.Api/Controllers/ReaderController.cs
-#, fuzzy
 msgid "error.enhance.modelUnavailable"
-msgstr "Ce modèle d'amélioration n'est pas disponible sur le serveur."
+msgstr ""
 
 #. English: The speed test could not run the sample page through this model.
 #: src/Maki.Api/Controllers/UpscalingController.cs
-#, fuzzy
 msgid "error.upscaling.benchmarkFailed"
-msgstr "Le test de vitesse n'a pas pu exécuter la page d'exemple avec ce modèle."
+msgstr ""
 
 #. English: The downloaded model did not match its checksum, so it was deleted. Try the download again.
 #: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
-#, fuzzy
 msgid "error.upscaling.checksumMismatch"
-msgstr "Le modèle téléchargé ne correspond pas à sa somme de contrôle, il a donc été supprimé. Relancez le téléchargement."
+msgstr ""
 
 #. English: The model could not be downloaded. Check that this server can reach GitHub, then try again.
 #: src/Maki.Api/Services/Upscaling/UpscaleModelStore.cs
-#, fuzzy
 msgid "error.upscaling.downloadFailed"
-msgstr "Le modèle n'a pas pu être téléchargé. Vérifiez que ce serveur peut joindre GitHub, puis réessayez."
+msgstr ""
 
 #. English: The cache size must be between {min} and {max} MB.
 #: src/Maki.Api/Controllers/UpscalingController.cs
-#, fuzzy
 msgid "error.upscaling.invalidCache"
-msgstr "La taille du cache doit être comprise entre {min} et {max} Mo."
+msgstr ""
 
 #. English: Threads must be between {min} and {max}.
 #: src/Maki.Api/Controllers/UpscalingController.cs
-#, fuzzy
 msgid "error.upscaling.invalidThreads"
-msgstr "Les threads doivent être compris entre {min} et {max}."
+msgstr ""
 
 #. Deleting a model whose file is still open because a page is being upscaled with it right now.
 #. English: The model is busy with a page right now. Try again in a moment.
 #: src/Maki.Api/Controllers/UpscalingController.cs
-#, fuzzy
 msgid "error.upscaling.modelInUse"
-msgstr "Le modèle est occupé par une page en ce moment. Réessayez dans un instant."
+msgstr ""
 
 #. English: Maki does not know that model.
 #: src/Maki.Api/Controllers/UpscalingController.cs
-#, fuzzy
 msgid "error.upscaling.unknownModel"
-msgstr "Maki ne connaît pas ce modèle."
+msgstr ""
 
 #. English: You cannot delete your own account
 #: src/Maki.Api/Controllers/UsersController.cs
@@ -3200,9 +3125,8 @@ msgstr "Le seuil de mise en attente doit être compris entre 0 (désactivé) et 
 #. {mode} is the value that was sent and is never translated.
 #. English: Unknown torrent removal mode: {mode}
 #: src/Maki.Api/Controllers/SettingsController.cs
-#, fuzzy
 msgid "error.settings.torrentRemovalModeInvalid"
-msgstr "Mode de suppression des torrents inconnu : {mode}"
+msgstr ""
 
 #. English: Smart Download refill point must be between {min} and {max} chapters
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -3645,51 +3569,44 @@ msgstr "Année de sortie ; vide si elle est inconnue"
 #. A line in the result of undoing a series' page conversion: nothing was restored because a download for the series is running.
 #. English: A download for this series is running, so nothing was restored. Try again once it has finished.
 #: src/Maki.Api/Services/PageConversionUndoService.cs
-#, fuzzy
 msgid "pageConversion.undo.downloadInFlight"
-msgstr "Un téléchargement pour cette série est en cours, donc rien n'a été restauré. Réessayez une fois qu'il est terminé."
+msgstr ""
 
 #. A file an undo of page conversion passed over. {name} is the file name, not translated.
 #. English: {name}: the file has changed since it was converted
 #: src/Maki.Api/Services/PageConversionUndoService.cs
-#, fuzzy
 msgid "pageConversion.undo.fileChanged"
-msgstr "{name} : le fichier a changé depuis sa conversion"
+msgstr ""
 
 #. A file an undo of page conversion passed over. {name} is the file name, not translated.
 #. English: {name}: the file is no longer in the library
 #: src/Maki.Api/Services/PageConversionUndoService.cs
-#, fuzzy
 msgid "pageConversion.undo.fileGone"
-msgstr "{name} : le fichier n'est plus dans la bibliothèque"
+msgstr ""
 
 #. A file an undo of page conversion passed over. {name} is the file name, not translated.
 #. English: {name}: the original could not be moved back
 #: src/Maki.Api/Services/PageConversionUndoService.cs
-#, fuzzy
 msgid "pageConversion.undo.moveFailed"
-msgstr "{name} : l'original n'a pas pu être remis en place"
+msgstr ""
 
 #. The last line of an undo that restored originals and queued them to be converted again. {count} is a number of files.
 #. English: {count, plural, one {# file is} other {# files are}} queued to be converted again with the current settings
 #: src/Maki.Api/Services/PageConversionUndoService.cs
-#, fuzzy
 msgid "pageConversion.undo.queued"
-msgstr "{count, plural, one {# fichier est mis en file d'attente pour être de nouveau converti avec les réglages actuels} many {# fichiers sont mis en file d'attente pour être de nouveau convertis avec les réglages actuels} other {# fichiers sont mis en file d'attente pour être de nouveau convertis avec les réglages actuels}}"
+msgstr ""
 
 #. A line in the result of undoing a series' page conversion: files whose conversion record no longer matches the file (downloaded again, upgraded or removed since), so there is nothing to restore. {count} is a number of files.
 #. English: {count, plural, one {# older conversion no longer applies; its file was replaced or removed since} other {# older conversions no longer apply; their files were replaced or removed since}}
 #: src/Maki.Api/Services/PageConversionUndoService.cs
-#, fuzzy
 msgid "pageConversion.undo.stale"
-msgstr "{count, plural, one {# conversion plus ancienne ne s'applique plus : son fichier a été remplacé ou supprimé depuis} many {# conversions plus anciennes ne s'appliquent plus : leurs fichiers ont été remplacés ou supprimés depuis} other {# conversions plus anciennes ne s'appliquent plus : leurs fichiers ont été remplacés ou supprimés depuis}}"
+msgstr ""
 
 #. A file an undo of page conversion passed over. {name} is the file name, not translated.
 #. English: {name}: the original is no longer in the trash
 #: src/Maki.Api/Services/PageConversionUndoService.cs
-#, fuzzy
 msgid "pageConversion.undo.trashGone"
-msgstr "{name} : l'original n'est plus dans la corbeille"
+msgstr ""
 
 #. English: Backup is missing maki.db. This is not a Maki backup.
 #: src/Maki.Api/Services/BackupService.cs
@@ -3752,16 +3669,14 @@ msgstr "Restauration préparée. Redémarrage pour l'appliquer."
 #. Shown in the response to a successful restore request when nothing will start Maki again by itself.
 #. English: Restore staged. Maki is stopping now. Start it again to apply the restore.
 #: src/Maki.Api/Controllers/SystemController.cs
-#, fuzzy
 msgid "error.system.restoreStagedManualStart"
-msgstr "Restauration préparée. Maki s'arrête maintenant. Démarrez-le à nouveau pour appliquer la restauration."
+msgstr ""
 
 #. The desktop app has not finished downloading an update, or none is newer than this version.
 #. English: No update has been downloaded yet. Try again in a few minutes.
 #: src/Maki.Api/Controllers/SystemController.cs
-#, fuzzy
 msgid "error.system.noUpdateReady"
-msgstr "Aucune mise à jour n'a encore été téléchargée. Réessayez dans quelques minutes."
+msgstr ""
 
 #. Check now in Settings > System > Updates: neither the GitHub API nor the release page answered, often because GitHub limits update checks from this network.
 #. English: Couldn't reach GitHub to check for updates. Try again later.
@@ -3772,16 +3687,14 @@ msgstr ""
 #. Docker installs must listen on every network inside the container.
 #. English: Network access is set by the container's port mapping, not here.
 #: src/Maki.Api/Controllers/SystemController.cs
-#, fuzzy
 msgid "error.system.networkAccessDocker"
-msgstr "L'accès réseau est défini par la redirection de ports du conteneur, pas ici."
+msgstr ""
 
 #. Maki was started by hand, so nothing would start it again after it stops.
 #. English: Maki can't restart itself here. Stop it and start it again by hand.
 #: src/Maki.Api/Controllers/SystemController.cs
-#, fuzzy
 msgid "error.system.restartUnsupervised"
-msgstr "Maki ne peut pas se redémarrer lui-même ici. Arrêtez-le puis redémarrez-le à la main."
+msgstr ""
 
 #. The cause is in the server log.
 #. English: Could not stage the restore. Details are in the server log.
@@ -4133,16 +4046,14 @@ msgstr "{series} : {count, plural, one {# nouveau chapitre} many {# nouveaux cha
 
 #. English: Custom source updated
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "inbox.customSource.updated.title"
-msgstr "Source personnalisée mise à jour"
+msgstr ""
 
 #. {source} is a custom source's name; {from} and {to} are version numbers.
 #. English: {source} was updated from version {from} to {to} by its repository.
 #: src/Maki.Api/Services/CustomRepositoryService.cs
-#, fuzzy
 msgid "inbox.customSource.updated.body"
-msgstr "{source} a été mise à jour de la version {from} à la version {to} par son dépôt."
+msgstr ""
 
 #. English: Series status changed
 #: src/Maki.Api/Services/SeriesMetadataChangeLog.cs
@@ -4442,7 +4353,7 @@ msgstr "Import de liste terminé"
 #: src/Maki.Api/Services/ImportListService.cs
 #, fuzzy
 msgid "inbox.importList.finished.body"
-msgstr "{tracker} : {added, plural, one {# série ajoutée} many {# séries ajoutées} other {# séries ajoutées}}{requested, plural, =0 {} one {, # demande créée} many {, # demandes créées} other {, # demandes créées}}{shortlisted, plural, =0 {} one {, # shortlisted} many {, # shortlisted} other {, # shortlisted}}{skipped, plural, =0 {} one {, # série ignorée} many {, # séries ignorées} other {, # séries ignorées}}{errors, plural, =0 {} one {, # erreur} many {, # erreurs} other {, # erreurs}}"
+msgstr "{tracker} : {added, plural, one {# série ajoutée} many {# séries ajoutées} other {# séries ajoutées}}{requested, plural, =0 {} one {, # demande créée} many {, # demandes créées} other {, # demandes créées}}{skipped, plural, =0 {} one {, # série ignorée} many {, # séries ignorées} other {, # séries ignorées}}{errors, plural, =0 {} one {, # erreur} many {, # erreurs} other {, # erreurs}}"
 
 #. {creator} is a person's or studio's name from the catalogue and is not translated.
 #. English: New from {creator}
@@ -5132,17 +5043,15 @@ msgstr "{series} a été ajoutée à la bibliothèque{hasRequester, select, yes 
 
 #. English: Series archived
 #: src/Maki.Api/Services/SeriesArchiveService.cs
-#, fuzzy
 msgid "notify.series.archived.title"
-msgstr "Série archivée"
+msgstr ""
 
 #. {files} is "kept" when the files stayed on disk, "binned" when they went to the recycle bin and
 #. "deleted" when they were deleted for good.
 #. English: {series} was archived{files, select, binned {, files moved to the recycle bin} deleted {, files deleted} other {, files kept on disk}}
 #: src/Maki.Api/Services/SeriesArchiveService.cs
-#, fuzzy
 msgid "notify.series.archived.body"
-msgstr "{series} a été archivée{files, select, binned {, fichiers envoyés à la corbeille} deleted {, fichiers supprimés} other {, fichiers conservés sur le disque}}"
+msgstr ""
 
 #. English: Series removed
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -5587,15 +5496,13 @@ msgstr "L'opération n'est pas prête, ou sa vérification n'est plus à jour."
 
 #. English: Only a failed operation can be retried.
 #: src/Maki.Api/Services/HealthOperationService.cs
-#, fuzzy
 msgid "error.health.operationNotRetryable"
-msgstr "Seule une opération échouée peut être relancée."
+msgstr ""
 
 #. English: This operation is still running. Cancel it first.
 #: src/Maki.Api/Controllers/HealthController.cs
-#, fuzzy
 msgid "error.health.operationNotFinished"
-msgstr "Cette opération est encore en cours. Annulez-la d'abord."
+msgstr ""
 
 #. English: The replacement must cover every linked chapter.
 #: src/Maki.Api/Services/HealthOperationService.cs
@@ -5652,30 +5559,26 @@ msgstr "La source {source} est de nouveau installée dans Suwayomi."
 #. {source} is a custom source's name.
 #. English: {source} lists its sample series.
 #: src/Maki.Api/Jobs/CustomSourceHealthJob.cs
-#, fuzzy
 msgid "health.check.customSourceWorking"
-msgstr "{source} liste sa série d'exemple."
+msgstr ""
 
 #. {source} is a custom source's name.
 #. English: {source} still works, but its sample series is gone from the site. Edit the definition and pick another one.
 #: src/Maki.Api/Jobs/CustomSourceHealthJob.cs
-#, fuzzy
 msgid "health.check.customSourceSample"
-msgstr "{source} fonctionne encore, mais sa série d'exemple n'est plus sur le site. Modifiez la définition et choisissez-en une autre."
+msgstr ""
 
 #. {source} is a custom source's name and {reason} is what the site or the definition said, untranslated.
 #. English: {source} could not list its sample series, so the site's layout may have changed. Edit the definition to check. ({reason})
 #: src/Maki.Api/Jobs/CustomSourceHealthJob.cs
-#, fuzzy
 msgid "health.check.customSourceFailing"
-msgstr "{source} n'a pas pu lister sa série d'exemple, la mise en page du site a peut-être changé. Modifiez la définition pour vérifier. ({reason})"
+msgstr ""
 
 #. {source} is a custom source's name.
 #. English: This build of Maki can't read the definition of {source}. Edit it to see why.
 #: src/Maki.Api/Jobs/CustomSourceHealthJob.cs
-#, fuzzy
 msgid "health.check.customSourceInvalid"
-msgstr "Cette version de Maki ne peut pas lire la définition de {source}. Modifiez-la pour voir pourquoi."
+msgstr ""
 
 #. English: {source} is no longer installed in Suwayomi. Reinstall its extension there, or remove the source in Maki's Suwayomi settings.
 #: src/Maki.Api/Services/HealthMonitor.cs
@@ -5821,29 +5724,25 @@ msgstr "Les diagnostics de la base de données ou du planificateur n'ont pas pu 
 
 #. English: Headless browser: installed
 #: src/Maki.Api/Services/HealthMonitor.cs
-#, fuzzy
 msgid "health.check.browserInstalled"
-msgstr "Navigateur sans interface : installé"
+msgstr ""
 
 #. {percent} is a number from 0 to 100.
 #. English: Headless browser: downloading, {percent}%
 #: src/Maki.Api/Services/HealthMonitor.cs
-#, fuzzy
 msgid "health.check.browserInstalling"
-msgstr "Navigateur sans interface : téléchargement, {percent} %"
+msgstr ""
 
 #. English: Headless browser: the install failed. The reason is in the server log, and Maki tries again the next time a source needs it.
 #: src/Maki.Api/Services/HealthMonitor.cs
-#, fuzzy
 msgid "health.check.browserFailed"
-msgstr "Navigateur sans interface : l'installation a échoué. La raison est dans le journal du serveur, et Maki réessaie la prochaine fois qu'une source en a besoin."
+msgstr ""
 
 #. {sources} is a comma-separated list of source names, never translated.
 #. English: Headless browser: not installed yet. It downloads (about 100 MB) the first time {sources} needs it.
 #: src/Maki.Api/Services/HealthMonitor.cs
-#, fuzzy
 msgid "health.check.browserMissing"
-msgstr "Navigateur sans interface : pas encore installé. Il se télécharge (environ 100 Mo) la première fois que {sources} en a besoin."
+msgstr ""
 
 #. {service} is a product name (Prowlarr, Jackett, Kavita, qBittorrent, FlareSolverr), never translated.
 #. English: {service}: not configured
@@ -5963,9 +5862,8 @@ msgstr "{check} est de nouveau opérationnel"
 #. old and new status beside it.
 #. English: {detail}
 #: src/Maki.Api/Services/HealthMonitor.cs
-#, fuzzy
 msgid "health.history.transition"
-msgstr "{detail}"
+msgstr ""
 
 #. English: PDFs are read in place and can't be repaired by replacement
 #: src/Maki.Api/Controllers/HealthController.cs
@@ -6819,91 +6717,77 @@ msgstr "Les vecteurs publiés semblent tronqués ; ils sont ignorés."
 
 #. English: Open Maki
 #: src/Maki.Desktop/TrayApp.cs
-#, fuzzy
 msgid "desktop.tray.open"
-msgstr "Ouvrir Maki"
+msgstr ""
 
 #. English: Start Maki
 #: src/Maki.Desktop/TrayApp.cs
-#, fuzzy
 msgid "desktop.tray.start"
-msgstr "Démarrer Maki"
+msgstr ""
 
 #. English: Start with Windows
 #: src/Maki.Desktop/TrayApp.cs
-#, fuzzy
 msgid "desktop.tray.startWithWindows"
-msgstr "Démarrer avec Windows"
+msgstr ""
 
 #. English: View logs
 #: src/Maki.Desktop/TrayApp.cs
-#, fuzzy
 msgid "desktop.tray.viewLogs"
-msgstr "Afficher les journaux"
+msgstr ""
 
 #. English: Quit Maki
 #: src/Maki.Desktop/TrayApp.cs
-#, fuzzy
 msgid "desktop.tray.quit"
-msgstr "Quitter Maki"
+msgstr ""
 
 #. {version} is a version number such as 0.35.0.
 #. English: Restart to update to {version}
 #: src/Maki.Desktop/TrayApp.cs
-#, fuzzy
 msgid "desktop.tray.restartToUpdate"
-msgstr "Redémarrer pour passer à la version {version}"
+msgstr ""
 
 #. Tooltip on the notification-area icon. Windows cuts it at 127 characters.
 #. English: Maki is starting
 #: src/Maki.Desktop/TrayApp.cs
-#, fuzzy
 msgid "desktop.tray.tooltipStarting"
-msgstr "Maki démarre"
+msgstr ""
 
 #. Tooltip on the notification-area icon. Windows cuts it at 127 characters.
 #. English: Maki is running
 #: src/Maki.Desktop/TrayApp.cs
-#, fuzzy
 msgid "desktop.tray.tooltipRunning"
-msgstr "Maki est en cours d'exécution"
+msgstr ""
 
 #. Tooltip on the notification-area icon. Windows cuts it at 127 characters.
 #. English: Maki is stopped
 #: src/Maki.Desktop/TrayApp.cs
-#, fuzzy
 msgid "desktop.tray.tooltipStopped"
-msgstr "Maki est arrêté"
+msgstr ""
 
 #. Tooltip on the notification-area icon. Windows cuts it at 127 characters.
 #. English: Maki is stopping
 #: src/Maki.Desktop/TrayApp.cs
-#, fuzzy
 msgid "desktop.tray.tooltipStopping"
-msgstr "Maki s'arrête"
+msgstr ""
 
 #. English: Maki is running. Its icon stays here in the notification area; right-click it for options.
 #: src/Maki.Desktop/TrayApp.cs
-#, fuzzy
 msgid "desktop.notice.firstRun"
-msgstr "Maki est en cours d'exécution. Son icône reste ici, dans la zone de notification ; faites un clic droit pour les options."
+msgstr ""
 
 #. {port} is a network port number. "Port" and "config.json" are literal names, never translated.
 #. English: Another program is using port {port}, so Maki can't start. Close that program, or change Port in config.json, then choose Start Maki.
 #: src/Maki.Desktop/TrayApp.cs
-#, fuzzy
 msgid "desktop.notice.portInUse"
-msgstr "Un autre programme utilise le port {port}, donc Maki ne peut pas démarrer. Fermez ce programme ou changez Port dans config.json, puis choisissez Démarrer Maki."
+msgstr ""
 
 #. English: Maki stopped and could not start again. View logs shows why.
 #: src/Maki.Desktop/TrayApp.cs
-#, fuzzy
 msgid "desktop.notice.stopped"
-msgstr "Maki s'est arrêté et n'a pas pu redémarrer. Afficher les journaux indique pourquoi."
+msgstr ""
 
 #. {version} is a version number such as 0.35.0.
 #. English: Maki {version} is downloaded. Choose Restart to update when it suits you.
 #: src/Maki.Desktop/TrayApp.cs
-#, fuzzy
 msgid "desktop.notice.updateReady"
-msgstr "Maki {version} est téléchargé. Choisissez Redémarrer pour mettre à jour quand cela vous convient."
+msgstr ""
