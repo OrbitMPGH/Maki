@@ -84,7 +84,9 @@ public record ReaderPrefsSpec(
     /// thin line on the screen's bottom edge), <c>detailed</c> (a labelled pill) or <c>off</c>. The
     /// toolbar shows it whenever the bars are up.
     /// </summary>
-    string EnhanceProgress = ReaderPrefsSpec.EnhanceProgressDefault)
+    string EnhanceProgress = ReaderPrefsSpec.EnhanceProgressDefault,
+    /// <summary>Show a chapter's notes in the margin beside the page when the screen leaves room for them.</summary>
+    bool NotesBeside = true)
 {
     public const string ModePaged = "paged";
     public const string ModeDouble = "double";

@@ -964,6 +964,10 @@ msgstr ""
 msgid "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
 msgstr "{count, plural, other {활성화된 소스가 없는 모니터링 시리즈가 #개 있습니다}}"
 
+#: src/pages/reader/NotesMargin.tsx
+msgid "{count, plural, one {# note on the whole chapter} other {# notes on the whole chapter}}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{count, plural, one {# replacement} other {# replacements}}"
@@ -2058,6 +2062,10 @@ msgstr "{renamed, plural, other {시리즈 #개 이름 변경됨}}"
 #, fuzzy
 msgid "{replacedFiles, plural, one {Replaces # file} other {Replaces # files}}"
 msgstr "{replacedFiles, plural, other {파일 #개 교체}}"
+
+#: src/pages/reader/NotesMargin.tsx
+msgid "{replies, plural, one {# reply} other {# replies}}"
+msgstr ""
 
 #: src/components/import/MihonSummary.tsx
 #, fuzzy
@@ -4804,6 +4812,10 @@ msgstr "알림 벨, 받은 편지함, 경고, 토스트, 앱 내 알림, 새 챕
 msgid "Below the series' upgrade cutoff"
 msgstr "시리즈의 업그레이드 컷오프 미만"
 
+#: src/pages/reader/ReaderPage.tsx
+msgid "Beside the page"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Best measured quality"
@@ -6064,6 +6076,10 @@ msgstr "클라이언트 시크릿"
 #, fuzzy
 msgid "Close"
 msgstr "닫기"
+
+#: src/components/notes/NotesDropdown.tsx
+msgid "Close notes"
+msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #, fuzzy
@@ -14286,6 +14302,10 @@ msgstr "아직 동기화되지 않음"
 msgid "Not yet synced"
 msgstr "아직 동기화되지 않음"
 
+#: src/pages/reader/NotesMargin.tsx
+msgid "Note"
+msgstr ""
+
 #: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -14293,12 +14313,17 @@ msgid "Note (optional)"
 msgstr "메모 (선택 사항)"
 
 #: src/components/notes/NoteThread.tsx
+#: src/pages/reader/NotesMargin.tsx
 msgid "Note deleted"
 msgstr ""
 
 #: src/components/discover/ShortlistButton.tsx
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Note for later"
+msgstr ""
+
+#: src/pages/reader/NotesMargin.tsx
+msgid "Note on page {pageNumber}"
 msgstr ""
 
 #: src/api/inbox.ts
@@ -14311,14 +14336,32 @@ msgstr ""
 msgid "Notes ({noteCount})"
 msgstr ""
 
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Notes beside the page"
+msgstr ""
+
 #: src/components/notes/NotesPanel.tsx
 msgid "Notes need a connection"
 msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
-msgid "Notes on {chapterLbl}: {mine} yours, {shared} shared"
+#~ msgid "Notes on {chapterLbl}: {mine} yours, {shared} shared"
+#~ msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Notes on {name}: {mine} yours, {shared} shared"
 msgstr ""
 
+#: src/pages/reader/NotesMargin.tsx
+msgid "Notes on page {pageNumber} ({count})"
+msgstr ""
+
+#. placeholder {0}: manifest.label
+#: src/pages/reader/ReaderPage.tsx
+msgid "Notes, {0}"
+msgstr ""
+
+#: src/components/notes/NotesDropdown.tsx
 #: src/components/notes/NotesPanel.tsx
 msgid "Notes, {chapterLabel}"
 msgstr ""
@@ -15385,6 +15428,7 @@ msgid "Page {pageIndex}/{pageCount}"
 msgstr "페이지 {pageIndex}/{pageCount}"
 
 #: src/components/notes/NoteThread.tsx
+#: src/pages/reader/NotesMargin.tsx
 msgid "Page {pageNumber}"
 msgstr ""
 
@@ -16098,6 +16142,7 @@ msgstr "{sourceName}의 우선순위"
 
 #: src/components/notes/NoteComposer.tsx
 #: src/components/notes/NoteThread.tsx
+#: src/pages/reader/NotesMargin.tsx
 msgid "Private"
 msgstr ""
 
@@ -19801,6 +19846,7 @@ msgstr "읽은 시리즈의 비율입니다."
 
 #: src/components/notes/NoteComposer.tsx
 #: src/components/notes/NoteThread.tsx
+#: src/pages/reader/NotesMargin.tsx
 msgid "Shared"
 msgstr ""
 
@@ -19855,6 +19901,7 @@ msgid "Shounen"
 msgstr "소년"
 
 #: src/pages/HealthPage.tsx
+#: src/pages/reader/NotesMargin.tsx
 msgid "Show"
 msgstr ""
 
@@ -19896,6 +19943,7 @@ msgstr "폴더 보기"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
+#: src/pages/reader/NotesMargin.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "Show less"
@@ -19921,6 +19969,10 @@ msgstr "더 보기"
 #, fuzzy
 msgid "Show newest {max} of {count}"
 msgstr "{count}개 중 최신 {max}개 보기"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Show notes beside the page when there is room"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -24019,6 +24071,10 @@ msgstr "시기"
 #, fuzzy
 msgid "When most pages are very tall."
 msgstr "대부분의 페이지가 매우 길 때."
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "When the screen has room for them"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy

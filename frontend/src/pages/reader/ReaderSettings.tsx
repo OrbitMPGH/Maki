@@ -67,7 +67,14 @@ const NESTED_COMBOBOX = { zIndex: OVERLAY_Z + 1, withinPortal: false, floatingSt
 
 type View = 'main' | 'wide' | 'look' | 'enhance' | 'reading'
 
-type Toggle = 'tapZones' | 'showPageNumber' | 'chapterBanner' | 'autoNextChapter' | 'autoWebtoon' | 'keepAwake'
+type Toggle =
+  | 'tapZones'
+  | 'showPageNumber'
+  | 'chapterBanner'
+  | 'autoNextChapter'
+  | 'autoWebtoon'
+  | 'keepAwake'
+  | 'notesBeside'
 
 function LayoutGlyph({ mode }: { mode: ReaderPrefs['mode'] }) {
   const page = { className: 'reader-settings-glyph-page', rx: 2 }
@@ -286,6 +293,7 @@ export default function ReaderSettings({
     { key: 'chapterBanner', label: t`Show the chapter name`, hint: t`Briefly, when a new chapter opens` },
     { key: 'autoNextChapter', label: t`Auto-advance to next chapter` },
     { key: 'autoWebtoon', label: t`Scroll webtoon chapters`, hint: t`Chapters of very tall pages open in Continuous` },
+    { key: 'notesBeside', label: t`Notes beside the page`, hint: t`When the screen has room for them` },
     ...(wakeLockSupported() ? [{ key: 'keepAwake' as const, label: t`Keep the screen awake` }] : []),
   ]
 

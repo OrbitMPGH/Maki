@@ -1,10 +1,10 @@
-import { Button, Center, Group, Stack, Text, VisuallyHidden } from '@mantine/core'
+import { Button, Center, Group, Stack, Switch, Text, VisuallyHidden } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { IconCloudOff } from '../../lib/icons'
 import { api, ApiError, isOfflineUnavailable } from '../../api/client'
-import { Trans } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useDocumentTitle } from '../../lib/documentTitle'
 import { getConnectivity, useConnectivity } from '../../lib/connectivity'
 import { settleQueuedProgress } from '../../pwa/progressQueue'
@@ -17,9 +17,11 @@ import {
   type ReaderManifest,
 } from '../../api/reader'
 import NotesPanel from '../../components/notes/NotesPanel'
+import { NotesDropdown } from '../../components/notes/NotesDropdown'
 import { usePhoneSheet } from '../../components/notes/phone'
 import ChapterBanner from './ChapterBanner'
 import ChapterEnd from './ChapterEnd'
+import NotesMargin from './NotesMargin'
 import { RatingCheckpointPrompt } from '../../components/series/RatingCheckpointPrompt'
 import { useDismissRatingCheckpoint, useRatingCheckpoint, useSetProvisionalRating } from '../../api/hooks'
 import { notifications } from '../../lib/toast'
@@ -83,6 +85,7 @@ export default function ReaderPage() {
   const { chapterId: param } = useParams()
   const chapterId = Number(param)
   const navigate = useNavigate()
+  const { t } = useLingui()
   const queryClient = useQueryClient()
   const {
     data: manifest,
@@ -150,6 +153,7 @@ export default function ReaderPage() {
   const [finishedFor, setFinishedFor] = useState<number | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
+  const [surface, setSurface] = useState<HTMLDivElement | null>(null)
   // The thread an inbox link points at, tied to its chapter so paging on cannot carry it along.
   const [notesThread, setNotesThread] = useState<{ chapterId: number; rootId: number } | null>(null)
   const phoneSheet = usePhoneSheet()
@@ -620,8 +624,8 @@ export default function ReaderPage() {
     if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
     const target = event.target instanceof HTMLElement ? event.target : null
     if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
-    // Keys inside the notes panel belong to the panel, not to the page behind it.
-    if (target?.closest('.notes-drawer')) return
+    // Keys inside the notes belong to them, not to the page behind.
+    if (target?.closest('.notes-surface')) return
     // Space on a control reached by keyboard presses that control, it does not turn the page.
     if (
       event.key === ' ' &&
@@ -774,6 +778,11 @@ export default function ReaderPage() {
    * waits a moment for a second tap, which toggles zoom instead.
    */
   const onSurfaceClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    // A tap on the page is a tap outside the notes dropdown; it closes and the tap still counts.
+    if (notesOpen && !phoneSheet) {
+      setNotesOpen(false)
+      setNotesThread(null)
+    }
     const bounds = event.currentTarget.getBoundingClientRect()
     if (pointerKind.current !== 'touch' || mode === 'vertical') {
       handleTap(event.clientX, bounds)
@@ -862,6 +871,24 @@ export default function ReaderPage() {
     )
   }
 
+  const closeNotes = () => {
+    setNotesOpen(false)
+    setNotesThread(null)
+  }
+  const notesBody = {
+    chapterId: manifest.chapterId,
+    seriesId: manifest.seriesId,
+    page: atEnd ? null : page,
+    pinPage: atEnd ? null : page,
+    pageCount: manifest.pageCount,
+    initialThreadId: notesThread?.chapterId === manifest.chapterId ? notesThread.rootId : null,
+    onGoToPage: (target: number) => {
+      setAtEnd(false)
+      seekToPage(target)
+      if (phoneSheet) setNotesOpen(false)
+    },
+  }
+
   // The manifest's read count is a snapshot from when the chapter opened, so finishing this one on
   // screen is added here, on the same condition the server uses. Incognito writes nothing.
   const readingCounted =
@@ -946,6 +973,7 @@ export default function ReaderPage() {
         />
       ) : (
         <div
+          ref={setSurface}
           className="reader-surface"
           // Continuous mode scrolls one way only, unless the reader has been zoomed past 100%,
           // which is the one case where panning across a page is what was asked for.
@@ -1054,28 +1082,51 @@ export default function ReaderPage() {
         <ShortcutSheet rtl={prefs.direction === 'rtl'} onClose={() => setShortcutsOpen(false)} />
       )}
 
-      <NotesPanel
-        key={manifest.chapterId}
-        opened={notesOpen}
-        onClose={() => {
-          setNotesOpen(false)
-          setNotesThread(null)
-        }}
-        chapterId={manifest.chapterId}
-        seriesId={manifest.seriesId}
-        chapterLabel={manifest.label}
-        inReader
-        page={atEnd ? null : page}
-        pinPage={atEnd ? null : page}
-        pageCount={manifest.pageCount}
-        initialThreadId={notesThread?.chapterId === manifest.chapterId ? notesThread.rootId : null}
-        onGoToPage={(target) => {
-          setAtEnd(false)
-          seekToPage(target)
-          if (phoneSheet) setNotesOpen(false)
-        }}
-        zIndex={OVERLAY_Z}
-      />
+      {!phoneSheet && prefs.notesBeside && !atEnd && (
+        <NotesMargin
+          key={`notes-margin-${manifest.chapterId}`}
+          surface={surface}
+          vertical={mode === 'vertical'}
+          shownPages={spreads[spreadIndex] ?? [page]}
+          page={page}
+          chapterId={manifest.chapterId}
+          seriesId={manifest.seriesId}
+          pageCount={manifest.pageCount}
+          finished={manifest.completed || finished}
+          zoomed={zoom !== 1}
+          layoutKey={`${mode}:${fit}:${prefs.scale}:${spreadIndex}:${half}:${page}:${zoom}`}
+          onGoToPage={seekToPage}
+        />
+      )}
+
+      {phoneSheet ? (
+        <NotesPanel
+          key={`notes-${manifest.chapterId}`}
+          opened={notesOpen}
+          onClose={closeNotes}
+          chapterLabel={manifest.label}
+          inReader
+          zIndex={OVERLAY_Z}
+          {...notesBody}
+        />
+      ) : (
+        <NotesDropdown
+          key={`notes-${manifest.chapterId}`}
+          opened={notesOpen}
+          onClose={closeNotes}
+          title={t`Notes, ${manifest.label}`}
+          zIndex={OVERLAY_Z}
+          headerExtra={
+            <Switch
+              size="xs"
+              label={t`Beside the page`}
+              checked={prefs.notesBeside}
+              onChange={(event) => edit({ notesBeside: event.currentTarget.checked })}
+            />
+          }
+          {...notesBody}
+        />
+      )}
 
       {prefs.showPageNumber && !chrome && !atEnd && (
         <div className="reader-page-badge">

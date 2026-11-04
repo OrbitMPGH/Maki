@@ -58,6 +58,8 @@ export interface ReaderPrefs {
   enhanceSkipTiers: QualityTierName[]
   /** How a server upscale in progress shows while the bars are hidden. The toolbar shows it whenever they are up. */
   enhanceProgress: EnhanceProgress
+  /** Show the chapter's notes in the margin beside the page when the screen leaves room. */
+  notesBeside: boolean
 }
 
 /** The two page backgrounds. OLED is true black so the panel edge disappears on an OLED panel. */
@@ -94,6 +96,7 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   enhanceFallback: 'a4k-m',
   enhanceSkipTiers: ['volume'],
   enhanceProgress: 'line',
+  notesBeside: true,
 }
 
 /** The enhance level a chapter actually gets: off when its file's tier is one the prefs skip. */

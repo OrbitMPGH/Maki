@@ -801,6 +801,10 @@ msgstr "{count, plural, one {# file gone, nowhere else in the library} other {# 
 msgid "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
 msgstr "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
 
+#: src/pages/reader/NotesMargin.tsx
+msgid "{count, plural, one {# note on the whole chapter} other {# notes on the whole chapter}}"
+msgstr "{count, plural, one {# note on the whole chapter} other {# notes on the whole chapter}}"
+
 #: src/pages/HealthPage.tsx
 msgid "{count, plural, one {# replacement} other {# replacements}}"
 msgstr "{count, plural, one {# replacement} other {# replacements}}"
@@ -1689,6 +1693,10 @@ msgstr "{renamed, plural, one {Renamed # series} other {Renamed # series}}"
 #: src/pages/ActivityPage.tsx
 msgid "{replacedFiles, plural, one {Replaces # file} other {Replaces # files}}"
 msgstr "{replacedFiles, plural, one {Replaces # file} other {Replaces # files}}"
+
+#: src/pages/reader/NotesMargin.tsx
+msgid "{replies, plural, one {# reply} other {# replies}}"
+msgstr "{replies, plural, one {# reply} other {# replies}}"
 
 #: src/components/import/MihonSummary.tsx
 msgid "{requested, plural, one {# sent for approval} other {# sent for approval}}"
@@ -3940,6 +3948,10 @@ msgstr "bell, inbox, alerts, toast, in-app notifications, new chapters, achievem
 msgid "Below the series' upgrade cutoff"
 msgstr "Below the series' upgrade cutoff"
 
+#: src/pages/reader/ReaderPage.tsx
+msgid "Beside the page"
+msgstr "Beside the page"
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Best measured quality"
 msgstr "Best measured quality"
@@ -4983,6 +4995,10 @@ msgstr "Client secret"
 #: src/theme-context.tsx
 msgid "Close"
 msgstr "Close"
+
+#: src/components/notes/NotesDropdown.tsx
+msgid "Close notes"
+msgstr "Close notes"
 
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Close preview"
@@ -11713,12 +11729,17 @@ msgstr "not yet synced"
 msgid "Not yet synced"
 msgstr "Not yet synced"
 
+#: src/pages/reader/NotesMargin.tsx
+msgid "Note"
+msgstr "Note"
+
 #: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
 msgid "Note (optional)"
 msgstr "Note (optional)"
 
 #: src/components/notes/NoteThread.tsx
+#: src/pages/reader/NotesMargin.tsx
 msgid "Note deleted"
 msgstr "Note deleted"
 
@@ -11726,6 +11747,10 @@ msgstr "Note deleted"
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Note for later"
 msgstr "Note for later"
+
+#: src/pages/reader/NotesMargin.tsx
+msgid "Note on page {pageNumber}"
+msgstr "Note on page {pageNumber}"
 
 #: src/api/inbox.ts
 #: src/pages/reader/ChapterEnd.tsx
@@ -11737,14 +11762,32 @@ msgstr "Notes"
 msgid "Notes ({noteCount})"
 msgstr "Notes ({noteCount})"
 
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Notes beside the page"
+msgstr "Notes beside the page"
+
 #: src/components/notes/NotesPanel.tsx
 msgid "Notes need a connection"
 msgstr "Notes need a connection"
 
 #: src/components/series/ChapterTableRows.tsx
-msgid "Notes on {chapterLbl}: {mine} yours, {shared} shared"
-msgstr "Notes on {chapterLbl}: {mine} yours, {shared} shared"
+#~ msgid "Notes on {chapterLbl}: {mine} yours, {shared} shared"
+#~ msgstr "Notes on {chapterLbl}: {mine} yours, {shared} shared"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Notes on {name}: {mine} yours, {shared} shared"
+msgstr "Notes on {name}: {mine} yours, {shared} shared"
+
+#: src/pages/reader/NotesMargin.tsx
+msgid "Notes on page {pageNumber} ({count})"
+msgstr "Notes on page {pageNumber} ({count})"
+
+#. placeholder {0}: manifest.label
+#: src/pages/reader/ReaderPage.tsx
+msgid "Notes, {0}"
+msgstr "Notes, {0}"
+
+#: src/components/notes/NotesDropdown.tsx
 #: src/components/notes/NotesPanel.tsx
 msgid "Notes, {chapterLabel}"
 msgstr "Notes, {chapterLabel}"
@@ -12621,6 +12664,7 @@ msgid "Page {pageIndex}/{pageCount}"
 msgstr "Page {pageIndex}/{pageCount}"
 
 #: src/components/notes/NoteThread.tsx
+#: src/pages/reader/NotesMargin.tsx
 msgid "Page {pageNumber}"
 msgstr "Page {pageNumber}"
 
@@ -13204,6 +13248,7 @@ msgstr "Priority for {sourceName}"
 
 #: src/components/notes/NoteComposer.tsx
 #: src/components/notes/NoteThread.tsx
+#: src/pages/reader/NotesMargin.tsx
 msgid "Private"
 msgstr "Private"
 
@@ -16248,6 +16293,7 @@ msgstr "Share of the series you've read."
 
 #: src/components/notes/NoteComposer.tsx
 #: src/components/notes/NoteThread.tsx
+#: src/pages/reader/NotesMargin.tsx
 msgid "Shared"
 msgstr "Shared"
 
@@ -16295,6 +16341,7 @@ msgid "Shounen"
 msgstr "Shounen"
 
 #: src/pages/HealthPage.tsx
+#: src/pages/reader/NotesMargin.tsx
 msgid "Show"
 msgstr "Show"
 
@@ -16330,6 +16377,7 @@ msgstr "Show folders"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
+#: src/pages/reader/NotesMargin.tsx
 #: src/pages/stats/ActivityFeed.tsx
 msgid "Show less"
 msgstr "Show less"
@@ -16352,6 +16400,10 @@ msgstr "Show more"
 #: src/pages/HealthPage.tsx
 msgid "Show newest {max} of {count}"
 msgstr "Show newest {max} of {count}"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Show notes beside the page when there is room"
+msgstr "Show notes beside the page when there is room"
 
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Show on"
@@ -19709,6 +19761,10 @@ msgstr "When"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "When most pages are very tall."
 msgstr "When most pages are very tall."
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "When the screen has room for them"
+msgstr "When the screen has room for them"
 
 #: src/pages/LibraryPage.tsx
 msgid "Where the files on disk came from, which can outlive the link"

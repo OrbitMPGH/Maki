@@ -3,19 +3,17 @@ import { Button, Drawer, Group, SegmentedControl, Skeleton, Stack, Text } from '
 import { IconCloudOff } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { errorText } from '../../api/errorText'
-import { isOfflineUnavailable } from '../../api/client'
-import { notePage, useChapterNotes, useNoteActions, useSeriesIncognito } from '../../api/notes'
-import { useAuth } from '../../auth/AuthProvider'
-import { useConnectivity } from '../../lib/connectivity'
+import { notePage } from '../../api/notes'
 import NoteComposer, { type ComposerValues } from './NoteComposer'
-import NoteThread, { type NoteThreadActions } from './NoteThread'
+import NoteThread from './NoteThread'
 import { usePhoneSheet } from './phone'
+import { useNotesWorkspace } from './useNotesWorkspace'
 
 type Scope = 'page' | 'chapter'
 
 /**
- * Every thread on one chapter and the box to start another. The reader opens it beside the pages
- * (a bottom sheet on a phone), the series page opens it over the table without leaving it.
+ * Every thread on one chapter and the box to start another, as a drawer. Phones get it as a bottom
+ * sheet; wider screens use `NotesDropdown`, the reader's margin and the page tabs instead.
  */
 export default function NotesPanel({
   opened,
@@ -66,9 +64,9 @@ export default function NotesPanel({
       lockScroll={!modeless}
       closeOnClickOutside={!modeless}
       returnFocus
-      classNames={{ content: 'notes-drawer', body: 'notes-drawer-body', title: 'notes-drawer-title' }}
+      classNames={{ content: 'notes-drawer notes-surface', body: 'notes-drawer-body', title: 'notes-drawer-title' }}
     >
-      <PanelBody
+      <NotesPanelBody
         chapterId={chapterId}
         seriesId={seriesId}
         page={page}
@@ -83,37 +81,34 @@ export default function NotesPanel({
   )
 }
 
-function PanelBody({
+export function NotesPanelBody({
   chapterId,
   seriesId,
-  page,
-  pinPage,
+  page = null,
+  pinPage = null,
   pageCount,
-  spoilerGuard,
-  initialThreadId,
+  spoilerGuard = false,
+  initialThreadId = null,
   onGoToPage,
-  takeFocus,
+  takeFocus = false,
+  lockPage = false,
 }: {
   chapterId: number
   seriesId: number
-  page: number | null
-  pinPage: number | null
+  page?: number | null
+  pinPage?: number | null
   pageCount?: number
-  spoilerGuard: boolean
-  initialThreadId: number | null
+  spoilerGuard?: boolean
+  initialThreadId?: number | null
   onGoToPage?: (page: number) => void
-  takeFocus: boolean
+  takeFocus?: boolean
+  /** Only that page's notes, with no way to widen the list: the reader's page tab. */
+  lockPage?: boolean
 }) {
   const { t } = useLingui()
-  const { me, singleUser } = useAuth()
-  const notes = useChapterNotes(chapterId)
-  const mutations = useNoteActions(chapterId, seriesId)
-  const incognito = useSeriesIncognito(seriesId, !singleUser).data ?? false
-  const offline = useConnectivity() === 'offline'
-  const unavailable = isOfflineUnavailable(notes.error)
-  const readOnly = offline || unavailable
-  const hasDisplayName = Boolean(me?.displayName?.trim())
-  const loginName = !hasDisplayName && me?.loginNamesVisible ? me.userName : null
+  const workspace = useNotesWorkspace(chapterId, seriesId)
+  const { notes, mutations, threadActions, unavailable, readOnly } = workspace
+  const { singleUser, incognito, hasDisplayName, loginName } = workspace.who
 
   const [picked, setPicked] = useState<Scope | null>(initialThreadId === null ? null : 'chapter')
   const [createError, setCreateError] = useState<string | null>(null)
@@ -128,7 +123,7 @@ function PanelBody({
 
   const roots = useMemo(() => notes.data ?? [], [notes.data])
   const onPage = page !== null && roots.some((n) => notePage(n, pageCount) === page)
-  const scope: Scope = page === null ? 'chapter' : (picked ?? (onPage ? 'page' : 'chapter'))
+  const scope: Scope = page === null ? 'chapter' : lockPage ? 'page' : (picked ?? (onPage ? 'page' : 'chapter'))
   const shown = scope === 'page' ? roots.filter((n) => notePage(n, pageCount) === page) : roots
 
   const scrolledTo = useRef<number | null>(null)
@@ -139,18 +134,6 @@ function PanelBody({
     scrolledTo.current = focusId
     thread.scrollIntoView({ block: 'center' })
   }, [focusId, roots, scope])
-
-  const threadActions: NoteThreadActions = {
-    reply: async (rootId, body) => {
-      await mutations.reply.mutateAsync({ rootId, body })
-    },
-    update: async (id, patch) => {
-      await mutations.update.mutateAsync({ id, patch })
-    },
-    remove: async (id) => {
-      await mutations.remove.mutateAsync(id)
-    },
-  }
 
   const create = async (values: ComposerValues) => {
     setCreateError(null)
@@ -166,7 +149,7 @@ function PanelBody({
 
   return (
     <div className="notes-panel" ref={panel} tabIndex={-1}>
-      {page !== null && (
+      {page !== null && !lockPage && (
         <SegmentedControl
           size="xs"
           fullWidth
@@ -211,7 +194,7 @@ function PanelBody({
                 <Trans>No notes on this chapter yet.</Trans>
               )}
             </Text>
-            {scope === 'page' && roots.length > 0 && (
+            {scope === 'page' && !lockPage && roots.length > 0 && (
               <Button size="xs" variant="subtle" color="gray" onClick={() => setPicked('chapter')}>
                 <Trans>Show the whole chapter</Trans>
               </Button>

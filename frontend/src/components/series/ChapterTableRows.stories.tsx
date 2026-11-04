@@ -114,12 +114,15 @@ type Story = StoryObj<typeof meta>
 
 export const WithNotes: Story = {
   args: { noteCounts: { chapterId: byNumber(5).id, mine: 2, shared: 3, total: 4 } },
-  play: async ({ args, canvas, userEvent }) => {
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
     const name = /^Notes on .*Ch\.5: 2 yours, 3 shared$/
     // Hovering mounts the tooltip, which replaces the button; click the one that stays.
     await userEvent.hover(await canvas.findByRole('button', { name }))
     await userEvent.click(await canvas.findByRole('button', { name }))
-    await waitFor(() => expect(args.actions.openNotes).toHaveBeenCalledWith(byNumber(5).id))
+    // A wide screen opens the notes under the count; only a phone hands off to the bottom sheet.
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByRole('dialog', { name })).toBeVisible()
+    await expect(args.actions.openNotes).not.toHaveBeenCalled()
   },
 }
 

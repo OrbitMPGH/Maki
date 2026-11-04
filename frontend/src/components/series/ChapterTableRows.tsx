@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { plural, t as staticT } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { ActionIcon, Badge, Group, Loader, Menu, Progress, Skeleton, Switch, Table, Text, Tooltip } from '@mantine/core'
+import { ActionIcon, Badge, Group, Loader, Menu, Popover, Progress, Skeleton, Switch, Table, Text, Tooltip } from '@mantine/core'
 import {
   IconBook,
   IconChevronDown,
@@ -32,6 +32,8 @@ import {
   IconUsers,
 } from '../../lib/icons'
 import type { NoteCountDto } from '../../api/notes'
+import { ChapterNotesDropdown } from '../notes/NotesDropdown'
+import { usePhoneSheet } from '../notes/phone'
 import { queueErrorMessage } from '../../api/queue'
 import type { ChapterProgressDto, ChapterReadState } from '../../api/reader'
 import type { ChapterDto, QueueItemDto } from '../../api/types'
@@ -419,33 +421,15 @@ export const ChapterRow = memo(function ChapterRow({
         </Table.Td>
         <Table.Td onClick={(e) => e.stopPropagation()}>
           <LightGroup gap={2} wrap="nowrap" justify="flex-end">
-            {noteCounts && (noteCounts.mine > 0 || noteCounts.shared > 0) && (() => {
-              const { mine, shared } = noteCounts
-              const label = t`Notes on ${chapterLbl}: ${mine} yours, ${shared} shared`
-              return (
-                  <HoverTooltip label={label} withArrow>
-                    <button
-                        type="button"
-                        className="chapter-notes-button"
-                        aria-label={label}
-                        onClick={() => actions.openNotes(c.id)}
-                    >
-                      {mine > 0 && (
-                          <span className="chapter-notes-count" data-kind="mine">
-                            <IconNote size={15} />
-                            {mine}
-                          </span>
-                      )}
-                      {shared > 0 && (
-                          <span className="chapter-notes-count" data-kind="shared">
-                            <IconUsers size={15} />
-                            {shared}
-                          </span>
-                      )}
-                    </button>
-                  </HoverTooltip>
-              )
-            })()}
+            {noteCounts && (noteCounts.mine > 0 || noteCounts.shared > 0) && (
+                <ChapterNotesCount
+                    chapter={c}
+                    counts={noteCounts}
+                    name={chapterLbl}
+                    spoilerGuard={!(read || watched)}
+                    onOpenSheet={actions.openNotes}
+                />
+            )}
             {/* Marking read needs the file for its page count, so a removed chapter can only be un-read. */}
             {(c.hasFile || (c.fileRemovedAt && read)) && (
                 <HoverTooltip label={read ? t`Mark unread` : t`Mark read`} withArrow>
@@ -845,4 +829,69 @@ export function ChunkedRows<T>({ rows, chunk = 100, children }: {
     else startTransition(() => setLimit(limit + chunk))
   }, [limit, rows.length, chunk])
   return children(limit >= rows.length ? rows : rows.slice(0, limit))
+}
+
+/** The row's note count. It opens the notes in a dropdown under itself, or the bottom sheet on a phone. */
+function ChapterNotesCount({
+  chapter,
+  counts,
+  name,
+  spoilerGuard,
+  onOpenSheet,
+}: {
+  chapter: ChapterDto
+  counts: NoteCountDto
+  name: string
+  spoilerGuard: boolean
+  onOpenSheet: (id: number) => void
+}) {
+  const { t } = useLingui()
+  const phone = usePhoneSheet()
+  const [opened, setOpened] = useState(false)
+  const { mine, shared } = counts
+  const label = t`Notes on ${name}: ${mine} yours, ${shared} shared`
+  const button = (
+    <button
+      type="button"
+      className="chapter-notes-button"
+      aria-label={label}
+      onClick={() => (phone ? onOpenSheet(chapter.id) : setOpened((open) => !open))}
+    >
+      {mine > 0 && (
+        <span className="chapter-notes-count" data-kind="mine">
+          <IconNote size={15} />
+          {mine}
+        </span>
+      )}
+      {shared > 0 && (
+        <span className="chapter-notes-count" data-kind="shared">
+          <IconUsers size={15} />
+          {shared}
+        </span>
+      )}
+    </button>
+  )
+  if (phone) {
+    return (
+      <HoverTooltip label={label} withArrow>
+        {button}
+      </HoverTooltip>
+    )
+  }
+  return (
+    <Popover opened={opened} onChange={setOpened} width={460} position="bottom-end" offset={4} shadow="lg" returnFocus>
+      <HoverTooltip label={label} withArrow>
+        <Popover.Target>{button}</Popover.Target>
+      </HoverTooltip>
+      {opened && (
+        <ChapterNotesDropdown
+          chapterId={chapter.id}
+          seriesId={chapter.seriesId}
+          chapterLabel={name}
+          spoilerGuard={spoilerGuard}
+          onClose={() => setOpened(false)}
+        />
+      )}
+    </Popover>
+  )
 }

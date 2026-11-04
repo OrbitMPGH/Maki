@@ -264,7 +264,8 @@ export const ChapterNotes: Story = {
     await userEvent.hover(await canvas.findByRole('button', { name }))
     await userEvent.click(await canvas.findByRole('button', { name }))
     const body = within(canvasElement.ownerDocument.body)
-    await expect(await body.findByRole('dialog', { name: /^Notes, .*Ch\.2$/ })).toBeVisible()
+    // Named after the count that opened it.
+    await expect(await body.findByRole('dialog', { name })).toBeVisible()
     // Chapter 2 is read, so other people's shared notes show without folding.
     await expect(await body.findByText(/Best fight so far/)).toBeVisible()
     await expect(body.queryByText('Tap to show')).toBeNull()
