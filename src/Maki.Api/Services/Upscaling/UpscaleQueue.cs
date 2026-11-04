@@ -24,16 +24,25 @@ public sealed class UpscaleJob(UpscaleWorkKey key, ReaderService.PageSlice slice
 
     public ReaderService.PageSlice Slice { get; } = slice;
 
+    private readonly CancellationTokenSource _abandon = new();
+
     internal Dictionary<int, UpscaleTarget> Waiters { get; } = [];
 
     internal bool Working { get; set; }
+
+    /// <summary>Cancelled when every reader left this job while it ran.</summary>
+    public CancellationToken Abandoned => _abandon.Token;
+
+    internal void Abandon() => _abandon.Cancel();
 }
 
 /// <summary>
 /// Pages waiting for the server upscaler. A page several readers want is one job with all of them
 /// waiting on it. Each reader has a FIFO lane of at most <see cref="MaxPendingPerUser"/> pages, and
 /// lanes are served round robin, so one reader paging fast cannot starve another. A job nobody
-/// waits on any more is dropped before it starts; one already running finishes and lands in the cache.
+/// waits on any more is dropped before it starts. One already running finishes and lands in the
+/// cache, unless its last reader moved to another chapter or model: then it is abandoned, so the
+/// first page there does not wait out a page nobody will look at.
 /// </summary>
 public sealed class UpscaleQueue
 {
@@ -54,9 +63,10 @@ public sealed class UpscaleQueue
 
     /// <summary>
     /// Makes <paramref name="items"/> this reader's pending work, current page first. Their pending
-    /// pages of another chapter or model are dropped; older pending pages of the same chapter and
-    /// model stay behind the new ones while there is room under the cap. Returns a state per item
-    /// (only the first <see cref="MaxPendingPerUser"/> items are taken).
+    /// pages of another chapter or model are dropped, and so are older pending pages behind the
+    /// lowest page asked for in this chapter: the reader paged past them before they were done.
+    /// Older pages ahead of it stay behind the new ones while there is room under the cap. Returns
+    /// a state per item (only the first <see cref="MaxPendingPerUser"/> items are taken).
     /// </summary>
     public IReadOnlyList<UpscaleJobState> Replace(
         int userId, int chapterId, string model, IReadOnlyList<UpscaleRequestItem> items)
@@ -68,11 +78,15 @@ public sealed class UpscaleQueue
         {
             var old = _lanes.TryGetValue(userId, out var lane) ? lane : [];
             var requested = taken.Select(i => i.Key).ToHashSet();
+            var floor = taken.Where(i => i.Target.ChapterId == chapterId)
+                .Select(i => i.Target.Page)
+                .DefaultIfEmpty(int.MinValue)
+                .Min();
             var next = new List<UpscaleWorkKey>();
             for (var i = 0; i < taken.Count; i++)
             {
                 var item = taken[i];
-                if (!_jobs.TryGetValue(item.Key, out var job))
+                if (!_jobs.TryGetValue(item.Key, out var job) || job.Abandoned.IsCancellationRequested)
                 {
                     job = new UpscaleJob(item.Key, item.Slice);
                     _jobs[item.Key] = job;
@@ -103,13 +117,26 @@ public sealed class UpscaleQueue
 
                 var sameChapter = job.Waiters.TryGetValue(userId, out var target)
                                   && target.ChapterId == chapterId && key.Model == model;
-                if (sameChapter && !job.Working && next.Count < MaxPendingPerUser)
+                if (sameChapter && target.Page >= floor && !job.Working && next.Count < MaxPendingPerUser)
                 {
                     next.Add(key);
                 }
                 else
                 {
                     Leave(job, userId);
+                }
+            }
+
+            foreach (var job in _jobs.Values)
+            {
+                if (job.Working && !requested.Contains(job.Key) && job.Waiters.TryGetValue(userId, out var target)
+                    && (target.ChapterId != chapterId || job.Key.Model != model))
+                {
+                    job.Waiters.Remove(userId);
+                    if (job.Waiters.Count == 0)
+                    {
+                        job.Abandon();
+                    }
                 }
             }
 
@@ -243,7 +270,8 @@ public sealed class UpscaleQueue
 
             job.Working = false;
             if (outcome == UpscaleOutcome.Ready
-                || reason is UpscaleReasons.ModelUnavailable or UpscaleReasons.UnknownModel or UpscaleReasons.CacheWriteFailed)
+                || reason is UpscaleReasons.ModelUnavailable or UpscaleReasons.UnknownModel or UpscaleReasons.CacheWriteFailed
+                    or UpscaleReasons.Abandoned)
             {
                 _memo.Remove(job.Key);
             }

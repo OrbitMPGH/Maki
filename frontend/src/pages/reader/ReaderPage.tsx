@@ -252,7 +252,10 @@ export default function ReaderPage() {
   const enhanceWindow = useMemo(() => {
     if (!serverModel) return []
     if (mode !== 'vertical') return preloadPages.length > 0 ? preloadPages : (spreads[spreadIndex] ?? [])
-    return stripRange.pages
+    // The server's one worker never spends a slice's seconds on pages already scrolled past. The one
+    // just above can still be on screen, so it stays.
+    const [first] = stripRange.pages
+    return stripRange.pages.filter((index) => index >= first - 1)
   }, [serverModel, mode, preloadPages, spreads, spreadIndex, stripRange])
   // A window that runs past the last page carries on into the next chapter's first pages.
   const nextChapterId = current?.nextChapterId ?? null

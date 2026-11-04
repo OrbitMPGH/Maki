@@ -134,15 +134,16 @@ public sealed class UpscaleWorker(
 
     private async Task<(UpscaleOutcome Outcome, string? Reason)> RunAsync(UpscaleJob job, UpscaleModelId model, CancellationToken ct)
     {
+        using var run = CancellationTokenSource.CreateLinkedTokenSource(ct, job.Abandoned);
         try
         {
-            var page = await ReaderPageCache.ReadPageBytesAsync(paths, archives, job.Slice, job.Key.AbsIndex, ct);
+            var page = await ReaderPageCache.ReadPageBytesAsync(paths, archives, job.Slice, job.Key.AbsIndex, run.Token);
             if (page is null)
             {
                 return (UpscaleOutcome.Skipped, UpscaleReasons.Unreadable);
             }
 
-            var result = await upscaler.UpscaleAsync(page, job.Key.Model, ct);
+            var result = await upscaler.UpscaleAsync(page, job.Key.Model, run.Token);
             if (result is { Outcome: UpscaleOutcome.Ready, Bytes: { } bytes, Extension: { } extension })
             {
                 if (!store.IsReady(model))
@@ -170,6 +171,12 @@ public sealed class UpscaleWorker(
         {
             queue.Complete(job, UpscaleOutcome.Failed, null);
             throw;
+        }
+        catch (OperationCanceledException) when (job.Abandoned.IsCancellationRequested)
+        {
+            logger.LogDebug("Stopped upscaling page {Page} of chapter file {FileId}: its reader moved on",
+                job.Key.AbsIndex, job.Key.ChapterFileId);
+            return (UpscaleOutcome.Failed, UpscaleReasons.Abandoned);
         }
         catch (Exception ex)
         {
