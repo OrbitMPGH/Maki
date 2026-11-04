@@ -475,13 +475,15 @@ function SeriesDetailBody() {
 
   // `sourceMatchFinished` normally refreshes these, but this page also polls the series row while
   // matching runs, so it can notice the flag clearing on a connection that missed the push. The
-  // mappings and the chapter list arrive with it, and neither has a flag of its own to poll on.
+  // mappings, the chapter list and the measurement started after the match arrive with it, and none
+  // has a flag of its own to poll on.
   const wasMatching = useRef(false)
   useEffect(() => {
     const matching = series?.sourceMatchPending ?? false
     if (wasMatching.current && !matching) {
       void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['source-order', seriesId] })
     }
     wasMatching.current = matching
   }, [series?.sourceMatchPending, seriesId, queryClient])

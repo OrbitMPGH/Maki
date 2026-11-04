@@ -220,8 +220,15 @@ public class SourceMatchWorkerHostedService(
             {
                 var sync = scope.ServiceProvider.GetRequiredService<ChapterSyncService>();
                 await sync.SyncSeriesAsync(series.Id, ct);
-                await scope.ServiceProvider.GetRequiredService<SourceScoutService>()
+                var scouting = await scope.ServiceProvider.GetRequiredService<SourceScoutService>()
                     .StartIfEnabledAsync(db, series.Id, ct);
+
+                // A scout triggers Smart Download when it finishes; without one the first batch can go now.
+                if (!scouting && series.MonitorNewItems == NewChapterMonitorMode.Smart &&
+                    scope.ServiceProvider.GetService<ISchedulerFactory>() is { } schedulerFactory)
+                {
+                    await SmartDownloadJob.TriggerAsync(schedulerFactory, logger);
+                }
             }
         }
         catch (Exception ex)

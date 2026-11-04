@@ -306,6 +306,9 @@ export function useLiveEvents() {
         queryClient.setQueryData(['sourcematch-failed', seriesId], failedSources ?? [])
         void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+        // The scout-on-match run is registered before this push goes out; the refetch sees it running
+        // and starts the source order's progress polling.
+        void queryClient.invalidateQueries({ queryKey: ['source-order', seriesId] })
         // The detail row carries the pending flag the spinner reads, so it refreshes at once; the
         // library list joins the coalesced refresh.
         void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
