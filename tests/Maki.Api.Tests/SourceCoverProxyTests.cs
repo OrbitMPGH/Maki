@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Text.Json;
 using Maki.Api.Controllers;
 using Maki.Api.Services;
@@ -45,6 +45,23 @@ public class SourceCoverProxyTests
         Assert.Equal(Jpeg, file.FileContents);
         Assert.Equal("private,max-age=86400", http.Response.Headers.CacheControl.ToString());
         Assert.Equal("default-src 'none'; sandbox", http.Response.Headers.ContentSecurityPolicy.ToString());
+    }
+
+    [Fact]
+    public async Task Sends_the_source_referer_and_a_browser_user_agent()
+    {
+        HttpRequestMessage? sent = null;
+        var (controller, _) = Build((request, ct) =>
+        {
+            sent = request;
+            return Respond(HttpStatusCode.OK, Jpeg, "image/jpeg")(request, ct);
+        });
+
+        await controller.SourceCover("src", "https://cdn.src.test/a.jpg", CancellationToken.None);
+
+        Assert.NotNull(sent);
+        Assert.Equal(Maki.Sources.Common.BrowserUserAgent.Value, sent.Headers.UserAgent.ToString());
+        Assert.NotNull(sent.Headers.Referrer);
     }
 
     [Fact]
