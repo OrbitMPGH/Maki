@@ -99,6 +99,12 @@ The repo needs a webhook to `https://hosted.weblate.org/hooks/github/` (content 
 merge what it fetched, so both components raise "Repository outdated" after every push to `dev`
 until someone clicks Update.
 
+If a merge ever fails, use **Discard local changes**, then **Rescan** if the counts look stale. Never
+use **Reset and reapply translations** or **Synchronize**: both write Weblate's own copy of every
+string back over the repo, and when that copy is older than `dev` it blanks every machine
+translation added since (PR #165 did this to about 8,000 entries). Copy any reviewed strings out of
+the failed commit by hand first.
+
 ## Glossary
 
 The project glossary is Weblate-local and not in the repo. It holds what `glossary.md` says never to
