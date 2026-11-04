@@ -430,6 +430,9 @@ export default function PagedView({
   // The pages ahead are enhanced at the size a page of the same pixel size is shown at now, so a
   // turn finds them in the cache. Pages of another size wait until they are on screen.
   const { crop: shapeCrop, part: shapePart, rotate: shapeRotate } = shaping
+  // Read when a page ahead is decoded, so a state change does not restart the preload.
+  const serverRef = useRef(server)
+  serverRef.current = server
   useEffect(() => {
     if (!pageEnhance || !preload?.length) return
     const { engine: live, scope: owner, preset, mode } = pageEnhance
@@ -458,7 +461,7 @@ export default function PagedView({
             if (!target) return
             const wanted = target.stretched || (mode === 'auto' && isSoftPage(image, src))
             owner.notePage(page, wanted)
-            if (!live || !preset || !wanted) return
+            if (!live || !preset || !wanted || serverRef.current?.states.get(page) === 'ready') return
             const key = enhanceKey(src, region)
             if (live.peek(key, preset, target.width, target.height)) return
             owner.note(src, key)

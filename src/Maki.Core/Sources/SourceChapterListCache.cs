@@ -77,6 +77,13 @@ public sealed class SourceChapterListCache(TimeProvider time, ILogger<SourceChap
             ct);
     }
 
+    /// <summary>The cached listing while it is fresh, without fetching one.</summary>
+    public IReadOnlyList<SourceChapter>? TryGetFresh(ISource source, string sourceSeriesId, string? languageFilter) =>
+        _entries.TryGetValue(Key(source, sourceSeriesId, languageFilter), out var entry) &&
+        IsFresh(entry, time.GetUtcNow().UtcDateTime)
+            ? entry.Chapters
+            : null;
+
     /// <summary>
     /// Records a listing somebody else already fetched. <c>ChapterSyncService</c> deliberately lists
     /// uncached, since a refresh has to see the site as it is right now, but a monitored refresh

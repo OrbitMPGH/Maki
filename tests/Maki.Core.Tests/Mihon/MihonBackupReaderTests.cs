@@ -180,6 +180,53 @@ public class MihonBackupReaderTests
     }
 
     [Fact]
+    public void A_raw_backup_over_the_cap_is_too_large()
+    {
+        var data = Backup(Manga("Berserk", m => m.String(5, new string('x', 20_000))));
+
+        Assert.Equal(MihonBackupFailure.TooLarge, Fails(data, cap: 10_000));
+    }
+
+    [Fact]
+    public void A_stream_that_cannot_seek_is_read_too()
+    {
+        var gz = Gzip(Backup(Manga("Berserk"), Manga("Vagabond")));
+        using var stream = new OneWayStream(gz);
+
+        Assert.Equal(["Berserk", "Vagabond"], MihonBackupReader.Read(stream).Manga.Select(m => m.Title));
+    }
+
+    [Fact]
+    public void A_length_past_the_end_of_a_small_file_is_corrupt()
+    {
+        byte[] data = [0x0A, 0x80, 0x80, 0x80, 0x40, 0x01, 0x02];
+
+        Assert.Equal(MihonBackupFailure.Corrupt, Fails(data));
+    }
+
+    [Fact]
+    public void Manga_messages_larger_than_the_read_buffer_parse_whole()
+    {
+        var chapters = Enumerable.Range(1, 6000).Select(n => Chapter(n, n <= 4000)).ToArray();
+        var result = Read(Gzip(Backup(Manga("Long", m =>
+        {
+            foreach (var c in chapters)
+            {
+                m.Message(16, c);
+            }
+        }), Manga("After"))));
+
+        Assert.Equal(6000, result.Manga[0].ChapterCount);
+        Assert.Equal(4000, result.Manga[0].ReadCount);
+        Assert.Equal("After", result.Manga[1].Title);
+    }
+
+    private sealed class OneWayStream(byte[] data) : MemoryStream(data)
+    {
+        public override bool CanSeek => false;
+    }
+
+    [Fact]
     public void Categories_map_by_order_not_position()
     {
         var backup = new ProtoWriter()

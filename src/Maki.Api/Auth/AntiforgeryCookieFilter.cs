@@ -104,12 +104,41 @@ public class AntiforgeryTokenMiddleware(RequestDelegate next, IAntiforgery antif
         // missing antiforgery token". Reissuing on each GET means the first read after any identity
         // change rebinds it. It costs an HMAC and a cookie header, which is nothing next to the
         // database work a typical GET here already does.
-        if (HttpMethods.IsGet(context.Request.Method))
+        if (HttpMethods.IsGet(context.Request.Method) && ShouldIssue(context))
         {
             IssueToken(context, antiforgery);
         }
 
         await next(context);
+    }
+
+    /// <summary>
+    /// False for image and file GETs and for API-key requests. Neither feeds the SPA's token, and
+    /// minting one stamps <c>Cache-Control: no-cache</c> and <c>Pragma</c> on the response and adds a
+    /// <c>Set-Cookie</c> to every cover and page.
+    /// </summary>
+    internal static bool ShouldIssue(HttpContext context)
+    {
+        var identity = context.User.Identity;
+        if (identity is { IsAuthenticated: true } && identity.AuthenticationType != IdentityConstants.ApplicationScheme)
+        {
+            return false;
+        }
+
+        var path = context.Request.Path;
+        if (path.StartsWithSegments("/api/v1/mediacover", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        if (path.StartsWithSegments("/api/v1/reader/chapter", StringComparison.OrdinalIgnoreCase))
+        {
+            var value = path.Value ?? string.Empty;
+            return !(value.Contains("/page/", StringComparison.OrdinalIgnoreCase) ||
+                     value.Contains("/thumb/", StringComparison.OrdinalIgnoreCase));
+        }
+
+        return true;
     }
 
     /// <summary>

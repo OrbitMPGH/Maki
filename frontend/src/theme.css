@@ -7773,7 +7773,6 @@ body.reader-open {
   background: rgba(10, 10, 11, 0.88);
   backdrop-filter: blur(12px) saturate(1.2);
   -webkit-backdrop-filter: blur(12px) saturate(1.2);
-  box-shadow: 0 14px 34px -14px rgba(0, 0, 0, 0.8);
   color: #fff;
   pointer-events: none;
 }
@@ -7835,6 +7834,12 @@ body.reader-open {
   position: fixed;
   bottom: calc(32px + env(safe-area-inset-bottom, 0px));
   animation: reader-enhance-status-in var(--dur-medium) var(--ease);
+  transition: opacity var(--dur-medium) var(--ease);
+}
+/* Held still first, then faded, ending with HINT_LINGER_MS in ContinuousView. */
+.reader-next-chapter-hint[data-leaving] {
+  opacity: 0;
+  transition-delay: 420ms;
 }
 .reader-ring {
   position: relative;

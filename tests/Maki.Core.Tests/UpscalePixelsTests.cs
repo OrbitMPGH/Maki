@@ -116,4 +116,38 @@ public class UpscalePixelsTests
         Assert.Equal([230, 70, 70], output);
         Assert.Throws<ArgumentException>(() => UpscalePixels.TakeColourFrom(new byte[6], new byte[3]));
     }
+
+    [Fact]
+    public void On_an_exact_grey_source_the_colour_pass_and_band_average_equal_the_output_luma()
+    {
+        var random = new Random(601);
+        var output = new byte[256 * 64 * 3];
+        random.NextBytes(output);
+        var source = new byte[output.Length];
+        for (var p = 0; p < output.Length / 3; p++)
+        {
+            source[p * 3] = source[p * 3 + 1] = source[p * 3 + 2] = (byte)(p / 64);
+        }
+
+        var luma = new byte[output.Length / 3];
+        for (var p = 0; p < luma.Length; p++)
+        {
+            luma[p] = (byte)UpscalePixels.Luma(output[p * 3], output[p * 3 + 1], output[p * 3 + 2]);
+        }
+
+        UpscalePixels.TakeColourFrom(output, source);
+
+        Assert.Equal(luma, UpscalePixels.ToSingleBand(output));
+    }
+
+    [Fact]
+    public void Exact_grey_needs_every_pixel_to_have_equal_channels()
+    {
+        var rgb = GreyPage();
+        Assert.True(UpscalePixels.IsExactGrey(rgb));
+
+        rgb[^2]++;
+        Assert.True(UpscalePixels.IsGreyscale(rgb));
+        Assert.False(UpscalePixels.IsExactGrey(rgb));
+    }
 }

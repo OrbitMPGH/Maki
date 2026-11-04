@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.IO.Compression;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Maki.Core.Mihon;
@@ -17,68 +16,47 @@ public static class MihonBackupReader
     private const int SyncKitsu = 3;
     private const int SyncMangaBaka = 11;
 
+    /// <summary>
+    /// Parses straight off <paramref name="input"/>, gunzipping on the way, so only one manga
+    /// message is held at a time rather than the upload and its decompressed copy. The cap counts
+    /// the bytes the parser takes in, decompressed where the backup is gzipped.
+    /// </summary>
     public static MihonBackup Read(Stream input) => Read(input, DefaultMaxBytes);
 
-    internal static MihonBackup Read(Stream input, long maxBytes) => Read(ReadAll(input, maxBytes), maxBytes);
-
-    /// <summary>Reads from a buffer the caller already holds, without copying it.</summary>
-    public static MihonBackup Read(ReadOnlyMemory<byte> raw) => Read(raw, DefaultMaxBytes);
-
-    internal static MihonBackup Read(ReadOnlyMemory<byte> raw, long maxBytes)
+    internal static MihonBackup Read(Stream input, long maxBytes)
     {
-        if (raw.Length == 0)
+        if (!input.CanSeek)
         {
-            throw new MihonBackupException(MihonBackupFailure.NotABackup, "The file is empty.");
+            var held = new MemoryStream();
+            Copy(input, held, maxBytes);
+            held.Position = 0;
+            input = held;
         }
 
-        if (raw.Length > maxBytes)
+        var start = input.Position;
+        if (input.Length - start > maxBytes)
         {
             throw new MihonBackupException(MihonBackupFailure.TooLarge, "The backup is too large.");
         }
 
-        var span = raw.Span;
-        var data = span.Length >= 2 && span[0] == 0x1F && span[1] == 0x8B ? Gunzip(raw, maxBytes) : raw;
-        if (LooksLikeJson(data.Span))
+        Span<byte> magic = stackalloc byte[2];
+        var peeked = input.ReadAtLeast(magic, magic.Length, throwOnEndOfStream: false);
+        input.Position = start;
+        if (peeked == 0)
+        {
+            throw new MihonBackupException(MihonBackupFailure.NotABackup, "The file is empty.");
+        }
+
+        var gzipped = peeked == 2 && magic[0] == 0x1F && magic[1] == 0x8B;
+        using var source = gzipped ? new GZipStream(input, CompressionMode.Decompress, leaveOpen: true) : null;
+        var reader = new ProtoStreamReader(source ?? input, maxBytes);
+        if (LooksLikeJson(reader.Lookahead()))
         {
             throw new MihonBackupException(MihonBackupFailure.JsonBackup, "JSON backups are not supported.");
         }
 
-        return Parse(data.Span);
+        return Parse(reader);
     }
-
-    private static ReadOnlyMemory<byte> ReadAll(Stream input, long maxBytes)
-    {
-        if (input is MemoryStream { Position: var position } held && held.TryGetBuffer(out var segment))
-        {
-            return segment.AsMemory((int)Math.Min(position, segment.Count));
-        }
-
-        var buffer = new MemoryStream();
-        Copy(input, buffer, maxBytes);
-        return Held(buffer);
-    }
-
-    private static ReadOnlyMemory<byte> Gunzip(ReadOnlyMemory<byte> compressed, long maxBytes)
-    {
-        var output = new MemoryStream();
-        try
-        {
-            var source = MemoryMarshal.TryGetArray(compressed, out var segment)
-                ? new MemoryStream(segment.Array!, segment.Offset, segment.Count, writable: false)
-                : new MemoryStream(compressed.ToArray(), writable: false);
-            using var gzip = new GZipStream(source, CompressionMode.Decompress);
-            Copy(gzip, output, maxBytes);
-        }
-        catch (Exception e) when (e is InvalidDataException or EndOfStreamException)
-        {
-            throw new MihonBackupException(MihonBackupFailure.Corrupt, "The gzip data is damaged.", e);
-        }
-
-        return Held(output);
-    }
-
-    private static ReadOnlyMemory<byte> Held(MemoryStream stream) =>
-        stream.TryGetBuffer(out var segment) ? segment.AsMemory() : stream.ToArray();
 
     private static void Copy(Stream from, MemoryStream to, long maxBytes)
     {
@@ -108,13 +86,13 @@ public static class MihonBackupReader
         return i < data.Length && data[i] == (byte)'{';
     }
 
-    private static MihonBackup Parse(ReadOnlySpan<byte> data)
+    private static MihonBackup Parse(ProtoStreamReader reader)
     {
-        var mangaRanges = new List<(int Offset, int Length)>();
+        var parsed = new List<(MihonManga Manga, List<long> CategoryOrders)>();
         var categoryNames = new Dictionary<long, string>();
+        var mangaCount = 0;
         var categoryCount = 0;
 
-        var reader = new ProtoReader(data);
         while (reader.Next(out var field, out var wire))
         {
             if (field is 1 or 2 && wire != ProtoReader.LengthDelimited)
@@ -125,16 +103,21 @@ public static class MihonBackupReader
             switch (field)
             {
                 case 1:
-                    if (mangaRanges.Count >= MaxMangaRecords)
+                    if (mangaCount >= MaxMangaRecords)
                     {
                         throw new MihonBackupException(MihonBackupFailure.TooLarge, "The backup has too many manga.");
                     }
 
-                    mangaRanges.Add(reader.ReadRange());
+                    if (ParseManga(reader.ReadMessage(), mangaCount) is { } manga)
+                    {
+                        parsed.Add(manga);
+                    }
+
+                    mangaCount++;
                     break;
                 case 2:
                     categoryCount++;
-                    var (name, order) = ParseCategory(reader.ReadBytes());
+                    var (name, order) = ParseCategory(reader.ReadMessage());
                     categoryNames.TryAdd(order, name);
                     break;
                 default:
@@ -143,22 +126,25 @@ public static class MihonBackupReader
             }
         }
 
-        if (mangaRanges.Count == 0 && categoryCount == 0)
+        if (mangaCount == 0 && categoryCount == 0)
         {
             throw new MihonBackupException(MihonBackupFailure.NotABackup, "No library data found.");
         }
 
-        var library = new List<MihonManga>();
-        for (var index = 0; index < mangaRanges.Count; index++)
-        {
-            var (offset, length) = mangaRanges[index];
-            if (ParseManga(data.Slice(offset, length), index, categoryNames) is { } manga)
+        // Categories follow the manga in a backup, so names are only known once the whole file is read.
+        var library = parsed
+            .Select(p => p.Manga with
             {
-                library.Add(manga);
-            }
-        }
+                Categories = p.CategoryOrders
+                    .Select(o => categoryNames.GetValueOrDefault(o))
+                    .OfType<string>()
+                    .Where(n => n.Length > 0)
+                    .Distinct()
+                    .ToList(),
+            })
+            .ToList();
 
-        return new MihonBackup(library, mangaRanges.Count - library.Count, categoryCount);
+        return new MihonBackup(library, mangaCount - library.Count, categoryCount);
     }
 
     private static (string Name, long Order) ParseCategory(ReadOnlySpan<byte> message)
@@ -185,7 +171,7 @@ public static class MihonBackupReader
         return (name, order);
     }
 
-    private static MihonManga? ParseManga(ReadOnlySpan<byte> message, int index, Dictionary<long, string> categoryNames)
+    private static (MihonManga Manga, List<long> CategoryOrders)? ParseManga(ReadOnlySpan<byte> message, int index)
     {
         var title = "";
         string? author = null;
@@ -268,18 +254,11 @@ public static class MihonBackupReader
             }
         }
 
-        var categories = categoryOrders
-            .Select(o => categoryNames.GetValueOrDefault(o))
-            .OfType<string>()
-            .Where(n => n.Length > 0)
-            .Distinct()
-            .ToList();
-
-        return new MihonManga(
+        return (new MihonManga(
             index,
             title,
             string.IsNullOrWhiteSpace(author) ? null : author,
-            categories,
+            [],
             aniList,
             mal,
             kitsu,
@@ -287,7 +266,7 @@ public static class MihonBackupReader
             [.. readNumbers],
             chapterCount == 0 && lastRead is { } l ? MihonFloat.NarrowToDecimal(l) : null,
             chapterCount,
-            readCount);
+            readCount), categoryOrders);
     }
 
     private static void ParseChapter(ReadOnlySpan<byte> message, ref int readCount, SortedSet<decimal> readNumbers)

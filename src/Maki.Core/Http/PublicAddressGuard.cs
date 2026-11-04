@@ -153,7 +153,11 @@ public static class PublicAddressGuard
     /// A primary handler whose connections may only reach public addresses. A connection to the
     /// configured HTTP proxy is let through, since the proxy (not this process) makes the real one.
     /// </summary>
-    public static SocketsHttpHandler CreateHandler() => new() { ConnectCallback = ConnectAsync };
+    public static SocketsHttpHandler CreateHandler() => new()
+    {
+        ConnectCallback = ConnectAsync,
+        AutomaticDecompression = DecompressionMethods.All,
+    };
 
     /// <summary>
     /// <see cref="CreateHandler"/> with automatic redirects off, for clients whose

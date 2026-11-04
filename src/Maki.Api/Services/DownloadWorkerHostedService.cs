@@ -475,6 +475,7 @@ public class DownloadWorkerHostedService(
 
             var (classified, detail) = key is null ? DownloadFailureReason.Classify(cause) : (key, null);
             key = classified;
+            if (key == DownloadFailureReason.Disk) HealthWriteProbe.Shared.Expire();
             item.Status = QueueStatus.Failed;
             item.SetError(key, detail: detail);
             item.RetryCount++;

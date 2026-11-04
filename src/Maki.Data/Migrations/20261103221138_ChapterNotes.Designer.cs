@@ -272,6 +272,8 @@ namespace Maki.Data.Migrations
                     b.HasIndex("MeasuredAtUtc")
                         .HasFilter("MeasuredAtUtc IS NULL");
 
+                    b.HasIndex("SeriesId", "DateAdded");
+
                     b.HasIndex("SeriesId", "SourceName");
 
                     b.ToTable("ChapterFiles");

@@ -1,4 +1,5 @@
-﻿using Maki.Sources.MangaFire;
+﻿using Maki.Core.Sources;
+using Maki.Sources.MangaFire;
 
 namespace Maki.Sources.Tests;
 
@@ -115,5 +116,48 @@ public class MangaFireSourceTests
 
         var chapter = Assert.Single(chapters);
         Assert.Equal("2", chapter.SourceChapterId);
+    }
+
+    private static KnownChapters Known(params (string Id, decimal Number)[] chapters) =>
+        new(chapters.Select(c => c.Id), chapters.Select(c => ((decimal?)c.Number, (int?)null, "en")));
+
+    [Fact]
+    public void A_page_of_known_ids_ends_the_walk()
+    {
+        Assert.True(MangaFireSource.PageIsKnown(
+            "s", [Item("12", 12m, "en"), Item("11", 11m, "en")], ["en"], Known(("12", 12m), ("11", 11m))));
+    }
+
+    [Fact]
+    public void A_page_with_an_unknown_chapter_keeps_walking()
+    {
+        Assert.False(MangaFireSource.PageIsKnown(
+            "s", [Item("13", 13m, "en"), Item("12", 12m, "en")], ["en"], Known(("12", 12m))));
+    }
+
+    [Fact]
+    public void A_second_upload_of_a_known_chapter_counts_as_known()
+    {
+        var page = new[]
+        {
+            Item("77", 12m, "en"),
+            """{"id":12,"number":12,"name":"Ch. 12","type":"unofficial","language":"en"}""",
+        };
+
+        Assert.True(MangaFireSource.PageIsKnown("s", page, ["en"], Known(("12", 12m))));
+    }
+
+    [Fact]
+    public void A_page_with_nothing_in_the_wanted_language_keeps_walking()
+    {
+        Assert.False(MangaFireSource.PageIsKnown(
+            "s", [Item("40", 40m, "es"), Item("39", 39m, "es")], ["en"], Known(("12", 12m))));
+    }
+
+    [Fact]
+    public void Other_languages_on_a_mixed_page_do_not_keep_the_walk_going()
+    {
+        Assert.True(MangaFireSource.PageIsKnown(
+            "s", [Item("40", 40m, "es"), Item("12", 12m, "en")], ["en"], Known(("12", 12m))));
     }
 }

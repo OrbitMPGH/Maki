@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Runtime.InteropServices;
 
 namespace Maki.Core.Io;
@@ -40,6 +41,59 @@ public static class PageCache
     private static readonly bool Enabled =
         OperatingSystem.IsLinux() &&
         !string.Equals(Environment.GetEnvironmentVariable(DisableVariable), "0", StringComparison.Ordinal);
+
+    /// <summary>How much of a <see cref="CopyDroppingWrittenAsync"/> write may sit in the cache.</summary>
+    public const long WriteWindowBytes = 64L * 1024 * 1024;
+
+    /// <summary>
+    /// Copies <paramref name="source"/> into <paramref name="destination"/> and keeps the written
+    /// file out of the page cache as it goes: every <paramref name="window"/> bytes it syncs what it
+    /// wrote and drops that range. Dirty pages cannot be dropped, so the sync is what makes the drop
+    /// work. Without it a 3.5 GB dump install charges all 3.5 GB to the container until the job ends.
+    /// A plain copy off Linux or when disabled.
+    /// </summary>
+    public static async Task CopyDroppingWrittenAsync(
+        Stream source, FileStream destination, CancellationToken ct, long window = WriteWindowBytes)
+    {
+        if (!Enabled)
+        {
+            await source.CopyToAsync(destination, ct);
+            return;
+        }
+
+        var buffer = ArrayPool<byte>.Shared.Rent(1024 * 1024);
+        try
+        {
+            long written = 0, dropped = 0;
+            int read;
+            while ((read = await source.ReadAsync(buffer.AsMemory(), ct)) > 0)
+            {
+                await destination.WriteAsync(buffer.AsMemory(0, read), ct);
+                written += read;
+                if (written - dropped >= window)
+                {
+                    destination.Flush(flushToDisk: true);
+                    Advise(destination, dropped, written - dropped);
+                    dropped = written;
+                }
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    private static void Advise(FileStream file, long offset, long length)
+    {
+        try
+        {
+            PosixFadvise((int)file.SafeFileHandle.DangerousGetHandle(), offset, length, DontNeed);
+        }
+        catch (Exception ex) when (ex is DllNotFoundException or EntryPointNotFoundException)
+        {
+        }
+    }
 
     /// <summary>
     /// Drops <paramref name="path"/> from the page cache. A no-op off Linux, when disabled, or when

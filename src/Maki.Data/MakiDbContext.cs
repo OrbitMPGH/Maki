@@ -539,6 +539,10 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // Also serves every plain SeriesId lookup, and the library list's GROUP BY SeriesId, SourceName.
             e.HasIndex(f => new { f.SeriesId, f.SourceName });
 
+            // Covers the library list's newest file per series (GROUP BY SeriesId, MAX(DateAdded)),
+            // which otherwise reads every row of the table for its date.
+            e.HasIndex(f => new { f.SeriesId, f.DateAdded });
+
             // Home's "recently added" rail is an ORDER BY DateAdded DESC LIMIT n; without this it
             // is a full scan plus a sort of every file in the library on every landing-page load.
             e.HasIndex(f => f.DateAdded);

@@ -105,10 +105,12 @@ public class ArtifactIdleUnloadJob(
             // here for a reason specific to this job: it runs only when something was actually
             // released, which by definition means the instance has been idle for the whole window,
             // so there is no request to stall. The large object heap needs asking separately - it
-            // is not compacted by default, and these artifacts are mostly large arrays.
+            // is not compacted by default, and these artifacts are mostly large arrays. Aggressive
+            // also decommits the freed regions instead of keeping them for reuse: 127 MB less RSS
+            // right after an unload than Forced, measured on WSL2, back to the fresh-start level.
             System.Runtime.GCSettings.LargeObjectHeapCompactionMode =
                 System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
-            GC.Collect(2, GCCollectionMode.Forced, blocking: true, compacting: true);
+            GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
             NativeHeap.Trim();
             logger.LogDebug("Released {Count} idle discovery artifact(s)", released);
         }

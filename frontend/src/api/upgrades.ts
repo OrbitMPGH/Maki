@@ -681,6 +681,8 @@ export function useUpgradeProfiles() {
   return useQuery({
     queryKey: ['upgrade-profiles'],
     queryFn: () => api<UpgradeProfileDto[]>('/upgrade-profiles'),
+    // Changes only through the profile editor, which invalidates it.
+    staleTime: 5 * 60 * 1000,
   })
 }
 

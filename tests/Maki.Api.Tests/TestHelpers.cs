@@ -178,10 +178,11 @@ internal static class Sources
     /// <see cref="FakeSource.ListCalls"/> need their own cache instance or one test's listing
     /// satisfies the next one's.
     /// </summary>
-    public static ChapterSourceResolver Resolver(SourceRegistry registry, SourceAvailability? availability = null) =>
+    public static ChapterSourceResolver Resolver(SourceRegistry registry, SourceAvailability? availability = null,
+        ChapterListingSchedule? listingSchedule = null) =>
         new(registry, availability ?? AllEnabled,
             new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
-            new SourceOrderService(registry, TestQuality.Create(registry)));
+            new SourceOrderService(registry, TestQuality.Create(registry)), listingSchedule);
 }
 
 /// <summary>In-memory <see cref="IAppSettings"/> — a dictionary, no DB.</summary>

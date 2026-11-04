@@ -25,7 +25,8 @@ public enum KavitaLiveStatus
 /// handled once the series goes quiet (or after <see cref="MaxWait"/> of continuous reading). Each
 /// one runs <see cref="KavitaReadImportService.MarkSeriesAsync"/>: the same rows the manual import
 /// writes, and nothing else. Rewind and tracker pushes still come from the scrobble tick, which is
-/// also what catches up on anything read while this was disconnected.
+/// also what catches up on anything read while this was disconnected. While connected, the series it
+/// hears about are the ones that tick fetches again from Kavita (<see cref="KavitaLiveCoverage"/>).
 /// </para>
 /// </summary>
 public class KavitaLiveReadSync(
@@ -35,7 +36,8 @@ public class KavitaLiveReadSync(
     KavitaClient kavita,
     KavitaReadImportService readImport,
     EventBroadcaster events,
-    ILogger<KavitaLiveReadSync> logger) : BackgroundService
+    ILogger<KavitaLiveReadSync> logger,
+    KavitaLiveCoverage? coverage = null) : BackgroundService
 {
     private static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(15);
     private static readonly TimeSpan RetryAfter = TimeSpan.FromMinutes(1);
@@ -201,6 +203,7 @@ public class KavitaLiveReadSync(
         {
             if (KavitaLiveEvents.SeriesIdFor(message, kavitaUserId) is { } seriesId)
             {
+                coverage?.Saw(seriesId);
                 Enqueue(seriesId, DateTime.UtcNow);
                 Wake();
             }
@@ -211,6 +214,7 @@ public class KavitaLiveReadSync(
             if (ReferenceEquals(_connection, connection))
             {
                 Status = KavitaLiveStatus.Connecting;
+                coverage?.Disconnected();
             }
 
             return Task.CompletedTask;
@@ -220,6 +224,7 @@ public class KavitaLiveReadSync(
             if (ReferenceEquals(_connection, connection))
             {
                 Status = KavitaLiveStatus.Connected;
+                coverage?.Connected();
             }
 
             return Task.CompletedTask;
@@ -229,6 +234,7 @@ public class KavitaLiveReadSync(
             if (ReferenceEquals(_connection, connection))
             {
                 Status = KavitaLiveStatus.Unreachable;
+                coverage?.Disconnected();
                 _retryAt = DateTime.UtcNow + RetryAfter;
                 Wake();
             }
@@ -241,6 +247,7 @@ public class KavitaLiveReadSync(
         {
             await connection.StartAsync(ct);
             Status = KavitaLiveStatus.Connected;
+            coverage?.Connected();
             logger.LogInformation("Listening to Kavita for reading progress");
         }
         catch (Exception e) when (e is not OperationCanceledException)
@@ -315,6 +322,7 @@ public class KavitaLiveReadSync(
         }
 
         _connection = null;
+        coverage?.Disconnected();
         try
         {
             await connection.DisposeAsync();

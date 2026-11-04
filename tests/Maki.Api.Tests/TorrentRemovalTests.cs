@@ -87,10 +87,10 @@ public class TorrentRemovalTests : IDisposable
         db.SaveChanges();
     }
 
-    private async Task RunAsync()
+    private async Task RunAsync(TorrentPollState? pollState = null)
     {
         using var db = _db.NewContext();
-        await new TorrentRemovalJob(db, _settings, _client.Registry(), NullLogger<TorrentRemovalJob>.Instance)
+        await new TorrentRemovalJob(db, _settings, _client.Registry(), NullLogger<TorrentRemovalJob>.Instance, pollState)
             .RunAsync(CancellationToken.None);
     }
 
@@ -104,12 +104,13 @@ public class TorrentRemovalTests : IDisposable
         new(true, null, files, files, 0, 0, 0, [], PlacedFresh: placedFresh);
 
     private async Task<DownloadQueueItem> MarkAsync(
-        TorrentImportOutcome outcome, bool settledByUser = false, string? hash = Hash, bool? addedBeforeGrab = false)
+        TorrentImportOutcome outcome, bool settledByUser = false, string? hash = Hash, bool? addedBeforeGrab = false,
+        TorrentPollState? pollState = null)
     {
         using var db = _db.NewContext();
         var importer = new TorrentImportService(
             db, null!, null!, null!, null!, null!, _settings, null!, new RecordingInbox(),
-            NullLogger<TorrentImportService>.Instance);
+            NullLogger<TorrentImportService>.Instance, pollState);
         var item = new DownloadQueueItem { SeriesId = _seriesId, ReleaseInfoJson = Release(hash, addedBeforeGrab: addedBeforeGrab) };
         await importer.MarkForClientRemovalAsync(item, outcome, settledByUser, CancellationToken.None);
         return item;
@@ -188,6 +189,36 @@ public class TorrentRemovalTests : IDisposable
         var item = await MarkAsync(Imported(), addedBeforeGrab: addedBeforeGrab);
 
         Assert.Null(item.ClientRemovalPendingAt);
+    }
+
+    [Fact]
+    public async Task An_empty_run_skips_the_queue_until_an_import_marks_a_removal()
+    {
+        var pollState = new TorrentPollState(TimeProvider.System);
+        await RunAsync(pollState);
+        Assert.True(pollState.CanSkipRemovals);
+
+        SeedPending();
+        _client.Torrents.Add(Torrent());
+        await RunAsync(pollState);
+        Assert.Empty(_client.Removed);
+
+        await MarkAsync(Imported(), pollState: pollState);
+        Assert.False(pollState.CanSkipRemovals);
+        await RunAsync(pollState);
+
+        Assert.Equal([(Hash, true)], _client.Removed);
+    }
+
+    [Fact]
+    public async Task A_run_that_found_rows_does_not_skip_the_next()
+    {
+        var pollState = new TorrentPollState(TimeProvider.System);
+        SeedPending();
+
+        await RunAsync(pollState);
+
+        Assert.False(pollState.CanSkipRemovals);
     }
 
     [Fact]
