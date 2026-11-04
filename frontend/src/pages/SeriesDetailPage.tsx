@@ -2774,7 +2774,7 @@ function SeriesDetailBody() {
                   )}
                   {fileMissingFilterCount > 0 && (
                       <Group gap="xs" wrap="nowrap" align="center" role="status">
-                        <Group gap={6} wrap="nowrap" align="center">
+                        <Group gap={6} wrap="nowrap" align="center" style={{ flex: 1, minWidth: 0 }}>
                           <IconAlertTriangle size={16} style={{ flexShrink: 0, color: 'var(--warn)' }} />
                           <Text size="sm" c="var(--warn)" className="tnum">
                             <Plural
@@ -2785,7 +2785,7 @@ function SeriesDetailBody() {
                           </Text>
                         </Group>
                         {canEditMetadata && (
-                            <Button size="xs" variant="default" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
+                            <Button size="xs" variant="default" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)} style={{ flexShrink: 0 }}>
                               <Trans>Relink files</Trans>
                             </Button>
                         )}
