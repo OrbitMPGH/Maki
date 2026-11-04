@@ -8012,6 +8012,10 @@ msgstr ""
 msgid "Downloads now try {bestName} first."
 msgstr "ダウンロードは{bestName}を最初に試すようになりました。"
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Downloads now try {bestName} first. Sources that could not be measured are tried last."
+msgstr ""
+
 #: src/components/QueuePause.tsx
 #, fuzzy
 msgid "Downloads paused"

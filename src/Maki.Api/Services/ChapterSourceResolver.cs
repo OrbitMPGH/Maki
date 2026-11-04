@@ -76,11 +76,12 @@ public class ChapterSourceResolver(
     /// falls through to the priority order and can land straight back on a mapping that just failed.
     /// <paramref name="onlyPreferred"/> turns that fallthrough off: the user picked this source's copy,
     /// and landing on another source would hand them a file they never chose.
+    /// <paramref name="lastResortSources"/> (paused or cooling down) are tried only after every other one.
     /// </summary>
     public async Task<ResolvedChapterSource> ResolveAsync(
         MakiDbContext db, Chapter chapter, int? preferMappingId, CancellationToken ct,
         IReadOnlyCollection<int>? excludeMappingIds = null, bool requireExactMatch = false,
-        bool onlyPreferred = false)
+        bool onlyPreferred = false, IReadOnlySet<string>? lastResortSources = null)
     {
         var disabledSources = await sourceAvailability.DisabledAsync(ct);
         var query = db.SourceMappings
@@ -98,6 +99,7 @@ public class ChapterSourceResolver(
 
         var mappings = (await OrderAsync(db, chapter.SeriesId, await query.ToListAsync(ct), ct))
             .OrderBy(m => m.Id == preferMappingId ? 0 : 1)
+            .ThenBy(m => lastResortSources?.Contains(m.SourceName) == true ? 1 : 0)
             .ToList();
 
         if (mappings.Count == 0)

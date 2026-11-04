@@ -6587,6 +6587,10 @@ msgstr "Downloads and torrent imports are converted in the background once they 
 msgid "Downloads now try {bestName} first."
 msgstr "Downloads now try {bestName} first."
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Downloads now try {bestName} first. Sources that could not be measured are tried last."
+msgstr "Downloads now try {bestName} first. Sources that could not be measured are tried last."
+
 #: src/components/QueuePause.tsx
 msgid "Downloads paused"
 msgstr "Downloads paused"

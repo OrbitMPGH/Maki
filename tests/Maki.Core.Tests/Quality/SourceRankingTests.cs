@@ -30,6 +30,23 @@ public class SourceRankingTests
     }
 
     [Fact]
+    public void A_measured_source_beats_an_unmeasured_one_from_a_better_tier_but_not_a_disallowed_tier()
+    {
+        var profile = Profile(p => p.Tiers =
+        [
+            new ProfileTier(QualityTier.Official, false),
+            new ProfileTier(QualityTier.Scanlator, true),
+            new ProfileTier(QualityTier.Aggregator, true)
+        ]);
+
+        Assert.Equal([2, 3, 1, 4], Order(profile,
+            Entry(1, 1, QualityTier.Scanlator, 50) with { Measured = false },
+            Entry(2, 2, QualityTier.Aggregator, 0),
+            Entry(3, 3, QualityTier.Aggregator, -5),
+            Entry(4, 4, QualityTier.Official, 90)));
+    }
+
+    [Fact]
     public void Priority_breaks_ties_then_id()
     {
         Assert.Equal([2, 1, 3], Order(Profile(),

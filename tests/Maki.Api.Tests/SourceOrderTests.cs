@@ -91,7 +91,7 @@ public sealed class SourceOrderTests : IDisposable
     }
 
     [Fact]
-    public async Task A_source_unmeasured_here_is_judged_by_its_record_on_other_series()
+    public async Task A_source_unmeasured_here_ranks_after_measured_ones_whatever_its_record_elsewhere()
     {
         var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
         using (var seed = _db.NewContext())
@@ -117,7 +117,7 @@ public sealed class SourceOrderTests : IDisposable
 
         using var db = _db.NewContext();
 
-        Assert.Equal([fresh, good, poor], await OrderAsync(db, seriesId));
+        Assert.Equal([good, poor, fresh], await OrderAsync(db, seriesId));
     }
 
     [Fact]
@@ -142,5 +142,19 @@ public sealed class SourceOrderTests : IDisposable
 
         Assert.Equal(good, best.Mapping.Id);
         Assert.Equal(poor, pinned.Mapping.Id);
+    }
+
+    [Fact]
+    public async Task A_held_source_is_resolved_only_after_every_other_one()
+    {
+        var (seriesId, poor, _, _) = Seed(SourceOrderMode.Quality, null);
+        var resolver = Sources.Resolver(Registry);
+        using var db = _db.NewContext();
+        var chapter = new Chapter { SeriesId = seriesId, Number = 1, NumberRaw = "1" };
+
+        var resolved = await resolver.ResolveAsync(db, chapter, null, CancellationToken.None,
+            lastResortSources: new HashSet<string> { "good" });
+
+        Assert.Equal(poor, resolved.Mapping.Id);
     }
 }
