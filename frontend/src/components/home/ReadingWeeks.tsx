@@ -143,9 +143,9 @@ export function ReadingWeeks({
               data-tip={currentStreakLabel}
             >
               <IconFlame size={16} aria-hidden />
-              {formatNumber(currentStreak)}
+              <span className="reading-weeks-streak-n">{formatNumber(currentStreak)}</span>
               <span className="reading-weeks-streak-l" aria-hidden>
-                <Trans>day streak</Trans>
+                {plural(currentStreak, { one: '#-day streak', other: '#-day streak' })}
               </span>
             </span>
           )}
@@ -226,7 +226,7 @@ export function ReadingWeeks({
 
         {!goal && (
           <span className="reading-weeks-week tnum">
-            {plural(weekChapters, { one: '# chapter this week', other: '# chapters this week' })}
+            {plural(weekChapters, { one: '# read this week', other: '# read this week' })}
           </span>
         )}
 

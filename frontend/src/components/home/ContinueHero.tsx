@@ -114,6 +114,7 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
   const lastRead = relativeTime(item.lastReadAt, 'narrow')
   const { seriesTitle, chapterLabel, unreadChapters, pageCount } = item
   const pageNumber = item.page + 1
+  const unreadLabel = plural(unreadChapters, { one: '# unread', other: '# unread' })
 
   return (
     <div className={item.coverAccent ? 'continue-hero has-accent' : 'continue-hero'} style={accentStyle(item)}>
@@ -161,6 +162,8 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
                 </Trans>
               </span>
             )}
+            {/* The phone's place for the count; the block under the bar is hidden there. */}
+            {unreadChapters > 0 && <span className="continue-hero-chapter-unread">{unreadLabel}</span>}
           </div>
 
           {hasProgress && (
@@ -177,9 +180,7 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
           )}
 
           {unreadChapters > 0 && (
-            <span className="continue-hero-unread tnum">
-              {plural(unreadChapters, { one: '# unread', other: '# unread' })}
-            </span>
+            <span className="continue-hero-unread tnum">{unreadLabel}</span>
           )}
 
           <div className="continue-hero-actions">

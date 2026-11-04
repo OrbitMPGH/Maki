@@ -1122,6 +1122,10 @@ msgstr "{created, plural, other {시리즈 #개 추가됨}}"
 #~ msgstr "{currentStreak, plural, other {#일 연속 기록}}"
 
 #: src/components/home/ReadingWeeks.tsx
+msgid "{currentStreak, plural, one {#-day streak} other {#-day streak}}"
+msgstr ""
+
+#: src/components/home/ReadingWeeks.tsx
 msgid "{currentStreak, plural, one {Current streak: # day} other {Current streak: # days}}"
 msgstr ""
 
@@ -1291,6 +1295,10 @@ msgstr "{fileName}(으)로 {filesText} 교체"
 #, fuzzy
 msgid "{files, plural, one {{used} of {limit}, # page} other {{used} of {limit}, # pages}}"
 msgstr "{files, plural, other {{used} / {limit}, 페이지 #개}}"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "{finalVolume} vol."
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -2625,6 +2633,7 @@ msgstr "{total, plural, other {전체 #개 보기}}"
 msgid "{total, plural, one {Wanted for {spanLabel}: {wantedCount} of # chapter} other {Wanted for {spanLabel}: {wantedCount} of # chapters}}"
 msgstr "{total, plural, other {{spanLabel}에서 원함: 챕터 #개 중 {wantedCount}개}}"
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
@@ -2851,8 +2860,12 @@ msgstr ""
 
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
-msgid "{weekChapters, plural, one {# chapter this week} other {# chapters this week}}"
-msgstr "{weekChapters, plural, other {이번 주 챕터 #개}}"
+#~ msgid "{weekChapters, plural, one {# chapter this week} other {# chapters this week}}"
+#~ msgstr "{weekChapters, plural, other {이번 주 챕터 #개}}"
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "{weekChapters, plural, one {# read this week} other {# read this week}}"
+msgstr ""
 
 #: src/pages/stats/charts/HourMatrix.tsx
 #, fuzzy
@@ -7238,8 +7251,8 @@ msgstr "날짜별"
 
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
-msgid "day streak"
-msgstr "일 연속 기록"
+#~ msgid "day streak"
+#~ msgstr "일 연속 기록"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy

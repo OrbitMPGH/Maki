@@ -181,10 +181,13 @@ export function DiscoverHero({
   const band = ratingBandVisual(score ?? 0)
   // `id` is a stable key: `label` is translated text, and keying the row off it would remount the
   // whole figures block on a language switch.
+  const year = detail?.year ?? item.year
+  const totalChapters = detail?.totalChapters ?? item.totalChapters
+  const finalVolume = detail?.finalVolume
   const figures = [
-    { id: 'released', label: t`Released`, value: detail?.year ?? item.year },
-    { id: 'chapters', label: t`Chapters`, value: detail?.totalChapters ?? item.totalChapters },
-    { id: 'volumes', label: t`Volumes`, value: detail?.finalVolume },
+    { id: 'released', label: t`Released`, value: year },
+    { id: 'chapters', label: t`Chapters`, value: totalChapters },
+    { id: 'volumes', label: t`Volumes`, value: finalVolume },
   ].filter((f): f is { id: string; label: string; value: number } => f.value != null)
 
   // The three "why" flavours, in the order of how much they claim: what readers did beats what they
@@ -391,6 +394,22 @@ export function DiscoverHero({
                   <Trans>More like this</Trans>
                 </Button>
               </Group>
+
+              {/* Phone only: the score and figures as one line under the buttons. */}
+              <div className="discover-hero-facts">
+                {score != null && (
+                  <span
+                    className="discover-hero-facts-score figure"
+                    style={{ '--band': `var(--${band.token})` } as CSSProperties}
+                  >
+                    <IconStar size={13} />
+                    {formatFixedDecimal(score / 10, 1)}
+                  </span>
+                )}
+                {year != null && <span className="tnum">{year}</span>}
+                {totalChapters != null && <span className="tnum">{t`${totalChapters} ch.`}</span>}
+                {finalVolume != null && <span className="tnum">{t`${finalVolume} vol.`}</span>}
+              </div>
             </Stack>
             </Group>
           </motion.div>

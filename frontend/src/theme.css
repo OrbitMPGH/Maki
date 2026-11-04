@@ -2602,17 +2602,17 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .reading-weeks-week {
   display: none;
 }
-/* Phone: no card, one line at the foot of the hero under a hairline. The streak pill, this week as
-   seven dots (the grid keeps its last row: after the 7 weekday letters come 35 days, and days 1 to
-   28 go) and this week's goal or count on the right. The five-week grid cost a screen of scrolling
-   before Next up. The heading stays for screen readers only. */
+/* Phone: no card, one row at the foot of the hero under a hairline: the flame and streak, this week
+   as seven day squares (the grid keeps its last row: after the 7 weekday letters come 35 days, and
+   days 1 to 28 go) and this week's count. A week goal takes its own line under it. The five-week
+   grid cost a screen of scrolling before Next up. The heading stays for screen readers only. */
 @media (max-width: 36em) {
   .reading-weeks-card {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 10px 16px;
-    padding: 16px 0 0;
+    gap: 10px;
+    padding: 12px 0 0;
     border-top: 1px solid color-mix(in srgb, var(--ink-4) 22%, transparent);
     border-radius: 0;
     background: none;
@@ -2647,21 +2647,26 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   }
   .reading-weeks-streak {
     order: 1;
-    gap: 6px;
-    padding: 5px 11px 5px 9px;
-    background: color-mix(in srgb, var(--surface-2) 80%, transparent);
-    font-size: var(--type-meta);
+    gap: 4px;
+    padding: 0;
+    border: 0;
+    font-size: var(--type-micro);
+    font-weight: var(--fw-semibold);
+  }
+  .reading-weeks-streak svg {
+    width: 14px;
+    height: 14px;
+  }
+  .reading-weeks-streak-n {
+    display: none;
   }
   .reading-weeks-streak-l {
     display: inline;
-    color: var(--ink-3);
-    font-weight: var(--fw-medium);
   }
   .reading-weeks-grid {
     order: 2;
     display: flex;
-    gap: 5px;
-    margin-left: auto;
+    gap: 3px;
   }
   .reading-weeks-weekday,
   .reading-weeks-figures,
@@ -2669,11 +2674,22 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     display: none;
   }
   .reading-weeks-grid > .reading-weeks-day {
-    width: 9px;
-    height: 9px;
+    width: 10px;
+    height: 10px;
     aspect-ratio: auto;
-    border-radius: var(--radius-pill);
+    border-radius: 3px;
     font-size: 0;
+  }
+  /* Read or not is the whole question at this size, so a read day takes the brand over its heat shade. */
+  .reading-weeks-grid > .reading-weeks-day:not([data-empty], [data-future]) {
+    background: var(--brand) !important;
+  }
+  .reading-weeks-grid > .reading-weeks-day[data-empty] {
+    background: transparent;
+  }
+  .reading-weeks-grid > .reading-weeks-day[data-future] {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink-3) 35%, transparent);
   }
   .reading-weeks-day[data-today] {
     box-shadow: inset 0 0 0 1.5px var(--brand-fg);
@@ -2681,18 +2697,16 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   .reading-weeks-day[data-today]:not([style]) {
     background: transparent;
   }
-  /* Its own line: the pill and the dots fill a phone's first one. */
-  .reading-weeks-week,
-  .reading-weeks-goal {
-    order: 3;
-    flex: 1 1 100%;
-  }
   .reading-weeks-week {
+    order: 3;
     display: block;
     color: var(--ink-3);
-    font-size: var(--type-meta);
+    font-size: var(--type-micro);
+    white-space: nowrap;
   }
   .reading-weeks-goal {
+    order: 4;
+    flex: 1 1 100%;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -3680,6 +3694,9 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .discover-hero-actions {
   margin-top: 20px;
 }
+.discover-hero-facts {
+  display: none;
+}
 .discover-hero-reason {
   max-width: 100%;
   overflow: hidden;
@@ -4197,15 +4214,44 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 @media (max-width: 35.9375em) {
   .discover-loading-hero {
-    min-height: 990px;
+    min-height: 820px;
   }
-  /* Two figures fit beside the score on a phone and three do not, so the row grew a line whenever
-     a pick's detail arrived. The figures take their own line from the start. */
-  .discover-hero .hero-stats {
-    flex-basis: 100%;
+  /* The buttons belong on the first screen, so the score, figures and source scores fold into one
+     line under them. The source scores stay in the detail view. */
+  .discover-hero.series-hero[data-compact] .series-hero-poster {
+    width: 150px;
+    height: 225px;
   }
-  .discover-hero .hero-figure-rule {
+  .discover-hero .hero-figures,
+  .discover-hero .discover-hero-sources {
     display: none;
+  }
+  .discover-hero .discover-hero-actions {
+    margin-top: 16px;
+  }
+  .discover-hero .discover-hero-reasons {
+    order: 1;
+  }
+  .discover-hero .discover-hero-facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 14px;
+    margin-top: 16px;
+    font-size: var(--type-body);
+    font-weight: var(--fw-medium);
+    color: var(--ink-2);
+  }
+  .discover-hero-facts-score {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: var(--radius-control);
+    font-weight: var(--fw-bold);
+    color: var(--band);
+    background: color-mix(in srgb, var(--band) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--band) 34%, transparent);
   }
 }
 
@@ -11580,6 +11626,9 @@ button.import-plan-folder-head:hover {
   border-radius: inherit;
   background: var(--tile-accent);
 }
+.continue-hero-chapter-unread {
+  display: none;
+}
 .continue-hero-unread {
   display: inline-flex;
   align-items: center;
@@ -11657,22 +11706,41 @@ button.import-plan-folder-head:hover {
     min-height: 0;
   }
   .continue-hero-body {
-    grid-template-columns: 112px minmax(0, 1fr);
+    grid-template-columns: 96px minmax(0, 1fr);
     column-gap: 14px;
   }
   .continue-hero-body > .home-glance {
     display: block;
+    margin-top: 16px;
   }
   .continue-glance-below {
     display: none;
   }
   .continue-hero-poster {
-    width: 112px;
+    width: 96px;
     grid-row: 1 / span 6;
     align-self: start;
   }
-  .continue-hero-when {
+  .continue-hero-when,
+  .continue-hero-copy > .continue-hero-unread {
     display: none;
+  }
+  .continue-hero-chapter {
+    align-items: center;
+    gap: 4px 8px;
+    margin-top: 10px;
+  }
+  .continue-hero-chapter-unread {
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 7px;
+    border-radius: var(--radius-control);
+    color: var(--tile-accent-fg);
+    background: color-mix(in srgb, var(--tile-accent) 15%, transparent);
+    font-size: var(--type-badge);
+    font-weight: var(--fw-semibold);
+    font-variant-numeric: tabular-nums;
   }
   .continue-hero-copy {
     display: contents;

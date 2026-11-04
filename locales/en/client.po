@@ -930,6 +930,10 @@ msgstr "{created, plural, one {# series added} other {# series added}}"
 #~ msgstr "{currentStreak, plural, one {# day streak} other {# day streak}}"
 
 #: src/components/home/ReadingWeeks.tsx
+msgid "{currentStreak, plural, one {#-day streak} other {#-day streak}}"
+msgstr "{currentStreak, plural, one {#-day streak} other {#-day streak}}"
+
+#: src/components/home/ReadingWeeks.tsx
 msgid "{currentStreak, plural, one {Current streak: # day} other {Current streak: # days}}"
 msgstr "{currentStreak, plural, one {Current streak: # day} other {Current streak: # days}}"
 
@@ -1069,6 +1073,10 @@ msgstr "{fileName} replaced {filesText}"
 #: src/pages/settings/UpscalingSection.tsx
 msgid "{files, plural, one {{used} of {limit}, # page} other {{used} of {limit}, # pages}}"
 msgstr "{files, plural, one {{used} of {limit}, # page} other {{used} of {limit}, # pages}}"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "{finalVolume} vol."
+msgstr "{finalVolume} vol."
 
 #: src/pages/rewind/slides.tsx
 msgid "{finishedCount, plural, one {# series finished} other {# series finished}}"
@@ -2161,6 +2169,7 @@ msgstr "{total, plural, one {Show all #} other {Show all #}}"
 msgid "{total, plural, one {Wanted for {spanLabel}: {wantedCount} of # chapter} other {Wanted for {spanLabel}: {wantedCount} of # chapters}}"
 msgstr "{total, plural, one {Wanted for {spanLabel}: {wantedCount} of # chapter} other {Wanted for {spanLabel}: {wantedCount} of # chapters}}"
 
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
 msgid "{totalChapters} ch."
@@ -2344,8 +2353,12 @@ msgid "{weak, plural, one {# more matches a file by name only. Open it to compar
 msgstr "{weak, plural, one {# more matches a file by name only. Open it to compare before relinking.} other {# more match a file by name only. Open each to compare before relinking.}}"
 
 #: src/components/home/ReadingWeeks.tsx
-msgid "{weekChapters, plural, one {# chapter this week} other {# chapters this week}}"
-msgstr "{weekChapters, plural, one {# chapter this week} other {# chapters this week}}"
+#~ msgid "{weekChapters, plural, one {# chapter this week} other {# chapters this week}}"
+#~ msgstr "{weekChapters, plural, one {# chapter this week} other {# chapters this week}}"
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "{weekChapters, plural, one {# read this week} other {# read this week}}"
+msgstr "{weekChapters, plural, one {# read this week} other {# read this week}}"
 
 #: src/pages/stats/charts/HourMatrix.tsx
 msgid "{weekday} {hourLabel}: {minutes} min"
@@ -5948,8 +5961,8 @@ msgid "Day by day"
 msgstr "Day by day"
 
 #: src/components/home/ReadingWeeks.tsx
-msgid "day streak"
-msgstr "day streak"
+#~ msgid "day streak"
+#~ msgstr "day streak"
 
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "Days active"
