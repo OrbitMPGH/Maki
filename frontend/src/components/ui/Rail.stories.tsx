@@ -61,6 +61,29 @@ export const FitsWithoutScrolling: Story = {
   },
 }
 
+/** Offscreen, the cards are skipped (content-visibility: auto); back on screen the end must still fade. */
+export const KeepsFadeAfterScrollingAway: Story = {
+  decorators: [
+    (Story) => (
+      <>
+        <Story />
+        <div style={{ height: '400vh' }} />
+      </>
+    ),
+  ],
+  play: async ({ canvasElement }) => {
+    const rail = canvasElement.querySelector<HTMLElement>('.discover-rail')!
+    await waitFor(() => expect(rail).toHaveAttribute('data-fade-end'))
+    const page = document.scrollingElement!
+    for (const top of [page.scrollHeight, 0, page.scrollHeight, 0]) {
+      page.scrollTop = top
+      await new Promise((resolve) => setTimeout(resolve, 250))
+    }
+    await waitFor(() => expect(rail).toHaveAttribute('data-fade-end'))
+    await expect(rail.scrollWidth).toBeGreaterThan(rail.clientWidth)
+  },
+}
+
 export const Engine: Story = {
   args: { engine: true },
   play: async ({ canvasElement }) => {

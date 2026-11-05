@@ -238,6 +238,8 @@ export default function RequestsPage() {
         />
       ) : (requests?.length ?? 0) === 0 ? (
         <EmptyState
+          compact
+          framed
           mood="asleep"
           title={filter === 'pending' ? t`No pending requests` : t`Nothing here`}
           description={

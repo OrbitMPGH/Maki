@@ -35,7 +35,7 @@ export const InTheHero: Story = {
   play: async ({ canvas }) => {
     const glance = await canvas.findByRole('region', { name: 'Last 5 weeks' })
     await expect(within(glance).getByText('Read today to keep it going')).toBeVisible()
-    await expect(within(glance).getByLabelText('6 day streak')).toBeVisible()
+    await expect(within(glance).getByLabelText('Current streak: 6 days')).toBeVisible()
     await waitFor(() => expect(within(glance).getByRole('progressbar', { name: 'This week' })).toHaveAttribute('aria-valuenow', '14'))
   },
 }
@@ -45,7 +45,7 @@ export const ReadToday: Story = {
   render: (args) => <ContinueHero items={continueReading} glance={<ReadingWeeks {...args} />} />,
   play: async ({ canvas }) => {
     const glance = await canvas.findByRole('region', { name: 'Last 5 weeks' })
-    await expect(within(glance).getByText('Today counts. Best: 31 days')).toBeVisible()
+    await expect(within(glance).getByText('You read today. Longest streak: 31 days')).toBeVisible()
   },
 }
 
@@ -71,7 +71,7 @@ export const StreaksSwitchedOff: Story = {
   args: { summary: { ...progressSummary, showStreaks: false } },
   play: async ({ canvas }) => {
     const glance = await canvas.findByRole('region', { name: 'Last 5 weeks' })
-    await expect(within(glance).queryByLabelText(/day streak/)).toBeNull()
+    await expect(within(glance).queryByLabelText(/Current streak/)).toBeNull()
     await expect(within(glance).queryByText('Read today to keep it going')).toBeNull()
   },
 }

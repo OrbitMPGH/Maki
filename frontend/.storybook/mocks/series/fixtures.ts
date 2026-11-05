@@ -216,6 +216,8 @@ export interface ChapterShape {
   upgradeable?: number
   /** Cap the chapter count so a story with a long series stays cheap to render. */
   limit?: number
+  /** Chapter numbers whose file record the health scan found gone from disk. */
+  fileMissing?: number[]
 }
 
 export function chaptersFor(id: number, shape: ChapterShape = {}): ChapterDto[] {
@@ -223,6 +225,7 @@ export function chaptersFor(id: number, shape: ChapterShape = {}): ChapterDto[] 
   const count = Math.min(entry.chapters, shape.limit ?? entry.chapters)
   const missing = new Set(shape.missing ?? [])
   const unwanted = new Set(shape.unwanted ?? [])
+  const fileMissing = new Set(shape.fileMissing ?? [])
   const trailing = shape.trailingMissing ?? Math.max(0, count - Math.round(count * 0.92))
   const numbers: number[] = []
   for (let n = 1; n <= count; n++) numbers.push(n)
@@ -246,6 +249,7 @@ export function chaptersFor(id: number, shape: ChapterShape = {}): ChapterDto[] 
       hasFile,
       fileRemovedAt: null,
       fileAutoRemoved: false,
+      fileMissing: hasFile && fileMissing.has(n),
       fileDeleteDueAt: null,
       delistedAt: null,
       filePath: hasFile ? `/library/manga/${entry.title}/${entry.title} - Ch.${n}.cbz` : null,

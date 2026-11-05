@@ -248,7 +248,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
           {standing === undefined ? (
             <ChartSkeleton h={200} />
           ) : !ratings ? (
-            <EmptyState compact title={t`Rate a few series to compare yourself with the crowd.`} />
+            <EmptyState compact mood="asking" title={t`Rate a few series to compare yourself with the crowd.`} />
           ) : (
             <>
               <RatingDumbbell series={ratings.series} />

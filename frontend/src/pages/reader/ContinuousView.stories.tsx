@@ -37,6 +37,20 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+/** Scrolls the strip to its end once the pages there have loaded: the meter waits for them. */
+async function scrollToEnd(canvasElement: HTMLElement): Promise<HTMLElement> {
+  const scroller = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+  await waitFor(() => expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight * 2))
+  const atEnd = () => expect(scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight).toBeLessThan(2)
+  scroller.scrollTop = scroller.scrollHeight
+  await waitFor(atEnd)
+  const pages = [...canvasElement.querySelectorAll<HTMLImageElement>('img.reader-page')]
+  await waitFor(() => expect(pages.every((page) => page.complete)).toBe(true))
+  scroller.scrollTop = scroller.scrollHeight
+  await waitFor(atEnd)
+  return scroller
+}
+
 export const Strip: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('img', { name: 'Chapter 40 - page 1' })).toBeVisible()
@@ -77,12 +91,7 @@ export const ResumesPartWayDown: Story = {
  */
 export const TouchPullAndRelease: Story = {
   play: async ({ canvas, canvasElement, args }) => {
-    const scroller = canvasElement.querySelector<HTMLElement>('.reader-surface')!
-    await waitFor(() => expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight * 2))
-    scroller.scrollTop = scroller.scrollHeight
-    await waitFor(() =>
-      expect(scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight).toBeLessThan(2),
-    )
+    const scroller = await scrollToEnd(canvasElement)
 
     const touch = (y: number) => new Touch({ identifier: 1, target: scroller, clientX: 100, clientY: y })
     const send = (type: string, y?: number) =>
@@ -117,12 +126,7 @@ export const TouchPullAndRelease: Story = {
  */
 export const WheelNudgeStaysQuiet: Story = {
   play: async ({ canvas, canvasElement }) => {
-    const scroller = canvasElement.querySelector<HTMLElement>('.reader-surface')!
-    await waitFor(() => expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight * 2))
-    scroller.scrollTop = scroller.scrollHeight
-    await waitFor(() =>
-      expect(scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight).toBeLessThan(2),
-    )
+    const scroller = await scrollToEnd(canvasElement)
     const wheel = (deltaY: number) => scroller.dispatchEvent(new WheelEvent('wheel', { deltaY, bubbles: true }))
     const settle = () => new Promise((resolve) => setTimeout(resolve, 100))
 
@@ -141,6 +145,56 @@ export const WheelNudgeStaysQuiet: Story = {
 
     wheel(-100)
     await waitFor(() => expect(canvas.queryByText('Scroll for next chapter')).toBeNull())
+  },
+}
+
+/**
+ * A fast scroll keeps sending wheel events after the meter fills. While the next chapter loads the
+ * ring stays full and the extra input neither restarts it nor asks for the chapter again.
+ */
+export const FullMeterHoldsWhileOpening: Story = {
+  args: { onPastEnd: fn(() => true), nextLabel: 'Chapter 41' },
+  play: async ({ canvas, canvasElement, args }) => {
+    const scroller = await scrollToEnd(canvasElement)
+    const wheel = (deltaY: number) => scroller.dispatchEvent(new WheelEvent('wheel', { deltaY, bubbles: true }))
+
+    for (let i = 0; i < 25; i++) wheel(120)
+    await waitFor(() => expect(args.onPastEnd).toHaveBeenCalledTimes(1))
+    await expect(await canvas.findByText('Opening')).toBeVisible()
+    const hint = canvasElement.querySelector('.reader-next-chapter-hint')!
+    await waitFor(() => expect(hint).toHaveAttribute('data-state', 'ready'))
+    await expect(hint).not.toHaveAttribute('data-leaving')
+    await expect(args.onPastEnd).toHaveBeenCalledTimes(1)
+  },
+}
+
+/**
+ * The last page landing taller than its placeholder moves the bottom away mid-fill. The meter holds
+ * while the reader scrolls on down and carries on from there, rather than emptying and starting over.
+ */
+export const MeterHoldsWhenTheEndGrows: Story = {
+  args: { onPastEnd: fn(() => true), nextLabel: 'Chapter 41' },
+  play: async ({ canvasElement, args }) => {
+    const scroller = await scrollToEnd(canvasElement)
+    const pages = [...canvasElement.querySelectorAll<HTMLImageElement>('img.reader-page')]
+    const wheel = (deltaY: number) => scroller.dispatchEvent(new WheelEvent('wheel', { deltaY, bubbles: true }))
+
+    for (let i = 0; i < 5; i++) wheel(120)
+    const hint = await waitFor(() => {
+      const element = canvasElement.querySelector('.reader-next-chapter-hint')
+      expect(element).not.toBeNull()
+      return element!
+    })
+
+    pages.at(-1)!.style.paddingBottom = '400px'
+    wheel(120)
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    await expect(hint).not.toHaveAttribute('data-leaving')
+
+    scroller.scrollTop = scroller.scrollHeight
+    await waitFor(() => expect(scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight).toBeLessThan(2))
+    for (let i = 0; i < 4; i++) wheel(120)
+    await waitFor(() => expect(args.onPastEnd).toHaveBeenCalledTimes(1))
   },
 }
 

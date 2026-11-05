@@ -1,29 +1,31 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react'
-import { Badge, Box, Button, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
+import { ActionIcon, Badge, Box, Button, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
-import { IconArrowRight, IconPlus, IconStar } from '../../lib/icons'
+import {
+  IconArrowRight,
+  IconPlayerPauseFilled,
+  IconPlayerPlayFilled,
+  IconPlus,
+  IconStar,
+} from '../../lib/icons'
 import { useNavigate } from 'react-router-dom'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion, useAnimate, useReducedMotion } from 'motion/react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useRecommendationDetail, type RecommendationItem } from '../../api/hooks'
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
 import { HeroBackdrop } from '../series/HeroBackdrop'
-import {
-  contentRatingToken,
-  contentRatingVisual,
-  ratingBandVisual,
-  seriesStatusVisual,
-  statusToken,
-} from '../ui/status'
+import { ratingBandVisual, seriesStatusVisual, statusToken } from '../ui/status'
+import { ContentRatingChip } from '../ContentRatingChip'
 import { relationPhrase } from '../ui/DiscoverRail'
 import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
 import { useLabel } from '../../i18n-context'
 import { formatFixedDecimal } from '../../format'
 import { onRovingKeyDown } from '../../lib/rovingFocus'
+import { CINEMATIC, DUR, DWELL, EASE, paced } from '../../lib/motion'
 import { MetaList } from '../ui/MetaList'
 
 /** How long one pick holds the band before the next takes it. */
-const ROTATE_MS = 5000
+const ROTATE_MS = DWELL.heroPick * 1000
 
 /**
  * How many picks the list carries. The list is the tallest thing in the band, so this number is
@@ -127,10 +129,11 @@ export function DiscoverHero({
   const picks = items.slice(0, stacked ? PICKS_NARROW : shortViewport ? PICKS_SHORT : PICKS)
   const [activeIndex, setActive] = useState(0)
   const [paused, setPaused] = useState(false)
+  const [userPaused, setUserPaused] = useState(false)
   const [autoRotate, setAutoRotate] = useState(true)
   const [heroEl, setHeroEl] = useState<HTMLDivElement | null>(null)
   const watched = useWatched(heroEl)
-  const halted = paused || !watched
+  const halted = paused || userPaused || !watched
   const reducedMotion = useReducedMotion()
   // Called up here, unconditionally, rather than after the `if (!item) return null` below: both are
   // hooks, and the rule holds even though `item` is never actually undefined once Discover is the
@@ -142,7 +145,36 @@ export function DiscoverHero({
   // Clamped rather than reset: the list shortens when the window does, and an index left pointing
   // past the end would blank the band mid-resize.
   const active = Math.min(activeIndex, picks.length - 1)
-  const item = picks[active] as RecommendationItem | undefined
+  const current = picks[active] as RecommendationItem | undefined
+  // The feature lags the selection by a short fade, so its text and buttons always describe the same
+  // pick and never sit half-faded over the next one.
+  const [shownId, setShownId] = useState(current?.providerId)
+  const item = picks.find((p) => p.providerId === shownId) ?? current
+  const [swapScope, animateSwap] = useAnimate<HTMLDivElement>()
+  const target = current?.providerId
+  const showing = item?.providerId
+
+  useEffect(() => {
+    const parts = Array.from(swapScope.current?.querySelectorAll<HTMLElement>('[data-hero-swap]') ?? [])
+    if (!target) return
+    if (target === showing) {
+      if (parts.length === 0) return
+      const fadeIn = animateSwap(parts, { opacity: 1 }, { duration: reducedMotion ? 0 : paced(DUR.base), ease: EASE })
+      return () => fadeIn.stop()
+    }
+    if (reducedMotion || parts.length === 0) {
+      setShownId(target)
+      return
+    }
+    let live = true
+    const fadeOut = animateSwap(parts, { opacity: 0 }, { duration: paced(DUR.fast), ease: 'linear' })
+    void fadeOut.then(() => live && setShownId(target))
+    return () => {
+      live = false
+      fadeOut.stop()
+    }
+  }, [animateSwap, reducedMotion, showing, swapScope, target])
+
   const { data: detail } = useRecommendationDetail(item?.providerId ?? null)
   const titleRef = useTitleFit(item?.title)
   const ownedArchived = useIsArchivedSeries(item ? seriesIdFor?.(item) : null)
@@ -159,7 +191,7 @@ export function DiscoverHero({
     return () => window.clearTimeout(id)
   }, [active, canAutoRotate, halted, picks.length])
 
-  if (!item) return null
+  if (!item || !current) return null
 
   // Everything here is on the rail item as well as the detail response, so the band is complete on
   // the first frame and the detail request fills in behind it rather than rearranging it.
@@ -167,16 +199,17 @@ export function DiscoverHero({
   const { title, becauseOfTitle, relationKind, relatedToTitle } = item
   const ownedSeriesId = seriesIdFor?.(item) ?? null
   const status = seriesStatusVisual(detail?.status ?? item.status)
-  const contentRating = contentRatingVisual(detail?.contentRating ?? null)
-  const ratingToken = contentRatingToken(detail?.contentRating)
   const score = detail?.rating ?? item.rating
   const band = ratingBandVisual(score ?? 0)
   // `id` is a stable key: `label` is translated text, and keying the row off it would remount the
   // whole figures block on a language switch.
+  const year = detail?.year ?? item.year
+  const totalChapters = detail?.totalChapters ?? item.totalChapters
+  const finalVolume = detail?.finalVolume
   const figures = [
-    { id: 'released', label: t`Released`, value: detail?.year ?? item.year },
-    { id: 'chapters', label: t`Chapters`, value: detail?.totalChapters ?? item.totalChapters },
-    { id: 'volumes', label: t`Volumes`, value: detail?.finalVolume },
+    { id: 'released', label: t`Released`, value: year },
+    { id: 'chapters', label: t`Chapters`, value: totalChapters },
+    { id: 'volumes', label: t`Volumes`, value: finalVolume },
   ].filter((f): f is { id: string; label: string; value: number } => f.value != null)
 
   // The three "why" flavours, in the order of how much they claim: what readers did beats what they
@@ -187,7 +220,7 @@ export function DiscoverHero({
     item.coRecommended
       ? { id: 'co-recommended', text: t`Readers like you also recommended this` }
       : null,
-    item.tasteMatch ? { id: 'taste-match', text: t`Close to your reading in taste space` } : null,
+    item.tasteMatch ? { id: 'taste-match', text: t`Close to what you read` } : null,
     becauseOfTitle ? { id: 'because-of-title', text: t`Because you read ${becauseOfTitle}` } : null,
     relationKind && relatedToTitle
       ? { id: 'relation', text: relationPhrase(relationKind, relatedToTitle) }
@@ -213,7 +246,7 @@ export function DiscoverHero({
           initial={reducedMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={reducedMotion ? undefined : { opacity: 0 }}
-          transition={{ duration: 0.55, ease: 'easeOut' }}
+          transition={{ duration: paced(CINEMATIC.fade), ease: EASE }}
         >
           <HeroBackdrop coverUrl={cover} />
         </motion.div>
@@ -221,17 +254,12 @@ export function DiscoverHero({
 
       <div className="series-hero-body">
         <div className="series-hero-content">
-          <motion.div
-            key={item.providerId}
-            className="discover-hero-feature"
-            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          >
+          <div ref={swapScope} className="discover-hero-feature">
             <Group align="flex-start" gap={26} wrap="nowrap" className="discover-hero-feature-row">
             {cover && (
               <button
                 type="button"
+                data-hero-swap
                 className="discover-hero-poster"
                 data-series-cover={ownedSeriesId ?? undefined}
                 onClick={() => onOpen(item)}
@@ -247,13 +275,13 @@ export function DiscoverHero({
               </Text>
 
               {/* The page's h1 is "Discover"; the featured pick is a section of it. */}
-              <Title order={2} className="series-hero-title" ref={titleRef}>
+              <Title order={2} className="series-hero-title" ref={titleRef} data-hero-swap>
                 <button type="button" className="discover-hero-title" title={title} onClick={() => onOpen(item)}>
                   {title}
                 </button>
               </Title>
 
-              <Group gap={9} wrap="wrap" className="discover-hero-pills">
+              <Group gap={9} wrap="wrap" className="discover-hero-pills" data-hero-swap>
                 <span
                   className="series-hero-status"
                   style={{
@@ -264,26 +292,10 @@ export function DiscoverHero({
                   <status.Icon size={14} />
                   {renderLabel(status.label)}
                 </span>
-                {contentRating && (
-                  <span
-                    className="series-hero-status"
-                    data-quiet={ratingToken ? undefined : true}
-                    style={
-                      ratingToken
-                        ? {
-                            color: `var(--${ratingToken})`,
-                            background: `var(--${ratingToken}-soft)`,
-                          }
-                        : undefined
-                    }
-                  >
-                    <contentRating.Icon size={14} />
-                    {renderLabel(contentRating.label)}
-                  </span>
-                )}
+                <ContentRatingChip rating={detail?.contentRating} />
               </Group>
 
-              <div className="hero-figures">
+              <div className="hero-figures" data-hero-swap>
                 {score != null && (
                   <span
                     className="hero-score"
@@ -312,18 +324,18 @@ export function DiscoverHero({
                   appears from nothing shoves the buttons down mid-read. Row spacing is in the
                   stylesheet rather than on `mt` props: it is what the band's height is made of, and
                   a short viewport tunes all of it at once. */}
-              <Group gap="xs" align="center" className="discover-hero-sources">
+              <Group gap="xs" align="center" className="discover-hero-sources" data-hero-swap>
                 {detail?.sourceRatings.map((r) => (
                   <Tooltip key={r.source} label={r.source} withArrow>
                     <Badge
                       size="sm"
-                      variant="outline"
+                      variant="light"
                       color="var(--neutral)"
                       leftSection={
                         <MetadataSiteIcon
                           site={r.source.toLowerCase()}
                           monogram={r.source.slice(0, 2).toUpperCase()}
-                          size={11}
+                          size={13}
                         />
                       }
                     >
@@ -334,13 +346,15 @@ export function DiscoverHero({
               </Group>
 
               {/* Always rendered: an empty row still holds its height. */}
-              <Group gap={7} wrap="wrap" className="discover-hero-reasons">
-                {reasons.slice(0, 3).map((r) => (
-                  <span key={r.id} className="discover-hero-reason" title={r.text}>
-                    {r.text}
-                  </span>
-                ))}
-              </Group>
+              <div className="discover-hero-reasons" data-hero-swap>
+                <MetaList
+                  items={reasons.slice(0, 3).map((r) => (
+                    <span key={r.id} className="discover-hero-reason" title={r.text}>
+                      {r.text}
+                    </span>
+                  ))}
+                />
+              </div>
 
               <Group gap="xs" className="discover-hero-actions">
                 {/* Adding needs a root folder, the caller's permissions and the request path for
@@ -383,9 +397,25 @@ export function DiscoverHero({
                   <Trans>More like this</Trans>
                 </Button>
               </Group>
+
+              {/* Phone only: the score and figures as one line under the buttons. */}
+              <div className="discover-hero-facts" data-hero-swap>
+                {score != null && (
+                  <span
+                    className="discover-hero-facts-score figure"
+                    style={{ '--band': `var(--${band.token})` } as CSSProperties}
+                  >
+                    <IconStar size={13} />
+                    {formatFixedDecimal(score / 10, 1)}
+                  </span>
+                )}
+                {year != null && <span className="tnum">{year}</span>}
+                {totalChapters != null && <span className="tnum">{t`${totalChapters} ch.`}</span>}
+                {finalVolume != null && <span className="tnum">{t`${finalVolume} vol.`}</span>}
+              </div>
             </Stack>
             </Group>
-          </motion.div>
+          </div>
 
           <div className="discover-hero-strip">
             <div className="discover-hero-strip-heading">
@@ -393,9 +423,22 @@ export function DiscoverHero({
                 <Trans>Also for you</Trans>
               </Text>
               {canAutoRotate && (
-                <Text className="discover-hero-strip-mode">
-                  {paused ? <Trans>Paused</Trans> : <Trans>Auto</Trans>}
-                </Text>
+                <div className="discover-hero-strip-controls">
+                  <Text className="discover-hero-strip-mode">
+                    {paused || userPaused ? <Trans>Paused</Trans> : <Trans>Auto</Trans>}
+                  </Text>
+                  <ActionIcon
+                    className="discover-hero-pause"
+                    variant="subtle"
+                    color="var(--ink-2)"
+                    size={26}
+                    aria-label={userPaused ? t`Resume rotating picks` : t`Pause rotating picks`}
+                    aria-pressed={userPaused}
+                    onClick={() => setUserPaused((p) => !p)}
+                  >
+                    {userPaused ? <IconPlayerPlayFilled size={14} /> : <IconPlayerPauseFilled size={14} />}
+                  </ActionIcon>
+                </div>
               )}
             </div>
             <div
@@ -406,7 +449,7 @@ export function DiscoverHero({
             >
               {picks.map((p, n) => {
                 const pickStatus = seriesStatusVisual(p.status)
-                const matches = [...p.matchedTags, ...p.matchedGenres].slice(0, 2)
+                const matches = [...p.matchedTags, ...p.matchedGenres].slice(0, 3)
                 const thumbnail = p.thumbUrl ?? p.coverUrl
 
                 return (
@@ -443,12 +486,17 @@ export function DiscoverHero({
                         )}
                       </span>
                       {matches.length > 0 && (
-                        <span className="discover-hero-strip-match"><MetaList inline items={matches} /></span>
+                        <MetaList
+                          className="discover-hero-strip-match"
+                          items={matches.map((m) => (
+                            <span key={m}>{m}</span>
+                          ))}
+                        />
                       )}
                     </span>
                     {n === active && canAutoRotate && !halted && (
                       <span className="discover-hero-strip-progress" aria-hidden>
-                        <span key={item.providerId} />
+                        <span key={current.providerId} />
                       </span>
                     )}
                   </button>

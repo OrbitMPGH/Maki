@@ -1,10 +1,12 @@
 import { i18n } from '@lingui/core'
+import { FieldAction } from './FieldAction'
 import { ssoLinkErrorLabel } from '../../api/ssoErrors'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   Alert,
   Badge,
+  Box,
   Button,
   Code,
   Divider,
@@ -15,6 +17,7 @@ import {
   Table,
   Text,
   TextInput,
+  Tooltip,
   VisuallyHidden,
 } from '@mantine/core'
 import { notifications } from '../../lib/toast'
@@ -77,7 +80,6 @@ export function SignInSection() {
         <PasswordCard />
         <Divider />
         <TwoFactorCard />
-        <Divider />
         <SsoCard />
         <Divider />
         <SessionsCard />
@@ -160,70 +162,75 @@ function SsoCard() {
   const displayName = sso.displayName || t`Single sign-on`
   const oidcUserName = me?.oidcUserName
 
+  // Brings its own divider: with SSO off the card is gone, and a divider left in the parent stacked
+  // on the next one.
   return (
-    <Stack gap="xs">
-      <Text fw={600} size="sm">
-        <Trans>Single sign-on</Trans>
-      </Text>
-      {me?.oidcLinked ? (
-        <Group gap="xs">
-          <Badge color="var(--ok)" variant="light">
-            <Trans>Linked</Trans>
-          </Badge>
-          <Text size="xs" c="var(--ink-3)">
-            <Trans>
-              Signed in as <Code>{oidcUserName}</Code> on {displayName}.
-            </Trans>
-          </Text>
-          <Button
-            size="compact-xs"
-            variant="subtle"
-            color="var(--danger)"
-            loading={unlink.isPending}
-            onClick={() =>
-              unlink.mutate(undefined, {
-                onSuccess: () =>
-                  notifications.show({ message: now`Single sign-on removed from your account`, color: 'var(--ok)' }),
-              })
-            }
-          >
-            <Trans>Remove</Trans>
-          </Button>
-        </Group>
-      ) : (
-        <Stack gap="xs">
-          <Text size="xs" c="var(--ink-3)">
-            <Trans>
-              Not linked yet. Confirm your password, then sign in with {displayName} to link it to
-              this account.
-            </Trans>
-          </Text>
-          <Group
-            component="form"
-            align="flex-end"
-            onSubmit={(e: FormEvent) => {
-              e.preventDefault()
-              confirmLink.mutate(linkPassword, {
-                // The link is a top-level navigation to the provider; the confirmation it needs
-                // was just set as a cookie.
-                onSuccess: () => window.location.assign('/api/v1/auth/oidc/link'),
-              })
-            }}
-          >
-            <PasswordInput
-              label={t`Confirm your password to link`}
-              autoComplete="current-password"
-              value={linkPassword}
-              onChange={(e) => setLinkPassword(e.currentTarget.value)}
-              w={260}
-            />
-            <Button type="submit" size="xs" variant="default" loading={confirmLink.isPending}>
-              <Trans>Link {displayName}</Trans>
+    <>
+      <Divider />
+      <Stack gap="xs">
+        <Text fw={600} size="sm">
+          <Trans>Single sign-on</Trans>
+        </Text>
+        {me?.oidcLinked ? (
+          <Group gap="xs">
+            <Badge color="var(--ok)" variant="light">
+              <Trans>Linked</Trans>
+            </Badge>
+            <Text size="xs" c="var(--ink-3)">
+              <Trans>
+                Signed in as <Code>{oidcUserName}</Code> on {displayName}.
+              </Trans>
+            </Text>
+            <Button
+              size="compact-xs"
+              variant="light"
+              color="var(--danger)"
+              loading={unlink.isPending}
+              onClick={() =>
+                unlink.mutate(undefined, {
+                  onSuccess: () =>
+                    notifications.show({ message: now`Single sign-on removed from your account`, color: 'var(--ok)' }),
+                })
+              }
+            >
+              <Trans>Remove</Trans>
             </Button>
           </Group>
-        </Stack>
-      )}
-    </Stack>
+        ) : (
+          <Stack gap="xs">
+            <Text size="xs" c="var(--ink-3)">
+              <Trans>
+                Not linked yet. Confirm your password, then sign in with {displayName} to link it to
+                this account.
+              </Trans>
+            </Text>
+            <Group
+              component="form"
+              align="flex-end"
+              onSubmit={(e: FormEvent) => {
+                e.preventDefault()
+                confirmLink.mutate(linkPassword, {
+                  // The link is a top-level navigation to the provider; the confirmation it needs
+                  // was just set as a cookie.
+                  onSuccess: () => window.location.assign('/api/v1/auth/oidc/link'),
+                })
+              }}
+            >
+              <PasswordInput
+                label={t`Confirm your password to link`}
+                autoComplete="current-password"
+                value={linkPassword}
+                onChange={(e) => setLinkPassword(e.currentTarget.value)}
+                w={260}
+              />
+              <Button type="submit" size="xs" variant="default" loading={confirmLink.isPending}>
+                <Trans>Link {displayName}</Trans>
+              </Button>
+            </Group>
+          </Stack>
+        )}
+      </Stack>
+    </>
   )
 }
 
@@ -232,19 +239,23 @@ function PasswordCard() {
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const change = useChangePassword()
+  const blocked = !current
+    ? t`Enter your current password first`
+    : next.length < 10
+      ? t`The new password needs at least 10 characters`
+      : null
 
   return (
     <Stack gap="xs">
       <Text fw={600} size="sm">
         <Trans>Password</Trans>
       </Text>
-      <Group
+      <Box
         component="form"
-        align="flex-end"
-        wrap="wrap"
+        className="settings-field-grid"
         onSubmit={(e: FormEvent) => {
           e.preventDefault()
-          if (!current || next.length < 10) return
+          if (blocked) return
           change.mutate(
             { currentPassword: current, newPassword: next },
             {
@@ -267,7 +278,6 @@ function PasswordCard() {
           autoComplete="current-password"
           value={current}
           onChange={(e) => setCurrent(e.currentTarget.value)}
-          w={200}
         />
         <PasswordInput
           label={t`New`}
@@ -275,12 +285,23 @@ function PasswordCard() {
           autoComplete="new-password"
           value={next}
           onChange={(e) => setNext(e.currentTarget.value)}
-          w={200}
         />
-        <Button type="submit" loading={change.isPending} disabled={!current || next.length < 10}>
-          <Trans>Change</Trans>
-        </Button>
-      </Group>
+        {/* The hint sits under New, so the row aligns on the labels and the button takes a blank one. */}
+        <FieldAction>
+          {/* data-disabled rather than disabled: a disabled button gets no hover or focus, so the
+              tooltip saying why could never show. The submit handler holds the guard. */}
+          <Tooltip label={blocked} disabled={!blocked} events={{ hover: true, focus: true, touch: true }}>
+            <Button
+              type="submit"
+              loading={change.isPending}
+              data-disabled={blocked !== null || undefined}
+              aria-disabled={blocked !== null}
+            >
+              <Trans>Change</Trans>
+            </Button>
+          </Tooltip>
+        </FieldAction>
+      </Box>
     </Stack>
   )
 }
@@ -563,10 +584,10 @@ function ApiKeysCard() {
 
   return (
     <Stack gap="xs">
-      <Group
+      <Box
         component="form"
-        align="flex-end"
-        wrap="wrap"
+        className="settings-field-grid"
+        data-align="end"
         onSubmit={(e: FormEvent) => {
           e.preventDefault()
           if (!name.trim()) return
@@ -587,7 +608,6 @@ function ApiKeysCard() {
           placeholder={t`Phone reader`}
           value={name}
           onChange={(e) => setName(e.currentTarget.value)}
-          w={200}
         />
         {needsPassword && (
           <PasswordInput
@@ -595,13 +615,19 @@ function ApiKeysCard() {
             autoComplete="current-password"
             value={keyPassword}
             onChange={(e) => setKeyPassword(e.currentTarget.value)}
-            w={200}
           />
         )}
-        <Button type="submit" loading={create.isPending} disabled={!name.trim()}>
-          <Trans>Create</Trans>
-        </Button>
-      </Group>
+        <Tooltip label={t`Name the key first`} disabled={!!name.trim()} events={{ hover: true, focus: true, touch: true }}>
+          <Button
+            type="submit"
+            loading={create.isPending}
+            data-disabled={!name.trim() || undefined}
+            aria-disabled={!name.trim()}
+          >
+            <Trans>Create</Trans>
+          </Button>
+        </Tooltip>
+      </Box>
 
       {fullKeys && fullKeys.length > 0 && (
         <Table.ScrollContainer minWidth={420} mt="xs">
@@ -631,8 +657,8 @@ function ApiKeysCard() {
                       </Text>
                     ) : (
                       <Button
-                        size="compact-xs"
-                        variant="subtle"
+                        size="xs"
+                        variant="light"
                         color="var(--danger)"
                         onClick={() => setRevoking(key)}
                       >

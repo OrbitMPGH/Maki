@@ -23,9 +23,11 @@ export function DiscoverTasteStrip() {
     return (
       <div className="discover-taste-strip" aria-hidden>
         <Skeleton h={12} w={120} />
-        {Array.from({ length: SHOWN }, (_, i) => (
-          <Skeleton key={i} h={30} w={88 + (i % 3) * 14} radius="md" />
-        ))}
+        <div className="discover-taste-chips">
+          {Array.from({ length: SHOWN }, (_, i) => (
+            <Skeleton key={i} h={30} w={88 + (i % 3) * 14} radius="md" />
+          ))}
+        </div>
       </div>
     )
   }
@@ -36,16 +38,18 @@ export function DiscoverTasteStrip() {
       <Text className="discover-taste-lead">
         <Trans>Steering these picks</Trans>
       </Text>
-      {facets.map((facet) => {
-        const percent = seriesCount > 0 ? Math.round((facet.support / seriesCount) * 100) : 0
-        return (
-          <span key={facet.name} className="discover-taste-chip">
-            <b>{facet.name}</b>
-            <i aria-hidden style={{ '--w': `${percent}%` } as React.CSSProperties} />
-            <em className="tnum">{percent}%</em>
-          </span>
-        )
-      })}
+      <div className="discover-taste-chips">
+        {facets.map((facet) => {
+          const percent = seriesCount > 0 ? Math.round((facet.support / seriesCount) * 100) : 0
+          return (
+            <span key={facet.name} className="discover-taste-chip">
+              <b>{facet.name}</b>
+              <i aria-hidden style={{ '--w': `${percent}%` } as React.CSSProperties} />
+              <em className="tnum">{percent}%</em>
+            </span>
+          )
+        })}
+      </div>
       <Link to="/discover/taste" className="discover-taste-more">
         <Trans>Your taste</Trans>
       </Link>

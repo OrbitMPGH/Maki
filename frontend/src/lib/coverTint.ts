@@ -1,6 +1,7 @@
 import { useLayoutEffect } from 'react'
 import { useThemeChoice } from '../theme-context'
-import { motionPace, prefersReducedMotion } from './motionPrefs'
+import { EASE_LOOP_CSS, PAGE, pacedMs } from './motion'
+import { prefersReducedMotion } from './motionPrefs'
 
 /**
  * The Cover tint background mixes the ground toward the cover on screen instead of the accent.
@@ -70,8 +71,6 @@ function sampleTint(img: HTMLImageElement): string | null {
   return toHex(hue, Math.min(0.75, Math.max(0.45, sat)), 0.55)
 }
 
-const EASE_MS = 250
-const EASING = 'cubic-bezier(0.65, 0, 0.35, 1)'
 const ACCENT = 'var(--brand)'
 /** What the property holds now: the last value written, or the accent when it is unset. */
 let current = ACCENT
@@ -131,7 +130,7 @@ function easeTint(tint: string | null) {
   }
   if (from === to || prefersReducedMotion()) return write(to)
 
-  const timer = new Animation(new KeyframeEffect(null, null, { duration: EASE_MS * motionPace(), easing: EASING }))
+  const timer = new Animation(new KeyframeEffect(null, null, { duration: pacedMs(PAGE.rise), easing: EASE_LOOP_CSS }))
   clock = timer
   timer.finished.then(
     () => {

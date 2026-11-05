@@ -22,8 +22,8 @@ import {
   Pagination,
   Paper,
   Radio,
-  SegmentedControl,
   Select,
+  Spoiler,
   Stack,
   Table,
   Tabs,
@@ -38,10 +38,13 @@ import {
   IconArrowLeft,
   IconBook,
   IconChevronDown,
+  IconCheck,
+  IconFilter,
   IconCircleCheck,
   IconDownload,
   IconEye,
   IconEyeCheck,
+  IconHistory,
   IconLink,
   IconLinkOff,
   IconListCheck,
@@ -58,6 +61,7 @@ import {
 } from '../lib/icons'
 import { useMediaQuery } from '@mantine/hooks'
 import { notifications } from '../lib/toast'
+import { onRovingKeyDown } from '../lib/rovingFocus'
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   useChapters,
@@ -196,13 +200,14 @@ import { useColumnWidths, type ColumnSpec } from '../lib/useColumnWidths'
 import { useStableActions } from '../lib/useStableActions'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { EmptyState } from '../components/ui/EmptyState'
+import { FigureStripReveal, HintLabel } from '../components/ui/FigureStrip'
 import { Panel } from '../components/ui/Panel'
 import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
 import { activeSeries } from '../lib/series'
 import { showRestoreResult } from '../components/series/restoreToast'
 import { buildAnimeSpans, mergeAnimeMarkers, type AnimeSpan } from '../lib/animeCoverage'
-import { cleanSynopsis } from '../lib/synopsis'
+import { cleanSynopsis, splitSynopsis } from '../lib/synopsis'
 import { useIncognitoOptions } from '../components/ui/incognito'
 import { useSeriesNotificationOptions } from '../components/ui/seriesNotifications'
 import { scrollBehavior } from '../lib/scrollBehavior'
@@ -232,6 +237,7 @@ const CHAPTER_FILTERS = [
   'all',
   'wanted',
   'missing',
+  'fileMissing',
   'downloaded',
   'unread',
   'main',
@@ -250,7 +256,7 @@ const CHAPTER_COLUMNS_STORAGE_KEY = 'series-chapter-columns'
 const CHAPTER_COLUMNS = {
   chapter: { width: 200, min: 110 },
   released: { width: 120, min: 90 },
-  source: { width: 190, min: 100 },
+  source: { width: 220, min: 100 },
   status: { width: 240, min: 140 },
 }
 // The Wanted and actions columns hold fixed-size controls, and Title takes whatever is left, down
@@ -366,7 +372,8 @@ const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
   all: () => true,
   wanted: (c) => c.wanted,
   missing: (c) => !c.hasFile && !c.fileRemovedAt,
-  downloaded: (c) => c.hasFile,
+  fileMissing: (c) => c.hasFile && c.fileMissing,
+  downloaded: (c) => c.hasFile && !c.fileMissing,
   specials: isSpecial,
   // A one-shot has no number and counts as main, matching NewChapterMonitorMode.MainOnly.
   main: (c) => !isSpecial(c),
@@ -639,6 +646,8 @@ function SeriesDetailBody() {
   const setChaptersWanted = useSetChaptersWanted()
   const clearDelisted = useClearDelisted()
   const [keepingFrom, setKeepingFrom] = useState<'alert' | 'select'>('alert')
+  // The alert fades out after Keep; holding the last ids stops its title reading 0 on the way.
+  const [alertDelistedIds, setAlertDelistedIds] = useState<number[]>([])
   const keepDelisted = (chapterIds: number[], from: 'alert' | 'select') => {
     setKeepingFrom(from)
     clearDelisted.mutate(chapterIds, {
@@ -1500,6 +1509,22 @@ function SeriesDetailBody() {
   const status = seriesStatusVisual(series.status)
   const contentRating = contentRatingVisual(series.contentRating)
   const altTitles = readableTitles(series.altTitles ?? [], i18n.locale)
+  const synopsis = splitSynopsis(cleanSynopsis(series.overview))
+  const synopsisSource = synopsis.source
+  const synopsisExtras = (synopsis.notes.length > 0 || synopsisSource) && (
+      <div className="series-synopsis-extras">
+        {synopsis.notes.length > 0 && (
+            <ul className="series-synopsis-notes">
+              {synopsis.notes.map((note, i) => <li key={i}>{note}</li>)}
+            </ul>
+        )}
+        {synopsisSource && (
+            <Text size="xs" c="var(--ink-4)">
+              <Trans>Source: {synopsisSource}</Trans>
+            </Text>
+        )}
+      </div>
+  )
   const seriesTitle = series.title
   const scanSeriesForUpgrades = () =>
     runUpgradeScan.mutate(seriesId, {
@@ -1529,6 +1554,7 @@ function SeriesDetailBody() {
     })
   const wantedFilterCount = chapters?.filter(chapterFilters.wanted).length ?? 0
   const missingFilterCount = chapters?.filter(chapterFilters.missing).length ?? 0
+  const fileMissingFilterCount = chapters?.filter(chapterFilters.fileMissing).length ?? 0
   const downloadedFilterCount = chapters?.filter(chapterFilters.downloaded).length ?? 0
   const unreadFilterCount = chapters?.filter(filters.unread).length ?? 0
   const specialsFilterCount = chapters?.filter(chapterFilters.specials).length ?? 0
@@ -1538,6 +1564,9 @@ function SeriesDetailBody() {
   const skippedFilterCount = chapters?.filter(filters.skipped).length ?? 0
   const delistedFilterCount = chapters?.filter(chapterFilters.delisted).length ?? 0
   const delistedWithFileIds = (chapters ?? []).filter((c) => c.delistedAt && c.hasFile).map((c) => c.id)
+  if (delistedWithFileIds.length > 0 && delistedWithFileIds.join() !== alertDelistedIds.join()) {
+    setAlertDelistedIds(delistedWithFileIds)
+  }
   const selectionHasDelisted = selected.size > 0 && (chapters ?? []).some((c) => c.delistedAt && selected.has(c.id))
   const selectedCount = selected.size
   const notesChapter = notesPanel ? chapters?.find((c) => c.id === notesPanel.chapterId) : undefined
@@ -1549,8 +1578,14 @@ function SeriesDetailBody() {
   const chapterFilterData = chapters
       ? [
         { value: 'all', label: t`All` },
-        { value: 'wanted', label: t`Wanted (${wantedFilterCount})` },
-        { value: 'missing', label: t`Missing (${missingFilterCount})` },
+        { value: 'wanted', label: t`Marked wanted (${wantedFilterCount})` },
+        { value: 'missing', label: t`Not downloaded (${missingFilterCount})` },
+        ...(fileMissingFilterCount > 0
+            ? [{ value: 'fileMissing', label: t`File missing (${fileMissingFilterCount})` }]
+            : []),
+        ...(delistedFilterCount > 0
+            ? [{ value: 'delisted', label: t`Delisted (${delistedFilterCount})` }]
+            : []),
         { value: 'downloaded', label: t`Have (${downloadedFilterCount})` },
         ...(canFilterUnread
             ? [{ value: 'unread', label: t`Unread (${unreadFilterCount})` }]
@@ -1564,11 +1599,41 @@ function SeriesDetailBody() {
         ...(readTracking && skippedFilterCount > 0
             ? [{ value: 'skipped', label: t`Skipped (${skippedFilterCount})` }]
             : []),
-        ...(delistedFilterCount > 0
-            ? [{ value: 'delisted', label: t`Delisted (${delistedFilterCount})` }]
-            : []),
       ]
       : []
+  const { total: chaptersCounted } = progress
+  // The server counts a chapter whose file vanished from disk as obtained; the heading sits next to
+  // the "no file on disk" count, so it leaves those out.
+  const chaptersHave = Math.max(0, progress.have - fileMissingFilterCount)
+  const wantedColumnTip = t`Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way.`
+  const chapterFilterTips: Record<string, string> = {
+    wanted: t`Chapters with Wanted switched on, downloaded or not.`,
+    missing: t`Chapters with no file on disk, leaving out files that were deleted on purpose.`,
+    fileMissing: t`Chapters whose file the last health scan couldn't find on disk.`,
+  }
+  const chapterFilterChips = chapterFilterData.map((o) => {
+    const active = o.value === chapterFilter
+    const chip = (
+        <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            tabIndex={active ? 0 : -1}
+            className="tag-chip tnum"
+            data-interactive
+            data-active={active || undefined}
+            onClick={() => setChapterFilter(o.value)}
+        >
+          {o.label}
+        </button>
+    )
+    return chapterFilterTips[o.value] ? (
+        <Tooltip key={o.value} label={chapterFilterTips[o.value]} withArrow multiline maw={260}>
+          {chip}
+        </Tooltip>
+    ) : chip
+  })
 
   const queueNext = (count: number) => {
     downloadNext.mutate(
@@ -1994,6 +2059,8 @@ function SeriesDetailBody() {
             series={series}
             onRate={submitRating}
             onFinalize={keepRating}
+            readUpTo={highestReadChapter}
+            nextChapter={nextChapter}
             actions={
               <>
                 {continueAt && (
@@ -2262,7 +2329,16 @@ function SeriesDetailBody() {
                     onRemoveOffline={() => void removeSeriesOffline(seriesId)}
                 />
                 {/* A state, not a control: nothing here could enable a download button, so it stops posing as one. */}
-                {canDownload && allWantedOnDisk && chapters.length > 0 && (
+                {fileMissingFilterCount > 0 ? (tab !== 'chapters' && (
+                    <Text component="span" size="sm" c="var(--warn)" className="series-actions-done series-actions-done--warn tnum">
+                      <IconAlertTriangle size={16} />
+                      <Plural
+                          value={fileMissingFilterCount}
+                          one="# chapter has no file on disk"
+                          other="# chapters have no file on disk"
+                      />
+                    </Text>
+                )) : canDownload && allWantedOnDisk && chapters.length > 0 && (
                     <Tooltip label={t`Every wanted chapter is already on disk`} withArrow>
                       <Text component="span" size="sm" c="var(--ink-3)" className="series-actions-done">
                         <IconCircleCheck size={16} />
@@ -2357,10 +2433,28 @@ function SeriesDetailBody() {
                   <Trans>Synopsis</Trans>
                   {series.lockedFields.includes('overview') && <>{' '}<MetadataLock /></>}
                 </Title>
-                {series.overview ? (
-                    <Text size="sm" mt="sm" c="var(--ink-3)" style={{ lineHeight: 1.66, maxWidth: '75ch' }}>
-                      {cleanSynopsis(series.overview)}
-                    </Text>
+                {series.overview && isMobile ? (
+                    // About four lines on a phone, where the whole text pushed the sources and tags
+                    // several screens down. The panel beside Sources has the room on a laptop.
+                    <Spoiler
+                        mt="sm"
+                        maxHeight={96}
+                        showLabel={t`Show more`}
+                        hideLabel={t`Show less`}
+                        attributes={{ content: { 'aria-label': t`Synopsis` } }}
+                    >
+                      <Text size="sm" c="var(--ink-3)" style={{ lineHeight: 1.66 }}>
+                        {synopsis.body}
+                      </Text>
+                      {synopsisExtras}
+                    </Spoiler>
+                ) : series.overview ? (
+                    <>
+                      <Text size="sm" mt="sm" c="var(--ink-3)" style={{ lineHeight: 1.66, maxWidth: '75ch' }}>
+                        {synopsis.body}
+                      </Text>
+                      {synopsisExtras}
+                    </>
                 ) : (
                     <Text size="sm" mt="sm" c="var(--ink-3)">
                       <Trans>No synopsis yet.</Trans> <Trans>Refresh metadata to fetch one.</Trans>
@@ -2475,12 +2569,13 @@ function SeriesDetailBody() {
                         })()}
                       </Alert>
                   )}
-                  {delistedWithFileIds.length > 0 && (
+                  <FigureStripReveal shown={delistedWithFileIds.length > 0}>
+                    {alertDelistedIds.length > 0 && (
                       <Alert
                           mb="md"
                           color="var(--warn)"
                           icon={<IconLinkOff size={18} />}
-                          title={plural(delistedWithFileIds.length, {
+                          title={plural(alertDelistedIds.length, {
                             one: '# downloaded chapter is no longer listed',
                             other: '# downloaded chapters are no longer listed',
                           })}
@@ -2492,6 +2587,7 @@ function SeriesDetailBody() {
                           <Button
                               size="xs"
                               variant="light"
+                              leftSection={<IconFilter size={16} />}
                               onClick={() => {
                                 setChapterFilterPreference('delisted')
                                 changeTab('chapters')
@@ -2503,15 +2599,17 @@ function SeriesDetailBody() {
                               <Button
                                   size="xs"
                                   variant="subtle"
+                                  leftSection={<IconCheck size={16} />}
                                   loading={clearDelisted.isPending && keepingFrom === 'alert'}
-                                  onClick={() => keepDelisted(delistedWithFileIds, 'alert')}
+                                  onClick={() => keepDelisted(alertDelistedIds, 'alert')}
                               >
                                 <Trans>Keep them</Trans>
                               </Button>
                           )}
                         </Group>
                       </Alert>
-                  )}
+                    )}
+                  </FigureStripReveal>
                   {canManageSources && (
                     <>
                       {/* The inner div is inert rather than every control inside getting a disabled
@@ -2532,7 +2630,20 @@ function SeriesDetailBody() {
                       <Divider my="md" color="var(--hairline)" />
                     </>
                   )}
-                  <ReleaseOutlookSummary seriesId={seriesId} divided />
+                  <ReleaseOutlookSummary
+                      seriesId={seriesId}
+                      divided
+                      idleReason={
+                        sourceMappings && enabledMappings === 0
+                            ? 'noSource'
+                            : series.status === 'Completed' &&
+                                series.totalChapters != null &&
+                                lastChapterNumber != null &&
+                                lastChapterNumber >= series.totalChapters
+                              ? 'finished'
+                              : undefined
+                      }
+                  />
                   <Text size="xs" c="var(--ink-3)">
                     {scanning ? (
                         <Group gap={6} component="span" wrap="nowrap">
@@ -2572,9 +2683,14 @@ function SeriesDetailBody() {
                     <Title order={2} size="h3" fz="var(--type-subhead)">
                       <Trans>Metadata</Trans>
                     </Title>
-                    <Anchor component="button" type="button" size="xs" c="var(--ink-3)" onClick={() => setMetadataHistoryOpen(true)}>
+                    <Button
+                      variant="default"
+                      size="compact-sm"
+                      leftSection={<IconHistory size={14} />}
+                      onClick={() => setMetadataHistoryOpen(true)}
+                    >
                       <Trans>History</Trans>
-                    </Anchor>
+                    </Button>
                   </Group>
                   <div className="series-records">
                     {series.originalTitle && (
@@ -2590,12 +2706,16 @@ function SeriesDetailBody() {
                           {altTitles.map(altTitleLabel).join(', ')}
                         </RecordRow>
                     )}
-                    {series.authorStory && (
+                    {series.authorStory && sameCreators(series.authorStory, series.authorArt) ? (
+                        <RecordRow label={t`Story and art`}>
+                          <CreatorNames role="author" names={series.authorStory} />
+                        </RecordRow>
+                    ) : series.authorStory && (
                         <RecordRow label={t`Story`}>
                           <CreatorNames role="author" names={series.authorStory} />
                         </RecordRow>
                     )}
-                    {series.authorArt && (
+                    {series.authorArt && !sameCreators(series.authorStory, series.authorArt) && (
                         <RecordRow label={t`Art`}>
                           <CreatorNames role="artist" names={series.authorArt} />
                         </RecordRow>
@@ -2626,7 +2746,7 @@ function SeriesDetailBody() {
                     )}
                     {series.rootFolderPath && (
                         <RecordRow label={t`Folder`}>
-                          <MonoValue value={series.rootFolderPath} copy c="var(--ink-3)" />
+                          <MonoValue value={series.rootFolderPath} copy wrap c="var(--ink-3)" />
                         </RecordRow>
                     )}
                   </div>
@@ -2797,6 +2917,7 @@ function SeriesDetailBody() {
               <Group
                   className="series-detail-chapter-toolbar"
                   justify="space-between"
+                  align="baseline"
                   wrap="wrap"
                   gap="sm"
               >
@@ -2804,7 +2925,7 @@ function SeriesDetailBody() {
                   <Title order={2} size="h3"><Trans>Chapters</Trans></Title>
                   {chapters && (
                       <Text size="sm" c="var(--ink-3)" className="tnum">
-                        {progress.have}/{progress.total}
+                        <Trans>{chaptersHave}/{chaptersCounted} downloaded</Trans>
                       </Text>
                   )}
                   {chapters && readTracking && progress.have > 0 && (
@@ -2812,9 +2933,29 @@ function SeriesDetailBody() {
                         <Trans>{readFilterCount} read</Trans>
                       </Badge>
                   )}
+                  {fileMissingFilterCount > 0 && (
+                      <Group gap="xs" wrap="nowrap" align="center" role="status">
+                        <Group gap={6} wrap="nowrap" align="flex-start" style={{ flex: 1, minWidth: 0 }}>
+                          <IconAlertTriangle size={16} style={{ flexShrink: 0, marginTop: 3, color: 'var(--warn)' }} />
+                          <Text size="sm" c="var(--warn)" className="tnum" style={{ textWrap: 'balance' }}>
+                            <Plural
+                                value={fileMissingFilterCount}
+                                one="# chapter has no file on disk"
+                                other="# chapters have no file on disk"
+                            />
+                          </Text>
+                        </Group>
+                        {canEditMetadata && (
+                            <Button size="xs" variant="default" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)} style={{ flexShrink: 0 }}>
+                              <Trans>Relink files</Trans>
+                            </Button>
+                        )}
+                      </Group>
+                  )}
                 </Group>
                 {chapters && chapters.length > 0 && (
-                    <Group gap="xs" wrap="wrap">
+                    // One row on a phone: the filter takes what the fixed-width controls leave.
+                    <Group gap="xs" wrap={isMobile ? 'nowrap' : 'wrap'} w={isMobile ? '100%' : undefined}>
                       {isMobile ? (
                           <Select
                               size="xs"
@@ -2823,16 +2964,17 @@ function SeriesDetailBody() {
                               value={chapterFilter}
                               onChange={(value) => value && setChapterFilter(value)}
                               allowDeselect={false}
-                              w={150}
+                              style={{ flex: 1, minWidth: 0 }}
                           />
                       ) : (
-                          <SegmentedControl
+                          <div
+                              className="chapter-filter-chips"
+                              role="radiogroup"
                               aria-label={t`Filter chapters`}
-                              size="xs"
-                              value={chapterFilter}
-                              onChange={setChapterFilter}
-                              data={chapterFilterData}
-                          />
+                              onKeyDown={onRovingKeyDown}
+                          >
+                            {chapterFilterChips}
+                          </div>
                       )}
                       <Tooltip label={chapterSort === 'asc' ? t`Oldest first` : t`Newest first`} withArrow>
                         <ActionIcon
@@ -2853,9 +2995,20 @@ function SeriesDetailBody() {
                           value={chapterPageSizePreference}
                           onChange={setChapterPageSize}
                           allowDeselect={false}
-                          w={isMobile ? 100 : 108}
+                          className="page-size-select"
+                          style={{ '--label-ch': Math.max(...chapterPageSizeOptions.map((o) => o.label.length)) }}
                       />
-                      {!selectMode && (
+                      {!selectMode && isMobile && (
+                          <ActionIcon
+                              size="input-xs"
+                              variant="default"
+                              aria-label={t`Select`}
+                              onClick={() => setSelectMode(true)}
+                          >
+                            <IconListCheck size={16} />
+                          </ActionIcon>
+                      )}
+                      {!selectMode && !isMobile && (
                           <Button
                               size="xs"
                               variant="default"
@@ -3213,12 +3366,15 @@ function SeriesDetailBody() {
                         <Table
                             className="chapter-table"
                             highlightOnHover
-                            verticalSpacing="xs"
+                            // 6px around the 32px row buttons lands a one-line row on the cells' 48px floor.
+                            verticalSpacing={6}
                             aria-busy={chapterRowsLoading || undefined}
                         >
                           <Table.Thead>
                             <Table.Tr>
-                              <Table.Th w={CHAPTER_WANTED_COLUMN_WIDTH}><Trans>Wanted</Trans></Table.Th>
+                              <Table.Th w={CHAPTER_WANTED_COLUMN_WIDTH}>
+                                <HintLabel tip={wantedColumnTip} maw={280}><Trans>Wanted</Trans></HintLabel>
+                              </Table.Th>
                               <Table.Th w={chapterColumnWidths.chapter}>
                                 <Trans>Chapter</Trans>
                                 {!chapterRowsAsList && (
@@ -3537,6 +3693,15 @@ function ReadTimeEstimateText({ estimate }: { estimate: ReadTimeEstimate }) {
 }
 
 /** A comma-separated credit, each name linking to that creator's page. */
+const creatorKey = (names: string | null | undefined) =>
+  (names ?? '').split(',').map((n) => n.trim().toLowerCase()).filter(Boolean).sort().join('|')
+
+/** Story and art credit the same people, so the Metadata panel shows one row for both. */
+function sameCreators(story: string | null | undefined, art: string | null | undefined) {
+  const key = creatorKey(story)
+  return key !== '' && key === creatorKey(art)
+}
+
 function CreatorNames({
                         role,
                         names,

@@ -1,6 +1,7 @@
 import { errorText } from '../api/errorText'
 import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePageState } from '../lib/pageState'
+import { onPageScroll } from '../lib/pageScroll'
 import { shownRating } from '../lib/rating'
 import { fuzzyFilter, titleIndex } from '../lib/fuzzySearch'
 import { useStableActions } from '../lib/useStableActions'
@@ -123,7 +124,7 @@ import { ArchivedSeriesCard, type ArchivedCardAction } from '../components/serie
 import { showBulkRestoreQueued, showRestoreResult } from '../components/series/restoreToast'
 import {
   DensityMenuItems,
-  POSTER_COLS_BY_DENSITY,
+  LIBRARY_POSTER_COLS_BY_DENSITY,
   readStored,
   ToolbarMenuButton,
   ViewModeToggle,
@@ -1456,6 +1457,30 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     return () => observer.disconnect()
   }, [showChrome])
 
+  // Marks the toolbar while it is pinned, so it can draw the edge the grid scrolls under.
+  useEffect(() => {
+    const panel = indexRef.current
+    if (!panel) return
+    let frame = 0
+    const check = () => {
+      frame = 0
+      const pinnedAt = parseFloat(getComputedStyle(panel).top) || 0
+      if (panel.getBoundingClientRect().top <= pinnedAt + 0.5) panel.dataset.stuck = ''
+      else delete panel.dataset.stuck
+    }
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(check)
+    }
+    check()
+    const stop = onPageScroll(schedule)
+    window.addEventListener('resize', schedule)
+    return () => {
+      cancelAnimationFrame(frame)
+      stop()
+      window.removeEventListener('resize', schedule)
+    }
+  }, [showChrome])
+
   const reverseSort = () => {
     const next: SortDir = sortDir === 'asc' ? 'desc' : 'asc'
     setSortDirOverride(next === SORT_DEFAULT_DIR[sort] ? '' : next)
@@ -1539,9 +1564,9 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             className="library-index-metrics"
             figures={archivedScope ? archivedFigures : [
               { label: t`Series`, value: stats.total },
-              { label: t`Monitored`, value: stats.monitored },
+              { label: t`Monitored`, value: stats.monitored, tip: t`Series Maki keeps checking for new chapters.` },
               { label: t`On disk`, value: stats.downloaded, tone: 'ok' },
-              { label: t`Missing`, value: stats.missing, tone: 'warn' },
+              { label: t`Missing`, value: stats.missing, tone: 'warn', tip: t`Chapters you want that aren't on disk yet.` },
               ...(stats.inQueue > 0 ? [{ label: t`In queue`, value: stats.inQueue, tone: 'info' as const }] : []),
             ]}
           />
@@ -2698,7 +2723,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         </Stack>
       </Modal>
 
-      {isLoading && <PosterSkeletons density={density} viewMode={viewMode} />}
+      {isLoading && <PosterSkeletons density={density} viewMode={viewMode} colsByDensity={LIBRARY_POSTER_COLS_BY_DENSITY} />}
       {error && (
         <EmptyState
           title={t`Failed to load library`}
@@ -2749,7 +2774,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           unaffected: "select filtered" works off `visible`, never off what is mounted. */}
       {visible.length > 0 && viewMode === 'grid' && (
         <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
-          <SimpleGrid ref={windowed.innerRef} cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
+          <SimpleGrid ref={windowed.innerRef} cols={LIBRARY_POSTER_COLS_BY_DENSITY[density]} spacing="md">
             {visible.slice(windowed.start, windowed.end).map((s) =>
               archivedScope ? (
                 <ArchivedSeriesCard
@@ -2777,6 +2802,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                   readTracking={readTracking}
                   onToggle={toggle}
                   offline={offlineOf(s.id)}
+                  menu
                 />
               ),
             )}

@@ -15,6 +15,7 @@ export function StepStrip({ steps, label }: { steps: Step[]; label: string }) {
   return (
     <ol
       className="import-steps"
+      data-many={steps.length > 3 || undefined}
       aria-label={label}
       style={steps.length === 3 ? undefined : { gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}
     >

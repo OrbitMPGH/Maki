@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, waitFor } from 'storybook/test'
+import { expect } from 'storybook/test'
 import { sourceReliability, sourceUsage } from '../../../.storybook/mocks/insights'
 import { Panel } from '../../components/ui/Panel'
 import { SourceReliability } from './SourceReliability'
@@ -30,11 +30,13 @@ export const Default: Story = {
   },
 }
 
-/** Sources on disk with no download in the last 30 days have nothing to rate. */
+/** Sources on disk with no download in the last 30 days have nothing to rate, so those columns go. */
 export const NoRecentDownloads: Story = {
   args: { reliability: [] },
   play: async ({ canvas }) => {
-    await waitFor(() => expect(canvas.getAllByText('n/a').length).toBeGreaterThan(0))
+    await expect(await canvas.findByText('MangaDex')).toBeVisible()
+    await expect(canvas.queryByRole('columnheader', { name: 'Success' })).toBeNull()
+    await expect(canvas.queryByRole('columnheader', { name: 'Median wait' })).toBeNull()
   },
 }
 

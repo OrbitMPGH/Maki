@@ -5,6 +5,7 @@ import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
 import {
   awaitingImportItem,
   cutoffUnmetPage,
+  failedItems,
   longTitleItem,
   pausedAll,
   pausedSources,
@@ -57,6 +58,41 @@ export const EmptyQueue: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Nothing in the queue')).toBeVisible()
     await expect(await canvas.findByText('No history yet')).toBeVisible()
+  },
+}
+
+/** Nothing to count, so the figure strip stays out of the page. */
+export const StatsStripHiddenAtZero: Story = {
+  parameters: {
+    msw: [
+      http.get(api('/queue'), () => HttpResponse.json(queuePage([]))),
+      http.get(api('/queue/history'), () => HttpResponse.json(emptyPage)),
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByText('Nothing in the queue')
+    const strip = canvasElement.querySelector('.figure-strip-reveal')
+    await expect(strip).toHaveAttribute('data-hidden')
+    await expect(strip).toHaveAttribute('inert')
+  },
+}
+
+/** One count above zero brings the strip back. */
+export const StatsStripShownWithValue: Story = {
+  parameters: {
+    msw: [
+      http.get(api('/queue'), () => HttpResponse.json(queuePage([failedItems[0]]))),
+      http.get(api('/queue/history'), () => HttpResponse.json(emptyPage)),
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const strip = await waitFor(() => {
+      const found = canvasElement.querySelector('.figure-strip-reveal')
+      expect(found).not.toBeNull()
+      return found!
+    })
+    await expect(strip).not.toHaveAttribute('data-hidden')
+    await expect(within(strip as HTMLElement).getByText('Failed')).toBeVisible()
   },
 }
 

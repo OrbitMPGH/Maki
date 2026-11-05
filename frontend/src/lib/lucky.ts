@@ -2,6 +2,7 @@ import { useCallback } from 'react'
 import { useAnimate } from 'motion/react'
 import { missingCount } from '../api/hooks'
 import { obtainedCount } from './chapterCounts'
+import { EASE } from './motion'
 import type { SeriesDto } from '../api/types'
 
 /**
@@ -24,9 +25,6 @@ export function pickRandom<T>(pool: T[], exclude?: (t: T) => boolean): T | null 
 export function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
-
-// theme.css --ease; motion wants the bezier points, not the custom property.
-const EASE = [0.16, 1, 0.3, 1] as const
 
 /** Spins whatever the returned ref is attached to. Resolves when the spin ends. */
 export function useDiceTumble() {

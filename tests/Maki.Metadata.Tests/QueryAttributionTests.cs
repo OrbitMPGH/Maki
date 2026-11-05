@@ -132,6 +132,25 @@ public class QueryAttributionTests
         Assert.Equal(double.PositiveInfinity, SemanticRecommender.AttributionCutoff([], tuning));
     }
 
+    [Fact]
+    public void FeelQueries_LeadWithTheChosenSeed_ThenOtherTitledSeedsThatClearTheCutoff()
+    {
+        List<SemanticRecommender.SeedQuery> queries =
+        [
+            new([], 1, null, IsCentroid: true),
+            new([], 1, "A", IsCentroid: false, SeedId: 1),
+            new([], 1, "B", IsCentroid: false, SeedId: 2),
+            new([], 1, null, IsCentroid: false, SeedId: 3),
+            new([], 1, "D", IsCentroid: false, SeedId: 4),
+            new([], 1, "E", IsCentroid: false, SeedId: 5),
+        ];
+        float[][] cosines = [[0.5f], [0.9f], [0.65f], [0.95f], [0.55f], [0.75f]];
+
+        // Seed 3 has no title to show; D sits only 0.05 above the centroid, under the bar.
+        Assert.Equal([1, 5, 2], SemanticRecommender.FeelQueries(cosines, null, queries, 0, 1, 0.4, 0.1));
+        Assert.Empty(SemanticRecommender.FeelQueries(cosines, null, queries, 0, 1, 0.4, 0.4));
+    }
+
     /// <summary>
     /// A unit vector in one shared cone: a fixed direction every vector leans on, plus per-vector
     /// noise. Stands in for the shared "this is a manga description" component real sentence

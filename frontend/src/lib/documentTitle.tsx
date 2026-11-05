@@ -39,18 +39,26 @@ function routeName(pathname: string) {
 }
 
 /**
+ * What the current page is called: the name its data gave (a series title, a creator), else the
+ * route's. The tab title and the phone header both read it. Null when nothing names the page.
+ */
+export function usePageName(): string | null {
+  const { pathname } = useLocation()
+  const label = useLabel()
+  const detail = useContext(DetailValue)
+  const route = routeName(pathname)
+  return detail ?? (route ? label(route) : null)
+}
+
+/**
  * Writes `document.title`: the page's own name, then the app, behind the unread inbox count when
  * there is one. Reads the same query the bell does, which the inbox push keeps current, so it adds
  * no request of its own.
  */
 export function DocumentTitle() {
-  const { pathname } = useLocation()
-  const label = useLabel()
-  const detail = useContext(DetailValue)
+  const name = usePageName()
   const { data: unread } = useInboxUnread()
 
-  const route = routeName(pathname)
-  const name = detail ?? (route ? label(route) : null)
   const count = unread?.count ?? 0
   const badge = count > 0 ? `(${count > 99 ? '99+' : count}) ` : ''
   const title = `${badge}${name ? `${name} | ${APP_NAME}` : APP_NAME}`

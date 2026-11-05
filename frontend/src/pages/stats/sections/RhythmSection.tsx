@@ -5,12 +5,13 @@ import { useActivityStats, useProgressSummary, useReadingHeatmap } from '../../.
 import { useStatsInsights, useStatsStanding } from '../../../api/stats'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { Panel } from '../../../components/ui/Panel'
-import { formatDecimal, formatHour, formatNumber, formatPercent, formatReadingTime, weekdayName } from '../../../format'
+import { formatDecimal, formatHour, formatNumber, formatPercent, formatTimeSpent, weekdayName } from '../../../format'
 import { ReadTrackingEmpty } from '../ReadTrackingEmpty'
 import { ChartSkeleton } from '../ChartSkeleton'
 import { HourMatrix } from '../charts/HourMatrix'
 import { ReadingHeatmap } from '../ReadingHeatmap'
 import { StatsInsight } from '../StatsSection'
+import { MIN_SITTINGS, MIN_TIMED_SECONDS } from '../sampleSize'
 import type { StatsSectionProps } from './types'
 
 /** Sum of the 24 hourly buckets belonging to one weekday. */
@@ -37,13 +38,15 @@ export default function RhythmSection({ userId, range, windowLabel }: StatsSecti
 
   const insight = useMemo(() => {
     const rhythm = insights?.rhythm
-    if (!rhythm || rhythm.totalSeconds === 0 || rhythm.primeStartHour === null) return null
+    const sittingCount = insights?.sittings?.count ?? 0
+    if (!rhythm || rhythm.primeStartHour === null) return null
+    if (rhythm.totalSeconds < MIN_TIMED_SECONDS || sittingCount < MIN_SITTINGS) return null
 
     const start = formatHour(rhythm.primeStartHour)
     const end = formatHour((rhythm.primeStartHour + 3) % 24)
     const weekendShare = formatPercent(rhythm.weekendShare ?? 0)
     const sittingSeconds = insights?.sittings?.medianSeconds
-    const sittingDuration = sittingSeconds !== undefined ? formatReadingTime(sittingSeconds) : ''
+    const sittingDuration = sittingSeconds !== undefined ? formatTimeSpent(sittingSeconds) : ''
 
     return (
       <>
@@ -108,7 +111,7 @@ export default function RhythmSection({ userId, range, windowLabel }: StatsSecti
   const primeEnd = rhythm.primeStartHour !== null ? formatHour((rhythm.primeStartHour + 3) % 24) : null
   const primeShare = rhythm.primeShare !== null ? formatPercent(rhythm.primeShare) : null
   const busiestShareLabel = busiestShare !== null ? formatPercent(busiestShare) : null
-  const longestSitting = sittings ? formatReadingTime(sittings.longestSeconds) : null
+  const longestSitting = sittings ? formatTimeSpent(sittings.longestSeconds) : null
   const minutesPerChapter = medianSecondsPerChapter !== null ? Math.round(medianSecondsPerChapter / 60) : null
   const perSittingMedian = sittings ? sittings.chaptersPerSittingMedian : null
   const perSitting = perSittingMedian === null ? '' : formatDecimal(perSittingMedian)
@@ -165,7 +168,7 @@ export default function RhythmSection({ userId, range, windowLabel }: StatsSecti
             <div className="stats-fact">
               <span className="stats-fact-label">{t`Typical sitting`}</span>
               <span className="stats-fact-value">
-                {sittings ? formatReadingTime(sittings.medianSeconds) : '-'}
+                {sittings ? formatTimeSpent(sittings.medianSeconds) : '-'}
               </span>
               <span className="stats-fact-hint">
                 {longestSitting !== null ? t`longest ${longestSitting}` : '-'}

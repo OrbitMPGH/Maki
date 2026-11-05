@@ -64,7 +64,7 @@ export const MixedConnections: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     const body = within(canvasElement.ownerDocument.body)
     await waitFor(() => expect(canvas.getAllByRole('button', { name: /\W+Not connected$/ })).toHaveLength(2))
-    await waitFor(() => expect(canvas.getAllByRole('button', { name: /\W+Not configured$/ })).toHaveLength(2))
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: /\W+Not set up$/ })).toHaveLength(2))
     await userEvent.click(await canvas.findByRole('button', { name: /^MyAnimeList\W+Not connected$/ }))
     await expect(await body.findByText('Not connected yet.')).toBeVisible()
     await expect(await body.findByRole('button', { name: 'Connect' })).toBeVisible()
@@ -90,6 +90,8 @@ export const NothingConnected: Story = {
   play: async ({ canvas }) => {
     const sync = await canvas.findByRole('button', { name: 'Sync now' })
     await waitFor(() => expect(sync).toHaveAttribute('aria-disabled', 'true'))
+    await expect(await canvas.findByText('Connect a tracker to use Sync now.')).toBeVisible()
+    await expect(sync).toHaveAccessibleDescription('Connect a tracker to use Sync now.')
     await expect(await canvas.findByText('Nothing needs review.')).toBeVisible()
     await expect(await canvas.findByText('No syncs yet.')).toBeVisible()
     await expect(await canvas.findByText('No activity yet.')).toBeVisible()
@@ -172,7 +174,7 @@ export const OAuthFailed: Story = {
 export const ReaderView: Story = {
   parameters: { auth: 'reader', msw: scrobbleHandlers(scrobbleStatusMixed) },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    const [unset] = await canvas.findAllByRole('button', { name: /\W+Not configured$/ })
+    const [unset] = await canvas.findAllByRole('button', { name: /\W+Not set up$/ })
     await userEvent.click(unset)
     const body = within(canvasElement.ownerDocument.body)
     await expect(await body.findByText('Not set up yet. An admin can add it in Settings.')).toBeVisible()
@@ -185,7 +187,7 @@ export const AdminSeesSetupLinks: Story = {
   parameters: { msw: scrobbleHandlers(scrobbleStatusMixed) },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(await canvas.findByRole('link', { name: 'Set up trackers' })).toBeVisible()
-    const [unset] = await canvas.findAllByRole('button', { name: /\W+Not configured$/ })
+    const [unset] = await canvas.findAllByRole('button', { name: /\W+Not set up$/ })
     await userEvent.click(unset)
     await expect(await within(canvasElement.ownerDocument.body).findByRole('link', { name: 'Set up in Settings' })).toBeVisible()
   },

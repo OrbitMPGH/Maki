@@ -33,6 +33,9 @@ export const FileName: Story = {
 
 export const FolderPath: Story = {
   args: { value: 'X:\\library\\manga\\Lanterns Over Kasumi', copy: true, c: 'var(--ink-3)' },
+  play: async ({ args }) => {
+    await expect(splitForTruncation(args.value)[1]).toBe('\\Lanterns Over Kasumi')
+  },
 }
 
 export const SourceIdLink: Story = {

@@ -28,7 +28,7 @@ async function scan(canvas: Canvas, body: Canvas, userEvent: { click: (element: 
 export const BeforeScanning: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('combobox', { name: 'Root folder' })).toBeVisible()
-    await waitFor(() => expect(canvas.getByRole('button', { name: 'Scan' })).toBeDisabled())
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Scan' })).toHaveAttribute('aria-disabled', 'true'))
     await expect(await canvas.findByText('Choose a root folder')).toBeVisible()
   },
 }

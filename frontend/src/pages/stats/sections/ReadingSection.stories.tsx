@@ -38,7 +38,7 @@ export const AllTime: Story = {
   args: { preset: 'all', previous: null, range: { from: '2024-01-01', to: '2026-10-19' }, windowLabel: 'all time' },
   play: async ({ canvas, canvasElement }) => {
     await expect(await canvas.findByText('Day by day')).toBeVisible()
-    await expect(canvasElement.querySelector('.stats-figure-delta')).toBeNull()
+    await expect(canvasElement.querySelector('.figure-strip-delta')).toBeNull()
   },
 }
 

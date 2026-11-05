@@ -99,6 +99,7 @@ public class ChapterController(
 
         // When each file is due to be cleaned up, so the table can say so ahead of time.
         var deleteDue = rows.Count > 0 ? await ReadFileCleanupService.PendingAsync(db, settings, seriesId, ct) : [];
+        var missingFiles = rows.Any(r => r.File != null) ? await HealthInventory.MissingChapterFilesAsync(db, seriesId, ct) : [];
 
         // When a chapter's backing file is a volume/compilation CBZ, surface that
         // volume so the UI can show "Vol.x Ch.y" even for scrape-source chapters that
@@ -120,6 +121,7 @@ public class ChapterController(
             c.FileRemovedAt,
             c.FileAutoRemoved,
             c.DelistedAt,
+            FileMissing = c.File != null && missingFiles.Contains(c.File.Id),
             FileDeleteDueAt = deleteDue.TryGetValue(c.Id, out var dueAt) ? dueAt : (DateTime?)null,
             c.FilePath,
             c.FileSourceName,

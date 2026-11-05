@@ -112,6 +112,13 @@ const HINT_SHOW_AT = 0.15
 // How long the card stays after the meter empties, fade included (theme.css, `[data-leaving]`).
 // Scrolling back down within it picks the same card up again instead of flashing a new one in.
 const HINT_LINGER_MS = 600
+// A full meter holds until the next chapter's pages arrive. If they never do (a failed load), it
+// lets go after this long so the strip is not stuck.
+const LEAVING_GIVE_UP_MS = 8000
+// After a jump, wheel input only counts again once it pauses this long, so the rest of the fling
+// that filled the meter does not start filling it again.
+const WHEEL_GESTURE_GAP_MS = 250
+const WHEEL_LINE_PX = 40
 
 function useLinger(on: boolean, ms: number): boolean {
   const [held, setHeld] = useState(on)
@@ -284,9 +291,10 @@ export default function ContinuousView({
    *  click, Home/End); this is what triggers a scroll. Plain `page` changes driven by this
    *  view's own scroll tracking must NOT scroll, or the view would fight the user's scroll. */
   seekVersion: number
-  /** Fired once the bottom-of-strip progress bar fills, the strip's analogue of turning past the
-   *  last page in paged mode. */
-  onPastEnd: () => void
+  /** Fired once the bottom-of-strip meter fills, the strip's analogue of turning past the last page
+   *  in paged mode. Returning true means the next chapter is on its way: the meter then stays full
+   *  and takes no more input until `urls` change. */
+  onPastEnd: () => boolean | void
   /** Picks which bottom-of-strip prompt shows: the fillable "scroll for next chapter" meter, or,
    *  on the last chapter, an inert "no more chapters" one that never advances anywhere. */
   hasNext: boolean
@@ -334,6 +342,17 @@ export default function ContinuousView({
   const hintMounted = useLinger(hintOn, HINT_LINGER_MS)
   // A finger is pulling the meter, which fills by distance and moves on only on release.
   const [pulling, setPulling] = useState(false)
+  // The meter filled and the next chapter is loading.
+  const leaving = useRef(false)
+  const [opening, setOpening] = useState(false)
+  // Wheel input is ignored until it pauses, set on every jump. Both outlive the listener effect,
+  // which runs again for the next chapter while the fling is still going.
+  const wheelHeld = useRef(false)
+  const lastWheelAt = useRef(0)
+  const onPastEndRef = useRef(onPastEnd)
+  onPastEndRef.current = onPastEnd
+  const hasNextRef = useRef(hasNext)
+  hasNextRef.current = hasNext
   // Read fresh inside the seek effect below without making `page` itself a dependency: the band
   // tracker updates `page` continuously while scrolling, and re-running the seek effect on every
   // one of those would re-scroll to wherever the user just scrolled from.
@@ -411,10 +430,23 @@ export default function ContinuousView({
   }, [enhanceOn, urls, page, shape, fit, scale, gap])
 
   useEffect(() => {
+    leaving.current = false
+    setOpening(false)
+    setPulling(false)
     setMeter(0)
     samples.current = { widths: [], aspects: [] }
     setShape(null)
   }, [urls, setMeter])
+
+  useEffect(() => {
+    if (!opening) return
+    const timer = setTimeout(() => {
+      leaving.current = false
+      setOpening(false)
+      setMeter(0)
+    }, LEAVING_GIVE_UP_MS)
+    return () => clearTimeout(timer)
+  }, [opening, setMeter])
 
   // Pages before the seek target whose load can still shift the target's offset. Re-scroll keeps
   // firing while this is non-empty; cleared once every preceding page has reported loaded (or the
@@ -532,24 +564,57 @@ export default function ContinuousView({
     const scroller = container.current?.parentElement
     if (!scroller) return
 
-    const atBottom = () =>
-      scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < BOTTOM_EPSILON
+    const fromBottom = () => scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight
+    const atBottom = () => fromBottom() < BOTTOM_EPSILON
+    // A page at the end still loading will move the bottom when it lands (a credits image is rarely
+    // the size the placeholder guessed), so the meter waits for it rather than fill and then reset.
+    // Pages skipped above the viewport do not count: scroll anchoring keeps them from moving it.
+    const settled = () => {
+      const top = scroller.getBoundingClientRect().top
+      for (let index = urls.length - 1; index >= 0; index--) {
+        const element = pages.current[index]
+        if (!element) continue
+        if (element.getBoundingClientRect().bottom < top) return true
+        if (!element.complete) return false
+      }
+      return true
+    }
+    // The bottom moved away under a partly filled meter (a page grew) while the reader is still
+    // heading down: hold the fill until they reach the new bottom instead of starting over.
+    const grewUnder = () => progress.current > 0 && fromBottom() < scroller.clientHeight
 
     let idle: ReturnType<typeof setTimeout> | undefined
     const decay = () => setMeter(0)
 
+    // While the parent is leaving, the meter stays full and every input is ignored. A refusal (the
+    // reader is still settling into this chapter) empties it.
+    const fire = () => {
+      clearTimeout(idle)
+      wheelHeld.current = true
+      if (onPastEndRef.current() === true) {
+        leaving.current = true
+        setOpening(true)
+        setMeter(1)
+      } else {
+        decay()
+      }
+    }
+
     // `delta` is in pixels, `distance` how many of them this input needs for a full meter.
     const advance = (delta: number, distance: number) => {
       clearTimeout(idle)
+      if (delta > 0 && (!atBottom() ? grewUnder() : !settled())) {
+        idle = setTimeout(decay, PAST_END_IDLE_MS)
+        return
+      }
       if (delta <= 0 || !atBottom()) {
         if (progress.current !== 0) decay()
         return
       }
       setMeter(Math.min(1, progress.current + delta / distance))
       // On the last chapter the card only says the strip has run out, so a full meter goes nowhere.
-      if (hasNext && progress.current >= 1) {
-        decay()
-        onPastEnd()
+      if (hasNextRef.current && progress.current >= 1) {
+        fire()
         return
       }
       idle = setTimeout(decay, PAST_END_IDLE_MS)
@@ -574,23 +639,35 @@ export default function ContinuousView({
     const onWheel = (event: WheelEvent) => {
       abandonSeek()
       const now = performance.now()
+      const sinceLast = now - lastWheelAt.current
+      lastWheelAt.current = now
+      if (leaving.current) return
+      if (wheelHeld.current) {
+        if (sinceLast < WHEEL_GESTURE_GAP_MS) return
+        wheelHeld.current = false
+      }
       if ((touching && now - touchSeenAt < TOUCH_STALE_MS) || now - touchEndedAt < WHEEL_AFTER_TOUCH_MS) return
-      advance(event.deltaY, PAST_END_WHEEL)
+      // deltaY is read before deltaMode: Firefox then reports pixels rather than lines.
+      const delta = event.deltaY
+      const unit = event.deltaMode === 1 ? WHEEL_LINE_PX : event.deltaMode === 2 ? scroller.clientHeight : 1
+      advance(delta * unit, PAST_END_WHEEL)
     }
 
     const onTouchStart = (event: TouchEvent) => {
       abandonSeek()
-      clearTimeout(idle)
       touching = true
       touchSeenAt = performance.now()
+      if (leaving.current) return
+      clearTimeout(idle)
       multiTouch = event.touches.length > 1
       const y = event.touches[0]?.clientY
-      pullFrom = y != null && !multiTouch && atBottom() ? y : null
+      pullFrom = y != null && !multiTouch && atBottom() && settled() ? y : null
       if (multiTouch && progress.current !== 0) decay()
       setPulling(true)
     }
     const onTouchMove = (event: TouchEvent) => {
       touchSeenAt = performance.now()
+      if (leaving.current) return
       if (event.touches.length > 1) multiTouch = true
       if (multiTouch) {
         pullFrom = null
@@ -599,12 +676,13 @@ export default function ContinuousView({
       }
       const y = event.touches[0]?.clientY
       if (y == null) return
-      if (!atBottom()) {
+      if (!atBottom() || !settled()) {
         pullFrom = null
-        if (progress.current !== 0) decay()
+        if (progress.current !== 0 && !(atBottom() || grewUnder())) decay()
         return
       }
-      pullFrom ??= y
+      // Picks up a fill held while the strip grew from where it was.
+      pullFrom ??= y + progress.current * touchDistance()
       const pull = pullFrom - y
       if (pull <= 0) {
         if (progress.current !== 0) decay()
@@ -613,14 +691,15 @@ export default function ContinuousView({
       setMeter(Math.min(1, pull / touchDistance()))
     }
     const endTouch = (release: boolean) => {
-      const full = release && !multiTouch && hasNext && progress.current >= 1
+      const full = release && !multiTouch && hasNextRef.current && progress.current >= 1
       touching = false
       multiTouch = false
       touchEndedAt = performance.now()
       pullFrom = null
+      if (leaving.current) return
       setPulling(false)
-      if (progress.current !== 0) decay()
-      if (full) onPastEnd()
+      if (full) fire()
+      else if (progress.current !== 0) decay()
     }
     // A finger lifted while another is still down is not the end of the gesture.
     const onTouchEnd = (event: TouchEvent) => {
@@ -652,7 +731,7 @@ export default function ContinuousView({
       window.removeEventListener('blur', onLostFocus)
       document.removeEventListener('visibilitychange', onVisibility)
     }
-  }, [urls, hasNext, onPastEnd, setMeter])
+  }, [urls, setMeter])
 
   return (
     <>
@@ -694,6 +773,7 @@ export default function ContinuousView({
         <NextChapterHint
           progress={pastEndProgress}
           pulling={pulling}
+          opening={opening}
           leaving={!hintOn}
           atEnd={!hasNext}
           nextLabel={nextLabel}

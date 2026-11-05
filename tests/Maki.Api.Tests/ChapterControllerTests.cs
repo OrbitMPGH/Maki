@@ -686,4 +686,54 @@ public class ChapterControllerTests : IDisposable
 
         Assert.True(File.Exists(Path.Combine(_root, path)));
     }
+
+    [Fact]
+    public async Task List_marks_a_chapter_file_missing_only_while_the_health_inventory_says_so_at_its_path()
+    {
+        var (seriesId, gone) = SeedSeriesWithChapter();
+        int present;
+        int relinked;
+        using (var seed = _db.NewContext())
+        {
+            var series = await seed.Series.FindAsync(seriesId);
+            ChapterFile NewFile(string name) => new()
+            {
+                SeriesId = seriesId, RelativePath = Path.Combine("Series", name), SourceName = "import", DateAdded = DateTime.UtcNow,
+            };
+            var goneFile = seed.ChapterFiles.Add(NewFile("ch1.cbz")).Entity;
+            var presentFile = seed.ChapterFiles.Add(NewFile("ch2.cbz")).Entity;
+            var relinkedFile = seed.ChapterFiles.Add(NewFile("ch3 new.cbz")).Entity;
+            var two = seed.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 2, NumberRaw = "2" }).Entity;
+            var three = seed.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 3, NumberRaw = "3" }).Entity;
+            seed.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 4, NumberRaw = "4" });
+            seed.SaveChanges();
+            (await seed.Chapters.FindAsync(gone))!.ChapterFileId = goneFile.Id;
+            two.ChapterFileId = presentFile.Id;
+            three.ChapterFileId = relinkedFile.Id;
+            (present, relinked) = (two.Id, three.Id);
+
+            HealthFile Row(ChapterFile file, string path, long size) => new()
+            {
+                RootFolderId = series!.RootFolderId, SeriesId = seriesId, ChapterFileId = file.Id, RelativePath = path, Size = size,
+            };
+            // Stored with the other separator, as a scan on another host would.
+            seed.HealthFiles.Add(Row(goneFile, "Series/ch1.cbz", -1));
+            seed.HealthFiles.Add(Row(presentFile, presentFile.RelativePath, 1234));
+            // The relink moved the record to a new path; the stale row for the old one waits for the next scan.
+            seed.HealthFiles.Add(Row(relinkedFile, Path.Combine("Series", "ch3.cbz"), -1));
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext();
+        var result = Assert.IsType<OkObjectResult>(await Controller(db).List(
+            seriesId, new UpgradeEvaluationService(db, TestQuality.Create()), new FakeAppSettings(), default));
+        var missing = ((IEnumerable<object>)result.Value!).ToDictionary(
+            row => (int)row.GetType().GetProperty("Id")!.GetValue(row)!,
+            row => (bool)row.GetType().GetProperty("FileMissing")!.GetValue(row)!);
+
+        Assert.True(missing[gone]);
+        Assert.False(missing[present]);
+        Assert.False(missing[relinked]);
+        Assert.Equal(1, missing.Values.Count(m => m));
+    }
 }

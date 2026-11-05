@@ -43,8 +43,17 @@ export function useDensityOptions(): { value: Density; label: string }[] {
  */
 export const POSTER_COLS_BY_DENSITY: Record<Density, Record<string, number>> = {
   compact: { base: 3, xs: 4, sm: 5, md: 6, lg: 8, xl: 10 },
-  default: { base: 2, xs: 3, sm: 4, md: 5, lg: 6, xl: 8 },
+  default: { base: 3, xs: 3, sm: 4, md: 5, lg: 6, xl: 8 },
   comfortable: { base: 2, xs: 2, sm: 3, md: 4, lg: 5, xl: 6 },
+}
+
+/**
+ * The Library grid's columns. Default shows two posters on a phone, where three cut titles to stubs;
+ * Compact keeps the three.
+ */
+export const LIBRARY_POSTER_COLS_BY_DENSITY: Record<Density, Record<string, number>> = {
+  ...POSTER_COLS_BY_DENSITY,
+  default: { ...POSTER_COLS_BY_DENSITY.default, base: 2 },
 }
 
 const VIEW_MODES: readonly ViewMode[] = ['grid', 'list']

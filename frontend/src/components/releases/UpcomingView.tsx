@@ -82,8 +82,9 @@ export function UpcomingContent({ items, now }: { items: UpcomingSeriesDto[]; no
     return (
       <EmptyState
         compact
+        framed
         mood="asleep"
-        title={t`Nothing to place yet`}
+        title={t`No release estimates yet`}
         description={t`A series shows up here once its chapters come out on a steady enough rhythm, or when its source announces the next one.`}
       />
     )

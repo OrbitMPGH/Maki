@@ -356,10 +356,10 @@ export function standingFor(kind: StatsKind): StatsStandingDto {
       ],
     },
     midway: [
-      { ...ref(3), read: 40, held: 48, etaSeconds: 20_160, lastReadAt: daysAgo(2) },
-      { ...ref(6), read: 150, held: 53, etaSeconds: 22_260, lastReadAt: daysAgo(1) },
-      { ...ref(11), read: 20, held: 37, etaSeconds: null, lastReadAt: daysAgo(15) },
-      { ...ref(7), read: 12, held: 108, etaSeconds: 45_360, lastReadAt: daysAgo(30) },
+      { ...ref(3), read: 40, held: 88, etaSeconds: 20_160, lastReadAt: daysAgo(2) },
+      { ...ref(6), read: 150, held: 203, etaSeconds: 22_260, lastReadAt: daysAgo(1) },
+      { ...ref(11), read: 20, held: 57, etaSeconds: null, lastReadAt: daysAgo(15) },
+      { ...ref(7), read: 12, held: 120, etaSeconds: 45_360, lastReadAt: daysAgo(30) },
     ],
     creators: [
       { name: 'Aoi Mizuhara', story: true, art: true, seriesRead: 2, chaptersRead: 179 },
