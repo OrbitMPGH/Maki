@@ -6015,6 +6015,10 @@ msgid "Checking for a new metadata snapshot"
 msgstr "Recherche d'un nouvel instantané de métadonnées"
 
 #: src/pages/HealthPage.tsx
+msgid "Checks on the server and the library, and the repairs they found."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #~ msgid "Checks on your server and library files, and the repairs you approve."
 #~ msgstr ""
 
@@ -8484,6 +8488,10 @@ msgstr "Activer le catalogue OPDS"
 #, fuzzy
 msgid "Enabled"
 msgstr "Activé"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Enabled for this series"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -20105,7 +20113,6 @@ msgstr "Afficher une fenêtre contextuelle à l'arrivée d'une notification"
 msgid "Show again"
 msgstr "Afficher à nouveau"
 
-#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show all"
@@ -20144,6 +20151,7 @@ msgstr "Afficher moins"
 #: src/components/discover/DiscoverReviews.tsx
 #: src/components/discover/FollowingRail.tsx
 #: src/components/rails/CustomRailSection.tsx
+#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -21280,8 +21288,8 @@ msgstr "Contrôles système"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "System checks and reviewed library maintenance."
-msgstr "Contrôles système et maintenance de bibliothèque examinée."
+#~ msgid "System checks and reviewed library maintenance."
+#~ msgstr "Contrôles système et maintenance de bibliothèque examinée."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

@@ -1,7 +1,7 @@
 import { Center, Group, Loader, Modal, ScrollArea, Stack, Text, TextInput } from '@mantine/core'
 import { useDisclosure, useHotkeys, useOs } from '@mantine/hooks'
 import { IconAdjustments, IconArchive, IconBell, IconBooks, IconPlus, IconSearch, IconSend } from '../lib/icons'
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { fuzzyFilter, titleIndex } from '../lib/fuzzySearch'
 import { DUR, EASE_CSS, pacedMs } from '../lib/motion'
 import { useNavigate } from 'react-router-dom'
@@ -16,6 +16,8 @@ import { useLabel } from '../i18n-context'
 import { seriesStatusVisual } from './ui/status'
 import type { SettingsTabKey } from '../pages/settings/registry'
 import type { NavItem } from '../nav'
+
+const LIST_MAX_HEIGHT = 360
 
 interface Props {
   navItems: NavItem[]
@@ -272,6 +274,33 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
     setSelected(0)
   }, [results.length])
 
+  // The list stops at the last row that fits whole under the cap, so the panel never ends on half
+  // a row. Rows differ in height (an alternate title adds a line), so it is measured, not fixed.
+  const rowsRef = useRef<HTMLDivElement | null>(null)
+  const [listMax, setListMax] = useState<number>()
+  const fitList = useCallback(() => {
+    const stack = rowsRef.current
+    if (!stack) return
+    const cap = Math.min(LIST_MAX_HEIGHT, window.innerHeight * 0.6)
+    const pad = parseFloat(getComputedStyle(stack).paddingBottom) || 0
+    let fit = cap
+    for (const row of Array.from(stack.children) as HTMLElement[]) {
+      const top = row.offsetParent === stack ? row.offsetTop : row.offsetTop - stack.offsetTop
+      const bottom = top + row.offsetHeight + pad
+      if (bottom > cap) break
+      fit = bottom
+    }
+    setListMax(Math.round(fit))
+  }, [])
+  const rowsRefCallback = useCallback(
+    (el: HTMLDivElement | null) => {
+      rowsRef.current = el
+      fitList()
+    },
+    [fitList],
+  )
+  useLayoutEffect(fitList, [fitList, results])
+
   // Only a keyboard move scrolls: a mouse hover is already on a visible row, and scrolling under
   // the pointer would make the list chase it.
   useEffect(() => {
@@ -341,13 +370,13 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
             style={{ borderBottom: '1px solid var(--border)' }}
           />
           <ScrollArea.Autosize
-            mah="min(360px, 60dvh)"
+            mah={listMax ?? `min(${LIST_MAX_HEIGHT}px, 60dvh)`}
             type="auto"
             scrollbars="y"
             viewportRef={listRef}
             className="command-palette-list"
           >
-            <Stack gap={2} p="xs" id={listId} role={results.length > 0 ? 'listbox' : undefined}>
+            <Stack ref={rowsRefCallback} gap={2} p="xs" id={listId} role={results.length > 0 ? 'listbox' : undefined}>
               {results.length === 0 && (
                 // On a cold cache the library is still loading, so an empty list is not an answer yet.
                 seriesLoading && !series ? (

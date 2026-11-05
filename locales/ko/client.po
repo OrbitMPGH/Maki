@@ -6015,6 +6015,10 @@ msgid "Checking for a new metadata snapshot"
 msgstr "새 메타데이터 스냅샷 확인 중"
 
 #: src/pages/HealthPage.tsx
+msgid "Checks on the server and the library, and the repairs they found."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #~ msgid "Checks on your server and library files, and the repairs you approve."
 #~ msgstr ""
 
@@ -8484,6 +8488,10 @@ msgstr "OPDS 카탈로그 활성화"
 #, fuzzy
 msgid "Enabled"
 msgstr "활성화됨"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Enabled for this series"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -20105,7 +20113,6 @@ msgstr "알림 도착 시 팝업 표시"
 msgid "Show again"
 msgstr "다시 표시"
 
-#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show all"
@@ -20144,6 +20151,7 @@ msgstr "덜 보기"
 #: src/components/discover/DiscoverReviews.tsx
 #: src/components/discover/FollowingRail.tsx
 #: src/components/rails/CustomRailSection.tsx
+#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -21280,8 +21288,8 @@ msgstr "시스템 확인"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "System checks and reviewed library maintenance."
-msgstr "시스템 확인 및 검토된 라이브러리 유지 관리."
+#~ msgid "System checks and reviewed library maintenance."
+#~ msgstr "시스템 확인 및 검토된 라이브러리 유지 관리."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

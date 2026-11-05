@@ -146,7 +146,8 @@ export const CoverCard = memo(function CoverCard({
           <span className="cover-title" title={series.title}>
             {series.displayTitle}
           </span>
-          <div className="cover-bar">
+          {/* With no total the bar would only ever read 0%; it keeps its space so the grid holds still. */}
+          <div className="cover-bar" data-empty={total === 0 || undefined}>
             <div
               className="cover-bar-fill"
               data-complete={complete || undefined}

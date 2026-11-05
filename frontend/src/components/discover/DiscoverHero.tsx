@@ -9,7 +9,7 @@ import {
   IconStar,
 } from '../../lib/icons'
 import { useNavigate } from 'react-router-dom'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion, useAnimate, useReducedMotion } from 'motion/react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useRecommendationDetail, type RecommendationItem } from '../../api/hooks'
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
@@ -21,7 +21,7 @@ import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
 import { useLabel } from '../../i18n-context'
 import { formatFixedDecimal } from '../../format'
 import { onRovingKeyDown } from '../../lib/rovingFocus'
-import { CINEMATIC, DWELL, EASE, paced } from '../../lib/motion'
+import { CINEMATIC, DUR, DWELL, EASE, paced } from '../../lib/motion'
 import { MetaList } from '../ui/MetaList'
 
 /** How long one pick holds the band before the next takes it. */
@@ -145,7 +145,36 @@ export function DiscoverHero({
   // Clamped rather than reset: the list shortens when the window does, and an index left pointing
   // past the end would blank the band mid-resize.
   const active = Math.min(activeIndex, picks.length - 1)
-  const item = picks[active] as RecommendationItem | undefined
+  const current = picks[active] as RecommendationItem | undefined
+  // The feature lags the selection by a short fade, so its text and buttons always describe the same
+  // pick and never sit half-faded over the next one.
+  const [shownId, setShownId] = useState(current?.providerId)
+  const item = picks.find((p) => p.providerId === shownId) ?? current
+  const [swapScope, animateSwap] = useAnimate<HTMLDivElement>()
+  const target = current?.providerId
+  const showing = item?.providerId
+
+  useEffect(() => {
+    const parts = Array.from(swapScope.current?.querySelectorAll<HTMLElement>('[data-hero-swap]') ?? [])
+    if (!target) return
+    if (target === showing) {
+      if (parts.length === 0) return
+      const fadeIn = animateSwap(parts, { opacity: 1 }, { duration: reducedMotion ? 0 : paced(DUR.base), ease: EASE })
+      return () => fadeIn.stop()
+    }
+    if (reducedMotion || parts.length === 0) {
+      setShownId(target)
+      return
+    }
+    let live = true
+    const fadeOut = animateSwap(parts, { opacity: 0 }, { duration: paced(DUR.fast), ease: 'linear' })
+    void fadeOut.then(() => live && setShownId(target))
+    return () => {
+      live = false
+      fadeOut.stop()
+    }
+  }, [animateSwap, reducedMotion, showing, swapScope, target])
+
   const { data: detail } = useRecommendationDetail(item?.providerId ?? null)
   const titleRef = useTitleFit(item?.title)
   const ownedArchived = useIsArchivedSeries(item ? seriesIdFor?.(item) : null)
@@ -162,7 +191,7 @@ export function DiscoverHero({
     return () => window.clearTimeout(id)
   }, [active, canAutoRotate, halted, picks.length])
 
-  if (!item) return null
+  if (!item || !current) return null
 
   // Everything here is on the rail item as well as the detail response, so the band is complete on
   // the first frame and the detail request fills in behind it rather than rearranging it.
@@ -225,17 +254,12 @@ export function DiscoverHero({
 
       <div className="series-hero-body">
         <div className="series-hero-content">
-          <motion.div
-            key={item.providerId}
-            className="discover-hero-feature"
-            initial={reducedMotion ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: paced(CINEMATIC.enter), ease: EASE }}
-          >
+          <div ref={swapScope} className="discover-hero-feature">
             <Group align="flex-start" gap={26} wrap="nowrap" className="discover-hero-feature-row">
             {cover && (
               <button
                 type="button"
+                data-hero-swap
                 className="discover-hero-poster"
                 data-series-cover={ownedSeriesId ?? undefined}
                 onClick={() => onOpen(item)}
@@ -251,13 +275,13 @@ export function DiscoverHero({
               </Text>
 
               {/* The page's h1 is "Discover"; the featured pick is a section of it. */}
-              <Title order={2} className="series-hero-title" ref={titleRef}>
+              <Title order={2} className="series-hero-title" ref={titleRef} data-hero-swap>
                 <button type="button" className="discover-hero-title" title={title} onClick={() => onOpen(item)}>
                   {title}
                 </button>
               </Title>
 
-              <Group gap={9} wrap="wrap" className="discover-hero-pills">
+              <Group gap={9} wrap="wrap" className="discover-hero-pills" data-hero-swap>
                 <span
                   className="series-hero-status"
                   style={{
@@ -271,7 +295,7 @@ export function DiscoverHero({
                 <ContentRatingChip rating={detail?.contentRating} />
               </Group>
 
-              <div className="hero-figures">
+              <div className="hero-figures" data-hero-swap>
                 {score != null && (
                   <span
                     className="hero-score"
@@ -300,7 +324,7 @@ export function DiscoverHero({
                   appears from nothing shoves the buttons down mid-read. Row spacing is in the
                   stylesheet rather than on `mt` props: it is what the band's height is made of, and
                   a short viewport tunes all of it at once. */}
-              <Group gap="xs" align="center" className="discover-hero-sources">
+              <Group gap="xs" align="center" className="discover-hero-sources" data-hero-swap>
                 {detail?.sourceRatings.map((r) => (
                   <Tooltip key={r.source} label={r.source} withArrow>
                     <Badge
@@ -322,7 +346,7 @@ export function DiscoverHero({
               </Group>
 
               {/* Always rendered: an empty row still holds its height. */}
-              <div className="discover-hero-reasons">
+              <div className="discover-hero-reasons" data-hero-swap>
                 <MetaList
                   items={reasons.slice(0, 3).map((r) => (
                     <span key={r.id} className="discover-hero-reason" title={r.text}>
@@ -375,7 +399,7 @@ export function DiscoverHero({
               </Group>
 
               {/* Phone only: the score and figures as one line under the buttons. */}
-              <div className="discover-hero-facts">
+              <div className="discover-hero-facts" data-hero-swap>
                 {score != null && (
                   <span
                     className="discover-hero-facts-score figure"
@@ -391,7 +415,7 @@ export function DiscoverHero({
               </div>
             </Stack>
             </Group>
-          </motion.div>
+          </div>
 
           <div className="discover-hero-strip">
             <div className="discover-hero-strip-heading">
@@ -472,7 +496,7 @@ export function DiscoverHero({
                     </span>
                     {n === active && canAutoRotate && !halted && (
                       <span className="discover-hero-strip-progress" aria-hidden>
-                        <span key={item.providerId} />
+                        <span key={current.providerId} />
                       </span>
                     )}
                   </button>

@@ -195,6 +195,7 @@ import { useColumnWidths, type ColumnSpec } from '../lib/useColumnWidths'
 import { useStableActions } from '../lib/useStableActions'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { EmptyState } from '../components/ui/EmptyState'
+import { HintLabel } from '../components/ui/FigureStrip'
 import { Panel } from '../components/ui/Panel'
 import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
@@ -3262,9 +3263,7 @@ function SeriesDetailBody() {
                           <Table.Thead>
                             <Table.Tr>
                               <Table.Th w={CHAPTER_WANTED_COLUMN_WIDTH}>
-                                <Tooltip label={wantedColumnTip} withArrow multiline maw={280} events={TOOLTIP_EVENTS}>
-                                  <span className="column-hint" tabIndex={0}><Trans>Wanted</Trans></span>
-                                </Tooltip>
+                                <HintLabel tip={wantedColumnTip} maw={280}><Trans>Wanted</Trans></HintLabel>
                               </Table.Th>
                               <Table.Th w={chapterColumnWidths.chapter}>
                                 <Trans>Chapter</Trans>

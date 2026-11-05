@@ -17,7 +17,7 @@ export const EASE_LOOP = [0.45, 0, 0.55, 1] as const
 export const EASE_LOOP_CSS = 'cubic-bezier(0.45, 0, 0.55, 1)'
 
 /** `--dur-*`, in seconds. */
-export const DUR = { fast: 0.12, base: 0.15, medium: 0.18, slow: 0.35 } as const
+export const DUR = { fast: 0.12, base: 0.15, medium: 0.18, slide: 0.25, slow: 0.35 } as const
 
 /** `transitionProps` for an overlay that is the page rather than something over it: it appears at once. */
 export const NO_TRANSITION = { duration: 0 } as const
@@ -35,7 +35,7 @@ export const PAGE = { rise: DUR.medium, coverFlight: 0.44 } as const
 export const CINEMATIC = { enter: 0.4, fade: 0.55, backdrop: 0.9, countUp: 1.6 } as const
 
 /** How long a Rewind slide and a Discover hero pick stay up, in seconds. Reading time, so never paced. */
-export const DWELL = { rewindSlide: 6, heroPick: 5 } as const
+export const DWELL = { rewindSlide: 6, heroPick: 8 } as const
 
 /** A duration in seconds at the current pace: shorter under "Faster animations". */
 export const paced = (seconds: number) => seconds * motionPace()

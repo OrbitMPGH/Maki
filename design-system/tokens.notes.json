@@ -451,6 +451,7 @@
     "--dur-base": "hover colour and background, menus, popovers and hover cards",
     "--dur-medium": "cards lifting, posters moving, modals and drawers",
     "--dur-slow": "cover art scaling on hover",
+    "--dur-slide": "a drill-down menu or popover sliding to its next page, and its box easing to the new height",
     "--dur-loop": "the one period for every pulse and indeterminate sweep, so two on screen keep time; a queued sweep runs at 1.5 times it. Not shortened by Faster animations",
     "--dur-flash": "a one-shot tint on something that just resolved, like a source row that found a match",
     "--dur-highlight": "the ring on a settings card a link pointed at",

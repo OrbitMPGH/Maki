@@ -134,7 +134,7 @@ export function EmptyState({
         data-framed={framed || undefined}
         gap={16}
         wrap="nowrap"
-        align="center"
+        align="flex-start"
         py={py}
         px={px}
       >

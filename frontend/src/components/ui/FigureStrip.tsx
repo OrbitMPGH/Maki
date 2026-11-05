@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from 'react'
-import { Skeleton, Tooltip } from '@mantine/core'
+import { useId, useState, type ReactNode } from 'react'
+import { Skeleton, Tooltip, VisuallyHidden } from '@mantine/core'
 import { formatNumber, formatSignedPercent } from '../../format'
+import { IconInfoCircle } from '../../lib/icons'
 
 export interface Figure {
   label: string
@@ -83,11 +84,9 @@ export function FigureStrip({
               n
             )}
             {f.tip ? (
-              <Tooltip label={f.tip} withArrow multiline maw={260} events={{ hover: true, focus: true, touch: true }}>
-                <span className="figure-strip-l column-hint" tabIndex={0}>
-                  {f.label}
-                </span>
-              </Tooltip>
+              <HintLabel tip={f.tip} className="figure-strip-l">
+                {f.label}
+              </HintLabel>
             ) : (
               <span className="figure-strip-l">{f.label}</span>
             )}
@@ -96,6 +95,37 @@ export function FigureStrip({
         )
       })}
     </div>
+  )
+}
+
+const HINT_EVENTS = { hover: true, focus: true, touch: true }
+
+/**
+ * A label with a plain-words tooltip, marked by an info glyph. It takes focus so the tooltip opens
+ * from the keyboard, and screen readers get the tip as its description.
+ */
+export function HintLabel({
+  tip,
+  children,
+  className,
+  maw = 260,
+}: {
+  tip: string
+  children: ReactNode
+  className?: string
+  maw?: number
+}) {
+  const id = useId()
+  return (
+    <>
+      <Tooltip label={tip} withArrow multiline maw={maw} events={HINT_EVENTS}>
+        <span className={className ? `column-hint ${className}` : 'column-hint'} tabIndex={0} aria-describedby={id}>
+          {children}
+          <IconInfoCircle className="column-hint-icon" size={13} aria-hidden="true" />
+        </span>
+      </Tooltip>
+      <VisuallyHidden id={id}>{tip}</VisuallyHidden>
+    </>
   )
 }
 

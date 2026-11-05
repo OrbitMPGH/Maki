@@ -5,7 +5,7 @@ import {
   ActionIcon, Alert, Badge, Button, Card, Collapse, Group, Loader, Paper, Stack, Text, Tooltip,
 } from '@mantine/core'
 import {
-  IconAdjustmentsHorizontal, IconArrowBackUp, IconCompass, IconHelpCircle, IconThumbDown, IconThumbUp,
+  IconAdjustmentsHorizontal, IconArrowBackUp, IconChevronRight, IconCompass, IconHelpCircle, IconThumbDown, IconThumbUp,
 } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { AvoidanceLabel, FeedbackActivity, FeedbackLabData } from '../../api/recommendationFeedback'
@@ -282,8 +282,13 @@ export function SignalsCard() {
                 <Text size="sm" fw={600}>
                   <Trans>Recent feedback</Trans>
                 </Text>
-                <Button size="compact-sm" variant="default" onClick={() => setManage('titles')}>
-                  <Trans>Show all</Trans>
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  rightSection={<IconChevronRight size={16} />}
+                  onClick={() => setManage('titles')}
+                >
+                  <Trans>Show more</Trans>
                 </Button>
               </Group>
               {recent.length === 0 && padded.length === 0 && (

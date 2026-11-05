@@ -6015,6 +6015,10 @@ msgid "Checking for a new metadata snapshot"
 msgstr "Проверка нового снимка метаданных"
 
 #: src/pages/HealthPage.tsx
+msgid "Checks on the server and the library, and the repairs they found."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #~ msgid "Checks on your server and library files, and the repairs you approve."
 #~ msgstr ""
 
@@ -8484,6 +8488,10 @@ msgstr "Включить каталог OPDS"
 #, fuzzy
 msgid "Enabled"
 msgstr "Включено"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Enabled for this series"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -20105,7 +20113,6 @@ msgstr "Показывать всплывающее окно при поступ
 msgid "Show again"
 msgstr "Показать снова"
 
-#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show all"
@@ -20144,6 +20151,7 @@ msgstr "Показывать меньше"
 #: src/components/discover/DiscoverReviews.tsx
 #: src/components/discover/FollowingRail.tsx
 #: src/components/rails/CustomRailSection.tsx
+#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -21280,8 +21288,8 @@ msgstr "Проверки системы"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
-msgid "System checks and reviewed library maintenance."
-msgstr "Проверки системы и обслуживание библиотеки с проверкой результатов."
+#~ msgid "System checks and reviewed library maintenance."
+#~ msgstr "Проверки системы и обслуживание библиотеки с проверкой результатов."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy

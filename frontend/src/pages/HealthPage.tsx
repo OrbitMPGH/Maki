@@ -434,7 +434,7 @@ export default function HealthPage() {
       <PageHeader
         compact
         title={t`Health`}
-        description={t`System checks and reviewed library maintenance.`}
+        description={t`Checks on the server and the library, and the repairs they found.`}
         actions={
           <>
             <Button

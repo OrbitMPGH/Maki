@@ -4968,6 +4968,10 @@ msgid "Checking for a new metadata snapshot"
 msgstr "Checking for a new metadata snapshot"
 
 #: src/pages/HealthPage.tsx
+msgid "Checks on the server and the library, and the repairs they found."
+msgstr "Checks on the server and the library, and the repairs they found."
+
+#: src/pages/HealthPage.tsx
 #~ msgid "Checks on your server and library files, and the repairs you approve."
 #~ msgstr "Checks on your server and library files, and the repairs you approve."
 
@@ -7004,6 +7008,10 @@ msgstr "Enable the OPDS catalogue"
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Enabled"
 msgstr "Enabled"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Enabled for this series"
+msgstr "Enabled for this series"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Enabling it creates the feed URL. Confirm your password to continue."
@@ -16543,7 +16551,6 @@ msgstr "Show a popup when a notification arrives"
 msgid "Show again"
 msgstr "Show again"
 
-#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/HealthPage.tsx
 msgid "Show all"
 msgstr "Show all"
@@ -16577,6 +16584,7 @@ msgstr "Show less"
 #: src/components/discover/DiscoverReviews.tsx
 #: src/components/discover/FollowingRail.tsx
 #: src/components/rails/CustomRailSection.tsx
+#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -17517,8 +17525,8 @@ msgid "System checks"
 msgstr "System checks"
 
 #: src/pages/HealthPage.tsx
-msgid "System checks and reviewed library maintenance."
-msgstr "System checks and reviewed library maintenance."
+#~ msgid "System checks and reviewed library maintenance."
+#~ msgstr "System checks and reviewed library maintenance."
 
 #: src/pages/HealthPage.tsx
 msgid "System issues"

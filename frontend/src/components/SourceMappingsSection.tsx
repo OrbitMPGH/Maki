@@ -96,6 +96,8 @@ const ORIGIN_LABELS: Record<string, MessageDescriptor> = {
   Manual: msg`Manual`,
 }
 
+const HEADER_TIP_EVENTS = { hover: true, focus: true, touch: true }
+
 const menuHint = { display: 'block', mt: 2, size: 'xs', fw: 400, lh: 1.4, c: 'var(--ink-3)' } as const
 
 const ORIGIN_COLORS: Record<string, string> = {
@@ -473,10 +475,13 @@ export function SourceMappingsSection({
               <Table.Th w={84}><Trans>Languages</Trans></Table.Th>
               <Table.Th w={76}><Trans>Priority</Trans></Table.Th>
               <Table.Th w={112}><Trans>Quality</Trans></Table.Th>
-              {/* Icon-only: the label survives for assistive tech via VisuallyHidden. */}
               <Table.Th w={48} ta="center">
-                <VisuallyHidden><Trans>Enabled</Trans></VisuallyHidden>
-                <IconPower size={16} style={{ opacity: 0.7 }} aria-hidden />
+                <Tooltip label={t`Enabled for this series`} withArrow events={HEADER_TIP_EVENTS}>
+                  <span className="sources-table-icon-head" tabIndex={0}>
+                    <VisuallyHidden><Trans>Enabled</Trans></VisuallyHidden>
+                    <IconPower size={16} aria-hidden />
+                  </span>
+                </Tooltip>
               </Table.Th>
               <Table.Th w={80}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
             </Table.Tr>
@@ -580,7 +585,7 @@ export function SourceMappingsSection({
                   >
                     {/* A disabled input fires no pointer events, so the tooltip has to hang off
                         a wrapper. Greyed, not flipped: the stored flag is left exactly as-is. */}
-                    <Box component="span" display="inline-flex">
+                    <Box component="span" display="inline-flex" style={{ verticalAlign: 'middle' }}>
                       <Switch
                         size="xs"
                         aria-label={t`${sourceName} enabled`}
@@ -1094,7 +1099,8 @@ function MappingQuality({ quality, tier }: { quality: SourceQualityDto | undefin
           </Badge>
         </Tooltip>
       )}
-      <MappingMeasurement quality={quality} />
+      {/* Under a tier pill an unmeasured source shows nothing; the dash only fills an otherwise empty cell. */}
+      {(quality || !tier) && <MappingMeasurement quality={quality} />}
     </Stack>
   )
 }

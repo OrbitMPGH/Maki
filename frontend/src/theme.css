@@ -143,6 +143,7 @@
   --dur-base: 0.15s;
   --dur-medium: 0.18s;
   --dur-slow: 0.35s;
+  --dur-slide: 0.25s;
   /* Mirrored in lib/motion.ts for script and Mantine's overlays; change both together. */
   /* One period for every pulse and loading sweep, so two on screen keep time. */
   --dur-loop: 1.6s;
@@ -932,6 +933,7 @@ body {
   --dur-base: 0.083s;
   --dur-medium: 0.099s;
   --dur-slow: 0.193s;
+  --dur-slide: 0.138s;
   --dur-flash: 0.495s;
   --dur-highlight: 0.99s;
   --dur-linger: 0.66s;
@@ -2117,6 +2119,9 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   border-radius: var(--radius-pill);
   background: rgba(255, 255, 255, 0.2);
   overflow: hidden;
+}
+.cover-bar[data-empty] {
+  visibility: hidden;
 }
 /* "47 of 106" on the left, the "N new" pill on the right. */
 .cover-row {
@@ -3515,6 +3520,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   display: flex;
   flex: 1;
   flex-direction: column;
+  justify-content: center;
   gap: 5px;
   padding: 8px 10px 9px;
   border-top: 1px solid var(--hairline);
@@ -3535,9 +3541,9 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   margin-top: 1px;
 }
 /* Two shapes of about the same height. A sentence reason (author, taste, the anonymous crowd) takes
-   two lines over the matched-tag chips. A reason naming one of the reader's series puts the kind on
-   its own line, so an ellipsis never eats it, and gives the series up to three lines beside its
-   cover; the chips go, since the seed already says why the pick is here. */
+   two lines over the matched-tag chips. A reason naming one of the reader's series is two lines
+   centred beside its cover: the kind on its own line, so an ellipsis never eats it, then the series
+   on one line; the chips go, since the seed already says why the pick is here. */
 .engine-why-text {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -3562,6 +3568,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .engine-why-seed-body {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   min-width: 0;
 }
 .engine-why-kind {
@@ -3589,10 +3596,9 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 /* Quieter than the poster's own title, which is the pick; this is only the reason for it. */
 .engine-why-seed-title {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   font-weight: var(--fw-medium);
   color: var(--ink-2);
 }
@@ -4217,6 +4223,21 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   --rail-item-w: 235px;
   --rail-item-engine-w: 282px;
   --genre-tile-w: 375px;
+}
+/* On a phone every rail shows two whole cards and 24px of the third, whatever the density, so one
+   card never fills the screen. Next up keeps its own narrower card, which already fits that way. */
+@media (max-width: 47.9375em) {
+  .discover-rail > .discover-rail-item,
+  .discover-rail[data-engine] > .discover-rail-item {
+    width: min(calc((100% - 2 * 14px - 24px) / 2), 188px);
+  }
+  .continue-tray .discover-rail > .discover-rail-item {
+    width: var(--rail-item-w);
+  }
+  /* Short enough that the second card stays whole and the slice of the third still shows. */
+  .discover-rail[data-fade-end] {
+    --rail-fade-end: 28px;
+  }
 }
 
 /* --- Catalogue block ------------------------------------------------------ */
@@ -10626,6 +10647,23 @@ tr:hover .mono-value-copy {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* The Enabled column's header is a power glyph; it takes focus so its tooltip names the column. */
+.sources-table-icon-head {
+  display: inline-flex;
+  vertical-align: middle;
+  color: var(--ink-3);
+  cursor: help;
+}
+.sources-table-icon-head:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-2xs);
+}
+/* A switch greyed because its source is off keeps the track's edge, or only the knob shows and it
+   sits off-centre under the header. */
+.sources-table .mantine-Switch-input:is(:disabled, [data-disabled]) + .mantine-Switch-track {
+  box-shadow: inset 0 0 0 1px var(--border-control);
+}
 
 .figure-strip {
   display: grid;
@@ -11846,13 +11884,26 @@ button.import-plan-folder-head:hover {
 .series-detail-chapter-table thead th {
   background: color-mix(in srgb, var(--surface-2) 46%, transparent);
 }
-/* A label with a plain-words tooltip: a column header or a figure that names something internal. */
+/* A label with a plain-words tooltip: a column header or a figure that names something internal.
+   An info glyph marks it rather than an underline, which read as a link. */
 .column-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   justify-self: start;
-  text-decoration: underline dotted;
-  text-decoration-color: var(--ink-4);
-  text-underline-offset: 3px;
   cursor: help;
+}
+.column-hint-icon {
+  flex-shrink: 0;
+  color: var(--ink-4);
+}
+.column-hint:hover .column-hint-icon,
+.column-hint:focus-visible .column-hint-icon {
+  color: var(--ink-2);
+}
+/* The glyph may run into the cell's end padding, so the Wanted column keeps its fixed width. */
+.chapter-table thead th > .column-hint {
+  margin-inline-end: -20px;
 }
 .column-hint:focus-visible {
   outline: 2px solid var(--mantine-primary-color-filled);

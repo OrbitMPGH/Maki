@@ -17,7 +17,7 @@ function Pane({
 }) {
   // The page sliding out stays mounted for the animation; inert keeps focus and arrow keys off it.
   const present = useIsPresent()
-  const slide = { duration: paced(DUR.slow), ease: EASE }
+  const slide = { duration: paced(DUR.slide), ease: EASE }
   return (
     <motion.div
       ref={ref}
@@ -82,7 +82,7 @@ export function DrillPanes({
     <motion.div
       initial={false}
       animate={{ height: height === undefined ? 'auto' : height + bleed * 2 }}
-      transition={{ duration: reduce ? 0 : paced(DUR.slow), ease: EASE }}
+      transition={{ duration: reduce ? 0 : paced(DUR.slide), ease: EASE }}
       style={{ overflow: 'clip', margin: -bleed, padding: bleed }}
     >
       <div ref={innerRef} style={{ position: 'relative' }}>
