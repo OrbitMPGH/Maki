@@ -148,7 +148,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
   const seriesTitles = useMemo(
     () =>
       titleIndex(series ?? [], (s) => [
-        s.title, s.displayTitle, s.sortTitle, s.originalTitle, ...s.altTitles.map((t) => t.title),
+        s.title, s.displayTitle, s.sortTitle, s.originalTitle, ...(s.altTitleNames ?? []),
       ]),
     [series],
   )
@@ -245,7 +245,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
             path: `/series/${s.id}`,
             alt: matchingAltTitle(
               s.displayTitle,
-              [s.title, s.originalTitle, ...s.altTitles.map((a) => a.title)],
+              [s.title, s.originalTitle, ...(s.altTitles ?? []).map((a) => a.title)],
               highlightTerms,
             ),
           }))

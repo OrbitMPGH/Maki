@@ -2,6 +2,7 @@ using System.Globalization;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Images;
+using Maki.Core.Io;
 using Maki.Core.Paths;
 using Maki.Core.Storage;
 using Maki.Data;
@@ -69,6 +70,8 @@ public class PageConversionService(
     internal Action<string, string> MoveOver { get; init; } = (from, to) => File.Move(from, to, overwrite: true);
 
     internal Func<string, long?> FreeSpace { get; init; } = DiskSpace.AvailableFor;
+
+    internal Action<string> DropCache { get; init; } = PageCache.DropAfterScan;
 
     /// <summary>
     /// Windows refuses to rename an open file or move the folder it is in, and a conversion can take
@@ -152,9 +155,20 @@ public class PageConversionService(
             return new FileConversion(FileConversionStatus.Unchanged);
         }
 
+        // A pass reads each file end to end once and never again soon, so whatever it leaves as it was goes
+        // out of the page cache. A queued file is a fresh download, likely to be read next.
+        void LeaveCold()
+        {
+            if (!queued)
+            {
+                DropCache(path);
+            }
+        }
+
         if (!await Probe(path, settings, ct))
         {
             await MarkCheckedAsync(file, action.Name, ct);
+            LeaveCold();
             return new FileConversion(FileConversionStatus.Unchanged, Outcome: ArchiveConversionOutcome.NotSmaller);
         }
 
@@ -191,6 +205,7 @@ public class PageConversionService(
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             logger.LogDebug(ex, "Could not convert {Path}", path);
+            LeaveCold();
             return new FileConversion(FileConversionStatus.Failed);
         }
         finally
@@ -204,8 +219,11 @@ public class PageConversionService(
         if (result.Outcome != ArchiveConversionOutcome.Converted)
         {
             await MarkCheckedAsync(file, action.Name, ct);
+            LeaveCold();
             return new FileConversion(FileConversionStatus.Unchanged, Outcome: result.Outcome);
         }
+
+        var swapped = false;
 
         try
         {
@@ -216,6 +234,7 @@ public class PageConversionService(
                 !onDisk.Exists || onDisk.Length != length || onDisk.LastWriteTimeUtc != written ||
                 await BusyAsync(current, queued, ct) || (queued && archives.ReadWithin(path, ReadingQuiet)))
             {
+                LeaveCold();
                 return new FileConversion(FileConversionStatus.Busy);
             }
 
@@ -227,8 +246,11 @@ public class PageConversionService(
             var trashRelative = keepOriginal ? Swap(row.Root, current, path, tmp, hardlinks) : null;
             if (keepOriginal ? trashRelative is null : !Replace(path, tmp))
             {
+                LeaveCold();
                 return new FileConversion(FileConversionStatus.Failed);
             }
+
+            swapped = true;
 
             // The bytes have changed: from here the row has to be saved whatever happens.
             archives.Invalidate(current.Id);
@@ -261,6 +283,11 @@ public class PageConversionService(
         finally
         {
             TryDelete(tmp);
+            // The converted copy was flushed before it was renamed in, so its pages are clean and can go.
+            if (swapped)
+            {
+                LeaveCold();
+            }
         }
 
         var topFolder = file.RelativePath.Split('/', '\\')[0];
@@ -316,6 +343,8 @@ public class PageConversionService(
             logger.LogDebug(ex, "Could not stamp {Path} with its trash time", trash);
         }
 
+        // The original, the same inode when hardlinked, is only read again by an undo.
+        DropCache(trash);
         return trashRelative;
     }
 

@@ -25,9 +25,11 @@ public sealed record SourceOrderResult(
 /// under the series' upgrade profile, scoring each source on its recent measurements
 /// (<see cref="SourceQualitySamples"/>); a series with no profile is ranked under the default tier
 /// order at the starter weights, so the mode still means something before any profile is picked.
-/// A source this series has not measured is judged by its record across the library, and one never
-/// measured anywhere gets the lowest measured points there are: below the reference is the norm, so
-/// scoring it as average would put it ahead of nearly every source that has been measured.
+/// A source this series has not measured ranks after every allowed source it has, whatever its tier:
+/// the usual reason is that sampling it failed or hit a rate limit, so a guess must not beat a measurement.
+/// Among the unmeasured, one is judged by its record across the library, and one never measured
+/// anywhere gets the lowest measured points there are: below the reference is the norm, so scoring it
+/// as average would put it ahead of nearly every source that has been measured.
 /// </summary>
 public class SourceOrderService(SourceRegistry registry, ChapterFileQualityService quality)
 {
@@ -86,7 +88,7 @@ public class SourceOrderService(SourceRegistry registry, ChapterFileQualityServi
 
         var byId = mappings.ToDictionary(m => m.Id);
         var ranked = SourceRanking.Order(evaluator.Profile,
-            mappings.Select(m => new SourceRanking.Entry(m.Id, m.Priority, scores[m.Id])));
+            mappings.Select(m => new SourceRanking.Entry(m.Id, m.Priority, scores[m.Id], estimates.ContainsKey(m.Id))));
         return new SourceOrderResult(seriesMode, defaultMode, [.. ranked.Select(e => byId[e.MappingId])], scores);
     }
 

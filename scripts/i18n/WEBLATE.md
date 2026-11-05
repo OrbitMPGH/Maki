@@ -80,6 +80,9 @@ instead of the bare key. The base file stays read-only here because keys are nam
 - **PO line wrap**: "Only wrap lines at newlines", which is what Lingui writes. The default of 77
   columns rewraps every file, and "No line wrapping" puts the whole header on one line, which
   Lingui's parser reads as empty. Either way CI's `lingui extract` + `git diff` step fails.
+- **Comment order**: every `#.` line comes before the `#:` references, which is the order Weblate
+  writes. `sync-server-keys.mjs` writes it that way; a catalogue in any other order gets rewritten
+  in full by the first Weblate edit, and that commit then conflicts with the next sync.
 - **Set "Last-Translator"**: off. It writes the committer's name and email into every catalogue
   header.
 - **Repository browser**: `https://github.com/OrbitMPGH/Maki/blob/{{branch}}/{{filename}}#L{{line}}`
@@ -88,6 +91,19 @@ instead of the bare key. The base file stays read-only here because keys are nam
   links. Those references are the most useful thing in
   the file: the same English word is a navigation tab in `nav.ts` and a failure sentence in
   `DownloadQueueService.cs`, and they do not translate the same way.
+
+### GitHub webhook
+
+The repo needs a webhook to `https://hosted.weblate.org/hooks/github/` (content type
+`application/json`, push events only). Without it Weblate only fetches once a night and does not
+merge what it fetched, so both components raise "Repository outdated" after every push to `dev`
+until someone clicks Update.
+
+If a merge ever fails, use **Discard local changes**, then **Rescan** if the counts look stale. Never
+use **Reset and reapply translations** or **Synchronize**: both write Weblate's own copy of every
+string back over the repo, and when that copy is older than `dev` it blanks every machine
+translation added since (PR #165 did this to about 8,000 entries). Copy any reviewed strings out of
+the failed commit by hand first.
 
 ## Glossary
 

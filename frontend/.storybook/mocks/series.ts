@@ -27,7 +27,8 @@ import {
   upgradeProfiles,
 } from './series/fixtures'
 import { api, failWith, hoursAgo } from './api'
-import { catalogue } from './shared'
+import { catalogue, seriesLookupHandler } from './shared'
+import { notesHandlers } from './notes'
 import { outlookFor } from './operations/upcoming'
 
 export * from './series/fixtures'
@@ -295,6 +296,7 @@ export const seriesHandlers: HttpHandler[] = [
  * Home stories see; page stories pass these as `parameters.msw`, ahead of any variant handlers.
  */
 export const seriesPageHandlers: HttpHandler[] = [
+  ...notesHandlers,
   http.get(api('/series'), () => HttpResponse.json(catalogue.map((s) => seriesDto(s.id)))),
   http.get(api('/queue'), () => HttpResponse.json({ items: [], total: 0, page: 1, pageSize: 200 })),
   http.get(api('/reader/used'), () => HttpResponse.json({ used: true })),
@@ -315,4 +317,4 @@ export const seriesPageHandlers: HttpHandler[] = [
 ]
 
 /** `parameters.msw` for a series page story: its variants first, then the shared page endpoints. */
-export const seriesMsw = (...variants: HttpHandler[]): HttpHandler[] => [...variants, ...seriesPageHandlers]
+export const seriesMsw = (...variants: HttpHandler[]): HttpHandler[] => [seriesLookupHandler, ...variants, ...seriesPageHandlers]

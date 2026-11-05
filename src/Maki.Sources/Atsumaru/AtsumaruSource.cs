@@ -191,7 +191,13 @@ public class AtsumaruSource(IHttpClientFactory httpClientFactory) : ISource
                 $"No page list in the response for chapter {chapter.SourceChapterId} of {chapter.SourceSeriesId}");
         }
 
-        var headers = new Dictionary<string, string> { ["Referer"] = $"{BaseUrl}/" };
+        // The CDN's Cloudflare rules 403 any User-Agent starting with "Maki/" (since 2026-11), which the
+        // shared page client sends, so pages carry the browser UA the API client already uses.
+        var headers = new Dictionary<string, string>
+        {
+            ["Referer"] = $"{BaseUrl}/",
+            ["User-Agent"] = BrowserUserAgent.Value,
+        };
         var pages = new List<PageRequest>();
         foreach (var page in pageArray
                      .EnumerateArray()

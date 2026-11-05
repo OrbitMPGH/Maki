@@ -95,6 +95,53 @@ export const ThumbnailStrip: Story = {
   },
 }
 
+export const NoteMarkersOnThumbnails: Story = {
+  parameters: open(1132),
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await userEvent.keyboard('t')
+    await expect(await canvas.findByRole('button', { name: 'Go to page 2 (has notes)' })).toHaveAttribute('data-noted', 'true')
+    await expect(await canvas.findByRole('button', { name: 'Go to page 12 (has notes)' })).toBeInTheDocument()
+  },
+}
+
+export const NotesPanelOpens: Story = {
+  parameters: open(1132),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await summonChrome({ canvasElement, userEvent })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Notes (3)' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByRole('dialog', { name: 'Notes, Chapter 132' })).toBeVisible()
+    await expect(await body.findByText(/tea cups/)).toBeVisible()
+    // Escape closes the panel and leaves the reader where it is.
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(body.queryByRole('dialog', { name: 'Notes, Chapter 132' })).toBeNull())
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible()
+  },
+}
+
+export const NotesPanelKeepsPageKeys: Story = {
+  parameters: open(1132),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await summonChrome({ canvasElement, userEvent })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Notes (3)' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.type(await body.findByRole('textbox', { name: 'Write a note' }), 'Typing {ArrowLeft}b t')
+    // Keys typed into the box never reach the page behind it.
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible()
+  },
+}
+
+export const NotesFromAnInboxLink: Story = {
+  parameters: { router: { path: '/read/:chapterId', initialEntries: ['/read/1132?notes=3'] } },
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByRole('dialog', { name: 'Notes, Chapter 132' })).toBeVisible()
+    await waitFor(() => expect(canvasElement.ownerDocument.getElementById('note-thread-3')).toHaveAttribute('data-highlight'))
+  },
+}
 export const KeyboardShortcuts: Story = {
   parameters: open(1132),
   play: async ({ canvas, userEvent }) => {

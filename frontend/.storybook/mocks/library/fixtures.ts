@@ -85,6 +85,7 @@ function toSeries(e: CatalogueEntry): SeriesDto {
     sortTitle: e.title.toLowerCase(),
     originalTitle: e.nativeTitle || null,
     altTitles: e.nativeTitle ? [{ title: e.nativeTitle, language: 'ja' }] : [],
+    altTitleNames: e.nativeTitle ? [e.nativeTitle] : [],
     status: e.status,
     type: e.type.toLowerCase(),
     overview: e.synopsis,

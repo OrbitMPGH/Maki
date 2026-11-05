@@ -181,8 +181,8 @@ public sealed class EnhanceEndpointTests : IDisposable
         Assert.Equal("""[{"page":2,"state":"queued"}]""", posted.GetProperty("pages").GetRawText());
         Assert.Equal(3, _queue.Snapshot().Pending);
 
-        var opened = Json(await Reader(db, 1).Enhance(nextId, new EnhancePagesRequest("span-s", [1]), _store, _queue, _cache, default));
-        Assert.Equal("""[{"page":1,"state":"queued"}]""", opened.GetProperty("pages").GetRawText());
+        var opened = Json(await Reader(db, 1).Enhance(nextId, new EnhancePagesRequest("span-s", [0]), _store, _queue, _cache, default));
+        Assert.Equal("""[{"page":0,"state":"queued"}]""", opened.GetProperty("pages").GetRawText());
         Assert.Equal(2, _queue.Snapshot().Pending);
 
         using var upscaler = new OnnxPageUpscaler(_catalog, _store, _settings, NullLogger<OnnxPageUpscaler>.Instance);
@@ -191,7 +191,7 @@ public sealed class EnhanceEndpointTests : IDisposable
         Assert.True(await worker.RunOnceAsync(default));
         Assert.True(await worker.RunOnceAsync(default));
         Assert.Equal(
-            [(1, nextId, 1, "span-s", "working"), (1, nextId, 1, "span-s", "ready"), (1, nextId, 0, "span-s", "working"), (1, nextId, 0, "span-s", "ready")],
+            [(1, nextId, 0, "span-s", "working"), (1, nextId, 0, "span-s", "ready"), (1, nextId, 1, "span-s", "working"), (1, nextId, 1, "span-s", "ready")],
             _broadcaster.Sent);
     }
 

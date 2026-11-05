@@ -47,6 +47,10 @@ export interface ReaderManifest {
   tier?: QualityTierName
   /** Whether the admin turned on server upscaling, and which of its models this reader can pick. Absent on a manifest saved offline before it existed. */
   enhanceServer?: EnhanceServer
+  /** Visible notes on the chapter, tombstones left out. Absent on a manifest saved offline before it existed. */
+  noteCount?: number
+  /** Zero based pages with at least one visible note, sorted. Absent on a manifest saved offline before it existed. */
+  notedPages?: number[]
 }
 
 export interface EnhanceServer {

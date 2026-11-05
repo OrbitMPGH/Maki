@@ -66,8 +66,10 @@ public static class ArchiveHealthAnalyzer
     /// <summary>
     /// Decompressed entry bytes allowed in flight across the whole fan-out. Bounds the workers by
     /// what they hold rather than by how many there are; see the sizing at the Parallel call.
+    /// Ordinary pages up to 8 MB keep all eight workers; only webtoon strips and other huge entries
+    /// narrow the fan-out, which is where 256 MB let a verify hold a quarter of a gigabyte.
     /// </summary>
-    public const long MaxInFlightBytes = 256L * 1024 * 1024;
+    public const long MaxInFlightBytes = 64L * 1024 * 1024;
     public const long MaxExpandedBytes = 4L * 1024 * 1024 * 1024;
     public const long MaxPixels = 40_000_000;
 

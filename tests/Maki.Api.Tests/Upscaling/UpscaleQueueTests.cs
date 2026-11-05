@@ -60,12 +60,82 @@ public class UpscaleQueueTests
     }
 
     [Fact]
-    public void Paging_on_in_one_chapter_keeps_older_pages_behind_the_new_window()
+    public void Paging_past_unfinished_pages_drops_them()
     {
         _queue.Replace(1, 1, "span-s", [Item(0), Item(1)]);
         _queue.Replace(1, 1, "span-s", [Item(5), Item(6)]);
 
-        Assert.Equal([5, 6, 0, 1], DrainPages());
+        Assert.Equal([5, 6], DrainPages());
+    }
+
+    [Fact]
+    public void Paging_back_keeps_older_pages_ahead_behind_the_new_window()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(5), Item(6), Item(7), Item(8)]);
+        _queue.Replace(1, 1, "span-s", [Item(4), Item(5)]);
+
+        Assert.Equal([4, 5, 6, 7, 8], DrainPages());
+    }
+
+    [Fact]
+    public void Moving_to_another_chapter_abandons_the_running_page()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(0), Item(1)]);
+        var running = _queue.TryDequeue()!;
+
+        _queue.Replace(1, 2, "span-s", [Item(7, chapterId: 2, fileId: 2)]);
+
+        Assert.True(running.Abandoned.IsCancellationRequested);
+        Assert.Empty(_queue.Complete(running, UpscaleOutcome.Failed, UpscaleReasons.Abandoned));
+        Assert.Null(_queue.RecentOutcome(running.Key));
+        Assert.Equal([7], DrainPages());
+    }
+
+    [Fact]
+    public void Paging_past_the_running_page_abandons_it()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(0), Item(1), Item(2)]);
+        var running = _queue.TryDequeue()!;
+
+        _queue.Replace(1, 1, "span-s", [Item(2), Item(3)]);
+
+        Assert.True(running.Abandoned.IsCancellationRequested);
+        _queue.Complete(running, UpscaleOutcome.Failed, UpscaleReasons.Abandoned);
+        Assert.Equal([2, 3], DrainPages());
+    }
+
+    [Fact]
+    public void A_running_page_is_kept_while_it_is_still_ahead_or_another_reader_waits()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(4)]);
+        var running = _queue.TryDequeue()!;
+
+        _queue.Replace(1, 1, "span-s", [Item(3), Item(5)]);
+        Assert.False(running.Abandoned.IsCancellationRequested);
+        _queue.Replace(1, 1, "span-s", []);
+        Assert.False(running.Abandoned.IsCancellationRequested);
+        _queue.Replace(1, 1, "span-s", [Item(4)]);
+
+        _queue.Replace(2, 1, "span-s", [Item(4)]);
+        _queue.Replace(1, 2, "realesrgan-av3", [Item(7, chapterId: 2, fileId: 2, model: "realesrgan-av3")]);
+        Assert.False(running.Abandoned.IsCancellationRequested);
+        Assert.Equal([2], _queue.Complete(running, UpscaleOutcome.Ready, null).Select(w => w.Key));
+    }
+
+    [Fact]
+    public void An_abandoned_page_asked_for_again_is_queued_afresh()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(0)]);
+        var running = _queue.TryDequeue()!;
+        _queue.Replace(1, 2, "span-s", [Item(7, chapterId: 2, fileId: 2)]);
+
+        Assert.Equal([UpscaleJobState.Queued], _queue.Replace(1, 1, "span-s", [Item(0)]));
+        _queue.Complete(running, UpscaleOutcome.Failed, UpscaleReasons.Abandoned);
+
+        var again = _queue.TryDequeue()!;
+        Assert.NotSame(running, again);
+        Assert.Equal(running.Key, again.Key);
+        Assert.False(again.Abandoned.IsCancellationRequested);
     }
 
     [Fact]

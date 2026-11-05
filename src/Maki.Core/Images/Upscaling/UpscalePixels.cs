@@ -66,7 +66,26 @@ public static class UpscalePixels
         }
     }
 
-    private static int Luma(int r, int g, int b) => (299 * r + 587 * g + 114 * b + 500) / 1000;
+    /// <summary>Rec. 601 luma, rounded. For a grey pixel it returns that grey.</summary>
+    public static int Luma(int r, int g, int b) => (299 * r + 587 * g + 114 * b + 500) / 1000;
+
+    /// <summary>
+    /// True when every pixel of interleaved RGB has R = G = B, as a one-band JPEG or PNG decodes.
+    /// For such a page <see cref="TakeColourFrom"/> followed by <see cref="ToSingleBand"/> gives
+    /// exactly the <see cref="Luma"/> of the model output, so the output can be stitched as luma.
+    /// </summary>
+    public static bool IsExactGrey(ReadOnlySpan<byte> rgb)
+    {
+        for (var i = 0; i + 2 < rgb.Length; i += 3)
+        {
+            if (rgb[i] != rgb[i + 1] || rgb[i] != rgb[i + 2])
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 
     /// <summary>One band per pixel, the rounded mean of the three channels.</summary>
     public static byte[] ToSingleBand(ReadOnlySpan<byte> rgb)

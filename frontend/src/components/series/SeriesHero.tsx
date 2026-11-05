@@ -191,7 +191,7 @@ export function SeriesHero({
     // otherwise picking "Japanese" makes the name everything else in Maki uses (the folder on disk,
     // the file names, search) disappear from the page entirely.
     const altTitles = otherTitles(
-        readableTitles(series.altTitles, i18n.locale),
+        readableTitles(series.altTitles ?? [], i18n.locale),
         series.originalTitle,
         series.displayTitle,
     ).concat(series.displayTitle === series.title ? [] : [{ title: series.title, language: null }])

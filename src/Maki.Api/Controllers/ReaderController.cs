@@ -219,6 +219,11 @@ public class ReaderController(
             .Where(f => f.Id == slice.ChapterFileId)
             .Select(f => f.Tier)
             .FirstOrDefaultAsync(ct);
+        // Drawn with the first paint, so the toolbar badge and the page markers need no second request.
+        var notePages = await db.ChapterNotes
+            .Where(n => n.ChapterId == id && n.ParentId == null && n.DeletedAt == null)
+            .Select(n => n.PageIndex)
+            .ToListAsync(ct);
 
         return Ok(new
         {
@@ -247,7 +252,9 @@ public class ReaderController(
             autoProfileId = resolved.AutoProfileId,
             pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion),
             tier = QualitySnapshot.TierName(tier),
-            enhanceServer
+            enhanceServer,
+            noteCount = notePages.Count,
+            notedPages = notePages.OfType<int>().Where(p => p < slice.PageCount).Distinct().Order().ToList()
         });
     }
 
@@ -426,6 +433,13 @@ public class ReaderController(
             return StatusCode(StatusCodes.Status304NotModified);
         }
 
+        // The browser keeps the page as immutable, so the server rarely reads it again; without this its
+        // pages stay in the container's page cache up to the upscale cache cap.
+        Response.OnCompleted(() =>
+        {
+            PageCache.DropAfterScan(cached);
+            return Task.CompletedTask;
+        });
         return PhysicalFile(cached, UpscaleCache.ContentType(cached), lastModified: null, entityTag: etag, enableRangeProcessing: false);
     }
 

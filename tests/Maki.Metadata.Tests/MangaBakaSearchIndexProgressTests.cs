@@ -62,6 +62,21 @@ public class MangaBakaSearchIndexProgressTests : IDisposable
     }
 
     [Fact]
+    public void Scanned_pagesAreDropped_everyFewRanges()
+    {
+        _db.AddSeries(1, "Berserk").AddSeries(60_000, "Vagabond").AddSeries(120_000, "Monster");
+
+        var drops = 0;
+        using (var conn = _db.Open())
+        {
+            MangaBakaDumpService.BuildSearchIndex(conn, dropScanned: () => drops++);
+        }
+
+        Assert.Equal(12 / MangaBakaDumpService.DropEveryChunks, drops);
+        Assert.Equal([120_000L], Search("monster"));
+    }
+
+    [Fact]
     public void An_emptyTable_stillFinishes()
     {
         var reports = new List<double>();

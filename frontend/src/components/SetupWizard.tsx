@@ -853,15 +853,27 @@ function GuideRail({
  * the whole query cache. Reading the query directly would unmount the guide and drop the step.
  */
 export default function SetupWizard() {
+  const { data: setup } = useSetupStatus()
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (!setup) return
+    if (setup.completed) setOpen(false)
+    else if (!open) setOpen(true)
+  }, [setup, open])
+
+  // The guide's own queries (settings, connections, dump progress) only run while it is open.
+  return open ? <SetupGuide /> : null
+}
+
+function SetupGuide() {
   const { t } = useLingui()
   const navigate = useNavigate()
-  const { data: setup } = useSetupStatus()
   const complete = useCompleteSetup()
   const { data: metadata } = useMetadataSettings()
   const steps = useSteps()
   // Skip still leaves early: the gate in front of the app then waits for the database instead.
   const ready = Boolean(metadata?.dumpPresent)
-  const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
   const [visited, setVisited] = useState<Set<number>>(() => new Set([0]))
   const titleRef = useRef<HTMLHeadingElement>(null)
@@ -877,17 +889,6 @@ export default function SetupWizard() {
     else unsaved.current.delete(id)
     setUnsavedCount(unsaved.current.size)
   }, [])
-
-  useEffect(() => {
-    if (!setup) return
-    if (setup.completed) {
-      setOpen(false)
-    } else if (!open) {
-      setOpen(true)
-      setActive(0)
-      setVisited(new Set([0]))
-    }
-  }, [setup, open])
 
   useEffect(() => {
     if (unsavedCount === 0) setConfirmLeave(false)
@@ -931,8 +932,6 @@ export default function SetupWizard() {
   }
 
   const confirmedFinish = (then?: string) => requireConfirm(() => finish(then))
-
-  if (!open) return null
 
   const step = steps[active]
   const stepNumber = active + 1

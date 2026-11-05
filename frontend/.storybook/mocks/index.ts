@@ -9,6 +9,7 @@ import { operationsHandlers } from './operations'
 import { insightsHandlers } from './insights'
 import { shellHandlers } from './shell'
 import { entryHandlers } from './entry'
+import { notesHandlers } from './notes'
 import { shortlistHandlers } from './shortlist'
 
 /**
@@ -41,6 +42,7 @@ export const defaultHandlers: HttpHandler[] = [
   ...insightsHandlers,
   ...shellHandlers,
   ...entryHandlers,
+  ...notesHandlers,
   ...shortlistHandlers,
   ...catchAll,
 ]

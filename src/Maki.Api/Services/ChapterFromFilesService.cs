@@ -161,6 +161,9 @@ public class ChapterFromFilesService(
         var bookmarks = await db.ReaderBookmarks.IgnoreQueryFilters()
             .Where(b => b.SeriesId == series.Id)
             .ToListAsync(ct);
+        var notes = await db.ChapterNotes.IgnoreQueryFilters()
+            .Where(n => n.SeriesId == series.Id)
+            .ToListAsync(ct);
         var silentMarks = new Dictionary<int, (decimal Chapter, int Volume)>();
 
         foreach (var entry in retiring)
@@ -220,6 +223,13 @@ public class ChapterFromFilesService(
                     db.ReaderBookmarks.Remove(bookmark);
                     bookmarks.Remove(bookmark);
                 }
+            }
+
+            // A volume's page index means nothing in one chapter's slice, so the note keeps only its chapter.
+            foreach (var note in notes.Where(n => n.ChapterId == entry.Id))
+            {
+                note.ChapterId = takers[0].Id;
+                note.PageIndex = null;
             }
 
             db.Chapters.Remove(entry);

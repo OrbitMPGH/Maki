@@ -984,6 +984,10 @@ msgstr ""
 msgid "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
 msgstr "{count, plural, other {# 个受监控的系列没有已启用的来源}}"
 
+#: src/pages/reader/NotesMargin.tsx
+msgid "{count, plural, one {# note on the whole chapter} other {# notes on the whole chapter}}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{count, plural, one {# replacement} other {# replacements}}"
@@ -1081,6 +1085,10 @@ msgstr "{count, plural, other {通知，# 条未读}}"
 #, fuzzy
 msgid "{count, plural, one {Saving # chapter for offline} other {Saving # chapters for offline}}"
 msgstr "{count, plural, other {正在保存 # 个章节以供离线阅读}}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{count, plural, one {See all # note} other {See all # notes}}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2131,6 +2139,10 @@ msgstr "{renamed, plural, other {已重命名 # 个系列}}"
 msgid "{replacedFiles, plural, one {Replaces # file} other {Replaces # files}}"
 msgstr "{replacedFiles, plural, other {替换 # 个文件}}"
 
+#: src/pages/reader/NotesMargin.tsx
+msgid "{replies, plural, one {# reply} other {# replies}}"
+msgstr ""
+
 #: src/components/import/MihonSummary.tsx
 #, fuzzy
 msgid "{requested, plural, one {# sent for approval} other {# sent for approval}}"
@@ -2300,6 +2312,10 @@ msgstr "已选择 {selectedCount}/{totalCount}"
 msgid "{selectedCount} selected"
 msgstr "已选择 {selectedCount} 个"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{selectedNoteCount, plural, one {# note on the selected chapters will be deleted.} other {# notes on the selected chapters will be deleted.}}"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "{seriesAdded, plural, one {series added} other {series added}}"
@@ -2310,10 +2326,6 @@ msgid "{seriesChapterCount, plural, one {{chaptersRead} of # read} other {{chapt
 msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
-#~ msgid "{seriesChapterCount, plural, one {{chaptersRead} read of # downloaded} other {{chaptersRead} read of # downloaded}}"
-#~ msgstr ""
-
-#: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 #~ msgid "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
 #~ msgstr "{seriesChapterCount, plural, other {已读 {chaptersRead}/# 个章节}}"
@@ -2321,10 +2333,6 @@ msgstr ""
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "{seriesChapterCount, plural, one {all # read} other {all # read}}"
 msgstr ""
-
-#: src/pages/reader/ReaderToolbar.tsx
-#~ msgid "{seriesChapterCount, plural, one {read all # downloaded} other {read all # downloaded}}"
-#~ msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/TagManagerModal.tsx
@@ -2940,6 +2948,10 @@ msgstr "{weekday} {hourLabel}：{minutes} 分钟"
 #, fuzzy
 msgid "{weight} total"
 msgstr "总计 {weight}"
+
+#: src/components/notes/NoteThread.tsx
+msgid "{who}, {when}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -3587,6 +3599,10 @@ msgstr "添加"
 msgid "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
 msgstr "在设置的章节格式中添加 {chapterLanguageToken}，以便区分它们。"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Add a note"
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
@@ -3629,6 +3645,10 @@ msgstr "添加连接"
 #, fuzzy
 msgid "Add folder"
 msgstr "添加文件夹"
+
+#: src/components/notes/NoteComposer.tsx
+msgid "Add note"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -4225,6 +4245,10 @@ msgstr "另一个自定义来源已使用此 ID"
 msgid "Another file already backs the chapter. Open each one to compare the two before keeping either."
 msgstr ""
 
+#: src/components/notes/useAuthorLabel.ts
+msgid "Another reader"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
@@ -4720,10 +4744,6 @@ msgstr "已避开"
 msgid "Back"
 msgstr "返回"
 
-#: src/pages/discover/FeedbackLab.tsx
-#~ msgid "back in recommendations since {until}"
-#~ msgstr ""
-
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Back in recommendations since {until}"
 msgstr ""
@@ -4932,6 +4952,10 @@ msgstr "铃铛，收件箱，提醒，提示，应用内通知，新章节，成
 #, fuzzy
 msgid "Below the series' upgrade cutoff"
 msgstr "低于该系列的升级截止线"
+
+#: src/pages/reader/ReaderPage.tsx
+msgid "Beside the page"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -5206,6 +5230,8 @@ msgstr "无法使用已保存的信息登录。"
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/notes/NoteComposer.tsx
+#: src/components/notes/NoteThread.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/QueueActions.tsx
@@ -5680,10 +5706,6 @@ msgstr "第 {resumeAt} 章尚未下载"
 msgid "Chapter already has a file"
 msgstr ""
 
-#: src/components/series/ChapterCountsInfo.tsx
-#~ msgid "Chapter counts"
-#~ msgstr ""
-
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Chapter downloaded"
@@ -6018,10 +6040,6 @@ msgstr "正在检查新的元数据快照"
 msgid "Checks on the server and the library, and the repairs they found."
 msgstr ""
 
-#: src/pages/HealthPage.tsx
-#~ msgid "Checks on your server and library files, and the repairs you approve."
-#~ msgstr ""
-
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -6231,6 +6249,10 @@ msgstr "客户端密钥"
 #, fuzzy
 msgid "Close"
 msgstr "关闭"
+
+#: src/components/notes/NotesDropdown.tsx
+msgid "Close notes"
+msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #, fuzzy
@@ -6867,6 +6889,10 @@ msgstr "无法从 Kavita 加载图书馆：{kavitaLibrariesErrorMessage}"
 msgid "Could not load library stats"
 msgstr "无法加载资料库统计数据"
 
+#: src/components/notes/NotesPanel.tsx
+msgid "Could not load the notes."
+msgstr ""
+
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
 msgid "Could not load this chapter."
@@ -7455,6 +7481,7 @@ msgstr "定义中"
 msgid "Definition"
 msgstr "定义"
 
+#: src/components/notes/NoteThread.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/rails/DeleteRailDialog.tsx
 #: src/components/series/ArchivedSeriesCard.tsx
@@ -7619,6 +7646,10 @@ msgstr ""
 msgid "Delete this file permanently?"
 msgstr "要永久删除此文件吗？"
 
+#: src/components/notes/NoteThread.tsx
+msgid "Delete this note?"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Delete this request?"
@@ -7644,6 +7675,10 @@ msgstr "已删除"
 #, fuzzy
 msgid "Deleted \"{name}\""
 msgstr "已删除“{name}”"
+
+#: src/components/notes/useAuthorLabel.ts
+msgid "Deleted account"
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -7883,11 +7918,6 @@ msgstr "忽略 30 天"
 #, fuzzy
 msgid "Dismiss notification"
 msgstr "忽略通知"
-
-#: src/pages/discover/FeedbackLab.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
-#~ msgid "Dismissal ended {until}"
-#~ msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -8185,6 +8215,10 @@ msgstr ""
 msgid "Downloads now try {bestName} first."
 msgstr "现在下载会优先尝试 {bestName}。"
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Downloads now try {bestName} first. Sources that could not be measured are tried last."
+msgstr ""
+
 #: src/components/QueuePause.tsx
 #, fuzzy
 msgid "Downloads paused"
@@ -8295,6 +8329,7 @@ msgstr "由资料库本身获得，因此此实例上的所有人共享这些成
 msgid "Ecchi"
 msgstr "Ecchi"
 
+#: src/components/notes/NoteThread.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesTagsEditor.tsx
 #: src/components/settings/UsersSection.tsx
@@ -8388,6 +8423,10 @@ msgstr "编辑请求"
 #, fuzzy
 msgid "Edit request for {title}"
 msgstr "编辑 {title} 的请求"
+
+#: src/components/notes/NoteThread.tsx
+msgid "edited"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -8756,6 +8795,10 @@ msgstr "所有人"
 #, fuzzy
 msgid "Everyone has read this chapter, so read file cleanup deletes the file around {dueOn}. It gets no upgrades until then."
 msgstr "所有人都已读过此章节，因此读取文件清理会在 {dueOn} 前后删除该文件。在此之前它不会被升级。"
+
+#: src/components/notes/NoteComposer.tsx
+msgid "Everyone who can see this series"
+msgstr ""
 
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
@@ -9826,15 +9869,24 @@ msgstr "返回"
 msgid "Go to library"
 msgstr "前往资料库"
 
+#: src/components/notes/NoteThread.tsx
 #: src/pages/reader/PageStrip.tsx
 #, fuzzy
 msgid "Go to page {pageNumber}"
 msgstr "前往第 {pageNumber} 页"
 
 #: src/pages/reader/PageStrip.tsx
+msgid "Go to page {pageNumber} (bookmarked, has notes)"
+msgstr ""
+
+#: src/pages/reader/PageStrip.tsx
 #, fuzzy
 msgid "Go to page {pageNumber} (bookmarked)"
 msgstr "前往第 {pageNumber} 页（已加书签）"
+
+#: src/pages/reader/PageStrip.tsx
+msgid "Go to page {pageNumber} (has notes)"
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -13653,10 +13705,6 @@ msgstr "没有匹配的章节"
 #~ msgstr "此时间段没有已读章节。"
 
 #: src/pages/HealthPage.tsx
-#~ msgid "No checks have run yet"
-#~ msgstr ""
-
-#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "No checks have run yet. Use Check now."
 msgstr "尚未运行任何检查。请使用“立即检查”。"
@@ -13852,6 +13900,14 @@ msgstr "未找到元数据匹配。"
 #, fuzzy
 msgid "No more chapters"
 msgstr "没有更多章节"
+
+#: src/components/notes/NotesPanel.tsx
+msgid "No notes on this chapter yet."
+msgstr ""
+
+#: src/components/notes/NotesPanel.tsx
+msgid "No notes on this page."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -14190,7 +14246,6 @@ msgstr "最近的通知中没有内容"
 msgid "None linked"
 msgstr "未关联任何内容"
 
-#: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
 #~ msgid "None listed"
@@ -14556,15 +14611,64 @@ msgstr "尚未同步"
 msgid "Not yet synced"
 msgstr "尚未同步"
 
+#: src/pages/reader/NotesMargin.tsx
+msgid "Note"
+msgstr ""
+
 #: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Note (optional)"
 msgstr "备注（可选）"
 
+#: src/components/notes/NoteThread.tsx
+#: src/pages/reader/NotesMargin.tsx
+msgid "Note deleted"
+msgstr ""
+
 #: src/components/discover/ShortlistButton.tsx
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Note for later"
+msgstr ""
+
+#: src/pages/reader/NotesMargin.tsx
+msgid "Note on page {pageNumber}"
+msgstr ""
+
+#: src/api/inbox.ts
+#: src/pages/reader/ChapterEnd.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Notes"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Notes ({noteCount})"
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Notes beside the page"
+msgstr ""
+
+#: src/components/notes/NotesPanel.tsx
+msgid "Notes need a connection"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Notes on {name}: {mine} yours, {shared} shared"
+msgstr ""
+
+#: src/pages/reader/NotesMargin.tsx
+msgid "Notes on page {pageNumber} ({count})"
+msgstr ""
+
+#. placeholder {0}: manifest.label
+#: src/pages/reader/ReaderPage.tsx
+msgid "Notes, {0}"
+msgstr ""
+
+#: src/components/notes/NotesDropdown.tsx
+#: src/components/notes/NotesPanel.tsx
+msgid "Notes, {chapterLabel}"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -15332,6 +15436,10 @@ msgstr "仅限核心内容"
 msgid "Only while you're partway through the series and haven't marked it finished."
 msgstr "仅在你阅读系列期间且尚未将其标记为完成时。"
 
+#: src/components/notes/NoteComposer.tsx
+msgid "Only you"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Only you can see this."
@@ -15467,6 +15575,15 @@ msgstr "以后用这些筛选条件打开搜索"
 msgid "Open webtoon chapters in Continuous layout"
 msgstr "以连续布局打开条漫章节"
 
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Opening"
+msgstr ""
+
+#: src/pages/reader/NextChapterHint.tsx
+msgid "Opening next chapter"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Opens a deletion review. Nothing is removed until you confirm it there."
@@ -15570,6 +15687,14 @@ msgstr "为你推荐的其他内容"
 msgid "Other sessions signed out"
 msgstr "其他会话已退出登录"
 
+#: src/components/notes/NoteComposer.tsx
+msgid "Others will see you as \"Another reader\" until an admin gives your account a display name."
+msgstr ""
+
+#: src/components/notes/NoteComposer.tsx
+msgid "Others will see your login name, {loginName}."
+msgstr ""
+
 #: src/components/pageconversion/RuleCard.tsx
 #, fuzzy
 msgid "Over"
@@ -15622,6 +15747,11 @@ msgstr "第 {page}/{pageCount} 页"
 #, fuzzy
 msgid "Page {pageIndex}/{pageCount}"
 msgstr "第 {pageIndex}/{pageCount} 页"
+
+#: src/components/notes/NoteThread.tsx
+#: src/pages/reader/NotesMargin.tsx
+msgid "Page {pageNumber}"
+msgstr ""
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
@@ -16107,6 +16237,10 @@ msgstr "根据整个资料库，由推荐器挑选。"
 msgid "Pin one to a series from its Quality profile menu."
 msgstr "在系列的「质量配置」菜单中，可以为其固定一个配置。"
 
+#: src/components/notes/NoteComposer.tsx
+msgid "Pin to page {pageNumber}"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Plain title search. Matches from just two characters."
@@ -16331,6 +16465,12 @@ msgstr "优先级"
 #, fuzzy
 msgid "Priority for {sourceName}"
 msgstr "{sourceName} 的优先级"
+
+#: src/components/notes/NoteComposer.tsx
+#: src/components/notes/NoteThread.tsx
+#: src/pages/reader/NotesMargin.tsx
+msgid "Private"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -16997,6 +17137,10 @@ msgstr ""
 #, fuzzy
 msgid "Readers who finished {finished} also finished this"
 msgstr "读完 {finished} 的读者也读完了这部"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Readers without a display name appear under their login name on shared notes, the leaderboard and edit history, instead of \"Another reader\". Anyone who can sign in then sees every username."
+msgstr ""
 
 #. Notify only while the user is partway through the series
 #: src/components/ImportListsSection.tsx
@@ -17787,6 +17931,10 @@ msgstr ""
 msgid "Removed {title} from your shortlist."
 msgstr ""
 
+#: src/components/notes/NoteThread.tsx
+msgid "Removed by an admin"
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Removed chapter"
@@ -17943,6 +18091,15 @@ msgstr "替换"
 #, fuzzy
 msgid "Replaces downloaded files with better releases for each series' quality profile."
 msgstr "根据每个系列的质量配置，用更好的发布版本替换已下载的文件。"
+
+#: src/api/inbox.ts
+msgid "Replies to your notes"
+msgstr ""
+
+#: src/components/notes/NoteComposer.tsx
+#: src/components/notes/NoteThread.tsx
+msgid "Reply"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -18783,6 +18940,7 @@ msgid "Samples a few pages from every linked source."
 msgstr "从每个已关联的来源抽取几页作为样本。"
 
 #: src/components/DiscoverPresets.tsx
+#: src/components/notes/NoteThread.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -20049,6 +20207,12 @@ msgstr "已读章节占比减去资料库占比。右侧表示你阅读该类型
 msgid "Share of the series you've read."
 msgstr "你读过的系列占比。"
 
+#: src/components/notes/NoteComposer.tsx
+#: src/components/notes/NoteThread.tsx
+#: src/pages/reader/NotesMargin.tsx
+msgid "Shared"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Shares a file with another chapter"
@@ -20100,6 +20264,7 @@ msgid "Shounen"
 msgstr "少年向"
 
 #: src/pages/HealthPage.tsx
+#: src/pages/reader/NotesMargin.tsx
 msgid "Show"
 msgstr ""
 
@@ -20140,11 +20305,17 @@ msgstr "显示文件夹"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
+#: src/pages/reader/NotesMargin.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "Show less"
 msgstr "显示更少"
+
+#: src/components/settings/UsersSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Show login names to everyone"
+msgstr ""
 
 #: src/components/discover/DiscoverCatalogue.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
@@ -20163,6 +20334,10 @@ msgstr "显示更多"
 #, fuzzy
 msgid "Show newest {max} of {count}"
 msgstr "显示最新的 {max} 项，共 {count} 项"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Show notes beside the page when there is room"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -20215,6 +20390,10 @@ msgstr "显示首页"
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Show the oldest"
+msgstr ""
+
+#: src/components/notes/NotesPanel.tsx
+msgid "Show the whole chapter"
 msgstr ""
 
 #: src/pages/CreatorPage.tsx
@@ -20621,6 +20800,10 @@ msgstr "部分来源无法搜索"
 msgid "Somebody filed a request"
 msgstr "有人提交了请求"
 
+#: src/api/inbox.ts
+msgid "Someone replied in a thread you wrote or joined."
+msgstr ""
+
 #: src/components/RouteErrorBoundary.tsx
 #, fuzzy
 msgid "Something went wrong while drawing it. Reloading usually clears it; if it keeps happening, the log has the details."
@@ -20734,24 +20917,12 @@ msgid "Sources disagree on chapter numbering"
 msgstr "来源的章节编号不一致"
 
 #: src/components/series/SeriesHero.tsx
-#~ msgid "Sources end at ch. {highest}; MangaBaka lists {listed}"
-#~ msgstr ""
-
-#: src/components/series/SeriesHero.tsx
-#~ msgid "Sources end at ch. {highest}; your total is {listed}"
-#~ msgstr ""
-
-#: src/components/series/SeriesHero.tsx
 msgid "Sources go up to ch. {highest}, MangaBaka lists {listed}."
 msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 msgid "Sources go up to ch. {highest}, your total is {listed}."
 msgstr ""
-
-#: src/components/series/SeriesHero.tsx
-#~ msgid "Sources reach ch. {highest} of {listed}"
-#~ msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -20830,17 +21001,9 @@ msgstr "与上一层级分开"
 msgid "Split into two pages"
 msgstr "拆分为两页"
 
-#: src/components/TagBuckets.tsx
-#~ msgid "Spoiler"
-#~ msgstr ""
-
-#: src/components/TagBuckets.tsx
-#~ msgid "Spoiler tag. Click to hide it again."
-#~ msgstr ""
-
-#: src/components/TagBuckets.tsx
-#~ msgid "Spoiler tag. Click to reveal it."
-#~ msgstr ""
+#: src/components/notes/NoteBody.tsx
+msgid "Spoiler, press to reveal"
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 msgid "Spoiler:"
@@ -20850,10 +21013,6 @@ msgstr ""
 #, fuzzy
 msgid "Spoiler: {description}"
 msgstr "剧透：{description}"
-
-#: src/components/TagBuckets.tsx
-#~ msgid "Spoiler. Hover or tap to reveal."
-#~ msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -21338,6 +21497,10 @@ msgstr "要包含的标签"
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Tap the page edges to turn pages"
+msgstr ""
+
+#: src/components/notes/NoteThread.tsx
+msgid "Tap to show"
 msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
@@ -22328,6 +22491,10 @@ msgstr "本月"
 msgid "This month"
 msgstr "本月"
 
+#: src/components/notes/NotesPanel.tsx
+msgid "This page"
+msgstr ""
+
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "This page could not be read, so the pass would leave the file alone."
@@ -22430,6 +22597,10 @@ msgstr "此系列没有质量配置"
 #, fuzzy
 msgid "This series is already in the library, but you can't see it, so it can't be changed here."
 msgstr "此系列已在资料库中，但你无权查看，因此无法在此修改。"
+
+#: src/components/notes/NoteComposer.tsx
+msgid "This series is incognito. A shared note tells everyone you read this chapter."
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -22938,6 +23109,7 @@ msgstr "尝试更短或不同的查询。"
 #: src/auth/OfflineStartPage.tsx
 #: src/components/home/OfflineHome.tsx
 #: src/components/MetadataDumpProgress.tsx
+#: src/components/notes/NotesPanel.tsx
 #: src/components/pageconversion/ReviewStep.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
@@ -23654,10 +23826,6 @@ msgstr "至少使用 {MIN_PASSWORD_LENGTH} 个字符"
 msgid "Use best quality first"
 msgstr "使用最佳质量优先"
 
-#: src/pages/HealthPage.tsx
-#~ msgid "Use Check now to run them."
-#~ msgstr ""
-
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Use for taste"
@@ -23767,6 +23935,11 @@ msgstr "用户名"
 #, fuzzy
 msgid "Username claim"
 msgstr "用户名声明"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "username, login name, display name, another reader, privacy, names"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/registry.ts
@@ -24345,6 +24518,10 @@ msgstr "时间"
 msgid "When most pages are very tall."
 msgstr "当大多数页面都非常高时。"
 
+#: src/pages/reader/ReaderSettings.tsx
+msgid "When the screen has room for them"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Where the files on disk came from, which can outlive the link"
@@ -24404,6 +24581,10 @@ msgstr "哪个列表包含此系列的章节？"
 msgid "Which new chapters get fetched as they land"
 msgstr "新章节出现时，哪些会被获取"
 
+#: src/components/notes/NotesPanel.tsx
+msgid "Which notes to show"
+msgstr ""
+
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
 msgid "Which series notify me"
@@ -24429,10 +24610,18 @@ msgstr ""
 msgid "While the server works"
 msgstr "服务器处理期间"
 
+#: src/components/notes/NoteComposer.tsx
+msgid "Who can see this note"
+msgstr ""
+
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Whole"
 msgstr "整页"
+
+#: src/components/notes/NotesPanel.tsx
+msgid "Whole chapter"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -24516,6 +24705,18 @@ msgstr "不再建议从这部动画继续阅读。"
 msgid "Worth a look ({lookCount})"
 msgstr "值得看看（{lookCount}）"
 
+#: src/components/notes/NoteComposer.tsx
+msgid "Write a note"
+msgstr ""
+
+#: src/components/notes/NoteComposer.tsx
+msgid "Write a note. Wrap spoilers in ||double bars||."
+msgstr ""
+
+#: src/components/notes/NoteComposer.tsx
+msgid "Write a reply"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -24569,6 +24770,7 @@ msgstr "昨天"
 msgid "you"
 msgstr "你"
 
+#: src/components/notes/useAuthorLabel.ts
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "You"

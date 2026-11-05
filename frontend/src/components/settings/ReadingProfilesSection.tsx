@@ -565,6 +565,12 @@ function ProfileEditor({
         checked={prefs.chapterBanner}
         onChange={(e) => set({ chapterBanner: e.currentTarget.checked })}
       />
+      <Switch
+        size="sm"
+        label={t`Show notes beside the page when there is room`}
+        checked={prefs.notesBeside}
+        onChange={(e) => set({ notesBeside: e.currentTarget.checked })}
+      />
 
       <Group justify="flex-end" gap="xs">
         <Button size="xs" variant="subtle" color="var(--neutral)" onClick={onCancel}>

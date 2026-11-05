@@ -35,7 +35,8 @@ public class ScrobbleService(
     MangaBakaTracker mangaBaka,
     KitsuTracker kitsu,
     MangaUpdatesTracker mangaUpdates,
-    ILogger<ScrobbleService> logger)
+    ILogger<ScrobbleService> logger,
+    KavitaLiveCoverage? liveCoverage = null)
 {
     public const int DefaultIntervalMinutes = 30;
 
@@ -465,6 +466,7 @@ public class ScrobbleService(
             .OfType<int>()
             .ToHashSet();
         var boundarySource = await volumeBoundaries.LoadAsync(userId, allRootFolders, matchedIds, ct);
+        var coverage = liveCoverage?.Begin();
 
         int updates = 0, errors = 0, skipped = 0, noProgress = 0;
         var batcher = new WriteBatcher(userId, MaxBatchWait, logger, ct);
@@ -505,10 +507,19 @@ public class ScrobbleService(
             List<KavitaProgress.KavitaVolumeDto> volumesRaw;
             try
             {
-                volumesRaw = await kavita.GetVolumesAsync(kavitaUrl, kavitaKey, series.Id, ct);
+                if (coverage?.Reuse(series) is { } reused)
+                {
+                    volumesRaw = reused;
+                }
+                else
+                {
+                    volumesRaw = await kavita.GetVolumesAsync(kavitaUrl, kavitaKey, series.Id, ct);
+                    coverage?.Fetched(series, volumesRaw);
+                }
             }
             catch (Exception e)
             {
+                coverage?.Failed(series.Id);
                 logger.LogWarning("Failed to read progress for '{Title}': {Error}", title, e.Message);
                 await AddKeyedLogAsync(userId, "error", "kavita", title,
                     "scrobble.log.progressReadFailed", new { detail = e.Message }, ct);
@@ -723,6 +734,7 @@ public class ScrobbleService(
         }
 
         await batcher.FlushAsync();
+        coverage?.Complete();
         return new PassCounts(updates, skipped, errors, noProgress);
     }
 

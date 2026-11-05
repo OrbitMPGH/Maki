@@ -25,7 +25,8 @@ public class TorrentRemovalJob(
     MakiDbContext db,
     IAppSettings settings,
     TorrentClientRegistry torrentClients,
-    ILogger<TorrentRemovalJob> logger) : IJob
+    ILogger<TorrentRemovalJob> logger,
+    TorrentPollState? pollState = null) : IJob
 {
     /// <summary>A removal the client keeps refusing is dropped after this long, and the row ages out as usual.</summary>
     internal static readonly TimeSpan GiveUpAfter = TimeSpan.FromDays(30);
@@ -37,12 +38,19 @@ public class TorrentRemovalJob(
 
     public async Task RunAsync(CancellationToken ct)
     {
+        if (pollState?.CanSkipRemovals == true)
+        {
+            return;
+        }
+
+        var generation = pollState?.RemovalGeneration ?? 0;
         var pending = await db.DownloadQueue
             .Where(q => q.ClientRemovalPendingAt != null)
             .OrderBy(q => q.ClientRemovalPendingAt)
             .ToListAsync(ct);
         if (pending.Count == 0)
         {
+            pollState?.MarkRemovalsIdle(generation);
             return;
         }
 

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Globalization;
+using Maki.Api.Jobs;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Http;
@@ -7,6 +8,7 @@ using Maki.Core.Quality;
 using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
+using Quartz;
 
 namespace Maki.Api.Services;
 
@@ -35,7 +37,8 @@ public sealed class SourceScoutService(
     SourceAvailability availability,
     SourceProbeService probes,
     IDownloadCooldown cooldowns,
-    ILogger<SourceScoutService> logger)
+    ILogger<SourceScoutService> logger,
+    ISchedulerFactory? schedulers = null)
 {
     public const int ChaptersPerSource = 3;
     private const int MaxConcurrentSeries = 2;
@@ -96,14 +99,18 @@ public sealed class SourceScoutService(
     }
 
     /// <summary>The automatic run after matching, only when <see cref="SettingKeys.SourcesScoutOnMatch"/> is on.</summary>
-    public async Task StartIfEnabledAsync(MakiDbContext db, int seriesId, CancellationToken ct)
+    /// <returns>Whether a run was started or joined.</returns>
+    public async Task<bool> StartIfEnabledAsync(MakiDbContext db, int seriesId, CancellationToken ct)
     {
         var enabled = await db.AppConfig.AsNoTracking()
             .AnyAsync(c => c.Key == SettingKeys.SourcesScoutOnMatch && c.Value == "true", ct);
-        if (enabled && !await db.Series.AnyAsync(s => s.Id == seriesId && s.ArchivedAt != null, ct))
+        if (!enabled || await db.Series.AnyAsync(s => s.Id == seriesId && s.ArchivedAt != null, ct))
         {
-            Start(seriesId);
+            return false;
         }
+
+        Start(seriesId);
+        return true;
     }
 
     /// <summary>For tests: the run for <paramref name="seriesId"/>, awaited to completion.</summary>
@@ -122,16 +129,17 @@ public sealed class SourceScoutService(
         }
     }
 
+    // The deadline starts once the run has a slot: a series queued behind a big import would
+    // otherwise time out unmeasured, and Smart Download only holds a series while its run is going.
     private async Task RunAsync(int seriesId, Job job)
     {
-        using var cts = new CancellationTokenSource(Deadline);
-        var ct = cts.Token;
         try
         {
-            await _gate.WaitAsync(ct);
+            await _gate.WaitAsync();
             try
             {
-                await ScoutAsync(seriesId, job, ct);
+                using var cts = new CancellationTokenSource(Deadline);
+                await ScoutAsync(seriesId, job, cts.Token);
             }
             finally
             {
@@ -146,6 +154,11 @@ public sealed class SourceScoutService(
         {
             job.FinishedAtUtc = DateTime.UtcNow;
             job.Running = false;
+        }
+
+        if (schedulers is not null)
+        {
+            await SmartDownloadJob.TriggerAsync(schedulers, logger);
         }
     }
 

@@ -33,6 +33,7 @@ public class SmartDownloadJob(
     DownloadQueueService queue,
     DownloadBatchNotifier batches,
     SettingsService settings,
+    SourceScoutService scout,
     ILogger<SmartDownloadJob> logger) : IJob
 {
     public static readonly JobKey Key = new("smart-download");
@@ -68,11 +69,19 @@ public class SmartDownloadJob(
             ? m
             : 5;
 
+        var scoutOnMatch = await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true";
+
         var dueSeries = await SeriesNeedingTopUpAsync(db, limit, ct);
 
         foreach (var (series, after) in dueSeries)
         {
             var chapters = await db.Chapters.AsNoTracking().Where(c => c.SeriesId == series.Id).ToListAsync(ct);
+            if (await WaitsForMeasurementAsync(db, scout, series.Id, chapters, scoutOnMatch, ct))
+            {
+                logger.LogDebug("Smart Download is waiting for the sources of series {SeriesId} to be measured", series.Id);
+                continue;
+            }
+
             if (await PreviousBatchPendingAsync(db, chapters, maxAttempts, DateTime.UtcNow, ct))
             {
                 continue;
@@ -127,6 +136,48 @@ public class SmartDownloadJob(
             logger.LogInformation(
                 "Smart Download queued {Added} chapters for series {SeriesId}", queuedItemIds.Count, series.Id);
         }
+    }
+
+    /// <summary>Queues a run without waiting for it. Never throws: a missed trigger waits for the next tick.</summary>
+    public static async Task TriggerAsync(ISchedulerFactory schedulerFactory, ILogger logger)
+    {
+        try
+        {
+            var scheduler = await schedulerFactory.GetScheduler();
+            await scheduler.TriggerJob(Key);
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "Could not trigger Smart Download");
+        }
+    }
+
+    /// <summary>
+    /// Whether the series has to wait for its sources to be measured. A batch takes its source when it is
+    /// queued, so one queued while <see cref="SourceScoutService"/> is still sampling goes to a source
+    /// ranked on guesses. Any running scout holds the series. With scout-on-match on, a series with
+    /// nothing on disk and no measurement at all gets a scout started here, which covers a restart that
+    /// lost the run started after matching. A scout that already finished in this process never holds it
+    /// again, even when it measured nothing, or a source that cannot be sampled would block the series.
+    /// </summary>
+    internal static async Task<bool> WaitsForMeasurementAsync(
+        MakiDbContext db, SourceScoutService scout, int seriesId, IEnumerable<Chapter> chapters, bool scoutOnMatch,
+        CancellationToken ct)
+    {
+        var run = scout.Snapshot(seriesId);
+        if (run is { Running: true })
+        {
+            return true;
+        }
+
+        if (!scoutOnMatch || run is not null || chapters.Any(c => c.ChapterFileId != null) ||
+            await db.SourceQualitySamples.AnyAsync(s => s.SeriesId == seriesId, ct))
+        {
+            return false;
+        }
+
+        scout.Start(seriesId);
+        return true;
     }
 
     /// <summary>

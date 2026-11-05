@@ -91,7 +91,8 @@ public class AuthController(
         var oidcLogin = await OidcLoginAsync(user);
         return Ok(UserDtoMapper.ToMe(
             user, await RootFolderIdsAsync(user, ct), oidcLogin is not null, oidcLogin?.ProviderDisplayName,
-            await SingleUserMode.IsOnAsync(db, appSettings, ct)));
+            await SingleUserMode.IsOnAsync(db, appSettings, ct),
+            await UserNameVisibility.LoginNamesVisibleAsync(appSettings, ct)));
     }
 
     private const string UnknownName = "?";
@@ -352,7 +353,7 @@ public class AuthController(
         }
 
         user.PendingSetup = false;
-        user.DisplayName = request.DisplayName?.Trim();
+        user.DisplayName = string.IsNullOrWhiteSpace(request.DisplayName) ? null : request.DisplayName.Trim();
         // Belt and braces: the migration already set these, but setup is what makes the account
         // real and an admin that cannot administer would be unrecoverable.
         user.Permissions |= MakiPermission.Admin;
@@ -749,7 +750,8 @@ public class AuthController(
         var oidcLogin = await OidcLoginAsync(user);
         return UserDtoMapper.ToMe(
             user, await RootFolderIdsAsync(user, ct), oidcLogin is not null, oidcLogin?.ProviderDisplayName,
-            await SingleUserMode.IsOnAsync(db, HttpContext.RequestServices?.GetService<IAppSettings>(), ct));
+            await SingleUserMode.IsOnAsync(db, HttpContext.RequestServices?.GetService<IAppSettings>(), ct),
+            await UserNameVisibility.LoginNamesVisibleAsync(HttpContext.RequestServices?.GetService<IAppSettings>(), ct));
     }
 
     private async Task<IReadOnlyList<int>> RootFolderIdsAsync(MakiUser user, CancellationToken ct) =>

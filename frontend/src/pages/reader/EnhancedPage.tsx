@@ -36,6 +36,8 @@ export interface EnhancedPageProps {
   box: HTMLElement | null
   /** Draw positioned over `box` (the continuous strip) instead of filling the parent (RegionPage's frame). */
   overlay?: boolean
+  /** The page waits off screen for a turn, in a box that fills the viewport, so it is not measured. */
+  standby?: boolean
   /** True while the canvas is showing, so the host can hide its image. */
   onShowing: (showing: boolean) => void
 }
@@ -62,6 +64,7 @@ export default function EnhancedPage({
   priority,
   box,
   overlay = false,
+  standby = false,
   onShowing,
 }: EnhancedPageProps) {
   const canvas = useRef<HTMLCanvasElement>(null)
@@ -89,7 +92,7 @@ export default function EnhancedPage({
 
   const measure = useRef(() => {})
   measure.current = () => {
-    if (!box) return
+    if (!box || standby) return
     const next = measureTarget(box, rotate, { width: image.naturalWidth, height: image.naturalHeight }, region)
     if (!next) return
     scope.noteSize(image.naturalWidth * region.w, image.naturalHeight * region.h, next)
@@ -99,9 +102,10 @@ export default function EnhancedPage({
 
   // Measured before the first paint, so a page turn can swap in a ready upscale without showing
   // the plain page first, then again only once a resize has settled, so turning a phone does not
-  // flip pages between enhanced and plain on the way round.
+  // flip pages between enhanced and plain on the way round. A page leaving standby is measured
+  // here at once, before the swap paints.
   useLayoutEffect(() => {
-    if (!box) return
+    if (!box || standby) return
     measure.current()
     let first = true
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -119,7 +123,7 @@ export default function EnhancedPage({
       observer.disconnect()
       clearTimeout(timer)
     }
-  }, [box, rotate, regionId, image])
+  }, [box, rotate, regionId, image, standby])
 
   useEffect(() => {
     if (soft) measure.current()
@@ -158,6 +162,31 @@ export default function EnhancedPage({
   }, [overlay, box, serverImage])
 
   const active = target !== null && (mode === 'always' || target.stretched || soft)
+  const serverReady = server?.states.get(page) === 'ready'
+  const serverChapter = server?.chapterId
+  const serverModel = server?.model
+  const serverVersion = server?.pageVersion
+  const serverKey = serverReady ? `${serverChapter}|${page}|${serverModel}|${serverVersion}` : null
+  const urlNow =
+    serverKey && serverChapter !== undefined && serverModel && serverVersion !== undefined
+      ? serverEnhancedUrlNow(serverChapter, page, serverModel, serverVersion)
+      : null
+  const [resolved, setResolved] = useState<{ key: string; url: string } | null>(null)
+  useEffect(() => {
+    if (urlNow || !serverKey || serverChapter === undefined || !serverModel || serverVersion === undefined) return
+    let live = true
+    void serverEnhancedUrl(serverChapter, page, serverModel, serverVersion).then((url) => {
+      if (live) setResolved({ key: serverKey, url })
+    })
+    return () => {
+      live = false
+    }
+  }, [urlNow, serverKey, serverChapter, page, serverModel, serverVersion])
+  const serverUrl = urlNow ?? (resolved && resolved.key === serverKey ? resolved.url : null)
+  const [decoded, setDecoded] = useState<string | null>(null)
+  const [failed, setFailed] = useState<string | null>(null)
+  const serverWanted = active && serverUrl !== null && failed !== serverUrl
+
   const priorityRef = useRef(priority)
   priorityRef.current = priority
   // `key` carries the region's values; the object itself may be rebuilt on every render.
@@ -175,6 +204,9 @@ export default function EnhancedPage({
     setDrawn(null)
   }, [active])
 
+  // With the server's upscale ready, the engine only fills in from its cache while that image loads.
+  // It runs the page again if the image fails.
+  const serverFirst = serverReady && (serverUrl === null || failed !== serverUrl)
   useEffect(() => {
     if (!active || !target || !engine || !preset) return
     const draw = (bitmap: ImageBitmap) => {
@@ -191,6 +223,7 @@ export default function EnhancedPage({
       draw(hit)
       return
     }
+    if (serverFirst) return
     const controller = new AbortController()
     const { signal } = controller
     void regionBitmap(image, regionRef.current)
@@ -215,7 +248,7 @@ export default function EnhancedPage({
         if (isEnhanceError(error, 'broken') || isEnhanceError(error, 'unsupported')) markEnhanceBroken()
       })
     return () => controller.abort()
-  }, [active, target, engine, scope, image, identity, key, preset, src])
+  }, [active, target, engine, scope, image, identity, key, preset, src, serverFirst])
 
   useEffect(() => {
     engine?.setPriority(key, priority)
@@ -231,30 +264,6 @@ export default function EnhancedPage({
     }
   }, [])
 
-  const serverChapter = server?.chapterId
-  const serverModel = server?.model
-  const serverVersion = server?.pageVersion
-  const serverReady = server?.states.get(page) === 'ready'
-  const serverKey = serverReady ? `${serverChapter}|${page}|${serverModel}|${serverVersion}` : null
-  const urlNow =
-    serverKey && serverChapter !== undefined && serverModel && serverVersion !== undefined
-      ? serverEnhancedUrlNow(serverChapter, page, serverModel, serverVersion)
-      : null
-  const [resolved, setResolved] = useState<{ key: string; url: string } | null>(null)
-  useEffect(() => {
-    if (urlNow || !serverKey || serverChapter === undefined || !serverModel || serverVersion === undefined) return
-    let live = true
-    void serverEnhancedUrl(serverChapter, page, serverModel, serverVersion).then((url) => {
-      if (live) setResolved({ key: serverKey, url })
-    })
-    return () => {
-      live = false
-    }
-  }, [urlNow, serverKey, serverChapter, page, serverModel, serverVersion])
-  const serverUrl = urlNow ?? (resolved && resolved.key === serverKey ? resolved.url : null)
-  const [decoded, setDecoded] = useState<string | null>(null)
-  const [failed, setFailed] = useState<string | null>(null)
-  const serverWanted = active && serverUrl !== null && failed !== serverUrl
 
   // A server image that leaves the window lets go of its pixels with it.
   useEffect(() => {
@@ -281,6 +290,17 @@ export default function EnhancedPage({
   }, [serverDecoded, reportServer, page])
 
   const serverShowing = serverDecoded && !held
+
+  // Once the server's upscale is on screen the fallback's pixels are not needed.
+  useEffect(() => {
+    if (!serverShowing) return
+    const element = canvas.current
+    if (element) {
+      element.width = 0
+      element.height = 0
+    }
+    setDrawn(null)
+  }, [serverShowing])
   const showing = active && drawn === identity && !held && !serverShowing
   const covering = showing || serverShowing
   const reportShowing = useRef(onShowing)

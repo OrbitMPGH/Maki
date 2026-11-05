@@ -984,6 +984,10 @@ msgstr ""
 msgid "{count, plural, one {# monitored series has no enabled sources} other {# monitored series have no enabled sources}}"
 msgstr "{count, plural, one {# série monitorada não tem fontes ativadas} many {# séries monitoradas não têm fontes ativadas} other {# séries monitoradas não têm fontes ativadas}}"
 
+#: src/pages/reader/NotesMargin.tsx
+msgid "{count, plural, one {# note on the whole chapter} other {# notes on the whole chapter}}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{count, plural, one {# replacement} other {# replacements}}"
@@ -1081,6 +1085,10 @@ msgstr "{count, plural, one {Notificações, # não lida} many {Notificações, 
 #, fuzzy
 msgid "{count, plural, one {Saving # chapter for offline} other {Saving # chapters for offline}}"
 msgstr "{count, plural, one {Salvando # capítulo para offline} many {Salvando # capítulos para offline} other {Salvando # capítulos para offline}}"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{count, plural, one {See all # note} other {See all # notes}}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2131,6 +2139,10 @@ msgstr "{renamed, plural, one {Renomeada # série} many {Renomeadas # séries}ot
 msgid "{replacedFiles, plural, one {Replaces # file} other {Replaces # files}}"
 msgstr "{replacedFiles, plural, one {Substitui # arquivo} many {Substitui # arquivos} other {Substitui # arquivos}}"
 
+#: src/pages/reader/NotesMargin.tsx
+msgid "{replies, plural, one {# reply} other {# replies}}"
+msgstr ""
+
 #: src/components/import/MihonSummary.tsx
 #, fuzzy
 msgid "{requested, plural, one {# sent for approval} other {# sent for approval}}"
@@ -2300,6 +2312,10 @@ msgstr "{selectedCount} de {totalCount} selecionados"
 msgid "{selectedCount} selected"
 msgstr "{selectedCount} selecionados"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{selectedNoteCount, plural, one {# note on the selected chapters will be deleted.} other {# notes on the selected chapters will be deleted.}}"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "{seriesAdded, plural, one {series added} other {series added}}"
@@ -2310,10 +2326,6 @@ msgid "{seriesChapterCount, plural, one {{chaptersRead} of # read} other {{chapt
 msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
-#~ msgid "{seriesChapterCount, plural, one {{chaptersRead} read of # downloaded} other {{chaptersRead} read of # downloaded}}"
-#~ msgstr ""
-
-#: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 #~ msgid "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
 #~ msgstr "{seriesChapterCount, plural, one {{chaptersRead}/# capítulo lido} many {{chaptersRead}/# capítulos lidos} other {{chaptersRead}/# capítulos lidos}}"
@@ -2321,10 +2333,6 @@ msgstr ""
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "{seriesChapterCount, plural, one {all # read} other {all # read}}"
 msgstr ""
-
-#: src/pages/reader/ReaderToolbar.tsx
-#~ msgid "{seriesChapterCount, plural, one {read all # downloaded} other {read all # downloaded}}"
-#~ msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/TagManagerModal.tsx
@@ -2940,6 +2948,10 @@ msgstr "{weekday} {hourLabel}: {minutes} min"
 #, fuzzy
 msgid "{weight} total"
 msgstr "{weight} no total"
+
+#: src/components/notes/NoteThread.tsx
+msgid "{who}, {when}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -3587,6 +3599,10 @@ msgstr "Adicionar"
 msgid "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
 msgstr "Adicione {chapterLanguageToken} ao formato do capítulo em Configurações para diferenciá-los."
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Add a note"
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
@@ -3629,6 +3645,10 @@ msgstr "Adicionar conexão"
 #, fuzzy
 msgid "Add folder"
 msgstr "Adicionar pasta"
+
+#: src/components/notes/NoteComposer.tsx
+msgid "Add note"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -4225,6 +4245,10 @@ msgstr "Outra fonte personalizada já usa este id"
 msgid "Another file already backs the chapter. Open each one to compare the two before keeping either."
 msgstr ""
 
+#: src/components/notes/useAuthorLabel.ts
+msgid "Another reader"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Another upgrade scan was already running, so this one did not run. Try again once it finishes."
@@ -4720,10 +4744,6 @@ msgstr "Evitado"
 msgid "Back"
 msgstr "Voltar"
 
-#: src/pages/discover/FeedbackLab.tsx
-#~ msgid "back in recommendations since {until}"
-#~ msgstr ""
-
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Back in recommendations since {until}"
 msgstr ""
@@ -4932,6 +4952,10 @@ msgstr "sino, caixa de entrada, alertas, toast, notificações no aplicativo, no
 #, fuzzy
 msgid "Below the series' upgrade cutoff"
 msgstr "Abaixo do corte de upgrade da série"
+
+#: src/pages/reader/ReaderPage.tsx
+msgid "Beside the page"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -5206,6 +5230,8 @@ msgstr "Não foi possível entrar com os dados salvos."
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/notes/NoteComposer.tsx
+#: src/components/notes/NoteThread.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/QueueActions.tsx
@@ -5680,10 +5706,6 @@ msgstr "O capítulo {resumeAt} ainda não foi baixado"
 msgid "Chapter already has a file"
 msgstr ""
 
-#: src/components/series/ChapterCountsInfo.tsx
-#~ msgid "Chapter counts"
-#~ msgstr ""
-
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Chapter downloaded"
@@ -6018,10 +6040,6 @@ msgstr "Verificando um novo snapshot de metadados"
 msgid "Checks on the server and the library, and the repairs they found."
 msgstr ""
 
-#: src/pages/HealthPage.tsx
-#~ msgid "Checks on your server and library files, and the repairs you approve."
-#~ msgstr ""
-
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -6231,6 +6249,10 @@ msgstr "Segredo do cliente"
 #, fuzzy
 msgid "Close"
 msgstr "Fechar"
+
+#: src/components/notes/NotesDropdown.tsx
+msgid "Close notes"
+msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #, fuzzy
@@ -6867,6 +6889,10 @@ msgstr "Não foi possível carregar as bibliotecas do Kavita: {kavitaLibrariesEr
 msgid "Could not load library stats"
 msgstr "Não foi possível carregar as estatísticas da biblioteca"
 
+#: src/components/notes/NotesPanel.tsx
+msgid "Could not load the notes."
+msgstr ""
+
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
 msgid "Could not load this chapter."
@@ -7455,6 +7481,7 @@ msgstr "Definindo"
 msgid "Definition"
 msgstr "Definição"
 
+#: src/components/notes/NoteThread.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/rails/DeleteRailDialog.tsx
 #: src/components/series/ArchivedSeriesCard.tsx
@@ -7619,6 +7646,10 @@ msgstr ""
 msgid "Delete this file permanently?"
 msgstr "Excluir este arquivo definitivamente?"
 
+#: src/components/notes/NoteThread.tsx
+msgid "Delete this note?"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Delete this request?"
@@ -7644,6 +7675,10 @@ msgstr "Excluído"
 #, fuzzy
 msgid "Deleted \"{name}\""
 msgstr "Excluído \"{name}\""
+
+#: src/components/notes/useAuthorLabel.ts
+msgid "Deleted account"
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -7883,11 +7918,6 @@ msgstr "Dispensar por 30 dias"
 #, fuzzy
 msgid "Dismiss notification"
 msgstr "Dispensar notificação"
-
-#: src/pages/discover/FeedbackLab.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
-#~ msgid "Dismissal ended {until}"
-#~ msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -8185,6 +8215,10 @@ msgstr ""
 msgid "Downloads now try {bestName} first."
 msgstr "Os downloads agora tentam {bestName} primeiro."
 
+#: src/components/SourceMeasurePanel.tsx
+msgid "Downloads now try {bestName} first. Sources that could not be measured are tried last."
+msgstr ""
+
 #: src/components/QueuePause.tsx
 #, fuzzy
 msgid "Downloads paused"
@@ -8295,6 +8329,7 @@ msgstr "Conquistado pela própria biblioteca, então todos nesta instância comp
 msgid "Ecchi"
 msgstr "Ecchi"
 
+#: src/components/notes/NoteThread.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesTagsEditor.tsx
 #: src/components/settings/UsersSection.tsx
@@ -8388,6 +8423,10 @@ msgstr "Editar solicitação"
 #, fuzzy
 msgid "Edit request for {title}"
 msgstr "Editar solicitação de {title}"
+
+#: src/components/notes/NoteThread.tsx
+msgid "edited"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -8756,6 +8795,10 @@ msgstr "Todos"
 #, fuzzy
 msgid "Everyone has read this chapter, so read file cleanup deletes the file around {dueOn}. It gets no upgrades until then."
 msgstr "Todos já leram este capítulo, então a limpeza de arquivos lidos exclui o arquivo por volta de {dueOn}. Ele não recebe upgrades até lá."
+
+#: src/components/notes/NoteComposer.tsx
+msgid "Everyone who can see this series"
+msgstr ""
 
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
@@ -9826,15 +9869,24 @@ msgstr "Voltar"
 msgid "Go to library"
 msgstr "Ir para a biblioteca"
 
+#: src/components/notes/NoteThread.tsx
 #: src/pages/reader/PageStrip.tsx
 #, fuzzy
 msgid "Go to page {pageNumber}"
 msgstr "Ir para a página {pageNumber}"
 
 #: src/pages/reader/PageStrip.tsx
+msgid "Go to page {pageNumber} (bookmarked, has notes)"
+msgstr ""
+
+#: src/pages/reader/PageStrip.tsx
 #, fuzzy
 msgid "Go to page {pageNumber} (bookmarked)"
 msgstr "Ir para a página {pageNumber} (favoritada)"
+
+#: src/pages/reader/PageStrip.tsx
+msgid "Go to page {pageNumber} (has notes)"
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
@@ -13653,10 +13705,6 @@ msgstr "nenhum capítulo correspondeu"
 #~ msgstr "Nenhum capítulo lido neste período."
 
 #: src/pages/HealthPage.tsx
-#~ msgid "No checks have run yet"
-#~ msgstr ""
-
-#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "No checks have run yet. Use Check now."
 msgstr "Nenhuma verificação foi executada ainda. Use Verificar agora."
@@ -13852,6 +13900,14 @@ msgstr "Nenhuma correspondência de metadados encontrada."
 #, fuzzy
 msgid "No more chapters"
 msgstr "Não há mais capítulos"
+
+#: src/components/notes/NotesPanel.tsx
+msgid "No notes on this chapter yet."
+msgstr ""
+
+#: src/components/notes/NotesPanel.tsx
+msgid "No notes on this page."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -14190,7 +14246,6 @@ msgstr "Nenhuma nas notificações mais recentes"
 msgid "None linked"
 msgstr "Nenhum vinculado"
 
-#: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
 #~ msgid "None listed"
@@ -14556,15 +14611,64 @@ msgstr "ainda não sincronizado"
 msgid "Not yet synced"
 msgstr "Ainda não sincronizado"
 
+#: src/pages/reader/NotesMargin.tsx
+msgid "Note"
+msgstr ""
+
 #: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Note (optional)"
 msgstr "Nota (opcional)"
 
+#: src/components/notes/NoteThread.tsx
+#: src/pages/reader/NotesMargin.tsx
+msgid "Note deleted"
+msgstr ""
+
 #: src/components/discover/ShortlistButton.tsx
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Note for later"
+msgstr ""
+
+#: src/pages/reader/NotesMargin.tsx
+msgid "Note on page {pageNumber}"
+msgstr ""
+
+#: src/api/inbox.ts
+#: src/pages/reader/ChapterEnd.tsx
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Notes"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Notes ({noteCount})"
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Notes beside the page"
+msgstr ""
+
+#: src/components/notes/NotesPanel.tsx
+msgid "Notes need a connection"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Notes on {name}: {mine} yours, {shared} shared"
+msgstr ""
+
+#: src/pages/reader/NotesMargin.tsx
+msgid "Notes on page {pageNumber} ({count})"
+msgstr ""
+
+#. placeholder {0}: manifest.label
+#: src/pages/reader/ReaderPage.tsx
+msgid "Notes, {0}"
+msgstr ""
+
+#: src/components/notes/NotesDropdown.tsx
+#: src/components/notes/NotesPanel.tsx
+msgid "Notes, {chapterLabel}"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -15332,6 +15436,10 @@ msgstr "Somente quando for central"
 msgid "Only while you're partway through the series and haven't marked it finished."
 msgstr "Apenas enquanto você estiver no meio da série e ainda não a tiver marcado como concluída."
 
+#: src/components/notes/NoteComposer.tsx
+msgid "Only you"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Only you can see this."
@@ -15467,6 +15575,15 @@ msgstr "A partir de agora, abrir a pesquisa com estes filtros"
 msgid "Open webtoon chapters in Continuous layout"
 msgstr "Abrir capítulos de webtoon no layout Contínuo"
 
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Opening"
+msgstr ""
+
+#: src/pages/reader/NextChapterHint.tsx
+msgid "Opening next chapter"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Opens a deletion review. Nothing is removed until you confirm it there."
@@ -15570,6 +15687,14 @@ msgstr "Outras escolhas para você"
 msgid "Other sessions signed out"
 msgstr "Outras sessões desconectadas"
 
+#: src/components/notes/NoteComposer.tsx
+msgid "Others will see you as \"Another reader\" until an admin gives your account a display name."
+msgstr ""
+
+#: src/components/notes/NoteComposer.tsx
+msgid "Others will see your login name, {loginName}."
+msgstr ""
+
 #: src/components/pageconversion/RuleCard.tsx
 #, fuzzy
 msgid "Over"
@@ -15622,6 +15747,11 @@ msgstr "Página {page} de {pageCount}"
 #, fuzzy
 msgid "Page {pageIndex}/{pageCount}"
 msgstr "Página {pageIndex}/{pageCount}"
+
+#: src/components/notes/NoteThread.tsx
+#: src/pages/reader/NotesMargin.tsx
+msgid "Page {pageNumber}"
+msgstr ""
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingRail.tsx
@@ -16107,6 +16237,10 @@ msgstr "Escolhas do sistema de recomendações, com base em toda a sua bibliotec
 msgid "Pin one to a series from its Quality profile menu."
 msgstr "Fixe um perfil em uma série pelo menu de Perfil de qualidade dela."
 
+#: src/components/notes/NoteComposer.tsx
+msgid "Pin to page {pageNumber}"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Plain title search. Matches from just two characters."
@@ -16331,6 +16465,12 @@ msgstr "Prioridade"
 #, fuzzy
 msgid "Priority for {sourceName}"
 msgstr "Prioridade para {sourceName}"
+
+#: src/components/notes/NoteComposer.tsx
+#: src/components/notes/NoteThread.tsx
+#: src/pages/reader/NotesMargin.tsx
+msgid "Private"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -16997,6 +17137,10 @@ msgstr ""
 #, fuzzy
 msgid "Readers who finished {finished} also finished this"
 msgstr "Leitores que terminaram {finished} também terminaram esta"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Readers without a display name appear under their login name on shared notes, the leaderboard and edit history, instead of \"Another reader\". Anyone who can sign in then sees every username."
+msgstr ""
 
 #. Notify only while the user is partway through the series
 #: src/components/ImportListsSection.tsx
@@ -17787,6 +17931,10 @@ msgstr ""
 msgid "Removed {title} from your shortlist."
 msgstr ""
 
+#: src/components/notes/NoteThread.tsx
+msgid "Removed by an admin"
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Removed chapter"
@@ -17943,6 +18091,15 @@ msgstr "Substituição"
 #, fuzzy
 msgid "Replaces downloaded files with better releases for each series' quality profile."
 msgstr "Substitui os arquivos baixados por lançamentos melhores, conforme o perfil de qualidade de cada série."
+
+#: src/api/inbox.ts
+msgid "Replies to your notes"
+msgstr ""
+
+#: src/components/notes/NoteComposer.tsx
+#: src/components/notes/NoteThread.tsx
+msgid "Reply"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -18783,6 +18940,7 @@ msgid "Samples a few pages from every linked source."
 msgstr "Pega uma amostra de algumas páginas de cada fonte vinculada."
 
 #: src/components/DiscoverPresets.tsx
+#: src/components/notes/NoteThread.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/series/EditMetadataModal.tsx
@@ -20049,6 +20207,12 @@ msgstr "Proporção de capítulos lidos menos a proporção na biblioteca. À di
 msgid "Share of the series you've read."
 msgstr "Parcela das séries que você leu."
 
+#: src/components/notes/NoteComposer.tsx
+#: src/components/notes/NoteThread.tsx
+#: src/pages/reader/NotesMargin.tsx
+msgid "Shared"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Shares a file with another chapter"
@@ -20100,6 +20264,7 @@ msgid "Shounen"
 msgstr "Shounen"
 
 #: src/pages/HealthPage.tsx
+#: src/pages/reader/NotesMargin.tsx
 msgid "Show"
 msgstr ""
 
@@ -20140,11 +20305,17 @@ msgstr "Mostrar pastas"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
+#: src/pages/reader/NotesMargin.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "Show less"
 msgstr "Mostrar menos"
+
+#: src/components/settings/UsersSection.tsx
+#: src/pages/settings/registry.ts
+msgid "Show login names to everyone"
+msgstr ""
 
 #: src/components/discover/DiscoverCatalogue.tsx
 #: src/components/discover/DiscoverDetailModal.tsx
@@ -20163,6 +20334,10 @@ msgstr "Mostrar mais"
 #, fuzzy
 msgid "Show newest {max} of {count}"
 msgstr "Mostrar as {max} mais recentes de {count}"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Show notes beside the page when there is room"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -20215,6 +20390,10 @@ msgstr "Mostrar a página Início"
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Show the oldest"
+msgstr ""
+
+#: src/components/notes/NotesPanel.tsx
+msgid "Show the whole chapter"
 msgstr ""
 
 #: src/pages/CreatorPage.tsx
@@ -20621,6 +20800,10 @@ msgstr "Algumas fontes não puderam ser pesquisadas"
 msgid "Somebody filed a request"
 msgstr "Alguém fez uma solicitação"
 
+#: src/api/inbox.ts
+msgid "Someone replied in a thread you wrote or joined."
+msgstr ""
+
 #: src/components/RouteErrorBoundary.tsx
 #, fuzzy
 msgid "Something went wrong while drawing it. Reloading usually clears it; if it keeps happening, the log has the details."
@@ -20734,24 +20917,12 @@ msgid "Sources disagree on chapter numbering"
 msgstr "As fontes discordam na numeração dos capítulos"
 
 #: src/components/series/SeriesHero.tsx
-#~ msgid "Sources end at ch. {highest}; MangaBaka lists {listed}"
-#~ msgstr ""
-
-#: src/components/series/SeriesHero.tsx
-#~ msgid "Sources end at ch. {highest}; your total is {listed}"
-#~ msgstr ""
-
-#: src/components/series/SeriesHero.tsx
 msgid "Sources go up to ch. {highest}, MangaBaka lists {listed}."
 msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 msgid "Sources go up to ch. {highest}, your total is {listed}."
 msgstr ""
-
-#: src/components/series/SeriesHero.tsx
-#~ msgid "Sources reach ch. {highest} of {listed}"
-#~ msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -20830,17 +21001,9 @@ msgstr "Separar do nível acima"
 msgid "Split into two pages"
 msgstr "Dividir em duas páginas"
 
-#: src/components/TagBuckets.tsx
-#~ msgid "Spoiler"
-#~ msgstr ""
-
-#: src/components/TagBuckets.tsx
-#~ msgid "Spoiler tag. Click to hide it again."
-#~ msgstr ""
-
-#: src/components/TagBuckets.tsx
-#~ msgid "Spoiler tag. Click to reveal it."
-#~ msgstr ""
+#: src/components/notes/NoteBody.tsx
+msgid "Spoiler, press to reveal"
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 msgid "Spoiler:"
@@ -20850,10 +21013,6 @@ msgstr ""
 #, fuzzy
 msgid "Spoiler: {description}"
 msgstr "Spoiler: {description}"
-
-#: src/components/TagBuckets.tsx
-#~ msgid "Spoiler. Hover or tap to reveal."
-#~ msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -21338,6 +21497,10 @@ msgstr "Tags a incluir"
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Tap the page edges to turn pages"
+msgstr ""
+
+#: src/components/notes/NoteThread.tsx
+msgid "Tap to show"
 msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
@@ -22328,6 +22491,10 @@ msgstr "este mês"
 msgid "This month"
 msgstr "Este mês"
 
+#: src/components/notes/NotesPanel.tsx
+msgid "This page"
+msgstr ""
+
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "This page could not be read, so the pass would leave the file alone."
@@ -22430,6 +22597,10 @@ msgstr "Esta série não tem perfil de qualidade"
 #, fuzzy
 msgid "This series is already in the library, but you can't see it, so it can't be changed here."
 msgstr "Esta série já está na biblioteca, mas você não a vê, então não pode ser alterada aqui."
+
+#: src/components/notes/NoteComposer.tsx
+msgid "This series is incognito. A shared note tells everyone you read this chapter."
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -22938,6 +23109,7 @@ msgstr "Tente uma consulta mais curta ou alternativa."
 #: src/auth/OfflineStartPage.tsx
 #: src/components/home/OfflineHome.tsx
 #: src/components/MetadataDumpProgress.tsx
+#: src/components/notes/NotesPanel.tsx
 #: src/components/pageconversion/ReviewStep.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
@@ -23654,10 +23826,6 @@ msgstr "Use pelo menos {MIN_PASSWORD_LENGTH} caracteres"
 msgid "Use best quality first"
 msgstr "Usar melhor qualidade primeiro"
 
-#: src/pages/HealthPage.tsx
-#~ msgid "Use Check now to run them."
-#~ msgstr ""
-
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Use for taste"
@@ -23767,6 +23935,11 @@ msgstr "Nome de usuário"
 #, fuzzy
 msgid "Username claim"
 msgstr "Claim de usuário"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "username, login name, display name, another reader, privacy, names"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/registry.ts
@@ -24345,6 +24518,10 @@ msgstr "Quando"
 msgid "When most pages are very tall."
 msgstr "Quando a maioria das páginas é muito alta."
 
+#: src/pages/reader/ReaderSettings.tsx
+msgid "When the screen has room for them"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Where the files on disk came from, which can outlive the link"
@@ -24404,6 +24581,10 @@ msgstr "Qual lista tem os capítulos desta série?"
 msgid "Which new chapters get fetched as they land"
 msgstr "Quais novos capítulos são buscados assim que chegam"
 
+#: src/components/notes/NotesPanel.tsx
+msgid "Which notes to show"
+msgstr ""
+
 #: src/components/settings/NotificationPrefsSection.tsx
 #, fuzzy
 msgid "Which series notify me"
@@ -24429,10 +24610,18 @@ msgstr ""
 msgid "While the server works"
 msgstr "Enquanto o servidor trabalha"
 
+#: src/components/notes/NoteComposer.tsx
+msgid "Who can see this note"
+msgstr ""
+
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Whole"
 msgstr "Inteira"
+
+#: src/components/notes/NotesPanel.tsx
+msgid "Whole chapter"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -24516,6 +24705,18 @@ msgstr "Este anime não será sugerido novamente como ponto de retomada."
 msgid "Worth a look ({lookCount})"
 msgstr "Vale uma olhada ({lookCount})"
 
+#: src/components/notes/NoteComposer.tsx
+msgid "Write a note"
+msgstr ""
+
+#: src/components/notes/NoteComposer.tsx
+msgid "Write a note. Wrap spoilers in ||double bars||."
+msgstr ""
+
+#: src/components/notes/NoteComposer.tsx
+msgid "Write a reply"
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -24569,6 +24770,7 @@ msgstr "Ontem"
 msgid "you"
 msgstr "você"
 
+#: src/components/notes/useAuthorLabel.ts
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "You"

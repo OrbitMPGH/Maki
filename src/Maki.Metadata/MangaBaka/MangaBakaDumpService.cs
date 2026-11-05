@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Globalization;
 using System.Security.Cryptography;
 using Maki.Core.Configuration;
+using Maki.Core.Io;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 using SQLitePCL;
@@ -236,7 +237,7 @@ public class MangaBakaDumpService(
         await using var decompressed = new DecompressionStream(hashing);
         await using (var output = File.Create(stagingPath))
         {
-            await decompressed.CopyToAsync(output, ct);
+            await PageCache.CopyDroppingWrittenAsync(decompressed, output, ct);
         }
 
         return Convert.ToHexStringLower(sha1.GetHashAndReset());
@@ -256,23 +257,20 @@ public class MangaBakaDumpService(
         Execute(conn, "PRAGMA journal_mode = OFF");
         Execute(conn, "PRAGMA synchronous = OFF");
 
-        // Reading the 3.5 GB table through a mapping rather than a copy per page halved the time
-        // of a full scan on the 2026-11 dump. SQLite caps the size at its compile-time maximum and
-        // falls back to plain reads where the map fails.
-        Execute(conn, $"PRAGMA mmap_size = {StagingMmapBytes}");
-
         Interruptible(conn, ct, () =>
         {
-            var count = (long)Scalar(conn, "SELECT COUNT(*) FROM series")!;
+            // Counts no further than the check needs: a full COUNT(*) reads every leaf page of the
+            // 3.5 GB table, which is most of the file, cold now that the write leaves nothing cached.
+            var count = (long)Scalar(conn, "SELECT COUNT(*) FROM (SELECT 1 FROM series LIMIT 1000)")!;
             if (count < 1000)
             {
                 throw new InvalidOperationException($"MangaBaka dump looks broken: only {count} series rows");
             }
 
-            status.ReportIndexed(CountShare);
-            logger.LogInformation("Building MangaBaka search index and browse table over {Count} series…", count);
+            logger.LogInformation("Building MangaBaka search index and browse table…");
             BuildSearchIndex(
-                conn, Slice(status.ReportIndexed, CountShare, SearchShare), withBrowseTable: true, withFranchiseTable: true);
+                conn, Slice(status.ReportIndexed, 0, SearchShare), withBrowseTable: true, withFranchiseTable: true,
+                dropScanned: () => PageCache.DropAfterScan(stagingPath));
 
             logger.LogInformation("Building MangaBaka browse indexes…");
             BuildBrowseIndexes(conn, logger, progress: Slice(status.ReportIndexed, SearchShare, 1));
@@ -280,15 +278,11 @@ public class MangaBakaDumpService(
     }
 
     /// <summary>
-    /// Where the row count and the search pass end on the indexing bar. On the 2026-11 standard dump
-    /// with the file mapped, the count took 0.5 to 6 s, the search pass with the browse table copy
-    /// riding on it 11 to 14.5 s, and the browse indexes on the narrow table 2 to 3.5 s.
+    /// Where the search pass ends on the indexing bar. On the 2026-11 standard dump, read cold since
+    /// the install keeps it out of the page cache, the search pass with the browse table copy riding
+    /// on it took 12.6 to 18.5 s and the browse indexes on the narrow table 2.3 to 2.4 s.
     /// </summary>
-    private const double CountShare = 0.05;
-
     private const double SearchShare = 0.85;
-
-    private const long StagingMmapBytes = 8L * 1024 * 1024 * 1024;
 
     /// <summary>Maps a step's own 0 to 1 onto its stretch of the whole bar.</summary>
     private static Action<double> Slice(Action<double> report, double from, double to) =>
@@ -719,10 +713,16 @@ public class MangaBakaDumpService(
     /// each range straight after, while its pages are still in the cache, which is what makes it
     /// cheap. The ranges are also what gives <paramref name="progress"/> something to report.
     /// </para>
+    ///
+    /// <para>
+    /// <paramref name="dropScanned"/> runs every <see cref="DropEveryChunks"/> ranges. The staged
+    /// file is read once in rowid order, so dropping what the pass has read evicts nothing it still
+    /// needs and keeps the container's page cache at a few hundred MB instead of the whole file.
+    /// </para>
     /// </summary>
     internal static void BuildSearchIndex(
         SqliteConnection conn, Action<double>? progress = null, bool withBrowseTable = false,
-        bool withFranchiseTable = false)
+        bool withFranchiseTable = false, Action? dropScanned = null)
     {
         Execute(conn, $"DROP TABLE IF EXISTS {SearchTableName}");
         Execute(conn, $"CREATE VIRTUAL TABLE {SearchTableName} USING fts5(title, series_id UNINDEXED, tokenize='unicode61 remove_diacritics 2')");
@@ -730,7 +730,9 @@ public class MangaBakaDumpService(
         long first = 0, last = -1;
         using (var range = conn.CreateCommand())
         {
-            range.CommandText = "SELECT MIN(rowid), MAX(rowid) FROM series";
+            // Two subqueries, because SQLite only seeks for a lone MIN or MAX: together they scan
+            // every leaf page, 11 s on the cold 2026-11 dump against 1 ms.
+            range.CommandText = "SELECT (SELECT MIN(rowid) FROM series), (SELECT MAX(rowid) FROM series)";
             using var reader = range.ExecuteReader();
             if (reader.Read() && !reader.IsDBNull(0))
             {
@@ -775,6 +777,7 @@ public class MangaBakaDumpService(
         try
         {
             var span = (double)(last - first + 1);
+            var chunks = 0;
             for (var start = first; start <= last; start += SearchChunkRows)
             {
                 var end = Math.Min(last, start + SearchChunkRows - 1);
@@ -790,6 +793,11 @@ public class MangaBakaDumpService(
                     edges.Parameters["$lo"].Value = start;
                     edges.Parameters["$hi"].Value = end;
                     franchise!.Add(edges);
+                }
+
+                if (dropScanned is not null && ++chunks % DropEveryChunks == 0)
+                {
+                    dropScanned();
                 }
 
                 progress?.Invoke((end - first + 1) / span);
@@ -826,6 +834,8 @@ public class MangaBakaDumpService(
 
     /// <summary>About 60 steps over the ~609k rowids of the 2026-11 dump, ~65 MB of rows each.</summary>
     private const long SearchChunkRows = 10_000;
+
+    internal const int DropEveryChunks = 2;
 
     private async Task SwapIntoPlaceAsync(string stagingPath, CancellationToken ct)
     {

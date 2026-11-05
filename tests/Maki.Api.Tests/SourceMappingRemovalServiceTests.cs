@@ -593,6 +593,35 @@ public class SourceMappingRemovalServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_delisted_chapter_whose_only_claim_is_a_note_is_kept()
+    {
+        var seriesId = _db.SeedSeries(mappings: Mapping("wrong"));
+        var reader = _db.SeedUser("reader", Maki.Core.Security.MakiPermission.None);
+        int wrongId;
+        int notedId;
+        using (var db = _db.NewContext())
+        {
+            wrongId = db.SourceMappings.Single(m => m.SeriesId == seriesId).Id;
+            var noted = new Chapter { SeriesId = seriesId, Number = 1, Language = "en" };
+            db.Chapters.AddRange(noted, new Chapter { SeriesId = seriesId, Number = 2, Language = "en" });
+            db.SaveChanges();
+            notedId = noted.Id;
+            db.ChapterNotes.Add(new ChapterNote
+            {
+                AuthorId = reader, SeriesId = seriesId, ChapterId = noted.Id, Body = "theory", CreatedAt = DateTime.UtcNow,
+            });
+            db.SaveChanges();
+        }
+
+        var result = await BuildService().RemoveAsync(wrongId, deleteFiles: false);
+
+        Assert.Equal(1, result!.RemovedChapters);
+        using var check = _db.NewContext();
+        Assert.Equal(notedId, Assert.Single(check.Chapters.Where(c => c.SeriesId == seriesId)).Id);
+        Assert.Single(check.ChapterNotes.Where(n => n.ChapterId == notedId));
+    }
+
+    [Fact]
     public async Task A_linkless_chapter_whose_only_claim_is_a_file_from_the_removed_source_goes_with_it()
     {
         var seriesId = _db.SeedSeries(mappings: Mapping("wrong"));

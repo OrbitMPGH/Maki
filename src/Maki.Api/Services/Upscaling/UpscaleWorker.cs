@@ -2,6 +2,7 @@ using Maki.Api.Configuration;
 using Maki.Api.Hubs;
 using Maki.Core.Configuration;
 using Maki.Core.Images.Upscaling;
+using Maki.Core.Io;
 
 namespace Maki.Api.Services.Upscaling;
 
@@ -34,14 +35,24 @@ public sealed class UpscaleWorker(
             logger.LogDebug(ex, "Could not index the upscale cache");
         }
 
+        var busy = false;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                if (!await RunOnceAsync(stoppingToken))
+                if (await RunOnceAsync(stoppingToken))
                 {
-                    await queue.WaitAsync(IdleWait, stoppingToken);
+                    busy = true;
+                    continue;
                 }
+
+                if (busy)
+                {
+                    busy = false;
+                    ReleaseMemory();
+                }
+
+                await queue.WaitAsync(IdleWait, stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -53,6 +64,19 @@ public sealed class UpscaleWorker(
                 await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
+    }
+
+    /// <summary>
+    /// Hands back what a burst of pages left behind once the queue drains: tens to hundreds of MB of
+    /// large-object garbage the GC would otherwise keep committed until the next page, and the native
+    /// heap ORT and libvips freed.
+    /// </summary>
+    private static void ReleaseMemory()
+    {
+        System.Runtime.GCSettings.LargeObjectHeapCompactionMode =
+            System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+        GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+        NativeHeap.Trim();
     }
 
     /// <summary>Runs the next job. False when there was nothing to run.</summary>
@@ -110,15 +134,16 @@ public sealed class UpscaleWorker(
 
     private async Task<(UpscaleOutcome Outcome, string? Reason)> RunAsync(UpscaleJob job, UpscaleModelId model, CancellationToken ct)
     {
+        using var run = CancellationTokenSource.CreateLinkedTokenSource(ct, job.Abandoned);
         try
         {
-            var page = await ReaderPageCache.ReadPageBytesAsync(paths, archives, job.Slice, job.Key.AbsIndex, ct);
+            var page = await ReaderPageCache.ReadPageBytesAsync(paths, archives, job.Slice, job.Key.AbsIndex, run.Token);
             if (page is null)
             {
                 return (UpscaleOutcome.Skipped, UpscaleReasons.Unreadable);
             }
 
-            var result = await upscaler.UpscaleAsync(page, job.Key.Model, ct);
+            var result = await upscaler.UpscaleAsync(page, job.Key.Model, run.Token);
             if (result is { Outcome: UpscaleOutcome.Ready, Bytes: { } bytes, Extension: { } extension })
             {
                 if (!store.IsReady(model))
@@ -146,6 +171,12 @@ public sealed class UpscaleWorker(
         {
             queue.Complete(job, UpscaleOutcome.Failed, null);
             throw;
+        }
+        catch (OperationCanceledException) when (job.Abandoned.IsCancellationRequested)
+        {
+            logger.LogDebug("Stopped upscaling page {Page} of chapter file {FileId}: its reader moved on",
+                job.Key.AbsIndex, job.Key.ChapterFileId);
+            return (UpscaleOutcome.Failed, UpscaleReasons.Abandoned);
         }
         catch (Exception ex)
         {

@@ -181,6 +181,11 @@ public sealed class ControllerAuthorizationInventoryTests
         "LibraryFiltersController.Create",
         "LibraryFiltersController.Delete",
         "LibraryFiltersController.Update",
+        // Author only, or an admin deleting a shared note; checked in the action, invisible ids 404.
+        "NotesController.Create",
+        "NotesController.Delete",
+        "NotesController.Reply",
+        "NotesController.Update",
         "PreviewController.Release",
         "PreviewController.Start",
         "ProgressController.DeleteGoal",

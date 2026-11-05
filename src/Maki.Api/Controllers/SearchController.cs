@@ -10,6 +10,7 @@ using Maki.Core.Quality;
 using Maki.Core.Security;
 using Maki.Core.Sources;
 using Maki.Data;
+using Maki.Sources.Common;
 using Maki.Sources.Custom;
 using Maki.Sources.Suwayomi;
 using Microsoft.AspNetCore.Authorization;
@@ -153,6 +154,8 @@ public class SearchController(
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, current);
             request.Headers.Referrer = referer;
+            // This stands in for the browser's <img> request, and some CDNs (cdn.atsu.moe) 403 the Maki UA.
+            request.Headers.TryAddWithoutValidation("User-Agent", BrowserUserAgent.Value);
 
             HttpResponseMessage response;
             try

@@ -30,14 +30,36 @@ public class UpscaleTilingTests
             covered[y * 900 + x]++;
 
         Assert.All(covered, c => Assert.Equal(1, c));
-        Assert.Equal(3 * 4, tiles.Count);
-        Assert.Equal(new UpscaleTile(768, 1152, 132, 148, 16, 164, 180), tiles[^1]);
+        Assert.Equal(10 * 14, tiles.Count);
+        Assert.Equal(new UpscaleTile(810, 1208, 90, 92, 12, 114, 117), tiles[^1]);
     }
 
     [Theory]
-    [InlineData(384, 416)]
-    [InlineData(105, 140)]
-    [InlineData(1, 36)]
+    [InlineData(1672, 2400, 4)]
+    [InlineData(1672, 2400, 1)]
+    [InlineData(720, 16000, 4)]
+    [InlineData(385, 769, 1)]
+    public void A_page_splits_into_as_many_tiles_as_fixed_tiling_with_equal_spans_and_one_shape(int width, int height, int multiple)
+    {
+        var tiles = UpscaleTiling.Plan(width, height, multiple);
+
+        var columns = tiles.Select(t => (t.X, t.Width)).Distinct().ToList();
+        var rows = tiles.Select(t => (t.Y, t.Height)).Distinct().ToList();
+        Assert.Equal((width + 95) / 96, columns.Count);
+        Assert.Equal((height + 95) / 96, rows.Count);
+        Assert.Equal(width, columns.Sum(c => c.Width));
+        Assert.Equal(height, rows.Sum(r => r.Height));
+        Assert.True(columns.Max(c => c.Width) - columns.Min(c => c.Width) <= 1);
+        Assert.True(rows.Max(r => r.Height) - rows.Min(r => r.Height) <= 1);
+        var shape = Assert.Single(tiles.Select(t => (t.ContextWidth, t.ContextHeight)).Distinct());
+        Assert.Equal((0, 0), (shape.ContextWidth % multiple, shape.ContextHeight % multiple));
+        Assert.All(tiles, t => Assert.True(t.ContextWidth >= t.Width + 24 && t.ContextHeight >= t.Height + 24));
+    }
+
+    [Theory]
+    [InlineData(96, 120)]
+    [InlineData(85, 112)]
+    [InlineData(1, 28)]
     public void The_context_tile_rounds_up_to_a_multiple_of_four(int interior, int context)
     {
         var tile = UpscaleTiling.Plan(interior, interior, multiple: 4).Single();
@@ -50,13 +72,13 @@ public class UpscaleTilingTests
     [Fact]
     public void Context_past_the_page_edge_is_reflected_from_the_page()
     {
-        var tile = UpscaleTiling.Plan(100, 100, multiple: 4).Single();
+        var tile = UpscaleTiling.Plan(90, 90, multiple: 4).Single();
 
-        Assert.Equal(16, tile.SourceX(0, 100));
-        Assert.Equal(0, tile.SourceX(16, 100));
-        Assert.Equal(99, tile.SourceX(115, 100));
-        Assert.Equal(98, tile.SourceX(116, 100));
-        Assert.Equal(132, tile.ContextWidth);
+        Assert.Equal(12, tile.SourceX(0, 90));
+        Assert.Equal(0, tile.SourceX(12, 90));
+        Assert.Equal(89, tile.SourceX(101, 90));
+        Assert.Equal(88, tile.SourceX(102, 90));
+        Assert.Equal(116, tile.ContextWidth);
     }
 
     [Fact]
@@ -120,6 +142,16 @@ public class UpscaleTilingTests
 
         using var tall = NetVips.Image.Black(1, PageConversion.MaxEdge + 1).Cast(NetVips.Enums.BandFormat.Uchar);
         Assert.Equal(UpscaleReasons.TooLarge, ImageCodec.DecodeForUpscale(tall.PngsaveBuffer()).SkipReason);
+    }
+
+    [Fact]
+    public void Decoding_for_upscaling_skips_a_page_over_the_server_pixel_limit()
+    {
+        using var limit = NetVips.Image.Black(4000, 4000).Cast(NetVips.Enums.BandFormat.Uchar);
+        using var over = NetVips.Image.Black(4000, 4001).Cast(NetVips.Enums.BandFormat.Uchar);
+
+        Assert.Null(ImageCodec.DecodeForUpscale(limit.PngsaveBuffer(compression: 1)).SkipReason);
+        Assert.Equal(UpscaleReasons.TooLarge, ImageCodec.DecodeForUpscale(over.PngsaveBuffer(compression: 1)).SkipReason);
     }
 
     [Fact]

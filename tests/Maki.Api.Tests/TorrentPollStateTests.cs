@@ -47,6 +47,26 @@ public class TorrentPollStateTests
     }
 
     [Fact]
+    public void Removals_skip_on_their_own_generation()
+    {
+        var state = new TorrentPollState(_clock);
+        Assert.False(state.CanSkipRemovals);
+
+        state.MarkRemovalsIdle(state.RemovalGeneration);
+        state.TorrentAdded();
+        Assert.True(state.CanSkipRemovals);
+
+        var before = state.RemovalGeneration;
+        state.RemovalMarked();
+        state.MarkRemovalsIdle(before);
+        Assert.False(state.CanSkipRemovals);
+
+        state.MarkRemovalsIdle(state.RemovalGeneration);
+        _clock.Now += TorrentPollState.RecheckRemovalsWhileIdle;
+        Assert.False(state.CanSkipRemovals);
+    }
+
+    [Fact]
     public void The_queue_is_read_again_after_the_recheck_interval()
     {
         var state = new TorrentPollState(_clock);

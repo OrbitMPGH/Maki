@@ -31,6 +31,7 @@ import {
   IconListCheck,
   IconPackage,
   IconPencil,
+  IconMessages,
   IconPuzzle,
   IconRestore,
   IconShieldLock,
@@ -236,6 +237,7 @@ const TYPE_ICONS: Record<InboxEventType, Icon> = {
   accountSecurity: IconShieldLock,
   seriesStatusChanged: IconFlag,
   customSourceUpdated: IconPuzzle,
+  noteReply: IconMessages,
 }
 
 /** A warning or error shows its severity; anything else shows what kind of event it was. */

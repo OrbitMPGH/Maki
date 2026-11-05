@@ -544,7 +544,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
 
   const titlesOf = useMemo(
     () =>
-      titleIndex(series ?? [], (s) => [s.title, s.displayTitle, s.originalTitle, ...s.altTitles.map((alt) => alt.title)]),
+      titleIndex(series ?? [], (s) => [s.title, s.displayTitle, s.originalTitle, ...(s.altTitleNames ?? [])]),
     [series],
   )
 

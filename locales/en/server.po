@@ -408,8 +408,8 @@ msgstr "There is nothing to register. Enter your OPDS token as the username and 
 msgid "error.libraryFilters.nameRequired"
 msgstr "Name is required"
 
-#: src/Maki.Api/Controllers/DiscoverFiltersController.cs
 #. {max} is how many saved filters one person may keep.
+#: src/Maki.Api/Controllers/DiscoverFiltersController.cs
 msgid "error.discoverFilters.tooMany"
 msgstr "You can keep at most {max} saved filters"
 
@@ -1116,6 +1116,38 @@ msgstr "Kavita is not configured (Settings → Integrations → Kavita)"
 #: src/Maki.Api/Controllers/ReaderController.cs
 msgid "error.reader.nothingToRead"
 msgstr "Nothing left to read"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "error.notes.empty"
+msgstr "Write something first"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "error.notes.tooLong"
+msgstr "Notes can be at most {max} characters"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "error.notes.badPage"
+msgstr "That page is not one this note can be pinned to"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "error.notes.badVisibility"
+msgstr "A note is either private or shared"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "error.notes.hasReplies"
+msgstr "Other readers replied to this note, so it has to stay shared"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "error.notes.deleted"
+msgstr "This note was deleted"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "error.notes.chapterGone"
+msgstr "This chapter changed while you were writing. Reload and try again"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "error.notes.notYours"
+msgstr "Only the person who wrote this note can change it"
 
 #: src/Maki.Api/Controllers/ReaderController.cs
 msgid "error.reader.pageOutOfRange"
@@ -2927,6 +2959,14 @@ msgstr "Level {level}"
 #: src/Maki.Api/Services/AchievementService.cs
 msgid "inbox.levelUpJump.body"
 msgstr "You reached level {level}, up from {previous}."
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "inbox.noteReply.title"
+msgstr "New reply to a note"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "inbox.noteReply.body"
+msgstr "{hasName, select, yes {{userName}} other {Another reader}} replied on {series}, {chapter}"
 
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 msgid "inbox.chapter.downloaded.title"

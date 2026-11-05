@@ -147,6 +147,22 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
     }
 
     /// <summary>
+    /// A shared note on a chapter was added, changed or removed. The payload names the chapter and
+    /// nothing else, no author, visibility or text: clients refetch through the filtered notes
+    /// endpoints, so the broadcast cannot leak what was written or by whom.
+    /// </summary>
+    public virtual async Task ChapterNotesChanged(int seriesId, int chapterId, int rootFolderId)
+    {
+        var groups = await AudienceForAsync(rootFolderId);
+        if (groups.Count == 0)
+        {
+            return;
+        }
+
+        await hubContext.Clients.Groups(groups).SendAsync("chapterNotesChanged", new { seriesId, chapterId });
+    }
+
+    /// <summary>
     /// The user groups allowed to see anything in <paramref name="rootFolderId"/>. Opens its own
     /// scope because this class is a singleton and the callers are background workers with no
     /// request scope of their own.

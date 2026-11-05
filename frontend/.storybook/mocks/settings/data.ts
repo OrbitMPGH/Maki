@@ -84,6 +84,7 @@ export const readerPrefs: ReaderPrefs = {
   enhanceFallback: 'a4k-m',
   enhanceSkipTiers: ['volume'],
   enhanceProgress: 'line',
+  notesBeside: true,
 }
 
 export const readerSettings: ReaderSettings = {

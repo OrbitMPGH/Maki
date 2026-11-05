@@ -8,7 +8,7 @@ import {
   type SetupStatus,
   type UiSettings,
 } from '../../src/api/hooks'
-import type { QueueSummaryDto } from '../../src/api/types'
+import type { QueueSummaryDto, SeriesDto } from '../../src/api/types'
 import { adminMe, api } from './api'
 import { imageHandlers } from './images'
 
@@ -293,7 +293,24 @@ function titleFor(seed: string): string {
   return Number.isInteger(id) && catalogue.some((s) => s.id === id) ? seriesById(id).title : seed
 }
 
+/**
+ * `GET series/lookup`, derived from whatever `GET series` answers in the same story, so a story that
+ * overrides the list (empty, failing, never resolving) gets the matching lookup without saying so.
+ */
+export const seriesLookupHandler = http.get(api('/series/lookup'), async () => {
+  const res = await fetch(api('/series'))
+  if (!res.ok) {
+    return new HttpResponse(await res.text(), { status: res.status, headers: { 'Content-Type': 'application/json' } })
+  }
+  const list = (await res.json()) as SeriesDto[]
+  return HttpResponse.json(
+    list.map((s) => ({ id: s.id, mangaBakaId: s.mangaBakaId, coverUrl: s.coverUrl, archived: s.archivedAt != null })),
+  )
+})
+
 export const sharedHandlers = [
+  // Ahead of every `/series/:id` handler, which would otherwise take `lookup` for an id.
+  seriesLookupHandler,
   http.get('/initialize.json', () =>
     HttpResponse.json({
       apiRoot: '/api/v1',
