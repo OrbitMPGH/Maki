@@ -5963,10 +5963,6 @@ msgstr "清除章节搜索"
 msgid "Clear default"
 msgstr "清除默认设置"
 
-#: src/pages/SeriesDetailPage.tsx
-msgid "Clear delisted"
-msgstr ""
-
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Clear filters"
@@ -8585,10 +8581,6 @@ msgid "Every source that listed them has stopped, which can mean a source filed 
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "Every source that listed them has stopped. Usually a source corrected a listing, so check these files before reading them."
-msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Every unread chapter is already on this device"
 msgstr "所有未读章节已在此设备上"
@@ -10931,6 +10923,10 @@ msgstr "保持不变"
 #, fuzzy
 msgid "Keep deleted files (days)"
 msgstr "保留已删除文件的天数"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Keep delisted chapters"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -13880,6 +13876,10 @@ msgstr "目前没有来源提供此章节"
 
 #: src/pages/HealthPage.tsx
 msgid "No source is enabled for this series, so there is nowhere to download it from."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "No source lists them any more. A source may have filed them here by mistake, or dropped them after a licence takedown, so check the files before reading them."
 msgstr ""
 
 #: src/pages/LibraryPage.tsx

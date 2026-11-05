@@ -18,14 +18,16 @@ public class ChapterDelistedTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private ChapterSyncService Service(params ISource[] sources)
+    private ChapterSyncService Service(params ISource[] sources) => Service(Sources.AllEnabled, sources);
+
+    private ChapterSyncService Service(SourceAvailability availability, params ISource[] sources)
     {
         var registry = new SourceRegistry(sources);
         return new ChapterSyncService(
             _db.NewContext(),
             registry,
             new DownloadQueueService(null!, TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
-            Sources.AllEnabled,
+            availability,
             new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),
             new FakeAppSettings(),
             NullLogger<ChapterSyncService>.Instance,
@@ -168,6 +170,22 @@ public class ChapterDelistedTests : IDisposable
         Update(db => db.SourceMappings.Single(m => m.SeriesId == seriesId && m.SourceName == "b").Enabled = false);
         a.Remove(3);
         await Service(sources).SyncSeriesAsync(seriesId);
+
+        Assert.NotNull(ChapterOf(seriesId, 3).DelistedAt);
+        Assert.Null(ChapterOf(seriesId, 4).DelistedAt);
+    }
+
+    [Fact]
+    public async Task A_globally_switched_off_source_counts_like_a_disabled_mapping()
+    {
+        var seriesId = _db.SeedSeries(mappings: [Mapping("a"), Mapping("b")]);
+        List<decimal> a = [1, 2, 3];
+        List<decimal> b = [1, 2, 3, 4];
+        ISource[] sources = [Listing("a", a), Listing("b", b)];
+        await Service(sources).SyncSeriesAsync(seriesId);
+
+        a.Remove(3);
+        await Service(Sources.Disabled("b"), sources).SyncSeriesAsync(seriesId);
 
         Assert.NotNull(ChapterOf(seriesId, 3).DelistedAt);
         Assert.Null(ChapterOf(seriesId, 4).DelistedAt);

@@ -381,6 +381,24 @@ export const DelistedChapters: Story = {
   },
 }
 
+export const DelistedChaptersKept: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/chapter'), () =>
+        HttpResponse.json(
+          chaptersFor(6).map((c, i, all) => (i >= all.length - 2 ? { ...c, hasFile: true, delistedAt: hoursAgo(20) } : c)),
+        ),
+      ),
+      http.post(api('/chapter/delisted/clear'), () => HttpResponse.json({ cleared: 2 })),
+    ),
+    ...at(6),
+  },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Keep them' }))
+    await waitFor(() => expect(document.body).toHaveTextContent('Kept 2 chapters'))
+  },
+}
+
 export const DownloadsInProgress: Story = {
   parameters: {
     msw: seriesMsw(

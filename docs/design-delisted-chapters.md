@@ -191,6 +191,13 @@ Add to `.claude/rules/downloads.md`, near the `FileRemovedAt` entry: what `Delis
 
 Each phase builds and passes on its own. Phase 1 is invisible to users.
 
+## Known gaps
+
+Found in the PR 168 review and accepted for now:
+
+- **The stamp depends on order.** It fires only in the sync where the last counted link goes. If a free-window source or a mapping the user disables later still holds the chapter at that moment, nothing is stamped, and nothing is stamped when that holder lets go afterwards either. A real drop that lands in the same sync as a language-filter change is missed the same way.
+- **Suwayomi and custom sources cannot declare `FreeWindowListing`.** A free-window site reached through a Suwayomi extension still gets its chapters flagged as its window closes.
+
 ## Open decisions
 
 - **Download selection.** A wanted, delisted chapter with no file still gets queued and fails as `notListed`, and a Smart series waits on it while it is inside its retry backoff. Skipping delisted chapters in `Chapter.NextWanted` would fix the Smart stall, but makes the Missing count include chapters "Download next N" passes over. Recommendation: leave it out of this feature and look again if Smart stalls on delisted chapters in practice.

@@ -638,6 +638,16 @@ function SeriesDetailBody() {
   const unlinkChapters = useUnlinkChapters()
   const setChaptersWanted = useSetChaptersWanted()
   const clearDelisted = useClearDelisted()
+  const [keepingFrom, setKeepingFrom] = useState<'alert' | 'select'>('alert')
+  const keepDelisted = (chapterIds: number[], from: 'alert' | 'select') => {
+    setKeepingFrom(from)
+    clearDelisted.mutate(chapterIds, {
+      onSuccess: (r) => {
+        notify.ok(plural(r.cleared, { one: 'Kept # chapter', other: 'Kept # chapters' }))
+        if (from === 'select') exitSelectMode()
+      },
+    })
+  }
   const deleteChapters = useDeleteChapters()
   const deleteChapterFiles = useDeleteChapterFiles()
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
@@ -1888,15 +1898,11 @@ function SeriesDetailBody() {
     canEditMetadata && selectionHasDelisted
       ? [
           {
-            key: 'clearDelisted',
-            label: <Trans>Clear delisted</Trans>,
+            key: 'keepDelisted',
+            label: <Trans>Keep delisted chapters</Trans>,
             icon: <IconCircleCheck size={16} />,
-            loading: clearDelisted.isPending,
-            run: () =>
-              clearDelisted.mutate([...selected], {
-                onSuccess: (r) =>
-                  notify.ok(plural(r.cleared, { one: 'Kept # chapter', other: 'Kept # chapters' })),
-              }),
+            loading: clearDelisted.isPending && keepingFrom === 'select',
+            run: () => keepDelisted([...selected], 'select'),
           },
         ]
       : [],
@@ -2480,14 +2486,14 @@ function SeriesDetailBody() {
                           })}
                       >
                         <Text size="sm">
-                          <Trans>Every source that listed them has stopped. Usually a source corrected a listing, so check these files before reading them.</Trans>
+                          <Trans>No source lists them any more. A source may have filed them here by mistake, or dropped them after a licence takedown, so check the files before reading them.</Trans>
                         </Text>
                         <Group gap="xs" mt="sm">
                           <Button
                               size="xs"
                               variant="light"
                               onClick={() => {
-                                setChapterFilter('delisted')
+                                setChapterFilterPreference('delisted')
                                 changeTab('chapters')
                               }}
                           >
@@ -2497,8 +2503,8 @@ function SeriesDetailBody() {
                               <Button
                                   size="xs"
                                   variant="subtle"
-                                  loading={clearDelisted.isPending}
-                                  onClick={() => clearDelisted.mutate(delistedWithFileIds)}
+                                  loading={clearDelisted.isPending && keepingFrom === 'alert'}
+                                  onClick={() => keepDelisted(delistedWithFileIds, 'alert')}
                               >
                                 <Trans>Keep them</Trans>
                               </Button>

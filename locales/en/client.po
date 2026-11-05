@@ -4901,10 +4901,6 @@ msgstr "Clear chapter search"
 msgid "Clear default"
 msgstr "Clear default"
 
-#: src/pages/SeriesDetailPage.tsx
-msgid "Clear delisted"
-msgstr "Clear delisted"
-
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Clear filters"
 msgstr "Clear filters"
@@ -7062,10 +7058,6 @@ msgid "Every source that listed them has stopped, which can mean a source filed 
 msgstr "Every source that listed them has stopped, which can mean a source filed them here by mistake."
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "Every source that listed them has stopped. Usually a source corrected a listing, so check these files before reading them."
-msgstr "Every source that listed them has stopped. Usually a source corrected a listing, so check these files before reading them."
-
-#: src/pages/SeriesDetailPage.tsx
 msgid "Every unread chapter is already on this device"
 msgstr "Every unread chapter is already on this device"
 
@@ -8983,6 +8975,10 @@ msgstr "Keep as is"
 #: src/pages/settings/LibraryCards.tsx
 msgid "Keep deleted files (days)"
 msgstr "Keep deleted files (days)"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Keep delisted chapters"
+msgstr "Keep delisted chapters"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Keep each reader's last read chapter"
@@ -11394,6 +11390,10 @@ msgstr "No source has this chapter right now"
 #: src/pages/HealthPage.tsx
 msgid "No source is enabled for this series, so there is nowhere to download it from."
 msgstr "No source is enabled for this series, so there is nowhere to download it from."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "No source lists them any more. A source may have filed them here by mistake, or dropped them after a licence takedown, so check the files before reading them."
+msgstr "No source lists them any more. A source may have filed them here by mistake, or dropped them after a licence takedown, so check the files before reading them."
 
 #: src/pages/LibraryPage.tsx
 msgid "No sources linked"

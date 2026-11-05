@@ -5963,10 +5963,6 @@ msgstr "Effacer la recherche de chapitres"
 msgid "Clear default"
 msgstr "Effacer la valeur par défaut"
 
-#: src/pages/SeriesDetailPage.tsx
-msgid "Clear delisted"
-msgstr ""
-
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Clear filters"
@@ -8585,10 +8581,6 @@ msgid "Every source that listed them has stopped, which can mean a source filed 
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "Every source that listed them has stopped. Usually a source corrected a listing, so check these files before reading them."
-msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Every unread chapter is already on this device"
 msgstr "Chaque chapitre non lu est déjà sur cet appareil"
@@ -10931,6 +10923,10 @@ msgstr "Conserver tel quel"
 #, fuzzy
 msgid "Keep deleted files (days)"
 msgstr "Conserver les fichiers supprimés (jours)"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Keep delisted chapters"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -13880,6 +13876,10 @@ msgstr "Aucune source ne propose ce chapitre pour le moment"
 
 #: src/pages/HealthPage.tsx
 msgid "No source is enabled for this series, so there is nowhere to download it from."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "No source lists them any more. A source may have filed them here by mistake, or dropped them after a licence takedown, so check the files before reading them."
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
