@@ -20,6 +20,7 @@ namespace Maki.Api.Controllers;
 public record LinkChaptersRequest(int[] ChapterIds, string RelativePath);
 
 public record SetChaptersWantedRequest(int[] ChapterIds, bool Wanted);
+public record ClearDelistedRequest(int[] ChapterIds);
 
 public record DownloadChaptersRequest(int[] ChapterIds);
 
@@ -64,6 +65,7 @@ public class ChapterController(
                 HasFile = c.ChapterFileId != null,
                 FileRemovedAt = c.ChapterFileId == null ? c.FileRemovedAt : null,
                 FileAutoRemoved = c.ChapterFileId == null && c.FileRemovedAt != null && c.FileAutoRemoved,
+                c.DelistedAt,
                 FilePath = c.ChapterFile != null ? c.ChapterFile.RelativePath : null,
                 // Where the file came from: a registered source's name, the literal "import" for a
                 // file the user brought in from disk, or "torrent:{indexer}" for a grabbed release.
@@ -117,6 +119,7 @@ public class ChapterController(
             c.HasFile,
             c.FileRemovedAt,
             c.FileAutoRemoved,
+            c.DelistedAt,
             FileDeleteDueAt = deleteDue.TryGetValue(c.Id, out var dueAt) ? dueAt : (DateTime?)null,
             c.FilePath,
             c.FileSourceName,
@@ -193,6 +196,25 @@ public class ChapterController(
                     : c.FileRemovedAt)
                 .SetProperty(c => c.Wanted, request.Wanted), ct);
         return Ok(new { updated });
+    }
+
+    /// <summary>
+    /// Keeps chapters a sync flagged as delisted: the user checked them and the file is fine. A cleared
+    /// chapter with no source link is never flagged again, since only losing a link stamps it.
+    /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("delisted/clear")]
+    public async Task<IActionResult> ClearDelisted([FromBody] ClearDelistedRequest request, CancellationToken ct)
+    {
+        if (request.ChapterIds.Length == 0)
+        {
+            return this.Fail(localizer, "error.chapter.noChaptersSelected");
+        }
+
+        var cleared = await db.Chapters
+            .Where(c => request.ChapterIds.Contains(c.Id) && c.DelistedAt != null)
+            .ExecuteUpdateAsync(u => u.SetProperty(c => c.DelistedAt, (DateTime?)null), ct);
+        return Ok(new { cleared });
     }
 
     /// <summary>

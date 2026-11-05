@@ -152,6 +152,32 @@ public class ChapterControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task ClearDelisted_clears_only_the_named_delisted_chapters()
+    {
+        var (seriesId, first) = SeedSeriesWithChapter();
+        var stamped = new DateTime(2026, 11, 1, 0, 0, 0, DateTimeKind.Utc);
+        int untouched;
+        using (var seed = _db.NewContext())
+        {
+            seed.Chapters.Single(c => c.Id == first).DelistedAt = stamped;
+            var other = seed.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 2, DelistedAt = stamped }).Entity;
+            seed.SaveChanges();
+            untouched = other.Id;
+        }
+
+        using (var db = _db.NewContext())
+        {
+            var result = Assert.IsType<OkObjectResult>(
+                await Controller(db).ClearDelisted(new ClearDelistedRequest([first, 999_999]), default));
+            Assert.Equal(1, result.Value!.GetType().GetProperty("cleared")!.GetValue(result.Value));
+        }
+
+        using var check = _db.NewContext();
+        Assert.Null(check.Chapters.Single(c => c.Id == first).DelistedAt);
+        Assert.Equal(stamped, check.Chapters.Single(c => c.Id == untouched).DelistedAt);
+    }
+
+    [Fact]
     public async Task Link_accepts_a_path_inside_the_root_folder()
     {
         var (seriesId, chapterId) = SeedSeriesWithChapter();

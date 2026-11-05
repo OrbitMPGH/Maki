@@ -247,6 +247,7 @@ export function chaptersFor(id: number, shape: ChapterShape = {}): ChapterDto[] 
       fileRemovedAt: null,
       fileAutoRemoved: false,
       fileDeleteDueAt: null,
+      delistedAt: null,
       filePath: hasFile ? `/library/manga/${entry.title}/${entry.title} - Ch.${n}.cbz` : null,
       fileSourceName: hasFile ? sourceKey(entry) : null,
       fileReleaseName: null,

@@ -34,6 +34,7 @@ export type InboxEventType =
   | 'seriesStatusChanged'
   | 'noteReply'
   | 'customSourceUpdated'
+  | 'chapterDelisted'
 
 export type InboxLevel = 'info' | 'warning' | 'error'
 
@@ -110,6 +111,7 @@ export const INBOX_CATEGORIES: {
       'seriesStatusChanged',
       'sourceMatchFinished',
       'importListFinished',
+      'chapterDelisted',
     ],
   },
   { id: 'discover', label: msg`Discover`, types: ['followedCreatorRelease'] },
@@ -180,6 +182,7 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
   seriesStatusChanged: msg`Series status changed`,
   noteReply: msg`Replies to your notes`,
   customSourceUpdated: msg`Custom source updated by its repository`,
+  chapterDelisted: msg`Downloaded chapters no longer listed`,
 }
 
 /**
@@ -191,6 +194,7 @@ export const INBOX_TYPE_DESCRIPTIONS: Partial<Record<InboxEventType, MessageDesc
   followedCreatorRelease: msg`Follow someone from their creator page.`,
   upgradeRestoreFailed: msg`The file is waiting in the trash folder.`,
   noteReply: msg`Someone replied in a thread you wrote or joined.`,
+  chapterDelisted: msg`Every source that listed them has stopped, which can mean a source filed them here by mistake.`,
 }
 
 /** Only ever admin-visible, so the settings card hides these for everyone else. */

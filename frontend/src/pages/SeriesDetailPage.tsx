@@ -81,6 +81,7 @@ import {
   useSeries,
   useSeriesDetail,
   useSetChaptersWanted,
+  useClearDelisted,
   useSetIncognito,
   useSetSeriesNotificationMode,
   useSetMonitorMode,
@@ -237,6 +238,7 @@ const CHAPTER_FILTERS = [
   'specials',
   'cutoffUnmet',
   'skipped',
+  'delisted',
 ] as const
 type ChapterFilter = (typeof CHAPTER_FILTERS)[number]
 
@@ -370,6 +372,7 @@ const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
   main: (c) => !isSpecial(c),
   // Matches `/upgrades/cutoff-unmet`, which excludes trusted files even when their cutoff isn't met.
   cutoffUnmet: (c) => c.fileQuality?.cutoffMet === false && !c.fileQuality?.trusted,
+  delisted: (c) => c.delistedAt != null,
 }
 
 // Errors are reported globally (see main.tsx); only success needs saying here. `info` is for
@@ -634,6 +637,7 @@ function SeriesDetailBody() {
   const dismissCheckpoint = useDismissRatingCheckpoint()
   const unlinkChapters = useUnlinkChapters()
   const setChaptersWanted = useSetChaptersWanted()
+  const clearDelisted = useClearDelisted()
   const deleteChapters = useDeleteChapters()
   const deleteChapterFiles = useDeleteChapterFiles()
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
@@ -1522,6 +1526,9 @@ function SeriesDetailBody() {
   const readFilterCount = chapters?.filter(filters.read).length ?? 0
   const cutoffUnmetFilterCount = chapters?.filter(chapterFilters.cutoffUnmet).length ?? 0
   const skippedFilterCount = chapters?.filter(filters.skipped).length ?? 0
+  const delistedFilterCount = chapters?.filter(chapterFilters.delisted).length ?? 0
+  const delistedWithFileIds = (chapters ?? []).filter((c) => c.delistedAt && c.hasFile).map((c) => c.id)
+  const selectionHasDelisted = selected.size > 0 && (chapters ?? []).some((c) => c.delistedAt && selected.has(c.id))
   const selectedCount = selected.size
   const notesChapter = notesPanel ? chapters?.find((c) => c.id === notesPanel.chapterId) : undefined
   const notesChapterRead = notesChapter ? readStateFor(notesChapter) : null
@@ -1546,6 +1553,9 @@ function SeriesDetailBody() {
             : []),
         ...(readTracking && skippedFilterCount > 0
             ? [{ value: 'skipped', label: t`Skipped (${skippedFilterCount})` }]
+            : []),
+        ...(delistedFilterCount > 0
+            ? [{ value: 'delisted', label: t`Delisted (${delistedFilterCount})` }]
             : []),
       ]
       : []
@@ -1872,6 +1882,21 @@ function SeriesDetailBody() {
             icon: <IconEyeOff size={16} />,
             loading: setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === false,
             run: () => applyWanted([...selected], false),
+          },
+        ]
+      : [],
+    canEditMetadata && selectionHasDelisted
+      ? [
+          {
+            key: 'clearDelisted',
+            label: <Trans>Clear delisted</Trans>,
+            icon: <IconCircleCheck size={16} />,
+            loading: clearDelisted.isPending,
+            run: () =>
+              clearDelisted.mutate([...selected], {
+                onSuccess: (r) =>
+                  notify.ok(plural(r.cleared, { one: 'Kept # chapter', other: 'Kept # chapters' })),
+              }),
           },
         ]
       : [],
@@ -2442,6 +2467,43 @@ function SeriesDetailBody() {
                               </>
                           )
                         })()}
+                      </Alert>
+                  )}
+                  {delistedWithFileIds.length > 0 && (
+                      <Alert
+                          mb="md"
+                          color="var(--warn)"
+                          icon={<IconLinkOff size={18} />}
+                          title={plural(delistedWithFileIds.length, {
+                            one: '# downloaded chapter is no longer listed',
+                            other: '# downloaded chapters are no longer listed',
+                          })}
+                      >
+                        <Text size="sm">
+                          <Trans>Every source that listed them has stopped. Usually a source corrected a listing, so check these files before reading them.</Trans>
+                        </Text>
+                        <Group gap="xs" mt="sm">
+                          <Button
+                              size="xs"
+                              variant="light"
+                              onClick={() => {
+                                setChapterFilter('delisted')
+                                changeTab('chapters')
+                              }}
+                          >
+                            <Trans>Show them</Trans>
+                          </Button>
+                          {canEditMetadata && (
+                              <Button
+                                  size="xs"
+                                  variant="subtle"
+                                  loading={clearDelisted.isPending}
+                                  onClick={() => clearDelisted.mutate(delistedWithFileIds)}
+                              >
+                                <Trans>Keep them</Trans>
+                              </Button>
+                          )}
+                        </Group>
                       </Alert>
                   )}
                   {canManageSources && (

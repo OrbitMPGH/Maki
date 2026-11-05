@@ -20,6 +20,7 @@ import {
   IconEyeCheck,
   IconEyeOff,
   IconLink,
+  IconLinkOff,
   IconListCheck,
   IconLock,
   IconLockOpen,
@@ -381,6 +382,24 @@ export const ChapterRow = memo(function ChapterRow({
                   <Trans>Missing</Trans>
                 </LightBadge>
             )}
+            {c.delistedAt && (() => {
+              const delistedOn = formatCalendarDate(c.delistedAt)
+              return (
+                  <HoverTooltip
+                      label={t`No source has listed this chapter since ${delistedOn}. A source may have filed it here by mistake, so check the file. Sources also drop chapters after a licence takedown, and then the file is fine.`}
+                      withArrow
+                      multiline
+                      w={300}
+                  >
+                    <LightBadge
+                        color={c.hasFile ? 'var(--warn)' : 'var(--neutral)'}
+                        leftSection={<IconLinkOff size={12} />}
+                    >
+                      <Trans>Delisted</Trans>
+                    </LightBadge>
+                  </HoverTooltip>
+              )
+            })()}
             {offline && <OfflineBadge record={offline} saving={offlineSaving} />}
             {read && (
                 <HoverTooltip

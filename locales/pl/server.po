@@ -4132,6 +4132,17 @@ msgstr "Nowe rozdziały wstrzymane"
 msgid "inbox.chapters.held.body"
 msgstr "{series}: znaleziono jednocześnie {count, plural, one {# nowy rozdział} few {# nowe rozdziały} many {# nowych rozdziałów} other {# nowego rozdziału}} i nie pobrano automatycznie. Pobierz je ze strony serii, jeśli są prawdziwe."
 
+#. English: Chapters no longer listed
+#: src/Maki.Api/Services/ChapterSyncService.cs
+msgid "inbox.chapters.delisted.title"
+msgstr ""
+
+#. Every source that listed these downloaded chapters has stopped listing them.
+#. English: {series}: {count, plural, one {# downloaded chapter is} other {# downloaded chapters are}} no longer listed by any source. Check the files on the series page.
+#: src/Maki.Api/Services/ChapterSyncService.cs
+msgid "inbox.chapters.delisted.body"
+msgstr ""
+
 #. English: Custom source updated
 #: src/Maki.Api/Services/CustomRepositoryService.cs
 #, fuzzy
