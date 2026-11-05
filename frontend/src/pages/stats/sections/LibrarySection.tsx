@@ -323,7 +323,7 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
             <TagChips>
               {stats.topGenres.map((g) => (
                 <TagChip key={g.name}>
-                  {g.name} <span className="tnum">{formatNumber(g.count)}</span>
+                  {g.name} {formatNumber(g.count)}
                 </TagChip>
               ))}
             </TagChips>

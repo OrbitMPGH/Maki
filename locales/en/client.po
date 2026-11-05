@@ -14,6 +14,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #: src/components/pageconversion/RuleCard.tsx
+#: src/pages/settings/DownloadCards.tsx
 msgid " MB"
 msgstr " MB"
 
@@ -1887,16 +1888,24 @@ msgid "{seriesAdded, plural, one {series added} other {series added}}"
 msgstr "{seriesAdded, plural, one {series added} other {series added}}"
 
 #: src/pages/reader/ReaderToolbar.tsx
-msgid "{seriesChapterCount, plural, one {{chaptersRead} read of # downloaded} other {{chaptersRead} read of # downloaded}}"
-msgstr "{seriesChapterCount, plural, one {{chaptersRead} read of # downloaded} other {{chaptersRead} read of # downloaded}}"
+msgid "{seriesChapterCount, plural, one {{chaptersRead} of # read} other {{chaptersRead} of # read}}"
+msgstr "{seriesChapterCount, plural, one {{chaptersRead} of # read} other {{chaptersRead} of # read}}"
+
+#: src/pages/reader/ReaderToolbar.tsx
+#~ msgid "{seriesChapterCount, plural, one {{chaptersRead} read of # downloaded} other {{chaptersRead} read of # downloaded}}"
+#~ msgstr "{seriesChapterCount, plural, one {{chaptersRead} read of # downloaded} other {{chaptersRead} read of # downloaded}}"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #~ msgid "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
 #~ msgstr "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
 
 #: src/pages/reader/ReaderToolbar.tsx
-msgid "{seriesChapterCount, plural, one {read all # downloaded} other {read all # downloaded}}"
-msgstr "{seriesChapterCount, plural, one {read all # downloaded} other {read all # downloaded}}"
+msgid "{seriesChapterCount, plural, one {all # read} other {all # read}}"
+msgstr "{seriesChapterCount, plural, one {all # read} other {all # read}}"
+
+#: src/pages/reader/ReaderToolbar.tsx
+#~ msgid "{seriesChapterCount, plural, one {read all # downloaded} other {read all # downloaded}}"
+#~ msgstr "{seriesChapterCount, plural, one {read all # downloaded} other {read all # downloaded}}"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/TagManagerModal.tsx
@@ -2544,8 +2553,8 @@ msgid "0 means no cap."
 msgstr "0 means no cap."
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "0 means no limit."
-msgstr "0 means no limit."
+#~ msgid "0 means no limit."
+#~ msgstr "0 means no limit."
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "0 means the format isn't scored."
@@ -3785,8 +3794,12 @@ msgid "Auto-grab"
 msgstr "Auto-grab"
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Auto-grab size limit (MB)"
-msgstr "Auto-grab size limit (MB)"
+msgid "Auto-grab size limit"
+msgstr "Auto-grab size limit"
+
+#: src/pages/settings/DownloadCards.tsx
+#~ msgid "Auto-grab size limit (MB)"
+#~ msgstr "Auto-grab size limit (MB)"
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -3800,6 +3813,10 @@ msgstr "Auto-matching is already running."
 #: src/components/SourceMappingsSection.tsx
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "Auto-matching is still running. It'll be free in a moment."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Auto-queue limit"
+msgstr "Auto-queue limit"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Auto-removed"
@@ -4041,8 +4058,8 @@ msgid "Best quality first compares a source's tier before its measured quality, 
 msgstr "Best quality first compares a source's tier before its measured quality, in the order the series' upgrade profile ranks tiers."
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Bigger batches stay wanted for you to download by hand. 0 means always queue."
-msgstr "Bigger batches stay wanted for you to download by hand. 0 means always queue."
+#~ msgid "Bigger batches stay wanted for you to download by hand. 0 means always queue."
+#~ msgstr "Bigger batches stay wanted for you to download by hand. 0 means always queue."
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Biggest day"
@@ -6019,6 +6036,10 @@ msgstr "Days active"
 msgid "Days after reading"
 msgstr "Days after reading"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days before a proposal you haven't approved expires."
+msgstr "Days before a proposal you haven't approved expires."
+
 #: src/pages/settings/LibraryCards.tsx
 msgid "Days left"
 msgstr "Days left"
@@ -6026,6 +6047,14 @@ msgstr "Days left"
 #: src/components/home/ReadingWeeks.tsx
 msgid "Days read"
 msgstr "Days read"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days to keep replaced files. 0 deletes them at the next cleanup."
+msgstr "Days to keep replaced files. 0 deletes them at the next cleanup."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days to skip a chapter after it was added or last upgraded."
+msgstr "Days to skip a chapter after it was added or last upgraded."
 
 #: src/components/ImportReviewModal.tsx
 msgid "Decide later"
@@ -6461,8 +6490,8 @@ msgid "Documentation"
 msgstr "Documentation"
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Don't auto-queue more than (chapters)"
-msgstr "Don't auto-queue more than (chapters)"
+#~ msgid "Don't auto-queue more than (chapters)"
+#~ msgstr "Don't auto-queue more than (chapters)"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -8001,8 +8030,8 @@ msgid "Give others their own account, library access and reading history."
 msgstr "Give others their own account, library access and reading history."
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Give up on a chapter after (minutes)"
-msgstr "Give up on a chapter after (minutes)"
+#~ msgid "Give up on a chapter after (minutes)"
+#~ msgstr "Give up on a chapter after (minutes)"
 
 #: src/pages/ActivityPage.tsx
 msgid "Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here."
@@ -8745,6 +8774,10 @@ msgstr "In library"
 #: src/components/import/MihonImport.tsx
 msgid "In Mihon, open More > Settings > Data and storage > Create backup, then choose the .tachibk file it makes. Only manga in your library are imported."
 msgstr "In Mihon, open More > Settings > Data and storage > Create backup, then choose the .tachibk file it makes. Only manga in your library are imported."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "In minutes. 0 means no limit."
+msgstr "In minutes. 0 means no limit."
 
 #: src/pages/ActivityPage.tsx
 msgid "In progress"
@@ -10404,7 +10437,6 @@ msgid "missing"
 msgstr "missing"
 
 #: src/components/LinkFileToChaptersModal.tsx
-#: src/components/series/ChapterTableRows.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
@@ -10412,8 +10444,8 @@ msgid "Missing"
 msgstr "Missing"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "Missing ({missingFilterCount})"
-msgstr "Missing ({missingFilterCount})"
+#~ msgid "Missing ({missingFilterCount})"
+#~ msgstr "Missing ({missingFilterCount})"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "Missing chapters allowed per volume"
@@ -11683,6 +11715,14 @@ msgstr "Not connected yet."
 #: src/pages/settings/SuwayomiCards.tsx
 msgid "Not connected."
 msgstr "Not connected."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Not downloaded"
+msgstr "Not downloaded"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Not downloaded ({missingFilterCount})"
+msgstr "Not downloaded ({missingFilterCount})"
 
 #: src/components/SetupWizard.tsx
 msgid "Not downloaded yet"
@@ -13175,6 +13215,7 @@ msgstr "Plum"
 msgid "PNG"
 msgstr "PNG"
 
+#: src/components/pageconversion/FormatStep.tsx
 #: src/components/pageconversion/StartStep.tsx
 msgid "PNG pages"
 msgstr "PNG pages"
@@ -13364,8 +13405,12 @@ msgid "Proposal dismissed"
 msgstr "Proposal dismissed"
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Proposal expiry (days)"
-msgstr "Proposal expiry (days)"
+msgid "Proposal expiry"
+msgstr "Proposal expiry"
+
+#: src/pages/settings/DownloadCards.tsx
+#~ msgid "Proposal expiry (days)"
+#~ msgstr "Proposal expiry (days)"
 
 #: src/components/SeriesFilesSection.tsx
 msgid "Protect {fileName} from upgrades"
@@ -13539,8 +13584,12 @@ msgid "Quiet for longer than its usual rhythm, so there is no estimate."
 msgstr "Quiet for longer than its usual rhythm, so there is no estimate."
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Quiet period (days)"
-msgstr "Quiet period (days)"
+msgid "Quiet period"
+msgstr "Quiet period"
+
+#: src/pages/settings/DownloadCards.tsx
+#~ msgid "Quiet period (days)"
+#~ msgstr "Quiet period (days)"
 
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Rail added"
@@ -15033,8 +15082,12 @@ msgid "Retry"
 msgstr "Retry"
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Retry a failed download up to (attempts)"
-msgstr "Retry a failed download up to (attempts)"
+#~ msgid "Retry a failed download up to (attempts)"
+#~ msgstr "Retry a failed download up to (attempts)"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Retry attempts for a failed download"
+msgstr "Retry attempts for a failed download"
 
 #: src/pages/ActivityPage.tsx
 msgid "Retry download"
@@ -16094,6 +16147,7 @@ msgstr "Sequel to {relatedTo}"
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "Series"
@@ -16722,8 +16776,8 @@ msgid "Skip {latestVersion}"
 msgstr "Skip {latestVersion}"
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Skip a chapter this long after it was added or last upgraded."
-msgstr "Skip a chapter this long after it was added or last upgraded."
+#~ msgid "Skip a chapter this long after it was added or last upgraded."
+#~ msgstr "Skip a chapter this long after it was added or last upgraded."
 
 #: src/components/CatalogueRules.tsx
 msgid "Skip series where it is only a passing element"
@@ -17805,6 +17859,10 @@ msgstr "The models are third-party files under their own licences. The non-comme
 msgid "The most explicit rating shown outside your own library."
 msgstr "The most explicit rating shown outside your own library."
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "The most new chapters queued at once. Bigger batches stay wanted for you to download by hand. 0 means always queue."
+msgstr "The most new chapters queued at once. Bigger batches stay wanted for you to download by hand. 0 means always queue."
+
 #: src/components/home/homeSectionDefs.ts
 msgid "The most popular titles in the MangaBaka catalogue."
 msgstr "The most popular titles in the MangaBaka catalogue."
@@ -18472,6 +18530,10 @@ msgstr "Time"
 msgid "Time between requests (ms)"
 msgstr "Time between requests (ms)"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Time limit per chapter"
+msgstr "Time limit per chapter"
+
 #: src/pages/stats/RangeControl.tsx
 msgid "Time range"
 msgstr "Time range"
@@ -18695,8 +18757,12 @@ msgid "Translations other than English are machine-made and being corrected over
 msgstr "Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Trash retention (days)"
-msgstr "Trash retention (days)"
+msgid "Trash retention"
+msgstr "Trash retention"
+
+#: src/pages/settings/DownloadCards.tsx
+#~ msgid "Trash retention (days)"
+#~ msgstr "Trash retention (days)"
 
 #: src/pages/ActivityPage.tsx
 msgid "Trash: {trashSize} across {trashFilesText}"

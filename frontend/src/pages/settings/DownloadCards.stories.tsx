@@ -43,7 +43,7 @@ type Story = StoryObj<typeof meta>
 export const DownloadQueue: Story = {
   play: async ({ canvas }) => {
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Concurrent chapter downloads' })).toHaveValue('2'))
-    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Give up on a chapter after (minutes)' })).toHaveValue('120'))
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Time limit per chapter' })).toHaveValue('120'))
     await expect(canvas.queryByText('Unsaved')).toBeNull()
   },
 }
@@ -106,7 +106,7 @@ export const DownloadQueueNoTimeout: Story = {
     msw: settingsMsw(http.get(api('/settings/download'), () => HttpResponse.json({ ...downloadSettings, itemTimeoutMinutes: 0, bulkHoldThreshold: 0 }))),
   },
   play: async ({ canvas }) => {
-    const timeout = await canvas.findByRole('textbox', { name: 'Give up on a chapter after (minutes)' })
+    const timeout = await canvas.findByRole('textbox', { name: 'Time limit per chapter' })
     await waitFor(() => expect(timeout).toHaveValue('0'))
   },
 }
@@ -300,7 +300,7 @@ export const VolumeReleases: Story = {
   play: async ({ canvas }) => {
     const search = await canvas.findByRole('switch', { name: /^Search torrents for volume releases/ })
     await waitFor(() => expect(search).toBeChecked())
-    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Auto-grab size limit (MB)' })).toHaveValue('500'))
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Auto-grab size limit' })).toHaveValue('500 MB'))
   },
 }
 

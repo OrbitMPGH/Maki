@@ -111,8 +111,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
       sharedPrefix ? f.fileName.length - sharedPrefix : splitForTruncation(f.fileName)[1].length,
     ),
   )
-  // When most of the folder is gone it is one problem, not twenty: one banner says so and the rows
-  // stop repeating it in red.
+  // When most of the folder is gone it is one problem, not twenty: one banner says so.
   const mostlyMissing = missingCount >= 2 && missingCount >= fileCount * 0.8
 
   const exitSelectMode = () => {
@@ -366,7 +365,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                           )}
                         </Table.Td>
                         <Table.Td className="files-cell-status">
-                          <StatusDot tone={mostlyMissing && f.status === 'missing' ? 'neutral' : statusToken(v.color)}>
+                          <StatusDot tone={f.status === 'missing' ? 'warn' : statusToken(v.color)}>
                             {renderLabel(v.label)}
                           </StatusDot>
                         </Table.Td>

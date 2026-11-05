@@ -52,6 +52,21 @@ export function sharedPrefixLength(values: string[]): number {
   return boundary >= 8 ? boundary : 0
 }
 
+/**
+ * A shared prefix too long for its room, in at most `room` characters: cut after a whole word
+ * ("Call of the… "), or a bare "…" when that would keep less than half of it.
+ */
+export function cutSharedPrefix(prefix: string, room: number): string {
+  const words = prefix.replace(/[\s_.-]+$/, '')
+  const joiner = prefix.slice(words.length)
+  if (words.length + joiner.length <= room) return prefix
+  let keep = 0
+  for (const m of words.matchAll(/[\s_.-]+/g)) {
+    if (m.index + 1 + joiner.length <= room) keep = m.index
+  }
+  return keep >= words.length / 2 ? `${words.slice(0, keep)}…${joiner}` : '…'
+}
+
 // One observer for every value on the page: a file table holds hundreds of them.
 const clipWatchers = new WeakMap<Element, () => void>()
 let clipObserver: ResizeObserver | undefined
@@ -113,10 +128,12 @@ export function MonoValue({
   const headRef = useRef<HTMLSpanElement>(null)
   const [opened, setOpened] = useState(false)
   const [clipped, setClipped] = useState(false)
+  const [cut, setCut] = useState<string | null>(null)
   const whole = full ?? value
+  const shared = !wrap && !!splitAt && splitAt < value.length
   const [head, tail] = wrap
     ? [value, '']
-    : splitAt && splitAt < value.length
+    : shared
       ? [value.slice(0, splitAt), value.slice(splitAt)]
       : splitForTruncation(value)
   // Clipped, or standing for something longer: only then is there anything to reveal. The value
@@ -129,8 +146,16 @@ export function MonoValue({
     const box = el?.parentElement
     if (!el || !box) return
     const over = (e: Element | null) => !!e && e.scrollWidth > e.clientWidth
-    return watchSize(box, () => setClipped(over(el) || over(el.nextElementSibling)))
-  }, [value])
+    return watchSize(box, () => {
+      const headClipped = over(el)
+      setClipped(headClipped || over(el.nextElementSibling))
+      // A shared prefix cut mid-word reads as a mangled title, so it is drawn over the real text
+      // at a word or as a bare ellipsis. The text itself keeps the layout, so the room stays put.
+      const head = el.textContent ?? ''
+      const room = headClipped && el.clientWidth > 0 ? Math.floor(el.clientWidth / (el.scrollWidth / head.length)) : 0
+      setCut(shared && headClipped ? cutSharedPrefix(head, room) + (el.nextElementSibling?.textContent ?? '') : null)
+    })
+  }, [value, shared])
 
   const show = () => setOpened(hidesSome)
   // A click focuses the copy button too, and the pointer is not on the text to take the tooltip
@@ -178,6 +203,7 @@ export function MonoValue({
         ) : (
           <span
             className="mono-value-text"
+            data-cut={cut ?? undefined}
             tabIndex={hidesSome && !copy && focusable ? 0 : undefined}
             title={hidesSome && !opened ? whole : undefined}
             onMouseEnter={show}

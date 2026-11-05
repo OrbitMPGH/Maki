@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { plural, t as staticT } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { ActionIcon, Badge, Group, Loader, Menu, Progress, Skeleton, Switch, Table, Text, Tooltip } from '@mantine/core'
+import { ActionIcon, Badge, Box, Group, Loader, Menu, Progress, Skeleton, Switch, Table, Text, Tooltip } from '@mantine/core'
 import {
   IconAlertTriangle,
   IconBook,
@@ -387,7 +387,7 @@ export const ChapterRow = memo(function ChapterRow({
                 </HoverTooltip>
             ) : (
                 <LightBadge color="var(--neutral)">
-                  <Trans>Missing</Trans>
+                  <Trans>Not downloaded</Trans>
                 </LightBadge>
             )}
             {offline && <OfflineBadge record={offline} saving={offlineSaving} />}
@@ -754,7 +754,19 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
         </Table.Td>
         <Table.Td onClick={(e) => e.stopPropagation()}>
           <Group gap={2} wrap="nowrap" justify="flex-end">
-            {readTracking && (
+            {/* The menu goes last, in the chapter rows' menu column; without one the chevron keeps its slot. */}
+            <Tooltip label={t`Expand`} withArrow>
+              <ActionIcon
+                  variant="subtle"
+                  color="var(--neutral)"
+                  data-row-action=""
+                  onClick={() => actions.toggleSpanFold(span.key)}
+                  aria-label={t`Expand ${spanLabel}`}
+              >
+                <IconChevronDown size={19} />
+              </ActionIcon>
+            </Tooltip>
+            {readTracking ? (
                 <Menu shadow="md" position="bottom-end" withinPortal>
                   <Menu.Target>
                     <ActionIcon variant="subtle" color="var(--neutral)" data-row-action="" aria-label={t`Actions for ${spanLabel}`}>
@@ -789,18 +801,9 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
                     </Menu.Item>
                   </Menu.Dropdown>
                 </Menu>
+            ) : (
+                <Box w={32} style={{ flex: 'none' }} aria-hidden />
             )}
-            <Tooltip label={t`Expand`} withArrow>
-              <ActionIcon
-                  variant="subtle"
-                  color="var(--neutral)"
-                  data-row-action=""
-                  onClick={() => actions.toggleSpanFold(span.key)}
-                  aria-label={t`Expand ${spanLabel}`}
-              >
-                <IconChevronDown size={19} />
-              </ActionIcon>
-            </Tooltip>
           </Group>
         </Table.Td>
       </Table.Tr>

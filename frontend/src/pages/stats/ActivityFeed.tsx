@@ -191,7 +191,7 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
                   <MetaList items={[renderLabel(kind.label), e.note]} />
                 </Text>
               </div>
-              <Text size="xs" c="var(--ink-3)" className="tnum" style={{ flexShrink: 0 }}>
+              <Text size="xs" c="var(--ink-3)" style={{ flexShrink: 0 }}>
                 {formatDate(e.at)}
               </Text>
             </Group>

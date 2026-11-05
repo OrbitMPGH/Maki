@@ -52,7 +52,7 @@ export function NextUpList({ items }: { items: HomeReadingItem[] }) {
         <h2 className="next-up-title">
           <Trans>Next up</Trans>
         </h2>
-        <span className="next-up-count tnum">{items.length}</span>
+        <span className="next-up-count">{items.length}</span>
       </div>
       <div
         ref={listRef}
@@ -89,7 +89,7 @@ const NextUpRow = memo(function NextUpRow({ item }: { item: HomeReadingItem }) {
       </span>
       <span className="next-up-copy">
         <span className="next-up-name">{seriesTitle}</span>
-        <span className="next-up-meta tnum">
+        <span className="next-up-meta">
           <span>{chapterLabel}</span>
           {lastRead && <span>{lastRead}</span>}
         </span>
@@ -100,7 +100,7 @@ const NextUpRow = memo(function NextUpRow({ item }: { item: HomeReadingItem }) {
             </span>
           )}
           {unreadChapters > 0 && (
-            <span className="next-up-unread tnum">{plural(unreadChapters, { one: '# unread', other: '# unread' })}</span>
+            <span className="next-up-unread">{plural(unreadChapters, { one: '# unread', other: '# unread' })}</span>
           )}
         </span>
       </span>

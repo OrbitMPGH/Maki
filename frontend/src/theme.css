@@ -857,6 +857,12 @@ body {
   28% { background-position: 0 100%, 0.36em 0, 0.72em 100%; }
   42% { background-position: 0 100%, 0.36em 100%, 0.72em 0; }
 }
+/* Reduced motion's stand-in for a busy loop that moves (see the prefers-reduced-motion block). */
+@keyframes busy-fade {
+  50% {
+    opacity: 0.3;
+  }
+}
 
 /* --- Scrollbars ---------------------------------------------------------- */
 * {
@@ -2127,7 +2133,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-size: var(--type-label);
   font-weight: var(--fw-medium);
   line-height: 1;
-  font-variant-numeric: tabular-nums;
   white-space: nowrap;
   color: rgba(255, 255, 255, 0.7);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
@@ -2422,7 +2427,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: var(--surface-2);
   box-shadow: var(--shadow-card), 0 18px 40px -18px rgba(0, 0, 0, 0.8);
 }
-.reading-weeks[data-loading] :is(.reading-weeks-head, .reading-weeks-weekday, .reading-weeks-figures, .reading-weeks-week) {
+.reading-weeks[data-loading] :is(.reading-weeks-head, .reading-weeks-weekday, .reading-weeks-month, .reading-weeks-figures, .reading-weeks-week) {
   visibility: hidden;
 }
 .reading-weeks-head {
@@ -2467,6 +2472,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--ink-hi);
   font-size: var(--type-meta);
   font-weight: var(--fw-bold);
+  white-space: nowrap;
 }
 .reading-weeks-streak svg {
   color: var(--ink-4);
@@ -2474,12 +2480,23 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .reading-weeks-streak[data-lit] svg {
   color: var(--warn);
 }
+/* A gutter column first, holding the month names, so every cell in the grid is a day. */
 .reading-weeks-grid {
   grid-area: grid;
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: auto repeat(7, minmax(0, 1fr));
   gap: 4px;
   align-content: start;
+}
+.reading-weeks-month {
+  align-self: center;
+  padding-right: 2px;
+  color: var(--ink-4);
+  font-size: var(--type-badge);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  text-align: end;
+  white-space: nowrap;
 }
 .reading-weeks-weekday {
   padding-bottom: 2px;
@@ -2509,10 +2526,9 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   box-shadow: inset 0 0 0 1.5px var(--brand-fg);
   font-size: var(--type-badge);
 }
-/* A month name is wider than a day number; a lighter weight keeps it off the cell's edge. */
+/* The 1st carries its number as the anchor for the month name beside its row, lighter than today's. */
 .reading-weeks-day[data-month] {
   font-weight: var(--fw-semibold);
-  letter-spacing: -0.02em;
 }
 .reading-weeks-figures {
   grid-area: figs;
@@ -2577,13 +2593,13 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     grid-template-areas: 'head head' 'grid figs' 'goal goal';
     column-gap: 16px;
   }
-  /* 30px days, so a month name ("Nov") and today's number sit in the cell with room around them. */
+  /* 26px days: a day number fits with room around it, and the month gutter fits beside them. */
   .reading-weeks-grid {
-    grid-template-columns: repeat(7, 30px);
+    grid-template-columns: auto repeat(7, 26px);
     gap: 3px;
   }
   .reading-weeks-day {
-    height: 30px;
+    height: 26px;
     font-size: var(--type-badge);
   }
   .reading-weeks-n {
@@ -2602,13 +2618,13 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 /* A whole row: the grid on the left, everything else beside it. */
 @container reading-weeks (min-width: 34rem) {
   .reading-weeks-card {
-    grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 16.5rem) minmax(0, 1fr);
     grid-template-areas: 'grid head' 'grid figs' 'grid goal';
     align-items: start;
     column-gap: 28px;
   }
   .reading-weeks-grid {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: auto repeat(7, minmax(0, 1fr));
   }
   .reading-weeks-day {
     height: auto;
@@ -2630,13 +2646,11 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 
 /* The phone form's parts, hidden until a phone asks for them. */
 .reading-weeks-title-week,
-.reading-weeks-streak-l,
 .reading-weeks-week {
   display: none;
 }
 /* Phone: no card, one row at the foot of the hero under a hairline: the flame and streak, this week
-   as seven day squares (the grid keeps its last row: after the 7 weekday letters come 35 days, and
-   days 1 to 28 go) and this week's count. A week goal takes its own line under it. The five-week
+   as seven day squares (the grid keeps its last seven days) and this week's count. A week goal takes its own line under it. The five-week
    grid cost a screen of scrolling before Next up. The heading stays for screen readers only. */
 @media (max-width: 36em) {
   .reading-weeks-card {
@@ -2689,20 +2703,15 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     width: 14px;
     height: 14px;
   }
-  .reading-weeks-streak-n {
-    display: none;
-  }
-  .reading-weeks-streak-l {
-    display: inline;
-  }
   .reading-weeks-grid {
     order: 2;
     display: flex;
     gap: 3px;
   }
   .reading-weeks-weekday,
+  .reading-weeks-month,
   .reading-weeks-figures,
-  .reading-weeks-grid > .reading-weeks-day:nth-child(-n + 35) {
+  .reading-weeks-grid > .reading-weeks-day:not(:nth-last-child(-n + 7)) {
     display: none;
   }
   .reading-weeks-grid > .reading-weeks-day {
@@ -3544,9 +3553,12 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-weight: var(--fw-medium);
   color: var(--ink-2);
 }
+/* One row of whole chips: a chip that does not fit wraps to a second row the height cuts off. */
 .engine-why-chips {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
+  height: 22px;
   overflow: hidden;
 }
 /* The reason every card in a rail shares, said once above it instead of on each card. */
@@ -3579,12 +3591,15 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   text-overflow: ellipsis;
 }
 .engine-chip {
+  flex: none;
+  max-width: 100%;
   padding: 2px 6px;
   border-radius: var(--radius-control);
   background: var(--surface-2);
   color: var(--ink-3);
   font-size: var(--type-micro);
   font-weight: var(--fw-medium);
+  line-height: 18px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3757,12 +3772,21 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   min-height: 22px;
   margin-top: 14px;
 }
-/* One row, held even when empty. Pills that wrap land on a second row the box cuts off whole, so
-   the band shows as many reasons as fit rather than growing to show all three. */
+/* One row, held even when empty. Reasons that wrap land on a second row the box cuts off whole, so
+   the band shows as many reasons as fit rather than growing to show all three. They are labels, not
+   buttons, so plain text between hairlines. */
 .discover-hero-reasons {
+  box-sizing: border-box;
   height: 28px;
   margin-top: 12px;
+  padding-top: 5px;
   overflow: hidden;
+}
+.discover-hero-reasons > .meta-list {
+  row-gap: 28px;
+}
+.discover-hero-reasons li {
+  max-width: 100%;
 }
 .discover-hero-actions {
   margin-top: 20px;
@@ -3771,18 +3795,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   display: none;
 }
 .discover-hero-reason {
-  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   line-height: 18px;
-  padding: 4px 9px;
-  border-radius: var(--radius-control);
-  font-size: var(--type-micro);
+  font-size: var(--type-label);
   font-weight: var(--fw-medium);
   color: var(--ink-2);
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
-  border: 1px solid var(--border-strong);
 }
 
 .discover-hero-strip {
@@ -3967,14 +3987,25 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   align-items: center;
   gap: 3px;
 }
+/* One line of whole tags: a tag that does not fit wraps below and the clip hides it. */
 .discover-hero-strip-match {
-  overflow: hidden;
+  flex-wrap: wrap;
+  height: 1em;
+  row-gap: 1em;
+  clip-path: inset(-4px -4px -3px calc(0.6em + 1px));
   color: var(--brand-fg, var(--brand));
   font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
   line-height: 1;
-  text-overflow: ellipsis;
   white-space: nowrap;
+}
+.discover-hero-strip-match > li {
+  max-width: 100%;
+}
+.discover-hero-strip-match > li > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .discover-hero-strip-progress {
   position: absolute;
@@ -7453,6 +7484,23 @@ body.column-resizing * {
   flex: 1 1 auto;
   min-width: 0;
 }
+/* Pinned, the bar casts a short shadow under its rule (StatsRail sets data-stuck, like the Library
+   toolbar), and the ground fades out below it, so a heading scrolling under it meets an edge
+   instead of looking sliced. The shadow alone barely shows on a dark ground. */
+.stats-rail[data-stuck],
+.stats-rail-bar[data-stuck] {
+  box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
+}
+.stats-rail[data-stuck]::after,
+.stats-rail-bar[data-stuck]::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  height: 12px;
+  background: linear-gradient(var(--app-bg), transparent);
+  pointer-events: none;
+}
 /* Content scrolls under the pinned bar. A short fade below its rule makes that read as intended
    rather than as a heading cut in half. */
 .series-detail-chapter-head[data-sticky]::after {
@@ -7731,11 +7779,13 @@ body.column-resizing * {
   text-align: end;
   font-variant-numeric: tabular-nums;
 }
+/* A sentence under the figure, so proportional: Onest's tabular 1 sits in a wide cell ("1 14 left"). */
 .stats-row-value small {
   display: block;
   color: var(--ink-3);
   font-size: var(--type-label);
   font-weight: var(--fw-medium);
+  font-variant-numeric: normal;
 }
 .stats-row-meter {
   height: 4px;
@@ -8332,8 +8382,10 @@ body.reader-open {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  /* A colour pulse moves nothing, so it keeps its loop past the global rule's cut. */
   .reader-page-skeleton {
-    animation: none;
+    animation-duration: var(--dur-loop) !important;
+    animation-iteration-count: infinite !important;
   }
 }
 
@@ -8900,15 +8952,9 @@ body.reader-open {
   .reader-enhance-line[data-phase='queued'] .reader-enhance-line-fill,
   .reader-enhance-line[data-phase='working'] .reader-enhance-line-fill {
     width: 100%;
-    animation: none;
   }
   .reader-compare-button[data-busy]::after {
-    animation: none;
     border-color: var(--brand);
-  }
-  .reader-scrub-segment[data-upscaling] {
-    animation: none;
-    background: rgba(255, 255, 255, 0.26);
   }
 }
 
@@ -9646,20 +9692,32 @@ body.reader-open {
     opacity: 1;
     transform: none;
   }
-  /* Busy indicators get a still form rather than whatever frame the global rule freezes on: the
-     button dots rest as an ellipsis, sweeps fill their track dimmed, the spinner turns dotted. */
+  /* Fades and colour pulses move nothing, so loading loops built from them keep running. */
+  .mantine-Skeleton-root[data-animate]::after,
+  .reader-scrub-segment[data-upscaling] {
+    animation-duration: var(--dur-loop) !important;
+    animation-iteration-count: infinite !important;
+  }
+  .reader-scrub-segment[data-upscaling] {
+    animation-duration: calc(var(--dur-loop) / 2) !important;
+  }
+  /* Busy indicators that move get a still form that pulses, rather than whatever frame the global
+     rule freezes on: the button dots rest as an ellipsis, a live dot drops its ring, sweeps fill
+     their track dimmed, the spinner turns dotted and Mantine's loader holds its first frame. */
   .mantine-Button-root[data-loading] .mantine-Button-label:not(:has(.pending-label))::after,
   .mantine-Button-root[data-loading] .pending-label-busy::after,
   .pulse-dot,
-  .reader-scrub-segment[data-upscaling],
-  .reader-enhance-status-fill,
-  .reader-enhance-line-fill,
+  .status-dot[data-live]::before,
+  .mantine-Loader-root,
+  .reader-enhance-status:is([data-phase='queued'], [data-phase='working']) .reader-enhance-status-fill,
+  .reader-enhance-line:is([data-phase='queued'], [data-phase='working']) .reader-enhance-line-fill,
   .reader-compare-button[data-busy]::after,
   .preview-chapter-button[data-indeterminate]::before {
-    animation: none !important;
+    animation: busy-fade var(--dur-loop) var(--ease-loop) infinite !important;
   }
-  .reader-scrub-segment[data-upscaling] {
-    background: rgba(255, 255, 255, 0.27);
+  .pulse-dot,
+  .status-dot[data-live]::before {
+    box-shadow: none;
   }
   .reader-enhance-status[data-phase='working'] .reader-enhance-status-fill,
   .reader-enhance-line[data-phase='working'] .reader-enhance-line-fill,
@@ -10408,6 +10466,21 @@ span.mono-value-text:focus-visible,
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* A clipped shared prefix: the real text stays (for layout, selection and copy) but is drawn over
+   by the word-cut version, so "Call o..." never shows. */
+.mono-value-text[data-cut] {
+  position: relative;
+  -webkit-text-fill-color: transparent;
+}
+.mono-value-text[data-cut]::before {
+  content: attr(data-cut) / '';
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: pre;
+  -webkit-text-fill-color: currentColor;
+}
 /* `wrap`: a path in a record row has height to spare and reads better whole than cut. */
 .mono-value[data-wrap] {
   align-items: flex-start;
@@ -10563,11 +10636,6 @@ tr:hover .mono-value-copy {
   }
   100% {
     box-shadow: 0 0 0 3px transparent;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .status-dot[data-live]::before {
-    animation: none;
   }
 }
 
@@ -11162,6 +11230,8 @@ button.import-plan-folder-head:hover {
 /* The house filter switch (xs), stretched to the search field's height so the row keeps one line. */
 .catalogue-search-mode {
   align-self: stretch;
+  padding: 3px;
+  border: 1px solid var(--border-control);
 }
 .catalogue-search-mode .mantine-SegmentedControl-control {
   display: flex;
@@ -11999,7 +12069,6 @@ button.import-plan-folder-head:hover {
     background: color-mix(in srgb, var(--tile-accent) 15%, transparent);
     font-size: var(--type-badge);
     font-weight: var(--fw-semibold);
-    font-variant-numeric: tabular-nums;
   }
   .continue-hero-copy {
     display: contents;

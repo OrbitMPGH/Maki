@@ -65,7 +65,6 @@ import { MeasureProgress, MeasureResult, ScoutCell } from './SourceMeasurePanel'
 import type { LocalizedTitle, SourceMappingDto } from '../api/types'
 import { englishSearchTitles } from '../api/titles'
 import {
-  QUALITY_TIER_COLOR,
   QUALITY_TIER_LABELS,
   useMeasureSources,
   useSetSourceOrderMode,
@@ -473,7 +472,7 @@ export function SourceMappingsSection({
               <Table.Th w={84}><Trans>Priority</Trans></Table.Th>
               <Table.Th w={120}><Trans>Quality</Trans></Table.Th>
               {/* Icon-only: the label survives for assistive tech via VisuallyHidden. */}
-              <Table.Th w={40}>
+              <Table.Th w={48} ta="center">
                 <VisuallyHidden><Trans>Enabled</Trans></VisuallyHidden>
                 <IconPower size={16} style={{ opacity: 0.7 }} aria-hidden />
               </Table.Th>
@@ -586,7 +585,7 @@ export function SourceMappingsSection({
                     )
                   })()}
                 </Table.Td>
-                <Table.Td>
+                <Table.Td ta="center">
                   <Tooltip
                     label={t`${sourceName} is switched off in Settings → Downloads → Sources. This series' setting is kept and applies again once it's back on.`}
                     withArrow
@@ -1050,7 +1049,7 @@ function MappingQuality({ quality, tier }: { quality: SourceQualityDto | undefin
           multiline
           w={260}
         >
-          <Badge size="sm" variant="light" color={QUALITY_TIER_COLOR[tier]} style={{ flexShrink: 0 }}>
+          <Badge size="sm" variant="outline" color="var(--neutral)" style={{ flexShrink: 0 }}>
             {renderLabel(QUALITY_TIER_LABELS[tier])}
           </Badge>
         </Tooltip>

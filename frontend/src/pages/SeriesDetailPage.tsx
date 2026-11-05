@@ -1532,7 +1532,7 @@ function SeriesDetailBody() {
       ? [
         { value: 'all', label: t`All` },
         { value: 'wanted', label: t`Marked wanted (${wantedFilterCount})` },
-        { value: 'missing', label: t`Missing (${missingFilterCount})` },
+        { value: 'missing', label: t`Not downloaded (${missingFilterCount})` },
         ...(fileMissingFilterCount > 0
             ? [{ value: 'fileMissing', label: t`File missing (${fileMissingFilterCount})` }]
             : []),

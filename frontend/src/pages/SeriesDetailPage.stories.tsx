@@ -194,7 +194,7 @@ export const ChaptersTab: Story = {
 export const ChapterFilterMissing: Story = {
   parameters: at(1, '?tab=chapters'),
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('radio', { name: /^Missing/ }))
+    await userEvent.click(await canvas.findByRole('radio', { name: /^Not downloaded/ }))
     await expect(await canvas.findByText(/Ch\.17\b/)).toBeVisible()
   },
 }

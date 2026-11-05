@@ -87,7 +87,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await expect(await canvas.findByText('Lanterns Over Kasumi')).toBeVisible()
-    await expect(await canvas.findByText('131 read of 142 downloaded, 150 in series')).toBeVisible()
+    await expect(await canvas.findByText('131 of 142 read, 150 in series')).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Toggle bookmark' }))
     await expect(args.onToggleBookmark).toHaveBeenCalledOnce()
     await userEvent.click(await canvas.findByRole('button', { name: 'Keyboard shortcuts' }))
@@ -138,7 +138,7 @@ export const NextChapterFromTheToolbar: Story = {
 export const EverythingRead: Story = {
   args: { manifest: chapters[2096], readingCounted: true, page: 23, pageLabel: '24' },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText(/^read all \d+ downloaded/)).toBeVisible()
+    await expect(await canvas.findByText(/^all \d+ read/)).toBeVisible()
   },
 }
 

@@ -14,6 +14,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #: src/components/pageconversion/RuleCard.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid " MB"
 msgstr "  МБ"
@@ -2289,8 +2290,12 @@ msgid "{seriesAdded, plural, one {series added} other {series added}}"
 msgstr "{seriesAdded, plural, one {серия добавлена} few {серии добавлены} many {серий добавлено} other {серия добавлена}}"
 
 #: src/pages/reader/ReaderToolbar.tsx
-msgid "{seriesChapterCount, plural, one {{chaptersRead} read of # downloaded} other {{chaptersRead} read of # downloaded}}"
+msgid "{seriesChapterCount, plural, one {{chaptersRead} of # read} other {{chaptersRead} of # read}}"
 msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+#~ msgid "{seriesChapterCount, plural, one {{chaptersRead} read of # downloaded} other {{chaptersRead} read of # downloaded}}"
+#~ msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -2298,8 +2303,12 @@ msgstr ""
 #~ msgstr "{seriesChapterCount, plural, one {{chaptersRead}/# глава прочитана} few {{chaptersRead}/# главы прочитаны} many {{chaptersRead}/# глав прочитано} other {{chaptersRead}/# главы прочитаны}}"
 
 #: src/pages/reader/ReaderToolbar.tsx
-msgid "{seriesChapterCount, plural, one {read all # downloaded} other {read all # downloaded}}"
+msgid "{seriesChapterCount, plural, one {all # read} other {all # read}}"
 msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+#~ msgid "{seriesChapterCount, plural, one {read all # downloaded} other {read all # downloaded}}"
+#~ msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/TagManagerModal.tsx
@@ -3087,8 +3096,8 @@ msgstr "0 означает без предела."
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "0 means no limit."
-msgstr "0 означает без ограничения."
+#~ msgid "0 means no limit."
+#~ msgstr "0 означает без ограничения."
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -4595,9 +4604,13 @@ msgid "Auto-grab"
 msgstr "Автополучение"
 
 #: src/pages/settings/DownloadCards.tsx
+msgid "Auto-grab size limit"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Auto-grab size limit (MB)"
-msgstr "Лимит размера автополучения (МБ)"
+#~ msgid "Auto-grab size limit (MB)"
+#~ msgstr "Лимит размера автополучения (МБ)"
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -4614,6 +4627,10 @@ msgstr "Автоматическое сопоставление уже выпо�
 #, fuzzy
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "Автоматическое сопоставление всё ещё выполняется. Скоро оно освободится."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Auto-queue limit"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -4909,8 +4926,8 @@ msgstr "Режим «Сначала лучшее качество» сравни
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Bigger batches stay wanted for you to download by hand. 0 means always queue."
-msgstr "Более крупные пакеты остаются запрошенными, чтобы вы загружали их вручную. 0 означает всегда ставить в очередь."
+#~ msgid "Bigger batches stay wanted for you to download by hand. 0 means always queue."
+#~ msgstr "Более крупные пакеты остаются запрошенными, чтобы вы загружали их вручную. 0 означает всегда ставить в очередь."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -7311,6 +7328,10 @@ msgstr "Дней активности"
 msgid "Days after reading"
 msgstr "Дней после прочтения"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days before a proposal you haven't approved expires."
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Days left"
@@ -7320,6 +7341,14 @@ msgstr "Осталось дней"
 #, fuzzy
 msgid "Days read"
 msgstr "Дней с чтением"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days to keep replaced files. 0 deletes them at the next cleanup."
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days to skip a chapter after it was added or last upgraded."
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -7843,8 +7872,8 @@ msgstr "Документация"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Don't auto-queue more than (chapters)"
-msgstr "Не ставить в очередь автоматически больше (глав)"
+#~ msgid "Don't auto-queue more than (chapters)"
+#~ msgstr "Не ставить в очередь автоматически больше (глав)"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -9721,8 +9750,8 @@ msgstr "Создайте другим пользователям отдельн�
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Give up on a chapter after (minutes)"
-msgstr "Отказаться от главы через (минут)"
+#~ msgid "Give up on a chapter after (minutes)"
+#~ msgstr "Отказаться от главы через (минут)"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -10626,6 +10655,10 @@ msgstr "В библиотеке"
 #, fuzzy
 msgid "In Mihon, open More > Settings > Data and storage > Create backup, then choose the .tachibk file it makes. Only manga in your library are imported."
 msgstr "В Mihon откройте Ещё > Настройки > Данные и хранилище > Create backup, затем выберите созданный файл .tachibk. Импортируется только манга из вашей библиотеки."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "In minutes. 0 means no limit."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -12655,7 +12688,6 @@ msgid "missing"
 msgstr "отсутствует"
 
 #: src/components/LinkFileToChaptersModal.tsx
-#: src/components/series/ChapterTableRows.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
@@ -12665,8 +12697,8 @@ msgstr "Отсутствует"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Missing ({missingFilterCount})"
-msgstr "Отсутствует ({missingFilterCount})"
+#~ msgid "Missing ({missingFilterCount})"
+#~ msgstr "Отсутствует ({missingFilterCount})"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -14215,6 +14247,14 @@ msgstr "Пока не подключено."
 #, fuzzy
 msgid "Not connected."
 msgstr "Не подключено."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Not downloaded"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Not downloaded ({missingFilterCount})"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -16034,6 +16074,7 @@ msgstr "Слива"
 msgid "PNG"
 msgstr "PNG"
 
+#: src/components/pageconversion/FormatStep.tsx
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
 msgid "PNG pages"
@@ -16266,9 +16307,13 @@ msgid "Proposal dismissed"
 msgstr "Предложение отклонено"
 
 #: src/pages/settings/DownloadCards.tsx
+msgid "Proposal expiry"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Proposal expiry (days)"
-msgstr "Срок действия предложения (дни)"
+#~ msgid "Proposal expiry (days)"
+#~ msgstr "Срок действия предложения (дни)"
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -16479,9 +16524,13 @@ msgid "Quiet for longer than its usual rhythm, so there is no estimate."
 msgstr "Тишина дольше обычного ритма, поэтому оценки нет."
 
 #: src/pages/settings/DownloadCards.tsx
+msgid "Quiet period"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Quiet period (days)"
-msgstr "Период покоя (дни)"
+#~ msgid "Quiet period (days)"
+#~ msgstr "Период покоя (дни)"
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -18290,8 +18339,12 @@ msgstr "Повторить"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Retry a failed download up to (attempts)"
-msgstr "Повторять неудачную загрузку не более (attempts) раз"
+#~ msgid "Retry a failed download up to (attempts)"
+#~ msgstr "Повторять неудачную загрузку не более (attempts) раз"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Retry attempts for a failed download"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -19582,6 +19635,7 @@ msgstr "Продолжение {relatedTo}"
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -20348,8 +20402,8 @@ msgstr "Пропустить {latestVersion}"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Skip a chapter this long after it was added or last upgraded."
-msgstr "Пропускать главу столько времени после её добавления или последнего улучшения."
+#~ msgid "Skip a chapter this long after it was added or last upgraded."
+#~ msgstr "Пропускать главу столько времени после её добавления или последнего улучшения."
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -21661,6 +21715,10 @@ msgstr "Модели это сторонние файлы под собстве�
 msgid "The most explicit rating shown outside your own library."
 msgstr "Самый откровенный рейтинг, который показывается за пределами вашей библиотеки."
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "The most new chapters queued at once. Bigger batches stay wanted for you to download by hand. 0 means always queue."
+msgstr ""
+
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
 msgid "The most popular titles in the MangaBaka catalogue."
@@ -22475,6 +22533,10 @@ msgstr "Время"
 msgid "Time between requests (ms)"
 msgstr "Время между запросами (мс)"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Time limit per chapter"
+msgstr ""
+
 #: src/pages/stats/RangeControl.tsx
 #, fuzzy
 msgid "Time range"
@@ -22746,9 +22808,13 @@ msgid "Translations other than English are machine-made and being corrected over
 msgstr "Переводы, кроме английского, созданы машиной и постепенно исправляются. Всё ещё непереведённые строки отображаются на английском."
 
 #: src/pages/settings/DownloadCards.tsx
+msgid "Trash retention"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Trash retention (days)"
-msgstr "Хранение корзины (дни)"
+#~ msgid "Trash retention (days)"
+#~ msgstr "Хранение корзины (дни)"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy

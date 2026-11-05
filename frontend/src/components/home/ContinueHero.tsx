@@ -153,7 +153,7 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
             </div>
           )}
 
-          <div className="continue-hero-chapter tnum">
+          <div className="continue-hero-chapter">
             <span>{chapterLabel}</span>
             {hasProgress && (
               <span className="continue-hero-pages">
@@ -180,7 +180,7 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
           )}
 
           {unreadChapters > 0 && (
-            <span className="continue-hero-unread tnum">{unreadLabel}</span>
+            <span className="continue-hero-unread">{unreadLabel}</span>
           )}
 
           <div className="continue-hero-actions">

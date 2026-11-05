@@ -42,7 +42,7 @@ export function MidwayList({ items, emptyText }: { items: MidwaySeriesDto[]; emp
                 <span style={{ width: `${pct}%` }} />
               </div>
             </div>
-            <div className="stats-row-value tnum">
+            <div className="stats-row-value">
               {formatNumber(item.read)} / {formatNumber(total)}
               <small>
                 <MidwayHint left={total - item.read} etaSeconds={item.etaSeconds} />

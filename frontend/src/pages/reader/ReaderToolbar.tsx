@@ -1,4 +1,4 @@
-import { ActionIcon, Group, Progress, Text, Tooltip } from '@mantine/core'
+import { ActionIcon, Divider, Group, Progress, Text, Tooltip } from '@mantine/core'
 import {
   IconArrowLeft,
   IconBookmark,
@@ -17,7 +17,7 @@ import {
 } from '../../lib/icons'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plural, useLingui } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { PrefsSource, ReaderManifest } from '../../api/reader'
 import type { ReadingProfile } from '../../api/readingProfiles'
@@ -211,10 +211,14 @@ export default function ReaderToolbar({
               <Text fz="xs" c="var(--ink-3)" style={{ whiteSpace: 'nowrap' }}>
                 {manifest.label}
               </Text>
+              {manifest.seriesChapterCount > 0 && <Divider orientation="vertical" />}
               {manifest.seriesChapterCount > 0 && (
                 <Tooltip label={seriesProgressTooltip} withArrow zIndex={OVERLAY_Z}>
                   {/* The series meter, not the page one: the bottom bar's slider is this chapter. */}
                   <Group gap={6} wrap="nowrap" align="center" style={{ minWidth: 0 }}>
+                    <Text fz="xs" c="var(--ink-2)" fw={600} style={{ whiteSpace: 'nowrap' }}>
+                      <Trans>Series</Trans>
+                    </Text>
                     <Progress
                       value={(chaptersRead / manifest.seriesChapterCount) * 100}
                       color="var(--brand)"
@@ -225,14 +229,13 @@ export default function ReaderToolbar({
                       aria-label={t`Chapters read in this series`}
                     />
                     <Text fz="xs" c="var(--ink-3)" truncate className="tnum">
-                      {/* Named, since the bottom bar's bare page count sits right under it. */}
                       {chaptersRead < seriesChapterCount ? (
                         plural(seriesChapterCount, {
-                          one: `${chaptersRead} read of # downloaded`,
-                          other: `${chaptersRead} read of # downloaded`,
+                          one: `${chaptersRead} of # read`,
+                          other: `${chaptersRead} of # read`,
                         })
                       ) : (
-                        <Plural value={seriesChapterCount} one="read all # downloaded" other="read all # downloaded" />
+                        <Plural value={seriesChapterCount} one="all # read" other="all # read" />
                       )}
                       {moreInSeries && (
                         <>

@@ -345,13 +345,15 @@ export function DiscoverHero({
               </Group>
 
               {/* Always rendered: an empty row still holds its height. */}
-              <Group gap={7} wrap="wrap" className="discover-hero-reasons">
-                {reasons.slice(0, 3).map((r) => (
-                  <span key={r.id} className="discover-hero-reason" title={r.text}>
-                    {r.text}
-                  </span>
-                ))}
-              </Group>
+              <div className="discover-hero-reasons">
+                <MetaList
+                  items={reasons.slice(0, 3).map((r) => (
+                    <span key={r.id} className="discover-hero-reason" title={r.text}>
+                      {r.text}
+                    </span>
+                  ))}
+                />
+              </div>
 
               <Group gap="xs" className="discover-hero-actions">
                 {/* Adding needs a root folder, the caller's permissions and the request path for
@@ -446,7 +448,7 @@ export function DiscoverHero({
             >
               {picks.map((p, n) => {
                 const pickStatus = seriesStatusVisual(p.status)
-                const matches = [...p.matchedTags, ...p.matchedGenres].slice(0, 2)
+                const matches = [...p.matchedTags, ...p.matchedGenres].slice(0, 3)
                 const thumbnail = p.thumbUrl ?? p.coverUrl
 
                 return (
@@ -483,7 +485,12 @@ export function DiscoverHero({
                         )}
                       </span>
                       {matches.length > 0 && (
-                        <span className="discover-hero-strip-match"><MetaList inline items={matches} /></span>
+                        <MetaList
+                          className="discover-hero-strip-match"
+                          items={matches.map((m) => (
+                            <span key={m}>{m}</span>
+                          ))}
+                        />
                       )}
                     </span>
                     {n === active && canAutoRotate && !halted && (

@@ -14,6 +14,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #: src/components/pageconversion/RuleCard.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid " MB"
 msgstr " MB"
@@ -2289,8 +2290,12 @@ msgid "{seriesAdded, plural, one {series added} other {series added}}"
 msgstr "{seriesAdded, plural, other {已添加系列}}"
 
 #: src/pages/reader/ReaderToolbar.tsx
-msgid "{seriesChapterCount, plural, one {{chaptersRead} read of # downloaded} other {{chaptersRead} read of # downloaded}}"
+msgid "{seriesChapterCount, plural, one {{chaptersRead} of # read} other {{chaptersRead} of # read}}"
 msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+#~ msgid "{seriesChapterCount, plural, one {{chaptersRead} read of # downloaded} other {{chaptersRead} read of # downloaded}}"
+#~ msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -2298,8 +2303,12 @@ msgstr ""
 #~ msgstr "{seriesChapterCount, plural, other {已读 {chaptersRead}/# 个章节}}"
 
 #: src/pages/reader/ReaderToolbar.tsx
-msgid "{seriesChapterCount, plural, one {read all # downloaded} other {read all # downloaded}}"
+msgid "{seriesChapterCount, plural, one {all # read} other {all # read}}"
 msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+#~ msgid "{seriesChapterCount, plural, one {read all # downloaded} other {read all # downloaded}}"
+#~ msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/TagManagerModal.tsx
@@ -3087,8 +3096,8 @@ msgstr "0 表示不设上限。"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "0 means no limit."
-msgstr "0 表示不限制。"
+#~ msgid "0 means no limit."
+#~ msgstr "0 表示不限制。"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -4595,9 +4604,13 @@ msgid "Auto-grab"
 msgstr "自动抓取"
 
 #: src/pages/settings/DownloadCards.tsx
+msgid "Auto-grab size limit"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Auto-grab size limit (MB)"
-msgstr "自动抓取大小上限（MB）"
+#~ msgid "Auto-grab size limit (MB)"
+#~ msgstr "自动抓取大小上限（MB）"
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -4614,6 +4627,10 @@ msgstr "自动匹配已在运行。"
 #, fuzzy
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "自动匹配仍在运行。很快就会空闲。"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Auto-queue limit"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -4909,8 +4926,8 @@ msgstr "最佳质量优先会先比较来源的层级，再比较其实测质量
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Bigger batches stay wanted for you to download by hand. 0 means always queue."
-msgstr "较大的批次会保持为想要状态，由你手动下载。0 表示始终加入队列。"
+#~ msgid "Bigger batches stay wanted for you to download by hand. 0 means always queue."
+#~ msgstr "较大的批次会保持为想要状态，由你手动下载。0 表示始终加入队列。"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -7311,6 +7328,10 @@ msgstr "活跃天数"
 msgid "Days after reading"
 msgstr "阅读后的天数"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days before a proposal you haven't approved expires."
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Days left"
@@ -7320,6 +7341,14 @@ msgstr "剩余天数"
 #, fuzzy
 msgid "Days read"
 msgstr "阅读天数"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days to keep replaced files. 0 deletes them at the next cleanup."
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days to skip a chapter after it was added or last upgraded."
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -7843,8 +7872,8 @@ msgstr "文档"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Don't auto-queue more than (chapters)"
-msgstr "自动排队数量不超过（章节）"
+#~ msgid "Don't auto-queue more than (chapters)"
+#~ msgstr "自动排队数量不超过（章节）"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -9721,8 +9750,8 @@ msgstr "为其他人创建账户，并设置资料库访问权限和阅读历史
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Give up on a chapter after (minutes)"
-msgstr "在（分钟）后放弃章节"
+#~ msgid "Give up on a chapter after (minutes)"
+#~ msgstr "在（分钟）后放弃章节"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -10626,6 +10655,10 @@ msgstr "在资料库中"
 #, fuzzy
 msgid "In Mihon, open More > Settings > Data and storage > Create backup, then choose the .tachibk file it makes. Only manga in your library are imported."
 msgstr "在 Mihon 中依次打开「更多」>「设置」>「数据和存储」>「创建备份」，然后选择生成的 .tachibk 文件。只会导入资料库中的漫画。"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "In minutes. 0 means no limit."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -12655,7 +12688,6 @@ msgid "missing"
 msgstr "缺失"
 
 #: src/components/LinkFileToChaptersModal.tsx
-#: src/components/series/ChapterTableRows.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
@@ -12665,8 +12697,8 @@ msgstr "缺失"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Missing ({missingFilterCount})"
-msgstr "缺失（{missingFilterCount}）"
+#~ msgid "Missing ({missingFilterCount})"
+#~ msgstr "缺失（{missingFilterCount}）"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -14215,6 +14247,14 @@ msgstr "尚未连接。"
 #, fuzzy
 msgid "Not connected."
 msgstr "未连接。"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Not downloaded"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Not downloaded ({missingFilterCount})"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -16034,6 +16074,7 @@ msgstr "李紫"
 msgid "PNG"
 msgstr "PNG"
 
+#: src/components/pageconversion/FormatStep.tsx
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
 msgid "PNG pages"
@@ -16266,9 +16307,13 @@ msgid "Proposal dismissed"
 msgstr "已忽略提议"
 
 #: src/pages/settings/DownloadCards.tsx
+msgid "Proposal expiry"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Proposal expiry (days)"
-msgstr "提议有效期（天）"
+#~ msgid "Proposal expiry (days)"
+#~ msgstr "提议有效期（天）"
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -16479,9 +16524,13 @@ msgid "Quiet for longer than its usual rhythm, so there is no estimate."
 msgstr "停更时间超过了平时的更新节奏，因此暂无估算。"
 
 #: src/pages/settings/DownloadCards.tsx
+msgid "Quiet period"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Quiet period (days)"
-msgstr "静默期（天）"
+#~ msgid "Quiet period (days)"
+#~ msgstr "静默期（天）"
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -18290,8 +18339,12 @@ msgstr "重试"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Retry a failed download up to (attempts)"
-msgstr "失败下载最多重试次数"
+#~ msgid "Retry a failed download up to (attempts)"
+#~ msgstr "失败下载最多重试次数"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Retry attempts for a failed download"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -19582,6 +19635,7 @@ msgstr "{relatedTo} 的续篇"
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -20348,8 +20402,8 @@ msgstr "跳过 {latestVersion}"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Skip a chapter this long after it was added or last upgraded."
-msgstr "章节在添加或上次升级后的这段时间内会被跳过。"
+#~ msgid "Skip a chapter this long after it was added or last upgraded."
+#~ msgstr "章节在添加或上次升级后的这段时间内会被跳过。"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -21661,6 +21715,10 @@ msgstr "这些模型是第三方文件，适用各自的许可协议。非商业
 msgid "The most explicit rating shown outside your own library."
 msgstr "在你自己的资料库之外显示的最露骨的分级。"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "The most new chapters queued at once. Bigger batches stay wanted for you to download by hand. 0 means always queue."
+msgstr ""
+
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
 msgid "The most popular titles in the MangaBaka catalogue."
@@ -22475,6 +22533,10 @@ msgstr "时间"
 msgid "Time between requests (ms)"
 msgstr "请求间隔（毫秒）"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Time limit per chapter"
+msgstr ""
+
 #: src/pages/stats/RangeControl.tsx
 #, fuzzy
 msgid "Time range"
@@ -22746,9 +22808,13 @@ msgid "Translations other than English are machine-made and being corrected over
 msgstr "英语以外的翻译由机器生成，会随着时间修正；仍未翻译的内容会退回英语。"
 
 #: src/pages/settings/DownloadCards.tsx
+msgid "Trash retention"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
-msgid "Trash retention (days)"
-msgstr "回收站保留时间（天）"
+#~ msgid "Trash retention (days)"
+#~ msgstr "回收站保留时间（天）"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy

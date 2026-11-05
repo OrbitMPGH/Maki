@@ -177,7 +177,7 @@ function Progress({ outcome }: { outcome: SyncOutcome }) {
     )
   }
   return (
-    <Text span size="sm" fw={600} className="tnum">
+    <Text span size="sm" fw={600}>
       {outcome.volume ? (
         <Trans>
           ch. {outcome.chapter}, vol. {outcome.volume}
@@ -240,7 +240,7 @@ function RecentSyncResult({
             return (
               <li key={o.services.join()} className="scrobble-result-line" data-exception>
                 <span className="scrobble-result-what">
-                  <Text span size="sm" c="var(--ink-2)" className="tnum">
+                  <Text span size="sm" c="var(--ink-2)">
                     {o.chapter === 0 && !o.volume ? (
                       <Trans>Not started</Trans>
                     ) : o.volume ? (
@@ -252,7 +252,7 @@ function RecentSyncResult({
                     )}
                   </Text>
                   {diff !== 0 && (
-                    <Text span size="xs" c="var(--ink-3)" className="tnum">
+                    <Text span size="xs" c="var(--ink-3)">
                       {diff > 0 ? (
                         <Plural value={diff} other="# behind" />
                       ) : (
@@ -630,7 +630,7 @@ export default function ScrobblePage() {
   )
 
   const syncTimes = (
-    <Text component="div" size="xs" c="var(--ink-3)" className="tnum section-header-status">
+    <Text component="div" size="xs" c="var(--ink-3)" className="section-header-status">
       <MetaList items={[data?.running && t`Syncing now`, t`Last ${lastSync}`, t`Next ${nextSync}`]} />
     </Text>
   )

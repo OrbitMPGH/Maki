@@ -212,7 +212,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
               <Title order={3} size="h4">
                 <Trans>Level {currentLevel}</Trans>
               </Title>
-              <Text size="sm" c="var(--ink-3)" className="tnum">
+              <Text size="sm" c="var(--ink-3)">
                 <Trans>
                   {intoLevel} / {levelSpan} XP to level {nextLevel}
                 </Trans>
@@ -220,7 +220,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
             </Stack>
           </Group>
           {summary.showStreaks && (
-            <Text size="xs" c="var(--ink-3)" mt="sm" className="tnum">
+            <Text size="xs" c="var(--ink-3)" mt="sm">
               <Trans>
                 Current streak:{' '}
                 <b>
@@ -304,7 +304,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
             <p className="stats-panel-title" style={{ margin: 0 }}>
               <Trans>Badges</Trans>
             </p>
-            <Text size="sm" c="var(--ink-3)" className="tnum">
+            <Text size="sm" c="var(--ink-3)">
               <Trans>All {total}</Trans>
             </Text>
           </Group>

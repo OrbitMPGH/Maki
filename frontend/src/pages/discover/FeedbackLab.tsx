@@ -49,13 +49,24 @@ export function SignalsCard() {
   const [actionError, setActionError] = useState('')
   const [howItWorks, setHowItWorks] = useState(false)
 
-  const recent = useMemo(() => (lab?.activity.items ?? []).slice(0, 5), [lab])
+  // Back-to-back events for one title on one day share a row, so "dismissed, then liked" reads as
+  // one story instead of the same title twice.
+  const recent = useMemo(() => {
+    const groups: FeedbackActivity[][] = []
+    for (const item of lab?.activity.items ?? []) {
+      const last = groups.at(-1)
+      if (last && last[0].mangaBakaId === item.mangaBakaId && dayOf(last[0]) === dayOf(item)) last.push(item)
+      else if (groups.length < 5) groups.push([item])
+      else break
+    }
+    return groups
+  }, [lab])
   // A reader who has never thumbed anything still has a shelf: pad the card with those signals
   // so it isn't empty, ranked rated > read > added and never duplicating a real feedback event.
   const padded = useMemo(() => {
     const need = 5 - recent.length
     if (need <= 0) return []
-    const seen = new Set(recent.map((item) => item.mangaBakaId))
+    const seen = new Set(recent.map((group) => group[0].mangaBakaId))
     const sources = lab?.sources ?? []
     const chosen: (typeof sources[number] & { kind: 'rated' | 'read' | 'added' })[] = []
 
@@ -283,9 +294,9 @@ export function SignalsCard() {
                 </Text>
               )}
               <Stack gap={2}>
-                {recent.map((item, index) => (
+                {recent.map(([item, ...earlier], index) => (
                   <div key={item.id}>
-                    {dayOf(item) !== dayOf(recent[index - 1]) && (
+                    {dayOf(item) !== dayOf(recent[index - 1]?.[0]) && (
                       <Text size="xs" fw={600} c="var(--ink-3)" mt={index === 0 ? 0 : 10}>
                         <DayLabel value={item.occurredAtUtc} />
                       </Text>
@@ -296,15 +307,17 @@ export function SignalsCard() {
                         <Text size="sm" fw={500} truncate>
                           {item.title ?? untitled(item.mangaBakaId)}
                         </Text>
-                        {/* Wraps rather than truncating: on a phone the pill's date was cut mid-way. */}
-                        <Group gap={6} wrap="wrap" mt={2}>
-                          <ActionPill item={item} />
-                          {/* The list form, not inline: a wrapped time takes its separator to the
-                              line start, where the list clips it, instead of leaving it alone. */}
-                          <Text component="div" size="xs" c="var(--ink-3)">
-                            <MetaList items={[phrase(item), formatTime(item.occurredAtUtc)]} />
-                          </Text>
-                        </Group>
+                        {[item, ...earlier].map((event) => (
+                          // Wraps rather than truncating: on a phone the pill's date was cut mid-way.
+                          <Group key={event.id} gap={6} wrap="wrap" mt={2}>
+                            <ActionPill item={event} />
+                            {/* The list form, not inline: a wrapped time takes its separator to the
+                                line start, where the list clips it, instead of leaving it alone. */}
+                            <Text component="div" size="xs" c="var(--ink-3)">
+                              <MetaList items={[phrase(event), formatTime(event.occurredAtUtc)]} />
+                            </Text>
+                          </Group>
+                        ))}
                       </div>
                       {newestPerTitle.has(item.id) && UNDOABLE.includes(item.action) && !dismissalEnded(item) && (
                         <Button
