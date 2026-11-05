@@ -190,6 +190,35 @@ public sealed class SourceOrderTests : IDisposable
     }
 
     [Fact]
+    public async Task A_failing_source_and_a_truncated_one_both_go_last_in_their_ranked_order()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        SeedDownloads(seriesId, poor, completed: 0, failed: 4);
+        using (var seed = _db.NewContext())
+        {
+            foreach (var (mapping, pages) in new[] { (good, 10), (poor, 42), (fresh, 46) })
+            {
+                for (var chapter = 11; chapter <= 13; chapter++)
+                {
+                    seed.SourceQualitySamples.Add(new SourceQualitySample
+                    {
+                        SourceMappingId = mapping, SeriesId = seriesId, ChapterId = chapter, PageCount = pages + chapter % 3,
+                        MedianWidth = 1000, MedianHeight = 1500, SizeBytes = 3_000_000, ImageFormat = "jpg",
+                        MeasuredAtUtc = DateTime.UtcNow
+                    });
+                }
+            }
+
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext();
+
+        // good is truncated, poor keeps failing; ranked on quality alone good comes before poor.
+        Assert.Equal([fresh, good, poor], await OrderAsync(db, seriesId));
+    }
+
+    [Fact]
     public async Task A_source_that_fails_elsewhere_is_not_trusted_on_a_series_it_has_not_been_tried_on()
     {
         var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
@@ -207,6 +236,33 @@ public sealed class SourceOrderTests : IDisposable
         using var db = _db.NewContext();
 
         Assert.Equal([poor, fresh, good], await OrderAsync(db, seriesId));
+    }
+
+    [Fact]
+    public async Task A_source_whose_chapters_are_far_shorter_than_the_others_is_tried_last()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        using (var seed = _db.NewContext())
+        {
+            foreach (var (mapping, pages) in new[] { (good, 10), (poor, 42), (fresh, 46) })
+            {
+                for (var chapter = 11; chapter <= 13; chapter++)
+                {
+                    seed.SourceQualitySamples.Add(new SourceQualitySample
+                    {
+                        SourceMappingId = mapping, SeriesId = seriesId, ChapterId = chapter, PageCount = pages + chapter % 3,
+                        MedianWidth = 1000, MedianHeight = 1500, SizeBytes = 3_000_000, ImageFormat = "jpg",
+                        MeasuredAtUtc = DateTime.UtcNow
+                    });
+                }
+            }
+
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext();
+
+        Assert.Equal(good, (await OrderAsync(db, seriesId)).Last());
     }
 
     [Fact]

@@ -24,12 +24,12 @@ public class SourceReliabilityTests
             ["a"] = new(0, 5), ["b"] = new(3, 0), ["c"] = new(0, 4), ["d"] = new(0, 0)
         };
 
-        var ordered = SourceReliability.Demote(["a", "b", "c", "d"], name => outcomes[name]);
+        var ordered = SourceReliability.Demote(["a", "b", "c", "d"], name => SourceReliability.IsUnreliable(outcomes[name]));
 
         Assert.Equal(["b", "d", "a", "c"], ordered);
     }
 
     [Fact]
     public void Nothing_moves_when_every_source_is_reliable() =>
-        Assert.Equal(["a", "b"], SourceReliability.Demote(["a", "b"], _ => new SourceReliability.Outcome(2, 0)));
+        Assert.Equal(["a", "b"], SourceReliability.Demote(["a", "b"], _ => false));
 }

@@ -187,7 +187,7 @@ public sealed partial class SuwayomiSource(
         string? pagesFor;
         try
         {
-            (pages, pagesFor) = await client.FetchPagesAsync(id, ct);
+            (pages, pagesFor) = await PagesAsync(id, ct);
         }
         catch (SuwayomiGraphQlException) when (cachedChapterId == id)
         {
@@ -200,13 +200,13 @@ public sealed partial class SuwayomiSource(
             }
 
             id = current;
-            (pages, pagesFor) = await client.FetchPagesAsync(id, ct);
+            (pages, pagesFor) = await PagesAsync(id, ct);
         }
 
         if (pagesFor is not null && pagesFor != chapter.SourceChapterId)
         {
             id = await ReResolveChapterAsync();
-            (pages, pagesFor) = await client.FetchPagesAsync(id, ct);
+            (pages, pagesFor) = await PagesAsync(id, ct);
             if (pagesFor is not null && pagesFor != chapter.SourceChapterId)
             {
                 throw new InvalidOperationException($"Suwayomi returned the pages of '{pagesFor}' for '{chapter.SourceChapterId}'");
@@ -302,6 +302,32 @@ public sealed partial class SuwayomiSource(
 
         return id;
     }
+
+    /// <summary>
+    /// Fetches the pages, telling a chapter that wants a login or a purchase from any other failure.
+    /// Suwayomi carries the extension's own error text and nothing structured, so this reads the English
+    /// wording extensions use ("log in via WebView", or "purchase" next to "chapter", "volume" or "episode").
+    /// An extension that words it another way is not recognised and fails like any other source error.
+    /// </summary>
+    private async Task<(IReadOnlyList<string> Pages, string? PagesFor)> PagesAsync(int chapterId, CancellationToken ct)
+    {
+        try
+        {
+            return await client.FetchPagesAsync(chapterId, ct);
+        }
+        catch (SuwayomiGraphQlException ex) when (WantsLoginOrPurchase(ex.Message))
+        {
+            throw new ChapterRequiresPurchaseException(ex.Message);
+        }
+    }
+
+    private static bool WantsLoginOrPurchase(string message) =>
+        message.Contains("log in via webview", StringComparison.OrdinalIgnoreCase) || PurchaseNotice().IsMatch(message);
+
+    // "purchase this chapter", "Please PURCHASE this volume to read": the word on its own, next to what is for sale.
+    // "purchase history" or a host name containing the word is not a notice about this chapter.
+    [GeneratedRegex(@"\bpurchase\b[^.]*\b(?:chapter|volume|episode)\b|\b(?:chapter|volume|episode)\b[^.]*\bpurchase\b", RegexOptions.IgnoreCase)]
+    private static partial Regex PurchaseNotice();
 
     private SourceChapter ToSourceChapter(SuwayomiChapter chapter, string seriesUrl, string language)
     {

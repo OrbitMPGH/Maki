@@ -30,7 +30,8 @@ public sealed record SourceOrderResult(
 /// Among the unmeasured, one is judged by its record across the library, and one never measured
 /// anywhere gets the lowest measured points there are: below the reference is the norm, so scoring it
 /// as average would put it ahead of nearly every source that has been measured. Whatever the
-/// score, a source that keeps failing its downloads goes last (<see cref="SourceReliability"/>).
+/// score, a source that keeps failing its downloads goes last (<see cref="SourceReliability"/>), and so does
+/// one whose page counts look like a preview (<see cref="SourcePageCounts"/>).
 /// </summary>
 public class SourceOrderService(SourceRegistry registry, ChapterFileQualityService quality)
 {
@@ -91,7 +92,13 @@ public class SourceOrderService(SourceRegistry registry, ChapterFileQualityServi
         var ranked = SourceRanking.Order(evaluator.Profile,
             mappings.Select(m => new SourceRanking.Entry(m.Id, m.Priority, scores[m.Id], estimates.ContainsKey(m.Id))));
         var outcomes = await OutcomesAsync(db, mappings, ct);
-        var ordered = SourceReliability.Demote([.. ranked.Select(e => byId[e.MappingId])], m => outcomes[m.Id]);
+        var truncated = SourcePageCounts.Truncated(await db.SourceQualitySamples.AsNoTracking()
+            .Where(q => q.SeriesId == seriesId && q.PageCount > 0)
+            .Select(q => new SourcePageCounts.Sample(q.SourceMappingId, q.ChapterId, q.PageCount))
+            .ToListAsync(ct));
+        var ordered = SourceReliability.Demote(
+            [.. ranked.Select(e => byId[e.MappingId])],
+            m => SourceReliability.IsUnreliable(outcomes[m.Id]) || truncated.Contains(m.Id));
         return new SourceOrderResult(seriesMode, defaultMode, ordered, scores);
     }
 

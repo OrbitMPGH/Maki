@@ -21,10 +21,10 @@ public static class SourceReliability
     public static bool IsUnreliable(Outcome outcome) =>
         outcome.Failed >= MinFailures && outcome.Failed >= outcome.Completed * FailuresPerSuccess;
 
-    /// <summary>Moves unreliable items behind the rest, keeping the given order inside each group.</summary>
-    public static IReadOnlyList<T> Demote<T>(IReadOnlyList<T> ordered, Func<T, Outcome> outcomeOf)
+    /// <summary>Moves the items <paramref name="isBad"/> picks behind the rest, keeping the given order inside each group.</summary>
+    public static IReadOnlyList<T> Demote<T>(IReadOnlyList<T> ordered, Func<T, bool> isBad)
     {
-        var unreliable = ordered.Where(item => IsUnreliable(outcomeOf(item))).ToList();
-        return unreliable.Count == 0 ? ordered : [.. ordered.Except(unreliable), .. unreliable];
+        var bad = ordered.Where(isBad).ToList();
+        return bad.Count == 0 ? ordered : [.. ordered.Except(bad), .. bad];
     }
 }

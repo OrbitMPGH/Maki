@@ -80,7 +80,7 @@ internal sealed class UpgradeWorld : IDisposable
         Root = Path.Combine(Path.GetTempPath(), "maki-upgrade-" + Guid.NewGuid().ToString("N")[..8]);
         Paths = new AppPaths(Path.Combine(Root, "config"));
         Registry = new SourceRegistry([
-            new FakeSource { Name = Agg, Kind = SourceKind.Aggregator, OnGetPages = c => AggPages(c) },
+            new FakeSource { Name = Agg, Kind = SourceKind.Aggregator, OnGetPages = c => AggPages(c), OnListChapters = id => AggListing(id) },
             new FakeSource
             {
                 Name = Official, Kind = SourceKind.Official, OnGetPages = c => OfficialPages(c),
@@ -106,6 +106,7 @@ internal sealed class UpgradeWorld : IDisposable
     public Func<SourceChapter, ChapterPages> AggPages { get; set; } = _ => new ChapterPages([]);
     public Func<SourceChapter, ChapterPages> OfficialPages { get; set; } = UrlPages(20);
     public Func<string, IReadOnlyList<SourceChapter>> OfficialListing { get; set; } = _ => [];
+    public Func<string, IReadOnlyList<SourceChapter>> AggListing { get; set; } = _ => [];
 
     public SourceAvailability Availability => new(Settings, Registry);
 

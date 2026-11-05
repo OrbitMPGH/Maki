@@ -486,6 +486,19 @@ public class ChapterDownloadProcessor(
 
             return await ProcessAsync(item.Id, triedMappingIds, ct);
         }
+        catch (ChapterRequiresPurchaseException ex)
+        {
+            logger.LogWarning("Queue item {Id}: {Source} wants a login or purchase for this chapter",
+                item.Id, usedMapping?.SourceName ?? "?");
+            if (item.HealthOperationId == null && item.PreferredMappingId == null && item.UpgradeInfoJson == null &&
+                await FailOverAsync(item, chapter, usedMapping, triedMappingIds, workingDir, ct) is not null)
+            {
+                return await ProcessAsync(item.Id, triedMappingIds, ct);
+            }
+
+            await FailAsync(item, DownloadFailureReason.SourceError, ct, permanent: true, detail: ex.Message);
+            return DownloadOutcome.Settled;
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Download failed for queue item {Id}", item.Id);
