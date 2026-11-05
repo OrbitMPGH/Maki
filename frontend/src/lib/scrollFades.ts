@@ -7,10 +7,14 @@ const ACTIVE = '[aria-selected="true"], [data-active="true"], [data-active=""], 
 
 const seen = new WeakSet<HTMLElement>()
 
+// A strip sized to its content can still report a few pixels of overflow from subpixel rounding at
+// some zoom levels, which faded the last item of a row that fits (the stats range's "All").
+const SLACK = 4
+
 function mark(el: HTMLElement) {
   const max = el.scrollWidth - el.clientWidth
-  const start = max > 1 && el.scrollLeft > 1
-  const end = max > 1 && el.scrollLeft < max - 1
+  const start = max > SLACK && el.scrollLeft > 1
+  const end = max > SLACK && el.scrollLeft < max - 1
   if (start) el.dataset.fadeStart = ''
   else delete el.dataset.fadeStart
   if (end) el.dataset.fadeEnd = ''

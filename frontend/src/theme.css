@@ -2042,13 +2042,41 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 /* Read progress wraps the status disc: a brand arc on a dark track just outside it, so one mark per
    cover carries both facts. Read through closes the ring; the disc keeps its status colour and glyph. */
+/* The disc and the ring share one 34px box (the margin keeps the 24px footprint): drawn as a 24px box
+   with a pseudo-element 5px outside it, the two snapped to different pixels and the ring sat off centre. */
 .cover-state[data-tone='status'][data-read] {
+  --disc-fill: var(--tone);
+  --disc-edge: var(--tone);
   position: relative;
+  width: 34px;
+  height: 34px;
+  margin: -5px;
+  --read-disc: radial-gradient(
+    closest-side,
+    var(--disc-fill) 10.25px,
+    var(--disc-edge) 10.75px,
+    var(--disc-edge) 11.75px,
+    rgba(6, 7, 11, 0.45) 12.25px,
+    rgba(6, 7, 11, 0.45) 13.25px,
+    transparent 13.75px
+  );
+  background: var(--read-disc);
+  box-shadow: none;
+}
+.cover-state[data-tone='status'][data-unmonitored][data-read] {
+  --disc-fill: rgba(6, 7, 11, 0.84);
+  box-shadow: none;
+}
+[data-theme='light'] .cover-state[data-tone='status'][data-unmonitored][data-read] {
+  --disc-fill: rgba(6, 7, 11, 0.8);
+  --disc-edge: var(--lift);
+  background: var(--read-disc);
+  box-shadow: none;
 }
 .cover-state[data-tone='status'][data-read]::before {
   content: '';
   position: absolute;
-  inset: -5px;
+  inset: 0;
   border-radius: 50%;
   background: conic-gradient(var(--brand) var(--ring-pct), rgba(6, 7, 11, 0.72) 0);
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
@@ -5839,6 +5867,10 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: color-mix(in srgb, var(--brand) 35%, transparent);
   color: var(--ink-hi);
 }
+.tag-chip[data-interactive][data-active]:hover {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 45%, transparent);
+}
 .tag-chip[data-active] > .tag-dot {
   background: var(--brand);
 }
@@ -7566,7 +7598,6 @@ body.column-resizing * {
     display: inline;
   }
 }
-
 /* The ground bleeds to the shell's padding so content never shows beside it while pinned, but the
    hairline is drawn on the content column, where every other page's tab rule sits. Solid
    background rather than a blur: content scrolls under it on every frame. */
@@ -10584,6 +10615,19 @@ a.mono-value-text {
 a.mono-value-text:hover {
   color: var(--ink-hi);
   text-decoration: underline;
+}
+/* The source name opens the same page as its id, without opening the row's details. */
+a.source-name-link {
+  color: inherit;
+  text-decoration: none;
+}
+a.source-name-link:hover {
+  text-decoration: underline;
+}
+a.source-name-link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-2xs);
 }
 span.mono-value-text:focus-visible,
 .mapped-to-label:focus-visible {

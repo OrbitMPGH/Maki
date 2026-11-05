@@ -66,6 +66,7 @@ import { MeasureProgress, MeasureResult, ScoutCell } from './SourceMeasurePanel'
 import type { LocalizedTitle, SourceMappingDto } from '../api/types'
 import { englishSearchTitles } from '../api/titles'
 import {
+  QUALITY_TIER_COLOR,
   QUALITY_TIER_LABELS,
   useMeasureSources,
   useSetSourceOrderMode,
@@ -511,7 +512,15 @@ export function SourceMappingsSection({
                         />
                     )}
                     <Group gap={6} wrap="nowrap" miw={0}>
-                        <Text fw={600} size="sm" truncate c={sourceDisabled(m.sourceName) ? 'var(--ink-3)' : undefined}>
+                        <Text
+                          fw={600}
+                          size="sm"
+                          truncate
+                          c={sourceDisabled(m.sourceName) ? 'var(--ink-3)' : undefined}
+                          {...(m.url
+                            ? { component: 'a', href: m.url, target: '_blank', rel: 'noreferrer', className: 'source-name-link' }
+                            : {})}
+                        >
                           {sourceName}
                         </Text>
                         {sourceDisabled(m.sourceName) && (
@@ -1094,7 +1103,7 @@ function MappingQuality({ quality, tier }: { quality: SourceQualityDto | undefin
           multiline
           w={260}
         >
-          <Badge size="sm" variant="outline" color="var(--neutral)" style={{ flexShrink: 0 }}>
+          <Badge size="sm" variant="light" color={QUALITY_TIER_COLOR[tier]} style={{ flexShrink: 0 }}>
             {renderLabel(QUALITY_TIER_LABELS[tier])}
           </Badge>
         </Tooltip>
