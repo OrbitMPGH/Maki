@@ -1998,6 +1998,8 @@ function SeriesDetailBody() {
             series={series}
             onRate={submitRating}
             onFinalize={keepRating}
+            readUpTo={highestReadChapter}
+            nextChapter={nextChapter}
             actions={
               <>
                 {continueAt && (

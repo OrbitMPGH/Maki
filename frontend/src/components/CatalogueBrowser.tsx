@@ -667,14 +667,16 @@ export function PosterSkeletons({
   count = 0,
   density,
   viewMode = 'grid',
+  colsByDensity = POSTER_COLS_BY_DENSITY,
 }: {
   /** Optional minimum for small fixed surfaces. Viewport filling can add more. */
   count?: number
   density: ViewPrefs['density']
   viewMode?: ViewMode
+  colsByDensity?: Record<ViewPrefs['density'], Record<string, number>>
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const columns = useMatches(POSTER_COLS_BY_DENSITY[density])
+  const columns = useMatches(colsByDensity[density])
   const initialCount = Math.max(count, viewMode === 'list' ? 8 : columns * 3)
   const [visibleCount, setVisibleCount] = useState(initialCount)
 
@@ -733,7 +735,7 @@ export function PosterSkeletons({
   return (
     <SimpleGrid
       ref={containerRef}
-      cols={POSTER_COLS_BY_DENSITY[density]}
+      cols={colsByDensity[density]}
       spacing="md"
       aria-hidden
     >

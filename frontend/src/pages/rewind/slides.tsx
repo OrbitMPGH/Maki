@@ -7,6 +7,7 @@ import type { ActivityStats } from '../../api/hooks'
 import { formatNumber, formatTimeSpent, monthName } from '../../format'
 import { GENRE_LABELS } from '../../components/CatalogueFilters'
 import { useLabel } from '../../i18n-context'
+import { IconBrandMark } from '../../components/IconBrandMark'
 
 /** Staggered fade-up wrapper used by every slide; collapses to instant cuts under reduced motion. */
 function Reveal({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
@@ -118,7 +119,10 @@ export interface RewindSlide {
   node: ReactNode
   /** A cover blurred full-bleed behind the slide. Slides without one keep the plain brand dark. */
   backdrop?: string | null
-  /** Covers tiled into a slow wall behind the slide instead of one blurred cover. */
+  /**
+   * Covers tiled into the sign-in page's tilted wall behind the slide, with the text set low on the
+   * left like its wordmark. Too few covers draw the sign-in page's accent shapes instead.
+   */
   mosaic?: string[]
 }
 
@@ -130,21 +134,28 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
   const covers = coversOf(stats)
   slides.push({
     key: 'title',
-    mosaic: covers.length >= 4 ? covers : undefined,
+    mosaic: covers.length >= 4 ? covers : [],
     node: (
-      <Stack align="center" gap="xs">
-        <Reveal>{eyebrow('Maki Rewind')}</Reveal>
-        <Reveal delay={0.25}>
-          <Text className="rewind-title">
-            <Trans>Your {label}</Trans>
-          </Text>
-        </Reveal>
-        <Reveal delay={0.55}>
-          <Text className="rewind-sub">
-            <Trans>Let's look back at what you read.</Trans>
-          </Text>
-        </Reveal>
-      </Stack>
+      <div className="auth-content">
+        <div className="auth-identity">
+          <Reveal>
+            <span className="brand-mark auth-brand-mark">
+              <IconBrandMark />
+            </span>
+          </Reveal>
+          <Reveal>{eyebrow('Maki Rewind')}</Reveal>
+          <Reveal delay={0.25}>
+            <h2 className="auth-wordmark">
+              <Trans>Your {label}</Trans>
+            </h2>
+          </Reveal>
+          <Reveal delay={0.55}>
+            <Text className="auth-tagline rewind-sub">
+              <Trans>Let's look back at what you read.</Trans>
+            </Text>
+          </Reveal>
+        </div>
+      </div>
     ),
   })
 

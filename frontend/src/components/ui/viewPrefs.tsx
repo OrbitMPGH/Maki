@@ -47,6 +47,15 @@ export const POSTER_COLS_BY_DENSITY: Record<Density, Record<string, number>> = {
   comfortable: { base: 2, xs: 2, sm: 3, md: 4, lg: 5, xl: 6 },
 }
 
+/**
+ * The Library grid's columns. Default shows two posters on a phone, where three cut titles to stubs;
+ * Compact keeps the three.
+ */
+export const LIBRARY_POSTER_COLS_BY_DENSITY: Record<Density, Record<string, number>> = {
+  ...POSTER_COLS_BY_DENSITY,
+  default: { ...POSTER_COLS_BY_DENSITY.default, base: 2 },
+}
+
 const VIEW_MODES: readonly ViewMode[] = ['grid', 'list']
 const DENSITIES: readonly Density[] = ['compact', 'default', 'comfortable']
 

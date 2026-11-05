@@ -1,5 +1,5 @@
 import { errorText } from '../api/errorText'
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -26,10 +26,11 @@ import {
   Title,
   Tooltip,
   VisuallyHidden,
-  Divider,
 } from '@mantine/core'
 import {
   IconAlertTriangle,
+  IconChevronDown,
+  IconChevronUp,
   IconColumns,
   IconDots,
   IconRuler,
@@ -180,6 +181,7 @@ export function SourceMappingsSection({
   const [query, setQuery] = useState(seriesTitle)
   const otherEnglishTitles = useMemo(() => englishSearchTitles(altTitles, seriesTitle), [altTitles, seriesTitle])
   const [removing, setRemoving] = useState<SourceMappingDto | null>(null)
+  const [expanded, setExpanded] = useState<Record<number, boolean>>({})
   const removingSourceName = removing ? sourceLabel(removing.sourceName) : undefined
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [fallbackOpen, setFallbackOpen] = useState(false)
@@ -468,23 +470,26 @@ export function SourceMappingsSection({
             <Table.Thead>
             <Table.Tr>
               <Table.Th><Trans>Source</Trans></Table.Th>
-              <Table.Th w={96}><Trans>Languages</Trans></Table.Th>
-              <Table.Th w={84}><Trans>Priority</Trans></Table.Th>
-              <Table.Th w={120}><Trans>Quality</Trans></Table.Th>
+              <Table.Th w={84}><Trans>Languages</Trans></Table.Th>
+              <Table.Th w={76}><Trans>Priority</Trans></Table.Th>
+              <Table.Th w={112}><Trans>Quality</Trans></Table.Th>
               {/* Icon-only: the label survives for assistive tech via VisuallyHidden. */}
               <Table.Th w={48} ta="center">
                 <VisuallyHidden><Trans>Enabled</Trans></VisuallyHidden>
                 <IconPower size={16} style={{ opacity: 0.7 }} aria-hidden />
               </Table.Th>
-              <Table.Th w={48}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
+              <Table.Th w={80}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
             </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
               {(orderedMappings ?? []).map((m) => {
               const { sourceName: sourceKey } = m
               const sourceName = sourceLabel(sourceKey)
+              const open = expanded[m.id] ?? false
+              const detailsId = `${hintId}-details-${m.id}`
               return (
-              <Table.Tr key={m.id}>
+              <Fragment key={m.id}>
+              <Table.Tr>
                 <Table.Td>
                   <Group gap="xs" wrap="nowrap">
                     {SOURCE_ICONS[m.sourceName] && (
@@ -500,8 +505,7 @@ export function SourceMappingsSection({
                             }}
                         />
                     )}
-                    <Stack gap={0} miw={0}>
-                      <Group gap={6} wrap="nowrap">
+                    <Group gap={6} wrap="nowrap" miw={0}>
                         <Text fw={600} size="sm" truncate c={sourceDisabled(m.sourceName) ? 'var(--ink-3)' : undefined}>
                           {sourceName}
                         </Text>
@@ -515,33 +519,14 @@ export function SourceMappingsSection({
                             {renderLabel(ORIGIN_LABELS[m.origin] ?? m.origin)}
                           </Badge>
                         </Tooltip>}
-                      </Group>
-                      <Group gap={6} wrap="nowrap" miw={0}>
-                        <MonoValue
-                          value={m.sourceSeriesId}
-                          href={m.url ?? undefined}
-                          copy
-                          fz="var(--mantine-font-size-xs)"
-                        />
-                        <Divider orientation="vertical" />
-                        {m.lastError ? (
-                          <Tooltip label={m.lastError} withArrow>
+                        {m.lastError && (
+                          <Tooltip label={m.lastError} withArrow multiline w={280}>
                             <Text size="xs" c="var(--danger)" fw={600} style={{ flexShrink: 0 }}>
                               <Trans>Error</Trans>
                             </Text>
                           </Tooltip>
-                        ) : (
-                          <Text
-                            size="xs"
-                            c="var(--ink-3)"
-                            title={m.lastRefresh ? formatDateTime(m.lastRefresh) : undefined}
-                            style={{ flexShrink: 0, whiteSpace: 'nowrap' }}
-                          >
-                            {m.lastRefresh ? formatRecentDate(m.lastRefresh) : <Trans>never</Trans>}
-                          </Text>
                         )}
-                      </Group>
-                    </Stack>
+                    </Group>
                   </Group>
                 </Table.Td>
                 <Table.Td>
@@ -609,6 +594,20 @@ export function SourceMappingsSection({
                   </Tooltip>
                 </Table.Td>
                 <Table.Td>
+                  <Group gap={0} wrap="nowrap" justify="flex-end">
+                  <Tooltip label={open ? t`Hide details` : t`Details`} withArrow>
+                    <ActionIcon
+                      variant="subtle"
+                      color="var(--neutral)"
+                      data-row-action=""
+                      aria-expanded={open}
+                      aria-controls={open ? detailsId : undefined}
+                      aria-label={t`Details for ${sourceName}`}
+                      onClick={() => setExpanded((prev) => ({ ...prev, [m.id]: !open }))}
+                    >
+                      {open ? <IconChevronUp size={19} /> : <IconChevronDown size={19} />}
+                    </ActionIcon>
+                  </Tooltip>
                   <Tooltip label={t`Remove mapping`} withArrow>
                     <ActionIcon
                       variant="subtle"
@@ -623,8 +622,17 @@ export function SourceMappingsSection({
                       <IconTrash size={19} />
                     </ActionIcon>
                   </Tooltip>
+                  </Group>
                 </Table.Td>
               </Table.Tr>
+              {open && (
+                <Table.Tr id={detailsId} className="sources-table-details">
+                  <Table.Td colSpan={6}>
+                    <SourceMappingDetails mapping={m} />
+                  </Table.Td>
+                </Table.Tr>
+              )}
+              </Fragment>
               )
               })}
 
@@ -1030,6 +1038,38 @@ export function SourceMappingsSection({
         />
       )}
     </>
+  )
+}
+
+/** What a row keeps out of its own line: the id on the source, when its chapters were last checked, and the last error. */
+function SourceMappingDetails({ mapping }: { mapping: SourceMappingDto }) {
+  const checked = mapping.lastRefresh ? formatRecentDate(mapping.lastRefresh) : null
+  return (
+    // Sticky so the details stay in view when a narrow screen has the table scrolled sideways.
+    <Stack
+      gap={6}
+      py={4}
+      style={{ position: 'sticky', insetInlineStart: 8, width: 'fit-content', maxWidth: 'min(100%, calc(100vw - 112px))' }}
+    >
+      <Group gap="xs" wrap="nowrap" miw={0}>
+        <Text size="xs" c="var(--ink-3)" style={{ flexShrink: 0 }}>
+          <Trans>Source ID</Trans>
+        </Text>
+        <MonoValue value={mapping.sourceSeriesId} href={mapping.url ?? undefined} copy fz="var(--mantine-font-size-xs)" />
+      </Group>
+      <Text
+        size="xs"
+        c="var(--ink-3)"
+        title={mapping.lastRefresh ? formatDateTime(mapping.lastRefresh) : undefined}
+      >
+        {checked ? <Trans>Chapters last checked {checked}</Trans> : <Trans>Chapters never checked</Trans>}
+      </Text>
+      {mapping.lastError && (
+        <Text size="xs" c="var(--danger)">
+          {mapping.lastError}
+        </Text>
+      )}
+    </Stack>
   )
 }
 

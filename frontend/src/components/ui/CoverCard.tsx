@@ -1,7 +1,6 @@
 import { memo } from 'react'
 import {
   IconBellOff,
-  IconCheck,
   IconDeviceMobileCheck,
   IconDownload,
   IconEyeOff,
@@ -12,6 +11,7 @@ import { seriesDownloadStateVisual, seriesProgressVisual, seriesStatusGlyph, ser
 import { useLabel } from '../../i18n-context'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
+import { CoverCardMenu } from './CoverCardMenu'
 
 /** What a library entry offers while the server is out of reach. */
 export type OfflineAvailability = 'saved' | 'unavailable'
@@ -37,6 +37,7 @@ export const CoverCard = memo(function CoverCard({
   readTracking,
   onToggle,
   offline,
+  menu = false,
 }: {
   series: SeriesDto
   selectMode: boolean
@@ -53,6 +54,8 @@ export const CoverCard = memo(function CoverCard({
    */
   readTracking: boolean
   onToggle: (id: number) => void
+  /** The library grid's menu button. Hidden in select mode and offline, where its actions cannot run. */
+  menu?: boolean
 }) {
   const renderLabel = useLabel()
   const { t } = useLingui()
@@ -95,8 +98,8 @@ export const CoverCard = memo(function CoverCard({
   // Only a download in progress earns the left corner; queued is a list-view and series-page fact.
   const downloading = series.downloadingCount > 0
   const downloadTip = downloading && download ? renderLabel(download.label) : null
-  // Read progress wraps the status disc, so a cover carries one mark for both. Read through turns
-  // the disc itself into the brand check.
+  // Read progress wraps the status disc, so a cover carries one mark for both. Read through closes
+  // the ring; the disc keeps its status glyph.
   const showsRead = readPct !== null && readPct > 0
   const readThrough = showsRead && unread === 0
   const readTip = unread === 0 ? t`All downloaded chapters read` : t`${readChapterCount} of ${have} downloaded read`
@@ -105,7 +108,7 @@ export const CoverCard = memo(function CoverCard({
   const statusOnly = series.monitored ? statusLabel : t`${statusLabel}, not monitored`
   const statusTip = showsRead ? t`${statusOnly}. ${readTip}` : statusOnly
 
-  return (
+  const card = (
     <Link
       to={`/series/${series.id}`}
       className="cover-card"
@@ -215,15 +218,23 @@ export const CoverCard = memo(function CoverCard({
                 {
                   '--tone': statusColor(status.color),
                   '--tone-on': statusOnColor(status.color),
-                  '--ring-pct': showsRead ? `${readPct}%` : undefined,
+                  '--ring-pct': showsRead ? `${readThrough ? 100 : readPct}%` : undefined,
                 } as React.CSSProperties
               }
             >
-              {readThrough ? <IconCheck size={13} /> : <StatusGlyph size={13} />}
+              <StatusGlyph size={13} />
             </span>
           </div>
         </div>
       </div>
     </Link>
+  )
+
+  if (!menu) return card
+  return (
+    <div className="reading-card library-card">
+      {card}
+      {!selectMode && !offline && <CoverCardMenu series={series} />}
+    </div>
   )
 })

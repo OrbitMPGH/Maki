@@ -80,7 +80,7 @@ import { SeriesCell } from '../components/SeriesCell'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
-import { FigureStrip } from '../components/ui/FigureStrip'
+import { FigureStrip, FigureStripReveal } from '../components/ui/FigureStrip'
 import { StatusDot } from '../components/ui/StatusDot'
 import { isQueueActive, needsImportReview, queueStatusVisual, statusToken } from '../components/ui/status'
 import { isHeldByPause, queueErrorMessage, queueItemLabel, queueOriginOrUnknown } from '../api/queue'
@@ -406,6 +406,7 @@ export default function ActivityPage() {
     }),
     [queueItems],
   )
+  const stripShown = stats.active + stats.queued + stats.review + stats.failed > 0
 
   return (
     <SurfaceFrame pageStyle="operational">
@@ -444,15 +445,19 @@ export default function ActivityPage() {
 
         <Tabs.Panel value="queue">
       <QueuePauseBanner canManage={canManageQueue} />
-      <FigureStrip
-        loading={!queue && !queueQuery.isError}
-        figures={[
-          { label: t`In progress`, value: stats.active, tone: 'info' },
-          { label: t`Queued`, value: stats.queued },
-          { label: t`Needs review`, value: stats.review, tone: 'warn' },
-          { label: t`Failed`, value: stats.failed, tone: 'danger' },
-        ]}
-      />
+      {/* Mounted once the queue has loaded, so the first state shows without a transition. */}
+      {queue && (
+        <FigureStripReveal shown={stripShown}>
+          <FigureStrip
+            figures={[
+              { label: t`In progress`, value: stats.active, tone: 'info' },
+              { label: t`Queued`, value: stats.queued },
+              { label: t`Needs review`, value: stats.review, tone: 'warn' },
+              { label: t`Failed`, value: stats.failed, tone: 'danger' },
+            ]}
+          />
+        </FigureStripReveal>
+      )}
 
       {!queue ? (
         queueQuery.isError ? (

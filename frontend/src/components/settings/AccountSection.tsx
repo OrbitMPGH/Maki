@@ -183,7 +183,7 @@ function SsoCard() {
             </Text>
             <Button
               size="compact-xs"
-              variant="subtle"
+              variant="light"
               color="var(--danger)"
               loading={unlink.isPending}
               onClick={() =>
@@ -657,8 +657,8 @@ function ApiKeysCard() {
                       </Text>
                     ) : (
                       <Button
-                        size="compact-xs"
-                        variant="subtle"
+                        size="xs"
+                        variant="light"
                         color="var(--danger)"
                         onClick={() => setRevoking(key)}
                       >

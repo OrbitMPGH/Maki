@@ -124,7 +124,7 @@ import { ArchivedSeriesCard, type ArchivedCardAction } from '../components/serie
 import { showBulkRestoreQueued, showRestoreResult } from '../components/series/restoreToast'
 import {
   DensityMenuItems,
-  POSTER_COLS_BY_DENSITY,
+  LIBRARY_POSTER_COLS_BY_DENSITY,
   readStored,
   ToolbarMenuButton,
   ViewModeToggle,
@@ -2723,7 +2723,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         </Stack>
       </Modal>
 
-      {isLoading && <PosterSkeletons density={density} viewMode={viewMode} />}
+      {isLoading && <PosterSkeletons density={density} viewMode={viewMode} colsByDensity={LIBRARY_POSTER_COLS_BY_DENSITY} />}
       {error && (
         <EmptyState
           title={t`Failed to load library`}
@@ -2774,7 +2774,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           unaffected: "select filtered" works off `visible`, never off what is mounted. */}
       {visible.length > 0 && viewMode === 'grid' && (
         <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
-          <SimpleGrid ref={windowed.innerRef} cols={POSTER_COLS_BY_DENSITY[density]} spacing="md">
+          <SimpleGrid ref={windowed.innerRef} cols={LIBRARY_POSTER_COLS_BY_DENSITY[density]} spacing="md">
             {visible.slice(windowed.start, windowed.end).map((s) =>
               archivedScope ? (
                 <ArchivedSeriesCard
@@ -2802,6 +2802,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                   readTracking={readTracking}
                   onToggle={toggle}
                   offline={offlineOf(s.id)}
+                  menu
                 />
               ),
             )}

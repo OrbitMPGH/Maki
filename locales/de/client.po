@@ -1306,6 +1306,10 @@ msgstr "{fileCount, plural, one {# Datei} other {# Dateien}}"
 msgid "{fileCount, plural, one {# single file} other {# single files}}"
 msgstr "{fileCount, plural, one {# einzelne Datei} other {# einzelne Dateien}}"
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk} other {# chapters have no file on disk}}"
 msgstr ""
@@ -1622,6 +1626,10 @@ msgstr ""
 msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 msgstr "{linkingTotal, plural, one {Quellen gefunden und Dateien für # Serie verknüpft} other {Quellen gefunden und Dateien für # Serien verknüpft}}"
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
+msgstr ""
+
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
 msgid "{lone, plural, one {# file with no number} other {# files with no number}}"
@@ -1855,6 +1863,10 @@ msgstr ""
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 msgstr "{notWanted, plural, one {# weiteres, nicht gewünscht} other {# weitere, nicht gewünscht}}"
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{offNumbering, plural, one {# of them has a decimal number or none, like an extra or a special.} other {# of them have a decimal number or none, like extras or specials.}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{ok, plural, one {Archived # series} other {Archived # series}}"
@@ -2033,6 +2045,10 @@ msgstr "{readChapterCount} von {have} heruntergeladenen Kapiteln gelesen"
 #, fuzzy
 msgid "{readCount, plural, one {# chapter read} other {# chapters read}}"
 msgstr "{readCount, plural, one {# Kapitel gelesen} other {# Kapitel gelesen}}"
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{readCount, plural, one {You have finished # chapter.} other {You have finished # chapters.}}"
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -2672,6 +2688,14 @@ msgstr "{total, plural, one {Alle # anzeigen} other {Alle # anzeigen}}"
 #, fuzzy
 msgid "{total, plural, one {Wanted for {spanLabel}: {wantedCount} of # chapter} other {Wanted for {spanLabel}: {wantedCount} of # chapters}}"
 msgstr "{total, plural, one {Gewünscht für {spanLabel}: {wantedCount} von # Kapitel} other {Gewünscht für {spanLabel}: {wantedCount} von # Kapiteln}}"
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{totalChapters, plural, one {MangaBaka lists # chapter.} other {MangaBaka lists # chapters.}}"
+msgstr ""
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{totalChapters, plural, one {You set the total to # chapter.} other {You set the total to # chapters.}}"
+msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
@@ -5656,6 +5680,10 @@ msgstr "Kapitel {resumeAt} wurde noch nicht heruntergeladen"
 msgid "Chapter already has a file"
 msgstr ""
 
+#: src/components/series/ChapterCountsInfo.tsx
+#~ msgid "Chapter counts"
+#~ msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Chapter downloaded"
@@ -5789,6 +5817,14 @@ msgstr "Kapitel automatisch heruntergeladen"
 #, fuzzy
 msgid "Chapters known"
 msgstr "Bekannte Kapitel"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Chapters last checked {checked}"
+msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Chapters never checked"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -6543,9 +6579,8 @@ msgid "Content"
 msgstr "Inhalt"
 
 #: src/components/CatalogueFilters.tsx
-#: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/ContentRatingChip.tsx
 #: src/components/discover/DiscoverGlance.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -6583,6 +6618,7 @@ msgstr "Beim Anime ansetzen"
 
 #: src/api/hooks.ts
 #: src/components/home/ContinueHero.tsx
+#: src/components/ui/CoverCardMenu.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/MetadataGatePage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -7679,6 +7715,7 @@ msgstr "Abgetrennte CBZs bleiben im Abschnitt Dateien, sofern du nicht auswähls
 msgid "Detailed"
 msgstr ""
 
+#: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -7690,6 +7727,10 @@ msgstr "Details"
 #, fuzzy
 msgid "Details and test"
 msgstr "Details und Test"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Details for {sourceName}"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -8129,6 +8170,10 @@ msgstr "Downloads"
 
 #: src/pages/settings/PageConversionSection.tsx
 msgid "Downloads and torrent imports are converted in the background once they finish."
+msgstr ""
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Downloads counts the {wanted, plural, one {# chapter} other {# chapters}} you want or already have. {notWanted, plural, one {# more is listed but not wanted.} other {# more are listed but not wanted.}}"
 msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
@@ -10090,6 +10135,7 @@ msgstr "Ausgeblendet, während der Fortschritt deaktiviert ist."
 msgid "Hide affected series"
 msgstr "Betroffene Serien ausblenden"
 
+#: src/components/SourceMappingsSection.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Hide details"
@@ -10297,6 +10343,10 @@ msgstr "Wie Signale funktionieren"
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "How the shortlist differs from your library"
+msgstr ""
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "How these chapter counts add up"
 msgstr ""
 
 #: src/components/ImportReviewModal.tsx
@@ -12754,6 +12804,7 @@ msgstr "Vom Monitor gefunden"
 
 #: src/components/import/MihonReview.tsx
 #: src/components/ImportListsSection.tsx
+#: src/components/ui/CoverCardMenu.tsx
 #, fuzzy
 msgid "Monitor for new chapters"
 msgstr "Auf neue Kapitel überwachen"
@@ -12854,6 +12905,7 @@ msgstr "Weitere Optionen"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
+#: src/components/ui/CoverCardMenu.tsx
 #, fuzzy
 msgid "More options for {seriesTitle}"
 msgstr "Weitere Optionen für {seriesTitle}"
@@ -13027,6 +13079,10 @@ msgstr "Bewegte Cover"
 #, fuzzy
 msgid "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
 msgstr "Der Mehrbenutzermodus ist aktiv, weil mehr als ein Konto aktiviert ist. Deaktiviere oder lösche die anderen, um zurückzuwechseln."
+
+#: src/components/ui/CoverCardMenu.tsx
+msgid "Mute notifications"
+msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/ui/seriesNotifications.ts
@@ -13228,7 +13284,6 @@ msgstr "neutral, startet mit Regal-Gewicht"
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
-#: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "never"
@@ -13463,6 +13518,10 @@ msgstr "Als Nächstes"
 #, fuzzy
 msgid "Next up beside the hero"
 msgstr "Als Nächstes neben dem Hero"
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Next up is {nextChapter}."
+msgstr ""
 
 #: src/components/releases/UpcomingView.tsx
 #, fuzzy
@@ -14647,6 +14706,10 @@ msgstr "Nichts wird gespeichert, bis du unten auf den Button drückst. Vorher ko
 msgid "Nothing is sent to it any more. This can't be undone."
 msgstr "Es wird nichts mehr dorthin gesendet. Das lässt sich nicht rückgängig machen."
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Nothing is wanted, so Downloads counts against every listed chapter."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Nothing left to download"
@@ -15361,6 +15424,7 @@ msgstr "Empfohlene Suche ab jetzt mit diesen Filtern öffnen"
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/series/AnimeResumeCallout.tsx
+#: src/components/ui/CoverCardMenu.tsx
 #: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -20599,6 +20663,10 @@ msgstr "Quelle"
 msgid "Source {letter}"
 msgstr "Quelle {letter}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Source ID"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Source is"
@@ -21004,6 +21072,10 @@ msgstr "Stoppen"
 #, fuzzy
 msgid "Stop ignoring"
 msgstr "Ignorieren beenden"
+
+#: src/components/ui/CoverCardMenu.tsx
+msgid "Stop monitoring"
+msgstr ""
 
 #: src/pages/CreatorPage.tsx
 #, fuzzy
@@ -23164,6 +23236,10 @@ msgstr "Nicht zugeordnet"
 msgid "Unmonitored"
 msgstr "Nicht überwacht"
 
+#: src/components/ui/CoverCardMenu.tsx
+msgid "Unmute notifications"
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
 msgid "Unofficial build (not a tagged release)"
@@ -24590,6 +24666,10 @@ msgstr "Du folgst noch niemandem. Öffne einen Creator oder ein Studio und klick
 msgid "You had this at {soFar} so far. Keep it?"
 msgstr "Du hattest das bei {soFar} vorläufig. Behalten?"
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "You have finished {readCount, plural, one {# chapter} other {# chapters}}, up to ch. {readUpTo}."
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "You have read to ch. {readChapter}"
@@ -24819,6 +24899,10 @@ msgstr ""
 #, fuzzy
 msgid "Your source changes have not been saved. Closing now discards them."
 msgstr "Deine Quellenänderungen wurden nicht gespeichert. Beim Schließen werden sie verworfen."
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Your sources go up to ch. {highest}."
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 msgid "Your sources only reach chapter {highest}, but MangaBaka lists {listed}. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."

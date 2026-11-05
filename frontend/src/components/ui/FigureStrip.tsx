@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Skeleton, Tooltip } from '@mantine/core'
 import { formatNumber, formatSignedPercent } from '../../format'
 
@@ -16,6 +16,8 @@ export interface Figure {
   hint?: ReactNode
   /** What the label means, in plain words, as a tooltip on the label. */
   tip?: string
+  /** A small graphic beside the value and label, such as the mascot. */
+  mark?: ReactNode
 }
 
 /**
@@ -54,7 +56,13 @@ export function FigureStrip({
           </span>
         )
         return (
-          <div className="figure-strip-item" key={f.label} data-zero={(!loading && zero) || undefined}>
+          <div
+            className="figure-strip-item"
+            key={f.label}
+            data-zero={(!loading && zero) || undefined}
+            data-mark={f.mark ? true : undefined}
+          >
+            {f.mark && <span className="figure-strip-mark">{f.mark}</span>}
             {loading ? (
               <div className="figure-strip-n">
                 <Skeleton h="0.8em" w="2.4em" my="0.125em" />
@@ -87,6 +95,29 @@ export function FigureStrip({
           </div>
         )
       })}
+    </div>
+  )
+}
+
+/**
+ * Shows or hides a strip with a height and opacity transition. The first render takes `shown` as is,
+ * so mount it once the data has loaded. Under reduced motion the height cannot move, so a hiding
+ * strip fades first and only then gives up its row.
+ */
+export function FigureStripReveal({ shown, children }: { shown: boolean; children: ReactNode }) {
+  const [collapsed, setCollapsed] = useState(!shown)
+  if (shown && collapsed) setCollapsed(false)
+  return (
+    <div
+      className="figure-strip-reveal"
+      data-hidden={!shown || undefined}
+      data-collapsed={collapsed || undefined}
+      inert={!shown}
+      onTransitionEnd={(e) => {
+        if (e.target === e.currentTarget && e.propertyName === 'opacity' && !shown) setCollapsed(true)
+      }}
+    >
+      <div>{children}</div>
     </div>
   )
 }

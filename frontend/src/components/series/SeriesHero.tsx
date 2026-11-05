@@ -18,13 +18,9 @@ import { IconAlertTriangle, IconArrowLeft, IconBook, IconCheck, IconDownload, Ic
 import { Link } from 'react-router-dom'
 import { otherTitles, readableTitles } from '../../api/titles'
 import type { SeriesDto } from '../../api/types'
-import {
-    contentRatingToken,
-    contentRatingVisual,
-    seriesProgressVisual,
-    seriesStatusVisual,
-    statusToken,
-} from '../ui/status'
+import { seriesProgressVisual, seriesStatusVisual, statusToken } from '../ui/status'
+import { ContentRatingChip } from '../ContentRatingChip'
+import { ChapterCountsInfo } from './ChapterCountsInfo'
 import { useReadTracking } from '../../api/reader'
 import { useChapters } from '../../api/hooks'
 import { formatDecimal } from '../../format'
@@ -64,6 +60,8 @@ export function SeriesHero({
                                onFinalize,
                                actions,
                                tabs,
+                               readUpTo = null,
+                               nextChapter = null,
                            }: {
     series: SeriesDto
     onRate: (value: number | null) => void
@@ -71,12 +69,14 @@ export function SeriesHero({
     onFinalize: () => void
     actions: ReactNode
     tabs: ReactNode
+    /** Highest chapter number read, for the counts popover. */
+    readUpTo?: number | null
+    /** Label of the chapter the Read button opens. */
+    nextChapter?: string | null
 }) {
     const { t, i18n } = useLingui()
     const readTracking = useReadTracking()
     const status = seriesStatusVisual(series.status)
-    const contentRating = contentRatingVisual(series.contentRating)
-    const ratingToken = contentRatingToken(series.contentRating)
     const author = series.authorStory ?? series.authorArt
     const rating = shownRating(series)
     const soFar = isProvisional(series)
@@ -114,6 +114,14 @@ export function SeriesHero({
 
         return { highest, total, missing }
     }, [series, chapters])
+
+    const numbering = useMemo(() => {
+        const numbered = (chapters ?? []).map((c) => c.number).filter((n): n is number => n !== null)
+        return {
+            highest: numbered.length > 0 ? Math.max(...numbered) : null,
+            offNumbering: (chapters ?? []).filter((c) => c.number === null || !Number.isInteger(c.number)).length,
+        }
+    }, [chapters])
 
     // Wanted chapters with no file yet, queued or not; the page's download button excludes the queued ones.
     const missingWanted = useMemo(
@@ -235,7 +243,14 @@ export function SeriesHero({
                                 // Capped: a well-covered series carries dozens of these (One Piece
                                 // has 37), and the full list belongs in the Metadata card, not
                                 // wrapped across four lines under the heading.
-                                <Text component="div" size="sm" pt="xs" c="var(--ink-3)">
+                                <Text
+                                    component="div"
+                                    size="sm"
+                                    pt="xs"
+                                    c="var(--ink-3)"
+                                    className="series-hero-alt"
+                                    title={altTitles.map((a) => a.title).join(', ')}
+                                >
                                     <MetaList
                                         items={[
                                             ...altTitles.slice(0, MAX_HERO_ALT_TITLES).map((t) => t.title),
@@ -268,25 +283,7 @@ export function SeriesHero({
                     {label(status.label)}
                 </span>
 
-                                    {contentRating && (
-                                        <Tooltip label={t`Content rating`} withArrow>
-                    <span
-                        className="series-hero-status"
-                        data-quiet={ratingToken ? undefined : true}
-                        style={
-                            ratingToken
-                                ? {
-                                    color: `var(--${ratingToken})`,
-                                    background: `var(--${ratingToken}-soft)`,
-                                }
-                                : undefined
-                        }
-                    >
-                      <contentRating.Icon size={14} />
-                        {label(contentRating.label)}
-                    </span>
-                                        </Tooltip>
-                                    )}
+                                    <ContentRatingChip rating={series.contentRating} />
                                 </Group>
 
                                 <Group gap={8} wrap="nowrap">
@@ -355,9 +352,29 @@ export function SeriesHero({
                         </Stack>
                     </Group>
                     <Paper withBorder radius="lg" p="lg" className="series-hero-panel">
-                        <Title order={2} size="h3" fz="var(--type-section)" lh={1}>
-                            <Trans>Progress</Trans>
-                        </Title>
+                        <Group justify="space-between" wrap="nowrap" gap="xs">
+                            <Title order={2} size="h3" fz="var(--type-section)" lh={1}>
+                                <Trans>Progress</Trans>
+                            </Title>
+                            {series.knownChapterCount > 0 && (
+                                <ChapterCountsInfo
+                                    counts={{
+                                        listed: series.knownChapterCount,
+                                        wanted: totalCount,
+                                        nothingWanted: downloads.nothingWanted,
+                                        notWanted,
+                                        offNumbering: numbering.offNumbering,
+                                        fileMissing,
+                                        highestListed: numbering.highest,
+                                        totalChapters: series.totalChapters,
+                                        totalLocked: series.lockedFields.includes('totalChapters'),
+                                        readCount: readTracking ? series.readChapterCount : null,
+                                        readUpTo: readTracking ? readUpTo : null,
+                                        nextChapter,
+                                    }}
+                                />
+                            )}
+                        </Group>
 
                         {readTracking && series.readChapterCount != null && progress.have > 0 && (
                             <Box mt="md" className="series-progress-meter">

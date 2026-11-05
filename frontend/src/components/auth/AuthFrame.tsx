@@ -111,6 +111,17 @@ function useAuthArt() {
   }
 }
 
+/** The band's own art: tilted cover shapes in the accent colour. Rewind's opening wall uses it too. */
+export function AuthBandShapes() {
+  return (
+    <div className="auth-band-shapes">
+      {SHAPES.map((shade, i) => (
+        <span key={i} style={{ '--shade': `${shade}%` } as CSSProperties} />
+      ))}
+    </div>
+  )
+}
+
 /**
  * The frame behind sign-in and first-run setup, with the page's one cinematic band.
  * <p>
@@ -137,11 +148,7 @@ export function AuthFrame({
   return (
     <div className="auth-frame" data-art={mode}>
       <div className="auth-band" aria-hidden>
-        <div className="auth-band-shapes">
-          {SHAPES.map((shade, i) => (
-            <span key={i} style={{ '--shade': `${shade}%` } as CSSProperties} />
-          ))}
-        </div>
+        <AuthBandShapes />
         {mosaicUrl && (
           <img
             className="auth-band-covers"

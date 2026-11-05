@@ -75,10 +75,10 @@ export const ReadingCard = memo(function ReadingCard({ item, note }: { item: Hom
           <div className="cover-row">
             <span className="cover-row-verb">{item.page > 0 ? t`Resume` : t`Start`}</span>
             {note ? (
-              <span className="cover-new cover-new-quiet">{note}</span>
+              <span className="cover-new">{note}</span>
             ) : (
               unreadChapters > 0 && (
-                <span className="cover-new cover-new-quiet">
+                <span className="cover-new">
                   {plural(unreadChapters, { one: '# new', other: '# new' })}
                 </span>
               )

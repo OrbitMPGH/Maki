@@ -81,6 +81,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip } from '../components/ui/FigureStrip'
+import { IconBrandMark } from '../components/IconBrandMark'
 import { StatusDot } from '../components/ui/StatusDot'
 import { MonoValue } from '../components/ui/MonoValue'
 import { SeriesCell } from '../components/SeriesCell'
@@ -507,7 +508,12 @@ export default function HealthPage() {
       <FigureStrip
         loading={overview.isPending}
         figures={[
-          { label: t`System issues`, value: issues, tone: issuesTone },
+          {
+            label: t`System issues`,
+            value: issues,
+            tone: issuesTone,
+            mark: <IconBrandMark mood={overview.isPending ? 'awake' : issues > 0 ? 'asking' : 'pleased'} size={40} />,
+          },
           { label: t`Open file findings`, value: overview.data?.openFindings ?? 0, tone: 'warn' },
           { label: t`Archives inventoried`, value: overview.data?.files ?? 0 },
         ]}
@@ -711,7 +717,7 @@ export default function HealthPage() {
                       <Trans>Delete</Trans>
                     )}
                   </Button>
-                  <Button size="xs" variant="subtle" onClick={() => setSelected(new Map())}>
+                  <Button size="xs" variant="default" onClick={() => setSelected(new Map())}>
                     <Trans>Clear</Trans>
                   </Button>
                 </Group>
@@ -1119,7 +1125,7 @@ function MissingBar({
               >
                 <Trans>Download again</Trans>
               </Button>
-              <Button size="xs" color="var(--danger)" variant="subtle" onClick={() => onClear(group.items)}>
+              <Button size="xs" color="var(--danger)" variant="light" onClick={() => onClear(group.items)}>
                 <Trans>Clear records</Trans>
               </Button>
             </Group>
@@ -1624,7 +1630,7 @@ function CheckGroup({ checks, run }: { checks: HealthCheck[]; run: (path: string
         <div className="health-check-actions">
           <Button
             size="xs"
-            variant="subtle"
+            variant="default"
             onClick={() =>
               run('/checks/acknowledge/bulk', {
                 ids: (unsettled.length > 0 ? unsettled : checks).map((c) => c.id),
@@ -1717,14 +1723,14 @@ function CheckRow({ check, run }: { check: HealthCheck; run: (path: string, body
           </Button>
         )}
         {check.url && (
-          <Button component={Link} to={check.url} size="xs" variant="subtle">
+          <Button component={Link} to={check.url} size="xs" variant="default">
             <Trans>Open</Trans>
           </Button>
         )}
         {ISSUE.includes(check.status) && (
           <Button
             size="xs"
-            variant="subtle"
+            variant="default"
             onClick={() => run('/checks/acknowledge', { id: check.id, acknowledged: !check.acknowledged })}
           >
             {check.acknowledged ? <Trans>Reopen</Trans> : <Trans>Acknowledge</Trans>}
@@ -1894,7 +1900,7 @@ function FileReview({
                         <Button
                           key={state}
                           size="xs"
-                          variant="subtle"
+                          variant="default"
                           onClick={() =>
                             action.mutate({ path: `/findings/${f.id}`, method: 'PUT', body: { version: f.version, state } })
                           }
@@ -2252,7 +2258,7 @@ function MissingPanel({
             >
               <Trans>Download it again</Trans>
             </Button>
-            <Button color="var(--danger)" variant="subtle" onClick={() => setConfirming('clear')}>
+            <Button color="var(--danger)" variant="light" onClick={() => setConfirming('clear')}>
               <Trans>Clear the record</Trans>
             </Button>
           </Group>
@@ -2806,7 +2812,7 @@ function UnlinkedPanel({
             >
               <Trans>Import this archive</Trans>
             </Button>
-            <Button component={Link} to="/import" variant="subtle">
+            <Button component={Link} to="/import" variant="default">
               <Trans>Import page</Trans>
             </Button>
           </Group>
@@ -3408,7 +3414,7 @@ function CachePanel() {
           >
             <Trans>Rebuild missing images</Trans>
           </Button>
-          <Button component={Link} to="/settings?tab=system" variant="subtle">
+          <Button component={Link} to="/settings?tab=system" variant="default">
             <Trans>Backup and cache tools</Trans>
           </Button>
         </Group>

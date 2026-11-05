@@ -14,13 +14,8 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useRecommendationDetail, type RecommendationItem } from '../../api/hooks'
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
 import { HeroBackdrop } from '../series/HeroBackdrop'
-import {
-  contentRatingToken,
-  contentRatingVisual,
-  ratingBandVisual,
-  seriesStatusVisual,
-  statusToken,
-} from '../ui/status'
+import { ratingBandVisual, seriesStatusVisual, statusToken } from '../ui/status'
+import { ContentRatingChip } from '../ContentRatingChip'
 import { relationPhrase } from '../ui/DiscoverRail'
 import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
 import { useLabel } from '../../i18n-context'
@@ -175,8 +170,6 @@ export function DiscoverHero({
   const { title, becauseOfTitle, relationKind, relatedToTitle } = item
   const ownedSeriesId = seriesIdFor?.(item) ?? null
   const status = seriesStatusVisual(detail?.status ?? item.status)
-  const contentRating = contentRatingVisual(detail?.contentRating ?? null)
-  const ratingToken = contentRatingToken(detail?.contentRating)
   const score = detail?.rating ?? item.rating
   const band = ratingBandVisual(score ?? 0)
   // `id` is a stable key: `label` is translated text, and keying the row off it would remount the
@@ -275,23 +268,7 @@ export function DiscoverHero({
                   <status.Icon size={14} />
                   {renderLabel(status.label)}
                 </span>
-                {contentRating && (
-                  <span
-                    className="series-hero-status"
-                    data-quiet={ratingToken ? undefined : true}
-                    style={
-                      ratingToken
-                        ? {
-                            color: `var(--${ratingToken})`,
-                            background: `var(--${ratingToken}-soft)`,
-                          }
-                        : undefined
-                    }
-                  >
-                    <contentRating.Icon size={14} />
-                    {renderLabel(contentRating.label)}
-                  </span>
-                )}
+                <ContentRatingChip rating={detail?.contentRating} />
               </Group>
 
               <div className="hero-figures">

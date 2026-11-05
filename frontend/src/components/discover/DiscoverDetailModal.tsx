@@ -36,12 +36,11 @@ import { HeroBackdrop } from '../series/HeroBackdrop'
 import { MetadataLinks } from '../MetadataLinks'
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
 import {
-  contentRatingToken,
-  contentRatingVisual,
   ratingBandVisual,
   seriesStatusVisual,
   statusToken,
 } from '../ui/status'
+import { ContentRatingChip } from '../ContentRatingChip'
 import { TagChip, TagChips } from '../ui/TagChip'
 import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
@@ -120,8 +119,6 @@ export function DiscoverDetailModal({
   const renderLabel = useLabel()
   const { t, i18n } = useLingui()
   const status = seriesStatusVisual(detail?.status ?? item?.status ?? '')
-  const contentRating = contentRatingVisual(detail?.contentRating ?? null)
-  const ratingToken = contentRatingToken(detail?.contentRating)
   const score = detail?.rating ?? item?.rating ?? null
   const band = ratingBandVisual(score ?? 0)
   const altTitles = readableTitles(detail?.altTitles ?? [], i18n.locale)
@@ -266,25 +263,7 @@ export function DiscoverDetailModal({
                         <status.Icon size={14} />
                         {renderLabel(status.label)}
                       </span>
-                      {contentRating && (
-                          <Tooltip label={t`Content rating`} withArrow zIndex={1001}>
-                          <span
-                              className="series-hero-status"
-                              data-quiet={ratingToken ? undefined : true}
-                              style={
-                                ratingToken
-                                    ? {
-                                      color: `var(--${ratingToken})`,
-                                      background: `var(--${ratingToken}-soft)`,
-                                    }
-                                    : undefined
-                              }
-                          >
-                            <contentRating.Icon size={14} />
-                            {renderLabel(contentRating.label)}
-                          </span>
-                          </Tooltip>
-                      )}
+                      <ContentRatingChip rating={detail?.contentRating} tooltipZIndex={1001} />
                     </Group>
 
                     {/* The numbers people open a card to check. Every one of them is on the item the

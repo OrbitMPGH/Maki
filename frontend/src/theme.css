@@ -2031,11 +2031,11 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--tone);
 }
 /* Read progress wraps the status disc: a brand arc on a dark track just outside it, so one mark per
-   cover carries both facts. Read through drops the arc and turns the disc into the brand check. */
+   cover carries both facts. Read through closes the ring; the disc keeps its status colour and glyph. */
 .cover-state[data-tone='status'][data-read] {
   position: relative;
 }
-.cover-state[data-tone='status'][data-read='part']::before {
+.cover-state[data-tone='status'][data-read]::before {
   content: '';
   position: absolute;
   inset: -5px;
@@ -2044,16 +2044,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
 }
-.cover-state[data-tone='status'][data-read='all'] {
+.cover-state[data-tone='status'][data-read='all']::before {
   background: var(--brand);
-  color: var(--brand-on);
-}
-.cover-card .cover-state[data-tone='status'][data-read='all'][data-unmonitored] {
-  background: rgba(6, 7, 11, 0.84);
-  box-shadow:
-    inset 0 0 0 1.5px var(--brand),
-    0 2px 6px rgba(0, 0, 0, 0.35);
-  color: var(--brand);
 }
 /* The light theme's status colours are tuned for a pale ground; these sit on a dark disc. The
    unmonitored ring and glyph lift further than the others and sit on a denser disc, because the disc
@@ -2194,18 +2186,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   height: 16px;
   padding: 0 6px;
   border-radius: var(--radius-pill);
-  background: var(--mantine-primary-color-filled);
-  color: var(--mantine-primary-color-contrast);
+  /* Neutral, not the accent: a solid brand pill read as a button, and Home's chapter pill already
+     carries the accent on its cards. */
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
   flex-shrink: 0;
   font-size: var(--type-micro);
   font-weight: var(--fw-bold);
-  /* The row's shadow is for white text over art; on a light accent's dark text it reads as a smear. */
   text-shadow: none;
-}
-/* Home rails already carry a brand chapter pill, so the count stays neutral to keep one accent per card. */
-.cover-new-quiet {
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
 }
 /* A chapter chip: top-left on Continue, Resume and Recently added cards. */
 .cover-chapter {
@@ -3206,6 +3194,66 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   .reading-card-menu:focus-visible,
   .reading-card-menu[data-expanded] {
     opacity: 1;
+  }
+}
+/* A library cover's menu sits at the end of the meta row on every device: the status disc holds the
+   top right and download marks the top left. A plain button, since the grid draws hundreds. */
+.cover-card-menu,
+.cover-card-menu-anchor {
+  top: auto;
+  bottom: 3px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+}
+.cover-card-menu {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.cover-card-menu:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.cover-card-menu-anchor {
+  position: absolute;
+  pointer-events: none;
+}
+/* With a pointer it only shows on hover or focus, and the row's count would lose its digits to a
+   touch-sized button, so it is smaller there. */
+@media (hover: hover) and (pointer: fine) {
+  .cover-card-menu,
+  .cover-card-menu-anchor {
+    bottom: 5px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+  }
+  .library-card:hover:has(> .cover-card-menu) .cover-row,
+  .library-card:has(> .cover-card:focus-visible ~ .cover-card-menu) .cover-row,
+  .library-card:has(> .cover-card-menu:focus-visible, > .cover-card-menu[data-expanded]) .cover-row {
+    padding-inline-end: 24px;
+  }
+  /* A laptop card has no room for the count, the "N new" pill and the button ("1..."), so while the
+     button shows the count steps aside and the bar above stands in for it. */
+  @container (max-width: 7.5rem) {
+    .library-card:hover:has(> .cover-card-menu) .cover-row:has(> .cover-new) > :first-child,
+    .library-card:has(> .cover-card:focus-visible ~ .cover-card-menu) .cover-row:has(> .cover-new) > :first-child,
+    .library-card:has(> .cover-card-menu:focus-visible, > .cover-card-menu[data-expanded]) .cover-row:has(> .cover-new) > :first-child {
+      visibility: hidden;
+    }
+  }
+  .library-card > .cover-card:focus-visible ~ .cover-card-menu {
+    opacity: 1;
+  }
+  .library-card:hover > .cover-card .cover-corner-right > .cover-badge-circle {
+    opacity: 0.9;
+  }
+  .library-card:hover > .cover-card .cover-corner-right > .cover-badge-circle[data-dim] {
+    opacity: 0.7;
   }
 }
 .discover-card:hover .discover-corner[data-add='true'],
@@ -4378,13 +4426,13 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 @media (max-width: 35.9375em) {
   .discover-loading-hero {
-    min-height: 820px;
+    min-height: 760px;
   }
   /* The buttons belong on the first screen, so the score, figures and source scores fold into one
      line under them. The source scores stay in the detail view. */
   .discover-hero.series-hero[data-compact] .series-hero-poster {
-    width: 150px;
-    height: 225px;
+    width: 104px;
+    height: 156px;
   }
   .discover-hero .hero-figures,
   .discover-hero .discover-hero-sources {
@@ -6642,12 +6690,33 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   .series-hero:not([data-compact]) .series-hero-poster {
     display: block;
     float: inline-start;
-    width: 76px;
-    height: 114px;
+    width: 60px;
+    height: 90px;
     margin-block: 4px 8px;
     margin-inline-end: 14px;
     border-radius: var(--radius-cover);
     box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.8);
+  }
+  /* Alt titles on one line that ends in an ellipsis; the full list is the title attribute and the Metadata card. */
+  .series-hero-alt {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .series-hero-alt .meta-list,
+  .series-hero-alt .meta-list > li {
+    display: inline;
+  }
+  .series-hero-alt .meta-list {
+    margin-inline-start: 0;
+    clip-path: none;
+  }
+  .series-hero-alt .meta-list > li::before {
+    display: inline-block;
+    vertical-align: -0.1em;
+  }
+  .series-hero-alt .meta-list > li:first-child::before {
+    content: none;
   }
 }
 
@@ -8223,8 +8292,8 @@ body.column-resizing * {
 }
 
 /* The covers. A slide about one series puts its art behind it the way the series page does,
-   blurred and pushed into the dark; the opening slide tiles the whole period's covers into a
-   tilted wall that drifts. Slides about numbers keep the plain brand dark, which is what gives the
+   blurred and pushed into the dark; the opening slide is the sign-in band (AuthFrame) tiled with
+   the whole period's covers, drifting, with the lockup set low on the left like the wordmark. Slides about numbers keep the plain brand dark, which is what gives the
    cover slides their weight. */
 .rewind-stage {
   position: absolute;
@@ -8240,22 +8309,39 @@ body.column-resizing * {
   filter: blur(30px) saturate(1.2) brightness(0.48);
   will-change: transform;
 }
-.rewind-mosaic {
-  position: absolute;
-  top: -20%;
-  left: -15%;
-  width: 130%;
-  display: grid;
-  grid-template-columns: repeat(9, 1fr);
-  gap: 14px;
-  transform: rotate(-9deg);
-  opacity: 0.36;
+/* The band's colours read --app-bg, which is light in the light theme; Rewind is always dark. */
+.rewind-stage {
+  --app-bg: #0b0d12;
 }
-.rewind-mosaic img {
+.rewind-wall {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
+}
+.rewind-wall-covers {
+  opacity: 0.6;
+}
+.rewind-wall-covers > img {
   width: 100%;
   aspect-ratio: 2 / 3;
   object-fit: cover;
-  border-radius: var(--radius-surface);
+  border-radius: var(--radius-cover);
+}
+.rewind-slide[data-wall] {
+  position: absolute;
+  inset: auto 0 0;
+  max-width: none;
+  text-align: start;
+}
+.rewind-overlay:has(> .rewind-stage) .rewind-slide[data-wall]::before {
+  content: none;
+}
+.rewind-slide .auth-wordmark {
+  margin-top: 8px;
+  color: inherit;
+}
+.rewind-slide .auth-tagline {
+  color: inherit;
 }
 /* The centre, where every slide's text sits, is held dark enough that the brightest cover in the
    wall (a yellow or white one) still leaves the small eyebrow and subtitle above 7:1; the edges keep
@@ -8536,7 +8622,7 @@ body.reader-open {
 }
 
 /* The page scrubber (PageScrubber): one segment per page, lit up to the page on screen, which
-   carries a light thumb. Upscaled pages ahead show lighter, like a video's buffer. The padding is the hit
+   takes the full accent. Upscaled pages ahead show lighter, like a video's buffer. The padding is the hit
    area around the 6px track. */
 .reader-scrub {
   position: relative;
@@ -8593,33 +8679,18 @@ body.reader-open {
     background: rgba(255, 255, 255, 0.38);
   }
 }
+/* Pages already passed are a dimmer pink, so the page on screen stands out as the full one. */
 .reader-scrub-segment[data-lit] {
-  background: var(--mantine-primary-color-filled);
+  background: color-mix(in srgb, var(--mantine-primary-color-filled) 50%, transparent);
 }
 .reader-scrub-segment[data-hover]:not([data-lit]) {
   background: rgba(255, 255, 255, 0.6);
 }
+.reader-scrub-segment[data-current] {
+  background: var(--brand);
+}
 .reader-scrub-segment[data-hover][data-lit] {
   background: color-mix(in srgb, var(--mantine-primary-color-filled) 70%, #fff);
-}
-/* Covers the page(s) on screen. With a gap, segment i starts at i * (track + gap) / count. The
-   minimum width keeps it findable in a long chapter whose segments are a pixel or two wide. */
-.reader-scrub-thumb {
-  position: absolute;
-  top: 50%;
-  left: calc((100% + var(--gap)) * var(--from) / var(--count));
-  width: max(6px, calc((100% + var(--gap)) * var(--span) / var(--count) - var(--gap)));
-  height: 16px;
-  transform: translateY(-50%);
-  border-radius: 3px;
-  background: #fff;
-  box-shadow:
-    0 0 0 2px #0a0a0b,
-    0 1px 6px rgba(0, 0, 0, 0.5);
-  pointer-events: none;
-  transition:
-    left var(--dur-fast) var(--ease),
-    width var(--dur-fast) var(--ease);
 }
 /* Page thumbnail above the segment under the pointer. */
 .reader-scrub-preview {
@@ -10609,6 +10680,59 @@ tr:hover .mono-value-copy {
   background: var(--ok-soft);
 }
 /* No rule for `down`: a quieter month is not a failure, and red here read like a broken download. */
+/* A graphic in its own column, beside both the value and the label. */
+.figure-strip-item[data-mark] {
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 12px;
+}
+.figure-strip-item[data-mark] > :not(.figure-strip-mark) {
+  grid-column: 2;
+}
+.figure-strip-mark {
+  display: flex;
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+/* Two narrow columns: the graphic shrinks to the number's row so the label keeps the full width. */
+@container figure-strip (width < 25.5rem) {
+  .figure-strip-item[data-mark] {
+    column-gap: 8px;
+  }
+  .figure-strip-mark {
+    grid-row: 1;
+  }
+  .figure-strip-mark svg {
+    width: 28px;
+    height: 28px;
+  }
+  .figure-strip-item[data-mark] > :not(.figure-strip-mark, .figure-strip-n, .figure-strip-value) {
+    grid-column: 1 / -1;
+  }
+}
+/* FigureStripReveal: a strip that leaves the page while it has nothing to count. Under reduced
+   motion the global rule drops the row transition, so the row only goes once the fade has ended. */
+.figure-strip-reveal {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows var(--dur-slow) var(--ease),
+    opacity var(--dur-slow) var(--ease);
+}
+.figure-strip-reveal > * {
+  min-height: 0;
+  overflow: hidden;
+}
+.figure-strip-reveal[data-hidden] {
+  opacity: 0;
+}
+.figure-strip-reveal[data-collapsed] {
+  grid-template-rows: 0fr;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .figure-strip-reveal[data-hidden] {
+    grid-template-rows: 0fr;
+  }
+}
 
 .status-dot {
   display: inline-flex;
@@ -12197,9 +12321,8 @@ button.import-plan-folder-head:hover {
   .rewind-summary-number {
     font-size: 1.6rem;
   }
-  .rewind-mosaic {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
+  .rewind-slide[data-wall] {
+    bottom: 64px;
   }
   .rewind-slide .rewind-figure-pair {
     flex-direction: column;
