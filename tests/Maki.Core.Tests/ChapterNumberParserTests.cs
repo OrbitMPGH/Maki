@@ -270,4 +270,39 @@ public class ChapterNumberParserTests
     {
         Assert.Equal(3, ChapterNumberParser.Parse("12", "\uFF13").Volume);
     }
+
+    [Theory]
+    [InlineData("１【電子限定特典付き】", 1)]
+    [InlineData("６【電子限定特典付き】", 6)]
+    [InlineData("スタジオカバナ９【電子限定特典付き】", 9)]
+    [InlineData("(1)【電子限定特典付】", 1)]
+    [InlineData("（２）【電子限定特典付き】", 2)]
+    [InlineData("(Volume) 隣のステラ（１）", 1)]
+    [InlineData("(Volume) やわはだに春雷(3)", 3)]
+    public void Reads_ebook_volume_editions_as_volumes(string input, int volume)
+    {
+        var result = ChapterNumberParser.Parse(input);
+        Assert.Null(result.Number);
+        Assert.Equal(volume, result.Volume);
+        Assert.False(result.IsOneShot);
+    }
+
+    [Theory]
+    [InlineData("隣のステラ（２）")]
+    [InlineData("（４）")]
+    [InlineData("twinkle episode ナイト")]
+    public void A_title_with_a_bracketed_number_and_no_marker_is_not_a_volume(string input)
+    {
+        var result = ChapterNumberParser.Parse(input);
+        Assert.Null(result.Volume);
+        Assert.True(result.IsOneShot);
+    }
+
+    [Fact]
+    public void A_chapter_with_a_bonus_note_stays_a_chapter()
+    {
+        var result = ChapterNumberParser.Parse("第3話【電子限定特典付き】");
+        Assert.Equal(3m, result.Number);
+        Assert.Null(result.Volume);
+    }
 }
