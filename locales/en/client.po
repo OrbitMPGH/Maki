@@ -12528,6 +12528,15 @@ msgstr "Open the search with these filters from now on"
 msgid "Open webtoon chapters in Continuous layout"
 msgstr "Open webtoon chapters in Continuous layout"
 
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Opening"
+msgstr "Opening"
+
+#: src/pages/reader/NextChapterHint.tsx
+msgid "Opening next chapter"
+msgstr "Opening next chapter"
+
 #: src/pages/HealthPage.tsx
 msgid "Opens a deletion review. Nothing is removed until you confirm it there."
 msgstr "Opens a deletion review. Nothing is removed until you confirm it there."

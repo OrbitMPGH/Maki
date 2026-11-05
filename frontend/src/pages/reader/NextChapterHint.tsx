@@ -11,6 +11,7 @@ const RING_LENGTH = 2 * Math.PI * RING_RADIUS
 export default function NextChapterHint({
   progress,
   pulling,
+  opening = false,
   leaving = false,
   atEnd,
   nextLabel,
@@ -18,6 +19,8 @@ export default function NextChapterHint({
 }: {
   progress: number
   pulling: boolean
+  /** The meter filled and the next chapter is loading. */
+  opening?: boolean
   /** The meter has emptied and the card is fading out. */
   leaving?: boolean
   /** Last chapter: the same card, but the ring never fills. */
@@ -26,13 +29,16 @@ export default function NextChapterHint({
   /** Replaces the generic wording when there's no next chapter label, as in the Discover preview. */
   fallbackLabel?: React.ReactNode
 }) {
-  const ready = !atEnd && pulling && progress >= 1
+  const ready = !atEnd && (opening || (pulling && progress >= 1))
   const state = atEnd ? 'end' : ready ? 'ready' : 'filling'
 
   let eyebrow: React.ReactNode = null
   let title: React.ReactNode
   if (atEnd) {
     title = <Trans>No more chapters</Trans>
+  } else if (opening) {
+    eyebrow = nextLabel ? <Trans context="next chapter gesture">Opening</Trans> : null
+    title = nextLabel || <Trans>Opening next chapter</Trans>
   } else if (nextLabel) {
     eyebrow = !pulling ? (
       <Trans context="next chapter gesture">Scroll</Trans>
@@ -55,7 +61,7 @@ export default function NextChapterHint({
   }
 
   const Glyph = ready ? IconCheck : pulling || atEnd ? IconArrowUp : IconArrowDown
-  const fill = atEnd ? 0 : Math.min(1, progress)
+  const fill = atEnd ? 0 : opening ? 1 : Math.min(1, progress)
 
   return (
     <div className="reader-card reader-next-chapter-hint" data-state={state} data-leaving={leaving || undefined}>

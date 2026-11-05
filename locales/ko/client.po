@@ -15263,6 +15263,15 @@ msgstr "이제부터 이 필터로 검색 열기"
 msgid "Open webtoon chapters in Continuous layout"
 msgstr "웹툰 챕터는 연속 레이아웃으로 열기"
 
+#: src/pages/reader/NextChapterHint.tsx
+msgctxt "next chapter gesture"
+msgid "Opening"
+msgstr ""
+
+#: src/pages/reader/NextChapterHint.tsx
+msgid "Opening next chapter"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Opens a deletion review. Nothing is removed until you confirm it there."

@@ -46,6 +46,15 @@ export const ReadyToRelease: Story = {
   },
 }
 
+/** The meter filled and the next chapter is loading: full, solid, whatever the input does now. */
+export const Opening: Story = {
+  args: { opening: true, progress: 0.2 },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvas.getByText('Opening')).toBeVisible()
+    await expect(canvasElement.querySelector('[data-state="ready"]')).not.toBeNull()
+  },
+}
+
 export const LastChapter: Story = {
   args: { atEnd: true, nextLabel: null, progress: 0 },
   play: async ({ canvas }) => {
