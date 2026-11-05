@@ -32,7 +32,7 @@ public class LibraryCompositionService(
     // Matches HousekeepingJob's DownloadQueue retention for Completed/Cancelled rows (Failed rows
     // are kept indefinitely), so reliability and monitor-catch counts never undercount completions
     // relative to failures older rows would still show.
-    private static readonly TimeSpan ReliabilityWindow = TimeSpan.FromDays(30);
+    internal static readonly TimeSpan ReliabilityWindow = TimeSpan.FromDays(30);
     private static readonly TimeSpan RequestResolvedWindow = TimeSpan.FromDays(90);
 
     public async Task<LibraryCompositionDto> GetAsync(CancellationToken ct)

@@ -120,6 +120,105 @@ public sealed class SourceOrderTests : IDisposable
         Assert.Equal([good, poor, fresh], await OrderAsync(db, seriesId));
     }
 
+    private void SeedDownloads(
+        int seriesId, int mappingId, int completed, int failed, string errorKey = "error.download.sourceError",
+        DateTime? queuedAt = null)
+    {
+        using var db = _db.NewContext();
+        for (var i = 0; i < completed + failed; i++)
+        {
+            var ok = i < completed;
+            db.DownloadQueue.Add(new DownloadQueueItem
+            {
+                SeriesId = seriesId, SourceMappingId = mappingId, QueuedAt = queuedAt ?? DateTime.UtcNow,
+                Status = ok ? QueueStatus.Completed : QueueStatus.Failed, ErrorKey = ok ? null : errorKey
+            });
+        }
+
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task A_source_that_keeps_failing_is_tried_last_whatever_its_quality()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        SeedDownloads(seriesId, good, completed: 0, failed: 4);
+        using var db = _db.NewContext();
+
+        Assert.Equal([poor, fresh, good], await OrderAsync(db, seriesId));
+    }
+
+    [Fact]
+    public async Task Failures_that_do_not_blame_the_source_do_not_demote_it()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        SeedDownloads(seriesId, good, completed: 0, failed: 4, errorKey: "error.download.disk");
+        using var db = _db.NewContext();
+
+        Assert.Equal([good, poor, fresh], await OrderAsync(db, seriesId));
+    }
+
+    [Fact]
+    public async Task Failures_inside_the_reliability_window_demote_a_source()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        SeedDownloads(seriesId, good, completed: 0, failed: 4, queuedAt: DateTime.UtcNow - LibraryCompositionService.ReliabilityWindow + TimeSpan.FromHours(1));
+        using var db = _db.NewContext();
+
+        Assert.Equal([poor, fresh, good], await OrderAsync(db, seriesId));
+    }
+
+    [Fact]
+    public async Task Failures_older_than_the_reliability_window_do_not_demote_a_source()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        SeedDownloads(seriesId, good, completed: 0, failed: 4, queuedAt: DateTime.UtcNow - LibraryCompositionService.ReliabilityWindow - TimeSpan.FromHours(1));
+        using var db = _db.NewContext();
+
+        Assert.Equal([good, poor, fresh], await OrderAsync(db, seriesId));
+    }
+
+    [Fact]
+    public async Task Completions_older_than_the_window_do_not_keep_a_failing_source_in_place()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        SeedDownloads(seriesId, good, completed: 20, failed: 0, queuedAt: DateTime.UtcNow - LibraryCompositionService.ReliabilityWindow - TimeSpan.FromDays(1));
+        SeedDownloads(seriesId, good, completed: 0, failed: 4);
+        using var db = _db.NewContext();
+
+        Assert.Equal([poor, fresh, good], await OrderAsync(db, seriesId));
+    }
+
+    [Fact]
+    public async Task A_source_that_fails_elsewhere_is_not_trusted_on_a_series_it_has_not_been_tried_on()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        using (var seed = _db.NewContext())
+        {
+            var root = seed.RootFolders.First();
+            var other = new Series { Title = "O", SortTitle = "o", FolderName = "O", RootFolderId = root.Id };
+            var mapping = new SourceMapping { SourceName = "good", SourceSeriesId = "o", Priority = 1 };
+            other.SourceMappings.Add(mapping);
+            seed.Series.Add(other);
+            seed.SaveChanges();
+            SeedDownloads(other.Id, mapping.Id, completed: 0, failed: 5);
+        }
+
+        using var db = _db.NewContext();
+
+        Assert.Equal([poor, fresh, good], await OrderAsync(db, seriesId));
+    }
+
+    [Fact]
+    public async Task Manual_order_ignores_download_failures()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Manual, null);
+        SeedDownloads(seriesId, poor, completed: 0, failed: 9);
+        using var db = _db.NewContext();
+
+        Assert.Equal([poor, good, fresh], await OrderAsync(db, seriesId));
+    }
+
     [Fact]
     public async Task A_series_set_to_manual_ignores_a_quality_default()
     {

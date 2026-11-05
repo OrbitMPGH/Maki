@@ -14,8 +14,11 @@ public static class SourceFailover
     /// Only failures that say something about the source. A challenge or a rate limit has its own
     /// cooldown and clears by itself, and a disk or page error would follow the item to any source.
     /// </summary>
-    public static bool CountsAgainstSource(string reasonKey) =>
-        reasonKey is DownloadFailureReason.SourceRejected or DownloadFailureReason.SourceError or DownloadFailureReason.Network;
+    public static bool CountsAgainstSource(string reasonKey) => SourceBlaming.Contains(reasonKey);
+
+    /// <summary>The reasons <see cref="CountsAgainstSource"/> accepts, for a query that has to filter on them.</summary>
+    public static readonly IReadOnlyList<string> SourceBlaming =
+        [DownloadFailureReason.SourceRejected, DownloadFailureReason.SourceError, DownloadFailureReason.Network];
 
     /// <param name="reasonKey">The key the failure being recorded classified as.</param>
     /// <param name="failureCount">The item's <c>RetryCount</c> including this failure.</param>
