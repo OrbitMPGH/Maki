@@ -11126,6 +11126,10 @@ msgstr "保持最新"
 msgid "Keep upcoming chapters"
 msgstr "保留后续章节"
 
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Keep upscaling every page while the chapter is open. Leaving cancels the rest."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Keeps taking better scoring copies until one scores {upgradeUntilScore}"
@@ -21974,6 +21978,10 @@ msgstr "系列的来源"
 msgid "The server is downloading it now. This page opens Maki by itself when it is done."
 msgstr "服务器正在下载。完成后，此页面会自动打开 Maki。"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "The server keeps working through every page of the open chapter, not only the next few, so fast stretches don't catch up with it. Pages left when you leave the chapter are cancelled."
+msgstr ""
+
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
 msgid "The server logs will say why."
@@ -24415,6 +24423,8 @@ msgid "Whole"
 msgstr "整页"
 
 #: src/components/notes/NotesPanel.tsx
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
 msgid "Whole chapter"
 msgstr ""
 

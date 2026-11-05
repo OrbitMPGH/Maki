@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ApiError, trackedFetch } from '../../api/client'
 import {
+  cancelServerEnhance,
   requestServerEnhance,
   serverEnhancedUrl,
   type EnhanceServer,
@@ -23,6 +24,7 @@ export interface ServerEnhance {
 }
 
 const MAX_PAGES = 32
+const MAX_CHAPTER_PAGES = 1000
 const DEBOUNCE_MS = 250
 const HUB_GRACE_MS = 10_000
 const POLL_MS = 5_000
@@ -52,6 +54,16 @@ interface Tracked {
   refused: boolean
 }
 
+/** The chapter's pages outside the window: from `from` to the end, then back from `from` to the start. */
+function chapterRest(from: number, pageCount: number, window: number[], limit: number): number[] {
+  const skip = new Set(window)
+  const rest: number[] = []
+  const start = Math.min(Math.max(0, from), pageCount)
+  for (let page = start; page < pageCount && rest.length < limit; page++) if (!skip.has(page)) rest.push(page)
+  for (let page = start - 1; page >= 0 && rest.length < limit; page--) if (!skip.has(page)) rest.push(page)
+  return rest
+}
+
 /**
  * Asks the server to upscale the reading window (current page first, at most 32) a moment after
  * each page change. With `only` set (Enhance on `auto`), only the window's pages in it are asked
@@ -61,7 +73,10 @@ interface Tracked {
  * 409 (tier switched off or model gone) stops asking for the rest of the visit. Null whenever
  * `model` is. Once the window runs past the last page, `next` names the next chapter's first pages,
  * queued behind the window so that chapter opens already upscaled; on `auto` they go along while
- * any page of the window is stretched.
+ * any page of the window is stretched. `whole` (the "Whole chapter" setting) queues the rest of the
+ * chapter behind the window the same way, pages ahead first; undefined means not known yet (the
+ * manifest is loading). The server's leftovers are cancelled when it turns off, when the reader
+ * unmounts and when the tab is closed.
  */
 export function useServerEnhance(
   chapterId: number,
@@ -70,6 +85,7 @@ export function useServerEnhance(
   pageVersion: string | undefined,
   only: ReadonlySet<number> | null = null,
   next: { chapterId: number; pages: number[] } | null = null,
+  whole: { from: number; pageCount: number } | null | undefined = null,
 ): ServerEnhance | null {
   const scope = model && pageVersion !== undefined ? `${chapterId}|${model}|${pageVersion}` : null
   const scopeRef = useRef(scope)
@@ -105,21 +121,34 @@ export function useServerEnhance(
     .filter((page, index, all) => all.indexOf(page) === index && (only === null || only.has(page)))
     .slice(0, MAX_PAGES)
     .join(',')
-  const room = MAX_PAGES - (windowKey ? windowKey.split(',').length : 0)
+  const windowCount = windowKey ? windowKey.split(',').length : 0
+  const wholeFrom = whole ? whole.from : -1
+  const wholePages = whole ? whole.pageCount : 0
+  const restKey = useMemo(
+    () =>
+      windowKey && wholePages > 0
+        ? chapterRest(wholeFrom, wholePages, windowKey.split(',').map(Number), MAX_CHAPTER_PAGES - windowCount).join(',')
+        : '',
+    [windowKey, windowCount, wholeFrom, wholePages],
+  )
+  const wholeOn = windowKey !== '' && wholePages > 0
+  const room = (wholeOn ? MAX_CHAPTER_PAGES : MAX_PAGES) - windowCount - (restKey ? restKey.split(',').length : 0)
   const nextChapterId = next && next.chapterId !== chapterId && room > 0 ? next.chapterId : null
   const nextKey = nextChapterId === null ? '' : next!.pages.slice(0, room).join(',')
   const connected = useHubConnected()
   const active = scope !== null && model !== null && !current.refused
+  const [revived, setRevived] = useState(0)
 
   // Re-runs on reconnect too: pushes sent while the socket was down are gone, so the window's
   // unfinished pages are asked about again.
   useEffect(() => {
     if (!active || !scope || !model || !windowKey) return
     const timer = setTimeout(() => {
-      const wanted = windowKey.split(',').map(Number).filter((page) => !SETTLED.has(statesRef.current.get(page)))
+      const asked = restKey ? `${windowKey},${restKey}` : windowKey
+      const wanted = asked.split(',').map(Number).filter((page) => !SETTLED.has(statesRef.current.get(page)))
       const ahead = nextChapterId !== null && nextKey ? { chapterId: nextChapterId, pages: nextKey.split(',').map(Number) } : null
       if (wanted.length === 0 && !ahead) return
-      requestServerEnhance(chapterId, model, wanted, ahead).then(
+      requestServerEnhance(chapterId, model, wanted, ahead, wholeOn).then(
         (response) => merge(scope, response.pages),
         (error: unknown) => {
           if (error instanceof ApiError && error.status === 409) refuse(scope)
@@ -127,7 +156,33 @@ export function useServerEnhance(
       )
     }, DEBOUNCE_MS)
     return () => clearTimeout(timer)
-  }, [active, scope, chapterId, model, windowKey, nextChapterId, nextKey, connected, merge, refuse])
+  }, [active, scope, chapterId, model, windowKey, restKey, wholeOn, nextChapterId, nextKey, connected, revived, merge, refuse])
+
+  // Unknown (a chapter's manifest loading) keeps the last answer, so turning to the next chapter
+  // does not cancel the pages already queued for it.
+  const wholeKnown = whole === undefined ? undefined : whole !== null && active
+  const wholeWas = useRef(false)
+  useEffect(() => {
+    if (wholeKnown === undefined) return
+    if (wholeWas.current && !wholeKnown) void cancelServerEnhance().catch(() => {})
+    wholeWas.current = wholeKnown
+  }, [wholeKnown])
+  useEffect(() => {
+    const onHide = () => {
+      if (wholeWas.current) void cancelServerEnhance().catch(() => {})
+    }
+    // Back from the back-forward cache with the queue cancelled: ask again.
+    const onShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setRevived((count) => count + 1)
+    }
+    window.addEventListener('pagehide', onHide)
+    window.addEventListener('pageshow', onShow)
+    return () => {
+      window.removeEventListener('pagehide', onHide)
+      window.removeEventListener('pageshow', onShow)
+      onHide()
+    }
+  }, [])
 
   useHubEvent<PageEnhancedEvent>(PAGE_ENHANCED, (event) => {
     const live = scopeRef.current

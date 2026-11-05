@@ -761,6 +761,31 @@ export const ServerEnhanceAutoUnstretched: Story = {
   },
 }
 
+const wholeAsked: { pages: number[]; wholeChapter?: boolean }[] = []
+
+/** Whole chapter: the window goes first, then every other page of the chapter, ahead before behind. */
+export const ServerEnhanceWholeChapter: Story = {
+  parameters: {
+    ...open(7721),
+    msw: [
+      serverMethod(7721, undefined, { enhanceWholeChapter: true }),
+      http.post(api('/reader/chapter/7721/enhance'), async ({ request }) => {
+        const body = (await request.json()) as { pages: number[]; wholeChapter?: boolean }
+        wholeAsked.push(body)
+        return HttpResponse.json({ pages: body.pages.map((page) => ({ page, state: 'queued' })) })
+      }),
+      http.get(api('/reader/chapter/7721/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
+    ],
+  },
+  play: async ({ canvas }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await waitFor(() => expect(wholeAsked.at(-1)?.pages).toHaveLength(18))
+    await waitFor(() => expect(wholeAsked.at(-1)?.wholeChapter).toBe(true))
+    await waitFor(() => expect(wholeAsked.at(-1)?.pages[0]).toBe(5))
+    await waitFor(() => expect(wholeAsked.at(-1)?.pages.slice(-5)).toEqual([4, 3, 2, 1, 0]))
+  },
+}
+
 const stretchedAsked: number[][] = []
 
 /** Auto with Sharp (server) at 200%: the page on screen is asked for first, then the pages ahead of the same size. */

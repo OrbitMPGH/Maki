@@ -103,6 +103,10 @@ screen. It is off until a reader turns it on. Library files are never modified.
 - **Working ahead.** Paged mode enhances the pages in the preload window. Continuous mode sizes its
   range by pixels instead of pages, so a chapter of many short slices is enhanced well down the
   strip and one of a few very tall slices only a page or two ahead, within what the device can hold.
+- **Whole chapter.** With a server method, the **Whole chapter** switch keeps the server going
+  through every page of the open chapter, not just the window: pages ahead first, then the ones
+  behind. A run of quick pages then finds the server already past them. Leaving the chapter or
+  closing the reader cancels what is left. On Auto it applies while the pages on screen are wanted.
 - **Fallbacks.** A server method shows a browser method on this device while its page is not ready,
   **Balanced** unless you pick **Light**, **Strong** or **None** (the plain page) under "While the
   server works" in the reader settings, or "Fallback" in a reading profile. It stays on for good

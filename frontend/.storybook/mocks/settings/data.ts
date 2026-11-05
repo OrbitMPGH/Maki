@@ -85,6 +85,7 @@ export const readerPrefs: ReaderPrefs = {
   enhanceSkipTiers: ['volume'],
   enhanceProgress: 'line',
   notesBeside: true,
+  enhanceWholeChapter: false,
 }
 
 export const readerSettings: ReaderSettings = {

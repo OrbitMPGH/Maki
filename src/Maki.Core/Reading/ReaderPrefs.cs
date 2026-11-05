@@ -86,7 +86,12 @@ public record ReaderPrefsSpec(
     /// </summary>
     string EnhanceProgress = ReaderPrefsSpec.EnhanceProgressDefault,
     /// <summary>Show a chapter's notes in the margin beside the page when the screen leaves room for them.</summary>
-    bool NotesBeside = true)
+    bool NotesBeside = true,
+    /// <summary>
+    /// With a server <see cref="EnhanceMethod"/>, keep upscaling every page of the open chapter
+    /// behind the reading window instead of only the window. What is left when the reader leaves is cancelled.
+    /// </summary>
+    bool EnhanceWholeChapter = false)
 {
     public const string ModePaged = "paged";
     public const string ModeDouble = "double";

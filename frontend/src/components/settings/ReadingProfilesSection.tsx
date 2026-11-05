@@ -519,6 +519,15 @@ function ProfileEditor({
           data={ENHANCE_PROGRESS_STYLES.map((style) => ({ value: style.value, label: renderLabel(style.label) }))}
         />
       )}
+      {prefs.enhance !== 'off' && isServerMethod(prefs.enhanceMethod) && (
+        <Switch
+          size="sm"
+          label={t`Whole chapter`}
+          description={t`The server keeps working through every page of the open chapter, not only the next few, so fast stretches don't catch up with it. Pages left when you leave the chapter are cancelled.`}
+          checked={prefs.enhanceWholeChapter}
+          onChange={(e) => set({ enhanceWholeChapter: e.currentTarget.checked })}
+        />
+      )}
 
       <Switch
         size="sm"

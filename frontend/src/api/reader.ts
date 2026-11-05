@@ -125,19 +125,31 @@ export function serverEnhancedUrlNow(chapterId: number, page: number, model: str
 export type ServerPageState = 'ready' | 'queued' | 'working' | 'failed' | 'skipped'
 
 /**
- * Asks the server to upscale a window of pages, current page first. At most 32 are taken; `next`
- * fills whatever room is left with the next chapter's pages, which are not answered here.
+ * Asks the server to upscale a window of pages, current page first. At most 32 are taken, or 1000
+ * with `wholeChapter`; `next` fills whatever room is left with the next chapter's pages, which are
+ * not answered here.
  */
 export function requestServerEnhance(
   chapterId: number,
   model: string,
   pages: number[],
   next: { chapterId: number; pages: number[] } | null = null,
+  wholeChapter = false,
 ) {
   return api<{ pages: { page: number; state: ServerPageState }[] }>(`/reader/chapter/${chapterId}/enhance`, {
     method: 'POST',
-    body: JSON.stringify({ model, pages, ...(next && { nextChapterId: next.chapterId, nextPages: next.pages }) }),
+    body: JSON.stringify({
+      model,
+      pages,
+      ...(next && { nextChapterId: next.chapterId, nextPages: next.pages }),
+      ...(wholeChapter && { wholeChapter }),
+    }),
   })
+}
+
+/** Drops this reader's pending server upscales. `keepalive` lets it go out while the tab closes. */
+export function cancelServerEnhance() {
+  return api<void>('/reader/enhance', { method: 'DELETE', keepalive: true })
 }
 
 // Chapters whose manifest this tab last got from the device's offline copy rather than the server.
