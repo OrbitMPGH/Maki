@@ -89,6 +89,27 @@ public class SourceScoutTests : IDisposable
         Assert.Equal(chapterId, Assert.Single(Samples()).ChapterId);
     }
 
+    [Fact]
+    public async Task A_source_sharing_no_chapter_with_the_others_is_measured_on_its_own_chapters()
+    {
+        _world.Seed();
+        _world.AggPages = UpgradeWorld.InlinePages(12, 700);
+        _world.OfficialPages = UpgradeWorld.InlinePages(40, 1600);
+        var chapters = Enumerable.Range(1, 4).Select(n => _world.Chapter(n, withFile: false).ChapterId).ToList();
+        using (var db = _world.Db.NewContext())
+        {
+            db.ChapterSourceLinks.RemoveRange(db.ChapterSourceLinks.Where(l => l.SourceMappingId == _world.AggMappingId && l.ChapterId != chapters[3]));
+            db.ChapterSourceLinks.RemoveRange(db.ChapterSourceLinks.Where(l => l.SourceMappingId == _world.OfficialMappingId && l.ChapterId == chapters[3]));
+            db.SaveChanges();
+        }
+
+        await Scout().RunNowAsync(_world.SeriesId, CancellationToken.None);
+
+        var agg = Assert.Single(Samples(), s => s.SourceMappingId == _world.AggMappingId);
+        Assert.Equal(chapters[3], agg.ChapterId);
+        Assert.Equal(12, agg.PageCount);
+    }
+
     [Theory]
     [InlineData(null, false)]
     [InlineData("false", false)]
