@@ -43,6 +43,7 @@
     "danger-fg": "Danger text on a danger tint. The theme's variant resolver hands it to every light-variant var(--danger) button, badge and alert, so call sites keep color=\"var(--danger)\". danger reads 4.3:1 on its own tint in dark; this lighter red reads 6.5:1. Light uses danger itself (4.8:1).",
     "danger-fill": "Fill for filled danger buttons (ConfirmDialog and every destructive confirm). White labels read 5.6:1 on it; danger itself is too light for them in dark. The same value as Light danger.",
     "watched": "Watched or read state. Kept apart from brand so a read row never looks selected. As text or a dot on surface and surface-2.",
+    "rating-safe": "The Safe content rating chip. Teal, so it never matches the ok green of the Completed status beside it. As text and a 45% outline on a 10% tint.",
     "suggestive": "The Suggestive content rating and the 65 to 79 score band. Olive, so it stays clear of warn. As text or a dot on surface and surface-2.",
     "suggestive-on": "Text or icon on a suggestive fill. Near-black in dark, white in Light.",
     "neutral": "Unknown or idle status; the fallback for any unmapped state. As text or a dot on surface and surface-2.",

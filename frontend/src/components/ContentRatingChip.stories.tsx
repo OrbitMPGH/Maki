@@ -12,7 +12,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Every rating is the same neutral outline; only the icon and the word differ. */
+/** Each rating is outlined in its own colour; Safe is teal, not the green of a Completed status. */
 export const EveryRating: Story = {
   render: () => (
     <Group gap={8}>
@@ -22,11 +22,13 @@ export const EveryRating: Story = {
     </Group>
   ),
   play: async ({ canvas }) => {
-    for (const label of ['Safe', 'Suggestive', 'Erotica', 'Pornographic']) {
+    const colours = new Set<string>()
+    for (const [label, rating] of [['Safe', 'safe'], ['Suggestive', 'suggestive'], ['Erotica', 'erotica'], ['Pornographic', 'pornographic']]) {
       const chip = await canvas.findByText(label)
-      await expect(chip).toHaveAttribute('data-quiet')
-      await expect(chip.getAttribute('style')).toBeNull()
+      await expect(chip).toHaveAttribute('data-content-rating', rating)
+      colours.add(getComputedStyle(chip).color)
     }
+    await expect(colours.size).toBe(4)
   },
 }
 

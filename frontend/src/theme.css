@@ -56,6 +56,7 @@
   --watched: #b197fc;
   --watched-on: #1a0f33;
   --suggestive: #b0bd52;
+  --rating-safe: #38c9a0;
   --suggestive-on: #1a1d06;
   --suggestive-soft: color-mix(in srgb, var(--suggestive) 15%, transparent);
   --neutral: #a6adbb;
@@ -441,6 +442,7 @@
   --watched: #7040bd;
   --watched-on: #ffffff;
   --suggestive: #657018;
+  --rating-safe: #0f7a64;
   --suggestive-on: #ffffff;
   --neutral: #606879;
   --neutral-on: #ffffff;
@@ -495,6 +497,7 @@
   --warn: #825c00;
   --danger: #b83029;
   --suggestive: #5d6716;
+  --rating-safe: #0d7360;
 }
 :root[data-theme='light'][data-ground='paper'][data-accent='blush'] {
   --brand-fg: #a63d60;
@@ -3196,8 +3199,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     opacity: 1;
   }
 }
-/* A library cover's menu sits at the end of the meta row on every device: the status disc holds the
-   top right and download marks the top left. A plain button, since the grid draws hundreds. */
+/* A library cover's menu: at the end of the meta row on touch, where it always shows and the row has
+   room; top left with a pointer (below). A plain button, since the grid draws hundreds. */
 .cover-card-menu,
 .cover-card-menu-anchor {
   top: auto;
@@ -3222,29 +3225,21 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   position: absolute;
   pointer-events: none;
 }
-/* With a pointer it only shows on hover or focus, and the row's count would lose its digits to a
-   touch-sized button, so it is smaller there. */
+/* With a pointer it only shows on hover or focus, in the top-left corner, so the meta row (count and
+   "N new" pill) never moves. That corner otherwise only holds the download or offline mark; the
+   menu steps right of it then. */
 @media (hover: hover) and (pointer: fine) {
   .cover-card-menu,
   .cover-card-menu-anchor {
-    bottom: 5px;
-    right: 8px;
+    top: 8px;
+    bottom: auto;
+    left: 8px;
+    right: auto;
     width: 24px;
     height: 24px;
   }
-  .library-card:hover:has(> .cover-card-menu) .cover-row,
-  .library-card:has(> .cover-card:focus-visible ~ .cover-card-menu) .cover-row,
-  .library-card:has(> .cover-card-menu:focus-visible, > .cover-card-menu[data-expanded]) .cover-row {
-    padding-inline-end: 24px;
-  }
-  /* A laptop card has no room for the count, the "N new" pill and the button ("1..."), so while the
-     button shows the count steps aside and the bar above stands in for it. */
-  @container (max-width: 7.5rem) {
-    .library-card:hover:has(> .cover-card-menu) .cover-row:has(> .cover-new) > :first-child,
-    .library-card:has(> .cover-card:focus-visible ~ .cover-card-menu) .cover-row:has(> .cover-new) > :first-child,
-    .library-card:has(> .cover-card-menu:focus-visible, > .cover-card-menu[data-expanded]) .cover-row:has(> .cover-new) > :first-child {
-      visibility: hidden;
-    }
+  .library-card:has(.cover-corner-left > .cover-state) > :is(.cover-card-menu, .cover-card-menu-anchor) {
+    left: 36px;
   }
   .library-card > .cover-card:focus-visible ~ .cover-card-menu {
     opacity: 1;
@@ -5479,6 +5474,27 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--ink-3);
   background: color-mix(in srgb, var(--app-bg) 45%, transparent);
   border-color: var(--border-strong);
+}
+/* Content rating beside the status chip: outlined in the rating's own colour, so it reads as a
+   second fact and never as the filled status. Safe is teal rather than the ok green Completed uses;
+   the rest escalate the way they always have. */
+.series-hero-status[data-content-rating] {
+  --tone: var(--ink-3);
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 10%, color-mix(in srgb, var(--app-bg) 45%, transparent));
+  border-color: color-mix(in srgb, var(--tone) 45%, transparent);
+}
+.series-hero-status[data-content-rating='safe'] {
+  --tone: var(--rating-safe);
+}
+.series-hero-status[data-content-rating='suggestive'] {
+  --tone: var(--suggestive);
+}
+.series-hero-status[data-content-rating='erotica'] {
+  --tone: var(--warn);
+}
+.series-hero-status[data-content-rating='pornographic'] {
+  --tone: var(--danger);
 }
 
 /* --- The same band, at modal scale ---------------------------------------- */
@@ -8637,6 +8653,7 @@ body.reader-open {
   --gap: 0px;
   position: relative;
   display: flex;
+  align-items: center;
   gap: var(--gap);
   height: 6px;
   border-radius: var(--radius-pill);
@@ -8654,6 +8671,7 @@ body.reader-open {
 .reader-scrub-segment {
   flex: 1;
   min-width: 0;
+  height: 100%;
   background: rgba(255, 255, 255, 0.24);
   transition: background-color var(--dur-fast) var(--ease);
 }
@@ -8686,7 +8704,11 @@ body.reader-open {
 .reader-scrub-segment[data-hover]:not([data-lit]) {
   background: rgba(255, 255, 255, 0.6);
 }
+/* The page on screen is a larger block, so where you are reads at a glance. */
 .reader-scrub-segment[data-current] {
+  flex-grow: 1.7;
+  height: 12px;
+  border-radius: 3px;
   background: var(--brand);
 }
 .reader-scrub-segment[data-hover][data-lit] {
