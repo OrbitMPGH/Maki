@@ -71,7 +71,7 @@ export default function NextChapterHint({
             strokeDashoffset={RING_LENGTH * (1 - fill)}
           />
         </svg>
-        <Glyph size={16} />
+        <Glyph size={16} className="reader-ring-glyph" />
       </span>
       <div className="reader-card-text">
         {eyebrow && <span className="reader-card-eyebrow">{eyebrow}</span>}

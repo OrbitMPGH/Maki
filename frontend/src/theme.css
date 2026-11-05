@@ -7762,17 +7762,20 @@ body.reader-open {
 }
 
 /* The reader's floating card, shared by the chapter banner and the next-chapter meter. Centred
-   with auto margins rather than left: 50%, which would cap its width at half the screen. */
+   with auto margins rather than left: 50%, which would cap its width at half the screen. Sized in
+   --rc, one design pixel that grows past 1280px wide so the card stays readable on a 4K screen
+   (1.35x at 2560, 1.8x at 3840). */
 .reader-card {
+  --rc: clamp(0.0625rem, 0.028rem + 0.035vw, 0.1125rem);
   inset-inline: 16px;
   z-index: var(--reader-overlay-z-index);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: calc(var(--rc) * 12);
   width: fit-content;
-  max-width: min(560px, calc(100% - 32px));
+  max-width: min(calc(var(--rc) * 560), calc(100% - 32px));
   margin-inline: auto;
-  padding: 10px 16px 10px 10px;
+  padding: calc(var(--rc) * 10) calc(var(--rc) * 16) calc(var(--rc) * 10) calc(var(--rc) * 10);
   border-radius: var(--radius-hero);
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(10, 10, 11, 0.88);
@@ -7782,7 +7785,7 @@ body.reader-open {
   pointer-events: none;
 }
 .reader-card:not(:has(> .reader-card-cover, > .reader-ring)) {
-  padding-inline-start: 14px;
+  padding-inline-start: calc(var(--rc) * 14);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .reader-card {
@@ -7790,21 +7793,21 @@ body.reader-open {
   }
 }
 .reader-card-cover {
-  width: 40px;
+  width: calc(var(--rc) * 40);
   aspect-ratio: 2 / 3;
   flex-shrink: 0;
   object-fit: cover;
-  border-radius: 5px;
+  border-radius: calc(var(--rc) * 5);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
 }
 .reader-card-text {
   display: grid;
-  gap: 1px;
+  gap: var(--rc);
   min-width: 0;
 }
 .reader-card-eyebrow {
   overflow: hidden;
-  font-size: var(--type-micro);
+  font-size: calc(var(--rc) * 12);
   font-weight: var(--fw-semibold);
   color: var(--brand-fg-on-art);
   white-space: nowrap;
@@ -7813,7 +7816,7 @@ body.reader-open {
 .reader-card-title {
   overflow: hidden;
   font-family: var(--font-display);
-  font-size: 1.1875rem;
+  font-size: calc(var(--rc) * 19);
   font-weight: var(--fw-bold);
   line-height: 1.1;
   letter-spacing: -0.01em;
@@ -7828,9 +7831,9 @@ body.reader-open {
   overflow-wrap: anywhere;
 }
 .reader-card-meta {
-  font-size: var(--type-micro);
+  font-size: calc(var(--rc) * 12);
   font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.62);
 }
 
 /* Bottom-of-strip meter (NextChapterHint). The ring is the toolbar's upscale ring at a larger
@@ -7850,8 +7853,8 @@ body.reader-open {
   position: relative;
   display: grid;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: calc(var(--rc) * 36);
+  height: calc(var(--rc) * 36);
   flex-shrink: 0;
   border-radius: 50%;
   transition: background-color var(--dur-fast) var(--ease);
@@ -7862,6 +7865,10 @@ body.reader-open {
   transform: rotate(-90deg);
   fill: none;
   stroke-width: 2.5;
+}
+.reader-ring-glyph {
+  width: calc(var(--rc) * 16);
+  height: calc(var(--rc) * 16);
 }
 .reader-ring-track {
   stroke: rgba(255, 255, 255, 0.14);
