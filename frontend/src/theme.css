@@ -2024,6 +2024,31 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     0 2px 6px rgba(0, 0, 0, 0.35);
   color: var(--tone);
 }
+/* Read progress wraps the status disc: a brand arc on a dark track just outside it, so one mark per
+   cover carries both facts. Read through drops the arc and turns the disc into the brand check. */
+.cover-state[data-tone='status'][data-read] {
+  position: relative;
+}
+.cover-state[data-tone='status'][data-read='part']::before {
+  content: '';
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  background: conic-gradient(var(--brand) var(--ring-pct), rgba(6, 7, 11, 0.72) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
+}
+.cover-state[data-tone='status'][data-read='all'] {
+  background: var(--brand);
+  color: var(--brand-on);
+}
+.cover-card .cover-state[data-tone='status'][data-read='all'][data-unmonitored] {
+  background: rgba(6, 7, 11, 0.84);
+  box-shadow:
+    inset 0 0 0 1.5px var(--brand),
+    0 2px 6px rgba(0, 0, 0, 0.35);
+  color: var(--brand);
+}
 /* The light theme's status colours are tuned for a pale ground; these sit on a dark disc. The
    unmonitored ring and glyph lift further than the others and sit on a denser disc, because the disc
    is all that separates them from the art. Composited over a white cover the disc is about

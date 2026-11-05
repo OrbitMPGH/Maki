@@ -1,6 +1,7 @@
 import { memo } from 'react'
 import {
   IconBellOff,
+  IconCheck,
   IconDeviceMobileCheck,
   IconDownload,
   IconEyeOff,
@@ -91,14 +92,18 @@ export const CoverCard = memo(function CoverCard({
     : total === 0
       ? t`No source has listed this series' chapters yet, so there is no total to count against.`
       : undefined
-  // Only a download in progress earns the corner, and it stands in for the read ring until it ends.
-  // Queued is a list-view and series-page fact.
+  // Only a download in progress earns the left corner; queued is a list-view and series-page fact.
   const downloading = series.downloadingCount > 0
   const downloadTip = downloading && download ? renderLabel(download.label) : null
+  // Read progress wraps the status disc, so a cover carries one mark for both. Read through turns
+  // the disc itself into the brand check.
+  const showsRead = readPct !== null && readPct > 0
+  const readThrough = showsRead && unread === 0
   const readTip = unread === 0 ? t`All downloaded chapters read` : t`${readChapterCount} of ${have} downloaded read`
   const notMonitoredTip = t`Not monitored`
   const mutedTip = t`Notifications muted`
-  const statusTip = series.monitored ? statusLabel : t`${statusLabel}, not monitored`
+  const statusOnly = series.monitored ? statusLabel : t`${statusLabel}, not monitored`
+  const statusTip = showsRead ? t`${statusOnly}. ${readTip}` : statusOnly
 
   return (
     <Link
@@ -166,16 +171,6 @@ export const CoverCard = memo(function CoverCard({
                 <IconDeviceMobileCheck size={13} />
               </span>
             )}
-            {!downloading && readPct !== null && readPct > 0 && (
-              <span
-                className="cover-ring"
-                data-complete={unread === 0 || undefined}
-                data-tip={readTip}
-                role="img"
-                aria-label={readTip}
-                style={{ '--ring-pct': `${readPct}%` } as React.CSSProperties}
-              />
-            )}
             {downloadTip && (
               <span className="cover-state" data-tone="info" data-tip={downloadTip} role="img" aria-label={downloadTip}>
                 <IconDownload size={13} />
@@ -212,12 +207,19 @@ export const CoverCard = memo(function CoverCard({
               className="cover-state"
               data-tone="status"
               data-unmonitored={!series.monitored || undefined}
+              data-read={readThrough ? 'all' : showsRead ? 'part' : undefined}
               data-tip={statusTip}
               role="img"
               aria-label={statusTip}
-              style={{ '--tone': statusColor(status.color), '--tone-on': statusOnColor(status.color) } as React.CSSProperties}
+              style={
+                {
+                  '--tone': statusColor(status.color),
+                  '--tone-on': statusOnColor(status.color),
+                  '--ring-pct': showsRead ? `${readPct}%` : undefined,
+                } as React.CSSProperties
+              }
             >
-              <StatusGlyph size={13} />
+              {readThrough ? <IconCheck size={13} /> : <StatusGlyph size={13} />}
             </span>
           </div>
         </div>

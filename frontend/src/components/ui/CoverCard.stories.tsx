@@ -33,7 +33,8 @@ export const FullyRead: Story = {
   args: { series: shiokaze },
   play: async ({ canvas }) => {
     await expect(canvas.queryByText(/new$/)).toBeNull()
-    await expect(await canvas.findByRole('img', { name: 'All downloaded chapters read' })).toBeInTheDocument()
+    const disc = await canvas.findByRole('img', { name: /\. All downloaded chapters read$/ })
+    await waitFor(() => expect(disc).toHaveAttribute('data-read', 'all'))
   },
 }
 
@@ -48,8 +49,8 @@ export const DownloadingAndBehind: Story = {
     await expect(
       await canvas.findByText((_, el) => el?.tagName === 'SPAN' && /^60( of |\/)88$/.test(el.textContent ?? '')),
     ).toBeVisible()
-    // The download holds the corner until it ends; the read ring waits.
-    await expect(canvas.queryByRole('img', { name: /downloaded read$/ })).toBeNull()
+    // The download takes the left corner; reading progress stays on the status disc.
+    await expect(await canvas.findByRole('img', { name: /downloaded read$/ })).toHaveAttribute('data-read', 'part')
   },
 }
 
@@ -57,7 +58,7 @@ export const NotMonitored: Story = {
   args: { series: neon },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('img', { name: 'Not monitored' })).toBeInTheDocument()
-    await expect(await canvas.findByRole('img', { name: /, not monitored$/ })).toHaveAttribute('data-unmonitored')
+    await expect(await canvas.findByRole('img', { name: /, not monitored(\.|$)/ })).toHaveAttribute('data-unmonitored')
   },
 }
 
