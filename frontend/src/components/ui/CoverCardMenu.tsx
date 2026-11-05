@@ -71,7 +71,7 @@ function CoverCardMenuDropdown({ series, onClose }: { series: SeriesDto; onClose
   const monitorMode = defaultMode && defaultMode !== 'None' ? defaultMode : 'All'
 
   return (
-    <Menu opened onChange={(opened) => !opened && onClose()} withinPortal position="bottom-end" shadow="md">
+    <Menu opened onChange={(opened) => !opened && onClose()} withinPortal position="bottom-start" shadow="md">
       <Menu.Target>
         <span className="cover-card-menu-anchor" aria-hidden />
       </Menu.Target>
