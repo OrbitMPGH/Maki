@@ -48,9 +48,9 @@ function mappedLabel(file: SeriesFileDto): string {
 
 const hasLinks = (file: SeriesFileDto) => file.mappedChapters.length > 0 || file.status === 'linked'
 const MAPPED_TOOLTIP_EVENTS = { hover: true, focus: true, touch: true }
-// The fixed columns take 714px; this leaves the file name about 200px, so a phone sees it and the
+// The fixed columns take 726px; this leaves the file name about 200px, so a phone sees it and the
 // parsed label before the table scrolls.
-const FILE_TABLE_MIN_WIDTH = 912
+const FILE_TABLE_MIN_WIDTH = 924
 
 export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const { t } = useLingui()
@@ -134,7 +134,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
         {selectMode && <Table.Th w={40}><VisuallyHidden><Trans>Select</Trans></VisuallyHidden></Table.Th>}
         <Table.Th><Trans>File</Trans></Table.Th>
         <Table.Th w={90}><Trans>Parsed</Trans></Table.Th>
-        <Table.Th w={144}><Trans>Status</Trans></Table.Th>
+        <Table.Th w={156}><Trans>Status</Trans></Table.Th>
         <Table.Th w={136}><Trans>Mapped to</Trans></Table.Th>
         <Table.Th w={84}><Trans>Size</Trans></Table.Th>
         <Table.Th w={148}><Trans>Quality</Trans></Table.Th>

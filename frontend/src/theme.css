@@ -6695,10 +6695,13 @@ tr:is(:hover, :focus-within) [data-row-action]:not(:disabled, [data-disabled]),
   white-space: normal;
   line-height: 1.25;
 }
-/* One width for "Vol.1" to "Vol.15", so the pills line up down the column. */
-.files-parsed-pill {
-  min-width: 3.75rem;
-  justify-content: center;
+/* One width for "Vol.1" to "Vol.15", so the pills line up down the table column. A phone card has
+   no column to line up with, and the extra width pushed its chapter list onto another line. */
+@media (min-width: 48em) {
+  .files-parsed-pill {
+    min-width: 3.75rem;
+    justify-content: center;
+  }
 }
 
 /* A table standing on the page gets a panel for its edge. The panel clips, so the header band and
