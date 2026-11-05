@@ -9,6 +9,7 @@ import {
   IconHeartFilled,
   IconPlus,
   IconIntersect,
+  IconLibrary,
   IconStar,
   IconStarFilled,
   IconUsers,
@@ -231,7 +232,7 @@ export const RecommendationCard = memo(function RecommendationCard({
 
         {owned ? (
           <span className="discover-corner" data-tip={t`In library`} aria-hidden="true">
-            <IconCheck size={16} />
+            <IconLibrary size={16} />
           </span>
         ) : saved ? (
           <span className="discover-corner" data-saved="true" data-tip={t`On your shortlist`} aria-hidden="true">
@@ -395,6 +396,8 @@ type EngineWhy = {
   text: string
   /** Reasons that name one of the reader's series split into the kind and the series itself. */
   seed?: { label: string; title: string; id: string | null; thumb: string | null }
+  /** The same reason said of a whole rail, for when every card in it would carry it. */
+  rail?: string
 }
 
 /** The strongest thing the engine can say about one pick, and the icon that says which kind it is. */
@@ -403,6 +406,7 @@ function engineWhy(item: RecommendationItem): EngineWhy {
     return {
       Glyph: IconAffiliate,
       text: relationPhrase(item.relationKind, item.relatedToTitle),
+      rail: relationPhrase(item.relationKind, item.relatedToTitle),
       seed: {
         label: relationLabel(item.relationKind),
         title: item.relatedToTitle,
@@ -416,6 +420,7 @@ function engineWhy(item: RecommendationItem): EngineWhy {
     return {
       Glyph: IconIntersect,
       text: now`Feels like ${becauseOfTitle}`,
+      rail: now`These feel like ${becauseOfTitle}`,
       seed: {
         label: now`Feels like`,
         title: becauseOfTitle,
@@ -430,9 +435,11 @@ function engineWhy(item: RecommendationItem): EngineWhy {
   // The crowd signals come after the item-specific ones on purpose: on the cohort rail every pick
   // has `coRead`, and a card repeating its own heading twenty times says nothing.
   if (item.coRead && item.coReadWithTitle) {
+    const finished = item.coReadWithTitle
     return {
       Glyph: IconUsers,
       text: coReadPhrase(item),
+      rail: now`Readers who finished ${finished} also finished these`,
       seed: {
         label: now`Fans of`,
         title: item.coReadWithTitle,
@@ -445,6 +452,20 @@ function engineWhy(item: RecommendationItem): EngineWhy {
   if (item.coRecommended) return { Glyph: IconUsers, text: now`Readers like you also recommended this` }
   if (item.tasteMatch) return { Glyph: IconHeartFilled, text: now`Close to your taste` }
   return { Glyph: IconIntersect, text: now`Similar feel` }
+}
+
+/**
+ * The reason every card in a rail shares, or null when any card differs. A rail seeded from one
+ * title (or one where the crowd pairs every pick with the same series) would otherwise print the
+ * same "Fans of X" under every poster.
+ */
+function sharedWhy(items: RecommendationItem[]): EngineWhy | null {
+  if (items.length < 2) return null
+  const key = (why: EngineWhy) => (why.seed && why.rail ? `${why.seed.label}|${why.seed.id ?? why.seed.title}` : null)
+  const first = engineWhy(items[0])
+  const firstKey = key(first)
+  if (firstKey == null) return null
+  return items.every((item) => key(engineWhy(item)) === firstKey) ? first : null
 }
 
 /**
@@ -471,6 +492,7 @@ export const EngineCard = memo(function EngineCard({
   onOpen,
   seedCoverUrl,
   savedFrom,
+  reasonInRail = false,
 }: {
   item: RecommendationItem
   inLibrarySeriesId: number | null
@@ -478,6 +500,8 @@ export const EngineCard = memo(function EngineCard({
   /** Cover of the library series the reason names. It stays recognisable when a long title is cut off. */
   seedCoverUrl?: string | null
   savedFrom?: ShortlistSource
+  /** The rail already states this card's reason, so the footer carries only the matched tags. */
+  reasonInRail?: boolean
 }) {
   const { t } = useLingui()
   const owned = inLibrarySeriesId != null
@@ -485,10 +509,10 @@ export const EngineCard = memo(function EngineCard({
   const { title } = item
   const { saved, usable, toggle } = useShortlistToggle(item.providerId, title, savedFrom)
   // Tags before genres: "Time Loop" says what a pick is, "Action" says what a third of the
-  // catalogue is. Two, because three at this width truncate to "Cl…", "Stud…", "High…".
+  // catalogue is. The chip row is one line tall and wraps, so only chips that fit whole show.
   // matchedTags is filtered against this series' spoiler flags by both recommendation paths.
   // Keep using that display-safe list rather than the detail view's full tag collection.
-  const chips = [...item.matchedTags, ...item.matchedGenres].slice(0, 2)
+  const chips = [...item.matchedTags, ...item.matchedGenres].slice(0, 3)
 
   return (
     <div className="cover-card discover-card engine-card">
@@ -516,7 +540,7 @@ export const EngineCard = memo(function EngineCard({
 
         {owned ? (
           <span className="discover-corner" data-tip={t`In library`} aria-hidden="true">
-            <IconCheck size={16} />
+            <IconLibrary size={16} />
           </span>
         ) : saved ? (
           <span className="discover-corner" data-saved="true" data-tip={t`On your shortlist`} aria-hidden="true">
@@ -536,36 +560,50 @@ export const EngineCard = memo(function EngineCard({
         </div>
       </div>
 
-      <div className="engine-why">
-        {seed ? (
-          <span className="engine-why-seed-row" title={text}>
-            {seedCoverUrl && (
-              <img className="engine-why-seed" src={seedCoverUrl} alt="" loading="lazy" decoding="async" />
-            )}
-            <span className="engine-why-seed-body">
-              <span className="engine-why-kind">
-                <Glyph size={12} />
-                <span>{seed.label}</span>
-              </span>
-              <span className="engine-why-seed-title">{seed.title}</span>
+      {reasonInRail ? (
+        chips.length > 0 && (
+          <div className="engine-why">
+            <span className="engine-why-chips">
+              {chips.map((c) => (
+                <span key={c} className="engine-chip" title={c}>
+                  {c}
+                </span>
+              ))}
             </span>
-          </span>
-        ) : (
-          <span className="engine-why-line" title={text}>
-            <Glyph size={13} />
-            <span className="engine-why-text">{text}</span>
-          </span>
-        )}
-        {!seed && chips.length > 0 && (
-          <span className="engine-why-chips">
-            {chips.map((c) => (
-              <span key={c} className="engine-chip" title={c}>
-                {c}
+          </div>
+        )
+      ) : (
+        <div className="engine-why">
+          {seed ? (
+            <span className="engine-why-seed-row" title={text}>
+              {seedCoverUrl && (
+                <img className="engine-why-seed" src={seedCoverUrl} alt="" loading="lazy" decoding="async" />
+              )}
+              <span className="engine-why-seed-body">
+                <span className="engine-why-kind">
+                  <Glyph size={12} />
+                  <span>{seed.label}</span>
+                </span>
+                <span className="engine-why-seed-title">{seed.title}</span>
               </span>
-            ))}
-          </span>
-        )}
-      </div>
+            </span>
+          ) : (
+            <span className="engine-why-line" title={text}>
+              <Glyph size={13} />
+              <span className="engine-why-text">{text}</span>
+            </span>
+          )}
+          {!seed && chips.length > 0 && (
+            <span className="engine-why-chips">
+              {chips.map((c) => (
+                <span key={c} className="engine-chip" title={c}>
+                  {c}
+                </span>
+              ))}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 })
@@ -591,20 +629,33 @@ export function EngineRailRow({
   savedFrom?: ShortlistSource
 }) {
   const seedCover = useSeedCover()
+  const shared = sharedWhy(items)
+  const sharedCover = shared ? seedCover(items[0]) : null
+  const SharedGlyph = shared?.Glyph
   return (
-    <Rail engine>
-      {items.map((item) => (
-        <div key={item.providerId} className="discover-rail-item">
-          <EngineCard
-            item={item}
-            inLibrarySeriesId={seriesIdFor(item)}
-            onOpen={onOpen}
-            seedCoverUrl={seedCover(item)}
-            savedFrom={savedFrom}
-          />
-        </div>
-      ))}
-    </Rail>
+    <>
+      {shared && SharedGlyph && (
+        <p className="engine-rail-reason">
+          {sharedCover && <img src={sharedCover} alt="" loading="lazy" decoding="async" />}
+          <SharedGlyph size={14} />
+          <span className="engine-rail-reason-text" title={shared.rail}>{shared.rail}</span>
+        </p>
+      )}
+      <Rail engine>
+        {items.map((item) => (
+          <div key={item.providerId} className="discover-rail-item">
+            <EngineCard
+              item={item}
+              inLibrarySeriesId={seriesIdFor(item)}
+              onOpen={onOpen}
+              seedCoverUrl={seedCover(item)}
+              savedFrom={savedFrom}
+              reasonInRail={shared != null}
+            />
+          </div>
+        ))}
+      </Rail>
+    </>
   )
 }
 

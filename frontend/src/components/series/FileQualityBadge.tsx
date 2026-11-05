@@ -31,8 +31,11 @@ const FORMAT_LABEL: Partial<Record<string, MessageDescriptor>> = {
  */
 export function FileQualityBadge({
   quality,
+  neutral = false,
 }: {
   quality: ChapterFileQualityDto | null | undefined
+  /** One outline style for every tier, for tables where colour is kept for the file's state. */
+  neutral?: boolean
 }) {
   const renderLabel = useLabel()
   const { t } = useLingui()
@@ -103,7 +106,8 @@ export function FileQualityBadge({
       }
     >
       <LightBadge
-        color={TIER_COLOR[tier]}
+        color={neutral ? 'var(--neutral)' : TIER_COLOR[tier]}
+        variant={neutral ? 'outline' : 'light'}
         rightSection={
           trusted ? (
             <IconLock size={9} aria-hidden />

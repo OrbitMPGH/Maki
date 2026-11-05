@@ -6,4 +6,4 @@ Header cells get an 8px bar (64px wide in the first column, 44px after); body ce
 
 **The consumer provides:** `columns` (match the real table) and `rows` (default 6).
 
-Use it in place of a spinner for any `panel-table`. Other loading states follow the same rule: keep labels, icons and layout in place and blank only the values (`StatTile` and `FigureStrip` take `loading` for this).
+Use it in place of a spinner for any `panel-table`. Other loading states follow the same rule: keep labels, icons and layout in place and blank only the values (`FigureStrip` takes `loading` for this).

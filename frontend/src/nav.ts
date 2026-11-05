@@ -25,6 +25,8 @@ export interface NavItem {
   path: string
   icon: Icon
   end?: boolean
+  /** Pages reached from this one that have no nav item of their own; they light it as its section. */
+  within?: string[]
 }
 
 export const NAV_SECTIONS: { label: MessageDescriptor; items: NavItem[] }[] = [
@@ -35,7 +37,7 @@ export const NAV_SECTIONS: { label: MessageDescriptor; items: NavItem[] }[] = [
       // their start page (see StartPageRedirect in App.tsx), not a page. That's also why neither
       // needs `end` any more, since nothing here prefix-matches anything else.
       { label: msg`Home`, path: '/home', icon: IconHome },
-      { label: msg`Library`, path: '/library', icon: IconLibrary },
+      { label: msg`Library`, path: '/library', icon: IconLibrary, within: ['/series/'] },
       { label: msg`Add series`, path: '/add', icon: IconPlus },
       { label: msg`Discover`, path: '/discover', icon: IconCompass },
       { label: msg`Import`, path: '/import', icon: IconFolderDown },
@@ -114,6 +116,11 @@ export function navSections({
 
 export function isActive(item: NavItem, pathname: string): boolean {
   return item.end ? pathname === item.path : pathname.startsWith(item.path)
+}
+
+/** isActive, plus the sub pages listed in `within`. Kept apart so page titles don't call a series "Library". */
+export function isInSection(item: NavItem, pathname: string): boolean {
+  return isActive(item, pathname) || (item.within?.some((p) => pathname.startsWith(p)) ?? false)
 }
 
 /**

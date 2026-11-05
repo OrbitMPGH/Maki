@@ -81,23 +81,6 @@ export function badgeFill(color: string): CSSProperties {
 }
 
 /**
- * Content ratings follow a green, yellow-green, yellow, red progression, which is deliberately not
- * what {@link statusToken} would give them: Suggestive gets its own olive rather than the amber it
- * shares with Hiatus, and it stays clear of the purple used for watched state.
- */
-const NSFW_TOKEN: Record<string, string> = {
-  safe: 'ok',
-  suggestive: 'suggestive',
-  erotica: 'warn',
-  pornographic: 'danger',
-}
-
-/** Token stem for a content rating, or undefined when the rating is unknown. */
-export function contentRatingToken(rating: string | null | undefined): string | undefined {
-  return rating ? NSFW_TOKEN[rating] : undefined
-}
-
-/**
  * How good a 0–100 catalogue score is, as both a Mantine colour (for `Badge`) and a token stem
  * (for the hero's score pill). One function rather than two so a band can't mean green in one
  * place and lime in the other.
@@ -299,11 +282,11 @@ export function trackerStatusVisual(status: string): StatusVisual {
   }
 }
 
-/** A tracker connection's dot/state: connected, configured but not connected, or not configured. */
+/** A tracker connection's dot/state: connected, set up but not connected, or not set up. */
 export function trackerConnectionVisual(connected: boolean, configured: boolean): StatusVisual {
   if (connected) return { color: 'green', label: msg`Connected`, Icon: IconLink }
   if (configured) return { color: 'red', label: msg`Not connected`, Icon: IconLinkOff }
-  return { color: 'gray', label: msg`Not configured`, Icon: IconLinkOff }
+  return { color: 'gray', label: msg`Not set up`, Icon: IconLinkOff }
 }
 
 /** A library file's link state against the series' chapters. */

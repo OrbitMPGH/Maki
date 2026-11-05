@@ -1,11 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Badge, Group, SimpleGrid, Stack, Text } from '@mantine/core'
 import { animate, motion, useReducedMotion } from 'motion/react'
+import { CINEMATIC, EASE, paced } from '../../lib/motion'
 import { Trans, Plural } from '@lingui/react/macro'
 import type { ActivityStats } from '../../api/hooks'
-import { formatNumber, formatReadingTime, monthName } from '../../format'
+import { formatNumber, formatTimeSpent, monthName } from '../../format'
 import { GENRE_LABELS } from '../../components/CatalogueFilters'
 import { useLabel } from '../../i18n-context'
+import { IconBrandMark } from '../../components/IconBrandMark'
 
 /** Staggered fade-up wrapper used by every slide; collapses to instant cuts under reduced motion. */
 function Reveal({ children, delay = 0 }: { children: ReactNode; delay?: number }) {
@@ -14,7 +16,7 @@ function Reveal({ children, delay = 0 }: { children: ReactNode; delay?: number }
     <motion.div
       initial={reduced ? false : { opacity: 0, y: 26 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.55, ease: 'easeOut' }}
+      transition={{ delay: paced(delay), duration: paced(CINEMATIC.fade), ease: EASE }}
     >
       {children}
     </motion.div>
@@ -30,8 +32,8 @@ function useCountUp(target: number): number {
       return
     }
     const controls = animate(0, target, {
-      duration: 1.6,
-      ease: 'easeOut',
+      duration: paced(CINEMATIC.countUp),
+      ease: EASE,
       onUpdate: (v) => setValue(Math.round(v)),
     })
     return () => controls.stop()
@@ -117,7 +119,10 @@ export interface RewindSlide {
   node: ReactNode
   /** A cover blurred full-bleed behind the slide. Slides without one keep the plain brand dark. */
   backdrop?: string | null
-  /** Covers tiled into a slow wall behind the slide instead of one blurred cover. */
+  /**
+   * Covers tiled into the sign-in page's tilted wall behind the slide, with the text set low on the
+   * left like its wordmark. Too few covers draw the sign-in page's accent shapes instead.
+   */
   mosaic?: string[]
 }
 
@@ -129,21 +134,28 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
   const covers = coversOf(stats)
   slides.push({
     key: 'title',
-    mosaic: covers.length >= 4 ? covers : undefined,
+    mosaic: covers.length >= 4 ? covers : [],
     node: (
-      <Stack align="center" gap="xs">
-        <Reveal>{eyebrow('Maki Rewind')}</Reveal>
-        <Reveal delay={0.25}>
-          <Text className="rewind-title">
-            <Trans>Your {label}</Trans>
-          </Text>
-        </Reveal>
-        <Reveal delay={0.55}>
-          <Text className="rewind-sub">
-            <Trans>Let's look back at what you read.</Trans>
-          </Text>
-        </Reveal>
-      </Stack>
+      <div className="auth-content">
+        <div className="auth-identity">
+          <Reveal>
+            <span className="brand-mark auth-brand-mark">
+              <IconBrandMark />
+            </span>
+          </Reveal>
+          <Reveal>{eyebrow('Maki Rewind')}</Reveal>
+          <Reveal delay={0.25}>
+            <h2 className="auth-wordmark">
+              <Trans>Your {label}</Trans>
+            </h2>
+          </Reveal>
+          <Reveal delay={0.55}>
+            <Text className="auth-tagline rewind-sub">
+              <Trans>Let's look back at what you read.</Trans>
+            </Text>
+          </Reveal>
+        </div>
+      </div>
     ),
   })
 
@@ -180,7 +192,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
 
   if (t.readingSeconds > 0) {
     const topByTime = stats.topByTime[0]
-    const topByTimeSpent = topByTime ? formatReadingTime(topByTime.seconds) : ''
+    const topByTimeSpent = topByTime ? formatTimeSpent(topByTime.seconds) : ''
     const topByTimeTitle = topByTime ? topByTime.title : ''
     slides.push({
       key: 'time',
@@ -189,7 +201,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
         <Stack align="center" gap="xs">
           <Poster url={topByTime?.coverUrl ?? null} />
           <Reveal>
-            <Text className="rewind-title">{formatReadingTime(t.readingSeconds)}</Text>
+            <Text className="rewind-title">{formatTimeSpent(t.readingSeconds)}</Text>
             <Text className="rewind-caption">
               <Trans comment="Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts">spent in the reader</Trans>
             </Text>
@@ -443,7 +455,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
                 {
                   id: 'in-the-reader',
                   value: t.readingSeconds,
-                  shown: formatReadingTime(t.readingSeconds),
+                  shown: formatTimeSpent(t.readingSeconds),
                 },
                 { id: 'downloaded', value: t.chaptersDownloaded },
                 { id: 'series-added', value: t.seriesAdded },

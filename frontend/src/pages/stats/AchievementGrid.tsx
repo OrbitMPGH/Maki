@@ -215,12 +215,12 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
               aria-label={achievement.name}
             />
             <Group justify="space-between" gap="xs">
-              <Text size="xs" c="var(--ink-3)" className="tnum">
+              <Text size="xs" c="var(--ink-3)">
                 {formatValue(achievement, achievement.value)}
               </Text>
               {next !== null && (
                 <Tooltip label={t`Next tier at ${nextValue}`}>
-                  <Text size="xs" c="var(--ink-3)" className="tnum">
+                  <Text size="xs" c="var(--ink-3)">
                     / {nextValue}
                   </Text>
                 </Tooltip>

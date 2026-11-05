@@ -215,7 +215,7 @@ export const SeriesRow = memo(function SeriesRow({
                   : undefined
             }
           >
-            {total > 0 ? `${have}/${total}` : have > 0 ? have : t`None listed`}
+            {total > 0 ? `${have}/${total}` : have > 0 ? have : t`No chapters`}
           </span>
         </div>
       </div>

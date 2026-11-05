@@ -588,11 +588,7 @@ public class SemanticRecommender(
                 // how far above that channel's own mean this row sits. A channel with no spread
                 // says nothing about any row, so it credits zero rather than dividing by nearly
                 // nothing.
-                var credit = scales is null
-                    ? cosine
-                    : scales[q].Deviation <= 0
-                        ? 0
-                        : (cosine - scales[q].Mean) / scales[q].Deviation;
+                var credit = Credit(scales, q, cosine);
 
                 if (credit > bestCredit)
                 {
@@ -740,9 +736,14 @@ public class SemanticRecommender(
         // returned, so calibrating on it set the bar at 1.95 where the page warranted 0.81 and a
         // near-duplicate of a seed scoring 1.15 went unnamed.
         var cutoff = AttributionCutoff([.. winners.Select(c => c.Distinctiveness)], _tuning);
+        var feelQueriesByRow = winners.ToDictionary(
+            c => c.Row, c => FeelQueries(cosines, scales, queries, c.Row, c.BestSeedQuery, c.Distinctiveness, cutoff));
+        var coReadSeedsByRow = coReadSeedByRow.Count > 0 && winners.Any(c => c.CoRead)
+            ? await CoReadSeedsForAsync(index, winners.Where(c => c.CoRead).ToList(), seedIds, seedWeights, ct)
+            : [];
         var results = await HydrateAsync(
             conn, index, winners, queries, genreWeight, tagProfile, vocab, Idf, CategoryWeight, tagTree,
-            cutoff, coReadSeedByRow, ct);
+            cutoff, coReadSeedByRow, feelQueriesByRow, coReadSeedsByRow, ct);
         logger.LogInformation(
             "Semantic reco returned {Count} of {Considered} scored candidates from {Queries} seed " +
             "quer(y/ies) in {Elapsed:F0}ms ({Injected} co-recommended and {CoReadInjected} co-read " +
@@ -1692,6 +1693,58 @@ public class SemanticRecommender(
     }
 
     /// <summary>
+    /// How much one query's cosine says about a row: the raw cosine, or under measured attribution
+    /// how far above that query's own mean it sits. A query with no spread credits nothing.
+    /// </summary>
+    private static double Credit(QueryScale[]? scales, int q, double cosine) =>
+        scales is null
+            ? cosine
+            : scales[q].Deviation <= 0
+                ? 0
+                : (cosine - scales[q].Mean) / scales[q].Deviation;
+
+    /// <summary>
+    /// The seed queries that may name a row after "Feels like", best first: the one scoring chose,
+    /// then every other titled seed that also clears <paramref name="cutoff"/> against the centroid.
+    /// Empty when the chosen one does not, since nothing below the best can clear a bar it missed.
+    /// </summary>
+    internal static List<int> FeelQueries(
+        float[][] cosines, QueryScale[]? scales, IReadOnlyList<SeedQuery> queries, int row,
+        int bestSeedQuery, double distinctiveness, double cutoff)
+    {
+        if (bestSeedQuery < 0 || distinctiveness <= cutoff || queries[bestSeedQuery].SeedTitle is null)
+        {
+            return [];
+        }
+
+        var centroid = double.NegativeInfinity;
+        for (var q = 0; q < queries.Count; q++)
+        {
+            if (queries[q].IsCentroid)
+            {
+                centroid = Credit(scales, q, cosines[q][row]);
+            }
+        }
+
+        var others = new List<(int Query, double Distinctiveness)>();
+        for (var q = 0; q < queries.Count; q++)
+        {
+            if (q == bestSeedQuery || queries[q].IsCentroid || queries[q].SeedTitle is null)
+            {
+                continue;
+            }
+
+            var gap = Credit(scales, q, cosines[q][row]) - centroid;
+            if (gap > cutoff)
+            {
+                others.Add((q, gap));
+            }
+        }
+
+        return [bestSeedQuery, .. others.OrderByDescending(o => o.Distinctiveness).Select(o => o.Query)];
+    }
+
+    /// <summary>
     /// One query channel's cosine distribution over the rows that survived the filter plan.
     /// <see cref="Deviation"/> is 0 when the channel has no spread at all, which only happens on a
     /// degenerate index but must not become a division.
@@ -1925,6 +1978,27 @@ public class SemanticRecommender(
     }
 
     /// <summary>
+    /// Every seed the co-read graph pairs with each co-read winner, strongest first, keyed by row.
+    /// </summary>
+    private async Task<Dictionary<int, List<long>>> CoReadSeedsForAsync(
+        VectorIndex index,
+        List<Candidate> winners,
+        IReadOnlyCollection<long> seedIds,
+        IReadOnlyDictionary<long, double>? seedWeights,
+        CancellationToken ct)
+    {
+        var graph = await coReadCache.GetAsync(ct);
+        if (graph is null)
+        {
+            return [];
+        }
+
+        var rowById = winners.ToDictionary(w => index.IdAt(w.Row), w => w.Row);
+        var byId = CoReadScorer.SeedsFor(graph, seedIds, seedWeights, coReadTuning, rowById.Keys.ToHashSet());
+        return byId.ToDictionary(kv => rowById[kv.Key], kv => kv.Value);
+    }
+
+    /// <summary>
     /// Rows the co-read graph vouches for that nothing else pooled, best-scoring first and capped.
     /// Same contract as <see cref="InjectGraphCandidates"/>, and it excludes that method's output
     /// too: a row both channels vouch for is already in, and letting it consume a slot here would
@@ -2065,6 +2139,8 @@ public class SemanticRecommender(
         TagMath.TagTree tagTree,
         double cutoff,
         IReadOnlyDictionary<int, long> coReadSeedByRow,
+        IReadOnlyDictionary<int, List<int>> feelQueriesByRow,
+        IReadOnlyDictionary<int, List<long>> coReadSeedsByRow,
         CancellationToken ct)
     {
         if (winners.Count == 0)
@@ -2077,6 +2153,8 @@ public class SemanticRecommender(
         var seedRows = await SeedRowsAsync(
             conn,
             winners.Where(w => w.CoRead).Select(w => coReadSeedByRow.GetValueOrDefault(w.Row))
+                .Concat(winners.Where(w => w.CoRead)
+                    .SelectMany(w => coReadSeedsByRow.GetValueOrDefault(w.Row) ?? []))
                 .Concat(queries.Select(q => q.SeedId ?? 0)),
             ct);
 
@@ -2127,6 +2205,12 @@ public class SemanticRecommender(
                 var feelThumb = feelSeed?.SeedId is { } feelId && seedRows.TryGetValue(feelId, out var feelRow)
                     ? feelRow.Thumb
                     : null;
+                var feelSeeds = feelSeed?.SeedTitle is null
+                    ? null
+                    : FeelReasonSeeds(feelQueriesByRow.GetValueOrDefault(winner.Row), queries, seedRows);
+                var coReadSeeds = coReadSeed is { } primary
+                    ? CoReadReasonSeeds(primary, coReadSeedsByRow.GetValueOrDefault(winner.Row), seedRows)
+                    : null;
 
                 byId[id] = new MangaBakaRecommendation(
                     id.ToString(CultureInfo.InvariantCulture),
@@ -2156,13 +2240,54 @@ public class SemanticRecommender(
                         : feelSeed.SeedId?.ToString(CultureInfo.InvariantCulture),
                     CoReadWithId: coReadSeed?.Id.ToString(CultureInfo.InvariantCulture),
                     BecauseOfThumbUrl: feelSeed?.SeedTitle is null ? null : feelThumb,
-                    CoReadWithThumbUrl: coReadSeed?.Thumb);
+                    CoReadWithThumbUrl: coReadSeed?.Thumb,
+                    FeelSeeds: feelSeeds,
+                    CoReadSeeds: coReadSeeds);
             }
         }
 
         // Preserve the ranking the selection produced; the IN query returns rows in whatever order
         // SQLite likes.
         return ids.Select(byId.GetValueOrDefault).OfType<MangaBakaRecommendation>().ToList();
+    }
+
+    /// <summary>
+    /// The "Feels like" candidates as card fields, in <see cref="FeelQueries"/> order, so the first
+    /// entry is always what <c>BecauseOfTitle</c> says.
+    /// </summary>
+    private static List<ReasonSeed>? FeelReasonSeeds(
+        List<int>? feelQueries, List<SeedQuery> queries,
+        IReadOnlyDictionary<long, (string Title, string? Thumb)> seedRows)
+    {
+        if (feelQueries is not { Count: > 0 })
+        {
+            return null;
+        }
+
+        return [.. feelQueries.Select(q => queries[q]).Where(q => q.SeedTitle is not null).Select(q => new ReasonSeed(
+            q.SeedId?.ToString(CultureInfo.InvariantCulture),
+            q.SeedTitle!,
+            q.SeedId is { } id && seedRows.TryGetValue(id, out var row) ? row.Thumb : null))];
+    }
+
+    /// <summary>
+    /// The co-read candidates as card fields: the strongest seed first, as before, then the other
+    /// seeds the graph pairs the pick with that the dump has a title for.
+    /// </summary>
+    private static List<ReasonSeed> CoReadReasonSeeds(
+        (long Id, string Title, string? Thumb) primary, List<long>? others,
+        IReadOnlyDictionary<long, (string Title, string? Thumb)> seedRows)
+    {
+        List<ReasonSeed> seeds = [new(primary.Id.ToString(CultureInfo.InvariantCulture), primary.Title, primary.Thumb)];
+        foreach (var id in others ?? [])
+        {
+            if (id != primary.Id && seedRows.TryGetValue(id, out var row))
+            {
+                seeds.Add(new ReasonSeed(id.ToString(CultureInfo.InvariantCulture), row.Title, row.Thumb));
+            }
+        }
+
+        return seeds;
     }
 
     private static async Task<Dictionary<long, (string Title, string? Thumb)>> SeedRowsAsync(

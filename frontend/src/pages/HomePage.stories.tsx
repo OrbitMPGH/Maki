@@ -142,7 +142,7 @@ export const GlanceWithStreaksOff: Story = {
   play: async ({ canvas }) => {
     const glance = await canvas.findByRole('region', { name: 'Last 5 weeks' })
     await expect(within(glance).getByText('Days read')).toBeVisible()
-    await expect(within(glance).queryByLabelText(/day streak/)).toBeNull()
+    await expect(within(glance).queryByLabelText(/Current streak/)).toBeNull()
   },
 }
 

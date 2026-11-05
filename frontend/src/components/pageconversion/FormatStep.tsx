@@ -1,4 +1,4 @@
-import { Checkbox, Radio, Stack, Text } from '@mantine/core'
+import { Checkbox, Divider, Input, Radio, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { PageConversionFormat, PageConversionSettings } from '../../api/pageConversion'
 
@@ -43,12 +43,18 @@ export function FormatStep({
       </Radio.Group>
 
       {value.format && (
-        <Checkbox
-          label={t`Keep PNG pages lossless`}
-          description={t`PNG pages are stored as lossless WebP at every stop, so no pixel changes. This saves little. Leave it off to let PNG pages follow the quality you choose.`}
-          checked={value.pngLossless}
-          onChange={(event) => onChange({ pngLossless: event.currentTarget.checked })}
-        />
+        <>
+          <Divider />
+          <Input.Wrapper label={t`PNG pages`} labelElement="div">
+            <Checkbox
+              mt="sm"
+              label={t`Keep PNG pages lossless`}
+              description={t`PNG pages are stored as lossless WebP at every stop, so no pixel changes. This saves little. Leave it off to let PNG pages follow the quality you choose.`}
+              checked={value.pngLossless}
+              onChange={(event) => onChange({ pngLossless: event.currentTarget.checked })}
+            />
+          </Input.Wrapper>
+        </>
       )}
 
       {!value.format && (

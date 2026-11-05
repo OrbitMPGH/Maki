@@ -21,13 +21,14 @@ export interface DateRange {
  * Descriptors rather than strings, because this module evaluates once: a rendered label would be
  * stuck in whichever language was active then. The caller renders them.
  */
-export const RANGE_OPTIONS: { value: RangePreset; label: MessageDescriptor }[] = [
-  { value: '30d', label: msg`30 days` },
-  { value: 'month', label: msg`This month` },
-  { value: '90d', label: msg`90 days` },
-  { value: '12m', label: msg`12 months` },
-  { value: 'year', label: msg`Year` },
-  { value: 'all', label: msg`All time` },
+/** `short` is the phone label: the six full labels need about 470px, a phone row has 360. */
+export const RANGE_OPTIONS: { value: RangePreset; label: MessageDescriptor; short: MessageDescriptor }[] = [
+  { value: '30d', label: msg`30 days`, short: msg({ message: '30d', comment: 'Abbreviated "30 days", a Stats range button on a phone' }) },
+  { value: 'month', label: msg`This month`, short: msg`Month` },
+  { value: '90d', label: msg`90 days`, short: msg({ message: '90d', comment: 'Abbreviated "90 days", a Stats range button on a phone' }) },
+  { value: '12m', label: msg`12 months`, short: msg({ message: '12m', comment: 'Abbreviated "12 months", a Stats range button on a phone' }) },
+  { value: 'year', label: msg`Year`, short: msg`Year` },
+  { value: 'all', label: msg`All time`, short: msg`All` },
 ]
 
 /** Local calendar date as yyyy-MM-dd. Not toISOString(), which converts to UTC first. */

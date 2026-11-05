@@ -28,7 +28,7 @@ const meta = {
   ],
   args: {
     emptyText: 'Nothing sits half read right now.',
-    items: [item(3, 40, 48, 20_160), item(6, 150, 53, 22_260), item(11, 20, 37, null), item(7, 12, 108, 45_360)],
+    items: [item(3, 40, 88, 20_160), item(6, 150, 203, 22_260), item(11, 20, 57, null), item(7, 12, 120, 45_360)],
   },
 } satisfies Meta<typeof MidwayList>
 
@@ -39,7 +39,7 @@ export const Default: Story = {}
 
 /** Without a pace to go on (no timed reading yet) the hint drops the time estimate. */
 export const NoEstimate: Story = {
-  args: { items: [item(11, 20, 37, null), item(7, 12, 108, null)] },
+  args: { items: [item(11, 20, 57, null), item(7, 12, 120, null)] },
 }
 
 export const Empty: Story = {

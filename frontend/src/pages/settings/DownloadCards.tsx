@@ -3,7 +3,7 @@ import { useEffect, useReducer, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
-import { Box, Button, Checkbox, Group, MultiSelect, Select, SimpleGrid, Stack, Switch, Text } from '@mantine/core'
+import { Box, Button, Checkbox, Group, MultiSelect, Select, Stack, Switch, Text } from '@mantine/core'
 import { IconAdjustments } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
@@ -292,7 +292,7 @@ export function DownloadQueueSection() {
         )
       }}
     >
-      <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" verticalSpacing="lg" mb="lg">
+      <Box className="settings-field-grid" data-pairs mb="lg">
         <SettingsNumberInput
           label={t`Concurrent chapter downloads`}
           min={1}
@@ -301,7 +301,7 @@ export function DownloadQueueSection() {
           onChange={setConcurrentChapters}
         />
         <SettingsNumberInput
-          label={t`Retry a failed download up to (attempts)`}
+          label={t`Retry attempts for a failed download`}
           description={t`0 turns retry off.`}
           min={0}
           max={20}
@@ -309,8 +309,8 @@ export function DownloadQueueSection() {
           onChange={setRetryAttempts}
         />
         <SettingsNumberInput
-          label={t`Give up on a chapter after (minutes)`}
-          description={t`0 means no limit.`}
+          label={t`Time limit per chapter`}
+          description={t`In minutes. 0 means no limit.`}
           min={0}
           max={1440}
           value={itemTimeoutMinutes}
@@ -318,14 +318,14 @@ export function DownloadQueueSection() {
           settle={clampItemTimeout}
         />
         <SettingsNumberInput
-          label={t`Don't auto-queue more than (chapters)`}
-          description={t`Bigger batches stay wanted for you to download by hand. 0 means always queue.`}
+          label={t`Auto-queue limit`}
+          description={t`The most new chapters queued at once. Bigger batches stay wanted for you to download by hand. 0 means always queue.`}
           min={0}
           max={1000}
           value={bulkHoldThreshold}
           onChange={setBulkHoldThreshold}
         />
-      </SimpleGrid>
+      </Box>
       <Switch
         label={t`Check quiet series less often`}
         checked={adaptiveRefresh}
@@ -378,7 +378,7 @@ export function SmartDownloadSection() {
         )
       }
     >
-      <Group align="flex-end" className="settings-field-row">
+      <Box className="settings-field-grid" data-pairs data-align="end">
         <SettingsNumberInput
           label={t`Fetch more when unread chapters drop to`}
           min={1}
@@ -393,7 +393,7 @@ export function SmartDownloadSection() {
           value={smartDownloadChapters}
           onChange={setSmartDownloadChapters}
         />
-      </Group>
+      </Box>
     </SettingsSection>
   )
 }
@@ -667,8 +667,8 @@ export function UpgradeScanSection() {
           onChange={setMaxProbesPerRun}
         />
         <SettingsNumberInput
-          label={t`Quiet period (days)`}
-          description={t`Skip a chapter this long after it was added or last upgraded.`}
+          label={t`Quiet period`}
+          description={t`Days to skip a chapter after it was added or last upgraded.`}
           min={0}
           max={365}
           value={quietPeriodDays}
@@ -676,7 +676,8 @@ export function UpgradeScanSection() {
         />
       </Group>
       <SettingsNumberInput
-        label={t`Trash retention (days)`}
+        label={t`Trash retention`}
+        description={t`Days to keep replaced files. 0 deletes them at the next cleanup.`}
         min={0}
         max={365}
         value={trashRetentionDays}
@@ -790,7 +791,8 @@ export function VolumeReleasesSection() {
       />
       <Group grow mb="md" align="flex-start">
         <SettingsNumberInput
-          label={t`Auto-grab size limit (MB)`}
+          label={t`Auto-grab size limit`}
+          suffix={t` MB`}
           description={t`Larger releases become proposals you approve by hand.`}
           min={0}
           max={102400}
@@ -818,7 +820,8 @@ export function VolumeReleasesSection() {
           disabled={!volumeSearch}
         />
         <SettingsNumberInput
-          label={t`Proposal expiry (days)`}
+          label={t`Proposal expiry`}
+          description={t`Days before a proposal you haven't approved expires.`}
           min={1}
           max={365}
           value={proposalExpiryDays}

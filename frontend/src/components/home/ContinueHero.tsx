@@ -1,7 +1,7 @@
 import { memo, type CSSProperties, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Skeleton } from '@mantine/core'
-import { IconPlayerPlay, IconPlayerTrackNext } from '../../lib/icons'
+import { IconBook, IconPlayerTrackNext } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { HomeReadingItem } from '../../api/hooks'
@@ -111,9 +111,10 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
   const resumePct = hasProgress ? Math.min(100, (item.page / item.pageCount) * 100) : 0
   // page 0 means the chapter was never opened, so "Resume" would be a lie.
   const started = item.page > 0
-  const lastRead = relativeTime(item.lastReadAt)
+  const lastRead = relativeTime(item.lastReadAt, 'narrow')
   const { seriesTitle, chapterLabel, unreadChapters, pageCount } = item
   const pageNumber = item.page + 1
+  const unreadLabel = plural(unreadChapters, { one: '# unread', other: '# unread' })
 
   return (
     <div className={item.coverAccent ? 'continue-hero has-accent' : 'continue-hero'} style={accentStyle(item)}>
@@ -152,7 +153,7 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
             </div>
           )}
 
-          <div className="continue-hero-chapter tnum">
+          <div className="continue-hero-chapter">
             <span>{chapterLabel}</span>
             {hasProgress && (
               <span className="continue-hero-pages">
@@ -161,6 +162,8 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
                 </Trans>
               </span>
             )}
+            {/* The phone's place for the count; the block under the bar is hidden there. */}
+            {unreadChapters > 0 && <span className="continue-hero-chapter-unread">{unreadLabel}</span>}
           </div>
 
           {hasProgress && (
@@ -177,13 +180,11 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
           )}
 
           {unreadChapters > 0 && (
-            <span className="continue-hero-unread tnum">
-              {plural(unreadChapters, { one: '# unread', other: '# unread' })}
-            </span>
+            <span className="continue-hero-unread">{unreadLabel}</span>
           )}
 
           <div className="continue-hero-actions">
-            <Button component={Link} to={`/read/${item.chapterId}`} leftSection={<IconPlayerPlay size={16} />}>
+            <Button component={Link} to={`/read/${item.chapterId}`} leftSection={<IconBook size={16} />}>
               {started ? <Trans>Resume</Trans> : <Trans>Start chapter</Trans>}
             </Button>
             <Button component={Link} to={`/series/${item.seriesId}`} variant="default">

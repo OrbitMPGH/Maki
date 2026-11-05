@@ -2,21 +2,28 @@ import {
   Badge,
   Button,
   Card,
+  type CollapseProps,
+  type ComboboxProps,
   type CSSVariablesResolver,
-  Drawer,
+  type DrawerProps,
   type MantineColorScheme,
   type MantineColorsTuple,
   type MantineThemeOverride,
-  Modal,
+  type MantineTransition,
+  type ModalProps,
   Notification,
   Pagination,
   Paper,
+  type PopoverProps,
+  type SegmentedControlProps,
   Table,
+  type TooltipProps,
   type VariantColorsResolver,
   createTheme,
   defaultVariantColorsResolver,
 } from '@mantine/core'
 import type { ReactNode } from 'react'
+import { DUR, EASE_CSS, pacedMs } from './lib/motion'
 
 const ModalPassthrough = ({ children }: { children?: ReactNode }) => children
 
@@ -338,8 +345,14 @@ export function createAppTheme(
     colors: { brand: accent, dark: ground },
     components: {
       ...themeBase.components,
-      Modal: Modal.extend({ defaultProps: { ...modalDefaults, closeButtonProps } }),
-      Drawer: Drawer.extend({ defaultProps: { closeButtonProps, attributes: dialogHeaderAttributes } }),
+      Modal: { defaultProps: (): Partial<ModalProps> => ({ ...modalDefaults(), closeButtonProps }) },
+      Drawer: {
+        defaultProps: (): Partial<DrawerProps> => ({
+          closeButtonProps,
+          attributes: dialogHeaderAttributes,
+          transitionProps: overlayTransition(DUR.medium),
+        }),
+      },
       Notification: Notification.extend({ defaultProps: { closeButtonProps } }),
       Pagination: Pagination.extend({
         defaultProps: paginationLabels && {
@@ -361,7 +374,20 @@ export interface ThemeLabels {
 // Mantine renders dialog headers as <header>, a second banner landmark next to the app shell's.
 const dialogHeaderAttributes = { header: { role: 'presentation' } }
 
-const modalDefaults = {
+/**
+ * Overlays move on the house curve and the token scale (lib/motion.ts) instead of Mantine's stock
+ * `ease`. These defaultProps are functions, which Mantine calls on every render, so a flip of
+ * "Faster animations" reaches the next overlay to open without rebuilding the theme. A
+ * `transitionProps` passed at the call site replaces the whole object, curve included. Combobox
+ * dropdowns (Select, Autocomplete) default to Mantine's 0 ms, so they get the Popover's timing below.
+ */
+const overlayTransition = (seconds: number, transition?: MantineTransition) => ({
+  ...(transition && { transition }),
+  duration: pacedMs(seconds),
+  timingFunction: EASE_CSS,
+})
+
+const modalDefaults = () => ({
   attributes: dialogHeaderAttributes,
   radius: 'lg',
   padding: 'lg',
@@ -375,7 +401,9 @@ const modalDefaults = {
     close: 'utility-modal-close',
     body: 'utility-modal-body',
   },
-}
+  // Mantine's own default names the transition, and this object replaces it rather than merging.
+  transitionProps: overlayTransition(DUR.medium, 'fade-down'),
+})
 
 const themeBase: MantineThemeOverride = {
   primaryColor: 'brand',
@@ -420,6 +448,7 @@ const themeBase: MantineThemeOverride = {
     lg: '0 12px 40px -8px rgba(0,0,0,.6)',
   },
   cursorType: 'pointer',
+  respectReducedMotion: true,
   components: {
     Card: Card.extend({
       defaultProps: { radius: 'lg', withBorder: true },
@@ -443,7 +472,27 @@ const themeBase: MantineThemeOverride = {
      * past the title and the content box could overflow on top of it. The content is a flex column
      * instead and only `.utility-modal-body` scrolls (theme.css).
      */
-    Modal: Modal.extend({ defaultProps: modalDefaults }),
+    Modal: { defaultProps: (): Partial<ModalProps> => modalDefaults() },
+    // Menu and HoverCard render a Popover and inherit this.
+    Popover: { defaultProps: (): Partial<PopoverProps> => ({ transitionProps: overlayTransition(DUR.base) }) },
+    Combobox: { defaultProps: (): Partial<ComboboxProps> => ({ transitionProps: overlayTransition(DUR.base) }) },
+    Tooltip: { defaultProps: (): Partial<TooltipProps> => ({ transitionProps: overlayTransition(DUR.fast) }) },
+    // Off Mantine's stock 200ms `ease` too. Disclosures and the segmented indicator are opened often
+    // enough that slow reads as lag.
+    Collapse: {
+      defaultProps: (): Partial<CollapseProps> => ({
+        transitionDuration: pacedMs(DUR.medium),
+        transitionTimingFunction: EASE_CSS,
+      }),
+    },
+    SegmentedControl: {
+      defaultProps: (): Partial<SegmentedControlProps> => ({
+        transitionDuration: pacedMs(DUR.medium),
+        transitionTimingFunction: EASE_CSS,
+      }),
+    },
+    // Toasts (@mantine/notifications); the curve is set in theme.css, since Mantine puts it inline.
+    Notifications: { defaultProps: () => ({ transitionDuration: pacedMs(DUR.medium) }) },
     Table: Table.extend({
       defaultProps: { verticalSpacing: 'sm', horizontalSpacing: 'md' },
     }),

@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { expect, fn, waitFor } from 'storybook/test'
+import { expect, fn, waitFor, within } from 'storybook/test'
+import { http, HttpResponse } from 'msw'
+import { api } from '../../../.storybook/mocks/api'
 import { librarySeries } from '../../../.storybook/mocks/home'
 import { CoverCard } from './CoverCard'
 
@@ -33,7 +35,10 @@ export const FullyRead: Story = {
   args: { series: shiokaze },
   play: async ({ canvas }) => {
     await expect(canvas.queryByText(/new$/)).toBeNull()
-    await expect(await canvas.findByRole('img', { name: 'All downloaded chapters read' })).toBeInTheDocument()
+    const disc = await canvas.findByRole('img', { name: /\. All downloaded chapters read$/ })
+    await waitFor(() => expect(disc).toHaveAttribute('data-read', 'all'))
+    // The ring closes around the status glyph instead of replacing it.
+    await expect(disc.style.getPropertyValue('--ring-pct')).toBe('100%')
   },
 }
 
@@ -44,9 +49,12 @@ export const Completed: Story = {
 export const DownloadingAndBehind: Story = {
   args: { series: ironPetal },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('60 of 88')).toBeVisible()
-    // The download holds the corner until it ends; the read ring waits.
-    await expect(canvas.queryByRole('img', { name: /downloaded read$/ })).toBeNull()
+    // Compact beside an "N new" pill, the long form otherwise.
+    await expect(
+      await canvas.findByText((_, el) => el?.tagName === 'SPAN' && /^60( of |\/)88$/.test(el.textContent ?? '')),
+    ).toBeVisible()
+    // The download takes the left corner; reading progress stays on the status disc.
+    await expect(await canvas.findByRole('img', { name: /downloaded read$/ })).toHaveAttribute('data-read', 'part')
   },
 }
 
@@ -54,7 +62,7 @@ export const NotMonitored: Story = {
   args: { series: neon },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('img', { name: 'Not monitored' })).toBeInTheDocument()
-    await expect(await canvas.findByRole('img', { name: /, not monitored$/ })).toHaveAttribute('data-unmonitored')
+    await expect(await canvas.findByRole('img', { name: /, not monitored(\.|$)/ })).toHaveAttribute('data-unmonitored')
   },
 }
 
@@ -89,7 +97,7 @@ export const NoChaptersListed: Story = {
     series: { ...graveRobber, totalChapters: null, wantedChapterCount: 0, knownChapterCount: 0, chapterFileCount: 0, readChapterCount: null },
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('No chapters listed')).toBeVisible()
+    await expect(await canvas.findByText('No chapters')).toBeVisible()
   },
 }
 
@@ -127,5 +135,52 @@ export const UnavailableOffline: Story = {
     await expect(await canvas.findByText('Not available offline')).toBeVisible()
     await expect(canvas.queryByText('11 new')).toBeNull()
     await waitFor(() => expect(canvas.getByRole('link')).toHaveAttribute('data-offline', 'unavailable'))
+  },
+}
+
+const notificationsSet = fn()
+
+/** The library grid's menu: a button beside the link, its items mounted only once it opens. */
+export const WithMenu: Story = {
+  args: { menu: true },
+  parameters: {
+    msw: [
+      http.get(api('/reader/series/:id/continue'), () => HttpResponse.json({ chapterId: 1012, page: 3 })),
+      http.post(api('/series/:id/notifications'), async ({ request }) => {
+        notificationsSet(((await request.json()) as { mode: string }).mode)
+        return HttpResponse.json({ notificationMode: 'Muted' })
+      }),
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    const trigger = await canvas.findByRole('button', { name: 'More options for Lanterns Over Kasumi' })
+    await expect(canvas.getByRole('link')).not.toContainElement(trigger)
+    await expect(body.queryByRole('menu')).toBeNull()
+    await userEvent.click(trigger)
+    await waitFor(() => expect(body.getByRole('menuitem', { name: 'Open series' })).toBeVisible())
+    await expect(await body.findByRole('menuitem', { name: 'Continue reading' })).toBeVisible()
+    await expect(body.getByRole('menuitem', { name: 'Stop monitoring' })).toBeVisible()
+    await userEvent.click(body.getByRole('menuitem', { name: 'Mute notifications' }))
+    await waitFor(() => expect(notificationsSet).toHaveBeenCalledWith('Muted'))
+    await waitFor(() => expect(body.queryByRole('menu')).toBeNull())
+  },
+}
+
+export const WithMenuNotMonitored: Story = {
+  args: { menu: true, series: { ...neon, notificationMode: 'Muted' } },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await canvas.findByRole('button', { name: /^More options for / }))
+    await expect(await body.findByRole('menuitem', { name: 'Monitor for new chapters' })).toBeVisible()
+    await expect(body.getByRole('menuitem', { name: 'Unmute notifications' })).toBeVisible()
+  },
+}
+
+export const WithMenuInSelectMode: Story = {
+  args: { menu: true, selectMode: true },
+  play: async ({ canvas }) => {
+    await canvas.findByRole('checkbox')
+    await expect(canvas.queryByRole('button', { name: /^More options for / })).toBeNull()
   },
 }

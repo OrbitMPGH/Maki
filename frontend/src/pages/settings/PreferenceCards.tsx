@@ -288,8 +288,8 @@ export function AppearanceSection() {
   )
 }
 
-/** The cover only flies inside a page transition, and fast mode only paces those two, so both grey
- * out when transitions are off. */
+/** The cover only flies inside a page transition, so it greys out when transitions are off. Fast mode
+ * paces every animation (the `--dur-*` tokens, overlays, page motion), so it stands on its own. */
 function MotionSwitches() {
   const { t } = useLingui()
   const [transitions, setTransitions] = useMotionPref('pageTransitions')
@@ -316,8 +316,8 @@ function MotionSwitches() {
           label={t`Moving covers`}
         />
         <Switch
-          checked={transitions && fast && !reduced}
-          disabled={reduced || !transitions}
+          checked={fast && !reduced}
+          disabled={reduced}
           onChange={(e) => setFast(e.currentTarget.checked)}
           label={t`Faster animations`}
         />

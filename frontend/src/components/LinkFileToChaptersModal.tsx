@@ -19,6 +19,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import { useChapters, useLinkChapters, useUnlinkChapters } from '../api/hooks'
 import type { ChapterDto, SeriesFileDto } from '../api/types'
+import { displayChapterTitle } from '../lib/chapterTitle'
 
 function chapterLabel(c: ChapterDto): string {
   if (!c.isOneShot && c.number === null && c.volume !== null) return now`Vol.${c.volume}`
@@ -235,9 +236,9 @@ export function LinkFileToChaptersModal({
                           <Text size="sm" className="tnum" style={{ whiteSpace: 'nowrap' }}>
                             {chapterLabel(c)}
                           </Text>
-                          {c.title && !c.isOneShot && (
+                          {!c.isOneShot && displayChapterTitle(c) && (
                             <Text size="sm" c="var(--ink-3)" truncate>
-                              {c.title}
+                              {displayChapterTitle(c)}
                             </Text>
                           )}
                         </Group>

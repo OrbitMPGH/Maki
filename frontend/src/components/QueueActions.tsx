@@ -198,7 +198,7 @@ export function QueueActions({ onClearQueue }: { onClearQueue?: () => void }) {
   return (
     <>
       {retryable && (
-        <Button variant="light" leftSection={<IconRefresh size={16} />} loading={retry.isPending} onClick={openRetry}>
+        <Button variant="default" leftSection={<IconRefresh size={16} />} loading={retry.isPending} onClick={openRetry}>
           <Trans>Retry failed</Trans>
         </Button>
       )}

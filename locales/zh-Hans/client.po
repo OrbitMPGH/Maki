@@ -14,6 +14,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #: src/components/pageconversion/RuleCard.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid " MB"
 msgstr " MB"
@@ -378,6 +379,11 @@ msgstr "{0, plural, other {# 个系列在其菜单中有自己的设置。}}"
 msgid "{0, plural, one {# skipped} other {# skipped}}"
 msgstr "{0, plural, other {已跳过 # 个}}"
 
+#. placeholder {0}: spoilers.length
+#: src/components/TagBuckets.tsx
+msgid "{0, plural, one {# spoiler tag} other {# spoiler tags}}"
+msgstr ""
+
 #. placeholder {0}: active.items.length
 #. placeholder {0}: items.length
 #: src/components/discover/DiscoverCatalogue.tsx
@@ -573,6 +579,16 @@ msgstr "{0, plural, other {显示全部 # 条}}"
 #, fuzzy
 msgid "{0, plural, one {Skipped: # file, {size}} other {Skipped: # files, {size}}}"
 msgstr "{0, plural, other {已跳过：# 个文件，{size}}}"
+
+#. placeholder {0}: spoilers.length
+#: src/components/TagBuckets.tsx
+msgid "{0, plural, one {Spoiler tag. Click to hide it again.} other {Spoiler tags. Click to hide them again.}}"
+msgstr ""
+
+#. placeholder {0}: spoilers.length
+#: src/components/TagBuckets.tsx
+msgid "{0, plural, one {Spoiler tag. Click to reveal it.} other {Spoiler tags. Click to reveal them.}}"
+msgstr ""
 
 #. placeholder {0}: parsed.skippedNonLibrary
 #: src/components/import/MihonImport.tsx
@@ -862,6 +878,10 @@ msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters dow
 msgstr "{chaptersDownloaded, plural, other {已下载章节}}"
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "{chaptersHave}/{chaptersCounted} downloaded"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{chaptersLeft} at your paged pace, {basis}."
 msgstr "按你翻页阅读的速度，还剩 {chaptersLeft}，{basis}。"
@@ -1121,9 +1141,12 @@ msgid "{created, plural, one {# series added} other {# series added}}"
 msgstr "{created, plural, other {已添加 # 个系列}}"
 
 #: src/components/home/ReadingWeeks.tsx
-#, fuzzy
-msgid "{currentStreak, plural, one {# day streak} other {# day streak}}"
-msgstr "{currentStreak, plural, other {连续阅读 # 天}}"
+msgid "{currentStreak, plural, one {#-day streak} other {#-day streak}}"
+msgstr ""
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "{currentStreak, plural, one {Current streak: # day} other {Current streak: # days}}"
+msgstr ""
 
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
@@ -1252,9 +1275,8 @@ msgid "{existing, plural, one {# already in the library} other {# already in the
 msgstr "{existing, plural, other {# 个已在资料库中}}"
 
 #: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "{exposed} seen elsewhere"
-msgstr "{exposed} 个在其他地方看过"
+msgid "{exposed} read or watched elsewhere"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -1282,6 +1304,14 @@ msgstr "{fileCount, plural, other {# 个文件}}"
 msgid "{fileCount, plural, one {# single file} other {# single files}}"
 msgstr "{fileCount, plural, other {# 个单独的文件}}"
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk} other {# chapters have no file on disk}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{fileName} replaced {filesText}"
@@ -1291,6 +1321,10 @@ msgstr "{fileName} 替换了 {filesText}"
 #, fuzzy
 msgid "{files, plural, one {{used} of {limit}, # page} other {{used} of {limit}, # pages}}"
 msgstr "{files, plural, other {{used} / {limit}，# 页}}"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "{finalVolume} vol."
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -1399,9 +1433,8 @@ msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} li
 msgstr "{haveCount} / {totalCount, plural, other {# 个章节}}已列出，但没有想要的"
 
 #: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
-msgstr "{haveCount} / {totalCount, plural, other {# 个想要的章节}}"
+msgid "{haveCount} / {totalCount, plural, one {# wanted} other {# wanted}}"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #, fuzzy
@@ -1586,15 +1619,18 @@ msgstr ""
 msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 msgstr "{linkingTotal, plural, other {已为 # 个系列找到来源并关联文件}}"
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
+msgstr ""
+
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
 msgid "{lone, plural, one {# file with no number} other {# files with no number}}"
 msgstr "{lone, plural, other {# 个没有编号的文件}}"
 
 #: src/components/home/ReadingWeeks.tsx
-#, fuzzy
-msgid "{longestStreak, plural, one {Today counts. Best: # day} other {Today counts. Best: # days}}"
-msgstr "{longestStreak, plural, other {今天计入。最长纪录：# 天}}"
+msgid "{longestStreak, plural, one {You read today. Longest streak: # day} other {You read today. Longest streak: # days}}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -1676,6 +1712,14 @@ msgstr "{misses, plural, other {失败中：连续未命中 # 次}}"
 #, fuzzy
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 msgstr "{missingCount, plural, other {新增 # 个你没有的章节}}"
+
+#: src/components/SeriesFilesSection.tsx
+msgid "{missingCount, plural, one {The file listed for this series is missing from disk.} other {All # files listed for this series are missing from disk.}}"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+msgid "{missingCount} of {fileCount} files listed for this series are missing from disk."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -1807,6 +1851,10 @@ msgstr ""
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 msgstr "{notWanted, plural, other {另有 # 个列出，但不想要}}"
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{offNumbering, plural, one {# of them has a decimal number or none, like an extra or a special.} other {# of them have a decimal number or none, like extras or specials.}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{ok, plural, one {Archived # series} other {Archived # series}}"
@@ -1907,9 +1955,8 @@ msgid "{profileCount, plural, one {Scored in # profile} other {Scored in # profi
 msgstr "{profileCount, plural, other {已在 # 个配置中计分}}"
 
 #: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "{pushingDown} kept out of your taste"
-msgstr "{pushingDown} 个被排除在品味之外"
+msgid "{pushingDown} pushing similar titles down"
+msgstr ""
 
 #: src/pages/settings/PageConversionSection.tsx
 msgid "{queued, plural, one {# file waiting to be converted. A chapter someone is reading is converted once they stop.} other {# files waiting to be converted. A chapter someone is reading is converted once they stop.}}"
@@ -1981,6 +2028,10 @@ msgstr "已读下载章节 {readChapterCount}/{have}"
 #, fuzzy
 msgid "{readCount, plural, one {# chapter read} other {# chapters read}}"
 msgstr "{readCount, plural, other {已读 # 章}}"
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{readCount, plural, one {You have finished # chapter.} other {You have finished # chapters.}}"
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -2246,9 +2297,12 @@ msgid "{seriesAdded, plural, one {series added} other {series added}}"
 msgstr "{seriesAdded, plural, other {已添加系列}}"
 
 #: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
-msgstr "{seriesChapterCount, plural, other {已读 {chaptersRead}/# 个章节}}"
+msgid "{seriesChapterCount, plural, one {{chaptersRead} of # read} other {{chaptersRead} of # read}}"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "{seriesChapterCount, plural, one {all # read} other {all # read}}"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/TagManagerModal.tsx
@@ -2306,9 +2360,8 @@ msgid "{siteName} languages"
 msgstr "{siteName}的语言"
 
 #: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
-msgstr "{size, plural, other {# 个系列，占此视图的 {shareLabel}，{coherenceWord}}}"
+msgid "{size, plural, one {# series ({shareLabel}), {coherenceWord}} other {# series ({shareLabel}), {coherenceWord}}}"
+msgstr ""
 
 #: src/components/pageconversion/CompareStep.tsx
 #, fuzzy
@@ -2422,6 +2475,10 @@ msgstr "{start} 至 {end}"
 msgid "{statusLabel}, not monitored"
 msgstr "{statusLabel}，未监控"
 
+#: src/components/ui/CoverCard.tsx
+msgid "{statusOnly}. {readTip}"
+msgstr ""
+
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
 msgid "{stop}. {hint}"
@@ -2431,11 +2488,6 @@ msgstr "{stop}。{hint}"
 #, fuzzy
 msgid "{stopKind, select, early {When you stop, it is usually early in, around {stopPointPct} of the way through.} midway {When you stop, it is usually midway in, around {stopPointPct} of the way through.} late {When you stop, it is usually late in, around {stopPointPct} of the way through.} other {}}"
 msgstr "{stopKind, select, early {你通常会在系列前段停下，大约读到 {stopPointPct}。} midway {你通常会在系列中途停下，大约读到 {stopPointPct}。} late {你通常会在系列后段停下，大约读到 {stopPointPct}。} other {}}"
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "{stopPercent} in"
-msgstr "位于 {stopPercent}"
 
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
@@ -2605,6 +2657,15 @@ msgstr "{total, plural, other {显示全部 # 项}}"
 msgid "{total, plural, one {Wanted for {spanLabel}: {wantedCount} of # chapter} other {Wanted for {spanLabel}: {wantedCount} of # chapters}}"
 msgstr "{total, plural, other {{spanLabel} 想要 {wantedCount}/# 个章节}}"
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{totalChapters, plural, one {MangaBaka lists # chapter.} other {MangaBaka lists # chapters.}}"
+msgstr ""
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{totalChapters, plural, one {You set the total to # chapter.} other {You set the total to # chapters.}}"
+msgstr ""
+
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
@@ -2830,9 +2891,8 @@ msgid "{weak, plural, one {# more matches a file by name only. Open it to compar
 msgstr ""
 
 #: src/components/home/ReadingWeeks.tsx
-#, fuzzy
-msgid "{weekChapters, plural, one {# chapter this week} other {# chapters this week}}"
-msgstr "{weekChapters, plural, other {本周 # 个章节}}"
+msgid "{weekChapters, plural, one {# read this week} other {# read this week}}"
+msgstr ""
 
 #: src/pages/stats/charts/HourMatrix.tsx
 #, fuzzy
@@ -2944,6 +3004,10 @@ msgstr "磁盘上有 <0>{seriesCount, plural, other {# 个系列}}</0>，共 <1>
 msgid "<0>{sub}</0> lists sub-chapters (1.1, 1.2, …) where <1>{whole}</1> lists whole chapters for the same content, so both appear as separate rows below."
 msgstr "<0>{sub}</0> 列出子章节（1.1、1.2、……），<1>{whole}</1> 列出相同内容的完整章节，因此两者会作为单独的行显示在下方。"
 
+#: src/pages/stats/sections/ReadingSection.tsx
+msgid "<0>{time}</0> of reading<1>, no chapter finished yet.</1>"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "<0>Excluded from taste</0> keeps a shelf title out of the ranking. Reading history is untouched."
@@ -2973,6 +3037,10 @@ msgstr "<0>点踩</0> 和 4 分及以下的评分会降低与被你拒绝的标�
 #, fuzzy
 msgid "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
 msgstr "<0>点赞</0> 会计入你的品味。相似标题的排名会更高。"
+
+#: src/format.ts
+msgid "<1m"
+msgstr ""
 
 #: src/pages/stats/charts/LeanBars.tsx
 #, fuzzy
@@ -3016,11 +3084,6 @@ msgstr "0 表示在下一次定期清理时永久删除。"
 #, fuzzy
 msgid "0 means no cap."
 msgstr "0 表示不设上限。"
-
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "0 means no limit."
-msgstr "0 表示不限制。"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -3072,6 +3135,11 @@ msgstr "每页 100 个"
 msgid "12 months"
 msgstr "12 个月"
 
+#. Abbreviated "12 months", a Stats range button on a phone
+#: src/pages/stats/StatsRange.ts
+msgid "12m"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "18+"
@@ -3092,6 +3160,11 @@ msgstr "每页 25 个"
 msgid "30 days"
 msgstr "30 天"
 
+#. Abbreviated "30 days", a Stats range button on a phone
+#: src/pages/stats/StatsRange.ts
+msgid "30d"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "50 / page"
@@ -3106,6 +3179,11 @@ msgstr "每页 75 个"
 #, fuzzy
 msgid "90 days"
 msgstr "90 天"
+
+#. Abbreviated "90 days", a Stats range button on a phone
+#: src/pages/stats/StatsRange.ts
+msgid "90d"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -3722,6 +3800,7 @@ msgstr "聚合站"
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/stats/StatsRange.ts
 #, fuzzy
 msgid "All"
 msgstr "全部"
@@ -3793,11 +3872,6 @@ msgstr "所有图书馆"
 #, fuzzy
 msgid "All optional. Maki downloads from its own sources without any of these. Open one to fill it in."
 msgstr "全部为可选项。即使不配置这些，Maki 也能通过自带来源下载。打开一项即可填写。"
-
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "all read"
-msgstr "全部已读"
 
 #: src/components/QueueActions.tsx
 #, fuzzy
@@ -4523,9 +4597,8 @@ msgid "Auto-grab"
 msgstr "自动抓取"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Auto-grab size limit (MB)"
-msgstr "自动抓取大小上限（MB）"
+msgid "Auto-grab size limit"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -4542,6 +4615,10 @@ msgstr "自动匹配已在运行。"
 #, fuzzy
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "自动匹配仍在运行。很快就会空闲。"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Auto-queue limit"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -4606,6 +4683,10 @@ msgstr "已避开"
 #, fuzzy
 msgid "Back"
 msgstr "返回"
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Back in recommendations since {until}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -4830,11 +4911,6 @@ msgstr "最佳质量优先"
 #, fuzzy
 msgid "Best quality first compares a source's tier before its measured quality, in the order the series' upgrade profile ranks tiers."
 msgstr "最佳质量优先会先比较来源的层级，再比较其实测质量，层级顺序以该系列的升级配置为准。"
-
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Bigger batches stay wanted for you to download by hand. 0 means always queue."
-msgstr "较大的批次会保持为想要状态，由你手动下载。0 表示始终加入队列。"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -5700,6 +5776,14 @@ msgid "Chapters known"
 msgstr "已知章节"
 
 #: src/components/SourceMappingsSection.tsx
+msgid "Chapters last checked {checked}"
+msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Chapters never checked"
+msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Chapters not listed by another enabled source will be removed. Files downloaded from this source will be detached so they cannot be read as the correct chapter."
 msgstr "其他已启用来源未列出的章节将被移除。从此来源下载的文件会取消关联，避免被当作正确章节读取。"
@@ -5758,6 +5842,22 @@ msgstr "每次获取的章节数"
 #, fuzzy
 msgid "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
 msgstr "文件具有这些质量之一的章节将保持原样显示。数字版卷通常已经很干净。"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters whose file the last health scan couldn't find on disk."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters with no file on disk, leaving out files that were deleted on purpose."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters with Wanted switched on, downloaded or not."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Chapters you want that aren't on disk yet."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -5871,6 +5971,10 @@ msgstr "已检查，未转换"
 msgid "Checking for a new metadata snapshot"
 msgstr "正在检查新的元数据快照"
 
+#: src/pages/HealthPage.tsx
+msgid "Checks on the server and the library, and the repairs they found."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -5896,6 +6000,10 @@ msgstr "选择匹配项"
 #, fuzzy
 msgid "Choose a root folder"
 msgstr "选择根文件夹"
+
+#: src/pages/ImportPage.tsx
+msgid "Choose a root folder first"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -6092,9 +6200,8 @@ msgid "Close Rewind"
 msgstr "关闭 Rewind"
 
 #: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Close to your reading in taste space"
-msgstr "在品味空间中与你的阅读偏好接近"
+msgid "Close to what you read"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -6343,6 +6450,10 @@ msgstr "在「记录」页面连接 {label} 即可从中导入。"
 msgid "Connect a tracker first"
 msgstr "请先连接跟踪器"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Connect a tracker to use Sync now."
+msgstr ""
+
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Connect accounts on the Scrobble page."
@@ -6407,11 +6518,6 @@ msgstr "连接"
 msgid "Consider disabling one of the two source mappings; the warning clears on the next refresh."
 msgstr "可以考虑禁用两个来源映射中的一个；警告会在下次刷新时消失。"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "consistent"
-msgstr "一致"
-
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Contained in a volume/compilation file"
@@ -6424,9 +6530,8 @@ msgid "Content"
 msgstr "内容"
 
 #: src/components/CatalogueFilters.tsx
-#: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/ContentRatingChip.tsx
 #: src/components/discover/DiscoverGlance.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -6464,6 +6569,7 @@ msgstr "根据动画继续阅读"
 
 #: src/api/hooks.ts
 #: src/components/home/ContinueHero.tsx
+#: src/components/ui/CoverCardMenu.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/MetadataGatePage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -7198,11 +7304,6 @@ msgstr "日期"
 msgid "Day by day"
 msgstr "逐日"
 
-#: src/components/home/ReadingWeeks.tsx
-#, fuzzy
-msgid "day streak"
-msgstr "连续阅读天数"
-
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Days active"
@@ -7213,6 +7314,10 @@ msgstr "活跃天数"
 msgid "Days after reading"
 msgstr "阅读后的天数"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days before a proposal you haven't approved expires."
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Days left"
@@ -7222,6 +7327,14 @@ msgstr "剩余天数"
 #, fuzzy
 msgid "Days read"
 msgstr "阅读天数"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days to keep replaced files. 0 deletes them at the next cleanup."
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days to skip a chapter after it was added or last upgraded."
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -7561,6 +7674,7 @@ msgstr "已取消关联的 CBZ 会保留在文件部分，除非你选择删除�
 msgid "Detailed"
 msgstr ""
 
+#: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -7572,6 +7686,10 @@ msgstr "详细信息"
 #, fuzzy
 msgid "Details and test"
 msgstr "详情与测试"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Details for {sourceName}"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -7667,6 +7785,7 @@ msgstr "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, 
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
+#: src/pages/CreatorPage.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -7745,11 +7864,6 @@ msgstr "显示名称"
 #, fuzzy
 msgid "Documentation"
 msgstr "文档"
-
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Don't auto-queue more than (chapters)"
-msgstr "自动排队数量不超过（章节）"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -8005,6 +8119,10 @@ msgstr "下载"
 
 #: src/pages/settings/PageConversionSection.tsx
 msgid "Downloads and torrent imports are converted in the background once they finish."
+msgstr ""
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Downloads counts the {wanted, plural, one {# chapter} other {# chapters}} you want or already have. {notWanted, plural, one {# more is listed but not wanted.} other {# more are listed but not wanted.}}"
 msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
@@ -8325,6 +8443,10 @@ msgstr "启用 OPDS 目录"
 msgid "Enabled"
 msgstr "已启用"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Enabled for this series"
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Enabling it creates the feed URL. Confirm your password to continue."
@@ -8385,6 +8507,10 @@ msgstr "在应用中输入 API 密钥，或输入任意用户名并将 API 密�
 #, fuzzy
 msgid "Enter your authenticator code"
 msgstr "输入身份验证器代码"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Enter your current password first"
+msgstr ""
 
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
@@ -8808,6 +8934,10 @@ msgstr "更新标签失败：{detail}"
 msgid "Fair quality"
 msgstr "质量一般"
 
+#: src/pages/discover/TasteTab.tsx
+msgid "fairly alike"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Fallback"
@@ -8922,6 +9052,14 @@ msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "File is gone from disk"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "File missing"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "File missing ({fileMissingFilterCount})"
 msgstr ""
 
 #: src/pages/ActivityPage.tsx
@@ -9122,11 +9260,6 @@ msgstr "查找更好的版本"
 #, fuzzy
 msgid "Find match"
 msgstr "查找匹配"
-
-#: src/pages/HomePage.tsx
-#, fuzzy
-msgid "Find more"
-msgstr "查看更多"
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -9621,11 +9754,6 @@ msgstr "给它起个名字"
 msgid "Give others their own account, library access and reading history."
 msgstr "为其他人创建账户，并设置资料库访问权限和阅读历史。"
 
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Give up on a chapter after (minutes)"
-msgstr "在（分钟）后放弃章节"
-
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here."
@@ -9954,9 +10082,8 @@ msgid "Hidden list saved"
 msgstr "隐藏列表已保存"
 
 #: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "hidden or dismissed"
-msgstr "已隐藏或忽略"
+msgid "Hidden or dismissed"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -9968,6 +10095,7 @@ msgstr "进度跟踪关闭时隐藏。"
 msgid "Hide affected series"
 msgstr "隐藏受影响的作品"
 
+#: src/components/SourceMappingsSection.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Hide details"
@@ -10129,6 +10257,10 @@ msgstr ""
 msgid "How close each quarter sat to where you started."
 msgstr "每个季度与你开始时的位置有多接近。"
 
+#: src/pages/discover/TasteTab.tsx
+msgid "How far into a series you get before you stop reading it, for the series you did not finish."
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "How far through a series you were when it stalled."
@@ -10171,6 +10303,10 @@ msgstr "信号的工作方式"
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "How the shortlist differs from your library"
+msgstr ""
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "How these chapter counts add up"
 msgstr ""
 
 #: src/components/ImportReviewModal.tsx
@@ -10230,6 +10366,10 @@ msgstr "像素完全相同。"
 
 #: src/pages/HealthPage.tsx
 msgid "Identical to another file"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+msgid "If they are in the folder under other names, Relink files finds them."
 msgstr ""
 
 #: src/components/ImportListsSection.tsx
@@ -10525,6 +10665,10 @@ msgstr "在资料库中"
 #, fuzzy
 msgid "In Mihon, open More > Settings > Data and storage > Create backup, then choose the .tachibk file it makes. Only manga in your library are imported."
 msgstr "在 Mihon 中依次打开「更多」>「设置」>「数据和存储」>「创建备份」，然后选择生成的 .tachibk 文件。只会导入资料库中的漫画。"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "In minutes. 0 means no limit."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -11783,15 +11927,14 @@ msgstr "正在查询 {total} 项中的 {looked} 项"
 msgid "Looking up chapters…"
 msgstr "正在查找章节……"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "loose"
-msgstr "宽松"
-
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
 msgid "loose page images"
 msgstr "零散的页面图片"
+
+#: src/pages/discover/TasteTab.tsx
+msgid "loosely related"
+msgstr ""
 
 #: src/components/pageconversion/labels.ts
 #, fuzzy
@@ -12226,6 +12369,10 @@ msgstr "已标记为已读或看过。你的品味资料没有改变。"
 msgid "Marked ch. 1 to {to} watched"
 msgstr "已将第 1 到 {to} 章标记为已看过"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Marked wanted ({wantedFilterCount})"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Marked watched, not read. Doesn't count toward reading stats"
@@ -12546,18 +12693,12 @@ msgid "missing"
 msgstr "缺失"
 
 #: src/components/LinkFileToChaptersModal.tsx
-#: src/components/series/ChapterTableRows.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Missing"
 msgstr "缺失"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Missing ({missingFilterCount})"
-msgstr "缺失（{missingFilterCount}）"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -12613,6 +12754,7 @@ msgstr "监控器捕获"
 
 #: src/components/import/MihonReview.tsx
 #: src/components/ImportListsSection.tsx
+#: src/components/ui/CoverCardMenu.tsx
 #, fuzzy
 msgid "Monitor for new chapters"
 msgstr "监视新章节"
@@ -12651,6 +12793,7 @@ msgid "Monitoring: {modeLabel}"
 msgstr "监控：{modeLabel}"
 
 #: src/pages/stats/RangeControl.tsx
+#: src/pages/stats/StatsRange.ts
 #, fuzzy
 msgid "Month"
 msgstr "月"
@@ -12712,6 +12855,7 @@ msgstr "更多选项"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
+#: src/components/ui/CoverCardMenu.tsx
 #, fuzzy
 msgid "More options for {seriesTitle}"
 msgstr "{seriesTitle} 的更多选项"
@@ -12725,6 +12869,10 @@ msgstr "更多队列操作"
 #, fuzzy
 msgid "More recommendation feedback actions"
 msgstr "更多推荐反馈操作"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "More source actions"
+msgstr ""
 
 #: src/components/AppearanceAnnouncementModal.tsx
 #, fuzzy
@@ -12882,6 +13030,10 @@ msgstr "封面动效"
 msgid "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
 msgstr "因为启用了多个账户，多用户模式已开启。若要切回，请停用或删除其他账户。"
 
+#: src/components/ui/CoverCardMenu.tsx
+msgid "Mute notifications"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -12964,6 +13116,10 @@ msgstr ""
 #, fuzzy
 msgid "Name of rule {number}"
 msgstr "规则 {number} 的名称"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Name the key first"
+msgstr ""
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -13078,7 +13234,6 @@ msgstr "中性，基准值为书架权重"
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
-#: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "never"
@@ -13314,6 +13469,10 @@ msgstr "接下来"
 msgid "Next up beside the hero"
 msgstr "主视觉旁的接下来"
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Next up is {nextChapter}."
+msgstr ""
+
 #: src/components/releases/UpcomingView.tsx
 #, fuzzy
 msgid "Next week"
@@ -13342,11 +13501,6 @@ msgstr "{windowLabel}内没有活动。"
 #, fuzzy
 msgid "No activity yet."
 msgstr "暂无活动。"
-
-#: src/pages/stats/sections/ReadingSection.tsx
-#, fuzzy
-msgid "no baseline"
-msgstr "无对照基准"
 
 #: src/components/series/UpgradeNowResultModal.tsx
 #, fuzzy
@@ -13396,13 +13550,21 @@ msgstr ""
 msgid "no chapter with this number in the series"
 msgstr "系列中没有此编号的章节"
 
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
+msgid "No chapters"
+msgstr ""
+
+#: src/pages/stats/sections/ReadingSection.tsx
+msgid "No chapters finished in this period."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "No chapters known."
 msgstr "没有已知章节。"
 
 #: src/components/series/SeriesHero.tsx
-#: src/components/ui/CoverCard.tsx
 #, fuzzy
 msgid "No chapters listed"
 msgstr "未列出任何章节"
@@ -13421,11 +13583,6 @@ msgstr "没有章节匹配此搜索和筛选条件。"
 #, fuzzy
 msgid "no chapters matched"
 msgstr "没有匹配的章节"
-
-#: src/pages/stats/sections/ReadingSection.tsx
-#, fuzzy
-msgid "No chapters read in this period."
-msgstr "此时间段没有已读章节。"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -13721,6 +13878,10 @@ msgstr "没有记录阅读时间。"
 msgid "No reading tracked yet"
 msgstr "尚未记录阅读"
 
+#: src/components/releases/UpcomingView.tsx
+msgid "No release estimates yet"
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "No release-year data yet"
@@ -13965,11 +14126,6 @@ msgstr "最近的通知中没有内容"
 msgid "None linked"
 msgstr "未关联任何内容"
 
-#: src/components/ui/SeriesRow.tsx
-#, fuzzy
-msgid "None listed"
-msgstr "未列出"
-
 #: src/components/series/RestoreSeriesDialog.tsx
 #, fuzzy
 msgid "None of the removed chapters are still wanted, so nothing would be downloaded."
@@ -14054,16 +14210,19 @@ msgstr "离线时不可用"
 msgid "Not checked for new chapters: it is finished and complete, or has no source switched on."
 msgstr "不检查新章节：该系列已完结，或没有开启任何来源。"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not checked for new chapters: no source is switched on."
+msgstr ""
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not checked for new chapters: the series is finished and every chapter is listed."
+msgstr ""
+
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Not checked yet"
 msgstr "尚未检查"
-
-#: src/components/ui/status.tsx
-#, fuzzy
-msgid "Not configured"
-msgstr "尚未配置"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
@@ -14080,6 +14239,14 @@ msgstr "尚未连接。"
 #, fuzzy
 msgid "Not connected."
 msgstr "未连接。"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Not downloaded"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Not downloaded ({missingFilterCount})"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -14247,6 +14414,10 @@ msgstr "未扫描"
 msgid "Not set"
 msgstr "未设置"
 
+#: src/components/ui/status.tsx
+msgid "Not set up"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Not set up yet."
@@ -14256,6 +14427,10 @@ msgstr "尚未设置。"
 #, fuzzy
 msgid "Not set up yet. An admin can add it in Settings."
 msgstr "尚未设置。管理员可以在设置中添加。"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not started"
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -14513,6 +14688,10 @@ msgstr "在你按下下方按钮之前不会保存任何内容。之前转换的
 msgid "Nothing is sent to it any more. This can't be undone."
 msgstr "不再向它发送任何内容。此操作无法撤销。"
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Nothing is wanted, so Downloads counts against every listed chapter."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Nothing left to download"
@@ -14637,11 +14816,6 @@ msgstr "没有可导入内容，{label} 上的评分与本地评分没有差异�
 msgid "Nothing to pick up yet"
 msgstr "暂无可继续阅读的内容"
 
-#: src/components/releases/UpcomingView.tsx
-#, fuzzy
-msgid "Nothing to place yet"
-msgstr "暂时没有可安排的内容"
-
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Nothing to profile yet"
@@ -14734,6 +14908,7 @@ msgstr "通知设置"
 msgid "Notification URLs"
 msgstr "通知 URL"
 
+#: src/components/CommandPalette.tsx
 #: src/components/NotificationBell.tsx
 #: src/components/settings/NotificationPrefsSection.tsx
 #: src/nav.ts
@@ -15203,6 +15378,7 @@ msgid "Open health"
 msgstr "打开「健康」"
 
 #: src/components/import/MihonSummary.tsx
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Open library"
 msgstr "打开资料库"
@@ -15229,6 +15405,7 @@ msgstr "以后使用这些筛选条件打开推荐内容"
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/series/AnimeResumeCallout.tsx
+#: src/components/ui/CoverCardMenu.tsx
 #: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -15723,6 +15900,10 @@ msgstr "暂停下载"
 msgid "Pause Rewind"
 msgstr "暂停 Rewind"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "Pause rotating picks"
+msgstr ""
+
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
 msgid "Pause the running pass and restart it with the new settings?"
@@ -15964,6 +16145,7 @@ msgstr "李紫"
 msgid "PNG"
 msgstr "PNG"
 
+#: src/components/pageconversion/FormatStep.tsx
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
 msgid "PNG pages"
@@ -16202,9 +16384,8 @@ msgid "Proposal dismissed"
 msgstr "已忽略提议"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Proposal expiry (days)"
-msgstr "提议有效期（天）"
+msgid "Proposal expiry"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -16386,9 +16567,8 @@ msgid "Queued a volume release"
 msgstr "已将一个卷资源加入队列"
 
 #: src/pages/ActivityPage.tsx
-#, fuzzy
-msgid "Queued and downloading chapters show up here. Trigger a search from a series page or the library."
-msgstr "已排队和正在下载的章节会显示在这里。从系列页面或资料库触发搜索。"
+msgid "Queued and downloading chapters show up here. Start a download from a series page or the library."
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -16411,9 +16591,8 @@ msgid "Quiet for longer than its usual rhythm, so there is no estimate."
 msgstr "停更时间超过了平时的更新节奏，因此暂无估算。"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Quiet period (days)"
-msgstr "静默期（天）"
+msgid "Quiet period"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -16580,11 +16759,6 @@ msgstr "无论如何都会重新触发 Kavita 对两个位置的扫描。"
 msgid "Reached for {ratioValue} more than owning it would predict, across {seriesPhrase}"
 msgstr "在 {seriesPhrase} 中，被阅读的次数比拥有它所预测的多 {ratioValue}"
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "read"
-msgstr "已读"
-
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
@@ -16726,6 +16900,10 @@ msgstr "最近 {daysSoFar} 天中有 {daysRead} 天在阅读"
 msgid "Read on {daysRead} of the last {daysSoFar} days."
 msgstr "最近 {daysSoFar} 天中有 {daysRead} 天在阅读。"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Read or watched"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Read slowly over a long span"
@@ -16795,6 +16973,10 @@ msgstr "像你一样的读者也读完了此内容"
 #, fuzzy
 msgid "Readers like you also recommended this"
 msgstr "像你一样的读者也推荐了此内容"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Readers who finished {finished} also finished these"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -17054,6 +17236,10 @@ msgstr "恢复代码"
 #, fuzzy
 msgid "Recurrent"
 msgstr "重复"
+
+#: src/pages/discover/TasteTab.tsx
+msgid "Recurring themes"
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/registry.ts
@@ -18181,6 +18367,10 @@ msgstr "恢复于"
 msgid "Resume Rewind"
 msgstr "恢复 Rewind"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "Resume rotating picks"
+msgstr ""
+
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Resumed since you saved it"
 msgstr ""
@@ -18222,9 +18412,8 @@ msgid "Retry"
 msgstr "重试"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Retry a failed download up to (attempts)"
-msgstr "失败下载最多重试次数"
+msgid "Retry attempts for a failed download"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -19516,6 +19705,7 @@ msgstr "{relatedTo} 的续篇"
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -19582,6 +19772,10 @@ msgstr "系列文件夹格式"
 #, fuzzy
 msgid "Series has no root folder"
 msgstr "系列没有根文件夹"
+
+#: src/pages/LibraryPage.tsx
+msgid "Series Maki keeps checking for new chapters."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -19924,7 +20118,6 @@ msgstr "通知到达时显示弹窗"
 msgid "Show again"
 msgstr "再次显示"
 
-#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show all"
@@ -19953,6 +20146,7 @@ msgstr "显示文件夹"
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
 #: src/pages/reader/NotesMargin.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "Show less"
@@ -19968,8 +20162,10 @@ msgstr ""
 #: src/components/discover/DiscoverReviews.tsx
 #: src/components/discover/FollowingRail.tsx
 #: src/components/rails/CustomRailSection.tsx
+#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/HomePage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Show more"
 msgstr "显示更多"
@@ -20295,11 +20491,6 @@ msgstr "跳过"
 msgid "Skip {latestVersion}"
 msgstr "跳过 {latestVersion}"
 
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Skip a chapter this long after it was added or last upgraded."
-msgstr "章节在添加或上次升级后的这段时间内会被跳过。"
-
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Skip series where it is only a passing element"
@@ -20498,6 +20689,10 @@ msgstr "来源"
 msgid "Source {letter}"
 msgstr "来源 {letter}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Source ID"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Source is"
@@ -20537,6 +20732,10 @@ msgstr ""
 msgid "Source state"
 msgstr "来源状态"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Source: {synopsisSource}"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -20551,6 +20750,14 @@ msgstr "来源"
 #, fuzzy
 msgid "Sources disagree on chapter numbering"
 msgstr "来源的章节编号不一致"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Sources go up to ch. {highest}, MangaBaka lists {listed}."
+msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "Sources go up to ch. {highest}, your total is {listed}."
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -20634,14 +20841,13 @@ msgid "Spoiler, press to reveal"
 msgstr ""
 
 #: src/components/TagBuckets.tsx
-#, fuzzy
-msgid "Spoiler: {description}"
-msgstr "剧透：{description}"
+msgid "Spoiler:"
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
-msgid "Spoiler. Hover to reveal."
-msgstr "剧透。悬停即可显示。"
+msgid "Spoiler: {description}"
+msgstr "剧透：{description}"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -20864,6 +21070,10 @@ msgstr "停止"
 msgid "Stop ignoring"
 msgstr "取消忽略"
 
+#: src/components/ui/CoverCardMenu.tsx
+msgid "Stop monitoring"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Stop showing their new titles on Home and Discover"
@@ -20905,6 +21115,10 @@ msgstr "以更小的图片格式存储章节页面。"
 #, fuzzy
 msgid "Story"
 msgstr "故事"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Story and art"
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -20962,6 +21176,10 @@ msgstr "Suwayomi"
 #, fuzzy
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
 msgstr "suwayomi, tachidesk, mihon, tachiyomi, 扩展, 扩展来源, 更多来源, graphql, 4567"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -21056,11 +21274,6 @@ msgstr "系统"
 #, fuzzy
 msgid "System checks"
 msgstr "系统检查"
-
-#: src/pages/HealthPage.tsx
-#, fuzzy
-msgid "System checks and reviewed library maintenance."
-msgstr "系统检查和经过审核的资料库维护。"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -21530,6 +21743,10 @@ msgstr "过去 90 天"
 msgid "The last check could not list the sample series. The site's layout may have changed. Edit the definition to check."
 msgstr "上次检查无法列出示例系列。网站的布局可能已经改变。请编辑定义后再检查。"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "The last health scan couldn't find this file on disk. Relink files finds it if it was moved or renamed."
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
 msgid "The layout could not be loaded."
@@ -21566,10 +21783,18 @@ msgstr "这些模型是第三方文件，适用各自的许可协议。非商业
 msgid "The most explicit rating shown outside your own library."
 msgstr "在你自己的资料库之外显示的最露骨的分级。"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "The most new chapters queued at once. Bigger batches stay wanted for you to download by hand. 0 means always queue."
+msgstr ""
+
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
 msgid "The most popular titles in the MangaBaka catalogue."
 msgstr "MangaBaka 目录中最受欢迎的作品。"
+
+#: src/components/settings/AccountSection.tsx
+msgid "The new password needs at least 10 characters"
+msgstr ""
 
 #: src/components/discover/discoverSectionDefs.ts
 #: src/components/home/homeSectionDefs.ts
@@ -21937,6 +22162,10 @@ msgstr "这些内容将不再转换。"
 #, fuzzy
 msgid "These are shown once. They are stored hashed, so nobody (including you) can read them back. Keep them somewhere you can reach without your authenticator."
 msgstr "这些内容只显示一次。它们以哈希形式存储，因此任何人（包括你自己）都无法再次读取。请将它们保存在不使用身份验证器也能访问的位置。"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "These feel like {becauseOfTitle}"
+msgstr ""
 
 #: src/components/PermanentDeleteFallback.tsx
 #, fuzzy
@@ -22336,9 +22565,8 @@ msgid "Thumbs up"
 msgstr "点赞"
 
 #: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "thumbs up / down"
-msgstr "点赞/点踩"
+msgid "Thumbs up / down"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -22375,6 +22603,10 @@ msgstr "时间"
 #, fuzzy
 msgid "Time between requests (ms)"
 msgstr "请求间隔（毫秒）"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Time limit per chapter"
+msgstr ""
 
 #: src/pages/stats/RangeControl.tsx
 #, fuzzy
@@ -22468,9 +22700,8 @@ msgid "Titles from"
 msgstr "作品来源"
 
 #: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "titles on the shelf"
-msgstr "书架上的标题"
+msgid "Titles on the shelf"
+msgstr ""
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Titles you want to come back to. Nothing here is downloaded or counted in your taste until you add it."
@@ -22643,9 +22874,8 @@ msgid "Translations other than English are machine-made and being corrected over
 msgstr "英语以外的翻译由机器生成，会随着时间修正；仍未翻译的内容会退回英语。"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Trash retention (days)"
-msgstr "回收站保留时间（天）"
+msgid "Trash retention"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -22996,6 +23226,10 @@ msgstr "未匹配"
 msgid "Unmonitored"
 msgstr "未监控"
 
+#: src/components/ui/CoverCardMenu.tsx
+msgid "Unmute notifications"
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
 msgid "Unofficial build (not a tagged release)"
@@ -23017,6 +23251,7 @@ msgstr "请先从所有系列中取消固定"
 msgid "Unrated"
 msgstr "未评级"
 
+#: src/components/NotificationBell.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Unread"
@@ -23086,6 +23321,10 @@ msgstr "不支持的文件类型"
 #, fuzzy
 msgid "Untagged only"
 msgstr "仅限未添加标签的"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "until {until}, now back in recommendations"
+msgstr ""
 
 #: src/components/QueuePause.tsx
 #, fuzzy
@@ -23644,9 +23883,8 @@ msgid "Version {0} to {1}. These parts of the definition change:"
 msgstr "版本 {0} 至 {1}。定义的以下部分将发生变化："
 
 #: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "very tight"
-msgstr "非常紧密"
+msgid "very alike"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -23906,11 +24144,6 @@ msgstr "在它离开之前要不要评分？目前你的评分是 {soFar}。"
 msgid "Wanted"
 msgstr "想要"
 
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Wanted ({wantedFilterCount})"
-msgstr "想要（{wantedFilterCount}）"
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Wanted chapters may be downloaded again by existing automation."
@@ -23948,6 +24181,10 @@ msgstr "已看过"
 #, fuzzy
 msgid "Watched chapters don't count toward your reading stats. If you have a connected tracker, this moves the manga entry there to the same chapter."
 msgstr "标记为已看过的章节不会计入阅读统计。如果你连接了追踪器，其中的漫画记录也会更新到同一章节。"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Watched in the anime"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -24047,11 +24284,6 @@ msgstr "你阅读的内容"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
-msgid "What you read, grouped"
-msgstr "你阅读的内容，按组显示"
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
 msgid "What you've read"
 msgstr "你读过的内容"
 
@@ -24109,6 +24341,10 @@ msgstr "接下来前往哪里"
 #, fuzzy
 msgid "Where you stop"
 msgstr "停下的位置"
+
+#: src/pages/discover/TasteTab.tsx
+msgid "Where you usually stop"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -24350,11 +24586,6 @@ msgstr "你正在通过普通 HTTP 访问此页面。重启后，在此地址登
 msgid "You are signed in over plain HTTP. Once Maki restarts it will refuse sign-in at this address, and getting back in needs a TLS proxy in front of Maki or an edit to the database."
 msgstr "你当前通过普通 HTTP 登录。Maki 重启后，将拒绝在此地址登录；要重新进入，需要在 Maki 前面加一个 TLS 代理，或直接修改数据库。"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "You bail around"
-msgstr "你通常在这里弃读"
-
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "You can add series, but no root folder has been granted to you yet. Ask an admin to grant you one, or to add this title."
@@ -24434,6 +24665,10 @@ msgstr "你还没有关注任何人。打开一个创作者或工作室页面，
 #, fuzzy
 msgid "You had this at {soFar} so far. Keep it?"
 msgstr "你目前给它的评分是 {soFar}。要保留吗？"
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "You have finished {readCount, plural, one {# chapter} other {# chapters}}, up to ch. {readUpTo}."
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -24648,9 +24883,8 @@ msgid "Your requests"
 msgstr "你的申请"
 
 #: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
-msgstr "你的书架、评分和阅读记录会影响排名。点赞、隐藏和看过状态各只影响一个标题。"
+msgid "Your shelf, ratings, reading and thumbs decide what gets recommended. Hide, dismiss and seen elsewhere only take that one title out."
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 msgid "Your shortlist is full."
@@ -24661,15 +24895,17 @@ msgstr ""
 msgid "Your source changes have not been saved. Closing now discards them."
 msgstr "来源更改尚未保存。现在关闭将丢弃这些更改。"
 
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
-msgstr "你的来源只到第 <0>{highest}</0> 章，但 MangaBaka 列出了 <1>{listed}</1> 章。大约 {missing, plural, other {# 个章节}} 无法从这里链接的来源下载。再链接一个来源来补齐缺口。"
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Your sources go up to ch. {highest}."
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "Your sources only reach chapter <0>{highest}</0>, but the total you set is <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
-msgstr "你的来源只能覆盖到第 <0>{highest}</0> 章，但你设置的总数是 <1>{listed}</1>。这里关联的来源大约有 {missing, plural, other {# 个章节}}无法下载。关联另一个来源即可补上缺口。"
+msgid "Your sources only reach chapter {highest}, but MangaBaka lists {listed}. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "Your sources only reach chapter {highest}, but the total you set is {listed}. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr ""
 
 #: src/components/SeriesTagsEditor.tsx
 #: src/pages/LibraryPage.tsx

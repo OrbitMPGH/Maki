@@ -171,8 +171,14 @@ export const ReaderView: Story = {
 export const PhoneLayout: Story = {
   parameters: { viewport: { defaultViewport: 'mobile1' } },
   globals: { viewport: { value: 'mobile1', isRotated: false } },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
     await expect(await canvas.findByRole('button', { name: 'Filters' })).toBeVisible()
+    // Two posters a row at Default density: the third card starts a new row.
+    await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })
+    const cards = [...canvasElement.querySelectorAll('.cover-card')].slice(0, 3)
+    const tops = cards.map((c) => Math.round(c.getBoundingClientRect().top))
+    await expect(tops[0]).toBe(tops[1])
+    await expect(tops[2]).toBeGreaterThan(tops[0])
   },
 }
 

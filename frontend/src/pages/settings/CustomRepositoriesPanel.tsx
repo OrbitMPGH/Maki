@@ -89,10 +89,10 @@ export function CustomSourceUpdateDialog({ id, opened, onClose, onApplied }: {
                   <Table.Tr key={field}>
                     <Table.Td style={{ fontFamily: 'var(--mantine-font-family-monospace)', verticalAlign: 'top' }}>{field}</Table.Td>
                     <Table.Td>
-                      <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: 11, color: 'var(--ink-3)' }}>
+                      <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: 'var(--type-micro)', color: 'var(--ink-3)' }}>
                         {JSON.stringify(preview.data!.current[field] ?? null)}
                       </pre>
-                      <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: 11 }}>
+                      <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: 'var(--type-micro)' }}>
                         {JSON.stringify(preview.data!.next[field] ?? null)}
                       </pre>
                     </Table.Td>

@@ -1,6 +1,7 @@
 import { memo, type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
-import { IconPlayerPlayFilled } from '../../lib/icons'
+import { IconBookFilled } from '../../lib/icons'
+import { coverChapterLabel } from '../../lib/chapterLabel'
 import type { HomeReadingItem } from '../../api/hooks'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -55,9 +56,9 @@ export const ReadingCard = memo(function ReadingCard({ item, note }: { item: Hom
 
         <div className="cover-corners">
           <div className="cover-corner cover-corner-left">
-            <span className="cover-chapter">
-              <IconPlayerPlayFilled size={10} />
-              <span>{chapterLabel}</span>
+            <span className="cover-chapter" title={chapterLabel}>
+              <IconBookFilled size={10} />
+              <span>{coverChapterLabel(chapterLabel)}</span>
             </span>
           </div>
         </div>
@@ -72,12 +73,12 @@ export const ReadingCard = memo(function ReadingCard({ item, note }: { item: Hom
             </div>
           )}
           <div className="cover-row">
-            <span>{item.page > 0 ? t`Resume` : t`Start`}</span>
+            <span className="cover-row-verb">{item.page > 0 ? t`Resume` : t`Start`}</span>
             {note ? (
-              <span className="cover-new cover-new-quiet">{note}</span>
+              <span className="cover-new">{note}</span>
             ) : (
               unreadChapters > 0 && (
-                <span className="cover-new cover-new-quiet">
+                <span className="cover-new">
                   {plural(unreadChapters, { one: '# new', other: '# new' })}
                 </span>
               )

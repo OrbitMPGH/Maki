@@ -21,7 +21,7 @@ const meta = {
   args: {
     icon: IconBook2,
     title: 'Most read',
-    emptyText: 'No chapters read in this period.',
+    emptyText: 'No chapters finished in this period.',
     items: [row(1, '34 ch.'), row(6, '23 ch.'), row(5, '18 ch.'), row(9, '12 ch.'), row(3, '9 ch.')],
   },
 } satisfies Meta<typeof RankList>

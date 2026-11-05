@@ -89,6 +89,22 @@ export const NotChecked: Story = {
   },
 }
 
+export const NotCheckedFinished: Story = {
+  args: { outlook: finishedOutlook, idleReason: 'finished' },
+  play: async ({ canvas }) => {
+    await expect(
+      await canvas.findByText('Not checked for new chapters: the series is finished and every chapter is listed.'),
+    ).toBeVisible()
+  },
+}
+
+export const NotCheckedNoSource: Story = {
+  args: { outlook: finishedOutlook, idleReason: 'noSource' },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Not checked for new chapters: no source is switched on.')).toBeVisible()
+  },
+}
+
 /** The series page's wrapper, fetching from `/series/:id/outlook`. */
 export const Fetched: StoryObj<typeof ReleaseOutlookSummary> = {
   render: () => <ReleaseOutlookSummary seriesId={1} />,

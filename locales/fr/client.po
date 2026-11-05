@@ -14,6 +14,7 @@ msgstr ""
 "Plural-Forms: \n"
 
 #: src/components/pageconversion/RuleCard.tsx
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid " MB"
 msgstr " Mo"
@@ -378,6 +379,11 @@ msgstr "{0, plural, one {# série a son propre réglage dans son menu.} many {# 
 msgid "{0, plural, one {# skipped} other {# skipped}}"
 msgstr "{0, plural, one {# ignoré} many {# ignorés} other {# ignorés}}"
 
+#. placeholder {0}: spoilers.length
+#: src/components/TagBuckets.tsx
+msgid "{0, plural, one {# spoiler tag} other {# spoiler tags}}"
+msgstr ""
+
 #. placeholder {0}: active.items.length
 #. placeholder {0}: items.length
 #: src/components/discover/DiscoverCatalogue.tsx
@@ -573,6 +579,16 @@ msgstr "{0, plural, one {Afficher tous les #} many {Afficher tous les #} other {
 #, fuzzy
 msgid "{0, plural, one {Skipped: # file, {size}} other {Skipped: # files, {size}}}"
 msgstr "{0, plural, one {Ignoré : # fichier, {size}} many {Ignorés : # fichiers, {size}} other {Ignorés : # fichiers, {size}}}"
+
+#. placeholder {0}: spoilers.length
+#: src/components/TagBuckets.tsx
+msgid "{0, plural, one {Spoiler tag. Click to hide it again.} other {Spoiler tags. Click to hide them again.}}"
+msgstr ""
+
+#. placeholder {0}: spoilers.length
+#: src/components/TagBuckets.tsx
+msgid "{0, plural, one {Spoiler tag. Click to reveal it.} other {Spoiler tags. Click to reveal them.}}"
+msgstr ""
 
 #. placeholder {0}: parsed.skippedNonLibrary
 #: src/components/import/MihonImport.tsx
@@ -862,6 +878,10 @@ msgid "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters dow
 msgstr "{chaptersDownloaded, plural, one {chapitre téléchargé} many {chapitres téléchargés} other {chapitres téléchargés}}"
 
 #: src/pages/SeriesDetailPage.tsx
+msgid "{chaptersHave}/{chaptersCounted} downloaded"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{chaptersLeft} at your paged pace, {basis}."
 msgstr "{chaptersLeft} au rythme de votre lecture par pages, {basis}."
@@ -1121,9 +1141,12 @@ msgid "{created, plural, one {# series added} other {# series added}}"
 msgstr "{created, plural, one {# série ajoutée} many {# séries ajoutées} other {# séries ajoutées}}"
 
 #: src/components/home/ReadingWeeks.tsx
-#, fuzzy
-msgid "{currentStreak, plural, one {# day streak} other {# day streak}}"
-msgstr "{currentStreak, plural, one {# jour de suite} many {# jours de suite} other {# jours de suite}}"
+msgid "{currentStreak, plural, one {#-day streak} other {#-day streak}}"
+msgstr ""
+
+#: src/components/home/ReadingWeeks.tsx
+msgid "{currentStreak, plural, one {Current streak: # day} other {Current streak: # days}}"
+msgstr ""
 
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
@@ -1252,9 +1275,8 @@ msgid "{existing, plural, one {# already in the library} other {# already in the
 msgstr "{existing, plural, one {# série déjà dans la bibliothèque} many {# séries déjà dans la bibliothèque} other {# séries déjà dans la bibliothèque}}"
 
 #: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "{exposed} seen elsewhere"
-msgstr "{exposed} vus ailleurs"
+msgid "{exposed} read or watched elsewhere"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -1282,6 +1304,14 @@ msgstr "{fileCount, plural, one {# fichier} many {# fichiers} other {# fichiers}
 msgid "{fileCount, plural, one {# single file} other {# single files}}"
 msgstr "{fileCount, plural, one {# fichier individuel} many {# fichiers individuels} other {# fichiers individuels}}"
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk} other {# chapters have no file on disk}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{fileName} replaced {filesText}"
@@ -1291,6 +1321,10 @@ msgstr "{fileName} a remplacé {filesText}"
 #, fuzzy
 msgid "{files, plural, one {{used} of {limit}, # page} other {{used} of {limit}, # pages}}"
 msgstr "{files, plural, one {{used} sur {limit}, # page} many {{used} sur {limit}, # pages} other {{used} sur {limit}, # pages}}"
+
+#: src/components/discover/DiscoverHero.tsx
+msgid "{finalVolume} vol."
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -1399,9 +1433,8 @@ msgid "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} li
 msgstr "{haveCount} / {totalCount, plural, one {# chapitre} many {# chapitres} other {# chapitres}} répertoriés, aucun souhaité"
 
 #: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "{haveCount} / {totalCount, plural, one {# wanted chapter} other {# wanted chapters}}"
-msgstr "{haveCount} / {totalCount, plural, one {# chapitre voulu} many {# chapitres voulus} other {# chapitres voulus}}"
+msgid "{haveCount} / {totalCount, plural, one {# wanted} other {# wanted}}"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #, fuzzy
@@ -1586,15 +1619,18 @@ msgstr ""
 msgid "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 msgstr "{linkingTotal, plural, one {Sources trouvées et fichiers liés pour # série} many {Sources trouvées et fichiers liés pour # séries} other {Sources trouvées et fichiers liés pour # séries}}"
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
+msgstr ""
+
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
 msgid "{lone, plural, one {# file with no number} other {# files with no number}}"
 msgstr "{lone, plural, one {# fichier sans numéro} many {# fichiers sans numéro} other {# fichiers sans numéro}}"
 
 #: src/components/home/ReadingWeeks.tsx
-#, fuzzy
-msgid "{longestStreak, plural, one {Today counts. Best: # day} other {Today counts. Best: # days}}"
-msgstr "{longestStreak, plural, one {Aujourd'hui compte. Meilleure suite : # jour} many {Aujourd'hui compte. Meilleure suite : # jours} other {Aujourd'hui compte. Meilleure suite : # jours}}"
+msgid "{longestStreak, plural, one {You read today. Longest streak: # day} other {You read today. Longest streak: # days}}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -1676,6 +1712,14 @@ msgstr "{misses, plural, one {En échec : # échec de suite} many {En échec : #
 #, fuzzy
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 msgstr "{missingCount, plural, one {ajoute # chapitre que vous n'avez pas} many {ajoute # chapitres que vous n'avez pas} other {ajoute # chapitres que vous n'avez pas}}"
+
+#: src/components/SeriesFilesSection.tsx
+msgid "{missingCount, plural, one {The file listed for this series is missing from disk.} other {All # files listed for this series are missing from disk.}}"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+msgid "{missingCount} of {fileCount} files listed for this series are missing from disk."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -1807,6 +1851,10 @@ msgstr ""
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 msgstr "{notWanted, plural, one {# de plus listé, non voulu} many {# de plus listés, non voulus} other {# de plus listés, non voulus}}"
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{offNumbering, plural, one {# of them has a decimal number or none, like an extra or a special.} other {# of them have a decimal number or none, like extras or specials.}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{ok, plural, one {Archived # series} other {Archived # series}}"
@@ -1907,9 +1955,8 @@ msgid "{profileCount, plural, one {Scored in # profile} other {Scored in # profi
 msgstr "{profileCount, plural, one {Noté dans # profil} many {Noté dans # profils} other {Noté dans # profils}}"
 
 #: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "{pushingDown} kept out of your taste"
-msgstr "{pushingDown} exclus de vos goûts"
+msgid "{pushingDown} pushing similar titles down"
+msgstr ""
 
 #: src/pages/settings/PageConversionSection.tsx
 msgid "{queued, plural, one {# file waiting to be converted. A chapter someone is reading is converted once they stop.} other {# files waiting to be converted. A chapter someone is reading is converted once they stop.}}"
@@ -1981,6 +2028,10 @@ msgstr "{readChapterCount} sur {have} chapitres téléchargés lus"
 #, fuzzy
 msgid "{readCount, plural, one {# chapter read} other {# chapters read}}"
 msgstr "{readCount, plural, one {# chapitre lu} many {# chapitres lus} other {# chapitres lus}}"
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{readCount, plural, one {You have finished # chapter.} other {You have finished # chapters.}}"
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
@@ -2246,9 +2297,12 @@ msgid "{seriesAdded, plural, one {series added} other {series added}}"
 msgstr "{seriesAdded, plural, one {série ajoutée} many {séries ajoutées} other {séries ajoutées}}"
 
 #: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "{seriesChapterCount, plural, one {{chaptersRead}/# chapter read} other {{chaptersRead}/# chapters read}}"
-msgstr "{seriesChapterCount, plural, one {{chaptersRead}/# chapitre lu} many {{chaptersRead}/# chapitres lus} other {{chaptersRead}/# chapitres lus}}"
+msgid "{seriesChapterCount, plural, one {{chaptersRead} of # read} other {{chaptersRead} of # read}}"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "{seriesChapterCount, plural, one {all # read} other {all # read}}"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/TagManagerModal.tsx
@@ -2306,9 +2360,8 @@ msgid "{siteName} languages"
 msgstr "Langues de {siteName}"
 
 #: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "{size, plural, one {# series, {shareLabel} of this view, {coherenceWord}} other {# series, {shareLabel} of this view, {coherenceWord}}}"
-msgstr "{size, plural, one {# série, {shareLabel} de cette vue, {coherenceWord}} many {# séries, {shareLabel} de cette vue, {coherenceWord}} other {# séries, {shareLabel} de cette vue, {coherenceWord}}}"
+msgid "{size, plural, one {# series ({shareLabel}), {coherenceWord}} other {# series ({shareLabel}), {coherenceWord}}}"
+msgstr ""
 
 #: src/components/pageconversion/CompareStep.tsx
 #, fuzzy
@@ -2422,6 +2475,10 @@ msgstr "{start} à {end}"
 msgid "{statusLabel}, not monitored"
 msgstr "{statusLabel}, sans surveillance"
 
+#: src/components/ui/CoverCard.tsx
+msgid "{statusOnly}. {readTip}"
+msgstr ""
+
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
 msgid "{stop}. {hint}"
@@ -2431,11 +2488,6 @@ msgstr "{stop}. {hint}"
 #, fuzzy
 msgid "{stopKind, select, early {When you stop, it is usually early in, around {stopPointPct} of the way through.} midway {When you stop, it is usually midway in, around {stopPointPct} of the way through.} late {When you stop, it is usually late in, around {stopPointPct} of the way through.} other {}}"
 msgstr "{stopKind, select, early {Quand vous vous arrêtez, c'est généralement tôt dans la série, vers {stopPointPct} de son avancement.} midway {Quand vous vous arrêtez, c'est généralement à mi-parcours, vers {stopPointPct} de son avancement.} late {Quand vous vous arrêtez, c'est généralement tard dans la série, vers {stopPointPct} de son avancement.} other {}}"
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "{stopPercent} in"
-msgstr "{stopPercent} dans"
 
 #: src/components/TagBrowserModal.tsx
 #, fuzzy
@@ -2605,6 +2657,15 @@ msgstr "{total, plural, one {Tout afficher #} many {Tout afficher #} other {Tout
 msgid "{total, plural, one {Wanted for {spanLabel}: {wantedCount} of # chapter} other {Wanted for {spanLabel}: {wantedCount} of # chapters}}"
 msgstr "{total, plural, one {Demandés pour {spanLabel} : {wantedCount} sur # chapitre} many {Demandés pour {spanLabel} : {wantedCount} sur # chapitres} other {Demandés pour {spanLabel} : {wantedCount} sur # chapitres}}"
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{totalChapters, plural, one {MangaBaka lists # chapter.} other {MangaBaka lists # chapters.}}"
+msgstr ""
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{totalChapters, plural, one {You set the total to # chapter.} other {You set the total to # chapters.}}"
+msgstr ""
+
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
@@ -2830,9 +2891,8 @@ msgid "{weak, plural, one {# more matches a file by name only. Open it to compar
 msgstr ""
 
 #: src/components/home/ReadingWeeks.tsx
-#, fuzzy
-msgid "{weekChapters, plural, one {# chapter this week} other {# chapters this week}}"
-msgstr "{weekChapters, plural, one {# chapitre cette semaine} many {# chapitres cette semaine} other {# chapitres cette semaine}}"
+msgid "{weekChapters, plural, one {# read this week} other {# read this week}}"
+msgstr ""
 
 #: src/pages/stats/charts/HourMatrix.tsx
 #, fuzzy
@@ -2944,6 +3004,10 @@ msgstr "<0>{seriesCount, plural, one {# série} many {# séries} other {# série
 msgid "<0>{sub}</0> lists sub-chapters (1.1, 1.2, …) where <1>{whole}</1> lists whole chapters for the same content, so both appear as separate rows below."
 msgstr "<0>{sub}</0> liste les sous-chapitres (1.1, 1.2, …), tandis que <1>{whole}</1> liste les chapitres entiers pour le même contenu ; les deux apparaissent donc sur des lignes distinctes ci-dessous."
 
+#: src/pages/stats/sections/ReadingSection.tsx
+msgid "<0>{time}</0> of reading<1>, no chapter finished yet.</1>"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "<0>Excluded from taste</0> keeps a shelf title out of the ranking. Reading history is untouched."
@@ -2973,6 +3037,10 @@ msgstr "<0>Pouce vers le bas</0> et les notes de 4 ou moins rétrogradent les ti
 #, fuzzy
 msgid "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
 msgstr "<0>Pouce vers le haut</0> compte pour vos goûts. Les titres similaires sont mieux classés."
+
+#: src/format.ts
+msgid "<1m"
+msgstr ""
 
 #: src/pages/stats/charts/LeanBars.tsx
 #, fuzzy
@@ -3016,11 +3084,6 @@ msgstr "Avec 0, les fichiers sont supprimés définitivement lors du prochain ne
 #, fuzzy
 msgid "0 means no cap."
 msgstr "0 signifie aucun plafond."
-
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "0 means no limit."
-msgstr "0 signifie aucune limite."
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -3072,6 +3135,11 @@ msgstr "100 / page"
 msgid "12 months"
 msgstr "12 mois"
 
+#. Abbreviated "12 months", a Stats range button on a phone
+#: src/pages/stats/StatsRange.ts
+msgid "12m"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "18+"
@@ -3092,6 +3160,11 @@ msgstr "25 / page"
 msgid "30 days"
 msgstr "30 jours"
 
+#. Abbreviated "30 days", a Stats range button on a phone
+#: src/pages/stats/StatsRange.ts
+msgid "30d"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "50 / page"
@@ -3106,6 +3179,11 @@ msgstr "75 / page"
 #, fuzzy
 msgid "90 days"
 msgstr "90 jours"
+
+#. Abbreviated "90 days", a Stats range button on a phone
+#: src/pages/stats/StatsRange.ts
+msgid "90d"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -3722,6 +3800,7 @@ msgstr "Agrégateur"
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
+#: src/pages/stats/StatsRange.ts
 #, fuzzy
 msgid "All"
 msgstr "Tous"
@@ -3793,11 +3872,6 @@ msgstr "Toutes les bibliothèques"
 #, fuzzy
 msgid "All optional. Maki downloads from its own sources without any of these. Open one to fill it in."
 msgstr "Tout est facultatif. Maki télécharge depuis ses propres sources sans aucun de ces outils. Ouvrez-en un pour le configurer."
-
-#: src/pages/reader/ReaderToolbar.tsx
-#, fuzzy
-msgid "all read"
-msgstr "tous lus"
 
 #: src/components/QueueActions.tsx
 #, fuzzy
@@ -4523,9 +4597,8 @@ msgid "Auto-grab"
 msgstr "Récupération automatique"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Auto-grab size limit (MB)"
-msgstr "Limite de taille de la récupération automatique (Mo)"
+msgid "Auto-grab size limit"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -4542,6 +4615,10 @@ msgstr "La mise en correspondance automatique est déjà en cours."
 #, fuzzy
 msgid "Auto-matching is still running. It'll be free in a moment."
 msgstr "La mise en correspondance automatique est toujours en cours. Elle sera disponible dans un instant."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Auto-queue limit"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -4606,6 +4683,10 @@ msgstr "Évité"
 #, fuzzy
 msgid "Back"
 msgstr "Retour"
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Back in recommendations since {until}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -4830,11 +4911,6 @@ msgstr "Meilleure qualité d'abord"
 #, fuzzy
 msgid "Best quality first compares a source's tier before its measured quality, in the order the series' upgrade profile ranks tiers."
 msgstr "« Meilleure qualité d'abord » compare le palier d'une source avant sa qualité mesurée, dans l'ordre où le profil de mise à niveau de la série classe les paliers."
-
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Bigger batches stay wanted for you to download by hand. 0 means always queue."
-msgstr "Les lots plus gros restent souhaités pour que vous les téléchargiez à la main. 0 signifie toujours mettre en file d'attente."
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -5700,6 +5776,14 @@ msgid "Chapters known"
 msgstr "Chapitres connus"
 
 #: src/components/SourceMappingsSection.tsx
+msgid "Chapters last checked {checked}"
+msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Chapters never checked"
+msgstr ""
+
+#: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Chapters not listed by another enabled source will be removed. Files downloaded from this source will be detached so they cannot be read as the correct chapter."
 msgstr "Les chapitres non listés par une autre source activée seront supprimés. Les fichiers téléchargés depuis cette source seront détachés afin de ne pas être lus comme le bon chapitre."
@@ -5758,6 +5842,22 @@ msgstr "Chapitres à récupérer à chaque fois"
 #, fuzzy
 msgid "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
 msgstr "Les chapitres dont le fichier a l'une de ces qualités sont affichés tels quels. Un volume numérique est généralement déjà propre."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters whose file the last health scan couldn't find on disk."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters with no file on disk, leaving out files that were deleted on purpose."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters with Wanted switched on, downloaded or not."
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
+msgid "Chapters you want that aren't on disk yet."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -5871,6 +5971,10 @@ msgstr "Vérifié, non converti"
 msgid "Checking for a new metadata snapshot"
 msgstr "Recherche d'un nouvel instantané de métadonnées"
 
+#: src/pages/HealthPage.tsx
+msgid "Checks on the server and the library, and the repairs they found."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -5896,6 +6000,10 @@ msgstr "Choisir une association"
 #, fuzzy
 msgid "Choose a root folder"
 msgstr "Choisir un dossier racine"
+
+#: src/pages/ImportPage.tsx
+msgid "Choose a root folder first"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -6092,9 +6200,8 @@ msgid "Close Rewind"
 msgstr "Fermer Rewind"
 
 #: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Close to your reading in taste space"
-msgstr "Proche de vos lectures dans l'espace des goûts"
+msgid "Close to what you read"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -6343,6 +6450,10 @@ msgstr "Connectez {label} sur la page Scrobble pour importer depuis ce service."
 msgid "Connect a tracker first"
 msgstr "Connectez d'abord un tracker"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Connect a tracker to use Sync now."
+msgstr ""
+
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Connect accounts on the Scrobble page."
@@ -6407,11 +6518,6 @@ msgstr "Connexions"
 msgid "Consider disabling one of the two source mappings; the warning clears on the next refresh."
 msgstr "Envisagez de désactiver l'une des deux correspondances de sources ; l'avertissement disparaîtra à la prochaine actualisation."
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "consistent"
-msgstr "cohérent"
-
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Contained in a volume/compilation file"
@@ -6424,9 +6530,8 @@ msgid "Content"
 msgstr "Contenu"
 
 #: src/components/CatalogueFilters.tsx
-#: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/ContentRatingChip.tsx
 #: src/components/discover/DiscoverGlance.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -6464,6 +6569,7 @@ msgstr "Reprendre après l'anime"
 
 #: src/api/hooks.ts
 #: src/components/home/ContinueHero.tsx
+#: src/components/ui/CoverCardMenu.tsx
 #: src/pages/HomePage.tsx
 #: src/pages/MetadataGatePage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -7198,11 +7304,6 @@ msgstr "Date"
 msgid "Day by day"
 msgstr "Jour après jour"
 
-#: src/components/home/ReadingWeeks.tsx
-#, fuzzy
-msgid "day streak"
-msgstr "jours de suite"
-
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Days active"
@@ -7213,6 +7314,10 @@ msgstr "Jours actifs"
 msgid "Days after reading"
 msgstr "Jours après la lecture"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days before a proposal you haven't approved expires."
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Days left"
@@ -7222,6 +7327,14 @@ msgstr "Jours restants"
 #, fuzzy
 msgid "Days read"
 msgstr "Jours de lecture"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days to keep replaced files. 0 deletes them at the next cleanup."
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Days to skip a chapter after it was added or last upgraded."
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -7561,6 +7674,7 @@ msgstr "Les CBZ détachés restent dans la section Fichiers, sauf si vous choisi
 msgid "Detailed"
 msgstr ""
 
+#: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -7572,6 +7686,10 @@ msgstr "Détails"
 #, fuzzy
 msgid "Details and test"
 msgstr "Détails et test"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "Details for {sourceName}"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -7667,6 +7785,7 @@ msgstr "discord, webhook, telegram, notifiarr, ntfy, gotify, pushover, apprise, 
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
+#: src/pages/CreatorPage.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -7745,11 +7864,6 @@ msgstr "Nom d'affichage"
 #, fuzzy
 msgid "Documentation"
 msgstr "Documentation"
-
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Don't auto-queue more than (chapters)"
-msgstr "Ne pas mettre en file automatiquement plus de (chapitres)"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -8005,6 +8119,10 @@ msgstr "Téléchargements"
 
 #: src/pages/settings/PageConversionSection.tsx
 msgid "Downloads and torrent imports are converted in the background once they finish."
+msgstr ""
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Downloads counts the {wanted, plural, one {# chapter} other {# chapters}} you want or already have. {notWanted, plural, one {# more is listed but not wanted.} other {# more are listed but not wanted.}}"
 msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
@@ -8325,6 +8443,10 @@ msgstr "Activer le catalogue OPDS"
 msgid "Enabled"
 msgstr "Activé"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Enabled for this series"
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Enabling it creates the feed URL. Confirm your password to continue."
@@ -8385,6 +8507,10 @@ msgstr "Saisissez la clé API dans l'application, ou n'importe quel nom d'utilis
 #, fuzzy
 msgid "Enter your authenticator code"
 msgstr "Saisissez le code de votre application d'authentification"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Enter your current password first"
+msgstr ""
 
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
@@ -8808,6 +8934,10 @@ msgstr "Échec de la mise à jour des tags : {detail}"
 msgid "Fair quality"
 msgstr "Qualité correcte"
 
+#: src/pages/discover/TasteTab.tsx
+msgid "fairly alike"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Fallback"
@@ -8922,6 +9052,14 @@ msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "File is gone from disk"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "File missing"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "File missing ({fileMissingFilterCount})"
 msgstr ""
 
 #: src/pages/ActivityPage.tsx
@@ -9122,11 +9260,6 @@ msgstr "Trouver une meilleure copie"
 #, fuzzy
 msgid "Find match"
 msgstr "Trouver une correspondance"
-
-#: src/pages/HomePage.tsx
-#, fuzzy
-msgid "Find more"
-msgstr "Trouver plus"
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -9621,11 +9754,6 @@ msgstr "Donnez-lui un nom"
 msgid "Give others their own account, library access and reading history."
 msgstr "Donnez aux autres leur propre compte, accès à la bibliothèque et historique de lecture."
 
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Give up on a chapter after (minutes)"
-msgstr "Abandonner un chapitre après (minutes)"
-
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here."
@@ -9954,9 +10082,8 @@ msgid "Hidden list saved"
 msgstr "Liste des éléments masqués enregistrée"
 
 #: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "hidden or dismissed"
-msgstr "masqué ou ignoré"
+msgid "Hidden or dismissed"
+msgstr ""
 
 #: src/pages/HomePage.tsx
 #, fuzzy
@@ -9968,6 +10095,7 @@ msgstr "Masqué lorsque le suivi de la progression est désactivé."
 msgid "Hide affected series"
 msgstr "Masquer les séries concernées"
 
+#: src/components/SourceMappingsSection.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Hide details"
@@ -10129,6 +10257,10 @@ msgstr ""
 msgid "How close each quarter sat to where you started."
 msgstr "Degré de proximité de chaque trimestre avec votre point de départ."
 
+#: src/pages/discover/TasteTab.tsx
+msgid "How far into a series you get before you stop reading it, for the series you did not finish."
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "How far through a series you were when it stalled."
@@ -10171,6 +10303,10 @@ msgstr "Comment fonctionnent les signaux"
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "How the shortlist differs from your library"
+msgstr ""
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "How these chapter counts add up"
 msgstr ""
 
 #: src/components/ImportReviewModal.tsx
@@ -10230,6 +10366,10 @@ msgstr "Pixels identiques."
 
 #: src/pages/HealthPage.tsx
 msgid "Identical to another file"
+msgstr ""
+
+#: src/components/SeriesFilesSection.tsx
+msgid "If they are in the folder under other names, Relink files finds them."
 msgstr ""
 
 #: src/components/ImportListsSection.tsx
@@ -10525,6 +10665,10 @@ msgstr "Dans la bibliothèque"
 #, fuzzy
 msgid "In Mihon, open More > Settings > Data and storage > Create backup, then choose the .tachibk file it makes. Only manga in your library are imported."
 msgstr "Dans Mihon, ouvrez More > Settings > Data and storage > Create backup, puis choisissez le fichier .tachibk qu'il crée. Seuls les manga de votre bibliothèque sont importés."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "In minutes. 0 means no limit."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -11783,15 +11927,14 @@ msgstr "Recherche de {looked} sur {total}"
 msgid "Looking up chapters…"
 msgstr "Recherche de chapitres…"
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "loose"
-msgstr "peu strict"
-
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
 msgid "loose page images"
 msgstr "images de pages isolées"
+
+#: src/pages/discover/TasteTab.tsx
+msgid "loosely related"
+msgstr ""
 
 #: src/components/pageconversion/labels.ts
 #, fuzzy
@@ -12226,6 +12369,10 @@ msgstr "Marqué comme déjà lu ou vu. Votre profil de goûts n'a pas changé."
 msgid "Marked ch. 1 to {to} watched"
 msgstr "Chapitres 1 à {to} marqués comme vus"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Marked wanted ({wantedFilterCount})"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Marked watched, not read. Doesn't count toward reading stats"
@@ -12546,18 +12693,12 @@ msgid "missing"
 msgstr "manquant"
 
 #: src/components/LinkFileToChaptersModal.tsx
-#: src/components/series/ChapterTableRows.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Missing"
 msgstr "Manquant"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Missing ({missingFilterCount})"
-msgstr "Manquant ({missingFilterCount})"
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -12613,6 +12754,7 @@ msgstr "Nouveautés détectées"
 
 #: src/components/import/MihonReview.tsx
 #: src/components/ImportListsSection.tsx
+#: src/components/ui/CoverCardMenu.tsx
 #, fuzzy
 msgid "Monitor for new chapters"
 msgstr "Surveiller les nouveaux chapitres"
@@ -12651,6 +12793,7 @@ msgid "Monitoring: {modeLabel}"
 msgstr "Suivi : {modeLabel}"
 
 #: src/pages/stats/RangeControl.tsx
+#: src/pages/stats/StatsRange.ts
 #, fuzzy
 msgid "Month"
 msgstr "Mois"
@@ -12712,6 +12855,7 @@ msgstr "Plus d'options"
 
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/home/ReadingCardMenu.tsx
+#: src/components/ui/CoverCardMenu.tsx
 #, fuzzy
 msgid "More options for {seriesTitle}"
 msgstr "Plus d'options pour {seriesTitle}"
@@ -12725,6 +12869,10 @@ msgstr "Autres actions de la file"
 #, fuzzy
 msgid "More recommendation feedback actions"
 msgstr "Plus d'actions de retour sur les recommandations"
+
+#: src/components/SourceMappingsSection.tsx
+msgid "More source actions"
+msgstr ""
 
 #: src/components/AppearanceAnnouncementModal.tsx
 #, fuzzy
@@ -12882,6 +13030,10 @@ msgstr "Couvertures en mouvement"
 msgid "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
 msgstr "Le mode multi-utilisateur est actif car plusieurs comptes sont activés. Désactivez ou supprimez les autres pour revenir en arrière."
 
+#: src/components/ui/CoverCardMenu.tsx
+msgid "Mute notifications"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
@@ -12964,6 +13116,10 @@ msgstr ""
 #, fuzzy
 msgid "Name of rule {number}"
 msgstr "Nom de la règle {number}"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Name the key first"
+msgstr ""
 
 #: src/pages/SetupAccountPage.tsx
 #, fuzzy
@@ -13078,7 +13234,6 @@ msgstr "neutre, part avec le poids de l'étagère"
 
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
-#: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "never"
@@ -13314,6 +13469,10 @@ msgstr "À suivre"
 msgid "Next up beside the hero"
 msgstr "À suivre à côté de la bannière"
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Next up is {nextChapter}."
+msgstr ""
+
 #: src/components/releases/UpcomingView.tsx
 #, fuzzy
 msgid "Next week"
@@ -13342,11 +13501,6 @@ msgstr "Aucune activité sur {windowLabel}."
 #, fuzzy
 msgid "No activity yet."
 msgstr "Aucune activité pour l'instant."
-
-#: src/pages/stats/sections/ReadingSection.tsx
-#, fuzzy
-msgid "no baseline"
-msgstr "aucune référence"
 
 #: src/components/series/UpgradeNowResultModal.tsx
 #, fuzzy
@@ -13396,13 +13550,21 @@ msgstr ""
 msgid "no chapter with this number in the series"
 msgstr "aucun chapitre portant ce numéro dans la série"
 
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
+msgid "No chapters"
+msgstr ""
+
+#: src/pages/stats/sections/ReadingSection.tsx
+msgid "No chapters finished in this period."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "No chapters known."
 msgstr "Aucun chapitre connu."
 
 #: src/components/series/SeriesHero.tsx
-#: src/components/ui/CoverCard.tsx
 #, fuzzy
 msgid "No chapters listed"
 msgstr "Aucun chapitre répertorié"
@@ -13421,11 +13583,6 @@ msgstr "Aucun chapitre ne correspond à cette recherche et à ce filtre."
 #, fuzzy
 msgid "no chapters matched"
 msgstr "aucun chapitre correspondant"
-
-#: src/pages/stats/sections/ReadingSection.tsx
-#, fuzzy
-msgid "No chapters read in this period."
-msgstr "Aucun chapitre lu pendant cette période."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -13721,6 +13878,10 @@ msgstr "Aucun temps de lecture enregistré."
 msgid "No reading tracked yet"
 msgstr "Aucune lecture suivie pour l'instant"
 
+#: src/components/releases/UpcomingView.tsx
+msgid "No release estimates yet"
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "No release-year data yet"
@@ -13965,11 +14126,6 @@ msgstr "Aucune dans les dernières notifications"
 msgid "None linked"
 msgstr "Aucun lié"
 
-#: src/components/ui/SeriesRow.tsx
-#, fuzzy
-msgid "None listed"
-msgstr "Aucun n'est indiqué"
-
 #: src/components/series/RestoreSeriesDialog.tsx
 #, fuzzy
 msgid "None of the removed chapters are still wanted, so nothing would be downloaded."
@@ -14054,16 +14210,19 @@ msgstr "Indisponible hors ligne"
 msgid "Not checked for new chapters: it is finished and complete, or has no source switched on."
 msgstr "Pas de vérification des nouveaux chapitres : la série est terminée et complète, ou aucune source n'est activée."
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not checked for new chapters: no source is switched on."
+msgstr ""
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not checked for new chapters: the series is finished and every chapter is listed."
+msgstr ""
+
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Not checked yet"
 msgstr "Pas encore vérifié"
-
-#: src/components/ui/status.tsx
-#, fuzzy
-msgid "Not configured"
-msgstr "Non configuré"
 
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
@@ -14080,6 +14239,14 @@ msgstr "Pas encore connecté."
 #, fuzzy
 msgid "Not connected."
 msgstr "Non connecté."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Not downloaded"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Not downloaded ({missingFilterCount})"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -14247,6 +14414,10 @@ msgstr "Pas analysé"
 msgid "Not set"
 msgstr "Non défini"
 
+#: src/components/ui/status.tsx
+msgid "Not set up"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Not set up yet."
@@ -14256,6 +14427,10 @@ msgstr "Pas encore configuré."
 #, fuzzy
 msgid "Not set up yet. An admin can add it in Settings."
 msgstr "Pas encore configuré. Un administrateur peut l'ajouter dans Paramètres."
+
+#: src/pages/ScrobblePage.tsx
+msgid "Not started"
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -14513,6 +14688,10 @@ msgstr "Rien n'est enregistré tant que vous n'appuyez pas sur le bouton ci-dess
 msgid "Nothing is sent to it any more. This can't be undone."
 msgstr "Plus rien n'y est envoyé. Cette action est irréversible."
 
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Nothing is wanted, so Downloads counts against every listed chapter."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Nothing left to download"
@@ -14637,11 +14816,6 @@ msgstr "Rien à importer, aucune note sur {label} ne diffère de vos notes local
 msgid "Nothing to pick up yet"
 msgstr "Rien à récupérer pour le moment"
 
-#: src/components/releases/UpcomingView.tsx
-#, fuzzy
-msgid "Nothing to place yet"
-msgstr "Rien à placer pour l'instant"
-
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Nothing to profile yet"
@@ -14734,6 +14908,7 @@ msgstr "Réglages des notifications"
 msgid "Notification URLs"
 msgstr "URL de notification"
 
+#: src/components/CommandPalette.tsx
 #: src/components/NotificationBell.tsx
 #: src/components/settings/NotificationPrefsSection.tsx
 #: src/nav.ts
@@ -15203,6 +15378,7 @@ msgid "Open health"
 msgstr "Ouvrir Intégrité"
 
 #: src/components/import/MihonSummary.tsx
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Open library"
 msgstr "Ouvrir la bibliothèque"
@@ -15229,6 +15405,7 @@ msgstr "Ouvrir désormais Recommended avec ces filtres"
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingCardMenu.tsx
 #: src/components/series/AnimeResumeCallout.tsx
+#: src/components/ui/CoverCardMenu.tsx
 #: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/RequestsPage.tsx
@@ -15723,6 +15900,10 @@ msgstr "Mettre les téléchargements en pause"
 msgid "Pause Rewind"
 msgstr "Mettre Rewind en pause"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "Pause rotating picks"
+msgstr ""
+
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
 msgid "Pause the running pass and restart it with the new settings?"
@@ -15964,6 +16145,7 @@ msgstr "Prune"
 msgid "PNG"
 msgstr "PNG"
 
+#: src/components/pageconversion/FormatStep.tsx
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
 msgid "PNG pages"
@@ -16202,9 +16384,8 @@ msgid "Proposal dismissed"
 msgstr "Proposition ignorée"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Proposal expiry (days)"
-msgstr "Expiration des propositions (jours)"
+msgid "Proposal expiry"
+msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
 #, fuzzy
@@ -16386,9 +16567,8 @@ msgid "Queued a volume release"
 msgstr "Release de volume mise en file"
 
 #: src/pages/ActivityPage.tsx
-#, fuzzy
-msgid "Queued and downloading chapters show up here. Trigger a search from a series page or the library."
-msgstr "Les chapitres mis en file et en cours de téléchargement apparaissent ici. Lancez une recherche depuis la page d'une série ou la bibliothèque."
+msgid "Queued and downloading chapters show up here. Start a download from a series page or the library."
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -16411,9 +16591,8 @@ msgid "Quiet for longer than its usual rhythm, so there is no estimate."
 msgstr "Silence plus long que son rythme habituel, il n'y a donc pas d'estimation."
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Quiet period (days)"
-msgstr "Période de calme (jours)"
+msgid "Quiet period"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -16580,11 +16759,6 @@ msgstr "Déclenche à nouveau une analyse Kavita des deux emplacements dans tous
 msgid "Reached for {ratioValue} more than owning it would predict, across {seriesPhrase}"
 msgstr "Atteint {ratioValue} de plus que ne le prédirait votre collection, pour {seriesPhrase}"
 
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "read"
-msgstr "lu"
-
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
@@ -16726,6 +16900,10 @@ msgstr "Lecture sur {daysRead} des {daysSoFar} derniers jours"
 msgid "Read on {daysRead} of the last {daysSoFar} days."
 msgstr "Lecture sur {daysRead} des {daysSoFar} derniers jours."
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Read or watched"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Read slowly over a long span"
@@ -16795,6 +16973,10 @@ msgstr "Les lecteurs comme vous ont aussi terminé ceci"
 #, fuzzy
 msgid "Readers like you also recommended this"
 msgstr "Les lecteurs comme vous ont aussi recommandé ceci"
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "Readers who finished {finished} also finished these"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -17054,6 +17236,10 @@ msgstr "Code de récupération"
 #, fuzzy
 msgid "Recurrent"
 msgstr "Récurrent"
+
+#: src/pages/discover/TasteTab.tsx
+msgid "Recurring themes"
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/registry.ts
@@ -18181,6 +18367,10 @@ msgstr "Reprendre à"
 msgid "Resume Rewind"
 msgstr "Reprendre Rewind"
 
+#: src/components/discover/DiscoverHero.tsx
+msgid "Resume rotating picks"
+msgstr ""
+
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Resumed since you saved it"
 msgstr ""
@@ -18222,9 +18412,8 @@ msgid "Retry"
 msgstr "Réessayer"
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Retry a failed download up to (attempts)"
-msgstr "Relancer un téléchargement échoué jusqu'à (tentatives)"
+msgid "Retry attempts for a failed download"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -19516,6 +19705,7 @@ msgstr "Suite de {relatedTo}"
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -19582,6 +19772,10 @@ msgstr "Format de dossier de série"
 #, fuzzy
 msgid "Series has no root folder"
 msgstr "La série n'a pas de dossier racine"
+
+#: src/pages/LibraryPage.tsx
+msgid "Series Maki keeps checking for new chapters."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -19924,7 +20118,6 @@ msgstr "Afficher une fenêtre contextuelle à l'arrivée d'une notification"
 msgid "Show again"
 msgstr "Afficher à nouveau"
 
-#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Show all"
@@ -19953,6 +20146,7 @@ msgstr "Afficher les dossiers"
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverReviews.tsx
 #: src/pages/reader/NotesMargin.tsx
+#: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "Show less"
@@ -19968,8 +20162,10 @@ msgstr ""
 #: src/components/discover/DiscoverReviews.tsx
 #: src/components/discover/FollowingRail.tsx
 #: src/components/rails/CustomRailSection.tsx
+#: src/pages/discover/FeedbackLab.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/HomePage.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Show more"
 msgstr "Afficher plus"
@@ -20295,11 +20491,6 @@ msgstr "Ignorer"
 msgid "Skip {latestVersion}"
 msgstr "Ignorer {latestVersion}"
 
-#: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Skip a chapter this long after it was added or last upgraded."
-msgstr "Ignorer un chapitre pendant ce délai après son ajout ou sa dernière mise à niveau."
-
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Skip series where it is only a passing element"
@@ -20498,6 +20689,10 @@ msgstr "Source"
 msgid "Source {letter}"
 msgstr "Source {letter}"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Source ID"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Source is"
@@ -20537,6 +20732,10 @@ msgstr ""
 msgid "Source state"
 msgstr "État de la source"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Source: {synopsisSource}"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -20551,6 +20750,14 @@ msgstr "Sources"
 #, fuzzy
 msgid "Sources disagree on chapter numbering"
 msgstr "Les sources ne s'accordent pas sur la numérotation des chapitres"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Sources go up to ch. {highest}, MangaBaka lists {listed}."
+msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "Sources go up to ch. {highest}, your total is {listed}."
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -20634,14 +20841,13 @@ msgid "Spoiler, press to reveal"
 msgstr ""
 
 #: src/components/TagBuckets.tsx
-#, fuzzy
-msgid "Spoiler: {description}"
-msgstr "Spoiler : {description}"
+msgid "Spoiler:"
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
-msgid "Spoiler. Hover to reveal."
-msgstr "Spoiler. Survolez pour afficher."
+msgid "Spoiler: {description}"
+msgstr "Spoiler : {description}"
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -20864,6 +21070,10 @@ msgstr "Arrêter"
 msgid "Stop ignoring"
 msgstr "Ne plus ignorer"
 
+#: src/components/ui/CoverCardMenu.tsx
+msgid "Stop monitoring"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Stop showing their new titles on Home and Discover"
@@ -20905,6 +21115,10 @@ msgstr "Stocke les pages de chapitre dans un format d'image plus léger."
 #, fuzzy
 msgid "Story"
 msgstr "Histoire"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Story and art"
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -20962,6 +21176,10 @@ msgstr "Suwayomi"
 #, fuzzy
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
 msgstr "suwayomi, tachidesk, mihon, tachiyomi, extensions, sources d'extensions, plus de sources, graphql, 4567"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -21056,11 +21274,6 @@ msgstr "Système"
 #, fuzzy
 msgid "System checks"
 msgstr "Contrôles système"
-
-#: src/pages/HealthPage.tsx
-#, fuzzy
-msgid "System checks and reviewed library maintenance."
-msgstr "Contrôles système et maintenance de bibliothèque examinée."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -21530,6 +21743,10 @@ msgstr "les 90 derniers jours"
 msgid "The last check could not list the sample series. The site's layout may have changed. Edit the definition to check."
 msgstr "La dernière vérification n'a pas pu lister la série d'exemple. La mise en page du site a peut-être changé. Modifiez la définition pour vérifier."
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "The last health scan couldn't find this file on disk. Relink files finds it if it was moved or renamed."
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #, fuzzy
 msgid "The layout could not be loaded."
@@ -21566,10 +21783,18 @@ msgstr "Les modèles sont des fichiers tiers sous leurs propres licences. Les li
 msgid "The most explicit rating shown outside your own library."
 msgstr "La classification la plus explicite affichée en dehors de votre propre bibliothèque."
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "The most new chapters queued at once. Bigger batches stay wanted for you to download by hand. 0 means always queue."
+msgstr ""
+
 #: src/components/home/homeSectionDefs.ts
 #, fuzzy
 msgid "The most popular titles in the MangaBaka catalogue."
 msgstr "Les titres les plus populaires du catalogue MangaBaka."
+
+#: src/components/settings/AccountSection.tsx
+msgid "The new password needs at least 10 characters"
+msgstr ""
 
 #: src/components/discover/discoverSectionDefs.ts
 #: src/components/home/homeSectionDefs.ts
@@ -21937,6 +22162,10 @@ msgstr "Ceux-ci ne sont jamais reconvertis."
 #, fuzzy
 msgid "These are shown once. They are stored hashed, so nobody (including you) can read them back. Keep them somewhere you can reach without your authenticator."
 msgstr "Ils ne sont affichés qu'une seule fois. Ils sont stockés sous forme hachée, personne, y compris vous, ne peut donc les relire. Conservez-les dans un endroit accessible sans votre authentificateur."
+
+#: src/components/ui/DiscoverRail.tsx
+msgid "These feel like {becauseOfTitle}"
+msgstr ""
 
 #: src/components/PermanentDeleteFallback.tsx
 #, fuzzy
@@ -22336,9 +22565,8 @@ msgid "Thumbs up"
 msgstr "Pouce vers le haut"
 
 #: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "thumbs up / down"
-msgstr "pouce vers le haut / bas"
+msgid "Thumbs up / down"
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -22375,6 +22603,10 @@ msgstr "Temps"
 #, fuzzy
 msgid "Time between requests (ms)"
 msgstr "Délai entre les requêtes (ms)"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Time limit per chapter"
+msgstr ""
 
 #: src/pages/stats/RangeControl.tsx
 #, fuzzy
@@ -22468,9 +22700,8 @@ msgid "Titles from"
 msgstr "Titres provenant de"
 
 #: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "titles on the shelf"
-msgstr "titres sur l'étagère"
+msgid "Titles on the shelf"
+msgstr ""
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Titles you want to come back to. Nothing here is downloaded or counted in your taste until you add it."
@@ -22643,9 +22874,8 @@ msgid "Translations other than English are machine-made and being corrected over
 msgstr "Les traductions autres que l'anglais sont générées automatiquement et corrigées progressivement. Toute traduction encore absente revient à l'anglais."
 
 #: src/pages/settings/DownloadCards.tsx
-#, fuzzy
-msgid "Trash retention (days)"
-msgstr "Rétention de la corbeille (jours)"
+msgid "Trash retention"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -22996,6 +23226,10 @@ msgstr "Sans correspondance"
 msgid "Unmonitored"
 msgstr "Non suivi"
 
+#: src/components/ui/CoverCardMenu.tsx
+msgid "Unmute notifications"
+msgstr ""
+
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
 msgid "Unofficial build (not a tagged release)"
@@ -23017,6 +23251,7 @@ msgstr "Désépinglez-le d'abord de toutes les séries"
 msgid "Unrated"
 msgstr "Sans note"
 
+#: src/components/NotificationBell.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Unread"
@@ -23086,6 +23321,10 @@ msgstr "Type de fichier non pris en charge"
 #, fuzzy
 msgid "Untagged only"
 msgstr "Sans tag uniquement"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "until {until}, now back in recommendations"
+msgstr ""
 
 #: src/components/QueuePause.tsx
 #, fuzzy
@@ -23644,9 +23883,8 @@ msgid "Version {0} to {1}. These parts of the definition change:"
 msgstr "Version {0} vers {1}. Ces parties de la définition changent :"
 
 #: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "very tight"
-msgstr "très proche"
+msgid "very alike"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -23906,11 +24144,6 @@ msgstr "Voulez-vous la noter avant qu'elle ne parte ? Vous lui aviez donné {soF
 msgid "Wanted"
 msgstr "Souhaité"
 
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Wanted ({wantedFilterCount})"
-msgstr "Souhaité ({wantedFilterCount})"
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Wanted chapters may be downloaded again by existing automation."
@@ -23948,6 +24181,10 @@ msgstr "Regardé"
 #, fuzzy
 msgid "Watched chapters don't count toward your reading stats. If you have a connected tracker, this moves the manga entry there to the same chapter."
 msgstr "Les chapitres marqués comme vus ne comptent pas dans vos statistiques de lecture. Si vous avez connecté un tracker, cela met aussi à jour l'entrée du manga jusqu'au même chapitre."
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Watched in the anime"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -24047,11 +24284,6 @@ msgstr "Ce que vous lisez"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
-msgid "What you read, grouped"
-msgstr "Ce que vous lisez, regroupé"
-
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
 msgid "What you've read"
 msgstr "Ce que vous avez lu"
 
@@ -24109,6 +24341,10 @@ msgstr "La suite du parcours"
 #, fuzzy
 msgid "Where you stop"
 msgstr "Où vous vous arrêtez"
+
+#: src/pages/discover/TasteTab.tsx
+msgid "Where you usually stop"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -24350,11 +24586,6 @@ msgstr "Vous consultez cette page en HTTP simple. Après un redémarrage, la con
 msgid "You are signed in over plain HTTP. Once Maki restarts it will refuse sign-in at this address, and getting back in needs a TLS proxy in front of Maki or an edit to the database."
 msgstr "Vous êtes connecté en HTTP simple. Une fois Maki redémarré, il refusera la connexion à cette adresse, et pour y revenir il faudra un proxy TLS devant Maki ou une modification de la base de données."
 
-#: src/pages/discover/TasteTab.tsx
-#, fuzzy
-msgid "You bail around"
-msgstr "Vous abandonnez vers"
-
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "You can add series, but no root folder has been granted to you yet. Ask an admin to grant you one, or to add this title."
@@ -24434,6 +24665,10 @@ msgstr "Vous ne suivez personne pour l'instant. Ouvrez un créateur ou un studio
 #, fuzzy
 msgid "You had this at {soFar} so far. Keep it?"
 msgstr "Vous l'aviez notée {soFar} pour l'instant. La garder ?"
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "You have finished {readCount, plural, one {# chapter} other {# chapters}}, up to ch. {readUpTo}."
+msgstr ""
 
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
@@ -24648,9 +24883,8 @@ msgid "Your requests"
 msgstr "Vos demandes"
 
 #: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "Your shelf, ratings and reading feed the ranking. Thumbs, hide and seen only touch one title each."
-msgstr "Votre étagère, vos notes et votre lecture alimentent le classement. Pouce, masquer et vu ne touchent qu'un seul titre à la fois."
+msgid "Your shelf, ratings, reading and thumbs decide what gets recommended. Hide, dismiss and seen elsewhere only take that one title out."
+msgstr ""
 
 #: src/components/ImportListsSection.tsx
 msgid "Your shortlist is full."
@@ -24661,15 +24895,17 @@ msgstr ""
 msgid "Your source changes have not been saved. Closing now discards them."
 msgstr "Vos modifications des sources n'ont pas été enregistrées. Si vous fermez maintenant, elles seront perdues."
 
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "Your sources only reach chapter <0>{highest}</0>, but MangaBaka lists <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
-msgstr "Vos sources ne vont que jusqu’au chapitre <0>{highest}</0>, alors que MangaBaka en répertorie <1>{listed}</1>. Environ {missing, plural, one {# chapitre} many {# chapitres} other {# chapitres}} ne peuvent pas être téléchargés depuis les sources liées ici. Liez une autre source pour combler l’écart."
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Your sources go up to ch. {highest}."
+msgstr ""
 
 #: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "Your sources only reach chapter <0>{highest}</0>, but the total you set is <1>{listed}</1>. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
-msgstr "Vos sources ne vont que jusqu'au chapitre <0>{highest}</0>, mais le total que vous avez défini est <1>{listed}</1>. Environ {missing, plural, one {# chapitre} many {# chapitres} other {# chapitres}} ne peuvent pas être téléchargés depuis les sources liées ici. Liez une autre source pour combler l'écart."
+msgid "Your sources only reach chapter {highest}, but MangaBaka lists {listed}. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "Your sources only reach chapter {highest}, but the total you set is {listed}. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
+msgstr ""
 
 #: src/components/SeriesTagsEditor.tsx
 #: src/pages/LibraryPage.tsx

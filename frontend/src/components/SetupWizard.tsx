@@ -54,6 +54,7 @@ import {
 } from '../api/hooks'
 import { languageName } from '../api/titles'
 import { formatBytes } from '../format'
+import { NO_TRANSITION } from '../lib/motion'
 import { useLanguageChoice } from '../i18n-context'
 import { AppearancePicker } from './AppearancePicker'
 import { ConnectionForm, type ConnectionFields } from './ConnectionSettingsCard'
@@ -944,7 +945,7 @@ function SetupGuide() {
       withCloseButton={false}
       closeOnEscape={false}
       padding={0}
-      transitionProps={{ duration: 0 }}
+      transitionProps={NO_TRANSITION}
       classNames={{ content: 'setup-modal', body: 'setup-modal-body' }}
       attributes={{ content: { 'aria-label': t`Setup guide` } }}
     >
