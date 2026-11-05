@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Maki.Core.Entities;
 
 namespace Maki.Metadata.MangaBaka;
@@ -75,6 +76,13 @@ namespace Maki.Metadata.MangaBaka;
 /// stop one franchise filling the visible part of a rail.
 /// </para>
 /// </param>
+/// <param name="FeelSeeds">
+/// Every seed that could honestly be named after "Feels like" for this pick, best first, so the
+/// first entry is what <see cref="BecauseOfTitle"/> was set from. Server-side only: a rail rewrites
+/// <see cref="BecauseOfTitle"/> from it so one seed is not named on every card
+/// (<c>RecommendationReasons</c>), and the client only ever reads the chosen one.
+/// </param>
+/// <param name="CoReadSeeds">The same for <see cref="CoReadWithTitle"/>.</param>
 public record MangaBakaRecommendation(
     string ProviderId,
     string Title,
@@ -102,7 +110,12 @@ public record MangaBakaRecommendation(
     string? CoReadWithId = null,
     string? RelatedToThumbUrl = null,
     string? BecauseOfThumbUrl = null,
-    string? CoReadWithThumbUrl = null);
+    string? CoReadWithThumbUrl = null,
+    [property: JsonIgnore] IReadOnlyList<ReasonSeed>? FeelSeeds = null,
+    [property: JsonIgnore] IReadOnlyList<ReasonSeed>? CoReadSeeds = null);
+
+/// <summary>One of the reader's series a pick's reason can name.</summary>
+public record ReasonSeed(string? Id, string Title, string? ThumbUrl);
 
 /// <summary>A dump row's anime range, as <c>AnimeCoverage.Parse</c> reads it, plus its chapter count.</summary>
 public record MangaBakaAnimeCoverage(string? AnimeStart, string? AnimeEnd, int? TotalChapters);
