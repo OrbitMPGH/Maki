@@ -188,7 +188,7 @@ export const ChapterRow = memo(function ChapterRow({
           <LightGroup gap={6} wrap="nowrap">
             {c.fileVolume !== null && !c.isOneShot && c.number !== null && (
                 <HoverTooltip label={t`Contained in a volume/compilation file`} withArrow>
-                  <LightBadge color="var(--neutral)" variant="outline" className="tnum chapter-label">
+                  <LightBadge color="var(--watched)" className="tnum chapter-label">
                     <Trans>Vol. {fileVolume}</Trans>
                   </LightBadge>
                 </HoverTooltip>
@@ -279,11 +279,11 @@ export const ChapterRow = memo(function ChapterRow({
                 return (
                     <LightGroup gap={4} wrap="wrap">
                       <HoverTooltip label={origin.hint} withArrow disabled={!origin.hint}>
-                        <LightBadge variant="outline" color="var(--neutral)">
+                        <LightBadge variant={origin.scraped ? 'light' : 'outline'} color="var(--neutral)">
                           {origin.label}
                         </LightBadge>
                       </HoverTooltip>
-                      <FileQualityBadge quality={c.fileQuality} neutral />
+                      <FileQualityBadge quality={c.fileQuality} />
                     </LightGroup>
                 )
               })()

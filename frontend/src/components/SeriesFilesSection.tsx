@@ -352,8 +352,8 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                           {f.parsedLabel ? (
                             <Badge
                               size="sm"
-                              variant="outline"
-                              color="var(--neutral)"
+                              variant="light"
+                              color={f.isVolume ? 'indigo' : 'gray'}
                               className="tnum files-parsed-pill"
                             >
                               {f.parsedLabel}
@@ -418,7 +418,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                           </Text>
                         </Table.Td>
                         <Table.Td className="files-cell-quality">
-                          <FileQualityBadge quality={f.quality} neutral />
+                          <FileQualityBadge quality={f.quality} />
                         </Table.Td>
                         {!selectMode && (
                           <Table.Td className="files-cell-actions">
