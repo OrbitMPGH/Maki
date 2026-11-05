@@ -719,6 +719,11 @@ body {
 .mantine-Button-root[data-loading]:not([data-with-right-section]):not(:has(.pending-label)) .mantine-Button-inner {
   transform: translateX(-0.55em);
 }
+/* The dots end 0.7em past the shifted label, more than compact sizes' padding, so those grow a
+   little rather than clip the last dot against the edge. */
+.mantine-Button-root[data-loading]:not([data-with-right-section]):not(:has(.pending-label)) {
+  padding-inline-end: max(var(--button-padding-x, var(--button-padding-x-sm)), 1em);
+}
 .mantine-Button-root[data-loading] .mantine-Button-section[data-position='right'] {
   visibility: hidden;
 }
