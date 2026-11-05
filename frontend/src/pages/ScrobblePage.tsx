@@ -1,5 +1,5 @@
 import { errorText } from '../api/errorText'
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import {
   Alert,
   Box,
@@ -565,6 +565,8 @@ export default function ScrobblePage() {
   }, [searchParams, setSearchParams])
 
   const anyTrackerConnected = data?.connections.some((c) => c.service !== 'kavita' && c.connected)
+  const noTrackerHintId = useId()
+  const showNoTrackerHint = !!data && !anyTrackerConnected
   const intervalMinutes = data?.intervalMinutes ?? 30
   const lastSync = fmtTime(data?.lastSyncAt)
   const nextSync = fmtTime(data?.nextSyncAt)
@@ -574,11 +576,21 @@ export default function ScrobblePage() {
       compact
       title={t`Scrobble`}
       description={
-        <Trans>
-          Sends what you read to your trackers every{' '}
-          <Plural value={intervalMinutes} one="# minute" other="# minutes" />. Progress on a tracker is never
-          lowered.
-        </Trans>
+        <>
+          <Trans>
+            Sends what you read to your trackers every{' '}
+            <Plural value={intervalMinutes} one="# minute" other="# minutes" />. Progress on a tracker is never
+            lowered.
+          </Trans>
+          {showNoTrackerHint && (
+            <>
+              {' '}
+              <span id={noTrackerHintId}>
+                <Trans>Connect a tracker to use Sync now.</Trans>
+              </span>
+            </>
+          )}
+        </>
       }
       actions={
         <>
@@ -601,6 +613,7 @@ export default function ScrobblePage() {
               loading={syncNow.isPending || data?.running}
               data-disabled={!anyTrackerConnected || undefined}
               aria-disabled={!anyTrackerConnected}
+              aria-describedby={showNoTrackerHint ? noTrackerHintId : undefined}
               onClick={() => {
                 if (!anyTrackerConnected) return
                 syncNow.mutate(undefined, {

@@ -61,6 +61,18 @@ export const SearchSeries: Story = {
   },
 }
 
+/** A match through another title shows that title under the shown one, with the match marked. */
+export const SearchByOtherTitle: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: /^Search/ }))
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.type(await body.findByRole('combobox', { name: INPUT_NAME }), '紙の月')
+    const option = await body.findByRole('option', { name: /Paper Moon Detective/ })
+    await expect(await within(option).findByText('紙の月')).toHaveProperty('tagName', 'MARK')
+    await expect(option).toHaveTextContent('紙の月探偵')
+  },
+}
+
 export const SearchSetting: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: /^Search/ }))

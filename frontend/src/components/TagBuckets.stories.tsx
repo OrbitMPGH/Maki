@@ -58,9 +58,9 @@ export const Default: Story = {
 export const SpoilerTooltip: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(canvas.queryByText('Unreliable Memory')).toBeNull()
-    const [first] = await canvas.findAllByRole('button', { name: 'Spoiler' })
-    await userEvent.click(first)
-    await waitFor(() => expect(first).toHaveAttribute('aria-pressed', 'true'))
+    const toggle = await canvas.findByRole('button', { name: '2 spoiler tags' })
+    await userEvent.click(toggle)
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-expanded', 'true'))
     await userEvent.hover(await canvas.findByText('Unreliable Memory'))
     const tip = await within(canvasElement.ownerDocument.body).findByText(
       'Spoiler: The narrator has been wrong about the first winter.',
@@ -71,10 +71,12 @@ export const SpoilerTooltip: Story = {
 
 export const SpoilerKeyboardReveal: Story = {
   play: async ({ canvas, userEvent }) => {
-    const buttons = await canvas.findAllByRole('button', { name: 'Spoiler' })
-    buttons[1].focus()
+    await expect(canvas.queryByText('Dream Sequence')).toBeNull()
+    const toggle = await canvas.findByRole('button', { name: '2 spoiler tags' })
+    toggle.focus()
     await userEvent.keyboard('{Enter}')
     await expect(await canvas.findByText('Dream Sequence')).toBeVisible()
+    await expect(await canvas.findByText('Unreliable Memory')).toBeVisible()
     await userEvent.keyboard(' ')
     await waitFor(() => expect(canvas.queryByText('Dream Sequence')).toBeNull())
   },

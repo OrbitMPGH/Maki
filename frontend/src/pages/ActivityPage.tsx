@@ -446,7 +446,6 @@ export default function ActivityPage() {
       <QueuePauseBanner canManage={canManageQueue} />
       <FigureStrip
         loading={!queue && !queueQuery.isError}
-        quietWhenZero
         figures={[
           { label: t`In progress`, value: stats.active, tone: 'info' },
           { label: t`Queued`, value: stats.queued },

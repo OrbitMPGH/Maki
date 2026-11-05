@@ -90,6 +90,8 @@ export const NothingConnected: Story = {
   play: async ({ canvas }) => {
     const sync = await canvas.findByRole('button', { name: 'Sync now' })
     await waitFor(() => expect(sync).toHaveAttribute('aria-disabled', 'true'))
+    await expect(await canvas.findByText('Connect a tracker to use Sync now.')).toBeVisible()
+    await expect(sync).toHaveAccessibleDescription('Connect a tracker to use Sync now.')
     await expect(await canvas.findByText('Nothing needs review.')).toBeVisible()
     await expect(await canvas.findByText('No syncs yet.')).toBeVisible()
     await expect(await canvas.findByText('No activity yet.')).toBeVisible()

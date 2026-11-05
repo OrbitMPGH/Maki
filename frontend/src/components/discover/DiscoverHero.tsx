@@ -198,7 +198,7 @@ export function DiscoverHero({
     item.coRecommended
       ? { id: 'co-recommended', text: t`Readers like you also recommended this` }
       : null,
-    item.tasteMatch ? { id: 'taste-match', text: t`Close to your reading in taste space` } : null,
+    item.tasteMatch ? { id: 'taste-match', text: t`Close to what you read` } : null,
     becauseOfTitle ? { id: 'because-of-title', text: t`Because you read ${becauseOfTitle}` } : null,
     relationKind && relatedToTitle
       ? { id: 'relation', text: relationPhrase(relationKind, relatedToTitle) }

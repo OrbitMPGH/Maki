@@ -247,7 +247,7 @@ export function SignalsCard() {
                     </>
                   ),
                 },
-                { label: t`Hidden or dismissed`, value: suppressed, hint: t`${exposed} seen elsewhere` },
+                { label: t`Hidden or dismissed`, value: suppressed, hint: t`${exposed} read or watched elsewhere` },
               ]}
             />
 
@@ -299,11 +299,10 @@ export function SignalsCard() {
                         {/* Wraps rather than truncating: on a phone the pill's date was cut mid-way. */}
                         <Group gap={6} wrap="wrap" mt={2}>
                           <ActionPill item={item} />
-                          <Text size="xs" c="var(--ink-3)">
-                            <MetaList
-                              inline
-                              items={[phrase(item), formatTime(item.occurredAtUtc)]}
-                            />
+                          {/* The list form, not inline: a wrapped time takes its separator to the
+                              line start, where the list clips it, instead of leaving it alone. */}
+                          <Text component="div" size="xs" c="var(--ink-3)">
+                            <MetaList items={[phrase(item), formatTime(item.occurredAtUtc)]} />
                           </Text>
                         </Group>
                       </div>

@@ -378,6 +378,11 @@ msgstr "{0, plural, one {# seria ma własne ustawienie w swoim menu.} few {# ser
 msgid "{0, plural, one {# skipped} other {# skipped}}"
 msgstr "{0, plural, one {Pominięto #} few {Pominięto #} many {Pominięto #} other {Pominięto #}}"
 
+#. placeholder {0}: spoilers.length
+#: src/components/TagBuckets.tsx
+msgid "{0, plural, one {# spoiler tag} other {# spoiler tags}}"
+msgstr ""
+
 #. placeholder {0}: active.items.length
 #. placeholder {0}: items.length
 #: src/components/discover/DiscoverCatalogue.tsx
@@ -573,6 +578,16 @@ msgstr "{0, plural, one {Pokaż wszystkie #} few {Pokaż wszystkie #} many {Poka
 #, fuzzy
 msgid "{0, plural, one {Skipped: # file, {size}} other {Skipped: # files, {size}}}"
 msgstr "{0, plural, one {Pominięto: # plik, {size}} few {Pominięto: # pliki, {size}} many {Pominięto: # plików, {size}} other {Pominięto: # pliku, {size}}}"
+
+#. placeholder {0}: spoilers.length
+#: src/components/TagBuckets.tsx
+msgid "{0, plural, one {Spoiler tag. Click to hide it again.} other {Spoiler tags. Click to hide them again.}}"
+msgstr ""
+
+#. placeholder {0}: spoilers.length
+#: src/components/TagBuckets.tsx
+msgid "{0, plural, one {Spoiler tag. Click to reveal it.} other {Spoiler tags. Click to reveal them.}}"
+msgstr ""
 
 #. placeholder {0}: parsed.skippedNonLibrary
 #: src/components/import/MihonImport.tsx
@@ -1256,9 +1271,13 @@ msgid "{existing, plural, one {# already in the library} other {# already in the
 msgstr "{existing, plural, one {# już w bibliotece} few {# już w bibliotece} many {# już w bibliotece} other {# już w bibliotece}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+msgid "{exposed} read or watched elsewhere"
+msgstr ""
+
+#: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
-msgid "{exposed} seen elsewhere"
-msgstr "{exposed} obejrzanych gdzie indziej"
+#~ msgid "{exposed} seen elsewhere"
+#~ msgstr "{exposed} obejrzanych gdzie indziej"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -2457,6 +2476,10 @@ msgstr "od {start} do {end}"
 #, fuzzy
 msgid "{statusLabel}, not monitored"
 msgstr "{statusLabel}, bez monitorowania"
+
+#: src/components/ui/CoverCard.tsx
+msgid "{statusOnly}. {readTip}"
+msgstr ""
 
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
@@ -6163,9 +6186,13 @@ msgid "Close Rewind"
 msgstr "Zamknij Rewind"
 
 #: src/components/discover/DiscoverHero.tsx
+msgid "Close to what you read"
+msgstr ""
+
+#: src/components/discover/DiscoverHero.tsx
 #, fuzzy
-msgid "Close to your reading in taste space"
-msgstr "Blisko Twoich upodobań w przestrzeni gustu"
+#~ msgid "Close to your reading in taste space"
+#~ msgstr "Blisko Twoich upodobań w przestrzeni gustu"
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -6413,6 +6440,10 @@ msgstr "Połącz {label} na stronie Scrobble, aby z niego importować."
 #, fuzzy
 msgid "Connect a tracker first"
 msgstr "Najpierw połącz tracker"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Connect a tracker to use Sync now."
+msgstr ""
 
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
@@ -14150,6 +14181,14 @@ msgstr "Niedostępne offline"
 msgid "Not checked for new chapters: it is finished and complete, or has no source switched on."
 msgstr "Nie sprawdzane pod kątem nowych rozdziałów: seria jest ukończona i kompletna albo nie ma włączonego żadnego źródła."
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not checked for new chapters: no source is switched on."
+msgstr ""
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not checked for new chapters: the series is finished and every chapter is listed."
+msgstr ""
+
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -20565,11 +20604,19 @@ msgid "Sources disagree on chapter numbering"
 msgstr "Źródła różnią się co do numeracji rozdziałów"
 
 #: src/components/series/SeriesHero.tsx
-msgid "Sources end at ch. {highest}; MangaBaka lists {listed}"
+#~ msgid "Sources end at ch. {highest}; MangaBaka lists {listed}"
+#~ msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+#~ msgid "Sources end at ch. {highest}; your total is {listed}"
+#~ msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "Sources go up to ch. {highest}, MangaBaka lists {listed}."
 msgstr ""
 
 #: src/components/series/SeriesHero.tsx
-msgid "Sources end at ch. {highest}; your total is {listed}"
+msgid "Sources go up to ch. {highest}, your total is {listed}."
 msgstr ""
 
 #: src/components/series/SeriesHero.tsx
@@ -20654,16 +20701,16 @@ msgid "Split into two pages"
 msgstr "Podziel na dwie strony"
 
 #: src/components/TagBuckets.tsx
-msgid "Spoiler"
-msgstr ""
+#~ msgid "Spoiler"
+#~ msgstr ""
 
 #: src/components/TagBuckets.tsx
-msgid "Spoiler tag. Click to hide it again."
-msgstr ""
+#~ msgid "Spoiler tag. Click to hide it again."
+#~ msgstr ""
 
 #: src/components/TagBuckets.tsx
-msgid "Spoiler tag. Click to reveal it."
-msgstr ""
+#~ msgid "Spoiler tag. Click to reveal it."
+#~ msgstr ""
 
 #: src/components/TagBuckets.tsx
 msgid "Spoiler:"
@@ -23072,6 +23119,7 @@ msgstr "Najpierw odepnij go od wszystkich serii"
 msgid "Unrated"
 msgstr "Bez oceny"
 
+#: src/components/NotificationBell.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Unread"

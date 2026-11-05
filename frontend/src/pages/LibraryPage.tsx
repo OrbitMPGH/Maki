@@ -1,6 +1,7 @@
 import { errorText } from '../api/errorText'
 import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePageState } from '../lib/pageState'
+import { onPageScroll } from '../lib/pageScroll'
 import { shownRating } from '../lib/rating'
 import { fuzzyFilter, titleIndex } from '../lib/fuzzySearch'
 import { useStableActions } from '../lib/useStableActions'
@@ -1454,6 +1455,30 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     const observer = new ResizeObserver(apply)
     observer.observe(strip)
     return () => observer.disconnect()
+  }, [showChrome])
+
+  // Marks the toolbar while it is pinned, so it can draw the edge the grid scrolls under.
+  useEffect(() => {
+    const panel = indexRef.current
+    if (!panel) return
+    let frame = 0
+    const check = () => {
+      frame = 0
+      const pinnedAt = parseFloat(getComputedStyle(panel).top) || 0
+      if (panel.getBoundingClientRect().top <= pinnedAt + 0.5) panel.dataset.stuck = ''
+      else delete panel.dataset.stuck
+    }
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(check)
+    }
+    check()
+    const stop = onPageScroll(schedule)
+    window.addEventListener('resize', schedule)
+    return () => {
+      cancelAnimationFrame(frame)
+      stop()
+      window.removeEventListener('resize', schedule)
+    }
   }, [showChrome])
 
   const reverseSort = () => {

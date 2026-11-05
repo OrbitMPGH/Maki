@@ -318,6 +318,11 @@ msgstr "{0, plural, one {# series has its own setting in its menu.} other {# ser
 msgid "{0, plural, one {# skipped} other {# skipped}}"
 msgstr "{0, plural, one {# skipped} other {# skipped}}"
 
+#. placeholder {0}: spoilers.length
+#: src/components/TagBuckets.tsx
+msgid "{0, plural, one {# spoiler tag} other {# spoiler tags}}"
+msgstr "{0, plural, one {# spoiler tag} other {# spoiler tags}}"
+
 #. placeholder {0}: active.items.length
 #. placeholder {0}: items.length
 #: src/components/discover/DiscoverCatalogue.tsx
@@ -481,6 +486,16 @@ msgstr "{0, plural, one {Show all #} other {Show all #}}"
 #: src/components/pageconversion/EstimateTable.tsx
 msgid "{0, plural, one {Skipped: # file, {size}} other {Skipped: # files, {size}}}"
 msgstr "{0, plural, one {Skipped: # file, {size}} other {Skipped: # files, {size}}}"
+
+#. placeholder {0}: spoilers.length
+#: src/components/TagBuckets.tsx
+msgid "{0, plural, one {Spoiler tag. Click to hide it again.} other {Spoiler tags. Click to hide them again.}}"
+msgstr "{0, plural, one {Spoiler tag. Click to hide it again.} other {Spoiler tags. Click to hide them again.}}"
+
+#. placeholder {0}: spoilers.length
+#: src/components/TagBuckets.tsx
+msgid "{0, plural, one {Spoiler tag. Click to reveal it.} other {Spoiler tags. Click to reveal them.}}"
+msgstr "{0, plural, one {Spoiler tag. Click to reveal it.} other {Spoiler tags. Click to reveal them.}}"
 
 #. placeholder {0}: parsed.skippedNonLibrary
 #: src/components/import/MihonImport.tsx
@@ -1042,8 +1057,12 @@ msgid "{existing, plural, one {# already in the library} other {# already in the
 msgstr "{existing, plural, one {# already in the library} other {# already in the library}}"
 
 #: src/pages/discover/FeedbackLab.tsx
-msgid "{exposed} seen elsewhere"
-msgstr "{exposed} seen elsewhere"
+msgid "{exposed} read or watched elsewhere"
+msgstr "{exposed} read or watched elsewhere"
+
+#: src/pages/discover/FeedbackLab.tsx
+#~ msgid "{exposed} seen elsewhere"
+#~ msgstr "{exposed} seen elsewhere"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
@@ -2027,6 +2046,10 @@ msgstr "{start} to {end}"
 #: src/components/ui/CoverCard.tsx
 msgid "{statusLabel}, not monitored"
 msgstr "{statusLabel}, not monitored"
+
+#: src/components/ui/CoverCard.tsx
+msgid "{statusOnly}. {readTip}"
+msgstr "{statusOnly}. {readTip}"
 
 #: src/components/pageconversion/StartStep.tsx
 msgid "{stop}. {hint}"
@@ -5080,8 +5103,12 @@ msgid "Close Rewind"
 msgstr "Close Rewind"
 
 #: src/components/discover/DiscoverHero.tsx
-msgid "Close to your reading in taste space"
-msgstr "Close to your reading in taste space"
+msgid "Close to what you read"
+msgstr "Close to what you read"
+
+#: src/components/discover/DiscoverHero.tsx
+#~ msgid "Close to your reading in taste space"
+#~ msgstr "Close to your reading in taste space"
 
 #: src/components/ui/DiscoverRail.tsx
 msgid "Close to your taste"
@@ -5284,6 +5311,10 @@ msgstr "Connect {label} on the Scrobble page to import from it."
 #: src/pages/ScrobblePage.tsx
 msgid "Connect a tracker first"
 msgstr "Connect a tracker first"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Connect a tracker to use Sync now."
+msgstr "Connect a tracker to use Sync now."
 
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Connect accounts on the Scrobble page."
@@ -11623,6 +11654,14 @@ msgstr "Not available offline"
 msgid "Not checked for new chapters: it is finished and complete, or has no source switched on."
 msgstr "Not checked for new chapters: it is finished and complete, or has no source switched on."
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not checked for new chapters: no source is switched on."
+msgstr "Not checked for new chapters: no source is switched on."
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not checked for new chapters: the series is finished and every chapter is listed."
+msgstr "Not checked for new chapters: the series is finished and every chapter is listed."
+
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/SystemCards.tsx
 msgid "Not checked yet"
@@ -16894,12 +16933,20 @@ msgid "Sources disagree on chapter numbering"
 msgstr "Sources disagree on chapter numbering"
 
 #: src/components/series/SeriesHero.tsx
-msgid "Sources end at ch. {highest}; MangaBaka lists {listed}"
-msgstr "Sources end at ch. {highest}; MangaBaka lists {listed}"
+#~ msgid "Sources end at ch. {highest}; MangaBaka lists {listed}"
+#~ msgstr "Sources end at ch. {highest}; MangaBaka lists {listed}"
 
 #: src/components/series/SeriesHero.tsx
-msgid "Sources end at ch. {highest}; your total is {listed}"
-msgstr "Sources end at ch. {highest}; your total is {listed}"
+#~ msgid "Sources end at ch. {highest}; your total is {listed}"
+#~ msgstr "Sources end at ch. {highest}; your total is {listed}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Sources go up to ch. {highest}, MangaBaka lists {listed}."
+msgstr "Sources go up to ch. {highest}, MangaBaka lists {listed}."
+
+#: src/components/series/SeriesHero.tsx
+msgid "Sources go up to ch. {highest}, your total is {listed}."
+msgstr "Sources go up to ch. {highest}, your total is {listed}."
 
 #: src/components/series/SeriesHero.tsx
 #~ msgid "Sources reach ch. {highest} of {listed}"
@@ -16969,16 +17016,16 @@ msgid "Split into two pages"
 msgstr "Split into two pages"
 
 #: src/components/TagBuckets.tsx
-msgid "Spoiler"
-msgstr "Spoiler"
+#~ msgid "Spoiler"
+#~ msgstr "Spoiler"
 
 #: src/components/TagBuckets.tsx
-msgid "Spoiler tag. Click to hide it again."
-msgstr "Spoiler tag. Click to hide it again."
+#~ msgid "Spoiler tag. Click to hide it again."
+#~ msgstr "Spoiler tag. Click to hide it again."
 
 #: src/components/TagBuckets.tsx
-msgid "Spoiler tag. Click to reveal it."
-msgstr "Spoiler tag. Click to reveal it."
+#~ msgid "Spoiler tag. Click to reveal it."
+#~ msgstr "Spoiler tag. Click to reveal it."
 
 #: src/components/TagBuckets.tsx
 msgid "Spoiler:"
@@ -18954,6 +19001,7 @@ msgstr "Unpin it from every series first"
 msgid "Unrated"
 msgstr "Unrated"
 
+#: src/components/NotificationBell.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Unread"
 msgstr "Unread"

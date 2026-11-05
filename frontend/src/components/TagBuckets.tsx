@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useState, type CSSProperties, type ReactElement } from 'react'
 import { Tooltip, VisuallyHidden } from '@mantine/core'
 import { IconEyeOff } from '../lib/icons'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
@@ -53,8 +53,20 @@ export function TagBuckets({ tags }: { tags: MangaBakaTag[] }) {
         if (inBucket.length === 0) return null
 
         const open = expanded.includes(bucket.key)
-        const shown = open ? inBucket : inBucket.slice(0, MAX_TAGS_PER_BUCKET)
-        const overflow = inBucket.length - shown.length
+        const plain = inBucket.filter((tag) => !tag.isSpoiler)
+        const spoilers = inBucket.filter((tag) => tag.isSpoiler)
+        const shown = open ? plain : plain.slice(0, MAX_TAGS_PER_BUCKET)
+        const overflow = plain.length - shown.length
+        const spoilersShown = revealed.includes(bucket.key)
+
+        const withTip = (key: string, tip: string | null, chip: ReactElement) =>
+          tip ? (
+            <Tooltip key={key} label={tip} withArrow multiline maw={320} openDelay={200} zIndex={1001}>
+              {chip}
+            </Tooltip>
+          ) : (
+            <span key={key}>{chip}</span>
+          )
 
         return (
           <div
@@ -69,71 +81,71 @@ export function TagBuckets({ tags }: { tags: MangaBakaTag[] }) {
             </div>
 
             <div className="tag-chips">
-              {shown.map((tag) => {
-                const { description, isSpoiler, name } = tag
-                const isRevealed = revealed.includes(name)
-                // A spoiler shows a readable "Spoiler" placeholder (a blurred name read as a
-                // rendering fault) until a click, tap or Enter/Space swaps in the name.
-                const chip = isSpoiler ? (
+              {shown.map(({ name, description }) =>
+                withTip(
+                  name,
+                  description,
+                  <span className="tag-chip">
+                    <i className="tag-dot" />
+                    <span>{name}</span>
+                  </span>,
+                ),
+              )}
+
+              {/* One placeholder per bucket, however many spoilers it holds; a click, tap or
+                  Enter/Space shows them all and the same button hides them again. */}
+              {spoilers.length > 0 && (
+                <Tooltip
+                  label={
+                    spoilersShown ? (
+                      <Plural value={spoilers.length} one="Spoiler tag. Click to hide it again." other="Spoiler tags. Click to hide them again." />
+                    ) : (
+                      <Plural value={spoilers.length} one="Spoiler tag. Click to reveal it." other="Spoiler tags. Click to reveal them." />
+                    )
+                  }
+                  withArrow
+                  multiline
+                  maw={320}
+                  openDelay={200}
+                  zIndex={1001}
+                >
                   <button
                     type="button"
                     className="tag-chip spoiler-tag"
                     data-interactive
-                    data-revealed={isRevealed || undefined}
-                    aria-pressed={isRevealed}
+                    data-revealed={spoilersShown || undefined}
+                    aria-expanded={spoilersShown}
                     onClick={() =>
-                      setRevealed((r) => (isRevealed ? r.filter((n) => n !== name) : [...r, name]))
+                      setRevealed((r) => (spoilersShown ? r.filter((k) => k !== bucket.key) : [...r, bucket.key]))
                     }
                   >
                     <i className="tag-dot" />
                     <IconEyeOff size={12} className="spoiler-tag-glyph" aria-hidden />
-                    {isRevealed ? (
-                      <>
-                        <VisuallyHidden>{t`Spoiler:`} </VisuallyHidden>
-                        <span>{name}</span>
-                      </>
-                    ) : (
-                      <span>{t`Spoiler`}</span>
-                    )}
+                    <span className="tnum">
+                      <Plural value={spoilers.length} one="# spoiler tag" other="# spoiler tags" />
+                    </span>
                   </button>
-                ) : (
-                  <span className="tag-chip">
-                    <i className="tag-dot" />
-                    <span>{name}</span>
-                  </span>
-                )
-                // Spoiler tags always get a hint; the description waits until the name is shown,
-                // since it gives the tag away.
-                const tip = isSpoiler
-                  ? isRevealed
-                    ? description
-                      ? t`Spoiler: ${description}`
-                      : t`Spoiler tag. Click to hide it again.`
-                    : t`Spoiler tag. Click to reveal it.`
-                  : description
-                return tip ? (
-                  <Tooltip
-                    key={name}
-                    label={tip}
-                    withArrow
-                    multiline
-                    maw={320}
-                    openDelay={200}
-                    zIndex={1001}
-                  >
-                    {chip}
-                  </Tooltip>
-                ) : (
-                  <span key={name}>{chip}</span>
-                )
-              })}
+                </Tooltip>
+              )}
+              {spoilersShown &&
+                spoilers.map(({ name, description }) =>
+                  withTip(
+                    name,
+                    description ? t`Spoiler: ${description}` : null,
+                    <span className="tag-chip spoiler-tag" data-revealed>
+                      <i className="tag-dot" />
+                      <VisuallyHidden>{t`Spoiler:`} </VisuallyHidden>
+                      <span>{name}</span>
+                    </span>,
+                  ),
+                )}
 
               {overflow > 0 && (
                 <button type="button" className="tag-more" onClick={() => setExpanded((e) => [...e, bucket.key])}>
                   <Plural value={overflow} one="+# more" other="+# more" />
                 </button>
               )}
-              {open && inBucket.length > MAX_TAGS_PER_BUCKET && (
+              {open && plain.length > MAX_TAGS_PER_BUCKET && (
                 <button
                   type="button"
                   className="tag-more"

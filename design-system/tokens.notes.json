@@ -455,6 +455,8 @@
     "--dur-highlight": "the ring on a settings card a link pointed at",
     "--dur-banner": "the reader's chapter banner from fade-in to fade-out; ChapterBanner.tsx holds it as long. Reading time, so not shortened by Faster animations",
     "--dur-linger": "how long the reader's upscale line stays after it finishes; a failed one stays twice as long",
+    "--dur-hint-linger": "how long the reader's next-chapter card stays after its meter empties; ContinuousView's HINT_LINGER_MS holds the same. Reading time, so not shortened by Faster animations",
+    "--dur-result-hold": "how long a source search row with no match keeps its result on screen before it leaves. Reading time, so not shortened by Faster animations",
     "--dur-spin": "one turn of a spinner; a queued spinner takes twice as long. Not shortened by Faster animations"
   },
   "meta": {

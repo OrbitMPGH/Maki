@@ -1,7 +1,8 @@
 // Sideways strips (tab rows, the stats range, saved filters) clip on a phone with no hint that more
 // sits off screen. This marks each strip's overflowing edges so theme.css can fade them, and on
 // first sight scrolls the active item into view so a deep tab is never hidden past the edge.
-const STRIPS = '.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row'
+const STRIPS =
+  '.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row, .discover-taste-chips'
 const ACTIVE = '[aria-selected="true"], [data-active="true"], [data-active=""], [aria-current="page"]'
 
 const seen = new WeakSet<HTMLElement>()

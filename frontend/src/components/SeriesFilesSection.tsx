@@ -27,7 +27,7 @@ import { useLabel } from '../i18n-context'
 import { isPdfFile } from '../lib/files'
 import { fileStatusVisual, statusToken } from './ui/status'
 import { StatusDot } from './ui/StatusDot'
-import { MonoValue, splitForTruncation } from './ui/MonoValue'
+import { MonoValue, sharedPrefixLength, splitForTruncation } from './ui/MonoValue'
 import { Panel } from './ui/Panel'
 import { useAuth } from '../auth/AuthProvider'
 import { LinkFileToChaptersModal } from './LinkFileToChaptersModal'
@@ -48,7 +48,7 @@ function mappedLabel(file: SeriesFileDto): string {
 
 const hasLinks = (file: SeriesFileDto) => file.mappedChapters.length > 0 || file.status === 'linked'
 const MAPPED_TOOLTIP_EVENTS = { hover: true, focus: true, touch: true }
-// The fixed columns take 774px; this leaves the file name about 140px, so a phone sees it and the
+// The fixed columns take 714px; this leaves the file name about 200px, so a phone sees it and the
 // parsed label before the table scrolls.
 const FILE_TABLE_MIN_WIDTH = 912
 
@@ -104,7 +104,13 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const unlinkedOnDisk = files?.filter((f) => f.onDisk && f.status !== 'linked').length ?? 0
   const missingCount = files?.filter((f) => f.status === 'missing').length ?? 0
   const fileCount = files?.length ?? 0
-  const fileNameTailCh = Math.max(0, ...(files ?? []).map((f) => splitForTruncation(f.fileName)[1].length))
+  const sharedPrefix = sharedPrefixLength((files ?? []).map((f) => f.fileName))
+  const fileNameTailCh = Math.max(
+    0,
+    ...(files ?? []).map((f) =>
+      sharedPrefix ? f.fileName.length - sharedPrefix : splitForTruncation(f.fileName)[1].length,
+    ),
+  )
   // When most of the folder is gone it is one problem, not twenty: one banner says so and the rows
   // stop repeating it in red.
   const mostlyMissing = missingCount >= 2 && missingCount >= fileCount * 0.8
@@ -128,10 +134,10 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
         {selectMode && <Table.Th w={40}><VisuallyHidden><Trans>Select</Trans></VisuallyHidden></Table.Th>}
         <Table.Th><Trans>File</Trans></Table.Th>
         <Table.Th w={90}><Trans>Parsed</Trans></Table.Th>
-        <Table.Th w={156}><Trans>Status</Trans></Table.Th>
-        <Table.Th w={156}><Trans>Mapped to</Trans></Table.Th>
-        <Table.Th w={100}><Trans>Size</Trans></Table.Th>
-        <Table.Th w={160}><Trans>Quality</Trans></Table.Th>
+        <Table.Th w={144}><Trans>Status</Trans></Table.Th>
+        <Table.Th w={136}><Trans>Mapped to</Trans></Table.Th>
+        <Table.Th w={84}><Trans>Size</Trans></Table.Th>
+        <Table.Th w={148}><Trans>Quality</Trans></Table.Th>
         {!selectMode && <Table.Th w={52 + (canLink ? 34 : 0) + (canDownload ? 34 : 0)}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>}
       </Table.Tr>
     </Table.Thead>
@@ -334,7 +340,13 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             ) : (
                               <IconFileZip size={16} style={{ flexShrink: 0 }} />
                             )}
-                            <MonoValue value={f.fileName} full={f.relativePath} tailCh={fileNameTailCh} copy />
+                            <MonoValue
+                              value={f.fileName}
+                              full={f.relativePath}
+                              splitAt={sharedPrefix || undefined}
+                              tailCh={fileNameTailCh}
+                              copy
+                            />
                           </Group>
                         </Table.Td>
                         <Table.Td className="files-cell-parsed">
@@ -343,7 +355,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                               size="sm"
                               variant="outline"
                               color="var(--neutral)"
-                              className="tnum"
+                              className="tnum files-parsed-pill"
                             >
                               {f.parsedLabel}
                             </Badge>

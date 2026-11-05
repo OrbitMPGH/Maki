@@ -201,7 +201,7 @@ export default function ReaderToolbar({
             color="gray"
             aria-label={t`Back to series`}
           >
-            <IconArrowLeft size={18} />
+            <IconArrowLeft size={20} />
           </ActionIcon>
           <div style={{ minWidth: 0, flex: 1 }}>
             <Text fz="sm" fw={600} truncate>
@@ -295,14 +295,14 @@ export default function ReaderToolbar({
                   onBlur={() => setCompareHeld(false)}
                   onContextMenu={(event) => event.preventDefault()}
                 >
-                  <IconSquareHalf size={18} />
+                  <IconSquareHalf size={20} />
                 </ActionIcon>
               </Tooltip>
             </Group>
           )}
           {incognito && (
             <Tooltip label={t`Incognito, this session isn't being recorded`} withArrow zIndex={OVERLAY_Z}>
-              <IconEyeOff size={18} opacity={0.7} />
+              <IconEyeOff size={20} opacity={0.7} />
             </Tooltip>
           )}
           <Tooltip
@@ -323,7 +323,7 @@ export default function ReaderToolbar({
               disabled={bookmarkDisabled}
               aria-label={t`Toggle bookmark`}
             >
-              {bookmarked ? <IconBookmarkFilled size={18} /> : <IconBookmark size={18} />}
+              {bookmarked ? <IconBookmarkFilled size={20} /> : <IconBookmark size={20} />}
             </ActionIcon>
           </Tooltip>
         </Group>
@@ -337,7 +337,7 @@ export default function ReaderToolbar({
         onMouseLeave={() => setHovered(false)}
         {...barFocus}
       >
-        <Group gap="xs" wrap="nowrap" px="md" h="100%">
+        <Group gap="var(--reader-bar-gap)" wrap="nowrap" px="md" h="100%">
           <Tooltip label={backChapterLabel} withArrow zIndex={OVERLAY_Z}>
             <ActionIcon
               variant="subtle"
@@ -346,7 +346,7 @@ export default function ReaderToolbar({
               disabled={(rtl ? manifest.nextChapterId : manifest.previousChapterId) === null}
               aria-label={backChapterLabel}
             >
-              <IconChevronLeft size={18} />
+              <IconChevronLeft size={20} />
             </ActionIcon>
           </Tooltip>
 
@@ -361,11 +361,10 @@ export default function ReaderToolbar({
             thumbs={thumbs}
           />
 
-          {/* Dropped on a phone: seven controls plus this counter leave the slider about 100px of
-              track, and the counter is the one thing here that is also on the slider's own label
-              and in the page badge. */}
+          {/* Dropped on a phone only when the zoom pair is up: seven controls plus this counter
+              leave the slider almost no track. */}
           <Text
-            visibleFrom="xs"
+            visibleFrom={prefs.mode !== 'vertical' ? 'xs' : undefined}
             fz="xs"
             c="var(--ink-3)"
             style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
@@ -381,7 +380,7 @@ export default function ReaderToolbar({
               disabled={(rtl ? manifest.previousChapterId : manifest.nextChapterId) === null}
               aria-label={forwardChapterLabel}
             >
-              <IconChevronRight size={18} />
+              <IconChevronRight size={20} />
             </ActionIcon>
           </Tooltip>
 
@@ -392,7 +391,7 @@ export default function ReaderToolbar({
               onClick={onToggleStrip}
               aria-label={t`Toggle page thumbnails`}
             >
-              <IconLayoutGrid size={18} />
+              <IconLayoutGrid size={20} />
             </ActionIcon>
           </Tooltip>
 
@@ -422,7 +421,7 @@ export default function ReaderToolbar({
               onClick={onShortcuts}
               aria-label={t`Keyboard shortcuts`}
             >
-              <IconKeyboard size={18} />
+              <IconKeyboard size={20} />
             </ActionIcon>
           </Tooltip>
 
@@ -431,7 +430,7 @@ export default function ReaderToolbar({
               {zoom !== 1 && (
                 <Tooltip label={t`Reset zoom`} withArrow zIndex={OVERLAY_Z}>
                   <ActionIcon variant="light" color="gray" onClick={onZoomReset} aria-label={t`Reset zoom`}>
-                    <IconZoomReset size={18} />
+                    <IconZoomReset size={20} />
                   </ActionIcon>
                 </Tooltip>
               )}
@@ -443,7 +442,7 @@ export default function ReaderToolbar({
                   disabled={zoom <= 1}
                   aria-label={t`Zoom out`}
                 >
-                  <IconZoomOut size={18} />
+                  <IconZoomOut size={20} />
                 </ActionIcon>
               </Tooltip>
               <Tooltip label={t`Zoom in`} withArrow zIndex={OVERLAY_Z}>
@@ -454,7 +453,7 @@ export default function ReaderToolbar({
                   disabled={zoom >= zoomMax}
                   aria-label={t`Zoom in`}
                 >
-                  <IconZoomIn size={18} />
+                  <IconZoomIn size={20} />
                 </ActionIcon>
               </Tooltip>
             </>
@@ -468,7 +467,7 @@ export default function ReaderToolbar({
                 onClick={onToggleFullscreen}
                 aria-label={t`Toggle full screen`}
               >
-                {fullscreen ? <IconMinimize size={18} /> : <IconMaximize size={18} />}
+                {fullscreen ? <IconMinimize size={20} /> : <IconMaximize size={20} />}
               </ActionIcon>
             </Tooltip>
           )}

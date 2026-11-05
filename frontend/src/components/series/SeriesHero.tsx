@@ -349,7 +349,7 @@ export function SeriesHero({
                                 </Text>
                             )}
 
-                            <Group gap="xs" mt="lg" wrap="wrap">
+                            <Group gap="xs" mt="lg" wrap="wrap" className="series-hero-actions">
                                 {actions}
                             </Group>
                         </Stack>
@@ -458,11 +458,11 @@ export function SeriesHero({
                                     <IconAlertTriangle size={14} aria-hidden />
                                     <span>
                                         {series.lockedFields.includes('totalChapters') ? (
-                                            <Trans>Sources end at ch. {highest}; your total is {listed}</Trans>
+                                            <Trans>Sources go up to ch. {highest}, your total is {listed}.</Trans>
                                         ) : (
-                                            <Trans>Sources end at ch. {highest}; MangaBaka lists {listed}</Trans>
+                                            <Trans>Sources go up to ch. {highest}, MangaBaka lists {listed}.</Trans>
                                         )}
-                                        <VisuallyHidden>. {gapExplanation}</VisuallyHidden>
+                                        <VisuallyHidden> {gapExplanation}</VisuallyHidden>
                                     </span>
                                 </Text>
                             </Tooltip>

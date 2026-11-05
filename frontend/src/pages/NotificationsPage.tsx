@@ -29,7 +29,7 @@ import {
 } from '../api/inbox'
 import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
-import { NotificationVisual } from '../components/NotificationBell'
+import { NotificationVisual, UnreadMark } from '../components/NotificationBell'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -325,6 +325,7 @@ function Row({
           </Box>
           <Stack gap={2} style={{ minWidth: 0 }}>
             <Text size="sm" fw={item.read ? 500 : 650}>
+              {!item.read && <UnreadMark />}
               {item.title}
             </Text>
             <Text size="xs" c="var(--ink-3)">

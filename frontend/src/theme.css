@@ -154,6 +154,11 @@
      at the unpaced length), and one turn of a spinner. */
   --dur-linger: 1.2s;
   --dur-spin: 1s;
+  /* Reading time, so never paced: how long the next-chapter card stays after its meter empties
+     (ContinuousView's HINT_LINGER_MS holds the same), and how long a source row's result is held
+     before it leaves. */
+  --dur-hint-linger: 0.6s;
+  --dur-result-hold: 1s;
 
   --font-display: 'Bricolage Grotesque Variable', 'Onest Variable', ui-sans-serif, -apple-system,
     'Segoe UI', Roboto, sans-serif;
@@ -2332,8 +2337,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   --rail-fade-start: 48px;
   --rail-edge-start: 6px;
 }
-/* The end fade is longer and eased, and clears fully a little before the edge: a short linear one
-   left the last card readable to its cut, which looked clipped rather than continued. */
+/* The end fade is longer and eased, and clears fully before the edge: a short or shallow one left
+   the last card readable to its cut ("192 ne"), which looked clipped rather than continued. */
 .discover-rail[data-fade-end] {
   --rail-fade-end: clamp(56px, 12vw, 104px);
   --rail-edge-end: 6px;
@@ -2345,16 +2350,16 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     transparent var(--rail-edge-start, 0px),
     #000 calc(var(--rail-edge-start, 0px) + var(--rail-fade-start)),
     #000 calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end)),
-    rgb(0 0 0 / 0.4) calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end) * 0.45),
-    transparent calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end) * 0.1)
+    rgb(0 0 0 / 0.25) calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end) * 0.5),
+    transparent calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end) * 0.15)
   );
   mask-image: linear-gradient(
     to right,
     transparent var(--rail-edge-start, 0px),
     #000 calc(var(--rail-edge-start, 0px) + var(--rail-fade-start)),
     #000 calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end)),
-    rgb(0 0 0 / 0.4) calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end) * 0.45),
-    transparent calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end) * 0.1)
+    rgb(0 0 0 / 0.25) calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end) * 0.5),
+    transparent calc(100% - var(--rail-edge-end, 0px) - var(--rail-fade-end) * 0.15)
   );
 }
 .discover-card:has(.discover-card-action:focus-visible) {
@@ -3143,6 +3148,18 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .reading-card:hover > .reading-card-menu {
   transform: translateY(-4px);
 }
+/* On touch the menu is always showing, and the top corner is where a cover's own volume number
+   tends to be printed. It moves to the end of the meta row, in the scrim, and the row makes room. */
+@media (hover: none), (pointer: coarse) {
+  .reading-card > .cover-card ~ .reading-card-menu {
+    top: auto;
+    bottom: 3px;
+    right: 6px;
+  }
+  .reading-card:has(> .cover-card ~ .reading-card-menu) .cover-row {
+    padding-inline-end: 28px;
+  }
+}
 /* The anime rail's unadded cards carry both the add hint and the menu in the top right. */
 .reading-card > .discover-card .discover-corner[data-add='true'] {
   right: 40px;
@@ -3792,6 +3809,17 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   flex-shrink: 0;
   color: var(--ok);
 }
+.series-actions-done--warn svg {
+  color: currentColor;
+}
+/* On a phone the hero buttons share each row they land on, so the row ends on one edge instead
+   of a ragged line of button widths. The overflow menu keeps its square. */
+@media (max-width: 47.9375em) {
+  .series-hero-actions > :is(.mantine-Button-root, .mantine-ButtonGroup-group),
+  .series-hero-actions > .mantine-ButtonGroup-group > .mantine-Button-root:first-child {
+    flex: 1 1 auto;
+  }
+}
 .discover-hero-strip-label {
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
@@ -3945,6 +3973,13 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 @keyframes discover-hero-progress {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
+}
+/* The hero does not rotate under reduced motion (DiscoverHero), and the global rule would leave this
+   snapped full, so it goes rather than claim a countdown. */
+@media (prefers-reduced-motion: reduce) {
+  .discover-hero-strip-progress {
+    display: none;
+  }
 }
 
 /* --- Recent activity: the seeds, as covers --------------------------------- */
@@ -4178,8 +4213,44 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-weight: var(--fw-semibold);
   color: var(--ink-3);
 }
+.discover-taste-chips {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+/* On a phone the chips wrapped into a ragged block with the link stranded at its end. The heading
+   and the link share the first line and the chips scroll sideways under them, one row tall. */
+@media (max-width: 47.9375em) {
+  .discover-taste-strip {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 10px;
+  }
+  .discover-taste-more {
+    grid-row: 1;
+    grid-column: 2;
+  }
+  .discover-taste-chips {
+    grid-column: 1 / -1;
+    flex-wrap: nowrap;
+    /* Keeps the chips' bottom border off the strip fade's unmasked 1px bottom line. */
+    padding-bottom: 1px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+}
+/* The sideways strip's chevron (see lib/scrollFades.ts) only belongs to the phone row. */
+@media (min-width: 48em) {
+  .discover-taste-strip .discover-taste-chips::after {
+    display: none;
+  }
+}
 .discover-taste-chip {
   display: inline-flex;
+  flex: none;
   align-items: center;
   gap: 7px;
   padding: 4px 9px;
@@ -5739,20 +5810,20 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
    far end also gets a chevron: a sticky `::after` painted in the ink, and a matching chevron layer in
    the mask that lets it through the faded edge. Both are drawn without a background, so the strip
    works on any ground. The bottom 1px layer keeps a rail's hairline from fading with the labels. */
-:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row) {
+:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row, .discover-taste-chips) {
   --strip-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='m184.49 136.49l-80 80a12 12 0 0 1-17-17L159 128L87.51 56.49a12 12 0 1 1 17-17l80 80a12 12 0 0 1-.02 17'/%3E%3C/svg%3E");
 }
-:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row):is([data-fade-start], [data-fade-end]) {
+:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row, .discover-taste-chips):is([data-fade-start], [data-fade-end]) {
   --fade-start: 0px;
   --fade-end: 0px;
   mask:
     linear-gradient(to right, transparent 0, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent 100%),
     linear-gradient(#000, #000) bottom / 100% 1px no-repeat;
 }
-:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row)[data-fade-start] {
+:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row, .discover-taste-chips)[data-fade-start] {
   --fade-start: 2rem;
 }
-:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row)[data-fade-end] {
+:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row, .discover-taste-chips)[data-fade-end] {
   --fade-end: 3.5rem;
   mask:
     linear-gradient(to right, transparent 0, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), transparent calc(100% - 1.25rem)),
@@ -5762,7 +5833,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 /* On a phone the last tab is often half on screen, and a short fade still left "Sh" readable as a
    cut word. A longer fade that is mostly gone by its middle and clear before the chevron. */
 @media (max-width: 47.9375em) {
-  :is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row)[data-fade-end] {
+  :is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row, .discover-taste-chips)[data-fade-end] {
     --fade-end: 5rem;
     mask:
       linear-gradient(to right, transparent 0, #000 var(--fade-start), #000 calc(100% - var(--fade-end)), rgb(0 0 0 / 0.25) calc(100% - 3.25rem), transparent calc(100% - 1.75rem)),
@@ -5772,7 +5843,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 /* Always present so showing it never changes the scroll width; it takes no room (the negative margin
    cancels its width) and only shows once the strip overflows. */
-:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row)::after {
+:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row, .discover-taste-chips)::after {
   content: '';
   position: sticky;
   inset-inline-end: 0;
@@ -5785,7 +5856,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   visibility: hidden;
   pointer-events: none;
 }
-:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row)[data-fade-end]::after {
+:is(.series-tabs, .stats-range, .stats-rail-links, .library-saved-filters, .discover-seeds-row, .discover-taste-chips)[data-fade-end]::after {
   visibility: visible;
 }
 /* A tab's label sits above its underline padding; centre the chevron on the label, not the row. */
@@ -5945,6 +6016,12 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background-color: var(--surface-hover);
   color: var(--ink-hi);
 }
+/* A text action's padding is invisible until hover, so its label ends flush with the content edge
+   like the rail and panels under it. */
+.section-header-action > .mantine-Button-root[data-variant='subtle']:last-child,
+.section-header-action > .mantine-Group-root > .mantine-Button-root[data-variant='subtle']:last-child {
+  margin-inline-end: calc(-1 * var(--button-padding-x, var(--button-padding-x-sm)));
+}
 /* Drawn inside the button so it shares the hit area, whatever element the caller passed. */
 .section-header-action[data-chevron] .mantine-Button-inner::after {
   content: '';
@@ -5977,24 +6054,33 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     opacity: 1;
   }
 }
-/* With no action beside them, the arrows float over the end of the rule rather than reserve their
-   width while hidden, so the rule reaches the content edge and only gives way while they show. */
+/* The arrows float over the end of the rule rather than reserve their width while hidden, so the
+   rule reaches the content edge (or the action) and only gives way while they show. Beside an action
+   they sit just before it, which keeps the action flush with the content edge on every header. */
 .section-header-end:not(:has(> .section-header-action)) {
   position: absolute;
   inset-inline-end: 0;
   top: 50%;
   translate: 0 -50%;
 }
+.section-header-end:has(> .section-header-action) {
+  position: relative;
+}
+.section-header-end:has(> .section-header-action) > .section-header-arrows {
+  position: absolute;
+  inset-inline-end: calc(100% + 10px);
+  top: 50%;
+  translate: 0 -50%;
+}
 .section-header-rule {
   transition: margin-inline-end var(--dur-base) var(--ease);
 }
-.section-header:has(> .section-header-end:not(:has(> .section-header-action)) > .section-header-arrows:is([data-hover], :focus-within))
+.section-header:has(> .section-header-end > .section-header-arrows:is([data-hover], :focus-within))
   > .section-header-rule {
   margin-inline-end: 76px;
 }
 @media (hover: none) {
-  .section-header:has(> .section-header-end:not(:has(> .section-header-action)) > .section-header-arrows:not(:empty))
-    > .section-header-rule {
+  .section-header:has(> .section-header-end > .section-header-arrows:not(:empty)) > .section-header-rule {
     margin-inline-end: 76px;
   }
 }
@@ -6095,6 +6181,22 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     translate: none;
     max-width: 100%;
     margin-left: auto;
+  }
+  /* Beside a heading that wraps, the action centres on its first line, with clear space before it,
+     instead of hanging off the top of the block. */
+  .section-header {
+    column-gap: 16px;
+  }
+  .section-header-end:has(> .section-header-action) {
+    min-height: calc(var(--type-section-title) * 1.2);
+  }
+  .section-header-end:has(> .section-header-action) > .section-header-arrows {
+    position: static;
+    translate: none;
+  }
+  .section-header-action > .mantine-Button-root[data-variant='subtle']:last-child,
+  .section-header-action > .mantine-Group-root > .mantine-Button-root[data-variant='subtle']:last-child {
+    margin-inline-end: -6px;
   }
 }
 @media (max-width: 36em) and (hover: none) {
@@ -6567,6 +6669,11 @@ tr:is(:hover, :focus-within) [data-row-action]:not(:disabled, [data-disabled]),
 .series-files-table .files-cell-status .status-dot {
   white-space: normal;
   line-height: 1.25;
+}
+/* One width for "Vol.1" to "Vol.15", so the pills line up down the column. */
+.files-parsed-pill {
+  min-width: 3.75rem;
+  justify-content: center;
 }
 
 /* A table standing on the page gets a panel for its edge. The panel clips, so the header band and
@@ -7977,9 +8084,10 @@ body.column-resizing * {
 }
 
 .rewind-eyebrow {
-  font-size: var(--type-meta);
+  font-size: var(--type-body);
   font-weight: var(--fw-semibold);
-  opacity: 0.75;
+  letter-spacing: 0.01em;
+  opacity: 0.9;
 }
 .rewind-title {
   font-size: clamp(2rem, 6vw, 3.4rem);
@@ -8083,6 +8191,17 @@ body.column-resizing * {
 }
 .rewind-overlay:has(> .rewind-stage) .rewind-slide {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7), 0 0 18px rgba(11, 13, 18, 0.85);
+}
+/* A soft pool hugging the text block itself, so a bright cover right behind the lockup cannot
+   wash it out without darkening the whole wall. */
+.rewind-overlay:has(> .rewind-stage) .rewind-slide::before {
+  content: '';
+  position: absolute;
+  inset: -32px -56px;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(11, 13, 18, 0.8), rgba(11, 13, 18, 0.5) 60%, rgba(11, 13, 18, 0));
+  pointer-events: none;
 }
 .rewind-slide,
 .rewind-progress,
@@ -8338,12 +8457,12 @@ body.reader-open {
 
 /* The page scrubber (PageScrubber): one segment per page, lit up to the page on screen, which
    carries a light thumb. Upscaled pages ahead show lighter, like a video's buffer. The padding is the hit
-   area; the track itself stays thin. */
+   area around the 6px track. */
 .reader-scrub {
   position: relative;
   flex: 1;
   min-width: 0;
-  padding: 10px 0;
+  padding: 12px 0;
   cursor: pointer;
   touch-action: none;
   outline: none;
@@ -8369,7 +8488,7 @@ body.reader-open {
 .reader-scrub-segment {
   flex: 1;
   min-width: 0;
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.24);
   transition: background-color var(--dur-fast) var(--ease);
 }
 .reader-scrub[data-gaps] .reader-scrub-segment {
@@ -8532,7 +8651,7 @@ body.reader-open {
 /* Held still first, then faded, ending with HINT_LINGER_MS in ContinuousView. */
 .reader-next-chapter-hint[data-leaving] {
   opacity: 0;
-  transition-delay: calc(0.6s - var(--dur-medium));
+  transition-delay: calc(var(--dur-hint-linger) - var(--dur-medium));
 }
 .reader-ring {
   position: relative;
@@ -8801,6 +8920,22 @@ body.reader-open {
 }
 .reader-bar .mantine-Text-root {
   color: #fff;
+}
+.reader-bar {
+  --reader-bar-gap: var(--mantine-spacing-xs);
+}
+.reader-bar .mantine-ActionIcon-root {
+  --ai-size: 36px;
+}
+/* On a phone the top bar keeps Mantine's size: its two buttons would otherwise push the series
+   meter's text into an ellipsis. */
+@media (max-width: 36em) {
+  .reader-bar {
+    --reader-bar-gap: 4px;
+  }
+  .reader-bar-top .mantine-ActionIcon-root {
+    --ai-size: var(--ai-size-md);
+  }
 }
 
 /* Reader settings popover (portalled, so not under .reader-bar). */
@@ -10111,7 +10246,7 @@ body.reader-open {
    dropped on animationend - a <tr> cannot animate its own height, so the rows below close the gap
    in one step once this is invisible. */
 .source-row-leaving > td {
-  animation: source-row-leaving var(--dur-slow) var(--ease) 1s forwards 1;
+  animation: source-row-leaving var(--dur-slow) var(--ease) var(--dur-result-hold) forwards 1;
 }
 @keyframes source-row-leaving {
   0% {
@@ -10257,6 +10392,12 @@ span.mono-value-text:focus-visible,
 .mono-value[data-wrap] .mono-value-head {
   overflow: visible;
 }
+/* Each path segment moves to the next line whole, so a folder breaks after a slash, never inside
+   a name. Only a segment wider than the line wraps within itself. */
+.mono-value-seg {
+  display: inline-block;
+  max-width: 100%;
+}
 .mono-value-tip {
   font-family: var(--mantine-font-family-monospace);
   overflow-wrap: anywhere;
@@ -10335,17 +10476,6 @@ tr:hover .mono-value-copy {
 }
 .figure-strip-item[data-zero] .figure-strip-n {
   color: var(--ink-4);
-}
-/* Every count zero: one short line, number beside its label, so the strip stops outweighing the
-   empty state below it. */
-.figure-strip[data-quiet] .figure-strip-item {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 0.45rem 1.1rem;
-}
-.figure-strip[data-quiet] .figure-strip-n {
-  font-size: var(--type-body);
 }
 .figure-strip-l {
   color: var(--ink-3);
@@ -10951,6 +11081,14 @@ button.import-plan-folder-head:hover {
   top: calc(var(--app-shell-header-offset, 58px) - var(--library-strip-h, 0px));
   z-index: 20;
 }
+/* Pinned, the toolbar ends in a hairline and a short shadow on its opaque ground, with square
+   corners, so the covers scrolling under it meet an edge instead of being sliced by it. */
+[data-mantine-color-scheme] .mantine-Paper-root.library-index[data-stuck] {
+  border-bottom-color: var(--hairline);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
+}
 .figure-strip.library-index-metrics {
   padding: 0;
   border-bottom: 1px solid var(--border);
@@ -11522,9 +11660,18 @@ button.import-plan-folder-head:hover {
 .inbox-record:last-child {
   border-bottom: 0;
 }
-/* Unread is the accent edge and a bold title, nothing else: a tinted row read as an error state
+/* Unread is the accent edge, a dot and a bold title: a tinted row read as an error state
    under a red-leaning accent, and severity already has its icon. The bell's row has no record
    around it, so it carries the edge itself. */
+.inbox-unread-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-inline-end: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+  vertical-align: 0.1em;
+}
 .inbox-record,
 .inbox-row[data-read] {
   border-left: 2px solid transparent;

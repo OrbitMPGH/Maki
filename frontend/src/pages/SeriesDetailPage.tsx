@@ -2267,7 +2267,7 @@ function SeriesDetailBody() {
                 />
                 {/* A state, not a control: nothing here could enable a download button, so it stops posing as one. */}
                 {fileMissingFilterCount > 0 ? (tab !== 'chapters' && (
-                    <Text component="span" size="sm" c="var(--warn)" className="series-actions-done tnum">
+                    <Text component="span" size="sm" c="var(--warn)" className="series-actions-done series-actions-done--warn tnum">
                       <IconAlertTriangle size={16} />
                       <Plural
                           value={fileMissingFilterCount}
@@ -2526,7 +2526,20 @@ function SeriesDetailBody() {
                       <Divider my="md" color="var(--hairline)" />
                     </>
                   )}
-                  <ReleaseOutlookSummary seriesId={seriesId} divided />
+                  <ReleaseOutlookSummary
+                      seriesId={seriesId}
+                      divided
+                      idleReason={
+                        sourceMappings && enabledMappings === 0
+                            ? 'noSource'
+                            : series.status === 'Completed' &&
+                                series.totalChapters != null &&
+                                lastChapterNumber != null &&
+                                lastChapterNumber >= series.totalChapters
+                              ? 'finished'
+                              : undefined
+                      }
+                  />
                   <Text size="xs" c="var(--ink-3)">
                     {scanning ? (
                         <Group gap={6} component="span" wrap="nowrap">
@@ -2818,9 +2831,9 @@ function SeriesDetailBody() {
                   )}
                   {fileMissingFilterCount > 0 && (
                       <Group gap="xs" wrap="nowrap" align="center" role="status">
-                        <Group gap={6} wrap="nowrap" align="center" style={{ flex: 1, minWidth: 0 }}>
-                          <IconAlertTriangle size={16} style={{ flexShrink: 0, color: 'var(--warn)' }} />
-                          <Text size="sm" c="var(--warn)" className="tnum">
+                        <Group gap={6} wrap="nowrap" align="flex-start" style={{ flex: 1, minWidth: 0 }}>
+                          <IconAlertTriangle size={16} style={{ flexShrink: 0, marginTop: 3, color: 'var(--warn)' }} />
+                          <Text size="sm" c="var(--warn)" className="tnum" style={{ textWrap: 'balance' }}>
                             <Plural
                                 value={fileMissingFilterCount}
                                 one="# chapter has no file on disk"

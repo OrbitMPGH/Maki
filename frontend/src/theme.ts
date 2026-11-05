@@ -3,6 +3,7 @@ import {
   Button,
   Card,
   type CollapseProps,
+  type ComboboxProps,
   type CSSVariablesResolver,
   type DrawerProps,
   type MantineColorScheme,
@@ -378,7 +379,7 @@ const dialogHeaderAttributes = { header: { role: 'presentation' } }
  * `ease`. These defaultProps are functions, which Mantine calls on every render, so a flip of
  * "Faster animations" reaches the next overlay to open without rebuilding the theme. A
  * `transitionProps` passed at the call site replaces the whole object, curve included. Combobox
- * dropdowns (Select, Autocomplete) keep Mantine's 0 ms: they pass their own and open instantly.
+ * dropdowns (Select, Autocomplete) default to Mantine's 0 ms, so they get the Popover's timing below.
  */
 const overlayTransition = (seconds: number, transition?: MantineTransition) => ({
   ...(transition && { transition }),
@@ -474,6 +475,7 @@ const themeBase: MantineThemeOverride = {
     Modal: { defaultProps: (): Partial<ModalProps> => modalDefaults() },
     // Menu and HoverCard render a Popover and inherit this.
     Popover: { defaultProps: (): Partial<PopoverProps> => ({ transitionProps: overlayTransition(DUR.base) }) },
+    Combobox: { defaultProps: (): Partial<ComboboxProps> => ({ transitionProps: overlayTransition(DUR.base) }) },
     Tooltip: { defaultProps: (): Partial<TooltipProps> => ({ transitionProps: overlayTransition(DUR.fast) }) },
     // Off Mantine's stock 200ms `ease` too. Disclosures and the segmented indicator are opened often
     // enough that slow reads as lag.

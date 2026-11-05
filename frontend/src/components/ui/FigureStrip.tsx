@@ -22,32 +22,26 @@ export interface Figure {
  * A row of labelled counts in one ruled strip, the operational counterpart of the hero figures.
  * `flush` drops the strip's own border and surface for when it already sits inside a panel.
  * `loading` keeps the labels and blanks the numbers, so a count never reads as zero before it arrives.
- * `quietWhenZero` shrinks the strip to one short line when every count is zero, so a row of large
- * zeros does not outweigh the empty state under it.
  * `deltaLabel` names what the deltas compare against; it is the chips' tooltip.
  */
 export function FigureStrip({
   figures,
   flush,
   loading,
-  quietWhenZero,
   deltaLabel,
   className,
 }: {
   figures: Figure[]
   flush?: boolean
   loading?: boolean
-  quietWhenZero?: boolean
   deltaLabel?: string
   className?: string
 }) {
   const isZero = (f: Figure) => f.zero ?? f.value === 0
-  const quiet = quietWhenZero && !loading && figures.every(isZero)
   return (
     <div
       className={className ? `figure-strip ${className}` : 'figure-strip'}
       data-flush={flush || undefined}
-      data-quiet={quiet || undefined}
     >
       {figures.map((f) => {
         const zero = isZero(f)

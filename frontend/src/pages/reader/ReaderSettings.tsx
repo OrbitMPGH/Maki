@@ -342,7 +342,7 @@ export default function ReaderSettings({
           onClick={() => onOpenedChange(!opened)}
           aria-label={t`Reader settings`}
         >
-          <IconSettings size={18} />
+          <IconSettings size={20} />
         </ActionIcon>
       </Popover.Target>
       {/* Taller than a landscape phone or a short window: it scrolls rather than running off the top. */}

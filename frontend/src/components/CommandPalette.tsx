@@ -30,7 +30,16 @@ interface ModalProps extends Props {
 type Result =
   | { kind: 'nav'; key: string; label: string; sub: string; icon: NavItem['icon']; path: string }
   | { kind: 'setting'; key: string; label: string; sub: string; path: string }
-  | { kind: 'series'; key: string; label: string; sub: string; coverUrl: string | null; path: string }
+  | {
+      kind: 'series'
+      key: string
+      label: string
+      sub: string
+      coverUrl: string | null
+      path: string
+      /** The other title the query matched, when the shown one has no match to mark. */
+      alt: string | null
+    }
   | { kind: 'search'; key: string; label: string; sub: string; path: string }
 
 const MAX_SERIES_RESULTS = 8
@@ -47,6 +56,22 @@ function markMatches(label: string, terms: string[]): ReactNode {
     .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
   const parts = label.split(new RegExp(`(${escaped.join('|')})`, 'gi'))
   return parts.map((part, i) => (i % 2 === 1 ? <mark key={i}>{part}</mark> : part))
+}
+
+function containsTerm(text: string, terms: string[]) {
+  const lower = text.toLowerCase()
+  return terms.some((term) => lower.includes(term.toLowerCase()))
+}
+
+/** The first other title holding the whole query, else any of its words; null when the shown one already has a match. */
+function matchingAltTitle(label: string, others: (string | null | undefined)[], terms: string[]): string | null {
+  if (terms.length === 0 || containsTerm(label, terms)) return null
+  const candidates = others.filter((o): o is string => !!o && o !== label)
+  return (
+    candidates.find((o) => containsTerm(o, terms.slice(0, 1))) ??
+    candidates.find((o) => containsTerm(o, terms)) ??
+    null
+  )
 }
 
 /** The search pill. `icon` is the bare circle the phone's top bar has room for. */
@@ -125,6 +150,14 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
       ]),
     [series],
   )
+
+  // The whole query first, then its words, since a fuzzy or multi-word match rarely contains the
+  // query as typed. A typo match highlights nothing, which is honest about what matched.
+  const highlightTerms = useMemo(() => {
+    const typed = query.trim()
+    if (!typed) return []
+    return [typed, ...typed.split(/\s+/).filter((w) => w.length > 1)]
+  }, [query])
 
   const results = useMemo<Result[]>(() => {
     const q = query.trim().toLowerCase()
@@ -208,6 +241,11 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
             sub: s.archivedAt != null ? archivedLabel : renderLabel(seriesStatusVisual(s.status).label),
             coverUrl: s.coverUrl,
             path: `/series/${s.id}`,
+            alt: matchingAltTitle(
+              s.displayTitle,
+              [s.title, s.originalTitle, ...s.altTitles.map((a) => a.title)],
+              highlightTerms,
+            ),
           }))
       : []
 
@@ -228,19 +266,11 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
       : []
 
     return [...navMatches, ...notificationsNav, ...archivedNav, ...settingMatches, ...seriesMatches, ...searchFallback]
-  }, [query, navItems, series, seriesTitles, visibleSettings, canAdd, renderLabel, _, i18n.locale])
+  }, [query, navItems, series, seriesTitles, visibleSettings, canAdd, renderLabel, highlightTerms, _, i18n.locale])
 
   useEffect(() => {
     setSelected(0)
   }, [results.length])
-
-  // The whole query first, then its words, since a fuzzy or multi-word match rarely contains the
-  // query as typed. A typo match highlights nothing, which is honest about what matched.
-  const highlightTerms = useMemo(() => {
-    const typed = query.trim()
-    if (!typed) return []
-    return [typed, ...typed.split(/\s+/).filter((w) => w.length > 1)]
-  }, [query])
 
   // Only a keyboard move scrolls: a mouse hover is already on a visible row, and scrolling under
   // the pointer would make the list chase it.
@@ -372,6 +402,11 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
                       {/* The fallback's label is the query itself, so marking it would mark all of it. */}
                       {r.kind === 'search' ? r.label : markMatches(r.label, highlightTerms)}
                     </Text>
+                    {r.kind === 'series' && r.alt && (
+                      <Text size="xs" c="var(--ink-3)" truncate>
+                        {markMatches(r.alt, highlightTerms)}
+                      </Text>
+                    )}
                     <Text size="xs" c="var(--ink-3)" truncate>
                       {r.sub}
                     </Text>

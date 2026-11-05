@@ -34,6 +34,24 @@ export function splitForTruncation(value: string): [head: string, tail: string] 
   return [value.slice(0, -keep), value.slice(-keep)]
 }
 
+/**
+ * How much of a column's names is the same leading text ("Call of the Night "), cut back to a word
+ * boundary so no word is split. That part goes first when the names lose their middle, so the
+ * volume and tags that tell rows apart stay. 0 when fewer than two names or under eight characters.
+ */
+export function sharedPrefixLength(values: string[]): number {
+  if (values.length < 2) return 0
+  let n = Math.min(...values.map((v) => v.length))
+  for (const v of values) {
+    let i = 0
+    while (i < n && v[i] === values[0][i]) i++
+    n = i
+  }
+  const prefix = values[0].slice(0, n)
+  const boundary = Math.max(...[' ', '_', '-', '.', '/', '\\'].map((c) => prefix.lastIndexOf(c))) + 1
+  return boundary >= 8 ? boundary : 0
+}
+
 // One observer for every value on the page: a file table holds hundreds of them.
 const clipWatchers = new WeakMap<Element, () => void>()
 let clipObserver: ResizeObserver | undefined
@@ -69,6 +87,7 @@ export function MonoValue({
   focusable = true,
   minWidth,
   tailCh,
+  splitAt,
   wrap,
   fz,
   c,
@@ -82,7 +101,9 @@ export function MonoValue({
   minWidth?: CSSProperties['minWidth']
   /** Characters kept for the tail, the longest tail in the column, so every row loses its middle at the same place. */
   tailCh?: number
-  /** Wraps onto more lines (breaking anywhere) instead of losing its middle, for a cell with height to spare. */
+  /** Where the tail starts, overriding the guess, e.g. after a prefix every row in the column shares. */
+  splitAt?: number
+  /** Wraps onto more lines, between path segments, instead of losing its middle, for a cell with height to spare. */
   wrap?: boolean
   fz?: CSSProperties['fontSize']
   c?: CSSProperties['color']
@@ -93,7 +114,11 @@ export function MonoValue({
   const [opened, setOpened] = useState(false)
   const [clipped, setClipped] = useState(false)
   const whole = full ?? value
-  const [head, tail] = wrap ? [value, ''] : splitForTruncation(value)
+  const [head, tail] = wrap
+    ? [value, '']
+    : splitAt && splitAt < value.length
+      ? [value.slice(0, splitAt), value.slice(splitAt)]
+      : splitForTruncation(value)
   // Clipped, or standing for something longer: only then is there anything to reveal. The value
   // takes focus for that only when it has no copy button, which reveals the same tooltip on focus,
   // so a table of values has one tab stop per row. The full text is in the DOM either way.
@@ -118,7 +143,13 @@ export function MonoValue({
   const text = (
     <>
       <span ref={headRef} className="mono-value-head" data-split={tail ? true : undefined}>
-        {head}
+        {wrap
+          ? head.split(/(?<=[/\\])/).map((segment, i) => (
+              <span key={i} className="mono-value-seg">
+                {segment}
+              </span>
+            ))
+          : head}
       </span>
       {tail && (
         <span className="mono-value-tail" style={tailCh ? { minWidth: `min(${tailCh}ch, 100% - 6ch)` } : undefined}>

@@ -378,6 +378,11 @@ msgstr "{0, plural, other {#件のシリーズには、メニューに独自の�
 msgid "{0, plural, one {# skipped} other {# skipped}}"
 msgstr "{0, plural, other {#件をスキップ}}"
 
+#. placeholder {0}: spoilers.length
+#: src/components/TagBuckets.tsx
+msgid "{0, plural, one {# spoiler tag} other {# spoiler tags}}"
+msgstr ""
+
 #. placeholder {0}: active.items.length
 #. placeholder {0}: items.length
 #: src/components/discover/DiscoverCatalogue.tsx
@@ -573,6 +578,16 @@ msgstr "{0, plural, other {#件すべて表示}}"
 #, fuzzy
 msgid "{0, plural, one {Skipped: # file, {size}} other {Skipped: # files, {size}}}"
 msgstr "{0, plural, other {スキップ：#件のファイル、{size}}}"
+
+#. placeholder {0}: spoilers.length
+#: src/components/TagBuckets.tsx
+msgid "{0, plural, one {Spoiler tag. Click to hide it again.} other {Spoiler tags. Click to hide them again.}}"
+msgstr ""
+
+#. placeholder {0}: spoilers.length
+#: src/components/TagBuckets.tsx
+msgid "{0, plural, one {Spoiler tag. Click to reveal it.} other {Spoiler tags. Click to reveal them.}}"
+msgstr ""
 
 #. placeholder {0}: parsed.skippedNonLibrary
 #: src/components/import/MihonImport.tsx
@@ -1256,9 +1271,13 @@ msgid "{existing, plural, one {# already in the library} other {# already in the
 msgstr "{existing, plural, other {#件はすでにライブラリにあります}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+msgid "{exposed} read or watched elsewhere"
+msgstr ""
+
+#: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
-msgid "{exposed} seen elsewhere"
-msgstr "{exposed}件を他で視聴済み"
+#~ msgid "{exposed} seen elsewhere"
+#~ msgstr "{exposed}件を他で視聴済み"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -2457,6 +2476,10 @@ msgstr "{start}〜{end}"
 #, fuzzy
 msgid "{statusLabel}, not monitored"
 msgstr "{statusLabel}、監視していません"
+
+#: src/components/ui/CoverCard.tsx
+msgid "{statusOnly}. {readTip}"
+msgstr ""
 
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
@@ -6163,9 +6186,13 @@ msgid "Close Rewind"
 msgstr "Rewindを閉じる"
 
 #: src/components/discover/DiscoverHero.tsx
+msgid "Close to what you read"
+msgstr ""
+
+#: src/components/discover/DiscoverHero.tsx
 #, fuzzy
-msgid "Close to your reading in taste space"
-msgstr "あなたの読書に近いテイスト空間"
+#~ msgid "Close to your reading in taste space"
+#~ msgstr "あなたの読書に近いテイスト空間"
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -6413,6 +6440,10 @@ msgstr "{label}からインポートするには、Scrobbleページで接続し
 #, fuzzy
 msgid "Connect a tracker first"
 msgstr "先にトラッカーを接続してください"
+
+#: src/pages/ScrobblePage.tsx
+msgid "Connect a tracker to use Sync now."
+msgstr ""
 
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
@@ -14150,6 +14181,14 @@ msgstr "オフラインでは利用できません"
 msgid "Not checked for new chapters: it is finished and complete, or has no source switched on."
 msgstr "新しい章を確認していません。完結済みか、オンになっているソースがないためです。"
 
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not checked for new chapters: no source is switched on."
+msgstr ""
+
+#: src/components/releases/ReleaseOutlookSummary.tsx
+msgid "Not checked for new chapters: the series is finished and every chapter is listed."
+msgstr ""
+
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -20565,11 +20604,19 @@ msgid "Sources disagree on chapter numbering"
 msgstr "ソース間で章番号が一致しません"
 
 #: src/components/series/SeriesHero.tsx
-msgid "Sources end at ch. {highest}; MangaBaka lists {listed}"
+#~ msgid "Sources end at ch. {highest}; MangaBaka lists {listed}"
+#~ msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+#~ msgid "Sources end at ch. {highest}; your total is {listed}"
+#~ msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "Sources go up to ch. {highest}, MangaBaka lists {listed}."
 msgstr ""
 
 #: src/components/series/SeriesHero.tsx
-msgid "Sources end at ch. {highest}; your total is {listed}"
+msgid "Sources go up to ch. {highest}, your total is {listed}."
 msgstr ""
 
 #: src/components/series/SeriesHero.tsx
@@ -20654,16 +20701,16 @@ msgid "Split into two pages"
 msgstr "2ページに分割"
 
 #: src/components/TagBuckets.tsx
-msgid "Spoiler"
-msgstr ""
+#~ msgid "Spoiler"
+#~ msgstr ""
 
 #: src/components/TagBuckets.tsx
-msgid "Spoiler tag. Click to hide it again."
-msgstr ""
+#~ msgid "Spoiler tag. Click to hide it again."
+#~ msgstr ""
 
 #: src/components/TagBuckets.tsx
-msgid "Spoiler tag. Click to reveal it."
-msgstr ""
+#~ msgid "Spoiler tag. Click to reveal it."
+#~ msgstr ""
 
 #: src/components/TagBuckets.tsx
 msgid "Spoiler:"
@@ -23072,6 +23119,7 @@ msgstr "先にすべてのシリーズから固定を外してください"
 msgid "Unrated"
 msgstr "未評価"
 
+#: src/components/NotificationBell.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Unread"
