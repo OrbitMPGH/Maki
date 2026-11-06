@@ -38,6 +38,8 @@ import {
   IconArrowLeft,
   IconBook,
   IconChevronDown,
+  IconCheck,
+  IconFilter,
   IconCircleCheck,
   IconDownload,
   IconEye,
@@ -83,6 +85,7 @@ import {
   useSeries,
   useSeriesDetail,
   useSetChaptersWanted,
+  useClearDelisted,
   useSetIncognito,
   useSetSeriesNotificationMode,
   useSetMonitorMode,
@@ -197,7 +200,7 @@ import { useColumnWidths, type ColumnSpec } from '../lib/useColumnWidths'
 import { useStableActions } from '../lib/useStableActions'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { EmptyState } from '../components/ui/EmptyState'
-import { HintLabel } from '../components/ui/FigureStrip'
+import { FigureStripReveal, HintLabel } from '../components/ui/FigureStrip'
 import { Panel } from '../components/ui/Panel'
 import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
@@ -241,6 +244,7 @@ const CHAPTER_FILTERS = [
   'specials',
   'cutoffUnmet',
   'skipped',
+  'delisted',
 ] as const
 type ChapterFilter = (typeof CHAPTER_FILTERS)[number]
 
@@ -375,6 +379,7 @@ const chapterFilters: Record<string, (c: ChapterDto) => boolean> = {
   main: (c) => !isSpecial(c),
   // Matches `/upgrades/cutoff-unmet`, which excludes trusted files even when their cutoff isn't met.
   cutoffUnmet: (c) => c.fileQuality?.cutoffMet === false && !c.fileQuality?.trusted,
+  delisted: (c) => c.delistedAt != null,
 }
 
 // Errors are reported globally (see main.tsx); only success needs saying here. `info` is for
@@ -639,6 +644,19 @@ function SeriesDetailBody() {
   const dismissCheckpoint = useDismissRatingCheckpoint()
   const unlinkChapters = useUnlinkChapters()
   const setChaptersWanted = useSetChaptersWanted()
+  const clearDelisted = useClearDelisted()
+  const [keepingFrom, setKeepingFrom] = useState<'alert' | 'select'>('alert')
+  // The alert fades out after Keep; holding the last ids stops its title reading 0 on the way.
+  const [alertDelistedIds, setAlertDelistedIds] = useState<number[]>([])
+  const keepDelisted = (chapterIds: number[], from: 'alert' | 'select') => {
+    setKeepingFrom(from)
+    clearDelisted.mutate(chapterIds, {
+      onSuccess: (r) => {
+        notify.ok(plural(r.cleared, { one: 'Kept # chapter', other: 'Kept # chapters' }))
+        if (from === 'select') exitSelectMode()
+      },
+    })
+  }
   const deleteChapters = useDeleteChapters()
   const deleteChapterFiles = useDeleteChapterFiles()
   const [releaseModalOpen, setReleaseModalOpen] = useState(false)
@@ -1544,6 +1562,12 @@ function SeriesDetailBody() {
   const readFilterCount = chapters?.filter(filters.read).length ?? 0
   const cutoffUnmetFilterCount = chapters?.filter(chapterFilters.cutoffUnmet).length ?? 0
   const skippedFilterCount = chapters?.filter(filters.skipped).length ?? 0
+  const delistedFilterCount = chapters?.filter(chapterFilters.delisted).length ?? 0
+  const delistedWithFileIds = (chapters ?? []).filter((c) => c.delistedAt && c.hasFile).map((c) => c.id)
+  if (delistedWithFileIds.length > 0 && delistedWithFileIds.join() !== alertDelistedIds.join()) {
+    setAlertDelistedIds(delistedWithFileIds)
+  }
+  const selectionHasDelisted = selected.size > 0 && (chapters ?? []).some((c) => c.delistedAt && selected.has(c.id))
   const selectedCount = selected.size
   const notesChapter = notesPanel ? chapters?.find((c) => c.id === notesPanel.chapterId) : undefined
   const notesChapterRead = notesChapter ? readStateFor(notesChapter) : null
@@ -1558,6 +1582,9 @@ function SeriesDetailBody() {
         { value: 'missing', label: t`Not downloaded (${missingFilterCount})` },
         ...(fileMissingFilterCount > 0
             ? [{ value: 'fileMissing', label: t`File missing (${fileMissingFilterCount})` }]
+            : []),
+        ...(delistedFilterCount > 0
+            ? [{ value: 'delisted', label: t`Delisted (${delistedFilterCount})` }]
             : []),
         { value: 'downloaded', label: t`Have (${downloadedFilterCount})` },
         ...(canFilterUnread
@@ -1930,6 +1957,17 @@ function SeriesDetailBody() {
             icon: <IconEyeOff size={16} />,
             loading: setChaptersWanted.isPending && setChaptersWanted.variables?.wanted === false,
             run: () => applyWanted([...selected], false),
+          },
+        ]
+      : [],
+    canEditMetadata && selectionHasDelisted
+      ? [
+          {
+            key: 'keepDelisted',
+            label: <Trans>Keep delisted chapters</Trans>,
+            icon: <IconCircleCheck size={16} />,
+            loading: clearDelisted.isPending && keepingFrom === 'select',
+            run: () => keepDelisted([...selected], 'select'),
           },
         ]
       : [],
@@ -2531,6 +2569,47 @@ function SeriesDetailBody() {
                         })()}
                       </Alert>
                   )}
+                  <FigureStripReveal shown={delistedWithFileIds.length > 0}>
+                    {alertDelistedIds.length > 0 && (
+                      <Alert
+                          mb="md"
+                          color="var(--warn)"
+                          icon={<IconLinkOff size={18} />}
+                          title={plural(alertDelistedIds.length, {
+                            one: '# downloaded chapter is no longer listed',
+                            other: '# downloaded chapters are no longer listed',
+                          })}
+                      >
+                        <Text size="sm">
+                          <Trans>No source lists them any more. A source may have filed them here by mistake, or dropped them after a licence takedown, so check the files before reading them.</Trans>
+                        </Text>
+                        <Group gap="xs" mt="sm">
+                          <Button
+                              size="xs"
+                              variant="light"
+                              leftSection={<IconFilter size={16} />}
+                              onClick={() => {
+                                setChapterFilterPreference('delisted')
+                                changeTab('chapters')
+                              }}
+                          >
+                            <Trans>Show them</Trans>
+                          </Button>
+                          {canEditMetadata && (
+                              <Button
+                                  size="xs"
+                                  variant="subtle"
+                                  leftSection={<IconCheck size={16} />}
+                                  loading={clearDelisted.isPending && keepingFrom === 'alert'}
+                                  onClick={() => keepDelisted(alertDelistedIds, 'alert')}
+                              >
+                                <Trans>Keep them</Trans>
+                              </Button>
+                          )}
+                        </Group>
+                      </Alert>
+                    )}
+                  </FigureStripReveal>
                   {canManageSources && (
                     <>
                       {/* The inner div is inert rather than every control inside getting a disabled

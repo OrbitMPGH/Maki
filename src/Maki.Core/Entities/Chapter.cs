@@ -58,6 +58,13 @@ public class Chapter
     /// </summary>
     public bool FileAutoRemoved { get; set; }
 
+    /// <summary>
+    /// When a sync left this chapter with no live source link after at least one had listed it, else
+    /// null. Cleared when a source links it again or the user keeps it. Never set for a chapter no
+    /// source ever listed. Display only: nothing reads it to decide a download.
+    /// </summary>
+    public DateTime? DelistedAt { get; set; }
+
     /// <summary>The per-source listings that currently support this chapter.</summary>
     [JsonIgnore]
     public List<ChapterSourceLink> SourceLinks { get; set; } = [];

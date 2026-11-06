@@ -2,6 +2,8 @@ using System.Globalization;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Http;
+using Maki.Core.Inbox;
+using Maki.Core.Notifications;
 using Maki.Core.Parsing;
 using Maki.Core.Releases;
 using Maki.Core.Sources;
@@ -29,7 +31,8 @@ public class ChapterSyncService(
     AnimeResumePendingService? animeResumePending = null,
     PendingReadImportService? pendingReadImports = null,
     CbzLinkService? cbzLinks = null,
-    ChapterListingSchedule? listingSchedule = null)
+    ChapterListingSchedule? listingSchedule = null,
+    InboxService? inbox = null)
 {
     /// <returns>Ids of newly discovered chapters.</returns>
     public Task<List<int>> SyncSeriesAsync(int seriesId, CancellationToken ct = default) =>
@@ -56,9 +59,23 @@ public class ChapterSyncService(
         // Two syncs of one series would both see a new chapter as missing and both insert it.
         List<int> newChapterIds;
         bool rescanVolumeEntries;
+        int delistedWithFiles;
+        int rootFolderId;
         using (await SeriesLocks.SeriesAsync(seriesId, ct))
         {
-            (newChapterIds, rescanVolumeEntries) = await SyncUnderLockAsync(seriesId, mappingIds, depth, ct);
+            (newChapterIds, rescanVolumeEntries, delistedWithFiles, rootFolderId) =
+                await SyncUnderLockAsync(seriesId, mappingIds, depth, ct);
+        }
+
+        if (delistedWithFiles > 0 && inbox is not null)
+        {
+            inbox.Raise(InboxEventType.ChapterDelisted, new InboxMessage(
+                    Key: "inbox.chapters.delisted",
+                    Params: InboxMessage.Args(new { count = delistedWithFiles }),
+                    Level: NotificationLevel.Warning,
+                    SeriesId: seriesId,
+                    Url: $"/series/{seriesId}"),
+                InboxAudience.SeriesTrackers(seriesId, rootFolderId));
         }
 
         // A volume entry's file belongs to the chapters a source has just listed for that volume.
@@ -73,7 +90,7 @@ public class ChapterSyncService(
         return newChapterIds;
     }
 
-    private async Task<(List<int> NewChapterIds, bool RescanVolumeEntries)> SyncUnderLockAsync(
+    private async Task<(List<int> NewChapterIds, bool RescanVolumeEntries, int DelistedWithFiles, int RootFolderId)> SyncUnderLockAsync(
         int seriesId, HashSet<int>? mappingIds, ChapterListingDepth depth, CancellationToken ct)
     {
         var series = await db.Series
@@ -105,10 +122,13 @@ public class ChapterSyncService(
         // A globally switched-off source counts as disabled here without its per-series
         // mappings being touched, so re-enabling it brings back the user's own layout.
         var disabledSources = await sourceAvailability.DisabledAsync(ct);
-        var liveMappings = series.SourceMappings
+        var enabledMappings = series.SourceMappings
             .Where(m => m.Enabled && !disabledSources.Contains(m.SourceName, StringComparer.OrdinalIgnoreCase))
+            .ToList();
+        var liveMappings = enabledMappings
             .Where(m => mappingIds is null || mappingIds.Contains(m.Id))
             .ToList();
+        var listedBefore = ListedByDelistingMappings(existing, enabledMappings);
 
         foreach (var mapping in liveMappings)
         {
@@ -270,6 +290,7 @@ public class ChapterSyncService(
         }
 
         await DropUnlistedLockedAsync(seriesId, existing, reads, ct);
+        var delistedWithFiles = MarkDelisted(existing, enabledMappings, listedBefore);
 
         // Flag (or clear) cross-source numbering clashes. A clash is always
         // recorded; clearing requires every enabled mapping to have fetched this
@@ -312,7 +333,66 @@ public class ChapterSyncService(
         }
 
         return (newChapters.Select(c => c.Id).ToList(),
-            newChapters.Count > 0 && cbzLinks is not null && existing.Any(Chapter.IsVolumeEntry));
+            newChapters.Count > 0 && cbzLinks is not null && existing.Any(Chapter.IsVolumeEntry),
+            delistedWithFiles, series.RootFolderId);
+    }
+
+    /// <summary>
+    /// Chapters a live mapping links whose losing the link would mean something. Links from a source
+    /// that only lists a free window, or from a mapping whose language filter just changed (snapshot
+    /// voided while its links still describe the old filter), are expected to go.
+    /// </summary>
+    private HashSet<int> ListedByDelistingMappings(List<Chapter> existing, List<SourceMapping> enabledMappings)
+    {
+        var delisting = enabledMappings
+            .Where(m => !(m.ChapterSnapshotAt is null && m.ChapterLinks.Count > 0))
+            .Where(m => sourceRegistry.Find(m.SourceName) is not { } source ||
+                        !source.Capabilities.HasFlag(SourceCapabilities.FreeWindowListing))
+            .Select(m => m.Id)
+            .ToHashSet();
+        return existing
+            .Where(c => c.Id != 0 && c.SourceLinks.Any(l =>
+                db.Entry(l).State != EntityState.Deleted && delisting.Contains(l.SourceMappingId)))
+            .Select(c => c.Id)
+            .ToHashSet();
+    }
+
+    /// <summary>
+    /// Stamps <see cref="Chapter.DelistedAt"/> on chapters that lost their last live link in this sync
+    /// and clears it on any chapter a live mapping links. Decided once after every mapping has synced,
+    /// so a chapter one source dropped and another picked up in the same pass is never stamped.
+    /// </summary>
+    /// <returns>How many chapters it newly stamped that have a file.</returns>
+    private int MarkDelisted(List<Chapter> existing, List<SourceMapping> enabledMappings, HashSet<int> listedBefore)
+    {
+        var now = DateTime.UtcNow;
+        var withFiles = 0;
+        foreach (var chapter in existing.Where(c => c.Id != 0))
+        {
+            var linked = chapter.SourceLinks.Any(l =>
+                db.Entry(l).State != EntityState.Deleted &&
+                enabledMappings.Any(m => ReferenceEquals(m, l.SourceMapping) || m.Id == l.SourceMappingId));
+            if (linked)
+            {
+                chapter.DelistedAt = null;
+            }
+            else if (chapter.DelistedAt is null && listedBefore.Contains(chapter.Id))
+            {
+                chapter.DelistedAt = now;
+                if (chapter.ChapterFileId is not null)
+                {
+                    withFiles++;
+                }
+            }
+        }
+
+        if (withFiles > 0)
+        {
+            logger.LogInformation("{Count} downloaded chapter(s) of series {SeriesId} are no longer listed by any source",
+                withFiles, existing[0].SeriesId);
+        }
+
+        return withFiles;
     }
 
     /// <summary>
@@ -555,6 +635,8 @@ public class ChapterSyncService(
                     keeper.FileRemovedAt = dup.FileRemovedAt;
                     keeper.FileAutoRemoved = dup.FileAutoRemoved;
                 }
+
+                keeper.DelistedAt ??= dup.DelistedAt;
 
                 keeper.Wanted |= dup.Wanted;
                 await reads.MoveAsync(dup, keeper, ct);

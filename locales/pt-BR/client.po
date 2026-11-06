@@ -123,6 +123,11 @@ msgstr "{0, plural, one {# capítulo} many {# capítulos} other {# capítulos}}"
 msgid "{0, plural, one {# could not be moved (locked or permission denied)} other {# could not be moved (locked or permission denied)}}"
 msgstr "{0, plural, one {# não pôde ser movido (bloqueado ou permissão negada)} many {# não puderam ser movidos (bloqueados ou permissão negada)} other {# não puderam ser movidos (bloqueados ou permissão negada)}}"
 
+#. placeholder {0}: alertDelistedIds.length
+#: src/pages/SeriesDetailPage.tsx
+msgid "{0, plural, one {# downloaded chapter is no longer listed} other {# downloaded chapters are no longer listed}}"
+msgstr ""
+
 #. placeholder {0}: failed.length
 #: src/components/import/MihonSummary.tsx
 #, fuzzy
@@ -459,6 +464,11 @@ msgstr "{0, plural, one {De todas as # séries, ponderado pelo que você lê} ma
 #, fuzzy
 msgid "{0, plural, one {Import # series} other {Import # series}}"
 msgstr "{0, plural, one {Importar # série} many {Importar # séries} other {Importar # séries}}"
+
+#. placeholder {0}: r.cleared
+#: src/pages/SeriesDetailPage.tsx
+msgid "{0, plural, one {Kept # chapter} other {Kept # chapters}}"
+msgstr ""
 
 #. placeholder {0}: r.updated
 #: src/pages/SeriesDetailPage.tsx
@@ -7639,6 +7649,14 @@ msgstr "Excluir arquivos exige a permissão Excluir séries"
 msgid "Deletion"
 msgstr "Exclusão"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Delisted"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Delisted ({delistedFilterCount})"
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "Demographic"
@@ -8057,6 +8075,10 @@ msgstr "Baixado"
 #, fuzzy
 msgid "Downloaded {installedDate}."
 msgstr "Baixado em {installedDate}."
+
+#: src/api/inbox.ts
+msgid "Downloaded chapters no longer listed"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -8679,6 +8701,10 @@ msgstr "Todas as séries têm capa."
 #, fuzzy
 msgid "Every source failed for this chapter"
 msgstr "Todas as fontes falharam para este capítulo"
+
+#: src/api/inbox.ts
+msgid "Every source that listed them has stopped, which can mean a source filed them here by mistake."
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -11042,6 +11068,10 @@ msgstr "Manter como está"
 msgid "Keep deleted files (days)"
 msgstr "Manter arquivos excluídos (dias)"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Keep delisted chapters"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Keep each reader's last read chapter"
@@ -11105,6 +11135,10 @@ msgstr "Manter a tela ligada"
 #, fuzzy
 msgid "Keep the screen awake while reading"
 msgstr "Manter a tela ligada durante a leitura"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Keep them"
+msgstr ""
 
 #: src/components/SoFarSyncAskDialog.tsx
 #, fuzzy
@@ -13990,6 +14024,10 @@ msgstr "Ainda não há snapshot baixado"
 msgid "No source could serve the first chapter."
 msgstr "Nenhuma fonte conseguiu fornecer o primeiro capítulo."
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "No source has listed this chapter since {delistedOn}. A source may have filed it here by mistake, so check the file. Sources also drop chapters after a licence takedown, and then the file is fine."
+msgstr ""
+
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
@@ -14003,6 +14041,10 @@ msgstr "Nenhuma fonte tem este capítulo no momento"
 
 #: src/pages/HealthPage.tsx
 msgid "No source is enabled for this series, so there is nowhere to download it from."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "No source lists them any more. A source may have filed them here by mistake, or dropped them after a licence takedown, so check the files before reading them."
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -20244,6 +20286,10 @@ msgstr ""
 #, fuzzy
 msgid "Show their newest titles in a rail on Home and Discover"
 msgstr "Mostrar os títulos mais recentes deles em uma faixa no Início e em Descobrir"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Show them"
+msgstr ""
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy

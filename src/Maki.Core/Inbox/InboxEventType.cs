@@ -54,6 +54,9 @@ public enum InboxEventType
 
     /// <summary>Someone replied in a shared note thread the user wrote in.</summary>
     NoteReply = 25,
+
+    /// <summary>A refresh found downloaded chapters that no enabled source lists any more.</summary>
+    ChapterDelisted = 26,
 }
 
 /// <summary>

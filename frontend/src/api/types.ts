@@ -330,6 +330,8 @@ export interface ChapterDto {
   fileMissing: boolean
   /** When read file cleanup will delete this chapter's file, or null when it isn't scheduled. */
   fileDeleteDueAt: string | null
+  /** When the last enabled source that listed this chapter stopped listing it. Null while one does, or if none ever did. */
+  delistedAt: string | null
   filePath: string | null
   /**
    * Where the file came from: a registered source's name, the literal "import" for a file brought

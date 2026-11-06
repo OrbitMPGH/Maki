@@ -41,6 +41,7 @@ public class InboxRendererTests
         { "inbox.request.declined", new { title = "Berserk" } },
         { "inbox.chapters.available", new { count = 2 } },
         { "inbox.chapters.queued", new { count = 1 } },
+        { "inbox.chapters.delisted", new { count = 2 } },
         { "inbox.backup.preUpgrade", new { name = "maki-2026.db", count = 3 } },
         { "inbox.achievement.unlocked", new { achievement = "reader", tier = 3 } },
         { "inbox.levelUp", new { level = 4, previous = 3 } },

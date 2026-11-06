@@ -251,6 +251,27 @@ export const FileAutoRemoved: Story = {
   },
 }
 
+export const DelistedWithFile: Story = {
+  args: { chapter: { ...byNumber(5), delistedAt: hoursAgo(20) } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Delisted')).toBeInTheDocument()
+    await expect(canvas.getByText('Downloaded')).toBeInTheDocument()
+  },
+}
+
+export const DelistedMissing: Story = {
+  args: {
+    chapter: {
+      ...byNumber(4),
+      delistedAt: hoursAgo(20),
+    },
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Delisted')).toBeInTheDocument()
+    await expect(canvas.getByText('Not downloaded')).toBeInTheDocument()
+  },
+}
+
 export const SelectModeSelected: Story = {
   args: { selectMode: true, selected: true },
   play: async ({ args, canvas, userEvent }) => {
