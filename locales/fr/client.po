@@ -123,6 +123,11 @@ msgstr "{0, plural, one {# chapitre} many {# chapitres} other {# chapitres}}"
 msgid "{0, plural, one {# could not be moved (locked or permission denied)} other {# could not be moved (locked or permission denied)}}"
 msgstr "{0, plural, one {# impossible à déplacer (verrouillé ou autorisation refusée)} many {# impossibles à déplacer (verrouillés ou autorisation refusée)} other {# impossibles à déplacer (verrouillés ou autorisation refusée)}}"
 
+#. placeholder {0}: alertDelistedIds.length
+#: src/pages/SeriesDetailPage.tsx
+msgid "{0, plural, one {# downloaded chapter is no longer listed} other {# downloaded chapters are no longer listed}}"
+msgstr ""
+
 #. placeholder {0}: failed.length
 #: src/components/import/MihonSummary.tsx
 #, fuzzy
@@ -459,6 +464,11 @@ msgstr "{0, plural, one {À partir des # séries, pondérées selon vos lectures
 #, fuzzy
 msgid "{0, plural, one {Import # series} other {Import # series}}"
 msgstr "{0, plural, one {Importer # série} many {Importer # séries} other {Importer # séries}}"
+
+#. placeholder {0}: r.cleared
+#: src/pages/SeriesDetailPage.tsx
+msgid "{0, plural, one {Kept # chapter} other {Kept # chapters}}"
+msgstr ""
 
 #. placeholder {0}: r.updated
 #: src/pages/SeriesDetailPage.tsx
@@ -7639,6 +7649,14 @@ msgstr "La permission de suppression des séries est nécessaire pour supprimer 
 msgid "Deletion"
 msgstr "Suppression"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Delisted"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Delisted ({delistedFilterCount})"
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "Demographic"
@@ -8057,6 +8075,10 @@ msgstr "Téléchargé"
 #, fuzzy
 msgid "Downloaded {installedDate}."
 msgstr "Téléchargé le {installedDate}."
+
+#: src/api/inbox.ts
+msgid "Downloaded chapters no longer listed"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -8680,6 +8702,10 @@ msgstr "Chaque série a une affiche."
 msgid "Every source failed for this chapter"
 msgstr "Toutes les sources ont échoué pour ce chapitre"
 
+#: src/api/inbox.ts
+msgid "Every source that listed them has stopped, which can mean a source filed them here by mistake."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Every unread chapter is already on this device"
@@ -8952,6 +8978,10 @@ msgstr "Pour les fans de"
 #, fuzzy
 msgid "Fantasy"
 msgstr "Fantastique"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Fast line art (server)"
+msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -11042,6 +11072,10 @@ msgstr "Conserver tel quel"
 msgid "Keep deleted files (days)"
 msgstr "Conserver les fichiers supprimés (jours)"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Keep delisted chapters"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Keep each reader's last read chapter"
@@ -11106,6 +11140,10 @@ msgstr "Garder l'écran allumé"
 msgid "Keep the screen awake while reading"
 msgstr "Garder l'écran allumé pendant la lecture"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Keep them"
+msgstr ""
+
 #: src/components/SoFarSyncAskDialog.tsx
 #, fuzzy
 msgid "Keep them in Maki"
@@ -11125,6 +11163,10 @@ msgstr "Garder à jour"
 #, fuzzy
 msgid "Keep upcoming chapters"
 msgstr "Garder les prochains chapitres"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Keep upscaling every page while the chapter is open. Leaving cancels the rest."
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -12188,6 +12230,10 @@ msgstr "Maki ne trouvera pas seul les séries sur ce site. Vous lierez chaque s�
 #, fuzzy
 msgid "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
 msgstr "L'interface de Maki est maintenant traduite en {languageCount} langues. Choisissez la vôtre ici, ou changez-la à tout moment dans Paramètres, Langue."
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Maki's own model; looks like Real-ESRGAN and runs faster"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "Maki's record says {recorded}, the file on disk is {onDisk}. Usually a tagger or another library tool rewrote its metadata. Updating the record makes Maki measure the file again; the file itself is not touched."
@@ -13986,6 +14032,10 @@ msgstr "Aucun instantané téléchargé pour le moment"
 msgid "No source could serve the first chapter."
 msgstr "Aucune source n'a pu fournir le premier chapitre."
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "No source has listed this chapter since {delistedOn}. A source may have filed it here by mistake, so check the file. Sources also drop chapters after a licence takedown, and then the file is fine."
+msgstr ""
+
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
 #, fuzzy
@@ -13999,6 +14049,10 @@ msgstr "Aucune source ne propose ce chapitre pour le moment"
 
 #: src/pages/HealthPage.tsx
 msgid "No source is enabled for this series, so there is nowhere to download it from."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "No source lists them any more. A source may have filed them here by mistake, or dropped them after a licence takedown, so check the files before reading them."
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -20241,6 +20295,10 @@ msgstr ""
 msgid "Show their newest titles in a rail on Home and Discover"
 msgstr "Afficher leurs titres les plus récents dans un rail sur Accueil et Découvrir"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Show them"
+msgstr ""
+
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
 msgid "Show this section"
@@ -21973,6 +22031,10 @@ msgstr "les sources de la série"
 #, fuzzy
 msgid "The server is downloading it now. This page opens Maki by itself when it is done."
 msgstr "Le serveur le télécharge en ce moment. Cette page ouvre Maki automatiquement une fois l'opération terminée."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "The server keeps working through every page of the open chapter, not only the next few, so fast stretches don't catch up with it. Pages left when you leave the chapter are cancelled."
+msgstr ""
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -24415,6 +24477,8 @@ msgid "Whole"
 msgstr "Entière"
 
 #: src/components/notes/NotesPanel.tsx
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
 msgid "Whole chapter"
 msgstr ""
 

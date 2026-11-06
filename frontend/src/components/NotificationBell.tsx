@@ -28,6 +28,7 @@ import {
   IconHeartbeat,
   IconInbox,
   IconLink,
+  IconLinkOff,
   IconListCheck,
   IconPackage,
   IconPencil,
@@ -238,6 +239,7 @@ const TYPE_ICONS: Record<InboxEventType, Icon> = {
   seriesStatusChanged: IconFlag,
   customSourceUpdated: IconPuzzle,
   noteReply: IconMessages,
+  chapterDelisted: IconLinkOff,
 }
 
 /** A warning or error shows its severity; anything else shows what kind of event it was. */

@@ -137,6 +137,9 @@ namespace Maki.Data.Migrations
                     b.Property<int?>("ChapterFileId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("DelistedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("FileAutoRemoved")
                         .HasColumnType("INTEGER");
 

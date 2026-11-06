@@ -276,6 +276,16 @@ export default function ReaderPage() {
   )
   // On `auto` the server is asked only for pages a view has measured as stretched.
   const [stretchedPages, setStretchedPages] = useState<ReadonlySet<number>>(NO_PAGES)
+  const wholeFrom = mode === 'vertical' ? page : (spreads[spreadIndex]?.[0] ?? page)
+  const enhanceWhole = useMemo(
+    () =>
+      !current || resumedFor !== chapterId
+        ? undefined
+        : prefs.enhanceWholeChapter && serverModel
+          ? { from: wholeFrom, pageCount }
+          : null,
+    [current, resumedFor, chapterId, prefs.enhanceWholeChapter, serverModel, wholeFrom, pageCount],
+  )
   const server = useServerEnhance(
     chapterId,
     serverModel,
@@ -283,6 +293,7 @@ export default function ReaderPage() {
     current?.pageVersion,
     enhance === 'auto' ? stretchedPages : null,
     enhanceNext,
+    enhanceWhole,
   )
 
   const serverStates = server?.states

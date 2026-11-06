@@ -364,8 +364,10 @@ public sealed class OnnxPageUpscaler(
         return value;
     }
 
+    // Maki 2x is within a level of any flat value deep in a tile but up to 6 off near its edges (it reaches
+    // further than the 12 px pad), so filling is closer to the model than running it is.
     private static bool KeepsFlat(UpscaleModelInfo info, byte value) =>
-        info.Id == UpscaleModelId.SpanS || value is 0 or 255;
+        info.Id == UpscaleModelId.SpanS || info.Id == UpscaleModelId.Maki2x || value is 0 or 255;
 
     private static void FillTile(UpscaleTile tile, int scale, byte[] output, int outputWidth, int bands, byte value)
     {

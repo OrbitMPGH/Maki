@@ -28,6 +28,7 @@ const chapter = (id: number, seriesId: number, number: number): ChapterDto => ({
   fileAutoRemoved: false,
   fileMissing: false,
   fileDeleteDueAt: null,
+  delistedAt: null,
   filePath: null,
   fileSourceName: 'mangadex',
   fileReleaseName: null,

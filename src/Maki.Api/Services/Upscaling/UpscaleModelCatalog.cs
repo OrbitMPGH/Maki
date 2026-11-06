@@ -19,6 +19,7 @@ public readonly record struct UpscaleModelId
 {
     public static readonly UpscaleModelId SpanS = new("span-s");
     public static readonly UpscaleModelId RealEsrganAv3 = new("realesrgan-av3");
+    public static readonly UpscaleModelId Maki2x = new("maki-2x");
 
     private UpscaleModelId(string value) => Value = value;
 
@@ -70,7 +71,10 @@ public sealed class UpscaleModelCatalog
             "the-database (IllustrationJaNai V3)", "https://github.com/the-database/MangaJaNai/releases/tag/3.0.0"),
         new(UpscaleModelId.RealEsrganAv3, UpscaleAdapter.Plain4xThenHalve, 4, 2, "input", UpscaleTensorType.Float32,
             "realesrgan-av3-4x.onnx", "Real-ESRGAN animevideov3", "BSD-3-Clause",
-            "Xintao Wang et al.", "https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0")
+            "Xintao Wang et al.", "https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0"),
+        new(UpscaleModelId.Maki2x, UpscaleAdapter.Plain2x, 2, 2, "input", UpscaleTensorType.Float32,
+            "maki-2x.onnx", "Maki 2x", "GPL-3.0",
+            "Maki", "https://github.com/OrbitMPGH/Maki/tree/main/distribution/upscale-models/distill")
     ];
 
     internal static IEnumerable<UpscaleModelId> Ids => Entries.Select(e => e.Id);

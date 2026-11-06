@@ -2095,6 +2095,21 @@ export function useSetChaptersWanted() {
   })
 }
 
+/** Keeps chapters flagged as delisted: clears the flag, which no sync sets again unless a source lists them anew. */
+export function useClearDelisted() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (chapterIds: number[]) =>
+      api<{ cleared: number }>('/chapter/delisted/clear', {
+        method: 'POST',
+        body: JSON.stringify({ chapterIds }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['chapters'] })
+    },
+  })
+}
+
 /** Queues a hand-picked set of chapters, ignoring their wanted flag, see ChapterController. */
 export function useDownloadChapters() {
   const queryClient = useQueryClient()

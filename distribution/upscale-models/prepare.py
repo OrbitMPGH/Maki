@@ -12,12 +12,14 @@ What it does:
   3. Rebuilds SRVGGNetCompact, loads realesr-animevideov3.pth with weights_only=True, exports
      realesrgan-av3-4x.onnx (opset 17, fp32, dynamic H and W) and compares ONNX Runtime with
      PyTorch on a 128x128 random tile (max abs difference must stay under 1e-3).
-  4. Writes manifest.json (sha256 and size of each file) and LICENSES.txt into --out.
+  4. With --maki, copies Maki's own model (exported by distill/export_onnx.py) in as maki-2x.onnx
+     and checks it runs as a 2x float32 model with an input named "input".
+  5. Writes manifest.json (sha256 and size of each file) and LICENSES.txt into --out.
 
 Upload the result with distribution/publish-upscale-models.ps1.
 
 Usage:
-    python distribution/upscale-models/prepare.py --work <download folder> --out <output folder>
+    python distribution/upscale-models/prepare.py --work <download folder> --out <output folder>         --maki <path to student-maki-hyb-2x.onnx>
 """
 
 import argparse
@@ -65,6 +67,13 @@ MODELS = [
         "license": "BSD-3-Clause",
         "author": "Xintao Wang et al. (Real-ESRGAN animevideov3)",
         "source": "https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0",
+    },
+    {
+        "id": "maki-2x",
+        "file": "maki-2x.onnx",
+        "license": "GPL-3.0",
+        "author": "Maki",
+        "source": "https://github.com/OrbitMPGH/Maki/tree/main/distribution/upscale-models/distill",
     },
 ]
 
@@ -160,6 +169,19 @@ def export_realesrgan(pth: Path, target: Path) -> float:
     return diff
 
 
+def copy_maki(source: Path, target: Path) -> None:
+    shutil.copyfile(source, target)
+    session = ort.InferenceSession(str(target), ort.SessionOptions(), providers=["CPUExecutionProvider"])
+    first = session.get_inputs()[0]
+    if first.name != "input" or first.type != "tensor(float)":
+        fail(f"{source.name}: input is {first.name} {first.type}, expected input tensor(float)")
+    tile = np.random.default_rng(1234).random((1, 3, 120, 120), dtype=np.float32)
+    out = session.run(None, {"input": tile})[0]
+    if out.shape != (1, 3, 240, 240):
+        fail(f"{source.name}: a 120x120 tile came back {out.shape}, expected a 2x model")
+    print("copied maki-2x.onnx")
+
+
 def licenses_text() -> str:
     def read(name: str) -> str:
         return (HERE / "licenses" / name).read_text(encoding="utf-8").strip()
@@ -182,6 +204,11 @@ def licenses_text() -> str:
         "   Source: https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0",
         "   Licence: BSD 3-Clause (full text below).",
         "",
+        "3. maki-2x.onnx",
+        "   Maki's own 2x model, trained to reproduce Real-ESRGAN animevideov3's output on manga pages.",
+        "   It contains none of Real-ESRGAN's weights. Training code: distribution/upscale-models/distill.",
+        "   Licence: GPL-3.0, the same as Maki's code.",
+        "",
         "-" * 70,
         "Real-ESRGAN: BSD 3-Clause",
         "-" * 70,
@@ -200,6 +227,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--work", required=True, type=Path, help="folder for the upstream downloads")
     parser.add_argument("--out", required=True, type=Path, help="folder that receives the release files")
+    parser.add_argument("--maki", type=Path, help="Maki's own exported model; left out of the release when absent")
     args = parser.parse_args()
 
     work: Path = args.work
@@ -223,8 +251,15 @@ def main() -> None:
 
     export_realesrgan(pth_path, out / "realesrgan-av3-4x.onnx")
 
+    models = MODELS
+    if args.maki:
+        copy_maki(args.maki, out / "maki-2x.onnx")
+    else:
+        print("no --maki given: maki-2x is left out of the manifest")
+        models = [m for m in MODELS if m["id"] != "maki-2x"]
+
     manifest = {"version": 1, "models": []}
-    for model in MODELS:
+    for model in models:
         file = out / model["file"]
         manifest["models"].append(
             {

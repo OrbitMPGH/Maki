@@ -200,4 +200,33 @@ public class UpscaleQueueTests
         Assert.Equal(UpscaleOutcome.Skipped, _queue.RecentOutcome(Item(2).Key));
         Assert.True(_queue.MemoOrderCount <= 2 * 1024 + 1, $"{_queue.MemoOrderCount} order entries");
     }
+
+    [Fact]
+    public void A_whole_chapter_request_queues_past_the_window_cap()
+    {
+        var items = Enumerable.Range(0, 80).Select(page => Item(page)).ToList();
+
+        Assert.Equal(UpscaleQueue.MaxPendingPerUser, _queue.Replace(1, 1, "span-s", items).Count);
+        Assert.Equal(80, _queue.Replace(1, 1, "span-s", items, UpscaleQueue.MaxChapterPages).Count);
+        Assert.Equal(Enumerable.Range(0, 80), DrainPages());
+    }
+
+    [Fact]
+    public void Cancelling_drops_the_readers_lane_and_abandons_only_what_nobody_else_waits_on()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(0), Item(1), Item(2)], UpscaleQueue.MaxChapterPages);
+        _queue.Replace(2, 1, "span-s", [Item(1)]);
+        var running = Assert.IsType<UpscaleJob>(_queue.TryDequeue());
+        var shared = Assert.IsType<UpscaleJob>(_queue.TryDequeue());
+        Assert.Equal(0, running.Key.AbsIndex);
+        Assert.Equal(1, shared.Key.AbsIndex);
+
+        _queue.Cancel(1);
+
+        Assert.True(running.Abandoned.IsCancellationRequested);
+        Assert.False(shared.Abandoned.IsCancellationRequested);
+        Assert.Equal([2], _queue.Complete(shared, UpscaleOutcome.Ready, null).Select(w => w.Key));
+        Assert.Null(_queue.TryDequeue());
+        Assert.Equal(0, _queue.Snapshot().Pending);
+    }
 }

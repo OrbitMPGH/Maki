@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
-import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
+import { api, failWith, hoursAgo, neverResolve } from '../../.storybook/mocks/api'
 import {
   animeResume,
   archivePreview,
@@ -386,6 +386,42 @@ export const NumberingClash: Story = {
       http.get(api('/series/:id'), () => HttpResponse.json(seriesDto(6, { numberingClash: 'comick|asurascans' }))),
     ),
     ...at(6),
+  },
+}
+
+export const DelistedChapters: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/chapter'), () =>
+        HttpResponse.json(
+          chaptersFor(6).map((c, i, all) => (i >= all.length - 2 ? { ...c, hasFile: true, delistedAt: hoursAgo(20) } : c)),
+        ),
+      ),
+    ),
+    ...at(6),
+  },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('2 downloaded chapters are no longer listed')).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: 'Show them' }))
+    await waitFor(() => expect(canvas.getAllByText('Delisted')).toHaveLength(2))
+  },
+}
+
+export const DelistedChaptersKept: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/chapter'), () =>
+        HttpResponse.json(
+          chaptersFor(6).map((c, i, all) => (i >= all.length - 2 ? { ...c, hasFile: true, delistedAt: hoursAgo(20) } : c)),
+        ),
+      ),
+      http.post(api('/chapter/delisted/clear'), () => HttpResponse.json({ cleared: 2 })),
+    ),
+    ...at(6),
+  },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Keep them' }))
+    await waitFor(() => expect(document.body).toHaveTextContent('Kept 2 chapters'))
   },
 }
 

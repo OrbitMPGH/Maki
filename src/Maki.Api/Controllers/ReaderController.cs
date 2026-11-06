@@ -53,9 +53,12 @@ public record SetChaptersStateRequest(int[] ChapterIds, string State);
 
 /// <summary>
 /// Pages of a chapter to upscale on the server, current page first, plus the first pages of the
-/// next chapter once the window runs past the last page. See <see cref="ReaderController.Enhance"/>.
+/// next chapter once the window runs past the last page. <c>WholeChapter</c> lifts the cap to
+/// <see cref="UpscaleQueue.MaxChapterPages"/> so the rest of the chapter can queue behind the window.
+/// See <see cref="ReaderController.Enhance"/>.
 /// </summary>
-public record EnhancePagesRequest(string? Model, int[]? Pages, int? NextChapterId = null, int[]? NextPages = null);
+public record EnhancePagesRequest(
+    string? Model, int[]? Pages, int? NextChapterId = null, int[]? NextPages = null, bool WholeChapter = false);
 
 /// <summary>Chapters a device holds offline copies of. See <see cref="ReaderController.ChapterVersions"/>.</summary>
 public record ChapterVersionsRequest(int[]? Ids);
@@ -339,7 +342,8 @@ public class ReaderController(
             return NotFound();
         }
 
-        var pages = (request.Pages ?? []).Distinct().Take(UpscaleQueue.MaxPendingPerUser).ToList();
+        var cap = request.WholeChapter ? UpscaleQueue.MaxChapterPages : UpscaleQueue.MaxPendingPerUser;
+        var pages = (request.Pages ?? []).Distinct().Take(cap).ToList();
         var states = new string[pages.Count];
         var wanted = new List<(int Index, UpscaleRequestItem Item)>();
         for (var i = 0; i < pages.Count; i++)
@@ -372,7 +376,7 @@ public class ReaderController(
         }
 
         var items = wanted.Select(w => w.Item).ToList();
-        var room = UpscaleQueue.MaxPendingPerUser - items.Count;
+        var room = cap - items.Count;
         if (request.NextChapterId is { } nextId && nextId != id && request.NextPages is { Length: > 0 } nextPages && room > 0
             && await reader.PageSliceAsync(nextId, ct) is { } next)
         {
@@ -388,13 +392,21 @@ public class ReaderController(
                 .Take(room));
         }
 
-        var queued = queue.Replace(currentUser.UserId, id, model.Value, items);
+        var queued = queue.Replace(currentUser.UserId, id, model.Value, items, cap);
         for (var i = 0; i < wanted.Count; i++)
         {
             states[wanted[i].Index] = queued[i] == UpscaleJobState.Working ? "working" : "queued";
         }
 
         return Ok(new { pages = pages.Select((page, i) => new { page, state = states[i] }).ToList() });
+    }
+
+    /// <summary>Drops this reader's pending upscales and stops a running one nobody else waits on. Sent as they leave the reader.</summary>
+    [HttpDelete("enhance")]
+    public IActionResult CancelEnhance([FromServices] UpscaleQueue queue)
+    {
+        queue.Cancel(currentUser.UserId);
+        return NoContent();
     }
 
     /// <summary>A server upscale from the cache. 404 until it is there; this never queues one.</summary>

@@ -4131,6 +4131,17 @@ msgstr "新章节已保留"
 msgid "inbox.chapters.held.body"
 msgstr "{series}：一次性发现 {count, plural, other {# 个新章节}}，未自动下载。如果确实是新章节，请从该系列页面下载。"
 
+#. English: Chapters no longer listed
+#: src/Maki.Api/Services/ChapterSyncService.cs
+msgid "inbox.chapters.delisted.title"
+msgstr ""
+
+#. Every source that listed these downloaded chapters has stopped listing them.
+#. English: {series}: {count, plural, one {# downloaded chapter is} other {# downloaded chapters are}} no longer listed by any source. Check the files on the series page.
+#: src/Maki.Api/Services/ChapterSyncService.cs
+msgid "inbox.chapters.delisted.body"
+msgstr ""
+
 #. English: Custom source updated
 #: src/Maki.Api/Services/CustomRepositoryService.cs
 #, fuzzy

@@ -716,6 +716,17 @@ export default function ReaderSettings({
                     </Text>
                   </div>
                 )}
+                {enhanceOn && isServerMethod(prefs.enhanceMethod) && (
+                  <Switch
+                    size="xs"
+                    labelPosition="left"
+                    label={t`Whole chapter`}
+                    description={t`Keep upscaling every page while the chapter is open. Leaving cancels the rest.`}
+                    checked={prefs.enhanceWholeChapter}
+                    onChange={(event) => onPrefs({ enhanceWholeChapter: event.currentTarget.checked })}
+                    classNames={{ body: 'reader-settings-switch', description: 'reader-settings-hint' }}
+                  />
+                )}
                 {enhanceOn && (
                   <div>
                     <FieldLabel>

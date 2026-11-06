@@ -86,7 +86,12 @@ public record ReaderPrefsSpec(
     /// </summary>
     string EnhanceProgress = ReaderPrefsSpec.EnhanceProgressDefault,
     /// <summary>Show a chapter's notes in the margin beside the page when the screen leaves room for them.</summary>
-    bool NotesBeside = true)
+    bool NotesBeside = true,
+    /// <summary>
+    /// With a server <see cref="EnhanceMethod"/>, keep upscaling every page of the open chapter
+    /// behind the reading window instead of only the window. What is left when the reader leaves is cancelled.
+    /// </summary>
+    bool EnhanceWholeChapter = false)
 {
     public const string ModePaged = "paged";
     public const string ModeDouble = "double";
@@ -128,7 +133,7 @@ public record ReaderPrefsSpec(
     private static readonly string[] SplitModes = [SplitOff, "split", "rotate"];
     private static readonly string[] EnhanceModes = [EnhanceOff, "auto", "always"];
     private static readonly string[] EnhanceMethods =
-        ["a4k-s", EnhanceMethodDefault, "a4k-a", "server:span-s", "server:realesrgan-av3"];
+        ["a4k-s", EnhanceMethodDefault, "a4k-a", "server:span-s", "server:realesrgan-av3", "server:maki-2x"];
     private static readonly string[] EnhanceFallbacks = ["a4k-s", EnhanceMethodDefault, "a4k-a", EnhanceOff];
     private static readonly string[] EnhanceProgressStyles = [EnhanceProgressDefault, "detailed", "off"];
     private static readonly string[] Tiers = [.. Enum.GetValues<QualityTier>().Select(QualitySnapshot.TierName)];
