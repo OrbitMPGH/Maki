@@ -70,8 +70,10 @@ public class CatalogueIndexCacheTests : IDisposable
         await cache.SnapshotSavedForTest;
         var settled = (await cache.GetAsync())!;
         Assert.True(settled.Credits.TryResolve("New Author", CreditRole.Author, out _));
-        var last = await latest;
-        Assert.True(ReferenceEquals(last, refreshed) || ReferenceEquals(last, settled));
+        // Either caller can be the one that starts the second build, and the other may arrive after
+        // the snapshot swap, so which instance each holds varies; both must be the new generation.
+        var last = (await latest)!;
+        Assert.True(last.Credits.TryResolve("New Author", CreditRole.Author, out _));
         Assert.Same(settled, await cache.GetAsync());
         Assert.Equal(2, pause.Builds);
     }

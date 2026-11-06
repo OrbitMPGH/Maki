@@ -155,6 +155,28 @@ public sealed class ChapterSyncPartialListingTests : IDisposable
     }
 
     [Fact]
+    public async Task A_partial_listing_delists_nothing_and_the_next_whole_walk_does()
+    {
+        var seriesId = SeedSeries();
+        var source = await SyncedSourceAsync(seriesId);
+        source.Listed.RemoveAll(c => c.Number <= 2);
+
+        await Service(source).SyncSeriesAsync(seriesId, ChapterListingDepth.NewestFirst);
+        Assert.Equal(1, source.PartialCalls);
+        Assert.Empty(DelistedOf(seriesId));
+
+        await Service(source).SyncSeriesAsync(seriesId);
+        Assert.Equal([1m, 2m], DelistedOf(seriesId));
+    }
+
+    private List<decimal?> DelistedOf(int seriesId)
+    {
+        using var db = _db.NewContext();
+        return db.Chapters.Where(c => c.SeriesId == seriesId && c.DelistedAt != null)
+            .Select(c => c.Number).AsEnumerable().OrderBy(n => n).ToList();
+    }
+
+    [Fact]
     public async Task A_partial_listing_removes_no_link_and_a_full_one_does()
     {
         var seriesId = SeedSeries();

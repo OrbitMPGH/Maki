@@ -199,7 +199,13 @@ public enum SourceCapabilities
 
     /// <summary>Launches a headless browser through Playwright. Native builds install it on first use;
     /// <c>HealthMonitor</c> reports the install while such a source is enabled.</summary>
-    NeedsBrowser = 4
+    NeedsBrowser = 4,
+
+    /// <summary>
+    /// The listing shows only the chapters free to read right now, so chapters leave it on a schedule.
+    /// A chapter dropped from this source's listing is never counted as delisted (<c>Chapter.DelistedAt</c>).
+    /// </summary>
+    FreeWindowListing = 8
 }
 
 /// <summary>

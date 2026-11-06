@@ -2901,6 +2901,17 @@ msgstr ""
 "{series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not "
 "downloaded automatically. Download them from the series page if they are real."
 
+#: src/Maki.Api/Services/ChapterSyncService.cs
+msgid "inbox.chapters.delisted.title"
+msgstr "Chapters no longer listed"
+
+#. Every source that listed these downloaded chapters has stopped listing them.
+#: src/Maki.Api/Services/ChapterSyncService.cs
+msgid "inbox.chapters.delisted.body"
+msgstr ""
+"{series}: {count, plural, one {# downloaded chapter is} other {# downloaded chapters are}} no "
+"longer listed by any source. Check the files on the series page."
+
 #: src/Maki.Api/Services/CustomRepositoryService.cs
 msgid "inbox.customSource.updated.title"
 msgstr "Custom source updated"
