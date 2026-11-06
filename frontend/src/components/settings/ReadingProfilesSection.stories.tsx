@@ -65,7 +65,7 @@ export const EnhanceFields: Story = {
 
     await userEvent.click(method)
     const body = within(canvasElement.ownerDocument.body)
-    await waitFor(() => expect(body.getAllByRole('option')).toHaveLength(5))
+    await waitFor(() => expect(body.getAllByRole('option')).toHaveLength(6))
     await userEvent.click(await body.findByRole('option', { name: 'Crisp line art (server)' }))
     await expect(
       await canvas.findByText('Server methods apply only when the admin has enabled them; otherwise the fallback is used.'),
