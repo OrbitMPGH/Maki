@@ -258,7 +258,7 @@ public sealed class EnhanceEndpointTests : IDisposable
         Assert.Equal(512, settings.GetProperty("cacheMb").GetInt32());
 
         var catalog = status.GetProperty("catalog").EnumerateArray().ToList();
-        Assert.Equal(["span-s", "realesrgan-av3"], catalog.Select(c => c.GetProperty("id").GetString()));
+        Assert.Equal(["span-s", "realesrgan-av3", "maki-2x"], catalog.Select(c => c.GetProperty("id").GetString()));
         foreach (var name in (string[])["id", "bytes", "license", "author", "source", "status", "error"])
         {
             Assert.True(catalog[0].TryGetProperty(name, out _), name);

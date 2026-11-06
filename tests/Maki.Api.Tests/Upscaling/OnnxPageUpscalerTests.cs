@@ -146,6 +146,22 @@ public class OnnxPageUpscalerTests : IDisposable
         Assert.All(page.Pixels, v => Assert.Equal(level, v));
     }
 
+    [Theory]
+    [InlineData(128)]
+    [InlineData(200)]
+    public void Maki_2x_skips_flat_tiles_at_any_level(byte level)
+    {
+        using var upscaler = NewUpscaler("identity-2x.onnx", UpscaleModelId.Maki2x);
+        var source = new Raster(200, 200, new Rgba(level, level, level), bands: 3);
+        var skipped = 0;
+        upscaler.TileSkipped = _ => skipped++;
+
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.Maki2x), threads: 2, luma: true, CancellationToken.None);
+
+        Assert.Equal(3 * 3, skipped);
+        Assert.All(page.Pixels, v => Assert.Equal(level, v));
+    }
+
     [Fact]
     public void A_4x_model_is_halved_per_tile_like_halving_the_whole_page()
     {

@@ -8953,6 +8953,10 @@ msgstr "粉丝向："
 msgid "Fantasy"
 msgstr "奇幻"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Fast line art (server)"
+msgstr ""
+
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "Faster animations"
@@ -12192,6 +12196,10 @@ msgstr "Maki 不会自行在此网站上查找系列。你需要在系列页面�
 #, fuzzy
 msgid "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
 msgstr "Maki 界面现已支持 {languageCount} 种语言。可在此选择，或随时在设置、语言中更改。"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Maki's own model; looks like Real-ESRGAN and runs faster"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "Maki's record says {recorded}, the file on disk is {onDisk}. Usually a tagger or another library tool rewrote its metadata. Updating the record makes Maki measure the file again; the file itself is not touched."
