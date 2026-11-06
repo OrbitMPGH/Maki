@@ -884,3 +884,34 @@ flattening where tone mixes with drawn texture, blotchy coarse halftone. Sheets 
 
 Checkpoints in `.artifacts/upscale-distill/`: `student-c48n8.pt` (round one), `student-c48n8-served.pt`
 (round four), `student-c48n8-colour.pt` (colour run, current best and the init for A1 and A2).
+
+### Research round 3 and step O (2026-11-06 evening)
+
+`RESEARCH-PLAN-3.md` (a Fable 5.1 research agent, probes and seven 10k arms in `X:/MakiModel/probe3/`):
+m1 fits training crops no better than validation crops, 85-98% of its error is a tail on edges, and the
+teacher itself is noise-sensitive on faint lines (one level of input noise moves its faint-line gradient
+20-27% on owner and grey pages, under 1% on strong edges), so the student learns the mean of a coin flip.
+A 64-channel trunk from m1's own function moved 0.05 dB in 10k steps. The unguarded relative faint term lifted
+the faint lower quartile 0.61 to 0.82 but overshot (mean 1.14-1.27, owner blobs +45%); the thin-line probe
+took thin-line depth p25 0.92 to 1.00 and overshot too. No swap, no EMA and a front-only widening were flat.
+
+`logs/stepO.sh` (21:26, owner's go-ahead): its steps 1 to 3 from m1. o1-line025 and o2-line05 (the guarded
+`--sharp-line` at 0.25 and 0.5 of the quarter rule, kill also on faint over 1.03); the survivor with the
+larger faint p25 lift (at least 0.1) seeds o3-thin (`--thin` at 0.25); o4-gan (10k at 5e-5, masked, warm-up
+gate 0.05) from o3 or its base, killed at 2.5k/5k/7.5k on 10% over its base's blobs or grain, 0.3 dB of
+PSNR, or more marks12. Then measure, smudge and faint over the survivors.
+
+Results (`measure-O.log`, `smudge-O.log`, `faint-O.log`; owner / colour / grey, m1 in brackets):
+- o1-line025, o2-line05: both stopped at 10k on owner blobs (2.71, 3.03 against the 2.5 bar); faint .917 /
+  .922 on the owner page (.899) but grey faint fell to .932 / .909 (.989). The guard did not stop the blobs.
+- o3-thin (from m1, neither step 1 arm qualified): marks12 .090 / .068 / .435 (.106 / .089 / .503), faint .916
+  / .926 / 1.042, PSNR owner 42.69 (42.55). Costs: owner grain .177 (.156), grey blobs 11.37 (9.41),
+  phase and seams a touch worse (owner 64.09 against 64.41).
+- o4-gan (o3 + 10k masked GAN, warm-up gap +0.46, passed every check-in): marks12 .095 / .076 / .405,
+  faint .922 / .929 / 1.047, owner grain .151 and blobs 2.06 (back to m1's), PSNR owner 42.76; colour grain
+  .170 (.139, teacher .155), grey blobs 11.64. `show/index.html`: Lanczos, m1, O3, O4, teacher.
+Owner verdict (2026-11-06, late): "Still can't really see any improvements" on O3 or O4. m1 stays as Maki 2x.
+With N0/N2 and now O3/O4 invisible by eye, the measurable gains left at this speed are below what the owner
+sees; RESEARCH-PLAN-3's reading (the teacher's own noise sensitivity on faint detail) stands. Tuning stops here.
+
+NAS (i5-14500, owner's "Test speed", 2026-11-06): Maki 2x 1.5 s a page, Real-ESRGAN 4.2 s, 2.8x.

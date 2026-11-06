@@ -40,8 +40,8 @@ import torch.nn as nn
 from common import WORK, load_student, load_teacher, luma, margin, student
 from crop_stats import is_fill, stats
 from gan import Discriminator, d_loss, g_loss, logit_gap
-from losses import (coherent_error, edge_band, fill_mask, gradient_variance, masked_fine, sharpness_deficit, ldl_map, masked_band, masked_pooled, ms_ssim, power_loss,
-                    sobel_l1, top_share)
+from losses import (coherent_error, edge_band, fill_mask, gradient_variance, masked_fine, sharpness_deficit, sharpness_deficit_relative, ldl_map,
+                    masked_band, masked_pooled, ms_ssim, power_loss, sharpness_deficit_line, sobel_l1, thin_line_deficit, top_share)
 from sets import open_set, to_gpu
 
 LUMA = (0.299, 0.587, 0.114)
@@ -178,6 +178,12 @@ def main():
                         help="also keep the fill terms 2 px off lines fainter than 64 (a Sobel threshold, e.g. 24)")
     parser.add_argument("--sharp", type=float, default=0.0,
                         help="weight of the one-sided sharpness deficit on the target's edges, faint ones included")
+    parser.add_argument("--sharp-rel", type=float, default=0.0,
+                        help="weight of the relative sharpness deficit on faint edges (16 to 64 levels, off strong ones)")
+    parser.add_argument("--sharp-line", type=float, default=0.0,
+                        help="weight of the relative sharpness deficit on line-like faint edges, with an over-sharpening charge")
+    parser.add_argument("--thin", type=float, default=0.0,
+                        help="weight of the one-sided depth deficit on the target's thin dark lines")
     parser.add_argument("--fine-edge", type=float, default=0.0,
                         help="weight of the pixel-scale residual within 2 px of strong edges (jagged lines)")
     parser.add_argument("--marks", type=float, default=0.0,
@@ -308,6 +314,12 @@ def main():
             out["fine"] = masked_fine(r, mask)
         if args.sharp:
             out["sharp"] = sharpness_deficit(pl[:, None], t[:, None])
+        if args.sharp_rel:
+            out["sharp_rel"] = sharpness_deficit_relative(pl[:, None], t[:, None])
+        if args.sharp_line:
+            out["sharp_line"] = sharpness_deficit_line(pl[:, None], t[:, None])
+        if args.thin:
+            out["thin"] = thin_line_deficit(pl[:, None], t[:, None])
         if args.fine_edge:
             out["fine_edge"] = masked_fine(r, edge_band(t[:, None] * 255))
         fills = mask if args.fill_mask else None
@@ -340,7 +352,8 @@ def main():
 
     weights = {"l1": 1.0, "pooled": args.pooled, "band": args.band, "mssim": args.mssim, "grad": args.grad,
                "gv": args.gv, "topk": args.topk, "feat": args.feat, "ldl": args.ldl, "fine": args.fine,
-               "fine_edge": args.fine_edge, "sharp": args.sharp, "marks": args.marks}
+               "fine_edge": args.fine_edge, "sharp": args.sharp, "sharp_rel": args.sharp_rel, "sharp_line": args.sharp_line,
+               "thin": args.thin, "marks": args.marks}
     if args.quarter:
         # RESEARCH-PLAN-2's rule: a new term starts at a quarter of the L1, whatever its natural scale.
         with torch.no_grad():
