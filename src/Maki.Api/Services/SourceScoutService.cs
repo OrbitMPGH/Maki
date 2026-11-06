@@ -203,8 +203,8 @@ public sealed class SourceScoutService(
             })
             .ToList();
         var states = plan.ToDictionary(p => p.Mapping.Id, p => new SourceState(p.Mapping.Id, p.Links.Count));
-        job.Chapters = [.. links
-            .Where(l => picks.Contains(l.ChapterId))
+        job.Chapters = [.. plan
+            .SelectMany(p => p.Links)
             .DistinctBy(l => l.ChapterId)
             .OrderBy(l => l.Chapter!.Number ?? decimal.MaxValue)
             .Select(l => l.Chapter!.NumberRaw ?? l.Chapter.Number?.ToString(CultureInfo.InvariantCulture) ?? "?")];
