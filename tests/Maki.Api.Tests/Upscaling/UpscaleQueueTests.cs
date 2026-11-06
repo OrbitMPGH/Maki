@@ -212,6 +212,39 @@ public class UpscaleQueueTests
     }
 
     [Fact]
+    public void Pages_shown_plain_are_dropped_from_what_an_earlier_request_queued()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(0), Item(1), Item(2), Item(3)]);
+
+        _queue.Replace(1, 1, "span-s", [], notWanted: new HashSet<UpscaleWorkKey> { Item(1).Key, Item(2).Key });
+
+        Assert.Equal([0, 3], DrainPages());
+    }
+
+    [Fact]
+    public void A_running_page_shown_plain_is_abandoned()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(0), Item(1)]);
+        var running = _queue.TryDequeue()!;
+
+        _queue.Replace(1, 1, "span-s", [], notWanted: new HashSet<UpscaleWorkKey> { running.Key });
+
+        Assert.True(running.Abandoned.IsCancellationRequested);
+        Assert.Empty(_queue.Complete(running, UpscaleOutcome.Failed, UpscaleReasons.Abandoned));
+        Assert.Equal([1], DrainPages());
+    }
+
+    [Fact]
+    public void An_empty_request_from_another_chapter_ends_the_previous_chapters_pages()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(4), Item(5), Item(0, chapterId: 2, fileId: 2)], UpscaleQueue.MaxChapterPages);
+
+        _queue.Replace(1, 2, "span-s", []);
+
+        Assert.Equal([0], DrainPages());
+    }
+
+    [Fact]
     public void Cancelling_drops_the_readers_lane_and_abandons_only_what_nobody_else_waits_on()
     {
         _queue.Replace(1, 1, "span-s", [Item(0), Item(1), Item(2)], UpscaleQueue.MaxChapterPages);

@@ -741,23 +741,27 @@ export const EnhanceSkippedForVolume: Story = {
   },
 }
 
-const unstretchedAsked: number[][] = []
+const unstretchedAsked: { pages: number[]; notWanted?: number[] }[] = []
 
-/** Auto with Sharp (server) and the page shown at 1:1: nothing is stretched, so nothing is asked of the server. */
+/** Auto with Sharp (server) and the page shown at 1:1: nothing is stretched, so no page is asked for and the pages measured plain go as `notWanted`, which drops what the previous chapter queued ahead. */
 export const ServerEnhanceAutoUnstretched: Story = {
   parameters: {
     ...open(7714),
     msw: [
       serverMethod(7714, undefined, { enhance: 'auto', fit: 'original', scale: 100 }),
-      enhanceAnswer(7714, 'queued', unstretchedAsked),
+      http.post(api('/reader/chapter/7714/enhance'), async ({ request }) => {
+        unstretchedAsked.push((await request.json()) as { pages: number[]; notWanted?: number[] })
+        return HttpResponse.json({ pages: [] })
+      }),
       http.get(api('/reader/chapter/7714/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
     ],
   },
   play: async ({ canvas, canvasElement }) => {
     await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
     await waitFor(() => expect(canvasElement.querySelector('canvas.reader-enhanced')).not.toBeNull())
+    await waitFor(() => expect(unstretchedAsked.at(-1)?.notWanted).toContain(5))
     await new Promise((resolve) => setTimeout(resolve, 800))
-    await expect(unstretchedAsked).toHaveLength(0)
+    await expect(unstretchedAsked.flatMap((body) => body.pages)).toHaveLength(0)
   },
 }
 

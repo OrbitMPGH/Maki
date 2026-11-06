@@ -13,6 +13,7 @@ import {
   regionBitmap,
   useEnhanceEngine,
   type PageEnhance,
+  type StretchedReport,
 } from './enhanceRuntime'
 import { useWarmServerPages, type ServerEnhance } from './useServerEnhance'
 import type {
@@ -334,7 +335,7 @@ export default function PagedView({
   /** The reader's preload window: the spread on screen and the pages after it, in reading order. */
   preload?: number[]
   /** The pages `auto` enhances: shown at 1.2x their size or more (measured on screen or matched to a measured size), or soft. */
-  onStretched?: (pages: ReadonlySet<number>) => void
+  onStretched?: StretchedReport
 }) {
   const { t } = useLingui()
   const root = useRef<HTMLDivElement>(null)
@@ -399,7 +400,7 @@ export default function PagedView({
     () =>
       new EnhanceScope(
         () => setSized((n) => n + 1),
-        (pages) => stretchedRef.current?.(pages),
+        (wanted, plain) => stretchedRef.current?.(wanted, plain),
       ),
   )
   useEffect(() => {

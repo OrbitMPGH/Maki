@@ -29,7 +29,7 @@ import { t as now } from '@lingui/core/macro'
 import ShortcutSheet from './ShortcutSheet'
 import ContinuousView from './ContinuousView'
 import ServerEnhanceStatus, { useEnhancePhase } from './ServerEnhanceStatus'
-import { serverModelFor, useServerEnhance } from './useServerEnhance'
+import { serverModelFor, useServerEnhance, type AutoPages } from './useServerEnhance'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
 import ReaderToolbar from './ReaderToolbar'
@@ -53,6 +53,7 @@ const DOUBLE_TAP_SLOP = 40
 const WARM_NEXT_WITHIN = 3
 const CHROME_HIDE_MS = 4000
 const NO_PAGES: ReadonlySet<number> = new Set()
+const NO_AUTO_PAGES: AutoPages = { wanted: NO_PAGES, plain: NO_PAGES }
 // A page turn this soon after moving to another chapter or the end screen is the tail of a double tap,
 // a fling or a held key, and must not carry on through the next chapter boundary.
 const CHAPTER_SETTLE_MS = 800
@@ -274,8 +275,9 @@ export default function ReaderPage() {
         : null,
     [nextChapterId, beyondEnd],
   )
-  // On `auto` the server is asked only for pages a view has measured as stretched.
-  const [stretchedPages, setStretchedPages] = useState<ReadonlySet<number>>(NO_PAGES)
+  // On `auto` the server is asked only for pages a view has measured as wanted.
+  const [autoPages, setAutoPages] = useState<AutoPages>(NO_AUTO_PAGES)
+  const onStretched = useCallback((wanted: ReadonlySet<number>, plain: ReadonlySet<number>) => setAutoPages({ wanted, plain }), [])
   const wholeFrom = mode === 'vertical' ? page : (spreads[spreadIndex]?.[0] ?? page)
   const enhanceWhole = useMemo(
     () =>
@@ -291,7 +293,7 @@ export default function ReaderPage() {
     serverModel,
     enhanceWindow,
     current?.pageVersion,
-    enhance === 'auto' ? stretchedPages : null,
+    enhance === 'auto' ? autoPages : null,
     enhanceNext,
     enhanceWhole,
   )
@@ -1019,7 +1021,7 @@ export default function ReaderPage() {
               enhanceMethod={prefs.enhanceMethod}
               enhanceFallback={prefs.enhanceFallback}
               server={server}
-              onStretched={setStretchedPages}
+              onStretched={onStretched}
               onEnhanceRange={onEnhanceRange}
             />
           ) : (
@@ -1041,7 +1043,7 @@ export default function ReaderPage() {
               enhanceFallback={prefs.enhanceFallback}
               server={server}
               preload={preloadPages}
-              onStretched={setStretchedPages}
+              onStretched={onStretched}
             />
           )}
         </div>

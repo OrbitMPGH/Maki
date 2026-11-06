@@ -127,7 +127,7 @@ export type ServerPageState = 'ready' | 'queued' | 'working' | 'failed' | 'skipp
 /**
  * Asks the server to upscale a window of pages, current page first. At most 32 are taken, or 1000
  * with `wholeChapter`; `next` fills whatever room is left with the next chapter's pages, which are
- * not answered here.
+ * not answered here. `notWanted` names this chapter's pages to drop from what is still queued.
  */
 export function requestServerEnhance(
   chapterId: number,
@@ -135,6 +135,7 @@ export function requestServerEnhance(
   pages: number[],
   next: { chapterId: number; pages: number[] } | null = null,
   wholeChapter = false,
+  notWanted: number[] = [],
 ) {
   return api<{ pages: { page: number; state: ServerPageState }[] }>(`/reader/chapter/${chapterId}/enhance`, {
     method: 'POST',
@@ -143,6 +144,7 @@ export function requestServerEnhance(
       pages,
       ...(next && { nextChapterId: next.chapterId, nextPages: next.pages }),
       ...(wholeChapter && { wholeChapter }),
+      ...(notWanted.length > 0 && { notWanted }),
     }),
   })
 }
