@@ -2,6 +2,7 @@ using Maki.Api.Configuration;
 using Maki.Api.Services;
 using Maki.Api.Services.Upscaling;
 using Maki.Core.Entities;
+using Maki.Core.Quality;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
@@ -284,6 +285,8 @@ public class HousekeepingJob(
 
         // Failed rows go too, or the downloads health check would stay yellow over a failure from months ago.
         await StaleFailures(db.DownloadQueue, now, cutoff).ExecuteDeleteAsync(ct);
+
+        await db.SourceFailures.Where(f => f.OccurredAtUtc < now - SourceReliability.Window).ExecuteDeleteAsync(ct);
 
         await PruneInboxAsync(ct);
 

@@ -81,6 +81,7 @@ const ERROR_LABELS: Record<string, MessageDescriptor> = {
   'error.download.challengeNotSolved': msg`The source needs FlareSolverr to get past its anti-bot check (Settings → Downloads)`,
   'error.download.sourceRejected': msg`The source refused the request`,
   'error.download.sourceError': msg`The source answered with an error`,
+  'error.download.sourceNeedsPurchase': msg`The source wants a login or a purchase for this chapter`,
   'error.download.network': msg`Could not reach the source`,
   'error.download.disk': msg`Could not write the chapter to disk`,
   'error.download.invalidPage': msg`A page the source sent is not a readable image`,

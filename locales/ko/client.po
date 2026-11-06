@@ -22099,6 +22099,10 @@ msgid "The source returned no pages"
 msgstr "소스가 페이지를 반환하지 않았습니다"
 
 #: src/api/queue.ts
+msgid "The source wants a login or a purchase for this chapter"
+msgstr ""
+
+#: src/api/queue.ts
 #, fuzzy
 msgid "The source you picked could not provide this chapter"
 msgstr "선택한 소스에서 이 챕터를 제공할 수 없습니다"

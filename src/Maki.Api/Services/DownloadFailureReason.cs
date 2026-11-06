@@ -20,6 +20,9 @@ public static class DownloadFailureReason
     public const string Unexpected = "error.download.unexpected";
     public const string ChallengeNotSolved = "error.download.challengeNotSolved";
 
+    /// <summary>The source lists the chapter but wants a login or a purchase for its pages.</summary>
+    public const string NeedsPurchase = "error.download.sourceNeedsPurchase";
+
     private const int MaxDetailLength = 300;
 
     public static (string Key, string? Detail) Classify(Exception ex)

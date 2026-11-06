@@ -1256,6 +1256,12 @@ public class DownloadQueueService(
     /// <summary>Failures no retry can change, which <see cref="RequeueEligibleFailuresAsync"/> never picks up.</summary>
     public static readonly string[] PermanentErrorKeys = ["error.download.upgradeTargetGone"];
 
+    /// <summary>
+    /// Failures the automatic retry would only repeat, but which the user can clear (logging in or buying
+    /// the chapter in Suwayomi's WebView), so a retry somebody asks for still picks them up.
+    /// </summary>
+    public static readonly string[] ManualRetryOnlyErrorKeys = [DownloadFailureReason.NeedsPurchase];
+
     /// <summary>The source name <see cref="QueueItemDto"/> shows for a torrent grab, which has no mapping.</summary>
     public const string TorrentSourceName = "torrent";
 
@@ -1320,6 +1326,7 @@ public class DownloadQueueService(
         var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
 
         var now = time.GetUtcNow().UtcDateTime;
+        string[] skipped = manual ? PermanentErrorKeys : [.. PermanentErrorKeys, .. ManualRetryOnlyErrorKeys];
         var eligible = await FailedWhere(db.DownloadQueue, reasonKey, source)
             .Include(q => q.Chapter)
             .Include(q => q.Series)
@@ -1328,7 +1335,7 @@ public class DownloadQueueService(
                         q.HealthOperationId == null &&
                         q.Series!.ArchivedAt == null &&
                         q.RetryCount < maxAttempts &&
-                        (q.ErrorKey == null || !PermanentErrorKeys.Contains(q.ErrorKey)) &&
+                        (q.ErrorKey == null || !skipped.Contains(q.ErrorKey)) &&
                         (manual || q.NextAttempt == null || q.NextAttempt <= now) &&
                         (q.ChapterId == null || !db.DownloadQueue.Any(o => o.ActiveChapterId == q.ChapterId)) &&
                         (q.UpgradeInfoJson != null || q.Chapter == null || !(

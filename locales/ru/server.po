@@ -4829,6 +4829,13 @@ msgstr "Источник отклонил запрос"
 msgid "error.download.sourceError"
 msgstr "Источник ответил ошибкой"
 
+#. The source lists the chapter but wants a login or a purchase for its pages (Suwayomi extensions
+#. word it "log in via WebView" or "purchase this chapter"). The extension's own text follows, untranslated.
+#. English: The source wants a login or a purchase for this chapter
+#: src/Maki.Api/Services/DownloadFailureReason.cs
+msgid "error.download.sourceNeedsPurchase"
+msgstr ""
+
 #. Connection refused, timed out, DNS or SSL failure: the site could not be reached at all.
 #. English: Could not reach the source
 #: src/Maki.Api/Services/DownloadFailureReason.cs

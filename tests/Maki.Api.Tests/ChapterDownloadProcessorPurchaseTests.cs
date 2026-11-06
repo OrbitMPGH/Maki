@@ -1,6 +1,7 @@
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Sources;
+using Maki.Data;
 
 namespace Maki.Api.Tests;
 
@@ -51,10 +52,60 @@ public class ChapterDownloadProcessorPurchaseTests : IDisposable
         using var check = _world.Db.NewContext();
         var row = check.DownloadQueue.Single(q => q.Id == id);
         Assert.Equal(QueueStatus.Failed, row.Status);
-        Assert.Equal(DownloadFailureReason.SourceError, row.ErrorKey);
+        Assert.Equal(DownloadFailureReason.NeedsPurchase, row.ErrorKey);
         Assert.Contains("purchase", row.ErrorMessage);
         Assert.Null(row.NextAttempt);
         Assert.Equal(1, _pageCalls);
+    }
+
+    [Fact]
+    public async Task The_automatic_retry_leaves_a_purchase_failure_alone_but_a_manual_retry_picks_it_up()
+    {
+        using (var db = _world.Db.NewContext())
+        {
+            db.SourceMappings.Single(m => m.Id == _world.AggMappingId).Enabled = false;
+            db.SaveChanges();
+        }
+
+        var id = Enqueue();
+        await _world.ProcessAsync(id);
+
+        // Its retry count never grows, so a sweep that took it would retry it every five minutes forever.
+        Assert.Equal(0, await _world.Queue.RequeueEligibleFailuresAsync(5));
+        Assert.Equal(1, await _world.Queue.RetryFailedAsync(null, null, new DataScope()));
+        using var check = _world.Db.NewContext();
+        Assert.Equal(QueueStatus.Queued, check.DownloadQueue.Single(q => q.Id == id).Status);
+    }
+
+    [Fact]
+    public async Task A_purchase_failure_that_moves_on_is_still_held_against_the_source_that_asked()
+    {
+        ServeFromTheAggregator();
+        var id = Enqueue();
+
+        await _world.ProcessAsync(id);
+
+        using var check = _world.Db.NewContext();
+        var failure = Assert.Single(check.SourceFailures);
+        Assert.Equal(_world.OfficialMappingId, failure.SourceMappingId);
+        Assert.Equal(DownloadFailureReason.NeedsPurchase, failure.ErrorKey);
+    }
+
+    [Fact]
+    public async Task A_source_error_is_held_against_the_source_but_a_disk_error_is_not()
+    {
+        _world.OfficialPages = _ => throw new SourceErrorException("Internal server error");
+        var sourceError = Enqueue();
+        await _world.ProcessAsync(sourceError);
+
+        _world.OfficialPages = _ => throw new IOException("Disk full");
+        var diskError = Enqueue();
+        await _world.ProcessAsync(diskError);
+
+        using var check = _world.Db.NewContext();
+        var failure = Assert.Single(check.SourceFailures);
+        Assert.Equal(_world.OfficialMappingId, failure.SourceMappingId);
+        Assert.Equal(DownloadFailureReason.SourceError, failure.ErrorKey);
     }
 
     private int Enqueue(Action<DownloadQueueItem>? configure = null)

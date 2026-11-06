@@ -1,6 +1,7 @@
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Quality;
 using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -120,18 +121,24 @@ public sealed class SourceOrderTests : IDisposable
         Assert.Equal([good, poor, fresh], await OrderAsync(db, seriesId));
     }
 
-    private void SeedDownloads(
-        int seriesId, int mappingId, int completed, int failed, string errorKey = "error.download.sourceError",
-        DateTime? queuedAt = null)
+    private void SeedDownloads(int seriesId, int mappingId, int completed, int failed, DateTime? at = null)
     {
         using var db = _db.NewContext();
-        for (var i = 0; i < completed + failed; i++)
+        var when = at ?? DateTime.UtcNow;
+        for (var i = 0; i < completed; i++)
         {
-            var ok = i < completed;
             db.DownloadQueue.Add(new DownloadQueueItem
             {
-                SeriesId = seriesId, SourceMappingId = mappingId, QueuedAt = queuedAt ?? DateTime.UtcNow,
-                Status = ok ? QueueStatus.Completed : QueueStatus.Failed, ErrorKey = ok ? null : errorKey
+                SeriesId = seriesId, SourceMappingId = mappingId, QueuedAt = when, CompletedAt = when,
+                Status = QueueStatus.Completed
+            });
+        }
+
+        for (var i = 0; i < failed; i++)
+        {
+            db.SourceFailures.Add(new SourceFailure
+            {
+                SeriesId = seriesId, SourceMappingId = mappingId, ErrorKey = "error.download.sourceError", OccurredAtUtc = when
             });
         }
 
@@ -149,10 +156,24 @@ public sealed class SourceOrderTests : IDisposable
     }
 
     [Fact]
-    public async Task Failures_that_do_not_blame_the_source_do_not_demote_it()
+    public async Task Failed_queue_rows_alone_do_not_demote_a_source()
     {
+        // A failover or a retry moves the row, so the row's mapping is not the source that failed.
         var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
-        SeedDownloads(seriesId, good, completed: 0, failed: 4, errorKey: "error.download.disk");
+        using (var seed = _db.NewContext())
+        {
+            for (var i = 0; i < 4; i++)
+            {
+                seed.DownloadQueue.Add(new DownloadQueueItem
+                {
+                    SeriesId = seriesId, SourceMappingId = good, QueuedAt = DateTime.UtcNow, Status = QueueStatus.Failed,
+                    ErrorKey = "error.download.sourceError"
+                });
+            }
+
+            seed.SaveChanges();
+        }
+
         using var db = _db.NewContext();
 
         Assert.Equal([good, poor, fresh], await OrderAsync(db, seriesId));
@@ -162,7 +183,7 @@ public sealed class SourceOrderTests : IDisposable
     public async Task Failures_inside_the_reliability_window_demote_a_source()
     {
         var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
-        SeedDownloads(seriesId, good, completed: 0, failed: 4, queuedAt: DateTime.UtcNow - LibraryCompositionService.ReliabilityWindow + TimeSpan.FromHours(1));
+        SeedDownloads(seriesId, good, completed: 0, failed: 4, at: DateTime.UtcNow - SourceReliability.Window + TimeSpan.FromHours(1));
         using var db = _db.NewContext();
 
         Assert.Equal([poor, fresh, good], await OrderAsync(db, seriesId));
@@ -172,7 +193,7 @@ public sealed class SourceOrderTests : IDisposable
     public async Task Failures_older_than_the_reliability_window_do_not_demote_a_source()
     {
         var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
-        SeedDownloads(seriesId, good, completed: 0, failed: 4, queuedAt: DateTime.UtcNow - LibraryCompositionService.ReliabilityWindow - TimeSpan.FromHours(1));
+        SeedDownloads(seriesId, good, completed: 0, failed: 4, at: DateTime.UtcNow - SourceReliability.Window - TimeSpan.FromHours(1));
         using var db = _db.NewContext();
 
         Assert.Equal([good, poor, fresh], await OrderAsync(db, seriesId));
@@ -182,7 +203,7 @@ public sealed class SourceOrderTests : IDisposable
     public async Task Completions_older_than_the_window_do_not_keep_a_failing_source_in_place()
     {
         var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
-        SeedDownloads(seriesId, good, completed: 20, failed: 0, queuedAt: DateTime.UtcNow - LibraryCompositionService.ReliabilityWindow - TimeSpan.FromDays(1));
+        SeedDownloads(seriesId, good, completed: 20, failed: 0, at: DateTime.UtcNow - SourceReliability.Window - TimeSpan.FromDays(1));
         SeedDownloads(seriesId, good, completed: 0, failed: 4);
         using var db = _db.NewContext();
 

@@ -22099,6 +22099,10 @@ msgid "The source returned no pages"
 msgstr "来源没有返回页面"
 
 #: src/api/queue.ts
+msgid "The source wants a login or a purchase for this chapter"
+msgstr ""
+
+#: src/api/queue.ts
 #, fuzzy
 msgid "The source you picked could not provide this chapter"
 msgstr "你选择的来源无法提供此章节"

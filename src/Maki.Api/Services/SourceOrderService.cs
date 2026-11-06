@@ -94,7 +94,7 @@ public class SourceOrderService(SourceRegistry registry, ChapterFileQualityServi
         var outcomes = await OutcomesAsync(db, mappings, ct);
         var truncated = SourcePageCounts.Truncated(await db.SourceQualitySamples.AsNoTracking()
             .Where(q => q.SeriesId == seriesId && q.PageCount > 0)
-            .Select(q => new SourcePageCounts.Sample(q.SourceMappingId, q.ChapterId, q.PageCount))
+            .Select(q => new SourcePageCounts.Sample(q.SourceMappingId, q.ChapterId, q.PageCount, q.MedianWidth, q.MedianHeight))
             .ToListAsync(ct));
         var ordered = SourceReliability.Demote(
             [.. ranked.Select(e => byId[e.MappingId])],
@@ -105,41 +105,41 @@ public class SourceOrderService(SourceRegistry registry, ChapterFileQualityServi
     /// <summary>
     /// How each mapping's downloads have gone over the reliability window: on this series if it has been
     /// tried here, otherwise across the library, so a source that fails everywhere is not trusted on a
-    /// series it has not failed on yet. Only failures that say something about the source count. Counted
-    /// in the database, since this runs for every chapter that resolves a source.
+    /// series it has not failed on yet. Failures are the attempts logged in <see cref="SourceFailure"/>,
+    /// not Failed queue rows, which a failover or a retry moves off the source that failed.
     /// </summary>
     private static async Task<Dictionary<int, SourceReliability.Outcome>> OutcomesAsync(
         MakiDbContext db, IReadOnlyCollection<SourceMapping> mappings, CancellationToken ct)
     {
         var names = mappings.Select(m => m.SourceName).Distinct().ToList();
-        var since = DateTime.UtcNow - LibraryCompositionService.ReliabilityWindow;
-        var counts = await db.DownloadQueue.AsNoTracking()
-            .Where(q => q.QueuedAt >= since && q.SourceMapping != null && names.Contains(q.SourceMapping.SourceName) &&
-                        (q.Status == QueueStatus.Completed ||
-                         (q.Status == QueueStatus.Failed && q.ErrorKey != null && SourceFailover.SourceBlaming.Contains(q.ErrorKey))))
-            .GroupBy(q => new { q.SourceMappingId, q.SourceMapping!.SourceName })
-            .Select(g => new
-            {
-                g.Key.SourceMappingId,
-                g.Key.SourceName,
-                Completed = g.Count(q => q.Status == QueueStatus.Completed),
-                Failed = g.Count(q => q.Status == QueueStatus.Failed)
-            })
+        var since = DateTime.UtcNow - SourceReliability.Window;
+        var failed = await db.SourceFailures.AsNoTracking()
+            .Where(f => f.OccurredAtUtc >= since && names.Contains(f.SourceMapping!.SourceName))
+            .GroupBy(f => new { f.SourceMappingId, f.SourceMapping!.SourceName })
+            .Select(g => new Tally(g.Key.SourceMappingId, g.Key.SourceName, 0, g.Count()))
             .ToListAsync(ct);
+        var completed = await db.DownloadQueue.AsNoTracking()
+            .Where(q => q.Status == QueueStatus.Completed && q.CompletedAt >= since &&
+                        q.SourceMapping != null && names.Contains(q.SourceMapping.SourceName))
+            .GroupBy(q => new { SourceMappingId = q.SourceMappingId!.Value, q.SourceMapping!.SourceName })
+            .Select(g => new Tally(g.Key.SourceMappingId, g.Key.SourceName, g.Count(), 0))
+            .ToListAsync(ct);
+        List<Tally> counts = [.. failed, .. completed];
+
+        static SourceReliability.Outcome Sum(IEnumerable<Tally> tallies) =>
+            tallies.Aggregate(new SourceReliability.Outcome(0, 0), (sum, t) => new(sum.Completed + t.Completed, sum.Failed + t.Failed));
 
         var result = new Dictionary<int, SourceReliability.Outcome>();
         foreach (var mapping in mappings)
         {
-            var here = counts.Where(c => c.SourceMappingId == mapping.Id)
-                .Aggregate(new SourceReliability.Outcome(0, 0), (sum, c) => new(sum.Completed + c.Completed, sum.Failed + c.Failed));
-            result[mapping.Id] = here.Attempts > 0
-                ? here
-                : counts.Where(c => c.SourceName == mapping.SourceName)
-                    .Aggregate(new SourceReliability.Outcome(0, 0), (sum, c) => new(sum.Completed + c.Completed, sum.Failed + c.Failed));
+            var here = Sum(counts.Where(c => c.MappingId == mapping.Id));
+            result[mapping.Id] = here.Attempts > 0 ? here : Sum(counts.Where(c => c.SourceName == mapping.SourceName));
         }
 
         return result;
     }
+
+    private sealed record Tally(int MappingId, string SourceName, int Completed, int Failed);
 
     public static SourceOrderMode? Parse(string? value) => value?.Trim().ToLowerInvariant() switch
     {

@@ -7,6 +7,12 @@ namespace Maki.Core.Quality;
 /// </summary>
 public static class SourceReliability
 {
+    /// <summary>
+    /// How far back failures and completions count. Matches the 30 days HousekeepingJob keeps settled
+    /// queue rows for, so completions are never undercounted against failures.
+    /// </summary>
+    public static readonly TimeSpan Window = TimeSpan.FromDays(30);
+
     /// <summary>Failures below this say nothing yet: one bad night is not a verdict.</summary>
     public const int MinFailures = 3;
 
