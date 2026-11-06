@@ -32,6 +32,11 @@ export const SERVER_ENHANCE_METHODS: EnhanceMethodInfo[] = [
     label: msg`Crisp line art (server)`,
     hint: msg`Real-ESRGAN; flattens screentone`,
   },
+  {
+    id: 'server:maki-2x',
+    label: msg`Fast line art (server)`,
+    hint: msg`Maki's own model; looks like Real-ESRGAN and runs faster`,
+  },
 ]
 
 export const ENHANCE_FALLBACKS: { value: EnhanceFallback; label: MessageDescriptor }[] = [

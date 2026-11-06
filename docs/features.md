@@ -78,10 +78,11 @@ screen. It is off until a reader turns it on. Library files are never modified.
 
 - **Two tiers, one setting.** Browser methods (**Light**, **Balanced**, **Strong**) run Anime4K
   shaders on the reader's own device. They are always available and need WebGL2. Server methods
-  (**Sharp**, **Crisp line art**) run ONNX models on the Maki server and appear in the Method list
-  once an admin has enabled them. Sharp is IllustrationJaNai SPAN-S and Crisp line art is
-  Real-ESRGAN animevideov3 (it flattens screentone). A greyscale page stays greyscale whichever
-  method draws it.
+  (**Sharp**, **Crisp line art**, **Fast line art**) run ONNX models on the Maki server and appear
+  in the Method list once an admin has enabled them. Sharp is IllustrationJaNai SPAN-S, Crisp line
+  art is Real-ESRGAN animevideov3 (it flattens screentone), and Fast line art is Maki's own model,
+  trained to look like Real-ESRGAN at a lower cost per page. A greyscale page stays greyscale
+  whichever method draws it.
 - **Turning it on.** In the reader toolbar's settings popover, set **Enhance** to Off, Auto or
   Always and pick a **Method**. The same two fields are in reading profiles and in per-series
   overrides, so they follow the usual order: series override, pinned profile, type profile, your

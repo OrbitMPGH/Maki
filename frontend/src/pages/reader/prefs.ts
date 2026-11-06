@@ -18,6 +18,7 @@ export type EnhanceMethod =
   | 'a4k-a'
   | 'server:span-s'
   | 'server:realesrgan-av3'
+  | 'server:maki-2x'
 export type EnhanceFallback = 'a4k-s' | 'a4k-m' | 'a4k-a' | 'off'
 export type EnhanceProgress = 'line' | 'detailed' | 'off'
 

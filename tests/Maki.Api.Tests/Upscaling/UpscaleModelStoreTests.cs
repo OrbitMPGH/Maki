@@ -258,7 +258,7 @@ public class UpscaleModelStoreTests : IDisposable
         Assert.False(UpscaleModelId.TryParse("waifu2x-art", out _));
         Assert.False(UpscaleModelId.TryParse("bogus", out _));
         Assert.False(UpscaleModelId.TryParse(null, out _));
-        Assert.Equal(2, new UpscaleModelCatalog().All.Count);
+        Assert.Equal(3, new UpscaleModelCatalog().All.Count);
     }
 
     [Fact]
