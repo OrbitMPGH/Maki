@@ -171,6 +171,64 @@ def edge_band(t255: torch.Tensor, width: int = 5) -> torch.Tensor:
         return _pool(strong, width, "max")
 
 
+def sharpness_deficit_relative(x: torch.Tensor, y: torch.Tensor, low: float = 16 / 255, high: float = 64 / 255) -> torch.Tensor:
+    """sharpness_deficit as a share of the target's own gradient, on faint edges only (Sobel in (low, high],
+    off the flanks of strong ones): a 30-level strand line then counts as much as a 200-level outline, which
+    the absolute term leaves to the strong edges it has already matched (probe_anatomy: strong-edge Sobel
+    ratio p50 0.99, faint-edge p25 0.61 to 0.76)."""
+    gx = sobel(x)
+    gy = sobel(y)
+    mx = ((gx * gx).sum(1, keepdim=True) + 1e-8).sqrt()
+    my = ((gy * gy).sum(1, keepdim=True) + 1e-8).sqrt()
+    near = F.max_pool2d(mx, 3, 1, 1)
+    flank = F.max_pool2d((my > high).float(), 7, 1, 3)
+    mask = ((my > low) & (my <= high)).float() * (1 - flank)
+    return (F.relu(my - near) / my.clamp_min(low) * mask).sum() / mask.sum().clamp_min(1.0)
+
+
+def sharpness_deficit_line(x: torch.Tensor, y: torch.Tensor, low: float = 16 / 255, high: float = 64 / 255,
+                           over: float = 1.15, coherence: float = 0.0) -> torch.Tensor:
+    """sharpness_deficit_relative plus a charge when the model's own gradient at the pixel exceeds `over` times
+    the target's. At half its quarter weight the one-sided relative term lifted the faint lower quartile from
+    0.61 to 0.82 but took the mean to 1.14 to 1.27 of the teacher's and owner-page blobs up 45% (probe3
+    relsharp): it is cheapest to satisfy by sharpening every faint gradient, and most faint pixels sit beside
+    creases. The excess charge makes broad sharpening cost. `coherence` gates on structure-tensor coherence
+    (5x5); measured on the reference pages it passes fill texture about as often as lines, so it is off."""
+    gx = sobel(x)
+    gy = sobel(y)
+    mx = ((gx * gx).sum(1, keepdim=True) + 1e-8).sqrt()
+    my = ((gy * gy).sum(1, keepdim=True) + 1e-8).sqrt()
+    with torch.no_grad():
+        jxx = _pool(gy[:, :1] * gy[:, :1], 5, "avg")
+        jyy = _pool(gy[:, 1:] * gy[:, 1:], 5, "avg")
+        jxy = _pool(gy[:, :1] * gy[:, 1:], 5, "avg")
+        coh = ((jxx - jyy) ** 2 + 4 * jxy * jxy).sqrt() / (jxx + jyy + 1e-8)
+        flank = F.max_pool2d((my > high).float(), 7, 1, 3)
+        mask = ((my > low) & (my <= high) & (coh > coherence)).float() * (1 - flank)
+    near = F.max_pool2d(mx, 3, 1, 1)
+    scale = my.clamp_min(low)
+    return ((F.relu(my - near) + F.relu(mx - over * my)) / scale * mask).sum() / mask.sum().clamp_min(1.0)
+
+
+def thin_line_deficit(x: torch.Tensor, y: torch.Tensor, contrast: float = 24 / 255, max_count: int = 8,
+                      over: float = 1.1) -> torch.Tensor:
+    """On the target's thin dark lines (a 5x5 local minimum at least `contrast` under the 7x7 mean, with at most
+    `max_count` such pixels in the 5x5), how much shallower the model's line is: the target's depth (7x7 mean
+    minus the pixel) less the model's depth at its 3x3 minimum, as a share of the target's. A line drawn a
+    pixel off costs nothing; a lighter one does (probe_strong: thin lines at any contrast are the learnable
+    part of the strong-edge tail), and so does one deeper than `over` times the target's: one-sided, at half
+    its quarter weight, the term drew lines 8 to 17% deeper than the teacher's (probe3 thin)."""
+    with torch.no_grad():
+        a7 = _pool(y, 7, "avg")
+        dark = y < a7 - contrast
+        local_min = y <= _pool(y, 5, "min") + 0.5 / 255
+        count = _pool(dark.float(), 5, "avg") * 25
+        mask = (dark & local_min & (count <= max_count)).float()
+        depth_t = (a7 - y).clamp_min(contrast)
+    depth_p = a7 - _pool(x, 3, "min")
+    return ((F.relu(depth_t - depth_p) + F.relu(depth_p - over * depth_t)) / depth_t * mask).sum() / mask.sum().clamp_min(1.0)
+
+
 def sharpness_deficit(x: torch.Tensor, y: torch.Tensor, threshold: float = 16 / 255) -> torch.Tensor:
     """On the target's edges (Sobel over `threshold`, faint ones included), how much less steep the model
     is than the target, against the model's steepest gradient within 1 px: a blurred line is charged, a

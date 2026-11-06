@@ -55,10 +55,16 @@ public record SetChaptersStateRequest(int[] ChapterIds, string State);
 /// Pages of a chapter to upscale on the server, current page first, plus the first pages of the
 /// next chapter once the window runs past the last page. <c>WholeChapter</c> lifts the cap to
 /// <see cref="UpscaleQueue.MaxChapterPages"/> so the rest of the chapter can queue behind the window.
-/// See <see cref="ReaderController.Enhance"/>.
+/// <c>NotWanted</c> names pages of this chapter the reader shows plain (Enhance on Auto), dropped from
+/// whatever an earlier request queued. See <see cref="ReaderController.Enhance"/>.
 /// </summary>
 public record EnhancePagesRequest(
-    string? Model, int[]? Pages, int? NextChapterId = null, int[]? NextPages = null, bool WholeChapter = false);
+    string? Model,
+    int[]? Pages,
+    int? NextChapterId = null,
+    int[]? NextPages = null,
+    bool WholeChapter = false,
+    int[]? NotWanted = null);
 
 /// <summary>Chapters a device holds offline copies of. See <see cref="ReaderController.ChapterVersions"/>.</summary>
 public record ChapterVersionsRequest(int[]? Ids);
@@ -392,7 +398,11 @@ public class ReaderController(
                 .Take(room));
         }
 
-        var queued = queue.Replace(currentUser.UserId, id, model.Value, items, cap);
+        var plain = (request.NotWanted ?? [])
+            .Where(page => page >= 0 && page < slice.PageCount && !pages.Contains(page))
+            .Select(page => new UpscaleWorkKey(slice.ChapterFileId, slice.ArchiveVersion, slice.StartPage + page, model.Value))
+            .ToHashSet();
+        var queued = queue.Replace(currentUser.UserId, id, model.Value, items, cap, plain);
         for (var i = 0; i < wanted.Count; i++)
         {
             states[wanted[i].Index] = queued[i] == UpscaleJobState.Working ? "working" : "queued";

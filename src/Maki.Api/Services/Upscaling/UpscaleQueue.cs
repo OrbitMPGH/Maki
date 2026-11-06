@@ -69,12 +69,19 @@ public sealed class UpscaleQueue
     /// pages of another chapter or model are dropped, and so are older pages behind the lowest page
     /// asked for in this chapter: the reader paged past them before they were done. A running one
     /// is abandoned when nobody else waits on it. Older pages ahead stay behind the new ones while
-    /// there is room under the cap. Returns a state per item (only the first <paramref name="cap"/>
+    /// there is room under the cap, except <paramref name="notWanted"/>: pages the reader shows plain,
+    /// dropped like the pages behind. Returns a state per item (only the first <paramref name="cap"/>
     /// items are taken, <see cref="MaxPendingPerUser"/> unless the reader asked for the whole chapter).
     /// </summary>
     public IReadOnlyList<UpscaleJobState> Replace(
-        int userId, int chapterId, string model, IReadOnlyList<UpscaleRequestItem> items, int cap = MaxPendingPerUser)
+        int userId,
+        int chapterId,
+        string model,
+        IReadOnlyList<UpscaleRequestItem> items,
+        int cap = MaxPendingPerUser,
+        IReadOnlySet<UpscaleWorkKey>? notWanted = null)
     {
+        notWanted ??= new HashSet<UpscaleWorkKey>();
         var taken = items.Take(cap).ToList();
         var states = new UpscaleJobState[taken.Count];
         var added = false;
@@ -122,7 +129,7 @@ public sealed class UpscaleQueue
 
                 var sameChapter = job.Waiters.TryGetValue(userId, out var target)
                                   && target.ChapterId == chapterId && key.Model == model;
-                if (sameChapter && target.Page >= floor && !job.Working && next.Count < cap)
+                if (sameChapter && target.Page >= floor && !job.Working && next.Count < cap && !notWanted.Contains(key))
                 {
                     if (inNext.Add(key))
                     {
@@ -138,7 +145,7 @@ public sealed class UpscaleQueue
             foreach (var job in _jobs.Values)
             {
                 if (job.Working && !requested.Contains(job.Key) && job.Waiters.TryGetValue(userId, out var target)
-                    && (target.ChapterId != chapterId || job.Key.Model != model || target.Page < floor))
+                    && (target.ChapterId != chapterId || job.Key.Model != model || target.Page < floor || notWanted.Contains(job.Key)))
                 {
                     job.Waiters.Remove(userId);
                     if (job.Waiters.Count == 0)

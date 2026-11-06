@@ -6,7 +6,7 @@ import type { EnhanceFallback, EnhanceMethod, ReaderEnhance, ReaderFit } from '.
 import EnhancedPage from './EnhancedPage'
 import NextChapterHint from './NextChapterHint'
 import { useCompareKey } from './compareHold'
-import { EnhanceScope, presetFor, useEnhanceEngine, type PageEnhance } from './enhanceRuntime'
+import { EnhanceScope, presetFor, useEnhanceEngine, type PageEnhance, type StretchedReport } from './enhanceRuntime'
 import { FULL_REGION } from './pageShape'
 import type { ServerEnhance } from './useServerEnhance'
 
@@ -316,7 +316,7 @@ export default function ContinuousView({
   /** Set while a server method is in use and the server tier can serve it. */
   server?: ServerEnhance | null
   /** The pages `auto` enhances: shown at 1.2x their size or more as measured on screen, or soft. */
-  onStretched?: (pages: ReadonlySet<number>) => void
+  onStretched?: StretchedReport
   /**
    * The pages being enhanced, current first, then ahead, then behind. `beyond` is how many of the
    * next chapter's pages the window would reach past the last one. `server` is what the server is
@@ -368,7 +368,7 @@ export default function ContinuousView({
   useCompareKey(enhanceOn)
   const stretchedRef = useRef(onStretched)
   stretchedRef.current = onStretched
-  const [scope] = useState(() => new EnhanceScope(undefined, (pages) => stretchedRef.current?.(pages)))
+  const [scope] = useState(() => new EnhanceScope(undefined, (wanted, plain) => stretchedRef.current?.(wanted, plain)))
   useEffect(() => {
     scope.attach(engine)
     return () => scope.release()
