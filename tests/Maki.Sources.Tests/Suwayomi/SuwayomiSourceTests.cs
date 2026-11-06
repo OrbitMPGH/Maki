@@ -306,6 +306,42 @@ public class SuwayomiSourceTests
         Assert.Equal(1, h.Server.Count("Pages"));
     }
 
+    [Theory]
+    [InlineData("Log in via WebView and purchase this chapter to read.")]
+    [InlineData("Please PURCHASE this chapter")]
+    public async Task A_chapter_that_needs_a_purchase_is_reported_as_such_and_not_asked_twice(string message)
+    {
+        var h = new SuwayomiHarness();
+        var server = new Uri(SuwayomiHarness.Base);
+        h.Cache.SetManga(server, "100", SeriesUrl, 7);
+        h.Cache.SetChapter(server, 7, "/c/2", 41);
+        h.Server.Ops["ChapterByUrl"] = (_, _) => FakeSuwayomi.Data(new { chapters = new { nodes = new[] { new { id = 41 } } } });
+        h.Server.Ops["Pages"] = (_, _) => FakeSuwayomi.Errors($"Exception while fetching data (/fetchChapterPages) : {message}");
+
+        await Assert.ThrowsAsync<ChapterRequiresPurchaseException>(() => h.Source().GetPagesAsync(Chapter("/c/2")));
+
+        Assert.Equal(1, h.Server.Count("Pages"));
+    }
+
+    [Theory]
+    [InlineData("Could not load purchase history")]
+    [InlineData("Request to purchase-history.example.test timed out")]
+    [InlineData("Unable to refresh the list of purchased titles")]
+    public async Task An_unrelated_error_that_mentions_a_purchase_is_not_a_purchase_notice(string message)
+    {
+        var h = new SuwayomiHarness();
+        var server = new Uri(SuwayomiHarness.Base);
+        h.Cache.SetManga(server, "100", SeriesUrl, 7);
+        h.Cache.SetChapter(server, 7, "/c/2", 41);
+        h.Server.Ops["ChapterByUrl"] = (_, _) => FakeSuwayomi.Data(new { chapters = new { nodes = new[] { new { id = 41 } } } });
+        h.Server.Ops["Pages"] = (_, _) => FakeSuwayomi.Errors($"Exception while fetching data (/fetchChapterPages) : {message}");
+
+        var ex = await Record.ExceptionAsync(() => h.Source().GetPagesAsync(Chapter("/c/2")));
+
+        Assert.NotNull(ex);
+        Assert.IsNotType<ChapterRequiresPurchaseException>(ex);
+    }
+
     [Fact]
     public async Task An_uninstalled_extension_fails_before_anything_is_asked_of_it()
     {

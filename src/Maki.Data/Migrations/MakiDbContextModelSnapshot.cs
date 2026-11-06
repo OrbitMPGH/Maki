@@ -2445,6 +2445,34 @@ namespace Maki.Data.Migrations
                     b.ToTable("ShortlistEntries");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.SourceFailure", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ErrorKey")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SourceMappingId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredAtUtc");
+
+                    b.HasIndex("SourceMappingId", "OccurredAtUtc");
+
+                    b.ToTable("SourceFailures");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.SourceMapping", b =>
                 {
                     b.Property<int>("Id")
@@ -3826,6 +3854,17 @@ namespace Maki.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.SourceFailure", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.SourceMapping", "SourceMapping")
+                        .WithMany()
+                        .HasForeignKey("SourceMappingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SourceMapping");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.SourceMapping", b =>

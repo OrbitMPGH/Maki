@@ -1,6 +1,7 @@
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Quality;
 using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -118,6 +119,181 @@ public sealed class SourceOrderTests : IDisposable
         using var db = _db.NewContext();
 
         Assert.Equal([good, poor, fresh], await OrderAsync(db, seriesId));
+    }
+
+    private void SeedDownloads(int seriesId, int mappingId, int completed, int failed, DateTime? at = null)
+    {
+        using var db = _db.NewContext();
+        var when = at ?? DateTime.UtcNow;
+        for (var i = 0; i < completed; i++)
+        {
+            db.DownloadQueue.Add(new DownloadQueueItem
+            {
+                SeriesId = seriesId, SourceMappingId = mappingId, QueuedAt = when, CompletedAt = when,
+                Status = QueueStatus.Completed
+            });
+        }
+
+        for (var i = 0; i < failed; i++)
+        {
+            db.SourceFailures.Add(new SourceFailure
+            {
+                SeriesId = seriesId, SourceMappingId = mappingId, ErrorKey = "error.download.sourceError", OccurredAtUtc = when
+            });
+        }
+
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task A_source_that_keeps_failing_is_tried_last_whatever_its_quality()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        SeedDownloads(seriesId, good, completed: 0, failed: 4);
+        using var db = _db.NewContext();
+
+        Assert.Equal([poor, fresh, good], await OrderAsync(db, seriesId));
+    }
+
+    [Fact]
+    public async Task Failed_queue_rows_alone_do_not_demote_a_source()
+    {
+        // A failover or a retry moves the row, so the row's mapping is not the source that failed.
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        using (var seed = _db.NewContext())
+        {
+            for (var i = 0; i < 4; i++)
+            {
+                seed.DownloadQueue.Add(new DownloadQueueItem
+                {
+                    SeriesId = seriesId, SourceMappingId = good, QueuedAt = DateTime.UtcNow, Status = QueueStatus.Failed,
+                    ErrorKey = "error.download.sourceError"
+                });
+            }
+
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext();
+
+        Assert.Equal([good, poor, fresh], await OrderAsync(db, seriesId));
+    }
+
+    [Fact]
+    public async Task Failures_inside_the_reliability_window_demote_a_source()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        SeedDownloads(seriesId, good, completed: 0, failed: 4, at: DateTime.UtcNow - SourceReliability.Window + TimeSpan.FromHours(1));
+        using var db = _db.NewContext();
+
+        Assert.Equal([poor, fresh, good], await OrderAsync(db, seriesId));
+    }
+
+    [Fact]
+    public async Task Failures_older_than_the_reliability_window_do_not_demote_a_source()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        SeedDownloads(seriesId, good, completed: 0, failed: 4, at: DateTime.UtcNow - SourceReliability.Window - TimeSpan.FromHours(1));
+        using var db = _db.NewContext();
+
+        Assert.Equal([good, poor, fresh], await OrderAsync(db, seriesId));
+    }
+
+    [Fact]
+    public async Task Completions_older_than_the_window_do_not_keep_a_failing_source_in_place()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        SeedDownloads(seriesId, good, completed: 20, failed: 0, at: DateTime.UtcNow - SourceReliability.Window - TimeSpan.FromDays(1));
+        SeedDownloads(seriesId, good, completed: 0, failed: 4);
+        using var db = _db.NewContext();
+
+        Assert.Equal([poor, fresh, good], await OrderAsync(db, seriesId));
+    }
+
+    [Fact]
+    public async Task A_failing_source_and_a_truncated_one_both_go_last_in_their_ranked_order()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        SeedDownloads(seriesId, poor, completed: 0, failed: 4);
+        using (var seed = _db.NewContext())
+        {
+            foreach (var (mapping, pages) in new[] { (good, 10), (poor, 42), (fresh, 46) })
+            {
+                for (var chapter = 11; chapter <= 13; chapter++)
+                {
+                    seed.SourceQualitySamples.Add(new SourceQualitySample
+                    {
+                        SourceMappingId = mapping, SeriesId = seriesId, ChapterId = chapter, PageCount = pages + chapter % 3,
+                        MedianWidth = 1000, MedianHeight = 1500, SizeBytes = 3_000_000, ImageFormat = "jpg",
+                        MeasuredAtUtc = DateTime.UtcNow
+                    });
+                }
+            }
+
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext();
+
+        // good is truncated, poor keeps failing; ranked on quality alone good comes before poor.
+        Assert.Equal([fresh, good, poor], await OrderAsync(db, seriesId));
+    }
+
+    [Fact]
+    public async Task A_source_that_fails_elsewhere_is_not_trusted_on_a_series_it_has_not_been_tried_on()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        using (var seed = _db.NewContext())
+        {
+            var root = seed.RootFolders.First();
+            var other = new Series { Title = "O", SortTitle = "o", FolderName = "O", RootFolderId = root.Id };
+            var mapping = new SourceMapping { SourceName = "good", SourceSeriesId = "o", Priority = 1 };
+            other.SourceMappings.Add(mapping);
+            seed.Series.Add(other);
+            seed.SaveChanges();
+            SeedDownloads(other.Id, mapping.Id, completed: 0, failed: 5);
+        }
+
+        using var db = _db.NewContext();
+
+        Assert.Equal([poor, fresh, good], await OrderAsync(db, seriesId));
+    }
+
+    [Fact]
+    public async Task A_source_whose_chapters_are_far_shorter_than_the_others_is_tried_last()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        using (var seed = _db.NewContext())
+        {
+            foreach (var (mapping, pages) in new[] { (good, 10), (poor, 42), (fresh, 46) })
+            {
+                for (var chapter = 11; chapter <= 13; chapter++)
+                {
+                    seed.SourceQualitySamples.Add(new SourceQualitySample
+                    {
+                        SourceMappingId = mapping, SeriesId = seriesId, ChapterId = chapter, PageCount = pages + chapter % 3,
+                        MedianWidth = 1000, MedianHeight = 1500, SizeBytes = 3_000_000, ImageFormat = "jpg",
+                        MeasuredAtUtc = DateTime.UtcNow
+                    });
+                }
+            }
+
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext();
+
+        Assert.Equal(good, (await OrderAsync(db, seriesId)).Last());
+    }
+
+    [Fact]
+    public async Task Manual_order_ignores_download_failures()
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Manual, null);
+        SeedDownloads(seriesId, poor, completed: 0, failed: 9);
+        using var db = _db.NewContext();
+
+        Assert.Equal([poor, good, fresh], await OrderAsync(db, seriesId));
     }
 
     [Fact]

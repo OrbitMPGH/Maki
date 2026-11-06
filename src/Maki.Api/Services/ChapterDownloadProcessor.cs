@@ -466,6 +466,7 @@ public class ChapterDownloadProcessor(
         }
         catch (HttpRequestException hre) when (hre.StatusCode is HttpStatusCode.NotFound)
         {
+            BlameSource(item, usedMapping, DownloadFailureReason.SourceError);
             if (item.HealthOperationId != null)
             {
                 await FailAsync(item, "error.download.approvedSourceNoPages", ct, detail: hre.Message);
@@ -486,10 +487,29 @@ public class ChapterDownloadProcessor(
 
             return await ProcessAsync(item.Id, triedMappingIds, ct);
         }
+        catch (ChapterRequiresPurchaseException ex)
+        {
+            logger.LogWarning("Queue item {Id}: {Source} wants a login or purchase for this chapter",
+                item.Id, usedMapping?.SourceName ?? "?");
+            BlameSource(item, usedMapping, DownloadFailureReason.NeedsPurchase);
+            if (item.HealthOperationId == null && item.PreferredMappingId == null && item.UpgradeInfoJson == null &&
+                await FailOverAsync(item, chapter, usedMapping, triedMappingIds, workingDir, ct) is not null)
+            {
+                return await ProcessAsync(item.Id, triedMappingIds, ct);
+            }
+
+            await FailAsync(item, DownloadFailureReason.NeedsPurchase, ct, permanent: true, detail: ex.Message);
+            return DownloadOutcome.Settled;
+        }
         catch (Exception ex)
         {
             logger.LogError(ex, "Download failed for queue item {Id}", item.Id);
             var (key, detail) = DownloadFailureReason.Classify(ex);
+            if (SourceFailover.CountsAgainstSource(key))
+            {
+                BlameSource(item, usedMapping, key);
+            }
+
             if (SourceFailover.ShouldFailOver(key, item.RetryCount + 1, item.PreferredMappingId != null,
                     item.HealthOperationId != null, item.UpgradeInfoJson != null) &&
                 await FailOverAsync(item, chapter, usedMapping, triedMappingIds, workingDir, ct) is { } failedOverTo)
@@ -519,6 +539,21 @@ public class ChapterDownloadProcessor(
     /// </summary>
     private async Task<bool> ConversionOnAsync(CancellationToken ct) =>
         (await PageConversionOptions.ReadAsync(db, ct)).Active is not null;
+
+    /// <summary>
+    /// Logs the failure against the mapping that caused it, before a failover moves the row off it.
+    /// Saved with the row's next save.
+    /// </summary>
+    private void BlameSource(DownloadQueueItem item, SourceMapping? usedMapping, string key)
+    {
+        if ((usedMapping?.Id ?? item.SourceMappingId) is { } mappingId)
+        {
+            db.SourceFailures.Add(new SourceFailure
+            {
+                SourceMappingId = mappingId, SeriesId = item.SeriesId, ErrorKey = key, OccurredAtUtc = DateTime.UtcNow
+            });
+        }
+    }
 
     /// <summary>
     /// Moves the item onto the next enabled mapping that has not been tried in this dispatch, leaving
@@ -1145,8 +1180,10 @@ public class ChapterDownloadProcessor(
     /// for a whole series and has nowhere to put values.
     /// </param>
     /// <param name="permanent">
-    /// Nothing a retry could change: the row fails without a retry scheduled or counted, and
-    /// <see cref="DownloadQueueService.RequeueEligibleFailuresAsync"/> leaves it alone.
+    /// Nothing a retry could change: the row fails without a retry scheduled or counted. The automatic
+    /// retry only leaves it alone when <paramref name="key"/> is in
+    /// <see cref="DownloadQueueService.PermanentErrorKeys"/> or <see cref="DownloadQueueService.ManualRetryOnlyErrorKeys"/>;
+    /// any other key is picked up on the next sweep with its retry count unchanged, and so retried forever.
     /// </param>
     /// <param name="detail">What the source or the exception said, shown after the keyed reason.</param>
     private async Task FailAsync(

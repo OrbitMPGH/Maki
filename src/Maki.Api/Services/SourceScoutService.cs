@@ -184,15 +184,27 @@ public sealed class SourceScoutService(
             [.. links.GroupBy(l => l.ChapterId).Select(g => new ScoutChapters.Candidate(
                 g.Key, g.First().Chapter!.Number, g.Select(l => l.SourceMappingId).Distinct().Count()))],
             ChaptersPerSource, Random.Shared).ToHashSet();
+        // A source that lists none of the shared picks is still measured, on chapters of its own: left
+        // unmeasured it ranks on its tier alone, and a source that only offers previews looks like the best.
         var plan = mappings
-            .Select(m => (Mapping: m, Links: links
-                .Where(l => l.SourceMappingId == m.Id && picks.Contains(l.ChapterId))
-                .DistinctBy(l => l.ChapterId)
-                .ToList()))
+            .Select(m =>
+            {
+                var own = links.Where(l => l.SourceMappingId == m.Id).DistinctBy(l => l.ChapterId).ToList();
+                var shared = own.Where(l => picks.Contains(l.ChapterId)).ToList();
+                if (shared.Count > 0)
+                {
+                    return (Mapping: m, Links: shared);
+                }
+
+                var solo = ScoutChapters.Pick(
+                    [.. own.Select(l => new ScoutChapters.Candidate(l.ChapterId, l.Chapter!.Number, 1))],
+                    ChaptersPerSource, Random.Shared).ToHashSet();
+                return (Mapping: m, Links: own.Where(l => solo.Contains(l.ChapterId)).ToList());
+            })
             .ToList();
         var states = plan.ToDictionary(p => p.Mapping.Id, p => new SourceState(p.Mapping.Id, p.Links.Count));
-        job.Chapters = [.. links
-            .Where(l => picks.Contains(l.ChapterId))
+        job.Chapters = [.. plan
+            .SelectMany(p => p.Links)
             .DistinctBy(l => l.ChapterId)
             .OrderBy(l => l.Chapter!.Number ?? decimal.MaxValue)
             .Select(l => l.Chapter!.NumberRaw ?? l.Chapter.Number?.ToString(CultureInfo.InvariantCulture) ?? "?")];

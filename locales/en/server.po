@@ -3411,6 +3411,12 @@ msgstr "The source refused the request"
 msgid "error.download.sourceError"
 msgstr "The source answered with an error"
 
+#. The source lists the chapter but wants a login or a purchase for its pages (Suwayomi extensions
+#. word it "log in via WebView" or "purchase this chapter"). The extension's own text follows, untranslated.
+#: src/Maki.Api/Services/DownloadFailureReason.cs
+msgid "error.download.sourceNeedsPurchase"
+msgstr "The source wants a login or a purchase for this chapter"
+
 #. Connection refused, timed out, DNS or SSL failure: the site could not be reached at all.
 #: src/Maki.Api/Services/DownloadFailureReason.cs
 msgid "error.download.network"

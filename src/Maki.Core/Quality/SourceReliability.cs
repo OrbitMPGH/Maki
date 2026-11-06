@@ -1,0 +1,36 @@
+namespace Maki.Core.Quality;
+
+/// <summary>
+/// Whether a source has been delivering. Quality scoring measures files that arrived; a source that
+/// lists chapters it cannot serve never produces one, so it keeps its place at the top and every
+/// chapter spends its failures there before moving on.
+/// </summary>
+public static class SourceReliability
+{
+    /// <summary>
+    /// How far back failures and completions count. Matches the 30 days HousekeepingJob keeps settled
+    /// queue rows for, so completions are never undercounted against failures.
+    /// </summary>
+    public static readonly TimeSpan Window = TimeSpan.FromDays(30);
+
+    /// <summary>Failures below this say nothing yet: one bad night is not a verdict.</summary>
+    public const int MinFailures = 3;
+
+    /// <summary>A source is unreliable once it fails this many times for every download that worked.</summary>
+    public const int FailuresPerSuccess = 3;
+
+    public readonly record struct Outcome(int Completed, int Failed)
+    {
+        public int Attempts => Completed + Failed;
+    }
+
+    public static bool IsUnreliable(Outcome outcome) =>
+        outcome.Failed >= MinFailures && outcome.Failed >= outcome.Completed * FailuresPerSuccess;
+
+    /// <summary>Moves the items <paramref name="isBad"/> picks behind the rest, keeping the given order inside each group.</summary>
+    public static IReadOnlyList<T> Demote<T>(IReadOnlyList<T> ordered, Func<T, bool> isBad)
+    {
+        var bad = ordered.Where(isBad).ToList();
+        return bad.Count == 0 ? ordered : [.. ordered.Except(bad), .. bad];
+    }
+}
