@@ -105,31 +105,36 @@ class Compact(nn.Module):
     the body runs at half resolution, with four times the channels per unit of cost and twice the reach
     per layer, then pixel-shuffle by 2 * scale back out."""
 
-    def __init__(self, channels: int, convs: int, scale: int, act: str = "prelu", dilations: list[int] | None = None,
-                 ecb: bool = False, unshuffle: int = 1):
+    def __init__(self, channels: int | list[int], convs: int, scale: int, act: str = "prelu",
+                 dilations: list[int] | None = None, ecb: bool = False, unshuffle: int = 1):
         super().__init__()
         self.scale = scale
         dilations = dilations or [1] * convs
+        # One width per conv before the head: the first conv, then each body conv. A list widens part of the
+        # stack (`c64_4_48n8`: the first four at 64, the rest at 48).
+        widths = [channels] * (convs + 1) if isinstance(channels, int) else list(channels)
+        assert len(widths) == convs + 1, (widths, convs)
+        self.widths = widths
 
-        def activation():
+        def activation(c):
             if act == "prelu":
-                return nn.PReLU(channels)
+                return nn.PReLU(c)
             if act == "leaky":
                 return nn.LeakyReLU(0.1, inplace=True)
             raise ValueError(act)
 
-        def conv(cin, d=1):
+        def conv(cin, cout, d=1):
             if ecb:
                 assert d == 1, "ECB branches are not dilated"
-                return ECB(cin, channels)
-            return nn.Conv2d(cin, channels, 3, 1, d, dilation=d)
+                return ECB(cin, cout)
+            return nn.Conv2d(cin, cout, 3, 1, d, dilation=d)
 
         u = unshuffle
-        layers = ([nn.PixelUnshuffle(u)] if u > 1 else []) + [conv(3 * u * u), activation()]
-        for d in dilations:
-            layers += [conv(channels, d), activation()]
+        layers = ([nn.PixelUnshuffle(u)] if u > 1 else []) + [conv(3 * u * u, widths[0]), activation(widths[0])]
+        for i, d in enumerate(dilations):
+            layers += [conv(widths[i], widths[i + 1], d), activation(widths[i + 1])]
         out_scale = scale * u
-        layers += [nn.Conv2d(channels, 3 * out_scale * out_scale, 3, 1, 1), nn.PixelShuffle(out_scale)]
+        layers += [nn.Conv2d(widths[convs], 3 * out_scale * out_scale, 3, 1, 1), nn.PixelShuffle(out_scale)]
         self.body = nn.ModuleList(layers)
 
     def forward_features(self, x):
@@ -155,12 +160,13 @@ class Hybrid(Compact):
 
     TAP, JOIN = 7, 9  # body indices: after body conv 3's and body conv 4's activations
 
-    def __init__(self, channels: int, convs: int, branch_channels: int, branch_convs: int, ecb: bool = False):
+    def __init__(self, channels: int | list[int], convs: int, branch_channels: int, branch_convs: int, ecb: bool = False):
         super().__init__(channels, convs, 2, "leaky", ecb=ecb)
-        layers = [nn.AvgPool2d(2), nn.Conv2d(channels, branch_channels, 3, 1, 1), nn.LeakyReLU(0.1, inplace=True)]
+        # The branch reads the trunk after body conv 3 and writes back after body conv 4.
+        layers = [nn.AvgPool2d(2), nn.Conv2d(self.widths[3], branch_channels, 3, 1, 1), nn.LeakyReLU(0.1, inplace=True)]
         for _ in range(branch_convs - 1):
             layers += [nn.Conv2d(branch_channels, branch_channels, 3, 1, 1), nn.LeakyReLU(0.1, inplace=True)]
-        project = nn.Conv2d(branch_channels, channels, 1)
+        project = nn.Conv2d(branch_channels, self.widths[4], 1)
         nn.init.zeros_(project.weight)
         nn.init.zeros_(project.bias)
         layers += [project, nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)]
@@ -199,7 +205,8 @@ def load_student(model: Compact, state: dict) -> None:
     if ecb and not any(".conv3." in k for k in state):
         for i in ecb:
             model.body[i].zero_branches()
-        state = {(f"body.{k.split('.')[1]}.conv3.{k.split('.')[2]}" if int(k.split(".")[1]) in ecb else k): v
+        state = {(f"body.{k.split('.')[1]}.conv3.{k.split('.')[2]}"
+                  if k.startswith("body.") and int(k.split(".")[1]) in ecb else k): v
                  for k, v in state.items()}
         missing, unexpected = model.load_state_dict(state, strict=False)
         assert not unexpected and all(".conv3." not in k for k in missing), (missing, unexpected)
@@ -272,13 +279,22 @@ def load_anime6b(device) -> RRDBNet:
     return model.eval().to(device)
 
 
-def _parse(spec: str) -> tuple[int, int, int, str]:
+def _widths(channels: str, convs: int) -> int | list[int]:
+    """`48` is 48 everywhere; `64_4_48` is 64 for the first four convs (the first conv counted) and 48 after."""
+    if "_" not in channels:
+        return int(channels)
+    wide, count, rest = (int(v) for v in channels.split("_"))
+    return [wide] * count + [rest] * (convs + 1 - count)
+
+
+def _parse(spec: str) -> tuple[int, int | list[int], int, str]:
     unshuffle = 1
     if spec.startswith("ps2-"):
         unshuffle, spec = 2, spec[4:]
     channels, rest = spec[1:].split("n")
     flags = rest.lstrip("0123456789")
-    return unshuffle, int(channels), int(rest[:len(rest) - len(flags)]), flags
+    convs = int(rest[:len(rest) - len(flags)])
+    return unshuffle, _widths(channels, convs), convs, flags
 
 
 def _hybrid(spec: str) -> tuple[str, int, int]:

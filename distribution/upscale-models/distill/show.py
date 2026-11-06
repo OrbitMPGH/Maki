@@ -42,6 +42,8 @@ LABELS = {
     "hyb-c48n8e-b64n4-final015-last": "Final (shipped as Maki 2x)",
     "hyb-c48n8e-b64n4-m1-sharp02-last": "M1 (Maki 2x now)",
     "hyb-c48n8e-b64n4-n0-more-last": "N0: M1 trained 20k steps more",
+    "hyb-c48n8e-b64n4-o3-thin-last": "O3: M1 + thin-line term",
+    "hyb-c48n8e-b64n4-o4-gan-last": "O4: O3 + short GAN",
     "hyb-c48n8e-b64n4-n2-hard05-sharp03-last": "N2: M1 + hard crops, sharpness 0.3",
     "c48n8e-c2-g02-ldlat5k": "C2: B6 + stronger GAN with LDL, 5k steps",
     "c48n8": "Round one",
