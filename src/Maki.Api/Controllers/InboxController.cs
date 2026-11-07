@@ -4,10 +4,12 @@ using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
+using Maki.Core.Progress;
 using Maki.Core.Security;
 using Maki.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace Maki.Api.Controllers;
 
@@ -16,6 +18,7 @@ namespace Maki.Api.Controllers;
 /// Resolved at read time rather than stored on the row: a poster is replaced in place by a metadata
 /// refresh, and a URL frozen at write time would serve a stale cache-buster forever.
 /// </param>
+/// <param name="Badge">An unlocked achievement's icon key and tier, so its row shows the badge.</param>
 public record InboxItemDto(
     int Id,
     string Type,
@@ -27,7 +30,12 @@ public record InboxItemDto(
     string? Url,
     string? CoverUrl,
     DateTime CreatedAt,
-    bool Read);
+    bool Read,
+    InboxBadgeDto? Badge = null);
+
+/// <param name="Icon">The achievement's icon key from <see cref="AchievementCatalog"/>.</param>
+/// <param name="Tier">1-based tier, or 0 for an ungraded achievement.</param>
+public record InboxBadgeDto(string Icon, int Tier);
 
 /// <param name="NextCursor">
 /// Pass back as <c>before</c> to fetch the following page. Null when the feed is exhausted.
@@ -276,6 +284,41 @@ public class InboxController(
             n.Url,
             line?.CoverUrl,
             n.CreatedAt,
-            n.ReadAt is not null);
+            n.ReadAt is not null,
+            n.Type == InboxEventType.AchievementUnlocked ? BadgeFor(n.ParamsJson) : null);
+    }
+
+    /// <summary>Null when the row predates keyed params or names an achievement that no longer exists.</summary>
+    private static InboxBadgeDto? BadgeFor(string? paramsJson)
+    {
+        if (string.IsNullOrEmpty(paramsJson))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(paramsJson);
+            var root = doc.RootElement;
+            if (root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty("achievement", out var key)
+                || key.ValueKind != JsonValueKind.String)
+            {
+                return null;
+            }
+
+            var definition = AchievementCatalog.All.FirstOrDefault(d => d.Key == key.GetString());
+            if (definition is null)
+            {
+                return null;
+            }
+
+            var tier = root.TryGetProperty("tier", out var t) && t.TryGetInt32(out var n) ? n : 0;
+            return new InboxBadgeDto(definition.Icon, tier);
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
     }
 }
