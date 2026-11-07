@@ -61,8 +61,8 @@
   --danger-fill: #c0322b;
   --anime: #b197fc;
   --anime-on: #1a0f33;
-  --volume: #3bc9db;
-  --volume-on: #04191d;
+  --volume: #c9a0c4;
+  --volume-on: #1e1020;
   --cr-safe: #38c9a0;
   --cr-safe-on: #04201a;
   --cr-suggestive: #b0bd52;
@@ -494,7 +494,7 @@ span[lang]:is(:lang(ja), :lang(ko)):not(:lang(ja-Latn), :lang(ko-Latn)) {
   --danger-fg: var(--danger);
   --anime: #7040bd;
   --anime-on: #ffffff;
-  --volume: #0b7285;
+  --volume: #7e4a78;
   --volume-on: #ffffff;
   --cr-safe: #0f7a64;
   --cr-safe-on: #ffffff;
@@ -570,7 +570,6 @@ span[lang]:is(:lang(ja), :lang(ko)):not(:lang(ja-Latn), :lang(ko-Latn)) {
   --cr-suggestive: #5d6716;
   --cr-erotica: #a84a16;
   --q-official: #7f6109;
-  --volume: #0a6a7b;
 }
 :root[data-theme='light'][data-ground='paper'][data-accent='blush'] {
   --brand-fg: #a63d60;

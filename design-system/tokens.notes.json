@@ -51,7 +51,7 @@
     "danger-fg": "Danger text on a danger tint. The theme's variant resolver hands it to every light-variant var(--danger) button, badge and alert, so call sites keep color=\"var(--danger)\". danger reads 4.3:1 on its own tint in dark; this lighter red reads 6.5:1. Light uses danger itself (4.8:1).",
     "danger-fill": "Fill for filled danger buttons (ConfirmDialog and every destructive confirm). White labels read 5.6:1 on it; danger itself is too light for them in dark. The same value as Light danger.",
     "anime": "Anime: watched chapter rows and the Watched badge, the anime resume callout, anime tag dots. Violet, used for nothing else except the Defining tag bucket (an accepted exception). As text or a dot on surface and surface-2.",
-    "volume": "Volume files, and nothing else: the Vol. N pill in the chapter table, the parsed pill in the Files tab and the link dialogs, and the Volume quality tier. Cyan. As text or a dot on surface and surface-2.",
+    "volume": "Volume files, and nothing else: the Vol. N pill in the chapter table, the parsed pill in the Files tab and the link dialogs, and the Volume quality tier. Dusty mauve: cooler than the blush accent, pinker than anime violet. As text or a dot on surface and surface-2.",
     "cr-safe": "Content rating step 1, Safe. Teal, the cool end of the rating scale (teal, lime, orange, magenta). The hero chip and the Stats content rating bar.",
     "cr-suggestive": "Content rating step 2, Suggestive (Safe is cr-safe). Lime. The hero chip, as text and a 45% outline on a 10% tint.",
     "cr-erotica": "Content rating step 3, Erotica, and the Mature tag on a source. Orange, so it never matches Hiatus or a warning.",
