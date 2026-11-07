@@ -67,6 +67,9 @@ export function Rail({
     const max = rail.scrollWidth - rail.clientWidth
     const left = rail.scrollLeft > 1
     const right = max > 1 && rail.scrollLeft < max - 1
+    // How far each edge is from its end, so the fades grow with the scroll instead of snapping on.
+    rail.style.setProperty('--rail-left', `${Math.round(Math.max(0, rail.scrollLeft))}px`)
+    rail.style.setProperty('--rail-right', `${Math.round(Math.max(0, max - rail.scrollLeft))}px`)
     setReach((prev) => (prev.left === left && prev.right === right ? prev : { left, right }))
   }, [])
 
