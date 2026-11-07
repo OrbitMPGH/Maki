@@ -66,15 +66,15 @@ public sealed class UpscaleModelCatalog
 {
     private static readonly UpscaleModelInfo[] Entries =
     [
+        new(UpscaleModelId.Maki2x, UpscaleAdapter.Plain2x, 2, 2, "input", UpscaleTensorType.Float32,
+            "maki-2x.onnx", "Maki 2x", "GPL-3.0",
+            "Maki", "https://github.com/OrbitMPGH/Maki/tree/main/distribution/upscale-models/distill"),
         new(UpscaleModelId.SpanS, UpscaleAdapter.Plain2x, 2, 2, "input", UpscaleTensorType.Float16,
             "span-s-2x.onnx", "SPAN-S (IllustrationJaNai V3)", "CC BY-NC 4.0",
             "the-database (IllustrationJaNai V3)", "https://github.com/the-database/MangaJaNai/releases/tag/3.0.0"),
         new(UpscaleModelId.RealEsrganAv3, UpscaleAdapter.Plain4xThenHalve, 4, 2, "input", UpscaleTensorType.Float32,
             "realesrgan-av3-4x.onnx", "Real-ESRGAN animevideov3", "BSD-3-Clause",
-            "Xintao Wang et al.", "https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0"),
-        new(UpscaleModelId.Maki2x, UpscaleAdapter.Plain2x, 2, 2, "input", UpscaleTensorType.Float32,
-            "maki-2x.onnx", "Maki 2x", "GPL-3.0",
-            "Maki", "https://github.com/OrbitMPGH/Maki/tree/main/distribution/upscale-models/distill")
+            "Xintao Wang et al.", "https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0")
     ];
 
     internal static IEnumerable<UpscaleModelId> Ids => Entries.Select(e => e.Id);

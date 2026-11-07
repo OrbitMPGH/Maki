@@ -20,7 +20,8 @@ public sealed record UpscaleOptions(
     public static async Task<UpscaleOptions> LoadAsync(IAppSettings settings, CancellationToken ct)
     {
         var models = new List<UpscaleModelId>();
-        var csv = await settings.GetAsync(SettingKeys.UpscalingModels, ct);
+        // Never saved: Maki 2x is ticked, so turning the tier on gives readers its default method.
+        var csv = await settings.GetAsync(SettingKeys.UpscalingModels, ct) ?? UpscaleModelId.Maki2x.Value;
         foreach (var part in (csv ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
         {
             if (UpscaleModelId.TryParse(part, out var id) && !models.Contains(id))

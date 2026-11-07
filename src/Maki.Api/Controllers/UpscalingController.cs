@@ -71,13 +71,14 @@ public class UpscalingController(
             }
         }
 
+        var firstSave = await settings.GetAsync(SettingKeys.UpscalingModels, ct) is null;
         var before = await UpscaleOptions.LoadAsync(settings, ct);
         await settings.SetAsync(SettingKeys.UpscalingEnabled, request.Enabled ? "true" : "false", ct);
         await settings.SetAsync(SettingKeys.UpscalingModels, string.Join(',', models.Select(m => m.Value)), ct);
         await settings.SetAsync(SettingKeys.UpscalingThreads, request.Threads.ToString(CultureInfo.InvariantCulture), ct);
         await settings.SetAsync(SettingKeys.UpscalingCacheMb, request.CacheMb.ToString(CultureInfo.InvariantCulture), ct);
 
-        foreach (var id in models.Where(m => !before.Models.Contains(m)))
+        foreach (var id in models.Where(m => firstSave || !before.Models.Contains(m)))
         {
             if (store.GetStatus(id).State is UpscaleModelState.Missing or UpscaleModelState.Failed)
             {

@@ -258,15 +258,16 @@ public sealed class EnhanceEndpointTests : IDisposable
         Assert.Equal(512, settings.GetProperty("cacheMb").GetInt32());
 
         var catalog = status.GetProperty("catalog").EnumerateArray().ToList();
-        Assert.Equal(["span-s", "realesrgan-av3", "maki-2x"], catalog.Select(c => c.GetProperty("id").GetString()));
+        Assert.Equal(["maki-2x", "span-s", "realesrgan-av3"], catalog.Select(c => c.GetProperty("id").GetString()));
+        var span = catalog.Single(c => c.GetProperty("id").GetString() == "span-s");
         foreach (var name in (string[])["id", "bytes", "license", "author", "source", "status", "error"])
         {
-            Assert.True(catalog[0].TryGetProperty(name, out _), name);
+            Assert.True(span.TryGetProperty(name, out _), name);
         }
 
-        Assert.Equal("ready", catalog[0].GetProperty("status").GetString());
-        Assert.Equal("missing", catalog[1].GetProperty("status").GetString());
-        Assert.Equal(new FileInfo(UpscaleFixture.IdentityModelPath).Length, catalog[0].GetProperty("bytes").GetInt64());
+        Assert.Equal("ready", span.GetProperty("status").GetString());
+        Assert.Equal("missing", catalog.Single(c => c.GetProperty("id").GetString() == "realesrgan-av3").GetProperty("status").GetString());
+        Assert.Equal(new FileInfo(UpscaleFixture.IdentityModelPath).Length, span.GetProperty("bytes").GetInt64());
 
         Assert.Equal(10, status.GetProperty("cache").GetProperty("bytes").GetInt64());
         Assert.Equal(1, status.GetProperty("cache").GetProperty("files").GetInt32());
@@ -282,7 +283,7 @@ public sealed class EnhanceEndpointTests : IDisposable
         var status = Json(await Admin().Delete("span-s", default));
 
         Assert.False(File.Exists(_store.PathOf(UpscaleModelId.SpanS)));
-        Assert.Equal("missing", status.GetProperty("catalog")[0].GetProperty("status").GetString());
+        Assert.Equal("missing", status.GetProperty("catalog").EnumerateArray().Single(c => c.GetProperty("id").GetString() == "span-s").GetProperty("status").GetString());
         Assert.Equal(0, status.GetProperty("cache").GetProperty("files").GetInt32());
     }
 

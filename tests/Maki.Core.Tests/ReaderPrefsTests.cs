@@ -78,12 +78,12 @@ public class ReaderPrefsTests
     }
 
     [Fact]
-    public void Parse_of_a_blob_from_before_enhance_uses_off_and_the_balanced_preset()
+    public void Parse_of_a_blob_from_before_enhance_uses_off_maki_2x_and_the_balanced_fallback()
     {
         var spec = ReaderPrefsSpec.Parse("""{"mode":"double","splitWide":"split"}""");
 
         Assert.Equal("off", spec.Enhance);
-        Assert.Equal("a4k-m", spec.EnhanceMethod);
+        Assert.Equal("server:maki-2x", spec.EnhanceMethod);
         Assert.Equal("a4k-m", spec.EnhanceFallback);
     }
 
@@ -93,7 +93,7 @@ public class ReaderPrefsTests
         var spec = new ReaderPrefsSpec(Enhance: "max", EnhanceMethod: "server:nope", EnhanceFallback: "server:span-s").Sanitized();
 
         Assert.Equal("off", spec.Enhance);
-        Assert.Equal("a4k-m", spec.EnhanceMethod);
+        Assert.Equal("server:maki-2x", spec.EnhanceMethod);
         Assert.Equal("a4k-m", spec.EnhanceFallback);
     }
 

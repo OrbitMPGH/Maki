@@ -266,7 +266,7 @@ public class UpscaleModelStoreTests : IDisposable
     {
         var defaults = await UpscaleOptions.LoadAsync(_settings, default);
         Assert.False(defaults.Enabled);
-        Assert.Empty(defaults.Models);
+        Assert.Equal([UpscaleModelId.Maki2x], defaults.Models);
         Assert.Equal(UpscaleOptions.DefaultThreads, defaults.Threads);
         Assert.Equal(1024, defaults.CacheMb);
         Assert.Null(defaults.ManifestUrl);
@@ -278,6 +278,9 @@ public class UpscaleModelStoreTests : IDisposable
         Assert.True(set.Enabled);
         Assert.Equal([UpscaleModelId.SpanS, UpscaleModelId.RealEsrganAv3], set.Models);
         Assert.Equal(UpscaleOptions.MinCacheMb, set.CacheMb);
+
+        _settings.Set(SettingKeys.UpscalingModels, "");
+        Assert.Empty((await UpscaleOptions.LoadAsync(_settings, default)).Models);
     }
 
     private static HttpResponseMessage Text(string body) =>
