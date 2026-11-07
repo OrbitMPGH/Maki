@@ -33,7 +33,7 @@ export const ReadingRail = memo(function ReadingRail({ items }: { items: HomeRea
 })
 
 /**
- * One poster that opens the reader. `note` replaces the "# new" count in the corner of the meta row.
+ * One poster that opens the reader. `note` replaces the "# unread" count in the corner of the meta row.
  * Memoized: `item` keeps its reference across renders, so unrelated Home state does not re-render the cards.
  */
 export const ReadingCard = memo(function ReadingCard({ item, note }: { item: HomeReadingItem; note?: string }) {
@@ -79,7 +79,7 @@ export const ReadingCard = memo(function ReadingCard({ item, note }: { item: Hom
             ) : (
               unreadChapters > 0 && (
                 <span className="cover-new">
-                  {plural(unreadChapters, { one: '# new', other: '# new' })}
+                  {plural(unreadChapters, { one: '# unread', other: '# unread' })}
                 </span>
               )
             )}

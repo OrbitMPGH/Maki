@@ -1855,13 +1855,13 @@ msgid "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
 msgstr "{name}：已停止，{ok}/{total} 成功，首个错误：{firstError}"
 
 #: src/components/home/RecentlyAddedRail.tsx
+msgid "{newChapterCount, plural, one {# new} other {# new}}"
+msgstr "{newChapterCount, plural, other {新增 #}}"
+
+#: src/components/home/RecentlyAddedRail.tsx
 #, fuzzy
 msgid "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
 msgstr "{newChapterCount, plural, other {最近新增的 # 个章节文件}}"
-
-#: src/components/home/RecentlyAddedRail.tsx
-msgid "{newChapterCount, plural, one {+#} other {+#}}"
-msgstr ""
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "{newChapters, plural, one {+# chapter} other {+# chapters}}"
@@ -2797,13 +2797,9 @@ msgstr "{unread, plural, other {新增 #}}"
 msgid "{unread, plural, one {# unread} other {# unread}}"
 msgstr "{unread, plural, other {# 个未读}}"
 
-#: src/components/home/ReadingRail.tsx
-#, fuzzy
-msgid "{unreadChapters, plural, one {# new} other {# new}}"
-msgstr "{unreadChapters, plural, other {新增 #}}"
-
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
+#: src/components/home/ReadingRail.tsx
 #, fuzzy
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, other {# 个未读}}"

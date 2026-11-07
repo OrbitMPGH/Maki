@@ -79,7 +79,7 @@ const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesIt
                 other: '# recent chapter files',
               })}
             >
-              {plural(newChapterCount, { one: '+#', other: '+#' })}
+              {plural(newChapterCount, { one: '# new', other: '# new' })}
             </span>
           </div>
         </div>

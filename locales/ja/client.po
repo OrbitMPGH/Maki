@@ -1855,13 +1855,13 @@ msgid "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
 msgstr "{name}：停止しました。{ok}/{total}件成功、最初のエラー：{firstError}"
 
 #: src/components/home/RecentlyAddedRail.tsx
+msgid "{newChapterCount, plural, one {# new} other {# new}}"
+msgstr "{newChapterCount, plural, other {新着#件}}"
+
+#: src/components/home/RecentlyAddedRail.tsx
 #, fuzzy
 msgid "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
 msgstr "{newChapterCount, plural, other {最近の章ファイル#件}}"
-
-#: src/components/home/RecentlyAddedRail.tsx
-msgid "{newChapterCount, plural, one {+#} other {+#}}"
-msgstr ""
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "{newChapters, plural, one {+# chapter} other {+# chapters}}"
@@ -2797,13 +2797,9 @@ msgstr "{unread, plural, other {新着#件}}"
 msgid "{unread, plural, one {# unread} other {# unread}}"
 msgstr "{unread, plural, other {#件未読}}"
 
-#: src/components/home/ReadingRail.tsx
-#, fuzzy
-msgid "{unreadChapters, plural, one {# new} other {# new}}"
-msgstr "{unreadChapters, plural, other {新着#件}}"
-
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
+#: src/components/home/ReadingRail.tsx
 #, fuzzy
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, other {#章未読}}"

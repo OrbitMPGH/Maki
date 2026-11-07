@@ -1855,13 +1855,13 @@ msgid "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
 msgstr "{name}: остановлено, успешно {ok}/{total}, первая ошибка: {firstError}"
 
 #: src/components/home/RecentlyAddedRail.tsx
+msgid "{newChapterCount, plural, one {# new} other {# new}}"
+msgstr "{newChapterCount, plural, one {# новая} few {# новые} many {# новых} other {# новых}}"
+
+#: src/components/home/RecentlyAddedRail.tsx
 #, fuzzy
 msgid "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
 msgstr "{newChapterCount, plural, one {# новый файл главы} few {# новых файла главы} many {# новых файлов глав} other {# нового файла главы}}"
-
-#: src/components/home/RecentlyAddedRail.tsx
-msgid "{newChapterCount, plural, one {+#} other {+#}}"
-msgstr ""
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "{newChapters, plural, one {+# chapter} other {+# chapters}}"
@@ -2797,13 +2797,9 @@ msgstr "{unread, plural, one {# новая} few {# новые} many {# новы�
 msgid "{unread, plural, one {# unread} other {# unread}}"
 msgstr "{unread, plural, one {# непрочитанная} few {# непрочитанных} many {# непрочитанных} other {# непрочитанных}}"
 
-#: src/components/home/ReadingRail.tsx
-#, fuzzy
-msgid "{unreadChapters, plural, one {# new} other {# new}}"
-msgstr "{unreadChapters, plural, one {# новая} few {# новые} many {# новых} other {# новых}}"
-
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
+#: src/components/home/ReadingRail.tsx
 #, fuzzy
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, one {# непрочитанная} few {# непрочитанных} many {# непрочитанных} other {# непрочитанных}}"

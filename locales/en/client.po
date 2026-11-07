@@ -1541,12 +1541,12 @@ msgid "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
 msgstr "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
 
 #: src/components/home/RecentlyAddedRail.tsx
-msgid "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
-msgstr "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
+msgid "{newChapterCount, plural, one {# new} other {# new}}"
+msgstr "{newChapterCount, plural, one {# new} other {# new}}"
 
 #: src/components/home/RecentlyAddedRail.tsx
-msgid "{newChapterCount, plural, one {+#} other {+#}}"
-msgstr "{newChapterCount, plural, one {+#} other {+#}}"
+msgid "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
+msgstr "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "{newChapters, plural, one {+# chapter} other {+# chapters}}"
@@ -2321,12 +2321,9 @@ msgstr "{unread, plural, one {# new} other {# new}}"
 msgid "{unread, plural, one {# unread} other {# unread}}"
 msgstr "{unread, plural, one {# unread} other {# unread}}"
 
-#: src/components/home/ReadingRail.tsx
-msgid "{unreadChapters, plural, one {# new} other {# new}}"
-msgstr "{unreadChapters, plural, one {# new} other {# new}}"
-
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/NextUpList.tsx
+#: src/components/home/ReadingRail.tsx
 msgid "{unreadChapters, plural, one {# unread} other {# unread}}"
 msgstr "{unreadChapters, plural, one {# unread} other {# unread}}"
 
