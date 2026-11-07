@@ -9514,6 +9514,12 @@ body.reader-open {
 }
 
 /* Reader settings popover (portalled, so not under .reader-bar). */
+.reader-settings-scroll {
+  max-height: calc(100dvh - 72px);
+  overflow-y: auto;
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  border-radius: inherit;
+}
 .reader-settings-radio {
   position: absolute;
   width: 1px;
