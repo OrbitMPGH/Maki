@@ -7,6 +7,7 @@ import { getConnectivity } from '../lib/connectivity'
 import { randomUUID } from '../lib/uuid'
 import { queueOfflineWrite } from '../pwa/progressQueue'
 import { api, ApiError, apiRootNow, apiWithOrigin, authHeaders, getInitialize, trackedFetch } from './client'
+import { optimisticMerge } from './optimistic'
 
 export interface ReaderManifest {
   chapterId: number
@@ -342,6 +343,12 @@ export function useSaveReaderSettings() {
         Partial<Pick<ReaderSettings, 'pullFromKavita'>>,
     ) =>
       api<ReaderSettings>('/settings/reader', { method: 'PUT', body: JSON.stringify(settings) }),
+    ...optimisticMerge(
+      queryClient,
+      ['settings', 'reader'],
+      (settings: Pick<ReaderSettings, 'defaults' | 'pushToKavita'> & Partial<Pick<ReaderSettings, 'pullFromKavita'>>) =>
+        settings,
+    ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'reader'] })
     },
@@ -447,6 +454,7 @@ export function useSetChaptersState(seriesId: number) {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['home'] })
+      void queryClient.invalidateQueries({ queryKey: ['progress'] })
       // Ticking a season off (or back on) can change whether the anime-resume callout has
       // anything left to offer.
       void queryClient.invalidateQueries({ queryKey: ['anime-resume', 'series', seriesId] })
@@ -467,6 +475,7 @@ export function useSetChapterRead(seriesId: number) {
       // Both Home rails are derived from ChapterProgress, and marking unread can move a series
       // between them (or drop it from both).
       void queryClient.invalidateQueries({ queryKey: ['home'] })
+      void queryClient.invalidateQueries({ queryKey: ['progress'] })
     },
   })
 }

@@ -1781,16 +1781,11 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                     </ActionIcon>
                   </Tooltip>
                 </div>
-                <Text size="sm" c="var(--ink-3)" className="tnum library-toolbar-count" hidden={isLoading}>
-                  {filtersActive ? (
-                    plural(totalCount, {
-                      one: `${visibleCount} of # series match`,
-                      other: `${visibleCount} of # series match`,
-                    })
-                  ) : (
-                    <Plural value={totalSeries} one="# series" other="# series" />
-                  )}
-                </Text>
+                {filtersActive && !isLoading && (
+                  <Text size="sm" c="var(--ink-3)" className="tnum library-toolbar-count">
+                    {t`${visibleCount} of ${totalCount}`}
+                  </Text>
+                )}
                 <Group className="library-view-controls" gap="sm" wrap="nowrap">
                   <Box visibleFrom="sm">
                     <ViewModeToggle
@@ -2619,7 +2614,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         title={plural(selectedCount, { one: 'Set notifications for # series', other: 'Set notifications for # series' })}
       >
         <Text size="sm" mb="md">
-          <Trans>Yours alone - this changes what lands in your bell, not anybody else's.</Trans>
+          <Trans>Yours alone. This changes what lands in your bell, not anybody else's.</Trans>
         </Text>
         <SegmentedControl
           aria-label={t`Notifications`}
@@ -2761,7 +2756,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       {series && series.length > 0 && visible.length === 0 && (
         <EmptyState
           title={t`No matches`}
-          description={t`No series match the current filter. Try clearing the search or status filter.`}
+          description={t`No series match your filters. Try clearing the search or a filter.`}
           actionLabel={t`Clear all filters`}
           onAction={() => {
             applySpec(DEFAULT_SPEC, null)

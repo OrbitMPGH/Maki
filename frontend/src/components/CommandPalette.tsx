@@ -134,7 +134,8 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
   const optionId = (i: number) => `${listId}-option-${i}`
   const visibleSettings = useVisibleSettingsEntries()
 
-  useHotkeys([['mod+K', open]])
+  // No ignored tags: mod+K has no editing meaning, and people reach for it while typing in a field.
+  useHotkeys([['mod+K', open]], [])
 
   useEffect(() => {
     if (!opened) {

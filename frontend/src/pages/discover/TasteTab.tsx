@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   Alert,
   Anchor,
+  Box,
   Button,
   Card,
   Group,
@@ -56,6 +57,7 @@ import { FigureStrip } from '../../components/ui/FigureStrip'
 import { SeriesLink, SeriesThumb } from '../stats/SeriesLink'
 import { buildFiltersFromProfile, hasAnyFilter } from './tasteFilters'
 import { Panel } from '../../components/ui/Panel'
+import { PanelTitle } from '../../components/ui/PanelTitle'
 import { TagChip } from '../../components/ui/TagChip'
 import { SignalsCard } from './FeedbackLab'
 import { formatFixedDecimal, formatNumber, formatPercent, formatReadingTime } from '../../format'
@@ -206,10 +208,9 @@ function BehaviourList({
 }) {
   return (
     <Card padding="md" radius="lg" withBorder>
-      <Group gap={8} mb="xs" wrap="nowrap">
-        <ListIcon size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
-        <Text fw={650}>{title}</Text>
-      </Group>
+      <Box mb="xs">
+        <PanelTitle icon={ListIcon}>{title}</PanelTitle>
+      </Box>
       {items.length === 0 ? (
         <Text c="var(--ink-3)" size="sm">
           {emptyText}

@@ -46,7 +46,7 @@ Two families. **Bricolage Grotesque** (`display`) is for names and figures: page
 
 - Display: `display` (series hero, Rewind), `route`, `page-title` (every `PageHeader`), `section-title` (every `SectionHeader`), `wordmark`. All at 700 with -0.025em tracking (-0.02em for section titles).
 - Headings: `h1` to `h4`, Mantine's Title scale (1.9rem 800, 1.5rem 800, 1.2rem 700, 1rem 700).
-- Roles: pick the tier by what the text is, not how big you want it. `body` (0.9375rem, Mantine `sm`) is the default. `meta` (0.8125rem, Mantine `xs`) for labels, chips and status words, `micro` (0.75rem) is the floor for anything read (counts, table headers), `label` for sentence-case labels over figures, `badge-text` for badges only. `figure` for numbers.
+- Roles: pick the tier by what the text is, not how big you want it. `body` (0.9375rem, Mantine `sm`) is the default. `meta` (0.8125rem, Mantine `xs`) for labels, chips and status words, `micro` (0.8125rem, the same size as `meta`) is the floor for anything read (counts, table headers), `label` for sentence-case labels over figures, `badge-text` for badges only. `figure` for numbers.
 - Figures (strips, stat tiles, the hero figures and the level) set in the display face through the `.figure` class: 700, -0.02em, tabular. Sizes stay per call site. Their labels are sentence case at `meta` size in `ink-3`.
 - The same scale is exposed as CSS variables (`type-display` through `type-badge`); the three largest are fluid `clamp()` values. If no tier fits, the scale gains a tier; call sites never get an off-scale size.
 - Weights come from six steps: `fw-regular` 400, `fw-medium` 500, `fw-semibold` 600, `fw-strong` 650, `fw-bold` 700, `fw-heavy` 800. A weight between two steps belongs on one of them.

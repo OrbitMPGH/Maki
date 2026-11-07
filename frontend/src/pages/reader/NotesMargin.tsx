@@ -305,11 +305,23 @@ function ChapterNotes({
   )
 }
 
+type ChromeLift = 'none' | 'bar' | 'strip'
+
 /**
  * The scrolling strip's one way to write a note: it stays put at the foot of the margin and names
  * the page in view, rather than a button that jumps from page to page as they scroll past.
  */
-function StripAdd({ page, workspace, style }: { page: number; workspace: NotesWorkspace; style: CSSProperties }) {
+function StripAdd({
+  page,
+  workspace,
+  style,
+  lift,
+}: {
+  page: number
+  workspace: NotesWorkspace
+  style: CSSProperties
+  lift: ChromeLift
+}) {
   // Held while writing, so scrolling on does not move the note to another page.
   const [pinned, setPinned] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -329,7 +341,7 @@ function StripAdd({ page, workspace, style }: { page: number; workspace: NotesWo
   }
 
   return (
-    <div className="notes-strip-add notes-surface" style={style} onClick={keepToNotes}>
+    <div className="notes-strip-add notes-surface" data-lift={lift} style={style} onClick={keepToNotes}>
       {pinned === null ? (
         <button type="button" className="notes-margin-add" onClick={() => setPinned(page)}>
           <IconPlus size={14} aria-hidden />
@@ -447,6 +459,7 @@ export default function NotesMargin({
   finished,
   zoomed,
   layoutKey,
+  lift = 'none',
   onGoToPage,
 }: {
   surface: HTMLElement | null
@@ -464,6 +477,8 @@ export default function NotesMargin({
   zoomed: boolean
   /** Changes whenever the pages may have moved: a turn, a layout or fit change. */
   layoutKey: string
+  /** What of the reader's chrome is up at the foot of the screen, which the strip's add chip clears. */
+  lift?: ChromeLift
   onGoToPage: (page: number) => void
 }) {
   const workspace = useNotesWorkspace(chapterId, seriesId)
@@ -547,13 +562,17 @@ export default function NotesMargin({
     return (
       <aside
         className="notes-margin notes-surface"
+        data-lift={lift}
         onClick={keepToNotes}
-        style={{
-          left: geometry.x,
-          width: width + GAP,
-          top: geometry.top + 12,
-          maxHeight: Math.max(160, geometry.bottom - geometry.top - 24),
-        }}
+        style={
+          {
+            left: geometry.x,
+            width: width + GAP,
+            top: geometry.top + 12,
+            maxHeight: Math.max(160, geometry.bottom - geometry.top - 24),
+            '--notes-top': `${geometry.top + 12}px`,
+          } as CSSProperties
+        }
       >
         {[...shownPages]
           .sort((a, b) => a - b)
@@ -585,7 +604,7 @@ export default function NotesMargin({
         </div>,
         geometry.host,
       )}
-      <StripAdd page={page} workspace={workspace} style={{ left: geometry.x + GAP, width }} />
+      <StripAdd page={page} workspace={workspace} lift={lift} style={{ left: geometry.x + GAP, width }} />
     </>
   )
 }

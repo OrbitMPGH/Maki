@@ -6,7 +6,7 @@ import {
   IconPlayerPauseFilled,
   IconPlayerPlayFilled,
   IconPlus,
-  IconStar,
+  IconStarFilled,
 } from '../../lib/icons'
 import { useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion, useAnimate, useReducedMotion } from 'motion/react'
@@ -301,7 +301,7 @@ export function DiscoverHero({
                     className="hero-score"
                     style={{ '--band': `var(--${band.token})` } as CSSProperties}
                   >
-                    <IconStar size={18} />
+                    <IconStarFilled size={18} />
                     <span className="hero-score-n figure">{formatFixedDecimal(score / 10, 1)}</span>
                   </span>
                 )}
@@ -405,7 +405,7 @@ export function DiscoverHero({
                     className="discover-hero-facts-score figure"
                     style={{ '--band': `var(--${band.token})` } as CSSProperties}
                   >
-                    <IconStar size={13} />
+                    <IconStarFilled size={13} />
                     {formatFixedDecimal(score / 10, 1)}
                   </span>
                 )}
@@ -480,7 +480,7 @@ export function DiscoverHero({
                         <span>{renderLabel(pickStatus.label)}</span>
                         {p.rating != null && (
                           <span className="discover-hero-strip-rating tnum">
-                            <IconStar size={11} />
+                            <IconStarFilled size={11} />
                             {formatFixedDecimal(p.rating / 10, 1)}
                           </span>
                         )}

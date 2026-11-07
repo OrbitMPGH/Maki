@@ -7,7 +7,7 @@ import {
   ActionIcon, Alert, Badge, Button, Chip, Group, Modal, Select, Stack, Tabs, Text,
   TextInput,
 } from '@mantine/core'
-import { IconSearch, IconX } from '../../lib/icons'
+import { IconSearch, IconThumbDown, IconThumbUp, IconX } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -473,11 +473,11 @@ function SignalRow({ row, busy, onClear, onExclude }: {
             </Badge>
           )}
           {sentiment === 'liked' && (
-            <Pill color="var(--ok)" label={t`👍 Liked`} clear={t`Clear the thumbs up`}
+            <Pill color="var(--ok)" icon={<IconThumbUp size={12} />} label={t`Liked`} clear={t`Clear the thumbs up`}
               onClear={() => onClear(row, 'clear-sentiment')} />
           )}
           {sentiment === 'disliked' && (
-            <Pill color="var(--danger)" label={t`👎 Disliked`} clear={t`Clear the thumbs down`}
+            <Pill color="var(--danger)" icon={<IconThumbDown size={12} />} label={t`Disliked`} clear={t`Clear the thumbs down`}
               onClear={() => onClear(row, 'clear-sentiment')} />
           )}
           {suppression === 'hidden' && (
@@ -521,8 +521,9 @@ function SignalRow({ row, busy, onClear, onExclude }: {
 }
 
 /** A state badge with the × that clears exactly that state. */
-function Pill({ color, label, clear, onClear }: {
+function Pill({ color, icon, label, clear, onClear }: {
   color: string
+  icon?: React.ReactNode
   label: string
   clear: string
   onClear: () => void
@@ -530,6 +531,7 @@ function Pill({ color, label, clear, onClear }: {
   return (
     <Badge
       size="sm" variant="light" color={color} pr={3} style={{ overflow: 'visible' }}
+      leftSection={icon}
       rightSection={
         <ActionIcon size={24} m={-5} variant="transparent" color={color} aria-label={clear} onClick={onClear}>
           <IconX size={12} />

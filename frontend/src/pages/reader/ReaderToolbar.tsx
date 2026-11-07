@@ -28,6 +28,7 @@ import { useEnhanceEngine } from './enhanceRuntime'
 import PageScrubber from './PageScrubber'
 import ReaderSettings, { OVERLAY_Z } from './ReaderSettings'
 import { isPendingPhase, useEnhancePhaseLabel, type EnhancePhase } from './ServerEnhanceStatus'
+import { serverChapterLabel } from '../../format'
 
 export default function ReaderToolbar({
   manifest,
@@ -214,20 +215,23 @@ export default function ReaderToolbar({
             <IconArrowLeft size={20} />
           </ActionIcon>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <Text fz="sm" fw={600} truncate>
+            <Text fz="var(--type-body)" fw={600} truncate>
               {manifest.seriesTitle}
             </Text>
             <Group gap={8} wrap="nowrap" align="center">
               <Text fz="xs" c="var(--ink-3)" style={{ whiteSpace: 'nowrap' }}>
-                {manifest.label}
+                {serverChapterLabel(manifest.label)}
               </Text>
               {manifest.seriesChapterCount > 0 && <Divider orientation="vertical" />}
               {manifest.seriesChapterCount > 0 && (
                 <Tooltip label={seriesProgressTooltip} withArrow zIndex={OVERLAY_Z}>
                   {/* The series meter, not the page one: the bottom bar's slider is this chapter. */}
                   <Group gap={6} wrap="nowrap" align="center" style={{ minWidth: 0 }}>
-                    <Text fz="xs" c="var(--ink-2)" fw={600} style={{ whiteSpace: 'nowrap' }}>
+                    <Text fz="xs" c="var(--ink-2)" fw={600} hiddenFrom="sm" style={{ whiteSpace: 'nowrap' }}>
                       <Trans>Series</Trans>
+                    </Text>
+                    <Text fz="xs" c="var(--ink-2)" fw={600} visibleFrom="sm" style={{ whiteSpace: 'nowrap' }}>
+                      <Trans>Series progress</Trans>
                     </Text>
                     <Progress
                       value={(chaptersRead / manifest.seriesChapterCount) * 100}
@@ -238,7 +242,10 @@ export default function ReaderToolbar({
                       style={{ flexShrink: 0 }}
                       aria-label={t`Chapters read in this series`}
                     />
-                    <Text fz="xs" c="var(--ink-3)" truncate className="tnum">
+                    <Text fz="xs" c="var(--ink-3)" hiddenFrom="xs" className="tnum" style={{ whiteSpace: 'nowrap' }}>
+                      {t`${chaptersRead}/${seriesChapterCount}`}
+                    </Text>
+                    <Text fz="xs" c="var(--ink-3)" visibleFrom="xs" truncate className="tnum">
                       {chaptersRead < seriesChapterCount ? (
                         plural(seriesChapterCount, {
                           one: `${chaptersRead} of # read`,

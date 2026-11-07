@@ -39,7 +39,7 @@ import { usePhoneSheet } from '../notes/phone'
 import { queueErrorMessage } from '../../api/queue'
 import type { ChapterProgressDto, ChapterReadState } from '../../api/reader'
 import type { ChapterDto, QueueItemDto } from '../../api/types'
-import { formatCalendarDate } from '../../format'
+import { chapterLabel as houseChapterLabel, chapterRangeLabel, formatCalendarDate } from '../../format'
 import type { OfflineChapter } from '../../pwa/contract'
 import type { SaveProgress } from '../../pwa/offlineChapters'
 import type { AnimeMarker, AnimeSpan } from '../../lib/animeCoverage'
@@ -142,7 +142,6 @@ export const ChapterRow = memo(function ChapterRow({
 }: ChapterRowProps) {
   const { t } = useLingui()
   const chapterLbl = chapterLabel(c)
-  const chapterNumber = c.number
   const fileVolume = c.fileVolume
   const { read, inProgress, external, watched } = readStateOf(rowProgress)
   const pageIndex = rowProgress ? rowProgress.pageIndex + 1 : null
@@ -188,17 +187,19 @@ export const ChapterRow = memo(function ChapterRow({
         <Table.Td className={hasAnimeMarkers ? 'chapter-cell' : undefined} data-chapter-number={c.number ?? undefined}>
           <LightGroup gap={6} wrap="nowrap">
             {c.fileVolume !== null && !c.isOneShot && c.number !== null && (
-                <HoverTooltip label={t`Contained in a volume/compilation file`} withArrow>
-                  <LightBadge color="var(--watched)" className="tnum chapter-label">
-                    <Trans>Vol. {fileVolume}</Trans>
-                  </LightBadge>
-                </HoverTooltip>
+                <span className="chapter-lead-slot">
+                  <HoverTooltip label={t`Contained in a volume/compilation file`} withArrow>
+                    <LightBadge color="var(--watched)" className="tnum chapter-label">
+                      <Trans>Vol. {fileVolume}</Trans>
+                    </LightBadge>
+                  </HoverTooltip>
+                </span>
             )}
             <LightText fw={600} className="tnum chapter-label chapter-number">
               {c.isOneShot || c.number === null
                   ? chapterLabel(c)
                   : c.fileVolume !== null
-                      ? <Trans>Ch. {chapterNumber}</Trans>
+                      ? houseChapterLabel(c.number)
                       : chapterLabel(c)}
             </LightText>
           </LightGroup>
@@ -657,10 +658,10 @@ function OfflineBadge({ record, saving }: { record: OfflineChapter; saving: Save
   )
 }
 
-/** "Ch.1–270", or "Ch.315+" for a season with no end marker yet. */
+/** "Ch. 1–270", or "Ch. 315+" for a season with no end marker yet. */
 const spanRangeLabel = (span: AnimeSpan) => {
   const { from, to, openEnded } = span
-  return openEnded ? staticT`Ch.${from}+` : staticT`Ch.${from}–${to}`
+  return openEnded ? staticT`Ch. ${from}+` : chapterRangeLabel(from, to)
 }
 
 type ChapterSpanRowProps = {
@@ -736,17 +737,19 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
         </Table.Td>
         <Table.Td className={hasAnimeMarkers ? 'chapter-cell' : undefined}>
           <Group gap={6} wrap="nowrap">
-            <Badge
-                size="sm"
-                color="var(--info)"
-                variant="light"
-                leftSection={<IconDeviceTv size={12} />}
-                className="chapter-span-badge"
-                data-span-fold={span.key}
-                {...pressable(() => actions.toggleSpanFold(span.key))}
-            >
-              {span.label}
-            </Badge>
+            <span className="chapter-lead-slot">
+              <Badge
+                  size="sm"
+                  color="var(--info)"
+                  variant="light"
+                  leftSection={<IconDeviceTv size={12} />}
+                  className="chapter-span-badge"
+                  data-span-fold={span.key}
+                  {...pressable(() => actions.toggleSpanFold(span.key))}
+              >
+                {span.label}
+              </Badge>
+            </span>
             <Text size="sm" fw={600} className="tnum chapter-label chapter-number">
               {spanRangeLabel(span)}
             </Text>

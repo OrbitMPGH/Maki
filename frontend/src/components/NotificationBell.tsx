@@ -54,6 +54,7 @@ import {
   type InboxItem,
 } from '../api/inbox'
 import { CountIndicator } from './ui/CountIndicator'
+import { AchievementBadge } from '../pages/stats/AchievementBadge'
 import { relativeTime } from './ui/time'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -271,6 +272,9 @@ export function UnreadMark() {
  * the one distinction the row's colour is carrying.
  */
 export function NotificationVisual({ item, size }: { item: InboxItem; size: number }) {
+  if (item.badge) {
+    return <AchievementBadge icon={item.badge.icon} tier={item.badge.tier} size={size < 30 ? 'sm' : 'md'} />
+  }
   if (!item.coverUrl) {
     return <LevelIcon level={item.level} type={item.type} />
   }

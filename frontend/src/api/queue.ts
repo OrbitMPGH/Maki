@@ -1,5 +1,6 @@
 import { msg } from '@lingui/core/macro'
 import { t as now } from '@lingui/core/macro'
+import { chapterLabel } from '../format'
 import type { MessageDescriptor } from '@lingui/core'
 import type { QueueItemDto, QueueOrigin, QueuePauseDto } from './types'
 import { upgradeReasonLabel } from './upgrades'
@@ -143,9 +144,7 @@ export function queueItemLabel(item: QueueItemDto): string {
   if (item.releaseTitle) return item.releaseTitle
   if (item.chapterNumber === null) return item.chapterTitle ?? now`One-shot`
   const chapter = item.chapterNumber
-  if (item.chapterVolume === null) return now`Ch.${chapter}`
-  const volume = item.chapterVolume
-  return now`Vol.${volume} Ch.${chapter}`
+  return chapterLabel(chapter, item.chapterVolume)
 }
 
 /**

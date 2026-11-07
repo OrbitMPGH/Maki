@@ -134,6 +134,41 @@ export function useGenreOptions() {
   return useSplitOptions(GENRE_OPTIONS, GENRE_LABELS)
 }
 
+/** Applied filters as short phrases, for saying what a results list is narrowed by. */
+export function useFilterSummary() {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
+  const ruleChips = useRuleChips()
+  const typeOptions = useTypeOptions()
+  const statusOptions = useStatusOptions()
+  return useCallback(
+    (f: RecommendationFilters): string[] => {
+      const label = (options: { value: string; label: string }[], values: string[]) =>
+        values.map((v) => options.find((o) => o.value === v)?.label ?? v).join(', ')
+      const parts: string[] = []
+      if (f.rules?.length) parts.push(...ruleChips(f.rules))
+      if (f.credits?.length) parts.push(f.credits.map((c) => c.name).join(', '))
+      if (f.types?.length) parts.push(label(typeOptions, f.types))
+      if (f.statuses?.length) parts.push(label(statusOptions, f.statuses))
+      if (f.contentRatings?.length) {
+        parts.push(f.contentRatings.map((v) => (CONTENT_RATING_LABELS[v] ? renderLabel(CONTENT_RATING_LABELS[v]) : v)).join(', '))
+      }
+      if (f.minChapters != null || f.maxChapters != null) {
+        const chaptersMin = f.minChapters ?? CHAPTER_MIN
+        const chaptersMax = f.maxChapters ?? `${CHAPTER_MAX}+`
+        parts.push(t`${chaptersMin}–${chaptersMax} chapters`)
+      }
+      if (f.yearMin != null || f.yearMax != null) parts.push(`${f.yearMin ?? YEAR_MIN}–${f.yearMax ?? YEAR_MAX}`)
+      if (f.minRating != null && f.minRating > 0) {
+        const ratingLabel = `★ ${formatFixedDecimal(f.minRating / 10, 1)}`
+        parts.push(t`Rated ${ratingLabel} or more`)
+      }
+      return parts
+    },
+    [t, renderLabel, ruleChips, typeOptions, statusOptions],
+  )
+}
+
 /**
  * A stored spec's catalogue-filter fields, as both saved-default shapes carry them: every field
  * optional and explicitly nullable, because the server round-trips an unset constraint as `null`

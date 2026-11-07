@@ -245,7 +245,7 @@ export default function RequestsPage() {
           description={
             isAdmin
               ? t`Requests filed from the Request series page and from series pages show up here.`
-              : t`Search for a series and request it - it will show up here once you do.`
+              : t`Search for a series and request it. It shows up here once you do.`
           }
         />
       ) : (

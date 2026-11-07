@@ -297,7 +297,7 @@ export function fileStatusVisual(status: string): StatusVisual {
     case 'unlinked':
       return { color: 'yellow', label: msg`Not linked`, Icon: IconLinkOff }
     case 'missing':
-      return { color: 'red', label: msg`Missing from disk`, Icon: IconFileUnknown }
+      return { color: 'red', label: msg`File missing`, Icon: IconFileUnknown }
     default:
       return { color: 'orange', label: msg`Unrecognized`, Icon: IconFileUnknown }
   }

@@ -293,7 +293,7 @@ export function AddRailButton({
   }
   return (
     <>
-      <Button variant="subtle" size="xs" leftSection={<IconPlus size={16} />} onClick={() => setOpen(true)}>
+      <Button variant="subtle" color="gray" leftSection={<IconPlus size={16} />} onClick={() => setOpen(true)}>
         {label ?? <Trans>Add a rail</Trans>}
       </Button>
       {open && <CustomRailEditor draft={draft} onSaved={onCreated} onClose={() => setOpen(false)} />}

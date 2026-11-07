@@ -75,8 +75,14 @@ export function LoginPage() {
   // need the form, and everyone else needs to be told why it will not work for them.
   const [showPassword, setShowPassword] = useState(false)
 
-  const login = useLogin()
-  const verify = useVerifyTwoFactor()
+  // The mascot smiles for a beat between a good sign-in and the app taking over the screen.
+  const [entering, setEntering] = useState(false)
+  const beforeEnter = () => {
+    setEntering(true)
+    return new Promise<void>((resolve) => window.setTimeout(resolve, 500))
+  }
+  const login = useLogin(beforeEnter)
+  const verify = useVerifyTwoFactor(beforeEnter)
 
   useEffect(() => {
     void getInitialize().then((init) =>
@@ -120,6 +126,7 @@ export function LoginPage() {
 
   return (
     <AuthFrame
+      mood={entering ? 'pleased' : error || ssoError ? 'asking' : 'awake'}
       title={needsCode ? t`Two-factor code` : t`Sign in`}
       subtitle={
         needsCode
@@ -237,6 +244,7 @@ export function LoginPage() {
                   autoComplete="username"
                   autoFocus
                   required
+                  withAsterisk={false}
                   value={username}
                   onChange={(e) => setUsername(e.currentTarget.value)}
                 />
@@ -244,6 +252,7 @@ export function LoginPage() {
                   label={t`Password`}
                   autoComplete="current-password"
                   required
+                  withAsterisk={false}
                   value={password}
                   onChange={(e) => setPassword(e.currentTarget.value)}
                 />

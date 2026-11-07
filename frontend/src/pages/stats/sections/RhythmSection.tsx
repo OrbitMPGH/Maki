@@ -94,6 +94,7 @@ export default function RhythmSection({ userId, range, windowLabel }: StatsSecti
     return (
       <EmptyState
         compact
+        mood="asleep"
         title={t`No timed reading yet`}
         description={t`Only Maki's reader records when you read. Chapters marked read from Kavita or OPDS apps do not carry a time.`}
       />
@@ -196,11 +197,9 @@ export default function RhythmSection({ userId, range, windowLabel }: StatsSecti
               <span className="stats-fact-value">
                 {sittings ? formatDecimal(sittings.perWeek) : '-'}
               </span>
-              <span className="stats-fact-hint">
-                {perSittingMedian !== null && perSittingMedian > 0
-                  ? t`${perSitting} ch. per sitting`
-                  : '-'}
-              </span>
+              {perSittingMedian !== null && perSittingMedian > 0 && (
+                <span className="stats-fact-hint">{t`${perSitting} ch. per sitting`}</span>
+              )}
             </div>
           </div>
         </Panel>

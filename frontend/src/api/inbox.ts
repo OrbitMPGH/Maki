@@ -55,6 +55,8 @@ export interface InboxItem {
   coverUrl: string | null
   createdAt: string
   read: boolean
+  /** An unlocked achievement's icon key and tier (0 when ungraded), drawn as its badge. */
+  badge?: { icon: string; tier: number } | null
 }
 
 export interface InboxPage {
@@ -158,7 +160,7 @@ export function visibleInboxCategories(isAdmin: boolean, singleUser: boolean) {
  */
 export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
   newChapterAvailable: msg`New chapters available`,
-  smartDownloadQueued: msg`Smart Download queued chapters`,
+  smartDownloadQueued: msg`Smart download queued chapters`,
   chapterDownloaded: msg`Chapters downloaded automatically`,
   downloadFailed: msg`Automatic download failed`,
   achievementUnlocked: msg`Achievement unlocked`,

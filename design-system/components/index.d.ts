@@ -32,6 +32,15 @@ export declare function SectionHeader(props: {
   chevron?: boolean
 }): JSX.Element
 
+/** Title inside a panel or card, one tier under a SectionHeader. */
+export declare function PanelTitle(props: {
+  icon?: Icon
+  /** Heading level, 3 by default. */
+  order?: 2 | 3 | 4
+  className?: string
+  children: ReactNode
+}): JSX.Element
+
 export interface Figure {
   label: string
   /** A count, formatted by the strip, or a value the caller already formatted. */

@@ -41,6 +41,7 @@ import { useReaderProgress } from './useReaderProgress'
 import { useReadingClock } from './useReadingClock'
 import { useWakeLock } from './useWakeLock'
 import { spreadIndexOf, usePageAspects, useSpreads } from './useSpreads'
+import { serverChapterLabel } from '../../format'
 
 const ZOOM_STEP = 0.25
 const ZOOM_MAX = 4
@@ -96,7 +97,7 @@ export default function ReaderPage() {
     isFetching,
     refetch,
   } = useReaderManifest(chapterId)
-  useDocumentTitle(manifest ? `${manifest.seriesTitle} - ${manifest.label}` : null)
+  useDocumentTitle(manifest ? `${manifest.seriesTitle} - ${serverChapterLabel(manifest.label)}` : null)
   const { prefs, update, keepForSeries, selection, setSelection, source, autoProfileId, profiles } =
     useReaderPrefs(manifest, !isFetching && !isError)
   // A layout or fit picked by hand during this visit to the series. Webtoon detection only stands
@@ -1016,7 +1017,7 @@ export default function ReaderPage() {
               scale={prefs.scale}
               tone={tone}
               gap={prefs.pageGap}
-              label={manifest.label}
+              label={serverChapterLabel(manifest.label)}
               enhance={enhance}
               enhanceMethod={prefs.enhanceMethod}
               enhanceFallback={prefs.enhanceFallback}
@@ -1033,7 +1034,7 @@ export default function ReaderPage() {
               zoom={zoom}
               scale={prefs.scale}
               tone={tone}
-              label={manifest.label}
+              label={serverChapterLabel(manifest.label)}
               onMeasure={measure}
               cropBorders={prefs.cropBorders}
               splitWide={mode === 'paged' ? prefs.splitWide : 'off'}
@@ -1088,7 +1089,7 @@ export default function ReaderPage() {
         <ChapterBanner
           key={manifest.chapterId}
           seriesTitle={manifest.seriesTitle}
-          label={manifest.label}
+          label={serverChapterLabel(manifest.label)}
           pageCount={manifest.pageCount}
           coverUrl={manifest.seriesCoverUrl}
         />
@@ -1111,6 +1112,7 @@ export default function ReaderPage() {
           finished={manifest.completed || finished}
           zoomed={zoom !== 1}
           layoutKey={`${mode}:${fit}:${prefs.scale}:${spreadIndex}:${half}:${page}:${zoom}`}
+          lift={!chrome ? 'none' : stripOpen ? 'strip' : 'bar'}
           onGoToPage={seekToPage}
         />
       )}
@@ -1120,7 +1122,7 @@ export default function ReaderPage() {
           key={`notes-${manifest.chapterId}`}
           opened={notesOpen}
           onClose={closeNotes}
-          chapterLabel={manifest.label}
+          chapterLabel={serverChapterLabel(manifest.label)}
           inReader
           zIndex={OVERLAY_Z}
           {...notesBody}
@@ -1130,7 +1132,7 @@ export default function ReaderPage() {
           key={`notes-${manifest.chapterId}`}
           opened={notesOpen}
           onClose={closeNotes}
-          title={t`Notes, ${manifest.label}`}
+          title={t`Notes, ${serverChapterLabel(manifest.label)}`}
           zIndex={OVERLAY_Z}
           headerExtra={
             <Switch

@@ -157,16 +157,21 @@ export function useMe(enabled = true) {
   })
 }
 
-export function useLogin() {
+/**
+ * `beforeEnter` runs once the session exists but before the cached identity flips and the app
+ * replaces the form, so the sign-in page can show a moment of success first.
+ */
+export function useLogin(beforeEnter?: () => Promise<void>) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: { username: string; password: string }) =>
       api<Me & LoginResult>('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
     // The form shows the failure inline.
     meta: { silent: true },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       // Two-factor is still pending, so there is no session yet and nothing to cache.
       if (result.requiresTwoFactor) return
+      await beforeEnter?.()
       noteSignedInUser(result.id)
       dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, result)
@@ -174,14 +179,15 @@ export function useLogin() {
   })
 }
 
-export function useVerifyTwoFactor() {
+export function useVerifyTwoFactor(beforeEnter?: () => Promise<void>) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: { code: string; rememberMachine: boolean }) =>
       api<Me>('/auth/2fa', { method: 'POST', body: JSON.stringify(body) }),
     // The form shows the failure inline.
     meta: { silent: true },
-    onSuccess: (me) => {
+    onSuccess: async (me) => {
+      await beforeEnter?.()
       noteSignedInUser(me.id)
       dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, me)

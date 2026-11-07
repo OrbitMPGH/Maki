@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Box, Button, Group, Title, VisuallyHidden } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -61,6 +61,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { RailSkeleton } from '../components/ui/RailSkeleton'
 import { SectionHeader, SectionTagContext } from '../components/ui/SectionHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { SectionErrorBoundary } from '../components/SectionErrorBoundary'
 import { useConnectivity } from '../lib/connectivity'
 import { pwaSupported, workerControlsPage } from '../lib/pwa/serviceWorker'
 import { useOfflineChapters } from '../pwa/offlineChapters'
@@ -429,7 +430,8 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
       : LIBRARY_SECTIONS.includes(key)
 
   const rendered = visible.map((s) => ({ key: s.key, node: renderSection(s.key), library: inLibraryZone(s.key) }))
-  const plain = (r: (typeof rendered)[number]) => <Fragment key={r.key}>{r.node}</Fragment>
+  // One bad rail payload takes down its own section, not the page.
+  const plain = (r: (typeof rendered)[number]) => <SectionErrorBoundary key={r.key}>{r.node}</SectionErrorBoundary>
   const catalogue = rendered.filter((r) => !r.library)
 
   const body =
@@ -439,7 +441,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
           plain(r)
         ) : (
           <SectionTagContext.Provider key={r.key} value={t`Not in your library`}>
-            {r.node}
+            <SectionErrorBoundary>{r.node}</SectionErrorBoundary>
           </SectionTagContext.Provider>
         ),
       )

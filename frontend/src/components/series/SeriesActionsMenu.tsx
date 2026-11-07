@@ -54,7 +54,7 @@ export const MONITOR_OPTIONS = [
 ] as const
 
 // Short names for the segmented controls, where the full labels don't fit four across.
-const MONITOR_SHORT: Record<string, MessageDescriptor> = {
+export const MONITOR_SHORT: Record<string, MessageDescriptor> = {
     All: msg({ message: 'All', context: 'monitor mode' }),
     Smart: msg`Smart`,
     MainOnly: msg({ message: 'Main only', comment: 'Monitor mode that skips specials' }),

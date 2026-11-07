@@ -13,6 +13,7 @@ import { relativeTime } from '../ui/time'
 import { NextUpList } from './NextUpList'
 import { ReadingCardMenu } from './ReadingCardMenu'
 import { ReadingRail } from './ReadingRail'
+import { serverChapterLabel } from '../../format'
 
 /** Where the rest of the section goes: a tray of posters under the hero, or a list in a card beside it. */
 export type HeroQueue = 'tray' | 'beside'
@@ -112,7 +113,8 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
   // page 0 means the chapter was never opened, so "Resume" would be a lie.
   const started = item.page > 0
   const lastRead = relativeTime(item.lastReadAt, 'narrow')
-  const { seriesTitle, chapterLabel, unreadChapters, pageCount } = item
+  const { seriesTitle, unreadChapters, pageCount } = item
+  const chapterLabel = serverChapterLabel(item.chapterLabel)
   const pageNumber = item.page + 1
   const unreadLabel = plural(unreadChapters, { one: '# unread', other: '# unread' })
 

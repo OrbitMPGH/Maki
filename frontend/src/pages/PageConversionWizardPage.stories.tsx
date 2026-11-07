@@ -154,7 +154,7 @@ export const PickAnotherPage: Story = {
 
     await userEvent.type(within(dialog).getByRole('textbox', { name: 'Search your series' }), 'Ninth')
     await userEvent.click(await within(dialog).findByRole('button', { name: 'The Ninth Kitchen' }))
-    await userEvent.click(await within(dialog).findByRole('button', { name: /Ch\.3(?!\d)/ }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: /Ch\. 3(?!\d)/ }))
 
     const page = await within(dialog).findByRole('textbox', { name: 'Page' })
     await waitFor(() => expect(page).toHaveValue('12'))

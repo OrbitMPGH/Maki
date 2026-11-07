@@ -9,8 +9,6 @@ import {
   IconHeartFilled,
   IconPlus,
   IconIntersect,
-  IconLibrary,
-  IconStar,
   IconStarFilled,
   IconUsers,
 } from '../../lib/icons'
@@ -231,8 +229,8 @@ export const RecommendationCard = memo(function RecommendationCard({
         {item.rating != null && <RatingChip rating={item.rating} />}
 
         {owned ? (
-          <span className="discover-corner" data-tip={t`In library`} aria-hidden="true">
-            <IconLibrary size={16} />
+          <span className="discover-corner" data-owned="true" data-tip={t`In library`} aria-hidden="true">
+            <IconCheck size={16} />
           </span>
         ) : saved ? (
           <span className="discover-corner" data-saved="true" data-tip={t`On your shortlist`} aria-hidden="true">
@@ -336,7 +334,7 @@ export const RecommendationRow = memo(function RecommendationRow({
         <div className="row-progress">
           {item.rating != null && (
             <span className="cover-badge" style={{ flexShrink: 0 }}>
-              <IconStar size={11} style={{ color: 'var(--rating)' }} />
+              <IconStarFilled size={11} style={{ color: 'var(--rating)' }} />
               {formatFixedDecimal(item.rating / 10, 1)}
             </span>
           )}
@@ -539,8 +537,8 @@ export const EngineCard = memo(function EngineCard({
         {item.rating != null && <RatingChip rating={item.rating} />}
 
         {owned ? (
-          <span className="discover-corner" data-tip={t`In library`} aria-hidden="true">
-            <IconLibrary size={16} />
+          <span className="discover-corner" data-owned="true" data-tip={t`In library`} aria-hidden="true">
+            <IconCheck size={16} />
           </span>
         ) : saved ? (
           <span className="discover-corner" data-saved="true" data-tip={t`On your shortlist`} aria-hidden="true">

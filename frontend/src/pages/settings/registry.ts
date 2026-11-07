@@ -371,7 +371,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'smart-download',
     tab: 'downloads',
-    title: msg`Smart Download`,
+    title: msg`Smart download`,
     admin: true,
     keywords: msg({
       message: `smart download, unread trigger`,

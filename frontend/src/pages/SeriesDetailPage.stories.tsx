@@ -179,7 +179,7 @@ export const ManyUnreadChapters: Story = {
   parameters: at(3, '?tab=chapters'),
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: 'Chapters' })).toBeVisible()
-    await waitFor(() => expect(canvas.getAllByText(/Ch\.\d+/).length).toBeGreaterThan(5))
+    await waitFor(() => expect(canvas.getAllByText(/Ch\. \d+/).length).toBeGreaterThan(5))
   },
 }
 
@@ -196,7 +196,7 @@ export const ChapterFilterMissing: Story = {
   parameters: at(1, '?tab=chapters'),
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('radio', { name: /^Not downloaded/ }))
-    await expect(await canvas.findByText(/Ch\.17\b/)).toBeVisible()
+    await expect(await canvas.findByText(/Ch\. 17\b/)).toBeVisible()
   },
 }
 
@@ -286,7 +286,7 @@ const withNoteCounts = seriesMsw(
 export const ChapterNotes: Story = {
   parameters: { ...at(1, '?tab=chapters'), msw: withNoteCounts },
   play: async ({ canvas, userEvent, canvasElement }) => {
-    const name = /^Notes on .*Ch\.2: 1 yours, 2 shared$/
+    const name = /^Notes on .*Ch\. 2: 1 yours, 2 shared$/
     // Hovering mounts the tooltip, which replaces the button; click the one that stays.
     await userEvent.hover(await canvas.findByRole('button', { name }))
     await userEvent.click(await canvas.findByRole('button', { name }))
@@ -303,7 +303,7 @@ export const RemoveChaptersWarnsAboutNotes: Story = {
   parameters: { ...at(1, '?tab=chapters'), msw: withNoteCounts },
   play: async ({ canvas, userEvent, canvasElement }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Select' }))
-    const row = (await canvas.findByRole('button', { name: /^Notes on .*Ch\.3: 0 yours, 1 shared$/ })).closest('tr')!
+    const row = (await canvas.findByRole('button', { name: /^Notes on .*Ch\. 3: 0 yours, 1 shared$/ })).closest('tr')!
     await userEvent.click(within(row).getAllByText(/Ch\.\s?3$/)[0])
     await userEvent.click(await canvas.findByRole('button', { name: 'Delete' }))
     const body = within(canvasElement.ownerDocument.body)

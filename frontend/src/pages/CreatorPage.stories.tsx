@@ -20,7 +20,8 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: 'Aoi Mizuhara' })).toBeVisible()
-    await expect(await canvas.findByText('12 titles in the catalogue')).toBeVisible()
+    await expect(await canvas.findByText('Titles')).toBeVisible()
+    await expect(await canvas.findByText('Average score')).toBeVisible()
   },
 }
 
@@ -85,6 +86,19 @@ export const ServerError: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Failed to load this creator')).toBeVisible()
     await expect(await canvas.findByRole('button', { name: 'Retry' })).toBeVisible()
+  },
+}
+
+/** A failure that isn't the server's own refusal: a plain sentence, the raw text behind Details. */
+export const MalformedAnswer: Story = {
+  parameters: {
+    msw: discoverPage(http.post(api('/recommendations/creator'), () => new HttpResponse(null, { status: 204 }))),
+  },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('Failed to load this creator')).toBeVisible()
+    await expect(canvas.queryByText(/data is undefined/)).not.toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Details' }))
+    await expect(await canvas.findByText(/data is undefined/)).toBeVisible()
   },
 }
 

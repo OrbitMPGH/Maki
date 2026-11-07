@@ -259,7 +259,6 @@ export default function SettingsPage() {
           isAdmin && (
             <Button
               variant="default"
-              size="xs"
               loading={completeSetup.isPending}
               onClick={() => completeSetup.mutate(false)}
             >

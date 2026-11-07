@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   Alert,
+  Badge,
   Button,
   Collapse,
   Group,
@@ -9,8 +10,8 @@ import {
   Stack,
   Text,
 } from '@mantine/core'
-import { IconAdjustmentsHorizontal, IconArrowLeft, IconBell, IconBellCheck } from '../lib/icons'
-import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { IconArrowLeft, IconBell, IconBellCheck, IconFilter } from '../lib/icons'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
 import {
   useCreator,
@@ -45,6 +46,9 @@ import { useDocumentTitle } from '../lib/documentTitle'
 import { useBackTarget, usePageLabel } from '../lib/navHistory'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
 import { useLabel } from '../i18n-context'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { FigureStrip, type Figure } from '../components/ui/FigureStrip'
+import { formatFixedDecimal } from '../format'
 
 const PAGE_SIZE = 60
 // Creator links come from Discover's detail card, so a page opened cold walks back there.
@@ -157,6 +161,30 @@ export default function CreatorPage() {
     }
   }
 
+  // The header's figures need every work, not the filtered page on screen. The page's own answer
+  // serves when it is unfiltered and already complete; otherwise one capped, unfiltered read.
+  const pageCoversAll = appliedCount === 0 && data != null && !isPlaceholderData && data.items.length < request.limit
+  const overviewRequest = useMemo(
+    () => (decoded.length > 0 ? { name: decoded, role, sort: 'popular' as BrowseSort, limit: MAX_WORKS } : null),
+    [decoded, role],
+  )
+  const { data: overview } = useCreator(pageCoversAll || data == null ? null : overviewRequest)
+  const works = pageCoversAll ? data.items : overview && overview.items.length < MAX_WORKS ? overview.items : null
+  const figures = useMemo(() => {
+    if (!data) return []
+    const list: Figure[] = [{ label: t`Titles`, value: data.workCount }]
+    if (!works) return list
+    list.push({ label: t`In library`, value: works.filter((w) => seriesIdFor(w) != null).length })
+    const years = works.map((w) => w.year).filter((y): y is number => y != null && y > 0)
+    if (years.length > 0) list.push({ label: t`Active since`, value: String(Math.min(...years)) })
+    const ratings = works.map((w) => w.rating).filter((r): r is number => r != null)
+    if (ratings.length > 0) {
+      const mean = ratings.reduce((a, b) => a + b, 0) / ratings.length
+      list.push({ label: t`Average score`, value: formatFixedDecimal(mean / 10, 1) })
+    }
+    return list
+  }, [data, works, seriesIdFor, t])
+
   const items = data?.items ?? []
   const canLoadMore =
     items.length >= PAGE_SIZE * (isPlaceholderData ? pages - 1 : pages) && items.length < MAX_WORKS
@@ -194,7 +222,7 @@ export default function CreatorPage() {
         ) : (
           <EmptyState
             title={t`Failed to load this creator`}
-            description={error instanceof Error ? error.message : String(error)}
+            description={<ErrorMessage error={error} />}
             actionLabel={t`Retry`}
             onAction={() => void refetch()}
           />
@@ -221,9 +249,6 @@ export default function CreatorPage() {
                   {renderLabel(CREDIT_ROLE_LABELS[r] ?? r)}
                 </TagChip>
               ))}
-              <span>
-                <Plural value={workCount} one="# title in the catalogue" other="# titles in the catalogue" />
-              </span>
             </span>
           ) : undefined
         }
@@ -247,13 +272,23 @@ export default function CreatorPage() {
         }
       />
 
+      {figures.length > 0 && <FigureStrip className="creator-figures" figures={figures} />}
+
       <Group gap="xs" mb="md" justify="space-between" wrap="wrap">
         <Button
           variant={appliedCount > 0 ? 'light' : 'default'}
-          leftSection={<IconAdjustmentsHorizontal size={16} />}
+          leftSection={<IconFilter size={16} />}
+          rightSection={
+            appliedCount > 0 ? (
+              <Badge size="xs" circle variant="filled">
+                {appliedCount}
+              </Badge>
+            ) : undefined
+          }
+          aria-expanded={filtersOpen}
           onClick={() => setFiltersOpen((o) => !o)}
         >
-          {appliedCount > 0 ? t`Filters (${appliedCount})` : t`Filters`}
+          {t`Filters`}
         </Button>
         <Group gap="xs">
           <Select

@@ -11,6 +11,7 @@ import { PosterSkeletons } from '../CatalogueBrowser'
 import { EmptyState } from '../ui/EmptyState'
 import { Rail } from '../ui/Rail'
 import { DensityControl, useDensityPref } from '../ui/viewPrefs'
+import { chapterLabel, serverChapterLabel } from '../../format'
 
 /**
  * Horizontal rail of series whose anime the reader finished but the manga hasn't caught up to.
@@ -230,7 +231,7 @@ function AnimeResumePoster({ item, children }: { item: HomeAnimeResumeItem; chil
       <div className="cover-corners">
         <div className="cover-corner cover-corner-left">
           <span className="cover-chapter" data-tip={item.animeTitle}>
-            <span>{item.resumeChapterLabel ?? <Trans>ch. {next}</Trans>}</span>
+            <span>{item.resumeChapterLabel ? serverChapterLabel(item.resumeChapterLabel) : chapterLabel(next)}</span>
           </span>
         </div>
       </div>

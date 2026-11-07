@@ -1,5 +1,5 @@
 import { Anchor, Badge, Group, Loader, Paper, Spoiler, Stack, Text, Title } from '@mantine/core'
-import { IconExternalLink, IconStar } from '../../lib/icons'
+import { IconExternalLink, IconStarFilled } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useMangaReviews, type MangaReview } from '../../api/hooks'
 import { ratingBandVisual } from '../ui/status'
@@ -73,7 +73,7 @@ export function ReviewList({
                   <Badge
                     size="sm"
                     color={`var(--${ratingBandVisual(review.score * 10).token})`}
-                    leftSection={<IconStar size={11} />}
+                    leftSection={<IconStarFilled size={11} />}
                   >
                     {review.score}
                   </Badge>

@@ -40,7 +40,7 @@ export function PageHeader({
       align="flex-start"
       wrap="wrap"
       gap="sm"
-      mb={compact ? 'md' : 'lg'}
+      mb="lg"
     >
       {heading}
       {actions && (

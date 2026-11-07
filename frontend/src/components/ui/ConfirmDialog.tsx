@@ -19,6 +19,7 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
   loading,
+  confirmDisabled,
 }: {
   opened: boolean
   onClose: () => void
@@ -27,9 +28,11 @@ export function ConfirmDialog({
   confirmLabel: ReactNode
   onConfirm: () => void
   loading?: boolean
+  /** Holds the button back, e.g. once the server refused the recycle bin and the body offers a permanent delete instead. */
+  confirmDisabled?: boolean
 }) {
   return (
-    <Modal opened={opened} onClose={onClose} title={title} centered>
+    <Modal opened={opened} onClose={onClose} title={title} centered attributes={{ content: { 'data-edge': 'danger' } }}>
       <Stack gap="sm">
         {/* `component="div"`: a caller that needs a form control (a NumberInput, say) alongside
             the confirmation copy can't nest one inside a `<p>`, which is what Text renders by
@@ -39,7 +42,7 @@ export function ConfirmDialog({
           <Button variant="default" onClick={onClose}>
             <Trans>Cancel</Trans>
           </Button>
-          <Button color="var(--danger-fill)" loading={loading} onClick={onConfirm}>
+          <Button color="var(--danger-fill)" loading={loading} disabled={confirmDisabled} onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </Group>

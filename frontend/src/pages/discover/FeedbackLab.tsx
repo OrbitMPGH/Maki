@@ -10,6 +10,7 @@ import {
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { AvoidanceLabel, FeedbackActivity, FeedbackLabData } from '../../api/recommendationFeedback'
 import { useFeedbackLab, useUndoFeedback } from '../../api/recommendationFeedback'
+import { DiscoverTasteStrip } from '../../components/discover/DiscoverTasteStrip'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { FigureStrip } from '../../components/ui/FigureStrip'
 import { SeriesThumb } from '../stats/SeriesLink'
@@ -17,6 +18,7 @@ import { formatDate, formatDecimal, formatRecentDate, formatTime } from '../../f
 import { ManageSignalsModal } from './ManageSignalsModal'
 import { AnimeSignalsSection } from './AnimeSignalsSection'
 import { MetaList } from '../../components/ui/MetaList'
+import { PanelTitle } from '../../components/ui/PanelTitle'
 
 /** Actions the undo endpoint can reverse: it replays the event's stored previous state. */
 const UNDOABLE = ['hide', 'dismiss', 'mark-exposed', 'clear-suppression', 'clear-exposure']
@@ -119,6 +121,7 @@ export function SignalsCard() {
   const excluded = summary?.excluded ?? 0
   const rated = summary?.ratedSources ?? 0
   const adds = summary?.personalAdds ?? 0
+  const incognito = summary?.incognito ?? 0
   const exposed = summary?.exposed ?? 0
   const pushingDown = summary?.pushingDown ?? 0
 
@@ -142,10 +145,10 @@ export function SignalsCard() {
         title={t`What shapes your recommendations`}
         action={
           <Group gap="xs" wrap="nowrap">
-            <Button visibleFrom="xs" variant="default" size="compact-sm" aria-expanded={howItWorks} onClick={() => setHowItWorks((v) => !v)}>
+            <Button visibleFrom="xs" variant="default" size="xs" aria-expanded={howItWorks} onClick={() => setHowItWorks((v) => !v)}>
               <Trans>How signals work</Trans>
             </Button>
-            <Button visibleFrom="xs" variant="default" size="compact-sm" onClick={() => setManage('titles')}>
+            <Button visibleFrom="xs" variant="default" size="xs" onClick={() => setManage('titles')}>
               <Trans>Manage signals</Trans>
             </Button>
             {/* A phone keeps both on the title row as icons; as words they dropped to a line of their own. */}
@@ -178,6 +181,7 @@ export function SignalsCard() {
             seen elsewhere only take that one title out.
           </Trans>
         </Text>
+        <DiscoverTasteStrip />
 
         <Collapse expanded={howItWorks}>
           <Paper withBorder radius="md" p="md">
@@ -237,7 +241,10 @@ export function SignalsCard() {
                 {
                   label: t`Titles on the shelf`,
                   value: summary.visibleShelf,
-                  hint: t`${adds} added by you, ${excluded} excluded from taste`,
+                  hint:
+                    incognito > 0
+                      ? t`${adds} added by you, ${excluded} excluded from taste, ${incognito} incognito not counted`
+                      : t`${adds} added by you, ${excluded} excluded from taste`,
                 },
                 { label: t`Read`, value: summary.readSources, hint: t`${rated} rated` },
                 {
@@ -279,9 +286,9 @@ export function SignalsCard() {
 
             <Card withBorder radius="lg" padding="md">
               <Group justify="space-between" align="center" mb={4}>
-                <Text size="sm" fw={600}>
+                <PanelTitle>
                   <Trans>Recent feedback</Trans>
-                </Text>
+                </PanelTitle>
                 <Button
                   variant="subtle"
                   size="xs"
@@ -445,8 +452,8 @@ function ActionPill({ item }: { item: FeedbackActivity }) {
   const { t } = useLingui()
   const [label, color] = ((): [string, string] => {
     switch (item.action) {
-      case 'like': return [t`👍 Liked`, 'var(--ok)']
-      case 'dislike': return [t`👎 Disliked`, 'var(--danger)']
+      case 'like': return [t`Liked`, 'var(--ok)']
+      case 'dislike': return [t`Disliked`, 'var(--danger)']
       case 'hide': return [t`Hidden`, 'var(--warn)']
       case 'dismiss': {
         const until = item.dismissedUntilUtc ? formatRecentDate(item.dismissedUntilUtc) : ''
@@ -461,7 +468,13 @@ function ActionPill({ item }: { item: FeedbackActivity }) {
       default: return [item.action.replaceAll('-', ' '), 'gray']
     }
   })()
-  return <Badge size="sm" variant="light" color={color} style={{ flexShrink: 0 }}>{label}</Badge>
+  const icon =
+    item.action === 'like' ? <IconThumbUp size={12} /> : item.action === 'dislike' ? <IconThumbDown size={12} /> : undefined
+  return (
+    <Badge size="sm" variant="light" color={color} leftSection={icon} style={{ flexShrink: 0 }}>
+      {label}
+    </Badge>
+  )
 }
 
 type ShelfPadItem = FeedbackLabData['sources'][number] & { kind: 'rated' | 'read' | 'added' }

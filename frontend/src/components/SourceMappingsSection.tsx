@@ -23,7 +23,6 @@ import {
   Table,
   Text,
   TextInput,
-  Title,
   Tooltip,
   VisuallyHidden,
 } from '@mantine/core'
@@ -90,6 +89,7 @@ import { ApiError } from '../api/client'
 import { ManageSourcesModal, type WizardRequest } from '../pages/settings/ManageSourcesModal'
 import { useSourceLabel } from '../sourceLabels'
 import { MonoValue } from './ui/MonoValue'
+import { PanelTitle } from './ui/PanelTitle'
 
 const ORIGIN_LABELS: Record<string, MessageDescriptor> = {
   TitleSearch: msg`Title search`,
@@ -273,10 +273,9 @@ export function SourceMappingsSection({
   return (
     <>
       <Group justify="space-between">
-        <Group gap={8}>
-          <IconPlugConnected size={18} style={{ opacity: 0.7 }} />
-          <Title order={3} size="h4" fz="var(--type-subhead)"><Trans>Sources</Trans></Title>
-        </Group>
+        <PanelTitle icon={IconPlugConnected}>
+          <Trans>Sources</Trans>
+        </PanelTitle>
         {/* Both held while auto-matching runs: (SeriesId, SourceName) is unique, so a hand-linked
             source that the matcher is about to add itself fails its whole batch of mappings. */}
         <Group gap="xs">

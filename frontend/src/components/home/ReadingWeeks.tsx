@@ -241,7 +241,7 @@ export function ReadingWeeks({
 
         {!goal && (
           <span className="reading-weeks-week">
-            {plural(weekChapters, { one: '# read this week', other: '# read this week' })}
+            {plural(weekChapters, { one: '# chapter this week', other: '# chapters this week' })}
           </span>
         )}
 

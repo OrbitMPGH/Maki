@@ -8,6 +8,7 @@ import {
   ActionIcon,
   Alert,
   Anchor,
+  Badge,
   Button,
   Collapse,
   Group,
@@ -26,7 +27,7 @@ import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '../lib/toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthProvider'
-import { IconAdjustmentsHorizontal, IconSearch, IconUser, IconX } from '../lib/icons'
+import { IconFilter, IconSearch, IconUser, IconX } from '../lib/icons'
 import { Panel } from './ui/Panel'
 import { TagChip } from './ui/TagChip'
 import {
@@ -51,8 +52,10 @@ import {
   filtersFromSpec,
   useBrowseSortOptions,
   useCatalogueFilters,
+  useFilterSummary,
   useLiveApply,
 } from './CatalogueFilters'
+import { MetaList } from './ui/MetaList'
 import { FilterMatchCount } from './CatalogueRules'
 import { HiddenContentButton, PresetMenu } from './DiscoverPresets'
 import { DiscoverDetailModal } from './discover/DiscoverDetailModal'
@@ -69,6 +72,7 @@ import {
   type ViewMode,
   type ViewPrefs,
 } from './ui/viewPrefs'
+import { ErrorMessage } from './ErrorMessage'
 
 /**
  * Smart matches on meaning and falls back to the title index; Title is the plain FTS5 title search.
@@ -214,6 +218,8 @@ export function CatalogueBrowser({
   }, [seededBrowse, setQuery, hydrateFilters, setApplied, setSort, setPages, setFiltersOpen, setHydrated])
 
   const appliedCount = Object.keys(applied).length
+  const summarizeFilters = useFilterSummary()
+  const filterSummary = useMemo(() => summarizeFilters(applied), [summarizeFilters, applied])
   const filters = appliedCount > 0 ? applied : undefined
 
   // A new query or a new filter set starts the browse list over. Not on mount, though: restored
@@ -307,6 +313,7 @@ export function CatalogueBrowser({
         <>
           <Group align="flex-start" gap="sm" mb="md" wrap="wrap">
             <TextInput
+              aria-label={t`Search the catalogue`}
               value={query}
               onChange={(e) => setQuery(e.currentTarget.value)}
               placeholder={placeholder ?? t`Search by title, description, or author:"Junji Ito"`}
@@ -368,10 +375,18 @@ export function CatalogueBrowser({
             <Button
               size="md"
               variant={appliedCount > 0 ? 'light' : 'default'}
-              leftSection={<IconAdjustmentsHorizontal size={16} />}
+              leftSection={<IconFilter size={16} />}
+              rightSection={
+                appliedCount > 0 ? (
+                  <Badge size="xs" circle variant="filled">
+                    {appliedCount}
+                  </Badge>
+                ) : undefined
+              }
+              aria-expanded={filtersOpen}
               onClick={() => setFiltersOpen((o) => !o)}
             >
-              {appliedCount > 0 ? <Trans>Filters ({appliedCount})</Trans> : <Trans>Filters</Trans>}
+              <Trans>Filters</Trans>
             </Button>
           </Group>
 
@@ -426,6 +441,11 @@ export function CatalogueBrowser({
                   <Trans>Browsing the catalogue</Trans>
                 </Text>
               )}
+              {filterSummary.length > 0 && (
+                <Text c="var(--ink-3)" size="sm" className="catalogue-filter-summary">
+                  <MetaList inline items={filterSummary} />
+                </Text>
+              )}
               {corrected && (
                 <Text size="sm" c="var(--ink-3)">
                   <Trans>
@@ -458,7 +478,7 @@ export function CatalogueBrowser({
 
           {error && (
             <Alert color="var(--warn)" variant="light" mb="md">
-              {errorText(error)}
+              <ErrorMessage error={error} />
             </Alert>
           )}
 

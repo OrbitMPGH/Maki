@@ -134,12 +134,12 @@ export function EmptyState({
         data-framed={framed || undefined}
         gap={16}
         wrap="nowrap"
-        align="flex-start"
+        align={description || actionLabel ? 'flex-start' : 'center'}
         py={py}
         px={px}
       >
-        <span className="empty-state-mark">
-          <IconBrandMark mood={mood} size={56} />
+        <span className="brand-mark empty-state-mark">
+          <IconBrandMark mood={mood} size={40} />
         </span>
         <Stack align="flex-start" gap={4}>
           {lines}

@@ -47,6 +47,22 @@ export const Open: Story = {
   },
 }
 
+// An unlock carries its badge the way a chapter row carries its cover; a row without one keeps the trophy.
+export const AchievementBadge: Story = {
+  beforeEach: withInbox(
+    inboxItems.map((i) =>
+      i.type === 'achievementUnlocked' ? { ...i, badge: { icon: 'owl', tier: 3 } } : i,
+    ),
+  ),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Notifications' }))
+    const body = within(canvasElement.ownerDocument.body)
+    const title = await body.findByText('Achievement unlocked: Night Owl')
+    const row = title.closest('.inbox-row') as HTMLElement
+    await expect(row.querySelector('.mantine-ThemeIcon-root')).not.toBeNull()
+  },
+}
+
 export const ManyUnread: Story = {
   beforeEach: withInbox(longInbox.map((i) => ({ ...i, read: false }))),
   play: async ({ canvas }) => {

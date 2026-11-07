@@ -3,7 +3,6 @@ import {
   IconBell,
   IconCompass,
   IconFlame,
-  IconHeartFilled,
   IconLayoutGrid,
   IconLibrary,
   IconStar,
@@ -27,11 +26,6 @@ export const DISCOVER_SECTION_DEFS: SectionRegistry = {
     icon: IconStar,
     label: DISCOVER_SECTION_LABELS.hero,
     description: msg`A few large picks at the top, from your recent reading or what is trending.`,
-  },
-  taste: {
-    icon: IconHeartFilled,
-    label: DISCOVER_SECTION_LABELS.taste,
-    description: msg`A short strip of what your library leans towards.`,
   },
   recent: {
     icon: IconLibrary,

@@ -280,3 +280,32 @@ export function formatTimeSpent(seconds: number): string {
   if (seconds > 0 && seconds < 60) return t`<1m`
   return formatReadingTime(seconds)
 }
+
+/** "Ch. 38", or "Vol. 10 Ch. 98" when the volume is worth naming. */
+export function chapterLabel(chapterNumber: number | string, volume?: number | string | null): string {
+  return volume != null && volume !== '' ? t`Vol. ${volume} Ch. ${chapterNumber}` : t`Ch. ${chapterNumber}`
+}
+
+/** "Ch. 1–46", or "Ch. 12" when both ends are the same chapter. */
+export function chapterRangeLabel(start: number | string, end: number | string): string {
+  return String(start) === String(end) ? t`Ch. ${start}` : t`Ch. ${start}–${end}`
+}
+
+const SERVER_CHAPTER = /^(?:Vol\.\s*(\d+)\s+)?Ch\.\s*(\S+)$/
+const SERVER_VOLUME = /^Vol\.\s*(\d+)$/
+
+/**
+ * A label the server rendered ("Vol.3 Ch.12", "Ch.10.5", "Vol.4") in the house form. Anything else,
+ * such as a one-shot's own title, comes back unchanged. `withVolume: false` keeps only the chapter,
+ * for a cover chip where the number alone already places it.
+ */
+export function serverChapterLabel(label: string, withVolume = true): string {
+  const chapter = SERVER_CHAPTER.exec(label)
+  if (chapter) return chapterLabel(chapter[2], withVolume ? chapter[1] : null)
+  const volume = SERVER_VOLUME.exec(label)
+  if (volume) {
+    const volumeNumber = volume[1]
+    return t`Vol. ${volumeNumber}`
+  }
+  return label
+}
