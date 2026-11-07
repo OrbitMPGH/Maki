@@ -57,7 +57,7 @@ export function MeasureProgress({ order }: { order: SourceOrderDto }) {
   const done = scout.done
   const probes = scout.probes
   return (
-    <Alert color="var(--info)" variant="light" icon={<Loader size={16} />} mb="sm">
+    <Alert color="var(--info)" variant="light" icon={<Loader size={16} />} mt="sm" mb="sm">
       <Text size="sm" fw={500}>
         {plural(sources, {
           one: `Measuring # source on chapters ${chapters}`,
@@ -116,6 +116,7 @@ export function MeasureResult({
       withCloseButton
       closeButtonLabel={t`Dismiss`}
       onClose={onDismiss}
+      mt="sm"
       mb="sm"
     >
       <Text size="sm" fw={500}>
