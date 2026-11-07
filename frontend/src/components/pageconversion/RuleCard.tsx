@@ -311,7 +311,7 @@ export function RuleCard({
           >
             <IconArrowDown size={16} />
           </ActionIcon>
-          <ActionIcon variant="subtle" color="red" aria-label={t`Remove rule ${number}`} onClick={onRemove}>
+          <ActionIcon variant="subtle" color="var(--danger)" aria-label={t`Remove rule ${number}`} onClick={onRemove}>
             <IconX size={16} />
           </ActionIcon>
         </Group>

@@ -9,13 +9,13 @@ export interface SplitBarItem {
   color?: string
 }
 
-const COLORS = ['var(--brand)', 'var(--info)', 'var(--warn)', 'var(--danger)', 'var(--neutral)']
+const COLORS = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--chart-6)']
 
 /**
  * A 100% stacked bar with its legend. Every share is printed as text beside its name, so the
  * colours only group the bar with the legend and never carry the number alone.
  *
- * `max` caps the segments (default five, one per colour); the rest fold into "Other".
+ * `max` caps the segments (default six, one per colour); the rest fold into "Other".
  */
 export function SplitBar({ items, max = COLORS.length }: { items: SplitBarItem[]; max?: number }) {
   const { t } = useLingui()

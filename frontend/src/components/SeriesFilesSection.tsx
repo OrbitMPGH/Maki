@@ -375,7 +375,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             <Badge
                               size="sm"
                               variant="light"
-                              color={f.isVolume ? 'indigo' : 'gray'}
+                              color={f.isVolume ? 'var(--volume)' : 'var(--neutral)'}
                               className="tnum files-parsed-pill"
                             >
                               {serverChapterLabel(f.parsedLabel)}
@@ -387,7 +387,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                           )}
                         </Table.Td>
                         <Table.Td className="files-cell-status">
-                          <StatusDot tone={f.status === 'missing' ? 'warn' : statusToken(v.color)}>
+                          <StatusDot tone={statusToken(v.color)}>
                             {renderLabel(v.label)}
                           </StatusDot>
                         </Table.Td>

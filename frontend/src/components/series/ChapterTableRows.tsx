@@ -189,7 +189,7 @@ export const ChapterRow = memo(function ChapterRow({
             {c.fileVolume !== null && !c.isOneShot && c.number !== null && (
                 <span className="chapter-lead-slot">
                   <HoverTooltip label={t`Contained in a volume/compilation file`} withArrow>
-                    <LightBadge color="var(--watched)" className="tnum chapter-label">
+                    <LightBadge color="var(--volume)" className="tnum chapter-label">
                       <Trans>Vol. {fileVolume}</Trans>
                     </LightBadge>
                   </HoverTooltip>
@@ -232,7 +232,7 @@ export const ChapterRow = memo(function ChapterRow({
                           withArrow
                       >
                         <LightBadge
-                            color={marker.kind === 'start' ? 'var(--info)' : 'var(--danger)'}
+                            color="var(--anime)"
                             className={`chapter-span-marker${span ? ' chapter-span-badge' : ''}`}
                             data-span-fold={span && marker.kind === 'start' ? span.key : undefined}
                             ref={
@@ -298,9 +298,7 @@ export const ChapterRow = memo(function ChapterRow({
                 (() => {
                   const visual = queueStatusVisual(queueItem.status)
                   const failure = queueErrorMessage(queueItem, renderLabel)
-                  const queueTone = queueItem.status === 'Failed'
-                      ? 'var(--danger)'
-                      : queueItem.status === 'AwaitingImport' ? 'var(--warn)' : 'brand'
+                  const queueTone = visual.color
                   return (
                       <Tooltip
                         label={failure ?? renderLabel(visual.label)}
@@ -432,9 +430,8 @@ export const ChapterRow = memo(function ChapterRow({
                     withArrow
                 >
                   <LightBadge
-                      color={watched ? 'var(--watched)' : 'var(--ok)'}
+                      color={watched ? 'var(--anime)' : 'var(--brand)'}
                       variant={watched || external ? 'light' : 'filled'}
-                      c={watched || external ? undefined : 'var(--ok-on)'}
                       leftSection={
                         watched ? <IconDeviceTv size={12} /> : <IconEyeCheck size={12} />
                       }
@@ -445,7 +442,7 @@ export const ChapterRow = memo(function ChapterRow({
             )}
             {/* Shown alongside Read when a finished chapter is being re-read. */}
             {inProgress && (
-                <LightBadge color="var(--info)" className="tnum">
+                <LightBadge color="var(--brand)" className="tnum">
                   {/* pageCount is 0 on rows imported from Kavita: the reader fills it
                       in on first open, so show a plain label until then. */}
                   {rowProgress && rowProgress.pageCount > 0 ? (
@@ -473,7 +470,7 @@ export const ChapterRow = memo(function ChapterRow({
                 <HoverTooltip label={read ? t`Mark unread` : t`Mark read`} withArrow>
                   <LightActionIcon
                       variant={read ? 'light' : 'subtle'}
-                      color={read ? 'var(--ok)' : 'gray'}
+                      color={read ? 'var(--brand)' : 'gray'}
                       data-row-action={read ? undefined : ''}
                       loading={readPending}
                       onClick={() => actions.setRead(c.id, !read)}
@@ -740,7 +737,7 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
             <span className="chapter-lead-slot">
               <Badge
                   size="sm"
-                  color="var(--info)"
+                  color="var(--anime)"
                   variant="light"
                   leftSection={<IconDeviceTv size={12} />}
                   className="chapter-span-badge"
@@ -784,7 +781,7 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
                 </Text>
                 <Progress
                     value={(done / downloaded.length) * 100}
-                    color={watchedCount > readCount ? 'var(--watched)' : 'var(--ok)'}
+                    color={watchedCount > readCount ? 'var(--anime)' : 'var(--brand)'}
                     size="sm"
                     radius="xl"
                     aria-label={t`Reading progress`}

@@ -251,7 +251,7 @@ function ShortlistRow({
         {genres.length > 0 && (
           <TagChips>
             {genres.map((g) => (
-              <TagChip key={g} size="sm" dot="var(--info)">
+              <TagChip key={g} size="sm" dot="var(--neutral)">
                 {label(GENRE_LABELS[g] ?? g)}
               </TagChip>
             ))}

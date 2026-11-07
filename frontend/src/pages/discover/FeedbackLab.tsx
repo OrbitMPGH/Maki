@@ -454,18 +454,18 @@ function ActionPill({ item }: { item: FeedbackActivity }) {
     switch (item.action) {
       case 'like': return [t`Liked`, 'var(--ok)']
       case 'dislike': return [t`Disliked`, 'var(--danger)']
-      case 'hide': return [t`Hidden`, 'var(--warn)']
+      case 'hide': return [t`Hidden`, 'var(--neutral)']
       case 'dismiss': {
         const until = item.dismissedUntilUtc ? formatRecentDate(item.dismissedUntilUtc) : ''
         if (dismissalEnded(item)) return [t`Dismissed`, 'var(--neutral)']
-        return [until ? t`Dismissed until ${until}` : t`Dismissed`, 'var(--warn)']
+        return [until ? t`Dismissed until ${until}` : t`Dismissed`, 'var(--neutral)']
       }
       case 'mark-exposed': return [t`Seen elsewhere`, 'var(--info)']
-      case 'clear-suppression': return [t`Restored`, 'gray']
-      case 'clear-exposure': return [t`Seen cleared`, 'gray']
-      case 'clear-sentiment': return [t`Rating cleared`, 'gray']
-      case 'undo': return [t`Undone`, 'gray']
-      default: return [item.action.replaceAll('-', ' '), 'gray']
+      case 'clear-suppression': return [t`Restored`, 'var(--neutral)']
+      case 'clear-exposure': return [t`Seen cleared`, 'var(--neutral)']
+      case 'clear-sentiment': return [t`Rating cleared`, 'var(--neutral)']
+      case 'undo': return [t`Undone`, 'var(--neutral)']
+      default: return [item.action.replaceAll('-', ' '), 'var(--neutral)']
     }
   })()
   const icon =
@@ -494,8 +494,8 @@ function useShelfPillInfo(item: ShelfPadItem) {
     }
     return { label, color: 'var(--neutral)', phrase: t`neutral, seeds at shelf weight` }
   }
-  if (item.kind === 'read') return { label: t`Read`, color: 'var(--info)', phrase: t`weighted by how far you got` }
-  return { label: t`Added by you`, color: 'var(--watched)', phrase: t`counts a little more than the rest` }
+  if (item.kind === 'read') return { label: t`Read`, color: 'var(--brand)', phrase: t`weighted by how far you got` }
+  return { label: t`Added by you`, color: 'var(--brand)', phrase: t`counts a little more than the rest` }
 }
 
 function ShelfPill({ item }: { item: ShelfPadItem }) {

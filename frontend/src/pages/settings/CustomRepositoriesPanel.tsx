@@ -30,7 +30,7 @@ function IdentityConfirm({ error, onConfirm, loading }: { error: unknown; onConf
   const reasons = useReasonLabels()
   if (!identity) return null
   return (
-    <Alert color="yellow" variant="light" icon={<IconAlertTriangle size={16} />} title={identity.error}>
+    <Alert color="var(--warn)" variant="light" icon={<IconAlertTriangle size={16} />} title={identity.error}>
       <List size="sm" spacing={2}>
         {identity.reasons.map((r) => <List.Item key={r}>{reasons[r] ?? r}</List.Item>)}
       </List>
@@ -77,7 +77,7 @@ export function CustomSourceUpdateDialog({ id, opened, onClose, onApplied }: {
   return (
     <Modal opened={opened} onClose={onClose} size={640} title={<Text fw={600}><Trans>Update {id}</Trans></Text>} closeButtonProps={{ 'aria-label': t`Close` }}>
       <Stack gap="sm">
-        {preview.error && <Alert color="red" variant="light">{errorText(preview.error)}</Alert>}
+        {preview.error && <Alert color="var(--danger)" variant="light">{errorText(preview.error)}</Alert>}
         {preview.data && (
           <>
             <Text size="sm">
@@ -102,7 +102,7 @@ export function CustomSourceUpdateDialog({ id, opened, onClose, onApplied }: {
             </Table>
           </>
         )}
-        {apply.error && !identity && <Alert color="red" variant="light">{errorText(apply.error)}</Alert>}
+        {apply.error && !identity && <Alert color="var(--danger)" variant="light">{errorText(apply.error)}</Alert>}
         <IdentityConfirm error={apply.error} onConfirm={() => run(true)} loading={apply.isPending} />
         <Group justify="flex-end" gap="xs">
           <Button variant="default" onClick={onClose}><Trans>Cancel</Trans></Button>
@@ -303,8 +303,8 @@ export function CustomRepositoriesPanel({ opened, onClose }: { opened: boolean; 
             <Trans>Add</Trans>
           </Button>
         </Group>
-        {add.error && <Alert color="red" variant="light">{errorText(add.error)}</Alert>}
-        {error && <Alert color="red" variant="light">{errorText(error)}</Alert>}
+        {add.error && <Alert color="var(--danger)" variant="light">{errorText(add.error)}</Alert>}
+        {error && <Alert color="var(--danger)" variant="light">{errorText(error)}</Alert>}
         {repositories?.length === 0 && (
           <Text size="sm" c="var(--ink-3)"><Trans>No repositories yet.</Trans></Text>
         )}

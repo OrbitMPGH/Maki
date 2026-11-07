@@ -395,7 +395,7 @@ const TOOLTIP_EVENTS = { hover: true, focus: true, touch: true }
 
 const notify = {
   ok: (message: string) => notifications.show({ message, color: 'var(--ok)' }),
-  info: (message: string) => notifications.show({ message, color: 'var(--warn)' }),
+  info: (message: string) => notifications.show({ message, color: 'var(--info)' }),
   err: (message: string) => notifications.show({ message, color: 'var(--danger)' }),
 }
 
@@ -2493,7 +2493,7 @@ function SeriesDetailBody() {
                         </Title>
                         {/* Genres carry no relevance weight, so they are one flat row rather than
                             buckets, on their own dot colour to read apart from the tags below. */}
-                        <div className="tag-chips" style={{ '--bucket': 'var(--info)' } as CSSProperties}>
+                        <div className="tag-chips" style={{ '--bucket': 'var(--neutral)' } as CSSProperties}>
                           {series.genres.map((g) => (
                               <span key={g} className="tag-chip">
                                 <i className="tag-dot" />
@@ -2929,7 +2929,7 @@ function SeriesDetailBody() {
                         </Text>
                     )}
                     {chapters && readTracking && progress.have > 0 && (
-                        <Badge size="sm" variant="light" color="var(--ok)" className="tnum">
+                        <Badge size="sm" variant="light" color="var(--brand)" className="tnum">
                           <Trans>{readFilterCount} read</Trans>
                         </Badge>
                     )}

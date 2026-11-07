@@ -103,7 +103,7 @@ const menuHint = { display: 'block', mt: 2, size: 'xs', fw: 400, lh: 1.4, c: 'va
 
 const ORIGIN_COLORS: Record<string, string> = {
   TitleSearch: 'var(--info)',
-  CrossId: 'var(--watched)',
+  CrossId: 'var(--ok)',
   Manual: 'var(--ok)',
   Unknown: 'var(--neutral)'
 }
@@ -441,7 +441,7 @@ export function SourceMappingsSection({
 
       {!matching && failedSources.length > 0 && (
         <Alert
-          color="yellow"
+          color="var(--warn)"
           variant="light"
           mb="sm"
           icon={<IconAlertTriangle size={16} />}

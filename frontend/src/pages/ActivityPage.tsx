@@ -576,7 +576,7 @@ export default function ActivityPage() {
                       <Table.Td>
                         <Tooltip label={tooltipLabel} withArrow disabled={!failure && !retryInfo || !!rejectionText}>
                           <StatusDot
-                            tone={rejectionText ? 'warn' : held ? 'neutral' : statusToken(visual.color)}
+                            tone={rejectionText || held ? 'warn' : statusToken(visual.color)}
                             live={isQueueActive(q.status)}
                           >
                             {rejectionText ?? (held ? t`Paused` : renderLabel(visual.label))}

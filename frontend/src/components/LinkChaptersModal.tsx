@@ -102,7 +102,7 @@ export function LinkChaptersModal({
                         </Badge>
                       )}
                       {f.parsedLabel && (
-                        <Badge size="sm" variant="light" color={f.isVolume ? 'indigo' : 'var(--neutral)'} className="tnum">
+                        <Badge size="sm" variant="light" color={f.isVolume ? 'var(--volume)' : 'var(--neutral)'} className="tnum">
                           {f.parsedLabel}
                         </Badge>
                       )}

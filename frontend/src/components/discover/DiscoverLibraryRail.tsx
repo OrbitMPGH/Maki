@@ -239,7 +239,6 @@ export function DiscoverLibraryRail({
           <Button
             mt="md"
             fullWidth
-            color="var(--ok)"
             variant="light"
             rightSection={<IconArrowRight size={16} />}
             onClick={goToLibrary}

@@ -357,7 +357,7 @@ export default function ReaderToolbar({
           >
             <ActionIcon
               variant="subtle"
-              color={bookmarked ? 'var(--warn)' : 'gray'}
+              color={bookmarked ? 'var(--brand)' : 'gray'}
               onClick={onToggleBookmark}
               disabled={bookmarkDisabled}
               aria-label={t`Toggle bookmark`}

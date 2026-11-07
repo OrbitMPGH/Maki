@@ -152,7 +152,7 @@ export function LinkFileToChaptersModal({
               {file.fileName}
             </Text>
             {file.parsedLabel && (
-              <Badge size="sm" variant="light" color={file.isVolume ? 'indigo' : 'gray'} className="tnum">
+              <Badge size="sm" variant="light" color={file.isVolume ? 'var(--volume)' : 'var(--neutral)'} className="tnum">
                 {file.parsedLabel}
               </Badge>
             )}

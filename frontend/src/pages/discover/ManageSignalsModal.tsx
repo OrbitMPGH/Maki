@@ -444,7 +444,7 @@ function SignalRow({ row, busy, onClear, onExclude }: {
   const action = row.excluded
     ? { label: t`Use for taste`, color: undefined, variant: 'outline', run: () => onExclude(row, false) }
     : suppression !== 'none'
-      ? { label: t`Restore`, color: 'var(--warn)', variant: 'outline', run: () => onClear(row, 'clear-suppression') }
+      ? { label: t`Restore`, color: undefined, variant: 'outline', run: () => onClear(row, 'clear-suppression') }
       : exposure.length > 0
         ? { label: t`Clear seen`, color: undefined, variant: 'outline', run: () => onClear(row, 'clear-exposure') }
         : sentiment !== 'none'
@@ -481,12 +481,12 @@ function SignalRow({ row, busy, onClear, onExclude }: {
               onClear={() => onClear(row, 'clear-sentiment')} />
           )}
           {suppression === 'hidden' && (
-            <Pill color="var(--warn)" label={t`Hidden`} clear={t`Restore this title`}
+            <Pill color="var(--neutral)" label={t`Hidden`} clear={t`Restore this title`}
               onClear={() => onClear(row, 'clear-suppression')} />
           )}
           {suppression === 'dismissed' && (
             <Pill
-              color={dismissalEnded ? 'var(--neutral)' : 'var(--warn)'}
+              color="var(--neutral)"
               label={dismissalEnded ? t`Back in recommendations since ${until}` : t`Dismissed until ${until}`}
               clear={t`Restore this title`}
               onClear={() => onClear(row, 'clear-suppression')} />
@@ -499,9 +499,9 @@ function SignalRow({ row, busy, onClear, onExclude }: {
             <Pill color="var(--neutral)" label={t`Excluded from taste`} clear={t`Use this title for taste`}
               onClear={() => onExclude(row, false)} />
           )}
-          {plain && row.isRead && <Badge size="sm" variant="light" color="var(--neutral)">{t`Read`}</Badge>}
+          {plain && row.isRead && <Badge size="sm" variant="light" color="var(--brand)">{t`Read`}</Badge>}
           {plain && !row.isRead && row.onShelf && (
-            <Badge size="sm" variant="light" color="var(--neutral)">{t`On shelf`}</Badge>
+            <Badge size="sm" variant="light" color="var(--brand)">{t`On shelf`}</Badge>
           )}
         </Group>
         <Text size="xs" c="var(--ink-3)" mt={4}>{why}</Text>

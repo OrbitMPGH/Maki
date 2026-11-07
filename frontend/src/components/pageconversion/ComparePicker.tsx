@@ -205,7 +205,7 @@ function PageStage({
       </Group>
       {isLoading && <Loader size="sm" />}
       {isError && (
-        <Alert color="red" variant="light">
+        <Alert color="var(--danger)" variant="light">
           <Trans>Maki can only preview pages from CBZ and ZIP files, and could not open this one.</Trans>
         </Alert>
       )}

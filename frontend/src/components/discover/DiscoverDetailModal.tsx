@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
 import {
   ActionIcon,
   Badge,
@@ -36,7 +35,6 @@ import { HeroBackdrop } from '../series/HeroBackdrop'
 import { MetadataLinks } from '../MetadataLinks'
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
 import {
-  ratingBandVisual,
   seriesStatusVisual,
   statusToken,
 } from '../ui/status'
@@ -122,7 +120,6 @@ export function DiscoverDetailModal({
   const { t, i18n } = useLingui()
   const status = seriesStatusVisual(detail?.status ?? item?.status ?? '')
   const score = detail?.rating ?? item?.rating ?? null
-  const band = ratingBandVisual(score ?? 0)
   const altTitles = readableTitles(detail?.altTitles ?? [], i18n.locale)
   // `id` is a stable key: `label` is translated text, and keying the row off it would remount the
   // whole figures block on a language switch.
@@ -280,10 +277,7 @@ export function DiscoverDetailModal({
                     <div className="hero-figures">
                       {score != null && (
                         <Tooltip label={t`MangaBaka aggregate score`} withArrow zIndex={1001}>
-                          <span
-                            className="hero-score"
-                            style={{ '--band': `var(--${band.token})` } as CSSProperties}
-                          >
+                          <span className="hero-score">
                             <IconStarFilled size={18} />
                             <span className="hero-score-n figure">{formatFixedDecimal(score / 10, 1)}</span>
                           </span>
@@ -509,7 +503,7 @@ export function DiscoverDetailModal({
                         </Text>
                         <TagChips>
                           {genres.map((g) => (
-                            <TagChip key={g} dot="var(--info)">
+                            <TagChip key={g} dot="var(--neutral)">
                               {genreLabel(g)}
                             </TagChip>
                           ))}

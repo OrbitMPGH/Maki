@@ -14,7 +14,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useRecommendationDetail, type RecommendationItem } from '../../api/hooks'
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
 import { HeroBackdrop } from '../series/HeroBackdrop'
-import { ratingBandVisual, seriesStatusVisual, statusToken } from '../ui/status'
+import { seriesStatusVisual, statusToken } from '../ui/status'
 import { ContentRatingChip } from '../ContentRatingChip'
 import { relationPhrase } from '../ui/DiscoverRail'
 import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
@@ -200,7 +200,6 @@ export function DiscoverHero({
   const ownedSeriesId = seriesIdFor?.(item) ?? null
   const status = seriesStatusVisual(detail?.status ?? item.status)
   const score = detail?.rating ?? item.rating
-  const band = ratingBandVisual(score ?? 0)
   // `id` is a stable key: `label` is translated text, and keying the row off it would remount the
   // whole figures block on a language switch.
   const year = detail?.year ?? item.year
@@ -297,10 +296,7 @@ export function DiscoverHero({
 
               <div className="hero-figures" data-hero-swap>
                 {score != null && (
-                  <span
-                    className="hero-score"
-                    style={{ '--band': `var(--${band.token})` } as CSSProperties}
-                  >
+                  <span className="hero-score">
                     <IconStarFilled size={18} />
                     <span className="hero-score-n figure">{formatFixedDecimal(score / 10, 1)}</span>
                   </span>
@@ -376,7 +372,6 @@ export function DiscoverHero({
                   </>
                 ) : ownedSeriesId != null ? (
                   <Button
-                    color="var(--ok)"
                     variant="light"
                     rightSection={<IconArrowRight size={16} />}
                     onClick={() => navigate(`/series/${ownedSeriesId}`)}
@@ -401,10 +396,7 @@ export function DiscoverHero({
               {/* Phone only: the score and figures as one line under the buttons. */}
               <div className="discover-hero-facts" data-hero-swap>
                 {score != null && (
-                  <span
-                    className="discover-hero-facts-score figure"
-                    style={{ '--band': `var(--${band.token})` } as CSSProperties}
-                  >
+                  <span className="discover-hero-facts-score figure">
                     <IconStarFilled size={13} />
                     {formatFixedDecimal(score / 10, 1)}
                   </span>
