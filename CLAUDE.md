@@ -12,6 +12,10 @@ Subsystem gotchas live in `.claude/rules/*.md` and load automatically when you t
 
 No em dashes, anywhere. Avoid "AI writing" tells: no "it's not just X, it's Y", no rule-of-three lists, no "leverage"/"seamless"/"robust"/"delve" filler, no over-hedged "note that"/"it's worth mentioning" throat-clearing. Write plain, direct sentences like a developer explaining something to a teammate.
 
+## Release notes
+
+**A commit that changes something a user of the last release would notice adds or edits a file in `changes/`.** See [changes/README.md](changes/README.md) for the format. Fixes and tweaks to unreleased work add nothing (edit that feature's entry if its final form changed); reworking or removing an unreleased feature means rewriting or deleting its entry. Contributor PRs merged without one: add it at merge.
+
 ## Directory ownership
 
 - `Maki.Core`: domain, no infra deps. Entities, `ISource`/`IMetadataProvider`, parsing, CBZ pipeline. Also `Security/`, `MakiPermission` flags enum, `ICurrentUser`, so domain code can check permissions without an ASP.NET Identity reference.

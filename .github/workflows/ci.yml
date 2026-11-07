@@ -77,3 +77,21 @@ jobs:
       # index.html, so it needs the build step above.
       - name: Only English is in the eager bundle
         run: npm run i18n:bundle
+
+  # Release notes are collected in changes/ as work lands (changes/README.md). A PR that touches the
+  # app without an entry is usually fine (refactor, fix to unreleased work), so this warns, never fails.
+  release-notes-entry:
+    if: github.event_name == 'pull_request' && github.base_ref == 'dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: PR has a changes/ entry if it touches the app
+        run: |
+          files=$(git diff --name-only "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}")
+          if echo "$files" | grep -qE '^(src/|frontend/src/)' \
+            && ! echo "$files" | grep -E '^changes/.+\.md$' | grep -qv '^changes/README\.md$'; then
+            echo "::warning title=No release notes entry::This PR changes src/ or frontend/src/ but adds nothing under changes/. Add one if a user of the last release would notice (see changes/README.md)."
+          fi
