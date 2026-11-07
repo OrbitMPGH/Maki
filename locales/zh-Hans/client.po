@@ -4842,6 +4842,10 @@ msgstr "以这些标题为推荐基础。搜索会从 MangaBaka 添加任意标�
 msgid "Based on your recent activity"
 msgstr "根据你最近的活动"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Basic"
+msgstr ""
+
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Basic auth"
@@ -4907,10 +4911,18 @@ msgstr "低于该系列的升级截止线"
 msgid "Beside the page"
 msgstr ""
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Best"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Best measured quality"
 msgstr "最佳测量质量"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Best on clean line art; can mottle screentone"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -4921,6 +4933,10 @@ msgstr "最佳质量优先"
 #, fuzzy
 msgid "Best quality first compares a source's tier before its measured quality, in the order the series' upgrade profile ranks tiers."
 msgstr "最佳质量优先会先比较来源的层级，再比较其实测质量，层级顺序以该系列的升级配置为准。"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Between Light and Strong"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -7150,11 +7166,6 @@ msgstr "反复阅读的创作者"
 msgid "Creators, type, status, content rating"
 msgstr "作者、类型、状态、内容分级"
 
-#: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "Crisp line art (server)"
-msgstr "锐利线稿（服务器）"
-
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -8955,6 +8966,10 @@ msgstr "更新通知失败：{detail}"
 msgid "Failed to update tags: {detail}"
 msgstr "更新标签失败：{detail}"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Fair"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Fair quality"
@@ -8979,8 +8994,8 @@ msgstr "粉丝向："
 msgid "Fantasy"
 msgstr "奇幻"
 
-#: src/pages/reader/enhanceMethods.ts
-msgid "Fast line art (server)"
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Fast"
 msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
@@ -8989,9 +9004,8 @@ msgid "Faster animations"
 msgstr "加快动画"
 
 #: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "Fastest, on this device"
-msgstr "此设备上最快"
+msgid "Fastest"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -9858,6 +9872,10 @@ msgstr "目标"
 msgid "Gone from disk"
 msgstr ""
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Good"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Good quality"
@@ -10177,6 +10195,7 @@ msgid "Hides the controls for sharing the instance."
 msgstr "隐藏用于共享此实例的控件。"
 
 #: src/components/pageconversion/labels.ts
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "High"
 msgstr "高"
@@ -10453,9 +10472,8 @@ msgid "Ignoring"
 msgstr "正在忽略"
 
 #: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "IllustrationJaNai SPAN-S"
-msgstr "IllustrationJaNai SPAN-S"
+msgid "IllustrationJaNai's sharp model"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #: src/pages/settings/SystemCards.tsx
@@ -12114,6 +12132,10 @@ msgstr "Maki {latestVersion} 已发布"
 msgid "Maki {version}"
 msgstr "Maki {version}"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Maki 2x"
+msgstr ""
+
 #: src/components/pageconversion/ComparePicker.tsx
 #, fuzzy
 msgid "Maki can only preview pages from CBZ and ZIP files, and could not open this one."
@@ -12580,6 +12602,10 @@ msgstr "中位数"
 #, fuzzy
 msgid "Median wait"
 msgstr "等待时间中位数"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Medium"
+msgstr ""
 
 #: src/components/releases/outlookText.ts
 #, fuzzy
@@ -15202,8 +15228,14 @@ msgstr "搁置中"
 msgid "On shelf"
 msgstr "在书架上"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "On the server"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
-#: src/pages/reader/enhanceMethods.ts
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "On this device"
 msgstr "在此设备上"
@@ -15212,11 +15244,6 @@ msgstr "在此设备上"
 #, fuzzy
 msgid "On this device, even when Maki is closed."
 msgstr "在此设备上，即使 Maki 已关闭。"
-
-#: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "On this device; best on clean line art, can mottle screentone"
-msgstr "在此设备上运行；最适合干净的线稿，可能使网点产生斑驳。"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -16554,6 +16581,7 @@ msgstr "按此顺序将这些来源置于新系列自动匹配时使用的全局
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Quality"
 msgstr "质量"
@@ -17144,9 +17172,8 @@ msgid "Ready to import"
 msgstr ""
 
 #: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "Real-ESRGAN; flattens screentone"
-msgstr "Real-ESRGAN；会抹平网点"
+msgid "Real-ESRGAN"
+msgstr ""
 
 #: src/components/QueueActions.tsx
 #, fuzzy
@@ -17273,6 +17300,7 @@ msgid "Recommendations on"
 msgstr "推荐功能已开启"
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Recommended"
 msgstr "推荐"
@@ -20112,11 +20140,6 @@ msgstr ""
 msgid "Shares a file with another chapter"
 msgstr "与另一个章节共用同一个文件"
 
-#: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "Sharp (server)"
-msgstr "锐利（服务器）"
-
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Sharpen soft pages. Auto does it only when a page is shown larger than its source or looks blurry."
@@ -20614,6 +20637,10 @@ msgstr "日常"
 msgid "Sliding: activity extends it."
 msgstr "滑动：活动会延长有效期。"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Slow"
+msgstr ""
+
 #: src/components/pageconversion/FormatStep.tsx
 #, fuzzy
 msgid "Smaller than WebP at the same look. KOReader and some e-readers can't open AVIF pages."
@@ -20832,6 +20859,10 @@ msgstr "空格（ ）"
 msgid "Space-separated. Keep email to match existing accounts."
 msgstr "以空格分隔。邮箱需与现有账户保持一致。"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "SPAN-S"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -20862,6 +20893,10 @@ msgstr "特殊章节（{visibleSpecialsCount}）"
 #, fuzzy
 msgid "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
 msgstr "specials, omake, 小数章节, 跟踪新内容, 监控, 隐身, 不同步阅读进度, 内容分级, 添加作品"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Speed"
+msgstr ""
 
 #. Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts
 #: src/pages/rewind/slides.tsx
@@ -21614,6 +21649,10 @@ msgstr "章节会保留在列表中并保留阅读记录，除非你要求，Mak
 #, fuzzy
 msgid "The counts could not be loaded. The rules still save as you wrote them."
 msgstr "无法加载计数。规则仍会按你编写的内容保存。"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "The crispest line art; flattens screentone"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -23950,6 +23989,14 @@ msgstr "版本 {0} 至 {1}。定义的以下部分将发生变化："
 
 #: src/pages/discover/TasteTab.tsx
 msgid "very alike"
+msgstr ""
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Very fast"
+msgstr ""
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Very slow"
 msgstr ""
 
 #: src/components/SourceMappingsSection.tsx

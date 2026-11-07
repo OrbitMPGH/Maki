@@ -553,7 +553,7 @@ async function expectFallback(canvasElement: HTMLElement, canvas: PlayArgs['canv
 
 const readyAsked: number[][] = []
 
-/** Sharp (server) with every page upscaled already: the server's image replaces the page once decoded, and compare still shows the original. */
+/** SPAN-S with every page upscaled already: the server's image replaces the page once decoded, and compare still shows the original. */
 export const ServerEnhanceReady: Story = {
   parameters: {
     ...open(7711),
@@ -718,7 +718,7 @@ export const ServerEnhanceTierOff: Story = {
 
 const volumeAsked: number[][] = []
 
-/** Sharp (server) on a digital volume, which the default prefs skip: the plain page shows and nothing is asked of the server. */
+/** SPAN-S on a digital volume, which the default prefs skip: the plain page shows and nothing is asked of the server. */
 export const EnhanceSkippedForVolume: Story = {
   parameters: {
     ...open(7718),
@@ -743,7 +743,7 @@ export const EnhanceSkippedForVolume: Story = {
 
 const unstretchedAsked: { pages: number[]; notWanted?: number[] }[] = []
 
-/** Auto with Sharp (server) and the page shown at 1:1: nothing is stretched, so no page is asked for and the pages measured plain go as `notWanted`, which drops what the previous chapter queued ahead. */
+/** Auto with SPAN-S and the page shown at 1:1: nothing is stretched, so no page is asked for and the pages measured plain go as `notWanted`, which drops what the previous chapter queued ahead. */
 export const ServerEnhanceAutoUnstretched: Story = {
   parameters: {
     ...open(7714),
@@ -792,7 +792,7 @@ export const ServerEnhanceWholeChapter: Story = {
 
 const stretchedAsked: number[][] = []
 
-/** Auto with Sharp (server) at 200%: the page on screen is asked for first, then the pages ahead of the same size. */
+/** Auto with SPAN-S at 200%: the page on screen is asked for first, then the pages ahead of the same size. */
 export const ServerEnhanceAutoStretched: Story = {
   parameters: {
     ...open(7715),

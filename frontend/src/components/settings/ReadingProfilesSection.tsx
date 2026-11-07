@@ -39,7 +39,8 @@ import {
   ENHANCE_FALLBACKS,
   ENHANCE_PROGRESS_STYLES,
   ENHANCE_LEVELS,
-  ENHANCE_METHODS,
+  BROWSER_ENHANCE_METHODS,
+  SERVER_ENHANCE_METHODS,
   ENHANCE_SKIP_TIERS,
   enhanceMethodInfo,
   isServerMethod,
@@ -485,7 +486,10 @@ function ProfileEditor({
             allowDeselect={false}
             value={prefs.enhanceMethod}
             onChange={(value) => value && set({ enhanceMethod: value as ReaderPrefs['enhanceMethod'] })}
-            data={ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label) }))}
+            data={[
+              { group: t`On this device`, items: BROWSER_ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label) })) },
+              { group: t`On the server`, items: SERVER_ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label) })) },
+            ]}
           />
         )}
       </Group>

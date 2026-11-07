@@ -4002,6 +4002,10 @@ msgstr "Base recommendations on these titles. Search adds any title from MangaBa
 msgid "Based on your recent activity"
 msgstr "Based on your recent activity"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Basic"
+msgstr "Basic"
+
 #: src/pages/settings/SuwayomiCards.tsx
 msgid "Basic auth"
 msgstr "Basic auth"
@@ -4055,9 +4059,17 @@ msgstr "Below the series' upgrade cutoff"
 msgid "Beside the page"
 msgstr "Beside the page"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Best"
+msgstr "Best"
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Best measured quality"
 msgstr "Best measured quality"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Best on clean line art; can mottle screentone"
+msgstr "Best on clean line art; can mottle screentone"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Best quality first"
@@ -4066,6 +4078,10 @@ msgstr "Best quality first"
 #: src/components/SourceMappingsSection.tsx
 msgid "Best quality first compares a source's tier before its measured quality, in the order the series' upgrade profile ranks tiers."
 msgstr "Best quality first compares a source's tier before its measured quality, in the order the series' upgrade profile ranks tiers."
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Between Light and Strong"
+msgstr "Between Light and Strong"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Biggest day"
@@ -5908,10 +5924,6 @@ msgstr "Creators you return to"
 msgid "Creators, type, status, content rating"
 msgstr "Creators, type, status, content rating"
 
-#: src/pages/reader/enhanceMethods.ts
-msgid "Crisp line art (server)"
-msgstr "Crisp line art (server)"
-
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Crop borders"
@@ -7402,6 +7414,10 @@ msgstr "Failed to update notifications: {detail}"
 msgid "Failed to update tags: {detail}"
 msgstr "Failed to update tags: {detail}"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Fair"
+msgstr "Fair"
+
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Fair quality"
 msgstr "Fair quality"
@@ -7422,17 +7438,17 @@ msgstr "Fans of"
 msgid "Fantasy"
 msgstr "Fantasy"
 
-#: src/pages/reader/enhanceMethods.ts
-msgid "Fast line art (server)"
-msgstr "Fast line art (server)"
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Fast"
+msgstr "Fast"
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Faster animations"
 msgstr "Faster animations"
 
 #: src/pages/reader/enhanceMethods.ts
-msgid "Fastest, on this device"
-msgstr "Fastest, on this device"
+msgid "Fastest"
+msgstr "Fastest"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Feed URL"
@@ -8145,6 +8161,10 @@ msgstr "Goals"
 msgid "Gone from disk"
 msgstr "Gone from disk"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Good"
+msgstr "Good"
+
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Good quality"
 msgstr "Good quality"
@@ -8407,6 +8427,7 @@ msgid "Hides the controls for sharing the instance."
 msgstr "Hides the controls for sharing the instance."
 
 #: src/components/pageconversion/labels.ts
+#: src/pages/settings/UpscalingSection.tsx
 msgid "High"
 msgstr "High"
 
@@ -8637,8 +8658,8 @@ msgid "Ignoring"
 msgstr "Ignoring"
 
 #: src/pages/reader/enhanceMethods.ts
-msgid "IllustrationJaNai SPAN-S"
-msgstr "IllustrationJaNai SPAN-S"
+msgid "IllustrationJaNai's sharp model"
+msgstr "IllustrationJaNai's sharp model"
 
 #: src/pages/settings/registry.ts
 #: src/pages/settings/SystemCards.tsx
@@ -9998,6 +10019,10 @@ msgstr "Maki {latestVersion} available"
 msgid "Maki {version}"
 msgstr "Maki {version}"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Maki 2x"
+msgstr "Maki 2x"
+
 #: src/components/pageconversion/ComparePicker.tsx
 msgid "Maki can only preview pages from CBZ and ZIP files, and could not open this one."
 msgstr "Maki can only preview pages from CBZ and ZIP files, and could not open this one."
@@ -10380,6 +10405,10 @@ msgstr "Median"
 #: src/pages/stats/SourceReliability.tsx
 msgid "Median wait"
 msgstr "Median wait"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Medium"
+msgstr "Medium"
 
 #: src/components/releases/outlookText.ts
 msgid "Medium confidence"
@@ -12545,18 +12574,20 @@ msgstr "On hold"
 msgid "On shelf"
 msgstr "On shelf"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "On the server"
+msgstr "On the server"
+
 #: src/components/series/ChapterTableRows.tsx
-#: src/pages/reader/enhanceMethods.ts
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
 msgid "On this device"
 msgstr "On this device"
 
 #: src/components/settings/PushNotificationsSection.tsx
 msgid "On this device, even when Maki is closed."
 msgstr "On this device, even when Maki is closed."
-
-#: src/pages/reader/enhanceMethods.ts
-msgid "On this device; best on clean line art, can mottle screentone"
-msgstr "On this device; best on clean line art, can mottle screentone"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "On your shelf, not used for ranking"
@@ -13659,6 +13690,7 @@ msgstr "Puts these sources, in this order, at the front of the global priority l
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/settings/UpscalingSection.tsx
 msgid "Quality"
 msgstr "Quality"
 
@@ -14149,8 +14181,8 @@ msgid "Ready to import"
 msgstr "Ready to import"
 
 #: src/pages/reader/enhanceMethods.ts
-msgid "Real-ESRGAN; flattens screentone"
-msgstr "Real-ESRGAN; flattens screentone"
+msgid "Real-ESRGAN"
+msgstr "Real-ESRGAN"
 
 #: src/components/QueueActions.tsx
 msgid "Reason"
@@ -14254,6 +14286,7 @@ msgid "Recommendations on"
 msgstr "Recommendations on"
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 msgid "Recommended"
 msgstr "Recommended"
 
@@ -16590,10 +16623,6 @@ msgstr "Shared"
 msgid "Shares a file with another chapter"
 msgstr "Shares a file with another chapter"
 
-#: src/pages/reader/enhanceMethods.ts
-msgid "Sharp (server)"
-msgstr "Sharp (server)"
-
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Sharpen soft pages. Auto does it only when a page is shown larger than its source or looks blurry."
 msgstr "Sharpen soft pages. Auto does it only when a page is shown larger than its source or looks blurry."
@@ -17008,6 +17037,10 @@ msgstr "Slice of Life"
 msgid "Sliding: activity extends it."
 msgstr "Sliding: activity extends it."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Slow"
+msgstr "Slow"
+
 #: src/components/pageconversion/FormatStep.tsx
 msgid "Smaller than WebP at the same look. KOReader and some e-readers can't open AVIF pages."
 msgstr "Smaller than WebP at the same look. KOReader and some e-readers can't open AVIF pages."
@@ -17191,6 +17224,10 @@ msgstr "Space ( )"
 msgid "Space-separated. Keep email to match existing accounts."
 msgstr "Space-separated. Keep email to match existing accounts."
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "SPAN-S"
+msgstr "SPAN-S"
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Spanish"
@@ -17216,6 +17253,10 @@ msgstr "Specials ({visibleSpecialsCount})"
 #: src/pages/settings/registry.ts
 msgid "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
 msgstr "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Speed"
+msgstr "Speed"
 
 #. Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts
 #: src/pages/rewind/slides.tsx
@@ -17835,6 +17876,10 @@ msgstr "The chapters stay in the list with their read history, and Maki won't do
 #: src/components/pageconversion/ScopeStep.tsx
 msgid "The counts could not be loaded. The rules still save as you wrote them."
 msgstr "The counts could not be loaded. The rules still save as you wrote them."
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "The crispest line art; flattens screentone"
+msgstr "The crispest line art; flattens screentone"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "The current feed URL stops working immediately. Every app using it needs the new one."
@@ -19759,6 +19804,14 @@ msgstr "Version {0} to {1}. These parts of the definition change:"
 #: src/pages/discover/TasteTab.tsx
 msgid "very alike"
 msgstr "very alike"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Very fast"
+msgstr "Very fast"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Very slow"
+msgstr "Very slow"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Vietnamese"

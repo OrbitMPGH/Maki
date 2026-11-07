@@ -4842,6 +4842,10 @@ msgstr "Empfehlungen auf diese Titel stützen. Die Suche fügt beliebige Titel a
 msgid "Based on your recent activity"
 msgstr "Basierend auf deiner letzten Aktivität"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Basic"
+msgstr ""
+
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "Basic auth"
@@ -4907,10 +4911,18 @@ msgstr "Unter dem Upgrade-Cutoff der Serie"
 msgid "Beside the page"
 msgstr ""
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Best"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Best measured quality"
 msgstr "Beste gemessene Qualität"
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Best on clean line art; can mottle screentone"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -4921,6 +4933,10 @@ msgstr "Beste Qualität zuerst"
 #, fuzzy
 msgid "Best quality first compares a source's tier before its measured quality, in the order the series' upgrade profile ranks tiers."
 msgstr "„Beste Qualität zuerst“ vergleicht zuerst die Stufe einer Quelle und dann ihre gemessene Qualität, in der Reihenfolge, in der das Upgrade-Profil der Serie die Stufen ordnet."
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "Between Light and Strong"
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -7150,11 +7166,6 @@ msgstr "Creators, zu denen du zurückkehrst"
 msgid "Creators, type, status, content rating"
 msgstr "Creator, Typ, Status, Inhaltseinstufung"
 
-#: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "Crisp line art (server)"
-msgstr "Scharfe Linienzeichnung (Server)"
-
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -8955,6 +8966,10 @@ msgstr "Benachrichtigungen konnten nicht aktualisiert werden: {detail}"
 msgid "Failed to update tags: {detail}"
 msgstr "Tags konnten nicht aktualisiert werden: {detail}"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Fair"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Fair quality"
@@ -8979,8 +8994,8 @@ msgstr "Fans von"
 msgid "Fantasy"
 msgstr "Fantasy"
 
-#: src/pages/reader/enhanceMethods.ts
-msgid "Fast line art (server)"
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Fast"
 msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
@@ -8989,9 +9004,8 @@ msgid "Faster animations"
 msgstr "Schnellere Animationen"
 
 #: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "Fastest, on this device"
-msgstr "Am schnellsten, auf diesem Gerät"
+msgid "Fastest"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -9858,6 +9872,10 @@ msgstr "Ziele"
 msgid "Gone from disk"
 msgstr ""
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Good"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Good quality"
@@ -10177,6 +10195,7 @@ msgid "Hides the controls for sharing the instance."
 msgstr "Blendet die Bedienelemente zum Teilen der Instanz aus."
 
 #: src/components/pageconversion/labels.ts
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "High"
 msgstr "Hoch"
@@ -10453,9 +10472,8 @@ msgid "Ignoring"
 msgstr "Wird ignoriert"
 
 #: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "IllustrationJaNai SPAN-S"
-msgstr "IllustrationJaNai SPAN-S"
+msgid "IllustrationJaNai's sharp model"
+msgstr ""
 
 #: src/pages/settings/registry.ts
 #: src/pages/settings/SystemCards.tsx
@@ -12114,6 +12132,10 @@ msgstr "Maki {latestVersion} verfügbar"
 msgid "Maki {version}"
 msgstr "Maki {version}"
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "Maki 2x"
+msgstr ""
+
 #: src/components/pageconversion/ComparePicker.tsx
 #, fuzzy
 msgid "Maki can only preview pages from CBZ and ZIP files, and could not open this one."
@@ -12580,6 +12602,10 @@ msgstr "Median"
 #, fuzzy
 msgid "Median wait"
 msgstr "Median-Wartezeit"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Medium"
+msgstr ""
 
 #: src/components/releases/outlookText.ts
 #, fuzzy
@@ -15202,8 +15228,14 @@ msgstr "Pausiert"
 msgid "On shelf"
 msgstr "Im Regal"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "On the server"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
-#: src/pages/reader/enhanceMethods.ts
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "On this device"
 msgstr "Auf diesem Gerät"
@@ -15212,11 +15244,6 @@ msgstr "Auf diesem Gerät"
 #, fuzzy
 msgid "On this device, even when Maki is closed."
 msgstr "Auf diesem Gerät, auch wenn Maki geschlossen ist."
-
-#: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "On this device; best on clean line art, can mottle screentone"
-msgstr "Auf diesem Gerät; am besten bei sauberen Linienzeichnungen, kann Rastertöne fleckig machen"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -16554,6 +16581,7 @@ msgstr "Stellt diese Quellen in dieser Reihenfolge an den Anfang der globalen Pr
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Quality"
 msgstr "Qualität"
@@ -17144,9 +17172,8 @@ msgid "Ready to import"
 msgstr ""
 
 #: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "Real-ESRGAN; flattens screentone"
-msgstr "Real-ESRGAN; glättet Rastertöne"
+msgid "Real-ESRGAN"
+msgstr ""
 
 #: src/components/QueueActions.tsx
 #, fuzzy
@@ -17273,6 +17300,7 @@ msgid "Recommendations on"
 msgstr "Empfehlungen an"
 
 #: src/pages/DiscoverPage.tsx
+#: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Recommended"
 msgstr "Empfohlen"
@@ -20112,11 +20140,6 @@ msgstr ""
 msgid "Shares a file with another chapter"
 msgstr "Teilt eine Datei mit einem anderen Kapitel"
 
-#: src/pages/reader/enhanceMethods.ts
-#, fuzzy
-msgid "Sharp (server)"
-msgstr "Scharf (Server)"
-
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Sharpen soft pages. Auto does it only when a page is shown larger than its source or looks blurry."
@@ -20614,6 +20637,10 @@ msgstr "Slice of Life"
 msgid "Sliding: activity extends it."
 msgstr "Gleitend: Aktivität verlängert ihn."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Slow"
+msgstr ""
+
 #: src/components/pageconversion/FormatStep.tsx
 #, fuzzy
 msgid "Smaller than WebP at the same look. KOReader and some e-readers can't open AVIF pages."
@@ -20832,6 +20859,10 @@ msgstr "Leerzeichen ( )"
 msgid "Space-separated. Keep email to match existing accounts."
 msgstr "Durch Leerzeichen getrennt. Die E-Mail-Angabe beibehalten, damit sie zu bestehenden Konten passt."
 
+#: src/pages/reader/enhanceMethods.ts
+msgid "SPAN-S"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
@@ -20862,6 +20893,10 @@ msgstr "Specials ({visibleSpecialsCount})"
 #, fuzzy
 msgid "specials, omake, decimal chapters, monitor new items, monitoring, incognito, no scrobble, content rating, add series"
 msgstr "Specials, Omake, Dezimalkapitel, neue Inhalte überwachen, Überwachung, Inkognito, nicht scrobbeln, Inhaltseinstufung, Serie hinzufügen"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Speed"
+msgstr ""
 
 #. Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts
 #: src/pages/rewind/slides.tsx
@@ -21614,6 +21649,10 @@ msgstr "Die Kapitel bleiben mit ihrer Lesehistorie in der Liste, und Maki lädt 
 #, fuzzy
 msgid "The counts could not be loaded. The rules still save as you wrote them."
 msgstr "Die Zahlen konnten nicht geladen werden. Die Regeln werden trotzdem so gespeichert, wie du sie geschrieben hast."
+
+#: src/pages/reader/enhanceMethods.ts
+msgid "The crispest line art; flattens screentone"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -23950,6 +23989,14 @@ msgstr "Version {0} auf {1}. Diese Teile der Definition ändern sich:"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "very alike"
+msgstr ""
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Very fast"
+msgstr ""
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Very slow"
 msgstr ""
 
 #: src/components/SourceMappingsSection.tsx

@@ -76,6 +76,9 @@ export const BACKGROUNDS = {
  * base for a merge. What a series actually opens with is resolved on the server: its own override,
  * then a pinned reading profile, then the profile claiming its type, then these.
  */
+/** Maki 2x; the reader shows `enhanceFallback` wherever the server does not offer it. */
+export const DEFAULT_ENHANCE_METHOD: EnhanceMethod = 'server:maki-2x'
+
 export const DEFAULT_PREFS: ReaderPrefs = {
   mode: 'paged',
   direction: 'rtl',
@@ -95,7 +98,7 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   cropBorders: false,
   autoWebtoon: true,
   enhance: 'off',
-  enhanceMethod: 'a4k-m',
+  enhanceMethod: DEFAULT_ENHANCE_METHOD,
   enhanceFallback: 'a4k-m',
   enhanceSkipTiers: ['volume'],
   enhanceProgress: 'line',

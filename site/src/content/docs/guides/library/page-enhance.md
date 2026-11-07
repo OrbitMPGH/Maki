@@ -17,7 +17,7 @@ Nothing runs until both steps are done.
    and the licences are listed in `THIRD_PARTY_NOTICES.md` in the Maki repository.
 
 Readers then turn **Enhance** on under **Enhance** in the reader's settings popover, where the **Method** list shows
-**Sharp (server)** and **Crisp line art (server)**. They still choose Off, Auto or Always for
+**Maki 2x**, **Real-ESRGAN** and **SPAN-S** under "On the server". They still choose Off, Auto or Always for
 themselves, so enabling the feature changes nobody's reading.
 
 ## What the server needs

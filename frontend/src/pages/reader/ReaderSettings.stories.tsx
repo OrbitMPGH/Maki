@@ -227,13 +227,13 @@ export const EnhanceOn: Story = {
     await expect(b.queryByRole('radiogroup', { name: 'While the server works' })).toBeNull()
 
     await userEvent.click(method)
-    await expect(await b.findByRole('option', { name: /Light/ })).toBeVisible()
-    await expect(b.getByRole('option', { name: /Sharp \(server\)/ })).not.toHaveAttribute('data-combobox-disabled', 'true')
-    const downloading = b.getByRole('option', { name: /Crisp line art \(server\)/ })
+    await expect(await b.findByRole('option', { name: /^Light/ })).toBeVisible()
+    await expect(b.getByRole('option', { name: /SPAN-S/ })).not.toHaveAttribute('data-combobox-disabled', 'true')
+    const downloading = b.getByRole('option', { name: /Real-ESRGAN/ })
     await expect(downloading).toHaveAttribute('data-combobox-disabled', 'true')
     await expect(within(downloading).getByText('Downloading')).toBeVisible()
 
-    await userEvent.click(b.getByRole('option', { name: /Sharp \(server\)/ }))
+    await userEvent.click(b.getByRole('option', { name: /SPAN-S/ }))
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceMethod: 'server:span-s' }))
   },
 }
@@ -242,7 +242,7 @@ export const EnhanceServerFallback: Story = {
   args: { prefs: { ...mangaPrefs, enhance: 'always', enhanceMethod: 'server:span-s', enhanceFallback: 'a4k-m' } },
   play: async ({ args, canvasElement, userEvent }) => {
     const b = body(canvasElement)
-    await userEvent.click(await b.findByRole('button', { name: /^Enhance\s*Always, Sharp \(server\)$/ }))
+    await userEvent.click(await b.findByRole('button', { name: /^Enhance\s*Always, SPAN-S$/ }))
     const fallback = await b.findByRole('radiogroup', { name: 'While the server works' })
     await waitFor(() => expect(within(fallback).getByLabelText('Balanced')).toBeChecked())
     await userEvent.click(within(fallback).getByText('Strong'))
@@ -295,12 +295,12 @@ export const EnhanceSavedServerModelGone: Story = {
     const b = body(canvasElement)
     await userEvent.click(await b.findByRole('button', { name: /^Enhance/ }))
     const method = await b.findByLabelText('Method', { selector: 'input' })
-    await expect(method).toHaveValue('Crisp line art (server)')
+    await expect(method).toHaveValue('Real-ESRGAN')
     await userEvent.click(method)
-    const gone = await b.findByRole('option', { name: /Crisp line art/ })
+    const gone = await b.findByRole('option', { name: /Real-ESRGAN/ })
     await expect(gone).toHaveAttribute('data-combobox-disabled', 'true')
     await expect(within(gone).getByText('Not available')).toBeVisible()
-    await expect(b.queryByRole('option', { name: /Sharp \(server\)/ })).toBeNull()
+    await expect(b.queryByRole('option', { name: /SPAN-S/ })).toBeNull()
   },
 }
 

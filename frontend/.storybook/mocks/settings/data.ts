@@ -1059,6 +1059,14 @@ export const pageConversionOff: PageConversionStatus = {
 }
 
 const upscaleCatalog = {
+  maki2x: {
+    id: 'maki-2x',
+    bytes: 1.2 * MB,
+    license: 'GPL-3.0',
+    author: 'Maki',
+    source: 'https://github.com/OrbitMPGH/Maki/tree/main/distribution/upscale-models/distill',
+    status: 'ready',
+  },
   spanS: {
     id: 'span-s',
     bytes: 0.9 * MB,
@@ -1079,7 +1087,7 @@ const upscaleCatalog = {
 
 export const upscalingOff = {
   settings: { enabled: false, models: [], threads: 2, cacheMb: 1024, maxThreads: 8 },
-  catalog: [upscaleCatalog.spanS, { ...upscaleCatalog.realesrganAv3, bytes: null }].map((m) => ({
+  catalog: [upscaleCatalog.maki2x, upscaleCatalog.spanS, { ...upscaleCatalog.realesrganAv3, bytes: null }].map((m) => ({
     ...m,
     status: 'missing',
   })),
@@ -1088,8 +1096,9 @@ export const upscalingOff = {
 } satisfies UpscalingState
 
 export const upscalingOn = {
-  settings: { enabled: true, models: ['span-s', 'realesrgan-av3'], threads: 2, cacheMb: 1024, maxThreads: 8 },
+  settings: { enabled: true, models: ['maki-2x', 'span-s', 'realesrgan-av3'], threads: 2, cacheMb: 1024, maxThreads: 8 },
   catalog: [
+    upscaleCatalog.maki2x,
     upscaleCatalog.spanS,
     { ...upscaleCatalog.realesrganAv3, status: 'downloading' },
   ],
@@ -1100,6 +1109,7 @@ export const upscalingOn = {
 export const upscalingFailed = {
   ...upscalingOn,
   catalog: [
+    upscaleCatalog.maki2x,
     upscaleCatalog.spanS,
     {
       ...upscaleCatalog.realesrganAv3,

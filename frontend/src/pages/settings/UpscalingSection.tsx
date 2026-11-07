@@ -8,7 +8,7 @@ import { SettingsSection } from './SettingsSection'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 import { formatBytes, formatDecimal, formatNumber } from '../../format'
 import { useLabel } from '../../i18n-context'
-import { enhanceMethodInfo } from '../reader/enhanceMethods'
+import { enhanceMethodInfo, type ModelRating } from '../reader/enhanceMethods'
 import {
   useClearUpscaleCache,
   useDeleteUpscaleModel,
@@ -194,9 +194,17 @@ function ModelRow({
   return (
     <Stack gap={6}>
       <Group justify="space-between" wrap="wrap" gap="sm">
-        <Checkbox label={name} checked={checked} onChange={(e) => onToggle(e.currentTarget.checked)} />
+        <Group gap="xs" wrap="nowrap">
+          <Checkbox label={name} checked={checked} onChange={(e) => onToggle(e.currentTarget.checked)} />
+          {info?.recommended && (
+            <Badge size="sm" variant="light" color="var(--brand)">
+              <Trans>Recommended</Trans>
+            </Badge>
+          )}
+        </Group>
         <StatusBadge status={model.status} />
       </Group>
+      {info?.speed && info.quality && <Ratings speed={info.speed} quality={info.quality} />}
       <Text component="div" size="xs" c="var(--ink-3)">
         <MetaList
           items={[
@@ -254,6 +262,44 @@ function ModelRow({
         )}
       </Group>
     </Stack>
+  )
+}
+
+function Ratings({ speed, quality }: { speed: ModelRating; quality: ModelRating }) {
+  const { t } = useLingui()
+  const speeds = { 1: t`Very slow`, 2: t`Slow`, 3: t`Medium`, 4: t`Fast`, 5: t`Very fast` }
+  const qualities = { 1: t`Basic`, 2: t`Fair`, 3: t`Good`, 4: t`High`, 5: t`Best` }
+  return (
+    <Group gap="lg" wrap="wrap">
+      <Rating label={t`Speed`} value={speed} word={speeds[speed]} minWidth="11rem" />
+      <Rating label={t`Quality`} value={quality} word={qualities[quality]} />
+    </Group>
+  )
+}
+
+function Rating({ label, value, word, minWidth }: { label: string; value: ModelRating; word: string; minWidth?: string }) {
+  return (
+    <Group gap={6} wrap="nowrap" miw={minWidth} aria-label={`${label}: ${word}`} role="img">
+      <Text size="xs" c="var(--ink-3)" aria-hidden>
+        {label}
+      </Text>
+      <Group gap={3} wrap="nowrap" aria-hidden>
+        {[1, 2, 3, 4, 5].map((step) => (
+          <span
+            key={step}
+            style={{
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              background: step <= value ? 'var(--brand)' : 'var(--border-strong)',
+            }}
+          />
+        ))}
+      </Group>
+      <Text size="xs" c="var(--ink-2)" aria-hidden>
+        {word}
+      </Text>
+    </Group>
   )
 }
 

@@ -16,10 +16,12 @@ screen. It is off until a reader turns it on. Library files are never modified.
 
 - **Browser methods** (**Light**, **Balanced**, **Strong**) run Anime4K shaders on the reader's own
   device. They are always available and need WebGL2.
-- **Server methods** (**Sharp (server)**, **Crisp line art (server)**) run ONNX models on the Maki
-  server. They appear in the Method list once an admin has enabled them, and stay disabled, marked
-  Downloading or Not available, until the model is ready. Sharp is IllustrationJaNai SPAN-S. Crisp
-  line art is Real-ESRGAN animevideov3 and flattens screentone.
+- **Server methods** (**Maki 2x**, **Real-ESRGAN**, **SPAN-S**) run ONNX models on the Maki
+  server. They appear in the Method list under "On the server" once an admin has enabled them, and
+  stay disabled, marked Downloading or Not available, until the model is ready. Maki 2x is Maki's own
+  model, trained to look like Real-ESRGAN at about a third of the cost, and is the default and the
+  recommended one. Real-ESRGAN (animevideov3) gives the crispest line art and flattens screentone.
+  SPAN-S is IllustrationJaNai's sharp model. The settings page marks each one's speed and quality.
 
 A greyscale page stays greyscale whichever method draws it.
 

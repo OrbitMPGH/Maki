@@ -50,6 +50,7 @@ import {
   enhanceMethodInfo,
   isServerMethod,
   serverModelId,
+  shownEnhanceMethod,
 } from './enhanceMethods'
 import { BACKGROUNDS, enhanceFor, toneFilter, type PrefsSelection, type ReaderPrefs } from './prefs'
 import { useEnhanceEngine } from './enhanceRuntime'
@@ -248,13 +249,22 @@ export default function ReaderSettings({
   const enhanceOn = prefs.enhance !== 'off'
   const browserUnsupported = useEnhanceEngine(enhanceOn).status === 'unsupported'
   const enhanceModels = manifest.enhanceServer?.models
+  const method = shownEnhanceMethod(
+    prefs.enhanceMethod,
+    prefs.enhanceFallback,
+    !!enhanceModels?.some((entry) => entry.id === serverModelId(prefs.enhanceMethod)),
+  )
+  const serverOptions = SERVER_ENHANCE_METHODS.flatMap((m) => {
+    const model = enhanceModels?.find((entry) => entry.id === serverModelId(m.id))
+    if (!model && m.id !== method) return []
+    return [{ value: m.id, label: renderLabel(m.label), disabled: !model || !model.ready }]
+  })
   const enhanceOptions = [
-    ...BROWSER_ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label), disabled: browserUnsupported })),
-    ...SERVER_ENHANCE_METHODS.flatMap((m) => {
-      const model = enhanceModels?.find((entry) => entry.id === serverModelId(m.id))
-      if (!model && m.id !== prefs.enhanceMethod) return []
-      return [{ value: m.id, label: renderLabel(m.label), disabled: !model || !model.ready }]
-    }),
+    {
+      group: t`On this device`,
+      items: BROWSER_ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label), disabled: browserUnsupported })),
+    },
+    ...(serverOptions.length ? [{ group: t`On the server`, items: serverOptions }] : []),
   ]
   const enhanceNote = (value: string): string | undefined => {
     const model = enhanceModels?.find((entry) => entry.id === serverModelId(value))
@@ -301,7 +311,7 @@ export default function ReaderSettings({
   const backgroundName = prefs.background === BACKGROUNDS.oled ? t`OLED black` : t`Dark`
   const lookSummary = prefs.cropBorders ? t`${backgroundName}, cropped` : backgroundName
   const levelName = renderLabel(ENHANCE_LEVELS.find((level) => level.value === prefs.enhance)?.label ?? '')
-  const methodInfo = enhanceMethodInfo(prefs.enhanceMethod)
+  const methodInfo = enhanceMethodInfo(method)
   const methodName = methodInfo ? renderLabel(methodInfo.label) : ''
   const enhanceSummary = !enhanceOn
     ? t`Off`
@@ -665,7 +675,7 @@ export default function ReaderSettings({
                       size="xs"
                       comboboxProps={NESTED_COMBOBOX}
                       allowDeselect={false}
-                      value={prefs.enhanceMethod}
+                      value={method}
                       onChange={(value) => value && onPrefs({ enhanceMethod: value as ReaderPrefs['enhanceMethod'] })}
                       data={enhanceOptions}
                       renderOption={({ option }) => (
@@ -679,7 +689,7 @@ export default function ReaderSettings({
                     />
                   </div>
                 )}
-                {enhanceOn && isServerMethod(prefs.enhanceMethod) && (
+                {enhanceOn && isServerMethod(method) && (
                   <div>
                     <FieldLabel>
                       <Trans>While the server works</Trans>
@@ -698,7 +708,7 @@ export default function ReaderSettings({
                     />
                   </div>
                 )}
-                {enhanceOn && isServerMethod(prefs.enhanceMethod) && (
+                {enhanceOn && isServerMethod(method) && (
                   <div>
                     <FieldLabel>
                       <Trans>Upscale progress</Trans>
@@ -716,7 +726,7 @@ export default function ReaderSettings({
                     </Text>
                   </div>
                 )}
-                {enhanceOn && isServerMethod(prefs.enhanceMethod) && (
+                {enhanceOn && isServerMethod(method) && (
                   <Switch
                     size="xs"
                     labelPosition="left"
