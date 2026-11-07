@@ -665,7 +665,7 @@ export default function ScrobblePage() {
           : Array.from({ length: 6 }, (_, i) => <Skeleton key={i} h={28} w={110} radius="xl" aria-hidden />)}
       </div>
 
-      <Stack gap="xl" mt="lg">
+      <Stack gap="xl" mt="xl">
 
         <Stack gap="sm">
           <SectionHeader
@@ -691,7 +691,7 @@ export default function ScrobblePage() {
           {!data ? (
             <TableSkeleton columns={3} rows={4} />
           ) : data.recent.length > 0 ? (
-            <Panel p={0} className="table-panel">
+            <Panel p={0} className="table-panel scrobble-recent-panel">
               <Table.ScrollContainer minWidth={600}>
                 <Table className="panel-table scrobble-recent-table" highlightOnHover>
                   <Table.Thead>

@@ -269,7 +269,7 @@ export function RecentImports({ rootFolderId, onUndone }: { rootFolderId: number
       <SectionHeader
         icon={IconHistory}
         title={t`Recent imports`}
-        count={batches.length}
+        count={batches.reduce((n, b) => n + b.folders.length, 0)}
         action={
           <Text size="xs" c="var(--ink-3)">
             <Trans>Imports can be undone for 30 days.</Trans>

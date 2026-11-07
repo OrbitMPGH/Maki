@@ -86,7 +86,7 @@ import { isQueueActive, needsImportReview, queueStatusVisual, statusToken } from
 import { isHeldByPause, queueErrorMessage, queueItemLabel, queueOriginOrUnknown } from '../api/queue'
 import { useLabel } from '../i18n-context'
 import { useSourceLabel } from '../sourceLabels'
-import { formatBytes, formatCalendarDate, formatDateTime, formatTime } from '../format'
+import { chapterLabel, formatBytes, formatCalendarDate, formatDateTime, formatTime } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { UpcomingView } from '../components/releases/UpcomingView'
 import { MetaList } from '../components/ui/MetaList'
@@ -95,11 +95,12 @@ const HISTORY_PAGE_SIZE = 25
 const UPGRADES_PAGE_SIZE = 25
 const UPGRADE_HISTORY_PAGE_SIZE = 25
 
-/** "Ch.148", "Ch.148 - Title", or the chapter's own title/"One-shot" when it has no number. */
+/** "Ch. 148", "Ch. 148: Title", or the chapter's own title/"One-shot" when it has no number. */
 function chapterRowLabel(row: { chapterNumber: number | null; chapterTitle: string | null }): string {
   const { chapterNumber, chapterTitle } = row
   if (chapterNumber === null) return chapterTitle ?? now`One-shot`
-  return chapterTitle ? now`Ch.${chapterNumber} - ${chapterTitle}` : now`Ch.${chapterNumber}`
+  const label = chapterLabel(chapterNumber)
+  return chapterTitle ? now`${label}: ${chapterTitle}` : label
 }
 
 /**
@@ -430,7 +431,7 @@ export default function ActivityPage() {
         onChange={changeTab}
         keepMounted={false}
       >
-        <Tabs.List mb="md">
+        <Tabs.List>
           <Tabs.Tab value="queue"><Trans>Queue</Trans></Tabs.Tab>
           <Tabs.Tab value="upgrades">
             <Trans>Upgrades</Trans>
@@ -506,7 +507,10 @@ export default function ActivityPage() {
                   const retryInfo =
                     q.status === 'Failed' && retryCount > 0
                       ? nextAttemptTime
-                        ? t`Retried ${retryCount}x - next attempt ${nextAttemptTime}`
+                        ? plural(retryCount, {
+                            one: `Retried # time. Next attempt at ${nextAttemptTime}.`,
+                            other: `Retried # times. Next attempt at ${nextAttemptTime}.`,
+                          })
                         : t`Retried ${retryCount}x`
                       : null
                   const failure = queueErrorMessage(q, renderLabel)
@@ -572,7 +576,7 @@ export default function ActivityPage() {
                       <Table.Td>
                         <Tooltip label={tooltipLabel} withArrow disabled={!failure && !retryInfo || !!rejectionText}>
                           <StatusDot
-                            tone={rejectionText ? 'warn' : held ? 'neutral' : statusToken(visual.color)}
+                            tone={rejectionText || held ? 'warn' : statusToken(visual.color)}
                             live={isQueueActive(q.status)}
                           >
                             {rejectionText ?? (held ? t`Paused` : renderLabel(visual.label))}
@@ -755,6 +759,7 @@ export default function ActivityPage() {
           <EmptyState
             compact
             framed
+            mood="asleep"
             title={t`No history yet`}
             description={t`Completed and cancelled downloads show up here.`}
           />
@@ -991,6 +996,7 @@ export default function ActivityPage() {
                   <EmptyState
                     compact
                     framed
+                    mood="asleep"
                     title={t`No upgrades yet`}
                     description={t`Files replaced by the automatic upgrader show up here.`}
                   />
@@ -1179,6 +1185,7 @@ export default function ActivityPage() {
                   <EmptyState
                     compact
                     framed
+                    mood="asking"
                     title={t`No quality profile assigned yet`}
                     description={
                       <Trans>
@@ -1194,6 +1201,7 @@ export default function ActivityPage() {
                   <EmptyState
                     compact
                     framed
+                    mood="pleased"
                     title={t`Every file meets its cutoff`}
                     description={t`Nothing downloaded falls short of the quality profile assigned to it.`}
                   />

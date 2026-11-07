@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   Alert,
   Anchor,
+  Box,
   Button,
   Card,
   Group,
@@ -56,6 +57,7 @@ import { FigureStrip } from '../../components/ui/FigureStrip'
 import { SeriesLink, SeriesThumb } from '../stats/SeriesLink'
 import { buildFiltersFromProfile, hasAnyFilter } from './tasteFilters'
 import { Panel } from '../../components/ui/Panel'
+import { PanelTitle } from '../../components/ui/PanelTitle'
 import { TagChip } from '../../components/ui/TagChip'
 import { SignalsCard } from './FeedbackLab'
 import { formatFixedDecimal, formatNumber, formatPercent, formatReadingTime } from '../../format'
@@ -63,12 +65,12 @@ import { GENRE_LABELS, TYPE_LABELS } from '../../components/CatalogueFilters'
 import { useLabel } from '../../i18n-context'
 
 const SLICE_COLORS = [
-  'var(--brand)',
-  'var(--info)',
-  'var(--ok)',
-  'var(--warn)',
-  'var(--danger)',
-  'var(--neutral)',
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-3)',
+  'var(--chart-4)',
+  'var(--chart-5)',
+  'var(--chart-6)',
 ]
 
 /** How many of each composition facet the demoted row shows. */
@@ -206,10 +208,9 @@ function BehaviourList({
 }) {
   return (
     <Card padding="md" radius="lg" withBorder>
-      <Group gap={8} mb="xs" wrap="nowrap">
-        <ListIcon size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
-        <Text fw={650}>{title}</Text>
-      </Group>
+      <Box mb="xs">
+        <PanelTitle icon={ListIcon}>{title}</PanelTitle>
+      </Box>
       {items.length === 0 ? (
         <Text c="var(--ink-3)" size="sm">
           {emptyText}
@@ -349,7 +350,7 @@ function DriftSection({ insights }: { insights: TasteInsights }) {
             </Text>
             <Group gap={4} style={{ flexShrink: 0 }}>
               {point.distinctiveTags.slice(0, 2).map((tag) => (
-                <TagChip key={tag} dot="var(--watched)" size="sm">
+                <TagChip key={tag} dot="var(--neutral)" size="sm">
                   {tag}
                 </TagChip>
               ))}
@@ -524,7 +525,7 @@ function TagsCard({
           {facets.slice(0, HEAD).map((f) => (
             <Group key={f.name} gap={8} wrap="nowrap">
               <TagChip
-                dot="var(--watched)"
+                dot="var(--neutral)"
                 size="sm"
                 style={{ flexShrink: 0 }}
                 onClick={() => onExplore(f.name)}
@@ -672,7 +673,7 @@ export function TasteTab() {
           {insights?.oddOneOut && (
             <Card padding="md" radius="lg" withBorder>
               <Group gap={8} wrap="nowrap">
-                <IconArrowsShuffle size={16} style={{ color: 'var(--warn)', flexShrink: 0 }} />
+                <IconArrowsShuffle size={16} style={{ color: 'var(--brand-fg)', flexShrink: 0 }} />
                 <Text fw={650} style={{ flexShrink: 0 }}>
                   <Trans>The odd one out</Trans>
                 </Text>

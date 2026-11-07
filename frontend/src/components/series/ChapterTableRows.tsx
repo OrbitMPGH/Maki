@@ -39,7 +39,7 @@ import { usePhoneSheet } from '../notes/phone'
 import { queueErrorMessage } from '../../api/queue'
 import type { ChapterProgressDto, ChapterReadState } from '../../api/reader'
 import type { ChapterDto, QueueItemDto } from '../../api/types'
-import { formatCalendarDate } from '../../format'
+import { chapterLabel as houseChapterLabel, chapterRangeLabel, formatCalendarDate } from '../../format'
 import type { OfflineChapter } from '../../pwa/contract'
 import type { SaveProgress } from '../../pwa/offlineChapters'
 import type { AnimeMarker, AnimeSpan } from '../../lib/animeCoverage'
@@ -142,7 +142,6 @@ export const ChapterRow = memo(function ChapterRow({
 }: ChapterRowProps) {
   const { t } = useLingui()
   const chapterLbl = chapterLabel(c)
-  const chapterNumber = c.number
   const fileVolume = c.fileVolume
   const { read, inProgress, external, watched } = readStateOf(rowProgress)
   const pageIndex = rowProgress ? rowProgress.pageIndex + 1 : null
@@ -188,17 +187,19 @@ export const ChapterRow = memo(function ChapterRow({
         <Table.Td className={hasAnimeMarkers ? 'chapter-cell' : undefined} data-chapter-number={c.number ?? undefined}>
           <LightGroup gap={6} wrap="nowrap">
             {c.fileVolume !== null && !c.isOneShot && c.number !== null && (
-                <HoverTooltip label={t`Contained in a volume/compilation file`} withArrow>
-                  <LightBadge color="var(--watched)" className="tnum chapter-label">
-                    <Trans>Vol. {fileVolume}</Trans>
-                  </LightBadge>
-                </HoverTooltip>
+                <span className="chapter-lead-slot">
+                  <HoverTooltip label={t`Contained in a volume/compilation file`} withArrow>
+                    <LightBadge color="var(--volume)" className="tnum chapter-label">
+                      <Trans>Vol. {fileVolume}</Trans>
+                    </LightBadge>
+                  </HoverTooltip>
+                </span>
             )}
             <LightText fw={600} className="tnum chapter-label chapter-number">
               {c.isOneShot || c.number === null
                   ? chapterLabel(c)
                   : c.fileVolume !== null
-                      ? <Trans>Ch. {chapterNumber}</Trans>
+                      ? houseChapterLabel(c.number)
                       : chapterLabel(c)}
             </LightText>
           </LightGroup>
@@ -231,7 +232,7 @@ export const ChapterRow = memo(function ChapterRow({
                           withArrow
                       >
                         <LightBadge
-                            color={marker.kind === 'start' ? 'var(--info)' : 'var(--danger)'}
+                            color="var(--anime)"
                             className={`chapter-span-marker${span ? ' chapter-span-badge' : ''}`}
                             data-span-fold={span && marker.kind === 'start' ? span.key : undefined}
                             ref={
@@ -297,9 +298,7 @@ export const ChapterRow = memo(function ChapterRow({
                 (() => {
                   const visual = queueStatusVisual(queueItem.status)
                   const failure = queueErrorMessage(queueItem, renderLabel)
-                  const queueTone = queueItem.status === 'Failed'
-                      ? 'var(--danger)'
-                      : queueItem.status === 'AwaitingImport' ? 'var(--warn)' : 'brand'
+                  const queueTone = visual.color
                   return (
                       <Tooltip
                         label={failure ?? renderLabel(visual.label)}
@@ -431,9 +430,8 @@ export const ChapterRow = memo(function ChapterRow({
                     withArrow
                 >
                   <LightBadge
-                      color={watched ? 'var(--watched)' : 'var(--ok)'}
+                      color={watched ? 'var(--anime)' : 'var(--brand)'}
                       variant={watched || external ? 'light' : 'filled'}
-                      c={watched || external ? undefined : 'var(--ok-on)'}
                       leftSection={
                         watched ? <IconDeviceTv size={12} /> : <IconEyeCheck size={12} />
                       }
@@ -444,7 +442,7 @@ export const ChapterRow = memo(function ChapterRow({
             )}
             {/* Shown alongside Read when a finished chapter is being re-read. */}
             {inProgress && (
-                <LightBadge color="var(--info)" className="tnum">
+                <LightBadge color="var(--brand)" className="tnum">
                   {/* pageCount is 0 on rows imported from Kavita: the reader fills it
                       in on first open, so show a plain label until then. */}
                   {rowProgress && rowProgress.pageCount > 0 ? (
@@ -472,7 +470,7 @@ export const ChapterRow = memo(function ChapterRow({
                 <HoverTooltip label={read ? t`Mark unread` : t`Mark read`} withArrow>
                   <LightActionIcon
                       variant={read ? 'light' : 'subtle'}
-                      color={read ? 'var(--ok)' : 'gray'}
+                      color={read ? 'var(--brand)' : 'gray'}
                       data-row-action={read ? undefined : ''}
                       loading={readPending}
                       onClick={() => actions.setRead(c.id, !read)}
@@ -657,10 +655,10 @@ function OfflineBadge({ record, saving }: { record: OfflineChapter; saving: Save
   )
 }
 
-/** "Ch.1–270", or "Ch.315+" for a season with no end marker yet. */
+/** "Ch. 1–270", or "Ch. 315+" for a season with no end marker yet. */
 const spanRangeLabel = (span: AnimeSpan) => {
   const { from, to, openEnded } = span
-  return openEnded ? staticT`Ch.${from}+` : staticT`Ch.${from}–${to}`
+  return openEnded ? staticT`Ch. ${from}+` : chapterRangeLabel(from, to)
 }
 
 type ChapterSpanRowProps = {
@@ -736,17 +734,19 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
         </Table.Td>
         <Table.Td className={hasAnimeMarkers ? 'chapter-cell' : undefined}>
           <Group gap={6} wrap="nowrap">
-            <Badge
-                size="sm"
-                color="var(--info)"
-                variant="light"
-                leftSection={<IconDeviceTv size={12} />}
-                className="chapter-span-badge"
-                data-span-fold={span.key}
-                {...pressable(() => actions.toggleSpanFold(span.key))}
-            >
-              {span.label}
-            </Badge>
+            <span className="chapter-lead-slot">
+              <Badge
+                  size="sm"
+                  color="var(--anime)"
+                  variant="light"
+                  leftSection={<IconDeviceTv size={12} />}
+                  className="chapter-span-badge"
+                  data-span-fold={span.key}
+                  {...pressable(() => actions.toggleSpanFold(span.key))}
+              >
+                {span.label}
+              </Badge>
+            </span>
             <Text size="sm" fw={600} className="tnum chapter-label chapter-number">
               {spanRangeLabel(span)}
             </Text>
@@ -781,7 +781,7 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
                 </Text>
                 <Progress
                     value={(done / downloaded.length) * 100}
-                    color={watchedCount > readCount ? 'var(--watched)' : 'var(--ok)'}
+                    color={watchedCount > readCount ? 'var(--anime)' : 'var(--brand)'}
                     size="sm"
                     radius="xl"
                     aria-label={t`Reading progress`}

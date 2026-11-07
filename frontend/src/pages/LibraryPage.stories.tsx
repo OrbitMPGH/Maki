@@ -43,7 +43,8 @@ async function pick(canvas: Canvas, userEvent: UserEvent, ...titles: string[]) {
 export const Grid: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })).toBeVisible()
-    await expect(await canvas.findByText('14 series')).toBeVisible()
+    // Unfiltered, the figure strip carries the total and the toolbar shows no count.
+    expect(canvas.queryByText(/ of 14$/)).toBeNull()
   },
 }
 
@@ -185,7 +186,7 @@ export const PhoneLayout: Story = {
 export const SearchMatches: Story = {
   beforeEach: () => seedLibraryPrefs({ page: { query: 'kasumi' } }),
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('1 of 14 series match')).toBeVisible()
+    await expect(await canvas.findByText('1 of 14')).toBeVisible()
     await expect(canvas.queryByRole('link', { name: /The Ninth Kitchen/ })).not.toBeInTheDocument()
   },
 }
@@ -193,7 +194,7 @@ export const SearchMatches: Story = {
 export const SearchToleratesTypos: Story = {
   beforeEach: () => seedLibraryPrefs({ page: { query: 'lantrens over kasmui' } }),
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('1 of 14 series match')).toBeVisible()
+    await expect(await canvas.findByText('1 of 14')).toBeVisible()
     await expect(await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })).toBeVisible()
   },
 }
@@ -209,10 +210,10 @@ export const NoMatches: Story = {
 export const OngoingAndBehind: Story = {
   beforeEach: () => seedLibraryPrefs({ page: { status: 'Ongoing', completeness: 'behind', sort: 'incomplete' } }),
   play: async ({ canvas, userEvent }) => {
-    await expect(await canvas.findByText('5 of 14 series match')).toBeVisible()
+    await expect(await canvas.findByText('5 of 14')).toBeVisible()
     await expect(await canvas.findByRole('button', { name: 'Save filter' })).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Clear' }))
-    await expect(await canvas.findByText('14 series')).toBeVisible()
+    await waitFor(() => expect(canvas.queryByText('5 of 14')).toBeNull())
   },
 }
 
@@ -296,7 +297,7 @@ export const SavedFilterChips: Story = {
   play: async ({ canvas, userEvent }) => {
     const chip = await canvas.findByRole('button', { name: 'Ongoing and behind' })
     await userEvent.click(chip)
-    await expect(await canvas.findByText('5 of 14 series match')).toBeVisible()
+    await expect(await canvas.findByText('5 of 14')).toBeVisible()
     await expect(await canvas.findByRole('button', { name: 'Clear' })).toBeVisible()
   },
 }

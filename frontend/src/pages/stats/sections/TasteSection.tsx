@@ -216,7 +216,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
                   <Trans>Read more than you own</Trans>
                 </li>
                 <li>
-                  <span className="stats-legend-swatch" style={{ background: 'var(--warn)' }} aria-hidden />
+                  <span className="stats-legend-swatch" style={{ background: 'var(--neutral)' }} aria-hidden />
                   <Trans>Own more than you read</Trans>
                 </li>
               </ul>

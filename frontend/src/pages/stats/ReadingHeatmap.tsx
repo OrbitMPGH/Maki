@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useLayoutEffect, useMemo, useRef } from 'react'
 import { Box, Group, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -94,6 +94,13 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
     // previous language's month names cached until days changed too.
   }, [days, i18n.locale])
 
+  // Narrower than a year, the grid opens on its newest weeks, where today is.
+  const scrollRef = useRef<HTMLDivElement>(null)
+  useLayoutEffect(() => {
+    const el = scrollRef.current
+    if (el) el.scrollLeft = el.scrollWidth
+  }, [columns])
+
   return (
     <Panel p="md">
       <Title order={3} size="h4" mb="xs">
@@ -103,7 +110,7 @@ export function ReadingHeatmap({ days }: { days: HeatmapDay[] }) {
         {t`Read on ${daysRead} of the last ${daysSoFar} days.`}{' '}
         {plural(chaptersRead, { one: '# chapter in total.', other: '# chapters in total.' })}
       </VisuallyHidden>
-      <Box style={{ overflowX: 'auto' }} role="region" aria-label={t`Reading days`} tabIndex={0}>
+      <Box ref={scrollRef} style={{ overflowX: 'auto' }} role="region" aria-label={t`Reading days`} tabIndex={0}>
         <Box style={{ minWidth: WEEKS * 14 }}>
           <Box style={{ display: 'flex', gap: 3, marginBottom: 4, paddingLeft: 0 }}>
             {columns.map((_, i) => {

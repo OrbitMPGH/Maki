@@ -27,6 +27,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import { obtainedCount } from '../../lib/chapterCounts'
 
 export interface StatusVisual {
+  /** A colour token as a CSS value (`var(--ok)`), so a Badge, a `--tone` and a fill all draw the same shade. */
   color: string
   /**
    * A descriptor for the words this app chose, a plain string for a wire value it did not
@@ -41,28 +42,11 @@ export interface StatusVisual {
 /** `vars` for a filled `color="var(--ok)"` Button: autoContrast cannot read a var(), so its label would stay white. */
 export const okButtonVars = () => ({ root: { '--button-color': 'var(--ok-on)' } })
 
-/**
- * The hero bands speak in design tokens, `StatusVisual` speaks in Mantine palette names. One map,
- * here, rather than a copy per band: a new slot cannot be added without also being named.
- */
-const STATUS_TOKEN: Record<string, string> = {
-  teal: 'ok',
-  yellow: 'warn',
-  blue: 'info',
-  red: 'danger',
-  violet: 'watched',
-  gray: 'neutral',
-  cyan: 'info',
-  orange: 'warn',
-  grape: 'watched',
-  green: 'ok',
-  lime: 'suggestive',
-  brand: 'brand',
-}
+const tone = (stem: string) => `var(--${stem})`
 
-/** Token stem for a `StatusVisual.color`, for `var(--x)` / `var(--x-soft)` pairs. */
+/** Token stem for a `StatusVisual.color` (`var(--ok)` gives `ok`), for `var(--x)` / `var(--x-soft)` pairs. */
 export function statusToken(color: string): string {
-  return STATUS_TOKEN[color] ?? 'neutral'
+  return /^var\(--([\w-]+)\)$/.exec(color)?.[1] ?? 'neutral'
 }
 
 /** The same, as a colour value a Mantine `color` prop takes. */
@@ -80,31 +64,19 @@ export function badgeFill(color: string): CSSProperties {
   return { background: statusColor(color), color: statusOnColor(color) }
 }
 
-/**
- * How good a 0–100 catalogue score is, as both a Mantine colour (for `Badge`) and a token stem
- * (for the hero's score pill). One function rather than two so a band can't mean green in one
- * place and lime in the other.
- */
-export function ratingBandVisual(rating: number): { color: string; token: string } {
-  if (rating >= 80) return { color: 'green', token: 'ok' }
-  if (rating >= 65) return { color: 'lime', token: 'suggestive' }
-  if (rating >= 50) return { color: 'yellow', token: 'warn' }
-  return { color: 'orange', token: 'danger' }
-}
-
 /** Publication status of a series (from metadata). */
 export function seriesStatusVisual(status: string): StatusVisual {
   switch (status) {
     case 'Ongoing':
-      return { color: 'blue', label: msg`Ongoing`, Icon: IconPlayerPlay }
+      return { color: tone('info'), label: msg`Ongoing`, Icon: IconPlayerPlay }
     case 'Completed':
-      return { color: 'teal', label: msg`Completed`, Icon: IconCircleCheck }
+      return { color: tone('ok'), label: msg`Completed`, Icon: IconCircleCheck }
     case 'Hiatus':
-      return { color: 'yellow', label: msg`Hiatus`, Icon: IconClockPause }
+      return { color: tone('warn'), label: msg`Hiatus`, Icon: IconClockPause }
     case 'Cancelled':
-      return { color: 'red', label: msg`Cancelled`, Icon: IconBan }
+      return { color: tone('danger'), label: msg`Cancelled`, Icon: IconBan }
     default:
-      return { color: 'gray', label: status || msg`Unknown`, Icon: IconHourglass }
+      return { color: tone('neutral'), label: status || msg`Unknown`, Icon: IconHourglass }
   }
 }
 
@@ -124,13 +96,13 @@ export function seriesStatusGlyph(status: string): Icon {
 export function contentRatingVisual(rating: string | null): StatusVisual | null {
   switch (rating) {
     case 'safe':
-      return { color: 'teal', label: msg`Safe`, Icon: IconEyeCheck }
+      return { color: tone('cr-safe'), label: msg`Safe`, Icon: IconEyeCheck }
     case 'suggestive':
-      return { color: 'yellow', label: msg`Suggestive`, Icon: IconEye }
+      return { color: tone('cr-suggestive'), label: msg`Suggestive`, Icon: IconEye }
     case 'erotica':
-      return { color: 'orange', label: msg`Erotica`, Icon: IconEyeOff }
+      return { color: tone('cr-erotica'), label: msg`Erotica`, Icon: IconEyeOff }
     case 'pornographic':
-      return { color: 'red', label: msg`Pornographic`, Icon: IconAlertTriangle }
+      return { color: tone('cr-explicit'), label: msg`Pornographic`, Icon: IconAlertTriangle }
     default:
       return null
   }
@@ -140,31 +112,31 @@ export function contentRatingVisual(rating: string | null): StatusVisual | null 
 export function queueStatusVisual(status: string): StatusVisual {
   switch (status) {
     case 'Resolving':
-      return { color: 'gray', label: msg`Finding source`, Icon: IconLoader2 }
+      return { color: tone('info'), label: msg`Finding source`, Icon: IconLoader2 }
     case 'Queued':
-      return { color: 'gray', label: msg`Queued`, Icon: IconClock }
+      return { color: tone('neutral'), label: msg`Queued`, Icon: IconClock }
     case 'FetchingPages':
-      return { color: 'blue', label: msg`Fetching`, Icon: IconLoader2 }
+      return { color: tone('info'), label: msg`Fetching`, Icon: IconLoader2 }
     case 'Downloading':
-      return { color: 'blue', label: msg`Downloading`, Icon: IconDownload }
+      return { color: tone('info'), label: msg`Downloading`, Icon: IconDownload }
     case 'Validating':
-      return { color: 'cyan', label: msg`Validating`, Icon: IconCheck }
+      return { color: tone('info'), label: msg`Validating`, Icon: IconCheck }
     case 'Packaging':
-      return { color: 'cyan', label: msg`Packaging`, Icon: IconFileZip }
+      return { color: tone('info'), label: msg`Packaging`, Icon: IconFileZip }
     case 'Importing':
-      return { color: 'teal', label: msg`Importing`, Icon: IconPackage }
+      return { color: tone('info'), label: msg`Importing`, Icon: IconPackage }
     case 'AwaitingImport':
-      return { color: 'yellow', label: msg`Needs review`, Icon: IconAlertTriangle }
+      return { color: tone('warn'), label: msg`Needs review`, Icon: IconAlertTriangle }
     case 'Completed':
-      return { color: 'teal', label: msg`Completed`, Icon: IconCircleCheck }
+      return { color: tone('ok'), label: msg`Completed`, Icon: IconCircleCheck }
     case 'Failed':
-      return { color: 'red', label: msg`Failed`, Icon: IconAlertTriangle }
+      return { color: tone('danger'), label: msg`Failed`, Icon: IconAlertTriangle }
     case 'RateLimited':
-      return { color: 'orange', label: msg`Rate limited`, Icon: IconClockPause }
+      return { color: tone('warn'), label: msg`Rate limited`, Icon: IconClockPause }
     case 'Cancelled':
-      return { color: 'gray', label: msg`Cancelled`, Icon: IconBan }
+      return { color: tone('neutral'), label: msg`Cancelled`, Icon: IconBan }
     default:
-      return { color: 'gray', label: status, Icon: IconHourglass }
+      return { color: tone('neutral'), label: status, Icon: IconHourglass }
   }
 }
 
@@ -181,8 +153,8 @@ export function seriesDownloadStateVisual(s: {
   const outstanding = s.downloadingCount + s.queuedCount
   if (outstanding === 0) return null
   return s.downloadingCount > 0
-    ? { color: 'blue', label: msg`Downloading ${outstanding}`, Icon: IconDownload }
-    : { color: 'grape', label: msg`Queued ${outstanding}`, Icon: IconClock }
+    ? { color: tone('info'), label: msg`Downloading ${outstanding}`, Icon: IconDownload }
+    : { color: tone('neutral'), label: msg`Queued ${outstanding}`, Icon: IconClock }
 }
 
 export interface SeriesProgressVisual {
@@ -269,36 +241,37 @@ export function isQueueActive(status: string): boolean {
 export function trackerStatusVisual(status: string): StatusVisual {
   switch (status) {
     case 'completed':
-      return { color: 'green', label: msg`Completed`, Icon: IconCircleCheck }
+      return { color: tone('ok'), label: msg`Completed`, Icon: IconCircleCheck }
     case 'reading':
-      return { color: 'brand', label: msg`Reading`, Icon: IconPlayerPlay }
+      return { color: tone('info'), label: msg`Reading`, Icon: IconPlayerPlay }
     case 'plan_to_read':
-      return { color: 'cyan', label: msg`Plan to read`, Icon: IconClock }
-    // A status the user set on the tracker that a sync never overrides.
+      return { color: tone('neutral'), label: msg`Plan to read`, Icon: IconClock }
+    // A status the user set on the tracker that a sync never overrides. The wire value does not
+    // tell paused from dropped, so it takes paused's amber rather than claim a drop.
     case 'other':
-      return { color: 'gray', label: msg`Paused or dropped`, Icon: IconHourglass }
+      return { color: tone('warn'), label: msg`Paused or dropped`, Icon: IconHourglass }
     default:
-      return { color: 'gray', label: status || msg`Listed`, Icon: IconHourglass }
+      return { color: tone('neutral'), label: status || msg`Listed`, Icon: IconHourglass }
   }
 }
 
 /** A tracker connection's dot/state: connected, set up but not connected, or not set up. */
 export function trackerConnectionVisual(connected: boolean, configured: boolean): StatusVisual {
-  if (connected) return { color: 'green', label: msg`Connected`, Icon: IconLink }
-  if (configured) return { color: 'red', label: msg`Not connected`, Icon: IconLinkOff }
-  return { color: 'gray', label: msg`Not set up`, Icon: IconLinkOff }
+  if (connected) return { color: tone('ok'), label: msg`Connected`, Icon: IconLink }
+  if (configured) return { color: tone('danger'), label: msg`Not connected`, Icon: IconLinkOff }
+  return { color: tone('neutral'), label: msg`Not set up`, Icon: IconLinkOff }
 }
 
 /** A library file's link state against the series' chapters. */
 export function fileStatusVisual(status: string): StatusVisual {
   switch (status) {
     case 'linked':
-      return { color: 'teal', label: msg`Linked`, Icon: IconLink }
+      return { color: tone('ok'), label: msg`Linked`, Icon: IconLink }
     case 'unlinked':
-      return { color: 'yellow', label: msg`Not linked`, Icon: IconLinkOff }
+      return { color: tone('warn'), label: msg`Not linked`, Icon: IconLinkOff }
     case 'missing':
-      return { color: 'red', label: msg`Missing from disk`, Icon: IconFileUnknown }
+      return { color: tone('warn'), label: msg`File missing`, Icon: IconFileUnknown }
     default:
-      return { color: 'orange', label: msg`Unrecognized`, Icon: IconFileUnknown }
+      return { color: tone('warn'), label: msg`Unrecognized`, Icon: IconFileUnknown }
   }
 }

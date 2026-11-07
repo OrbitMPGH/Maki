@@ -72,7 +72,7 @@ function progressOf(s: { readChapterCount: number | null; chapterFileCount: numb
   const total = formatNumber(s.chapterFileCount)
   return (
     <Trans>
-      ch. {read} of {total}
+      Ch. {read} of {total}
     </Trans>
   )
 }

@@ -127,7 +127,7 @@ export function CompareStep({
         />
       )}
       {encoded.isError && (
-        <Alert color="red" variant="light">
+        <Alert color="var(--danger)" variant="light">
           <Trans>Maki could not encode this page. Try another page or another format.</Trans>
         </Alert>
       )}

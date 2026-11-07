@@ -10,7 +10,6 @@ import {
   Button,
   Collapse,
   Group,
-  Loader,
   Menu,
   Modal,
   MultiSelect,
@@ -91,7 +90,6 @@ import { DiscoverGenreWall } from '../components/discover/DiscoverGenreWall'
 import { DiscoverHero } from '../components/discover/DiscoverHero'
 import { RecommenderDials } from '../components/discover/RecommenderDials'
 import { DiscoverSeedStrip } from '../components/discover/DiscoverSeedStrip'
-import { DiscoverTasteStrip } from '../components/discover/DiscoverTasteStrip'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
 import { FollowingRail } from '../components/discover/FollowingRail'
 import { LuckyButton } from '../components/LuckyButton'
@@ -122,6 +120,7 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { RailSkeleton } from '../components/ui/RailSkeleton'
+import { DelayedLoader } from '../components/ui/DelayedLoader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { TagChip, TagChips } from '../components/ui/TagChip'
 import { usePageState } from '../lib/pageState'
@@ -141,6 +140,7 @@ import {
   type DensityPref,
 } from '../components/ui/viewPrefs'
 import { formatFixedDecimal } from '../format'
+import { useModalHistory } from '../lib/useModalHistory'
 
 const DENSITY_VALUES: readonly Density[] = ['compact', 'default', 'comfortable']
 
@@ -946,6 +946,7 @@ function FeedExpandModal({
   const { t } = useLingui()
   const catalogue = useCatalogueFilters()
   const [applied, setApplied] = useState<RecommendationFilters>({})
+  useModalHistory(rail != null, onClose)
   // Its own scope: the rails behind it are fixed-size rows, so this density is nobody else's.
   const { density, setDensity, cols } = useDensityPref('discover-expand')
 
@@ -1385,8 +1386,6 @@ function DiscoverBrowseTab({
         <DiscoverHeroSkeleton />
       ) : null,
 
-    taste: <DiscoverTasteStrip />,
-
     recent: recentRail ? (
       <div>
         <SectionHeader
@@ -1674,14 +1673,25 @@ export default function DiscoverPage() {
             <Group gap="xs" wrap="wrap" justify="flex-end">
               <div ref={setTabTools} className="discover-tab-tools" />
               {active === 'browse' && (
-                <Tooltip label={t`Refresh the catalogue`} withArrow>
+                <Button
+                  visibleFrom="sm"
+                  variant="default"
+                  leftSection={<IconRefresh size={16} />}
+                  loading={railsFetching}
+                  onClick={refreshRails}
+                >
+                  <Trans>Refresh picks</Trans>
+                </Button>
+              )}
+              {active === 'browse' && (
+                <Tooltip label={t`Refresh picks`} withArrow>
                   <ActionIcon
-                    variant="subtle"
-                    color="var(--neutral)"
-                    size={44}
+                    hiddenFrom="sm"
+                    variant="default"
+                    size="input-sm"
                     loading={railsFetching}
                     onClick={refreshRails}
-                    aria-label={t`Refresh the catalogue`}
+                    aria-label={t`Refresh picks`}
                   >
                     <IconRefresh size={18} />
                   </ActionIcon>
@@ -1689,7 +1699,7 @@ export default function DiscoverPage() {
               )}
               <Menu position="bottom-end" withinPortal>
                 <Menu.Target>
-                  <ToolbarMenuButton size={44} />
+                  <ToolbarMenuButton />
                 </Menu.Target>
                 <Menu.Dropdown>
                   {active === 'browse' && (
@@ -1717,13 +1727,13 @@ export default function DiscoverPage() {
       >
         <Tabs.List>
           <Tabs.Tab value="browse">
-            <Trans>Discover</Trans>
+            <Trans>Browse</Trans>
           </Tabs.Tab>
           <Tabs.Tab value="recommended" disabled={editing}>
             <Trans>Recommended</Trans>
           </Tabs.Tab>
           <Tabs.Tab value="taste" disabled={editing}>
-            <Trans>Your Taste</Trans>
+            <Trans>Your taste</Trans>
           </Tabs.Tab>
           <Tabs.Tab value="shortlist" disabled={editing}>
             <CountIndicator count={shortlistCount ?? 0} inline position="middle-end" offset={-14} withBorder={false}>
@@ -1736,11 +1746,11 @@ export default function DiscoverPage() {
       {active === 'recommended' ? (
         <RecommendedTab prefs={viewPrefs} toolsTarget={tabTools} />
       ) : active === 'taste' ? (
-        <Suspense fallback={<Loader />}>
+        <Suspense fallback={<DelayedLoader />}>
           <TasteTab />
         </Suspense>
       ) : active === 'shortlist' ? (
-        <Suspense fallback={<Loader />}>
+        <Suspense fallback={<DelayedLoader />}>
           <ShortlistTab />
         </Suspense>
       ) : (

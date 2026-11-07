@@ -292,12 +292,12 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
     switch (entry.role) {
       case 'positive': return { label: t`Positive`, color: 'var(--ok)' }
       case 'avoided': return { label: t`Avoided`, color: 'var(--danger)' }
-      case 'neutral': return { label: t`Neutral`, color: 'gray' }
+      case 'neutral': return { label: t`Neutral`, color: 'var(--neutral)' }
       case 'superseded':
         return entry.supersededBy === 'ignored'
-          ? { label: t`Excluded`, color: 'gray' }
-          : { label: t`Already yours`, color: 'gray' }
-      default: return { label: t`Unmatched`, color: 'gray' }
+          ? { label: t`Excluded`, color: 'var(--neutral)' }
+          : { label: t`Already yours`, color: 'var(--brand)' }
+      default: return { label: t`Unmatched`, color: 'var(--neutral)' }
     }
   })()
 

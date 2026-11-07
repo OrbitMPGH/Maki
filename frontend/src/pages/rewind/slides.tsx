@@ -425,9 +425,9 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
                 const { title, maxChapter } = s
                 return (
                   <Text key={s.seriesId ?? title} className="rewind-list-line">
-                    {title}{' '}
+                    {title}
                     <span className="rewind-dim">
-                      - <Trans>stalled at ch. {maxChapter}</Trans>
+                      , <Trans>stalled at ch. {maxChapter}</Trans>
                     </span>
                   </Text>
                 )

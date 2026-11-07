@@ -509,13 +509,17 @@ export default function HealthPage() {
         loading={overview.isPending}
         figures={[
           {
-            label: t`System issues`,
+            label: t`Server issues`,
             value: issues,
             tone: issuesTone,
-            mark: <IconBrandMark mood={overview.isPending ? 'awake' : issues > 0 ? 'asking' : 'pleased'} size={40} />,
+            mark: (
+              <span className="brand-mark empty-state-mark">
+                <IconBrandMark mood={overview.isPending ? 'awake' : issues > 0 ? 'asking' : 'pleased'} size={40} />
+              </span>
+            ),
           },
-          { label: t`Open file findings`, value: overview.data?.openFindings ?? 0, tone: 'warn' },
-          { label: t`Archives inventoried`, value: overview.data?.files ?? 0 },
+          { label: t`Open file problems`, value: overview.data?.openFindings ?? 0, tone: 'warn' },
+          { label: t`Files scanned`, value: overview.data?.files ?? 0 },
         ]}
       />
 
@@ -2406,7 +2410,7 @@ function SizePanel({ detail }: { detail: FileDetail }) {
         onClick={() =>
           action.mutate(
             { path: '/records/refresh', body: { fileIds: [file.id] } },
-            { onSuccess: () => notifications.show({ color: 'var(--ok)', message: t`Updated the record` }) },
+            { onSuccess: () => notifications.show({ color: 'var(--ok)', message: t`Maki's record now matches the file on disk.` }) },
           )
         }
       >

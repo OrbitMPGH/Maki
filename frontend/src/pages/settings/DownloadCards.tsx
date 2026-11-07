@@ -363,7 +363,7 @@ export function SmartDownloadSection() {
   return (
     <SettingsSection
       id="smart-download"
-      title={<Trans>Smart Download</Trans>}
+      title={<Trans>Smart download</Trans>}
       description={<Trans>Turned on per series in its monitoring options.</Trans>}
       dirty={dirty}
       saving={save.isPending}

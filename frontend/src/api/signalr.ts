@@ -424,6 +424,7 @@ export function useLiveEvents() {
         seriesList.mark(seriesId)
         scheduleSeriesRefresh()
         void queryClient.invalidateQueries({ queryKey: ['home'] })
+        void queryClient.invalidateQueries({ queryKey: ['progress'] })
       })
 
       // Only ids travel: the text and the author come back through the filtered endpoints.

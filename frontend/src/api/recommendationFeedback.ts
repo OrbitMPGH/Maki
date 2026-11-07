@@ -58,6 +58,8 @@ export interface FeedbackLabData {
     visibleShelf: number; personalAdds: number; ratedSources: number; readSources: number
     excluded: number; hidden: number; dismissed: number; exposed: number; liked: number; disliked: number
     pushingDown: number
+    /** Fully incognito series, left off the shelf count. Absent from an older server. */
+    incognito?: number
   }
   avoids: AvoidanceLabel[]
   sources: {

@@ -45,7 +45,8 @@ import { getInitialize } from '../../api/client'
 import { formatDateTime } from '../../format'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
-import { useCopyText } from '../ui/useCopyText'
+import { useCopyText } from '../ui/useCopyText'
+import { PanelTitle } from '../ui/PanelTitle'
 
 /**
  * Self-service account management: password, two-factor, single sign-on, sessions.
@@ -68,7 +69,9 @@ export function SignInSection() {
         <Text size="sm" c="var(--ink-3)">
           <Trans>Signed in as</Trans>
         </Text>
-        <Code>{me?.userName}</Code>
+        <Text size="sm" fw={600} c="var(--ink-hi)">
+          {me?.userName}
+        </Text>
         {me?.isAdmin && (
           <Badge size="sm" variant="light">
             <Trans>Administrator</Trans>
@@ -247,9 +250,9 @@ function PasswordCard() {
 
   return (
     <Stack gap="xs">
-      <Text fw={600} size="sm">
+      <PanelTitle>
         <Trans>Password</Trans>
-      </Text>
+      </PanelTitle>
       <Box
         component="form"
         className="settings-field-grid"
@@ -349,9 +352,9 @@ function TwoFactorCard() {
     <Stack gap="xs">
       <Group justify="space-between">
         <div>
-          <Text fw={600} size="sm">
+          <PanelTitle>
             <Trans>Two-factor authentication</Trans>
-          </Text>
+          </PanelTitle>
           <Text size="xs" c="var(--ink-3)">
             {status?.ssoDelegated && !status.enabled ? (
               <Trans>
@@ -721,9 +724,9 @@ function SessionsCard() {
   return (
     <Group justify="space-between">
       <div>
-        <Text fw={600} size="sm">
+        <PanelTitle>
           <Trans>Sessions</Trans>
-        </Text>
+        </PanelTitle>
         <Text size="xs" c="var(--ink-3)">
           <Trans>Signs out every other browser and device. This one stays signed in.</Trans>
         </Text>

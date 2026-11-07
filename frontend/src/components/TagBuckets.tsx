@@ -10,7 +10,7 @@ import { useLabel } from '../i18n-context'
 /** MangaBaka's own relevance buckets, most-relevant first, each with the token it is drawn in. */
 const TAG_BUCKETS: { key: string; label: MessageDescriptor; token: string }[] = [
   { key: 'core', label: msg`Core`, token: 'danger' },
-  { key: 'defining', label: msg`Defining`, token: 'watched' },
+  { key: 'defining', label: msg`Defining`, token: 'anime' },
   { key: 'recurrent', label: msg`Recurrent`, token: 'ok' },
   { key: 'incidental', label: msg`Incidental`, token: 'neutral' },
 ]

@@ -49,6 +49,24 @@ export const OpenedWithShortcut: Story = {
   },
 }
 
+/** The shortcut still opens the palette while the cursor sits in a text field elsewhere on the page. */
+export const OpenedWithShortcutFromField: Story = {
+  decorators: [
+    (Story) => (
+      <>
+        <input aria-label="Filter library" />
+        <Story />
+      </>
+    ),
+  ],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('textbox', { name: 'Filter library' }))
+    await userEvent.keyboard('{Control>}k{/Control}')
+    const body = within(canvasElement.ownerDocument.body)
+    await waitFor(async () => expect(await body.findByRole('combobox', { name: INPUT_NAME })).toBeVisible())
+  },
+}
+
 export const SearchSeries: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: /^Search/ }))

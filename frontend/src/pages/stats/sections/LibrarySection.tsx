@@ -11,6 +11,7 @@ import { FigureStrip } from '../../../components/ui/FigureStrip'
 import { TagChip, TagChips } from '../../../components/ui/TagChip'
 import { formatBytes, formatNumber, formatPercent, formatStatsBucket } from '../../../format'
 import { ChartSkeleton } from '../ChartSkeleton'
+import { seriesStatusVisual, statusColor } from '../../../components/ui/status'
 import { SplitBar } from '../charts/SplitBar'
 import type { SplitBarItem } from '../charts/SplitBar'
 import { CONTENT_RATING_LABELS, PROTOCOL_LABELS, STATUS_LABELS, TYPE_LABELS, useNameLabel } from '../labels'
@@ -18,6 +19,13 @@ import { SeriesLink, SeriesThumb } from '../SeriesLink'
 import { SourceReliability } from '../SourceReliability'
 import { StatsInsight } from '../StatsSection'
 import type { StatsSectionProps } from './types'
+
+const CONTENT_RATING_COLOR: Record<string, string> = {
+  safe: 'var(--cr-safe)',
+  suggestive: 'var(--cr-suggestive)',
+  erotica: 'var(--cr-erotica)',
+  pornographic: 'var(--cr-explicit)',
+}
 
 function fileCount(n: number): string {
   return plural(n, { one: '# file', other: '# files' })
@@ -65,6 +73,10 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
     // the previous language's month names cached until the data changed too.
     [growth, growthMetric, i18n.locale],
   )
+  // Both charts on one band axis with the same ticks, so a step in Total sits over the bar that
+  // made it and the gridlines line up. syncWithTicks drops the extra lines at the plot edges.
+  const growthXAxis = { scale: 'band' as const, interval: Math.max(0, Math.ceil(growthData.length / 8) - 1) }
+  const growthGrid = { syncWithTicks: true }
 
   const topSource = useMemo(() => {
     if (!stats?.sourceReliability.length) return null
@@ -130,6 +142,7 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
     key: s.name,
     label: nameLabel(STATUS_LABELS, s.name),
     value: s.count,
+    color: statusColor(seriesStatusVisual(s.name).color),
   }))
   const typeItems: SplitBarItem[] = stats.byType.map((s) => ({
     key: s.name,
@@ -140,6 +153,7 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
     key: s.name,
     label: nameLabel(CONTENT_RATING_LABELS, s.name),
     value: s.count,
+    color: CONTENT_RATING_COLOR[s.name.toLowerCase()],
   }))
 
   if (seriesCount === 0) {
@@ -210,6 +224,8 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
                   withXAxis={false}
                   tickLine="none"
                   gridAxis="y"
+                  gridProps={growthGrid}
+                  xAxisProps={growthXAxis}
                   yAxisProps={{ width: 64 }}
                   valueFormatter={growthMetric === 'size' ? formatBytes : undefined}
                   series={[{ name: 'Total', label: t`Total`, color: 'var(--brand)' }]}
@@ -223,9 +239,11 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
                   dataKey="bucket"
                   tickLine="none"
                   gridAxis="y"
+                  gridProps={growthGrid}
+                  xAxisProps={growthXAxis}
                   yAxisProps={{ width: 64 }}
                   valueFormatter={growthMetric === 'size' ? formatBytes : undefined}
-                  series={[{ name: 'Added', label: t`Added`, color: 'var(--ok)' }]}
+                  series={[{ name: 'Added', label: t`Added`, color: 'var(--neutral)' }]}
                 />
               </>
             ) : (

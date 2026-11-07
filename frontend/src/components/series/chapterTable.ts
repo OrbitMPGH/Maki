@@ -2,15 +2,19 @@ import { t as staticT } from '@lingui/core/macro'
 import type { ChapterProgressDto } from '../../api/reader'
 import type { SourceInfo } from '../../api/hooks'
 import type { ChapterDto, SourceMappingDto } from '../../api/types'
+import { chapterLabel as houseChapterLabel } from '../../format'
 
 export function chapterLabel(c: ChapterDto): string {
   // A volume entry: a volume file on disk standing in for chapters no source lists.
-  if (!c.isOneShot && c.number === null && c.volume !== null) return staticT`Vol.${c.volume}`
+  if (!c.isOneShot && c.number === null && c.volume !== null) {
+    const volume = c.volume
+    return staticT`Vol. ${volume}`
+  }
   if (c.isOneShot || c.number === null) return c.title ?? staticT`One-shot`
   // Prefer the volume the backing file actually is; fall back to metadata volume.
   const volNum = c.fileVolume ?? (c.volume !== null ? String(c.volume) : null)
   const chapterNumber = c.number
-  return volNum !== null ? staticT`Vol.${volNum} Ch.${chapterNumber}` : staticT`Ch.${chapterNumber}`
+  return houseChapterLabel(chapterNumber, volNum)
 }
 
 export interface ReadState {

@@ -4,8 +4,8 @@ import { useLabel } from '../i18n-context'
 import { contentRatingVisual } from './ui/status'
 
 /**
- * The content rating beside a hero's status chip: outlined in its own colour (theme.css), with Safe
- * in teal so it never reads as the same green as "Completed".
+ * The content rating beside a hero's status chip: outlined in its own colour (theme.css), on a scale
+ * of its own so no rating reads as a status. Safe is teal, the cool end.
  */
 export function ContentRatingChip({ rating, tooltipZIndex }: { rating: string | null | undefined; tooltipZIndex?: number }) {
   const { t } = useLingui()

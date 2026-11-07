@@ -3,7 +3,7 @@ import { formatNumber, formatPercent } from '../../../format'
 
 /**
  * Ten buckets of how far unfinished series got before stalling. The bucket the median falls in is
- * called out in `--warn` with a small label, everything else in the ordinary brand colour.
+ * called out in `--neutral` with a small label, everything else in the ordinary brand colour.
  */
 export function StopHistogram({
   buckets,
@@ -28,7 +28,7 @@ export function StopHistogram({
               className="stats-hist-bar"
               style={{
                 height: `${(count / max) * 100}%`,
-                background: isMedian ? 'var(--warn)' : undefined,
+                background: isMedian ? 'var(--neutral)' : undefined,
               }}
             />
             <span className="stats-hist-label">{formatPercent(i / buckets.length)}</span>

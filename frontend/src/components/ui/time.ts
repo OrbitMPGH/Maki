@@ -49,10 +49,16 @@ export function relativeTime(iso: string, style: Intl.RelativeTimeFormatStyle = 
   const magnitude = Math.abs(seconds)
   if (magnitude < 60) return t`just now`
 
-  for (const [unit, size] of UNITS) {
-    if (magnitude >= size) {
-      return formatter(style).format(Math.round(seconds / size), unit)
+  for (let i = 0; i < UNITS.length; i++) {
+    const [unit, size] = UNITS[i]
+    if (magnitude < size) continue
+    const value = Math.round(seconds / size)
+    // 23h40m rounds to 24 hours and 350 days to 12 months: say "1d" and "1y" instead.
+    if (i > 0 && Math.abs(value) >= Math.round(UNITS[i - 1][1] / size)) {
+      const [larger, largerSize] = UNITS[i - 1]
+      return formatter(style).format(Math.round(seconds / largerSize), larger)
     }
+    return formatter(style).format(value, unit)
   }
 
   return t`just now`

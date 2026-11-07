@@ -144,7 +144,7 @@ export default function ImportPage() {
         description={
           mihonMode
             ? t`Adds the manga in your Mihon library to Maki.`
-            : t`Brings series folders Maki doesn't know yet into the library.`
+            : t`Add series folders that Maki does not know about yet.`
         }
       />
       {mihonAvailable && (
@@ -159,7 +159,7 @@ export default function ImportPage() {
             setSearchParams(next, { replace: true })
           }}
         >
-          <Tabs.List mb="md">
+          <Tabs.List>
             <Tabs.Tab value="folders">
               <Trans>Folders</Trans>
             </Tabs.Tab>

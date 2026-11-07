@@ -1,8 +1,7 @@
 import { Anchor, Badge, Group, Loader, Paper, Spoiler, Stack, Text, Title } from '@mantine/core'
-import { IconExternalLink, IconStar } from '../../lib/icons'
+import { IconExternalLink, IconStarFilled } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useMangaReviews, type MangaReview } from '../../api/hooks'
-import { ratingBandVisual } from '../ui/status'
 
 /**
  * What readers made of a series, scraped from MyAnimeList when the card opens.
@@ -72,8 +71,10 @@ export function ReviewList({
                 {review.score != null && (
                   <Badge
                     size="sm"
-                    color={`var(--${ratingBandVisual(review.score * 10).token})`}
-                    leftSection={<IconStar size={11} />}
+                    variant="light"
+                    color="var(--rating)"
+                    c="var(--ink-hi)"
+                    leftSection={<IconStarFilled size={11} color="var(--rating)" />}
                   >
                     {review.score}
                   </Badge>

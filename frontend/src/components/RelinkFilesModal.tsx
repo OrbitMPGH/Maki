@@ -559,7 +559,7 @@ function PlanRow({
       </Text>
       {basisLabel ? (
         <Tooltip label={hint ? renderLabel(hint) : undefined} withArrow disabled={!hint} multiline w={280}>
-          <Badge size="sm" variant="light" color={row.basis === 'estimated' ? 'gray' : row.basis === 'existing' ? 'indigo' : 'teal'}>
+          <Badge size="sm" variant="light" color={row.basis === 'estimated' || row.basis === 'existing' ? 'var(--neutral)' : 'var(--ok)'}>
             {basisLabel}
           </Badge>
         </Tooltip>

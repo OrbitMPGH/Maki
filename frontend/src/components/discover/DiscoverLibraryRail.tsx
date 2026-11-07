@@ -21,7 +21,7 @@ import { RequestForm } from '../RequestForm'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useIncognitoOptions, type IncognitoMode } from '../ui/incognito'
 import { useLabel } from '../../i18n-context'
-import { MONITOR_OPTIONS } from '../series/SeriesActionsMenu'
+import { MONITOR_OPTIONS, MONITOR_SHORT } from '../series/SeriesActionsMenu'
 import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
 
 /**
@@ -239,7 +239,6 @@ export function DiscoverLibraryRail({
           <Button
             mt="md"
             fullWidth
-            color="var(--ok)"
             variant="light"
             rightSection={<IconArrowRight size={16} />}
             onClick={goToLibrary}
@@ -320,10 +319,15 @@ export function DiscoverLibraryRail({
             <Select
               aria-label={t`Monitor`}
               leftSection={<IconBell size={16} />}
-              data={MONITOR_OPTIONS.map(({ value, label }) => {
-                const mode = renderLabel(label)
+              // The short name in the closed field, which is narrow here; the full one in the list.
+              data={MONITOR_OPTIONS.map(({ value }) => {
+                const mode = renderLabel(MONITOR_SHORT[value])
                 return { value, label: t`Monitor: ${mode}` }
               })}
+              renderOption={({ option }) => {
+                const full = MONITOR_OPTIONS.find((o) => o.value === option.value)
+                return full ? renderLabel(full.label) : option.label
+              }}
               value={shownMonitorMode}
               onChange={(value) => value && setMonitorMode(value)}
               allowDeselect={false}

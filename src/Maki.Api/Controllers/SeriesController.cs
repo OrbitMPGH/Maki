@@ -1120,7 +1120,9 @@ public class SeriesController(
                            series.Type is SeriesTypes.Manhua or SeriesTypes.Manhwa
             ? Maki.Core.Reading.ReaderPrefsSpec.ModeVertical
             : readerPrefs.Prefs.Mode;
-        var estimateTotal = Math.Max(series.TotalChapters ?? 0, known);
+        // The wanted total, as the Progress panel and the Unread filter count, so a listed chapter the
+        // reader turned down is not "left". With nothing wanted every listed chapter counts.
+        var estimateTotal = Math.Max(series.TotalChapters ?? 0, total > 0 ? total : known);
         var estimate = await readingTimeEstimates.EstimateAsync(
             id, estimateTotal, readRows, estimateMode, ct);
 

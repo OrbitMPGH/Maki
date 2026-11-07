@@ -193,6 +193,6 @@ export const ReaderResolvedRequests: Story = {
 export const ReaderNoRequests: Story = {
   parameters: { auth: 'reader', msw: [noRequests] },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Search for a series and request it - it will show up here once you do.')).toBeVisible()
+    await expect(await canvas.findByText('Search for a series and request it. It shows up here once you do.')).toBeVisible()
   },
 }

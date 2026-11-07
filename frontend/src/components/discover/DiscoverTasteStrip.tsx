@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import { Skeleton, Text } from '@mantine/core'
 import { Trans } from '@lingui/react/macro'
 import { useTasteProfile } from '../../api/hooks'
@@ -7,13 +6,8 @@ import { useTasteProfile } from '../../api/hooks'
 const SHOWN = 5
 
 /**
- * One line saying what is steering the picks below it, with a way through to the full breakdown.
- *
- * <p>
- * The whole taste panel lives on its own tab and stays there. Discover only needs to answer "why
- * these", not "what am I". Tags stay ordered by weighted taste strength, while the percentage says
- * how many of the reader's series carry the tag.
- * </p>
+ * One line saying what is steering the picks, at the top of the Your taste tab. Tags stay ordered
+ * by weighted taste strength, while the percentage says how many of the reader's series carry the tag.
  */
 export function DiscoverTasteStrip() {
   const { data, isLoading } = useTasteProfile('read')
@@ -36,7 +30,7 @@ export function DiscoverTasteStrip() {
   return (
     <div className="discover-taste-strip">
       <Text className="discover-taste-lead">
-        <Trans>Steering these picks</Trans>
+        <Trans>Steering your picks</Trans>
       </Text>
       <div className="discover-taste-chips">
         {facets.map((facet) => {
@@ -50,9 +44,6 @@ export function DiscoverTasteStrip() {
           )
         })}
       </div>
-      <Link to="/discover/taste" className="discover-taste-more">
-        <Trans>Your taste</Trans>
-      </Link>
     </div>
   )
 }

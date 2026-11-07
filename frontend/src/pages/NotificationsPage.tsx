@@ -16,6 +16,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { I18n } from '@lingui/core'
 import { useState } from 'react'
+import { useMediaQuery } from '@mantine/hooks'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   visibleInboxCategories,
@@ -116,6 +117,18 @@ export default function NotificationsPage() {
   const clear = useClearInbox()
 
   const categories = visibleInboxCategories(isAdmin, singleUser)
+  // A phone has no room beside the tabs, so the switch joins the header actions instead of taking a
+  // row of its own above the rule.
+  const phone = useMediaQuery('(max-width: 36em)') ?? false
+  const unreadSwitch = (
+    <Switch
+      className="notifications-unread-switch"
+      size="xs"
+      label={t`Unread only`}
+      checked={unreadOnly}
+      onChange={(e) => setUnreadOnly(e.currentTarget.checked)}
+    />
+  )
 
   // Filtered client-side rather than through the endpoint's `type` parameter: a category is several
   // types, and the endpoint takes one. Paging still comes from the server, so this narrows the page
@@ -149,7 +162,7 @@ export default function NotificationsPage() {
                 component={Link}
                 to="/settings?tab=preferences&s=notification-prefs"
                 variant="default"
-                size="lg"
+                size="input-sm"
                 aria-label={t`Notification settings`}
               >
                 <IconSettings size={18} />
@@ -171,6 +184,7 @@ export default function NotificationsPage() {
             >
               <Trans>Clear all</Trans>
             </Button>
+            {phone && unreadSwitch}
           </>
         }
       />
@@ -194,14 +208,7 @@ export default function NotificationsPage() {
             ))}
           </Tabs.List>
         </Tabs>
-        <Switch
-          className="notifications-unread-switch"
-          size="xs"
-          ml="auto"
-          label={t`Unread only`}
-          checked={unreadOnly}
-          onChange={(e) => setUnreadOnly(e.currentTarget.checked)}
-        />
+        {!phone && unreadSwitch}
       </div>
 
       {isLoading ? (

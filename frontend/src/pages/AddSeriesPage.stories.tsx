@@ -57,7 +57,7 @@ export const FromDiscoverFeed: Story = {
     },
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('button', { name: 'Filters (1)' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Filters 1' })).toBeVisible()
     await expect(await canvas.findByText('Browsing the catalogue')).toBeVisible()
   },
 }

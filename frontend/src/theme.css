@@ -27,12 +27,18 @@
   --tier-2-soft: color-mix(in srgb, var(--tier-2) 15%, transparent);
   --tier-3: #d4a017;
   --tier-3-soft: color-mix(in srgb, var(--tier-3) 15%, transparent);
-  --tier-4: #4fb0c6;
+  --tier-4: #cfe3ea;
   --tier-4-soft: color-mix(in srgb, var(--tier-4) 15%, transparent);
-  --tier-5: #7f6fd6;
+  --tier-5: #8fd3ff;
   --tier-5-soft: color-mix(in srgb, var(--tier-5) 15%, transparent);
-  --tier-6: #d64f7f;
+  --tier-6: var(--brand);
   --tier-6-soft: color-mix(in srgb, var(--tier-6) 15%, transparent);
+  --chart-1: var(--brand);
+  --chart-2: #8fa3c7;
+  --chart-3: #c79a6b;
+  --chart-4: #6fbfa0;
+  --chart-5: #b98cd1;
+  --chart-6: #a6adbb;
 
   --brand: #6d7dff;
   --brand-hover: #5c6cf0;
@@ -53,24 +59,44 @@
   --danger-fg: #ff8b84;
   /* Filled danger buttons carry white text, which --danger is too light for in the dark themes. */
   --danger-fill: #c0322b;
-  --watched: #b197fc;
-  --watched-on: #1a0f33;
-  --suggestive: #b0bd52;
-  --rating-safe: #38c9a0;
-  --suggestive-on: #1a1d06;
-  --suggestive-soft: color-mix(in srgb, var(--suggestive) 15%, transparent);
+  --anime: #b197fc;
+  --anime-on: #1a0f33;
+  --volume: #c9a0c4;
+  --volume-on: #1e1020;
+  --cr-safe: #38c9a0;
+  --cr-safe-on: #04201a;
+  --cr-suggestive: #b0bd52;
+  --cr-suggestive-on: #1a1d06;
+  --cr-erotica: #f0803c;
+  --cr-erotica-on: #2a1405;
+  --cr-explicit: #e64980;
+  --cr-explicit-on: #2a0815;
+  --q-official: #f2c94c;
+  --q-official-on: #241a00;
+  --q-scanlator: #c3ccd6;
+  --q-scanlator-on: #15191e;
+  --q-aggregator: #c8814f;
+  --q-aggregator-on: #24140a;
   --neutral: #a6adbb;
   --neutral-on: #11141c;
   --ok-soft: color-mix(in srgb, var(--ok) 15%, transparent);
   --warn-soft: color-mix(in srgb, var(--warn) 15%, transparent);
   --info-soft: color-mix(in srgb, var(--info) 15%, transparent);
   --danger-soft: color-mix(in srgb, var(--danger) 15%, transparent);
-  --watched-soft: color-mix(in srgb, var(--watched) 15%, transparent);
+  --anime-soft: color-mix(in srgb, var(--anime) 15%, transparent);
+  --volume-soft: color-mix(in srgb, var(--volume) 15%, transparent);
+  --cr-safe-soft: color-mix(in srgb, var(--cr-safe) 15%, transparent);
+  --cr-suggestive-soft: color-mix(in srgb, var(--cr-suggestive) 15%, transparent);
+  --cr-erotica-soft: color-mix(in srgb, var(--cr-erotica) 15%, transparent);
+  --cr-explicit-soft: color-mix(in srgb, var(--cr-explicit) 15%, transparent);
+  --q-official-soft: color-mix(in srgb, var(--q-official) 15%, transparent);
+  --q-scanlator-soft: color-mix(in srgb, var(--q-scanlator) 15%, transparent);
+  --q-aggregator-soft: color-mix(in srgb, var(--q-aggregator) 15%, transparent);
   --neutral-soft: color-mix(in srgb, var(--neutral) 15%, transparent);
 
   --content-wide: 72rem;
   --content-prose: 42rem;
-  --section-space: clamp(2rem, 4vw, 4.5rem);
+  --section-space: 44px;
   --control-height-xs: 1.875rem;
   --control-height-md: 2.625rem;
   --radius-control: 6px;
@@ -134,8 +160,8 @@
   --shadow-cover: 0 1px 2px rgba(0, 0, 0, 0.45);
   --shadow-cover-hover: 0 14px 26px -12px rgba(0, 0, 0, 0.8);
   --cover-rim: rgba(255, 255, 255, 0.09);
-  /* The focus ring's colour, so pointer and keyboard get the same 2px edge; selection adds a third pixel. */
-  --cover-rim-hover: var(--focus-ring);
+  /* An ink edge, so a pointed-at cover never reads as focused or selected (both brand). */
+  --cover-rim-hover: color-mix(in srgb, var(--ink-hi) 30%, transparent);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   /* Symmetric, for anything that loops: an expo-out start snaps on every repeat. Spinners stay linear. */
   --ease-loop: cubic-bezier(0.45, 0, 0.55, 1);
@@ -163,7 +189,12 @@
   --dur-result-hold: 1s;
 
   --font-display: 'Bricolage Grotesque Variable', 'Onest Variable', ui-sans-serif, -apple-system,
-    'Segoe UI', Roboto, sans-serif;
+    'Segoe UI', Roboto, 'Hiragino Sans', 'Yu Gothic UI', 'Meiryo UI', 'Noto Sans JP', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+}
+/* Japanese and Korean faces draw lighter than Onest at the same weight; a title tagged with its
+   language steps up one so it matches the Latin titles beside it. */
+span[lang]:is(:lang(ja), :lang(ko)):not(:lang(ja-Latn), :lang(ko-Latn)) {
+  font-weight: var(--fw-medium);
 }
 
 /* The display face carries names and headline numbers: page, section, modal and series titles, card
@@ -234,19 +265,19 @@
   --brand: #c4476e;
   --brand-hover: #b8436a;
   --brand-on: #ffffff;
-  --brand-fg: #ad4064;
+  --brand-fg: #a43d5f;
   --brand-fg-on-art: #f5b6c8;
 }
 :root[data-theme='light'][data-accent='rose'] {
-  --brand-fg: #c0164f;
+  --brand-fg: #b6154b;
   --brand-fg-on-art: #ff9fbd;
 }
 :root[data-theme='light'][data-accent='emerald'] {
-  --brand-fg: #127a4c;
+  --brand-fg: #106f45;
   --brand-fg-on-art: #96efc4;
 }
 :root[data-theme='light'][data-accent='amber'] {
-  --brand-fg: #8a5a00;
+  --brand-fg: #845600;
   --brand-fg-on-art: #ffdf85;
 }
 :root[data-accent='rose'] {
@@ -305,6 +336,27 @@
 }
 :root :is(.mantine-focus-auto, .mantine-focus-always):focus-visible {
   outline-color: var(--focus-ring);
+}
+/* Plain anchors and buttons would otherwise get the browser's white outline. Zero specificity, so
+   any element with its own ring keeps it. */
+:where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+/* A focused field gets a 2px edge, the border plus a 1px ring, so it reads as strongly as a button's
+   ring without shifting the layout. */
+.mantine-Input-input:is(:focus, :focus-within):not([data-error], [data-variant='unstyled']) {
+  border-color: var(--focus-ring);
+  box-shadow: 0 0 0 1px var(--focus-ring);
+}
+/* Press feedback for buttons, icon buttons, rail arrows and cover menus. Never cards or covers: they
+   lift on hover, and a cover image never animates a transform. `scale` composes with any transform
+   the control already has. */
+:where(.mantine-active) {
+  transition: scale var(--dur-fast) var(--ease);
+}
+:is(.mantine-active, .rail-arrow, .reading-card-menu):active:not(:disabled, [data-disabled], [data-loading]) {
+  scale: 0.97;
 }
 /* Mantine's disabled label (dark-3 / gray-5) sat at 2.7:1 and under 2:1 on its own fill, so a
    disabled "Sync now" could not be read at all. The flat fill and missing border still mark it off. */
@@ -427,33 +479,50 @@
   --ink: #252a38;
   --ink-2: #3d4454;
   --ink-3: #454c5d;
-  --ink-4: #606879;
+  --ink-4: #586075;
   --border-control: color-mix(in srgb, var(--ink-4) 75%, transparent);
-  --brand-fg: #4553e6;
+  --brand-fg: #424fda;
   --brand-fg-on-art: #b8c1ff;
-  --ok: #237b36;
+  --ok: #1f6d30;
   --ok-on: #ffffff;
-  --warn: #876000;
+  --warn: #7f5a00;
   --warn-on: #ffffff;
   --info: #245fbd;
   --info-on: #ffffff;
   --danger: #c0322b;
   --danger-on: #ffffff;
   --danger-fg: var(--danger);
-  --watched: #7040bd;
-  --watched-on: #ffffff;
-  --suggestive: #657018;
-  --rating-safe: #0f7a64;
-  --suggestive-on: #ffffff;
+  --anime: #7040bd;
+  --anime-on: #ffffff;
+  --volume: #7e4a78;
+  --volume-on: #ffffff;
+  --cr-safe: #0f7a64;
+  --cr-safe-on: #ffffff;
+  --cr-suggestive: #657018;
+  --cr-suggestive-on: #ffffff;
+  --cr-erotica: #b4511a;
+  --cr-erotica-on: #ffffff;
+  --cr-explicit: #b8255f;
+  --cr-explicit-on: #ffffff;
+  --q-official: #8a6a0a;
+  --q-official-on: #ffffff;
+  --q-scanlator: #5b6672;
+  --q-scanlator-on: #ffffff;
+  --q-aggregator: #8a4f22;
+  --q-aggregator-on: #ffffff;
   --neutral: #606879;
   --neutral-on: #ffffff;
   --rating: #b8860b;
   --tier-1: #7a4a1e;
   --tier-2: #6b7480;
   --tier-3: #8a6a0a;
-  --tier-4: #1f7a8c;
-  --tier-5: #5b4bab;
-  --tier-6: #a83660;
+  --tier-4: #6b8794;
+  --tier-5: #2f7fb8;
+  --chart-2: #4e6491;
+  --chart-3: #8a5f33;
+  --chart-4: #2f7a5d;
+  --chart-5: #7a4f93;
+  --chart-6: #606879;
   --shadow-card: 0 1px 2px rgba(20, 24, 40, 0.08);
   --shadow-cover: 0 1px 2px rgba(20, 24, 40, 0.14);
   --shadow-cover-hover: 0 14px 26px -12px rgba(20, 24, 40, 0.4);
@@ -497,8 +566,10 @@
   --ok: #207132;
   --warn: #825c00;
   --danger: #b83029;
-  --suggestive: #5d6716;
-  --rating-safe: #0d7360;
+  --cr-safe: #0d7360;
+  --cr-suggestive: #5d6716;
+  --cr-erotica: #a84a16;
+  --q-official: #7f6109;
 }
 :root[data-theme='light'][data-ground='paper'][data-accent='blush'] {
   --brand-fg: #a63d60;
@@ -520,6 +591,11 @@
 :root[data-theme='light'][data-ground='paper'] body,
 :root[data-theme='light'][data-ground='paper'] .series-hero::after {
   background-image: var(--paper-grain);
+}
+/* Mantine's empty star is gray-3, about 1.1:1 on a light hero, so an unrated series showed no stars. */
+[data-theme='light'] .mantine-Rating-starSymbol:not([data-filled]) {
+  fill: color-mix(in srgb, var(--ink-4) 85%, transparent);
+  stroke: color-mix(in srgb, var(--ink-4) 85%, transparent);
 }
 /* The resting colour is a dark-theme grey; left alone on white it lands around 2.5:1. */
 [data-theme='light'] .nav-link {
@@ -728,7 +804,7 @@ body {
   margin-inline-start: calc(-1.2em - 1px);
   padding: 0;
   list-style: none;
-  clip-path: inset(-8px -8px -8px calc(0.6em + 1px));
+  clip-path: inset(-8px -8px -8px calc(0.6em + 2px));
 }
 .meta-list > li {
   display: inline-flex;
@@ -865,6 +941,15 @@ body {
   14% { background-position: 0 0, 0.36em 100%, 0.72em 100%; }
   28% { background-position: 0 100%, 0.36em 0, 0.72em 100%; }
   42% { background-position: 0 100%, 0.36em 100%, 0.72em 0; }
+}
+/* Loading fallbacks wait out a fast load before they show, then fade in. */
+.delayed-fallback {
+  animation: delayed-fallback-in var(--dur-medium) var(--ease) 200ms both;
+}
+@keyframes delayed-fallback-in {
+  from {
+    opacity: 0;
+  }
 }
 /* Reduced motion's stand-in for a busy loop that moves (see the prefers-reduced-motion block). */
 @keyframes busy-fade {
@@ -1211,8 +1296,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   border: 1px solid color-mix(in srgb, var(--brand) 35%, var(--border));
 }
 .brand-mark svg {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
 }
 
 /* Sidebar nav link */
@@ -1241,16 +1326,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: color-mix(in srgb, var(--brand) 13%, transparent);
   color: var(--ink-hi);
 }
-.nav-link[data-active='true']::before {
-  content: '';
-  position: absolute;
-  left: -6px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 3px;
-  height: 16px;
-  border-radius: 2px;
-  background: var(--brand);
+/* A drawer list that runs past the footer fades out at its foot, so the rest reads as scrollable. */
+.nav-scroll[data-fade-end] .mantine-ScrollArea-viewport {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 40px), transparent);
+}
+/* The nav scroll area clips anything outside the link. */
+.nav-link:focus-visible {
+  outline-offset: -2px;
 }
 .nav-link .nav-icon {
   flex-shrink: 0;
@@ -1407,11 +1490,17 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--ink-hi);
   background: var(--surface-hover);
 }
-/* The phone drawer is tapped, not clicked. */
+/* The phone drawer is tapped, not clicked. Rows and section gaps are a little tighter than a
+   desktop column would need, so Settings still fits above the footer on an iPhone-sized screen. */
 @media (max-width: 47.9375em) {
-  .nav-link,
+  .nav-link {
+    height: 42px;
+  }
   .nav-footer-link {
     height: 44px;
+  }
+  .app-navbar .nav-sections {
+    gap: 12px;
   }
   .nav-footer-link {
     padding-right: 44px;
@@ -1556,7 +1645,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
    is an UnstyledButton laid out as a grid of text. */
 .inbox-row {
   width: 100%;
-  transition: background var(--dur-fast) var(--ease);
+  transition: background var(--dur-base) var(--ease);
 }
 .inbox-row:hover,
 .inbox-row:focus-visible {
@@ -1813,6 +1902,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: linear-gradient(to top, rgba(6, 7, 11, 0.92) 0, rgba(6, 7, 11, 0.58) 40%, transparent 66%);
   pointer-events: none;
 }
+/* A series with no cover gets the same brand tile as a cover that failed to load (lib/coverFallback.ts). */
 .cover-placeholder {
   position: absolute;
   inset: 0;
@@ -1820,8 +1910,17 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   place-items: center;
   padding: 12px;
   text-align: center;
+  background: linear-gradient(
+    163deg,
+    color-mix(in srgb, var(--brand) 30%, var(--app-bg)),
+    color-mix(in srgb, var(--brand) 10%, var(--app-bg))
+  );
   color: var(--ink-3);
   font-size: var(--type-meta);
+}
+/* Under a scrim the card already prints the title over the cover. */
+.cover-placeholder:has(~ .cover-scrim) {
+  font-size: 0;
 }
 
 /* Overlay furniture. All plain elements: see the note in CoverCard.tsx for why this isn't
@@ -1919,8 +2018,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--mantine-primary-color-contrast);
 }
 .cover-badge-read {
-  background: var(--ok);
-  color: var(--ok-on);
+  background: var(--brand);
+  color: var(--brand-on);
 }
 /* Compact density (or any narrow container) can put the left and right corner badges close
    enough to overlap (a wide label + eye + status colliding). Drop the text label and shrink to
@@ -2509,7 +2608,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--ink-4);
 }
 .reading-weeks-streak[data-lit] svg {
-  color: var(--warn);
+  color: var(--brand-fg);
 }
 /* A gutter column first, holding the month names, so every cell in the grid is a day. */
 .reading-weeks-grid {
@@ -2616,6 +2715,13 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 .reading-weeks-bar > span[data-done] {
   background: var(--ok);
+}
+/* The narrow hero column on a laptop with the sidebar open: the streak goes under the heading. */
+@container reading-weeks (max-width: 17rem) {
+  .reading-weeks-head {
+    flex-direction: column;
+    gap: 8px;
+  }
 }
 /* The hero's right column: square days at a fixed size, the figures stacked beside them. */
 @container reading-weeks (min-width: 22rem) {
@@ -2970,7 +3076,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   --tile-accent-fg: color-mix(in oklab, var(--series-accent) 68%, white);
 }
 :root[data-theme='light'] .next-up-row.has-accent {
-  --tile-accent-fg: color-mix(in oklab, var(--series-accent) 82%, black);
+  --tile-accent-fg: color-mix(in oklab, var(--series-accent) 60%, black);
 }
 .next-up-row:hover {
   background: var(--surface-hover);
@@ -3177,6 +3283,11 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: var(--ok);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
+/* In library: the accent with a check, so it never reads as a Library status disc. */
+.discover-corner[data-owned='true'] {
+  color: var(--brand-on);
+  background: var(--brand);
+}
 .discover-corner[data-add='true'] {
   color: var(--brand-on);
   background: var(--brand);
@@ -3201,7 +3312,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: #fff;
   background: rgba(6, 7, 11, 0.62);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-  transition: opacity var(--dur-base) var(--ease), transform var(--dur-medium) var(--ease), background var(--dur-base) var(--ease);
+  transition: opacity var(--dur-base) var(--ease), transform var(--dur-medium) var(--ease), background var(--dur-base) var(--ease),
+    scale var(--dur-fast) var(--ease);
 }
 .reading-card-menu:hover {
   background: rgba(6, 7, 11, 0.85);
@@ -3405,24 +3517,19 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 /* Preview and Shortlist side by side under the add panel. The preview button's longer labels wrap
    instead of truncating in the half column. */
 .discover-modal-actions {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--mantine-spacing-xs);
   align-items: start;
+}
+/* Side by side where both labels fit on one line, otherwise one per row; never a wrapped label. */
+.discover-modal-actions > * {
+  flex: 1 1 auto;
 }
 .discover-modal-actions .preview-chapter-button,
 .discover-modal-actions .shortlist-button {
   padding-inline: 8px;
   font-size: var(--type-meta);
-}
-.discover-modal-actions .preview-chapter-button {
-  height: auto;
-  min-height: var(--button-height);
-  padding-block: 6px;
-}
-.discover-modal-actions .preview-chapter-button .mantine-Button-label {
-  white-space: normal;
-  text-align: center;
 }
 /* MangaBaka's 0-100 score, shown out of 10, top-left. */
 .discover-rating {
@@ -4267,7 +4374,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     width: min(calc((100% - 2 * 14px - 24px) / 2), 188px);
   }
   .continue-tray .discover-rail > .discover-rail-item {
-    width: var(--rail-item-w);
+    width: var(--rail-item-w, 132px);
   }
   /* Short enough that the second card stays whole and the slice of the third still shows. */
   .discover-rail[data-fade-end] {
@@ -4358,7 +4465,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   gap: 10px;
   flex-wrap: wrap;
   padding: 9px 12px;
-  margin-bottom: var(--mantine-spacing-xl);
   border: 1px solid var(--border);
   border-radius: var(--mantine-radius-lg);
   background: var(--surface);
@@ -4376,17 +4482,13 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   gap: 10px;
   min-width: 0;
 }
-/* On a phone the chips wrapped into a ragged block with the link stranded at its end. The heading
-   and the link share the first line and the chips scroll sideways under them, one row tall. */
+/* On a phone the chips wrapped into a ragged block. The heading takes the first line and the chips
+   scroll sideways under it, one row tall. */
 @media (max-width: 47.9375em) {
   .discover-taste-strip {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px 10px;
-  }
-  .discover-taste-more {
-    grid-row: 1;
-    grid-column: 2;
   }
   .discover-taste-chips {
     grid-column: 1 / -1;
@@ -4439,12 +4541,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-size: var(--type-label);
   color: var(--ink-4);
 }
-.discover-taste-more {
-  margin-left: auto;
-  font-size: var(--type-meta);
-  font-weight: var(--fw-medium);
-  color: var(--brand-fg, var(--brand));
-}
 
 @media (max-width: 820px) {
   /* The loaded band stacks to 750 to 1000px here, so a 360px placeholder pushed the whole page down
@@ -4477,13 +4573,17 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 @media (max-width: 35.9375em) {
   .discover-loading-hero {
-    min-height: 760px;
+    min-height: 480px;
   }
   /* The buttons belong on the first screen, so the score, figures and source scores fold into one
      line under them. The source scores stay in the detail view. */
   .discover-hero.series-hero[data-compact] .series-hero-poster {
     width: 104px;
     height: 156px;
+  }
+  /* The rails below repeat these picks, and the list pushed the first rail two screens down. */
+  .discover-hero .discover-hero-strip {
+    display: none;
   }
   .discover-hero .hero-figures,
   .discover-hero .discover-hero-sources {
@@ -4512,9 +4612,12 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     padding: 2px 8px;
     border-radius: var(--radius-control);
     font-weight: var(--fw-bold);
-    color: var(--band);
-    background: color-mix(in srgb, var(--band) 15%, transparent);
-    border: 1px solid color-mix(in srgb, var(--band) 34%, transparent);
+    color: var(--ink-hi);
+    background: color-mix(in srgb, var(--rating) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--rating) 34%, transparent);
+  }
+  .discover-hero-facts-score svg {
+    color: var(--rating);
   }
 }
 
@@ -4552,6 +4655,25 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   }
   .discover-hero-actions {
     margin-top: 14px;
+  }
+}
+/* Beside the text, the poster takes the text column's height (that column is a fixed box, so the
+   poster doesn't change size between picks) instead of ending early over an empty block. Where a
+   bigger poster would squeeze the text, it stays its size and centres on the column instead. */
+@media (min-width: 48em) {
+  .discover-hero-feature-row {
+    --group-align: center !important;
+  }
+}
+@media (min-width: 80em) {
+  .discover-hero-feature-row {
+    --group-align: stretch !important;
+  }
+  .discover-hero.series-hero[data-compact] .discover-hero-poster .series-hero-poster {
+    width: auto;
+    height: 100%;
+    max-height: 22rem;
+    aspect-ratio: 2 / 3;
   }
 }
 
@@ -4651,13 +4773,32 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   opacity: 0;
 }
 .auth-brand-mark {
-  width: 56px;
-  height: 56px;
+  width: 84px;
+  height: 84px;
   margin-bottom: 20px;
 }
 .auth-brand-mark svg {
-  width: 40px;
-  height: 40px;
+  width: 72px;
+  height: 72px;
+}
+/* Mood changes cross-fade: the old face fades out over the new one. */
+.auth-brand-mark > .brand-mood {
+  grid-area: 1 / 1;
+  display: grid;
+  animation: brand-mood-in var(--dur-medium) var(--ease) both;
+}
+.auth-brand-mark > .brand-mood[data-leaving] {
+  animation-name: brand-mood-out;
+}
+@keyframes brand-mood-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes brand-mood-out {
+  to {
+    opacity: 0;
+  }
 }
 .auth-wordmark {
   margin: 0;
@@ -4683,8 +4824,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   border-radius: 34px;
 }
 .auth-frame[data-art='shapes'] .auth-brand-mark svg {
-  width: 104px;
-  height: 104px;
+  width: 96px;
+  height: 96px;
 }
 .auth-column {
   display: grid;
@@ -5327,6 +5468,15 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .app-main-hero {
   padding-top: var(--app-shell-header-offset, 0rem);
 }
+/* Main has already given up its top padding, so the band must not pull itself up again: on desktop
+   that margin collapsed through <main> and the page opened 20px past its top. The header is clear
+   of the band now, so the body only needs its own air. */
+.app-main-hero .series-hero {
+  margin-top: 0;
+}
+.app-main-hero .series-hero-body {
+  padding-top: 28px;
+}
 
 /* --- Series hero ---------------------------------------------------------- */
 /* A full-bleed band, not a card: it gives back the main column's padding on three sides and the
@@ -5476,6 +5626,10 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     grid-row: 2;
     margin-top: var(--mantine-spacing-xl);
   }
+  /* Beside the panel the rule would stop short of the panels below. */
+  .series-hero:not([data-compact]) .series-hero-tabs .page-tabs {
+    border-bottom: 0;
+  }
 }
 
 .series-hero-poster {
@@ -5532,8 +5686,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   border-color: var(--border-strong);
 }
 /* Content rating beside the status chip: outlined in the rating's own colour, so it reads as a
-   second fact and never as the filled status. Safe is teal rather than the ok green Completed uses;
-   the rest escalate the way they always have. */
+   second fact and never as the filled status. Safe has nothing to report; the rest rise in heat on
+   their own scale, so none of them reads as a warning or an error. */
 .series-hero-status[data-content-rating] {
   --tone: var(--ink-3);
   color: var(--tone);
@@ -5541,16 +5695,16 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   border-color: color-mix(in srgb, var(--tone) 45%, transparent);
 }
 .series-hero-status[data-content-rating='safe'] {
-  --tone: var(--rating-safe);
+  --tone: var(--cr-safe);
 }
 .series-hero-status[data-content-rating='suggestive'] {
-  --tone: var(--suggestive);
+  --tone: var(--cr-suggestive);
 }
 .series-hero-status[data-content-rating='erotica'] {
-  --tone: var(--warn);
+  --tone: var(--cr-erotica);
 }
 .series-hero-status[data-content-rating='pornographic'] {
-  --tone: var(--danger);
+  --tone: var(--cr-explicit);
 }
 
 /* --- The same band, at modal scale ---------------------------------------- */
@@ -5606,8 +5760,8 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   gap: 16px;
   margin-top: 16px;
 }
-/* Colour is the whole point of this one, so the number sits on a soft fill of its own band rather
-   than on the band's colour: `--band` comes from the same thresholds the review badges use. */
+/* A score is not a state, so every score is the same gold: the star carries the colour and the
+   number stays ink-hi, which gold cannot hold as text in Light. */
 .hero-score {
   display: inline-flex;
   align-items: center;
@@ -5615,9 +5769,12 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   height: 42px;
   padding: 0 14px;
   border-radius: var(--radius-hero);
-  color: var(--band);
-  background: color-mix(in srgb, var(--band) 15%, transparent);
-  border: 1px solid color-mix(in srgb, var(--band) 34%, transparent);
+  color: var(--ink-hi);
+  background: color-mix(in srgb, var(--rating) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--rating) 34%, transparent);
+}
+.hero-score svg {
+  color: var(--rating);
 }
 .hero-score-n {
   font-size: var(--type-figure);
@@ -6107,6 +6264,46 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .page-tabs .series-tab {
   padding-top: 2px;
 }
+/* In the series band the rail is the band's last line, and the body pads the panels below it. */
+.series-hero-tabs .page-tabs {
+  margin-bottom: 0;
+}
+
+/* Touch: thumb-sized (40px) hit areas on the small controls people tap most, without changing what
+   is drawn. The series tabs take the extra height as padding above the label, pulled back up out of
+   the gap over the rail so the labels stay where they were. */
+@media (pointer: coarse) {
+  .cover-card-menu::after,
+  :is(.chapter-table, .series-files-table) td .mantine-ActionIcon-root::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+  }
+  :is(.chapter-table, .series-files-table) td .mantine-ActionIcon-root {
+    overflow: visible;
+  }
+  :is(.chapter-table, .series-files-table) td .mantine-ActionIcon-root::after {
+    inset: -4px;
+  }
+  .series-hero .series-hero-tabs {
+    margin-top: calc(var(--mantine-spacing-md) - 10px);
+  }
+  .series-hero-tabs .page-tabs .series-tab {
+    padding-top: 12px;
+  }
+  .series-hero-tabs .series-tabs::after {
+    margin-top: 10px;
+  }
+  :root .anime-coverage-raw-toggle {
+    padding-block: 11px;
+    margin-block: -1px -11px;
+  }
+}
+@media (pointer: coarse) and (min-width: 68.8125em) {
+  .series-hero:not([data-compact]) .series-hero-tabs {
+    margin-top: calc(var(--mantine-spacing-xl) - 10px);
+  }
+}
 
 /* --- Section headers ------------------------------------------------------- */
 /* The heading over a rail or a block of panels. Set in the display face, because a run of rails
@@ -6118,9 +6315,13 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   align-items: center;
   gap: 10px;
   min-height: 30px;
-  margin-top: 44px;
+  margin-top: var(--section-space);
   margin-bottom: 14px;
   min-width: 0;
+}
+/* A Stack already spaces its children, so a header in one takes only what the gap leaves over. */
+.mantine-Stack-root > .section-header:where(:not(:first-child)) {
+  margin-top: max(0px, calc(var(--section-space) - var(--stack-gap, 0px)));
 }
 /* Icon, title and count wrap as one unit, so a narrow row never strands the count on a line of its own. */
 .section-header-lead {
@@ -6147,6 +6348,19 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 .section-header-status {
   text-align: end;
+}
+/* When the title and the status line can't share a row, the status moves under the title instead of
+   squeezing it to an ellipsis. */
+.section-header:has(> .section-header-end .section-header-status) {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+.section-header:has(> .section-header-end .section-header-status) > .section-header-lead {
+  flex-shrink: 0;
+  max-width: 100%;
+}
+.section-header:has(> .section-header-end .section-header-status) > .section-header-end {
+  margin-inline-start: auto;
 }
 .section-header-icon {
   display: grid;
@@ -6253,15 +6467,17 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   translate: 0 -50%;
 }
 .section-header-rule {
-  transition: margin-inline-end var(--dur-base) var(--ease);
+  clip-path: inset(0 0 0 0);
+  transition: clip-path var(--dur-base) var(--ease);
 }
+/* Clipped rather than shortened, so the header never re-lays out under a passing pointer. */
 .section-header:has(> .section-header-end > .section-header-arrows:is([data-hover], :focus-within))
   > .section-header-rule {
-  margin-inline-end: 76px;
+  clip-path: inset(0 76px 0 0);
 }
 @media (hover: none) {
   .section-header:has(> .section-header-end > .section-header-arrows:not(:empty)) > .section-header-rule {
-    margin-inline-end: 76px;
+    clip-path: inset(0 76px 0 0);
   }
 }
 .rail-arrow {
@@ -6277,8 +6493,9 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   box-shadow: var(--shadow-card);
   cursor: pointer;
   transition:
-    color var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease);
+    color var(--dur-base) var(--ease),
+    border-color var(--dur-base) var(--ease),
+    scale var(--dur-fast) var(--ease);
 }
 .rail-arrow:hover:not(:disabled) {
   border-color: var(--border-strong);
@@ -6470,6 +6687,26 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   }
 }
 
+/* --- Panel titles ---------------------------------------------------------- */
+/* One tier under a section header (PanelTitle). Stats' panel titles share it. */
+.panel-title,
+.stats-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--type-subhead);
+  font-weight: var(--fw-bold);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--ink-hi);
+}
+.panel-title-icon {
+  flex: none;
+  color: var(--brand-fg);
+}
+
 /* --- Empty states ---------------------------------------------------------- */
 .empty-state-title {
   color: var(--ink-hi);
@@ -6483,8 +6720,13 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-weight: var(--fw-semibold);
 }
 .empty-state-mark {
-  display: flex;
   flex: none;
+  width: 48px;
+  height: 48px;
+}
+.empty-state-mark svg {
+  width: 40px;
+  height: 40px;
 }
 /* Holds the place of the table it stands in for: the dashed outline the app uses for an empty slot. */
 .empty-state[data-framed] {
@@ -6520,6 +6762,52 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   justify-content: center;
   gap: var(--mantine-spacing-sm);
   margin-top: var(--mantine-spacing-lg);
+}
+/* ErrorMessage: a plain sentence, with the raw failure behind a toggle and wrapped, never widening the page. */
+.error-message {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.error-message-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.error-message-toggle:hover {
+  color: var(--ink-hi);
+}
+.error-message-toggle svg {
+  transition: transform var(--dur-base) var(--ease);
+}
+.error-message-toggle svg[data-open] {
+  transform: rotate(180deg);
+}
+.error-message-detail {
+  display: block;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: var(--radius-control);
+  background: var(--surface-sunken);
+  color: var(--ink-3);
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--type-micro);
+  text-align: start;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  animation: error-detail-in var(--dur-base) var(--ease);
+}
+.error-message-detail[hidden] {
+  display: none;
+}
+@keyframes error-detail-in {
+  from {
+    opacity: 0;
+  }
 }
 
 .empty-shelf {
@@ -6773,11 +7061,14 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
     border-radius: var(--radius-cover);
     box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.8);
   }
-  /* Alt titles on one line that ends in an ellipsis; the full list is the title attribute and the Metadata card. */
+  /* Alt titles on two lines at most, then an ellipsis; the full list is the title attribute and the
+     Metadata card. One line cut the second title to a letter. */
   .series-hero-alt {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
     overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
   }
   .series-hero-alt .meta-list,
   .series-hero-alt .meta-list > li {
@@ -6892,10 +7183,11 @@ tr:is(:hover, :focus-within) [data-row-action]:not(:disabled, [data-disabled]),
    first cell because a border on <tr> doesn't render with border-collapse. */
 .chapter-row-read,
 .chapter-row-reading {
-  --chapter-accent: var(--ok);
+  --chapter-accent: var(--brand);
 }
+/* Half strength while still going, the way the read ring is a partial arc. */
 .chapter-row-reading {
-  --chapter-accent: var(--info);
+  --chapter-accent: color-mix(in srgb, var(--brand) 55%, transparent);
 }
 .chapter-row-read td:first-child,
 .chapter-row-reading td:first-child {
@@ -6905,7 +7197,7 @@ tr:is(:hover, :focus-within) [data-row-action]:not(:disabled, [data-disabled]),
 .chapter-row-reading {
   background: color-mix(in srgb, var(--chapter-accent) 7%, transparent);
 }
-/* The same mix reads far heavier over white, and a long run of read rows turns the table green. */
+/* The same mix reads far heavier over white, and a long run of read rows floods the table. */
 [data-theme='light'] .chapter-row-read,
 [data-theme='light'] .chapter-row-reading {
   background: color-mix(in srgb, var(--chapter-accent) 4%, transparent);
@@ -6921,7 +7213,7 @@ tr:is(:hover, :focus-within) [data-row-action]:not(:disabled, [data-disabled]),
    rather than opened, so it gets its own desaturated accent: a run of watched
    rows has to be distinguishable at a glance from a run actually read. */
 .chapter-row-watched {
-  --chapter-accent: var(--mantine-color-violet-5);
+  --chapter-accent: var(--anime);
 }
 .chapter-row-watched td:first-child {
   box-shadow: inset 3px 0 0 var(--chapter-accent);
@@ -6969,12 +7261,12 @@ tr:is(:hover, :focus-within) [data-row-action]:not(:disabled, [data-disabled]),
   width: 2px;
   height: 100%;
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--info) 60%, transparent);
+  background: color-mix(in srgb, var(--anime) 60%, transparent);
   transition: background var(--dur-fast) var(--ease), width var(--dur-fast) var(--ease);
 }
 .chapter-span-line:hover::before {
   width: 3px;
-  background: var(--info);
+  background: var(--anime);
 }
 .chapter-span-line:focus-visible,
 .chapter-span-badge:focus-visible,
@@ -7012,6 +7304,13 @@ tr:is(:hover, :focus-within) [data-row-action]:not(:disabled, [data-disabled]),
 .chapter-table .chapter-span-badge {
   flex-shrink: 0;
   white-space: nowrap;
+}
+/* The pill before the number ("S1", "Vol. 10") gets a slot of one width, so "Ch." starts at the
+   same x on season rows and volume rows. */
+.chapter-lead-slot {
+  display: inline-flex;
+  flex-shrink: 0;
+  min-width: 3.75rem;
 }
 /* The list reads as a table of contents: the number in the display face, the date set flush
    against the end of the title column. */
@@ -7064,7 +7363,9 @@ thead th:hover > .column-resize-handle::after,
   background: var(--brand);
 }
 .column-resize-handle:focus-visible {
-  outline: none;
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+  border-radius: var(--radius-2xs);
 }
 body.column-resizing,
 body.column-resizing * {
@@ -7100,10 +7401,10 @@ body.column-resizing * {
 /* The row a folded span collapses to. Reads as a header for the run it stands
    in for rather than as another chapter. */
 .chapter-span-row {
-  background: color-mix(in srgb, var(--info) 8%, transparent);
+  background: color-mix(in srgb, var(--anime) 8%, transparent);
 }
 [data-theme='light'] .chapter-span-row {
-  background: color-mix(in srgb, var(--info) 5%, transparent);
+  background: color-mix(in srgb, var(--anime) 5%, transparent);
 }
 
 /* A folded span's Wanted switch when the chapters under it disagree. There is no
@@ -7567,6 +7868,28 @@ body.column-resizing * {
 .stats-section > .section-header + * {
   margin-top: 0;
 }
+/* A heading inside a section (Reading's "What you read") sits one tier down, and closer to the
+   panels above it than one section sits to the next. */
+.stats-section > :not(.section-header) .section-header {
+  margin-top: 12px;
+}
+.stats-section > :not(.section-header) .section-header-title {
+  font-size: var(--type-section);
+}
+/* A phone gives the reader picker the row's spare width, so it and Rewind reach the gutter. */
+@media (max-width: 36em) {
+  .stats-page-header .page-header-actions {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+  }
+  .stats-page-header .page-header-actions > .mantine-Select-root {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .stats-page-header .page-header-actions > .mantine-Button-root {
+    flex-shrink: 0;
+  }
+}
 
 /* Scrolls sideways on a phone rather than pushing the page wider; `min-width: 0` overrides a flex item's content-sized default minimum. */
 .stats-range {
@@ -7616,7 +7939,7 @@ body.column-resizing * {
   z-index: 20;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   gap: 0 var(--mantine-spacing-md);
   margin: 0 calc(-1 * var(--mantine-spacing-lg)) var(--mantine-spacing-lg);
   padding-inline: var(--mantine-spacing-lg);
@@ -7708,7 +8031,7 @@ body.column-resizing * {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  padding-block: 6px;
+  padding-block: 0 6px;
 }
 .stats-range-group {
   display: flex;
@@ -7742,6 +8065,18 @@ body.column-resizing * {
   font-weight: var(--fw-semibold);
   white-space: nowrap;
   transition: color var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease);
+}
+/* Labels sit on the rule at the same height as every other page's tabs. Narrower, the strip pins
+   on a line of its own, so it keeps the padding above to clear the app header. */
+@media (min-width: 62em) {
+  .stats-rail-link {
+    padding: 0 0 13px;
+  }
+  /* Room above the labels once pinned, taken from the header's margin so nothing moves at rest. */
+  .stats-rail {
+    margin-top: -8px;
+    padding-top: 8px;
+  }
 }
 .stats-rail-link:hover {
   color: var(--ink-2);
@@ -7809,13 +8144,7 @@ body.column-resizing * {
 
 /* A panel's own title and the one line under it that says what is being counted. */
 .stats-panel-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   margin: 0 0 2px;
-  color: var(--ink-hi);
-  font-size: var(--type-body);
-  font-weight: var(--fw-bold);
 }
 .stats-panel-sub {
   margin: 0 0 var(--mantine-spacing-sm);
@@ -8052,7 +8381,7 @@ body.column-resizing * {
   display: flex;
   justify-content: center;
   min-height: calc(var(--type-micro) * 1.4);
-  color: var(--warn);
+  color: var(--neutral);
   font-size: var(--type-micro);
   font-weight: var(--fw-bold);
   line-height: 1.4;
@@ -8122,9 +8451,6 @@ body.column-resizing * {
 .stats-dumbbell-gap.pos {
   color: var(--brand-fg);
 }
-.stats-dumbbell-gap.neg {
-  color: var(--warn);
-}
 
 /* Diverging bars around a centre line: right is read more than owned, left owned more than read. */
 .stats-lean {
@@ -8167,7 +8493,7 @@ body.column-resizing * {
 }
 .stats-lean-bar.neg {
   right: 50%;
-  background: var(--warn);
+  background: var(--neutral);
 }
 .stats-lean-value {
   color: var(--ink-3);
@@ -8179,7 +8505,7 @@ body.column-resizing * {
   color: var(--brand-fg);
 }
 .stats-lean-value.neg {
-  color: var(--warn);
+  color: var(--ink-3);
 }
 
 /* Stacked read/unread bars per series. The bar's own width is inline, relative to the largest. */
@@ -8912,7 +9238,7 @@ body.reader-open {
   height: calc(var(--rc) * 36);
   flex-shrink: 0;
   border-radius: 50%;
-  transition: background-color var(--dur-fast) var(--ease);
+  transition: background-color var(--dur-base) var(--ease);
 }
 .reader-ring-svg {
   position: absolute;
@@ -9139,7 +9465,7 @@ body.reader-open {
   position: absolute;
   left: 0;
   right: 0;
-  z-index: 2;
+  z-index: 3;
   height: 56px;
   opacity: 0;
   pointer-events: none;
@@ -9212,8 +9538,8 @@ body.reader-open {
   color: var(--ink-2);
   cursor: pointer;
   transition:
-    background var(--dur-fast) var(--ease),
-    border-color var(--dur-fast) var(--ease);
+    background var(--dur-base) var(--ease),
+    border-color var(--dur-base) var(--ease);
 }
 .reader-settings-tile:hover {
   background: var(--surface-hover);
@@ -9368,7 +9694,7 @@ body.reader-open {
   height: 26px;
   border-radius: var(--radius-control);
   color: var(--ink-2);
-  transition: background var(--dur-fast) var(--ease);
+  transition: background var(--dur-base) var(--ease);
 }
 .drill-back:hover .drill-back-icon,
 .drill-back:focus-visible .drill-back-icon {
@@ -9472,8 +9798,8 @@ body.reader-open {
   line-height: 1.2;
   text-align: center;
   transition:
-    background-color var(--dur-fast) var(--ease),
-    color var(--dur-fast) var(--ease);
+    background-color var(--dur-base) var(--ease),
+    color var(--dur-base) var(--ease);
 }
 [data-mantine-color-scheme='light'] .series-actions-segment {
   color: var(--mantine-color-gray-7);
@@ -9560,7 +9886,7 @@ body.reader-open {
   width: 8px;
   height: 8px;
   border-radius: var(--radius-2xs);
-  background: var(--warn);
+  background: var(--brand);
 }
 .reader-strip-item img {
   display: block;
@@ -9858,6 +10184,9 @@ body.reader-open {
   .reading-card:hover > .home-read-button,
   .reading-card:hover > .home-read-button:hover {
     transform: none;
+  }
+  :is(.mantine-active, .rail-arrow, .reading-card-menu):active:not(:disabled, [data-disabled], [data-loading]) {
+    scale: none;
   }
   /* The chapter flash is information, not decoration: collapsing its animation to nothing would
      leave it stuck on the final (invisible) keyframe and drop the cue entirely. It still clears
@@ -10536,22 +10865,21 @@ body.reader-open {
   }
 }
 
+/* Left-aligned, so a capped operational page starts at the same x as every other page and only
+   ends earlier on a wide window. */
 .surface-frame {
   box-sizing: border-box;
   width: 100%;
-  margin-inline: auto;
+  margin-inline: 0 auto;
 }
 .surface-frame--wide {
   max-width: var(--content-wide);
 }
-.surface-frame--standard {
-  --section-space: clamp(1.75rem, 3vw, 3.5rem);
-}
 .surface-frame--editorial {
-  --section-space: clamp(2.5rem, 5vw, 5.5rem);
+  --section-space: 48px;
 }
 .surface-frame--operational {
-  --section-space: clamp(1.5rem, 2.5vw, 2.75rem);
+  --section-space: 32px;
 }
 
 /* --- Operational density --------------------------------------------------- */
@@ -10561,11 +10889,12 @@ body.reader-open {
 .page-header[data-compact] .mantine-Text-root {
   font-size: var(--type-meta);
 }
-/* Sections here sit in Stacks that already space them, so the rail-scale margin above a header
-   would double the gap. */
+/* A header that opens its block takes its spacing from the block, not the section rhythm. */
 .surface-frame--operational .section-header {
-  margin-top: 0;
   margin-bottom: 2px;
+}
+.surface-frame--operational .section-header:first-child {
+  margin-top: 0;
 }
 /* Panels take `p="lg"` as a spacing variable, so rescoping the variable tightens every panel on
    these pages, and the gaps inside them, without touching each call site. */
@@ -10801,8 +11130,12 @@ tr:hover .mono-value-copy {
   min-width: 0;
 }
 .figure-strip-delta {
+  /* The negative margin keeps the chip inside the number's line box, so a cell with a delta is no
+     taller than its neighbours and their labels stay level. */
+  margin-block: -2px;
   padding: 2px 7px;
   border-radius: var(--radius-control);
+  line-height: 1.3;
   font-size: var(--type-label);
   font-weight: var(--fw-bold);
   white-space: nowrap;
@@ -10813,7 +11146,10 @@ tr:hover .mono-value-copy {
   color: var(--ok);
   background: var(--ok-soft);
 }
-/* No rule for `down`: a quieter month is not a failure, and red here read like a broken download. */
+.figure-strip-delta[data-tone='down'] {
+  color: var(--danger-fg);
+  background: var(--danger-soft);
+}
 /* A graphic in its own column, beside both the value and the label. */
 .figure-strip-item[data-mark] {
   grid-template-columns: auto minmax(0, 1fr);
@@ -11447,6 +11783,20 @@ button.import-plan-folder-head:hover {
   padding: 0;
   border-bottom: 1px solid var(--border);
 }
+/* Four figures go 2x2 rather than three plus one alone; five go three plus two. */
+.library-index {
+  container: library-index / inline-size;
+}
+@container library-index (width < 34rem) {
+  .library-index-metrics:has(> .figure-strip-item:nth-child(4):last-child) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@container library-index (width < 42.5rem) {
+  .library-index-metrics:has(> .figure-strip-item:nth-child(5):last-child) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
 .library-toolbar {
   padding: 0.875rem 1.125rem;
 }
@@ -11484,6 +11834,13 @@ button.import-plan-folder-head:hover {
 .library-view-controls {
   flex: none;
   margin-inline-start: auto;
+}
+/* A laptop with the sidebar open: a lower search floor keeps the toolbar on one row. */
+@media (min-width: 48em) and (max-width: 71.9375em) {
+  .library-toolbar-row .library-search {
+    flex-basis: 8rem;
+    min-width: 8rem;
+  }
 }
 /* The house filter switch (xs), stretched to the search field's height so the row keeps one line. */
 .catalogue-search-mode {
@@ -12008,6 +12365,10 @@ button.import-plan-folder-head:hover {
   margin-inline-start: auto;
   padding-bottom: 12px;
 }
+.page-header-actions .notifications-unread-switch {
+  margin-inline-start: 0;
+  padding-bottom: 0;
+}
 .notifications-feed {
   overflow: hidden;
   box-shadow: none;
@@ -12161,7 +12522,7 @@ button.import-plan-folder-head:hover {
   --tile-accent-fg: color-mix(in oklab, var(--series-accent) 68%, white);
 }
 :root[data-theme='light'] .continue-hero.has-accent {
-  --tile-accent-fg: color-mix(in oklab, var(--series-accent) 82%, black);
+  --tile-accent-fg: color-mix(in oklab, var(--series-accent) 60%, black);
 }
 /* Says which of the two cards this is: part-way through a chapter, or the next one not started. */
 .continue-hero-label {
@@ -12270,6 +12631,24 @@ button.import-plan-folder-head:hover {
 /* Wide: the glance is a card in a column of its own on the right. With Next up beside it the hero
    is narrower than its container, so the glance stays under the lead until the wider query below. */
 @container continue-lead (min-width: 62rem) {
+  .continue-lead:not([data-queue='beside']) .continue-hero-body {
+    grid-template-columns: auto minmax(0, 1fr) var(--glance-w);
+  }
+  .continue-lead:not([data-queue='beside']) .continue-hero-body > .home-glance {
+    display: block;
+    grid-column: 3;
+    grid-row: 1;
+    margin-top: 0;
+  }
+  .continue-section:not([data-queue='beside']) > .continue-glance-below {
+    display: none;
+  }
+}
+/* Laptop with the sidebar open: a narrower glance column, so the hero's right half isn't bare art. */
+@container continue-lead (min-width: 44rem) and (max-width: 61.99rem) {
+  .continue-lead:not([data-queue='beside']) {
+    --glance-w: 15.5rem;
+  }
   .continue-lead:not([data-queue='beside']) .continue-hero-body {
     grid-template-columns: auto minmax(0, 1fr) var(--glance-w);
   }
@@ -12507,6 +12886,23 @@ button.import-plan-folder-head:hover {
 }
 .scrobble-recent-table td {
   vertical-align: top;
+}
+/* The series name shares the first text line with Result and When instead of centring on its cover. */
+.scrobble-recent-table .series-cell {
+  align-items: flex-start;
+}
+/* A tablet panel is narrower than the three columns need. The date goes, as it does on a phone,
+   rather than being cut off at the panel's edge. */
+.scrobble-recent-panel {
+  container: scrobble-recent / inline-size;
+}
+@container scrobble-recent (width < 40rem) {
+  .mantine-TableScrollContainer-scrollContainerInner:has(> .scrobble-recent-table) {
+    min-width: 0;
+  }
+  .scrobble-recent-table [data-priority='low'] {
+    display: none;
+  }
 }
 .scrobble-not-updated {
   display: inline-flex;
@@ -13862,8 +14258,8 @@ button.import-plan-folder-head:hover {
   white-space: nowrap;
 }
 .source-provider[data-provider='suwayomi'] {
-  background: var(--watched-soft);
-  color: var(--watched);
+  background: var(--neutral-soft);
+  color: var(--ink-2);
 }
 .source-provider[data-provider='custom'] {
   background: var(--info-soft);
@@ -13895,17 +14291,32 @@ button.import-plan-folder-head:hover {
 }
 .source-tag[data-tone='official'] {
   background: transparent;
-  border: 1px solid color-mix(in srgb, var(--info) 50%, transparent);
-  color: var(--info);
+  border: 1px solid color-mix(in srgb, var(--q-official) 50%, transparent);
+  color: var(--q-official);
+}
+.source-tag[data-tone='scanlator'] {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--q-scanlator) 50%, transparent);
+  color: var(--q-scanlator);
+}
+.source-tag[data-tone='aggregator'] {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--q-aggregator) 50%, transparent);
+  color: var(--q-aggregator);
 }
 .source-tag[data-tone='adult'] {
-  background: var(--danger-soft);
-  color: var(--danger);
+  background: var(--cr-explicit-soft);
+  color: var(--cr-explicit);
   font-weight: var(--fw-semibold);
 }
 .source-tag[data-tone='mature'] {
-  background: var(--warn-soft);
-  color: var(--warn);
+  background: var(--cr-erotica-soft);
+  color: var(--cr-erotica);
+  font-weight: var(--fw-semibold);
+}
+.source-tag[data-tone='broken'] {
+  background: var(--danger-soft);
+  color: var(--danger-fg);
   font-weight: var(--fw-semibold);
 }
 .source-tag[data-tone='flare'] {
@@ -14595,7 +15006,7 @@ button.shortlist-title:hover {
   color: var(--brand-fg);
 }
 .chapter-notes-count[data-kind='shared'] {
-  color: var(--info);
+  color: var(--neutral);
 }
 
 /* Notes outside the bottom sheet: the reader's dropdown, the series page popover, the margin beside
@@ -14662,6 +15073,14 @@ button.shortlist-title:hover {
 .notes-margin > * {
   pointer-events: auto;
 }
+/* A page that runs under the top bar puts the margin's first row there too; it steps down clear
+   of the bar while the chrome is up. */
+.notes-margin {
+  transition: transform var(--dur-base) var(--ease);
+}
+.notes-margin:is([data-lift='bar'], [data-lift='strip']) {
+  transform: translateY(max(0px, calc(56px + var(--safe-top, 0px) + 12px - var(--notes-top, 0px))));
+}
 .notes-strip-column {
   position: absolute;
   top: 0;
@@ -14683,6 +15102,14 @@ button.shortlist-title:hover {
   z-index: 2;
   display: grid;
   justify-items: start;
+  transition: transform var(--dur-base) var(--ease);
+}
+/* Rises clear of the bottom bar (and the thumbnail rail above it) while the chrome is up. */
+.notes-strip-add[data-lift='bar'] {
+  transform: translateY(-56px);
+}
+.notes-strip-add[data-lift='strip'] {
+  transform: translateY(-173px);
 }
 .notes-strip-add .notes-margin-compose {
   width: 100%;

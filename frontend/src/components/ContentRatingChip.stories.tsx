@@ -12,7 +12,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Each rating is outlined in its own colour; Safe is teal, not the green of a Completed status. */
+/** Each rating is outlined in its own colour; Safe is neutral and the rest rise in heat. */
 export const EveryRating: Story = {
   render: () => (
     <Group gap={8}>

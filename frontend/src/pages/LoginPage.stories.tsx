@@ -35,11 +35,14 @@ export const WrongPassword: Story = {
   parameters: {
     msw: [http.post(api('/auth/login'), () => failWith(401, 'Invalid username or password', 'error.auth.invalidCredentials'))],
   },
-  play: async ({ canvas, userEvent }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.type(await canvas.findByLabelText(/username/i), 'reader')
     await userEvent.type(await canvas.findByLabelText(/password/i, { selector: 'input' }), 'not-it')
     await userEvent.click(await canvas.findByRole('button', { name: /^sign in$/i }))
     await waitFor(() => expect(canvas.getByRole('alert')).toHaveTextContent('Invalid username or password'))
+    // The mascot asks what went wrong, and no field carries a red required asterisk.
+    await waitFor(() => expect(canvasElement.querySelectorAll('.auth-brand-mark .brand-mood')).toHaveLength(1))
+    await expect(canvasElement.querySelector('.mantine-InputWrapper-required')).toBeNull()
   },
 }
 

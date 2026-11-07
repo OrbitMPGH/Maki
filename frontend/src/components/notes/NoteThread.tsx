@@ -119,7 +119,7 @@ export default function NoteThread({
             <Badge
               size="xs"
               variant="light"
-              color={n.visibility === 'shared' ? 'var(--info)' : 'var(--neutral)'}
+              color="var(--neutral)"
               leftSection={n.visibility === 'shared' ? <IconUsers size={10} /> : <IconLock size={10} />}
             >
               {n.visibility === 'shared' ? <Trans>Shared</Trans> : <Trans>Private</Trans>}

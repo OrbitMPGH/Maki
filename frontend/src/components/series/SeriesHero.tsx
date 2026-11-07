@@ -129,6 +129,10 @@ export function SeriesHero({
         [chapters],
     )
 
+    // The total also counts chapters that have (or had) a file with Wanted off, so it only says
+    // "wanted" when every one of them has the switch on, or it disagrees with the Wanted filter.
+    const wantedSwitches = useMemo(() => (chapters ?? []).filter((c) => c.wanted).length, [chapters])
+
     // The server counts a file the health scan found missing as obtained; the Chapters tab does not.
     const fileMissing = useMemo(() => (chapters ?? []).filter((c) => c.fileMissing).length, [chapters])
     const progress = useMemo(
@@ -247,13 +251,17 @@ export function SeriesHero({
                                     component="div"
                                     size="sm"
                                     pt="xs"
-                                    c="var(--ink-3)"
+                                    c="var(--ink-2)"
                                     className="series-hero-alt"
                                     title={altTitles.map((a) => a.title).join(', ')}
                                 >
                                     <MetaList
                                         items={[
-                                            ...altTitles.slice(0, MAX_HERO_ALT_TITLES).map((t) => t.title),
+                                            ...altTitles.slice(0, MAX_HERO_ALT_TITLES).map((a, i) => (
+                                                <span key={i} lang={a.language ?? undefined}>
+                                                    {a.title}
+                                                </span>
+                                            )),
                                             overflow > 0 && (
                                                 <Plural key="more" value={overflow} one="+# more" other="+# more" />
                                             ),
@@ -432,6 +440,7 @@ export function SeriesHero({
                                         totalCount={totalCount}
                                         nothingWanted={downloads.nothingWanted}
                                         notWanted={notWanted}
+                                        allSwitchedOn={wantedSwitches >= totalCount}
                                         noneListed={series.knownChapterCount === 0}
                                     />
                                 </Text>
@@ -501,12 +510,14 @@ function DownloadsCount({
     totalCount,
     nothingWanted,
     notWanted,
+    allSwitchedOn,
     noneListed,
 }: {
     haveCount: number
     totalCount: number
     nothingWanted: boolean
     notWanted: number
+    allSwitchedOn: boolean
     noneListed: boolean
 }) {
     if (noneListed) return <Trans>No chapters listed</Trans>
@@ -519,7 +530,7 @@ function DownloadsCount({
             </Trans>
         )
     }
-    if (notWanted > 0) {
+    if (notWanted > 0 && allSwitchedOn) {
         return (
             <Trans>
                 {haveCount} /{' '}

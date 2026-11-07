@@ -74,7 +74,7 @@ export function ReviewStep({ value, rules }: { value: PageConversionSettings; ru
       </Text>
 
       {startFailed && !running && (
-        <Alert color="red" role="alert" title={<Trans>The estimate could not be started</Trans>}>
+        <Alert color="var(--danger)" role="alert" title={<Trans>The estimate could not be started</Trans>}>
           <Button
             variant="default"
             size="xs"
@@ -88,7 +88,7 @@ export function ReviewStep({ value, rules }: { value: PageConversionSettings; ru
 
       {!startFailed && broken && !running && (
         <Alert
-          color="red"
+          color="var(--danger)"
           role="alert"
           title={
             estimate?.state === 'cancelled' ? <Trans>The estimate was cancelled</Trans> : <Trans>The estimate failed</Trans>

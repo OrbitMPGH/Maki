@@ -413,7 +413,7 @@ const themeBase: MantineThemeOverride = {
   colors: { brand, dark },
   defaultRadius: 'md',
   fontFamily:
-    '"Onest Variable", Onest, ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+    '"Onest Variable", Onest, ui-sans-serif, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, "Hiragino Sans", "Yu Gothic UI", "Meiryo UI", "Noto Sans JP", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif',
   fontFamilyMonospace:
     'ui-monospace, "JetBrains Mono", "SFMono-Regular", "Cascadia Code", Menlo, monospace',
   // One step per role: xs is meta, sm is body, matching --type-meta and --type-body in theme.css.
@@ -426,7 +426,7 @@ const themeBase: MantineThemeOverride = {
   },
   headings: {
     fontFamily:
-      '"Bricolage Grotesque Variable", "Onest Variable", ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif',
+      '"Bricolage Grotesque Variable", "Onest Variable", ui-sans-serif, -apple-system, "Segoe UI", Roboto, "Hiragino Sans", "Yu Gothic UI", "Meiryo UI", "Noto Sans JP", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif',
     fontWeight: '700',
     sizes: {
       h1: { fontSize: '1.9rem', lineHeight: '1.2', fontWeight: '800' },

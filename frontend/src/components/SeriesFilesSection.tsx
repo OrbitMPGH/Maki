@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ActionIcon, Badge, Button, Checkbox, Group, Modal, Paper, Skeleton, Stack, Table, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core'
+import { ActionIcon, Badge, Button, Checkbox, Group, Paper, Skeleton, Stack, Table, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core'
 import {
   IconFileTypePdf,
   IconFileUnknown,
@@ -19,7 +19,7 @@ import { offersPermanentDelete, useRecycleBinDays } from '../api/recycleBin'
 import { PermanentDeleteFallback } from './PermanentDeleteFallback'
 import { useSetFileTrusted } from '../api/upgrades'
 import type { SeriesFileDto } from '../api/types'
-import { formatBytes } from '../format'
+import { formatBytes, serverChapterLabel } from '../format'
 import { FileQualityBadge } from './series/FileQualityBadge'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -33,24 +33,47 @@ import { useAuth } from '../auth/AuthProvider'
 import { LinkFileToChaptersModal } from './LinkFileToChaptersModal'
 import { RelinkFilesModal } from './RelinkFilesModal'
 import { MetaList } from './ui/MetaList'
+import { ConfirmDialog } from './ui/ConfirmDialog'
 
-/** "21" → "Ch. 21"; ["21","22","23"] → "Ch. 21, 22, 23". */
+/** ["1", ..., "8", "8.5", "10"] → "1–8, 8.5, 10": whole-number runs collapse, so a long list never cuts mid-number. */
+export function chapterRuns(numbers: string[]): string {
+  const parts: string[] = []
+  let start: string | null = null
+  let prev: string | null = null
+  const close = () => {
+    if (start === null || prev === null) return
+    parts.push(start === prev ? start : `${start}–${prev}`)
+  }
+  for (const n of numbers) {
+    const value = Number(n)
+    const follows = prev !== null && Number.isInteger(value) && Number.isInteger(Number(prev)) && value === Number(prev) + 1
+    if (!follows) {
+      close()
+      start = n
+    }
+    prev = n
+  }
+  close()
+  return parts.join(', ')
+}
+
+/** "21" → "Ch. 21"; ["21","22","23","25"] → "Ch. 21–23, 25". */
 function mappedLabel(file: SeriesFileDto): string {
   const { mappedChapters } = file
   if (mappedChapters.length === 0) {
     // A linked volume with no chapter numbers backs volume entries, which carry its own label.
     if (file.status !== 'linked') return '-'
-    return file.isVolume && file.parsedLabel !== null ? file.parsedLabel : now`One-shot`
+    return file.isVolume && file.parsedLabel !== null ? serverChapterLabel(file.parsedLabel) : now`One-shot`
   }
-  const chapters = mappedChapters.join(', ')
+  const chapters = chapterRuns(mappedChapters)
   return now`Ch. ${chapters}`
 }
 
 const hasLinks = (file: SeriesFileDto) => file.mappedChapters.length > 0 || file.status === 'linked'
 const MAPPED_TOOLTIP_EVENTS = { hover: true, focus: true, touch: true }
-// The fixed columns take 726px; this leaves the file name about 200px, so a phone sees it and the
+// The fixed columns take 752px; this leaves the file name about 200px, so a phone sees it and the
 // parsed label before the table scrolls.
-const FILE_TABLE_MIN_WIDTH = 924
+const FILE_TABLE_MIN_WIDTH = 950
 
 export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const { t } = useLingui()
@@ -132,9 +155,9 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
       <Table.Tr>
         {selectMode && <Table.Th w={40}><VisuallyHidden><Trans>Select</Trans></VisuallyHidden></Table.Th>}
         <Table.Th><Trans>File</Trans></Table.Th>
-        <Table.Th w={90}><Trans>Parsed</Trans></Table.Th>
+        <Table.Th w={100}><Trans>Parsed</Trans></Table.Th>
         <Table.Th w={156}><Trans>Status</Trans></Table.Th>
-        <Table.Th w={136}><Trans>Mapped to</Trans></Table.Th>
+        <Table.Th w={152}><Trans>Mapped to</Trans></Table.Th>
         <Table.Th w={84}><Trans>Size</Trans></Table.Th>
         <Table.Th w={148}><Trans>Quality</Trans></Table.Th>
         {!selectMode && <Table.Th w={52 + (canLink ? 34 : 0) + (canDownload ? 34 : 0)}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>}
@@ -145,9 +168,8 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   return (
     <div>
       <Group justify="space-between" wrap="wrap" gap="sm">
-        <Group gap="xs" align="center">
-          <IconFileZip size={18} />
-          <Title order={3}>
+        <Group gap="xs" align="baseline">
+          <Title order={2} size="h3">
             <Trans>Files</Trans>
           </Title>
           {files && (
@@ -353,10 +375,10 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             <Badge
                               size="sm"
                               variant="light"
-                              color={f.isVolume ? 'indigo' : 'gray'}
+                              color={f.isVolume ? 'var(--volume)' : 'var(--neutral)'}
                               className="tnum files-parsed-pill"
                             >
-                              {f.parsedLabel}
+                              {serverChapterLabel(f.parsedLabel)}
                             </Badge>
                           ) : (
                             <Text size="sm" c="var(--ink-3)">
@@ -365,7 +387,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                           )}
                         </Table.Td>
                         <Table.Td className="files-cell-status">
-                          <StatusDot tone={f.status === 'missing' ? 'warn' : statusToken(v.color)}>
+                          <StatusDot tone={statusToken(v.color)}>
                             {renderLabel(v.label)}
                           </StatusDot>
                         </Table.Td>
@@ -465,7 +487,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                                 </ActionIcon>
                               </Tooltip>
                             )}
-                            <Tooltip label={f.onDisk ? t`Delete from disk` : t`Missing from disk`} withArrow>
+                            <Tooltip label={f.onDisk ? t`Delete from disk` : t`File missing`} withArrow>
                               <ActionIcon
                                 variant="subtle"
                                 color="var(--danger)"
@@ -492,12 +514,14 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             </Table.ScrollContainer>
           </Panel>
 
-          <Modal
+          <ConfirmDialog
             opened={confirmOpen}
             onClose={closeConfirm}
             title={t`Delete files?`}
-            centered
-            attributes={{ content: { 'data-edge': 'danger' } }}
+            confirmLabel={<Trans>Delete files</Trans>}
+            onConfirm={() => deleteSelected(false)}
+            loading={deleteFiles.isPending}
+            confirmDisabled={binRefused}
           >
             <Stack gap="md">
               <Text size="sm" c="var(--ink-3)">
@@ -515,25 +539,11 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                   other="Files can be restored from Settings for # days, then they are deleted for good."
                 />
               </Text>
-              <Group justify="flex-end">
-                <Button variant="default" onClick={closeConfirm}>
-                  <Trans>Cancel</Trans>
-                </Button>
-                <Button
-                  color="var(--danger-fill)"
-                  leftSection={<IconTrash size={16} />}
-                  loading={deleteFiles.isPending}
-                  disabled={binRefused}
-                  onClick={() => deleteSelected(false)}
-                >
-                  <Trans>Delete</Trans>
-                </Button>
-              </Group>
               {binRefused && (
                 <PermanentDeleteFallback loading={deleteFiles.isPending} onConfirm={() => deleteSelected(true)} />
               )}
             </Stack>
-          </Modal>
+          </ConfirmDialog>
         </>
       ))}
 

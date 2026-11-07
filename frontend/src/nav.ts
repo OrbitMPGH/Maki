@@ -39,7 +39,7 @@ export const NAV_SECTIONS: { label: MessageDescriptor; items: NavItem[] }[] = [
       { label: msg`Home`, path: '/home', icon: IconHome },
       { label: msg`Library`, path: '/library', icon: IconLibrary, within: ['/series/'] },
       { label: msg`Add series`, path: '/add', icon: IconPlus },
-      { label: msg`Discover`, path: '/discover', icon: IconCompass },
+      { label: msg`Discover`, path: '/discover', icon: IconCompass, within: ['/creator/'] },
       { label: msg`Import`, path: '/import', icon: IconFolderDown },
       // "Stats" rather than "Rewind": the page is a standing reading dashboard, and Rewind is the
       // year playback it launches. Naming the whole thing after the once-a-year part is what made

@@ -6,6 +6,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { HomeReadingItem } from '../../api/hooks'
 import { relativeTime } from '../ui/time'
+import { serverChapterLabel } from '../../format'
 
 /**
  * Next up as a list of rows in a card beside the Continue hero: thumb, title, chapter and recency,
@@ -73,7 +74,8 @@ const NextUpRow = memo(function NextUpRow({ item }: { item: HomeReadingItem }) {
   const resumePct = hasProgress ? Math.min(100, (item.page / item.pageCount) * 100) : 0
   const started = item.page > 0
   const lastRead = relativeTime(item.lastReadAt, 'narrow')
-  const { seriesTitle, chapterLabel, unreadChapters } = item
+  const { seriesTitle, unreadChapters } = item
+  const chapterLabel = serverChapterLabel(item.chapterLabel)
   const style = item.coverAccent ? ({ '--series-accent': item.coverAccent } as CSSProperties) : undefined
 
   return (

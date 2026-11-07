@@ -19,7 +19,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(monoText(/Bonus booklet/))).toBeVisible()
-    await expect(await canvas.findByText('Vol.3')).toBeVisible()
+    await expect(await canvas.findByText('Vol. 3')).toBeVisible()
   },
 }
 
@@ -29,7 +29,7 @@ export const SelectAndDelete: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: /select all on disk/i }))
     await userEvent.click(await canvas.findByRole('button', { name: /delete selected/i }))
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
-    await expect(await within(dialog).findByRole('button', { name: 'Delete' })).toBeVisible()
+    await expect(await within(dialog).findByRole('button', { name: 'Delete files' })).toBeVisible()
     await userEvent.click(await within(dialog).findByRole('button', { name: 'Cancel' }))
   },
 }
@@ -47,7 +47,7 @@ export const BinRefusesDelete: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: /select all on disk/i }))
     await userEvent.click(await canvas.findByRole('button', { name: /delete selected/i }))
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
-    await userEvent.click(await within(dialog).findByRole('button', { name: 'Delete' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Delete files' }))
     await expect(await within(dialog).findByRole('button', { name: 'Delete permanently' })).toBeVisible()
   },
 }
@@ -57,6 +57,24 @@ export const AllLinked: Story = {
     msw: seriesMsw(
       http.get(api('/series/:id/files'), () => HttpResponse.json(filesFor(1, chaptersFor(1)).filter((f) => f.status === 'linked'))),
     ),
+  },
+}
+
+/** A volume's chapters collapse into runs, so a long list never ends in a cut-off number. */
+export const VolumeChapterRuns: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/series/:id/files'), () =>
+        HttpResponse.json(
+          filesFor(1, chaptersFor(1))
+            .filter((f) => f.isVolume)
+            .map((f) => ({ ...f, status: 'linked', mappedChapters: ['1', '2', '3', '4', '4.5', '6'] })),
+        ),
+      ),
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Ch. 1–4, 4.5, 6')).toBeVisible()
   },
 }
 

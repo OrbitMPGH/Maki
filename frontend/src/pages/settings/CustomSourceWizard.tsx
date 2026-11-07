@@ -97,7 +97,7 @@ function Report({ report, only }: { report: CustomSourceTestReport; only?: Custo
   const steps = only ? report.steps.filter((s) => only.includes(s.name)) : report.steps
   const passed = steps.every((s) => s.status !== 'failed')
   return (
-    <Alert color={passed ? 'green' : 'yellow'} variant="light" title={passed ? t`Every check passed` : t`Some checks failed`}>
+    <Alert color={passed ? 'var(--ok)' : 'var(--warn)'} variant="light" title={passed ? t`Every check passed` : t`Some checks failed`}>
       <Stack gap={6}>{steps.map((step) => <StepRow key={step.name} step={step} />)}</Stack>
     </Alert>
   )
@@ -408,19 +408,19 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
             <Trans>Read the site</Trans>
           </Button>
         </Group>
-        {probe.error && <Alert color="red" variant="light">{errorText(probe.error)}</Alert>}
+        {probe.error && <Alert color="var(--danger)" variant="light">{errorText(probe.error)}</Alert>}
         {site && (
           <Stack gap="xs">
-            <Alert color="green" variant="light" icon={<IconCheck size={16} />}>
+            <Alert color="var(--ok)" variant="light" icon={<IconCheck size={16} />}>
               {site.viaFlareSolverr
                 ? <Trans>Read {site.title ?? site.seriesId} through FlareSolverr. The source will use it too.</Trans>
                 : <Trans>Read {site.title ?? site.seriesId} directly.</Trans>}
             </Alert>
             {site.chapterError && (
-              <Alert color="yellow" variant="light"><Trans>The chapter page did not load: {site.chapterError}</Trans></Alert>
+              <Alert color="var(--warn)" variant="light"><Trans>The chapter page did not load: {site.chapterError}</Trans></Alert>
             )}
             {site.hostTaken && (
-              <Alert color="yellow" variant="light" icon={<IconAlertTriangle size={16} />}>
+              <Alert color="var(--warn)" variant="light" icon={<IconAlertTriangle size={16} />}>
                 <Stack gap={6}>
                   <Text size="sm"><Trans>{site.hostTaken.displayName} already reads this site.</Trans></Text>
                   {site.hostTaken.custom && onEditExisting && (
@@ -434,7 +434,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
               </Alert>
             )}
             {site.engine && (
-              <Alert color="blue" variant="light">
+              <Alert color="var(--info)" variant="light">
                 <Trans>This site runs {siteEngine}, which Maki already knows how to read. The next steps are filled in.</Trans>
               </Alert>
             )}
@@ -445,7 +445,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
     chapters: engine ? presetNote : (
       <Stack gap="sm">
         {site && site.chapters.length === 0 && (
-          <Alert color="yellow" variant="light">
+          <Alert color="var(--warn)" variant="light">
             <Trans>Maki could not find a chapter list on the series page. Describe it under Advanced.</Trans>
           </Alert>
         )}
@@ -477,7 +477,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
     pages: engine ? presetNote : (
       <Stack gap="sm">
         {site && !site.pages && (
-          <Alert color="yellow" variant="light">
+          <Alert color="var(--warn)" variant="light">
             {chapterUrl.trim()
               ? <Trans>Maki could not find the page images on the chapter page. Describe them under Advanced.</Trans>
               : <Trans>Without a chapter page Maki can't guess where the images are. Go back and paste one, or describe them under Advanced.</Trans>}
@@ -501,7 +501,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
             </Group>
             {site.pages.image.ok
               ? <Text size="xs" c="var(--ok)"><Trans>Maki loaded the first page ({site.pages.image.format}).</Trans></Text>
-              : <Alert color="red" variant="light"><Trans>The first page image did not load: {site.pages.image.error ?? t`not an image`}</Trans></Alert>}
+              : <Alert color="var(--danger)" variant="light"><Trans>The first page image did not load: {site.pages.image.error ?? t`not an image`}</Trans></Alert>}
           </Stack>
         )}
         {report && <Report report={report} only={['pages', 'image']} />}
@@ -527,7 +527,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
             <Trans>Find search</Trans>
           </Button>
         </Group>
-        {probeSearch.error && <Alert color="red" variant="light">{errorText(probeSearch.error)}</Alert>}
+        {probeSearch.error && <Alert color="var(--danger)" variant="light">{errorText(probeSearch.error)}</Alert>}
         {found && (
           <Radio.Group value={searchChoice} onChange={(v) => chooseSearch(v as 'found' | 'none')}>
             <Stack gap="xs">
@@ -549,7 +549,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
           </Radio.Group>
         )}
         {found && !found.search && !found.catalogue && (
-          <Alert color="yellow" variant="light" title={t`No search found`}>
+          <Alert color="var(--warn)" variant="light" title={t`No search found`}>
             <List size="xs" spacing={2}>
               {found.tried.map((a) => <List.Item key={a.url}>{a.url}{a.error ? `: ${a.error}` : ''}</List.Item>)}
             </List>
@@ -565,7 +565,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
     details: (
       <Stack gap="sm">
         {origin?.updateAvailable && (
-          <Alert color="blue" variant="light">
+          <Alert color="var(--info)" variant="light">
             <Group justify="space-between" wrap="nowrap">
               <Text size="sm"><Trans>Version {origin.latestVersion} is available from {repositoryName}.</Trans></Text>
               <Button size="xs" variant="default" onClick={() => setUpdateOpen(true)}><Trans>Review update</Trans></Button>
@@ -591,7 +591,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
           </Group>
         )}
         {identityChangeOf(revert.error) && (
-          <Alert color="yellow" variant="light" icon={<IconAlertTriangle size={16} />} title={identityChangeOf(revert.error)!.error}>
+          <Alert color="var(--warn)" variant="light" icon={<IconAlertTriangle size={16} />} title={identityChangeOf(revert.error)!.error}>
             <List size="sm" spacing={2}>
               {identityChangeOf(revert.error)!.reasons.map((r) => <List.Item key={r}>{reasonLabels[r] ?? r}</List.Item>)}
             </List>
@@ -723,21 +723,21 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
           </Anchor>
         </Group>
         {idChanged && (
-          <Alert color="red" variant="light">
+          <Alert color="var(--danger)" variant="light">
             <Trans>The id of a saved source can't change. Import it as a new source instead.</Trans>
           </Alert>
         )}
         {problems && (
-          <Alert color="red" variant="light" icon={<IconAlertTriangle size={16} />} title={t`The definition has problems`}>
+          <Alert color="var(--danger)" variant="light" icon={<IconAlertTriangle size={16} />} title={t`The definition has problems`}>
             <List size="sm" spacing={2}>
               {problems.map((p, i) => <List.Item key={`${p.code}-${i}`}>{p.error}</List.Item>)}
             </List>
           </Alert>
         )}
-        {otherError && <Alert color="red" variant="light">{errorText(otherError)}</Alert>}
+        {otherError && <Alert color="var(--danger)" variant="light">{errorText(otherError)}</Alert>}
         {report && <Report report={report} />}
         {identity && (
-          <Alert color="yellow" variant="light" icon={<IconAlertTriangle size={16} />} title={identity.error}>
+          <Alert color="var(--warn)" variant="light" icon={<IconAlertTriangle size={16} />} title={identity.error}>
             <List size="sm" spacing={2}>
               {identity.reasons.map((r) => <List.Item key={r}>{reasonLabels[r] ?? r}</List.Item>)}
             </List>

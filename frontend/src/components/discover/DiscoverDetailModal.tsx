@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import type { CSSProperties } from 'react'
 import {
   ActionIcon,
   Badge,
@@ -17,7 +16,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import {
-  IconStar,
+  IconStarFilled,
   IconTrendingDown,
   IconTrendingUp,
 } from '../../lib/icons'
@@ -36,7 +35,6 @@ import { HeroBackdrop } from '../series/HeroBackdrop'
 import { MetadataLinks } from '../MetadataLinks'
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
 import {
-  ratingBandVisual,
   seriesStatusVisual,
   statusToken,
 } from '../ui/status'
@@ -57,6 +55,7 @@ import { cleanSynopsis } from '../../lib/synopsis'
 import { useLabel } from '../../i18n-context'
 import { GENRE_LABELS, TYPE_LABELS } from '../CatalogueFilters'
 import { MetaList } from '../ui/MetaList'
+import { useModalHistory } from '../../lib/useModalHistory'
 
 export function DiscoverDetailModal({
   item,
@@ -81,6 +80,7 @@ export function DiscoverDetailModal({
   savedFrom?: ShortlistSource
 }) {
   const shortlisted = useIsShortlisted(item?.providerId ?? '')
+  useModalHistory(item !== null, onClose)
   const { data: detail, isLoading, isError, refetch } = useRecommendationDetail(item?.providerId ?? null, true)
   const { scope: diceScope, tumble } = useDiceTumble()
   const rerolling = useRef(false)
@@ -120,7 +120,6 @@ export function DiscoverDetailModal({
   const { t, i18n } = useLingui()
   const status = seriesStatusVisual(detail?.status ?? item?.status ?? '')
   const score = detail?.rating ?? item?.rating ?? null
-  const band = ratingBandVisual(score ?? 0)
   const altTitles = readableTitles(detail?.altTitles ?? [], i18n.locale)
   // `id` is a stable key: `label` is translated text, and keying the row off it would remount the
   // whole figures block on a language switch.
@@ -246,7 +245,13 @@ export function DiscoverDetailModal({
                     )}
                     {altTitles.length > 0 && (
                       <Text size="xs" c="var(--ink-4)" mt={4} lineClamp={2}>
-                        {altTitles.map(altTitleLabel).join(', ')}
+                        {altTitles.map((a, i) => (
+                          <span key={i}>
+                            {i > 0 && ', '}
+                            <span lang={a.language ?? undefined}>{a.title}</span>
+                            {altTitleLabel(a).slice(a.title.length)}
+                          </span>
+                        ))}
                       </Text>
                     )}
 
@@ -272,11 +277,8 @@ export function DiscoverDetailModal({
                     <div className="hero-figures">
                       {score != null && (
                         <Tooltip label={t`MangaBaka aggregate score`} withArrow zIndex={1001}>
-                          <span
-                            className="hero-score"
-                            style={{ '--band': `var(--${band.token})` } as CSSProperties}
-                          >
-                            <IconStar size={18} />
+                          <span className="hero-score">
+                            <IconStarFilled size={18} />
                             <span className="hero-score-n figure">{formatFixedDecimal(score / 10, 1)}</span>
                           </span>
                         </Tooltip>
@@ -501,7 +503,7 @@ export function DiscoverDetailModal({
                         </Text>
                         <TagChips>
                           {genres.map((g) => (
-                            <TagChip key={g} dot="var(--info)">
+                            <TagChip key={g} dot="var(--neutral)">
                               {genreLabel(g)}
                             </TagChip>
                           ))}

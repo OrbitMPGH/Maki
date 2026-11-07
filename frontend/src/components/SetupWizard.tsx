@@ -493,8 +493,8 @@ function useServices(): ServiceSpec[] {
       fields: [
         { key: 'url', label: t`URL`, placeholder: 'http://localhost:5000' },
         { key: 'apiKey', label: t`API key`, secret: true },
-        { key: 'pathMapFrom', label: t`Path mapping - Maki side`, placeholder: t`C:\\Manga (optional)` },
-        { key: 'pathMapTo', label: t`Path mapping - Kavita side`, placeholder: t`/manga (optional)` },
+        { key: 'pathMapFrom', label: t`Path mapping, Maki side`, placeholder: t`C:\\Manga (optional)` },
+        { key: 'pathMapTo', label: t`Path mapping, Kavita side`, placeholder: t`/manga (optional)` },
       ],
     },
   ]

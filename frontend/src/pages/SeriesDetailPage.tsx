@@ -58,6 +58,8 @@ import {
   IconEyeOff,
   IconSortAscendingNumbers,
   IconSortDescendingNumbers,
+  IconDatabase,
+  IconFileText,
 } from '../lib/icons'
 import { useMediaQuery } from '@mantine/hooks'
 import { notifications } from '../lib/toast'
@@ -137,6 +139,7 @@ import { useLabel } from '../i18n-context'
 import { useDocumentTitle } from '../lib/documentTitle'
 import { usePageLabel } from '../lib/navHistory'
 import { AnimeCoverageBar } from '../components/AnimeCoverageBar'
+import { TYPE_LABELS } from '../components/CatalogueFilters'
 import { LinkChaptersModal } from '../components/LinkChaptersModal'
 import { RelinkFilesModal } from '../components/RelinkFilesModal'
 import { MetadataLinks } from '../components/MetadataLinks'
@@ -196,12 +199,14 @@ import {
 } from '../components/ui/status'
 import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { MonoValue } from '../components/ui/MonoValue'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { useColumnWidths, type ColumnSpec } from '../lib/useColumnWidths'
 import { useStableActions } from '../lib/useStableActions'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { EmptyState } from '../components/ui/EmptyState'
 import { FigureStripReveal, HintLabel } from '../components/ui/FigureStrip'
 import { Panel } from '../components/ui/Panel'
+import { PanelTitle } from '../components/ui/PanelTitle'
 import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
 import { activeSeries } from '../lib/series'
@@ -390,7 +395,7 @@ const TOOLTIP_EVENTS = { hover: true, focus: true, touch: true }
 
 const notify = {
   ok: (message: string) => notifications.show({ message, color: 'var(--ok)' }),
-  info: (message: string) => notifications.show({ message, color: 'var(--warn)' }),
+  info: (message: string) => notifications.show({ message, color: 'var(--info)' }),
   err: (message: string) => notifications.show({ message, color: 'var(--danger)' }),
 }
 
@@ -1578,7 +1583,7 @@ function SeriesDetailBody() {
   const chapterFilterData = chapters
       ? [
         { value: 'all', label: t`All` },
-        { value: 'wanted', label: t`Marked wanted (${wantedFilterCount})` },
+        { value: 'wanted', label: t`Wanted (${wantedFilterCount})` },
         { value: 'missing', label: t`Not downloaded (${missingFilterCount})` },
         ...(fileMissingFilterCount > 0
             ? [{ value: 'fileMissing', label: t`File missing (${fileMissingFilterCount})` }]
@@ -1586,7 +1591,7 @@ function SeriesDetailBody() {
         ...(delistedFilterCount > 0
             ? [{ value: 'delisted', label: t`Delisted (${delistedFilterCount})` }]
             : []),
-        { value: 'downloaded', label: t`Have (${downloadedFilterCount})` },
+        { value: 'downloaded', label: t`Downloaded (${downloadedFilterCount})` },
         ...(canFilterUnread
             ? [{ value: 'unread', label: t`Unread (${unreadFilterCount})` }]
             : []),
@@ -2053,7 +2058,7 @@ function SeriesDetailBody() {
           // Unmounted rather than hidden: the chapter table's season overlay measures real DOM rects,
           // and a laid-out-but-unpainted table reads every one of them as zero.
           keepMounted={false}
-          classNames={{ list: 'series-tabs', tab: 'series-tab', panel: 'series-body' }}
+          classNames={{ list: 'series-tabs page-tabs', tab: 'series-tab', panel: 'series-body' }}
       >
         <SeriesHero
             series={series}
@@ -2429,10 +2434,10 @@ function SeriesDetailBody() {
             )}
             <div className="series-split">
               <Panel className="series-detail-synopsis">
-                <Title order={2} size="h3" fz="var(--type-section)">
+                <PanelTitle order={2} icon={IconFileText}>
                   <Trans>Synopsis</Trans>
-                  {series.lockedFields.includes('overview') && <>{' '}<MetadataLock /></>}
-                </Title>
+                  {series.lockedFields.includes('overview') && <MetadataLock />}
+                </PanelTitle>
                 {series.overview && isMobile ? (
                     // About four lines on a phone, where the whole text pushed the sources and tags
                     // several screens down. The panel beside Sources has the room on a laptop.
@@ -2488,7 +2493,7 @@ function SeriesDetailBody() {
                         </Title>
                         {/* Genres carry no relevance weight, so they are one flat row rather than
                             buckets, on their own dot colour to read apart from the tags below. */}
-                        <div className="tag-chips" style={{ '--bucket': 'var(--info)' } as CSSProperties}>
+                        <div className="tag-chips" style={{ '--bucket': 'var(--neutral)' } as CSSProperties}>
                           {series.genres.map((g) => (
                               <span key={g} className="tag-chip">
                                 <i className="tag-dot" />
@@ -2647,7 +2652,7 @@ function SeriesDetailBody() {
                   <Text size="xs" c="var(--ink-3)">
                     {scanning ? (
                         <Group gap={6} component="span" wrap="nowrap">
-                          <Loader size={10} />
+                          <Loader size={12} />
                           <Trans>Scanning for upgrades…</Trans>
                         </Group>
                     ) : series.lastUpgradeScan ? (
@@ -2680,9 +2685,9 @@ function SeriesDetailBody() {
                 </Panel>
                 <Panel className="series-detail-metadata-panel series-machine">
                   <Group justify="space-between" align="baseline" mb="sm" wrap="nowrap">
-                    <Title order={2} size="h3" fz="var(--type-subhead)">
+                    <PanelTitle order={2} icon={IconDatabase}>
                       <Trans>Metadata</Trans>
-                    </Title>
+                    </PanelTitle>
                     <Button
                       variant="default"
                       size="compact-sm"
@@ -2725,7 +2730,7 @@ function SeriesDetailBody() {
                           <CreatorNames role="studio" names={series.publisher} />
                         </RecordRow>
                     )}
-                    {series.type && <RecordRow label={t`Type`}>{series.type}</RecordRow>}
+                    {series.type && <RecordRow label={t`Type`}>{renderLabel(TYPE_LABELS[series.type] ?? series.type)}</RecordRow>}
                     {series.year && <RecordRow label={t`Year`}>{series.year}</RecordRow>}
                     <RecordRow label={t`Status`}>
                       {renderLabel(status.label)}
@@ -2914,48 +2919,46 @@ function SeriesDetailBody() {
         <Tabs.Panel value="chapters">
           <Stack className="series-detail-chapters" gap="lg">
             <div className="series-detail-chapter-head" data-sticky={selectMode ? undefined : true}>
-              <Group
-                  className="series-detail-chapter-toolbar"
-                  justify="space-between"
-                  align="baseline"
-                  wrap="wrap"
-                  gap="sm"
-              >
-                <Group gap="xs" align="baseline">
-                  <Title order={2} size="h3"><Trans>Chapters</Trans></Title>
-                  {chapters && (
-                      <Text size="sm" c="var(--ink-3)" className="tnum">
-                        <Trans>{chaptersHave}/{chaptersCounted} downloaded</Trans>
-                      </Text>
-                  )}
-                  {chapters && readTracking && progress.have > 0 && (
-                      <Badge size="sm" variant="light" color="var(--ok)" className="tnum">
-                        <Trans>{readFilterCount} read</Trans>
-                      </Badge>
-                  )}
-                  {fileMissingFilterCount > 0 && (
-                      <Group gap="xs" wrap="nowrap" align="center" role="status">
-                        <Group gap={6} wrap="nowrap" align="flex-start" style={{ flex: 1, minWidth: 0 }}>
-                          <IconAlertTriangle size={16} style={{ flexShrink: 0, marginTop: 3, color: 'var(--warn)' }} />
-                          <Text size="sm" c="var(--warn)" className="tnum" style={{ textWrap: 'balance' }}>
-                            <Plural
-                                value={fileMissingFilterCount}
-                                one="# chapter has no file on disk"
-                                other="# chapters have no file on disk"
-                            />
-                          </Text>
-                        </Group>
-                        {canEditMetadata && (
-                            <Button size="xs" variant="default" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)} style={{ flexShrink: 0 }}>
-                              <Trans>Relink files</Trans>
-                            </Button>
-                        )}
-                      </Group>
+              <Stack className="series-detail-chapter-toolbar" gap="sm">
+                <Group justify="space-between" wrap="nowrap" align="flex-start" gap="sm">
+                  <Group gap="xs" align="baseline" style={{ flex: 1, minWidth: 0 }}>
+                    <Title order={2} size="h3"><Trans>Chapters</Trans></Title>
+                    {chapters && (
+                        <Text size="sm" c="var(--ink-3)" className="tnum">
+                          <Trans>{chaptersHave}/{chaptersCounted} downloaded</Trans>
+                        </Text>
+                    )}
+                    {chapters && readTracking && progress.have > 0 && (
+                        <Badge size="sm" variant="light" color="var(--brand)" className="tnum">
+                          <Trans>{readFilterCount} read</Trans>
+                        </Badge>
+                    )}
+                  </Group>
+                  {chapters && chapters.length > 0 && !selectMode && (
+                      isMobile ? (
+                          <ActionIcon
+                              size="input-xs"
+                              variant="default"
+                              aria-label={t`Select`}
+                              onClick={() => setSelectMode(true)}
+                          >
+                            <IconListCheck size={16} />
+                          </ActionIcon>
+                      ) : (
+                          <Button
+                              size="xs"
+                              variant="default"
+                              leftSection={<IconListCheck size={16} />}
+                              onClick={() => setSelectMode(true)}
+                          >
+                            <Trans>Select</Trans>
+                          </Button>
+                      )
                   )}
                 </Group>
                 {chapters && chapters.length > 0 && (
                     // One row on a phone: the filter takes what the fixed-width controls leave.
-                    <Group gap="xs" wrap={isMobile ? 'nowrap' : 'wrap'} w={isMobile ? '100%' : undefined}>
+                    <Group gap="xs" wrap={isMobile ? 'nowrap' : 'wrap'}>
                       {isMobile ? (
                           <Select
                               size="xs"
@@ -2998,33 +3001,35 @@ function SeriesDetailBody() {
                           className="page-size-select"
                           style={{ '--label-ch': Math.max(...chapterPageSizeOptions.map((o) => o.label.length)) }}
                       />
-                      {!selectMode && isMobile && (
-                          <ActionIcon
-                              size="input-xs"
-                              variant="default"
-                              aria-label={t`Select`}
-                              onClick={() => setSelectMode(true)}
-                          >
-                            <IconListCheck size={16} />
-                          </ActionIcon>
-                      )}
-                      {!selectMode && !isMobile && (
-                          <Button
-                              size="xs"
-                              variant="default"
-                              leftSection={<IconListCheck size={16} />}
-                              onClick={() => setSelectMode(true)}
-                          >
-                            <Trans>Select</Trans>
-                          </Button>
-                      )}
                     </Group>
                 )}
-              </Group>
+              </Stack>
 
               {!isMobile && chapterSearchInput}
             </div>
             {isMobile && chapterSearchInput}
+
+            {!selectMode && fileMissingFilterCount > 0 && (
+                <Paper className="series-detail-chapter-hint" withBorder p="xs" radius="lg" role="status">
+                  <Group gap="sm" wrap="wrap" justify="space-between">
+                    <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: '1 1 20rem', minWidth: 0 }}>
+                      <IconAlertTriangle size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} />
+                      <Text size="sm" c="var(--ink-2)" className="tnum">
+                        <Plural
+                            value={fileMissingFilterCount}
+                            one="# chapter has no file on disk"
+                            other="# chapters have no file on disk"
+                        />
+                      </Text>
+                    </Group>
+                    {canEditMetadata && (
+                        <Button size="xs" variant="default" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
+                          <Trans>Relink files</Trans>
+                        </Button>
+                    )}
+                  </Group>
+                </Paper>
+            )}
 
             {/* Two closed issues came from people who had a file on disk and could not find how to
                 tell Maki which chapters it holds. Point at it from the tab they were looking at. */}
@@ -3220,11 +3225,14 @@ function SeriesDetailBody() {
                 </Paper>
             )}
 
-            <Modal
+            <ConfirmDialog
                 opened={deleteChaptersModalOpen}
                 onClose={closeRemoveChapters}
                 title={t`Remove chapters?`}
-                centered
+                confirmLabel={<Trans>Remove chapters</Trans>}
+                onConfirm={() => removeChapters()}
+                loading={deleteChapters.isPending}
+                confirmDisabled={binRefused === 'chapters'}
             >
               <Stack gap="md">
                 <Text size="sm" c="var(--ink-3)">
@@ -3253,31 +3261,20 @@ function SeriesDetailBody() {
                 <Text size="sm" c="var(--danger)">
                   <Trans>Removed chapter rows and their read history cannot be restored.</Trans>
                 </Text>
-                <Group justify="flex-end">
-                  <Button variant="default" onClick={closeRemoveChapters}>
-                    <Trans>Cancel</Trans>
-                  </Button>
-                  <Button
-                      color="var(--danger-fill)"
-                      leftSection={<IconTrash size={16} />}
-                      loading={deleteChapters.isPending}
-                      disabled={binRefused === 'chapters'}
-                      onClick={() => removeChapters()}
-                  >
-                    <Trans>Remove</Trans>
-                  </Button>
-                </Group>
                 {binRefused === 'chapters' && (
                     <PermanentDeleteFallback loading={deleteChapters.isPending} onConfirm={() => removeChapters(true)} />
                 )}
               </Stack>
-            </Modal>
+            </ConfirmDialog>
 
-            <Modal
+            <ConfirmDialog
                 opened={deleteFileIds !== null}
                 onClose={closeDeleteFiles}
                 title={t`Delete files?`}
-                centered
+                confirmLabel={<Trans>Delete files</Trans>}
+                onConfirm={() => deleteFilesOf()}
+                loading={deleteChapterFiles.isPending}
+                confirmDisabled={!deleteFilesPlan || deleteFilesPlan.files === 0 || binRefused === 'files'}
             >
               <Stack gap="md">
                 {deleteFilesPlan && deleteFilesPlan.files === 0 ? (
@@ -3309,25 +3306,11 @@ function SeriesDetailBody() {
                       />
                     </Text>
                 )}
-                <Group justify="flex-end">
-                  <Button variant="default" onClick={closeDeleteFiles}>
-                    <Trans>Cancel</Trans>
-                  </Button>
-                  <Button
-                      color="var(--danger-fill)"
-                      leftSection={<IconTrash size={16} />}
-                      disabled={!deleteFilesPlan || deleteFilesPlan.files === 0 || binRefused === 'files'}
-                      loading={deleteChapterFiles.isPending}
-                      onClick={() => deleteFilesOf()}
-                  >
-                    <Trans>Delete files</Trans>
-                  </Button>
-                </Group>
                 {binRefused === 'files' && (
                     <PermanentDeleteFallback loading={deleteChapterFiles.isPending} onConfirm={() => deleteFilesOf(true)} />
                 )}
               </Stack>
-            </Modal>
+            </ConfirmDialog>
 
             <RelinkFilesModal seriesId={seriesId} opened={relinkOpen} onClose={() => setRelinkOpen(false)} />
 

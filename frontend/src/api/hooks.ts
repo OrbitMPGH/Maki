@@ -18,6 +18,7 @@ import type { RequestSummaryDto, SourceReliabilityDto } from './stats'
 import type { IncognitoMode } from '../components/ui/incognito'
 import type { ReleaseParsedDto } from './upgrades'
 import { obtainedCount } from '../lib/chapterCounts'
+import { optimisticMerge, optimisticSeries } from './optimistic'
 import { activeSeries } from '../lib/series'
 import { isProvisional, ratesProvisionally } from '../lib/rating'
 import { askSoFarSync } from '../lib/soFarSyncAsk'
@@ -573,7 +574,7 @@ export function useRecommendations(request: RecommendationRequest, enabled = tru
       })
     },
     initialPageParam: { page: 0, poolVersion: undefined as string | undefined },
-    getNextPageParam: (last) => (last.hasMore
+    getNextPageParam: (last) => (last?.hasMore
       ? { page: last.page + 1, poolVersion: last.poolVersion ?? undefined }
       : undefined),
     // A restart page is the server saying the pool changed under us and handing back the new one
@@ -581,7 +582,7 @@ export function useRecommendations(request: RecommendationRequest, enabled = tru
     // it would show titles this reader hid or repeat ones the new pool ordered differently. Drop
     // those pages here rather than stopping at the restart: paging carries on from the new page 0.
     select: (data) => {
-      const restart = data.pages.findLastIndex((page) => page.restartRequired)
+      const restart = data.pages.findLastIndex((page) => page?.restartRequired)
       return restart <= 0
         ? data
         : { pages: data.pages.slice(restart), pageParams: data.pageParams.slice(restart) }
@@ -1074,7 +1075,6 @@ export const HOME_SECTION_OPTIONS: Record<string, Record<string, boolean>> = {
 /** Discover Browse tab section keys, in the order they ship. Mirrors `DiscoverSections.All`. */
 export const DISCOVER_SECTIONS = [
   'hero',
-  'taste',
   'recent',
   'following',
   'sideinterests',
@@ -1088,7 +1088,6 @@ export type DiscoverSectionKey = (typeof DISCOVER_SECTIONS)[number]
 
 export const DISCOVER_SECTION_LABELS: Record<DiscoverSectionKey, MessageDescriptor> = {
   hero: msg`Spotlight`,
-  taste: msg`Your taste`,
   recent: msg`Based on your recent activity`,
   following: msg`New from creators you follow`,
   sideinterests: msg`Side interests`,
@@ -2504,6 +2503,10 @@ export function useSetMonitorMode() {
         method: 'POST',
         body: JSON.stringify({ mode }),
       }),
+    ...optimisticSeries<{ seriesId: number; mode: string }, SeriesDto>(queryClient, ({ mode }) => ({
+      monitorNewItems: mode,
+      monitored: mode !== 'None',
+    })),
     onSuccess: () => {
       // No ['chapters'] invalidation: a mode change governs chapters released later and leaves
       // every existing row alone, so there is nothing there to refetch.
@@ -2566,6 +2569,7 @@ export function useSaveReadFileCleanupSettings() {
   return useMutation({
     mutationFn: (body: ReadFileCleanupSettings) =>
       api<ReadFileCleanupSettings>('/settings/readcleanup', { method: 'PUT', body: JSON.stringify(body) }),
+    ...optimisticMerge(queryClient, ['settings', 'readcleanup'], (body: ReadFileCleanupSettings) => body),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'readcleanup'] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
@@ -2625,6 +2629,9 @@ export function useSetSeriesNotificationMode() {
         method: 'POST',
         body: JSON.stringify({ mode }),
       }),
+    ...optimisticSeries<{ seriesId: number; mode: string }, SeriesDto>(queryClient, ({ mode }) => ({
+      notificationMode: mode,
+    })),
     onSuccess: (_data, { seriesId }) => {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
@@ -2789,6 +2796,7 @@ export function useSaveRatingPromptsSettings() {
   return useMutation({
     mutationFn: (settings: RatingPromptsSettings) =>
       api<RatingPromptsSettings>('/settings/rating-prompts', { method: 'PUT', body: JSON.stringify(settings) }),
+    ...optimisticMerge(queryClient, ['settings', 'rating-prompts'], (settings: RatingPromptsSettings) => settings),
     onSuccess: (saved) => queryClient.setQueryData(['settings', 'rating-prompts'], saved),
   })
 }
@@ -3024,6 +3032,15 @@ export function useSaveOpdsSettings() {
     // `password` is only needed when the save mints the token (first enable); the server decides.
     mutationFn: (settings: { enabled: boolean; trackProgress: boolean; komga?: boolean; password?: string }) =>
       api<OpdsSettings>('/settings/opds', { method: 'PUT', body: JSON.stringify(settings) }),
+    ...optimisticMerge(
+      queryClient,
+      ['settings', 'opds'],
+      ({ enabled, trackProgress, komga }: { enabled: boolean; trackProgress: boolean; komga?: boolean }) => ({
+        enabled,
+        trackProgress,
+        ...(komga !== undefined && { komga }),
+      }),
+    ),
     onSuccess: (data) => {
       // The PUT mints the token on first enable, so seed the cache from the response rather
       // than refetching, otherwise the URL box stays empty until the round-trip lands.
@@ -3061,6 +3078,7 @@ export function useSaveUpdateSettings() {
         method: 'PUT',
         body: JSON.stringify({ checkForUpdates }),
       }),
+    ...optimisticMerge(queryClient, ['settings', 'updates'], (checkForUpdates: boolean) => ({ checkForUpdates })),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'updates'] })
     },
@@ -3746,6 +3764,7 @@ export function useSaveMonitoringSettings() {
         method: 'PUT',
         body: JSON.stringify(patch),
       }),
+    ...optimisticMerge(queryClient, ['settings', 'monitoring'], (patch: Partial<MonitoringSettings>) => patch),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'monitoring'] })
     },
@@ -3793,6 +3812,9 @@ export function useSaveDiscoverSettings() {
         method: 'PUT',
         body: JSON.stringify({ maxContentRating }),
       }),
+    ...optimisticMerge(queryClient, ['settings', 'discover'], (maxContentRating: ContentRating) => ({
+      maxContentRating,
+    })),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'discover'] })
     },
@@ -3897,6 +3919,7 @@ export function useSaveNameParsingSettings() {
         method: 'PUT',
         body: JSON.stringify({ languages }),
       }),
+    ...optimisticMerge(queryClient, ['settings', 'nameparsing'], (languages: string[]) => ({ languages })),
     onSuccess: (saved) => queryClient.setQueryData(['settings', 'nameparsing'], saved),
   })
 }
@@ -4701,6 +4724,7 @@ export function useSaveBackupSettings() {
         method: 'PUT',
         body: JSON.stringify(value),
       }),
+    ...optimisticMerge(queryClient, ['settings', 'backup'], (value: BackupRetentionSettings) => value),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings', 'backup'] }),
   })
 }

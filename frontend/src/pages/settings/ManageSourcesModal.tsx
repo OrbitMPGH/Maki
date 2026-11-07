@@ -137,14 +137,14 @@ function SourceTags({ source, contentLabels, nameOfLanguage }: {
   return (
     <div className="source-tags">
       {source.suwayomi?.missing && (
-        <span className="source-tag" data-tone="adult"><Trans>No longer in Suwayomi</Trans></span>
+        <span className="source-tag" data-tone="broken"><Trans>No longer in Suwayomi</Trans></span>
       )}
       {source.suwayomi?.needsSetup && (
         <span className="source-tag" data-tone="setup"><Trans>Several languages, pick one</Trans></span>
       )}
       {source.custom?.invalid && (
         <Tooltip label={source.custom.problem} disabled={!source.custom.problem} events={{ hover: true, focus: true, touch: true }} withArrow multiline w={320}>
-          <span className="source-tag" data-tone="adult" tabIndex={0}><Trans>Not working</Trans></span>
+          <span className="source-tag" data-tone="broken" tabIndex={0}><Trans>Not working</Trans></span>
         </Tooltip>
       )}
       {source.custom && !source.custom.invalid && source.custom.failing && (
@@ -155,7 +155,7 @@ function SourceTags({ source, contentLabels, nameOfLanguage }: {
           multiline
           w={320}
         >
-          <span className="source-tag" data-tone="adult" tabIndex={0}><Trans>Not working</Trans></span>
+          <span className="source-tag" data-tone="broken" tabIndex={0}><Trans>Not working</Trans></span>
         </Tooltip>
       )}
       {source.custom && !source.custom.invalid && !source.custom.hasSearch && (
@@ -197,8 +197,8 @@ function SourceTags({ source, contentLabels, nameOfLanguage }: {
         </Tooltip>
       )}
       {source.kind === 'official' && <span className="source-tag" data-tone="official"><Trans>Official</Trans></span>}
-      {source.kind === 'scanlator' && <span className="source-tag" data-tone="kind"><Trans>Scanlator</Trans></span>}
-      {source.kind === 'aggregator' && <span className="source-tag" data-tone="kind"><Trans>Aggregator</Trans></span>}
+      {source.kind === 'scanlator' && <span className="source-tag" data-tone="scanlator"><Trans>Scanlator</Trans></span>}
+      {source.kind === 'aggregator' && <span className="source-tag" data-tone="aggregator"><Trans>Aggregator</Trans></span>}
       {(source.content ?? []).map((c) => contentLabels[c] && (
         <span key={c} className="source-tag">{contentLabels[c]}</span>
       ))}
@@ -1144,7 +1144,7 @@ export function ManageSourcesModal({
       </div>
       <div className="source-manager-list">
         {refresh.data && !refresh.data.reachable && (
-          <Alert color="yellow" variant="light" mb="xs">
+          <Alert color="var(--warn)" variant="light" mb="xs">
             {refresh.data.error}{' '}
             <Trans>The Suwayomi sources below are the ones it listed last time.</Trans>
           </Alert>

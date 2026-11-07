@@ -46,7 +46,7 @@ export function RecommenderDials({
             { value: 0 },
             { value: 1, label: t`gems` },
           ]}
-          color={obscurity >= 0 ? 'grape' : 'var(--info)'}
+          color="var(--brand)"
         />
       </div>
       <div>
@@ -70,7 +70,7 @@ export function RecommenderDials({
             { value: 0.5 },
             { value: 1, label: t`varied` },
           ]}
-          color="var(--ok)"
+          color="var(--brand)"
         />
         {/* Mark labels are absolutely positioned, so they take no layout space — this has
             to clear them by hand or the caption lands on top of "closest"/"varied". */}

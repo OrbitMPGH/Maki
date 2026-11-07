@@ -25,7 +25,7 @@ import {
   IconHistory,
   IconPencil,
   IconPlus,
-  IconStar,
+  IconStarFilled,
   IconThumbDown,
 } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -232,7 +232,7 @@ function ShortlistRow({
           )}
           {item?.rating != null && (
             <span className="shortlist-score tnum">
-              <IconStar size={16} style={{ color: 'var(--rating)' }} />
+              <IconStarFilled size={16} style={{ color: 'var(--rating)' }} />
               {formatFixedDecimal(item.rating / 10, 1)}
             </span>
           )}
@@ -251,7 +251,7 @@ function ShortlistRow({
         {genres.length > 0 && (
           <TagChips>
             {genres.map((g) => (
-              <TagChip key={g} size="sm" dot="var(--info)">
+              <TagChip key={g} size="sm" dot="var(--neutral)">
                 {label(GENRE_LABELS[g] ?? g)}
               </TagChip>
             ))}

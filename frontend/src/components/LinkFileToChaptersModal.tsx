@@ -17,14 +17,15 @@ import { IconFileZip, IconSearch, IconX } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
+import { chapterLabel as houseChapterLabel, serverChapterLabel } from '../format'
 import { useChapters, useLinkChapters, useUnlinkChapters } from '../api/hooks'
 import type { ChapterDto, SeriesFileDto } from '../api/types'
 import { displayChapterTitle } from '../lib/chapterTitle'
 
 function chapterLabel(c: ChapterDto): string {
-  if (!c.isOneShot && c.number === null && c.volume !== null) return now`Vol.${c.volume}`
+  if (!c.isOneShot && c.number === null && c.volume !== null) return serverChapterLabel(`Vol.${c.volume}`)
   if (c.isOneShot || c.number === null) return c.title ?? now`One-shot`
-  return c.volume !== null ? now`Vol.${c.volume} Ch.${c.number}` : now`Ch.${c.number}`
+  return houseChapterLabel(c.number, c.volume)
 }
 
 /**
@@ -151,7 +152,7 @@ export function LinkFileToChaptersModal({
               {file.fileName}
             </Text>
             {file.parsedLabel && (
-              <Badge size="sm" variant="light" color={file.isVolume ? 'indigo' : 'gray'} className="tnum">
+              <Badge size="sm" variant="light" color={file.isVolume ? 'var(--volume)' : 'var(--neutral)'} className="tnum">
                 {file.parsedLabel}
               </Badge>
             )}

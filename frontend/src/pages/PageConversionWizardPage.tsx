@@ -83,7 +83,7 @@ export default function PageConversionWizardPage() {
         title={<Trans>Set up page conversion</Trans>}
         description={<Trans>Compare your own pages at each quality before anything is rewritten.</Trans>}
         actions={
-          <Button component={Link} to={SETTINGS_URL} variant="default" size="xs" leftSection={<IconArrowLeft size={16} />}>
+          <Button component={Link} to={SETTINGS_URL} variant="default" leftSection={<IconArrowLeft size={16} />}>
             <Trans>Back to settings</Trans>
           </Button>
         }
@@ -96,7 +96,7 @@ export default function PageConversionWizardPage() {
             <Skeleton height={220} />
           </Stack>
         ) : (
-          <Stack gap="lg" p="xs">
+          <Stack gap="lg" pt="xs">
             {current === 'format' && <FormatStep value={draft} onChange={change} />}
             {current === 'compare' && (
               <CompareStep value={draft} onChange={change} choice={compare} onChoiceChange={setCompare} />

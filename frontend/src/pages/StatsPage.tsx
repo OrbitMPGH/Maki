@@ -110,6 +110,7 @@ export default function StatsPage() {
 
       <PageHeader
         title={<Trans>Stats</Trans>}
+        className="stats-page-header"
         actions={
           <>
             {isAdmin && users && users.length > 1 && (
@@ -119,7 +120,7 @@ export default function StatsPage() {
                   .map((u) => ({ value: String(u.id), label: u.displayName || u.userName }))}
                 value={viewUserId === undefined ? String(me?.id ?? '') : String(viewUserId)}
                 onChange={(v) => setViewUserId(v && Number(v) !== me?.id ? Number(v) : undefined)}
-                w={180}
+                w={{ base: 'auto', xs: 180 }}
                 size="sm"
                 aria-label={t`Reader`}
               />
