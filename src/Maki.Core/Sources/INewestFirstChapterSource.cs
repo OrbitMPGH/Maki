@@ -22,6 +22,8 @@ public sealed record ChapterListing(IReadOnlyList<SourceChapter> Chapters, bool 
 /// <summary>
 /// What a mapping already links. A listed chapter is known by its source id, or by number, volume and
 /// language, since a site can list a second upload of a chapter the mapping already has under one id.
+/// A chapter with no number is known only by its id: every unnumbered extra shares the same key, so a
+/// new one would read as known.
 /// </summary>
 public sealed class KnownChapters
 {
@@ -32,14 +34,16 @@ public sealed class KnownChapters
         IEnumerable<string> ids, IEnumerable<(decimal? Number, int? Volume, string Language)> keys)
     {
         _ids = new HashSet<string>(ids, StringComparer.Ordinal);
-        _keys = keys.Select(k => (k.Number, k.Volume, SourceLanguages.Canonical(k.Language))).ToHashSet();
+        _keys = keys.Where(k => k.Number is not null)
+            .Select(k => (k.Number, k.Volume, SourceLanguages.Canonical(k.Language))).ToHashSet();
     }
 
     public int Count => _ids.Count;
 
     public bool Knows(SourceChapter chapter) =>
         _ids.Contains(chapter.SourceChapterId) ||
-        _keys.Contains((chapter.Number, chapter.Volume, SourceLanguages.Canonical(chapter.Language)));
+        (chapter.Number is not null &&
+         _keys.Contains((chapter.Number, chapter.Volume, SourceLanguages.Canonical(chapter.Language))));
 
     /// <summary>
     /// True when a page of the listing can end the walk: it holds at least one chapter the caller
