@@ -137,6 +137,24 @@ public class SqliteFilesTests : IDisposable
     }
 
     [Fact]
+    public void IsUnattached_tells_a_database_nothing_has_open_from_one_held()
+    {
+        var db = Path.Combine(_dir, "maki.db");
+        Assert.True(SqliteFiles.IsUnattached(db));
+        LeaveWalBehind(db, rows: 1);
+        Assert.Equal(!OperatingSystem.IsMacOS(), SqliteFiles.IsUnattached(db));
+
+        using var holder = new FileStream(db + "-shm", FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
+        if (!HoldAttachLock(holder))
+        {
+            return;
+        }
+
+        Assert.False(SqliteFiles.IsUnattached(db));
+        Assert.True(File.Exists(db + "-shm"));
+    }
+
+    [Fact]
     public void A_missing_directory_or_file_deletes_nothing()
     {
         Assert.Empty(SqliteFiles.DeleteStaleSharedMemory(Path.Combine(_dir, "absent")));

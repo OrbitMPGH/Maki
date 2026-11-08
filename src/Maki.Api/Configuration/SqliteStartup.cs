@@ -15,13 +15,17 @@ namespace Maki.Api.Configuration;
 public static class SqliteStartup
 {
     private static readonly ConcurrentDictionary<string, bool> Swept = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, bool> Unattached = new(StringComparer.Ordinal);
 
     public static void Prepare(AppPaths paths, ILogger logger)
     {
         SqliteKeeper.Logger = logger;
         SqliteKeeper.Allow(paths.DatabasePath);
         SqliteKeeper.Allow(paths.EmbeddingsDbPath);
-        if (OperatingSystem.IsLinux() && Swept.TryAdd(Path.GetFullPath(paths.ConfigDir), true))
+        var first = Swept.TryAdd(Path.GetFullPath(paths.ConfigDir), true);
+        // Asked before this process opens the database, and only once per process for the same reason.
+        Unattached[Path.GetFullPath(paths.DatabasePath)] = first && SqliteFiles.IsUnattached(paths.DatabasePath);
+        if (OperatingSystem.IsLinux() && first)
         {
             foreach (var directory in new[] { paths.ConfigDir, paths.CacheDir })
             {
@@ -35,6 +39,13 @@ public static class SqliteStartup
         SqliteFiles.CreateIfMissing(paths.DatabasePath);
         KeepAttached(paths);
     }
+
+    /// <summary>
+    /// Whether no other process had the database open when this one started, so nothing else can be
+    /// migrating it. False when it could not be told.
+    /// </summary>
+    public static bool AloneAtStart(AppPaths paths) =>
+        Unattached.TryGetValue(Path.GetFullPath(paths.DatabasePath), out var alone) && alone;
 
     /// <summary>Again once the database is in WAL mode: on a fresh install the keeper opened before it was.</summary>
     public static void KeepAttached(AppPaths paths) => SqliteKeeper.For(paths.DatabasePath).Attach();

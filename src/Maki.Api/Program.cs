@@ -1572,6 +1572,11 @@ try
             preMigrationBackup = scope.ServiceProvider.GetRequiredService<BackupService>()
                 .CreateAsync("auto", CancellationToken.None).GetAwaiter().GetResult();
         }
+        // One process per config: with nothing else attached, a lock row can only be a dead run's.
+        if (SqliteStartup.AloneAtStart(paths) && MigrationLock.ClearAbandoned(db.Database))
+        {
+            startupLog.LogWarning("Cleared the migration lock a previous start left when it stopped during a database upgrade");
+        }
         try { db.Database.Migrate(); }
         catch (Exception ex)
         {

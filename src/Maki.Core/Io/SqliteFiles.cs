@@ -82,6 +82,41 @@ public static class SqliteFiles
     }
 
     /// <summary>
+    /// True when no other process has <paramref name="databasePath"/> open: it has no <c>-shm</c>, or
+    /// nothing holds SQLite's attach lock on it. False when that cannot be told (macOS, an unreadable
+    /// file). Same precondition as <see cref="DeleteStaleSharedMemory"/>.
+    /// </summary>
+    public static bool IsUnattached(string databasePath)
+    {
+        var shmPath = databasePath + "-shm";
+        if (!File.Exists(shmPath))
+        {
+            return true;
+        }
+
+        if (OperatingSystem.IsMacOS())
+        {
+            return false;
+        }
+
+        try
+        {
+            using var stream = new FileStream(
+                shmPath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
+            stream.Lock(AttachLockOffset, 1);
+            return true;
+        }
+        catch (FileNotFoundException)
+        {
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
     /// Creates <paramref name="databasePath"/> as an empty file, which SQLite opens as an empty
     /// database, and sets its size so the filesystem reports its final inode number. Leaves an
     /// existing file alone.
