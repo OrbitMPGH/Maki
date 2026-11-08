@@ -40,6 +40,15 @@ public class HttpRequestLogPolicyTests
         Assert.Equal(LogEventLevel.Verbose, Level("GET", path, status));
     }
 
+    [Theory]
+    [InlineData("/signalr/events", 101)]
+    [InlineData("/signalr/events", 200)]
+    [InlineData("/anything", 101)]
+    public void Long_lived_connections_are_not_slow_requests(string path, int status)
+    {
+        Assert.NotEqual(LogEventLevel.Warning, Level("GET", path, status, elapsedMs: Options.SlowRequestMs * 100));
+    }
+
     [Fact]
     public void Server_errors_are_errors()
     {
