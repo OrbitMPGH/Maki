@@ -262,10 +262,12 @@ public class QueueController(
             return this.Conflict(localizer, "error.chapter.alreadyQueued");
         }
 
-        // Scraper item that never had a mapping resolved (e.g. it failed before
-        // ResolveAndActivateAsync could set one) — ClaimNextAsync requires every Queued/RateLimited
-        // scraper item to have one, so send it back through resolution instead of straight to
-        // Queued. Torrent items never carry a SourceMappingId, so they're unaffected.
+        await queue.ReleaseOutrankedSourcesAsync(db, [item], ct);
+
+        // Scraper item with no mapping: it failed before ResolveAndActivateAsync could set one, or the
+        // line above released a source that is no longer the first choice. ClaimNextAsync requires
+        // every Queued/RateLimited scraper item to have one, so send it back through resolution
+        // instead of straight to Queued. Torrent items never carry a SourceMappingId.
         if (item.Protocol == AcquisitionProtocol.Scraper && item.SourceMappingId is null)
         {
             if (item.ChapterId is not { } unresolvedChapterId)

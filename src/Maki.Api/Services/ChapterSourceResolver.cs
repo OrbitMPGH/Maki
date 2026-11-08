@@ -83,24 +83,8 @@ public class ChapterSourceResolver(
         IReadOnlyCollection<int>? excludeMappingIds = null, bool requireExactMatch = false,
         bool onlyPreferred = false, IReadOnlySet<string>? lastResortSources = null)
     {
-        var disabledSources = await sourceAvailability.DisabledAsync(ct);
-        var query = db.SourceMappings
-            .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && !disabledSources.Contains(m.SourceName));
-
-        if (onlyPreferred && preferMappingId is { } only)
-        {
-            query = query.Where(m => m.Id == only);
-        }
-
-        if (excludeMappingIds is { Count: > 0 })
-        {
-            query = query.Where(m => !excludeMappingIds.Contains(m.Id));
-        }
-
-        var mappings = (await OrderAsync(db, chapter.SeriesId, await query.ToListAsync(ct), ct))
-            .OrderBy(m => m.Id == preferMappingId ? 0 : 1)
-            .ThenBy(m => lastResortSources?.Contains(m.SourceName) == true ? 1 : 0)
-            .ToList();
+        var mappings = await CandidatesAsync(
+            db, chapter.SeriesId, preferMappingId, excludeMappingIds, onlyPreferred, lastResortSources, ct);
 
         if (mappings.Count == 0)
         {
@@ -151,6 +135,39 @@ public class ChapterSourceResolver(
 
         throw new ChapterUnavailableException(ChapterUnavailableException.NotListed,
             $"Chapter {chapter.Number?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)} unavailable on all sources ({string.Join("; ", errors)})");
+    }
+
+    /// <summary>
+    /// The mapping a fresh <see cref="ResolveAsync"/> of this series would try first, without asking any
+    /// source. Null when the series has no usable mapping.
+    /// </summary>
+    public async Task<int?> FirstChoiceAsync(
+        MakiDbContext db, int seriesId, IReadOnlySet<string>? lastResortSources, CancellationToken ct) =>
+        (await CandidatesAsync(db, seriesId, null, null, false, lastResortSources, ct))
+        .FirstOrDefault(m => sourceRegistry.Find(m.SourceName) is not null)?.Id;
+
+    private async Task<List<SourceMapping>> CandidatesAsync(
+        MakiDbContext db, int seriesId, int? preferMappingId, IReadOnlyCollection<int>? excludeMappingIds,
+        bool onlyPreferred, IReadOnlySet<string>? lastResortSources, CancellationToken ct)
+    {
+        var disabledSources = await sourceAvailability.DisabledAsync(ct);
+        var query = db.SourceMappings
+            .Where(m => m.SeriesId == seriesId && m.Enabled && !disabledSources.Contains(m.SourceName));
+
+        if (onlyPreferred && preferMappingId is { } only)
+        {
+            query = query.Where(m => m.Id == only);
+        }
+
+        if (excludeMappingIds is { Count: > 0 })
+        {
+            query = query.Where(m => !excludeMappingIds.Contains(m.Id));
+        }
+
+        return (await OrderAsync(db, seriesId, await query.ToListAsync(ct), ct))
+            .OrderBy(m => m.Id == preferMappingId ? 0 : 1)
+            .ThenBy(m => lastResortSources?.Contains(m.SourceName) == true ? 1 : 0)
+            .ToList();
     }
 
     /// <summary>

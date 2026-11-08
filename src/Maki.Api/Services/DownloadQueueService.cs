@@ -1262,6 +1262,53 @@ public class DownloadQueueService(
     /// </summary>
     public static readonly string[] ManualRetryOnlyErrorKeys = [DownloadFailureReason.NeedsPurchase];
 
+    /// <summary>Failures that say something about the source the row was on, which another source might not repeat.</summary>
+    private static readonly string[] SourceSideErrorKeys =
+    [
+        DownloadFailureReason.SourceRejected, DownloadFailureReason.SourceError, DownloadFailureReason.Network,
+        DownloadFailureReason.ChallengeNotSolved, DownloadFailureReason.Unexpected, "error.download.noPages",
+        "error.download.invalidPage", "error.download.noMoreSources", "error.download.itemTimedOut",
+    ];
+
+    /// <summary>
+    /// A retry somebody asks for sends a row that failed on its source back through the resolve when that
+    /// source is no longer the first choice, say a source that was off when the chapter was queued is on
+    /// again. Without this the row keeps the mapping it fell through to and replays the same failure. A
+    /// pin, a health repair and an upgrade keep their source, and a paywall keeps its source too, since
+    /// buying the chapter there is what the manual retry is for. Changes the rows without saving.
+    /// </summary>
+    public async Task ReleaseOutrankedSourcesAsync(
+        MakiDbContext db, IReadOnlyCollection<DownloadQueueItem> items, CancellationToken ct)
+    {
+        var candidates = items
+            .Where(q => q.Protocol == AcquisitionProtocol.Scraper && q.SourceMappingId != null && q.ChapterId != null &&
+                        q.PreferredMappingId == null && q.HealthOperationId == null && q.UpgradeInfoJson == null &&
+                        q.Origin != DownloadOrigin.Upgrade && q.ErrorKey is { } key && SourceSideErrorKeys.Contains(key))
+            .ToList();
+        if (candidates.Count == 0)
+        {
+            return;
+        }
+
+        var held = await HeldSourcesAsync(ct);
+        var firstChoices = new Dictionary<int, int?>();
+        foreach (var item in candidates)
+        {
+            if (!firstChoices.TryGetValue(item.SeriesId, out var first))
+            {
+                first = await sourceResolver.FirstChoiceAsync(db, item.SeriesId, held, ct);
+                firstChoices[item.SeriesId] = first;
+            }
+
+            if (first is not null && first != item.SourceMappingId)
+            {
+                item.SourceMapping = null;
+                item.SourceMappingId = null;
+                item.SourceChapterId = null;
+            }
+        }
+    }
+
     /// <summary>The source name <see cref="QueueItemDto"/> shows for a torrent grab, which has no mapping.</summary>
     public const string TorrentSourceName = "torrent";
 
@@ -1348,6 +1395,11 @@ public class DownloadQueueService(
             .GroupBy(q => q.ChapterId is { } chapterId ? (long)chapterId : -q.Id)
             .Select(g => g.MaxBy(q => q.Id)!)
             .ToList();
+
+        if (manual)
+        {
+            await ReleaseOutrankedSourcesAsync(db, eligible, ct);
+        }
 
         foreach (var item in eligible)
         {
