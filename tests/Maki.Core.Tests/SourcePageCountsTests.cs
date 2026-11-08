@@ -44,6 +44,22 @@ public class SourcePageCountsTests
     }
 
     [Fact]
+    public void A_series_of_short_chapters_every_source_agrees_on_is_not_a_preview_cap()
+    {
+        var samples = new[]
+        {
+            S(1, 1, 12), S(1, 2, 12), S(1, 3, 13),
+            S(2, 1, 12), S(2, 2, 13), S(2, 3, 13)
+        };
+
+        Assert.Empty(SourcePageCounts.Truncated(samples));
+    }
+
+    [Fact]
+    public void A_short_fixed_length_with_no_longer_copy_anywhere_is_left_alone() =>
+        Assert.Empty(SourcePageCounts.Truncated([S(1, 1, 10), S(1, 2, 10), S(1, 3, 10)]));
+
+    [Fact]
     public void Chapters_of_varying_length_are_not_a_preview_cap()
     {
         var samples = new[] { S(1, 1, 10), S(1, 2, 14), S(1, 3, 9), S(1, 4, 12) };

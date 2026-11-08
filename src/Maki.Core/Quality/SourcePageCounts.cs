@@ -32,7 +32,9 @@ public static class SourcePageCounts
 
     /// <summary>
     /// Mappings that look truncated: short on most of the chapters they share with other sources, or
-    /// three or more different chapters of one short, fixed length (a preview cap). Real chapters vary.
+    /// three or more different chapters of one short, fixed length (a preview cap) that other sources
+    /// carry longer copies of. Real chapters vary, but a series of genuinely short chapters can sample
+    /// as one length, so the cap alone is not enough.
     /// </summary>
     /// <remarks>
     /// A long strip cut into 12 tall images and the same strip cut into 60 short ones are the same
@@ -44,9 +46,10 @@ public static class SourcePageCounts
         var truncated = new HashSet<int>();
         var shortCopies = new Dictionary<int, int>();
         var compared = new Dictionary<int, int>();
-        foreach (var chapter in samples.GroupBy(s => s.ChapterId))
+        var byChapter = samples.GroupBy(s => s.ChapterId)
+            .ToDictionary(g => g.Key, g => g.GroupBy(s => s.MappingId).Select(m => m.First()).ToList());
+        foreach (var copies in byChapter.Values)
         {
-            var copies = chapter.GroupBy(s => s.MappingId).Select(g => g.First()).ToList();
             if (copies.Count < 2)
             {
                 continue;
@@ -87,12 +90,41 @@ public static class SourcePageCounts
             }
 
             var counts = chapters.Select(c => c.PageCount).ToList();
-            if (counts.Count >= MinFixedChapters && counts.Max() <= FixedMaxPages && counts.Max() - counts.Min() <= FixedSpread)
+            if (counts.Count >= MinFixedChapters && counts.Max() <= FixedMaxPages && counts.Max() - counts.Min() <= FixedSpread &&
+                LongerElsewhere(chapters, byChapter))
             {
                 truncated.Add(mapping.Key);
             }
         }
 
         return truncated;
+    }
+
+    /// <summary>Whether, on most of these chapters that another source also sampled, some other copy is clearly longer.</summary>
+    private static bool LongerElsewhere(List<Sample> chapters, Dictionary<int, List<Sample>> byChapter)
+    {
+        int shared = 0, longer = 0;
+        foreach (var copy in chapters)
+        {
+            var others = byChapter[copy.ChapterId].Where(c => c.MappingId != copy.MappingId).ToList();
+            if (others.Count == 0)
+            {
+                continue;
+            }
+
+            shared++;
+            if (others.Any(o =>
+                {
+                    var byShape = copy.HasShape && o.HasShape;
+                    var own = byShape ? copy.PageCount * copy.Aspect / PageAspect : copy.PageCount;
+                    var theirs = byShape ? o.PageCount * o.Aspect / PageAspect : o.PageCount;
+                    return theirs - own >= MinPagesShort;
+                }))
+            {
+                longer++;
+            }
+        }
+
+        return longer > 0 && longer * 2 > shared;
     }
 }
