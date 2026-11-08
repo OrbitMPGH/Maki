@@ -63,7 +63,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         if (info.Exists && file.ContentHash == null) throw new HealthRefusedException("error.health.fileContentChanged");
         if (info.Exists && readBytes && !await HashMatchesAsync(path, file.ContentHash!, ct))
             throw new HealthRefusedException("error.health.fileContentChanged");
-        var chapterFiles = await db.ChapterFiles.Where(f => db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == root.Id) && f.RelativePath == file.RelativePath).Select(f => f.Id).ToListAsync(ct);
+        var chapterFiles = (await HealthInventory.RecordsAtAsync(db, root.Id, file.RelativePath, ct)).Select(f => f.Id).ToList();
         var chapters = await db.Chapters.Where(c => c.ChapterFileId != null && chapterFiles.Contains(c.ChapterFileId.Value)).ToListAsync(ct);
         if (await db.HealthOperations.AnyAsync(o => o.FileId == id && o.Id != operationId && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
             throw new HealthRefusedException("error.health.operationActive");
@@ -432,7 +432,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                     }
                 }
                 // Include stale file rows even if no chapter still references them.
-                var oldFiles = await db.ChapterFiles.Where(f => f.RelativePath == file.RelativePath && db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == root.Id)).ToListAsync(ct);
+                var oldFiles = await HealthInventory.RecordsAtAsync(db, root.Id, file.RelativePath, ct);
                 // Same pages in the same places: a copy of the old archive on a KOReader device still reads true.
                 if (op.Kind == "repair" && !reset && chapters.Single().ChapterFileId is { } replacementId)
                     await KoreaderDocumentIndexer.MoveAsync(db, oldFiles.Select(f => f.Id).ToList(), replacementId, ct);
@@ -557,7 +557,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
     private async Task CompleteDeletionAsync(HealthOperation op, HealthFile file, RootFolder root, CancellationToken ct)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        var oldFiles = await db.ChapterFiles.Where(f => f.RelativePath == file.RelativePath && db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == root.Id)).ToListAsync(ct);
+        var oldFiles = await HealthInventory.RecordsAtAsync(db, root.Id, file.RelativePath, ct);
         var ids = oldFiles.Select(f => f.Id).ToArray();
         var chapters = await db.Chapters.Where(c => c.ChapterFileId != null && ids.Contains(c.ChapterFileId.Value)).ToListAsync(ct);
         // Recovery after a crash lands here too, by which time the copy may have gone as well.

@@ -138,6 +138,22 @@ public sealed class HealthDuplicateTests : IDisposable
     }
 
     [Fact]
+    public async Task A_record_stored_with_the_other_separator_still_moves_with_the_delete()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        var stored = s.ChapterFile.RelativePath;
+        var other = stored.Contains('/') ? stored.Replace('/', '\\') : stored.Replace('\\', '/');
+        await db.ChapterFiles.Where(f => f.Id == s.ChapterFile.Id).ExecuteUpdateAsync(u => u.SetProperty(f => f.RelativePath, other));
+
+        var op = await Operations(db).DeleteNowAsync(s.Linked.Id, s.Linked.Version, 1, default);
+
+        Assert.Equal(s.Spare.Id, op.RelinkFileId);
+        Assert.Equal(s.Spare.RelativePath, db.ChapterFiles.AsNoTracking().Single().RelativePath);
+        Assert.All(db.Chapters.AsNoTracking(), c => Assert.Equal(s.ChapterFile.Id, c.ChapterFileId));
+    }
+
+    [Fact]
     public async Task A_copy_in_another_folder_is_never_a_relink_target()
     {
         using var db = fixture.NewContext();
@@ -257,7 +273,9 @@ public sealed class HealthDuplicateTests : IDisposable
         var refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
             Operations(db).DeleteNowAsync(row.Id, row.Version, 1, default, spare: true));
 
-        Assert.Equal("error.health.spareLastCopy", refused.Key);
+        // Windows matches the record's path ignoring case and finds its chapters; elsewhere only the
+        // other copy is the same file.
+        Assert.Contains(refused.Key, new[] { "error.health.spareInUse", "error.health.spareLastCopy" });
         Assert.True(File.Exists(Path.Combine(root, s.Linked.RelativePath)));
     }
 

@@ -56,9 +56,7 @@ public static class HealthDuplicates
         foreach (var candidate in candidates)
         {
             if (!LibraryPaths.FolderComparer.Equals(LibraryPaths.TopFolder(candidate.RelativePath), folder)) continue;
-            var claimed = await db.ChapterFiles.AnyAsync(f => f.RelativePath == candidate.RelativePath
-                && db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == file.RootFolderId), ct);
-            if (!claimed) return candidate;
+            if ((await HealthInventory.RecordsAtAsync(db, file.RootFolderId, candidate.RelativePath, ct)).Count == 0) return candidate;
         }
         return null;
     }

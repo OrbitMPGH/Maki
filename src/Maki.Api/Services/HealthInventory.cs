@@ -39,6 +39,22 @@ public static class HealthInventory
     }
 
     /// <summary>
+    /// The root's <c>ChapterFile</c> rows at a stored path, matched by <see cref="LibraryPaths.ComparisonKey"/>
+    /// the way the scan links them, so a record written with the other host's separator is the same file.
+    /// </summary>
+    public static async Task<List<ChapterFile>> RecordsAtAsync(MakiDbContext db, int rootId, string relativePath, CancellationToken ct)
+    {
+        var key = LibraryPaths.ComparisonKey(relativePath);
+        var spellings = new[] { relativePath, key, key.Replace('/', '\\'), "/" + key }.Distinct().ToList();
+        var lowered = OperatingSystem.IsWindows() ? spellings.Select(p => p.ToLowerInvariant()).Distinct().ToList() : [];
+        var rows = await db.ChapterFiles
+            .Where(f => db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == rootId))
+            .Where(f => spellings.Contains(f.RelativePath) || lowered.Contains(f.RelativePath.ToLower()))
+            .ToListAsync(ct);
+        return rows.Where(f => KeyComparer.Equals(LibraryPaths.ComparisonKey(f.RelativePath), key)).ToList();
+    }
+
+    /// <summary>
     /// Repoints the series' live rows at <paramref name="destinationId"/> without saving. A path the
     /// destination already holds keeps that row and retires the moving one. Every entity it attaches,
     /// changes or adds goes into <paramref name="touched"/>, also when it throws, so the caller can detach them.
