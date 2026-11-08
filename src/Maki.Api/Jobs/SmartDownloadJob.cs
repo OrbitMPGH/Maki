@@ -88,7 +88,8 @@ public class SmartDownloadJob(
             }
 
             var backingOff = await BackingOffAsync(db, chapters, maxAttempts, DateTime.UtcNow, ct);
-            var missing = Chapter.NextWanted(Ahead(chapters, after), batchSize, backingOff);
+            var walls = await WaitingOnManualRetryAsync(db, chapters, ct);
+            var missing = Chapter.NextWanted(BeforeWall(Ahead(chapters, after), walls), batchSize, backingOff);
 
             if (missing.Count == 0)
             {
@@ -188,7 +189,38 @@ public class SmartDownloadJob(
     /// source carries held its place in the window forever.
     /// </summary>
     internal static async Task<HashSet<int>> BackingOffAsync(
-        MakiDbContext db, IEnumerable<Chapter> chapters, int maxAttempts, DateTime now, CancellationToken ct)
+        MakiDbContext db, IEnumerable<Chapter> chapters, int maxAttempts, DateTime now, CancellationToken ct) =>
+        (await LatestRowsAsync(db, chapters, ct))
+            .Where(r => r.Status == QueueStatus.Failed &&
+                        (r.RetryCount >= maxAttempts || r.NextAttempt > now || r.WaitsOnManualRetry))
+            .Select(r => r.ChapterId)
+            .ToHashSet();
+
+    /// <summary>Wanted, missing chapters whose latest row is a plain download only a manual retry may revisit.</summary>
+    internal static async Task<HashSet<int>> WaitingOnManualRetryAsync(
+        MakiDbContext db, IEnumerable<Chapter> chapters, CancellationToken ct) =>
+        (await LatestRowsAsync(db, chapters, ct))
+            .Where(r => r.Status == QueueStatus.Failed && r.WaitsOnManualRetry)
+            .Select(r => r.ChapterId)
+            .ToHashSet();
+
+    /// <summary>
+    /// The chapters up to the lowest one waiting on a manual retry. Smart downloads for reading in
+    /// order, and the reader has to buy that chapter before going on anyway, so walking a paywalled
+    /// tail would only fail every chapter in it, a batch per tick. One-shots have no number and stay in.
+    /// </summary>
+    internal static IEnumerable<Chapter> BeforeWall(IEnumerable<Chapter> chapters, IReadOnlySet<int> walls)
+    {
+        var list = chapters.ToList();
+        var wall = list.Where(c => c.Number is not null && walls.Contains(c.Id)).Min(c => c.Number);
+        return wall is null ? list : list.Where(c => c.Number is null || c.Number <= wall);
+    }
+
+    private sealed record LatestRow(
+        int ChapterId, QueueStatus Status, int RetryCount, DateTime? NextAttempt, bool WaitsOnManualRetry);
+
+    private static async Task<List<LatestRow>> LatestRowsAsync(
+        MakiDbContext db, IEnumerable<Chapter> chapters, CancellationToken ct)
     {
         var candidates = chapters.Where(Chapter.IsMissing).Select(c => c.Id).ToList();
         if (candidates.Count == 0)
@@ -198,16 +230,21 @@ public class SmartDownloadJob(
 
         var rows = await db.DownloadQueue
             .Where(q => q.ChapterId != null && candidates.Contains(q.ChapterId.Value))
-            .Select(q => new { ChapterId = q.ChapterId!.Value, q.Id, q.Status, q.RetryCount, q.NextAttempt, q.ErrorKey })
+            .Select(q => new
+            {
+                ChapterId = q.ChapterId!.Value, q.Id, q.Status, q.RetryCount, q.NextAttempt, q.ErrorKey,
+                Plain = q.UpgradeInfoJson == null && q.Origin != DownloadOrigin.Upgrade
+            })
             .ToListAsync(ct);
 
-        return rows
-            .GroupBy(r => r.ChapterId)
-            .Select(g => g.MaxBy(r => r.Id)!)
-            .Where(r => r.Status == QueueStatus.Failed &&
-                        (r.RetryCount >= maxAttempts || r.NextAttempt > now || NeverRetriedAutomatically(r.ErrorKey)))
-            .Select(r => r.ChapterId)
-            .ToHashSet();
+        return
+        [
+            .. rows
+                .GroupBy(r => r.ChapterId)
+                .Select(g => g.MaxBy(r => r.Id)!)
+                .Select(r => new LatestRow(r.ChapterId, r.Status, r.RetryCount, r.NextAttempt,
+                    r.Plain && ManualRetryOnly(r.ErrorKey)))
+        ];
     }
 
     /// <summary>
@@ -238,13 +275,11 @@ public class SmartDownloadJob(
             .Select(g => g.MaxBy(r => r.Id)!)
             .Any(r => r.Status is not (QueueStatus.Completed or QueueStatus.Failed or QueueStatus.Cancelled) ||
                       (r.Status == QueueStatus.Failed && r.ErrorKey != ChapterDownloadProcessor.EarlyAccessKey &&
-                       !NeverRetriedAutomatically(r.ErrorKey) && r.RetryCount < maxAttempts && r.NextAttempt > now));
+                       !ManualRetryOnly(r.ErrorKey) && r.RetryCount < maxAttempts && r.NextAttempt > now));
     }
 
-    private static bool NeverRetriedAutomatically(string? errorKey) =>
-        errorKey is not null &&
-        (DownloadQueueService.ManualRetryOnlyErrorKeys.Contains(errorKey) ||
-         DownloadQueueService.PermanentErrorKeys.Contains(errorKey));
+    private static bool ManualRetryOnly(string? errorKey) =>
+        errorKey is not null && DownloadQueueService.ManualRetryOnlyErrorKeys.Contains(errorKey);
 
     /// <summary>
     /// The chapters past the reader's position. A batch starts there rather than at the lowest missing
