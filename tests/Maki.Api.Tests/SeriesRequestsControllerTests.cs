@@ -959,6 +959,19 @@ public class SeriesRequestsControllerTests : IDisposable
         Assert.Equal("Licensed here.", rejected.ResolutionNote);
     }
 
+    [Fact]
+    public async Task A_requester_does_not_see_the_login_name_of_an_admin_without_a_display_name()
+    {
+        var created = Body<SeriesRequestDto>(await AsReader().Create(
+            new CreateSeriesRequestBody("NewSeries", MetadataProviderId: "1"), default));
+        await AsAdmin().Reject(created.Id, new RejectSeriesRequestBody("Licensed here."), default);
+
+        var mine = Assert.Single(Body<List<SeriesRequestDto>>(await AsReader().List(ct: default)));
+
+        Assert.Equal("reader", mine.RequestedBy);
+        Assert.Null(mine.ResolvedBy);
+    }
+
     // ---- withdrawing ----
 
     [Fact]
