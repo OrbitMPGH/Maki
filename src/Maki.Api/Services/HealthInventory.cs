@@ -1,3 +1,4 @@
+using System.Text;
 using Maki.Core.Entities;
 using Maki.Core.Paths;
 using Maki.Data;
@@ -45,13 +46,33 @@ public static class HealthInventory
     public static async Task<List<ChapterFile>> RecordsAtAsync(MakiDbContext db, int rootId, string relativePath, CancellationToken ct)
     {
         var key = LibraryPaths.ComparisonKey(relativePath);
-        var spellings = new[] { relativePath, key, key.Replace('/', '\\'), "/" + key }.Distinct().ToList();
-        var lowered = OperatingSystem.IsWindows() ? spellings.Select(p => p.ToLowerInvariant()).Distinct().ToList() : [];
+        return (await RecordsNamedAsync(db, rootId, Path.GetFileName(key), ct))
+            .Where(f => KeyComparer.Equals(LibraryPaths.ComparisonKey(f.RelativePath), key))
+            .ToList();
+    }
+
+    /// <summary>
+    /// The root's <c>ChapterFile</c> rows whose file name is <paramref name="fileName"/> ignoring case,
+    /// in any folder. One query: SQLite's LIKE folds ASCII case only, so other cased letters match
+    /// any character there and the name is compared exactly here.
+    /// </summary>
+    public static async Task<List<ChapterFile>> RecordsNamedAsync(MakiDbContext db, int rootId, string fileName, CancellationToken ct)
+    {
+        var pattern = new StringBuilder("%");
+        foreach (var c in fileName)
+        {
+            if (c is '%' or '_' or '\\') pattern.Append('\\').Append(c);
+            else if (c > 127 && char.ToUpperInvariant(c) != char.ToLowerInvariant(c)) pattern.Append('_');
+            else pattern.Append(c);
+        }
+        var like = pattern.ToString();
         var rows = await db.ChapterFiles
             .Where(f => db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == rootId))
-            .Where(f => spellings.Contains(f.RelativePath) || lowered.Contains(f.RelativePath.ToLower()))
+            .Where(f => EF.Functions.Like(f.RelativePath, like, "\\"))
             .ToListAsync(ct);
-        return rows.Where(f => KeyComparer.Equals(LibraryPaths.ComparisonKey(f.RelativePath), key)).ToList();
+        return rows
+            .Where(f => string.Equals(Path.GetFileName(LibraryPaths.ComparisonKey(f.RelativePath)), fileName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
     }
 
     /// <summary>

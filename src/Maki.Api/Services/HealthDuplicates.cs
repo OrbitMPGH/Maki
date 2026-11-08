@@ -12,11 +12,13 @@ namespace Maki.Api.Services;
 /// </summary>
 public static class HealthDuplicates
 {
+    /// <param name="KeptOnDisk">Some kept copy of the set is on disk. Without one nothing is spare: the
+    /// copies left are where the missing kept copy's chapters can move.</param>
     public sealed record Copy(int Id, string Version, int RootFolderId, string RelativePath, long Size,
-        int? ChapterFileId, string ContentHash, bool Kept)
+        int? ChapterFileId, string ContentHash, bool Kept, bool KeptOnDisk)
     {
         public bool Missing => Size < 0;
-        public bool Spare => !Kept && !Missing;
+        public bool Spare => !Kept && !Missing && KeptOnDisk;
     }
 
     /// <summary>Every live copy of each hash, kept copies first, then by path.</summary>
@@ -30,9 +32,10 @@ public static class HealthDuplicates
         {
             var linked = g.Any(r => r.ChapterFileId != null);
             var keep = linked ? (int?)null : g.Where(r => r.Size >= 0).Select(r => (int?)r.Id).Min();
+            var keptOnDisk = linked ? g.Any(r => r.ChapterFileId != null && r.Size >= 0) : keep != null;
             return g
                 .Select(r => new Copy(r.Id, r.Version, r.RootFolderId, r.RelativePath, r.Size, r.ChapterFileId, r.ContentHash,
-                    linked ? r.ChapterFileId != null : r.Id == keep))
+                    linked ? r.ChapterFileId != null : r.Id == keep, keptOnDisk))
                 .OrderByDescending(c => c.Kept)
                 .ThenBy(c => c.RelativePath, StringComparer.OrdinalIgnoreCase)
                 .ToList();

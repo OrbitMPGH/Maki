@@ -5573,6 +5573,16 @@ msgstr ""
 msgid "error.health.spareLastCopy"
 msgstr ""
 
+#. English: Maki can't tell this copy apart from the other one on disk. They may be one file under two names, so nothing was deleted.
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.spareNotDistinct"
+msgstr ""
+
+#. English: Another chapter record reads this same file under a different spelling of its path. Nothing was deleted.
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.fileBacksChapters"
+msgstr ""
+
 #. English: The root folder no longer exists.
 #: src/Maki.Api/Services/HealthOperationService.cs
 #, fuzzy

@@ -6,7 +6,7 @@ using Maki.Core.Entities;
 using Maki.Core.Images;
 using Maki.Core.Paths;
 using Maki.Core.Reading;
-using Maki.Core.Storage;
+using Maki.Core.Io;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -45,6 +45,9 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
     /// otherwise be interrupted at. Always null outside tests.
     /// </summary>
     internal Action? TestHookAfterFileDeleted;
+
+    /// <summary>Test seam only: how two paths are told apart. <see cref="FileIdentity.Compare"/> outside tests.</summary>
+    internal Func<string, string, FileSameness> SameFile = FileIdentity.Compare;
     public static List<RepairCandidate> Candidates(HealthOperation op) => JsonSerializer.Deserialize<List<RepairCandidate>>(op.JournalJson, HealthScanService.Json) ?? [];
 
     /// <param name="readBytes">False only where nothing acts on the bytes yet (a deletion preview):
@@ -326,6 +329,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             if (op.Kind == "delete")
             {
                 if (spare) await RequireSpareAsync(file, root, chapters, ct);
+                if (file.Size >= 0) await RefuseIfAnotherRecordReadsItAsync(file, root, ct);
                 if (op.RelinkFileId is { } relinkId)
                 {
                     // The chapters were promised a home. If that copy changed or found another use
@@ -334,7 +338,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                     var targetPath = target == null ? null : HealthPaths.Resolve(root.Path, target.RelativePath);
                     var targetInfo = targetPath == null ? null : new FileInfo(targetPath);
                     if (target?.Id != relinkId || targetInfo is not { Exists: true } || targetInfo.Length != target.Size
-                        || targetInfo.LastWriteTimeUtc != target.ModifiedAt || OneFile(HealthPaths.Resolve(root.Path, file.RelativePath), targetPath!)
+                        || targetInfo.LastWriteTimeUtc != target.ModifiedAt || SameFile(HealthPaths.Resolve(root.Path, file.RelativePath), targetPath!) != FileSameness.Different
                         || !await HashMatchesAsync(targetPath!, file.ContentHash!, ct))
                         throw new HealthRefusedException("error.health.relinkTargetChanged");
                 }
@@ -605,7 +609,9 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
     /// <summary>
     /// A spare is only spare while nothing reads from it and another copy of its bytes is still on
     /// disk. Checked at apply because the review can be stale: a relink can give the spare chapters,
-    /// and the copy it was spare to can have been deleted since.
+    /// and the copy it was spare to can have been deleted since. A copy counts only when the
+    /// filesystem proves it is another file: two roots can name one share, and a case-insensitive
+    /// mount opens two spellings as one file.
     /// </summary>
     private async Task RequireSpareAsync(HealthFile file, RootFolder root, List<Chapter> chapters, CancellationToken ct)
     {
@@ -616,23 +622,34 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             .Where(f => f.Id != file.Id && !f.Removed && f.Size >= 0 && f.ContentHash == file.ContentHash)
             .OrderByDescending(f => f.ChapterFileId != null).ThenBy(f => f.Id)
             .ToListAsync(ct);
+        var undistinguished = false;
         foreach (var copy in copies)
         {
             var copyRoot = copy.RootFolderId == root.Id ? root : await db.RootFolders.FindAsync([copy.RootFolderId], ct);
             if (copyRoot == null || !Directory.Exists(copyRoot.Path) || LibraryPaths.ResolveNoLinks(copyRoot.Path, copy.RelativePath) is not { } copyPath) continue;
             var info = new FileInfo(copyPath);
-            if (!info.Exists || info.Length != copy.Size || info.LastWriteTimeUtc != copy.ModifiedAt || OneFile(path, copyPath)) continue;
+            if (!info.Exists || info.Length != copy.Size || info.LastWriteTimeUtc != copy.ModifiedAt) continue;
+            if (SameFile(path, copyPath) != FileSameness.Different) { undistinguished = true; continue; }
             if (await HashMatchesAsync(copyPath, file.ContentHash, ct)) return;
         }
-        throw new HealthRefusedException("error.health.spareLastCopy");
+        throw new HealthRefusedException(undistinguished ? "error.health.spareNotDistinct" : "error.health.spareLastCopy");
     }
 
     /// <summary>
-    /// Whether two paths may name one file. Spellings that differ only in case count, since a
-    /// case-insensitive mount opens both as the same file, and so does the same device and inode.
+    /// Refuses to delete a file that another record in the root reads under another spelling. A
+    /// case-insensitive mount on a case-sensitive host opens <c>chainsaw man/x.cbz</c> and
+    /// <c>Chainsaw Man/x.cbz</c> as one file, and the record lookup compares the spellings.
     /// </summary>
-    private static bool OneFile(string a, string b) =>
-        string.Equals(Path.GetFullPath(a), Path.GetFullPath(b), StringComparison.OrdinalIgnoreCase) || SameVolumeMove.SameFile(a, b);
+    private async Task RefuseIfAnotherRecordReadsItAsync(HealthFile file, RootFolder root, CancellationToken ct)
+    {
+        var path = HealthPaths.Resolve(root.Path, file.RelativePath);
+        var own = (await HealthInventory.RecordsAtAsync(db, root.Id, file.RelativePath, ct)).Select(f => f.Id).ToHashSet();
+        foreach (var record in await HealthInventory.RecordsNamedAsync(db, root.Id, Path.GetFileName(LibraryPaths.ComparisonKey(file.RelativePath)), ct))
+        {
+            if (own.Contains(record.Id) || LibraryPaths.Resolve(root.Path, record.RelativePath) is not { } other || !File.Exists(other)) continue;
+            if (SameFile(path, other) != FileSameness.Different) throw new HealthRefusedException("error.health.fileBacksChapters");
+        }
+    }
 
     private static async Task<bool> HashMatchesAsync(string path, string hash, CancellationToken ct)
     {

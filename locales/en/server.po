@@ -3940,6 +3940,14 @@ msgid "error.health.spareLastCopy"
 msgstr "No other copy of these bytes is left on disk, so this one is not a spare. Nothing was deleted."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.spareNotDistinct"
+msgstr "Maki can't tell this copy apart from the other one on disk. They may be one file under two names, so nothing was deleted."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.fileBacksChapters"
+msgstr "Another chapter record reads this same file under a different spelling of its path. Nothing was deleted."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.rootGone"
 msgstr "The root folder no longer exists."
 

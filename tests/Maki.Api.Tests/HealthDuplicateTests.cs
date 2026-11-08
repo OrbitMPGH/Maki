@@ -4,6 +4,7 @@ using Maki.Api.Controllers;
 using Maki.Api.Hubs;
 using Maki.Api.Services;
 using Maki.Core.Entities;
+using Maki.Core.Io;
 using Maki.Core.Reading;
 using Maki.Data;
 using Microsoft.AspNetCore.Http;
@@ -79,6 +80,19 @@ public sealed class HealthDuplicateTests : IDisposable
         Assert.Equal([s.Linked.Id, s.Spare.Id], group.Select(c => c.Id));
         Assert.True(group[0].Kept);
         Assert.True(group[1].Spare);
+    }
+
+    [Fact]
+    public async Task Nothing_is_a_spare_while_every_kept_copy_is_missing()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        await db.HealthFiles.Where(f => f.Id == s.Linked.Id).ExecuteUpdateAsync(u => u.SetProperty(f => f.Size, -1L));
+
+        var group = (await HealthDuplicates.GroupsAsync(db, db.HealthFiles.Select(f => f.ContentHash!), default)).Single().Value;
+
+        Assert.True(group.Single(c => c.Id == s.Linked.Id).Kept);
+        Assert.DoesNotContain(group, c => c.Spare);
     }
 
     [Fact]
@@ -252,7 +266,7 @@ public sealed class HealthDuplicateTests : IDisposable
     }
 
     [Fact]
-    public async Task A_spare_that_is_the_kept_file_under_another_case_is_refused()
+    public async Task A_spare_that_is_the_kept_file_under_another_case_is_refused_and_a_real_second_file_is_not()
     {
         using var db = fixture.NewContext();
         var s = await Seed(db);
@@ -261,7 +275,8 @@ public sealed class HealthDuplicateTests : IDisposable
         // What a case-insensitive mount lists next to the record's own spelling.
         var aliasPath = Path.Combine("SERIES", "series V10.cbz");
         var alias = Path.Combine(root, aliasPath);
-        if (!File.Exists(alias))
+        var secondFile = !File.Exists(alias);
+        if (secondFile)
         {
             Directory.CreateDirectory(Path.GetDirectoryName(alias)!);
             File.Copy(Path.Combine(root, s.Linked.RelativePath), alias);
@@ -270,13 +285,114 @@ public sealed class HealthDuplicateTests : IDisposable
         db.HealthFiles.Add(row); await db.SaveChangesAsync();
         await new HealthScanService(db).AnalyzeAsync(row, root, true, default, 0, true);
 
-        var refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
-            Operations(db).DeleteNowAsync(row.Id, row.Version, 1, default, spare: true));
-
-        // Windows matches the record's path ignoring case and finds its chapters; elsewhere only the
-        // other copy is the same file.
-        Assert.Contains(refused.Key, new[] { "error.health.spareInUse", "error.health.spareLastCopy" });
+        if (secondFile)
+        {
+            // A case-sensitive filesystem holds two files, and the second really is a spare.
+            Assert.Equal("completed", (await Operations(db).DeleteNowAsync(row.Id, row.Version, 1, default, spare: true)).Status);
+        }
+        else
+        {
+            var refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
+                Operations(db).DeleteNowAsync(row.Id, row.Version, 1, default, spare: true));
+            // Windows matches the record's path ignoring case and finds its chapters; a case-insensitive
+            // mount elsewhere finds the kept copy is the same file.
+            Assert.Contains(refused.Key, new[] { "error.health.spareInUse", "error.health.spareNotDistinct" });
+        }
         Assert.True(File.Exists(Path.Combine(root, s.Linked.RelativePath)));
+    }
+
+    [Fact]
+    public async Task A_spare_whose_twin_cannot_be_told_apart_from_it_is_refused()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        var service = Operations(db);
+        service.SameFile = (_, _) => FileSameness.Unknown;
+
+        var refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
+            service.DeleteNowAsync(s.Spare.Id, s.Spare.Version, 1, default, spare: true));
+
+        Assert.Equal("error.health.spareNotDistinct", refused.Key);
+        Assert.True(File.Exists(Path.Combine(root, s.Spare.RelativePath)));
+    }
+
+    [Fact]
+    public async Task A_spare_in_a_second_root_naming_the_same_folder_is_refused()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        File.Delete(Path.Combine(root, s.Spare.RelativePath));
+        await db.HealthFiles.Where(f => f.Id == s.Spare.Id).ExecuteUpdateAsync(u => u.SetProperty(f => f.Removed, true));
+        var link = root + "-link";
+        if (!MakeDirectoryLink(link, root)) return;
+        try
+        {
+            var second = new RootFolder { Path = link }; db.RootFolders.Add(second); await db.SaveChangesAsync();
+            var row = new HealthFile { RootFolderId = second.Id, RelativePath = s.Linked.RelativePath };
+            db.HealthFiles.Add(row); await db.SaveChangesAsync();
+            await new HealthScanService(db).AnalyzeAsync(row, link, true, default, 0, true);
+
+            var refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
+                Operations(db).DeleteNowAsync(row.Id, row.Version, 1, default, spare: true));
+
+            Assert.Equal("error.health.spareNotDistinct", refused.Key);
+            Assert.True(File.Exists(Path.Combine(root, s.Linked.RelativePath)));
+        }
+        finally
+        {
+            Directory.Delete(link);
+        }
+    }
+
+    [Fact]
+    public async Task A_plain_delete_of_a_file_another_record_reads_is_refused()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        var series = db.Series.AsNoTracking().Single();
+        var otherPath = Path.Combine("Elsewhere", Path.GetFileName(s.Spare.RelativePath).ToUpperInvariant());
+        Directory.CreateDirectory(Path.Combine(root, "Elsewhere"));
+        File.Copy(Path.Combine(root, s.Spare.RelativePath), Path.Combine(root, otherPath));
+        db.ChapterFiles.Add(new ChapterFile { SeriesId = series.Id, RelativePath = otherPath, Size = 1 });
+        await db.SaveChangesAsync();
+        var service = Operations(db);
+        // What a case-insensitive mount, or a link inside the root, makes of the two paths.
+        service.SameFile = (a, b) => string.Equals(Path.GetFileName(a), Path.GetFileName(b), StringComparison.OrdinalIgnoreCase)
+            ? FileSameness.Same : FileIdentity.Compare(a, b);
+
+        var refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
+            service.DeleteNowAsync(s.Spare.Id, s.Spare.Version, 1, default));
+
+        Assert.Equal("error.health.fileBacksChapters", refused.Key);
+        Assert.True(File.Exists(Path.Combine(root, s.Spare.RelativePath)));
+        Assert.Equal("failed", db.HealthOperations.AsNoTracking().Single().Status);
+    }
+
+    /// <summary>A junction on Windows (no privilege needed), a symbolic link elsewhere. False when the host refuses.</summary>
+    private static bool MakeDirectoryLink(string link, string target)
+    {
+        try
+        {
+            if (!OperatingSystem.IsWindows())
+            {
+                Directory.CreateSymbolicLink(link, target);
+                return true;
+            }
+
+            using var mklink = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("cmd.exe")
+            {
+                ArgumentList = { "/c", "mklink", "/J", link, target },
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+            })!;
+            mklink.WaitForExit();
+            return mklink.ExitCode == 0 && Directory.Exists(link);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.ComponentModel.Win32Exception)
+        {
+            return false;
+        }
     }
 
     [Fact]
