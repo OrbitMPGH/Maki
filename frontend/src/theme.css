@@ -2142,7 +2142,9 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 /* Read progress wraps the status disc: a brand arc on a dark track just outside it, so one mark per
    cover carries both facts. Read through closes the ring; the disc keeps its status colour and glyph. */
 /* The disc and the ring share one 34px box (the margin keeps the 24px footprint): drawn as a 24px box
-   with a pseudo-element 5px outside it, the two snapped to different pixels and the ring sat off centre. */
+   with a pseudo-element 5px outside it, the two snapped to different pixels and the ring sat off centre.
+   The dark collar runs to the box edge so the arc has a dark line on both sides; drawn straight on the
+   art, a blush arc vanished into a pink cover. */
 .cover-state[data-tone='status'][data-read] {
   --disc-fill: var(--tone);
   --disc-edge: var(--tone);
@@ -2155,31 +2157,29 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     var(--disc-fill) 10.25px,
     var(--disc-edge) 10.75px,
     var(--disc-edge) 11.75px,
-    rgba(6, 7, 11, 0.45) 12.25px,
-    rgba(6, 7, 11, 0.45) 13.25px,
-    transparent 13.75px
+    rgba(6, 7, 11, 0.86) 12.25px
   );
   background: var(--read-disc);
-  box-shadow: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 .cover-state[data-tone='status'][data-unmonitored][data-read] {
   --disc-fill: rgba(6, 7, 11, 0.84);
-  box-shadow: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 [data-theme='light'] .cover-state[data-tone='status'][data-unmonitored][data-read] {
   --disc-fill: rgba(6, 7, 11, 0.8);
   --disc-edge: var(--lift);
   background: var(--read-disc);
-  box-shadow: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 .cover-state[data-tone='status'][data-read]::before {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: 1.25px;
   border-radius: 50%;
-  background: conic-gradient(var(--brand) var(--ring-pct), rgba(6, 7, 11, 0.72) 0);
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
+  background: conic-gradient(var(--brand) var(--ring-pct), rgba(255, 255, 255, 0.14) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.75px), #000 calc(100% - 2.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2.75px), #000 calc(100% - 2.5px));
 }
 .cover-state[data-tone='status'][data-read='all']::before {
   background: var(--brand);
