@@ -247,8 +247,14 @@ public sealed class VectorIndexCache(
     /// <summary>
     /// Replaces the vector database with <paramref name="stagedPath"/> and drops the cached index.
     /// Waits out any running build under the build lock, so a swap can never race a build that is
-    /// midway through reading the old file. The WAL sidecars belong to the file being replaced, so they go with it:
-    /// leaving them would let SQLite reconstruct pages of the *previous* database over the new one.
+    /// midway through reading the old file.
+    /// <para>
+    /// An existing database gets the new content copied into it with SQLite's backup API rather than
+    /// a file moved over it, so the file and its <c>-shm</c> stay the ones every connection and the
+    /// keeper share (see <see cref="SqliteKeeper"/>). A move is the fallback, and then the WAL
+    /// sidecars go with the old file: leaving them would let SQLite reconstruct pages of the
+    /// *previous* database over the new one.
+    /// </para>
     /// </summary>
     public async Task SwapDatabaseAsync(string stagedPath, CancellationToken ct = default)
     {
@@ -263,23 +269,61 @@ public sealed class VectorIndexCache(
                 DeleteSnapshot();
             }
 
-            using var keeperClosed = SqliteKeeper.For(options.VectorDbPath).Suspend();
             SqliteConnection.ClearAllPools();
-
-            foreach (var sidecar in new[] { options.VectorDbPath + "-wal", options.VectorDbPath + "-shm" })
+            if (File.Exists(options.VectorDbPath) && TryCopyInto(stagedPath))
             {
-                if (File.Exists(sidecar))
+                File.Delete(stagedPath);
+            }
+            else
+            {
+                using var keeperClosed = SqliteKeeper.For(options.VectorDbPath).Suspend();
+                foreach (var sidecar in new[] { options.VectorDbPath + "-wal", options.VectorDbPath + "-shm" })
                 {
-                    File.Delete(sidecar);
+                    if (File.Exists(sidecar))
+                    {
+                        File.Delete(sidecar);
+                    }
                 }
+
+                File.Move(stagedPath, options.VectorDbPath, overwrite: true);
             }
 
-            File.Move(stagedPath, options.VectorDbPath, overwrite: true);
             logger.LogInformation("Swapped in a new vector database at {Path}", options.VectorDbPath);
         }
         finally
         {
             _lock.Release();
+        }
+    }
+
+    private bool TryCopyInto(string stagedPath)
+    {
+        try
+        {
+            SqliteKeeper.For(options.VectorDbPath).Attach();
+            using var source = new SqliteConnection($"Data Source={stagedPath};Mode=ReadOnly;Pooling=False");
+            using var live = new SqliteConnection($"Data Source={options.VectorDbPath};Mode=ReadWrite;Pooling=False");
+            source.Open();
+            live.Open();
+            using (var wait = live.CreateCommand())
+            {
+                wait.CommandText = "PRAGMA busy_timeout=5000";
+                wait.ExecuteNonQuery();
+            }
+
+            source.BackupDatabase(live);
+
+            // The copy went through the WAL whole; give the space back.
+            using var truncate = live.CreateCommand();
+            truncate.CommandText = "PRAGMA wal_checkpoint(TRUNCATE)";
+            truncate.ExecuteNonQuery();
+            return true;
+        }
+        catch (SqliteException ex)
+        {
+            logger.LogWarning("Could not copy the new vector database into {Path}, replacing the file instead: {Error}",
+                options.VectorDbPath, ex.Message);
+            return false;
         }
     }
 

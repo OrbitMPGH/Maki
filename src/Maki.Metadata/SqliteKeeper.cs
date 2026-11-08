@@ -1,11 +1,13 @@
 using System.Collections.Concurrent;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Logging;
 
 namespace Maki.Metadata;
 
 /// <summary>
-/// Holds one idle connection to a WAL database for the life of the process, so its <c>-shm</c> is
-/// created once and never deleted and recreated while Maki runs.
+/// Holds one idle connection to a WAL database while Maki runs, so its <c>-shm</c> is created once
+/// per run and not deleted and recreated until <see cref="Release"/> at shutdown or a
+/// <see cref="Suspend"/> around replacing the file.
 /// <para>
 /// SQLite creates the <c>-shm</c> when the first connection in a process attaches and deletes it
 /// when the last one closes. On Docker Desktop's virtiofs bind mounts a <c>-shm</c> created again
@@ -24,6 +26,7 @@ public sealed class SqliteKeeper
     private readonly object _gate = new();
     private SqliteConnection? _connection;
     private int _suspended;
+    private bool _attached;
 
     internal SqliteKeeper(string path, bool enabled)
     {
@@ -31,8 +34,27 @@ public sealed class SqliteKeeper
         _enabled = enabled;
     }
 
+    /// <summary>Where open failures are logged. Set at startup.</summary>
+    public static ILogger? Logger { get; set; }
+
     public static SqliteKeeper For(string databasePath) =>
         All.GetOrAdd(Path.GetFullPath(databasePath), path => new SqliteKeeper(path, OperatingSystem.IsLinux()));
+
+    /// <summary>
+    /// Closes and forgets the keeper for <paramref name="databasePath"/>, at shutdown. Closing it
+    /// last checkpoints the database and removes its <c>-wal</c> and <c>-shm</c>, so clear the
+    /// connection pools first.
+    /// </summary>
+    public static void Release(string databasePath)
+    {
+        if (All.TryRemove(Path.GetFullPath(databasePath), out var keeper))
+        {
+            lock (keeper._gate)
+            {
+                keeper.CloseLocked();
+            }
+        }
+    }
 
     internal bool IsOpen
     {
@@ -46,33 +68,54 @@ public sealed class SqliteKeeper
     /// </summary>
     public void Attach()
     {
-        if (!_enabled)
+        if (!_enabled || Volatile.Read(ref _attached))
         {
             return;
         }
 
         lock (_gate)
         {
-            if (_suspended > 0 || !File.Exists(_path))
+            if (_attached || _suspended > 0 || !File.Exists(_path))
             {
                 return;
             }
 
-            try
+            if (_connection is null)
             {
-                if (_connection is null)
+                try
                 {
                     _connection = new SqliteConnection($"Data Source={_path};Mode=ReadWrite;Pooling=False");
                     _connection.Open();
                 }
+                catch (SqliteException ex)
+                {
+                    Logger?.LogWarning("Could not keep {Path} open: {Error}", _path, ex.Message);
+                    CloseLocked();
+                    return;
+                }
+            }
 
+            try
+            {
                 using var read = _connection.CreateCommand();
                 read.CommandText = "SELECT count(*) FROM sqlite_master";
                 read.CommandTimeout = 1;
                 read.ExecuteScalar();
+
+                using var mode = _connection.CreateCommand();
+                mode.CommandText = "PRAGMA journal_mode";
+                if (string.Equals(mode.ExecuteScalar() as string, "wal", StringComparison.OrdinalIgnoreCase))
+                {
+                    Volatile.Write(ref _attached, true);
+                }
             }
-            catch (SqliteException)
+            catch (SqliteException ex) when ((ex.SqliteErrorCode & 0xFF) is 5 or 6)
             {
+                // Busy or locked: a writer holds the file. The next call tries the read again.
+            }
+            catch (SqliteException ex)
+            {
+                Logger?.LogWarning("Could not keep {Path} open: {Error}", _path, ex.Message);
                 CloseLocked();
             }
         }
@@ -97,6 +140,7 @@ public sealed class SqliteKeeper
     {
         _connection?.Dispose();
         _connection = null;
+        Volatile.Write(ref _attached, false);
     }
 
     private sealed class Resumer(SqliteKeeper keeper) : IDisposable

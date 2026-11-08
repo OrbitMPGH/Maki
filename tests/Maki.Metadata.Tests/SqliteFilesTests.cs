@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Maki.Core.Io;
 using Microsoft.Data.Sqlite;
@@ -47,6 +49,77 @@ public class SqliteFilesTests : IDisposable
 
         Assert.False(SqliteFiles.TryDeleteStaleSharedMemory(shm));
         Assert.True(File.Exists(shm));
+    }
+
+    /// <summary>
+    /// The real hazard: another process holding SQLite's classic record lock. Needs python3, which
+    /// takes the lock with fcntl the way SQLite does; skipped off Linux or without it.
+    /// </summary>
+    [Fact]
+    public void An_shm_another_process_holds_a_read_lock_on_is_kept()
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            return;
+        }
+
+        var db = Path.Combine(_dir, "maki.db");
+        LeaveWalBehind(db, rows: 1);
+        var shm = db + "-shm";
+
+        Process child;
+        try
+        {
+            var start = new ProcessStartInfo("python3")
+            {
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+            };
+            start.ArgumentList.Add("-c");
+            start.ArgumentList.Add(
+                "import fcntl, sys; f = open(sys.argv[1], 'r+b'); fcntl.lockf(f, fcntl.LOCK_SH, 1, 128); "
+                + "print('locked', flush=True); sys.stdin.read()");
+            start.ArgumentList.Add(shm);
+            child = Process.Start(start)!;
+        }
+        catch (Win32Exception)
+        {
+            return;
+        }
+
+        using (child)
+        {
+            try
+            {
+                Assert.Equal("locked", child.StandardOutput.ReadLine());
+                Assert.False(SqliteFiles.TryDeleteStaleSharedMemory(shm));
+                Assert.True(File.Exists(shm));
+            }
+            finally
+            {
+                child.StandardInput.Close();
+                if (!child.WaitForExit(5000))
+                {
+                    child.Kill();
+                }
+            }
+        }
+
+        Assert.True(SqliteFiles.TryDeleteStaleSharedMemory(shm));
+    }
+
+    [Fact]
+    public void Release_forgets_the_keeper_for_a_path()
+    {
+        var db = Path.Combine(_dir, "released.db");
+        var first = SqliteKeeper.For(db);
+
+        SqliteKeeper.Release(db);
+
+        Assert.False(first.IsOpen);
+        Assert.NotSame(first, SqliteKeeper.For(db));
+        SqliteKeeper.Release(db);
     }
 
     [Fact]

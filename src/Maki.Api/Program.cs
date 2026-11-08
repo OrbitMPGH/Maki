@@ -1543,6 +1543,7 @@ try
 
     var app = builder.Build();
     DataDiagnostics.Logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Maki.Data");
+    app.Lifetime.ApplicationStopped.Register(() => SqliteStartup.Release(paths));
 
     // Apply migrations + enable WAL on startup. Migrations are forward-only with no down path, so
     // snapshot the current DB *before* applying any pending migration — the recovery net for a bad

@@ -91,6 +91,7 @@ public class EmbeddingStore(EmbeddingOptions options)
         MigrateFloat32Vectors(conn);
         AddTagVocabColumn(conn, "category");
         AddTagVocabColumn(conn, "name_path");
+        TruncateWal(conn);
         _schemaEnsured = true;
     }
 
@@ -542,6 +543,15 @@ public class EmbeddingStore(EmbeddingOptions options)
         vacuum.CommandText = "VACUUM";
         vacuum.CommandTimeout = 1800;
         vacuum.ExecuteNonQuery();
+        TruncateWal(conn);
+    }
+
+    // The keeper never closes while Maki runs, so nothing else shrinks the -wal after a VACUUM.
+    private static void TruncateWal(SqliteConnection conn)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "PRAGMA wal_checkpoint(TRUNCATE)";
+        cmd.ExecuteNonQuery();
     }
 
     /// <summary>
@@ -851,6 +861,9 @@ public class EmbeddingStore(EmbeddingOptions options)
         Keeper.Attach();
         var conn = new SqliteConnection($"Data Source={DbPath};Pooling=False");
         conn.Open();
+        using var limit = conn.CreateCommand();
+        limit.CommandText = "PRAGMA journal_size_limit=8388608";
+        limit.ExecuteNonQuery();
         return conn;
     }
 

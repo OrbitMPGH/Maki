@@ -68,6 +68,8 @@ paths:
   - "src/Maki.Metadata/Embedding/UnindexedHits.cs"
   - "src/Maki.Metadata/Embedding/EmbeddingStore.cs"
   - "src/Maki.Metadata/Embedding/VectorIndex*.cs"
+  - "src/Maki.Metadata/Embedding/SemanticRecommender.cs"
+  - "src/Maki.Metadata/Embedding/PrebuiltIndex*.cs"
   - "src/Maki.Metadata/Catalogue/*Index*.cs"
   - "src/Maki.Metadata/SnapshotFile.cs"
   - "src/Maki.Metadata/SnapshotMapping.cs"
@@ -162,3 +164,4 @@ paths:
 - **Per-tracker anime opt-out lives under the anime-signals prefix, not `scrobble.{service}.*`** (`SettingKeys.RecommendationsAnimeSignalsSourceKey`, unset = on, `AnimeSignalSources.EnabledAsync`/`EnabledForAsync`, switch in `TrackerSyncControls` beside "Scrobble reading"/"Sync ratings"). Those three push manga *to* a tracker; this reads a different medium *from* one, and a reader can want AniList scrobbled with its anime list ignored. `ConnectionDto.AnimeList` is the capability (`tracker is IAnimeListSource`) and is what draws the switch; `PreferencesRequest.Anime` is nullable so the three blocks without the switch do not write an accidental off. Switching a source off deletes that service's rows immediately in `ScrobbleController.SetPreferences` and again defensively at the top of `AnimeSignalSyncService.RunAsync` - leaving them would keep a list the reader disabled in their taste for up to a day.
 
 - **Reason seeds are capped per window by `RecommendationReasons.Balance`** (2 per 20 cards, `Window`/`MaxPerWindow`): one seed may be named as the reason on at most two cards in any run of 20, after which a card names its next supporting seed from `FeelSeeds`/`CoReadSeeds` (server-only, `JsonIgnore`). It rewrites only the named seed, never the pick, order or score, and keeps the top seed when nothing else clears the cutoff. Its precedence (relation, Feels like, author match, co-read) must stay in step with `engineWhy` in `DiscoverRail.tsx`, or it spends the allowance on a reason the card doesn't show. It runs after `Spread` in `RecommendationService.GetAsync` and again on side-interest rails' filtered list.
+- **Every connection to `embeddings.db` is preceded by `SqliteKeeper.For(path).Attach()`**, and a new vector database is copied into the live file (`VectorIndexCache.SwapDatabaseAsync`), never moved over it. On Docker Desktop bind mounts a `-shm` truncated or recreated within a run kills the process with SIGBUS; the keeper holds it for the run. Details in `infra.md`.

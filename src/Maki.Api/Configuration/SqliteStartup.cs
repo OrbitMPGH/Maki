@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Maki.Core.Io;
 using Maki.Metadata;
+using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
 
 namespace Maki.Api.Configuration;
@@ -17,6 +18,7 @@ public static class SqliteStartup
 
     public static void Prepare(AppPaths paths, ILogger logger)
     {
+        SqliteKeeper.Logger = logger;
         if (OperatingSystem.IsLinux() && Swept.TryAdd(Path.GetFullPath(paths.ConfigDir), true))
         {
             foreach (var directory in new[] { paths.ConfigDir, paths.CacheDir })
@@ -34,4 +36,15 @@ public static class SqliteStartup
 
     /// <summary>Again once the database is in WAL mode: on a fresh install the keeper opened before it was.</summary>
     public static void KeepAttached(AppPaths paths) => SqliteKeeper.For(paths.DatabasePath).Attach();
+
+    /// <summary>
+    /// At shutdown: pooled connections close first, so each keeper closes last, checkpoints, and a
+    /// clean stop leaves no <c>-wal</c> or <c>-shm</c> behind.
+    /// </summary>
+    public static void Release(AppPaths paths)
+    {
+        SqliteConnection.ClearAllPools();
+        SqliteKeeper.Release(paths.DatabasePath);
+        SqliteKeeper.Release(paths.EmbeddingsDbPath);
+    }
 }

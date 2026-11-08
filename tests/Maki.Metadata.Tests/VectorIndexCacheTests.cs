@@ -471,6 +471,25 @@ public class VectorIndexCacheTests : IDisposable
             new MangaBakaDumpOptions(_dumpPath, _dir),
             NullLogger<VectorIndexCache>.Instance).GetAsync());
 
+    [Fact]
+    public async Task A_swap_copies_into_the_existing_database_instead_of_replacing_it()
+    {
+        Store().UpsertBatch([(1L, "old", [1f, 0f, 0f, 0f])]);
+        var staged = Path.Combine(_dir, "embeddings.db.partial");
+        var stagedStore = new EmbeddingStore(new EmbeddingOptions(_dir, staged, _dir, EmbeddingModelProfile.Base));
+        stagedStore.EnsureSchema();
+        stagedStore.UpsertBatch([(2L, "new", [0f, 1f, 0f, 0f]), (3L, "new", [0f, 0f, 1f, 0f])]);
+        SqliteConnection.ClearAllPools();
+        var logger = new RecordingLogger();
+
+        await Cache(dimensions: 4, logger).SwapDatabaseAsync(staged);
+
+        Assert.False(File.Exists(staged));
+        Assert.DoesNotContain(logger.Messages, m => m.Contains("replacing the file instead"));
+        Assert.Equal(["new", "new"], Store().GetHashes().OrderBy(kv => kv.Key).Select(kv => kv.Value));
+        Assert.True(!File.Exists(_vectorPath + "-wal") || new FileInfo(_vectorPath + "-wal").Length == 0);
+    }
+
     private EmbeddingStore Store()
     {
         var store = new EmbeddingStore(new EmbeddingOptions(_dir, _vectorPath, _dir, EmbeddingModelProfile.Base));
