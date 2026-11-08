@@ -47,14 +47,19 @@ public static class HealthMovedFiles
     public static async Task<Dictionary<int, Found>> FindAsync(MakiDbContext db, IReadOnlyCollection<int> missingIds, CancellationToken ct,
         ISet<int>? ambiguous = null)
     {
-        var rootIds = await db.HealthFiles.AsNoTracking()
+        var asking = await db.HealthFiles.AsNoTracking()
             .Where(f => missingIds.Contains(f.Id) && !f.Removed && f.Size < 0 && f.ChapterFileId != null)
-            .Select(f => f.RootFolderId).Distinct().ToListAsync(ct);
-        if (rootIds.Count == 0) return [];
-        var missing = await db.HealthFiles.AsNoTracking()
-            .Where(f => rootIds.Contains(f.RootFolderId) && !f.Removed && f.Size < 0 && f.ChapterFileId != null)
-            .Select(f => new { f.Id, f.RootFolderId, f.RelativePath, ChapterFileId = f.ChapterFileId!.Value, f.ContentHash })
-            .ToListAsync(ct);
+            .Select(f => new { f.RootFolderId, f.RelativePath }).ToListAsync(ct);
+        if (asking.Count == 0) return [];
+        var rootIds = asking.Select(a => a.RootFolderId).Distinct().ToList();
+        // Only a record with the same file name can compete for a candidate.
+        var askedNames = asking.Select(a => FileName(a.RelativePath)).ToHashSet(NameComparer);
+        var missing = (await db.HealthFiles.AsNoTracking()
+                .Where(f => rootIds.Contains(f.RootFolderId) && !f.Removed && f.Size < 0 && f.ChapterFileId != null)
+                .Select(f => new { f.Id, f.RootFolderId, f.RelativePath, ChapterFileId = f.ChapterFileId!.Value, f.ContentHash })
+                .ToListAsync(ct))
+            .Where(m => askedNames.Contains(FileName(m.RelativePath)))
+            .ToList();
         var recordIds = missing.Select(m => m.ChapterFileId).ToList();
         var records = await db.ChapterFiles.AsNoTracking().Where(f => recordIds.Contains(f.Id))
             .Select(f => new { f.Id, f.SeriesId, f.Size, f.PageCount }).ToDictionaryAsync(f => f.Id, ct);
@@ -67,6 +72,7 @@ public static class HealthMovedFiles
             .Where(f => names.Contains(FileName(f.RelativePath)))
             .ToList();
         if (candidates.Count == 0) return [];
+        var candidatesByName = candidates.ToLookup(c => FileName(c.RelativePath), NameComparer);
 
         // A path a chapter file already names belongs to that record, whatever its inventory row says.
         var claimed = (await db.ChapterFiles.AsNoTracking()
@@ -103,7 +109,7 @@ public static class HealthMovedFiles
             if (!records.TryGetValue(m.ChapterFileId, out var record)) continue;
             var name = FileName(m.RelativePath);
             var options = new List<Found>();
-            foreach (var c in candidates.Where(c => c.RootFolderId == m.RootFolderId && NameComparer.Equals(FileName(c.RelativePath), name)))
+            foreach (var c in candidatesByName[name].Where(c => c.RootFolderId == m.RootFolderId))
             {
                 if (claimed.Contains((c.RootFolderId, LibraryPaths.ComparisonKey(c.RelativePath)))) continue;
                 // Inside another series' folder it belongs to that series, however alike the names.
