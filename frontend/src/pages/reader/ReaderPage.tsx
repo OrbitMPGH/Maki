@@ -255,6 +255,31 @@ export default function ReaderPage() {
 
   const current = manifest?.chapterId === chapterId ? manifest : undefined
   const enhance = enhanceFor(prefs, manifest?.tier)
+
+  // E jumps to Always and a second press goes back to the level it came from. Starting on Always,
+  // there is nothing to go back to, so it goes Off.
+  const enhanceBefore = useRef<{ seriesId: number; level: ReaderPrefs['enhance'] } | null>(null)
+  useEffect(() => {
+    if (prefs.enhance !== 'always') enhanceBefore.current = null
+  }, [prefs.enhance])
+  const toggleAlwaysEnhance = () => {
+    const seriesId = manifest?.seriesId
+    if (seriesId == null) return
+    const before = enhanceBefore.current?.seriesId === seriesId ? enhanceBefore.current.level : null
+    const level = prefs.enhance !== 'always' ? 'always' : (before ?? 'off')
+    enhanceBefore.current = level === 'always' ? { seriesId, level: prefs.enhance } : null
+    update({ enhance: level })
+    const skipped = level !== 'off' && enhanceFor({ ...prefs, enhance: level }, manifest?.tier) === 'off'
+    const message = skipped
+      ? t`Enhance is set, but stays off for this chapter because of its quality.`
+      : level === 'always'
+        ? t`Enhance: Always`
+        : level === 'auto'
+          ? t`Enhance: Auto`
+          : t`Enhance: Off`
+    notifications.hide('reader-enhance')
+    notifications.show({ id: 'reader-enhance', message, autoClose: 1500 })
+  }
   const serverModel = current
     ? serverModelFor(enhance, prefs.enhanceMethod, current.enhanceServer, offline || manifestServedOffline(chapterId))
     : null
@@ -781,6 +806,9 @@ export default function ReaderPage() {
         break
       case 'c':
         update({ cropBorders: !prefs.cropBorders })
+        break
+      case 'e':
+        toggleAlwaysEnhance()
         break
       case '+':
       case '=':

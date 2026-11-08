@@ -8699,6 +8699,26 @@ msgstr "Melhorar"
 msgid "enhance {level}, {methodLabel}"
 msgstr "melhorar {level}, {methodLabel}"
 
+#: src/pages/reader/ReaderPage.tsx
+msgid "Enhance is set, but stays off for this chapter because of its quality."
+msgstr ""
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Enhance on Always, or back"
+msgstr ""
+
+#: src/pages/reader/ReaderPage.tsx
+msgid "Enhance: Always"
+msgstr ""
+
+#: src/pages/reader/ReaderPage.tsx
+msgid "Enhance: Auto"
+msgstr ""
+
+#: src/pages/reader/ReaderPage.tsx
+msgid "Enhance: Off"
+msgstr ""
+
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Enter one of your recovery codes"
