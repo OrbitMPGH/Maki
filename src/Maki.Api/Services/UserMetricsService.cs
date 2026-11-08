@@ -211,7 +211,7 @@ public class UserMetricsService(
     private static List<ReadingDay> BucketDays(List<ReadEvent> events, TimeZoneInfo tz)
     {
         var byDate = new Dictionary<DateOnly, (int Chapters, int Seconds)>();
-        foreach (var e in events)
+        foreach (var e in events.Where(e => e.Value > 0))
         {
             var date = LocalDate(e.Timestamp, tz);
             byDate.TryGetValue(date, out var bucket);

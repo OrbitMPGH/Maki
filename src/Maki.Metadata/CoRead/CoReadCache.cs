@@ -221,6 +221,8 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
                 try
                 {
                     SnapshotFile.Save(SnapshotPath, SnapshotMagic, key, loaded.WriteTo);
+                    // The caller publishes `loaded` after this task starts; the swap needs it in place.
+                    SpinWait.SpinUntil(() => Volatile.Read(ref _graph) is not null, 5000);
                     if (SnapshotFile.Load(SnapshotPath, SnapshotMagic, key, PairGraphIndex.ReadFrom) is { IsMapped: true } mapped)
                     {
                         Interlocked.CompareExchange(ref _graph, mapped, loaded);
