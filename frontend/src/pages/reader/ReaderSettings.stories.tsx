@@ -158,7 +158,7 @@ export const PageLook: Story = {
     await userEvent.click(b.getByRole('switch', { name: /Crop borders/ }))
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ cropBorders: true }))
     await userEvent.click(b.getByRole('button', { name: /^Back/ }))
-    await expect(await b.findByRole('button', { name: /^Page look\s*OLED black, cropped$/ })).toBeVisible()
+    await waitFor(() => expect(b.getByRole('button', { name: /^Page look\s*OLED black, cropped$/ })).toBeVisible())
   },
 }
 
