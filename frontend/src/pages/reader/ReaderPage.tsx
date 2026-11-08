@@ -846,8 +846,10 @@ export default function ReaderPage() {
   const handleTap = (clientX: number, clientY: number, bounds: DOMRect) => {
     if (prefs.tapZones && mode === 'vertical') {
       const ratio = (clientY - bounds.top) / bounds.height
-      if (ratio < 0.33) stepStrip(-1)
-      else if (ratio > 0.67) stepStrip(1)
+      if (ratio < 0.33) {
+        if (!surface || surface.scrollTop > 0) stepStrip(-1)
+        else setChrome((visible) => !visible)
+      } else if (ratio > 0.67) stepStrip(1)
       else setChrome((visible) => !visible)
       return
     }
