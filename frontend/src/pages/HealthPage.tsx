@@ -1028,6 +1028,7 @@ export default function HealthPage() {
               body: {
                 files: (deleteTargets?.files ?? []).map(({ id: fileId, version }) => ({ fileId, version })),
                 confirmed: true,
+                spares: deleteTargets?.spares ?? false,
               },
             },
             {
@@ -2497,13 +2498,16 @@ function DuplicatePanel({ detail, openFile, close }: { detail: FileDetail; openF
     if (spares.length === 1) {
       const [only] = spares
       action.mutate(
-        { path: '/deletions', body: { fileId: only.id, version: only.version, confirmed: true } },
+        { path: '/deletions', body: { fileId: only.id, version: only.version, confirmed: true, spare: true } },
         { onSuccess: () => finish(t`Deleted the spare copy`, selfSpare) },
       )
       return
     }
     action.mutate(
-      { path: '/deletions/bulk', body: { files: spares.map((c) => ({ fileId: c.id, version: c.version })), confirmed: true } },
+      {
+        path: '/deletions/bulk',
+        body: { files: spares.map((c) => ({ fileId: c.id, version: c.version })), confirmed: true, spares: true },
+      },
       {
         onSuccess: (result) => {
           const report = result as unknown as DeleteReport

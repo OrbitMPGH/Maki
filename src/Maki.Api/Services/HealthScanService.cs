@@ -101,14 +101,29 @@ public class HealthScanService(MakiDbContext db)
                 var paths = new HashSet<string>(trackedByKey.Keys, seen.Comparer);
                 foreach (var known in knownFiles.Where(f => !f.Removed)) paths.Add(LibraryPaths.ComparisonKey(known.RelativePath));
                 // Series and selected-file scans do not enumerate unrelated unlinked archives.
+                var enumerated = new HashSet<string>(StringComparer.Ordinal);
                 if (scan.SeriesId == null && selected.Length == 0)
-                    foreach (var path in HealthPaths.Archives(root.Path)) paths.Add(LibraryPaths.ComparisonKey(Path.GetRelativePath(root.Path, path)));
+                    foreach (var path in HealthPaths.Archives(root.Path))
+                    {
+                        var key = LibraryPaths.ComparisonKey(Path.GetRelativePath(root.Path, path));
+                        paths.Add(key);
+                        enumerated.Add(key);
+                    }
+                var aliases = CaseAliases(root.Path, paths, trackedByKey, enumerated);
                 foreach (var key in paths)
                 {
                     ct.ThrowIfCancellationRequested();
                     var relative = key.Replace('/', Path.DirectorySeparatorChar);
                     var absolute = HealthPaths.Resolve(root.Path, key);
                     var trackedFile = trackedByKey.GetValueOrDefault(key);
+                    // Another spelling of a file a record already names. As its own row it read as an
+                    // unlinked duplicate of itself, and deleting that "spare" deleted the only copy.
+                    if (aliases.Contains(key))
+                    {
+                        foreach (var row in knownByKey.GetValueOrDefault(key) ?? [])
+                            if (!row.Removed) { row.Removed = true; retired.Add(row.Id); }
+                        continue;
+                    }
                     if (trackedFile == null && trackedFullPaths.Any(t => t.Key != root.Id && t.Value.Contains(absolute))) continue;
                     if (!seen.Add(absolute)) continue;
                     if (scan.SeriesId != null && trackedFile?.SeriesId != scan.SeriesId) continue;
@@ -146,7 +161,7 @@ public class HealthScanService(MakiDbContext db)
         }
         // Explicit selections include unlinked inventory records even when disk enumeration is skipped.
         foreach (var file in await db.HealthFiles.Where(f => selected.Contains(f.Id) && !f.Removed).ToListAsync(ct))
-            if (!files.Contains(file)) files.Add(file);
+            if (!file.Removed && !files.Contains(file)) files.Add(file);
         scan.Total = files.Count;
         await db.SaveChangesAsync(ct);
         if (retired.Count > 0)
@@ -422,6 +437,29 @@ public class HealthScanService(MakiDbContext db)
     }
 
     private sealed record TrackedFile(int Id, int SeriesId, string RelativePath);
+
+    /// <summary>
+    /// Keys that differ from another key only in case and open the same file, which a case-insensitive
+    /// mount on a case-sensitive host allows. The spelling a record names is kept, then the one on disk.
+    /// </summary>
+    private static HashSet<string> CaseAliases(string rootPath, IEnumerable<string> keys,
+        Dictionary<string, TrackedFile> tracked, HashSet<string> enumerated)
+    {
+        var aliases = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var group in keys.GroupBy(k => k, StringComparer.OrdinalIgnoreCase).Where(g => g.Skip(1).Any()))
+        {
+            var keep = group
+                .OrderBy(k => tracked.ContainsKey(k) ? 0 : enumerated.Contains(k) ? 1 : 2)
+                .ThenBy(k => tracked.TryGetValue(k, out var t) ? t.Id : 0)
+                .ThenBy(k => k, StringComparer.Ordinal)
+                .First();
+            var keepPath = HealthPaths.Resolve(rootPath, keep);
+            foreach (var other in group)
+                if (other != keep && !tracked.ContainsKey(other) && LibraryPaths.IsSameFile(keepPath, HealthPaths.Resolve(rootPath, other)))
+                    aliases.Add(other);
+        }
+        return aliases;
+    }
 }
 
 /// <summary>

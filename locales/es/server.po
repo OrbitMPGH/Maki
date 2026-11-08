@@ -5563,6 +5563,16 @@ msgstr "Solo coincide el nombre del archivo, así que este archivo tiene que vol
 msgid "error.health.relinkTargetChanged"
 msgstr "La copia idéntica a la que iban a pasar estos capítulos ha cambiado o ya no está. No se ha eliminado nada. Revisa el archivo de nuevo."
 
+#. English: This copy backs chapters now, so it is no longer a spare. Nothing was deleted.
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.spareInUse"
+msgstr ""
+
+#. English: No other copy of these bytes is left on disk, so this one is not a spare. Nothing was deleted.
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.spareLastCopy"
+msgstr ""
+
 #. English: The root folder no longer exists.
 #: src/Maki.Api/Services/HealthOperationService.cs
 #, fuzzy

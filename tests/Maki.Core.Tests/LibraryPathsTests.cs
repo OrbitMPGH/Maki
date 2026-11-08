@@ -35,6 +35,38 @@ public class LibraryPathsTests
     }
 
     [Fact]
+    public void IsSameFile_tells_a_case_only_spelling_from_a_second_file()
+    {
+        var root = Directory.CreateTempSubdirectory("maki-same-file-").FullName;
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root, "chainsaw man"));
+            var lower = Path.Combine(root, "chainsaw man", "x.cbz");
+            var upper = Path.Combine(root, "Chainsaw Man", "X.cbz");
+            File.WriteAllText(lower, "a");
+            File.WriteAllText(Path.Combine(root, "chainsaw man", "y.cbz"), "a");
+
+            Assert.True(LibraryPaths.IsSameFile(lower, lower));
+            Assert.False(LibraryPaths.IsSameFile(lower, Path.Combine(root, "chainsaw man", "y.cbz")));
+            if (File.Exists(upper))
+            {
+                // Case-insensitive filesystem: both spellings open the one file.
+                Assert.True(LibraryPaths.IsSameFile(lower, upper));
+            }
+            else
+            {
+                Directory.CreateDirectory(Path.Combine(root, "Chainsaw Man"));
+                File.WriteAllText(upper, "a");
+                Assert.False(LibraryPaths.IsSameFile(lower, upper));
+            }
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Resolve_reads_a_backslash_as_a_separator_on_every_host()
     {
         var root = Directory.CreateTempSubdirectory("maki-library-paths-").FullName;

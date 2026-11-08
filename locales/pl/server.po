@@ -5564,6 +5564,16 @@ msgstr "Pasuje tylko nazwa pliku, więc ten plik trzeba połączyć ponownie oso
 msgid "error.health.relinkTargetChanged"
 msgstr "Identyczna kopia, na którą miały przejść te rozdziały, zmieniła się albo zniknęła. Nic nie zostało usunięte. Przejrzyj plik jeszcze raz."
 
+#. English: This copy backs chapters now, so it is no longer a spare. Nothing was deleted.
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.spareInUse"
+msgstr ""
+
+#. English: No other copy of these bytes is left on disk, so this one is not a spare. Nothing was deleted.
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.spareLastCopy"
+msgstr ""
+
 #. English: The root folder no longer exists.
 #: src/Maki.Api/Services/HealthOperationService.cs
 #, fuzzy

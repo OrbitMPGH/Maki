@@ -174,6 +174,64 @@ public sealed class HealthDuplicateTests : IDisposable
     }
 
     [Fact]
+    public async Task A_spare_given_chapters_since_the_list_was_read_is_refused()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        var service = Operations(db);
+        // Deleting the kept copy moves its chapters onto the spare without changing the spare's version.
+        await service.DeleteNowAsync(s.Linked.Id, s.Linked.Version, 1, default);
+
+        var refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
+            service.DeleteNowAsync(s.Spare.Id, s.Spare.Version, 1, default, spare: true));
+
+        Assert.Equal("error.health.spareInUse", refused.Key);
+        Assert.True(File.Exists(Path.Combine(root, s.Spare.RelativePath)));
+        Assert.All(db.Chapters.AsNoTracking(), c => Assert.Equal(s.ChapterFile.Id, c.ChapterFileId));
+    }
+
+    [Fact]
+    public async Task A_spare_whose_only_twin_is_gone_from_disk_is_refused()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        File.Delete(Path.Combine(root, s.Linked.RelativePath));
+
+        var refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
+            Operations(db).DeleteNowAsync(s.Spare.Id, s.Spare.Version, 1, default, spare: true));
+
+        Assert.Equal("error.health.spareLastCopy", refused.Key);
+        Assert.True(File.Exists(Path.Combine(root, s.Spare.RelativePath)));
+        Assert.Equal("failed", db.HealthOperations.AsNoTracking().Single().Status);
+    }
+
+    [Fact]
+    public async Task A_spare_that_is_the_kept_file_under_another_case_is_refused()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        File.Delete(Path.Combine(root, s.Spare.RelativePath));
+        await db.HealthFiles.Where(f => f.Id == s.Spare.Id).ExecuteUpdateAsync(u => u.SetProperty(f => f.Removed, true));
+        // What a case-insensitive mount lists next to the record's own spelling.
+        var aliasPath = Path.Combine("SERIES", "series V10.cbz");
+        var alias = Path.Combine(root, aliasPath);
+        if (!File.Exists(alias))
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(alias)!);
+            File.Copy(Path.Combine(root, s.Linked.RelativePath), alias);
+        }
+        var row = new HealthFile { RootFolderId = s.Linked.RootFolderId, RelativePath = aliasPath };
+        db.HealthFiles.Add(row); await db.SaveChangesAsync();
+        await new HealthScanService(db).AnalyzeAsync(row, root, true, default, 0, true);
+
+        var refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
+            Operations(db).DeleteNowAsync(row.Id, row.Version, 1, default, spare: true));
+
+        Assert.Equal("error.health.spareLastCopy", refused.Key);
+        Assert.True(File.Exists(Path.Combine(root, s.Linked.RelativePath)));
+    }
+
+    [Fact]
     public async Task The_duplicate_filter_lists_one_row_per_set_with_its_spares()
     {
         using var db = fixture.NewContext();

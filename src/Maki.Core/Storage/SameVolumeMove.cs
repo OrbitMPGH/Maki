@@ -173,7 +173,7 @@ public static class SameVolumeMove
     /// Same device and inode, read from the first two fields of <c>struct stat</c>, which are 64-bit
     /// on both 64-bit Linux layouts (x86-64 and the generic one arm64 uses). Anywhere else, false.
     /// </summary>
-    private static bool SameFile(string a, string b)
+    public static bool SameFile(string a, string b)
     {
         if (!OperatingSystem.IsLinux() || !Environment.Is64BitProcess)
         {

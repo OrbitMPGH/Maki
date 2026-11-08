@@ -731,7 +731,9 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
             return this.Fail(localizer, "health.repair.pdfUnsupported");
         }
     });
-    public record BulkDelete(FileReview[] Files, bool Confirmed);
+    /// <param name="Spares">Every file is a spare copy of a duplicate: each one is refused unless it
+    /// still backs nothing and another copy of its bytes is still on disk.</param>
+    public record BulkDelete(FileReview[] Files, bool Confirmed, bool Spares = false);
     /// <summary>
     /// Deletes several archives under one confirmation, each through the ordinary preview-then-apply
     /// path so nothing skips validation.
@@ -761,7 +763,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         {
             try
             {
-                await operations.DeleteNowAsync(item.FileId, item.Version, user.UserId, ct);
+                await operations.DeleteNowAsync(item.FileId, item.Version, user.UserId, ct, request.Spares);
                 deleted++;
             }
             catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
@@ -790,7 +792,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         return Ok(new { deleted, failures });
     }
 
-    public record ConfirmedDelete(int FileId, string Version, bool Confirmed);
+    public record ConfirmedDelete(int FileId, string Version, bool Confirmed, bool Spare = false);
     /// <summary>
     /// Preview and apply in one call, for a delete the page already confirmed inline (a spare copy of
     /// a duplicate). Validation is the same as the two-step path; only the review screen is skipped.
@@ -800,7 +802,7 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         ConflictGuard($"file {request.FileId}", async () =>
         {
             if (!request.Confirmed) return this.Fail(localizer, "error.health.confirmationRequired");
-            return Ok(Rendered(await operations.DeleteNowAsync(request.FileId, request.Version, user.UserId, ct)));
+            return Ok(Rendered(await operations.DeleteNowAsync(request.FileId, request.Version, user.UserId, ct, request.Spare)));
         });
 
     [HttpPost("deletions/preview")]

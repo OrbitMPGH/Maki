@@ -6,6 +6,7 @@ using Maki.Core.Entities;
 using Maki.Core.Images;
 using Maki.Core.Paths;
 using Maki.Core.Reading;
+using Maki.Core.Storage;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -141,10 +142,12 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
     /// Preview and apply under one confirmation the caller already has. A refusal at apply fails the
     /// operation instead of leaving it in review, where it would block every later request on the file.
     /// </summary>
-    public async Task<HealthOperation> DeleteNowAsync(int fileId, string version, int userId, CancellationToken ct)
+    /// <param name="spare">The caller deletes a spare copy: refuse unless the file still backs nothing
+    /// and another copy of the same bytes is still on disk as a file of its own.</param>
+    public async Task<HealthOperation> DeleteNowAsync(int fileId, string version, int userId, CancellationToken ct, bool spare = false)
     {
         var op = await PreviewDeleteAsync(fileId, version, userId, ct);
-        try { await ApplyAsync(op.Id, version, true, false, ct); }
+        try { await ApplyAsync(op.Id, version, true, false, ct, spare); }
         catch (HealthRefusedException ex) when (op.Status == "review")
         {
             op.Status = "failed"; op.ErrorKey = ex.Key; op.FinishedAt = DateTime.UtcNow;
@@ -305,7 +308,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         return next;
     }
 
-    public async Task ApplyAsync(int operationId, string version, bool confirmed, bool resetPositions, CancellationToken ct)
+    public async Task ApplyAsync(int operationId, string version, bool confirmed, bool resetPositions, CancellationToken ct, bool spare = false)
     {
         if (!confirmed) throw new HealthRefusedException("error.health.confirmationRequired");
         await MutationGate.WaitAsync(ct);
@@ -316,6 +319,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             var (file, root, chapters) = await ValidateAsync(op.FileId, version, ct, op.Id);
             if (op.Kind == "delete")
             {
+                if (spare) await RequireSpareAsync(file, root, chapters, ct);
                 if (op.RelinkFileId is { } relinkId)
                 {
                     // The chapters were promised a home. If that copy changed or found another use
@@ -324,7 +328,8 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                     var targetPath = target == null ? null : HealthPaths.Resolve(root.Path, target.RelativePath);
                     var targetInfo = targetPath == null ? null : new FileInfo(targetPath);
                     if (target?.Id != relinkId || targetInfo is not { Exists: true } || targetInfo.Length != target.Size
-                        || targetInfo.LastWriteTimeUtc != target.ModifiedAt || !await HashMatchesAsync(targetPath!, file.ContentHash!, ct))
+                        || targetInfo.LastWriteTimeUtc != target.ModifiedAt || OneFile(HealthPaths.Resolve(root.Path, file.RelativePath), targetPath!)
+                        || !await HashMatchesAsync(targetPath!, file.ContentHash!, ct))
                         throw new HealthRefusedException("error.health.relinkTargetChanged");
                 }
                 op.Status = "deleting";
@@ -590,6 +595,38 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         if (file.ContentHash != null) await HealthDuplicates.ResolveLonelyAsync(db, [file.ContentHash], ct);
         await transaction.CommitAsync(ct);
     }
+
+    /// <summary>
+    /// A spare is only spare while nothing reads from it and another copy of its bytes is still on
+    /// disk. Checked at apply because the review can be stale: a relink can give the spare chapters,
+    /// and the copy it was spare to can have been deleted since.
+    /// </summary>
+    private async Task RequireSpareAsync(HealthFile file, RootFolder root, List<Chapter> chapters, CancellationToken ct)
+    {
+        if (chapters.Count > 0 || file.ChapterFileId != null) throw new HealthRefusedException("error.health.spareInUse");
+        if (file.Size < 0 || file.ContentHash == null) throw new HealthRefusedException("error.health.spareLastCopy");
+        var path = HealthPaths.Resolve(root.Path, file.RelativePath);
+        var copies = await db.HealthFiles.AsNoTracking()
+            .Where(f => f.Id != file.Id && !f.Removed && f.Size >= 0 && f.ContentHash == file.ContentHash)
+            .OrderByDescending(f => f.ChapterFileId != null).ThenBy(f => f.Id)
+            .ToListAsync(ct);
+        foreach (var copy in copies)
+        {
+            var copyRoot = copy.RootFolderId == root.Id ? root : await db.RootFolders.FindAsync([copy.RootFolderId], ct);
+            if (copyRoot == null || !Directory.Exists(copyRoot.Path) || LibraryPaths.ResolveNoLinks(copyRoot.Path, copy.RelativePath) is not { } copyPath) continue;
+            var info = new FileInfo(copyPath);
+            if (!info.Exists || info.Length != copy.Size || info.LastWriteTimeUtc != copy.ModifiedAt || OneFile(path, copyPath)) continue;
+            if (await HashMatchesAsync(copyPath, file.ContentHash, ct)) return;
+        }
+        throw new HealthRefusedException("error.health.spareLastCopy");
+    }
+
+    /// <summary>
+    /// Whether two paths may name one file. Spellings that differ only in case count, since a
+    /// case-insensitive mount opens both as the same file, and so does the same device and inode.
+    /// </summary>
+    private static bool OneFile(string a, string b) =>
+        string.Equals(Path.GetFullPath(a), Path.GetFullPath(b), StringComparison.OrdinalIgnoreCase) || SameVolumeMove.SameFile(a, b);
 
     private static async Task<bool> HashMatchesAsync(string path, string hash, CancellationToken ct)
     {
