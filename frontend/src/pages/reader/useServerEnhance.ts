@@ -177,7 +177,8 @@ export function useServerEnhance(
       if (wanted.length === 0 && !ahead && told.current === said) return
       told.current = said
       const plain = plainKey ? plainKey.split(',').map(Number) : []
-      requestServerEnhance(chapterId, model, wanted, ahead, wholeOn, plain).then(
+      const inWindow = windowKey ? windowKey.split(',').filter((page) => !SETTLED.has(statesRef.current.get(Number(page)))).length : 0
+      requestServerEnhance(chapterId, model, wanted, ahead, wholeOn, plain, inWindow).then(
         (response) => merge(scope, response.pages),
         (error: unknown) => {
           if (error instanceof ApiError && error.status === 409) refuse(scope)

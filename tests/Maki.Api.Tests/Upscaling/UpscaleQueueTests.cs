@@ -6,7 +6,17 @@ namespace Maki.Api.Tests.Upscaling;
 
 public class UpscaleQueueTests
 {
-    private readonly UpscaleQueue _queue = new();
+    private readonly Clock _clock = new();
+    private readonly UpscaleQueue _queue;
+
+    public UpscaleQueueTests() => _queue = new UpscaleQueue(_clock);
+
+    private sealed class Clock : TimeProvider
+    {
+        public DateTimeOffset Now { get; set; } = new(2026, 11, 9, 12, 0, 0, TimeSpan.Zero);
+
+        public override DateTimeOffset GetUtcNow() => Now;
+    }
 
     private List<int> DrainPages()
     {
@@ -309,7 +319,7 @@ public class UpscaleQueueTests
 
         _queue.Replace(1, 1, "span-s", [Item(100)], session: "extra1");
         _queue.Replace(1, 1, "span-s", [Item(200)], session: "extra2");
-        _queue.Cancel(1, "extra2");
+        _queue.Cancel(1, "extra1");
 
         Assert.All(running, job => Assert.False(job.Abandoned.IsCancellationRequested));
         Assert.All(Enumerable.Range(0, UpscaleQueue.MaxSessionsPerUser), tab => Assert.Equal(1, _queue.PendingFor(1, $"tab{tab}")));
@@ -319,12 +329,54 @@ public class UpscaleQueueTests
     }
 
     [Fact]
-    public void A_users_most_recent_tab_goes_first_and_the_others_fill_in_after()
+    public void A_tab_not_active_lately_only_runs_once_the_active_ones_are_empty()
     {
         _queue.Replace(1, 1, "span-s", [Item(0), Item(1)], UpscaleQueue.MaxChapterPages, session: "phone");
+        _clock.Now += UpscaleQueue.ActiveWindow + TimeSpan.FromSeconds(1);
         _queue.Replace(1, 2, "span-s", [Item(50, chapterId: 2, fileId: 2), Item(51, chapterId: 2, fileId: 2)], session: "desktop");
 
         Assert.Equal([50, 51, 0, 1], DrainPages());
+    }
+
+    [Fact]
+    public void A_hidden_tabs_request_does_not_make_it_active()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(0), Item(1)], session: "phone");
+        _clock.Now += UpscaleQueue.ActiveWindow + TimeSpan.FromSeconds(1);
+        _queue.Replace(1, 2, "span-s", [Item(50, chapterId: 2, fileId: 2), Item(51, chapterId: 2, fileId: 2)], session: "desktop");
+        _queue.Replace(1, 1, "span-s", [Item(0), Item(1)], session: "phone", visible: false);
+        _queue.Replace(1, 1, "span-s", [Item(5)], session: "tablet", visible: false);
+
+        Assert.Equal([50, 51, 0, 1, 5], DrainPages());
+    }
+
+    [Fact]
+    public void Active_tabs_of_one_user_all_get_their_window_before_any_backlog()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(0), Item(1), Item(10), Item(11)], UpscaleQueue.MaxChapterPages, session: "a", window: 2);
+        _queue.Replace(1, 2, "span-s",
+            [Item(50, chapterId: 2, fileId: 2), Item(51, chapterId: 2, fileId: 2), Item(60, chapterId: 2, fileId: 2)],
+            UpscaleQueue.MaxChapterPages, session: "b", window: 2);
+
+        Assert.Equal([0, 50, 1, 51, 10, 60, 11], DrainPages());
+    }
+
+    [Fact]
+    public void A_folded_tab_that_last_filled_the_shared_lane_can_clear_it()
+    {
+        for (var tab = 0; tab < UpscaleQueue.MaxSessionsPerUser; tab++)
+        {
+            _queue.Replace(1, 1, "span-s", [Item(tab * 10)], session: $"tab{tab}");
+        }
+
+        _queue.Replace(1, 1, "span-s", [Item(100)], session: "extra1");
+        _queue.Replace(1, 1, "span-s", [Item(200), Item(201)], UpscaleQueue.MaxChapterPages, session: "extra2");
+
+        _queue.Cancel(1, "extra1");
+        Assert.Equal(2, _queue.PendingFor(1));
+        _queue.Cancel(1, "extra2");
+        Assert.Equal(0, _queue.PendingFor(1));
+        Assert.All(Enumerable.Range(0, UpscaleQueue.MaxSessionsPerUser), tab => Assert.Equal(1, _queue.PendingFor(1, $"tab{tab}")));
     }
 
     [Fact]
@@ -334,6 +386,6 @@ public class UpscaleQueueTests
         _queue.Replace(1, 1, "span-s", [Item(10), Item(11)], session: "b");
         _queue.Replace(2, 2, "span-s", [Item(100, chapterId: 2, fileId: 2), Item(101, chapterId: 2, fileId: 2), Item(102, chapterId: 2, fileId: 2)]);
 
-        Assert.Equal([10, 100, 11, 101, 0, 102, 1], DrainPages());
+        Assert.Equal([0, 100, 10, 101, 1, 102, 11], DrainPages());
     }
 }

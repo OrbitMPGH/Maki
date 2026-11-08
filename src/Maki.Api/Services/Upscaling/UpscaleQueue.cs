@@ -45,16 +45,56 @@ public sealed class UpscaleJob(UpscaleWorkKey key, ReaderService.PageSlice slice
 /// <summary>
 /// Pages waiting for the server upscaler. A page several readers want is one job with all of them
 /// waiting on it. Each reader (a user's tab) has a FIFO lane of at most <see cref="MaxPendingPerUser"/>
-/// pages. Users are served round robin, so one reader paging fast cannot starve another, however many
-/// tabs they have open. On a user's turn their most recently active tab goes first, and their other
-/// tabs only fill in while it has nothing pending, so a tab left open elsewhere never slows the one
-/// being read. A job nobody
-/// waits on any more is dropped before it starts. One already running finishes and lands in the
-/// cache, unless its last reader paged past it or moved to another chapter or model: then it is
-/// abandoned, so the page they turned to does not wait out one nobody will look at.
+/// pages, or a window plus the whole chapter's rest. Users are served round robin, so one reader
+/// paging fast cannot starve another, however many tabs they have open. On a user's turn their tabs
+/// that asked while visible in the last <see cref="ActiveWindow"/> take turns, every one's window
+/// before any one's rest; tabs not active lately only run once those have nothing pending, so a tab
+/// left open elsewhere never slows the ones being read. A job nobody waits on any more is dropped
+/// before it starts. One already running finishes and lands in the cache, unless its last reader
+/// paged past it or moved to another chapter or model: then it is abandoned, so the page they
+/// turned to does not wait out one nobody will look at.
 /// </summary>
-public sealed class UpscaleQueue
+public sealed class UpscaleQueue(TimeProvider? time = null)
 {
+    /// <summary>How recently a tab must have asked, while visible, to share its user's turns.</summary>
+    public static readonly TimeSpan ActiveWindow = TimeSpan.FromMinutes(2);
+
+    private readonly TimeProvider _time = time ?? TimeProvider.System;
+
+    /// <summary>When a reader last asked while visible, and a sequence number fixing their place in the rotation.</summary>
+    private readonly record struct Touch(DateTimeOffset At, long First);
+
+    /// <summary>A reader's pending pages in order; the first <see cref="Window"/> are their reading window, the rest backlog.</summary>
+    private sealed class Lane(List<UpscaleWorkKey> keys, int window)
+    {
+        public List<UpscaleWorkKey> Keys { get; } = keys;
+
+        public int Window { get; private set; } = window;
+
+        public UpscaleWorkKey PopFront()
+        {
+            var key = Keys[0];
+            Keys.RemoveAt(0);
+            Window = Math.Max(0, Window - 1);
+            return key;
+        }
+
+        public void Remove(UpscaleWorkKey key)
+        {
+            var at = Keys.IndexOf(key);
+            if (at < 0)
+            {
+                return;
+            }
+
+            Keys.RemoveAt(at);
+            if (at < Window)
+            {
+                Window--;
+            }
+        }
+    }
+
     public const int MaxPendingPerUser = 32;
 
     /// <summary>The cap for a reader who asked for their whole chapter (the reader's "Whole chapter" setting).</summary>
@@ -68,9 +108,11 @@ public sealed class UpscaleQueue
 
     private readonly Lock _gate = new();
     private readonly Dictionary<UpscaleWorkKey, UpscaleJob> _jobs = [];
-    private readonly Dictionary<UpscaleReader, List<UpscaleWorkKey>> _lanes = [];
-    private readonly Dictionary<UpscaleReader, long> _touched = [];
+    private readonly Dictionary<UpscaleReader, Lane> _lanes = [];
+    private readonly Dictionary<UpscaleReader, Touch> _touched = [];
     private long _touchSeq;
+    private readonly Dictionary<int, UpscaleReader> _lastServed = [];
+    private readonly Dictionary<int, string> _sharedBy = [];
     private readonly Queue<int> _turns = new();
     private readonly HashSet<int> _inTurns = [];
     private readonly Dictionary<UpscaleWorkKey, (UpscaleOutcome Outcome, DateTime At, long Seq)> _memo = [];
@@ -86,6 +128,9 @@ public sealed class UpscaleQueue
     /// there is room under the cap, except <paramref name="notWanted"/>: pages the reader shows plain,
     /// dropped like the pages behind. Returns a state per item (only the first <paramref name="cap"/>
     /// items are taken, <see cref="MaxPendingPerUser"/> unless the reader asked for the whole chapter).
+    /// The first <paramref name="window"/> items are the reader's window and the rest backlog; null
+    /// makes them all window. A request from a hidden tab (<paramref name="visible"/> false) does not
+    /// make that tab active.
     /// </summary>
     public IReadOnlyList<UpscaleJobState> Replace(
         int userId,
@@ -94,7 +139,9 @@ public sealed class UpscaleQueue
         IReadOnlyList<UpscaleRequestItem> items,
         int cap = MaxPendingPerUser,
         IReadOnlySet<UpscaleWorkKey>? notWanted = null,
-        string? session = null)
+        string? session = null,
+        int? window = null,
+        bool visible = true)
     {
         notWanted ??= new HashSet<UpscaleWorkKey>();
         var taken = items.Take(cap).ToList();
@@ -103,8 +150,27 @@ public sealed class UpscaleQueue
         lock (_gate)
         {
             var reader = ReaderFor(userId, session);
-            _touched[reader] = ++_touchSeq;
-            var old = _lanes.TryGetValue(reader, out var lane) ? lane : [];
+            var first = _touched.TryGetValue(reader, out var was) ? was.First : ++_touchSeq;
+            if (visible)
+            {
+                _touched[reader] = new Touch(_time.GetUtcNow(), first);
+            }
+            else if (!_touched.ContainsKey(reader))
+            {
+                _touched[reader] = new Touch(DateTimeOffset.MinValue, first);
+            }
+
+            if (session is null)
+            {
+                _sharedBy.Remove(userId);
+            }
+            else if (reader.Session is null)
+            {
+                _sharedBy[userId] = session;
+            }
+
+            var old = _lanes.TryGetValue(reader, out var lane) ? lane.Keys : [];
+            var windowAdded = 0;
             var requested = taken.Select(i => i.Key).ToHashSet();
             var floor = taken.Where(i => i.Target.ChapterId == chapterId)
                 .Select(i => i.Target.Page)
@@ -134,6 +200,10 @@ public sealed class UpscaleQueue
                 {
                     next.Add(item.Key);
                     added = true;
+                    if (i < window)
+                    {
+                        windowAdded++;
+                    }
                 }
             }
 
@@ -178,7 +248,7 @@ public sealed class UpscaleQueue
             }
             else
             {
-                _lanes[reader] = next;
+                _lanes[reader] = new Lane(next, window is null ? next.Count : windowAdded);
                 if (_inTurns.Add(userId))
                 {
                     _turns.Enqueue(userId);
@@ -197,8 +267,8 @@ public sealed class UpscaleQueue
     /// <summary>
     /// Drops everything this reader has pending, and abandons a running page nobody else waits on.
     /// Called when they leave the reader with the whole chapter still going. Only the reader with this
-    /// <paramref name="session"/> is touched; the user's other tabs keep theirs. A tab that was folded
-    /// into the shared lane leaves it alone, since other tabs use it too.
+    /// <paramref name="session"/> is touched; the user's other tabs keep theirs. A tab folded into the
+    /// shared lane clears it only while it was the last to fill it, since other tabs use it too.
     /// </summary>
     public void Cancel(int userId, string? session = null)
     {
@@ -207,13 +277,23 @@ public sealed class UpscaleQueue
         {
             if (session is not null && !_touched.ContainsKey(reader))
             {
-                return;
+                if (!_sharedBy.TryGetValue(userId, out var by) || by != session)
+                {
+                    return;
+                }
+
+                reader = new UpscaleReader(userId, null);
+            }
+
+            if (reader.Session is null)
+            {
+                _sharedBy.Remove(userId);
             }
 
             _touched.Remove(reader);
             if (_lanes.Remove(reader, out var lane))
-        {
-                foreach (var key in lane)
+            {
+                foreach (var key in lane.Keys)
                 {
                     if (_jobs.TryGetValue(key, out var job))
                     {
@@ -260,50 +340,43 @@ public sealed class UpscaleQueue
         return mine.Count(_touched.ContainsKey) < MaxSessionsPerUser ? reader : new UpscaleReader(userId, null);
     }
 
-    /// <summary>The next job, taking one page from the next reader's lane in turn. Null when nothing is waiting.</summary>
+    /// <summary>
+    /// The next job: one page from the next user in turn, from the lane <see cref="NextReader"/> picks
+    /// among theirs. Null when nothing is waiting.
+    /// </summary>
     public UpscaleJob? TryDequeue()
     {
         lock (_gate)
         {
+            var now = _time.GetUtcNow();
             var rounds = _turns.Count;
             while (rounds-- > 0)
             {
                 var user = _turns.Dequeue();
                 _inTurns.Remove(user);
-                var readers = _lanes.Keys.Where(r => r.UserId == user)
-                    .OrderByDescending(r => _touched.GetValueOrDefault(r))
-                    .ToList();
                 UpscaleJob? picked = null;
-                foreach (var reader in readers)
+                while (picked is null && NextReader(user, now) is { } reader)
                 {
                     var lane = _lanes[reader];
-                    while (lane.Count > 0 && picked is null)
-                    {
-                        var key = lane[0];
-                        lane.RemoveAt(0);
-                        if (!_jobs.TryGetValue(key, out var job) || job.Working)
-                        {
-                            continue;
-                        }
-
-                        if (job.Waiters.Count == 0)
-                        {
-                            _jobs.Remove(key);
-                            continue;
-                        }
-
-                        picked = job;
-                    }
-
-                    if (lane.Count == 0)
+                    var key = lane.PopFront();
+                    if (lane.Keys.Count == 0)
                     {
                         _lanes.Remove(reader);
                     }
 
-                    if (picked is not null)
+                    if (!_jobs.TryGetValue(key, out var job) || job.Working)
                     {
-                        break;
+                        continue;
                     }
+
+                    if (job.Waiters.Count == 0)
+                    {
+                        _jobs.Remove(key);
+                        continue;
+                    }
+
+                    picked = job;
+                    _lastServed[user] = reader;
                 }
 
                 if (picked is null)
@@ -317,7 +390,7 @@ public sealed class UpscaleQueue
                     if (_lanes.TryGetValue(other, out var otherLane))
                     {
                         otherLane.Remove(picked.Key);
-                        if (otherLane.Count == 0)
+                        if (otherLane.Keys.Count == 0)
                         {
                             _lanes.Remove(other);
                         }
@@ -334,6 +407,34 @@ public sealed class UpscaleQueue
 
             return null;
         }
+    }
+
+    /// <summary>
+    /// Whose lane serves this user's turn. Tabs active in the last <see cref="ActiveWindow"/> take
+    /// turns in a fixed rotation, those with window pages left first, so every active tab's window
+    /// comes before any active tab's backlog. Once every active lane is empty, the most recently
+    /// active of the rest goes.
+    /// </summary>
+    private UpscaleReader? NextReader(int user, DateTimeOffset now)
+    {
+        var lanes = _lanes.Where(l => l.Key.UserId == user)
+            .Select(l => (Reader: l.Key, l.Value.Window, Touch: _touched.GetValueOrDefault(l.Key)))
+            .ToList();
+        if (lanes.Count == 0)
+        {
+            return null;
+        }
+
+        var active = lanes.Where(l => now - l.Touch.At <= ActiveWindow).OrderBy(l => l.Touch.First).ToList();
+        if (active.Count == 0)
+        {
+            return lanes.OrderByDescending(l => l.Touch.At).ThenByDescending(l => l.Touch.First).First().Reader;
+        }
+
+        var pool = active.Any(l => l.Window > 0) ? active.Where(l => l.Window > 0).ToList() : active;
+        var last = _lastServed.TryGetValue(user, out var served) ? _touched.GetValueOrDefault(served).First : long.MinValue;
+        var after = pool.FindIndex(l => l.Touch.First > last);
+        return pool[after < 0 ? 0 : after].Reader;
     }
 
     /// <summary>Waits until work may have arrived, or the timeout passes.</summary>
@@ -438,6 +539,8 @@ public sealed class UpscaleQueue
 
             _lanes.Clear();
             _touched.Clear();
+            _lastServed.Clear();
+            _sharedBy.Clear();
             _turns.Clear();
             _inTurns.Clear();
         }
@@ -457,7 +560,7 @@ public sealed class UpscaleQueue
     {
         lock (_gate)
         {
-            return _lanes.TryGetValue(new UpscaleReader(userId, session), out var lane) ? lane.Count : 0;
+            return _lanes.TryGetValue(new UpscaleReader(userId, session), out var lane) ? lane.Keys.Count : 0;
         }
     }
 

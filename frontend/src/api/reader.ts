@@ -138,6 +138,8 @@ const ENHANCE_SESSION = randomUUID()
  * Asks the server to upscale a window of pages, current page first. At most 32 are taken, or 1000
  * with `wholeChapter`; `next` fills whatever room is left with the next chapter's pages, which are
  * not answered here. `notWanted` names this chapter's pages to drop from what is still queued.
+ * `window` is how many leading `pages` are the reading window, ahead of the whole chapter's rest. A
+ * hidden tab says so, and the server does not count its request as reading.
  */
 export function requestServerEnhance(
   chapterId: number,
@@ -146,6 +148,7 @@ export function requestServerEnhance(
   next: { chapterId: number; pages: number[] } | null = null,
   wholeChapter = false,
   notWanted: number[] = [],
+  window = pages.length,
 ) {
   return api<{ pages: { page: number; state: ServerPageState }[] }>(`/reader/chapter/${chapterId}/enhance`, {
     method: 'POST',
@@ -153,9 +156,10 @@ export function requestServerEnhance(
       model,
       pages,
       ...(next && { nextChapterId: next.chapterId, nextPages: next.pages }),
-      ...(wholeChapter && { wholeChapter }),
+      ...(wholeChapter && { wholeChapter, window }),
       ...(notWanted.length > 0 && { notWanted }),
       session: ENHANCE_SESSION,
+      visible: document.visibilityState === 'visible',
     }),
   })
 }
