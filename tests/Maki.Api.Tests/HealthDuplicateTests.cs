@@ -462,20 +462,13 @@ public sealed class HealthDuplicateTests : IDisposable
     }
 
     [Fact]
-    public async Task A_plain_delete_of_a_file_another_record_reads_is_refused()
+    public async Task A_plain_delete_of_a_file_a_linked_twin_may_be_is_refused()
     {
         using var db = fixture.NewContext();
         var s = await Seed(db);
-        var series = db.Series.AsNoTracking().Single();
-        var otherPath = Path.Combine("Elsewhere", Path.GetFileName(s.Spare.RelativePath).ToUpperInvariant());
-        Directory.CreateDirectory(Path.Combine(root, "Elsewhere"));
-        File.Copy(Path.Combine(root, s.Spare.RelativePath), Path.Combine(root, otherPath));
-        db.ChapterFiles.Add(new ChapterFile { SeriesId = series.Id, RelativePath = otherPath, Size = 1 });
-        await db.SaveChangesAsync();
         var service = Operations(db);
-        // What a case-insensitive mount, or a link inside the root, makes of the two paths.
-        service.SameFile = (a, b) => string.Equals(Path.GetFileName(a), Path.GetFileName(b), StringComparison.OrdinalIgnoreCase)
-            ? FileSameness.Same : FileIdentity.Compare(a, b);
+        // What a case-insensitive mount or an invented inode makes of the spare and the linked copy.
+        service.SameFile = (_, _) => FileSameness.Same;
 
         var refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
             service.DeleteNowAsync(s.Spare.Id, s.Spare.Version, 1, default));
@@ -483,6 +476,85 @@ public sealed class HealthDuplicateTests : IDisposable
         Assert.Equal("error.health.fileBacksChapters", refused.Key);
         Assert.True(File.Exists(Path.Combine(root, s.Spare.RelativePath)));
         Assert.Equal("failed", db.HealthOperations.AsNoTracking().Single().Status);
+    }
+
+    [Fact]
+    public async Task A_plain_delete_through_a_second_root_naming_the_first_is_refused()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        var link = root + "-plain-link";
+        if (!MakeDirectoryLink(link, root)) return;
+        try
+        {
+            var row = await SecondRootCopy(db, s, link, copy: false);
+            var service = Operations(db);
+            // Two mounts of one share: file identity alone reads the two as separate files.
+            service.SameFile = (_, _) => FileSameness.Different;
+
+            var refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
+                service.DeleteNowAsync(row.Id, row.Version, 1, default));
+
+            Assert.Equal("error.health.fileBacksChapters", refused.Key);
+            Assert.True(File.Exists(Path.Combine(root, s.Linked.RelativePath)));
+            Assert.All(db.Chapters.AsNoTracking(), c => Assert.Equal(s.ChapterFile.Id, c.ChapterFileId));
+        }
+        finally
+        {
+            Directory.Delete(link);
+        }
+    }
+
+    [Fact]
+    public async Task A_plain_delete_of_a_copy_whose_linked_twin_is_in_a_separate_root_goes_ahead()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        var separate = Directory.CreateTempSubdirectory("maki-health-plain-").FullName;
+        try
+        {
+            var row = await SecondRootCopy(db, s, separate, copy: true);
+
+            Assert.Equal("completed", (await Operations(db).DeleteNowAsync(row.Id, row.Version, 1, default)).Status);
+            Assert.False(File.Exists(Path.Combine(separate, s.Linked.RelativePath)));
+            Assert.True(File.Exists(Path.Combine(root, s.Linked.RelativePath)));
+        }
+        finally
+        {
+            Directory.Delete(separate, true);
+        }
+    }
+
+    [Fact]
+    public async Task A_name_repeated_in_another_series_folder_does_not_block_a_delete_where_identity_is_unknown()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        var series = db.Series.AsNoTracking().Single();
+        void Write(string relative, string text)
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(root, relative))!);
+            using var zip = ZipFile.Open(Path.Combine(root, relative), ZipArchiveMode.Create);
+            using var stream = zip.CreateEntry("ComicInfo.xml").Open();
+            stream.Write(System.Text.Encoding.UTF8.GetBytes(text));
+        }
+        var mine = Path.Combine("Series", "Chapter 001.cbz");
+        var theirs = Path.Combine("Other", "Chapter 001.cbz");
+        Write(mine, "<ComicInfo><Title>mine</Title></ComicInfo>");
+        Write(theirs, "<ComicInfo><Title>theirs</Title></ComicInfo>");
+        var record = new ChapterFile { SeriesId = series.Id, RelativePath = theirs, Size = new FileInfo(Path.Combine(root, theirs)).Length };
+        db.ChapterFiles.Add(record); await db.SaveChangesAsync();
+        var row = new HealthFile { RootFolderId = s.Linked.RootFolderId, RelativePath = mine };
+        var linked = new HealthFile { RootFolderId = s.Linked.RootFolderId, RelativePath = theirs, ChapterFileId = record.Id, SeriesId = series.Id };
+        db.HealthFiles.AddRange(row, linked); await db.SaveChangesAsync();
+        var scan = new HealthScanService(db);
+        await scan.AnalyzeAsync(row, root, true, default, 0, true);
+        await scan.AnalyzeAsync(linked, root, true, default, 0, true);
+        var service = Operations(db);
+        service.SameFile = (_, _) => FileSameness.Unknown;
+
+        Assert.Equal("completed", (await service.DeleteNowAsync(row.Id, row.Version, 1, default)).Status);
+        Assert.True(File.Exists(Path.Combine(root, theirs)));
     }
 
     /// <summary>A junction on Windows (no privilege needed), a symbolic link elsewhere. False when the host refuses.</summary>

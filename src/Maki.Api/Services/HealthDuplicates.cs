@@ -1,4 +1,5 @@
 using Maki.Core.Entities;
+using Maki.Core.Io;
 using Maki.Core.Paths;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -46,11 +47,16 @@ public static class HealthDuplicates
     /// The copy a deleted file's chapters can move to: same bytes, on disk, in the same root and the
     /// same series folder, and backing nothing itself. A copy elsewhere would leave a chapter file
     /// outside the series' folders, and a copy that already backs chapters would have two files'
-    /// worth of chapters on one row.
+    /// worth of chapters on one row. It must also provably be another file (<paramref name="sameFile"/>,
+    /// <see cref="FileIdentity.Compare"/> by default), the same rule apply checks, so a preview never
+    /// promises a relink apply would refuse.
     /// </summary>
-    public static async Task<HealthFile?> RelinkTargetAsync(MakiDbContext db, HealthFile file, CancellationToken ct)
+    public static async Task<HealthFile?> RelinkTargetAsync(MakiDbContext db, HealthFile file, CancellationToken ct,
+        Func<string, string, FileSameness>? sameFile = null)
     {
         if (file.ContentHash == null || LibraryPaths.TopFolder(file.RelativePath) is not { } folder) return null;
+        var rootPath = await db.RootFolders.Where(r => r.Id == file.RootFolderId).Select(r => r.Path).FirstOrDefaultAsync(ct);
+        if (rootPath == null || LibraryPaths.Resolve(rootPath, file.RelativePath) is not { } path) return null;
         var candidates = await db.HealthFiles
             .Where(f => f.Id != file.Id && !f.Removed && f.Size >= 0 && f.Status != "pending" && f.ChapterFileId == null
                 && f.RootFolderId == file.RootFolderId && f.ContentHash == file.ContentHash)
@@ -59,7 +65,9 @@ public static class HealthDuplicates
         foreach (var candidate in candidates)
         {
             if (!LibraryPaths.FolderComparer.Equals(LibraryPaths.TopFolder(candidate.RelativePath), folder)) continue;
-            if ((await HealthInventory.RecordsAtAsync(db, file.RootFolderId, candidate.RelativePath, ct)).Count == 0) return candidate;
+            if ((await HealthInventory.RecordsAtAsync(db, file.RootFolderId, candidate.RelativePath, ct)).Count > 0) continue;
+            if (LibraryPaths.Resolve(rootPath, candidate.RelativePath) is { } candidatePath
+                && (sameFile ?? FileIdentity.Compare)(path, candidatePath) == FileSameness.Different) return candidate;
         }
         return null;
     }

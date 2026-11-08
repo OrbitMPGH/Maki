@@ -1575,9 +1575,16 @@ try
         // One process per config: with nothing else attached, a lock row older than this process can
         // only be a dead run's.
         using var self = System.Diagnostics.Process.GetCurrentProcess();
-        if (SqliteStartup.AloneAtStart(paths) && MigrationLock.ClearAbandoned(db.Database, new DateTimeOffset(self.StartTime)))
+        var migrationLock = SqliteStartup.AloneAtStart(paths)
+            ? MigrationLock.ClearAbandoned(db.Database, new DateTimeOffset(self.StartTime))
+            : MigrationLockState.None;
+        if (migrationLock == MigrationLockState.Cleared)
         {
             startupLog.LogWarning("Cleared the migration lock a previous start left when it stopped during a database upgrade");
+        }
+        else if (migrationLock == MigrationLockState.KeptNewer)
+        {
+            startupLog.LogInformation("Left the migration lock in place: it was taken after this process started, so another start may hold it");
         }
         try { db.Database.Migrate(); }
         catch (Exception ex)

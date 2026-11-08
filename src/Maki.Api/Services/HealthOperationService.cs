@@ -132,7 +132,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         try
         {
             var (file, _, chapters) = await ValidateAsync(fileId, version, ct, readBytes: false);
-            var target = chapters.Count > 0 ? await HealthDuplicates.RelinkTargetAsync(db, file, ct) : null;
+            var target = chapters.Count > 0 ? await HealthDuplicates.RelinkTargetAsync(db, file, ct, SameFile) : null;
             var op = new HealthOperation { Kind = "delete", Status = "review", FileId = fileId, Version = version, UserId = userId, RelinkFileId = target?.Id };
             db.HealthOperations.Add(op);
             await db.SaveChangesAsync(ct);
@@ -334,7 +334,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                 {
                     // The chapters were promised a home. If that copy changed or found another use
                     // since the review, unlinking them instead is not what was confirmed.
-                    var target = await HealthDuplicates.RelinkTargetAsync(db, file, ct);
+                    var target = await HealthDuplicates.RelinkTargetAsync(db, file, ct, SameFile);
                     var targetPath = target == null ? null : HealthPaths.Resolve(root.Path, target.RelativePath);
                     var targetInfo = targetPath == null ? null : new FileInfo(targetPath);
                     if (target?.Id != relinkId || targetInfo is not { Exists: true } || targetInfo.Length != target.Size
@@ -629,7 +629,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             if (copyRoot == null || !Directory.Exists(copyRoot.Path) || LibraryPaths.ResolveNoLinks(copyRoot.Path, copy.RelativePath) is not { } copyPath) continue;
             var info = new FileInfo(copyPath);
             if (!info.Exists || info.Length != copy.Size || info.LastWriteTimeUtc != copy.ModifiedAt) continue;
-            if (SameFile(path, copyPath) != FileSameness.Different || (copyRoot.Id != root.Id && SharesStorage(root, file.RelativePath, copyRoot, copy.RelativePath)))
+            if (!Distinct(root, file.RelativePath, path, copyRoot, copy.RelativePath, copyPath))
             {
                 undistinguished = true;
                 continue;
@@ -639,27 +639,33 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         throw new HealthRefusedException(undistinguished ? "error.health.spareNotDistinct" : "error.health.spareLastCopy");
     }
 
+    /// <summary>
+    /// Whether the file at <paramref name="path"/> and a copy elsewhere are provably two files: the
+    /// filesystem says so, and a copy in another root is not on the same storage either.
+    /// </summary>
+    private bool Distinct(RootFolder root, string relative, string path, RootFolder otherRoot, string otherRelative, string otherPath) =>
+        SameFile(path, otherPath) == FileSameness.Different
+        && (otherRoot.Id == root.Id || !SharesStorage(root, relative, otherRoot, otherRelative));
+
     /// <summary>Verdicts of <see cref="Probe"/> for this service's scope: one request, so one bulk operation.</summary>
-    private readonly Dictionary<(int, string, int, string), bool> sharedStorage = [];
+    private readonly Dictionary<(int, int, string), bool> sharedStorage = [];
 
     /// <summary>
     /// Whether two root folders may be one storage under two names. Two CIFS mounts of one share
     /// report different devices, so file identity calls every file in one a separate copy of its
-    /// twin in the other. A probe written under the spare's root that shows up under the copy's root
-    /// settles it. When one copy's path ends with the other's, the leftover folders say where one
-    /// root would sit inside the other (a mount of a subfolder of the share), and that spot is
-    /// probed too.
+    /// twin in the other. A probe written in one root that shows up in the other settles it. When
+    /// one copy's path ends with the other's, the leftover folders say where one root would sit
+    /// inside the other (a mount of a subfolder of the share), and that spot is probed too. Probes
+    /// are only ever written in a root's own <c>.maki/tmp</c>, and one that cannot be written or
+    /// looked for counts as shared.
     /// </summary>
-    private bool SharesStorage(RootFolder from, string fromRelative, RootFolder other, string otherRelative)
+    private bool SharesStorage(RootFolder root, string relative, RootFolder other, string otherRelative)
     {
-        if (Probe(from, "", other, "", unreadable: true)) return true;
-        var mine = LibraryPaths.ComparisonKey(fromRelative).Split('/');
+        if (Probe(root, other, "")) return true;
+        var mine = LibraryPaths.ComparisonKey(relative).Split('/');
         var theirs = LibraryPaths.ComparisonKey(otherRelative).Split('/');
-        // The spare's root may be a folder inside the copy's root.
-        if (Prefix(theirs, mine) is { } inOther && Probe(from, "", other, inOther, unreadable: true)) return true;
-        // The copy's root may be a folder inside the spare's. Writing in a series folder can fail
-        // for reasons that say nothing about the mounts, so a failure there settles nothing.
-        return Prefix(mine, theirs) is { } inFrom && Probe(from, inFrom, other, "", unreadable: false);
+        if (Prefix(theirs, mine) is { } rootInOther && Probe(root, other, rootInOther)) return true;
+        return Prefix(mine, theirs) is { } otherInRoot && Probe(other, root, otherInRoot);
     }
 
     /// <summary>The leading folders of <paramref name="longer"/> when the rest of it is <paramref name="shorter"/>, ignoring case.</summary>
@@ -669,30 +675,30 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             : null;
 
     /// <summary>
-    /// Writes a probe at <paramref name="fromFolder"/> under <paramref name="from"/> and looks for it at
-    /// <paramref name="otherFolder"/> under <paramref name="other"/>. <paramref name="unreadable"/> is the
-    /// answer when the probe cannot be written or looked for. Folders it created are removed again.
+    /// Writes a probe in <paramref name="writeIn"/>'s <c>.maki/tmp</c> and looks for it in
+    /// <paramref name="lookIn"/> at <paramref name="folder"/><c>/.maki/tmp</c>, by listing the folder:
+    /// a CIFS client can answer a single lookup from its cache. Folders it created are removed again.
     /// </summary>
-    private bool Probe(RootFolder from, string fromFolder, RootFolder other, string otherFolder, bool unreadable)
+    private bool Probe(RootFolder writeIn, RootFolder lookIn, string folder)
     {
-        var key = (from.Id, fromFolder.ToUpperInvariant(), other.Id, otherFolder.ToUpperInvariant());
+        var key = (writeIn.Id, lookIn.Id, folder.ToUpperInvariant());
         if (sharedStorage.TryGetValue(key, out var known)) return known;
-        var name = $".maki/tmp/probe-{Guid.NewGuid():N}.tmp";
+        var name = $"probe-{Guid.NewGuid():N}.tmp";
         string? probe = null;
         var created = new List<string>();
-        var shared = unreadable;
+        var shared = true;
         try
         {
-            probe = HealthPaths.Resolve(from.Path, fromFolder.Length == 0 ? name : $"{fromFolder}/{name}");
-            var seen = HealthPaths.Resolve(other.Path, otherFolder.Length == 0 ? name : $"{otherFolder}/{name}");
+            probe = HealthPaths.Resolve(writeIn.Path, $".maki/tmp/{name}");
+            var seenIn = Path.GetDirectoryName(HealthPaths.Resolve(lookIn.Path, folder.Length == 0 ? $".maki/tmp/{name}" : $"{folder}/.maki/tmp/{name}"))!;
             var tmp = Path.GetDirectoryName(probe)!;
             var maki = Path.GetDirectoryName(tmp)!;
-            if (fromFolder.Length > 0 && !Directory.Exists(Path.GetDirectoryName(maki))) return false;
             if (!Directory.Exists(maki)) created.Add(maki);
             if (!Directory.Exists(tmp)) created.Insert(0, tmp);
             Directory.CreateDirectory(tmp);
             File.WriteAllBytes(probe, []);
-            shared = File.Exists(seen);
+            try { shared = Directory.EnumerateFiles(seenIn).Any(f => string.Equals(Path.GetFileName(f), name, StringComparison.OrdinalIgnoreCase)); }
+            catch (DirectoryNotFoundException) { shared = false; }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException) { }
         finally
@@ -700,9 +706,8 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             try
             {
                 if (probe != null) File.Delete(probe);
-                // Under a nested mount the probe's folders can land inside another root's series folder.
-                foreach (var folder in created)
-                    if (Directory.Exists(folder) && !Directory.EnumerateFileSystemEntries(folder).Any()) Directory.Delete(folder);
+                foreach (var made in created)
+                    if (Directory.Exists(made) && !Directory.EnumerateFileSystemEntries(made).Any()) Directory.Delete(made);
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
         }
@@ -710,18 +715,40 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
     }
 
     /// <summary>
-    /// Refuses to delete a file that another record in the root reads under another spelling. A
-    /// case-insensitive mount on a case-sensitive host opens <c>chainsaw man/x.cbz</c> and
-    /// <c>Chainsaw Man/x.cbz</c> as one file, and the record lookup compares the spellings.
+    /// Refuses to delete a file that a record anywhere may read under another name: another
+    /// spelling on a case-insensitive mount, another root naming the same share, or a root mounted
+    /// as a folder of another. Such a twin has the same bytes by definition, so the linked copies of
+    /// the file's hash are the whole list; each must provably be another file. A file with no hash
+    /// yet falls back to the records of its own root with the same file name.
     /// </summary>
     private async Task RefuseIfAnotherRecordReadsItAsync(HealthFile file, RootFolder root, CancellationToken ct)
     {
         var path = HealthPaths.Resolve(root.Path, file.RelativePath);
         var own = (await HealthInventory.RecordsAtAsync(db, root.Id, file.RelativePath, ct)).Select(f => f.Id).ToHashSet();
-        foreach (var record in await HealthInventory.RecordsNamedAsync(db, root.Id, Path.GetFileName(LibraryPaths.ComparisonKey(file.RelativePath)), ct))
+        if (file.ContentHash == null)
         {
-            if (own.Contains(record.Id) || LibraryPaths.Resolve(root.Path, record.RelativePath) is not { } other || !File.Exists(other)) continue;
-            if (SameFile(path, other) != FileSameness.Different) throw new HealthRefusedException("error.health.fileBacksChapters");
+            foreach (var record in await HealthInventory.RecordsNamedAsync(db, root.Id, Path.GetFileName(LibraryPaths.ComparisonKey(file.RelativePath)), ct))
+            {
+                if (own.Contains(record.Id) || LibraryPaths.Resolve(root.Path, record.RelativePath) is not { } other || !File.Exists(other)) continue;
+                if (SameFile(path, other) != FileSameness.Different) throw new HealthRefusedException("error.health.fileBacksChapters");
+            }
+            return;
+        }
+
+        var twins = await db.HealthFiles.AsNoTracking()
+            .Where(f => f.Id != file.Id && !f.Removed && f.Size >= 0 && f.ChapterFileId != null && f.ContentHash == file.ContentHash)
+            .Select(f => new { f.RootFolderId, f.RelativePath, ChapterFileId = f.ChapterFileId!.Value })
+            .ToListAsync(ct);
+        foreach (var twin in twins.Where(t => !own.Contains(t.ChapterFileId)))
+        {
+            var twinRoot = twin.RootFolderId == root.Id ? root : await db.RootFolders.FindAsync([twin.RootFolderId], ct);
+            if (twinRoot == null) continue;
+            // A root that cannot be looked at may be this one under another name.
+            if (!Directory.Exists(twinRoot.Path) || LibraryPaths.Resolve(twinRoot.Path, twin.RelativePath) is not { } other)
+                throw new HealthRefusedException("error.health.fileBacksChapters");
+            if (!File.Exists(other)) continue;
+            if (!Distinct(root, file.RelativePath, path, twinRoot, twin.RelativePath, other))
+                throw new HealthRefusedException("error.health.fileBacksChapters");
         }
     }
 

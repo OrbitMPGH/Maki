@@ -28,12 +28,12 @@ public sealed class MigrationLockTests : IDisposable
     {
         using var db = Context();
         var started = DateTimeOffset.UtcNow;
-        Assert.False(MigrationLock.ClearAbandoned(db.Database, started));
+        Assert.Equal(MigrationLockState.None, MigrationLock.ClearAbandoned(db.Database, started));
         await db.Database.MigrateAsync();
         await Lock(db, started.AddMinutes(-5));
 
-        Assert.True(MigrationLock.ClearAbandoned(db.Database, started));
-        Assert.False(MigrationLock.ClearAbandoned(db.Database, started));
+        Assert.Equal(MigrationLockState.Cleared, MigrationLock.ClearAbandoned(db.Database, started));
+        Assert.Equal(MigrationLockState.None, MigrationLock.ClearAbandoned(db.Database, started));
         await db.Database.MigrateAsync().WaitAsync(TimeSpan.FromSeconds(30));
     }
 
@@ -45,7 +45,7 @@ public sealed class MigrationLockTests : IDisposable
         await db.Database.MigrateAsync();
         await Lock(db, started.AddSeconds(2));
 
-        Assert.False(MigrationLock.ClearAbandoned(db.Database, started));
+        Assert.Equal(MigrationLockState.KeptNewer, MigrationLock.ClearAbandoned(db.Database, started));
         Assert.Equal(1, db.Database.SqlQueryRaw<int>("SELECT COUNT(*) AS \"Value\" FROM \"__EFMigrationsLock\"").AsEnumerable().Single());
     }
 }

@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using Maki.Core.Paths;
 using Microsoft.Win32.SafeHandles;
 
 namespace Maki.Core.Io;
@@ -22,9 +23,25 @@ public static class FileIdentity
 {
     public static FileSameness Compare(string a, string b)
     {
-        if (string.Equals(Path.GetFullPath(a), Path.GetFullPath(b), StringComparison.Ordinal))
+        var fullA = Path.GetFullPath(a);
+        var fullB = Path.GetFullPath(b);
+        if (string.Equals(fullA, fullB, StringComparison.Ordinal))
         {
             return FileSameness.Same;
+        }
+
+        // CIFS without serverino and FUSE mounts invent an inode per name, so two spellings of one
+        // file can carry two numbers. Only a listing that holds both spellings proves two files.
+        if (string.Equals(fullA, fullB, StringComparison.OrdinalIgnoreCase) && File.Exists(fullA) && File.Exists(fullB))
+        {
+            try
+            {
+                return LibraryPaths.IsSameFile(fullA, fullB) ? FileSameness.Same : FileSameness.Different;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                return FileSameness.Same;
+            }
         }
 
         if (Of(a) is not { } first || Of(b) is not { } second)
