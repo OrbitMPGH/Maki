@@ -629,7 +629,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             if (copyRoot == null || !Directory.Exists(copyRoot.Path) || LibraryPaths.ResolveNoLinks(copyRoot.Path, copy.RelativePath) is not { } copyPath) continue;
             var info = new FileInfo(copyPath);
             if (!info.Exists || info.Length != copy.Size || info.LastWriteTimeUtc != copy.ModifiedAt) continue;
-            if (SameFile(path, copyPath) != FileSameness.Different || (copyRoot.Id != root.Id && SharesStorage(root, copyRoot)))
+            if (SameFile(path, copyPath) != FileSameness.Different || (copyRoot.Id != root.Id && SharesStorage(root, file.RelativePath, copyRoot, copy.RelativePath)))
             {
                 undistinguished = true;
                 continue;
@@ -639,36 +639,74 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         throw new HealthRefusedException(undistinguished ? "error.health.spareNotDistinct" : "error.health.spareLastCopy");
     }
 
-    /// <summary>Verdicts of <see cref="SharesStorage"/> for this service's scope: one request, so one bulk operation.</summary>
-    private readonly Dictionary<(int, int), bool> sharedStorage = [];
+    /// <summary>Verdicts of <see cref="Probe"/> for this service's scope: one request, so one bulk operation.</summary>
+    private readonly Dictionary<(int, string, int, string), bool> sharedStorage = [];
 
     /// <summary>
     /// Whether two root folders may be one storage under two names. Two CIFS mounts of one share
     /// report different devices, so file identity calls every file in one a separate copy of its
-    /// twin in the other. A probe written under <paramref name="from"/> that shows up under
-    /// <paramref name="other"/> settles it; a probe that cannot be written or looked for counts as shared.
+    /// twin in the other. A probe written under the spare's root that shows up under the copy's root
+    /// settles it. When one copy's path ends with the other's, the leftover folders say where one
+    /// root would sit inside the other (a mount of a subfolder of the share), and that spot is
+    /// probed too.
     /// </summary>
-    private bool SharesStorage(RootFolder from, RootFolder other)
+    private bool SharesStorage(RootFolder from, string fromRelative, RootFolder other, string otherRelative)
     {
-        if (sharedStorage.TryGetValue((from.Id, other.Id), out var known)) return known;
+        if (Probe(from, "", other, "", unreadable: true)) return true;
+        var mine = LibraryPaths.ComparisonKey(fromRelative).Split('/');
+        var theirs = LibraryPaths.ComparisonKey(otherRelative).Split('/');
+        // The spare's root may be a folder inside the copy's root.
+        if (Prefix(theirs, mine) is { } inOther && Probe(from, "", other, inOther, unreadable: true)) return true;
+        // The copy's root may be a folder inside the spare's. Writing in a series folder can fail
+        // for reasons that say nothing about the mounts, so a failure there settles nothing.
+        return Prefix(mine, theirs) is { } inFrom && Probe(from, inFrom, other, "", unreadable: false);
+    }
+
+    /// <summary>The leading folders of <paramref name="longer"/> when the rest of it is <paramref name="shorter"/>, ignoring case.</summary>
+    private static string? Prefix(string[] longer, string[] shorter) =>
+        longer.Length > shorter.Length && longer.TakeLast(shorter.Length).SequenceEqual(shorter, StringComparer.OrdinalIgnoreCase)
+            ? string.Join('/', longer.Take(longer.Length - shorter.Length))
+            : null;
+
+    /// <summary>
+    /// Writes a probe at <paramref name="fromFolder"/> under <paramref name="from"/> and looks for it at
+    /// <paramref name="otherFolder"/> under <paramref name="other"/>. <paramref name="unreadable"/> is the
+    /// answer when the probe cannot be written or looked for. Folders it created are removed again.
+    /// </summary>
+    private bool Probe(RootFolder from, string fromFolder, RootFolder other, string otherFolder, bool unreadable)
+    {
+        var key = (from.Id, fromFolder.ToUpperInvariant(), other.Id, otherFolder.ToUpperInvariant());
+        if (sharedStorage.TryGetValue(key, out var known)) return known;
         var name = $".maki/tmp/probe-{Guid.NewGuid():N}.tmp";
         string? probe = null;
-        var shared = true;
+        var created = new List<string>();
+        var shared = unreadable;
         try
         {
-            probe = HealthPaths.Resolve(from.Path, name);
-            var seen = HealthPaths.Resolve(other.Path, name);
-            Directory.CreateDirectory(Path.GetDirectoryName(probe)!);
+            probe = HealthPaths.Resolve(from.Path, fromFolder.Length == 0 ? name : $"{fromFolder}/{name}");
+            var seen = HealthPaths.Resolve(other.Path, otherFolder.Length == 0 ? name : $"{otherFolder}/{name}");
+            var tmp = Path.GetDirectoryName(probe)!;
+            var maki = Path.GetDirectoryName(tmp)!;
+            if (fromFolder.Length > 0 && !Directory.Exists(Path.GetDirectoryName(maki))) return false;
+            if (!Directory.Exists(maki)) created.Add(maki);
+            if (!Directory.Exists(tmp)) created.Insert(0, tmp);
+            Directory.CreateDirectory(tmp);
             File.WriteAllBytes(probe, []);
             shared = File.Exists(seen);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException) { }
         finally
         {
-            try { if (probe != null) File.Delete(probe); }
+            try
+            {
+                if (probe != null) File.Delete(probe);
+                // Under a nested mount the probe's folders can land inside another root's series folder.
+                foreach (var folder in created)
+                    if (Directory.Exists(folder) && !Directory.EnumerateFileSystemEntries(folder).Any()) Directory.Delete(folder);
+            }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
         }
-        return sharedStorage[(from.Id, other.Id)] = shared;
+        return sharedStorage[key] = shared;
     }
 
     /// <summary>

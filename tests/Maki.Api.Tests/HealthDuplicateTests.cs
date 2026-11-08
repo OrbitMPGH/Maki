@@ -378,7 +378,54 @@ public sealed class HealthDuplicateTests : IDisposable
 
             Assert.Equal("error.health.spareNotDistinct", refused.Key);
             Assert.True(File.Exists(Path.Combine(root, s.Linked.RelativePath)));
-            Assert.Empty(Directory.EnumerateFiles(Path.Combine(root, ".maki", "tmp")));
+            Assert.False(Directory.Exists(Path.Combine(root, ".maki")));
+        }
+        finally
+        {
+            Directory.Delete(link);
+        }
+    }
+
+    [Fact]
+    public async Task A_second_root_that_is_a_folder_of_the_first_is_caught_by_the_probe_either_way_round()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        var link = root + "-sub-link";
+        if (!MakeDirectoryLink(link, Path.Combine(root, "Series"))) return;
+        try
+        {
+            var second = new RootFolder { Path = link }; db.RootFolders.Add(second); await db.SaveChangesAsync();
+            var scan = new HealthScanService(db);
+            var linkedThere = new HealthFile { RootFolderId = second.Id, RelativePath = Path.GetFileName(s.Linked.RelativePath) };
+            var spareThere = new HealthFile { RootFolderId = second.Id, RelativePath = Path.GetFileName(s.Spare.RelativePath) };
+            db.HealthFiles.AddRange(linkedThere, spareThere); await db.SaveChangesAsync();
+            await scan.AnalyzeAsync(linkedThere, link, true, default, 0, true);
+            await scan.AnalyzeAsync(spareThere, link, true, default, 0, true);
+            // Two mounts of one share: file identity alone reads every pair as separate files.
+            FileSameness Apart(string a, string b) => FileSameness.Different;
+
+            // The spare's root is the folder: only the kept copy in the first root is left besides it.
+            await db.HealthFiles.Where(f => f.Id == s.Spare.Id || f.Id == spareThere.Id).ExecuteUpdateAsync(u => u.SetProperty(f => f.Removed, true));
+            var service = Operations(db);
+            service.SameFile = Apart;
+            var refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
+                service.DeleteNowAsync(linkedThere.Id, linkedThere.Version, 1, default, spare: true));
+            Assert.Equal("error.health.spareNotDistinct", refused.Key);
+
+            // The copy's root is the folder: the spare in the first root has only its twin under the link.
+            await db.HealthFiles.Where(f => f.Id == spareThere.Id).ExecuteUpdateAsync(u => u.SetProperty(f => f.Removed, false));
+            await db.HealthFiles.Where(f => f.Id == s.Linked.Id || f.Id == linkedThere.Id).ExecuteUpdateAsync(u => u.SetProperty(f => f.Removed, true));
+            await db.HealthFiles.Where(f => f.Id == s.Spare.Id).ExecuteUpdateAsync(u => u.SetProperty(f => f.Removed, false));
+            service = Operations(db);
+            service.SameFile = Apart;
+            refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
+                service.DeleteNowAsync(s.Spare.Id, s.Spare.Version, 1, default, spare: true));
+            Assert.Equal("error.health.spareNotDistinct", refused.Key);
+
+            Assert.True(File.Exists(Path.Combine(root, s.Linked.RelativePath)));
+            Assert.True(File.Exists(Path.Combine(root, s.Spare.RelativePath)));
+            Assert.False(Directory.Exists(Path.Combine(root, "Series", ".maki")));
         }
         finally
         {
