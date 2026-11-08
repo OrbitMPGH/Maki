@@ -448,8 +448,14 @@ public class ReaderController(
             return NotFound();
         }
 
-        var etag = new EntityTagHeaderValue($"\"{key.ChapterFileId}-{key.ArchiveVersion}-{key.AbsIndex}-{key.Model}\"");
+        var etag = new EntityTagHeaderValue(
+            $"\"{key.ChapterFileId}-{key.ArchiveVersion}-{key.AbsIndex}-{key.Model}-{UpscaleCache.Generation}\"");
         SetPageCacheControl(slice);
+        // A pipeline change raises the generation; a URL without the current one must not be kept for a year.
+        if (Request.Query["g"] != UpscaleCache.Generation)
+        {
+            Response.Headers.CacheControl = "private, no-cache";
+        }
         if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
         {
             return StatusCode(StatusCodes.Status304NotModified);

@@ -106,8 +106,14 @@ export async function pageUrl(chapterId: number, page: number, thumb = false, ve
   return `${init.apiRoot}/reader/chapter/${chapterId}/${kind}/${page}${query}`
 }
 
+/**
+ * `UpscaleCache.Generation` on the server. The enhanced page is kept as immutable, so a pipeline change
+ * only reaches a browser that already has the page when its URL changes. Raise the two together.
+ */
+const ENHANCE_GENERATION = 'g3'
+
 function enhancedUrl(apiRoot: string, chapterId: number, page: number, model: string, pageVersion: string): string {
-  const query = `?model=${encodeURIComponent(model)}&v=${encodeURIComponent(pageVersion)}`
+  const query = `?model=${encodeURIComponent(model)}&v=${encodeURIComponent(pageVersion)}&g=${ENHANCE_GENERATION}`
   return `${apiRoot}/reader/chapter/${chapterId}/page/${page}/enhanced${query}`
 }
 

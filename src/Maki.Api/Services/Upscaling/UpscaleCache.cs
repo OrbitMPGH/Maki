@@ -23,7 +23,8 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
 
     /// <summary>
     /// Part of every page's name, raised whenever the pipeline's output changes so pages made before
-    /// it stop being served and are pruned as unknown names. Change the regex with it. g2: colour comes
+    /// it stop being served and are pruned as unknown names. Change the regex and the frontend's
+    /// <c>ENHANCE_GENERATION</c> with it: the browser keeps enhanced pages as immutable by URL. g2: colour comes
     /// from the source page, so grey pages carry no model tint. g3: pages with an embedded profile are
     /// converted to sRGB first.
     /// </summary>

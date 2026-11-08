@@ -156,11 +156,15 @@ public sealed class EnhanceEndpointTests : IDisposable
         var slice = (await new ReaderService(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), null!, null!,
             new ReadingSessionService(db), NullLogger<ReaderService>.Instance).PageSliceAsync(_chapterId, default))!;
         var version = $"{slice.ChapterFileId}-{slice.ArchiveVersion}";
-        var controller = Reader(db, 1, $"?model=span-s&v={version}");
+        var controller = Reader(db, 1, $"?model=span-s&v={version}&g={UpscaleCache.Generation}");
         var file = Assert.IsType<PhysicalFileResult>(await controller.EnhancedPage(_chapterId, 1, "span-s", _store, _cache, default));
         Assert.Equal("image/webp", file.ContentType);
-        Assert.Equal($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-1-span-s\"", file.EntityTag!.Tag.ToString());
+        Assert.Equal($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-1-span-s-{UpscaleCache.Generation}\"", file.EntityTag!.Tag.ToString());
         Assert.Equal("private, max-age=31536000, immutable", controller.Response.Headers.CacheControl.ToString());
+
+        var olderGeneration = Reader(db, 1, $"?model=span-s&v={version}");
+        Assert.IsType<PhysicalFileResult>(await olderGeneration.EnhancedPage(_chapterId, 1, "span-s", _store, _cache, default));
+        Assert.Equal("private, no-cache", olderGeneration.Response.Headers.CacheControl.ToString());
 
         var stale = Reader(db, 1, "?model=span-s&v=old");
         Assert.IsType<PhysicalFileResult>(await stale.EnhancedPage(_chapterId, 1, "span-s", _store, _cache, default));
