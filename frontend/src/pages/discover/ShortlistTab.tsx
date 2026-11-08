@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
@@ -155,6 +155,7 @@ function ShortlistRow({
   const feedback = useMutateFeedback()
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
+  const cancelled = useRef(false)
 
   const { item, library, statusChange, newChapters, note, type } = entry
   const shown = shownTitle(entry)
@@ -165,9 +166,11 @@ function ShortlistRow({
 
   const startEdit = () => {
     setDraft(note ?? '')
+    cancelled.current = false
     setEditing(true)
   }
   const commitNote = () => {
+    if (cancelled.current) return
     setEditing(false)
     if (draft.trim() !== (note ?? '').trim()) updateNote.mutate({ id: entry.mangaBakaId, note: draft })
   }
@@ -302,7 +305,10 @@ function ShortlistRow({
             onBlur={commitNote}
             onKeyDown={(e) => {
               if (e.key === 'Enter') commitNote()
-              if (e.key === 'Escape') setEditing(false)
+              if (e.key === 'Escape') {
+                cancelled.current = true
+                setEditing(false)
+              }
             }}
           />
         ) : note ? (
@@ -363,7 +369,7 @@ function ShortlistRow({
           </Tooltip>
 
           {item && !inLibrary && (
-            <Menu withinPortal position="bottom-end" width={220}>
+            <Menu withinPortal position="bottom-end" width={220} returnFocus={false}>
               <Menu.Target>
                 <ActionIcon size="lg" variant="subtle" color="var(--neutral)" aria-label={t`More actions for ${title}`}>
                   <IconDots size={18} />

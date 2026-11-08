@@ -28,6 +28,9 @@ export function optimistic<TVars>(queryClient: QueryClient, patches: (vars: TVar
     onError: (_err: unknown, _vars: TVars, snapshot: Snapshot | undefined) => {
       for (const [key, data] of snapshot?.previous ?? []) queryClient.setQueryData(key, data)
     },
+    onSettled: (_data: unknown, _err: unknown, vars: TVars) => {
+      for (const p of patches(vars)) void queryClient.invalidateQueries({ queryKey: p.key, exact: true })
+    },
   }
 }
 

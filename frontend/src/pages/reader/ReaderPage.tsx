@@ -364,6 +364,8 @@ export default function ReaderPage() {
       void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['home', 'reading'] })
+      void queryClient.invalidateQueries({ queryKey: ['progress'] })
+      void queryClient.invalidateQueries({ queryKey: ['stats'] })
     },
     [queryClient],
   )

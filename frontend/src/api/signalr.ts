@@ -213,10 +213,7 @@ export function useLiveEvents() {
       if (root === 'chapters' && typeof a === 'number') {
         const items = held.get(a)
         if (!items) return
-        const withFile = new Set(
-          (event.query.state.data as ChapterDto[] | undefined)?.filter((c) => c.hasFile).map((c) => c.id),
-        )
-        releaseHeld(a, [...items.values()].filter((q) => withFile.has(q.chapterId)).map((q) => q.id))
+        releaseHeld(a, [...items.keys()])
       } else if (root === 'queue' && a === 'series' && typeof b === 'number') {
         const items = held.get(b)
         const data = event.query.state.data as QueueHistoryDto | undefined

@@ -168,9 +168,11 @@ export function useSaveToShortlist() {
       }),
     onMutate: async ({ id }) => {
       await client.cancelQueries({ queryKey: IDS_KEY })
+      const wasSaved = client.getQueryData<ShortlistIdsResponse>(IDS_KEY)?.ids.includes(id) ?? false
       patchIds(client, id, true)
+      return { wasSaved }
     },
-    onError: (_error, { id }) => patchIds(client, id, false),
+    onError: (_error, { id }, context) => patchIds(client, id, context?.wasSaved ?? false),
     onSettled: () => invalidateShortlist(client),
   })
 }
