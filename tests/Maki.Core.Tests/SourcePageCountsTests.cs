@@ -56,6 +56,30 @@ public class SourcePageCountsTests
     }
 
     [Fact]
+    public void A_preview_cap_measured_on_chapters_of_its_own_is_judged_against_the_others_typical_length()
+    {
+        var samples = new[]
+        {
+            S(1, 1, 10), S(1, 2, 10), S(1, 3, 10),
+            S(2, 5, 40), S(2, 6, 44), S(3, 7, 38)
+        };
+
+        Assert.Equal([1], SourcePageCounts.Truncated(samples));
+    }
+
+    [Fact]
+    public void Short_chapters_on_their_own_chapters_are_fine_when_the_others_run_short_too()
+    {
+        var samples = new[]
+        {
+            S(1, 1, 12), S(1, 2, 12), S(1, 3, 13),
+            S(2, 5, 13), S(2, 6, 15), S(3, 7, 14)
+        };
+
+        Assert.Empty(SourcePageCounts.Truncated(samples));
+    }
+
+    [Fact]
     public void A_short_fixed_length_with_no_longer_copy_anywhere_is_left_alone() =>
         Assert.Empty(SourcePageCounts.Truncated([S(1, 1, 10), S(1, 2, 10), S(1, 3, 10)]));
 

@@ -91,7 +91,7 @@ public static class SourcePageCounts
 
             var counts = chapters.Select(c => c.PageCount).ToList();
             if (counts.Count >= MinFixedChapters && counts.Max() <= FixedMaxPages && counts.Max() - counts.Min() <= FixedSpread &&
-                LongerElsewhere(chapters, byChapter))
+                LongerElsewhere(chapters, byChapter, samples))
             {
                 truncated.Add(mapping.Key);
             }
@@ -100,8 +100,13 @@ public static class SourcePageCounts
         return truncated;
     }
 
-    /// <summary>Whether, on most of these chapters that another source also sampled, some other copy is clearly longer.</summary>
-    private static bool LongerElsewhere(List<Sample> chapters, Dictionary<int, List<Sample>> byChapter)
+    /// <summary>
+    /// Whether, on most of these chapters that another source also sampled, some other copy is clearly
+    /// longer. With none sampled by another source (a source the scout measured on chapters of its
+    /// own, or downloads that never overlap), the other sources' typical chapter is the yardstick.
+    /// </summary>
+    private static bool LongerElsewhere(
+        List<Sample> chapters, Dictionary<int, List<Sample>> byChapter, IReadOnlyCollection<Sample> samples)
     {
         int shared = 0, longer = 0;
         foreach (var copy in chapters)
@@ -125,6 +130,25 @@ public static class SourcePageCounts
             }
         }
 
-        return longer > 0 && longer * 2 > shared;
+        if (shared > 0)
+        {
+            return longer > 0 && longer * 2 > shared;
+        }
+
+        var mappingId = chapters[0].MappingId;
+        var elsewhere = samples.Where(s => s.MappingId != mappingId)
+            .GroupBy(s => (s.MappingId, s.ChapterId)).Select(g => g.First()).ToList();
+        if (elsewhere.Count == 0)
+        {
+            return false;
+        }
+
+        var byShape = chapters.All(c => c.HasShape) && elsewhere.All(o => o.HasShape);
+        double Length(Sample s) => byShape ? s.PageCount * s.Aspect / PageAspect : s.PageCount;
+        var lengths = elsewhere.Select(Length).Order().ToList();
+        var median = lengths.Count % 2 == 1
+            ? lengths[lengths.Count / 2]
+            : (lengths[lengths.Count / 2 - 1] + lengths[lengths.Count / 2]) / 2.0;
+        return median - chapters.Max(Length) >= MinPagesShort;
     }
 }
