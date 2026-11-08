@@ -119,6 +119,25 @@ public class UpscaleTilingTests
     }
 
     [Fact]
+    public void A_page_with_a_wide_gamut_profile_decodes_for_upscaling_as_srgb()
+    {
+        using var srgb = (NetVips.Image.Black(8, 8, bands: 3) + new double[] { 200, 30, 60 })
+            .Cast(NetVips.Enums.BandFormat.Uchar).Copy(interpretation: NetVips.Enums.Interpretation.Srgb);
+        using var p3 = srgb.IccTransform("p3", inputProfile: "srgb", depth: 8);
+        var tagged = p3.PngsaveBuffer();
+        using var stored = NetVips.Image.NewFromBuffer(tagged);
+        Assert.True(stored.Contains("icc-profile-data"));
+        Assert.NotEqual(200, (int)stored.Getpoint(4, 4)[0]);
+
+        var (raster, _) = ImageCodec.DecodeForUpscale(tagged);
+
+        var pixel = raster![4, 4];
+        Assert.InRange(pixel.R, 198, 202);
+        Assert.InRange(pixel.G, 28, 32);
+        Assert.InRange(pixel.B, 58, 62);
+    }
+
+    [Fact]
     public void Transparency_lands_on_white_when_decoding_for_upscaling()
     {
         var rgba = new Raster(4, 4, new Rgba(10, 20, 30, 0));

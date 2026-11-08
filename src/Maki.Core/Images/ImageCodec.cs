@@ -323,8 +323,9 @@ public static class ImageCodec
     /// Decodes a page for an upscale model, or returns a reason it cannot be: the bytes do not decode
     /// cleanly (<see cref="UpscaleReasons.Unreadable"/>), more than 8 bits per channel, or over
     /// <see cref="PageConversion.MaxEdge"/> or <see cref="MaxUpscalePixels"/>.
-    /// Orientation is applied, CMYK and greyscale become sRGB, transparency lands on white, and the
-    /// result always has 3 bands.
+    /// Orientation is applied, transparency lands on white, an embedded profile, CMYK and greyscale
+    /// become sRGB, and the result always has 3 bands. The output is untagged sRGB, so a page in
+    /// another profile (Adobe RGB colour pages) has to be converted here or it shows washed out.
     /// </summary>
     public static (Raster? Raster, string? SkipReason) DecodeForUpscale(byte[] source)
     {
@@ -344,9 +345,9 @@ public static class ImageCodec
 
             using var rotated = loaded.Autorot();
             using var flat = rotated.HasAlpha() ? rotated.Flatten(background: [255, 255, 255]) : rotated.Copy();
-            using var srgb = flat.Interpretation == Enums.Interpretation.Cmyk
-                ? flat.Colourspace(Enums.Interpretation.Srgb)
-                : flat.Copy();
+            using var converted = Raster.ToSrgb(flat);
+            // A grey profile converts to three bands a level apart, which would lose the one-band path.
+            using var srgb = flat.Bands == 1 && converted.Bands > 1 ? converted.ExtractBand(1) : converted.Copy();
             using var rgb = srgb.Bands switch
             {
                 1 => srgb.Bandjoin(srgb, srgb),

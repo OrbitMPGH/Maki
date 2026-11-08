@@ -24,11 +24,12 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
     /// <summary>
     /// Part of every page's name, raised whenever the pipeline's output changes so pages made before
     /// it stop being served and are pruned as unknown names. Change the regex with it. g2: colour comes
-    /// from the source page, so grey pages carry no model tint.
+    /// from the source page, so grey pages carry no model tint. g3: pages with an embedded profile are
+    /// converted to sRGB first.
     /// </summary>
-    internal const string Generation = "g2";
+    internal const string Generation = "g3";
 
-    [GeneratedRegex(@"^(\d+)-(\d+)-(\d+)\.([a-z0-9-]+)\.g2\.(webp|jpg)$")]
+    [GeneratedRegex(@"^(\d+)-(\d+)-(\d+)\.([a-z0-9-]+)\.g3\.(webp|jpg)$")]
     internal static partial Regex FileName();
 
     public string Root { get; } = Path.GetFullPath(Path.Combine(paths.CacheDir, "upscale"));

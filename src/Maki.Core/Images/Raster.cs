@@ -144,7 +144,7 @@ public sealed class Raster
     /// Converts whatever was stored (greyscale, CMYK, 16-bit, an embedded profile) to plain 8-bit
     /// sRGB, so the pixel values are the ones a browser would show.
     /// </summary>
-    private static VipsImage ToSrgb(VipsImage image)
+    internal static VipsImage ToSrgb(VipsImage image)
     {
         if (image.Contains("icc-profile-data"))
         {
