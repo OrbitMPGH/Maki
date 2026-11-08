@@ -122,7 +122,7 @@ grows with the page number, so wrong page order is obvious in the reader.
 | `Chainsaw Man` | `.zip` | 3 chapters, placed as CBZ without a repack |
 | `Sousou no Frieren` | `.cbr`, romanised title | Matches Frieren, 3 chapters repacked to CBZ |
 | `Blue Period` | `.cb7`, `.7z`, `.cbt`, and a 7z named `.cbz` | 4 chapters, all real CBZ afterwards |
-| `Vagabond` | Folders of loose images | 2 volumes |
+| `Vagabond` | Folders of loose images whose page names carry chapter markers (`Vagabond v01 c001 p001.png`) | 2 volumes, built into CBZs that link to the chapters the page names mark (vol 1: chapters 1 and 2, vol 2: chapters 3 and 4) |
 | `Oyasumi Punpun` | `.pdf` | 2 volumes kept as PDF, 4 pages each |
 | `Spy x Family` | Ch.1 as both `.cbr` and `.cbz`, plus `.txt`/`.nfo` | 2 chapters, Ch.1 once, other files ignored |
 | `Berserk` | Ch.002 is a truncated archive | Ch.001 imports, the import row lists Ch.002 as unreadable, nothing crashes |
@@ -176,8 +176,9 @@ Use a scratch series here: reaching a chapter's last page marks it read and adds
       the page strip all work.
 - [ ] **5.2** Switch paged, double-page, 1:1 and continuous scroll. Each renders correctly.
 - [ ] **5.3** Leave mid-chapter and reopen: it resumes on the right page.
-- [ ] **5.4** Finish the chapter. The end screen offers the next chapter, and the chapter now shows
-      as read on the series page and in **Continue reading** on Home.
+- [ ] **5.4** With **Auto-advance to next chapter** off, finish the chapter. The end screen offers the next
+      chapter, and the chapter now shows as read on the series page and in **Continue reading** on
+      Home. (With auto-next on, the reader goes straight into the next chapter instead, which is expected.)
 - [ ] **5.5** Incognito toggle: reading with it on writes no progress.
 - [ ] **5.6** Phone width (375px): the reader and the series page are usable, nothing overflows
       sideways.
