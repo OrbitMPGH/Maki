@@ -6070,6 +6070,14 @@ msgstr "清除评分"
 msgid "Clear read or seen"
 msgstr "清除已读或看过状态"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Clear reading progress"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Clear reading progress of {chapterLbl}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Clear records"
 msgstr ""
@@ -12352,6 +12360,10 @@ msgstr "手动优先级"
 #, fuzzy
 msgid "Mapped to"
 msgstr "映射到"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Mark {chapterLbl} unread"
+msgstr ""
 
 #: src/components/NotificationBell.tsx
 #: src/pages/NotificationsPage.tsx

@@ -6070,6 +6070,14 @@ msgstr "Bewertung löschen"
 msgid "Clear read or seen"
 msgstr "Gelesen oder gesehen zurücksetzen"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Clear reading progress"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Clear reading progress of {chapterLbl}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Clear records"
 msgstr ""
@@ -12352,6 +12360,10 @@ msgstr "Manuelle Priorität"
 #, fuzzy
 msgid "Mapped to"
 msgstr "Zugeordnet zu"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Mark {chapterLbl} unread"
+msgstr ""
 
 #: src/components/NotificationBell.tsx
 #: src/pages/NotificationsPage.tsx

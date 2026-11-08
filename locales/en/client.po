@@ -5034,6 +5034,14 @@ msgstr "Clear rating"
 msgid "Clear read or seen"
 msgstr "Clear read or seen"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Clear reading progress"
+msgstr "Clear reading progress"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Clear reading progress of {chapterLbl}"
+msgstr "Clear reading progress of {chapterLbl}"
+
 #: src/pages/HealthPage.tsx
 msgid "Clear records"
 msgstr "Clear records"
@@ -10218,6 +10226,10 @@ msgstr "Manual priority"
 #: src/components/SeriesFilesSection.tsx
 msgid "Mapped to"
 msgstr "Mapped to"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Mark {chapterLbl} unread"
+msgstr "Mark {chapterLbl} unread"
 
 #: src/components/NotificationBell.tsx
 #: src/pages/NotificationsPage.tsx

@@ -6070,6 +6070,14 @@ msgstr "평점 지우기"
 msgid "Clear read or seen"
 msgstr "읽음/봄 표시 해제"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Clear reading progress"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Clear reading progress of {chapterLbl}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Clear records"
 msgstr ""
@@ -12352,6 +12360,10 @@ msgstr "수동 우선순위"
 #, fuzzy
 msgid "Mapped to"
 msgstr "매핑 대상"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Mark {chapterLbl} unread"
+msgstr ""
 
 #: src/components/NotificationBell.tsx
 #: src/pages/NotificationsPage.tsx

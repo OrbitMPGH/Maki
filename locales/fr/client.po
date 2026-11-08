@@ -6070,6 +6070,14 @@ msgstr "Effacer la note"
 msgid "Clear read or seen"
 msgstr "Effacer lu ou vu"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Clear reading progress"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Clear reading progress of {chapterLbl}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Clear records"
 msgstr ""
@@ -12352,6 +12360,10 @@ msgstr "Priorité manuelle"
 #, fuzzy
 msgid "Mapped to"
 msgstr "Correspond à"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Mark {chapterLbl} unread"
+msgstr ""
 
 #: src/components/NotificationBell.tsx
 #: src/pages/NotificationsPage.tsx

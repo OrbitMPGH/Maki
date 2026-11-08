@@ -465,8 +465,8 @@ export const ChapterRow = memo(function ChapterRow({
                     onOpenSheet={actions.openNotes}
                 />
             )}
-            {/* Marking read needs the file for its page count, so a removed chapter can only be un-read. */}
-            {(c.hasFile || (c.fileRemovedAt && read)) && (
+            {/* Marking read needs the file for its page count, so without one the button only clears progress. */}
+            {c.hasFile ? (
                 <HoverTooltip label={read ? t`Mark unread` : t`Mark read`} withArrow>
                   <LightActionIcon
                       variant={read ? 'light' : 'subtle'}
@@ -477,6 +477,18 @@ export const ChapterRow = memo(function ChapterRow({
                       aria-label={t`Toggle read state of ${chapterLbl}`}
                   >
                     {!read ? <IconEye size={19} /> : <IconEyeOff size={19} />}
+                  </LightActionIcon>
+                </HoverTooltip>
+            ) : (read || inProgress) && (
+                <HoverTooltip label={read ? t`Mark unread` : t`Clear reading progress`} withArrow>
+                  <LightActionIcon
+                      variant="light"
+                      color="var(--brand)"
+                      loading={readPending}
+                      onClick={() => actions.setRead(c.id, false)}
+                      aria-label={read ? t`Mark ${chapterLbl} unread` : t`Clear reading progress of ${chapterLbl}`}
+                  >
+                    <IconEyeOff size={19} />
                   </LightActionIcon>
                 </HoverTooltip>
             )}

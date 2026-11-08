@@ -6070,6 +6070,14 @@ msgstr "Очистить оценку"
 msgid "Clear read or seen"
 msgstr "Снять отметку «прочитано/просмотрено»"
 
+#: src/components/series/ChapterTableRows.tsx
+msgid "Clear reading progress"
+msgstr ""
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Clear reading progress of {chapterLbl}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Clear records"
 msgstr ""
@@ -12352,6 +12360,10 @@ msgstr "Ручной приоритет"
 #, fuzzy
 msgid "Mapped to"
 msgstr "Сопоставлено с"
+
+#: src/components/series/ChapterTableRows.tsx
+msgid "Mark {chapterLbl} unread"
+msgstr ""
 
 #: src/components/NotificationBell.tsx
 #: src/pages/NotificationsPage.tsx
