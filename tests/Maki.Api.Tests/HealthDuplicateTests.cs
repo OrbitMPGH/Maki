@@ -280,6 +280,24 @@ public sealed class HealthDuplicateTests : IDisposable
     }
 
     [Fact]
+    public async Task The_duplicate_filter_offers_only_spares_inside_the_search()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+
+        var kept = JsonSerializer.SerializeToElement(Assert.IsType<OkObjectResult>(
+            await Controller(db).Files(kind: "duplicate", search: "v10", ct: default)).Value);
+        var spare = JsonSerializer.SerializeToElement(Assert.IsType<OkObjectResult>(
+            await Controller(db).Files(kind: "duplicate", search: "Vol.", ct: default)).Value);
+
+        Assert.Equal(0, kept.GetProperty("spares").GetProperty("total").GetInt32());
+        Assert.Equal(1, kept.GetProperty("items").EnumerateArray().Single().GetProperty("copies").GetArrayLength());
+        Assert.Equal(s.Spare.Id, spare.GetProperty("spares").GetProperty("items").EnumerateArray().Single().GetProperty("Id").GetInt32());
+        var row = spare.GetProperty("items").EnumerateArray().Single();
+        Assert.Equal(s.Spare.Id, row.GetProperty("copies").EnumerateArray().Single().GetProperty("Id").GetInt32());
+    }
+
+    [Fact]
     public async Task File_detail_names_the_copies_and_where_the_chapters_would_go()
     {
         using var db = fixture.NewContext();

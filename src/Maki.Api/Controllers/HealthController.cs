@@ -260,8 +260,9 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         var query = db.HealthFiles.Where(f => !f.Removed);
         if (!string.IsNullOrWhiteSpace(search)) query = query.Where(f => f.RelativePath.Contains(search));
         if (rootId != null) query = query.Where(f => f.RootFolderId == rootId);
+        var scope = string.IsNullOrWhiteSpace(search) && rootId == null ? null : query;
         if (kind != null || state != null) query = query.Where(f => db.HealthFindings.Any(i => i.FileId == f.Id && i.Version == f.Version && (kind == null || i.Kind == kind) && (state == null || i.State == state)));
-        if (kind == "duplicate") return await DuplicateGroups(query, page, ct);
+        if (kind == "duplicate") return await DuplicateGroups(query, scope, page, ct);
         if (kind == "unlinked") return await UnlinkedCases(query, page, fileCase, ct);
         var total = await query.CountAsync(ct);
         var ids = await query.OrderBy(f => f.RelativePath).Skip((Math.Max(page, 1) - 1) * 30).Take(30).Select(f => f.Id).ToListAsync(ct);
@@ -368,10 +369,18 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     /// keep, carrying the whole set; <c>spares</c> is every spare across the filter, for the one-click
     /// cleanup above the table.
     /// </summary>
-    private async Task<IActionResult> DuplicateGroups(IQueryable<HealthFile> query, int page, CancellationToken ct)
+    /// <param name="scope">The root and search filters, or null for none. Which copy is kept is decided
+    /// over the whole set, but only copies inside the filter are shown or offered as spares.</param>
+    private async Task<IActionResult> DuplicateGroups(IQueryable<HealthFile> query, IQueryable<HealthFile>? scope, int page, CancellationToken ct)
     {
-        var groups = (await HealthDuplicates.GroupsAsync(db, query.Where(f => f.ContentHash != null).Select(f => f.ContentHash!).Distinct(), ct))
-            .Values.OrderBy(g => g[0].RelativePath, StringComparer.OrdinalIgnoreCase).ToList();
+        var hashes = query.Where(f => f.ContentHash != null).Select(f => f.ContentHash!).Distinct();
+        var inScope = scope == null
+            ? null
+            : (await scope.Where(f => f.ContentHash != null && hashes.Contains(f.ContentHash)).Select(f => f.Id).ToListAsync(ct)).ToHashSet();
+        var groups = (await HealthDuplicates.GroupsAsync(db, hashes, ct)).Values
+            .Select(g => inScope == null ? g : g.Where(c => inScope.Contains(c.Id)).ToList())
+            .Where(g => g.Count > 0)
+            .OrderBy(g => g[0].RelativePath, StringComparer.OrdinalIgnoreCase).ToList();
         var shown = groups.Skip((Math.Max(page, 1) - 1) * 30).Take(30).ToList();
         var leadIds = shown.Select(g => g[0].Id).ToArray();
         var leads = await db.HealthFiles.AsNoTracking().Where(f => leadIds.Contains(f.Id))
