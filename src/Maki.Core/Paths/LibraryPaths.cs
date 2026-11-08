@@ -228,6 +228,12 @@ public static class LibraryPaths
             return IsSameDirectory(Path.GetDirectoryName(fullA)!, parent);
         }
 
+        // Two folders can differ in case at more than one level; the parents have to be one too.
+        if (!IsSameDirectory(Path.GetDirectoryName(fullA)!, parent))
+        {
+            return false;
+        }
+
         var listed = Directory.EnumerateDirectories(parent).Select(Path.GetFileName).ToList();
         return !(listed.Contains(nameA, StringComparer.Ordinal) && listed.Contains(nameB, StringComparer.Ordinal));
     }

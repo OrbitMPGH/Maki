@@ -453,10 +453,15 @@ public class HealthScanService(MakiDbContext db)
                 .ThenBy(k => tracked.TryGetValue(k, out var t) ? t.Id : 0)
                 .ThenBy(k => k, StringComparer.Ordinal)
                 .First();
-            var keepPath = HealthPaths.Resolve(rootPath, keep);
-            foreach (var other in group)
-                if (other != keep && !tracked.ContainsKey(other) && LibraryPaths.IsSameFile(keepPath, HealthPaths.Resolve(rootPath, other)))
-                    aliases.Add(other);
+            foreach (var other in group.Where(k => k != keep && !tracked.ContainsKey(k)))
+            {
+                // A folder that cannot be read is no reason to give up on the rest of the root.
+                try
+                {
+                    if (LibraryPaths.IsSameFile(HealthPaths.Resolve(rootPath, keep), HealthPaths.Resolve(rootPath, other))) aliases.Add(other);
+                }
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException) { }
+            }
         }
         return aliases;
     }

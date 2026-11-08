@@ -67,6 +67,34 @@ public class LibraryPathsTests
     }
 
     [Fact]
+    public void IsSameFile_tells_apart_files_whose_folders_differ_in_case_at_two_levels()
+    {
+        var root = Directory.CreateTempSubdirectory("maki-same-file-deep-").FullName;
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root, "Foo", "Bar"));
+            if (Directory.Exists(Path.Combine(root, "foo")))
+            {
+                // Case-insensitive filesystem: there cannot be a second tree to tell apart.
+                return;
+            }
+
+            Directory.CreateDirectory(Path.Combine(root, "foo", "bar"));
+            var upper = Path.Combine(root, "Foo", "Bar", "x.cbz");
+            var lower = Path.Combine(root, "foo", "bar", "x.cbz");
+            File.WriteAllText(upper, "a");
+            File.WriteAllText(lower, "a");
+
+            Assert.False(LibraryPaths.IsSameDirectory(Path.Combine(root, "Foo", "Bar"), Path.Combine(root, "foo", "bar")));
+            Assert.False(LibraryPaths.IsSameFile(upper, lower));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Resolve_reads_a_backslash_as_a_separator_on_every_host()
     {
         var root = Directory.CreateTempSubdirectory("maki-library-paths-").FullName;
