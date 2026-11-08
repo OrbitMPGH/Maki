@@ -224,16 +224,20 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
     /// Once the last record has left a series folder that no longer exists, the series moves with
     /// it, so new downloads land beside the files instead of recreating the old folder.
     /// </summary>
-    private async Task FollowFolderAsync(ChapterFile moved, string oldPath, RootFolder root, int userId, CancellationToken ct)
+    internal async Task FollowFolderAsync(ChapterFile moved, string oldPath, RootFolder root, int userId, CancellationToken ct)
     {
         var series = await db.Series.FindAsync([moved.SeriesId], ct);
         var from = LibraryPaths.TopFolder(oldPath);
         var to = LibraryPaths.TopFolder(moved.RelativePath);
-        if (series == null || from == null || to == null || LibraryPaths.FolderComparer.Equals(from, to)) return;
-        if (!LibraryPaths.FolderComparer.Equals(series.FolderName, from) || Directory.Exists(HealthPaths.Resolve(root.Path, from))) return;
+        if (series == null || from == null || to == null || string.Equals(from, to, StringComparison.Ordinal)) return;
+        // A rename that only changed case has to tell the two spellings apart.
+        var names = LibraryPaths.FolderComparer.Equals(from, to) ? StringComparer.Ordinal : LibraryPaths.FolderComparer;
+        var oldFolder = HealthPaths.Resolve(root.Path, from);
+        if (!names.Equals(series.FolderName, from)
+            || (Directory.Exists(oldFolder) && !LibraryPaths.IsSameDirectory(oldFolder, HealthPaths.Resolve(root.Path, to)))) return;
         var others = await db.ChapterFiles.Where(f => f.SeriesId == series.Id && f.Id != moved.Id).Select(f => f.RelativePath).ToListAsync(ct);
-        if (others.Any(p => LibraryPaths.FolderComparer.Equals(LibraryPaths.TopFolder(p), from))) return;
-        using var names = await SeriesLocks.FolderNamesAsync(ct);
+        if (others.Any(p => LibraryPaths.TopFolder(p) is { } top && names.Equals(top, from))) return;
+        using var folderNames = await SeriesLocks.FolderNamesAsync(ct);
         var taken = await db.Series.Where(s => s.Id != series.Id && s.RootFolderId == root.Id).Select(s => s.FolderName).ToListAsync(ct);
         if (taken.Any(n => LibraryPaths.FolderComparer.Equals(n, to))) return;
         series.FolderName = to;

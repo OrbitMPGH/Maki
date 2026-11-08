@@ -325,4 +325,20 @@ public sealed class HealthFindingWorkflowTests : IDisposable
         Assert.Equal(0, moves.GetProperty("total").GetInt32());
         Assert.Empty(moves.GetProperty("gone").EnumerateArray());
     }
+
+    [Fact]
+    public async Task A_folder_renamed_only_in_case_is_followed()
+    {
+        using var db = fixture.NewContext();
+        var lib = await SeedLinked(db, folder: "series");
+        var oldPath = lib.Record.RelativePath;
+        Directory.Move(Path.Combine(root, "series"), Path.Combine(root, "Series-tmp"));
+        Directory.Move(Path.Combine(root, "Series-tmp"), Path.Combine(root, "Series"));
+        lib.Record.RelativePath = Path.Combine("Series", Path.GetFileName(oldPath));
+        await db.SaveChangesAsync();
+
+        await Operations(db).FollowFolderAsync(lib.Record, oldPath, lib.Root, 1, default);
+
+        Assert.Equal("Series", db.Series.AsNoTracking().Single().FolderName);
+    }
 }
