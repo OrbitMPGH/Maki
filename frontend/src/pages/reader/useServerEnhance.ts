@@ -150,7 +150,9 @@ export function useServerEnhance(
         : '',
     [windowKey, windowCount, wholeFrom, wholePages, plainKey],
   )
-  const wholeOn = windowKey !== '' && wholePages > 0
+  // Not tied to the window: on Auto a window with nothing wanted would drop the server's cap to 32
+  // and cut the chapter it already queued.
+  const wholeOn = wholePages > 0
   const room = (wholeOn ? MAX_CHAPTER_PAGES : MAX_PAGES) - windowCount - (restKey ? restKey.split(',').length : 0)
   const nextChapterId = next && next.chapterId !== chapterId && room > 0 ? next.chapterId : null
   const nextKey = nextChapterId === null ? '' : next!.pages.slice(0, room).join(',')
