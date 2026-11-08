@@ -108,8 +108,9 @@ export function isSoftPage(image: HTMLImageElement, src: string, scale: number):
   const key = scoreKey(src, scale)
   let score = scores.get(key)
   if (score === undefined) {
-    if (!image.complete || image.naturalWidth === 0) return false
-    score = measureBlur(image, scale)
+    if (!image.complete) return false
+    // A broken image never becomes readable, so it is answered as plain rather than left unknown.
+    score = image.naturalWidth === 0 ? null : measureBlur(image, scale)
     if (scores.size >= CACHE_SIZE) scores.delete(scores.keys().next().value!)
     scores.set(key, score)
   }

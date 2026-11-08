@@ -84,10 +84,19 @@ export default function EnhancedPage({
   const [, setMeasured] = useState<string | null>(null)
   useEffect(() => {
     if (known !== undefined || scale === null) return
-    const timer = setTimeout(() => {
+    const run = () => {
       isSoftPage(image, src, scale)
       setMeasured(`${src}@${scale}`)
-    })
+    }
+    if (!image.complete) {
+      image.addEventListener('load', run, { once: true })
+      image.addEventListener('error', run, { once: true })
+      return () => {
+        image.removeEventListener('load', run)
+        image.removeEventListener('error', run)
+      }
+    }
+    const timer = setTimeout(run)
     return () => clearTimeout(timer)
   }, [known, image, src, scale])
   const soft = known === true
@@ -197,6 +206,8 @@ export default function EnhancedPage({
     if (!serverReady) setFailed(null)
   }, [serverReady])
   const reportMissing = server?.reportMissing
+  // A first error the server answers fine on a fresh fetch was passing; the image gets one more try.
+  const retried = useRef<string | null>(null)
   const serverFailed = useCallback(
     (url: string | null) => {
       setFailed(url)
@@ -205,6 +216,10 @@ export default function EnhancedPage({
         .then((response) => {
           void response.body?.cancel()
           if (response.status === 404) reportMissing(page)
+          else if (response.ok && retried.current !== url) {
+            retried.current = url
+            setFailed((current) => (current === url ? null : current))
+          }
         })
         .catch(() => {})
     },
