@@ -98,6 +98,13 @@ public sealed class UpscaleWorker(
         (UpscaleOutcome Outcome, string? Reason) result;
         if (UpscaleModelId.TryParse(job.Key.Model, out var model) && options.Models.Contains(model))
         {
+            // An abandoned run of the same page can finish and cache it after this job was queued.
+            if (cache.TryGet(job.Key) is not null)
+            {
+                await TellAsync(queue.Complete(job, UpscaleOutcome.Ready, null), job.Key.Model, "ready");
+                return true;
+            }
+
             await TellAsync(queue.WaitersOf(job), job.Key.Model, "working");
             result = await RunAsync(job, model, ct);
         }

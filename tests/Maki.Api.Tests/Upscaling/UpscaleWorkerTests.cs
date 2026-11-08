@@ -160,6 +160,20 @@ public sealed class UpscaleWorkerTests : IDisposable
         Assert.Equal([(1, 7, 0, "span-s", "working")], _broadcaster.Sent);
     }
 
+    [Fact]
+    public async Task A_page_already_in_the_cache_is_answered_ready_without_running()
+    {
+        await _cache.WriteAsync(Item(1).Key, [1, 2, 3], "webp", default);
+        var upscaler = new FakeUpscaler();
+        _queue.Replace(1, 7, "span-s", [Item(1)]);
+
+        Assert.True(await NewWorker(upscaler).RunOnceAsync(default));
+
+        Assert.Equal(0, upscaler.Calls);
+        Assert.Equal([(1, 7, 1, "span-s", "ready")], _broadcaster.Sent);
+        Assert.Equal(0, _queue.Snapshot().Pending + _queue.Snapshot().Working);
+    }
+
     private sealed class BlockingUpscaler : IPageUpscaler
     {
         public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
