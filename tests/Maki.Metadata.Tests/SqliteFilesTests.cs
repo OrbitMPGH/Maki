@@ -111,27 +111,29 @@ public class SqliteFilesTests : IDisposable
     }
 
     [Fact]
-    public void A_released_keeper_never_opens_again_until_allowed()
+    public void A_keeper_opens_only_between_allow_and_release()
     {
-        var db = Path.Combine(_dir, "released.db");
+        var db = Path.Combine(_dir, "allowed.db");
         SqliteFiles.CreateIfMissing(db);
-        var first = SqliteKeeper.For(db);
+
+        var before = SqliteKeeper.For(db);
+        before.Attach();
+        Assert.False(before.IsOpen);
+        Assert.NotSame(before, SqliteKeeper.For(db));
+
+        SqliteKeeper.Allow(db);
+        var kept = SqliteKeeper.For(db);
+        Assert.Same(kept, SqliteKeeper.For(db));
+        kept.Attach();
+        Assert.Equal(OperatingSystem.IsLinux(), kept.IsOpen);
 
         SqliteKeeper.Release(db);
-        first.Attach();
+        kept.Attach();
         var late = SqliteKeeper.For(db);
         late.Attach();
 
-        Assert.False(first.IsOpen);
+        Assert.False(kept.IsOpen);
         Assert.False(late.IsOpen);
-        Assert.NotSame(late, SqliteKeeper.For(db));
-
-        SqliteKeeper.Allow(db);
-        var again = SqliteKeeper.For(db);
-        Assert.Same(again, SqliteKeeper.For(db));
-        again.Attach();
-        Assert.Equal(OperatingSystem.IsLinux(), again.IsOpen);
-        SqliteKeeper.Release(db);
     }
 
     [Fact]

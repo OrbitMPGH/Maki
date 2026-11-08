@@ -13,14 +13,15 @@ namespace Maki.Metadata;
 /// when the last one closes. On Docker Desktop's virtiofs bind mounts a <c>-shm</c> created again
 /// later in the same run can map short and kill the process with SIGBUS on the next write, and one
 /// left behind by a read-only connection gets truncated under the next opener's mapping. Every
-/// other connection attaching to the keeper's <c>-shm</c> avoids both. Linux only: elsewhere this
-/// does nothing.
+/// other connection attaching to the keeper's <c>-shm</c> avoids both. Linux only, and only for the
+/// paths a starting host passed to <see cref="Allow"/>: tools and tests that use a store directly
+/// keep SQLite's own behaviour, where the last close checkpoints into the file.
 /// </para>
 /// </summary>
 public sealed class SqliteKeeper
 {
     private static readonly ConcurrentDictionary<string, SqliteKeeper> All = new(StringComparer.Ordinal);
-    private static readonly ConcurrentDictionary<string, bool> Released = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, bool> Allowed = new(StringComparer.Ordinal);
 
     private readonly string _path;
     private readonly bool _enabled;
@@ -40,19 +41,20 @@ public sealed class SqliteKeeper
     public static ILogger? Logger { get; set; }
 
     /// <summary>
-    /// The keeper for <paramref name="databasePath"/>. After <see cref="Release"/> it is one that never
-    /// opens, so a late opener at shutdown cannot recreate the <c>-shm</c>, until <see cref="Allow"/>.
+    /// The keeper for <paramref name="databasePath"/>. One that never opens unless the path was passed
+    /// to <see cref="Allow"/>, which also means after <see cref="Release"/>, so a late opener at
+    /// shutdown cannot recreate the <c>-shm</c>.
     /// </summary>
     public static SqliteKeeper For(string databasePath)
     {
         var path = Path.GetFullPath(databasePath);
-        return Released.ContainsKey(path)
-            ? new SqliteKeeper(path, enabled: false)
-            : All.GetOrAdd(path, p => new SqliteKeeper(p, OperatingSystem.IsLinux()));
+        return Allowed.ContainsKey(path)
+            ? All.GetOrAdd(path, p => new SqliteKeeper(p, OperatingSystem.IsLinux()))
+            : new SqliteKeeper(path, enabled: false);
     }
 
-    /// <summary>Lets <paramref name="databasePath"/> have a keeper again, when a host starts.</summary>
-    public static void Allow(string databasePath) => Released.TryRemove(Path.GetFullPath(databasePath), out _);
+    /// <summary>Lets <paramref name="databasePath"/> have a keeper, when a host starts.</summary>
+    public static void Allow(string databasePath) => Allowed[Path.GetFullPath(databasePath)] = true;
 
     /// <summary>
     /// Closes and forgets the keeper for <paramref name="databasePath"/>, at shutdown. Closing it
@@ -62,7 +64,7 @@ public sealed class SqliteKeeper
     public static void Release(string databasePath)
     {
         var path = Path.GetFullPath(databasePath);
-        Released[path] = true;
+        Allowed.TryRemove(path, out _);
         if (All.TryRemove(path, out var keeper))
         {
             lock (keeper._gate)
