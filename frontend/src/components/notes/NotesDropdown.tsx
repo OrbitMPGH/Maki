@@ -11,7 +11,7 @@ function Head({ title, extra, onClose }: { title: string; extra?: ReactNode; onC
     <div className="notes-dropdown-head">
       <span className="notes-dropdown-title">{title}</span>
       {extra}
-      <CloseButton size="sm" aria-label={t`Close notes`} onClick={onClose} />
+      <CloseButton size="sm" className="notes-close" aria-label={t`Close notes`} onClick={onClose} />
     </div>
   )
 }

@@ -18,6 +18,7 @@ import {
 } from '../../api/reader'
 import NotesPanel from '../../components/notes/NotesPanel'
 import { NotesDropdown } from '../../components/notes/NotesDropdown'
+import { notesEscapeCloses } from '../../components/notes/notesEscape'
 import { usePhoneSheet } from '../../components/notes/phone'
 import ChapterBanner from './ChapterBanner'
 import ChapterEnd from './ChapterEnd'
@@ -493,12 +494,8 @@ export default function ReaderPage() {
     const onEscape = (event: KeyboardEvent) => {
       if (event.key !== 'Escape' || event.isComposing) return
       event.preventDefault()
-      const target = event.target instanceof HTMLElement ? event.target : null
-      if (target?.closest('.notes-surface') && target.matches('textarea, input:not([type="checkbox"]):not([type="radio"])')) {
-        target.blur()
-        return
-      }
-      if (document.querySelector('.notes-surface .note-composer[data-dirty]')) return
+      const panel = document.querySelector<HTMLElement>('.notes-dropdown-fixed, .notes-drawer')
+      if (!notesEscapeCloses(event, panel)) return
       setNotesOpen(false)
       setNotesThread(null)
     }

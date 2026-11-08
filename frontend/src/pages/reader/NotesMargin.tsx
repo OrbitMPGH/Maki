@@ -7,6 +7,7 @@ import { notePage, type NoteDto } from '../../api/notes'
 import NoteBody from '../../components/notes/NoteBody'
 import NoteComposer, { type ComposerValues } from '../../components/notes/NoteComposer'
 import { NotesPanelBody } from '../../components/notes/NotesPanel'
+import { notesEscapeCloses } from '../../components/notes/notesEscape'
 import NoteThread from '../../components/notes/NoteThread'
 import { useAuthorLabel } from '../../components/notes/useAuthorLabel'
 import { useNotesWorkspace, type NotesWorkspace } from '../../components/notes/useNotesWorkspace'
@@ -383,15 +384,16 @@ function PageTab({
 }) {
   const { t } = useLingui()
   const [opened, setOpened] = useState(false)
+  const dropdown = useRef<HTMLDivElement>(null)
   const pageNumber = page + 1
 
   // Captured ahead of the reader's own Escape, which would otherwise leave the chapter.
   useEffect(() => {
     if (!opened) return
     const onEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
+      if (event.key !== 'Escape' || event.isComposing) return
       event.preventDefault()
-      setOpened(false)
+      if (notesEscapeCloses(event, dropdown.current)) setOpened(false)
     }
     window.addEventListener('keydown', onEscape, true)
     return () => window.removeEventListener('keydown', onEscape, true)
@@ -406,6 +408,7 @@ function PageTab({
       offset={8}
       shadow="lg"
       zIndex={OVERLAY_Z}
+      closeOnEscape={false}
       returnFocus
     >
       <Popover.Target>
@@ -420,7 +423,7 @@ function PageTab({
           <span className="tnum">{count}</span>
         </button>
       </Popover.Target>
-      <Popover.Dropdown className="notes-dropdown notes-surface" p={0}>
+      <Popover.Dropdown ref={dropdown} className="notes-dropdown notes-surface" p={0}>
         <div className="notes-dropdown-head">
           <span className="notes-dropdown-title">
             <Trans>Page {pageNumber}</Trans>

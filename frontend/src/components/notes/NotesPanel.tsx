@@ -66,7 +66,7 @@ export default function NotesPanel({
       // In the reader, ReaderPage owns Escape so a note being typed is not lost.
       closeOnEscape={!inReader}
       returnFocus
-      classNames={{ content: 'notes-drawer notes-surface', body: 'notes-drawer-body', title: 'notes-drawer-title' }}
+      classNames={{ content: 'notes-drawer notes-surface', body: 'notes-drawer-body', title: 'notes-drawer-title', close: 'notes-close' }}
     >
       <NotesPanelBody
         chapterId={chapterId}
