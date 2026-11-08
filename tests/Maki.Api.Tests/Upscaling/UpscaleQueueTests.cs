@@ -298,15 +298,42 @@ public class UpscaleQueueTests
     }
 
     [Fact]
-    public void A_user_past_the_session_cap_loses_their_least_recent_tab()
+    public void A_users_tabs_past_the_cap_share_one_lane_and_nothing_is_cancelled()
     {
-        for (var tab = 0; tab <= UpscaleQueue.MaxSessionsPerUser; tab++)
+        var running = new List<UpscaleJob>();
+        for (var tab = 0; tab < UpscaleQueue.MaxSessionsPerUser; tab++)
         {
-            _queue.Replace(1, 1, "span-s", [Item(tab * 10)], session: $"tab{tab}");
+            _queue.Replace(1, 1, "span-s", [Item(tab * 10), Item(tab * 10 + 1)], session: $"tab{tab}");
+            running.Add(_queue.TryDequeue()!);
         }
 
-        Assert.Equal(0, _queue.PendingFor(1, "tab0"));
-        Assert.Equal(1, _queue.PendingFor(1, $"tab{UpscaleQueue.MaxSessionsPerUser}"));
-        Assert.Equal(UpscaleQueue.MaxSessionsPerUser, _queue.Snapshot().Pending);
+        _queue.Replace(1, 1, "span-s", [Item(100)], session: "extra1");
+        _queue.Replace(1, 1, "span-s", [Item(200)], session: "extra2");
+        _queue.Cancel(1, "extra2");
+
+        Assert.All(running, job => Assert.False(job.Abandoned.IsCancellationRequested));
+        Assert.All(Enumerable.Range(0, UpscaleQueue.MaxSessionsPerUser), tab => Assert.Equal(1, _queue.PendingFor(1, $"tab{tab}")));
+        Assert.Equal(0, _queue.PendingFor(1, "extra1"));
+        Assert.Equal(1, _queue.PendingFor(1));
+        Assert.Equal(200, _queue.TryDequeue()!.Key.AbsIndex);
+    }
+
+    [Fact]
+    public void A_users_most_recent_tab_goes_first_and_the_others_fill_in_after()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(0), Item(1)], UpscaleQueue.MaxChapterPages, session: "phone");
+        _queue.Replace(1, 2, "span-s", [Item(50, chapterId: 2, fileId: 2), Item(51, chapterId: 2, fileId: 2)], session: "desktop");
+
+        Assert.Equal([50, 51, 0, 1], DrainPages());
+    }
+
+    [Fact]
+    public void Users_are_served_in_turn_however_many_tabs_they_have()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(0), Item(1)], session: "a");
+        _queue.Replace(1, 1, "span-s", [Item(10), Item(11)], session: "b");
+        _queue.Replace(2, 2, "span-s", [Item(100, chapterId: 2, fileId: 2), Item(101, chapterId: 2, fileId: 2), Item(102, chapterId: 2, fileId: 2)]);
+
+        Assert.Equal([10, 100, 11, 101, 0, 102, 1], DrainPages());
     }
 }

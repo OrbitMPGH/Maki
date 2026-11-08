@@ -44,8 +44,11 @@ public sealed class UpscaleJob(UpscaleWorkKey key, ReaderService.PageSlice slice
 
 /// <summary>
 /// Pages waiting for the server upscaler. A page several readers want is one job with all of them
-/// waiting on it. Each reader has a FIFO lane of at most <see cref="MaxPendingPerUser"/> pages, and
-/// lanes are served round robin, so one reader paging fast cannot starve another. A job nobody
+/// waiting on it. Each reader (a user's tab) has a FIFO lane of at most <see cref="MaxPendingPerUser"/>
+/// pages. Users are served round robin, so one reader paging fast cannot starve another, however many
+/// tabs they have open. On a user's turn their most recently active tab goes first, and their other
+/// tabs only fill in while it has nothing pending, so a tab left open elsewhere never slows the one
+/// being read. A job nobody
 /// waits on any more is dropped before it starts. One already running finishes and lands in the
 /// cache, unless its last reader paged past it or moved to another chapter or model: then it is
 /// abandoned, so the page they turned to does not wait out one nobody will look at.
@@ -57,7 +60,7 @@ public sealed class UpscaleQueue
     /// <summary>The cap for a reader who asked for their whole chapter (the reader's "Whole chapter" setting).</summary>
     public const int MaxChapterPages = 1000;
 
-    /// <summary>Readers one user keeps at once; a new session past it ends their least recently active one.</summary>
+    /// <summary>Tabs with their own lane per user; a further tab shares the user's session-less lane.</summary>
     public const int MaxSessionsPerUser = 4;
 
     private const int MemoCapacity = 1024;
@@ -68,8 +71,8 @@ public sealed class UpscaleQueue
     private readonly Dictionary<UpscaleReader, List<UpscaleWorkKey>> _lanes = [];
     private readonly Dictionary<UpscaleReader, long> _touched = [];
     private long _touchSeq;
-    private readonly Queue<UpscaleReader> _turns = new();
-    private readonly HashSet<UpscaleReader> _inTurns = [];
+    private readonly Queue<int> _turns = new();
+    private readonly HashSet<int> _inTurns = [];
     private readonly Dictionary<UpscaleWorkKey, (UpscaleOutcome Outcome, DateTime At, long Seq)> _memo = [];
     private readonly Queue<(UpscaleWorkKey Key, long Seq)> _memoOrder = new();
     private long _memoSeq;
@@ -94,14 +97,13 @@ public sealed class UpscaleQueue
         string? session = null)
     {
         notWanted ??= new HashSet<UpscaleWorkKey>();
-        var reader = new UpscaleReader(userId, session);
         var taken = items.Take(cap).ToList();
         var states = new UpscaleJobState[taken.Count];
         var added = false;
         lock (_gate)
         {
+            var reader = ReaderFor(userId, session);
             _touched[reader] = ++_touchSeq;
-            EvictIdleReaders(userId);
             var old = _lanes.TryGetValue(reader, out var lane) ? lane : [];
             var requested = taken.Select(i => i.Key).ToHashSet();
             var floor = taken.Where(i => i.Target.ChapterId == chapterId)
@@ -177,9 +179,9 @@ public sealed class UpscaleQueue
             else
             {
                 _lanes[reader] = next;
-                if (_inTurns.Add(reader))
+                if (_inTurns.Add(userId))
                 {
-                    _turns.Enqueue(reader);
+                    _turns.Enqueue(userId);
                 }
             }
         }
@@ -195,71 +197,67 @@ public sealed class UpscaleQueue
     /// <summary>
     /// Drops everything this reader has pending, and abandons a running page nobody else waits on.
     /// Called when they leave the reader with the whole chapter still going. Only the reader with this
-    /// <paramref name="session"/> is touched; the user's other tabs keep theirs.
+    /// <paramref name="session"/> is touched; the user's other tabs keep theirs. A tab that was folded
+    /// into the shared lane leaves it alone, since other tabs use it too.
     /// </summary>
     public void Cancel(int userId, string? session = null)
     {
+        var reader = new UpscaleReader(userId, session);
         lock (_gate)
         {
-            CancelLocked(new UpscaleReader(userId, session));
-        }
-    }
-
-    private void CancelLocked(UpscaleReader reader)
-    {
-        _touched.Remove(reader);
-        if (_lanes.Remove(reader, out var lane))
-        {
-            foreach (var key in lane)
+            if (session is not null && !_touched.ContainsKey(reader))
             {
-                if (_jobs.TryGetValue(key, out var job))
+                return;
+            }
+
+            _touched.Remove(reader);
+            if (_lanes.Remove(reader, out var lane))
+        {
+                foreach (var key in lane)
                 {
-                    Leave(job, reader);
+                    if (_jobs.TryGetValue(key, out var job))
+                    {
+                        Leave(job, reader);
+                    }
                 }
             }
-        }
 
-        foreach (var job in _jobs.Values.Where(j => j.Working && j.Waiters.ContainsKey(reader)).ToList())
-        {
-            job.Waiters.Remove(reader);
-            if (job.Waiters.Count == 0)
+            foreach (var job in _jobs.Values.Where(j => j.Working && j.Waiters.ContainsKey(reader)).ToList())
             {
-                job.Abandon();
+                job.Waiters.Remove(reader);
+                if (job.Waiters.Count == 0)
+                {
+                    job.Abandon();
+                }
             }
         }
     }
 
     /// <summary>
-    /// Keeps a user to <see cref="MaxSessionsPerUser"/> readers with work, so tabs closed without their
-    /// cancel, or a client inventing sessions, cannot take more turns than a few tabs would.
+    /// The reader a request belongs to. A user keeps at most <see cref="MaxSessionsPerUser"/> tabs with
+    /// lanes of their own; a further tab, while the others still have work, shares the session-less lane
+    /// older clients use, so a client inventing sessions cannot hold more than a few lanes.
     /// </summary>
-    private void EvictIdleReaders(int userId)
+    private UpscaleReader ReaderFor(int userId, string? session)
     {
-        var mine = _touched.Where(t => t.Key.UserId == userId).OrderBy(t => t.Value).Select(t => t.Key).ToList();
-        if (mine.Count <= MaxSessionsPerUser)
+        var reader = new UpscaleReader(userId, session);
+        if (session is null || _touched.ContainsKey(reader))
         {
-            return;
+            return reader;
         }
 
-        var live = new List<UpscaleReader>();
-        foreach (var reader in mine)
+        var mine = _touched.Keys.Where(r => r.UserId == userId && r.Session is not null).ToList();
+        if (mine.Count < MaxSessionsPerUser)
         {
-            if (_touched[reader] == _touchSeq
-                || _lanes.ContainsKey(reader)
-                || _jobs.Values.Any(j => j.Waiters.ContainsKey(reader)))
-            {
-                live.Add(reader);
-            }
-            else
-            {
-                _touched.Remove(reader);
-            }
+            return reader;
         }
 
-        for (var i = 0; i < live.Count - MaxSessionsPerUser; i++)
+        foreach (var idle in mine.Where(r => !_lanes.ContainsKey(r) && !_jobs.Values.Any(j => j.Waiters.ContainsKey(r))))
         {
-            CancelLocked(live[i]);
+            _touched.Remove(idle);
         }
+
+        return mine.Count(_touched.ContainsKey) < MaxSessionsPerUser ? reader : new UpscaleReader(userId, null);
     }
 
     /// <summary>The next job, taking one page from the next reader's lane in turn. Null when nothing is waiting.</summary>
@@ -272,37 +270,40 @@ public sealed class UpscaleQueue
             {
                 var user = _turns.Dequeue();
                 _inTurns.Remove(user);
-                if (!_lanes.TryGetValue(user, out var lane))
-                {
-                    continue;
-                }
-
+                var readers = _lanes.Keys.Where(r => r.UserId == user)
+                    .OrderByDescending(r => _touched.GetValueOrDefault(r))
+                    .ToList();
                 UpscaleJob? picked = null;
-                while (lane.Count > 0 && picked is null)
+                foreach (var reader in readers)
                 {
-                    var key = lane[0];
-                    lane.RemoveAt(0);
-                    if (!_jobs.TryGetValue(key, out var job) || job.Working)
+                    var lane = _lanes[reader];
+                    while (lane.Count > 0 && picked is null)
                     {
-                        continue;
+                        var key = lane[0];
+                        lane.RemoveAt(0);
+                        if (!_jobs.TryGetValue(key, out var job) || job.Working)
+                        {
+                            continue;
+                        }
+
+                        if (job.Waiters.Count == 0)
+                        {
+                            _jobs.Remove(key);
+                            continue;
+                        }
+
+                        picked = job;
                     }
 
-                    if (job.Waiters.Count == 0)
+                    if (lane.Count == 0)
                     {
-                        _jobs.Remove(key);
-                        continue;
+                        _lanes.Remove(reader);
                     }
 
-                    picked = job;
-                }
-
-                if (lane.Count == 0)
-                {
-                    _lanes.Remove(user);
-                }
-                else if (_inTurns.Add(user))
-                {
-                    _turns.Enqueue(user);
+                    if (picked is not null)
+                    {
+                        break;
+                    }
                 }
 
                 if (picked is null)
@@ -313,7 +314,7 @@ public sealed class UpscaleQueue
                 picked.Working = true;
                 foreach (var other in picked.Waiters.Keys)
                 {
-                    if (other != user && _lanes.TryGetValue(other, out var otherLane))
+                    if (_lanes.TryGetValue(other, out var otherLane))
                     {
                         otherLane.Remove(picked.Key);
                         if (otherLane.Count == 0)
@@ -321,6 +322,11 @@ public sealed class UpscaleQueue
                             _lanes.Remove(other);
                         }
                     }
+                }
+
+                if (_lanes.Keys.Any(r => r.UserId == user) && _inTurns.Add(user))
+                {
+                    _turns.Enqueue(user);
                 }
 
                 return picked;
