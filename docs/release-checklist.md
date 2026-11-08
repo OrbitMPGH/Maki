@@ -133,8 +133,8 @@ grows with the page number, so wrong page order is obvious in the reader.
 - [ ] **3.1** Scan `/import` from the Import page. Every row matches the table above.
 - [ ] **3.2** Import everything that matched. It finishes without errors and the series show up in
       the library with their chapters marked as on disk.
-- [ ] **3.3** In the run's `import` folder, every chapter has a CBZ beside its original (imports
-      never delete the originals), and unrelated files were left alone.
+- [ ] **3.3** In the run's `import` folder, every chapter has a CBZ, non-CBZ originals are left in
+      place next to the new CBZ, and unrelated files were left alone.
 - [ ] **3.4** Open one chapter of each kind in the reader (a repacked one, a loose-image volume, a
       PDF). Pages are in order.
 

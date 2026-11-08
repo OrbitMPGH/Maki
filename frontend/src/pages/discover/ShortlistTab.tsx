@@ -156,6 +156,7 @@ function ShortlistRow({
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const cancelled = useRef(false)
+  const editAfterMenu = useRef(false)
 
   const { item, library, statusChange, newChapters, note, type } = entry
   const shown = shownTitle(entry)
@@ -171,6 +172,7 @@ function ShortlistRow({
   }
   const commitNote = () => {
     if (cancelled.current) return
+    cancelled.current = true
     setEditing(false)
     if (draft.trim() !== (note ?? '').trim()) updateNote.mutate({ id: entry.mangaBakaId, note: draft })
   }
@@ -369,14 +371,22 @@ function ShortlistRow({
           </Tooltip>
 
           {item && !inLibrary && (
-            <Menu withinPortal position="bottom-end" width={220} returnFocus={false}>
+            <Menu withinPortal position="bottom-end" width={220}
+              transitionProps={{
+                onExited: () => {
+                  if (!editAfterMenu.current) return
+                  editAfterMenu.current = false
+                  startEdit()
+                },
+              }}
+            >
               <Menu.Target>
                 <ActionIcon size="lg" variant="subtle" color="var(--neutral)" aria-label={t`More actions for ${title}`}>
                   <IconDots size={18} />
                 </ActionIcon>
               </Menu.Target>
               <Menu.Dropdown>
-                <Menu.Item leftSection={<IconPencil size={16} />} onClick={startEdit}>
+                <Menu.Item leftSection={<IconPencil size={16} />} onClick={() => (editAfterMenu.current = true)}>
                   <Trans>Edit note</Trans>
                 </Menu.Item>
                 <Menu.Item leftSection={<IconThumbDown size={16} />} onClick={() => void leave('dislike')}>

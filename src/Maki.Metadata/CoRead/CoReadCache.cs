@@ -162,6 +162,7 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
                 {
                     var loaded = Load(CancellationToken.None);
                     _graph = loaded;
+                    _published?.TrySetResult();
                     _idle.Touch();
                     if (loaded is null)
                     {
@@ -191,6 +192,8 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
         return await load.WaitAsync(ct);
     }
 
+    private volatile TaskCompletionSource? _published;
+
     private PairGraphIndex? Load(CancellationToken ct)
     {
         var started = DateTime.UtcNow;
@@ -216,13 +219,14 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
         if (loaded is not null)
         {
             // Then trade the copy just built on the heap for one reading the snapshot in place.
-            SnapshotSavedForTest = Task.Run(() =>
+            var published = _published = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            SnapshotSavedForTest = Task.Run(async () =>
             {
                 try
                 {
                     SnapshotFile.Save(SnapshotPath, SnapshotMagic, key, loaded.WriteTo);
                     // The caller publishes `loaded` after this task starts; the swap needs it in place.
-                    SpinWait.SpinUntil(() => Volatile.Read(ref _graph) is not null, 5000);
+                    await published.Task.WaitAsync(TimeSpan.FromSeconds(5));
                     if (SnapshotFile.Load(SnapshotPath, SnapshotMagic, key, PairGraphIndex.ReadFrom) is { IsMapped: true } mapped)
                     {
                         Interlocked.CompareExchange(ref _graph, mapped, loaded);

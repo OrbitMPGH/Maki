@@ -4,7 +4,12 @@ export interface OptimisticPatch {
   key: QueryKey
   /** Only called when the key holds data; an empty cache is left empty. */
   update: (old: never) => unknown
+  /** False for a heavy list that only needs a refetch when the request failed. */
+  refetchOnSuccess?: boolean
 }
+
+const inFlight = new Map<string, number>()
+const flightKey = (key: QueryKey) => JSON.stringify(key)
 
 type Snapshot = { previous: [QueryKey, unknown][] }
 
@@ -18,6 +23,7 @@ export function optimistic<TVars>(queryClient: QueryClient, patches: (vars: TVar
   return {
     onMutate: async (vars: TVars): Promise<Snapshot> => {
       const list = patches(vars)
+      for (const p of list) inFlight.set(flightKey(p.key), (inFlight.get(flightKey(p.key)) ?? 0) + 1)
       await Promise.all(list.map((p) => queryClient.cancelQueries({ queryKey: p.key, exact: true })))
       const previous = list.map((p): [QueryKey, unknown] => [p.key, queryClient.getQueryData(p.key)])
       for (const p of list) {
@@ -28,8 +34,16 @@ export function optimistic<TVars>(queryClient: QueryClient, patches: (vars: TVar
     onError: (_err: unknown, _vars: TVars, snapshot: Snapshot | undefined) => {
       for (const [key, data] of snapshot?.previous ?? []) queryClient.setQueryData(key, data)
     },
-    onSettled: (_data: unknown, _err: unknown, vars: TVars) => {
-      for (const p of patches(vars)) void queryClient.invalidateQueries({ queryKey: p.key, exact: true })
+    onSettled: (_data: unknown, err: unknown, vars: TVars) => {
+      for (const p of patches(vars)) {
+        const k = flightKey(p.key)
+        const left = (inFlight.get(k) ?? 1) - 1
+        if (left > 0) inFlight.set(k, left)
+        else inFlight.delete(k)
+        if (left === 0 && (err || p.refetchOnSuccess !== false)) {
+          void queryClient.invalidateQueries({ queryKey: p.key, exact: true })
+        }
+      }
     },
   }
 }
@@ -56,6 +70,7 @@ export function optimisticSeries<TVars extends { seriesId: number }, TSeries ext
       { key: ['series', vars.seriesId], update: (old: TSeries) => ({ ...old, ...patch }) },
       {
         key: ['series'],
+        refetchOnSuccess: false,
         update: (old: TSeries[]) => old.map((s) => (s.id === vars.seriesId ? { ...s, ...patch } : s)),
       },
     ]
