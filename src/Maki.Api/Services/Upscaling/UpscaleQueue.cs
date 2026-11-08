@@ -8,6 +8,12 @@ public readonly record struct UpscaleWorkKey(int ChapterFileId, string ArchiveVe
 /// <summary>The chapter and page index a reader used to ask, which is what the push names back to them.</summary>
 public readonly record struct UpscaleTarget(int ChapterId, int Page);
 
+/// <summary>
+/// One reader: a user and the session id their reader tab sent, so two tabs or devices on one account
+/// keep separate lanes. Null for clients that send none, which share one lane per user.
+/// </summary>
+public readonly record struct UpscaleReader(int UserId, string? Session = null);
+
 public sealed record UpscaleRequestItem(UpscaleWorkKey Key, UpscaleTarget Target, ReaderService.PageSlice Slice);
 
 public enum UpscaleJobState
@@ -26,7 +32,7 @@ public sealed class UpscaleJob(UpscaleWorkKey key, ReaderService.PageSlice slice
 
     private readonly CancellationTokenSource _abandon = new();
 
-    internal Dictionary<int, UpscaleTarget> Waiters { get; } = [];
+    internal Dictionary<UpscaleReader, UpscaleTarget> Waiters { get; } = [];
 
     internal bool Working { get; set; }
 
@@ -51,14 +57,19 @@ public sealed class UpscaleQueue
     /// <summary>The cap for a reader who asked for their whole chapter (the reader's "Whole chapter" setting).</summary>
     public const int MaxChapterPages = 1000;
 
+    /// <summary>Readers one user keeps at once; a new session past it ends their least recently active one.</summary>
+    public const int MaxSessionsPerUser = 4;
+
     private const int MemoCapacity = 1024;
     private static readonly TimeSpan MemoLifetime = TimeSpan.FromMinutes(10);
 
     private readonly Lock _gate = new();
     private readonly Dictionary<UpscaleWorkKey, UpscaleJob> _jobs = [];
-    private readonly Dictionary<int, List<UpscaleWorkKey>> _lanes = [];
-    private readonly Queue<int> _turns = new();
-    private readonly HashSet<int> _inTurns = [];
+    private readonly Dictionary<UpscaleReader, List<UpscaleWorkKey>> _lanes = [];
+    private readonly Dictionary<UpscaleReader, long> _touched = [];
+    private long _touchSeq;
+    private readonly Queue<UpscaleReader> _turns = new();
+    private readonly HashSet<UpscaleReader> _inTurns = [];
     private readonly Dictionary<UpscaleWorkKey, (UpscaleOutcome Outcome, DateTime At, long Seq)> _memo = [];
     private readonly Queue<(UpscaleWorkKey Key, long Seq)> _memoOrder = new();
     private long _memoSeq;
@@ -79,15 +90,19 @@ public sealed class UpscaleQueue
         string model,
         IReadOnlyList<UpscaleRequestItem> items,
         int cap = MaxPendingPerUser,
-        IReadOnlySet<UpscaleWorkKey>? notWanted = null)
+        IReadOnlySet<UpscaleWorkKey>? notWanted = null,
+        string? session = null)
     {
         notWanted ??= new HashSet<UpscaleWorkKey>();
+        var reader = new UpscaleReader(userId, session);
         var taken = items.Take(cap).ToList();
         var states = new UpscaleJobState[taken.Count];
         var added = false;
         lock (_gate)
         {
-            var old = _lanes.TryGetValue(userId, out var lane) ? lane : [];
+            _touched[reader] = ++_touchSeq;
+            EvictIdleReaders(userId);
+            var old = _lanes.TryGetValue(reader, out var lane) ? lane : [];
             var requested = taken.Select(i => i.Key).ToHashSet();
             var floor = taken.Where(i => i.Target.ChapterId == chapterId)
                 .Select(i => i.Target.Page)
@@ -105,7 +120,7 @@ public sealed class UpscaleQueue
                     added = true;
                 }
 
-                job.Waiters[userId] = item.Target;
+                job.Waiters[reader] = item.Target;
                 if (job.Working)
                 {
                     states[i] = UpscaleJobState.Working;
@@ -127,7 +142,7 @@ public sealed class UpscaleQueue
                     continue;
                 }
 
-                var sameChapter = job.Waiters.TryGetValue(userId, out var target)
+                var sameChapter = job.Waiters.TryGetValue(reader, out var target)
                                   && target.ChapterId == chapterId && key.Model == model;
                 if (sameChapter && target.Page >= floor && !job.Working && next.Count < cap && !notWanted.Contains(key))
                 {
@@ -138,16 +153,16 @@ public sealed class UpscaleQueue
                 }
                 else
                 {
-                    Leave(job, userId);
+                    Leave(job, reader);
                 }
             }
 
             foreach (var job in _jobs.Values)
             {
-                if (job.Working && !requested.Contains(job.Key) && job.Waiters.TryGetValue(userId, out var target)
+                if (job.Working && !requested.Contains(job.Key) && job.Waiters.TryGetValue(reader, out var target)
                     && (target.ChapterId != chapterId || job.Key.Model != model || target.Page < floor || notWanted.Contains(job.Key)))
                 {
-                    job.Waiters.Remove(userId);
+                    job.Waiters.Remove(reader);
                     if (job.Waiters.Count == 0)
                     {
                         job.Abandon();
@@ -157,14 +172,14 @@ public sealed class UpscaleQueue
 
             if (next.Count == 0)
             {
-                _lanes.Remove(userId);
+                _lanes.Remove(reader);
             }
             else
             {
-                _lanes[userId] = next;
-                if (_inTurns.Add(userId))
+                _lanes[reader] = next;
+                if (_inTurns.Add(reader))
                 {
-                    _turns.Enqueue(userId);
+                    _turns.Enqueue(reader);
                 }
             }
         }
@@ -179,31 +194,71 @@ public sealed class UpscaleQueue
 
     /// <summary>
     /// Drops everything this reader has pending, and abandons a running page nobody else waits on.
-    /// Called when they leave the reader with the whole chapter still going.
+    /// Called when they leave the reader with the whole chapter still going. Only the reader with this
+    /// <paramref name="session"/> is touched; the user's other tabs keep theirs.
     /// </summary>
-    public void Cancel(int userId)
+    public void Cancel(int userId, string? session = null)
     {
         lock (_gate)
         {
-            if (_lanes.Remove(userId, out var lane))
-            {
-                foreach (var key in lane)
-                {
-                    if (_jobs.TryGetValue(key, out var job))
-                    {
-                        Leave(job, userId);
-                    }
-                }
-            }
+            CancelLocked(new UpscaleReader(userId, session));
+        }
+    }
 
-            foreach (var job in _jobs.Values.Where(j => j.Working && j.Waiters.ContainsKey(userId)).ToList())
+    private void CancelLocked(UpscaleReader reader)
+    {
+        _touched.Remove(reader);
+        if (_lanes.Remove(reader, out var lane))
+        {
+            foreach (var key in lane)
             {
-                job.Waiters.Remove(userId);
-                if (job.Waiters.Count == 0)
+                if (_jobs.TryGetValue(key, out var job))
                 {
-                    job.Abandon();
+                    Leave(job, reader);
                 }
             }
+        }
+
+        foreach (var job in _jobs.Values.Where(j => j.Working && j.Waiters.ContainsKey(reader)).ToList())
+        {
+            job.Waiters.Remove(reader);
+            if (job.Waiters.Count == 0)
+            {
+                job.Abandon();
+            }
+        }
+    }
+
+    /// <summary>
+    /// Keeps a user to <see cref="MaxSessionsPerUser"/> readers with work, so tabs closed without their
+    /// cancel, or a client inventing sessions, cannot take more turns than a few tabs would.
+    /// </summary>
+    private void EvictIdleReaders(int userId)
+    {
+        var mine = _touched.Where(t => t.Key.UserId == userId).OrderBy(t => t.Value).Select(t => t.Key).ToList();
+        if (mine.Count <= MaxSessionsPerUser)
+        {
+            return;
+        }
+
+        var live = new List<UpscaleReader>();
+        foreach (var reader in mine)
+        {
+            if (_touched[reader] == _touchSeq
+                || _lanes.ContainsKey(reader)
+                || _jobs.Values.Any(j => j.Waiters.ContainsKey(reader)))
+            {
+                live.Add(reader);
+            }
+            else
+            {
+                _touched.Remove(reader);
+            }
+        }
+
+        for (var i = 0; i < live.Count - MaxSessionsPerUser; i++)
+        {
+            CancelLocked(live[i]);
         }
     }
 
@@ -290,20 +345,20 @@ public sealed class UpscaleQueue
         }
     }
 
-    /// <summary>
-    /// Ends a job and returns everyone waiting on it at that moment, including readers who asked
-    /// while it ran. A failed or skipped page is remembered for a while so it is not queued again
-    /// on every page turn.
-    /// </summary>
     /// <summary>Who is waiting on <paramref name="job"/> right now.</summary>
     public IReadOnlyList<KeyValuePair<int, UpscaleTarget>> WaitersOf(UpscaleJob job)
     {
         lock (_gate)
         {
-            return job.Waiters.ToList();
+            return ByUser(job);
         }
     }
 
+    /// <summary>
+    /// Ends a job and returns everyone waiting on it at that moment, including readers who asked
+    /// while it ran. A failed or skipped page is remembered for a while so it is not queued again
+    /// on every page turn.
+    /// </summary>
     public IReadOnlyList<KeyValuePair<int, UpscaleTarget>> Complete(UpscaleJob job, UpscaleOutcome outcome, string? reason)
     {
         lock (_gate)
@@ -325,9 +380,13 @@ public sealed class UpscaleQueue
                 Remember(job.Key, outcome);
             }
 
-            return job.Waiters.ToList();
+            return ByUser(job);
         }
     }
+
+    /// <summary>The push goes to a user, not a tab, so two tabs waiting on one page are told once.</summary>
+    private static List<KeyValuePair<int, UpscaleTarget>> ByUser(UpscaleJob job) =>
+        job.Waiters.Select(w => KeyValuePair.Create(w.Key.UserId, w.Value)).Distinct().ToList();
 
     /// <summary>Failed or Skipped when this page ended that way in the last few minutes, else null.</summary>
     public UpscaleOutcome? RecentOutcome(UpscaleWorkKey key)
@@ -372,6 +431,7 @@ public sealed class UpscaleQueue
             }
 
             _lanes.Clear();
+            _touched.Clear();
             _turns.Clear();
             _inTurns.Clear();
         }
@@ -387,17 +447,17 @@ public sealed class UpscaleQueue
         }
     }
 
-    internal int PendingFor(int userId)
+    internal int PendingFor(int userId, string? session = null)
     {
         lock (_gate)
         {
-            return _lanes.TryGetValue(userId, out var lane) ? lane.Count : 0;
+            return _lanes.TryGetValue(new UpscaleReader(userId, session), out var lane) ? lane.Count : 0;
         }
     }
 
-    private void Leave(UpscaleJob job, int userId)
+    private void Leave(UpscaleJob job, UpscaleReader reader)
     {
-        job.Waiters.Remove(userId);
+        job.Waiters.Remove(reader);
         if (job.Waiters.Count == 0 && !job.Working)
         {
             _jobs.Remove(job.Key);

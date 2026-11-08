@@ -56,7 +56,8 @@ public record SetChaptersStateRequest(int[] ChapterIds, string State);
 /// next chapter once the window runs past the last page. <c>WholeChapter</c> lifts the cap to
 /// <see cref="UpscaleQueue.MaxChapterPages"/> so the rest of the chapter can queue behind the window.
 /// <c>NotWanted</c> names pages of this chapter the reader shows plain (Enhance on Auto), dropped from
-/// whatever an earlier request queued. See <see cref="ReaderController.Enhance"/>.
+/// whatever an earlier request queued. <c>Session</c> names the reader tab, so two tabs on one account
+/// keep separate queues. See <see cref="ReaderController.Enhance"/>.
 /// </summary>
 public record EnhancePagesRequest(
     string? Model,
@@ -64,7 +65,8 @@ public record EnhancePagesRequest(
     int? NextChapterId = null,
     int[]? NextPages = null,
     bool WholeChapter = false,
-    int[]? NotWanted = null);
+    int[]? NotWanted = null,
+    string? Session = null);
 
 /// <summary>Chapters a device holds offline copies of. See <see cref="ReaderController.ChapterVersions"/>.</summary>
 public record ChapterVersionsRequest(int[]? Ids);
@@ -402,7 +404,7 @@ public class ReaderController(
             .Where(page => page >= 0 && page < slice.PageCount && !pages.Contains(page))
             .Select(page => new UpscaleWorkKey(slice.ChapterFileId, slice.ArchiveVersion, slice.StartPage + page, model.Value))
             .ToHashSet();
-        var queued = queue.Replace(currentUser.UserId, id, model.Value, items, cap, plain);
+        var queued = queue.Replace(currentUser.UserId, id, model.Value, items, cap, plain, EnhanceSession(request.Session));
         for (var i = 0; i < wanted.Count; i++)
         {
             states[wanted[i].Index] = queued[i] == UpscaleJobState.Working ? "working" : "queued";
@@ -413,11 +415,13 @@ public class ReaderController(
 
     /// <summary>Drops this reader's pending upscales and stops a running one nobody else waits on. Sent as they leave the reader.</summary>
     [HttpDelete("enhance")]
-    public IActionResult CancelEnhance([FromServices] UpscaleQueue queue)
+    public IActionResult CancelEnhance([FromServices] UpscaleQueue queue, [FromQuery] string? session = null)
     {
-        queue.Cancel(currentUser.UserId);
+        queue.Cancel(currentUser.UserId, EnhanceSession(session));
         return NoContent();
     }
+
+    private static string? EnhanceSession(string? session) => session is { Length: > 0 and <= 64 } ? session : null;
 
     /// <summary>A server upscale from the cache. 404 until it is there; this never queues one.</summary>
     [HttpGet("chapter/{id:int}/page/{page:int}/enhanced")]

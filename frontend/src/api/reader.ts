@@ -131,6 +131,9 @@ export function serverEnhancedUrlNow(chapterId: number, page: number, model: str
 
 export type ServerPageState = 'ready' | 'queued' | 'working' | 'failed' | 'skipped'
 
+// One per tab: the server keeps a queue per session, so two tabs on one account never cancel each other's pages.
+const ENHANCE_SESSION = randomUUID()
+
 /**
  * Asks the server to upscale a window of pages, current page first. At most 32 are taken, or 1000
  * with `wholeChapter`; `next` fills whatever room is left with the next chapter's pages, which are
@@ -152,13 +155,14 @@ export function requestServerEnhance(
       ...(next && { nextChapterId: next.chapterId, nextPages: next.pages }),
       ...(wholeChapter && { wholeChapter }),
       ...(notWanted.length > 0 && { notWanted }),
+      session: ENHANCE_SESSION,
     }),
   })
 }
 
-/** Drops this reader's pending server upscales. `keepalive` lets it go out while the tab closes. */
+/** Drops this tab's pending server upscales. `keepalive` lets it go out while the tab closes. */
 export function cancelServerEnhance() {
-  return api<void>('/reader/enhance', { method: 'DELETE', keepalive: true })
+  return api<void>(`/reader/enhance?session=${encodeURIComponent(ENHANCE_SESSION)}`, { method: 'DELETE', keepalive: true })
 }
 
 // Chapters whose manifest this tab last got from the device's offline copy rather than the server.

@@ -262,4 +262,51 @@ public class UpscaleQueueTests
         Assert.Null(_queue.TryDequeue());
         Assert.Equal(0, _queue.Snapshot().Pending);
     }
+
+    [Fact]
+    public void Two_tabs_on_one_account_keep_their_own_pages()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(0), Item(1), Item(2)], session: "a");
+        var running = _queue.TryDequeue()!;
+        Assert.Equal(0, running.Key.AbsIndex);
+
+        _queue.Replace(1, 2, "span-s", [Item(7, chapterId: 2, fileId: 2)], session: "b");
+        Assert.False(running.Abandoned.IsCancellationRequested);
+        Assert.Equal(2, _queue.PendingFor(1, "a"));
+
+        _queue.Cancel(1, "b");
+        Assert.False(running.Abandoned.IsCancellationRequested);
+        Assert.Equal(2, _queue.PendingFor(1, "a"));
+        Assert.Equal(0, _queue.PendingFor(1, "b"));
+
+        _queue.Cancel(1);
+        Assert.False(running.Abandoned.IsCancellationRequested);
+
+        _queue.Cancel(1, "a");
+        Assert.True(running.Abandoned.IsCancellationRequested);
+        Assert.Equal(0, _queue.PendingFor(1, "a"));
+    }
+
+    [Fact]
+    public void Two_tabs_waiting_on_one_page_are_told_once()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(4)], session: "a");
+        _queue.Replace(1, 1, "span-s", [Item(4)], session: "b");
+        var job = _queue.TryDequeue()!;
+
+        Assert.Equal([1], _queue.Complete(job, UpscaleOutcome.Ready, null).Select(w => w.Key));
+    }
+
+    [Fact]
+    public void A_user_past_the_session_cap_loses_their_least_recent_tab()
+    {
+        for (var tab = 0; tab <= UpscaleQueue.MaxSessionsPerUser; tab++)
+        {
+            _queue.Replace(1, 1, "span-s", [Item(tab * 10)], session: $"tab{tab}");
+        }
+
+        Assert.Equal(0, _queue.PendingFor(1, "tab0"));
+        Assert.Equal(1, _queue.PendingFor(1, $"tab{UpscaleQueue.MaxSessionsPerUser}"));
+        Assert.Equal(UpscaleQueue.MaxSessionsPerUser, _queue.Snapshot().Pending);
+    }
 }
