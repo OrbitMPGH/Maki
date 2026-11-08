@@ -1,6 +1,8 @@
 using Maki.Data;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Maki.Api.Tests;
 
@@ -14,17 +16,36 @@ public sealed class MigrationLockTests : IDisposable
 
     private MakiDbContext Context() => new(new DbContextOptionsBuilder<MakiDbContext>().UseSqlite(connection).Options);
 
+    /// <summary>The row a process killed inside Migrate() leaves, written the way EF writes it.</summary>
+    private static Task Lock(MakiDbContext db, DateTimeOffset at)
+    {
+        var literal = db.GetService<IRelationalTypeMappingSource>().FindMapping(typeof(DateTimeOffset))!.GenerateSqlLiteral(at);
+        return db.Database.ExecuteSqlRawAsync("INSERT INTO \"__EFMigrationsLock\" (\"Id\", \"Timestamp\") VALUES (1, " + literal + ")");
+    }
+
     [Fact]
     public async Task A_lock_left_by_a_run_that_died_while_migrating_is_cleared_and_migrate_finishes()
     {
         using var db = Context();
-        Assert.False(MigrationLock.ClearAbandoned(db.Database));
+        var started = DateTimeOffset.UtcNow;
+        Assert.False(MigrationLock.ClearAbandoned(db.Database, started));
         await db.Database.MigrateAsync();
-        // What a process killed inside Migrate() leaves behind.
-        await db.Database.ExecuteSqlRawAsync("INSERT INTO \"__EFMigrationsLock\" (\"Id\", \"Timestamp\") VALUES (1, '2026-11-08 00:00:00')");
+        await Lock(db, started.AddMinutes(-5));
 
-        Assert.True(MigrationLock.ClearAbandoned(db.Database));
-        Assert.False(MigrationLock.ClearAbandoned(db.Database));
+        Assert.True(MigrationLock.ClearAbandoned(db.Database, started));
+        Assert.False(MigrationLock.ClearAbandoned(db.Database, started));
         await db.Database.MigrateAsync().WaitAsync(TimeSpan.FromSeconds(30));
+    }
+
+    [Fact]
+    public async Task A_lock_taken_after_this_process_started_is_left_alone()
+    {
+        using var db = Context();
+        var started = DateTimeOffset.UtcNow;
+        await db.Database.MigrateAsync();
+        await Lock(db, started.AddSeconds(2));
+
+        Assert.False(MigrationLock.ClearAbandoned(db.Database, started));
+        Assert.Equal(1, db.Database.SqlQueryRaw<int>("SELECT COUNT(*) AS \"Value\" FROM \"__EFMigrationsLock\"").AsEnumerable().Single());
     }
 }
