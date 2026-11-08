@@ -182,9 +182,10 @@ public class SmartDownloadJob(
 
     /// <summary>
     /// Wanted, missing chapters whose latest queue row failed and is not due again: still inside its
-    /// retry backoff, or out of attempts. Enqueueing only dedupes against active rows, so without this
-    /// every tick queued a fresh row for a failing chapter, bypassing both the backoff and the cap,
-    /// and a chapter no source carries held its place in the window forever.
+    /// retry backoff, out of attempts, or failed for a reason only a manual retry may revisit (a
+    /// paywall). Enqueueing only dedupes against active rows, so without this every tick queued a
+    /// fresh row for a failing chapter, bypassing both the backoff and the cap, and a chapter no
+    /// source carries held its place in the window forever.
     /// </summary>
     internal static async Task<HashSet<int>> BackingOffAsync(
         MakiDbContext db, IEnumerable<Chapter> chapters, int maxAttempts, DateTime now, CancellationToken ct)
@@ -197,13 +198,14 @@ public class SmartDownloadJob(
 
         var rows = await db.DownloadQueue
             .Where(q => q.ChapterId != null && candidates.Contains(q.ChapterId.Value))
-            .Select(q => new { ChapterId = q.ChapterId!.Value, q.Id, q.Status, q.RetryCount, q.NextAttempt })
+            .Select(q => new { ChapterId = q.ChapterId!.Value, q.Id, q.Status, q.RetryCount, q.NextAttempt, q.ErrorKey })
             .ToListAsync(ct);
 
         return rows
             .GroupBy(r => r.ChapterId)
             .Select(g => g.MaxBy(r => r.Id)!)
-            .Where(r => r.Status == QueueStatus.Failed && (r.RetryCount >= maxAttempts || r.NextAttempt > now))
+            .Where(r => r.Status == QueueStatus.Failed &&
+                        (r.RetryCount >= maxAttempts || r.NextAttempt > now || NeverRetriedAutomatically(r.ErrorKey)))
             .Select(r => r.ChapterId)
             .ToHashSet();
     }
@@ -213,7 +215,8 @@ public class SmartDownloadJob(
     /// downloading, or failed and waiting out its backoff. A series whose downloads all fail stays
     /// due, and queueing the next batch past the backing-off one would walk the whole series a batch
     /// per tick. A chapter out of attempts no longer holds the series back, and neither does one
-    /// parked for early access: that waits hours or days without spending an attempt.
+    /// parked for early access (that waits hours or days without spending an attempt) or one only a
+    /// manual retry may revisit.
     /// </summary>
     internal static async Task<bool> PreviousBatchPendingAsync(
         MakiDbContext db, IEnumerable<Chapter> chapters, int maxAttempts, DateTime now, CancellationToken ct)
@@ -235,8 +238,13 @@ public class SmartDownloadJob(
             .Select(g => g.MaxBy(r => r.Id)!)
             .Any(r => r.Status is not (QueueStatus.Completed or QueueStatus.Failed or QueueStatus.Cancelled) ||
                       (r.Status == QueueStatus.Failed && r.ErrorKey != ChapterDownloadProcessor.EarlyAccessKey &&
-                       r.RetryCount < maxAttempts && r.NextAttempt > now));
+                       !NeverRetriedAutomatically(r.ErrorKey) && r.RetryCount < maxAttempts && r.NextAttempt > now));
     }
+
+    private static bool NeverRetriedAutomatically(string? errorKey) =>
+        errorKey is not null &&
+        (DownloadQueueService.ManualRetryOnlyErrorKeys.Contains(errorKey) ||
+         DownloadQueueService.PermanentErrorKeys.Contains(errorKey));
 
     /// <summary>
     /// The chapters past the reader's position. A batch starts there rather than at the lowest missing

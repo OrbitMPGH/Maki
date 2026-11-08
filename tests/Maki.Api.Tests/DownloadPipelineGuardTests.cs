@@ -161,6 +161,26 @@ public class DownloadPipelineGuardTests : IDisposable
         Assert.Contains(locked.Id, await SmartDownloadJob.BackingOffAsync(db, chapters, maxAttempts: 5, now, CancellationToken.None));
     }
 
+    [Theory]
+    [InlineData(DownloadFailureReason.NeedsPurchase)]
+    [InlineData("error.download.upgradeTargetGone")]
+    public async Task Smart_does_not_requeue_a_chapter_only_a_manual_retry_may_revisit(string errorKey)
+    {
+        var now = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var seriesId = _db.SeedSeries();
+        var paywalled = SeedChapter(seriesId, 1m);
+        var next = SeedChapter(seriesId, 2m);
+        SeedRow(seriesId, paywalled.Id, QueueStatus.Failed, 0, null, DownloadOrigin.SmartDownload, errorKey);
+
+        using var db = _db.NewContext();
+        var chapters = db.Chapters.Where(c => c.SeriesId == seriesId).ToList();
+        var skipped = await SmartDownloadJob.BackingOffAsync(db, chapters, maxAttempts: 5, now, CancellationToken.None);
+
+        Assert.False(await SmartDownloadJob.PreviousBatchPendingAsync(db, chapters, maxAttempts: 5, now, CancellationToken.None));
+        Assert.Equal(new HashSet<int> { paywalled.Id }, skipped);
+        Assert.Equal([next.Id], Chapter.NextWanted(chapters, 5, skipped));
+    }
+
     [Fact]
     public async Task Smart_is_not_held_back_by_a_download_somebody_else_queued()
     {
