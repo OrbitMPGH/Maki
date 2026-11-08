@@ -21,6 +21,8 @@ export interface ServerEnhance {
   shown: ReadonlySet<number>
   /** Called by a view as a page's server upscale starts and stops being drawn. */
   reportShown: (page: number, shown: boolean) => void
+  /** Called when a page answered `ready` is gone from the server's cache, so it is asked for again. */
+  reportMissing: (page: number) => void
 }
 
 const MAX_PAGES = 32
@@ -265,6 +267,18 @@ export function useServerEnhance(
   }, [])
   const shown = shownFor.scope === scope ? shownFor.pages : NO_PAGES
 
+  const reportMissing = useCallback((page: number) => {
+    const live = scopeRef.current
+    if (!live || statesRef.current.get(page) !== 'ready') return
+    setTracked((previous) => {
+      if (previous.scope !== live || previous.states.get(page) !== 'ready') return previous
+      const states = new Map(previous.states)
+      states.delete(page)
+      return { ...previous, states }
+    })
+    setRevived((count) => count + 1)
+  }, [])
+
   const all = current.states
   const states = useMemo(() => {
     if (!plainKey) return all
@@ -277,9 +291,9 @@ export function useServerEnhance(
   return useMemo(
     () =>
       active && model && pageVersion !== undefined
-        ? { chapterId, model, pageVersion, states, shown, reportShown }
+        ? { chapterId, model, pageVersion, states, shown, reportShown, reportMissing }
         : null,
-    [active, chapterId, model, pageVersion, states, shown, reportShown],
+    [active, chapterId, model, pageVersion, states, shown, reportShown, reportMissing],
   )
 }
 

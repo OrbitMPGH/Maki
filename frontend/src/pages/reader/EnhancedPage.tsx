@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { trackedFetch } from '../../api/client'
 import { serverEnhancedUrl, serverEnhancedUrlNow } from '../../api/reader'
 import { isSoftPage, knownSoft } from '../../lib/enhance/softness'
 import { useCompareHeld } from './compareHold'
@@ -189,6 +190,24 @@ export default function EnhancedPage({
   const [decoded, setDecoded] = useState<string | null>(null)
   const [failed, setFailed] = useState<string | null>(null)
   const serverWanted = active && serverUrl !== null && failed !== serverUrl
+  // A page asked for again after its upscale was evicted comes back on the same URL.
+  useEffect(() => {
+    if (!serverReady) setFailed(null)
+  }, [serverReady])
+  const reportMissing = server?.reportMissing
+  const serverFailed = useCallback(
+    (url: string | null) => {
+      setFailed(url)
+      if (!url || !reportMissing) return
+      void trackedFetch(url, { cache: 'no-store', credentials: 'same-origin' })
+        .then((response) => {
+          void response.body?.cancel()
+          if (response.status === 404) reportMissing(page)
+        })
+        .catch(() => {})
+    },
+    [reportMissing, page],
+  )
 
   const priorityRef = useRef(priority)
   priorityRef.current = priority
@@ -357,7 +376,7 @@ export default function EnhancedPage({
               () => setFailed(url),
             )
           }}
-          onError={() => setFailed(serverUrl)}
+          onError={() => serverFailed(serverUrl)}
         />
       )}
     </>
