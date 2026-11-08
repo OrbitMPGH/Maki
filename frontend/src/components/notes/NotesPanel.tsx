@@ -63,6 +63,8 @@ export default function NotesPanel({
       trapFocus={!modeless}
       lockScroll={!modeless}
       closeOnClickOutside={!modeless}
+      // In the reader, ReaderPage owns Escape so a note being typed is not lost.
+      closeOnEscape={!inReader}
       returnFocus
       classNames={{ content: 'notes-drawer notes-surface', body: 'notes-drawer-body', title: 'notes-drawer-title' }}
     >

@@ -485,18 +485,26 @@ export default function ReaderPage() {
     )
   }, [notesParam, chapterId, setSearchParams])
 
-  // Captured so it runs before the reader's own Escape, which leaves for the series page.
+  // Captured so it runs before the reader's own Escape, which leaves for the series page. The
+  // shortcut sheet sits above the notes and takes Escape first. In a text field Escape only leaves
+  // the field, and a composer holding unsaved text keeps the panel open.
   useEffect(() => {
-    if (!notesOpen) return
+    if (!notesOpen || shortcutsOpen) return
     const onEscape = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
+      if (event.key !== 'Escape' || event.isComposing) return
       event.preventDefault()
+      const target = event.target instanceof HTMLElement ? event.target : null
+      if (target?.closest('.notes-surface') && target.matches('textarea, input:not([type="checkbox"]):not([type="radio"])')) {
+        target.blur()
+        return
+      }
+      if (document.querySelector('.notes-surface .note-composer[data-dirty]')) return
       setNotesOpen(false)
       setNotesThread(null)
     }
     window.addEventListener('keydown', onEscape, true)
     return () => window.removeEventListener('keydown', onEscape, true)
-  }, [notesOpen])
+  }, [notesOpen, shortcutsOpen])
 
   const notedPageSet = useMemo(() => new Set(manifest?.notedPages ?? []), [manifest?.notedPages])
 

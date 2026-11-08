@@ -76,7 +76,7 @@ export default function NoteComposer({
   }
 
   return (
-    <Stack gap="xs" className="note-composer">
+    <Stack gap="xs" className="note-composer" data-dirty={body !== (initial?.body ?? '') || undefined}>
       <Textarea
         aria-label={variant === 'reply' ? t`Write a reply` : t`Write a note`}
         placeholder={variant === 'reply' ? t`Write a reply` : t`Write a note. Wrap spoilers in ||double bars||.`}
