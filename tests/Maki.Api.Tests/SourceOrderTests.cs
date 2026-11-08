@@ -259,6 +259,31 @@ public sealed class SourceOrderTests : IDisposable
         Assert.Equal([poor, fresh, good], await OrderAsync(db, seriesId));
     }
 
+    [Theory]
+    [InlineData(0, 2, true)]
+    [InlineData(3, 1, false)]
+    public async Task A_few_failures_here_are_judged_on_the_source_record_elsewhere(
+        int completedHere, int failedHere, bool demoted)
+    {
+        var (seriesId, poor, good, fresh) = Seed(SourceOrderMode.Quality, null);
+        SeedDownloads(seriesId, good, completed: completedHere, failed: failedHere);
+        using (var seed = _db.NewContext())
+        {
+            var root = seed.RootFolders.First();
+            var other = new Series { Title = "O", SortTitle = "o", FolderName = "O", RootFolderId = root.Id };
+            var mapping = new SourceMapping { SourceName = "good", SourceSeriesId = "o", Priority = 1 };
+            other.SourceMappings.Add(mapping);
+            seed.Series.Add(other);
+            seed.SaveChanges();
+            SeedDownloads(other.Id, mapping.Id, completed: 0, failed: 20);
+        }
+
+        using var db = _db.NewContext();
+
+        int[] expected = demoted ? [poor, fresh, good] : [good, poor, fresh];
+        Assert.Equal(expected, await OrderAsync(db, seriesId));
+    }
+
     [Fact]
     public async Task A_source_whose_chapters_are_far_shorter_than_the_others_is_tried_last()
     {

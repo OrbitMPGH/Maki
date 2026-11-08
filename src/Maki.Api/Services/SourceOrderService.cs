@@ -103,9 +103,10 @@ public class SourceOrderService(SourceRegistry registry, ChapterFileQualityServi
     }
 
     /// <summary>
-    /// How each mapping's downloads have gone over the reliability window: on this series if it has been
-    /// tried here, otherwise across the library, so a source that fails everywhere is not trusted on a
-    /// series it has not failed on yet. Failures are the attempts logged in <see cref="SourceFailure"/>,
+    /// How each mapping's downloads have gone over the reliability window: on this series once that record
+    /// says something (enough failures to judge, or more downloads that worked than failed), otherwise
+    /// across the library, so a source that fails everywhere is not trusted on a series where it has
+    /// only failed once or twice yet. Failures are the attempts logged in <see cref="SourceFailure"/>,
     /// not Failed queue rows, which a failover or a retry moves off the source that failed.
     /// </summary>
     private static async Task<Dictionary<int, SourceReliability.Outcome>> OutcomesAsync(
@@ -133,7 +134,9 @@ public class SourceOrderService(SourceRegistry registry, ChapterFileQualityServi
         foreach (var mapping in mappings)
         {
             var here = Sum(counts.Where(c => c.MappingId == mapping.Id));
-            result[mapping.Id] = here.Attempts > 0 ? here : Sum(counts.Where(c => c.SourceName == mapping.SourceName));
+            result[mapping.Id] = here.Failed >= SourceReliability.MinFailures || here.Completed > here.Failed
+                ? here
+                : Sum(counts.Where(c => c.SourceName == mapping.SourceName));
         }
 
         return result;
