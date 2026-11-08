@@ -355,10 +355,15 @@ for (const n of [1, 2, 3]) write('Sousou no Frieren', `Sousou no Frieren Ch.${St
   if (!sevenZip) skipped.push('Blue Period .cb7/.7z/fake .cbz (7-Zip not found)')
 }
 
-// Loose page images, one folder per volume.
+// Loose page images, one folder per volume. The page names carry chapter markers (two chapters a
+// volume, two pages each), the way scanlation compilations do, so the import can link the volume
+// to the chapters it holds even though the catalogue gives those chapters no volume number.
 for (const v of [1, 2]) {
   const vol = String(v).padStart(2, '0')
-  for (const page of chapterPages(280, `VOL ${v}`)) write(`Vagabond/Vagabond Vol.${vol}`, page.name, page.data)
+  chapterPages(280, `VOL ${v}`).forEach((page, i) => {
+    const chapter = String((v - 1) * 2 + Math.floor(i / 2) + 1).padStart(3, '0')
+    write(`Vagabond/Vagabond Vol.${vol}`, `Vagabond v${vol} c${chapter} p${String(i + 1).padStart(3, '0')}.png`, page.data)
+  })
 }
 
 // PDFs are kept as PDFs and read in place.

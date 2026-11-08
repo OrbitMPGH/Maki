@@ -69,6 +69,8 @@ public class VolumeChapterScannerTests
     [InlineData("Title c049p113.png", 49)]
     [InlineData("Title c049v05.png", 49)]
     [InlineData("Title c049_x.png", 49)]
+    [InlineData("Vagabond v01 c001 p001.png", 1)]
+    [InlineData("Vagabond v02 c004 p003.png", 4)]
     public void Recognizes_marker_variants(string name, int expected)
     {
         Assert.Equal([(decimal)expected], VolumeChapterScanner.ChaptersInNames([name]));
