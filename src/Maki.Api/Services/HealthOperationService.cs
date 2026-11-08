@@ -735,19 +735,28 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             return;
         }
 
-        var twins = await db.HealthFiles.AsNoTracking()
-            .Where(f => f.Id != file.Id && !f.Removed && f.Size >= 0 && f.ChapterFileId != null && f.ContentHash == file.ContentHash)
-            .Select(f => new { f.RootFolderId, f.RelativePath, ChapterFileId = f.ChapterFileId!.Value })
-            .ToListAsync(ct);
-        foreach (var twin in twins.Where(t => !own.Contains(t.ChapterFileId)))
+        // Twins by the current hash, by a hash an earlier version had (a scan of an empty mount point
+        // records the file missing and can drop its hash), and, for rows never verified, by name and size.
+        var hash = file.ContentHash;
+        var name = Path.GetFileName(LibraryPaths.ComparisonKey(file.RelativePath));
+        var twins = (await db.HealthFiles.AsNoTracking()
+                .Where(f => f.Id != file.Id && !f.Removed && f.ChapterFileId != null
+                    && (f.ContentHash == hash
+                        || db.HealthFileVersions.Any(v => v.FileId == f.Id && v.ContentHash == hash)
+                        || (f.ContentHash == null && f.Size == file.Size)))
+                .Select(f => new { f.RootFolderId, f.RelativePath, f.Size, f.ContentHash, ChapterFileId = f.ChapterFileId!.Value })
+                .ToListAsync(ct))
+            .Where(t => t.ContentHash != null || t.Size != file.Size
+                || string.Equals(Path.GetFileName(LibraryPaths.ComparisonKey(t.RelativePath)), name, StringComparison.OrdinalIgnoreCase))
+            .Where(t => !own.Contains(t.ChapterFileId));
+        foreach (var twin in twins)
         {
             var twinRoot = twin.RootFolderId == root.Id ? root : await db.RootFolders.FindAsync([twin.RootFolderId], ct);
             if (twinRoot == null) continue;
-            // A root that cannot be looked at may be this one under another name.
-            if (!Directory.Exists(twinRoot.Path) || LibraryPaths.Resolve(twinRoot.Path, twin.RelativePath) is not { } other)
-                throw new HealthRefusedException("error.health.fileBacksChapters");
-            if (!File.Exists(other)) continue;
-            if (!Distinct(root, file.RelativePath, path, twinRoot, twin.RelativePath, other))
+            // A root that cannot be looked at may be this one under another name, and a twin that reads
+            // as missing may be this file behind a mount that was not there when it was looked for.
+            if (twin.Size < 0 || !Directory.Exists(twinRoot.Path) || LibraryPaths.Resolve(twinRoot.Path, twin.RelativePath) is not { } other
+                || !File.Exists(other) || !Distinct(root, file.RelativePath, path, twinRoot, twin.RelativePath, other))
                 throw new HealthRefusedException("error.health.fileBacksChapters");
         }
     }

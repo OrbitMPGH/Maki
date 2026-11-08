@@ -479,6 +479,59 @@ public sealed class HealthDuplicateTests : IDisposable
     }
 
     [Fact]
+    public async Task A_plain_delete_is_refused_while_a_linked_twin_reads_as_missing()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        var service = Operations(db);
+        // Gone at the path it was recorded at: an empty mount point looks the same.
+        var linkedPath = Path.Combine(root, s.Linked.RelativePath);
+        var bytes = await File.ReadAllBytesAsync(linkedPath);
+        File.Delete(linkedPath);
+
+        var refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
+            service.DeleteNowAsync(s.Spare.Id, s.Spare.Version, 1, default));
+        Assert.Equal("error.health.fileBacksChapters", refused.Key);
+
+        // Recorded missing by a scan, with the hash dropped: only an earlier version still has it.
+        await File.WriteAllBytesAsync(linkedPath, bytes);
+        Assert.True(db.HealthFileVersions.Any(v => v.FileId == s.Linked.Id && v.ContentHash == s.Linked.ContentHash));
+        await db.HealthFiles.Where(f => f.Id == s.Linked.Id).ExecuteUpdateAsync(u => u
+            .SetProperty(f => f.Size, -1L).SetProperty(f => f.ContentHash, (string?)null));
+        refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
+            service.DeleteNowAsync(s.Spare.Id, s.Spare.Version, 1, default));
+        Assert.Equal("error.health.fileBacksChapters", refused.Key);
+        Assert.True(File.Exists(Path.Combine(root, s.Spare.RelativePath)));
+    }
+
+    [Fact]
+    public async Task An_unverified_linked_file_with_the_same_name_and_size_that_may_be_this_one_refuses_the_delete()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        await db.HealthFiles.Where(f => f.Id == s.Linked.Id).ExecuteUpdateAsync(u => u.SetProperty(f => f.Removed, true));
+        var series = db.Series.AsNoTracking().Single();
+        var otherPath = Path.Combine("Other", Path.GetFileName(s.Spare.RelativePath).ToUpperInvariant());
+        Directory.CreateDirectory(Path.Combine(root, "Other"));
+        File.Copy(Path.Combine(root, s.Spare.RelativePath), Path.Combine(root, otherPath));
+        var record = new ChapterFile { SeriesId = series.Id, RelativePath = otherPath, Size = s.Spare.Size };
+        db.ChapterFiles.Add(record); await db.SaveChangesAsync();
+        db.HealthFiles.Add(new HealthFile
+        {
+            RootFolderId = s.Spare.RootFolderId, RelativePath = otherPath, ChapterFileId = record.Id, SeriesId = series.Id, Size = s.Spare.Size,
+        });
+        await db.SaveChangesAsync();
+        var service = Operations(db);
+        service.SameFile = (_, _) => FileSameness.Unknown;
+
+        var refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
+            service.DeleteNowAsync(s.Spare.Id, s.Spare.Version, 1, default));
+
+        Assert.Equal("error.health.fileBacksChapters", refused.Key);
+        Assert.True(File.Exists(Path.Combine(root, s.Spare.RelativePath)));
+    }
+
+    [Fact]
     public async Task A_plain_delete_through_a_second_root_naming_the_first_is_refused()
     {
         using var db = fixture.NewContext();
