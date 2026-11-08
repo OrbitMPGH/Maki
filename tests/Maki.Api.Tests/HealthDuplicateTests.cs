@@ -174,6 +174,36 @@ public sealed class HealthDuplicateTests : IDisposable
     }
 
     [Fact]
+    public async Task A_file_that_cannot_be_read_at_apply_fails_the_delete_instead_of_blocking_the_file()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        var path = Path.Combine(root, s.Spare.RelativePath);
+        var service = Operations(db);
+        FileStream? held = null;
+        if (OperatingSystem.IsWindows()) held = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+        else File.SetUnixFileMode(path, UnixFileMode.None);
+        try
+        {
+            try { await File.ReadAllBytesAsync(path); return; }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+
+            await Assert.ThrowsAnyAsync<Exception>(() => service.DeleteNowAsync(s.Spare.Id, s.Spare.Version, 1, default));
+        }
+        finally
+        {
+            held?.Dispose();
+            if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        }
+
+        var op = db.HealthOperations.AsNoTracking().Single();
+        Assert.Equal("failed", op.Status);
+        Assert.Equal("health.operation.error.deleteFailed", op.ErrorKey);
+        Assert.True(File.Exists(path));
+        Assert.Equal("completed", (await service.DeleteNowAsync(s.Spare.Id, s.Spare.Version, 1, default)).Status);
+    }
+
+    [Fact]
     public async Task A_spare_given_chapters_since_the_list_was_read_is_refused()
     {
         using var db = fixture.NewContext();

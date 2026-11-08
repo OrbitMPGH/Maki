@@ -148,9 +148,11 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
     {
         var op = await PreviewDeleteAsync(fileId, version, userId, ct);
         try { await ApplyAsync(op.Id, version, true, false, ct, spare); }
-        catch (HealthRefusedException ex) when (op.Status == "review")
+        catch (Exception ex) when (op.Status == "review" && ex is InvalidOperationException or IOException or UnauthorizedAccessException)
         {
-            op.Status = "failed"; op.ErrorKey = ex.Key; op.FinishedAt = DateTime.UtcNow;
+            op.Status = "failed";
+            op.ErrorKey = ex is HealthRefusedException refused ? refused.Key : "health.operation.error.deleteFailed";
+            op.FinishedAt = DateTime.UtcNow;
             await db.SaveChangesAsync(CancellationToken.None);
             throw;
         }
