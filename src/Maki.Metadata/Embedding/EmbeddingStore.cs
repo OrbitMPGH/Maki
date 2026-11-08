@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Maki.Core.Io;
 using Microsoft.Data.Sqlite;
 
 namespace Maki.Metadata.Embedding;
@@ -73,6 +74,9 @@ public class EmbeddingStore(EmbeddingOptions options)
                 """;
             cmd.ExecuteNonQuery();
         }
+
+        // While this connection still holds the -shm the WAL switch above may have created.
+        Keeper.Attach();
 
         // A file from before the version was recorded is taken to hold the running model's vectors,
         // which is what every pass and install up to the release that started recording it wrote.
@@ -507,7 +511,16 @@ public class EmbeddingStore(EmbeddingOptions options)
     /// The model version every vector in the file was written with, or null when the file predates
     /// the record. The dimension check cannot tell two 768-dim models apart, so this is what can.
     /// </summary>
-    public string? GetModelVersion() => File.Exists(DbPath) ? ReadModelVersion(DbPath) : null;
+    public string? GetModelVersion()
+    {
+        if (!File.Exists(DbPath))
+        {
+            return null;
+        }
+
+        Keeper.Attach();
+        return ReadModelVersion(DbPath);
+    }
 
     /// <summary>Records <paramref name="version"/> as the model the whole file now holds.</summary>
     public void SetModelVersion(string version)
@@ -829,9 +842,13 @@ public class EmbeddingStore(EmbeddingOptions options)
     /// <summary>Reinterprets the packed int8 vector as bytes for BLOB storage (no copy of meaning, just of bits).</summary>
     private static byte[] ToBytes(sbyte[] packed) => MemoryMarshal.AsBytes(packed.AsSpan()).ToArray();
 
+    private SqliteKeeper Keeper => SqliteKeeper.For(DbPath);
+
     private SqliteConnection OpenWritable()
     {
         _count = null;
+        SqliteFiles.CreateIfMissing(DbPath);
+        Keeper.Attach();
         var conn = new SqliteConnection($"Data Source={DbPath};Pooling=False");
         conn.Open();
         return conn;
@@ -839,6 +856,7 @@ public class EmbeddingStore(EmbeddingOptions options)
 
     private SqliteConnection OpenReadOnly()
     {
+        Keeper.Attach();
         var conn = new SqliteConnection($"Data Source={DbPath};Mode=ReadOnly;Pooling=False");
         conn.Open();
         return conn;

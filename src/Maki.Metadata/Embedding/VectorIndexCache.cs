@@ -130,6 +130,7 @@ public sealed class VectorIndexCache(
     {
         try
         {
+            SqliteKeeper.For(options.VectorDbPath).Attach();
             using var conn = new SqliteConnection($"Data Source={options.VectorDbPath};Mode=ReadOnly;Pooling=False");
             conn.Open();
             return ContentStamp(conn);
@@ -262,6 +263,7 @@ public sealed class VectorIndexCache(
                 DeleteSnapshot();
             }
 
+            using var keeperClosed = SqliteKeeper.For(options.VectorDbPath).Suspend();
             SqliteConnection.ClearAllPools();
 
             foreach (var sidecar in new[] { options.VectorDbPath + "-wal", options.VectorDbPath + "-shm" })
@@ -410,6 +412,7 @@ public sealed class VectorIndexCache(
     private (VectorIndex? Index, VectorIndexParts? Fresh, string Key) Build(long dumpTicks, long dumpLength, CancellationToken ct)
     {
         var started = DateTime.UtcNow;
+        SqliteKeeper.For(options.VectorDbPath).Attach();
         using var conn = new SqliteConnection($"Data Source={options.VectorDbPath};Mode=ReadOnly;Pooling=False");
         conn.Open();
         using (var attach = conn.CreateCommand())

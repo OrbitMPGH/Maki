@@ -98,6 +98,8 @@ try
     MakiLogging.Configure(paths, loggingOptions);
 
     startupLog = MakiLogging.CreateLogger("Startup");
+
+    SqliteStartup.Prepare(paths, startupLog);
 }
 catch (Exception ex) when (ex is not HostAbortedException)
 {
@@ -1577,6 +1579,7 @@ try
         }
         scope.ServiceProvider.GetRequiredService<HealthOperationService>().RecoverAsync(CancellationToken.None).GetAwaiter().GetResult();
         db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+        SqliteStartup.KeepAttached(paths);
 
         // Told after the migration, never before: the UserNotifications table is itself created by a
         // migration, so on the upgrade that introduces it there is nowhere to write this yet. Awaited

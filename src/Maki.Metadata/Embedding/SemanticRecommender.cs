@@ -363,6 +363,7 @@ public class SemanticRecommender(
             w = w with { CoRead = coReadTuning.Weight };
         }
 
+        SqliteKeeper.For(store.DbPath).Attach();
         using var conn = new SqliteConnection($"Data Source={store.DbPath};Mode=ReadOnly;Pooling=False");
         conn.Open();
         using (var attach = conn.CreateCommand())
