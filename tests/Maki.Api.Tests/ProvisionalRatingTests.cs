@@ -232,6 +232,24 @@ public sealed class ProvisionalRatingTests : IDisposable
     }
 
     [Fact]
+    public async Task A_correction_after_the_window_is_a_new_entry()
+    {
+        var alice = _db.SeedUser("alice");
+        var seriesId = SeedSeries();
+
+        using (var db = _db.NewContext(alice))
+        {
+            await RatingSnapshotService.RecordAsync(db, alice, seriesId, 7, false, 5, RatingSnapshotOrigin.Manual, default);
+            var first = db.RatingSnapshots.Single();
+            first.CreatedAt = DateTime.UtcNow - RatingSnapshotService.CorrectionWindow - TimeSpan.FromMinutes(1);
+            await db.SaveChangesAsync();
+            await RatingSnapshotService.RecordAsync(db, alice, seriesId, 8, false, 5, RatingSnapshotOrigin.Manual, default);
+        }
+
+        Assert.Equal([7, 8], History(alice, seriesId).Select(s => s.Rating));
+    }
+
+    [Fact]
     public async Task Answering_a_prompt_is_recorded_as_a_checkpoint()
     {
         var alice = _db.SeedUser("alice");
