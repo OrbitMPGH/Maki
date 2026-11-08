@@ -344,6 +344,76 @@ public sealed class HealthDuplicateTests : IDisposable
         }
     }
 
+    /// <summary>A second root holding a byte-identical copy of the linked file, as an unlinked inventory row.</summary>
+    private async Task<HealthFile> SecondRootCopy(MakiDbContext db, Seeded s, string secondRoot, bool copy)
+    {
+        if (copy)
+        {
+            Directory.CreateDirectory(Path.Combine(secondRoot, "Series"));
+            File.Copy(Path.Combine(root, s.Linked.RelativePath), Path.Combine(secondRoot, s.Linked.RelativePath));
+        }
+        var second = new RootFolder { Path = secondRoot }; db.RootFolders.Add(second); await db.SaveChangesAsync();
+        var row = new HealthFile { RootFolderId = second.Id, RelativePath = s.Linked.RelativePath };
+        db.HealthFiles.Add(row); await db.SaveChangesAsync();
+        await new HealthScanService(db).AnalyzeAsync(row, secondRoot, true, default, 0, true);
+        return row;
+    }
+
+    [Fact]
+    public async Task A_second_root_that_is_the_first_under_another_name_is_caught_by_the_probe()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        var link = root + "-probe-link";
+        if (!MakeDirectoryLink(link, root)) return;
+        try
+        {
+            var row = await SecondRootCopy(db, s, link, copy: false);
+            var service = Operations(db);
+            // Two mounts of one share: file identity alone reads the two as separate files.
+            service.SameFile = (_, _) => FileSameness.Different;
+
+            var refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
+                service.DeleteNowAsync(row.Id, row.Version, 1, default, spare: true));
+
+            Assert.Equal("error.health.spareNotDistinct", refused.Key);
+            Assert.True(File.Exists(Path.Combine(root, s.Linked.RelativePath)));
+            Assert.Empty(Directory.EnumerateFiles(Path.Combine(root, ".maki", "tmp")));
+        }
+        finally
+        {
+            Directory.Delete(link);
+        }
+    }
+
+    [Fact]
+    public async Task A_spare_in_a_separate_root_is_deleted_and_one_whose_probe_fails_is_refused()
+    {
+        using var db = fixture.NewContext();
+        var s = await Seed(db);
+        var separate = Directory.CreateTempSubdirectory("maki-health-second-").FullName;
+        var blocked = Directory.CreateTempSubdirectory("maki-health-blocked-").FullName;
+        try
+        {
+            var row = await SecondRootCopy(db, s, separate, copy: true);
+            Assert.Equal("completed", (await Operations(db).DeleteNowAsync(row.Id, row.Version, 1, default, spare: true)).Status);
+            Assert.False(File.Exists(Path.Combine(separate, s.Linked.RelativePath)));
+
+            // A file where the probe's folder should be: nothing can be written to check with.
+            File.WriteAllText(Path.Combine(blocked, ".maki"), "");
+            var stuck = await SecondRootCopy(db, s, blocked, copy: true);
+            var refused = await Assert.ThrowsAsync<HealthRefusedException>(() =>
+                Operations(db).DeleteNowAsync(stuck.Id, stuck.Version, 1, default, spare: true));
+            Assert.Equal("error.health.spareNotDistinct", refused.Key);
+            Assert.True(File.Exists(Path.Combine(blocked, s.Linked.RelativePath)));
+        }
+        finally
+        {
+            Directory.Delete(separate, true);
+            Directory.Delete(blocked, true);
+        }
+    }
+
     [Fact]
     public async Task A_plain_delete_of_a_file_another_record_reads_is_refused()
     {

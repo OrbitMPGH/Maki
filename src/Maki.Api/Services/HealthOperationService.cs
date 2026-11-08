@@ -629,10 +629,46 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             if (copyRoot == null || !Directory.Exists(copyRoot.Path) || LibraryPaths.ResolveNoLinks(copyRoot.Path, copy.RelativePath) is not { } copyPath) continue;
             var info = new FileInfo(copyPath);
             if (!info.Exists || info.Length != copy.Size || info.LastWriteTimeUtc != copy.ModifiedAt) continue;
-            if (SameFile(path, copyPath) != FileSameness.Different) { undistinguished = true; continue; }
+            if (SameFile(path, copyPath) != FileSameness.Different || (copyRoot.Id != root.Id && SharesStorage(root, copyRoot)))
+            {
+                undistinguished = true;
+                continue;
+            }
             if (await HashMatchesAsync(copyPath, file.ContentHash, ct)) return;
         }
         throw new HealthRefusedException(undistinguished ? "error.health.spareNotDistinct" : "error.health.spareLastCopy");
+    }
+
+    /// <summary>Verdicts of <see cref="SharesStorage"/> for this service's scope: one request, so one bulk operation.</summary>
+    private readonly Dictionary<(int, int), bool> sharedStorage = [];
+
+    /// <summary>
+    /// Whether two root folders may be one storage under two names. Two CIFS mounts of one share
+    /// report different devices, so file identity calls every file in one a separate copy of its
+    /// twin in the other. A probe written under <paramref name="from"/> that shows up under
+    /// <paramref name="other"/> settles it; a probe that cannot be written or looked for counts as shared.
+    /// </summary>
+    private bool SharesStorage(RootFolder from, RootFolder other)
+    {
+        if (sharedStorage.TryGetValue((from.Id, other.Id), out var known)) return known;
+        var name = $".maki/tmp/probe-{Guid.NewGuid():N}.tmp";
+        string? probe = null;
+        var shared = true;
+        try
+        {
+            probe = HealthPaths.Resolve(from.Path, name);
+            var seen = HealthPaths.Resolve(other.Path, name);
+            Directory.CreateDirectory(Path.GetDirectoryName(probe)!);
+            File.WriteAllBytes(probe, []);
+            shared = File.Exists(seen);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException) { }
+        finally
+        {
+            try { if (probe != null) File.Delete(probe); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        }
+        return sharedStorage[(from.Id, other.Id)] = shared;
     }
 
     /// <summary>
