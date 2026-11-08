@@ -20,6 +20,7 @@ namespace Maki.Metadata;
 public sealed class SqliteKeeper
 {
     private static readonly ConcurrentDictionary<string, SqliteKeeper> All = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, bool> Released = new(StringComparer.Ordinal);
 
     private readonly string _path;
     private readonly bool _enabled;
@@ -27,6 +28,7 @@ public sealed class SqliteKeeper
     private SqliteConnection? _connection;
     private int _suspended;
     private bool _attached;
+    private bool _released;
 
     internal SqliteKeeper(string path, bool enabled)
     {
@@ -37,8 +39,20 @@ public sealed class SqliteKeeper
     /// <summary>Where open failures are logged. Set at startup.</summary>
     public static ILogger? Logger { get; set; }
 
-    public static SqliteKeeper For(string databasePath) =>
-        All.GetOrAdd(Path.GetFullPath(databasePath), path => new SqliteKeeper(path, OperatingSystem.IsLinux()));
+    /// <summary>
+    /// The keeper for <paramref name="databasePath"/>. After <see cref="Release"/> it is one that never
+    /// opens, so a late opener at shutdown cannot recreate the <c>-shm</c>, until <see cref="Allow"/>.
+    /// </summary>
+    public static SqliteKeeper For(string databasePath)
+    {
+        var path = Path.GetFullPath(databasePath);
+        return Released.ContainsKey(path)
+            ? new SqliteKeeper(path, enabled: false)
+            : All.GetOrAdd(path, p => new SqliteKeeper(p, OperatingSystem.IsLinux()));
+    }
+
+    /// <summary>Lets <paramref name="databasePath"/> have a keeper again, when a host starts.</summary>
+    public static void Allow(string databasePath) => Released.TryRemove(Path.GetFullPath(databasePath), out _);
 
     /// <summary>
     /// Closes and forgets the keeper for <paramref name="databasePath"/>, at shutdown. Closing it
@@ -47,10 +61,13 @@ public sealed class SqliteKeeper
     /// </summary>
     public static void Release(string databasePath)
     {
-        if (All.TryRemove(Path.GetFullPath(databasePath), out var keeper))
+        var path = Path.GetFullPath(databasePath);
+        Released[path] = true;
+        if (All.TryRemove(path, out var keeper))
         {
             lock (keeper._gate)
             {
+                keeper._released = true;
                 keeper.CloseLocked();
             }
         }
@@ -75,7 +92,7 @@ public sealed class SqliteKeeper
 
         lock (_gate)
         {
-            if (_attached || _suspended > 0 || !File.Exists(_path))
+            if (_attached || _released || _suspended > 0 || !File.Exists(_path))
             {
                 return;
             }

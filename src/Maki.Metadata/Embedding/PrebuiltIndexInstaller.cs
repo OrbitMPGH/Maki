@@ -202,7 +202,11 @@ public class PrebuiltIndexInstaller(
             // Checked against the manifest above; recorded in the file so the next freshness check
             // can tell this model's vectors from another's.
             EmbeddingStore.StampModelVersion(staging, options.ModelVersion);
-            await cache.SwapDatabaseAsync(staging, ct);
+            if (!await cache.SwapDatabaseAsync(staging, ct))
+            {
+                return new PrebuiltIndexResult(false, "install.prebuiltIndex.indexingRunning");
+            }
+
             await settings.SetAsync(
                 SettingKeys.RecommendationsPrebuiltGeneratedAt,
                 (manifest.GeneratedAt ?? DateTime.UtcNow).ToString("O", CultureInfo.InvariantCulture),

@@ -102,6 +102,7 @@ public class SqliteFilesTests : IDisposable
                 if (!child.WaitForExit(5000))
                 {
                     child.Kill();
+                    child.WaitForExit();
                 }
             }
         }
@@ -110,15 +111,26 @@ public class SqliteFilesTests : IDisposable
     }
 
     [Fact]
-    public void Release_forgets_the_keeper_for_a_path()
+    public void A_released_keeper_never_opens_again_until_allowed()
     {
         var db = Path.Combine(_dir, "released.db");
+        SqliteFiles.CreateIfMissing(db);
         var first = SqliteKeeper.For(db);
 
         SqliteKeeper.Release(db);
+        first.Attach();
+        var late = SqliteKeeper.For(db);
+        late.Attach();
 
         Assert.False(first.IsOpen);
-        Assert.NotSame(first, SqliteKeeper.For(db));
+        Assert.False(late.IsOpen);
+        Assert.NotSame(late, SqliteKeeper.For(db));
+
+        SqliteKeeper.Allow(db);
+        var again = SqliteKeeper.For(db);
+        Assert.Same(again, SqliteKeeper.For(db));
+        again.Attach();
+        Assert.Equal(OperatingSystem.IsLinux(), again.IsOpen);
         SqliteKeeper.Release(db);
     }
 

@@ -35,8 +35,10 @@ public class SqliteStartupTests : IDisposable
 
         Assert.True(File.Exists(stale));
 
+        var keeper = SqliteKeeper.For(paths.DatabasePath);
         SqliteStartup.Release(paths);
+        Assert.False(keeper.IsOpen);
+        SqliteKeeper.For(paths.DatabasePath).Attach();
         Assert.False(SqliteKeeper.For(paths.DatabasePath).IsOpen);
-        SqliteKeeper.Release(paths.DatabasePath);
     }
 }

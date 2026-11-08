@@ -479,15 +479,39 @@ public class VectorIndexCacheTests : IDisposable
         var stagedStore = new EmbeddingStore(new EmbeddingOptions(_dir, staged, _dir, EmbeddingModelProfile.Base));
         stagedStore.EnsureSchema();
         stagedStore.UpsertBatch([(2L, "new", [0f, 1f, 0f, 0f]), (3L, "new", [0f, 0f, 1f, 0f])]);
+        SqliteKeeper.Release(staged);
         SqliteConnection.ClearAllPools();
         var logger = new RecordingLogger();
 
-        await Cache(dimensions: 4, logger).SwapDatabaseAsync(staged);
+        Assert.True(await Cache(dimensions: 4, logger).SwapDatabaseAsync(staged));
 
-        Assert.False(File.Exists(staged));
         Assert.DoesNotContain(logger.Messages, m => m.Contains("replacing the file instead"));
         Assert.Equal(["new", "new"], Store().GetHashes().OrderBy(kv => kv.Key).Select(kv => kv.Value));
         Assert.True(!File.Exists(_vectorPath + "-wal") || new FileInfo(_vectorPath + "-wal").Length == 0);
+    }
+
+    [Fact]
+    public async Task A_swap_while_a_writer_holds_the_database_changes_nothing()
+    {
+        Store().UpsertBatch([(1L, "old", [1f, 0f, 0f, 0f])]);
+        var staged = Path.Combine(_dir, "embeddings.db.partial");
+        var stagedStore = new EmbeddingStore(new EmbeddingOptions(_dir, staged, _dir, EmbeddingModelProfile.Base));
+        stagedStore.EnsureSchema();
+        stagedStore.UpsertBatch([(2L, "new", [0f, 1f, 0f, 0f])]);
+        SqliteKeeper.Release(staged);
+
+        using (var writer = new SqliteConnection($"Data Source={_vectorPath};Pooling=False"))
+        {
+            writer.Open();
+            using var begin = writer.CreateCommand();
+            begin.CommandText = "BEGIN IMMEDIATE";
+            begin.ExecuteNonQuery();
+
+            Assert.False(await Cache(dimensions: 4).SwapDatabaseAsync(staged));
+        }
+
+        Assert.True(File.Exists(staged));
+        Assert.Equal(["old"], Store().GetHashes().Values);
     }
 
     private EmbeddingStore Store()

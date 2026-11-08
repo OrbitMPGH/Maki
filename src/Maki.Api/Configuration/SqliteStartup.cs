@@ -19,6 +19,8 @@ public static class SqliteStartup
     public static void Prepare(AppPaths paths, ILogger logger)
     {
         SqliteKeeper.Logger = logger;
+        SqliteKeeper.Allow(paths.DatabasePath);
+        SqliteKeeper.Allow(paths.EmbeddingsDbPath);
         if (OperatingSystem.IsLinux() && Swept.TryAdd(Path.GetFullPath(paths.ConfigDir), true))
         {
             foreach (var directory in new[] { paths.ConfigDir, paths.CacheDir })

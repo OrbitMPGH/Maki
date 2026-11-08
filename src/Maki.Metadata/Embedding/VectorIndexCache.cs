@@ -251,12 +251,18 @@ public sealed class VectorIndexCache(
     /// <para>
     /// An existing database gets the new content copied into it with SQLite's backup API rather than
     /// a file moved over it, so the file and its <c>-shm</c> stay the ones every connection and the
-    /// keeper share (see <see cref="SqliteKeeper"/>). A move is the fallback, and then the WAL
-    /// sidecars go with the old file: leaving them would let SQLite reconstruct pages of the
-    /// *previous* database over the new one.
+    /// keeper share (see <see cref="SqliteKeeper"/>). Unlike the instant move it replaced, the copy
+    /// holds the build lock and the database's write lock for its whole length, seconds on a NAS.
+    /// A move is the fallback only when the copy cannot work (a page size the live file cannot take,
+    /// or a corrupt live file), and then the WAL sidecars go with the old file: leaving them would
+    /// let SQLite reconstruct pages of the *previous* database over the new one.
     /// </para>
     /// </summary>
-    public async Task SwapDatabaseAsync(string stagedPath, CancellationToken ct = default)
+    /// <returns>
+    /// False when a writer held the database through the wait. Nothing changed and the staged file
+    /// is left where it was; the caller tries again on its next run.
+    /// </returns>
+    public async Task<bool> SwapDatabaseAsync(string stagedPath, CancellationToken ct = default)
     {
         await _lock.WaitAsync(ct);
         try
@@ -270,11 +276,14 @@ public sealed class VectorIndexCache(
             }
 
             SqliteConnection.ClearAllPools();
-            if (File.Exists(options.VectorDbPath) && TryCopyInto(stagedPath))
+            var copy = File.Exists(options.VectorDbPath) ? CopyInto(stagedPath) : CopyResult.Unusable;
+            if (copy == CopyResult.Busy)
             {
-                File.Delete(stagedPath);
+                logger.LogInformation("Did not swap in the new vector database: {Path} is being written to", options.VectorDbPath);
+                return false;
             }
-            else
+
+            if (copy == CopyResult.Unusable)
             {
                 using var keeperClosed = SqliteKeeper.For(options.VectorDbPath).Suspend();
                 foreach (var sidecar in new[] { options.VectorDbPath + "-wal", options.VectorDbPath + "-shm" })
@@ -289,6 +298,7 @@ public sealed class VectorIndexCache(
             }
 
             logger.LogInformation("Swapped in a new vector database at {Path}", options.VectorDbPath);
+            return true;
         }
         finally
         {
@@ -296,7 +306,9 @@ public sealed class VectorIndexCache(
         }
     }
 
-    private bool TryCopyInto(string stagedPath)
+    private enum CopyResult { Copied, Busy, Unusable }
+
+    private CopyResult CopyInto(string stagedPath)
     {
         try
         {
@@ -305,10 +317,10 @@ public sealed class VectorIndexCache(
             using var live = new SqliteConnection($"Data Source={options.VectorDbPath};Mode=ReadWrite;Pooling=False");
             source.Open();
             live.Open();
-            using (var wait = live.CreateCommand())
+            using (var setup = live.CreateCommand())
             {
-                wait.CommandText = "PRAGMA busy_timeout=5000";
-                wait.ExecuteNonQuery();
+                setup.CommandText = "PRAGMA busy_timeout=5000; PRAGMA journal_size_limit=8388608;";
+                setup.ExecuteNonQuery();
             }
 
             source.BackupDatabase(live);
@@ -316,14 +328,23 @@ public sealed class VectorIndexCache(
             // The copy went through the WAL whole; give the space back.
             using var truncate = live.CreateCommand();
             truncate.CommandText = "PRAGMA wal_checkpoint(TRUNCATE)";
-            truncate.ExecuteNonQuery();
-            return true;
+            using var result = truncate.ExecuteReader();
+            if (result.Read() && result.GetInt32(0) != 0)
+            {
+                logger.LogInformation("The new vector database is in place, but a reader kept its WAL from being truncated");
+            }
+
+            return CopyResult.Copied;
         }
-        catch (SqliteException ex)
+        catch (SqliteException ex) when ((ex.SqliteErrorCode & 0xFF) is 5 or 6)
+        {
+            return CopyResult.Busy;
+        }
+        catch (SqliteException ex) when ((ex.SqliteErrorCode & 0xFF) is 8 or 11 or 26)
         {
             logger.LogWarning("Could not copy the new vector database into {Path}, replacing the file instead: {Error}",
                 options.VectorDbPath, ex.Message);
-            return false;
+            return CopyResult.Unusable;
         }
     }
 
