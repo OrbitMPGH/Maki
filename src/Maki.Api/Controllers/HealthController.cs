@@ -301,9 +301,11 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
     {
         var missing = await query.Where(f => f.Size < 0 && f.ChapterFileId != null)
             .Select(f => new { f.Id, f.Version, f.RelativePath }).ToListAsync(ct);
-        var found = await HealthMovedFiles.FindAsync(db, missing.Select(m => m.Id).ToList(), ct);
+        // A file two records could have moved to is neither found nor gone.
+        var ambiguous = new HashSet<int>();
+        var found = await HealthMovedFiles.FindAsync(db, missing.Select(m => m.Id).ToList(), ct, ambiguous);
         var strong = missing.Where(m => found.TryGetValue(m.Id, out var f) && HealthMovedFiles.Strong(f.Evidence)).ToList();
-        var gone = missing.Where(m => !found.ContainsKey(m.Id))
+        var gone = missing.Where(m => !found.ContainsKey(m.Id) && !ambiguous.Contains(m.Id))
             .GroupBy(m => LibraryPaths.TopFolder(m.RelativePath) ?? "", LibraryPaths.FolderComparer)
             .OrderByDescending(g => g.Count()).Take(20)
             .Select(g => new

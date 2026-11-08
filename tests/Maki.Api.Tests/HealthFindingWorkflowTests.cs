@@ -304,4 +304,25 @@ public sealed class HealthFindingWorkflowTests : IDisposable
         Assert.Equal(moved.Id, item.GetProperty("TargetId").GetInt32());
         Assert.Empty(moves.GetProperty("gone").EnumerateArray());
     }
+
+    [Fact]
+    public async Task A_file_two_missing_records_could_claim_is_offered_to_neither_and_is_not_gone()
+    {
+        using var db = fixture.NewContext();
+        var lib = await SeedLinked(db);
+        await MoveFolder(db, lib, "Series (2024)");
+        var other = new ChapterFile { SeriesId = lib.Series.Id, RelativePath = Path.Combine("Series", "Old", "Series Ch.1.cbz") };
+        db.ChapterFiles.Add(other); await db.SaveChangesAsync();
+        db.HealthFiles.Add(new HealthFile { RootFolderId = lib.Root.Id, RelativePath = other.RelativePath, ChapterFileId = other.Id, SeriesId = lib.Series.Id, Size = -1 });
+        await db.SaveChangesAsync();
+
+        var ambiguous = new HashSet<int>();
+        Assert.Empty(await HealthMovedFiles.FindAsync(db, [lib.File.Id], default, ambiguous));
+        Assert.Equal([lib.File.Id], ambiguous);
+
+        var result = await Controller(db).Files(kind: "missing", search: "Ch.1", ct: default);
+        var moves = JsonSerializer.SerializeToElement(Assert.IsType<OkObjectResult>(result).Value).GetProperty("moves");
+        Assert.Equal(0, moves.GetProperty("total").GetInt32());
+        Assert.Empty(moves.GetProperty("gone").EnumerateArray());
+    }
 }
