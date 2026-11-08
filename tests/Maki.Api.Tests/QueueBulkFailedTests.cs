@@ -4,6 +4,7 @@ using Maki.Api.Dtos;
 using Maki.Api.Services;
 using Maki.Core.Entities;
 using Maki.Core.Indexers;
+using Maki.Core.Sources;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -22,7 +23,10 @@ public class QueueBulkFailedTests : IDisposable
 
     public QueueBulkFailedTests()
     {
-        _queue = new DownloadQueueService(_db.ScopeFactory(), TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance);
+        // A manual retry asks the resolver for each series' source order, so this needs a real one.
+        _queue = new DownloadQueueService(_db.ScopeFactory(), TimeProvider.System,
+            Sources.Resolver(new SourceRegistry([new FakeSource { Name = "alpha" }, new FakeSource { Name = "beta" }])),
+            NullLogger<DownloadQueueService>.Instance);
         _batches = new DownloadBatchNotifier(
             new RecordingNotifications(), new RecordingInbox(), new TestLocalizer(), new TestUserLocaleResolver(), TimeProvider.System,
             NullLogger<DownloadBatchNotifier>.Instance);
