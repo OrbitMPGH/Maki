@@ -48,14 +48,18 @@ export function optimistic<TVars>(queryClient: QueryClient, patches: (vars: TVar
   }
 }
 
-/** {@link optimistic} for one settings object: the fields the save sends are merged into its cache. */
+/**
+ * {@link optimistic} for one settings object: the fields the save sends are merged into its cache.
+ * `seededBySave` is for a save whose response is written to the cache, so a refetch would only replace it.
+ */
 export function optimisticMerge<TVars, TData extends object>(
   queryClient: QueryClient,
   key: QueryKey,
   toPatch: (vars: TVars) => Partial<TData>,
+  { seededBySave = false }: { seededBySave?: boolean } = {},
 ) {
   return optimistic<TVars>(queryClient, (vars) => [
-    { key, update: (old: TData) => ({ ...old, ...toPatch(vars) }) },
+    { key, refetchOnSuccess: !seededBySave, update: (old: TData) => ({ ...old, ...toPatch(vars) }) },
   ])
 }
 

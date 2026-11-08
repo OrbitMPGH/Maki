@@ -2796,7 +2796,7 @@ export function useSaveRatingPromptsSettings() {
   return useMutation({
     mutationFn: (settings: RatingPromptsSettings) =>
       api<RatingPromptsSettings>('/settings/rating-prompts', { method: 'PUT', body: JSON.stringify(settings) }),
-    ...optimisticMerge(queryClient, ['settings', 'rating-prompts'], (settings: RatingPromptsSettings) => settings),
+    ...optimisticMerge(queryClient, ['settings', 'rating-prompts'], (settings: RatingPromptsSettings) => settings, { seededBySave: true }),
     onSuccess: (saved) => queryClient.setQueryData(['settings', 'rating-prompts'], saved),
   })
 }
@@ -3040,6 +3040,7 @@ export function useSaveOpdsSettings() {
         trackProgress,
         ...(komga !== undefined && { komga }),
       }),
+      { seededBySave: true },
     ),
     onSuccess: (data) => {
       // The PUT mints the token on first enable, so seed the cache from the response rather
@@ -3919,7 +3920,7 @@ export function useSaveNameParsingSettings() {
         method: 'PUT',
         body: JSON.stringify({ languages }),
       }),
-    ...optimisticMerge(queryClient, ['settings', 'nameparsing'], (languages: string[]) => ({ languages })),
+    ...optimisticMerge(queryClient, ['settings', 'nameparsing'], (languages: string[]) => ({ languages }), { seededBySave: true }),
     onSuccess: (saved) => queryClient.setQueryData(['settings', 'nameparsing'], saved),
   })
 }
