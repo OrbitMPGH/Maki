@@ -3,8 +3,11 @@
  * of its pixel-to-pixel contrast survives. A sharp page loses most of it, an already soft page
  * barely changes. The score runs from 0 (sharp) to 1 (smeared) and does not depend on contrast.
  *
- * Measured at the page's own pixels on a grid of small tiles, so a 15000 px webtoon slice costs the
- * same as a single page. Flat areas add nothing to either sum, so blank tiles do not dilute it.
+ * Measured on a grid of small tiles at the size the page is shown, never above its own pixels, so a
+ * 15000 px webtoon slice costs the same as a single page. A large soft file shown scaled down looks
+ * sharp, and upscaling it would cost a lot for nothing (a 2822 x 4000 release scored 0.30 to 0.49
+ * at its own pixels and 0.13 to 0.25 at 1300 to 2400 px tall). Flat areas add nothing to either
+ * sum, so blank tiles do not dilute it.
  */
 
 const TILE = 160
@@ -16,6 +19,9 @@ const COLUMNS = 3
  * 0.2, sub-800 px scans and soft colour webtoons 0.25 to 0.45.
  */
 export const SOFT_BLUR = 0.28
+
+/** Shown scale in twentieths: a resize that barely changes the page reuses its score. */
+const shownScale = (scale: number) => Math.min(1, Math.max(0.05, Math.round(scale * 20) / 20))
 
 /** Below this mean step per pixel the tiles are close to blank and say nothing either way. */
 const MIN_DETAIL = 1
@@ -50,10 +56,14 @@ function addTile(luma: Float32Array, size: number, sums: Sums) {
   }
 }
 
-/** The blur score of a decoded page, or null when it is close to blank or cannot be read. */
-export function measureBlur(image: HTMLImageElement): number | null {
-  const width = image.naturalWidth
-  const height = image.naturalHeight
+/**
+ * The blur score of a decoded page shown at `scale` device pixels per page pixel, or null when it is
+ * close to blank or cannot be read. Above 1 the page is stretched, and Auto takes it anyway.
+ */
+export function measureBlur(image: HTMLImageElement, scale = 1): number | null {
+  const shown = shownScale(scale)
+  const width = Math.floor(image.naturalWidth * shown)
+  const height = Math.floor(image.naturalHeight * shown)
   if (width < COLUMNS * 16 || height < 3 * 16) return null
   const rows = Math.max(3, Math.min(8, Math.round((height / width) * COLUMNS)))
   const size = Math.min(TILE, Math.floor(width / COLUMNS), Math.floor(height / rows))
@@ -62,6 +72,7 @@ export function measureBlur(image: HTMLImageElement): number | null {
   canvas.height = size
   const context = canvas.getContext('2d', { willReadFrequently: true })
   if (!context) return null
+  context.imageSmoothingQuality = 'high'
   const sums: Sums = { sharp: [0, 0], kept: [0, 0] }
   const luma = new Float32Array(size * size)
   try {
@@ -69,7 +80,7 @@ export function measureBlur(image: HTMLImageElement): number | null {
       for (let column = 0; column < COLUMNS; column++) {
         const y = Math.floor(((row + 0.5) * height) / rows - size / 2)
         const x = Math.floor(((column + 0.5) * width) / COLUMNS - size / 2)
-        context.drawImage(image, x, y, size, size, 0, 0, size, size)
+        context.drawImage(image, x / shown, y / shown, size / shown, size / shown, 0, 0, size, size)
         const { data } = context.getImageData(0, 0, size, size)
         for (let i = 0; i < luma.length; i++) {
           luma[i] = (2 * data[i * 4] + 5 * data[i * 4 + 1] + data[i * 4 + 2]) / 8
@@ -90,20 +101,23 @@ export function measureBlur(image: HTMLImageElement): number | null {
 const CACHE_SIZE = 400
 const scores = new Map<string, number | null>()
 
-/** Whether the page at `src` looks soft enough for Auto to enhance it, measured once per URL. */
-export function isSoftPage(image: HTMLImageElement, src: string): boolean {
-  let score = scores.get(src)
+const scoreKey = (src: string, scale: number) => `${src}@${shownScale(scale)}`
+
+/** Whether the page at `src`, shown at `scale`, looks soft enough for Auto to enhance it, measured once per URL and scale. */
+export function isSoftPage(image: HTMLImageElement, src: string, scale: number): boolean {
+  const key = scoreKey(src, scale)
+  let score = scores.get(key)
   if (score === undefined) {
     if (!image.complete || image.naturalWidth === 0) return false
-    score = measureBlur(image)
+    score = measureBlur(image, scale)
     if (scores.size >= CACHE_SIZE) scores.delete(scores.keys().next().value!)
-    scores.set(src, score)
+    scores.set(key, score)
   }
   return score !== null && score >= SOFT_BLUR
 }
 
-/** The answer for a page already measured, or undefined. Measuring takes 10 to 35 ms, so a page on screen asks this first. */
-export function knownSoft(src: string): boolean | undefined {
-  const score = scores.get(src)
+/** The answer for a page already measured at this scale, or undefined. Measuring takes 10 to 35 ms, so a page on screen asks this first. */
+export function knownSoft(src: string, scale: number): boolean | undefined {
+  const score = scores.get(scoreKey(src, scale))
   return score === undefined ? undefined : score !== null && score >= SOFT_BLUR
 }

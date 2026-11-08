@@ -97,6 +97,11 @@ export function measureTarget(
   }
 }
 
+/** Device pixels per source pixel on the axis shown largest, as `stretched` compares it. */
+export function shownScale(target: EnhanceTarget, regionWidth: number, regionHeight: number): number {
+  return Math.max(target.width / regionWidth, target.height / regionHeight)
+}
+
 /** The region of a decoded page as a bitmap the engine can take ownership of. */
 export async function regionBitmap(image: HTMLImageElement, region: Region): Promise<ImageBitmap> {
   const sx = Math.round(image.naturalWidth * region.x)

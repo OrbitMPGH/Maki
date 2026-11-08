@@ -8,6 +8,7 @@ import {
   markEnhanceBroken,
   measureTarget,
   regionBitmap,
+  shownScale,
   type EnhanceTarget,
   type PageEnhance,
 } from './enhanceRuntime'
@@ -75,17 +76,19 @@ export default function EnhancedPage({
   const key = enhanceKey(src, region)
   const identity = `${key}|${preset}`
   const regionId = `${region.x},${region.y},${region.w},${region.h}`
-  // A page measured ahead answers at once; one that was not is measured after it paints.
-  const known = mode === 'auto' ? knownSoft(src) : false
+  // Softness is judged at the size the page is shown, so it waits for the first measured target. A
+  // page measured ahead answers at once; one that was not is measured after it paints.
+  const scale = target ? shownScale(target, image.naturalWidth * region.w, image.naturalHeight * region.h) : null
+  const known = mode !== 'auto' ? false : scale === null ? undefined : knownSoft(src, scale)
   const [, setMeasured] = useState<string | null>(null)
   useEffect(() => {
-    if (known !== undefined) return
+    if (known !== undefined || scale === null) return
     const timer = setTimeout(() => {
-      isSoftPage(image, src)
-      setMeasured(src)
+      isSoftPage(image, src, scale)
+      setMeasured(`${src}@${scale}`)
     })
     return () => clearTimeout(timer)
-  }, [known, image, src])
+  }, [known, image, src, scale])
   const soft = known === true
   const softRef = useRef(soft)
   softRef.current = soft

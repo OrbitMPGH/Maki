@@ -11,6 +11,7 @@ import {
   enhanceKey,
   presetFor,
   regionBitmap,
+  shownScale,
   useEnhanceEngine,
   type PageEnhance,
   type StretchedReport,
@@ -461,7 +462,10 @@ export default function PagedView({
             const region = (shapeCrop ? cropRegion(image) : null) ?? FULL_REGION
             const target = owner.sizeFor(image.naturalWidth * region.w, image.naturalHeight * region.h)
             if (!target) return
-            const wanted = target.stretched || (mode === 'auto' && isSoftPage(image, src))
+            const wanted =
+              target.stretched ||
+              (mode === 'auto' &&
+                isSoftPage(image, src, shownScale(target, image.naturalWidth * region.w, image.naturalHeight * region.h)))
             owner.notePage(page, wanted)
             if (!live || !preset || !wanted || serverRef.current?.states.get(page) === 'ready') return
             const key = enhanceKey(src, region)
