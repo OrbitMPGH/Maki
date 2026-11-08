@@ -2,6 +2,7 @@
 using Maki.Api.Dtos;
 using Maki.Api.Hubs;
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Maki.Core.Security;
@@ -67,7 +68,8 @@ public class SeriesRequestsControllerTests : IDisposable
     }
 
     private SeriesRequestsController Controller(
-        int userId, string userName, MakiPermission permissions, IReadOnlySet<int>? rootFolderIds = null)
+        int userId, string userName, MakiPermission permissions, IReadOnlySet<int>? rootFolderIds = null,
+        bool loginNamesVisible = false)
     {
         var db = _db.NewContext(userId, allRootFolders: rootFolderIds is null);
         var creation = new SeriesCreationService(
@@ -88,7 +90,8 @@ public class SeriesRequestsControllerTests : IDisposable
                 NullLogger<SeriesRequestSubmitter>.Instance),
             new TestCurrentUser(userId, userName, permissions,
                 allRootFolders: rootFolderIds is null, rootFolderIds: rootFolderIds),
-            NullLogger<SeriesRequestsController>.Instance);
+            NullLogger<SeriesRequestsController>.Instance,
+            new FakeAppSettings().Set(SettingKeys.LoginNamesVisible, loginNamesVisible ? "true" : "false"));
     }
 
     private SeriesRequestsController AsReader() => Controller(_reader, "reader", MakiPermission.None);
@@ -970,6 +973,10 @@ public class SeriesRequestsControllerTests : IDisposable
 
         Assert.Equal("reader", mine.RequestedBy);
         Assert.Null(mine.ResolvedBy);
+
+        var shown = Assert.Single(Body<List<SeriesRequestDto>>(
+            await Controller(_reader, "reader", MakiPermission.None, loginNamesVisible: true).List(ct: default)));
+        Assert.Equal("admin", shown.ResolvedBy);
     }
 
     // ---- withdrawing ----

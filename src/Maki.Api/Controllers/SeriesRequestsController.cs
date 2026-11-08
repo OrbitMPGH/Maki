@@ -14,7 +14,6 @@ using Maki.Data.Identity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Maki.Api.Controllers;
 
@@ -43,7 +42,8 @@ public class SeriesRequestsController(
     NotificationService notifications,
     SeriesRequestSubmitter submitter,
     ICurrentUser currentUser,
-    ILogger<SeriesRequestsController> logger) : ControllerBase
+    ILogger<SeriesRequestsController> logger,
+    IAppSettings? appSettings = null) : ControllerBase
 {
     private bool IsAdmin => currentUser.Has(MakiPermission.Admin);
 
@@ -756,8 +756,7 @@ public class SeriesRequestsController(
             .Distinct()
             .ToList();
 
-        var loginNamesVisible = await UserNameVisibility.LoginNamesVisibleAsync(
-            HttpContext?.RequestServices?.GetService<IAppSettings>(), ct);
+        var loginNamesVisible = await UserNameVisibility.LoginNamesVisibleAsync(appSettings, ct);
         var names = (await db.Users
                 .Where(u => ids.Contains(u.Id))
                 .Select(u => new { u.Id, u.DisplayName, u.UserName })
