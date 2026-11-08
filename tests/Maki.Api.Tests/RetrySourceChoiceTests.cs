@@ -115,6 +115,42 @@ public class RetrySourceChoiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_chapter_only_the_fallback_lists_keeps_the_fallback()
+    {
+        using (var seed = _world.Db.NewContext())
+        {
+            seed.ChapterSourceLinks.RemoveRange(seed.ChapterSourceLinks
+                .Where(l => l.ChapterId == _chapterId && l.SourceMappingId == _world.OfficialMappingId));
+            seed.SaveChanges();
+            Assert.Contains(seed.ChapterSourceLinks, l => l.ChapterId == _chapterId && l.SourceMappingId == _world.AggMappingId);
+        }
+
+        var id = SeedFailed(_world.AggMappingId, DownloadFailureReason.SourceError);
+
+        await _world.Queue.RetryFailedAsync(null, null, new DataScope());
+
+        Assert.Equal(_world.AggMappingId, Row(id).SourceMappingId);
+    }
+
+    [Fact]
+    public async Task A_row_taken_while_the_retry_looked_is_left_alone()
+    {
+        var id = SeedFailed(_world.AggMappingId, DownloadFailureReason.SourceError);
+        using var db = _world.Db.NewContext();
+        var stale = db.DownloadQueue.Single(q => q.Id == id);
+        using (var other = _world.Db.NewContext())
+        {
+            other.DownloadQueue.Single(q => q.Id == id).Status = QueueStatus.Downloading;
+            other.SaveChanges();
+        }
+
+        var gone = await _world.Queue.ReleaseOutrankedSourcesAsync(db, [stale], CancellationToken.None);
+
+        Assert.Equal([id], gone);
+        Assert.Equal(_world.AggMappingId, Row(id).SourceMappingId);
+    }
+
+    [Fact]
     public async Task Row_retry_resolves_again_onto_the_first_choice()
     {
         var id = SeedFailed(_world.AggMappingId, DownloadFailureReason.ChallengeNotSolved);

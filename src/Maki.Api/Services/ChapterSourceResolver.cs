@@ -138,13 +138,13 @@ public class ChapterSourceResolver(
     }
 
     /// <summary>
-    /// The mapping a fresh <see cref="ResolveAsync"/> of this series would try first, without asking any
-    /// source. Null when the series has no usable mapping.
+    /// The mappings a fresh <see cref="ResolveAsync"/> of this series would try, in order, without asking
+    /// any source.
     /// </summary>
-    public async Task<int?> FirstChoiceAsync(
+    public async Task<List<SourceMapping>> CandidateOrderAsync(
         MakiDbContext db, int seriesId, IReadOnlySet<string>? lastResortSources, CancellationToken ct) =>
-        (await CandidatesAsync(db, seriesId, null, null, false, lastResortSources, ct))
-        .FirstOrDefault(m => sourceRegistry.Find(m.SourceName) is not null)?.Id;
+        [.. (await CandidatesAsync(db, seriesId, null, null, false, lastResortSources, ct))
+            .Where(m => sourceRegistry.Find(m.SourceName) is not null)];
 
     private async Task<List<SourceMapping>> CandidatesAsync(
         MakiDbContext db, int seriesId, int? preferMappingId, IReadOnlyCollection<int>? excludeMappingIds,

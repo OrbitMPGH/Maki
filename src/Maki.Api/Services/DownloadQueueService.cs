@@ -1272,12 +1272,17 @@ public class DownloadQueueService(
 
     /// <summary>
     /// A retry somebody asks for sends a row that failed on its source back through the resolve when that
-    /// source is no longer the first choice, say a source that was off when the chapter was queued is on
-    /// again. Without this the row keeps the mapping it fell through to and replays the same failure. A
-    /// pin, a health repair and an upgrade keep their source, and a paywall keeps its source too, since
-    /// buying the chapter there is what the manual retry is for. Changes the rows without saving.
+    /// source is no longer the chapter's first choice, say a source that was off when the chapter was
+    /// queued is on again. Without this the row keeps the mapping it fell through to and replays the same
+    /// failure. The first choice is taken among the mappings that list the chapter, so a chapter only the
+    /// fallback carries keeps it. A pin, a health repair and an upgrade keep their source, and a paywall
+    /// keeps its source too, since buying the chapter there is what the manual retry is for.
     /// </summary>
-    public async Task ReleaseOutrankedSourcesAsync(
+    /// <returns>
+    /// The rows that stopped being Failed while this looked (a sweep or a worker got there first), which
+    /// the caller must not retry. The release is a conditional update, so such a row is left untouched.
+    /// </returns>
+    public async Task<HashSet<int>> ReleaseOutrankedSourcesAsync(
         MakiDbContext db, IReadOnlyCollection<DownloadQueueItem> items, CancellationToken ct)
     {
         var candidates = items
@@ -1287,26 +1292,51 @@ public class DownloadQueueService(
             .ToList();
         if (candidates.Count == 0)
         {
-            return;
+            return [];
         }
 
         var held = await HeldSourcesAsync(ct);
-        var firstChoices = new Dictionary<int, int?>();
+        var chapterIds = candidates.Select(q => q.ChapterId!.Value).Distinct().ToList();
+        var listedOn = (await db.ChapterSourceLinks
+                .Where(l => chapterIds.Contains(l.ChapterId))
+                .Select(l => new { l.ChapterId, l.SourceMappingId })
+                .ToListAsync(ct))
+            .ToLookup(l => l.ChapterId, l => l.SourceMappingId);
+        var orders = new Dictionary<int, List<SourceMapping>>();
+        var gone = new HashSet<int>();
         foreach (var item in candidates)
         {
-            if (!firstChoices.TryGetValue(item.SeriesId, out var first))
+            if (!orders.TryGetValue(item.SeriesId, out var order))
             {
-                first = await sourceResolver.FirstChoiceAsync(db, item.SeriesId, held, ct);
-                firstChoices[item.SeriesId] = first;
+                order = await sourceResolver.CandidateOrderAsync(db, item.SeriesId, held, ct);
+                orders[item.SeriesId] = order;
             }
 
-            if (first is not null && first != item.SourceMappingId)
+            var listing = listedOn[item.ChapterId!.Value].ToHashSet();
+            var first = order.FirstOrDefault(m => listing.Contains(m.Id)) ?? order.FirstOrDefault();
+            if (first is null || first.Id == item.SourceMappingId)
             {
-                item.SourceMapping = null;
-                item.SourceMappingId = null;
-                item.SourceChapterId = null;
+                continue;
             }
+
+            var mappingId = item.SourceMappingId;
+            var released = await db.DownloadQueue
+                .Where(q => q.Id == item.Id && q.Status == QueueStatus.Failed && q.SourceMappingId == mappingId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(q => q.SourceMappingId, (int?)null)
+                    .SetProperty(q => q.SourceChapterId, (string?)null), ct);
+            if (released == 0)
+            {
+                gone.Add(item.Id);
+                continue;
+            }
+
+            item.SourceMapping = null;
+            item.SourceMappingId = null;
+            item.SourceChapterId = null;
         }
+
+        return gone;
     }
 
     /// <summary>The source name <see cref="QueueItemDto"/> shows for a torrent grab, which has no mapping.</summary>
@@ -1398,7 +1428,8 @@ public class DownloadQueueService(
 
         if (manual)
         {
-            await ReleaseOutrankedSourcesAsync(db, eligible, ct);
+            var gone = await ReleaseOutrankedSourcesAsync(db, eligible, ct);
+            eligible.RemoveAll(q => gone.Contains(q.Id));
         }
 
         foreach (var item in eligible)
