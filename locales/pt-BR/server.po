@@ -1607,43 +1607,51 @@ msgstr "Não há mais nada para ler"
 
 #. English: Write something first
 #: src/Maki.Api/Controllers/NotesController.cs
+#, fuzzy
 msgid "error.notes.empty"
-msgstr ""
+msgstr "Escreva algo primeiro"
 
 #. English: Notes can be at most {max} characters
 #: src/Maki.Api/Controllers/NotesController.cs
+#, fuzzy
 msgid "error.notes.tooLong"
-msgstr ""
+msgstr "As notas podem ter no máximo {max} caracteres"
 
 #. English: That page is not one this note can be pinned to
 #: src/Maki.Api/Controllers/NotesController.cs
+#, fuzzy
 msgid "error.notes.badPage"
-msgstr ""
+msgstr "Esta página não pode receber esta nota fixada"
 
 #. English: A note is either private or shared
 #: src/Maki.Api/Controllers/NotesController.cs
+#, fuzzy
 msgid "error.notes.badVisibility"
-msgstr ""
+msgstr "Uma nota é privada ou compartilhada"
 
 #. English: Other readers replied to this note, so it has to stay shared
 #: src/Maki.Api/Controllers/NotesController.cs
+#, fuzzy
 msgid "error.notes.hasReplies"
-msgstr ""
+msgstr "Outros leitores responderam a esta nota, então ela precisa continuar compartilhada"
 
 #. English: This note was deleted
 #: src/Maki.Api/Controllers/NotesController.cs
+#, fuzzy
 msgid "error.notes.deleted"
-msgstr ""
+msgstr "Esta nota foi excluída"
 
 #. English: This chapter changed while you were writing. Reload and try again
 #: src/Maki.Api/Controllers/NotesController.cs
+#, fuzzy
 msgid "error.notes.chapterGone"
-msgstr ""
+msgstr "Este capítulo mudou enquanto você escrevia. Recarregue e tente de novo"
 
 #. English: Only the person who wrote this note can change it
 #: src/Maki.Api/Controllers/NotesController.cs
+#, fuzzy
 msgid "error.notes.notYours"
-msgstr ""
+msgstr "Só quem escreveu esta nota pode alterá-la"
 
 #. English: Page is outside this chapter
 #: src/Maki.Api/Controllers/ReaderController.cs
@@ -2552,20 +2560,23 @@ msgstr "\"{entry}\" não é um endereço IP nem uma rede CIDR"
 #. {max} is that limit.
 #. English: Your shortlist is full. It holds at most {max} titles.
 #: src/Maki.Api/Controllers/ShortlistController.cs
+#, fuzzy
 msgid "error.shortlist.full"
-msgstr ""
+msgstr "Sua lista de interesse está cheia. Ela comporta no máximo {max} títulos."
 
 #. Saving a title to the shortlist that is already in the library, archived or not.
 #. English: This title is already in the library.
 #: src/Maki.Api/Controllers/ShortlistController.cs
+#, fuzzy
 msgid "error.shortlist.inLibrary"
-msgstr ""
+msgstr "Este título já está na biblioteca."
 
 #. Saving a title to the shortlist that the catalogue does not have, or that is hidden from this account.
 #. English: This title is not in the catalogue.
 #: src/Maki.Api/Controllers/ShortlistController.cs
+#, fuzzy
 msgid "error.shortlist.notInCatalogue"
-msgstr ""
+msgstr "Este título não está no catálogo."
 
 #. English: Series already has a mapping for this source
 #: src/Maki.Api/Controllers/SourceMappingController.cs
@@ -3766,8 +3777,9 @@ msgstr "Nenhuma atualização foi baixada ainda. Tente de novo em alguns minutos
 #. Check now in Settings > System > Updates: neither the GitHub API nor the release page answered, often because GitHub limits update checks from this network.
 #. English: Couldn't reach GitHub to check for updates. Try again later.
 #: src/Maki.Api/Controllers/SettingsController.cs
+#, fuzzy
 msgid "error.updates.checkFailed"
-msgstr ""
+msgstr "Não foi possível acessar o GitHub para verificar atualizações. Tente de novo mais tarde."
 
 #. Docker installs must listen on every network inside the container.
 #. English: Network access is set by the container's port mapping, not here.
@@ -4133,14 +4145,16 @@ msgstr "{series}: {count, plural, one {# novo capítulo encontrado de uma vez e 
 
 #. English: Chapters no longer listed
 #: src/Maki.Api/Services/ChapterSyncService.cs
+#, fuzzy
 msgid "inbox.chapters.delisted.title"
-msgstr ""
+msgstr "Capítulos que não estão mais listados"
 
 #. Every source that listed these downloaded chapters has stopped listing them.
 #. English: {series}: {count, plural, one {# downloaded chapter is} other {# downloaded chapters are}} no longer listed by any source. Check the files on the series page.
 #: src/Maki.Api/Services/ChapterSyncService.cs
+#, fuzzy
 msgid "inbox.chapters.delisted.body"
-msgstr ""
+msgstr "{series}: {count, plural, one {# capítulo baixado não está mais listado} many {# capítulos baixados não estão mais listados} other {# capítulos baixados não estão mais listados}} por nenhuma fonte. Confira os arquivos na página da série."
 
 #. English: Custom source updated
 #: src/Maki.Api/Services/CustomRepositoryService.cs
@@ -4223,13 +4237,15 @@ msgstr "Você alcançou o nível {level}, acima de {previous}."
 
 #. English: New reply to a note
 #: src/Maki.Api/Controllers/NotesController.cs
+#, fuzzy
 msgid "inbox.noteReply.title"
-msgstr ""
+msgstr "Nova resposta a uma nota"
 
 #. English: {hasName, select, yes {{userName}} other {Another reader}} replied on {series}, {chapter}
 #: src/Maki.Api/Controllers/NotesController.cs
+#, fuzzy
 msgid "inbox.noteReply.body"
-msgstr ""
+msgstr "{hasName, select, yes {{userName}} other {Outro leitor}} respondeu em {series}, {chapter}"
 
 #. English: New chapter downloaded
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
@@ -4833,8 +4849,9 @@ msgstr "A fonte respondeu com um erro"
 #. word it "log in via WebView" or "purchase this chapter"). The extension's own text follows, untranslated.
 #. English: The source wants a login or a purchase for this chapter
 #: src/Maki.Api/Services/DownloadFailureReason.cs
+#, fuzzy
 msgid "error.download.sourceNeedsPurchase"
-msgstr ""
+msgstr "A fonte exige login ou compra para este capítulo"
 
 #. Connection refused, timed out, DNS or SSL failure: the site could not be reached at all.
 #. English: Could not reach the source
@@ -5530,18 +5547,21 @@ msgstr "Esta revisão está desatualizada. Verifique de novo e revise outra vez.
 
 #. English: The file found at the new path has changed or is gone. Nothing was relinked. Review the file again.
 #: src/Maki.Api/Services/HealthOperationService.cs
+#, fuzzy
 msgid "error.health.movedTargetChanged"
-msgstr ""
+msgstr "O arquivo encontrado no novo caminho mudou ou sumiu. Nada foi reassociado. Revise o arquivo de novo."
 
 #. English: Only the file name matches, so this file has to be relinked on its own after you have compared it.
 #: src/Maki.Api/Services/HealthOperationService.cs
+#, fuzzy
 msgid "error.health.relinkWeakMatch"
-msgstr ""
+msgstr "Só o nome do arquivo bate, então este arquivo precisa ser reassociado sozinho depois que você o comparar."
 
 #. English: The identical copy these chapters were going to move to has changed or is gone. Nothing was deleted. Review the file again.
 #: src/Maki.Api/Services/HealthOperationService.cs
+#, fuzzy
 msgid "error.health.relinkTargetChanged"
-msgstr ""
+msgstr "A cópia idêntica para a qual estes capítulos iriam mudou ou sumiu. Nada foi excluído. Revise o arquivo de novo."
 
 #. English: The root folder no longer exists.
 #: src/Maki.Api/Services/HealthOperationService.cs
@@ -6017,23 +6037,27 @@ msgstr "Registro de {path} como ausente removido; os registros dos capítulos e 
 
 #. English: Found missing {path} at {target} and pointed its chapters there
 #: src/Maki.Api/Services/HealthOperationService.cs
+#, fuzzy
 msgid "health.history.relinkedMoved"
-msgstr ""
+msgstr "Encontrado {path} ausente em {target}, e os capítulos dele foram apontados para lá"
 
 #. English: Series folder {from} is gone and every file is now in {to}, so the series moved there too
 #: src/Maki.Api/Services/HealthOperationService.cs
+#, fuzzy
 msgid "health.history.seriesFolderFollowed"
-msgstr ""
+msgstr "A pasta da série {from} sumiu e todos os arquivos estão agora em {to}, então a série também foi para lá"
 
 #. English: {count, plural, one {Updated # record to the file's size on disk} other {Updated # records to the files' sizes on disk}}
 #: src/Maki.Api/Services/HealthOperationService.cs
+#, fuzzy
 msgid "health.history.recordsRefreshed"
-msgstr ""
+msgstr "{count, plural, one {Atualizado # registro com o tamanho do arquivo no disco} many {Atualizados # registros com os tamanhos dos arquivos no disco} other {Atualizados # registros com os tamanhos dos arquivos no disco}}"
 
 #. English: Deleted duplicate {path}; its chapters now read from the identical copy {target}
 #: src/Maki.Api/Services/HealthOperationService.cs
+#, fuzzy
 msgid "health.history.deletedRelinked"
-msgstr ""
+msgstr "Duplicata {path} excluída; os capítulos dela agora são lidos da cópia idêntica {target}"
 
 #. English: Scan {scan}: {completed} of {total} files, {status}
 #: src/Maki.Api/Services/HealthScanService.cs

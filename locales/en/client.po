@@ -17750,10 +17750,6 @@ msgid "Tags to include"
 msgstr "Tags to include"
 
 #: src/pages/reader/ReaderSettings.tsx
-#~ msgid "Tap the page edges to turn pages"
-#~ msgstr "Tap the page edges to turn pages"
-
-#: src/pages/reader/ReaderSettings.tsx
 msgid "Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen"
 msgstr "Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen"
 
