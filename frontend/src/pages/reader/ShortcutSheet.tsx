@@ -35,6 +35,15 @@ export default function ShortcutSheet({ rtl, onClose }: { rtl: boolean; onClose:
       ],
     },
     {
+      title: t`Continuous`,
+      items: [
+        { keys: [t`Space`, t`Page Down`], label: t`Down a screen` },
+        { keys: [t`Shift + Space`, t`Page Up`], label: t`Up a screen` },
+        { keys: ['A'], label: t`Auto-scroll on or off` },
+        { keys: ['[', ']'], label: t`Auto-scroll slower and faster` },
+      ],
+    },
+    {
       title: t`Layout`,
       items: [
         { keys: ['1'], label: t`Single page` },

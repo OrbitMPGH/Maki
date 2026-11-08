@@ -10,7 +10,11 @@ import {
   IconLayoutGrid,
   IconMaximize,
   IconMinimize,
+  IconMinus,
   IconNote,
+  IconPlayerPause,
+  IconPlayerPlay,
+  IconPlus,
   IconSquareHalf,
   IconZoomIn,
   IconZoomOut,
@@ -29,6 +33,14 @@ import PageScrubber from './PageScrubber'
 import ReaderSettings, { OVERLAY_Z } from './ReaderSettings'
 import { isPendingPhase, useEnhancePhaseLabel, type EnhancePhase } from './ServerEnhanceStatus'
 import { serverChapterLabel } from '../../format'
+import { AUTO_SCROLL_MAX, AUTO_SCROLL_MIN } from './useAutoScroll'
+
+export interface AutoScrollControls {
+  on: boolean
+  level: number
+  onToggle: () => void
+  onLevel: (level: number) => void
+}
 
 export default function ReaderToolbar({
   manifest,
@@ -73,6 +85,7 @@ export default function ReaderToolbar({
   enhancePhase = null,
   thumbs = [],
   shownTo,
+  autoScroll,
 }: {
   manifest: ReaderManifest
   page: number
@@ -129,6 +142,8 @@ export default function ReaderToolbar({
   thumbs?: string[]
   /** The last page on screen, past `page` when a spread shows two. */
   shownTo?: number
+  /** Continuous mode's auto-scroll, which takes the zoom buttons' place there. */
+  autoScroll?: AutoScrollControls
 }) {
   const { t } = useLingui()
 
@@ -464,6 +479,60 @@ export default function ReaderToolbar({
               <IconKeyboard size={20} />
             </ActionIcon>
           </Tooltip>
+
+          {prefs.mode === 'vertical' && autoScroll && (
+            <Group gap={2} wrap="nowrap">
+              {autoScroll.on && (
+                <Tooltip label={t`Slower ([)`} withArrow zIndex={OVERLAY_Z}>
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    onClick={() => autoScroll.onLevel(autoScroll.level - 1)}
+                    disabled={autoScroll.level <= AUTO_SCROLL_MIN}
+                    aria-label={t`Scroll slower`}
+                  >
+                    <IconMinus size={18} />
+                  </ActionIcon>
+                </Tooltip>
+              )}
+              <Tooltip label={autoScroll.on ? t`Stop auto-scroll (A)` : t`Auto-scroll (A)`} withArrow zIndex={OVERLAY_Z}>
+                <ActionIcon
+                  variant={autoScroll.on ? 'light' : 'subtle'}
+                  color="gray"
+                  onClick={autoScroll.onToggle}
+                  aria-label={autoScroll.on ? t`Stop auto-scroll` : t`Auto-scroll`}
+                  aria-pressed={autoScroll.on}
+                >
+                  {autoScroll.on ? <IconPlayerPause size={20} /> : <IconPlayerPlay size={20} />}
+                </ActionIcon>
+              </Tooltip>
+              {autoScroll.on && (
+                <>
+                  <Text
+                    fz="xs"
+                    c="var(--ink-3)"
+                    w="2ch"
+                    ta="center"
+                    style={{ fontVariantNumeric: 'tabular-nums' }}
+                    aria-label={t`Speed ${autoScroll.level} of ${AUTO_SCROLL_MAX}`}
+                  >
+                    {autoScroll.level}
+                  </Text>
+                  <Tooltip label={t`Faster (])`} withArrow zIndex={OVERLAY_Z}>
+                    <ActionIcon
+                      variant="subtle"
+                      color="gray"
+                      onClick={() => autoScroll.onLevel(autoScroll.level + 1)}
+                      disabled={autoScroll.level >= AUTO_SCROLL_MAX}
+                      aria-label={t`Scroll faster`}
+                    >
+                      <IconPlus size={18} />
+                    </ActionIcon>
+                  </Tooltip>
+                </>
+              )}
+            </Group>
+          )}
 
           {prefs.mode !== 'vertical' && (
             <>

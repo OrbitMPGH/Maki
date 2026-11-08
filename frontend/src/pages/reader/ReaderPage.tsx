@@ -42,6 +42,8 @@ import { useReadingClock } from './useReadingClock'
 import { useWakeLock } from './useWakeLock'
 import { spreadIndexOf, usePageAspects, useSpreads } from './useSpreads'
 import { serverChapterLabel } from '../../format'
+import { scrollBehavior } from '../../lib/scrollBehavior'
+import { useAutoScroll, useAutoScrollLevel } from './useAutoScroll'
 
 const ZOOM_STEP = 0.25
 const ZOOM_MAX = 4
@@ -59,6 +61,12 @@ const NO_AUTO_PAGES: AutoPages = { wanted: NO_PAGES, plain: NO_PAGES }
 // a fling or a held key, and must not carry on through the next chapter boundary.
 const CHAPTER_SETTLE_MS = 800
 const FLUSH_WAIT_MS = 2000
+// A screen step in continuous mode moves this share of the viewport, so the last lines read stay on
+// screen at the top and the eye finds its place again.
+const STRIP_STEP_SHARE = 0.85
+// A step pressed while the last one is still gliding goes on from where that one is headed.
+const STRIP_STEP_CHAIN_MS = 500
+const STRIP_BOTTOM_EPSILON = 2
 
 /**
  * Whether the chapter at `urls` reads as a webtoon, once known; undefined while the probe runs.
@@ -156,6 +164,8 @@ export default function ReaderPage() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
   const [surface, setSurface] = useState<HTMLDivElement | null>(null)
+  const [autoScroll, setAutoScroll] = useState(false)
+  const [autoScrollLevel, setAutoScrollLevel] = useAutoScrollLevel()
   // The thread an inbox link points at, tied to its chapter so paging on cannot carry it along.
   const [notesThread, setNotesThread] = useState<{ chapterId: number; rootId: number } | null>(null)
   const phoneSheet = usePhoneSheet()
@@ -634,6 +644,48 @@ export default function ReaderPage() {
     }
   }, [spreads, spreadIndex, manifest, goToChapter, atEnd, seekToPage, settling, splitting, half, wide])
 
+  /** Continuous mode's page turn: about a screen down or up, or on into the next or previous chapter at either end. */
+  const stripStep = useRef<{ top: number; at: number } | null>(null)
+  const stepStrip = useCallback(
+    (direction: 1 | -1) => {
+      if (!surface) return
+      const max = surface.scrollHeight - surface.clientHeight
+      const chained = stripStep.current && performance.now() - stripStep.current.at < STRIP_STEP_CHAIN_MS
+      const from = chained ? stripStep.current!.top : surface.scrollTop
+      if (direction > 0 && from >= max - STRIP_BOTTOM_EPSILON) {
+        continuousPastEnd()
+        return
+      }
+      if (direction < 0 && from <= 0) {
+        if (manifest?.previousChapterId != null && !settling()) void goToChapter(manifest.previousChapterId, false, true)
+        return
+      }
+      const top = Math.min(max, Math.max(0, from + direction * surface.clientHeight * STRIP_STEP_SHARE))
+      stripStep.current = { top, at: performance.now() }
+      surface.scrollTo({ top, behavior: scrollBehavior() })
+    },
+    [surface, continuousPastEnd, manifest, goToChapter, settling],
+  )
+
+  const toggleAutoScroll = useCallback(() => {
+    setAutoScroll((on) => !on)
+    // Starting it is a request to read, so the bars get out of the way at once.
+    setChrome(false)
+  }, [])
+
+  useEffect(() => {
+    if (mode !== 'vertical') setAutoScroll(false)
+  }, [mode])
+
+  // Paused whenever something sits over the page; the chrome hides itself after a few seconds, so a
+  // tap in the middle is a pause that lets go on its own.
+  useAutoScroll(
+    surface,
+    autoScroll && mode === 'vertical' && !atEnd && !chrome && !shortcutsOpen && !notesOpen,
+    autoScrollLevel,
+    continuousPastEnd,
+  )
+
   // The listener is registered once and reads the latest handler, so it is not torn down and
   // re-added on every render (a page change in continuous mode re-renders on each scroll step).
   const onKey = useRef<(event: KeyboardEvent) => void>(() => {})
@@ -678,13 +730,23 @@ export default function ReaderPage() {
         previous()
         break
       case ' ':
-        // Continuous mode keeps the browser's native space-to-scroll, except on the end screen,
-        // where there is nothing to scroll.
-        if (mode !== 'vertical' || atEnd) {
-          event.preventDefault()
-          if (event.shiftKey) previous()
-          else next()
-        }
+      case 'PageDown':
+      case 'PageUp': {
+        event.preventDefault()
+        const back = key === 'PageUp' || (key === ' ' && event.shiftKey)
+        if (mode === 'vertical' && !atEnd) stepStrip(back ? -1 : 1)
+        else if (back) previous()
+        else next()
+        break
+      }
+      case 'a':
+        if (mode === 'vertical') toggleAutoScroll()
+        break
+      case '[':
+        if (mode === 'vertical') setAutoScrollLevel(autoScrollLevel - 1)
+        break
+      case ']':
+        if (mode === 'vertical') setAutoScrollLevel(autoScrollLevel + 1)
         break
       case 'Home':
         event.preventDefault()
@@ -745,8 +807,15 @@ export default function ReaderPage() {
     return () => window.removeEventListener('keydown', listener)
   }, [])
 
-  /** Tap zones: outer thirds page, the middle toggles the chrome. */
-  const handleTap = (clientX: number, bounds: DOMRect) => {
+  /** Tap zones: outer thirds page, the middle toggles the chrome. Continuous mode splits top to bottom instead. */
+  const handleTap = (clientX: number, clientY: number, bounds: DOMRect) => {
+    if (prefs.tapZones && mode === 'vertical') {
+      const ratio = (clientY - bounds.top) / bounds.height
+      if (ratio < 0.33) stepStrip(-1)
+      else if (ratio > 0.67) stepStrip(1)
+      else setChrome((visible) => !visible)
+      return
+    }
     if (!prefs.tapZones || mode === 'vertical' || zoom !== 1) {
       setChrome((visible) => !visible)
       return
@@ -802,14 +871,14 @@ export default function ReaderPage() {
     }
     const bounds = event.currentTarget.getBoundingClientRect()
     if (pointerKind.current !== 'touch' || mode === 'vertical') {
-      handleTap(event.clientX, bounds)
+      handleTap(event.clientX, event.clientY, bounds)
       return
     }
 
     const { clientX, clientY } = event
     const ratio = (clientX - bounds.left) / bounds.width
     if (zoom === 1 && prefs.tapZones && (ratio < 0.33 || ratio > 0.67)) {
-      handleTap(clientX, bounds)
+      handleTap(clientX, clientY, bounds)
       return
     }
 
@@ -821,11 +890,11 @@ export default function ReaderPage() {
         setZoom((z) => (z === 1 ? DOUBLE_TAP_ZOOM : 1))
         return
       }
-      tapRef.current(first.x, first.bounds)
+      tapRef.current(first.x, first.y, first.bounds)
     }
     const timer = setTimeout(() => {
       pendingTap.current = null
-      tapRef.current(clientX, bounds)
+      tapRef.current(clientX, clientY, bounds)
     }, DOUBLE_TAP_MS)
     pendingTap.current = { timer, x: clientX, y: clientY, bounds }
   }
@@ -962,6 +1031,12 @@ export default function ReaderPage() {
         enhancePhase={enhancePhase}
         thumbs={thumbs}
         shownTo={shownTo}
+        autoScroll={{
+          on: autoScroll,
+          level: autoScrollLevel,
+          onToggle: toggleAutoScroll,
+          onLevel: setAutoScrollLevel,
+        }}
       />
 
       {atEnd ? (

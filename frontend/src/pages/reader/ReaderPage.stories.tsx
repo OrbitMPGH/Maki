@@ -171,6 +171,40 @@ export const ContinuousWebtoon: Story = {
   },
 }
 
+/** The bottom of the screen moves the strip down most of a screen, Shift + Space brings it back. */
+export const ContinuousTapMovesAScreen: Story = {
+  parameters: open(3040),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 40 - page 1' })
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    await waitFor(() => expect(surface.scrollHeight).toBeGreaterThan(surface.clientHeight * 2))
+    const start = surface.scrollTop
+    const box = surface.getBoundingClientRect()
+    await userEvent.pointer({
+      keys: '[MouseLeft]',
+      target: surface,
+      coords: { clientX: box.left + box.width / 2, clientY: box.top + box.height * 0.9 },
+    })
+    await waitFor(() => expect(surface.scrollTop).toBeGreaterThan(start + surface.clientHeight * 0.8))
+    await expect(canvasElement.querySelector('.reader-bar-bottom')).toHaveAttribute('data-visible', 'false')
+    await userEvent.keyboard('{Shift>} {/Shift}')
+    await waitFor(() => expect(Math.abs(surface.scrollTop - start)).toBeLessThan(4))
+  },
+}
+
+export const ContinuousAutoScroll: Story = {
+  parameters: open(3040),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 40 - page 1' })
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    await waitFor(() => expect(surface.scrollHeight).toBeGreaterThan(surface.clientHeight * 2))
+    await summonChrome({ canvasElement, userEvent })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Auto-scroll' }))
+    const start = surface.scrollTop
+    await waitFor(() => expect(surface.scrollTop).toBeGreaterThan(start + 20))
+  },
+}
+
 // Chapter ids of their own: with isolate off, page URLs of a chapter other stories open are already
 // in the image cache as portrait pages, and these handlers would never be asked.
 const stripPages = (chapterId: number) =>

@@ -36,7 +36,10 @@
   Wide pages in single-page mode can be shown whole, split into two halves in reading order, or
   rotated. **Crop borders** (shortcut C) trims plain white or black margins. Chapters with very
   tall pages open in continuous mode on their own, and on touch you pull past the end of a
-  chapter to open the next one. The page bar has one segment per page, lit up to the page
+  chapter to open the next one. In continuous mode a tap on the bottom or top third of the
+  screen (or Space, Page Down, Page Up) moves about a screen at a time, and **Auto-scroll**
+  (shortcut A, speed with [ and ]) scrolls on its own, pausing while a finger is down or the
+  toolbar is up. The page bar has one segment per page, lit up to the page
   on screen; hovering a segment shows that page's thumbnail, and clicking or dragging jumps to it.
 - **Reading profiles.** Per-user defaults for page fit, direction, and mode by series type, with
   per-series overrides on top.

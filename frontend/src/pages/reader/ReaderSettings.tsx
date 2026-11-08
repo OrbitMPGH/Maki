@@ -298,7 +298,7 @@ export default function ReaderSettings({
     { value: 'invert', label: t`Invert` },
   ] as const
   const toggles: { key: Toggle; label: string; hint?: string }[] = [
-    { key: 'tapZones', label: t`Tap zones`, hint: t`Tap the page edges to turn pages` },
+    { key: 'tapZones', label: t`Tap zones`, hint: t`Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen` },
     { key: 'showPageNumber', label: t`Show page number` },
     { key: 'chapterBanner', label: t`Show the chapter name`, hint: t`Briefly, when a new chapter opens` },
     { key: 'autoNextChapter', label: t`Auto-advance to next chapter` },

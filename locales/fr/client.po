@@ -4631,6 +4631,22 @@ msgstr ""
 msgid "Auto-removed"
 msgstr "Retiré automatiquement"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Auto-scroll"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Auto-scroll (A)"
+msgstr ""
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Auto-scroll on or off"
+msgstr ""
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Auto-scroll slower and faster"
+msgstr ""
+
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -7927,6 +7943,10 @@ msgstr "Doujinshi"
 msgid "Down"
 msgstr "En bas"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Down a screen"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -8974,6 +8994,10 @@ msgstr "Fantastique"
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Fast"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Faster (])"
 msgstr ""
 
 #: src/pages/settings/PreferenceCards.tsx
@@ -15707,6 +15731,10 @@ msgstr "Étapes de conversion des pages"
 msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format, quality, stops, lossless, compare, preview, before and after, wizard"
 msgstr "conversion des pages, webp, avif, convertir les pages, compresser, espace disque, taille du fichier, réencoder, format d'image, qualité, paliers, sans perte, comparer, aperçu, avant et après, assistant"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Page Down"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Page fit"
@@ -15757,6 +15785,10 @@ msgstr "Tolérance de pages %"
 #, fuzzy
 msgid "Page transitions"
 msgstr "Transitions de page"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Page Up"
+msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #, fuzzy
@@ -19320,6 +19352,10 @@ msgstr ""
 msgid "Scroll back"
 msgstr "Défiler en arrière"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Scroll faster"
+msgstr ""
+
 #: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgid "Scroll for next chapter"
@@ -19329,6 +19365,10 @@ msgstr "Faire défiler pour le chapitre suivant"
 #, fuzzy
 msgid "Scroll forward"
 msgstr "Défiler en avant"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Scroll slower"
+msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #, fuzzy
@@ -20627,6 +20667,10 @@ msgstr "Glissant : l'activité le prolonge."
 msgid "Slow"
 msgstr ""
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Slower ([)"
+msgstr ""
+
 #: src/components/pageconversion/FormatStep.tsx
 #, fuzzy
 msgid "Smaller than WebP at the same look. KOReader and some e-readers can't open AVIF pages."
@@ -20880,6 +20924,11 @@ msgstr "chapitres spéciaux, omake, chapitres décimaux, surveiller les nouveaux
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Speed"
+msgstr ""
+
+#. placeholder {0}: autoScroll.level
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Speed {0} of {AUTO_SCROLL_MAX}"
 msgstr ""
 
 #. Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts
@@ -21141,6 +21190,14 @@ msgstr ""
 msgid "Stop"
 msgstr "Arrêter"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Stop auto-scroll"
+msgstr ""
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Stop auto-scroll (A)"
+msgstr ""
+
 #: src/components/import/IgnoredFoldersModal.tsx
 #, fuzzy
 msgid "Stop ignoring"
@@ -21392,7 +21449,11 @@ msgid "Tags to include"
 msgstr "Tags à inclure"
 
 #: src/pages/reader/ReaderSettings.tsx
-msgid "Tap the page edges to turn pages"
+#~ msgid "Tap the page edges to turn pages"
+#~ msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen"
 msgstr ""
 
 #: src/components/notes/NoteThread.tsx
@@ -23443,6 +23504,10 @@ msgstr "Jusqu'à : {end}"
 #, fuzzy
 msgid "Up"
 msgstr "En haut"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Up a screen"
+msgstr ""
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy

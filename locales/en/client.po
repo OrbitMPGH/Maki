@@ -3835,6 +3835,22 @@ msgstr "Auto-queue limit"
 msgid "Auto-removed"
 msgstr "Auto-removed"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Auto-scroll"
+msgstr "Auto-scroll"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Auto-scroll (A)"
+msgstr "Auto-scroll (A)"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Auto-scroll on or off"
+msgstr "Auto-scroll on or off"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Auto-scroll slower and faster"
+msgstr "Auto-scroll slower and faster"
+
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/settings/SystemCards.tsx
 msgid "Automatic"
@@ -6571,6 +6587,10 @@ msgstr "Doujinshi"
 msgid "Down"
 msgstr "Down"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Down a screen"
+msgstr "Down a screen"
+
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Download"
@@ -7436,6 +7456,10 @@ msgstr "Fantasy"
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Fast"
 msgstr "Fast"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Faster (])"
+msgstr "Faster (])"
 
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Faster animations"
@@ -12992,6 +13016,10 @@ msgstr "Page conversion steps"
 msgid "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format, quality, stops, lossless, compare, preview, before and after, wizard"
 msgstr "page conversion, webp, avif, convert pages, compress, disk space, file size, re-encode, image format, quality, stops, lossless, compare, preview, before and after, wizard"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Page Down"
+msgstr "Page Down"
+
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Page fit"
 msgstr "Page fit"
@@ -13033,6 +13061,10 @@ msgstr "Page tolerance %"
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Page transitions"
 msgstr "Page transitions"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Page Up"
+msgstr "Page Up"
 
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Paged"
@@ -15978,6 +16010,10 @@ msgstr "Scroll"
 msgid "Scroll back"
 msgstr "Scroll back"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Scroll faster"
+msgstr "Scroll faster"
+
 #: src/pages/reader/NextChapterHint.tsx
 msgid "Scroll for next chapter"
 msgstr "Scroll for next chapter"
@@ -15985,6 +16021,10 @@ msgstr "Scroll for next chapter"
 #: src/components/ui/Rail.tsx
 msgid "Scroll forward"
 msgstr "Scroll forward"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Scroll slower"
+msgstr "Scroll slower"
 
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Scroll to finish the preview"
@@ -17054,6 +17094,10 @@ msgstr "Sliding: activity extends it."
 msgid "Slow"
 msgstr "Slow"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Slower ([)"
+msgstr "Slower ([)"
+
 #: src/components/pageconversion/FormatStep.tsx
 msgid "Smaller than WebP at the same look. KOReader and some e-readers can't open AVIF pages."
 msgstr "Smaller than WebP at the same look. KOReader and some e-readers can't open AVIF pages."
@@ -17271,6 +17315,11 @@ msgstr "specials, omake, decimal chapters, monitor new items, monitoring, incogn
 msgid "Speed"
 msgstr "Speed"
 
+#. placeholder {0}: autoScroll.level
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Speed {0} of {AUTO_SCROLL_MAX}"
+msgstr "Speed {0} of {AUTO_SCROLL_MAX}"
+
 #. Caption under a value shown large above it on a Rewind slide; it finishes the sentence the value starts
 #: src/pages/rewind/slides.tsx
 msgid "spent in the reader"
@@ -17486,6 +17535,14 @@ msgstr "Still shown in Discover rails"
 msgid "Stop"
 msgstr "Stop"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Stop auto-scroll"
+msgstr "Stop auto-scroll"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "Stop auto-scroll (A)"
+msgstr "Stop auto-scroll (A)"
+
 #: src/components/import/IgnoredFoldersModal.tsx
 msgid "Stop ignoring"
 msgstr "Stop ignoring"
@@ -17693,8 +17750,12 @@ msgid "Tags to include"
 msgstr "Tags to include"
 
 #: src/pages/reader/ReaderSettings.tsx
-msgid "Tap the page edges to turn pages"
-msgstr "Tap the page edges to turn pages"
+#~ msgid "Tap the page edges to turn pages"
+#~ msgstr "Tap the page edges to turn pages"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen"
+msgstr "Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen"
 
 #: src/components/notes/NoteThread.tsx
 msgid "Tap to show"
@@ -19380,6 +19441,10 @@ msgstr "Until: {end}"
 #: src/components/layout/SectionProperties.tsx
 msgid "Up"
 msgstr "Up"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Up a screen"
+msgstr "Up a screen"
 
 #: src/pages/reader/ChapterEnd.tsx
 msgid "Up next"
