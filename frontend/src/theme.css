@@ -4240,28 +4240,37 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 
 /* --- Recent activity: the seeds, as covers --------------------------------- */
-/* Scrolls sideways rather than wrapping: six seeds on a narrow window would otherwise push the
-   rail below them down a row, and the seeds are the caption, not the content. */
+/* Wraps, so every seed shows. A phone keeps the sideways scroll: beside the label there is room for
+   one pill a line, and six seeds would stack into a tower above the rail. */
 .discover-seeds {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
   margin-bottom: var(--mantine-spacing-sm);
   min-width: 0;
 }
+/* As tall as a pill, so it sits level with the first line when the pills wrap. */
 .discover-seeds-label {
   flex: none;
+  display: flex;
+  align-items: center;
+  min-height: 36px;
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
   color: var(--ink-3);
 }
 .discover-seeds-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  padding-bottom: 2px;
+}
+@media (max-width: 47.9375em) {
+  .discover-seeds-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
 }
 .discover-seed {
   display: grid;
