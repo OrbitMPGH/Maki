@@ -123,6 +123,54 @@ function clickedCover(id: string): HTMLElement | null {
 // No animation frame runs while the update callback is pending, so waits inside it use timers.
 const tick = (ms = 0) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
+let pageLoading: () => boolean = () => false
+/** Tells the transition when the new page is still waiting on its first data (main.tsx). */
+export function holdCaptureWhile(loading: () => boolean) {
+  pageLoading = loading
+}
+
+/**
+ * Holds the capture until the new page's first data is in, then lets React render it. Captured on
+ * its skeletons, the page swapped them for content in the middle of the fade, and that render (all
+ * of Home's rails at once) blocked the main thread for most of it: the fade dropped to a few frames
+ * and read as a snap. Rendered here, the old page stands still while it happens.
+ */
+async function pageDataReady(deadline: number) {
+  if (!pageLoading()) return
+  while (pageLoading() && performance.now() < deadline) await tick(16)
+  await tick()
+}
+
+// Firefox draws the cross-fade on the main thread, where Chrome hands it to the compositor.
+const fadeOnMainThread = typeof CSS !== 'undefined' && CSS.supports('-moz-appearance', 'none')
+
+/**
+ * The new page's first frame carries its mount work (rails measuring, observers reporting, images
+ * starting), and in Firefox one long frame there could swallow the whole fade into a cut. The fade
+ * waits on its first frame until frames come at speed again, or 200ms at most, then plays.
+ */
+function holdFadeUntilCalm(then: () => void) {
+  const fades = document.documentElement
+    .getAnimations({ subtree: true })
+    .filter((a) => (a.effect as KeyframeEffect | null)?.pseudoElement?.startsWith('::view-transition'))
+  for (const a of fades) a.pause()
+  const deadline = performance.now() + 200
+  // Two quick frames in a row: the first two after the capture always arrive back to back.
+  let last = 0
+  let quick = 0
+  const step = (now: number) => {
+    quick = last && now - last < 25 ? quick + 1 : 0
+    if (quick >= 2 || performance.now() > deadline) {
+      for (const a of fades) a.play()
+      then()
+      return
+    }
+    last = now
+    requestAnimationFrame(step)
+  }
+  requestAnimationFrame(step)
+}
+
 /** Waits for the series poster to render and decode, so the cover lands on a real image. */
 async function posterReady(deadline: number): Promise<HTMLImageElement | null> {
   while (performance.now() < deadline) {
@@ -354,6 +402,7 @@ appHistory.listen = (listener) =>
         // Lets the commit's passive effects run first, ScrollMemory's restore among them, so the
         // new page is captured where it will sit.
         await tick()
+        await pageDataReady(deadline)
         let incoming: HTMLElement | null = null
         if (outgoing && opening) incoming = await posterReady(deadline)
         else if (outgoing && leaving) incoming = linkedCover(leaving)
@@ -369,9 +418,13 @@ appHistory.listen = (listener) =>
     transition.ready.then(
       () => {
         // The drift starts with the cross-fade so the two land together.
-        if (flight) flight.start()
-        else rise(false)
-        releaseTint()
+        const go = () => {
+          if (flight) flight.start()
+          else rise(false)
+          releaseTint()
+        }
+        if (fadeOnMainThread) holdFadeUntilCalm(go)
+        else go()
       },
       () => {
         skipped = true

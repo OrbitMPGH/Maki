@@ -1014,6 +1014,16 @@ body {
   animation-duration: var(--dur-medium);
   animation-timing-function: var(--ease);
 }
+/* Firefox draws the fade on the main thread, which the new page keeps busy, so it paints only a
+   handful of frames. On the front-loaded curve the old page is gone by the second one and the fade
+   reads as a cut. A plain ease-out leaves one of them visibly in between, and the shorter length
+   keeps it as quick as Chrome's, where linear felt slow. */
+@supports (-moz-appearance: none) {
+  ::view-transition-group(root) {
+    animation-duration: calc(var(--dur-medium) * 0.67);
+    animation-timing-function: ease-out;
+  }
+}
 /* "Faster animations" under Settings > Appearance: every token at FAST_PACE (0.55) in
    lib/motionPrefs.ts, which scales the script's motion to match. The loop period, the spinner and
    the chapter banner keep theirs: a faster pulse reads as alarm, not speed, and the banner is
