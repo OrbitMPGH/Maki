@@ -28,8 +28,10 @@ public class UpscalingController(
 
     /// <param name="Status">"missing", "downloading", "ready" or "failed".</param>
     /// <param name="Error">Why the download failed, in the caller's language. Null unless failed.</param>
+    /// <param name="Bundled">Ships with Maki: never downloaded, cannot be deleted.</param>
     public record CatalogEntryDto(
-        string Id, string Name, long? Bytes, string License, string Author, string Source, string Status, string? Error);
+        string Id, string Name, long? Bytes, string License, string Author, string Source, string Status, string? Error,
+        bool Bundled);
 
     public record CacheDto(long Bytes, int Files);
 
@@ -116,6 +118,11 @@ public class UpscalingController(
             return this.NotFoundMessage(localizer, "error.upscaling.unknownModel");
         }
 
+        if (store.IsBundled(model))
+        {
+            return this.Conflict(localizer, "error.upscaling.modelBundled");
+        }
+
         upscaler.ReleaseModel(model);
         try
         {
@@ -185,7 +192,8 @@ public class UpscalingController(
                     UpscaleModelState.Failed => "failed",
                     _ => "missing"
                 },
-                status is { State: UpscaleModelState.Failed, ErrorKey: { } key } ? localizer.Get(key) : null);
+                status is { State: UpscaleModelState.Failed, ErrorKey: { } key } ? localizer.Get(key) : null,
+                store.IsBundled(info.Id));
         }).ToList();
 
         var (bytes, files) = cache.Stats();

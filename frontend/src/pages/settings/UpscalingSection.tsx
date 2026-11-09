@@ -142,7 +142,14 @@ export function UpscalingSection() {
   )
 }
 
-function StatusBadge({ status }: { status: UpscaleCatalogEntry['status'] }) {
+function StatusBadge({ status, bundled }: { status: UpscaleCatalogEntry['status']; bundled?: boolean }) {
+  if (bundled && status === 'ready') {
+    return (
+      <Badge size="sm" variant="light" color="var(--ok)">
+        <Trans>Included</Trans>
+      </Badge>
+    )
+  }
   switch (status) {
     case 'ready':
       return (
@@ -202,7 +209,7 @@ function ModelRow({
             </Badge>
           )}
         </Group>
-        <StatusBadge status={model.status} />
+        <StatusBadge status={model.status} bundled={model.bundled} />
       </Group>
       {info?.speed && info.quality && <Ratings speed={info.speed} quality={info.quality} />}
       <Text component="div" size="xs" c="var(--ink-3)">
@@ -223,7 +230,7 @@ function ModelRow({
         </Text>
       )}
       <Group gap="xs" wrap="wrap">
-        {ready ? (
+        {model.bundled ? null : ready ? (
           <Button
             variant="default"
             size="xs"

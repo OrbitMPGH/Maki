@@ -11003,6 +11003,10 @@ msgstr "Incluir subetiquetas al añadir"
 msgid "Include the subpath if Suwayomi runs under one."
 msgstr "Incluye la subruta si Suwayomi funciona bajo una."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Included"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Includes subtags"

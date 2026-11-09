@@ -51,9 +51,10 @@ public class UpscaleModelStoreTests : IDisposable
         return path;
     }
 
-    private UpscaleModelStore NewStore(HttpMessageHandler? handler = null) =>
+    private UpscaleModelStore NewStore(HttpMessageHandler? handler = null, string? bundledDirectory = null) =>
         new(new FakeHttpClientFactory(handler ?? new StubHandler(_ => new HttpResponseMessage(HttpStatusCode.NotFound))),
-            new AppPaths(_configDir), _settings, new UpscaleModelCatalog(), NullLogger<UpscaleModelStore>.Instance);
+            new AppPaths(_configDir), _settings, new UpscaleModelCatalog(), NullLogger<UpscaleModelStore>.Instance,
+            bundledDirectory);
 
     private string ModelFile => Path.Combine(_configDir, "models", "upscale", "span-s-2x.onnx");
 
@@ -177,6 +178,38 @@ public class UpscaleModelStoreTests : IDisposable
 
         var again = await store.DownloadAsync(UpscaleModelId.SpanS);
         Assert.Equal(UpscaleModelState.Ready, again.State);
+    }
+
+    [Fact]
+    public async Task A_bundled_model_is_ready_from_the_app_folder_and_never_downloaded_or_deleted()
+    {
+        var bundle = Path.Combine(_root, "app", UpscaleModelStore.BundledFolder);
+        Directory.CreateDirectory(bundle);
+        var bundled = Path.Combine(bundle, "maki-2x.onnx");
+        File.Copy(UpscaleFixture.IdentityModelPath, bundled);
+        var stale = Path.Combine(_configDir, "models", "upscale", "maki-2x.onnx");
+        Directory.CreateDirectory(Path.GetDirectoryName(stale)!);
+        File.WriteAllBytes(stale, [1, 2, 3]);
+        var requests = 0;
+        var handler = new StubHandler(_ =>
+        {
+            Interlocked.Increment(ref requests);
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        var store = NewStore(handler, bundle);
+
+        Assert.True(store.IsBundled(UpscaleModelId.Maki2x));
+        Assert.False(store.IsBundled(UpscaleModelId.SpanS));
+        Assert.True(store.IsReady(UpscaleModelId.Maki2x));
+        Assert.Equal(bundled, store.PathOf(UpscaleModelId.Maki2x));
+        Assert.Equal(new FileInfo(bundled).Length, store.GetStatus(UpscaleModelId.Maki2x).Bytes);
+        Assert.False(File.Exists(stale));
+
+        Assert.Equal(UpscaleModelState.Ready, (await store.DownloadAsync(UpscaleModelId.Maki2x)).State);
+        Assert.Equal(0, requests);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => store.DeleteAsync(UpscaleModelId.Maki2x));
+        Assert.True(File.Exists(bundled));
     }
 
     [Fact]

@@ -8941,6 +8941,10 @@ msgstr "Include subtags when adding"
 msgid "Include the subpath if Suwayomi runs under one."
 msgstr "Include the subpath if Suwayomi runs under one."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Included"
+msgstr "Included"
+
 #: src/components/CatalogueRules.tsx
 msgid "Includes subtags"
 msgstr "Includes subtags"

@@ -11003,6 +11003,10 @@ msgstr "添加时包含子标签"
 msgid "Include the subpath if Suwayomi runs under one."
 msgstr "如果 Suwayomi 运行在子路径下，请包含该子路径。"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Included"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Includes subtags"

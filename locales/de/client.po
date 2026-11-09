@@ -11003,6 +11003,10 @@ msgstr "Unter-Tags beim Hinzufügen einschließen"
 msgid "Include the subpath if Suwayomi runs under one."
 msgstr "Gib den Unterpfad mit an, falls Suwayomi unter einem läuft."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Included"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Includes subtags"

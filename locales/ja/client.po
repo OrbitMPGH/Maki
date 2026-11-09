@@ -11003,6 +11003,10 @@ msgstr "追加時にサブタグも含める"
 msgid "Include the subpath if Suwayomi runs under one."
 msgstr "Suwayomiがサブパスで動作している場合は、サブパスも入力してください。"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Included"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Includes subtags"

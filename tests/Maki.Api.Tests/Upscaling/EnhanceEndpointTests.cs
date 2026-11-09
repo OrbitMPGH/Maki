@@ -280,6 +280,32 @@ public sealed class EnhanceEndpointTests : IDisposable
     }
 
     [Fact]
+    public async Task A_bundled_model_is_flagged_and_refuses_deletion()
+    {
+        var bundle = Path.Combine(_configDir, "app", UpscaleModelStore.BundledFolder);
+        Directory.CreateDirectory(bundle);
+        File.Copy(UpscaleFixture.IdentityModelPath, Path.Combine(bundle, "maki-2x.onnx"));
+        var store = new UpscaleModelStore(new UpscaleTestKit.NoHttp(), _paths, _settings, _catalog,
+            NullLogger<UpscaleModelStore>.Instance, bundle);
+        var admin = new UpscalingController(_settings, _catalog, store,
+            new OnnxPageUpscaler(_catalog, store, _settings, NullLogger<OnnxPageUpscaler>.Instance), _cache, _queue, new TestLocalizer());
+        await _cache.WriteAsync(new UpscaleWorkKey(1, "1-1", 0, "maki-2x"), [1], "webp", default);
+
+        var catalog = Json(await admin.Status(default)).GetProperty("catalog").EnumerateArray().ToList();
+        var maki = catalog.Single(c => c.GetProperty("id").GetString() == "maki-2x");
+        Assert.True(maki.GetProperty("bundled").GetBoolean());
+        Assert.Equal("ready", maki.GetProperty("status").GetString());
+        Assert.False(catalog.Single(c => c.GetProperty("id").GetString() == "span-s").GetProperty("bundled").GetBoolean());
+
+        var result = await admin.Delete("maki-2x", default);
+
+        Assert.IsType<ConflictObjectResult>(result);
+        Assert.Equal("error.upscaling.modelBundled", Code(result));
+        Assert.True(store.IsReady(UpscaleModelId.Maki2x));
+        Assert.Equal(1, _cache.Stats().Files);
+    }
+
+    [Fact]
     public async Task Deleting_a_model_removes_its_file_and_its_pages()
     {
         await _cache.WriteAsync(new UpscaleWorkKey(1, "1-1", 0, "span-s"), [1], "webp", default);

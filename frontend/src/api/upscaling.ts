@@ -21,6 +21,8 @@ export interface UpscaleCatalogEntry {
   source: string
   status: UpscaleModelStatus
   error?: string | null
+  /** Ships with Maki: never downloaded, cannot be deleted. */
+  bundled?: boolean
 }
 
 export interface UpscalingState {

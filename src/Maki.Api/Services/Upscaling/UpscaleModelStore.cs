@@ -38,12 +38,16 @@ public sealed record UpscaleManifestModel
 
 /// <summary>
 /// Downloads the upscale models to <c>{ConfigDir}/models/upscale</c> and answers which are usable.
+/// A model shipped in <see cref="BundledFolder"/> next to the app is used from there and never
+/// downloaded or deleted.
 /// Failure reasons are catalogue keys, not text: this is a singleton and the request language is
 /// scoped, so the caller renders the key with its own <c>ILocalizer</c>.
 /// </summary>
 public sealed class UpscaleModelStore
 {
     public const string HttpClientName = "upscale-models";
+
+    public const string BundledFolder = "UpscaleModels";
 
     public const string DefaultManifestUrl =
         "https://github.com/OrbitMPGH/Maki/releases/download/upscale-models-v1/manifest.json";
@@ -59,7 +63,7 @@ public sealed class UpscaleModelStore
 
     public UpscaleModelStore(
         IHttpClientFactory httpClientFactory, AppPaths paths, IAppSettings settings,
-        UpscaleModelCatalog catalog, ILogger<UpscaleModelStore> logger)
+        UpscaleModelCatalog catalog, ILogger<UpscaleModelStore> logger, string? bundledDirectory = null)
     {
         _httpClientFactory = httpClientFactory;
         _settings = settings;
@@ -70,7 +74,16 @@ public sealed class UpscaleModelStore
         foreach (var info in catalog.All)
         {
             var entry = new Entry();
-            if (File.Exists(Path.Combine(ModelsDirectory, info.FileName)))
+            var downloaded = Path.Combine(ModelsDirectory, info.FileName);
+            var bundled = bundledDirectory is null ? null : Path.Combine(bundledDirectory, info.FileName);
+            if (bundled is not null && File.Exists(bundled))
+            {
+                entry.BundledPath = bundled;
+                entry.State = UpscaleModelState.Ready;
+                // Left behind by an older version that downloaded it.
+                TryDelete(downloaded);
+            }
+            else if (File.Exists(downloaded))
             {
                 entry.State = UpscaleModelState.Ready;
             }
@@ -83,7 +96,10 @@ public sealed class UpscaleModelStore
 
     public string ModelsDirectory { get; }
 
-    public string PathOf(UpscaleModelId id) => Path.Combine(ModelsDirectory, _catalog.Get(id).FileName);
+    public string PathOf(UpscaleModelId id) =>
+        _entries[id].BundledPath ?? Path.Combine(ModelsDirectory, _catalog.Get(id).FileName);
+
+    public bool IsBundled(UpscaleModelId id) => _entries[id].BundledPath is not null;
 
     /// <summary>True when the model finished downloading and its file is still on disk. Never hashes.</summary>
     public bool IsReady(UpscaleModelId id)
@@ -140,6 +156,11 @@ public sealed class UpscaleModelStore
     /// </summary>
     public async Task<UpscaleModelStatus> DownloadAsync(UpscaleModelId id, CancellationToken ct = default)
     {
+        if (IsBundled(id))
+        {
+            return GetStatus(id);
+        }
+
         Task running;
         lock (_gate)
         {
@@ -165,9 +186,14 @@ public sealed class UpscaleModelStore
         return GetStatus(id);
     }
 
-    /// <summary>Stops a download in flight and deletes the file. Throws if the file is still held open.</summary>
+    /// <summary>Stops a download in flight and deletes the file. Throws if the file is still held open or bundled.</summary>
     public async Task<UpscaleModelStatus> DeleteAsync(UpscaleModelId id)
     {
+        if (IsBundled(id))
+        {
+            throw new InvalidOperationException($"Upscale model '{id}' ships with Maki and cannot be deleted.");
+        }
+
         Task? running;
         lock (_gate)
         {
@@ -365,6 +391,7 @@ public sealed class UpscaleModelStore
 
     private sealed class Entry
     {
+        public string? BundledPath;
         public UpscaleModelState State;
         public string? ErrorKey;
         public long? ManifestBytes;

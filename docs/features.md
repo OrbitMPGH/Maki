@@ -122,8 +122,10 @@ screen. It is off until a reader turns it on. Library files are never modified.
   without WebGL2 shows plain pages and the browser methods read "Not supported on this device".
 - **Server upscaling (admins).** Settings, Library, **Server upscaling** has the on switch, the
   list of models readers may use, **Threads**, the cache cap (1 GB by default), **Clear cache**
-  and **Test speed**, which times one built-in sample page. Models are not bundled. Maki downloads
-  each one on first use from a Maki GitHub release and checks its SHA-256. Some are licensed for
+  and **Test speed**, which times one built-in sample page. Maki 2x ships with Maki, so it works
+  offline and cannot be deleted. Maki downloads the others on first use from a Maki GitHub release
+  and checks their SHA-256. Shipping Maki 2x does not turn server upscaling on; that stays the
+  admin's choice. Some are licensed for
   non-commercial use only; the per-model licences are in
   [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). A page takes seconds of server CPU, a
   few times longer on a NAS, so the queue is capped per reader and shared fairly between readers.

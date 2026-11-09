@@ -11003,6 +11003,10 @@ msgstr "추가할 때 하위 태그 포함"
 msgid "Include the subpath if Suwayomi runs under one."
 msgstr "Suwayomi가 하위 경로에서 실행된다면 하위 경로를 포함하세요."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Included"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Includes subtags"

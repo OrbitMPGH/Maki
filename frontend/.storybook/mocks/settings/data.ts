@@ -1066,6 +1066,7 @@ const upscaleCatalog = {
     author: 'Maki',
     source: 'https://github.com/OrbitMPGH/Maki/tree/main/distribution/upscale-models/distill',
     status: 'ready',
+    bundled: true,
   },
   spanS: {
     id: 'span-s',

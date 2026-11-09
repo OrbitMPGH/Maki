@@ -2148,6 +2148,11 @@ msgstr "The cache size must be between {min} and {max} MB."
 msgid "error.upscaling.invalidThreads"
 msgstr "Threads must be between {min} and {max}."
 
+#. Deleting a model that ships with Maki itself rather than being downloaded.
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.modelBundled"
+msgstr "This model comes with Maki and cannot be deleted."
+
 #. Deleting a model whose file is still open because a page is being upscaled with it right now.
 #: src/Maki.Api/Controllers/UpscalingController.cs
 msgid "error.upscaling.modelInUse"

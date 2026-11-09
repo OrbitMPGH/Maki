@@ -11003,6 +11003,10 @@ msgstr "Eklerken alt etiketleri de dahil et"
 msgid "Include the subpath if Suwayomi runs under one."
 msgstr "Suwayomi bir alt yol altında çalışıyorsa alt yolu da ekleyin."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Included"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Includes subtags"

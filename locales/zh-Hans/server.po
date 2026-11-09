@@ -3094,6 +3094,12 @@ msgstr "缓存大小必须在 {min} 到 {max} MB 之间。"
 msgid "error.upscaling.invalidThreads"
 msgstr "线程数必须在 {min} 到 {max} 之间。"
 
+#. Deleting a model that ships with Maki itself rather than being downloaded.
+#. English: This model comes with Maki and cannot be deleted.
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.modelBundled"
+msgstr ""
+
 #. Deleting a model whose file is still open because a page is being upscaled with it right now.
 #. English: The model is busy with a page right now. Try again in a moment.
 #: src/Maki.Api/Controllers/UpscalingController.cs

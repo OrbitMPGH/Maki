@@ -1051,7 +1051,8 @@ try
     builder.Services.AddScoped<ReadingProfileService>();
     builder.Services.AddScoped<Maki.Api.Services.Upscaling.EnhanceAvailability>();
     builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleModelCatalog>();
-    builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleModelStore>();
+    builder.Services.AddSingleton(sp => ActivatorUtilities.CreateInstance<Maki.Api.Services.Upscaling.UpscaleModelStore>(
+        sp, Path.Combine(AppContext.BaseDirectory, Maki.Api.Services.Upscaling.UpscaleModelStore.BundledFolder)));
     builder.Services.AddSingleton<Maki.Api.Services.Upscaling.OnnxPageUpscaler>();
     builder.Services.AddSingleton<Maki.Core.Images.Upscaling.IPageUpscaler>(sp =>
         sp.GetRequiredService<Maki.Api.Services.Upscaling.OnnxPageUpscaler>());

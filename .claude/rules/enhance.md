@@ -17,6 +17,7 @@ paths:
   - "frontend/src/pages/settings/UpscalingSection*"
   - "frontend/src/api/upscaling.ts"
   - "distribution/upscale-models/**"
+  - "src/Maki.Api/UpscaleModels/**"
 ---
 
 # Enhance: browser shaders and server upscaling
@@ -78,6 +79,7 @@ User-facing summary in `docs/features.md`. Two tiers share one reader setting: `
 
 ## Model delivery
 
+- Maki 2x is bundled: `src/Maki.Api/UpscaleModels/maki-2x.onnx` is copied to the build and publish output, and `Program.cs` hands `UpscaleModelStore` that folder (`BundledFolder` under `AppContext.BaseDirectory`). A bundled model is `Ready` from startup, `DownloadAsync` returns at once, `DeleteAsync` throws, `UpscalingController.Delete` answers `error.upscaling.modelBundled`, the catalogue DTO carries `bundled` and the settings page shows "Included" with no Delete button. A copy an older version downloaded into `{ConfigDir}/models/upscale` is deleted at startup. Bundling never turns the tier on: `library.upscaling.enabled` stays off until an admin flips it (owner, 2026-11-09: weak hardware must not upscale without the admin choosing it). Tests build the store without a bundle folder, although the file sits in the test output too. New weights mean replacing that file and raising `UpscaleCache.Generation`: cache names key on the model id, not the file, so pages from the old weights would keep being served. The `upscale-models-v1` release keeps its maki-2x entry for older versions.
 - Release assets come from `distribution/upscale-models/prepare.py` and are uploaded by the owner with `distribution/publish-upscale-models.ps1`.
 - In dev, point `library.upscaling.manifesturl` at a local `manifest.json` (a plain path or `file://`).
 - Licences live in the root `THIRD_PARTY_NOTICES.md` and `distribution/upscale-models/licenses/`. SPAN-S is CC BY-NC 4.0, so it is non-commercial even though Maki's code is GPL-3.0.
