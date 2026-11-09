@@ -44,7 +44,7 @@ Choose **Automation → Incognito** from the series' actions menu:
 - **No scrobble** skips tracker pushes only. The series still counts in your stats.
 - **Full** also leaves the series out of Stats, and so out of Rewind.
 
-The reader's settings popover has a separate **Incognito** toggle for the current session.
+The reader's settings panel has a separate **Incognito** toggle for the current session.
 
 :::caution
 Reading recorded while a series is on **Full** never reaches your history, even after you switch the

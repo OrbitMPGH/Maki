@@ -51,7 +51,7 @@ The list has **Titles** and **Anime** tabs. Filter by **All**, **Rated**, **Thum
 **Excluded from taste** keeps a shelf title out of the ranking without changing your reading history.
 
 The **Anime** tab appears once an AniList or MyAnimeList tracker is connected. Anime only feeds
-recommendations after you switch on **Anime you've watched** in the Taste tab. See
+recommendations after you switch on **Anime you've watched** in Discover's **Your taste** tab. See
 [Connect a tracker](/Maki/guides/trackers/connect/).
 
 ## Hidden everywhere

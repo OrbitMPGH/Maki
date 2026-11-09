@@ -21,7 +21,7 @@ Accounts are connected on the **Scrobble** page (`/scrobble`). Each tracker has 
 AniList tokens last about a year and cannot be refreshed. When the token expires, connect again.
 
 AniList and MyAnimeList both have an anime list. The **Use anime for recommendation taste** switch
-lets Discover learn from it, once **Anime you've watched** is also on in the Taste tab. See
+lets Discover learn from it, once **Anime you've watched** is also on in Discover's **Your taste** tab. See
 [Discover](/Maki/features/discover/).
 
 ## MyAnimeList
@@ -78,7 +78,9 @@ Import lists add the series on your tracker lists to your library. Connect the t
 open **Settings → Integrations → Import lists** and turn on its switch.
 
 - **Import entries with status.** Any of **Reading**, **Plan to read** and **Completed**. At least
-  one must stay selected.
+  one must stay selected. **Plan to read** entries go on your
+  [Shortlist](/Maki/features/discover/#shortlist), not into the library. A later Reading or
+  Completed status still adds the series.
 - **Root folder.** Where new series are filed. Defaults to the first folder you can see.
 - **Monitor for new chapters** and **New chapters.** The latter is **All**, **Smart** (only the next
   few ahead of your reading) or **Main only** (skips specials).
@@ -87,7 +89,7 @@ open **Settings → Integrations → Import lists** and turn on its switch.
 **Run now** starts a sync. **Sync everything** pulls the whole list again and asks for confirmation.
 
 If your account cannot add series directly, Maki files each entry as a request for an admin to
-approve. Entries Maki could not match, or that you ignored, are listed under **Not matched or
+approve. The last-run summary and the inbox message count what was shortlisted. Entries Maki could not match, or that you ignored, are listed under **Not matched or
 ignored**, where you can retry or un-ignore them.
 
 To send unread series the other way, turn on **Add unread series as plan-to-read** in the Trackers

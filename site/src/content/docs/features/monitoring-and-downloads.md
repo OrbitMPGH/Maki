@@ -51,6 +51,17 @@ chapter of the series. Entries can be read but are never downloaded. Chapter 0 a
 number are left alone. Once sources list chapters, numbered rows take their links, and each
 entry gives way to the numbered chapters on its file, with its reads moving onto them.
 
+## Delisted and missing chapters
+
+A chapter that no enabled source lists any more is flagged as **Delisted**, with a badge and a
+filter on the series page. An alert there offers **Show them** and **Keep them**. The flag clears
+itself if a source lists the chapter again, and a sync that delists chapters you have files for
+sends one inbox warning per series. Nothing is downloaded or deleted because of it.
+
+A chapter whose file has gone from disk says **File missing**, with a count in the chapter heading,
+a filter and a **Relink files** button. Downloaded counts leave these chapters out. See
+[Health checks](/Maki/guides/running/health-checks/#missing-files-that-moved).
+
 ## Multilingual libraries
 
 A series' link to a source can hold several languages, each with its own chapter rows and files,

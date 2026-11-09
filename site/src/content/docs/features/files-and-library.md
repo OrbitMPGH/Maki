@@ -27,6 +27,10 @@ default. The setup wizard compares one of your own pages at each stop before any
 and per-file rules or a series' own setting can change which stop applies. Each series can be
 undone on its own. See [WebP and AVIF conversion](/Maki/guides/library/page-conversion/).
 
+New downloads, upgrades and torrent imports are converted in a background queue after they land, so
+downloads finish sooner. A file waits while someone is reading it, and the page conversion card
+shows how many files are queued.
+
 A pausable library pass converts the files already on disk, one at a time, and shows what it saved.
 Several pages of a file are encoded at once; the card sets how many (by default half the cores,
 between 2 and 4).
@@ -53,7 +57,10 @@ look like a worse release.
 ![Library grid of series covers with read and new-chapter badges, above the summary counts and filter bar](../../../assets/library.png)
 <hr>
 
-Grid or list view with density options. Shows download state, read badges and monitor status.
+Grid or list view with density options. Shows download state, read progress and monitor status.
+Each cover has a menu on hover or focus to open, continue, monitor or mute the series. Reading
+progress is a ring around the status disc, which turns into a check once you've read everything.
+The title filter tolerates typos, and shows the closest titles when nothing matches exactly.
 Filter by source, chapter count or user tag, save filters, and set monitoring for the selected
 series in bulk. Per-series incognito mode keeps a title out of stats and progress without hiding it.
 
@@ -66,7 +73,9 @@ bulk. See [Archiving a series](/Maki/guides/library/archiving/).
 <hr>
 
 Admins can index and verify archives, and find missing, unreadable, duplicate or suspicious files.
-Repeated findings of one kind fold into one row with **Acknowledge all**. Replacement and deletion
+A missing archive that moved can be found by name, size and page hashes and relinked in one step,
+and spare duplicates can be deleted in one click. Repeated findings of one kind fold into one row
+with **Acknowledge all**. Replacement and deletion
 operations are reviewed before they run, and unlinked CBZs can be imported. The History tab
 keeps a timeline of status changes, and failed repairs can be retried or dismissed. See
 [Health checks](/Maki/guides/running/health-checks/).

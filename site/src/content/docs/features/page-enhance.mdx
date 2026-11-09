@@ -27,12 +27,13 @@ A greyscale page stays greyscale whichever method draws it.
 
 ## Turning it on
 
-In the reader's settings popover, open **Enhance**, set it to Off, Auto or Always and pick a
+In the reader's settings panel, open **Enhance**, set it to Off, Auto or Always and pick a
 **Method**. The same two fields are in reading profiles and in per-series overrides, so they follow
 the usual order: series override, pinned profile, type profile, your default.
 
 **Auto** enhances a page when it is shown at least 1.2 times larger than its source on either side,
-or when the page itself looks soft and blurry. A sharp page in a small window stays plain.
+or when the page looks soft and blurry at the size it is shown. A sharp page in a small window stays
+plain, and so does a large page that is slightly soft at full size but sharp on screen.
 
 Hold **H** or the toolbar's compare button to see the original page.
 
@@ -44,9 +45,14 @@ placeholder reads "Every quality is enhanced". The tiers are described under
 
 ## Server progress
 
-While a server method is still working on the page on screen, a pill at the bottom says whether it
-is waiting, upscaling or loading, and the fallback shows meanwhile. The page bar marks the pages
-ahead that are already upscaled in light grey, like the buffered part of a video.
+While a server method is still working on the page on screen, the fallback shows meanwhile. With
+the reader's bars hidden, a thin line along the bottom edge shows the progress. With the bars
+showing, the compare button and the page bar show it instead, and the page bar marks the pages ahead
+that are already upscaled in light grey, like the buffered part of a video.
+
+**Upscale progress** in the Enhance settings picks what shows while the bars are hidden: **Line**
+(the default), **Detailed** (a pill that says whether the page is waiting, upscaling or loading) or
+**Hidden**.
 
 ## Working ahead
 
@@ -54,6 +60,13 @@ Paged mode enhances the pages in the preload window. Continuous mode sizes its r
 instead of pages, so a chapter of many short slices is enhanced well down the strip and one of a few
 very tall slices only a page or two ahead, within what the device can hold. Near a chapter's end, a
 server method also queues the next chapter's first pages, so it opens already upscaled.
+
+Pages you have paged past drop out of the server queue, and a page still running is abandoned when
+you skip ahead or switch chapter.
+
+**Whole chapter**, off by default and shown only for server methods, keeps the server upscaling every
+page of the open chapter, ahead first and then behind, so fast reading doesn't catch up with it.
+Leaving the chapter cancels the rest.
 
 ## Fallbacks
 
@@ -81,7 +94,12 @@ and saves, or from its Download button, and checks its SHA-256. Some are license
 [THIRD_PARTY_NOTICES.md](https://github.com/OrbitMPGH/Maki/blob/main/THIRD_PARTY_NOTICES.md).
 
 A page takes seconds of server CPU, a few times longer on a NAS, so the queue is capped per reader
-and shared fairly between readers.
+and shared fairly between readers. Each page is split into small tiles that run in parallel, and
+flat areas skip the model. Pages over 16 megapixels are never upscaled on the server, since one can
+take around 2 GB of memory. The reader uses the browser method for those pages instead.
+
+Colour pages saved with a wide-gamut colour profile, such as Adobe RGB, are converted to sRGB before
+upscaling.
 
 ## Privacy
 

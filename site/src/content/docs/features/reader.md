@@ -20,8 +20,20 @@ series page estimates time to finish from comparable chapters.
 - Chapters with very tall pages open in continuous mode on their own.
 - In continuous mode, scrolling past the end of a chapter opens the next one. On touch, pull past
   the end instead.
+- Continuous mode also moves a screen at a time with a tap on the top or bottom of the screen, or
+  with `Space`, `Page Down` and `Page Up`. Auto-scroll (`A`) has ten speeds and pauses while you
+  touch the screen.
+- The gear opens a quick settings panel that says what a change applies to: a profile and every
+  series using it, this series, or your defaults.
 - The page bar has one segment per page, lit up to the page on screen. Hover a segment for that
   page's thumbnail, and click or drag to jump.
+
+## Chapter notes
+
+Write a note on any page while you read. Keep it private or share it with everyone who can see the
+series, and reply to other readers' shared notes. On wide screens notes sit in the margin beside
+their page, and other people's notes stay folded until you finish the chapter. See
+[Chapter notes](/Maki/guides/reading/chapter-notes/).
 
 ## Reading profiles
 

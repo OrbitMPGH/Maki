@@ -58,10 +58,28 @@ System checks have these buttons:
 For files:
 
 - Review an archive to see its findings and decide what to do.
-- **Import unlinked** imports archives not yet linked to a chapter.
+- **Import unlinked** imports archives not yet linked to a chapter. The **Unlinked** filter is split
+  by reason, such as a file that moved, an identical copy, or a name Maki can't place.
+- A damaged file has **Get a new copy**, and a size mismatch has **Update the record**.
 - Mark a finding with **Ignore** or **Acknowledge** once you have decided what it means.
-- A file that is missing while its chapter still points at it stays a finding, and the chapter shows
-  as downloaded until you deal with it.
+- Bulk actions report which files failed.
+
+### Missing files that moved
+
+When an archive goes missing, Maki looks for it elsewhere in the same root folder, by file name, size
+and page hashes. A match can be relinked in one step, and the chapter keeps its read state and
+history. A match on the file name alone waits for you to confirm it.
+
+Until a missing file is relinked or dealt with, its chapter says **File missing** on the series
+page and is left out of the downloaded count. The series page has a **Relink files** button and a
+filter for these chapters.
+
+### Duplicates
+
+A duplicate finding lists every copy and marks the one to keep: the copy a chapter reads from, or
+the oldest when none does. Delete a spare from the review with an inline confirm, or use the bar on
+the **Duplicate** filter to delete every spare at once. If you delete the copy a chapter reads from
+and an identical copy exists, the chapter moves to that copy instead of losing its file.
 
 The **Repairs** tab lists repair and delete requests and their status. Open a failed one to **Retry**
 it. A retried deletion comes back for review first. **Dismiss** clears a finished request, and

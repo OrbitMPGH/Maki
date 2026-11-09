@@ -13,7 +13,8 @@ sent to MangaBaka unless you connect it as a tracker. For how recommendations us
 
 The snapshot is about 350 MB to download and 3.5 GB on disk. Maki downloads it in the background on
 first start, then checks every six hours and installs each new snapshot once MangaBaka publishes
-one. Your setup finishes once it is installed.
+one. Your setup finishes once it is installed. While it installs, the progress bar follows the index
+build with a time estimate. The install stays under about 400 MB of memory.
 
 **Settings → Library → Metadata database** shows its size and last refresh. **Refresh now** downloads
 a newer snapshot if one exists. A failed download is retried after 15 minutes, then 30, 60 and so on, while no usable snapshot is
@@ -35,8 +36,9 @@ meaning, and recommendations use it to find similar titles, even when they share
 
 Toggle it in **Settings → Library → Semantic search & recommendations**. It needs the MangaBaka
 database first. Turning it on starts a model switch that downloads the model and index, with progress
-on the status line. Maki tries the prebuilt vectors first. If none are available, it builds the index
-on your machine, which takes a long time on a CPU. While loaded, it uses about 140 MB of RAM. It unloads after 5 idle minutes by default.
+on the status line. Maki tries the prebuilt vectors first, about 42 MB to download and 65 MB on disk.
+If none are available, it builds the index on your machine, which takes a long time on a CPU. Search
+and the rails that need the index are empty until it is in place. While loaded, it uses about 140 MB of RAM. It unloads after 5 idle minutes by default.
 
 With the switch off, search falls back to title matching, and rails that need the index are left out.
 Side interests, for example, have no rows without it.

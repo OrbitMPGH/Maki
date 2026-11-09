@@ -11,6 +11,7 @@ Maki publishes an image for amd64 and arm64 at `ghcr.io/orbitmpgh/maki:latest`.
 
 <Tabs>
   <TabItem label="docker-compose.yml">
+
 ```yaml
 services:
   maki:
@@ -27,8 +28,10 @@ services:
     mem_reservation: 512m
     restart: unless-stopped
 ```
+
   </TabItem>
   <TabItem label="docker run">
+
 ```bash
 docker run -d --name maki \
   -e PUID=1000 -e PGID=1000 \
@@ -39,10 +42,13 @@ docker run -d --name maki \
   --restart unless-stopped \
   ghcr.io/orbitmpgh/maki:latest
 ```
+
   </TabItem>
   <TabItem label="Synology / Portainer">
-Paste the compose file above into a Portainer stack, or into a Synology Container Manager project. Map
+
+Paste the compose file from the first tab into a Portainer stack, or into a Synology Container Manager project. Map
 `/config` and `/library` to shared folders that the `PUID:PGID` user can write to.
+
   </TabItem>
 </Tabs>
 

@@ -22,6 +22,10 @@ imported into the library from Settings.
 
 For a series with an anime adaptation, Maki can start you at the chapter where the anime ended.
 
+Home's **Continue from the anime** rail lists those series, your most recent tracker updates first,
+and skips series the anime has fully caught up with. Dismiss a card, with undo, either until a new
+season moves past the chapters it covers or for good.
+
 ## Ratings
 
 Rate a series from 1 to 10 when you finish it, or set a "so far" score while you are partway through.

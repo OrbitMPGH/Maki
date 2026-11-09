@@ -5,8 +5,10 @@ description: Store chapter pages as WebP or AVIF to save space, which readers ca
 
 Page conversion shrinks chapter files by re-encoding their pages as WebP or AVIF. It is off by
 default. Turn it on under **Settings, Library, Page conversion**, then pick a format and a quality.
-Maki converts new downloads as it places them, and a pausable pass works through files already on
-disk.
+New downloads, upgrades and torrent imports go through a background queue after they land, so
+downloads finish without waiting on the encoder. A file waits in the queue while someone is reading
+it, and the Page conversion card shows how many are queued. A pausable pass works through files
+already on disk.
 
 ## Which readers open which format
 
