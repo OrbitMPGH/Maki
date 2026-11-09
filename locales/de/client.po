@@ -754,6 +754,10 @@ msgstr "{announcedBy} hat ihn für {announced} angesetzt"
 msgid "{announcedBy} has it scheduled for {when}"
 msgstr "{announcedBy} hat ihn für {when} angesetzt"
 
+#: src/pages/ActivityPage.tsx
+msgid "{applied, plural, one {# upgraded} other {# upgraded}}"
+msgstr ""
+
 #: src/components/RatingImportModal.tsx
 #, fuzzy
 msgid "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
@@ -994,10 +998,22 @@ msgstr "{copyCount, plural, one {# Kopie} other {# Kopien}}"
 msgid "{count, plural, =2 {Both trackers} other {All # trackers}}"
 msgstr "{count, plural, =2 {Beide Tracker} one {# Tracker} other {Alle # Tracker}}"
 
+#: src/pages/ActivityPage.tsx
+msgid "{count, plural, one {# cancelled} other {# cancelled}}"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "{count, plural, one {# ch.} other {# ch.}}"
 msgstr "{count, plural, one {# Kap.} other {# Kap.}}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{count, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "{count, plural, one {# completed} other {# completed}}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -1598,6 +1614,14 @@ msgid "{label} tokens"
 msgstr "{label}-Tokens"
 
 #: src/pages/ActivityPage.tsx
+msgid "{label}, {source}"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "{label}, {source}, {time}"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{label}: {chapterTitle}"
 msgstr "{label}: {chapterTitle}"
@@ -1818,6 +1842,10 @@ msgstr "{moreCount, plural, one {+# weitere} other {+# weitere}}"
 msgid "{n, plural, one {# file} other {# files}}"
 msgstr "{n, plural, one {# Datei} other {# Dateien}}"
 
+#: src/pages/ActivityPage.tsx
+msgid "{n, plural, one {# from {name}} other {# from {name}}}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{n, plural, one {Next # chapter} other {Next # chapters}}"
@@ -1917,6 +1945,10 @@ msgstr "{offNumbering, plural, one {# davon hat eine Dezimalnummer oder keine, w
 #, fuzzy
 msgid "{ok, plural, one {Archived # series} other {Archived # series}}"
 msgstr "{ok, plural, one {# Serie archiviert} other {# Serien archiviert}}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{other, plural, one {# completed} other {# completed}}"
+msgstr ""
 
 #: src/components/series/ArchiveSeriesDialog.tsx
 #, fuzzy
@@ -2150,6 +2182,10 @@ msgstr "{reason}: {detail}"
 #, fuzzy
 msgid "{reasonText} - {measurement}"
 msgstr "{reasonText} - {measurement}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{rejected, plural, one {# not upgraded} other {# not upgraded}}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -3889,6 +3925,7 @@ msgstr "Aggregator"
 #: src/components/CatalogueRules.tsx
 #: src/components/ChapterMapParts.tsx
 #: src/components/import/MihonReview.tsx
+#: src/pages/ActivityPage.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/discover/ShortlistTab.tsx
@@ -5371,6 +5408,7 @@ msgstr "Diese Anfrage abbrechen?"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
+#: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/stats/labels.ts
 #, fuzzy
@@ -6196,6 +6234,7 @@ msgstr "Kapitelsuche leeren"
 msgid "Clear default"
 msgstr "Standard leeren"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Clear filters"
@@ -9452,6 +9491,10 @@ msgstr "Nach Zuordnungsstatus filtern"
 msgid "Filter by root folder"
 msgstr "Nach Stammordner filtern"
 
+#: src/pages/ActivityPage.tsx
+msgid "Filter by series"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -10141,6 +10184,10 @@ msgstr "Graustufenseite"
 msgid "Grid view"
 msgstr "Rasteransicht"
 
+#: src/pages/ActivityPage.tsx
+msgid "Group chapters"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Group matches (regex)"
@@ -10359,6 +10406,10 @@ msgstr "Ausgeblendet, während der Fortschritt deaktiviert ist."
 #, fuzzy
 msgid "Hide affected series"
 msgstr "Betroffene Serien ausblenden"
+
+#: src/pages/ActivityPage.tsx
+msgid "Hide chapters"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ScrobblePage.tsx
@@ -15107,6 +15158,10 @@ msgstr "Unter dieser Adresse gibt es nichts. Der Link ist möglicherweise veralt
 #, fuzzy
 msgid "Nothing matches"
 msgstr "Nichts entspricht den Kriterien"
+
+#: src/pages/ActivityPage.tsx
+msgid "Nothing matches these filters"
+msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -20628,6 +20683,10 @@ msgstr "Alle anzeigen"
 msgid "Show all unlinked files"
 msgstr "Alle nicht verknüpften Dateien anzeigen"
 
+#: src/pages/ActivityPage.tsx
+msgid "Show chapters"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Show covers from the library"
@@ -24574,6 +24633,11 @@ msgstr "Serie ansehen"
 #, fuzzy
 msgid "View series: {title}"
 msgstr "Serie ansehen: {title}"
+
+#. placeholder {0}: segment.volume
+#: src/pages/ActivityPage.tsx
+msgid "Vol. {0}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy

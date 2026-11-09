@@ -754,6 +754,10 @@ msgstr "{announcedBy}이(가) {announced}로 예정해 두었습니다."
 msgid "{announcedBy} has it scheduled for {when}"
 msgstr "{announcedBy}이(가) {when}로 예정해 두었습니다."
 
+#: src/pages/ActivityPage.tsx
+msgid "{applied, plural, one {# upgraded} other {# upgraded}}"
+msgstr ""
+
 #: src/components/RatingImportModal.tsx
 #, fuzzy
 msgid "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
@@ -994,10 +998,22 @@ msgstr "{copyCount, plural, other {사본 #개}}"
 msgid "{count, plural, =2 {Both trackers} other {All # trackers}}"
 msgstr "{count, plural, =2 {트래커 둘 다} other {트래커 전체 #개}}"
 
+#: src/pages/ActivityPage.tsx
+msgid "{count, plural, one {# cancelled} other {# cancelled}}"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "{count, plural, one {# ch.} other {# ch.}}"
 msgstr "{count, plural, other {#화}}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{count, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "{count, plural, one {# completed} other {# completed}}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -1598,6 +1614,14 @@ msgid "{label} tokens"
 msgstr "{label} 토큰"
 
 #: src/pages/ActivityPage.tsx
+msgid "{label}, {source}"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
+msgid "{label}, {source}, {time}"
+msgstr ""
+
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{label}: {chapterTitle}"
 msgstr "{label}: {chapterTitle}"
@@ -1818,6 +1842,10 @@ msgstr "{moreCount, plural, other {+#개 더}}"
 msgid "{n, plural, one {# file} other {# files}}"
 msgstr "{n, plural, other {파일 #개}}"
 
+#: src/pages/ActivityPage.tsx
+msgid "{n, plural, one {# from {name}} other {# from {name}}}"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{n, plural, one {Next # chapter} other {Next # chapters}}"
@@ -1917,6 +1945,10 @@ msgstr "{offNumbering, plural, other {그중 #개는 소수 번호가 있거나 
 #, fuzzy
 msgid "{ok, plural, one {Archived # series} other {Archived # series}}"
 msgstr "{ok, plural, other {시리즈 #개를 보관했습니다}}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{other, plural, one {# completed} other {# completed}}"
+msgstr ""
 
 #: src/components/series/ArchiveSeriesDialog.tsx
 #, fuzzy
@@ -2150,6 +2182,10 @@ msgstr "{reason}: {detail}"
 #, fuzzy
 msgid "{reasonText} - {measurement}"
 msgstr "{reasonText} - {measurement}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{rejected, plural, one {# not upgraded} other {# not upgraded}}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -3889,6 +3925,7 @@ msgstr "애그리게이터"
 #: src/components/CatalogueRules.tsx
 #: src/components/ChapterMapParts.tsx
 #: src/components/import/MihonReview.tsx
+#: src/pages/ActivityPage.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/discover/ShortlistTab.tsx
@@ -5371,6 +5408,7 @@ msgstr "이 요청을 취소할까요?"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
+#: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/stats/labels.ts
 #, fuzzy
@@ -6196,6 +6234,7 @@ msgstr "챕터 검색 지우기"
 msgid "Clear default"
 msgstr "기본값 지우기"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Clear filters"
@@ -9452,6 +9491,10 @@ msgstr "일치 상태로 필터링"
 msgid "Filter by root folder"
 msgstr "루트 폴더로 필터"
 
+#: src/pages/ActivityPage.tsx
+msgid "Filter by series"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -10141,6 +10184,10 @@ msgstr "회색조 페이지"
 msgid "Grid view"
 msgstr "그리드 보기"
 
+#: src/pages/ActivityPage.tsx
+msgid "Group chapters"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Group matches (regex)"
@@ -10359,6 +10406,10 @@ msgstr "진행 상황 추적이 꺼져 있으면 숨겨집니다."
 #, fuzzy
 msgid "Hide affected series"
 msgstr "영향을 받는 시리즈 숨기기"
+
+#: src/pages/ActivityPage.tsx
+msgid "Hide chapters"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ScrobblePage.tsx
@@ -15107,6 +15158,10 @@ msgstr "이 주소에는 페이지가 없습니다. 링크가 오래되었거나
 #, fuzzy
 msgid "Nothing matches"
 msgstr "일치하는 항목 없음"
+
+#: src/pages/ActivityPage.tsx
+msgid "Nothing matches these filters"
+msgstr ""
 
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
@@ -20628,6 +20683,10 @@ msgstr "전체 보기"
 msgid "Show all unlinked files"
 msgstr "연결되지 않은 파일 모두 보기"
 
+#: src/pages/ActivityPage.tsx
+msgid "Show chapters"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Show covers from the library"
@@ -24574,6 +24633,11 @@ msgstr "시리즈 보기"
 #, fuzzy
 msgid "View series: {title}"
 msgstr "시리즈 보기: {title}"
+
+#. placeholder {0}: segment.volume
+#: src/pages/ActivityPage.tsx
+msgid "Vol. {0}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy

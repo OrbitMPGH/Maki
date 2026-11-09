@@ -66,16 +66,20 @@ public class QueueController(
         return Ok(new QueueHistoryDto(dtos, total, page, pageSize));
     }
 
-    /// <summary>Completed/cancelled downloads, paginated — the "always visible" history feed.</summary>
+    /// <summary>
+    /// Completed/cancelled downloads, paginated: the "always visible" history feed. <c>status</c> is
+    /// <c>completed</c>, <c>cancelled</c> or <c>upgrades</c> (anything else means all), and
+    /// <c>search</c> narrows to series whose title contains it.
+    /// </summary>
     [HttpGet("history")]
     public async Task<IActionResult> History(
-        [FromQuery] int page = 1, [FromQuery] int pageSize = 25, CancellationToken ct = default)
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 25, [FromQuery] string? status = null,
+        [FromQuery] string? search = null, CancellationToken ct = default)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var query = db.DownloadQueue
-            .Where(q => q.Status == QueueStatus.Completed || q.Status == QueueStatus.Cancelled);
+        var query = HistoryQuery(status, search);
 
         var total = await query.CountAsync(ct);
         // Id breaks ties so rows sharing a timestamp cannot repeat or vanish between pages.
@@ -85,6 +89,78 @@ public class QueueController(
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize))
             .ToListAsync(ct);
+
+        return Ok(new QueueHistoryDto(await HistoryDtosAsync(rows, ct), total, page, pageSize));
+    }
+
+    /// <summary>
+    /// The history feed with each series' bursts folded into one entry (<see cref="QueueHistoryRuns"/>),
+    /// paginated by entry. Grouping happens here rather than in the browser so a run never splits
+    /// across pages. Takes the same filters as <see cref="History"/>.
+    /// </summary>
+    [HttpGet("history/grouped")]
+    public async Task<IActionResult> GroupedHistory(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 25, [FromQuery] string? status = null,
+        [FromQuery] string? search = null, CancellationToken ct = default)
+    {
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        // Every settled row, slim: housekeeping keeps 30 days of them, so this stays small.
+        var slim = await HistoryQuery(status, search)
+            .OrderByDescending(q => q.CompletedAt ?? q.QueuedAt)
+            .ThenByDescending(q => q.Id)
+            .Select(q => new QueueHistoryRuns.Row(
+                q.Id, q.SeriesId, q.Status, q.CompletedAt ?? q.QueuedAt,
+                q.ChapterId == null
+                    ? QueueHistoryRuns.Kind.Alone
+                    : q.UpgradeInfoJson != null ? QueueHistoryRuns.Kind.Upgrade : QueueHistoryRuns.Kind.Download))
+            .ToListAsync(ct);
+
+        var runs = QueueHistoryRuns.Group(slim);
+        var pageRuns = runs.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+        var rows = new List<QueueRow>();
+        foreach (var chunk in pageRuns.SelectMany(r => r).Chunk(500))
+        {
+            rows.AddRange(await Rows(db.DownloadQueue.Where(q => chunk.Contains(q.Id))).ToListAsync(ct));
+        }
+        var byId = (await HistoryDtosAsync(rows, ct)).ToDictionary(d => d.Id);
+
+        var entries = pageRuns
+            .Select(run => run.Select(id => byId.GetValueOrDefault(id)).OfType<QueueItemDto>().ToList())
+            .Where(items => items.Count > 0)
+            .Select(items => new QueueHistoryEntryDto(items))
+            .ToList();
+
+        return Ok(new QueueHistoryGroupsDto(entries, runs.Count, slim.Count, page, pageSize));
+    }
+
+    private IQueryable<DownloadQueueItem> HistoryQuery(string? status, string? search)
+    {
+        var query = status?.ToLowerInvariant() switch
+        {
+            "completed" => db.DownloadQueue.Where(q => q.Status == QueueStatus.Completed),
+            "cancelled" => db.DownloadQueue.Where(q => q.Status == QueueStatus.Cancelled),
+            "upgrades" => db.DownloadQueue.Where(q =>
+                (q.Status == QueueStatus.Completed || q.Status == QueueStatus.Cancelled) && q.UpgradeInfoJson != null),
+            _ => db.DownloadQueue.Where(q => q.Status == QueueStatus.Completed || q.Status == QueueStatus.Cancelled),
+        };
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var pattern = "%" + LikeEscape(search.Trim()) + "%";
+            query = query.Where(q => q.Series != null && EF.Functions.Like(q.Series.Title, pattern, "\\"));
+        }
+
+        return query;
+    }
+
+    private static string LikeEscape(string text) =>
+        text.Replace("\\", "\\\\").Replace("%", "\\%").Replace("_", "\\_");
+
+    private async Task<List<QueueItemDto>> HistoryDtosAsync(List<QueueRow> rows, CancellationToken ct)
+    {
         var items = rows.Select(r => r.Item).ToList();
 
         var historyIds = items
@@ -99,7 +175,7 @@ public class QueueController(
             .ToList();
         var groups = await UpgradeHistoryStates.LoadGroupsAsync(db, groupIds, ct);
 
-        var dtos = rows
+        return rows
             .Where(r => r.Series != null)
             .Select(r => QueueItemDto.FromEntity(
                 r.Item, r.Chapter, r.Series!, r.SourceName,
@@ -107,8 +183,6 @@ public class QueueController(
                     ? torrent.HistoryGroupId is { } groupId ? groups.GetValueOrDefault(groupId) : null
                     : UpgradeInfo.Parse(r.Item.UpgradeInfoJson)?.HistoryId is { } historyId ? upgrades.GetValueOrDefault(historyId) : null))
             .ToList();
-
-        return Ok(new QueueHistoryDto(dtos, total, page, pageSize));
     }
 
     /// <summary>

@@ -113,6 +113,14 @@ public record QueueItemDto(
 
 public record QueueHistoryDto(IReadOnlyList<QueueItemDto> Items, int Total, int Page, int PageSize);
 
+/// <summary>One history run: a single row, or one series' burst of the same status, newest first.</summary>
+public record QueueHistoryEntryDto(IReadOnlyList<QueueItemDto> Items);
+
+/// <param name="Total">Entries across every page.</param>
+/// <param name="ItemTotal">Rows across every page, so the header can say how many chapters the entries hold.</param>
+public record QueueHistoryGroupsDto(
+    IReadOnlyList<QueueHistoryEntryDto> Entries, int Total, int ItemTotal, int Page, int PageSize);
+
 /// <param name="Active">Items still working: everything not settled, failed or parked for an import decision.</param>
 public record QueueSummaryDto(int Active, int AwaitingImport, int Failed);
 

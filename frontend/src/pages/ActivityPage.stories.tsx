@@ -28,6 +28,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 const emptyPage = { items: [], total: 0, page: 1, pageSize: 25 }
+const emptyGroups = { entries: [], total: 0, itemTotal: 0, page: 1, pageSize: 25 }
 
 /** The upgrades endpoints, pinned here so the tab's content does not depend on another area's mocks. */
 const upgradesData = [
@@ -52,6 +53,7 @@ export const EmptyQueue: Story = {
   parameters: {
     msw: [
       http.get(api('/queue'), () => HttpResponse.json(queuePage([]))),
+      http.get(api('/queue/history/grouped'), () => HttpResponse.json(emptyGroups)),
       http.get(api('/queue/history'), () => HttpResponse.json(emptyPage)),
     ],
   },
@@ -66,6 +68,7 @@ export const StatsStripHiddenAtZero: Story = {
   parameters: {
     msw: [
       http.get(api('/queue'), () => HttpResponse.json(queuePage([]))),
+      http.get(api('/queue/history/grouped'), () => HttpResponse.json(emptyGroups)),
       http.get(api('/queue/history'), () => HttpResponse.json(emptyPage)),
     ],
   },
@@ -82,6 +85,7 @@ export const StatsStripShownWithValue: Story = {
   parameters: {
     msw: [
       http.get(api('/queue'), () => HttpResponse.json(queuePage([failedItems[0]]))),
+      http.get(api('/queue/history/grouped'), () => HttpResponse.json(emptyGroups)),
       http.get(api('/queue/history'), () => HttpResponse.json(emptyPage)),
     ],
   },
@@ -100,7 +104,7 @@ export const Loading: Story = {
   parameters: {
     msw: [
       http.get(api('/queue'), () => neverResolve()),
-      http.get(api('/queue/history'), () => neverResolve()),
+      http.get(api('/queue/history/grouped'), () => neverResolve()),
     ],
   },
 }
@@ -109,7 +113,7 @@ export const QueueLoadFailed: Story = {
   parameters: {
     msw: [
       http.get(api('/queue'), () => failWith(500, 'The queue could not be read')),
-      http.get(api('/queue/history'), () => failWith(500, 'The history could not be read')),
+      http.get(api('/queue/history/grouped'), () => failWith(500, 'The history could not be read')),
     ],
   },
   play: async ({ canvas }) => {
@@ -200,8 +204,40 @@ export const HistoryPaging: Story = {
   },
 }
 
+/** A series' burst is one row; opened, its chapters show as chips, the odd source dashed. */
+export const HistoryGroupedRun: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('10 chapters')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Show chapters' }))
+    await expect(await canvas.findByText('Vol. 3')).toBeVisible()
+    await waitFor(() => expect(document.querySelectorAll('.history-chip').length).toBe(10))
+    await waitFor(() => expect(document.querySelectorAll('.history-chip-alt').length).toBe(1))
+  },
+}
+
+/** Switching grouping off lists every chapter on its own row again, and the choice is remembered. */
+export const HistoryUngrouped: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByText('10 chapters')
+    await userEvent.click(await canvas.findByRole('switch', { name: 'Group chapters' }))
+    await waitFor(() => expect(canvas.queryByText('10 chapters')).toBeNull())
+    await waitFor(() => expect(localStorage.getItem('maki.activity.historyGrouped')).toBe('off'))
+  },
+}
+
+/** A filter that matches nothing says so and offers the way back. */
+export const HistoryFilteredEmpty: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByText('10 chapters')
+    await userEvent.type(await canvas.findByRole('searchbox', { name: 'Filter by series' }), 'zzz')
+    await expect(await canvas.findByText('Nothing matches these filters')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Clear filters' }))
+    await expect(await canvas.findByText('10 chapters')).toBeVisible()
+  },
+}
+
 export const HistoryFailed: Story = {
-  parameters: { msw: [http.get(api('/queue/history'), () => failWith(500, 'The history could not be read'))] },
+  parameters: { msw: [http.get(api('/queue/history/grouped'), () => failWith(500, 'The history could not be read'))] },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('The history could not be read')).toBeVisible()
   },

@@ -630,6 +630,10 @@ msgstr "{announcedBy} has it scheduled for {announced}"
 msgid "{announcedBy} has it scheduled for {when}"
 msgstr "{announcedBy} has it scheduled for {when}"
 
+#: src/pages/ActivityPage.tsx
+msgid "{applied, plural, one {# upgraded} other {# upgraded}}"
+msgstr "{applied, plural, one {# upgraded} other {# upgraded}}"
+
 #: src/components/RatingImportModal.tsx
 msgid "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
 msgstr "{applied, plural, one {Imported # rating} other {Imported # ratings}}"
@@ -823,9 +827,21 @@ msgstr "{copyCount, plural, one {# copy} other {# copies}}"
 msgid "{count, plural, =2 {Both trackers} other {All # trackers}}"
 msgstr "{count, plural, =2 {Both trackers} other {All # trackers}}"
 
+#: src/pages/ActivityPage.tsx
+msgid "{count, plural, one {# cancelled} other {# cancelled}}"
+msgstr "{count, plural, one {# cancelled} other {# cancelled}}"
+
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "{count, plural, one {# ch.} other {# ch.}}"
 msgstr "{count, plural, one {# ch.} other {# ch.}}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{count, plural, one {# chapter} other {# chapters}}"
+msgstr "{count, plural, one {# chapter} other {# chapters}}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{count, plural, one {# completed} other {# completed}}"
+msgstr "{count, plural, one {# completed} other {# completed}}"
 
 #: src/pages/HealthPage.tsx
 msgid "{count, plural, one {# deletion} other {# deletions}}"
@@ -1307,6 +1323,14 @@ msgid "{label} tokens"
 msgstr "{label} tokens"
 
 #: src/pages/ActivityPage.tsx
+msgid "{label}, {source}"
+msgstr "{label}, {source}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{label}, {source}, {time}"
+msgstr "{label}, {source}, {time}"
+
+#: src/pages/ActivityPage.tsx
 msgid "{label}: {chapterTitle}"
 msgstr "{label}: {chapterTitle}"
 
@@ -1483,6 +1507,10 @@ msgstr "{moreCount, plural, one {+# more} other {+# more}}"
 msgid "{n, plural, one {# file} other {# files}}"
 msgstr "{n, plural, one {# file} other {# files}}"
 
+#: src/pages/ActivityPage.tsx
+msgid "{n, plural, one {# from {name}} other {# from {name}}}"
+msgstr "{n, plural, one {# from {name}} other {# from {name}}}"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "{n, plural, one {Next # chapter} other {Next # chapters}}"
 msgstr "{n, plural, one {Next # chapter} other {Next # chapters}}"
@@ -1563,6 +1591,10 @@ msgstr "{offNumbering, plural, one {# of them has a decimal number or none, like
 #: src/pages/LibraryPage.tsx
 msgid "{ok, plural, one {Archived # series} other {Archived # series}}"
 msgstr "{ok, plural, one {Archived # series} other {Archived # series}}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{other, plural, one {# completed} other {# completed}}"
+msgstr "{other, plural, one {# completed} other {# completed}}"
 
 #: src/components/series/ArchiveSeriesDialog.tsx
 msgid "{otherReaders, plural, one {# other reader is partway through this series. Archiving stops new chapters for everyone.} other {# other readers are partway through this series. Archiving stops new chapters for everyone.}}"
@@ -1751,6 +1783,10 @@ msgstr "{reason}: {detail}"
 #: src/components/series/UpgradeNowResultModal.tsx
 msgid "{reasonText} - {measurement}"
 msgstr "{reasonText} - {measurement}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{rejected, plural, one {# not upgraded} other {# not upgraded}}"
+msgstr "{rejected, plural, one {# not upgraded} other {# not upgraded}}"
 
 #: src/pages/HealthPage.tsx
 msgid "{relinked, plural, one {Relinked # file} other {Relinked # files}}"
@@ -3153,6 +3189,7 @@ msgstr "Aggregator"
 #: src/components/CatalogueRules.tsx
 #: src/components/ChapterMapParts.tsx
 #: src/components/import/MihonReview.tsx
+#: src/pages/ActivityPage.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/discover/ShortlistTab.tsx
@@ -4363,6 +4400,7 @@ msgstr "Cancel this request?"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/ui/status.tsx
+#: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/stats/labels.ts
 msgid "Cancelled"
@@ -5030,6 +5068,7 @@ msgstr "Clear chapter search"
 msgid "Clear default"
 msgstr "Clear default"
 
+#: src/pages/ActivityPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Clear filters"
 msgstr "Clear filters"
@@ -7683,6 +7722,10 @@ msgstr "Filter by match status"
 msgid "Filter by root folder"
 msgstr "Filter by root folder"
 
+#: src/pages/ActivityPage.tsx
+msgid "Filter by series"
+msgstr "Filter by series"
+
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Filter by state"
@@ -8243,6 +8286,10 @@ msgstr "Greyscale page"
 msgid "Grid view"
 msgstr "Grid view"
 
+#: src/pages/ActivityPage.tsx
+msgid "Group chapters"
+msgstr "Group chapters"
+
 #: src/api/upgrades.ts
 msgid "Group matches (regex)"
 msgstr "Group matches (regex)"
@@ -8419,6 +8466,10 @@ msgstr "Hidden while progression is switched off."
 #: src/pages/HealthPage.tsx
 msgid "Hide affected series"
 msgstr "Hide affected series"
+
+#: src/pages/ActivityPage.tsx
+msgid "Hide chapters"
+msgstr "Hide chapters"
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ScrobblePage.tsx
@@ -12267,6 +12318,10 @@ msgstr "Nothing lives at this address. The link may be old or mistyped."
 #: src/pages/NotificationsPage.tsx
 msgid "Nothing matches"
 msgstr "Nothing matches"
+
+#: src/pages/ActivityPage.tsx
+msgid "Nothing matches these filters"
+msgstr "Nothing matches these filters"
 
 #: src/components/CatalogueBrowser.tsx
 msgid "Nothing matches these filters. Try loosening one of them."
@@ -16756,6 +16811,10 @@ msgstr "Show all"
 msgid "Show all unlinked files"
 msgstr "Show all unlinked files"
 
+#: src/pages/ActivityPage.tsx
+msgid "Show chapters"
+msgstr "Show chapters"
+
 #: src/components/settings/SecuritySection.tsx
 msgid "Show covers from the library"
 msgstr "Show covers from the library"
@@ -19955,6 +20014,11 @@ msgstr "View series"
 #: src/components/discover/DiscoverHero.tsx
 msgid "View series: {title}"
 msgstr "View series: {title}"
+
+#. placeholder {0}: segment.volume
+#: src/pages/ActivityPage.tsx
+msgid "Vol. {0}"
+msgstr "Vol. {0}"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Vol. {fileVolume}"

@@ -453,6 +453,22 @@ export interface QueueHistoryDto {
   pageSize: number
 }
 
+/** One history run: a single row, or one series' burst of the same status, newest first. */
+export interface QueueHistoryEntryDto {
+  items: QueueItemDto[]
+}
+
+/** `total` counts entries, `itemTotal` the rows inside them. */
+export interface QueueHistoryGroupsDto {
+  entries: QueueHistoryEntryDto[]
+  total: number
+  itemTotal: number
+  page: number
+  pageSize: number
+}
+
+export type QueueHistoryStatusFilter = 'all' | 'completed' | 'cancelled' | 'upgrades'
+
 /** Whole-queue counts for the Activity badge. `active` excludes failed and parked items. */
 export interface QueueSummaryDto {
   active: number
