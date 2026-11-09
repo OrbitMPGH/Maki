@@ -11005,7 +11005,7 @@ msgstr "Gib den Unterpfad mit an, falls Suwayomi unter einem läuft."
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Included"
-msgstr ""
+msgstr "Enthalten"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

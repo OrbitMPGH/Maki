@@ -3098,7 +3098,7 @@ msgstr "스레드 수는 {min}에서 {max} 사이여야 합니다."
 #. English: This model comes with Maki and cannot be deleted.
 #: src/Maki.Api/Controllers/UpscalingController.cs
 msgid "error.upscaling.modelBundled"
-msgstr ""
+msgstr "이 모델은 Maki에 기본으로 포함되어 있어 삭제할 수 없습니다."
 
 #. Deleting a model whose file is still open because a page is being upscaled with it right now.
 #. English: The model is busy with a page right now. Try again in a moment.

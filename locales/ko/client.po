@@ -11005,7 +11005,7 @@ msgstr "Suwayomi가 하위 경로에서 실행된다면 하위 경로를 포함�
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Included"
-msgstr ""
+msgstr "기본 포함"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

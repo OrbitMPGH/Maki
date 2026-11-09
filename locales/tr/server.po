@@ -3096,7 +3096,7 @@ msgstr "İş parçacığı sayısı {min} ile {max} arasında olmalı."
 #. English: This model comes with Maki and cannot be deleted.
 #: src/Maki.Api/Controllers/UpscalingController.cs
 msgid "error.upscaling.modelBundled"
-msgstr ""
+msgstr "Bu model Maki ile birlikte gelir ve silinemez."
 
 #. Deleting a model whose file is still open because a page is being upscaled with it right now.
 #. English: The model is busy with a page right now. Try again in a moment.

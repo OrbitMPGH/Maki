@@ -11005,7 +11005,7 @@ msgstr "Podaj podścieżkę, jeśli Suwayomi działa pod nią."
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Included"
-msgstr ""
+msgstr "Wbudowany"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

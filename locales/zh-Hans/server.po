@@ -3098,7 +3098,7 @@ msgstr "线程数必须在 {min} 到 {max} 之间。"
 #. English: This model comes with Maki and cannot be deleted.
 #: src/Maki.Api/Controllers/UpscalingController.cs
 msgid "error.upscaling.modelBundled"
-msgstr ""
+msgstr "此模型随 Maki 一起提供，无法删除。"
 
 #. Deleting a model whose file is still open because a page is being upscaled with it right now.
 #. English: The model is busy with a page right now. Try again in a moment.

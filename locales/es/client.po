@@ -11005,7 +11005,7 @@ msgstr "Incluye la subruta si Suwayomi funciona bajo una."
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Included"
-msgstr ""
+msgstr "Incluido"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

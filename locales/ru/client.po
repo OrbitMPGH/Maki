@@ -11005,7 +11005,7 @@ msgstr "Укажите подпуть, если Suwayomi работает по �
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Included"
-msgstr ""
+msgstr "Встроенная"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

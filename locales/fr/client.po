@@ -11005,7 +11005,7 @@ msgstr "Incluez le sous-chemin si Suwayomi en utilise un."
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Included"
-msgstr ""
+msgstr "Inclus"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

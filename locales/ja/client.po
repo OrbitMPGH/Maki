@@ -11005,7 +11005,7 @@ msgstr "Suwayomiがサブパスで動作している場合は、サブパスも�
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Included"
-msgstr ""
+msgstr "同梱"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

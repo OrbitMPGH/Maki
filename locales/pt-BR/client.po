@@ -11005,7 +11005,7 @@ msgstr "Inclua o subcaminho se o Suwayomi rodar em um."
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Included"
-msgstr ""
+msgstr "Incluído"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

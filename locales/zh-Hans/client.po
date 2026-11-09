@@ -11005,7 +11005,7 @@ msgstr "如果 Suwayomi 运行在子路径下，请包含该子路径。"
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Included"
-msgstr ""
+msgstr "内置"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy

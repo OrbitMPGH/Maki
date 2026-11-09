@@ -11005,7 +11005,7 @@ msgstr "Suwayomi bir alt yol altında çalışıyorsa alt yolu da ekleyin."
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Included"
-msgstr ""
+msgstr "Dahili"
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
