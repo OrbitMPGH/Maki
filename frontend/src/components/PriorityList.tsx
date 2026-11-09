@@ -1,6 +1,6 @@
 import { useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { ActionIcon, Divider, Group, Stack, Switch, Text } from '@mantine/core'
-import { IconChevronDown, IconChevronUp, IconGripVertical } from '@tabler/icons-react'
+import { IconChevronDown, IconChevronUp, IconGripVertical } from '../lib/icons'
 import { useLingui } from '@lingui/react/macro'
 
 interface PriorityListProps {
@@ -122,7 +122,7 @@ export function PriorityList({
               }}
             >
               <Group gap="sm" wrap="nowrap">
-                <IconGripVertical size={14} opacity={0.5} />
+                <IconGripVertical size={16} opacity={0.5} />
                 <Text size="sm" c="var(--ink-3)" w={20}>
                   {i + 1}
                 </Text>
@@ -139,7 +139,7 @@ export function PriorityList({
                     onClick={() => move(i, -1)}
                     draggable={false}
                   >
-                    <IconChevronUp size={14} />
+                    <IconChevronUp size={16} />
                   </ActionIcon>
                   <ActionIcon
                     variant="subtle" color="var(--neutral)" disabled={i === items.length - 1}
@@ -147,7 +147,7 @@ export function PriorityList({
                     onClick={() => move(i, 1)}
                     draggable={false}
                   >
-                    <IconChevronDown size={14} />
+                    <IconChevronDown size={16} />
                   </ActionIcon>
                 </span>
                 <Switch

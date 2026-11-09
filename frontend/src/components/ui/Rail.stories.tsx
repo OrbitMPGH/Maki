@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor } from 'storybook/test'
-import { IconBook } from '@tabler/icons-react'
+import { IconBook } from '../../lib/icons'
 import { Rail } from './Rail'
 import { SectionHeader } from './SectionHeader'
 
@@ -58,6 +58,29 @@ export const FitsWithoutScrolling: Story = {
   play: async ({ canvas, canvasElement }) => {
     await waitFor(() => expect(canvasElement.querySelectorAll('.discover-rail-item')).toHaveLength(3))
     await expect(canvas.queryByRole('button', { name: 'Scroll forward' })).toBeNull()
+  },
+}
+
+/** Offscreen, the cards are skipped (content-visibility: auto); back on screen the end must still fade. */
+export const KeepsFadeAfterScrollingAway: Story = {
+  decorators: [
+    (Story) => (
+      <>
+        <Story />
+        <div style={{ height: '400vh' }} />
+      </>
+    ),
+  ],
+  play: async ({ canvasElement }) => {
+    const rail = canvasElement.querySelector<HTMLElement>('.discover-rail')!
+    await waitFor(() => expect(rail).toHaveAttribute('data-fade-end'))
+    const page = document.scrollingElement!
+    for (const top of [page.scrollHeight, 0, page.scrollHeight, 0]) {
+      page.scrollTop = top
+      await new Promise((resolve) => setTimeout(resolve, 250))
+    }
+    await waitFor(() => expect(rail).toHaveAttribute('data-fade-end'))
+    await expect(rail.scrollWidth).toBeGreaterThan(rail.clientWidth)
   },
 }
 

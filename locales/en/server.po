@@ -408,8 +408,8 @@ msgstr "There is nothing to register. Enter your OPDS token as the username and 
 msgid "error.libraryFilters.nameRequired"
 msgstr "Name is required"
 
-#: src/Maki.Api/Controllers/DiscoverFiltersController.cs
 #. {max} is how many saved filters one person may keep.
+#: src/Maki.Api/Controllers/DiscoverFiltersController.cs
 msgid "error.discoverFilters.tooMany"
 msgstr "You can keep at most {max} saved filters"
 
@@ -1117,6 +1117,38 @@ msgstr "Kavita is not configured (Settings → Integrations → Kavita)"
 msgid "error.reader.nothingToRead"
 msgstr "Nothing left to read"
 
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "error.notes.empty"
+msgstr "Write something first"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "error.notes.tooLong"
+msgstr "Notes can be at most {max} characters"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "error.notes.badPage"
+msgstr "That page is not one this note can be pinned to"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "error.notes.badVisibility"
+msgstr "A note is either private or shared"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "error.notes.hasReplies"
+msgstr "Other readers replied to this note, so it has to stay shared"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "error.notes.deleted"
+msgstr "This note was deleted"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "error.notes.chapterGone"
+msgstr "This chapter changed while you were writing. Reload and try again"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "error.notes.notYours"
+msgstr "Only the person who wrote this note can change it"
+
 #: src/Maki.Api/Controllers/ReaderController.cs
 msgid "error.reader.pageOutOfRange"
 msgstr "Page is outside this chapter"
@@ -1746,6 +1778,22 @@ msgstr ""
 msgid "error.settings.trustedProxyInvalid"
 msgstr "\"{entry}\" is not an IP address or CIDR network"
 
+#. Saving to the Discover shortlist when it already holds the most one person may keep.
+#. {max} is that limit.
+#: src/Maki.Api/Controllers/ShortlistController.cs
+msgid "error.shortlist.full"
+msgstr "Your shortlist is full. It holds at most {max} titles."
+
+#. Saving a title to the shortlist that is already in the library, archived or not.
+#: src/Maki.Api/Controllers/ShortlistController.cs
+msgid "error.shortlist.inLibrary"
+msgstr "This title is already in the library."
+
+#. Saving a title to the shortlist that the catalogue does not have, or that is hidden from this account.
+#: src/Maki.Api/Controllers/ShortlistController.cs
+msgid "error.shortlist.notInCatalogue"
+msgstr "This title is not in the catalogue."
+
 #: src/Maki.Api/Controllers/SourceMappingController.cs
 msgid "error.sourceMapping.alreadyMapped"
 msgstr "Series already has a mapping for this source"
@@ -2099,6 +2147,11 @@ msgstr "The cache size must be between {min} and {max} MB."
 #: src/Maki.Api/Controllers/UpscalingController.cs
 msgid "error.upscaling.invalidThreads"
 msgstr "Threads must be between {min} and {max}."
+
+#. Deleting a model that ships with Maki itself rather than being downloaded.
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.modelBundled"
+msgstr "This model comes with Maki and cannot be deleted."
 
 #. Deleting a model whose file is still open because a page is being upscaled with it right now.
 #: src/Maki.Api/Controllers/UpscalingController.cs
@@ -2572,6 +2625,11 @@ msgstr "Restore staged. Maki is stopping now. Start it again to apply the restor
 msgid "error.system.noUpdateReady"
 msgstr "No update has been downloaded yet. Try again in a few minutes."
 
+#. Check now in Settings > System > Updates: neither the GitHub API nor the release page answered, often because GitHub limits update checks from this network.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.updates.checkFailed"
+msgstr "Couldn't reach GitHub to check for updates. Try again later."
+
 #. Docker installs must listen on every network inside the container.
 #: src/Maki.Api/Controllers/SystemController.cs
 msgid "error.system.networkAccessDocker"
@@ -2848,6 +2906,17 @@ msgstr ""
 "{series}: {count, plural, one {# new chapter} other {# new chapters}} found at once and not "
 "downloaded automatically. Download them from the series page if they are real."
 
+#: src/Maki.Api/Services/ChapterSyncService.cs
+msgid "inbox.chapters.delisted.title"
+msgstr "Chapters no longer listed"
+
+#. Every source that listed these downloaded chapters has stopped listing them.
+#: src/Maki.Api/Services/ChapterSyncService.cs
+msgid "inbox.chapters.delisted.body"
+msgstr ""
+"{series}: {count, plural, one {# downloaded chapter is} other {# downloaded chapters are}} no "
+"longer listed by any source. Check the files on the series page."
+
 #: src/Maki.Api/Services/CustomRepositoryService.cs
 msgid "inbox.customSource.updated.title"
 msgstr "Custom source updated"
@@ -2906,6 +2975,14 @@ msgstr "Level {level}"
 #: src/Maki.Api/Services/AchievementService.cs
 msgid "inbox.levelUpJump.body"
 msgstr "You reached level {level}, up from {previous}."
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "inbox.noteReply.title"
+msgstr "New reply to a note"
+
+#: src/Maki.Api/Controllers/NotesController.cs
+msgid "inbox.noteReply.body"
+msgstr "{hasName, select, yes {{userName}} other {Another reader}} replied on {series}, {chapter}"
 
 #: src/Maki.Api/Services/ChapterDownloadProcessor.cs
 msgid "inbox.chapter.downloaded.title"
@@ -3073,12 +3150,13 @@ msgid "inbox.importList.finished.title"
 msgstr "Import list finished"
 
 #. {tracker} is a site name (AniList, MyAnimeList, Kitsu, MangaBaka) and is not translated. The
-#. requested, skipped and errors counts drop out through their =0 branch; keep every =0 {} empty.
+#. requested, shortlisted, skipped and errors counts drop out through their =0 branch; keep every =0 {} empty.
 #: src/Maki.Api/Services/ImportListService.cs
 msgid "inbox.importList.finished.body"
 msgstr ""
 "{tracker}: {added, plural, other {# added}}"
 "{requested, plural, =0 {} other {, # requested}}"
+"{shortlisted, plural, =0 {} other {, # shortlisted}}"
 "{skipped, plural, =0 {} other {, # skipped}}"
 "{errors, plural, =0 {} one {, # error} other {, # errors}}"
 
@@ -3337,6 +3415,12 @@ msgstr "The source refused the request"
 #: src/Maki.Api/Services/DownloadFailureReason.cs
 msgid "error.download.sourceError"
 msgstr "The source answered with an error"
+
+#. The source lists the chapter but wants a login or a purchase for its pages (Suwayomi extensions
+#. word it "log in via WebView" or "purchase this chapter"). The extension's own text follows, untranslated.
+#: src/Maki.Api/Services/DownloadFailureReason.cs
+msgid "error.download.sourceNeedsPurchase"
+msgstr "The source wants a login or a purchase for this chapter"
 
 #. Connection refused, timed out, DNS or SSL failure: the site could not be reached at all.
 #: src/Maki.Api/Services/DownloadFailureReason.cs
@@ -3841,6 +3925,34 @@ msgid "error.health.reviewStale"
 msgstr "This review is out of date. Rescan and review again."
 
 #: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.movedTargetChanged"
+msgstr "The file found at the new path has changed or is gone. Nothing was relinked. Review the file again."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.relinkWeakMatch"
+msgstr "Only the file name matches, so this file has to be relinked on its own after you have compared it."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.relinkTargetChanged"
+msgstr "The identical copy these chapters were going to move to has changed or is gone. Nothing was deleted. Review the file again."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.spareInUse"
+msgstr "This copy backs chapters now, so it is no longer a spare. Nothing was deleted."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.spareLastCopy"
+msgstr "No other copy of these bytes is left on disk, so this one is not a spare. Nothing was deleted."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.spareNotDistinct"
+msgstr "Maki can't tell this copy apart from the other one on disk. They may be one file under two names, so nothing was deleted."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "error.health.fileBacksChapters"
+msgstr "Another chapter record reads this same file under a different spelling of its path. Nothing was deleted."
+
+#: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.rootGone"
 msgstr "The root folder no longer exists."
 
@@ -4170,6 +4282,22 @@ msgstr "Permanently deleted {path}; chapter records and Wanted flags preserved"
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "health.history.deletedMissing"
 msgstr "Cleared the record for missing {path}; chapter records and Wanted flags preserved"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "health.history.relinkedMoved"
+msgstr "Found missing {path} at {target} and pointed its chapters there"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "health.history.seriesFolderFollowed"
+msgstr "Series folder {from} is gone and every file is now in {to}, so the series moved there too"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "health.history.recordsRefreshed"
+msgstr "{count, plural, one {Updated # record to the file's size on disk} other {Updated # records to the files' sizes on disk}}"
+
+#: src/Maki.Api/Services/HealthOperationService.cs
+msgid "health.history.deletedRelinked"
+msgstr "Deleted duplicate {path}; its chapters now read from the identical copy {target}"
 
 #: src/Maki.Api/Services/HealthScanService.cs
 msgid "health.history.scan"

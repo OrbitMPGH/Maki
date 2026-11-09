@@ -10,13 +10,14 @@ import {
   Text,
   Title,
 } from '@mantine/core'
-import { IconAlertTriangle, IconInfoCircle } from '@tabler/icons-react'
+import { IconAlertTriangle, IconInfoCircle } from '../../../lib/icons'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useAchievements, useProgressSummary, useLeaderboard } from '../../../api/hooks'
 import { useAuth } from '../../../auth/AuthProvider'
 import type { ReadingGoal } from '../../../api/hooks'
+import { EmptyState } from '../../../components/ui/EmptyState'
 import { Panel } from '../../../components/ui/Panel'
 import { formatNumber } from '../../../format'
 import { useLabel } from '../../../i18n-context'
@@ -211,7 +212,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
               <Title order={3} size="h4">
                 <Trans>Level {currentLevel}</Trans>
               </Title>
-              <Text size="sm" c="var(--ink-3)" className="tnum">
+              <Text size="sm" c="var(--ink-3)">
                 <Trans>
                   {intoLevel} / {levelSpan} XP to level {nextLevel}
                 </Trans>
@@ -219,7 +220,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
             </Stack>
           </Group>
           {summary.showStreaks && (
-            <Text size="xs" c="var(--ink-3)" mt="sm" className="tnum">
+            <Text size="xs" c="var(--ink-3)" mt="sm">
               <Trans>
                 Current streak:{' '}
                 <b>
@@ -246,9 +247,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
               ))}
             </ul>
           ) : (
-            <p className="stats-row-sub" style={{ margin: 0 }}>
-              {t`No goals set yet.`}
-            </p>
+            <EmptyState compact mood="asleep" title={t`No goals set yet.`} />
           )}
         </Panel>
 
@@ -293,9 +292,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
                 </Table.Tbody>
               </Table>
             ) : (
-              <p className="stats-row-sub" style={{ margin: 0 }}>
-                {t`No one else on this instance has opted in yet.`}
-              </p>
+              <EmptyState compact mood="asleep" title={t`No one else on this instance has opted in yet.`} />
             )}
           </Panel>
         )}
@@ -307,7 +304,7 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
             <p className="stats-panel-title" style={{ margin: 0 }}>
               <Trans>Badges</Trans>
             </p>
-            <Text size="sm" c="var(--ink-3)" className="tnum">
+            <Text size="sm" c="var(--ink-3)">
               <Trans>All {total}</Trans>
             </Text>
           </Group>

@@ -468,9 +468,10 @@ public sealed class AnimeResumeServiceTests : IDisposable
         dump.AddSeries(501, "No anime range", totalChapters: "40");
         dump.AddSeries(502, "Too explicit", totalChapters: "40", contentRating: "pornographic",
             animeStart: "Chap 1 (S1)", animeEnd: "Chap 12 (S1)");
+        dump.AddSeries(503, "Adapted to the end", totalChapters: "12", animeStart: "Chap 1 (S1)", animeEnd: "Chap 12 (S1)");
         var seriesId = SeedWatchedSeries();
         AnimeResumeFixture.SeedChapters(_db, seriesId, 1, 2, 3, 4, 5, 6);
-        foreach (var id in new long[] { 500, 501, 502 })
+        foreach (var id in new long[] { 500, 501, 502, 503 })
         {
             AnimeResumeFixture.SeedSignal(_db, User, animeId: id, mangaBakaId: id);
         }
@@ -487,7 +488,27 @@ public sealed class AnimeResumeServiceTests : IDisposable
         Assert.Null(items[1].SeriesId);
         Assert.Equal("500", items[1].Catalogue?.ProviderId);
         Assert.Equal("Not added", items[1].SeriesTitle);
+        Assert.Equal(500, items[1].MangaBakaId);
         Assert.Equal(12m, items[1].CoveredTo);
+    }
+
+    [Fact]
+    public async Task Rail_dismissal_hides_an_unadded_manga_and_survives_adding_it()
+    {
+        using var dump = new DumpDbBuilder();
+        dump.AddSeries(500, "Not added", totalChapters: "40", animeStart: "Chap 1 (S1)", animeEnd: "Chap 12 (S1)");
+        AnimeResumeFixture.OptIn(_db, User);
+        AnimeResumeFixture.SeedSignal(_db, User, animeId: 500, mangaBakaId: 500);
+
+        var service = AnimeResumeFixture.Service(_db, _db.NewContext(User), _gate, dump.Path);
+        await service.DismissFromRailAsync(500, null, CancellationToken.None);
+        Assert.Empty((await service.RailAsync(CancellationToken.None)).Items);
+
+        var seriesId = AnimeResumeFixture.SeedAnimeSeries(_db, "Not added", 500, animeEnd: "Chap 12 (S1)");
+        AnimeResumeFixture.SeedChapters(_db, seriesId, 1, 2, 3, 12, 13);
+        var after = AnimeResumeFixture.Service(_db, _db.NewContext(User), _gate, dump.Path);
+        Assert.Empty((await after.RailAsync(CancellationToken.None)).Items);
+        Assert.NotNull(await after.ForSeriesAsync(seriesId, CancellationToken.None));
     }
 
     private AnimeResumePendingService PendingService()

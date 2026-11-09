@@ -10,8 +10,12 @@ A badge names a state in a word. The colour comes from the status tokens, never 
 | Completed, success | `ok` |
 | Hiatus, partial | `warn` |
 | Cancelled, failed | `danger` |
-| Read, watched | `watched` |
-| Suggestive rating, 65 to 79 score | `suggestive` |
+| Queued, skipped | `neutral` |
+| Needs review, paused, missing file | `warn` |
+| Anime, watched | `anime` |
+| Volume | `volume` |
+| Content rating | `cr-safe`, `cr-suggestive`, `cr-erotica`, `cr-explicit` |
+| Quality tier | `q-official`, `q-scanlator`, `q-aggregator` |
 | Unknown | `neutral` |
 
 **The consumer provides:** the word (translated) and a status. **In a dense table use `StatusDot` instead:** a filled badge on every row turns the column into a stripe.

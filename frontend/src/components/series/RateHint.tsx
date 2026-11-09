@@ -1,6 +1,6 @@
 import { ActionIcon, Button, Group, Rating, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { IconStar, IconX } from '@tabler/icons-react'
+import { IconStar, IconX } from '../../lib/icons'
 
 /**
  * A quiet line for a series the reader has finished but not rated: stars to rate it in place, and a
@@ -46,7 +46,7 @@ export function RateHint({
         </Button>
       )}
       <ActionIcon size="sm" variant="subtle" color="gray" aria-label={t`Dismiss`} onClick={onDismiss}>
-        <IconX size={14} />
+        <IconX size={16} />
       </ActionIcon>
     </Group>
   )

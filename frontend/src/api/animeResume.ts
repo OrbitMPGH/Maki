@@ -37,9 +37,11 @@ export interface SeriesAnimeResume extends AnimeResume {
 /**
  * One poster on Home's "Continue from the anime" rail. `seriesId` is null for a manga that is not
  * in the library yet; `catalogue` is then its dump row, which is what the Discover modal opens.
+ * `mangaBakaId` is set on both kinds and is what a dismissal is keyed on.
  */
 export interface HomeAnimeResumeItem {
   seriesId: number | null
+  mangaBakaId: number
   seriesTitle: string
   coverUrl: string | null
   animeTitle: string
@@ -149,6 +151,33 @@ export function useHomeFromAnime(enabled = true) {
     queryFn: () => api<HomeAnimeResumePage>('/home/from-anime'),
     enabled,
     staleTime: 60_000,
+  })
+}
+
+/**
+ * Takes a card off the rail, or puts it back with `restore`. `coveredTo` keeps it off only until a
+ * newly watched season moves the frontier past it; null keeps it off for good. Optimistic, so the
+ * card leaves the rail and the "Show more" grid at once.
+ */
+export function useDismissFromAnimeRail() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ mangaBakaId, coveredTo, restore = false }: { mangaBakaId: number; coveredTo?: number | null; restore?: boolean }) =>
+      api<void>(`/home/from-anime/${mangaBakaId}/dismiss`, restore
+        ? { method: 'DELETE' }
+        : { method: 'POST', body: JSON.stringify({ coveredTo: coveredTo ?? null }) }),
+    onMutate: async ({ mangaBakaId, restore }) => {
+      if (restore) return
+      await queryClient.cancelQueries({ queryKey: ['home', 'from-anime'] })
+      queryClient.setQueriesData<HomeAnimeResumePage>({ queryKey: ['home', 'from-anime'] }, (data) =>
+        data && {
+          items: data.items.filter((i) => i.mangaBakaId !== mangaBakaId),
+          total: Math.max(0, data.total - (data.items.some((i) => i.mangaBakaId === mangaBakaId) ? 1 : 0)),
+        },
+      )
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['home', 'from-anime'] }),
+    meta: { silent: true },
   })
 }
 

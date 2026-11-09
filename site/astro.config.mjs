@@ -121,6 +121,7 @@ export default defineConfig({
               collapsed: true,
               items: [
                 'guides/reading/maki-reader',
+                'guides/reading/chapter-notes',
                 'guides/reading/offline-and-app',
                 'guides/reading/opds-apps',
                 'guides/reading/koreader',

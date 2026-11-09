@@ -4,6 +4,7 @@ import { UnstyledButton } from '@mantine/core'
 import { useLingui } from '@lingui/react/macro'
 import { useAuth } from '../../auth/AuthProvider'
 import { useLabel } from '../../i18n-context'
+import { onPageScroll } from '../../lib/pageScroll'
 import { scrollBehavior } from '../../lib/scrollBehavior'
 import {
   STATS_SECTIONS,
@@ -28,6 +29,7 @@ export function StatsRail({ end }: { end?: ReactNode }) {
     return isStatsSectionKey(requested) ? requested : STATS_SECTIONS[0].key
   })
   const railRef = useRef<HTMLElement>(null)
+  const boxRef = useRef<HTMLDivElement>(null)
 
   // Deep link: jump once on mount. Panels above are still loading and grow as they fill in, so
   // it jumps again shortly after, unless the reader has started scrolling on their own by then.
@@ -79,12 +81,44 @@ export function StatsRail({ end }: { end?: ReactNode }) {
     return () => observer.disconnect()
   }, [])
 
+  // Marks whichever box is pinned (the whole rail, or the bar alone on a phone) while it is stuck,
+  // so it can draw the edge the content scrolls under. Same check as the Library toolbar.
+  useEffect(() => {
+    const box = boxRef.current
+    const bar = box?.querySelector<HTMLElement>('.stats-rail-bar')
+    if (!box || !bar) return
+    let frame = 0
+    const check = () => {
+      frame = 0
+      for (const el of [box, bar]) {
+        const style = getComputedStyle(el)
+        const stuck =
+          style.position === 'sticky' &&
+          style.display !== 'contents' &&
+          el.getBoundingClientRect().top <= (parseFloat(style.top) || 0) + 0.5
+        if (stuck) el.dataset.stuck = ''
+        else delete el.dataset.stuck
+      }
+    }
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(check)
+    }
+    check()
+    const stop = onPageScroll(schedule)
+    window.addEventListener('resize', schedule)
+    return () => {
+      cancelAnimationFrame(frame)
+      stop()
+      window.removeEventListener('resize', schedule)
+    }
+  }, [])
+
   // Keep the active link in view on a phone, where the strip scrolls sideways.
   useEffect(() => {
     const rail = railRef.current
     const link = rail?.querySelector<HTMLElement>(`[data-section="${active}"]`)
     if (!rail || !link) return
-    // The rail is sticky, so it is the link's offset parent.
+    // The strip is positioned, so it is the link's offset parent and offsetLeft is in its scroll space.
     const left = link.offsetLeft
     if (left < rail.scrollLeft || left + link.offsetWidth > rail.scrollLeft + rail.clientWidth) {
       rail.scrollTo({ left: Math.max(0, left - 16) })
@@ -92,10 +126,11 @@ export function StatsRail({ end }: { end?: ReactNode }) {
   }, [active])
 
   return (
-    <div className="stats-rail">
+    <div ref={boxRef} className="stats-rail">
+      {/* Its own box so a phone can pin the links alone and let the window picker scroll away. */}
+      <div className="stats-rail-bar">
       <nav ref={railRef} className="stats-rail-links" aria-label={t`Stats sections`}>
         {STATS_SECTIONS.map((s) => {
-        const SectionIcon = s.icon
         const isActive = active === s.key
         return (
           <UnstyledButton
@@ -118,14 +153,14 @@ export function StatsRail({ end }: { end?: ReactNode }) {
               )
             }}
           >
-            <SectionIcon size={15} stroke={1.8} aria-hidden />
             {renderLabel(s.label)}
             {s.railChip && !singleUser && <span className="stats-rail-chip">{renderLabel(s.railChip)}</span>}
           </UnstyledButton>
         )
       })}
       </nav>
-      {end && <div className="stats-rail-end">{end}</div>}
+      </div>
+      {end &&<div className="stats-rail-end">{end}</div>}
     </div>
   )
 }

@@ -58,6 +58,7 @@ export const adminMe: Me = {
   oidcLinked: false,
   oidcUserName: null,
   singleUser: false,
+  loginNamesVisible: false,
 }
 
 /** A signed-in non-admin who reads and requests but cannot add, delete or download directly. */

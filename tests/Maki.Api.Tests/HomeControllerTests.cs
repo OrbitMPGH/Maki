@@ -467,6 +467,30 @@ public class HomeControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task RecentlyAdded_fills_the_rail_past_fully_read_series()
+    {
+        // The first chunk is as long as the rail; the read ones in it send the rest to a later chunk.
+        var unread = new List<int>();
+        for (var i = 0; i < 6; i++)
+        {
+            var seriesId = _db.SeedSeries($"Series {i}");
+            var chapterId = SeedChapter(seriesId, 1, addedAt: Base.AddDays(-i));
+            if (i < 3)
+            {
+                SeedProgress(seriesId, chapterId, pageIndex: 0, completed: true, updatedAt: Base);
+            }
+            else
+            {
+                unread.Add(seriesId);
+            }
+        }
+
+        var items = Recent(await Controller().RecentlyAdded(limit: 3, ct: CancellationToken.None));
+
+        Assert.Equal(unread, items.Select(i => i.SeriesId));
+    }
+
+    [Fact]
     public async Task RecentlyAdded_counts_only_the_latest_batch()
     {
         // Weekly releases: each arrived on its own, so only the newest is new.
@@ -685,6 +709,117 @@ public class HomeControllerTests : IDisposable
         var first = items[0];
         Assert.Equal(5m, first.CoveredTo);
         Assert.Equal("Ch.6", first.ResumeChapterLabel);
+    }
+
+    [Fact]
+    public async Task From_anime_puts_the_most_recently_watched_first()
+    {
+        AnimeResumeFixture.OptIn(_db, 1);
+        SeedFromAnime("Loved long ago", 1, 10);
+        SeedFromAnime("Just finished", 2, 6);
+        SeedFromAnime("Last month", 3, 7);
+        using (var db = _db.NewContext())
+        {
+            foreach (var row in db.AnimeSignals)
+            {
+                row.ListUpdatedAtUtc = row.MangaBakaId switch
+                {
+                    1 => new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                    2 => new DateTime(2026, 11, 2, 0, 0, 0, DateTimeKind.Utc),
+                    _ => new DateTime(2026, 10, 1, 0, 0, 0, DateTimeKind.Utc),
+                };
+            }
+            db.SaveChanges();
+        }
+
+        var items = await FromAnime();
+
+        Assert.Equal(["Just finished", "Last month", "Loved long ago"], items.Select(i => i.SeriesTitle));
+    }
+
+    [Fact]
+    public async Task From_anime_drops_a_series_the_anime_adapted_to_the_end()
+    {
+        AnimeResumeFixture.OptIn(_db, 1);
+        var whole = AnimeResumeFixture.SeedAnimeSeries(_db, "Whole story", 1);
+        AnimeResumeFixture.SeedSignal(_db, 1, animeId: 1, mangaBakaId: 1);
+        AnimeResumeFixture.SeedChapters(_db, whole, 1, 2, 3, 4, 5);
+        var stillGoing = AnimeResumeFixture.SeedAnimeSeries(_db, "Source lags", 2, configure: s => s.TotalChapters = 40);
+        AnimeResumeFixture.SeedSignal(_db, 1, animeId: 2, mangaBakaId: 2);
+        AnimeResumeFixture.SeedChapters(_db, stillGoing, 1, 2, 3, 4, 5);
+
+        var items = await FromAnime();
+
+        Assert.Equal(stillGoing, Assert.Single(items).SeriesId);
+    }
+
+    [Fact]
+    public async Task From_anime_dismissed_until_a_new_season_stays_off_at_the_same_frontier()
+    {
+        AnimeResumeFixture.OptIn(_db, 1);
+        SeedFromAnime("Waiting for season two", 1, 8);
+        var shown = SeedFromAnime("Shown", 2, 8);
+        var older = SeedFromAnime("Dismissed at an older frontier", 3, 8);
+
+        await DismissFromAnime(1, 5m);
+        await DismissFromAnime(3, 4m);
+
+        var items = await FromAnime();
+
+        Assert.Equal([shown, older], items.Select(i => i.SeriesId!.Value).Order());
+    }
+
+    [Fact]
+    public async Task From_anime_dismissed_for_good_stays_off_until_restored()
+    {
+        AnimeResumeFixture.OptIn(_db, 1);
+        var series = SeedFromAnime("Not reading it", 1, 8);
+
+        await DismissFromAnime(1, null);
+        Assert.Empty(await FromAnime());
+
+        var controller = UserController();
+        Assert.IsType<NoContentResult>(await controller.RestoreFromAnime(
+            1, AnimeResumeFixture.Service(_db, _db.NewContext(1), _gate), CancellationToken.None));
+        Assert.Equal(series, Assert.Single(await FromAnime()).SeriesId);
+    }
+
+    [Fact]
+    public async Task From_anime_dismissal_is_per_user()
+    {
+        var other = _db.SeedUser("other");
+        AnimeResumeFixture.OptIn(_db, 1);
+        AnimeResumeFixture.OptIn(_db, other);
+        SeedFromAnime("Shared", 1, 8);
+        AnimeResumeFixture.SeedSignal(_db, other, animeId: 1, mangaBakaId: 1);
+
+        await DismissFromAnime(1, null);
+
+        Assert.Empty(await FromAnime());
+        Assert.Single(await FromAnime(other));
+    }
+
+    [Fact]
+    public async Task From_anime_dismiss_rejects_a_bad_frontier()
+    {
+        var result = await UserController().DismissFromAnime(
+            1, new HomeController.FromAnimeDismissRequest(0m),
+            AnimeResumeFixture.Service(_db, _db.NewContext(1), _gate), CancellationToken.None);
+
+        Assert.IsType<BadRequestResult>(result);
+    }
+
+    private async Task DismissFromAnime(int mangaBakaId, decimal? coveredTo, int userId = 1)
+    {
+        var context = _db.NewContext(userId);
+        var controller = new HomeController(context, new ContinueReadingService(context), Accents())
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
+        };
+        var result = await controller.DismissFromAnime(
+            mangaBakaId, new HomeController.FromAnimeDismissRequest(coveredTo),
+            AnimeResumeFixture.Service(_db, context, _gate), CancellationToken.None);
+        Assert.IsType<NoContentResult>(result);
     }
 
     [Fact]

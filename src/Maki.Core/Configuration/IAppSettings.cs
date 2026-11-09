@@ -117,6 +117,12 @@ public static class SettingKeys
     /// </summary>
     public const string SingleUserMode = "instance.singleusermode";
 
+    /// <summary>
+    /// "true" shows every account's login name to every user wherever no display name is set (shared
+    /// notes, the leaderboard, metadata history). Off unless set: a login name is half of a password login.
+    /// </summary>
+    public const string LoginNamesVisible = "instance.loginnamesvisible";
+
     /// <summary>"true" deletes read chapter files for every series left on Default. Off unless set.</summary>
     public const string ReadFileCleanupEnabled = "cleanup.readfiles.enabled";
 

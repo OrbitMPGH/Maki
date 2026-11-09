@@ -1,5 +1,6 @@
 import { msg } from '@lingui/core/macro'
 import { t as now } from '@lingui/core/macro'
+import { chapterLabel } from '../format'
 import type { MessageDescriptor } from '@lingui/core'
 import type { QueueItemDto, QueueOrigin, QueuePauseDto } from './types'
 import { upgradeReasonLabel } from './upgrades'
@@ -81,6 +82,7 @@ const ERROR_LABELS: Record<string, MessageDescriptor> = {
   'error.download.challengeNotSolved': msg`The source needs FlareSolverr to get past its anti-bot check (Settings → Downloads)`,
   'error.download.sourceRejected': msg`The source refused the request`,
   'error.download.sourceError': msg`The source answered with an error`,
+  'error.download.sourceNeedsPurchase': msg`The source wants a login or a purchase for this chapter`,
   'error.download.network': msg`Could not reach the source`,
   'error.download.disk': msg`Could not write the chapter to disk`,
   'error.download.invalidPage': msg`A page the source sent is not a readable image`,
@@ -142,9 +144,7 @@ export function queueItemLabel(item: QueueItemDto): string {
   if (item.releaseTitle) return item.releaseTitle
   if (item.chapterNumber === null) return item.chapterTitle ?? now`One-shot`
   const chapter = item.chapterNumber
-  if (item.chapterVolume === null) return now`Ch.${chapter}`
-  const volume = item.chapterVolume
-  return now`Vol.${volume} Ch.${chapter}`
+  return chapterLabel(chapter, item.chapterVolume)
 }
 
 /**

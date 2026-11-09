@@ -34,7 +34,8 @@ public class ChapterSourceResolver(
     SourceRegistry sourceRegistry,
     SourceAvailability sourceAvailability,
     SourceChapterListCache chapterLists,
-    SourceOrderService sourceOrder)
+    SourceOrderService sourceOrder,
+    ChapterListingSchedule? listingSchedule = null)
 {
     /// <summary>Best first under the series' <see cref="SourceOrderMode"/>. See <see cref="SourceOrderService"/>.</summary>
     public async Task<IReadOnlyList<SourceMapping>> OrderAsync(
@@ -75,29 +76,15 @@ public class ChapterSourceResolver(
     /// falls through to the priority order and can land straight back on a mapping that just failed.
     /// <paramref name="onlyPreferred"/> turns that fallthrough off: the user picked this source's copy,
     /// and landing on another source would hand them a file they never chose.
+    /// <paramref name="lastResortSources"/> (paused or cooling down) are tried only after every other one.
     /// </summary>
     public async Task<ResolvedChapterSource> ResolveAsync(
         MakiDbContext db, Chapter chapter, int? preferMappingId, CancellationToken ct,
         IReadOnlyCollection<int>? excludeMappingIds = null, bool requireExactMatch = false,
-        bool onlyPreferred = false)
+        bool onlyPreferred = false, IReadOnlySet<string>? lastResortSources = null)
     {
-        var disabledSources = await sourceAvailability.DisabledAsync(ct);
-        var query = db.SourceMappings
-            .Where(m => m.SeriesId == chapter.SeriesId && m.Enabled && !disabledSources.Contains(m.SourceName));
-
-        if (onlyPreferred && preferMappingId is { } only)
-        {
-            query = query.Where(m => m.Id == only);
-        }
-
-        if (excludeMappingIds is { Count: > 0 })
-        {
-            query = query.Where(m => !excludeMappingIds.Contains(m.Id));
-        }
-
-        var mappings = (await OrderAsync(db, chapter.SeriesId, await query.ToListAsync(ct), ct))
-            .OrderBy(m => m.Id == preferMappingId ? 0 : 1)
-            .ToList();
+        var mappings = await CandidatesAsync(
+            db, chapter.SeriesId, preferMappingId, excludeMappingIds, onlyPreferred, lastResortSources, ct);
 
         if (mappings.Count == 0)
         {
@@ -116,7 +103,7 @@ public class ChapterSourceResolver(
 
             try
             {
-                var sourceChapterId = await ResolveSourceChapterIdAsync(source, mapping, chapter, ct, requireExactMatch);
+                var sourceChapterId = await ResolveSourceChapterIdAsync(db, source, mapping, chapter, ct, requireExactMatch);
                 if (sourceChapterId != null)
                 {
                     return new ResolvedChapterSource(mapping, source, sourceChapterId);
@@ -151,6 +138,39 @@ public class ChapterSourceResolver(
     }
 
     /// <summary>
+    /// The mappings a fresh <see cref="ResolveAsync"/> of this series would try, in order, without asking
+    /// any source.
+    /// </summary>
+    public async Task<List<SourceMapping>> CandidateOrderAsync(
+        MakiDbContext db, int seriesId, IReadOnlySet<string>? lastResortSources, CancellationToken ct) =>
+        [.. (await CandidatesAsync(db, seriesId, null, null, false, lastResortSources, ct))
+            .Where(m => sourceRegistry.Find(m.SourceName) is not null)];
+
+    private async Task<List<SourceMapping>> CandidatesAsync(
+        MakiDbContext db, int seriesId, int? preferMappingId, IReadOnlyCollection<int>? excludeMappingIds,
+        bool onlyPreferred, IReadOnlySet<string>? lastResortSources, CancellationToken ct)
+    {
+        var disabledSources = await sourceAvailability.DisabledAsync(ct);
+        var query = db.SourceMappings
+            .Where(m => m.SeriesId == seriesId && m.Enabled && !disabledSources.Contains(m.SourceName));
+
+        if (onlyPreferred && preferMappingId is { } only)
+        {
+            query = query.Where(m => m.Id == only);
+        }
+
+        if (excludeMappingIds is { Count: > 0 })
+        {
+            query = query.Where(m => !excludeMappingIds.Contains(m.Id));
+        }
+
+        return (await OrderAsync(db, seriesId, await query.ToListAsync(ct), ct))
+            .OrderBy(m => m.Id == preferMappingId ? 0 : 1)
+            .ThenBy(m => lastResortSources?.Contains(m.SourceName) == true ? 1 : 0)
+            .ToList();
+    }
+
+    /// <summary>
     /// The queue stores our Chapter, not the source's chapter id, so look it up in the source's
     /// current chapter list. Keeps the queue robust when a source re-uploads chapters under new ids.
     /// <para>
@@ -158,11 +178,41 @@ public class ChapterSourceResolver(
     /// resolution is per chapter but the listing is per series, so a bulk enqueue would otherwise
     /// issue one full catalog listing per queued chapter against the same rate-limited source.
     /// </para>
+    /// <para>
+    /// A newest-first source's monitored sync lists only its newest pages and caches nothing, so with
+    /// no fresh whole listing cached the stored link is used before walking the whole list, but only
+    /// while the mapping had a whole walk within <see cref="ChapterListingSchedule.FullEvery"/>. An
+    /// older link may name a re-uploaded id, and the processor's 404 path never lists again.
+    /// </para>
     /// </summary>
     private async Task<string?> ResolveSourceChapterIdAsync(
-        ISource source, SourceMapping mapping, Chapter chapter, CancellationToken ct, bool requireExactMatch = false)
+        MakiDbContext db, ISource source, SourceMapping mapping, Chapter chapter, CancellationToken ct,
+        bool requireExactMatch = false)
     {
-        var chapters = await chapterLists.GetAsync(source, mapping.SourceSeriesId, mapping.LanguageFilter, ct);
+        if (source is INewestFirstChapterSource && listingSchedule is not null && !listingSchedule.FullDue(mapping.Id))
+        {
+            if (chapterLists.TryGetFresh(source, mapping.SourceSeriesId, mapping.LanguageFilter) is { } fresh &&
+                Match(fresh, chapter, requireExactMatch) is { } listed)
+            {
+                return listed;
+            }
+
+            var stored = await db.ChapterSourceLinks.AsNoTracking()
+                .Where(l => l.SourceMappingId == mapping.Id && l.ChapterId == chapter.Id)
+                .Select(l => l.SourceChapterId)
+                .FirstOrDefaultAsync(ct);
+            if (!string.IsNullOrEmpty(stored))
+            {
+                return stored;
+            }
+        }
+
+        return Match(await chapterLists.GetAsync(source, mapping.SourceSeriesId, mapping.LanguageFilter, ct),
+            chapter, requireExactMatch);
+    }
+
+    private static string? Match(IReadOnlyList<SourceChapter> chapters, Chapter chapter, bool requireExactMatch)
+    {
         if (requireExactMatch)
         {
             var exact = chapters.Where(c => SourceLanguages.Same(c.Language, chapter.Language) &&

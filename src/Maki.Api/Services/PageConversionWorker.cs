@@ -38,23 +38,53 @@ public sealed record PageConversionPassTotals(
     long SavedBytes);
 
 /// <summary>
-/// Converts the library that was there before conversion was switched on, one file at a time, at low
-/// priority: a short pause between files, and pages encoded through <c>ImageWorkGate</c> alongside the reader's own decodes. The
-/// pass is started and paused from the settings card; its state survives a restart, and a file is done
-/// once <see cref="ChapterFile.ConversionCheckedAtUtc"/> is set, so a resumed pass picks up where it
-/// stopped. A file that is busy or unreadable is passed over until the next pass.
+/// Converts library files one at a time, at low priority: a short pause between files, and pages encoded
+/// through <c>ImageWorkGate</c> alongside the reader's own decodes. Two kinds of work share the loop:
+/// <list type="bullet">
+/// <item>The queue: files a download or import placed while conversion was on
+/// (<see cref="ChapterFile.ConversionQueuedAtUtc"/>), so the download itself never waits on an encode.
+/// It runs whenever conversion is on, ahead of the pass and between its files. A file being read, or with a
+/// download of one of its chapters in flight, waits and is tried again; one that keeps failing is left to
+/// the pass after <see cref="MaxQueueAttempts"/> tries.</item>
+/// <item>The pass over the library that was there before, started and paused from the settings card. Its
+/// state survives a restart, and a file is done once <see cref="ChapterFile.ConversionCheckedAtUtc"/> is
+/// set, so a resumed pass picks up where it stopped. A file that is busy or unreadable is passed over until
+/// the next pass.</item>
+/// </list>
 /// </summary>
 public class PageConversionWorker(
-    IServiceScopeFactory scopes, IAppSettings settings, ILogger<PageConversionWorker> logger) : BackgroundService
+    IServiceScopeFactory scopes, IAppSettings settings, ILogger<PageConversionWorker> logger,
+    Maki.Api.Jobs.ArtifactBuildGate? buildGate = null) : BackgroundService
 {
     /// <summary>Kept free on the library volume, on top of the file being converted.</summary>
     public const long DiskReserveBytes = 1L << 30;
+
+    public const int MaxQueueAttempts = 5;
+
+    internal TimeSpan BusyRetry { get; set; } = TimeSpan.FromMinutes(2);
+    internal TimeSpan FailedRetry { get; set; } = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan LowDiskRetry = TimeSpan.FromMinutes(10);
+
+    /// <summary>
+    /// The longest the worker sleeps with nothing due. Every source of new work signals it: a queued file,
+    /// a start, a settings save. This only covers a signal lost to a restart race.
+    /// </summary>
+    internal static readonly TimeSpan IdleFallback = TimeSpan.FromMinutes(30);
 
     private const int BatchSize = 20;
 
     internal TimeSpan DelayBetweenFiles { get; set; } = TimeSpan.FromMilliseconds(250);
 
-    private readonly SemaphoreSlim _wake = new(0);
+    // Static so a download or import can wake the worker without holding a reference to it.
+    private static readonly SemaphoreSlim Wake = new(0, 1);
+
+    /// <summary>Per queued file, when it may be tried again and how many tries failed. In memory: a restart retries at once.</summary>
+    private readonly Dictionary<int, (DateTime RetryAt, int Failures)> _queueRetry = [];
+    private DateTime _queueHeldUntil;
+
+    // The earliest retry among the files the last queue run saw; null while conversion is off.
+    private DateTime? _queueNextRetry;
+
     private readonly Lock _sync = new();
     private PageConversionPassTotals? _current;
     private string? _currentFile;
@@ -90,7 +120,19 @@ public class PageConversionWorker(
 
         Interlocked.Increment(ref _generation);
         await settings.SetAsync(SettingKeys.PageConversionPass, "running", ct);
-        _wake.Release();
+        Signal();
+    }
+
+    /// <summary>Wakes the worker for new work, such as a file just queued.</summary>
+    public static void Signal()
+    {
+        try
+        {
+            Wake.Release();
+        }
+        catch (SemaphoreFullException)
+        {
+        }
     }
 
     public async Task PauseAsync(CancellationToken ct)
@@ -132,13 +174,14 @@ public class PageConversionWorker(
         {
             try
             {
+                await RunQueueAsync(stoppingToken);
                 if (await StateAsync(stoppingToken) == PageConversionPassState.Running &&
                     await RunPassAsync(stoppingToken))
                 {
                     continue;
                 }
 
-                await _wake.WaitAsync(TimeSpan.FromMinutes(1), stoppingToken);
+                await Wake.WaitAsync(IdleWait(DateTime.UtcNow), stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -149,6 +192,34 @@ public class PageConversionWorker(
                 logger.LogError(ex, "Page conversion pass failed");
                 await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
             }
+        }
+    }
+
+    /// <summary>
+    /// Until the earliest file the last queue run left waiting may be tried again, or the low-disk hold
+    /// ends, at most <see cref="IdleFallback"/>. Zero when one came due while the run was busy.
+    /// </summary>
+    internal TimeSpan IdleWait(DateTime now)
+    {
+        var next = now + IdleFallback;
+        if (_queueNextRetry is { } retry && retry < next)
+        {
+            next = retry;
+        }
+
+        if (_queueHeldUntil > now && _queueHeldUntil < next)
+        {
+            next = _queueHeldUntil;
+        }
+
+        return next > now ? next - now : TimeSpan.Zero;
+    }
+
+    private void RetryNoLaterThan(DateTime retryAt)
+    {
+        if (_queueNextRetry is not { } earliest || retryAt < earliest)
+        {
+            _queueNextRetry = retryAt;
         }
     }
 
@@ -222,7 +293,10 @@ public class PageConversionWorker(
                         return false;
                     }
 
-                    plan ??= await PageConversionOptions.LoadPlanAsync(db, ct);
+                    // New downloads go first, so a pass over a large library does not hold them up for hours.
+                    await RunQueueAsync(ct);
+
+                    plan ??=await PageConversionOptions.LoadPlanAsync(db, ct);
                     if (plan is null)
                     {
                         await HoldAsync(PageConversionHold.ConversionOff, ct);
@@ -244,6 +318,7 @@ public class PageConversionWorker(
                     FileConversion result;
                     try
                     {
+                        if (buildGate is not null) await buildGate.WaitUntilIdleAsync(ct);
                         using var fileScope = scopes.CreateScope();
                         result = await fileScope.ServiceProvider.GetRequiredService<PageConversionService>()
                             .ConvertAsync(file.Id, plan, cache, ct);
@@ -282,13 +357,143 @@ public class PageConversionWorker(
         }
     }
 
-    /// <summary>Archives conversion has not looked at yet. PDFs are never converted, and an import still owed its link is left alone.</summary>
+    /// <summary>
+    /// Archives conversion has not looked at yet, for the pass. PDFs are never converted, an import still
+    /// owed its link is left alone, and a queued file belongs to <see cref="QueuedQuery"/>.
+    /// </summary>
     public static IQueryable<ChapterFile> PendingQuery(MakiDbContext db) =>
+        UncheckedQuery(db).Where(f => f.ConversionQueuedAtUtc == null);
+
+    /// <summary>Files a download or import queued that the queue has not decided yet, with the same exclusions.</summary>
+    public static IQueryable<ChapterFile> QueuedQuery(MakiDbContext db) =>
+        UncheckedQuery(db).Where(f => f.ConversionQueuedAtUtc != null);
+
+    private static IQueryable<ChapterFile> UncheckedQuery(MakiDbContext db) =>
         db.ChapterFiles.IgnoreQueryFilters()
             .Where(f => f.ConversionCheckedAtUtc == null &&
                         (f.RelativePath.ToLower().EndsWith(".cbz") || f.RelativePath.ToLower().EndsWith(".zip")) &&
                         !db.Series.IgnoreQueryFilters().Any(s =>
                             s.Id == f.SeriesId && s.PendingImportLink != PendingImportLink.None));
+
+    /// <summary>
+    /// Works through the queued files that are due, oldest first, under the plan as it is now. Returns how
+    /// many were settled. Does nothing while conversion is off; the files stay queued.
+    /// </summary>
+    internal async Task<int> RunQueueAsync(CancellationToken ct)
+    {
+        _queueNextRetry = null;
+        if (DateTime.UtcNow < _queueHeldUntil)
+        {
+            return 0;
+        }
+
+        var settled = 0;
+        var lastId = 0;
+        var cache = new PageConversionPassCache();
+        PageConversionPlan? plan = null;
+        while (true)
+        {
+            using var scope = scopes.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+            var batch = await QueuedQuery(db).Where(f => f.Id > lastId)
+                .OrderBy(f => f.Id)
+                .Select(f => new
+                {
+                    f.Id,
+                    f.RelativePath,
+                    f.Size,
+                    Root = db.Series.IgnoreQueryFilters().Where(s => s.Id == f.SeriesId).Select(s => s.RootFolder!.Path).FirstOrDefault()
+                })
+                .Take(BatchSize)
+                .ToListAsync(ct);
+            if (batch.Count == 0)
+            {
+                return settled;
+            }
+
+            plan ??= await PageConversionOptions.LoadPlanAsync(db, ct);
+            if (plan is null)
+            {
+                return settled;
+            }
+
+            foreach (var file in batch)
+            {
+                lastId = file.Id;
+                var now = DateTime.UtcNow;
+                if (_queueRetry.TryGetValue(file.Id, out var retry) && retry.RetryAt > now)
+                {
+                    RetryNoLaterThan(retry.RetryAt);
+                    continue;
+                }
+
+                if (file.Root is not null && DiskSpace.AvailableFor(file.Root) is { } free &&
+                    free < file.Size + DiskReserveBytes)
+                {
+                    logger.LogWarning("Page conversion queue held for {Minutes} minutes: {Free} bytes free on {Root}",
+                        LowDiskRetry.TotalMinutes, free, file.Root);
+                    _queueHeldUntil = now + LowDiskRetry;
+                    return settled;
+                }
+
+                FileConversion result;
+                try
+                {
+                    if (buildGate is not null) await buildGate.WaitUntilIdleAsync(ct);
+                    using var fileScope = scopes.CreateScope();
+                    result = await fileScope.ServiceProvider.GetRequiredService<PageConversionService>()
+                        .ConvertAsync(file.Id, plan, cache, ct, queued: true);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+                {
+                    logger.LogError(ex, "Could not convert the pages of {Path}", file.RelativePath);
+                    result = new FileConversion(FileConversionStatus.Failed);
+                }
+
+                if (await SettleQueuedAsync(db, file.Id, file.RelativePath, result.Status, ct))
+                {
+                    settled++;
+                }
+
+                if (DelayBetweenFiles > TimeSpan.Zero)
+                {
+                    await Task.Delay(DelayBetweenFiles, ct);
+                }
+            }
+        }
+    }
+
+    /// <summary>True when the file left the queue.</summary>
+    private async Task<bool> SettleQueuedAsync(MakiDbContext db, int fileId, string path, FileConversionStatus status,
+        CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        switch (status)
+        {
+            case FileConversionStatus.Busy:
+                _queueRetry[fileId] = (now + BusyRetry, _queueRetry.GetValueOrDefault(fileId).Failures);
+                RetryNoLaterThan(now + BusyRetry);
+                return false;
+            case FileConversionStatus.Failed:
+                var failures = _queueRetry.GetValueOrDefault(fileId).Failures + 1;
+                if (failures < MaxQueueAttempts)
+                {
+                    _queueRetry[fileId] = (now + FailedRetry * failures, failures);
+                    RetryNoLaterThan(now + FailedRetry * failures);
+                    return false;
+                }
+
+                logger.LogWarning("Could not convert {Path} after {Attempts} tries; it is left for the library pass",
+                    path, failures);
+                break;
+        }
+
+        _queueRetry.Remove(fileId);
+        await db.ChapterFiles.IgnoreQueryFilters()
+            .Where(f => f.Id == fileId)
+            .ExecuteUpdateAsync(set => set.SetProperty(f => f.ConversionQueuedAtUtc, (DateTime?)null), ct);
+        return true;
+    }
 
     private void Count(FileConversion result)
     {

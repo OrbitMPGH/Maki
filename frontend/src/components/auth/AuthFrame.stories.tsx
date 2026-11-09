@@ -77,6 +77,14 @@ export const WithError: Story = {
   },
 }
 
+/** A mood change cross-fades: the old face stays until its fade-out ends. */
+export const AskingMood: Story = {
+  args: { mood: 'asking' },
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(canvasElement.querySelectorAll('.auth-brand-mark .brand-mood')).toHaveLength(1))
+  },
+}
+
 export const Mobile: Story = {
   parameters: { viewport: { defaultViewport: 'mobile1' } },
   globals: { viewport: { value: 'mobile1', isRotated: false } },

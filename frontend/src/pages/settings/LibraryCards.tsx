@@ -20,7 +20,7 @@ import {
   TextInput,
   VisuallyHidden,
 } from '@mantine/core'
-import { IconRestore, IconTrash } from '@tabler/icons-react'
+import { IconRestore, IconTrash } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { activeSeries } from '../../lib/series'
@@ -284,7 +284,7 @@ export function RecommendationIndexSection() {
         status={status}
         busy={setModel.isPending}
         onSelect={selectModel}
-        description={t`Uses about 240 MB of RAM. Needs the local MangaBaka database above.`}
+        description={t`Uses about 150 MB of RAM. Needs the local MangaBaka database above.`}
       />
     </SettingsSection>
   )
@@ -785,7 +785,7 @@ export function RecycleBinSection() {
                                 <Button
                                   size="xs"
                                   variant="default"
-                                  leftSection={<IconRestore size={14} />}
+                                  leftSection={<IconRestore size={16} />}
                                   disabled={entry.missing}
                                   loading={restore.isPending && restore.variables === entry.id}
                                   onClick={() => onRestore(entry)}

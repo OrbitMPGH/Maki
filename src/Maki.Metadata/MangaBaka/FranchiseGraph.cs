@@ -58,53 +58,126 @@ public static class FranchiseGraph
     /// </summary>
     public static Dictionary<long, int> Build(SqliteConnection conn, string seriesTable = "series")
     {
-        var union = new UnionFind();
-        var columns = string.Join(", ", FlatColumns);
+        var builder = new Builder();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = EdgeQuery(seriesTable, ranged: false);
+        cmd.CommandTimeout = 600;
+        builder.Add(cmd);
+        return builder.Components();
+    }
 
-        using (var cmd = conn.CreateCommand())
+    /// <summary>
+    /// The rows carrying an edge, optionally limited to <c>rowid BETWEEN $lo AND $hi</c> for a caller
+    /// walking the table in ranges. Ranges in ascending order feed the same edges in the same order
+    /// as one full read, so they produce the same components and the same component ids.
+    /// </summary>
+    public static string EdgeQuery(string seriesTable, bool ranged)
+    {
+        var anyRelation = string.Join(" OR ", FlatColumns.Select(c => $"{c} IS NOT NULL"));
+        return $"SELECT id, relationships_v2, {string.Join(", ", FlatColumns)} FROM {seriesTable} " +
+               $"WHERE (relationships_v2 IS NOT NULL OR {anyRelation})" +
+               (ranged ? " AND rowid BETWEEN $lo AND $hi" : string.Empty);
+    }
+
+    /// <summary>Whether a table has every column <see cref="EdgeQuery"/> reads.</summary>
+    public static bool HasEdgeColumns(IReadOnlySet<string> columns) =>
+        columns.Contains("relationships_v2") && FlatColumns.All(columns.Contains);
+
+    /// <summary>
+    /// The persisted result of <see cref="Build"/>, written once when a dump is installed, so a load
+    /// reads ~150k pairs instead of parsing every relation blob in the 3.5 GB file. Null when the
+    /// dump has no such table yet.
+    /// </summary>
+    public const string TableName = "maki_franchise";
+
+    public static Dictionary<long, int>? Read(SqliteConnection conn, string schema = "main")
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"SELECT 1 FROM {schema}.sqlite_master WHERE type = 'table' AND name = '{TableName}'";
+        if (cmd.ExecuteScalar() is null)
         {
-            // Only rows carrying an edge. relationships_v2 covers 15% of the dump, so this reads a
-            // small fraction of it rather than every row.
-            var anyRelation = string.Join(" OR ", FlatColumns.Select(c => $"{c} IS NOT NULL"));
-            cmd.CommandText =
-                $"SELECT id, relationships_v2, {columns} FROM {seriesTable} " +
-                $"WHERE relationships_v2 IS NOT NULL OR {anyRelation}";
-            cmd.CommandTimeout = 600;
-            using var reader = cmd.ExecuteReader();
+            return null;
+        }
+
+        cmd.CommandText = $"SELECT id, component FROM {schema}.{TableName}";
+        var componentOf = new Dictionary<long, int>();
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            componentOf[reader.GetInt64(0)] = reader.GetInt32(1);
+        }
+
+        return componentOf;
+    }
+
+    /// <summary>Replaces <see cref="TableName"/> with <paramref name="componentOf"/>.</summary>
+    public static void Write(SqliteConnection conn, SqliteTransaction tx, IReadOnlyDictionary<long, int> componentOf)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = $"DROP TABLE IF EXISTS {TableName}";
+        cmd.ExecuteNonQuery();
+        cmd.CommandText = $"CREATE TABLE {TableName} (id INTEGER PRIMARY KEY, component INTEGER NOT NULL)";
+        cmd.ExecuteNonQuery();
+
+        cmd.CommandText = $"INSERT INTO {TableName} (id, component) VALUES ($id, $component)";
+        var id = cmd.Parameters.Add("$id", SqliteType.Integer);
+        var component = cmd.Parameters.Add("$component", SqliteType.Integer);
+        foreach (var (member, of) in componentOf)
+        {
+            id.Value = member;
+            component.Value = of;
+            cmd.ExecuteNonQuery();
+        }
+    }
+
+    /// <summary>Accumulates edges from one or more reads of <see cref="EdgeQuery"/>.</summary>
+    public sealed class Builder
+    {
+        private readonly UnionFind _union = new();
+
+        public void Add(SqliteCommand edges)
+        {
+            using var reader = edges.ExecuteReader();
             while (reader.Read())
             {
                 var id = reader.GetInt64(0);
                 if (!reader.IsDBNull(1))
                 {
-                    AddTyped(reader.GetString(1), id, union);
+                    AddTyped(reader.GetString(1), id, _union);
                 }
 
                 for (var ordinal = 2; ordinal < 2 + FlatColumns.Length; ordinal++)
                 {
                     if (!reader.IsDBNull(ordinal))
                     {
-                        AddBare(reader.GetString(ordinal), id, union);
+                        AddBare(reader.GetString(ordinal), id, _union);
                     }
                 }
             }
         }
 
-        // Component ids are assigned densely from the roots, so they are small ints an index column
-        // can hold rather than sparse series ids.
-        var componentOf = new Dictionary<long, int>(union.Count);
-        var idByRoot = new Dictionary<long, int>();
-        foreach (var member in union.Members)
+        /// <summary>
+        /// Component ids are assigned densely from the roots, so they are small ints an index
+        /// column can hold rather than sparse series ids.
+        /// </summary>
+        public Dictionary<long, int> Components()
         {
-            var root = union.Find(member);
-            if (!idByRoot.TryGetValue(root, out var component))
+            var componentOf = new Dictionary<long, int>(_union.Count);
+            var idByRoot = new Dictionary<long, int>();
+            foreach (var member in _union.Members)
             {
-                idByRoot[root] = component = idByRoot.Count;
+                var root = _union.Find(member);
+                if (!idByRoot.TryGetValue(root, out var component))
+                {
+                    idByRoot[root] = component = idByRoot.Count;
+                }
+
+                componentOf[member] = component;
             }
 
-            componentOf[member] = component;
+            return componentOf;
         }
-
-        return componentOf;
     }
 
     /// <summary>The flat relation columns that mean the same work, for a caller reading one row.</summary>

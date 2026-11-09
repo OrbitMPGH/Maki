@@ -8,10 +8,10 @@ namespace Maki.Api.Jobs;
 /// Unloads the ONNX embedding session once nothing has used it for a while.
 ///
 /// <para>
-/// The default model is ~240 MB resident and used to stay that way for the rest of the process once
+/// The default model is ~140 MB resident and used to stay that way for the rest of the process once
 /// anything touched it, which on a typical instance is one natural-language search. Almost nothing
 /// needs it: recommendations score vectors the index already holds, and local indexing only runs
-/// when series are added. So the steady state was a quarter of a gigabyte held for a feature the
+/// when series are added. So the steady state was that much memory held for a feature the
 /// server was not using.
 /// </para>
 ///

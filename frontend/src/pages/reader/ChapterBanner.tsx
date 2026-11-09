@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plural } from '@lingui/react/macro'
 
-/** Fade in, hold, fade out. Kept in step with the `reader-chapter-banner` animation in theme.css. */
+/** Fade in, hold, fade out. Kept in step with `--dur-banner` in theme.css. */
 const SHOW_MS = 2400
 
 /**
@@ -16,12 +16,15 @@ export default function ChapterBanner({
   seriesTitle,
   label,
   pageCount,
+  coverUrl,
 }: {
   seriesTitle: string
   label: string
   pageCount: number
+  coverUrl?: string | null
 }) {
   const [done, setDone] = useState(false)
+  const [coverFailed, setCoverFailed] = useState(false)
 
   useEffect(() => {
     const timer = setTimeout(() => setDone(true), SHOW_MS)
@@ -31,12 +34,19 @@ export default function ChapterBanner({
   if (done) return null
 
   return (
-    <div className="reader-chapter-banner" role="status" aria-live="polite">
-      <span className="reader-chapter-banner-series">{seriesTitle}</span>
-      <span className="reader-chapter-banner-label">{label}</span>
-      <span className="reader-chapter-banner-pages">
-        <Plural value={pageCount} one="# page" other="# pages" />
-      </span>
+    <div className="reader-card reader-chapter-banner" role="status" aria-live="polite">
+      {coverUrl && !coverFailed && (
+        <img className="reader-card-cover" src={coverUrl} alt="" onError={() => setCoverFailed(true)} />
+      )}
+      <div className="reader-card-text">
+        <span className="reader-card-eyebrow">{seriesTitle}</span>
+        <span className="reader-card-title" data-wrap>
+          {label}
+        </span>
+        <span className="reader-card-meta">
+          <Plural value={pageCount} one="# page" other="# pages" />
+        </span>
+      </div>
     </div>
   )
 }

@@ -64,8 +64,10 @@ export const SettingsOpen: Story = {
     await summonChrome({ canvasElement, userEvent })
     await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
     const body = within(canvasElement.ownerDocument.body)
-    await expect(await body.findByText('Reading profile')).toBeVisible()
-    await waitFor(() => expect(body.getByText(/^Changes /)).toHaveTextContent('Changes retune'))
+    await expect(await body.findByRole('button', { name: /^Reading profile: / })).toBeVisible()
+    await waitFor(() =>
+      expect(canvasElement.ownerDocument.querySelector('.reader-settings-scope')).toHaveTextContent(/profile and every series using it/),
+    )
   },
 }
 
@@ -93,6 +95,53 @@ export const ThumbnailStrip: Story = {
   },
 }
 
+export const NoteMarkersOnThumbnails: Story = {
+  parameters: open(1132),
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await userEvent.keyboard('t')
+    await expect(await canvas.findByRole('button', { name: 'Go to page 2 (has notes)' })).toHaveAttribute('data-noted', 'true')
+    await expect(await canvas.findByRole('button', { name: 'Go to page 12 (has notes)' })).toBeInTheDocument()
+  },
+}
+
+export const NotesPanelOpens: Story = {
+  parameters: open(1132),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await summonChrome({ canvasElement, userEvent })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Notes (3)' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByRole('dialog', { name: 'Notes, Chapter 132' })).toBeVisible()
+    await expect(await body.findByText(/tea cups/)).toBeVisible()
+    // Escape closes the panel and leaves the reader where it is.
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(body.queryByRole('dialog', { name: 'Notes, Chapter 132' })).toBeNull())
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible()
+  },
+}
+
+export const NotesPanelKeepsPageKeys: Story = {
+  parameters: open(1132),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await summonChrome({ canvasElement, userEvent })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Notes (3)' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.type(await body.findByRole('textbox', { name: 'Write a note' }), 'Typing {ArrowLeft}b t')
+    // Keys typed into the box never reach the page behind it.
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible()
+  },
+}
+
+export const NotesFromAnInboxLink: Story = {
+  parameters: { router: { path: '/read/:chapterId', initialEntries: ['/read/1132?notes=3'] } },
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByRole('dialog', { name: 'Notes, Chapter 132' })).toBeVisible()
+    await waitFor(() => expect(canvasElement.ownerDocument.getElementById('note-thread-3')).toHaveAttribute('data-highlight'))
+  },
+}
 export const KeyboardShortcuts: Story = {
   parameters: open(1132),
   play: async ({ canvas, userEvent }) => {
@@ -119,6 +168,40 @@ export const ContinuousWebtoon: Story = {
   parameters: open(3040),
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('img', { name: 'Chapter 40 - page 1' })).toBeVisible()
+  },
+}
+
+/** The bottom of the screen moves the strip down most of a screen, Shift + Space brings it back. */
+export const ContinuousTapMovesAScreen: Story = {
+  parameters: open(3040),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 40 - page 1' })
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    await waitFor(() => expect(surface.scrollHeight).toBeGreaterThan(surface.clientHeight * 2))
+    const start = surface.scrollTop
+    const box = surface.getBoundingClientRect()
+    await userEvent.pointer({
+      keys: '[MouseLeft]',
+      target: surface,
+      coords: { clientX: box.left + box.width / 2, clientY: box.top + box.height * 0.9 },
+    })
+    await waitFor(() => expect(surface.scrollTop).toBeGreaterThan(start + surface.clientHeight * 0.8))
+    await expect(canvasElement.querySelector('.reader-bar-bottom')).toHaveAttribute('data-visible', 'false')
+    await userEvent.keyboard('{Shift>} {/Shift}')
+    await waitFor(() => expect(Math.abs(surface.scrollTop - start)).toBeLessThan(4))
+  },
+}
+
+export const ContinuousAutoScroll: Story = {
+  parameters: open(3040),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 40 - page 1' })
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    await waitFor(() => expect(surface.scrollHeight).toBeGreaterThan(surface.clientHeight * 2))
+    await summonChrome({ canvasElement, userEvent })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Auto-scroll' }))
+    const start = surface.scrollTop
+    await waitFor(() => expect(surface.scrollTop).toBeGreaterThan(start + 20))
   },
 }
 
@@ -504,7 +587,7 @@ async function expectFallback(canvasElement: HTMLElement, canvas: PlayArgs['canv
 
 const readyAsked: number[][] = []
 
-/** Sharp (server) with every page upscaled already: the server's image replaces the page once decoded, and compare still shows the original. */
+/** SPAN-S with every page upscaled already: the server's image replaces the page once decoded, and compare still shows the original. */
 export const ServerEnhanceReady: Story = {
   parameters: {
     ...open(7711),
@@ -589,6 +672,44 @@ export const ServerEnhanceWaiting: Story = {
   play: async ({ canvas, canvasElement }) => {
     await waitFor(() => expect(waitingAsked[0]?.slice(0, 2)).toEqual([5, 6]))
     await expectFallback(canvasElement, canvas)
+    await waitFor(() => expect(canvasElement.querySelector('.reader-enhance-line')?.getAttribute('data-phase')).toBe('queued'))
+    await expect(canvasElement.querySelector('.reader-enhance-status')).toBeNull()
+    await expect(await canvas.findByText('Waiting for the server')).toBeInTheDocument()
+  },
+}
+
+/** The detailed style: the labelled pill over the page instead of the edge line. */
+export const ServerEnhanceWaitingDetailed: Story = {
+  parameters: {
+    ...open(7719),
+    msw: [
+      serverMethod(7719, undefined, { enhanceProgress: 'detailed' }),
+      enhanceAnswer(7719, 'queued'),
+      http.get(api('/reader/chapter/7719/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(canvasElement.querySelector('.reader-enhance-status')?.textContent).toContain('Waiting for the server'))
+    await expect(canvasElement.querySelector('.reader-enhance-line')).toBeNull()
+  },
+}
+
+/** Hidden: nothing over the page, the toolbar's compare button still shows the wait once the bars are up. */
+export const ServerEnhanceWaitingHidden: Story = {
+  parameters: {
+    ...open(7720),
+    msw: [
+      serverMethod(7720, undefined, { enhanceProgress: 'off' }),
+      enhanceAnswer(7720, 'queued'),
+      http.get(api('/reader/chapter/7720/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(await canvas.findByText('Waiting for the server')).toBeInTheDocument()
+    await expect(canvasElement.querySelector('.reader-enhance-line')).toBeNull()
+    await expect(canvasElement.querySelector('.reader-enhance-status')).toBeNull()
+    await waitFor(() => expect(canvasElement.querySelector('.reader-compare')?.getAttribute('data-phase')).toBe('queued'))
+    await expect(canvasElement.querySelector('.reader-compare-button')).toHaveAttribute('data-busy')
   },
 }
 
@@ -631,7 +752,7 @@ export const ServerEnhanceTierOff: Story = {
 
 const volumeAsked: number[][] = []
 
-/** Sharp (server) on a digital volume, which the default prefs skip: the plain page shows and nothing is asked of the server. */
+/** SPAN-S on a digital volume, which the default prefs skip: the plain page shows and nothing is asked of the server. */
 export const EnhanceSkippedForVolume: Story = {
   parameters: {
     ...open(7718),
@@ -654,29 +775,58 @@ export const EnhanceSkippedForVolume: Story = {
   },
 }
 
-const unstretchedAsked: number[][] = []
+const unstretchedAsked: { pages: number[]; notWanted?: number[] }[] = []
 
-/** Auto with Sharp (server) and the page shown at 1:1: nothing is stretched, so nothing is asked of the server. */
+/** Auto with SPAN-S and the page shown at 1:1: nothing is stretched, so no page is asked for and the pages measured plain go as `notWanted`, which drops what the previous chapter queued ahead. */
 export const ServerEnhanceAutoUnstretched: Story = {
   parameters: {
     ...open(7714),
     msw: [
       serverMethod(7714, undefined, { enhance: 'auto', fit: 'original', scale: 100 }),
-      enhanceAnswer(7714, 'queued', unstretchedAsked),
+      http.post(api('/reader/chapter/7714/enhance'), async ({ request }) => {
+        unstretchedAsked.push((await request.json()) as { pages: number[]; notWanted?: number[] })
+        return HttpResponse.json({ pages: [] })
+      }),
       http.get(api('/reader/chapter/7714/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
     ],
   },
   play: async ({ canvas, canvasElement }) => {
     await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
     await waitFor(() => expect(canvasElement.querySelector('canvas.reader-enhanced')).not.toBeNull())
+    await waitFor(() => expect(unstretchedAsked.at(-1)?.notWanted).toContain(5))
     await new Promise((resolve) => setTimeout(resolve, 800))
-    await expect(unstretchedAsked).toHaveLength(0)
+    await expect(unstretchedAsked.flatMap((body) => body.pages)).toHaveLength(0)
+  },
+}
+
+const wholeAsked: { pages: number[]; wholeChapter?: boolean }[] = []
+
+/** Whole chapter: the window goes first, then every other page of the chapter, ahead before behind. */
+export const ServerEnhanceWholeChapter: Story = {
+  parameters: {
+    ...open(7721),
+    msw: [
+      serverMethod(7721, undefined, { enhanceWholeChapter: true }),
+      http.post(api('/reader/chapter/7721/enhance'), async ({ request }) => {
+        const body = (await request.json()) as { pages: number[]; wholeChapter?: boolean }
+        wholeAsked.push(body)
+        return HttpResponse.json({ pages: body.pages.map((page) => ({ page, state: 'queued' })) })
+      }),
+      http.get(api('/reader/chapter/7721/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
+    ],
+  },
+  play: async ({ canvas }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    await waitFor(() => expect(wholeAsked.at(-1)?.pages).toHaveLength(18))
+    await waitFor(() => expect(wholeAsked.at(-1)?.wholeChapter).toBe(true))
+    await waitFor(() => expect(wholeAsked.at(-1)?.pages[0]).toBe(5))
+    await waitFor(() => expect(wholeAsked.at(-1)?.pages.slice(-5)).toEqual([4, 3, 2, 1, 0]))
   },
 }
 
 const stretchedAsked: number[][] = []
 
-/** Auto with Sharp (server) at 200%: the page on screen is asked for first, then the pages ahead of the same size. */
+/** Auto with SPAN-S at 200%: the page on screen is asked for first, then the pages ahead of the same size. */
 export const ServerEnhanceAutoStretched: Story = {
   parameters: {
     ...open(7715),

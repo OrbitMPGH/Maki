@@ -271,6 +271,7 @@ function animeLibrary(seriesId: number, coveredTo: number, animeTitle: string): 
   const entry = catalogue.find((s) => s.id === seriesId)!
   return {
     seriesId,
+    mangaBakaId: 9000 + seriesId,
     seriesTitle: entry.title,
     coverUrl: cover(seriesId),
     animeTitle,
@@ -287,6 +288,7 @@ function animeCatalogue(n: number, coveredTo: number): HomeAnimeResumeItem {
   const item = catalogueItem(n)
   return {
     seriesId: null,
+    mangaBakaId: Number(item.providerId),
     seriesTitle: item.title,
     coverUrl: item.thumbUrl,
     animeTitle: `${item.title} (TV)`,

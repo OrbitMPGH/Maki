@@ -9,7 +9,7 @@ import {
   type HTMLAttributes,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
+import { IconChevronLeft, IconChevronRight } from '../../lib/icons'
 import { useLingui } from '@lingui/react/macro'
 
 const RAIL_GAP = 14
@@ -60,9 +60,16 @@ export function Rail({
   const measure = useCallback(() => {
     const rail = ref.current
     if (!rail) return
+    // An offscreen rail's cards are skipped (content-visibility: auto) and it reports no overflow, so
+    // measuring it then would drop the fades it still needs when it comes back on screen.
+    const first = rail.firstElementChild
+    if (first?.checkVisibility && !first.checkVisibility({ contentVisibilityAuto: true })) return
     const max = rail.scrollWidth - rail.clientWidth
     const left = rail.scrollLeft > 1
     const right = max > 1 && rail.scrollLeft < max - 1
+    // How far each edge is from its end, so the fades grow with the scroll instead of snapping on.
+    rail.style.setProperty('--rail-left', `${Math.round(Math.max(0, rail.scrollLeft))}px`)
+    rail.style.setProperty('--rail-right', `${Math.round(Math.max(0, max - rail.scrollLeft))}px`)
     setReach((prev) => (prev.left === left && prev.right === right ? prev : { left, right }))
   }, [])
 
@@ -88,6 +95,7 @@ export function Rail({
     if (!rail) return
     rail.addEventListener('scroll', schedule, { passive: true })
     rail.addEventListener('load', schedule, { capture: true, passive: true })
+    rail.addEventListener('contentvisibilityautostatechange', schedule)
     window.addEventListener('resize', schedule)
     const resize = new ResizeObserver(schedule)
     resize.observe(rail)
@@ -98,6 +106,7 @@ export function Rail({
       cancelAnimationFrame(frame.current)
       rail.removeEventListener('scroll', schedule)
       rail.removeEventListener('load', schedule, { capture: true })
+      rail.removeEventListener('contentvisibilityautostatechange', schedule)
       window.removeEventListener('resize', schedule)
       resize.disconnect()
       visible.disconnect()
@@ -158,7 +167,7 @@ export function Rail({
               disabled={!reach.left}
               onClick={() => move(-1)}
             >
-              <IconChevronLeft size={16} stroke={2} aria-hidden />
+              <IconChevronLeft size={16} aria-hidden />
             </button>
             <button
               type="button"
@@ -167,7 +176,7 @@ export function Rail({
               disabled={!reach.right}
               onClick={() => move(1)}
             >
-              <IconChevronRight size={16} stroke={2} aria-hidden />
+              <IconChevronRight size={16} aria-hidden />
             </button>
           </>,
           slot,

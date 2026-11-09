@@ -1,6 +1,8 @@
+using Maki.Api.Jobs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Sources;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -87,6 +89,27 @@ public class SourceScoutTests : IDisposable
         Assert.Equal(chapterId, Assert.Single(Samples()).ChapterId);
     }
 
+    [Fact]
+    public async Task A_source_sharing_no_chapter_with_the_others_is_measured_on_its_own_chapters()
+    {
+        _world.Seed();
+        _world.AggPages = UpgradeWorld.InlinePages(12, 700);
+        _world.OfficialPages = UpgradeWorld.InlinePages(40, 1600);
+        var chapters = Enumerable.Range(1, 4).Select(n => _world.Chapter(n, withFile: false).ChapterId).ToList();
+        using (var db = _world.Db.NewContext())
+        {
+            db.ChapterSourceLinks.RemoveRange(db.ChapterSourceLinks.Where(l => l.SourceMappingId == _world.AggMappingId && l.ChapterId != chapters[3]));
+            db.ChapterSourceLinks.RemoveRange(db.ChapterSourceLinks.Where(l => l.SourceMappingId == _world.OfficialMappingId && l.ChapterId == chapters[3]));
+            db.SaveChanges();
+        }
+
+        await Scout().RunNowAsync(_world.SeriesId, CancellationToken.None);
+
+        var agg = Assert.Single(Samples(), s => s.SourceMappingId == _world.AggMappingId);
+        Assert.Equal(chapters[3], agg.ChapterId);
+        Assert.Equal(12, agg.PageCount);
+    }
+
     [Theory]
     [InlineData(null, false)]
     [InlineData("false", false)]
@@ -102,9 +125,65 @@ public class SourceScoutTests : IDisposable
         }
 
         var scout = Scout();
-        await scout.StartIfEnabledAsync(db, _world.SeriesId, CancellationToken.None);
+        Assert.Equal(expected, await scout.StartIfEnabledAsync(db, _world.SeriesId, CancellationToken.None));
 
         Assert.Equal(expected, scout.Snapshot(_world.SeriesId) is not null);
+    }
+
+    [Fact]
+    public async Task Smart_download_starts_a_missing_run_and_waits_for_it_to_finish()
+    {
+        _world.Seed();
+        _world.OfficialPages = UpgradeWorld.InlinePages(20, 1600);
+        _world.Chapter(1, withFile: false);
+        var scout = Scout();
+        using var db = _world.Db.NewContext();
+        var chapters = db.Chapters.AsNoTracking().Where(c => c.SeriesId == _world.SeriesId).ToList();
+
+        Assert.True(await SmartDownloadJob.WaitsForMeasurementAsync(
+            db, scout, _world.SeriesId, chapters, scoutOnMatch: true, CancellationToken.None));
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (scout.Snapshot(_world.SeriesId)!.Running && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(20);
+        }
+
+        Assert.NotEmpty(Samples());
+        Assert.False(await SmartDownloadJob.WaitsForMeasurementAsync(
+            db, scout, _world.SeriesId, chapters, scoutOnMatch: true, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task A_finished_run_that_measured_nothing_does_not_hold_smart_download()
+    {
+        _world.Seed();
+        _world.OfficialPages = _ => new ChapterPages([]);
+        _world.Chapter(1, withFile: false);
+        var scout = Scout();
+        await scout.RunNowAsync(_world.SeriesId, CancellationToken.None);
+        using var db = _world.Db.NewContext();
+        var chapters = db.Chapters.AsNoTracking().Where(c => c.SeriesId == _world.SeriesId).ToList();
+
+        Assert.Empty(Samples());
+        Assert.False(await SmartDownloadJob.WaitsForMeasurementAsync(
+            db, scout, _world.SeriesId, chapters, scoutOnMatch: true, CancellationToken.None));
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    public async Task Smart_download_starts_no_run_when_the_setting_is_off_or_a_file_is_on_disk(
+        bool scoutOnMatch, bool withFile)
+    {
+        _world.Seed();
+        _world.Chapter(1, withFile: withFile);
+        var scout = Scout();
+        using var db = _world.Db.NewContext();
+        var chapters = db.Chapters.AsNoTracking().Where(c => c.SeriesId == _world.SeriesId).ToList();
+
+        Assert.False(await SmartDownloadJob.WaitsForMeasurementAsync(
+            db, scout, _world.SeriesId, chapters, scoutOnMatch, CancellationToken.None));
+        Assert.Null(scout.Snapshot(_world.SeriesId));
     }
 
     private sealed record ScoutSnapshotCounts(int Probes, int Done, int Measured);

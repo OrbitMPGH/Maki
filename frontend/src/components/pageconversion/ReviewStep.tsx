@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Alert, Button, Group, Progress, Skeleton, Stack, Text } from '@mantine/core'
-import { IconRefresh } from '@tabler/icons-react'
+import { IconRefresh } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import {
   estimateRequestKey,
@@ -74,11 +74,11 @@ export function ReviewStep({ value, rules }: { value: PageConversionSettings; ru
       </Text>
 
       {startFailed && !running && (
-        <Alert color="red" role="alert" title={<Trans>The estimate could not be started</Trans>}>
+        <Alert color="var(--danger)" role="alert" title={<Trans>The estimate could not be started</Trans>}>
           <Button
             variant="default"
             size="xs"
-            leftSection={<IconRefresh size={14} />}
+            leftSection={<IconRefresh size={16} />}
             onClick={() => (start.isError ? restart() : void refetch())}
           >
             <Trans>Try again</Trans>
@@ -88,7 +88,7 @@ export function ReviewStep({ value, rules }: { value: PageConversionSettings; ru
 
       {!startFailed && broken && !running && (
         <Alert
-          color="red"
+          color="var(--danger)"
           role="alert"
           title={
             estimate?.state === 'cancelled' ? <Trans>The estimate was cancelled</Trans> : <Trans>The estimate failed</Trans>
@@ -100,7 +100,7 @@ export function ReviewStep({ value, rules }: { value: PageConversionSettings; ru
                 <Trans>The estimate failed on this server. Try again, or check the log.</Trans>
               </Text>
             )}
-            <Button variant="default" size="xs" leftSection={<IconRefresh size={14} />} onClick={restart}>
+            <Button variant="default" size="xs" leftSection={<IconRefresh size={16} />} onClick={restart}>
               <Trans>Try again</Trans>
             </Button>
           </Stack>
@@ -120,7 +120,7 @@ export function ReviewStep({ value, rules }: { value: PageConversionSettings; ru
         <>
           <EstimateTable result={result} rules={rules} stop={value.stop} stale={stale} />
           <Group>
-            <Button variant="default" size="xs" leftSection={<IconRefresh size={14} />} disabled={running} onClick={restart}>
+            <Button variant="default" size="xs" leftSection={<IconRefresh size={16} />} disabled={running} onClick={restart}>
               <Trans>Re-estimate</Trans>
             </Button>
           </Group>

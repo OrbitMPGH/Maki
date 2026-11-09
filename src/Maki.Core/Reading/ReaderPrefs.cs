@@ -65,20 +65,34 @@ public record ReaderPrefsSpec(
     /// <summary>
     /// How <see cref="Enhance"/> is done: a browser shader preset (<c>a4k-*</c>) or a server model
     /// (<c>server:*</c>). A server method is kept even when the server tier is off, so the choice
-    /// survives an admin toggling it; the client decides the fallback.
+    /// survives an admin toggling it; the client decides the fallback. The default is Maki 2x, which
+    /// shows <see cref="EnhanceFallback"/> wherever the server does not offer it.
     /// </summary>
     string EnhanceMethod = ReaderPrefsSpec.EnhanceMethodDefault,
     /// <summary>
     /// The browser preset a server <see cref="EnhanceMethod"/> shows until its upscale is ready, and
     /// whenever the server tier cannot be used: an <c>a4k-*</c> preset, or <c>off</c> for the plain page.
     /// </summary>
-    string EnhanceFallback = ReaderPrefsSpec.EnhanceMethodDefault,
+    string EnhanceFallback = ReaderPrefsSpec.EnhanceFallbackDefault,
     /// <summary>
     /// Quality tiers (<c>QualityTier</c> names in lower case) whose chapters are never enhanced,
     /// whatever <see cref="Enhance"/> says. Null means unset and becomes <see cref="DefaultEnhanceSkipTiers"/>:
     /// a digital volume is already clean, and sharpening it only adds artefacts.
     /// </summary>
-    IReadOnlyList<string>? EnhanceSkipTiers = null)
+    IReadOnlyList<string>? EnhanceSkipTiers = null,
+    /// <summary>
+    /// How the reader shows a server upscale in progress while the bars are hidden: <c>line</c> (a
+    /// thin line on the screen's bottom edge), <c>detailed</c> (a labelled pill) or <c>off</c>. The
+    /// toolbar shows it whenever the bars are up.
+    /// </summary>
+    string EnhanceProgress = ReaderPrefsSpec.EnhanceProgressDefault,
+    /// <summary>Show a chapter's notes in the margin beside the page when the screen leaves room for them.</summary>
+    bool NotesBeside = true,
+    /// <summary>
+    /// With a server <see cref="EnhanceMethod"/>, keep upscaling every page of the open chapter
+    /// behind the reading window instead of only the window. What is left when the reader leaves is cancelled.
+    /// </summary>
+    bool EnhanceWholeChapter = false)
 {
     public const string ModePaged = "paged";
     public const string ModeDouble = "double";
@@ -99,7 +113,9 @@ public record ReaderPrefsSpec(
     public const string SplitOff = "off";
 
     public const string EnhanceOff = "off";
-    public const string EnhanceMethodDefault = "a4k-m";
+    public const string EnhanceMethodDefault = "server:maki-2x";
+    public const string EnhanceFallbackDefault = "a4k-m";
+    public const string EnhanceProgressDefault = "line";
 
     public const string FitWidth = "width";
     public const string FitHeight = "height";
@@ -119,8 +135,9 @@ public record ReaderPrefsSpec(
     private static readonly string[] SplitModes = [SplitOff, "split", "rotate"];
     private static readonly string[] EnhanceModes = [EnhanceOff, "auto", "always"];
     private static readonly string[] EnhanceMethods =
-        ["a4k-s", EnhanceMethodDefault, "a4k-a", "server:span-s", "server:realesrgan-av3"];
-    private static readonly string[] EnhanceFallbacks = ["a4k-s", EnhanceMethodDefault, "a4k-a", EnhanceOff];
+        ["a4k-s", EnhanceFallbackDefault, "a4k-a", "server:span-s", "server:realesrgan-av3", EnhanceMethodDefault];
+    private static readonly string[] EnhanceFallbacks = ["a4k-s", EnhanceFallbackDefault, "a4k-a", EnhanceOff];
+    private static readonly string[] EnhanceProgressStyles = [EnhanceProgressDefault, "detailed", "off"];
     private static readonly string[] Tiers = [.. Enum.GetValues<QualityTier>().Select(QualitySnapshot.TierName)];
 
     public static readonly IReadOnlyList<string> DefaultEnhanceSkipTiers = ["volume"];
@@ -139,10 +156,11 @@ public record ReaderPrefsSpec(
         SplitWide = SplitModes.Contains(SplitWide) ? SplitWide : SplitOff,
         Enhance = EnhanceModes.Contains(Enhance) ? Enhance : EnhanceOff,
         EnhanceMethod = EnhanceMethods.Contains(EnhanceMethod) ? EnhanceMethod : EnhanceMethodDefault,
-        EnhanceFallback = EnhanceFallbacks.Contains(EnhanceFallback) ? EnhanceFallback : EnhanceMethodDefault,
+        EnhanceFallback = EnhanceFallbacks.Contains(EnhanceFallback) ? EnhanceFallback : EnhanceFallbackDefault,
         EnhanceSkipTiers = EnhanceSkipTiers is null
             ? DefaultEnhanceSkipTiers
             : [.. Tiers.Where(EnhanceSkipTiers.Contains)],
+        EnhanceProgress = EnhanceProgressStyles.Contains(EnhanceProgress) ? EnhanceProgress : EnhanceProgressDefault,
     };
 
     /// <summary>Fills an unset <see cref="AutoWebtoon"/> with the layer's default: on for the global defaults only.</summary>

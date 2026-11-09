@@ -35,6 +35,66 @@ public class LibraryPathsTests
     }
 
     [Fact]
+    public void IsSameFile_tells_a_case_only_spelling_from_a_second_file()
+    {
+        var root = Directory.CreateTempSubdirectory("maki-same-file-").FullName;
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root, "chainsaw man"));
+            var lower = Path.Combine(root, "chainsaw man", "x.cbz");
+            var upper = Path.Combine(root, "Chainsaw Man", "X.cbz");
+            File.WriteAllText(lower, "a");
+            File.WriteAllText(Path.Combine(root, "chainsaw man", "y.cbz"), "a");
+
+            Assert.True(LibraryPaths.IsSameFile(lower, lower));
+            Assert.False(LibraryPaths.IsSameFile(lower, Path.Combine(root, "chainsaw man", "y.cbz")));
+            if (File.Exists(upper))
+            {
+                // Case-insensitive filesystem: both spellings open the one file.
+                Assert.True(LibraryPaths.IsSameFile(lower, upper));
+            }
+            else
+            {
+                Directory.CreateDirectory(Path.Combine(root, "Chainsaw Man"));
+                File.WriteAllText(upper, "a");
+                Assert.False(LibraryPaths.IsSameFile(lower, upper));
+            }
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void IsSameFile_tells_apart_files_whose_folders_differ_in_case_at_two_levels()
+    {
+        var root = Directory.CreateTempSubdirectory("maki-same-file-deep-").FullName;
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(root, "Foo", "Bar"));
+            if (Directory.Exists(Path.Combine(root, "foo")))
+            {
+                // Case-insensitive filesystem: there cannot be a second tree to tell apart.
+                return;
+            }
+
+            Directory.CreateDirectory(Path.Combine(root, "foo", "bar"));
+            var upper = Path.Combine(root, "Foo", "Bar", "x.cbz");
+            var lower = Path.Combine(root, "foo", "bar", "x.cbz");
+            File.WriteAllText(upper, "a");
+            File.WriteAllText(lower, "a");
+
+            Assert.False(LibraryPaths.IsSameDirectory(Path.Combine(root, "Foo", "Bar"), Path.Combine(root, "foo", "bar")));
+            Assert.False(LibraryPaths.IsSameFile(upper, lower));
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Resolve_reads_a_backslash_as_a_separator_on_every_host()
     {
         var root = Directory.CreateTempSubdirectory("maki-library-paths-").FullName;

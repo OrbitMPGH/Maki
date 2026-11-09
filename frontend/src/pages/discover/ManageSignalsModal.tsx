@@ -1,12 +1,13 @@
 import { errorText } from '../../api/errorText'
 import { useEffect, useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
+import { fuzzyFilter, titleIndex } from '../../lib/fuzzySearch'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   ActionIcon, Alert, Badge, Button, Chip, Group, Modal, Select, Stack, Tabs, Text,
   TextInput,
 } from '@mantine/core'
-import { IconSearch, IconX } from '@tabler/icons-react'
+import { IconSearch, IconThumbDown, IconThumbUp, IconX } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -18,7 +19,7 @@ import { useAnimeSignals, useSyncAnimeSignals } from '../../api/animeSignals'
 import { AnimeSignalRow, AnimeSignalsStatusLine, useAnimeRoleFilters } from './AnimeSignalsSection'
 import type { RoleFilter } from './AnimeSignalsSection'
 import { SeriesThumb } from '../stats/SeriesLink'
-import { formatDate } from '../../format'
+import { formatRecentDate } from '../../format'
 import { useLabel } from '../../i18n-context'
 
 /** Wire values of a feedback state's `exposure` field, labeled for display. */
@@ -141,10 +142,9 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
     added: rows.filter((row) => row.addedByYou).length,
   }), [rows])
 
+  const rowTitles = useMemo(() => titleIndex(rows, (row) => [row.title]), [rows])
   const visible = useMemo(() => {
-    const needle = search.trim().toLowerCase()
-    return rows.filter((row) => {
-      if (needle && !row.title.toLowerCase().includes(needle)) return false
+    const filtered = rows.filter((row) => {
       switch (filter) {
         case 'rated': return row.rating !== null
         case 'thumbs': return !!row.state && row.state.sentiment !== 'none'
@@ -155,7 +155,8 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
         default: return true
       }
     })
-  }, [rows, search, filter])
+    return fuzzyFilter(filtered, search, rowTitles)
+  }, [rows, rowTitles, search, filter])
 
   async function run(id: number, work: () => Promise<unknown>) {
     setActionError('')
@@ -318,15 +319,14 @@ function AnimeSignalsPanel() {
     setWasSyncing(data.syncing)
   }, [data, wasSyncing, queryClient])
 
+  const entryTitles = useMemo(
+    () => titleIndex(data?.entries ?? [], (entry) => [entry.title, entry.mangaTitle]),
+    [data?.entries],
+  )
   const filtered = useMemo(() => {
-    const needle = search.trim().toLowerCase()
-    return (data?.entries ?? []).filter((entry) => {
-      if (roleFilter !== 'all' && entry.role !== roleFilter) return false
-      if (!needle) return true
-      return entry.title.toLowerCase().includes(needle) ||
-        (entry.mangaTitle?.toLowerCase().includes(needle) ?? false)
-    })
-  }, [data?.entries, search, roleFilter])
+    const inRole = (data?.entries ?? []).filter((entry) => roleFilter === 'all' || entry.role === roleFilter)
+    return fuzzyFilter(inRole, search, entryTitles)
+  }, [data?.entries, entryTitles, search, roleFilter])
   const shown = filtered.length
   const total = data?.entries.length ?? 0
 
@@ -422,7 +422,8 @@ function SignalRow({ row, busy, onClear, onExclude }: {
   const exposure = state?.exposure ?? []
   const rating = row.rating
   const media = exposure.map((value) => label(EXPOSURE_LABELS[value] ?? value)).join(', ')
-  const until = state?.dismissedUntilUtc ? formatDate(state.dismissedUntilUtc) : ''
+  const until = state?.dismissedUntilUtc ? formatRecentDate(state.dismissedUntilUtc) : ''
+  const dismissalEnded = state?.dismissedUntilUtc != null && new Date(state.dismissedUntilUtc).getTime() <= Date.now()
   const id = row.id
   const title = row.title || t`Catalogue title ${id}`
 
@@ -443,7 +444,7 @@ function SignalRow({ row, busy, onClear, onExclude }: {
   const action = row.excluded
     ? { label: t`Use for taste`, color: undefined, variant: 'outline', run: () => onExclude(row, false) }
     : suppression !== 'none'
-      ? { label: t`Restore`, color: 'var(--warn)', variant: 'outline', run: () => onClear(row, 'clear-suppression') }
+      ? { label: t`Restore`, color: undefined, variant: 'outline', run: () => onClear(row, 'clear-suppression') }
       : exposure.length > 0
         ? { label: t`Clear seen`, color: undefined, variant: 'outline', run: () => onClear(row, 'clear-exposure') }
         : sentiment !== 'none'
@@ -472,19 +473,22 @@ function SignalRow({ row, busy, onClear, onExclude }: {
             </Badge>
           )}
           {sentiment === 'liked' && (
-            <Pill color="var(--ok)" label={t`👍 Liked`} clear={t`Clear the thumbs up`}
+            <Pill color="var(--ok)" icon={<IconThumbUp size={12} />} label={t`Liked`} clear={t`Clear the thumbs up`}
               onClear={() => onClear(row, 'clear-sentiment')} />
           )}
           {sentiment === 'disliked' && (
-            <Pill color="var(--danger)" label={t`👎 Disliked`} clear={t`Clear the thumbs down`}
+            <Pill color="var(--danger)" icon={<IconThumbDown size={12} />} label={t`Disliked`} clear={t`Clear the thumbs down`}
               onClear={() => onClear(row, 'clear-sentiment')} />
           )}
           {suppression === 'hidden' && (
-            <Pill color="var(--warn)" label={t`Hidden`} clear={t`Restore this title`}
+            <Pill color="var(--neutral)" label={t`Hidden`} clear={t`Restore this title`}
               onClear={() => onClear(row, 'clear-suppression')} />
           )}
           {suppression === 'dismissed' && (
-            <Pill color="var(--warn)" label={t`Dismissed until ${until}`} clear={t`Restore this title`}
+            <Pill
+              color="var(--neutral)"
+              label={dismissalEnded ? t`Back in recommendations since ${until}` : t`Dismissed until ${until}`}
+              clear={t`Restore this title`}
               onClear={() => onClear(row, 'clear-suppression')} />
           )}
           {exposure.length > 0 && (
@@ -495,9 +499,9 @@ function SignalRow({ row, busy, onClear, onExclude }: {
             <Pill color="var(--neutral)" label={t`Excluded from taste`} clear={t`Use this title for taste`}
               onClear={() => onExclude(row, false)} />
           )}
-          {plain && row.isRead && <Badge size="sm" variant="light" color="var(--neutral)">{t`Read`}</Badge>}
+          {plain && row.isRead && <Badge size="sm" variant="light" color="var(--brand)">{t`Read`}</Badge>}
           {plain && !row.isRead && row.onShelf && (
-            <Badge size="sm" variant="light" color="var(--neutral)">{t`On shelf`}</Badge>
+            <Badge size="sm" variant="light" color="var(--brand)">{t`On shelf`}</Badge>
           )}
         </Group>
         <Text size="xs" c="var(--ink-3)" mt={4}>{why}</Text>
@@ -517,8 +521,9 @@ function SignalRow({ row, busy, onClear, onExclude }: {
 }
 
 /** A state badge with the × that clears exactly that state. */
-function Pill({ color, label, clear, onClear }: {
+function Pill({ color, icon, label, clear, onClear }: {
   color: string
+  icon?: React.ReactNode
   label: string
   clear: string
   onClear: () => void
@@ -526,6 +531,7 @@ function Pill({ color, label, clear, onClear }: {
   return (
     <Badge
       size="sm" variant="light" color={color} pr={3} style={{ overflow: 'visible' }}
+      leftSection={icon}
       rightSection={
         <ActionIcon size={24} m={-5} variant="transparent" color={color} aria-label={clear} onClick={onClear}>
           <IconX size={12} />

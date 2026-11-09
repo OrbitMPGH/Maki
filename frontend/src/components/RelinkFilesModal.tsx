@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Badge, Button, Checkbox, Group, Loader, Modal, Radio, ScrollArea, Stack, Text, Tooltip } from '@mantine/core'
-import { IconTrash } from '@tabler/icons-react'
+import { IconTrash } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
@@ -383,7 +383,7 @@ export function RelinkFilesModal({
                   borderRadius: 'var(--radius-surface)',
                   background: 'color-mix(in srgb, var(--surface-2) 46%, transparent)',
                   opacity: isFetching ? 0.7 : 1,
-                  transition: 'opacity 0.2s',
+                  transition: 'opacity var(--dur-medium) var(--ease)',
                 }}
               >
                 <ScrollArea.Autosize mah={220}>
@@ -559,7 +559,7 @@ function PlanRow({
       </Text>
       {basisLabel ? (
         <Tooltip label={hint ? renderLabel(hint) : undefined} withArrow disabled={!hint} multiline w={280}>
-          <Badge size="sm" variant="light" color={row.basis === 'estimated' ? 'gray' : row.basis === 'existing' ? 'indigo' : 'teal'}>
+          <Badge size="sm" variant="light" color={row.basis === 'estimated' || row.basis === 'existing' ? 'var(--neutral)' : 'var(--ok)'}>
             {basisLabel}
           </Badge>
         </Tooltip>

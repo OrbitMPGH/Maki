@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect } from 'storybook/test'
-import { IconBook2, IconBooks } from '@tabler/icons-react'
+import { IconBook2, IconBooks } from '../../lib/icons'
 import { Panel } from '../../components/ui/Panel'
 import { StatsInsight, StatsSection } from './StatsSection'
 

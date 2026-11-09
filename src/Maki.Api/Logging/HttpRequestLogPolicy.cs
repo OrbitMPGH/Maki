@@ -83,7 +83,7 @@ public static class HttpRequestLogPolicy
 
         // Checked before the read/write split so a slow read is not silently demoted to Debug. This
         // is the only tier that can fire on an otherwise entirely successful request.
-        if (elapsedMs >= options.SlowRequestMs)
+        if (elapsedMs >= options.SlowRequestMs && !IsLongLived(context, path))
             return LogEventLevel.Warning;
 
         // Off keeps the failure and slow tiers above and drops everything else, including the
@@ -97,6 +97,10 @@ public static class HttpRequestLogPolicy
 
         return IsBulkRead(path) ? LogEventLevel.Verbose : LogEventLevel.Debug;
     }
+
+    private static bool IsLongLived(HttpContext context, PathString path) =>
+        context.Response.StatusCode == StatusCodes.Status101SwitchingProtocols
+        || path.StartsWithSegments("/signalr");
 
     private static bool IsMutation(string method) =>
         HttpMethods.IsPost(method)

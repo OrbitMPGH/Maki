@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Maki.Api.Configuration;
 using Maki.Api.Services;
 using Maki.Api.Services.Upscaling;
@@ -54,7 +55,7 @@ public sealed class UpscaleWorkerTests : IDisposable
 
         var cached = _cache.TryGet(Item(1).Key);
         Assert.NotNull(cached);
-        Assert.EndsWith(".span-s.g2.webp", cached);
+        Assert.EndsWith(".span-s.g3.webp", cached);
         Assert.Equal(
             [(1, 7, 1, "span-s", "working"), (1, 7, 1, "span-s", "ready"), (2, 7, 1, "span-s", "working"), (2, 7, 1, "span-s", "ready")],
             _broadcaster.Sent.OrderBy(s => s.UserId));
@@ -141,6 +142,48 @@ public sealed class UpscaleWorkerTests : IDisposable
 
         Assert.Equal([(1, 7, 0, "span-s", "working"), (1, 7, 0, "span-s", "failed")], _broadcaster.Sent);
         Assert.Null(_queue.RecentOutcome(Item(0).Key));
+    }
+
+    [Fact]
+    public async Task A_page_abandoned_mid_run_stops_and_is_not_remembered_or_cached()
+    {
+        var upscaler = new BlockingUpscaler();
+        _queue.Replace(1, 7, "span-s", [Item(0)]);
+        var run = NewWorker(upscaler).RunOnceAsync(default);
+        await upscaler.Started.Task.WaitAsync(TimeSpan.FromSeconds(10));
+
+        _queue.Replace(1, 8, "span-s", []);
+
+        Assert.True(await run.WaitAsync(TimeSpan.FromSeconds(10)));
+        Assert.Null(_cache.TryGet(Item(0).Key));
+        Assert.Null(_queue.RecentOutcome(Item(0).Key));
+        Assert.Equal([(1, 7, 0, "span-s", "working")], _broadcaster.Sent);
+    }
+
+    [Fact]
+    public async Task A_page_already_in_the_cache_is_answered_ready_without_running()
+    {
+        await _cache.WriteAsync(Item(1).Key, [1, 2, 3], "webp", default);
+        var upscaler = new FakeUpscaler();
+        _queue.Replace(1, 7, "span-s", [Item(1)]);
+
+        Assert.True(await NewWorker(upscaler).RunOnceAsync(default));
+
+        Assert.Equal(0, upscaler.Calls);
+        Assert.Equal([(1, 7, 1, "span-s", "ready")], _broadcaster.Sent);
+        Assert.Equal(0, _queue.Snapshot().Pending + _queue.Snapshot().Working);
+    }
+
+    private sealed class BlockingUpscaler : IPageUpscaler
+    {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async Task<UpscaleResult> UpscaleAsync(byte[] page, string modelId, CancellationToken ct)
+        {
+            Started.TrySetResult();
+            await Task.Delay(Timeout.Infinite, ct);
+            throw new UnreachableException();
+        }
     }
 
     private sealed class DeletingUpscaler(UpscaleModelStore store) : IPageUpscaler

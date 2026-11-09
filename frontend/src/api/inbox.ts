@@ -32,7 +32,9 @@ export type InboxEventType =
   | 'volumeUpgraded'
   | 'accountSecurity'
   | 'seriesStatusChanged'
+  | 'noteReply'
   | 'customSourceUpdated'
+  | 'chapterDelisted'
 
 export type InboxLevel = 'info' | 'warning' | 'error'
 
@@ -53,6 +55,8 @@ export interface InboxItem {
   coverUrl: string | null
   createdAt: string
   read: boolean
+  /** An unlocked achievement's icon key and tier (0 when ungraded), drawn as its badge. */
+  badge?: { icon: string; tier: number } | null
 }
 
 export interface InboxPage {
@@ -109,6 +113,7 @@ export const INBOX_CATEGORIES: {
       'seriesStatusChanged',
       'sourceMatchFinished',
       'importListFinished',
+      'chapterDelisted',
     ],
   },
   { id: 'discover', label: msg`Discover`, types: ['followedCreatorRelease'] },
@@ -132,6 +137,12 @@ export const INBOX_CATEGORIES: {
     multiUserOnly: true,
   },
   {
+    id: 'notes',
+    label: msg`Notes`,
+    types: ['noteReply'],
+    multiUserOnly: true,
+  },
+  {
     id: 'system',
     label: msg`System`,
     types: ['healthIssue', 'updateAvailable', 'importFinished', 'backupFinished', 'customSourceUpdated'],
@@ -149,7 +160,7 @@ export function visibleInboxCategories(isAdmin: boolean, singleUser: boolean) {
  */
 export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
   newChapterAvailable: msg`New chapters available`,
-  smartDownloadQueued: msg`Smart Download queued chapters`,
+  smartDownloadQueued: msg`Smart download queued chapters`,
   chapterDownloaded: msg`Chapters downloaded automatically`,
   downloadFailed: msg`Automatic download failed`,
   achievementUnlocked: msg`Achievement unlocked`,
@@ -171,7 +182,9 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
   volumeUpgraded: msg`Volume upgraded`,
   accountSecurity: msg`Account security`,
   seriesStatusChanged: msg`Series status changed`,
+  noteReply: msg`Replies to your notes`,
   customSourceUpdated: msg`Custom source updated by its repository`,
+  chapterDelisted: msg`Downloaded chapters no longer listed`,
 }
 
 /**
@@ -182,6 +195,8 @@ export const INBOX_TYPE_LABELS: Record<InboxEventType, MessageDescriptor> = {
 export const INBOX_TYPE_DESCRIPTIONS: Partial<Record<InboxEventType, MessageDescriptor>> = {
   followedCreatorRelease: msg`Follow someone from their creator page.`,
   upgradeRestoreFailed: msg`The file is waiting in the trash folder.`,
+  noteReply: msg`Someone replied in a thread you wrote or joined.`,
+  chapterDelisted: msg`Every source that listed them has stopped, which can mean a source filed them here by mistake.`,
 }
 
 /** Only ever admin-visible, so the settings card hides these for everyone else. */

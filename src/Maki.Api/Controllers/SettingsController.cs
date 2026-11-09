@@ -195,6 +195,8 @@ public class SettingsController(
     public record UserModeSettings(bool SingleUser, bool Available);
 
     public record SetUserModeRequest(bool SingleUser);
+
+    public record LoginNameSettings(bool Visible);
     public record BackupSettings(int Retention, bool? Scheduled = null);
     public record UpdateSettings(bool CheckForUpdates);
     public record DiscoverSettings(string MaxContentRating);
@@ -1189,6 +1191,19 @@ public class SettingsController(
     }
 
     [Authorize(Policy = Policies.Admin)]
+    [HttpGet("loginnames")]
+    public async Task<IActionResult> GetLoginNames(CancellationToken ct) =>
+        Ok(new LoginNameSettings(await UserNameVisibility.LoginNamesVisibleAsync(settings, ct)));
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("loginnames")]
+    public async Task<IActionResult> SetLoginNames([FromBody] LoginNameSettings request, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.LoginNamesVisible, request.Visible ? "true" : "false", ct);
+        return await GetLoginNames(ct);
+    }
+
+    [Authorize(Policy = Policies.Admin)]
     [HttpGet("readcleanup")]
     public async Task<IActionResult> GetReadFileCleanup(
         [FromServices] ReadFileCleanupService cleanup, CancellationToken ct)
@@ -1951,7 +1966,10 @@ public class SettingsController(
 
     [Authorize(Policy = Policies.Admin)]
     [HttpPost("updates/check")]
-    public async Task<IActionResult> CheckForUpdatesNow(CancellationToken ct) => Ok(await updateCheck.CheckAsync(ct));
+    public async Task<IActionResult> CheckForUpdatesNow(CancellationToken ct) =>
+        await updateCheck.CheckAsync(ct) is { } status
+            ? Ok(status)
+            : this.BadGateway(localizer, "error.updates.checkFailed");
 
     public record RecommendationIndexResponse(
         bool ModelPresent, bool DumpPresent, int VectorCount, int? RecommendableTotal,

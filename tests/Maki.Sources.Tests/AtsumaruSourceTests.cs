@@ -1,5 +1,6 @@
 ﻿using Maki.Core.Sources;
 using Maki.Sources.Atsumaru;
+using Maki.Sources.Common;
 
 namespace Maki.Sources.Tests;
 
@@ -170,6 +171,7 @@ public class AtsumaruSourceTests
             ],
             pages.Pages.Select(p => p.Url));
         Assert.All(pages.Pages, p => Assert.Equal("https://atsu.moe/", p.Headers!["Referer"]));
+        Assert.All(pages.Pages, p => Assert.Equal(BrowserUserAgent.Value, p.Headers!["User-Agent"]));
     }
 
     [Fact]

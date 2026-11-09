@@ -18,7 +18,7 @@ import {
   useCombobox,
 } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
-import { IconEyeOff, IconListTree, IconPlus, IconSitemap, IconTarget, IconTrash } from '@tabler/icons-react'
+import { IconEyeOff, IconListTree, IconPlus, IconSitemap, IconTarget, IconTrash } from '../lib/icons'
 import { usePageState } from '../lib/pageState'
 import {
   useDiscoverCount,
@@ -362,7 +362,7 @@ function RuleBuilder({
         <Button
           size="xs"
           variant="default"
-          leftSection={<IconPlus size={14} />}
+          leftSection={<IconPlus size={16} />}
           onClick={() => onChange([...rules, { mode: rules.length === 0 ? 'all' : 'any', terms: [] }])}
         >
           <Trans>Add rule</Trans>
@@ -686,7 +686,7 @@ function TermPill({
               size="xs"
               variant="subtle"
               color="var(--danger)"
-              leftSection={<IconEyeOff size={14} />}
+              leftSection={<IconEyeOff size={16} />}
               loading={hideEverywhere.isPending}
               disabled={!hideEverywhere.ready}
               onClick={() => {

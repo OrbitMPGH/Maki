@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, waitFor } from 'storybook/test'
 import { cover } from '../../../.storybook/mocks/api'
 import { catalogueItem, popularPicks, recommendedPicks } from '../../../.storybook/mocks/home'
+import { shortlistEntry, shortlistMock } from '../../../.storybook/mocks/shortlist'
 import { DiscoverRailRow, EngineCard, EngineRailRow, RecommendationCard, RecommendationRow } from './DiscoverRail'
 
 const item = catalogueItem(1)
@@ -65,8 +66,72 @@ export const ListRow: Story = {
     </div>
   ),
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: new RegExp(`^${item.title}`) }))
+    const open = await canvas.findByRole('button', { name: `View and add ${item.title}` })
+    await userEvent.click(open)
     await waitFor(() => expect(args.onOpen).toHaveBeenCalledWith(item))
+    await expect(open.querySelector('button')).toBeNull()
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(args.onOpen).toHaveBeenCalledTimes(2))
+  },
+}
+
+const savedCard = shortlistMock([
+  shortlistEntry(item, { savedFrom: 'rail:trending', createdAtUtc: new Date().toISOString() }),
+])
+const hoverCard = shortlistMock([])
+
+export const Shortlisted: Story = {
+  beforeEach: () => savedCard.reset(),
+  parameters: { msw: savedCard.handlers },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('button', { name: `View ${item.title}, on your shortlist` })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: `Remove ${item.title} from your shortlist` })).toHaveAttribute('aria-pressed', 'true')
+    await expect(canvas.queryByRole('button', { name: `View and add ${item.title}` })).toBeNull()
+  },
+}
+
+export const ShortlistedWhenOwned: Story = {
+  args: { inLibrarySeriesId: 3 },
+  beforeEach: () => savedCard.reset(),
+  parameters: { msw: savedCard.handlers },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('button', { name: `View ${item.title}` })).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: /your shortlist/ })).toBeNull()
+  },
+}
+
+export const SaveOnHover: Story = {
+  args: { savedFrom: { savedFrom: 'rail:trending' } },
+  beforeEach: () => hoverCard.reset(),
+  parameters: { msw: hoverCard.handlers },
+  play: async ({ args, canvas, userEvent }) => {
+    const save = await canvas.findByRole('button', { name: `Shortlist ${item.title}` })
+    // The test driver cannot raise :hover, so focus stands in: the card shows the button for both.
+    await userEvent.tab()
+    await userEvent.tab()
+    await expect(save).toHaveFocus()
+    await waitFor(() => expect(save).toBeVisible())
+    await userEvent.click(save)
+    await expect(await canvas.findByRole('button', { name: `View ${item.title}, on your shortlist` })).toBeVisible()
+    await waitFor(() => expect(hoverCard.snapshot().map((e) => e.savedFrom)).toEqual(['rail:trending']))
+    await expect(args.onOpen).not.toHaveBeenCalled()
+  },
+}
+
+export const ListRowShortlisted: Story = {
+  beforeEach: () => savedCard.reset(),
+  parameters: { msw: savedCard.handlers },
+  render: (args) => (
+    <div style={{ width: 640 }}>
+      <RecommendationRow item={args.item} inLibrarySeriesId={null} density="default" onOpen={args.onOpen} />
+    </div>
+  ),
+  play: async ({ args, canvas, userEvent }) => {
+    const save = await canvas.findByRole('button', { name: `Remove ${item.title} from your shortlist` })
+    await expect(save).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(save)
+    await waitFor(() => expect(canvas.queryByRole('button', { name: `Remove ${item.title} from your shortlist` })).toBeNull())
+    await expect(args.onOpen).not.toHaveBeenCalled()
   },
 }
 
@@ -192,5 +257,21 @@ export const EngineRail: Story = {
   play: async ({ canvasElement }) => {
     // The sequel and the co-read pick name series the mocked library owns, so both show its cover.
     await waitFor(() => expect(canvasElement.querySelectorAll('.engine-why-seed').length).toBe(2))
+  },
+}
+
+const sharedSeedPicks = [40, 41, 42, 43, 44].map((n) =>
+  catalogueItem(n, { coRead: true, coReadWithTitle: 'Lanterns Over Kasumi', becauseOfTitle: null, authorMatch: false }),
+)
+
+/** Every pick pairs with the same series, so the rail says it once and the cards keep their tags. */
+export const EngineRailSharedReason: Story = {
+  parameters: { layout: 'padded' },
+  decorators: [(Story) => <div style={{ width: '100%' }}><Story /></div>],
+  render: (args) => <EngineRailRow items={sharedSeedPicks} seriesIdFor={() => null} onOpen={args.onOpen} />,
+  play: async ({ canvas, canvasElement }) => {
+    await expect(await canvas.findByText('Readers who finished Lanterns Over Kasumi also finished these')).toBeVisible()
+    await expect(canvas.queryByText('Fans of')).toBeNull()
+    await waitFor(() => expect(canvasElement.querySelectorAll('.engine-chip').length).toBeGreaterThan(0))
   },
 }

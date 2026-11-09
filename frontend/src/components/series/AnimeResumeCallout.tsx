@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Anchor, Button, Group, NumberInput, Paper, Stack, Text } from '@mantine/core'
-import { IconDeviceTv } from '@tabler/icons-react'
+import { IconDeviceTv } from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { AnimeResume, SeriesAnimeResume } from '../../api/animeResume'
@@ -71,10 +71,10 @@ export function AnimeResumeCallout({
       radius="lg"
       p="md"
       className="anime-resume-callout"
-      style={{ borderColor: 'var(--watched)', background: 'var(--watched-soft)' }}
+      style={{ borderColor: 'var(--anime)', background: 'var(--anime-soft)' }}
     >
       <Group align="flex-start" wrap="nowrap" gap="sm">
-        <IconDeviceTv size={20} style={{ flexShrink: 0, marginTop: 2, color: 'var(--watched)' }} aria-hidden />
+        <IconDeviceTv size={20} style={{ flexShrink: 0, marginTop: 2, color: 'var(--anime)' }} aria-hidden />
         <Stack gap="xs" style={{ flex: 1, minWidth: 0 }}>
           <Text size="sm">{copy}</Text>
 

@@ -62,6 +62,8 @@ export interface PageConversionStatus {
     convertedFiles: number
     savedBytes: number
     pendingFiles: number
+    /** New downloads and torrent imports waiting for the background queue. */
+    queuedFiles: number
     trashBytes: number
     trashFiles: number
     trashDays: number
@@ -86,7 +88,8 @@ export function usePageConversion() {
   return useQuery({
     queryKey: key,
     queryFn: () => api<PageConversionStatus>('/pageconversion'),
-    refetchInterval: (query) => (query.state.data?.pass.state === 'running' ? 3000 : false),
+    refetchInterval: (query) =>
+      query.state.data?.pass.state === 'running' ? 3000 : query.state.data?.library.queuedFiles ? 10_000 : false,
   })
 }
 

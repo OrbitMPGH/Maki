@@ -54,6 +54,21 @@ const signedDecimals = cached(() => new Map<number, Intl.NumberFormat>())
 const signedPercent = cached((l) => new Intl.NumberFormat(l, { style: 'percent', signDisplay: 'exceptZero' }))
 const fixedDecimals = cached(() => new Map<number, Intl.NumberFormat>())
 
+/**
+ * A clock time with the space beside "AM"/"PM" made non-breaking. Chrome writes a plain space there,
+ * and a narrow figure or sentence then set "12:00" at the end of one line and "PM" on the next.
+ */
+function unbrokenTime(format: Intl.DateTimeFormat, date: Date): string {
+  const parts = format.formatToParts(date)
+  return parts
+    .map((p, i) =>
+      p.type === 'literal' && (parts[i - 1]?.type === 'dayPeriod' || parts[i + 1]?.type === 'dayPeriod')
+        ? p.value.replace(/\s/g, '\u00a0')
+        : p.value,
+    )
+    .join('')
+}
+
 /** "1 234" / "1,234", whichever the language groups with. */
 export function formatNumber(value: number): string {
   return integer().format(value)
@@ -118,7 +133,7 @@ export function formatWeekdayDate(value: string | number | Date): string {
 /** "Fri 24 Oct, 16:00", in the viewer's zone. */
 export function formatWeekdayDateTime(value: string | number | Date): string {
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '' : weekdayDateTime().format(date)
+  return Number.isNaN(date.getTime()) ? '' : unbrokenTime(weekdayDateTime(), date)
 }
 
 /** "Fri 24 Oct to Sun 26 Oct" as the language writes a range, collapsing to one day when both fall on it. */
@@ -132,13 +147,13 @@ export function formatDayRange(start: string | number | Date, end: string | numb
 /** "15 Sep 2026, 16:45". */
 export function formatDateTime(value: string | number | Date): string {
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '' : dateAndTime().format(date)
+  return Number.isNaN(date.getTime()) ? '' : unbrokenTime(dateAndTime(), date)
 }
 
 /** "16:45", or "4:45 PM" where that is the convention. */
 export function formatTime(value: string | number | Date): string {
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '' : timeOnly().format(date)
+  return Number.isNaN(date.getTime()) ? '' : unbrokenTime(timeOnly(), date)
 }
 
 /**
@@ -166,7 +181,7 @@ export function weekdayName(index: number, style: 'narrow' | 'short' | 'long' = 
 /** An hour of the day, 0-23, as a clock time: "22:00", or "10:00 PM" where that is the convention. */
 export function formatHour(hour: number): string {
   const h = ((Math.trunc(hour) % 24) + 24) % 24
-  return hourOnly().format(new Date(2001, 0, 1, h, 0))
+  return unbrokenTime(hourOnly(), new Date(2001, 0, 1, h, 0))
 }
 
 /** A 0..1 fraction as a percentage in the active language: "62%", "62 %", "%62". */
@@ -255,4 +270,42 @@ export function formatReadingTime(seconds: number): string {
   if (minutes === 60) return h(hours + 1)
   if (hours === 0) return m(minutes)
   return minutes === 0 ? h(hours) : `${h(hours)} ${m(minutes)}`
+}
+
+/**
+ * Time spent reading, as a total: "4h 20m", "35m", "<1m". Seconds only matter for a pace or a
+ * timer; as a total, "4s" reads like a bug. Use `formatReadingTime` where seconds carry meaning.
+ */
+export function formatTimeSpent(seconds: number): string {
+  if (seconds > 0 && seconds < 60) return t`<1m`
+  return formatReadingTime(seconds)
+}
+
+/** "Ch. 38", or "Vol. 10 Ch. 98" when the volume is worth naming. */
+export function chapterLabel(chapterNumber: number | string, volume?: number | string | null): string {
+  return volume != null && volume !== '' ? t`Vol. ${volume} Ch. ${chapterNumber}` : t`Ch. ${chapterNumber}`
+}
+
+/** "Ch. 1–46", or "Ch. 12" when both ends are the same chapter. */
+export function chapterRangeLabel(start: number | string, end: number | string): string {
+  return String(start) === String(end) ? t`Ch. ${start}` : t`Ch. ${start}–${end}`
+}
+
+const SERVER_CHAPTER = /^(?:Vol\.\s*(\d+)\s+)?Ch\.\s*(\S+)$/
+const SERVER_VOLUME = /^Vol\.\s*(\d+)$/
+
+/**
+ * A label the server rendered ("Vol.3 Ch.12", "Ch.10.5", "Vol.4") in the house form. Anything else,
+ * such as a one-shot's own title, comes back unchanged. `withVolume: false` keeps only the chapter,
+ * for a cover chip where the number alone already places it.
+ */
+export function serverChapterLabel(label: string, withVolume = true): string {
+  const chapter = SERVER_CHAPTER.exec(label)
+  if (chapter) return chapterLabel(chapter[2], withVolume ? chapter[1] : null)
+  const volume = SERVER_VOLUME.exec(label)
+  if (volume) {
+    const volumeNumber = volume[1]
+    return t`Vol. ${volumeNumber}`
+  }
+  return label
 }

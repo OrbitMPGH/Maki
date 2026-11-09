@@ -55,6 +55,24 @@ every enabled source and records a quality tier for each, and **Compare** shows 
 side. To measure new series automatically, turn on **Measure sources when a series is added** in the
 Sources section of Downloads settings.
 
+Smart Download waits until a new series' sources have been measured, so its first batch doesn't go
+to a source ranked on a guess. If no measurement ever ran, it starts one, and it starts downloading
+as soon as the measurement finishes.
+
+### Automatic adjustments
+
+The automatic order also moves sources around based on how they behave. A manual order is left
+alone.
+
+- A source that keeps failing, three failures for every success over 30 days, moves behind the
+  others.
+- Sources measured on the series go ahead of unmeasured ones.
+- Paused sources, sources cooling down after failures, and sources that only serve previews are
+  tried last.
+- A Suwayomi source that wants a login or a purchase for a chapter fails over to the next source
+  straight away, and isn't retried every few minutes. A manual retry still works once you've logged
+  in or bought the chapter.
+
 ## Linking a source
 
 On the series page, select **Link source** in the Sources section, pick a source, then search for

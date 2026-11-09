@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
   Alert,
+  Badge,
   Button,
   Collapse,
   Group,
@@ -9,9 +10,9 @@ import {
   Stack,
   Text,
 } from '@mantine/core'
-import { IconAdjustmentsHorizontal, IconBell, IconBellCheck } from '@tabler/icons-react'
-import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import { plural } from '@lingui/core/macro'
+import { IconArrowLeft, IconBell, IconBellCheck, IconFilter } from '../lib/icons'
+import { Trans, useLingui } from '@lingui/react/macro'
+import { msg, plural } from '@lingui/core/macro'
 import {
   useCreator,
   useRootFolders,
@@ -31,6 +32,7 @@ import {
   useLiveApply,
 } from '../components/CatalogueFilters'
 import { PosterSkeletons, Results } from '../components/CatalogueBrowser'
+import type { ShortlistSource } from '../api/shortlist'
 import { CREDIT_ROLE_LABELS } from '../components/CreditPicker'
 import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
 import { DiscoverDetailModal } from '../components/discover/DiscoverDetailModal'
@@ -41,11 +43,16 @@ import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { TagChip } from '../components/ui/TagChip'
 import { useViewPrefs, ViewPrefsControls } from '../components/ui/viewPrefs'
 import { useDocumentTitle } from '../lib/documentTitle'
-import { usePageLabel } from '../lib/navHistory'
+import { useBackTarget, usePageLabel } from '../lib/navHistory'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
 import { useLabel } from '../i18n-context'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { FigureStrip, type Figure } from '../components/ui/FigureStrip'
+import { formatFixedDecimal } from '../format'
 
 const PAGE_SIZE = 60
+// Creator links come from Discover's detail card, so a page opened cold walks back there.
+const DISCOVER_FALLBACK = { to: '/discover', label: msg`Discover` }
 const MAX_WORKS = 600
 
 /**
@@ -77,6 +84,13 @@ export default function CreatorPage() {
   // Named for the back link on any series opened from this page.
   usePageLabel(decoded)
   useDocumentTitle(decoded)
+  const back = useBackTarget(DISCOVER_FALLBACK)
+  const backLink = (
+    <Text component={Link} to={back.to} onClick={back.onClick} className="page-back-link" mb="sm" size="sm" fw={600}>
+      <IconArrowLeft size={16} />
+      {renderLabel(back.label)}
+    </Text>
+  )
 
   const prefs = useViewPrefs('discover')
   // Scoped per creator, so coming back to Junji Ito restores his filters and not the ones left on
@@ -97,6 +111,7 @@ export default function CreatorPage() {
     setPages(1)
   }, [filtersAsMounted, applied, setPages])
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
+  const savedFrom = useMemo<ShortlistSource>(() => ({ savedFrom: 'creator', savedFromDetail: decoded }), [decoded])
 
   // Clicking a credit on this page navigates to the same route with a different name, so React
   // Router re-renders rather than unmounting and the previous creator's modal would otherwise
@@ -146,6 +161,30 @@ export default function CreatorPage() {
     }
   }
 
+  // The header's figures need every work, not the filtered page on screen. The page's own answer
+  // serves when it is unfiltered and already complete; otherwise one capped, unfiltered read.
+  const pageCoversAll = appliedCount === 0 && data != null && !isPlaceholderData && data.items.length < request.limit
+  const overviewRequest = useMemo(
+    () => (decoded.length > 0 ? { name: decoded, role, sort: 'popular' as BrowseSort, limit: MAX_WORKS } : null),
+    [decoded, role],
+  )
+  const { data: overview } = useCreator(pageCoversAll || data == null ? null : overviewRequest)
+  const works = pageCoversAll ? data.items : overview && overview.items.length < MAX_WORKS ? overview.items : null
+  const figures = useMemo(() => {
+    if (!data) return []
+    const list: Figure[] = [{ label: t`Titles`, value: data.workCount }]
+    if (!works) return list
+    list.push({ label: t`In library`, value: works.filter((w) => seriesIdFor(w) != null).length })
+    const years = works.map((w) => w.year).filter((y): y is number => y != null && y > 0)
+    if (years.length > 0) list.push({ label: t`Active since`, value: String(Math.min(...years)) })
+    const ratings = works.map((w) => w.rating).filter((r): r is number => r != null)
+    if (ratings.length > 0) {
+      const mean = ratings.reduce((a, b) => a + b, 0) / ratings.length
+      list.push({ label: t`Average score`, value: formatFixedDecimal(mean / 10, 1) })
+    }
+    return list
+  }, [data, works, seriesIdFor, t])
+
   const items = data?.items ?? []
   const canLoadMore =
     items.length >= PAGE_SIZE * (isPlaceholderData ? pages - 1 : pages) && items.length < MAX_WORKS
@@ -153,6 +192,7 @@ export default function CreatorPage() {
   if (decoded.length === 0) {
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
+        {backLink}
         <PageHeader title={t`Creator`} />
         <EmptyState
           art="missing"
@@ -169,6 +209,7 @@ export default function CreatorPage() {
     const notFound = error instanceof ApiError && error.status === 404
     return (
       <SurfaceFrame width="full" pageStyle="editorial">
+        {backLink}
         <PageHeader title={decoded} />
         {notFound ? (
           <EmptyState
@@ -181,7 +222,7 @@ export default function CreatorPage() {
         ) : (
           <EmptyState
             title={t`Failed to load this creator`}
-            description={error instanceof Error ? error.message : String(error)}
+            description={<ErrorMessage error={error} />}
             actionLabel={t`Retry`}
             onAction={() => void refetch()}
           />
@@ -196,47 +237,58 @@ export default function CreatorPage() {
 
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
+      {backLink}
       <PageHeader
         title={data?.name ?? decoded}
+        // The roles sit with the name they describe; beside Follow they read as more buttons.
         description={
           data ? (
-            <Plural value={workCount} one="# title in the catalogue" other="# titles in the catalogue" />
+            <span className="creator-header-meta">
+              {data.roles.map((r) => (
+                <TagChip key={r} size="sm">
+                  {renderLabel(CREDIT_ROLE_LABELS[r] ?? r)}
+                </TagChip>
+              ))}
+            </span>
           ) : undefined
         }
         actions={
-          <Group gap="xs">
-            {data && (
-              <Button
-                variant={follow.following ? 'light' : 'default'}
-                leftSection={follow.following ? <IconBellCheck size={16} /> : <IconBell size={16} />}
-                loading={follow.pending}
-                disabled={!follow.ready}
-                onClick={follow.toggle}
-                title={
-                  follow.following
-                    ? t`Stop showing their new titles on Home and Discover`
-                    : t`Show their newest titles in a rail on Home and Discover`
-                }
-              >
-                {follow.following ? t`Following` : t`Follow`}
-              </Button>
-            )}
-            {(data?.roles ?? []).map((r) => (
-              <TagChip key={r} size="sm">
-                {renderLabel(CREDIT_ROLE_LABELS[r] ?? r)}
-              </TagChip>
-            ))}
-          </Group>
+          data && (
+            <Button
+              variant={follow.following ? 'light' : 'default'}
+              leftSection={follow.following ? <IconBellCheck size={16} /> : <IconBell size={16} />}
+              loading={follow.pending}
+              disabled={!follow.ready}
+              onClick={follow.toggle}
+              title={
+                follow.following
+                  ? t`Stop showing their new titles on Home and Discover`
+                  : t`Show their newest titles in a rail on Home and Discover`
+              }
+            >
+              {follow.following ? t`Following` : t`Follow`}
+            </Button>
+          )
         }
       />
+
+      {figures.length > 0 && <FigureStrip className="creator-figures" figures={figures} />}
 
       <Group gap="xs" mb="md" justify="space-between" wrap="wrap">
         <Button
           variant={appliedCount > 0 ? 'light' : 'default'}
-          leftSection={<IconAdjustmentsHorizontal size={16} />}
+          leftSection={<IconFilter size={16} />}
+          rightSection={
+            appliedCount > 0 ? (
+              <Badge size="xs" circle variant="filled">
+                {appliedCount}
+              </Badge>
+            ) : undefined
+          }
+          aria-expanded={filtersOpen}
           onClick={() => setFiltersOpen((o) => !o)}
         >
-          {appliedCount > 0 ? t`Filters (${appliedCount})` : t`Filters`}
+          {t`Filters`}
         </Button>
         <Group gap="xs">
           <Select
@@ -297,7 +349,7 @@ export default function CreatorPage() {
 
       {items.length > 0 && (
         <>
-          <Results items={items} prefs={prefs} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />
+          <Results items={items} prefs={prefs} seriesIdFor={seriesIdFor} onOpen={setDetailItem} savedFrom={savedFrom} />
           {canLoadMore && (
             <Group justify="center" mt="lg">
               <Button variant="default" loading={isFetching} onClick={() => setPages((p) => p + 1)}>
@@ -324,6 +376,7 @@ export default function CreatorPage() {
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={closeDetail}
+        savedFrom={savedFrom}
       />
     </SurfaceFrame>
   )

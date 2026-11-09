@@ -1023,6 +1023,8 @@ public sealed class ArchiveGuardTests : IDisposable
         // Guarded through their callers: the refresh action, restore, and the health recovery selector.
         "RefreshMonitoredSeriesJob.RefreshSeriesAsync",
         "UpgradeScanJob.TriggerSeriesAsync",
+        // Only sees series SeriesNeedingTopUpAsync picked, which is Active().
+        "SmartDownloadJob.WaitsForMeasurementAsync",
         // Left alone on purpose: an archived series still gets its metadata refreshed.
         "MetadataRefreshJob.RefreshSeriesAsync",
     ];

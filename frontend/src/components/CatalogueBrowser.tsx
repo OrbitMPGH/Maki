@@ -8,6 +8,7 @@ import {
   ActionIcon,
   Alert,
   Anchor,
+  Badge,
   Button,
   Collapse,
   Group,
@@ -26,7 +27,7 @@ import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '../lib/toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthProvider'
-import { IconAdjustmentsHorizontal, IconSearch, IconUser, IconX } from '@tabler/icons-react'
+import { IconFilter, IconSearch, IconUser, IconX } from '../lib/icons'
 import { Panel } from './ui/Panel'
 import { TagChip } from './ui/TagChip'
 import {
@@ -51,13 +52,16 @@ import {
   filtersFromSpec,
   useBrowseSortOptions,
   useCatalogueFilters,
+  useFilterSummary,
   useLiveApply,
 } from './CatalogueFilters'
+import { MetaList } from './ui/MetaList'
 import { FilterMatchCount } from './CatalogueRules'
 import { HiddenContentButton, PresetMenu } from './DiscoverPresets'
 import { DiscoverDetailModal } from './discover/DiscoverDetailModal'
 import { EmptyState } from './ui/EmptyState'
-import { RecommendationCard, RecommendationRow } from './ui/DiscoverRail'
+import { RecommendationCard, RecommendationRow, type OpenItem } from './ui/DiscoverRail'
+import { CATALOGUE_SOURCE, SEARCH_SOURCE, type ShortlistSource } from '../api/shortlist'
 import { useWindowedRows, WINDOW_MIN_ITEMS } from './ui/useWindowedRows'
 import {
   POSTER_COLS_BY_DENSITY,
@@ -68,6 +72,7 @@ import {
   type ViewMode,
   type ViewPrefs,
 } from './ui/viewPrefs'
+import { ErrorMessage } from './ErrorMessage'
 
 /**
  * Smart matches on meaning and falls back to the title index; Title is the plain FTS5 title search.
@@ -213,6 +218,8 @@ export function CatalogueBrowser({
   }, [seededBrowse, setQuery, hydrateFilters, setApplied, setSort, setPages, setFiltersOpen, setHydrated])
 
   const appliedCount = Object.keys(applied).length
+  const summarizeFilters = useFilterSummary()
+  const filterSummary = useMemo(() => summarizeFilters(applied), [summarizeFilters, applied])
   const filters = appliedCount > 0 ? applied : undefined
 
   // A new query or a new filter set starts the browse list over. Not on mount, though: restored
@@ -259,6 +266,7 @@ export function CatalogueBrowser({
   const { data: rootFolders } = useRootFolders()
   const seriesIdFor = useSeriesIdLookup()
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
+  const savedFrom = searching ? SEARCH_SOURCE : CATALOGUE_SOURCE
 
   const searchCap = PAGE_SIZE
   const items = searching ? (search.data?.items ?? []) : (browse.data ?? [])
@@ -305,6 +313,7 @@ export function CatalogueBrowser({
         <>
           <Group align="flex-start" gap="sm" mb="md" wrap="wrap">
             <TextInput
+              aria-label={t`Search the catalogue`}
               value={query}
               onChange={(e) => setQuery(e.currentTarget.value)}
               placeholder={placeholder ?? t`Search by title, description, or author:"Junji Ito"`}
@@ -326,7 +335,8 @@ export function CatalogueBrowser({
             />
             <Tooltip.Group openDelay={200}>
               <SegmentedControl
-                size="md"
+                size="xs"
+                className="catalogue-search-mode"
                 value={mode}
                 onChange={(v) => {
                   setMode(v as SearchMode)
@@ -365,10 +375,18 @@ export function CatalogueBrowser({
             <Button
               size="md"
               variant={appliedCount > 0 ? 'light' : 'default'}
-              leftSection={<IconAdjustmentsHorizontal size={16} />}
+              leftSection={<IconFilter size={16} />}
+              rightSection={
+                appliedCount > 0 ? (
+                  <Badge size="xs" circle variant="filled">
+                    {appliedCount}
+                  </Badge>
+                ) : undefined
+              }
+              aria-expanded={filtersOpen}
               onClick={() => setFiltersOpen((o) => !o)}
             >
-              {appliedCount > 0 ? <Trans>Filters ({appliedCount})</Trans> : <Trans>Filters</Trans>}
+              <Trans>Filters</Trans>
             </Button>
           </Group>
 
@@ -423,6 +441,11 @@ export function CatalogueBrowser({
                   <Trans>Browsing the catalogue</Trans>
                 </Text>
               )}
+              {filterSummary.length > 0 && (
+                <Text c="var(--ink-3)" size="sm" className="catalogue-filter-summary">
+                  <MetaList inline items={filterSummary} />
+                </Text>
+              )}
               {corrected && (
                 <Text size="sm" c="var(--ink-3)">
                   <Trans>
@@ -455,7 +478,7 @@ export function CatalogueBrowser({
 
           {error && (
             <Alert color="var(--warn)" variant="light" mb="md">
-              {errorText(error)}
+              <ErrorMessage error={error} />
             </Alert>
           )}
 
@@ -476,7 +499,7 @@ export function CatalogueBrowser({
             />
           )}
 
-          {items.length > 0 && <Results items={items} prefs={prefs} seriesIdFor={seriesIdFor} onOpen={setDetailItem} />}
+          {items.length > 0 && <Results items={items} prefs={prefs} seriesIdFor={seriesIdFor} onOpen={setDetailItem} savedFrom={savedFrom} />}
 
           {canLoadMore && (
             <Group justify="center" mt="lg">
@@ -497,6 +520,7 @@ export function CatalogueBrowser({
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
+        savedFrom={savedFrom}
       />
     </>
   )
@@ -609,11 +633,13 @@ export function Results({
   prefs,
   seriesIdFor,
   onOpen,
+  savedFrom,
 }: {
   items: RecommendationItem[]
   prefs: ViewPrefs
   seriesIdFor: (item: RecommendationItem) => number | null
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
+  savedFrom?: ShortlistSource
 }) {
   // Same windowing as Library; all three callers page up to the 600-item ceiling in the window scroll.
   const windowed = useWindowedRows(items.length, items.length >= WINDOW_MIN_ITEMS)
@@ -629,6 +655,7 @@ export function Results({
             inLibrarySeriesId={seriesIdFor(item)}
             onOpen={onOpen}
             reasonOverride={null}
+            savedFrom={savedFrom}
           />
         ))}
       </SimpleGrid>
@@ -644,6 +671,7 @@ export function Results({
             density={prefs.density}
             onOpen={onOpen}
             reasonOverride={null}
+            savedFrom={savedFrom}
           />
         ))}
       </Stack>
@@ -659,14 +687,16 @@ export function PosterSkeletons({
   count = 0,
   density,
   viewMode = 'grid',
+  colsByDensity = POSTER_COLS_BY_DENSITY,
 }: {
   /** Optional minimum for small fixed surfaces. Viewport filling can add more. */
   count?: number
   density: ViewPrefs['density']
   viewMode?: ViewMode
+  colsByDensity?: Record<ViewPrefs['density'], Record<string, number>>
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const columns = useMatches(POSTER_COLS_BY_DENSITY[density])
+  const columns = useMatches(colsByDensity[density])
   const initialCount = Math.max(count, viewMode === 'list' ? 8 : columns * 3)
   const [visibleCount, setVisibleCount] = useState(initialCount)
 
@@ -708,7 +738,7 @@ export function PosterSkeletons({
         {Array.from({ length: visibleCount }, (_, i) => (
           <div key={i} className={`series-row ${density}`}>
             <Skeleton
-              radius="sm"
+              radius="var(--radius-thumb)"
               style={{ width: thumbSize, height: thumbSize * 1.5, flexShrink: 0 }}
             />
             <div className="row-body">
@@ -725,12 +755,12 @@ export function PosterSkeletons({
   return (
     <SimpleGrid
       ref={containerRef}
-      cols={POSTER_COLS_BY_DENSITY[density]}
+      cols={colsByDensity[density]}
       spacing="md"
       aria-hidden
     >
       {Array.from({ length: visibleCount }, (_, i) => (
-        <Skeleton key={i} radius="lg" style={{ aspectRatio: '2 / 3' }} />
+        <Skeleton key={i} radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
       ))}
     </SimpleGrid>
   )

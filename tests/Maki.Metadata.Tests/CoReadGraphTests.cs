@@ -142,6 +142,21 @@ public class CoReadGraphTests : IDisposable
     }
 
     [Fact]
+    public async Task SeedsForListsEverySupportingSeedStrongestFirst()
+    {
+        var graph = await Load((1, 5, 0.6f), (2, 5, 0.3f), (3, 5, 0.2f), (1, 4, 0.4f));
+        var weights = new Dictionary<long, double> { [1] = 0.5, [2] = 2.0, [3] = 1.0 };
+        var strongest = new Dictionary<long, long>();
+        CoReadScorer.Score(graph!, [1L, 2L, 3L], weights, CoReadTuning.Default, strongest);
+
+        var seeds = CoReadScorer.SeedsFor(graph!, [1L, 2L, 3L], weights, CoReadTuning.Default, new HashSet<long> { 5 });
+
+        Assert.Equal([2L, 1L, 3L], seeds[5]);
+        Assert.Equal(strongest[5], seeds[5][0]);
+        Assert.DoesNotContain(4L, seeds.Keys);
+    }
+
+    [Fact]
     public async Task DegreeDoesNotPenalize_BecauseTheStrengthAlreadyDividedByPopularity()
     {
         // This is the whole reason CoReadScorer exists rather than reusing RecoGraphScorer. The hub

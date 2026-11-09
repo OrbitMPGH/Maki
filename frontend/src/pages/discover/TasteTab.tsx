@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import {
   Alert,
   Anchor,
+  Box,
   Button,
   Card,
   Group,
@@ -25,9 +26,9 @@ import {
   IconLock,
   IconPencil,
   IconRoute,
-  IconSparkles,
+  IconLightning,
   IconTags,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -49,12 +50,14 @@ import {
   useTasteProfile,
 } from '../../api/hooks'
 import { DiscoverDetailModal } from '../../components/discover/DiscoverDetailModal'
-import { DiscoverRailRow } from '../../components/ui/DiscoverRail'
+import { DiscoverRailRow, type OpenItem } from '../../components/ui/DiscoverRail'
+import { sectionSource } from '../../api/shortlist'
 import { SectionHeader } from '../../components/ui/SectionHeader'
-import { StatTile } from '../../components/ui/StatTile'
+import { FigureStrip } from '../../components/ui/FigureStrip'
 import { SeriesLink, SeriesThumb } from '../stats/SeriesLink'
 import { buildFiltersFromProfile, hasAnyFilter } from './tasteFilters'
 import { Panel } from '../../components/ui/Panel'
+import { PanelTitle } from '../../components/ui/PanelTitle'
 import { TagChip } from '../../components/ui/TagChip'
 import { SignalsCard } from './FeedbackLab'
 import { formatFixedDecimal, formatNumber, formatPercent, formatReadingTime } from '../../format'
@@ -62,12 +65,12 @@ import { GENRE_LABELS, TYPE_LABELS } from '../../components/CatalogueFilters'
 import { useLabel } from '../../i18n-context'
 
 const SLICE_COLORS = [
-  'var(--brand)',
-  'var(--info)',
-  'var(--ok)',
-  'var(--warn)',
-  'var(--danger)',
-  'var(--neutral)',
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-3)',
+  'var(--chart-4)',
+  'var(--chart-5)',
+  'var(--chart-6)',
 ]
 
 /** How many of each composition facet the demoted row shows. */
@@ -93,13 +96,15 @@ function TasteSkeleton() {
     <Stack gap="md" aria-hidden inert>
       <SignalsCard />
       <SectionHeader icon={IconClock} title={t`How you read`} />
-      <SimpleGrid cols={{ base: 2, md: 4 }} spacing="md">
-        <StatTile label={t`You finish`} value="" loading />
-        <StatTile label={t`Typical chapter`} value="" loading />
-        <StatTile label={t`You bail around`} value="" loading />
-        <StatTile label={t`Biggest day`} value="" loading />
-      </SimpleGrid>
-      <SectionHeader icon={IconCompass} title={t`What you read, grouped`} />
+      <FigureStrip
+        loading
+        className="taste-figures"
+        figures={[t`You finish`, t`Typical chapter`, t`Where you usually stop`, t`Biggest day`].map((label) => ({
+          label,
+          value: 0,
+        }))}
+      />
+      <SectionHeader icon={IconCompass} title={t`Recurring themes`} />
       {[0, 1, 2].map((i) => (
         <Panel key={i} p="md">
           <Group justify="space-between" mb="sm">
@@ -118,7 +123,7 @@ function TasteSkeleton() {
           <div className="discover-rail">
             {Array.from({ length: 8 }, (_, j) => (
               <div key={j} className="discover-rail-item">
-                <Skeleton radius="lg" style={{ aspectRatio: '2 / 3' }} />
+                <Skeleton radius="var(--radius-cover)" style={{ aspectRatio: '2 / 3' }} />
               </div>
             ))}
           </div>
@@ -134,7 +139,7 @@ function GroupCard({
   seriesIdFor,
 }: {
   group: TasteGroup
-  onOpen: (item: RecommendationItem) => void
+  onOpen: OpenItem
   seriesIdFor: (item: RecommendationItem) => number | null
 }) {
   const { t } = useLingui()
@@ -146,10 +151,11 @@ function GroupCard({
   // The bands sit higher than they did for the old k-means groups. A group defined by a tag its
   // members all carry starts out tight - the simulated library's twelve run 0.74 to 0.87 - so the
   // old 0.72 floor called every one of them "very tight" and said nothing.
-  const coherenceWord = coherence >= 0.84 ? t`very tight` : coherence >= 0.76 ? t`consistent` : t`loose`
+  const coherenceWord =
+    coherence >= 0.84 ? t`very alike` : coherence >= 0.76 ? t`fairly alike` : t`loosely related`
   const summary = plural(size, {
-    one: `# series, ${shareLabel} of this view, ${coherenceWord}`,
-    other: `# series, ${shareLabel} of this view, ${coherenceWord}`,
+    one: `# series (${shareLabel}), ${coherenceWord}`,
+    other: `# series (${shareLabel}), ${coherenceWord}`,
   })
 
   return (
@@ -179,7 +185,7 @@ function GroupCard({
           <Text size="xs" fw={600} mb={4}>
             <Trans>More of this</Trans>
           </Text>
-          <DiscoverRailRow items={group.picks} seriesIdFor={seriesIdFor} onOpen={onOpen} />
+          <DiscoverRailRow items={group.picks} seriesIdFor={seriesIdFor} onOpen={onOpen} savedFrom={sectionSource('taste')} />
         </>
       )}
     </Panel>
@@ -202,10 +208,9 @@ function BehaviourList({
 }) {
   return (
     <Card padding="md" radius="lg" withBorder>
-      <Group gap={8} mb="xs" wrap="nowrap">
-        <ListIcon size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
-        <Text fw={650}>{title}</Text>
-      </Group>
+      <Box mb="xs">
+        <PanelTitle icon={ListIcon}>{title}</PanelTitle>
+      </Box>
       {items.length === 0 ? (
         <Text c="var(--ink-3)" size="sm">
           {emptyText}
@@ -250,28 +255,35 @@ function BehaviourSection({ behaviour }: { behaviour: ReadingBehaviour }) {
 
   return (
     <>
-      <SimpleGrid cols={{ base: 2, md: 4 }} spacing="md">
-        <StatTile
-          label={t`You finish`}
-          value={behaviour.finishRate === null ? '-' : percent(behaviour.finishRate)}
-        />
-        <StatTile
-          label={t`Typical chapter`}
-          value={pace === null ? '-' : formatReadingTime(pace)}
-        />
-        <StatTile
-          label={t`You bail around`}
-          value={stopPercent === null ? '-' : t`${stopPercent} in`}
-        />
-        <StatTile
-          label={t`Biggest day`}
-          value={
-            biggestDayCount === null
-              ? '-'
-              : plural(biggestDayCount, { one: '# chapter', other: '# chapters' })
-          }
-        />
-      </SimpleGrid>
+      <FigureStrip
+        className="taste-figures"
+        figures={[
+          {
+            label: t`You finish`,
+            value: behaviour.finishRate === null ? '-' : percent(behaviour.finishRate),
+            zero: behaviour.finishRate === null,
+          },
+          {
+            label: t`Typical chapter`,
+            value: pace === null ? '-' : formatReadingTime(pace),
+            zero: pace === null,
+          },
+          {
+            label: t`Where you usually stop`,
+            value: stopPercent === null ? '-' : stopPercent,
+            zero: stopPercent === null,
+            tip: t`How far into a series you get before you stop reading it, for the series you did not finish.`,
+          },
+          {
+            label: t`Biggest day`,
+            value:
+              biggestDayCount === null
+                ? '-'
+                : plural(biggestDayCount, { one: '# chapter', other: '# chapters' }),
+            zero: biggestDayCount === null,
+          },
+        ]}
+      />
 
       <Text c="var(--ink-3)" size="xs" mt={6}>
         {readSummary}{' '}
@@ -292,7 +304,7 @@ function BehaviourSection({ behaviour }: { behaviour: ReadingBehaviour }) {
           format={(item) => formatReadingTime(item.measure)}
         />
         <BehaviourList
-          icon={IconSparkles}
+          icon={IconLightning}
           title={t`You tear through`}
           items={behaviour.devoured}
           emptyText={t`Not enough timed chapters yet.`}
@@ -338,7 +350,7 @@ function DriftSection({ insights }: { insights: TasteInsights }) {
             </Text>
             <Group gap={4} style={{ flexShrink: 0 }}>
               {point.distinctiveTags.slice(0, 2).map((tag) => (
-                <TagChip key={tag} dot="var(--watched)" size="sm">
+                <TagChip key={tag} dot="var(--neutral)" size="sm">
                   {tag}
                 </TagChip>
               ))}
@@ -513,7 +525,7 @@ function TagsCard({
           {facets.slice(0, HEAD).map((f) => (
             <Group key={f.name} gap={8} wrap="nowrap">
               <TagChip
-                dot="var(--watched)"
+                dot="var(--neutral)"
                 size="sm"
                 style={{ flexShrink: 0 }}
                 onClick={() => onExplore(f.name)}
@@ -617,7 +629,7 @@ export function TasteTab() {
 
       <SectionHeader
         icon={IconCompass}
-        title={t`What you read, grouped`}
+        title={t`Recurring themes`}
         count={insights?.groups.length ? insights.groups.length : undefined}
         action={
           <SegmentedControl
@@ -661,7 +673,7 @@ export function TasteTab() {
           {insights?.oddOneOut && (
             <Card padding="md" radius="lg" withBorder>
               <Group gap={8} wrap="nowrap">
-                <IconArrowsShuffle size={16} style={{ color: 'var(--warn)', flexShrink: 0 }} />
+                <IconArrowsShuffle size={16} style={{ color: 'var(--brand-fg)', flexShrink: 0 }} />
                 <Text fw={650} style={{ flexShrink: 0 }}>
                   <Trans>The odd one out</Trans>
                 </Text>
@@ -742,7 +754,7 @@ export function TasteTab() {
       )}
 
       <Group gap="xs" mt="xs">
-        <IconLock size={14} style={{ color: 'var(--ink-3)' }} />
+        <IconLock size={16} style={{ color: 'var(--ink-3)' }} />
         <Text c="var(--ink-3)" size="xs">
           <Trans>Only you can see this.</Trans>{' '}
           <Trans>Reading history stays visible when a source is excluded from recommendations.</Trans>
@@ -755,6 +767,7 @@ export function TasteTab() {
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
         onClose={() => setDetailItem(null)}
+        savedFrom={sectionSource('taste')}
       />
     </Stack>
   )

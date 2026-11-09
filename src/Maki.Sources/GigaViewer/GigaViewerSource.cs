@@ -30,7 +30,7 @@ public abstract class GigaViewerSource(IHttpClientFactory httpClientFactory, Gig
     public string Name => site.Name;
     public string DisplayName => site.DisplayName;
     public string BaseUrl => site.BaseUrl;
-    public SourceCapabilities Capabilities => SourceCapabilities.None;
+    public SourceCapabilities Capabilities => SourceCapabilities.FreeWindowListing;
     public SourceKind Kind => SourceKind.Official;
     public IReadOnlyList<string> SupportedLanguages => ["ja"];
 

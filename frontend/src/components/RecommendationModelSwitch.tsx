@@ -95,7 +95,7 @@ export function RecommendationModelSwitch({
     <>
       <Switch
         label={t`Semantic search and recommendations`}
-        description={description ?? t`Uses about 240 MB of RAM.`}
+        description={description ?? t`Uses about 150 MB of RAM.`}
         checked={selected !== 'off'}
         disabled={disabled}
         onChange={(e) => onSelect(e.currentTarget.checked ? ON_MODEL : 'off')}

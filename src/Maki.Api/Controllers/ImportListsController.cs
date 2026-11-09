@@ -41,7 +41,9 @@ public class ImportListsController(
         bool Enabled, IReadOnlyList<string> Statuses, int? RootFolderId, bool Monitored,
         string MonitorNewItems, int MaxPerRun);
 
-    public record LastRunDto(DateTime At, int Added, int Requested, int Skipped, int Errors, bool DumpUnavailable);
+    public record LastRunDto(
+        DateTime At, int Added, int Requested, int Skipped, int Errors, bool DumpUnavailable, int Shortlisted,
+        bool ShortlistFull);
 
     public record TrackerDto(string Service, string Label, bool Connected, TrackerPrefsDto Prefs, LastRunDto? LastRun);
 
@@ -76,7 +78,8 @@ public class ImportListsController(
                     p.Monitored, p.MonitorNewItems, p.MaxPerRun),
                 last is null
                     ? null
-                    : new LastRunDto(last.At, last.Added, last.Requested, last.Skipped, last.Errors, last.DumpUnavailable)));
+                    : new LastRunDto(last.At, last.Added, last.Requested, last.Skipped, last.Errors, last.DumpUnavailable,
+                        last.Shortlisted, last.ShortlistFull)));
         }
 
         var skipped = await db.ImportListSkips.AsNoTracking()

@@ -3,8 +3,10 @@ import { Group, Stack, Text, Title } from '@mantine/core'
 
 /**
  * Consistent page header: title (+ optional description) on the left, actions
- * on the right, wrapping gracefully on narrow screens. `compact` is the smaller
- * header for operational pages, where the content below is the point.
+ * on the right, wrapping gracefully on narrow screens. `compact` is the tighter
+ * header for operational pages, where the content below is the point. The title
+ * row is the same height on every page whatever its actions, so titles share a
+ * baseline when you switch pages.
  */
 export function PageHeader({
   title,
@@ -35,13 +37,17 @@ export function PageHeader({
       className={className ? `page-header ${className}` : 'page-header'}
       data-compact={compact || undefined}
       justify="space-between"
-      align="flex-end"
+      align="flex-start"
       wrap="wrap"
       gap="sm"
-      mb={compact ? 'md' : 'lg'}
+      mb="lg"
     >
       {heading}
-      {actions && <Group gap="xs">{actions}</Group>}
+      {actions && (
+        <Group gap="xs" className="page-header-actions">
+          {actions}
+        </Group>
+      )}
     </Group>
   )
 }

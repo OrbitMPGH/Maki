@@ -98,6 +98,8 @@ try
     MakiLogging.Configure(paths, loggingOptions);
 
     startupLog = MakiLogging.CreateLogger("Startup");
+
+    SqliteStartup.Prepare(paths, startupLog);
 }
 catch (Exception ex) when (ex is not HostAbortedException)
 {
@@ -140,6 +142,11 @@ try
         options.UseSqlite($"Data Source={paths.DatabasePath}"));
 
     builder.Services.AddScoped<BackupService>();
+
+    // Every client asks for compressed bodies: chapter listings and JSON APIs shrink about 13x.
+    // A client with its own primary handler sets the flag there (PublicAddressGuard does).
+    builder.Services.ConfigureHttpClientDefaults(http => http.ConfigurePrimaryHttpMessageHandler(() =>
+        new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All }));
 
     builder.Services.AddHttpClient("covers", client =>
         {
@@ -286,6 +293,8 @@ try
     builder.Services.AddSingleton<DiscoverService>();
     builder.Services.AddSingleton<SemanticSearchState>();
     builder.Services.AddScoped<HiddenContentService>();
+    builder.Services.AddScoped<ShortlistService>();
+    builder.Services.AddSingleton<ShortlistMergeService>();
     builder.Services.AddScoped<CustomRailService>();
 
     // Semantic recommendations: a local ONNX embedding model (~110 MB, downloaded on first
@@ -612,9 +621,9 @@ try
     // Manhuagui — Simplified Chinese manhua/manga aggregator, plain HTTP, no Cloudflare. Bans IPs
     // on bulk reads, hence a standalone, stricter-than-usual limiter (1 req/2s) rather than a slot
     // in the standard batch. Every response is gzip-compressed regardless of what Accept-Encoding
-    // asked for, hence AutomaticDecompression here (most named clients don't need it because they
-    // never request compression in the first place). isAdult=1 is the cookie Keiyoushi sends for
-    // audited/R18 titles; harmless on everything else, unverified whether it's load-bearing here.
+    // asked for, which the default primary handler's AutomaticDecompression covers. isAdult=1 is the
+    // cookie Keiyoushi sends for audited/R18 titles; harmless on everything else, unverified whether
+    // it's load-bearing here.
     var manhuaguiBaseUrl = (Environment.GetEnvironmentVariable("MAKI_SOURCE_MANHUAGUI_BASEURL")?.TrimEnd('/')
         ?? "https://www.manhuagui.com") + "/";
     var manhuaguiLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(2), burst: 1);
@@ -626,10 +635,6 @@ try
             client.DefaultRequestHeaders.AcceptLanguage.ParseAdd("zh-CN,zh;q=0.9");
             client.DefaultRequestHeaders.TryAddWithoutValidation("Cookie", "isAdult=1");
             client.Timeout = TimeSpan.FromSeconds(30);
-        })
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-        {
-            AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli
         })
         .AddHttpMessageHandler(() => new RateLimitingHandler(manhuaguiLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
@@ -646,7 +651,10 @@ try
             client.DefaultRequestHeaders.UserAgent.ParseAdd(browserUa);
             client.Timeout = TimeSpan.FromSeconds(30);
         })
-        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { UseCookies = false })
+        .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+        {
+            UseCookies = false, AutomaticDecompression = DecompressionMethods.All
+        })
         .AddHttpMessageHandler(() => new RateLimitingHandler(mangaTubeLimiter))
         .AddHttpMessageHandler(() => new RateLimitDetectingHandler());
 
@@ -913,6 +921,12 @@ try
         client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         client.Timeout = TimeSpan.FromSeconds(15);
     });
+    builder.Services.AddHttpClient(UpdateCheckService.ReleasePageClientName, client =>
+    {
+        client.BaseAddress = new Uri("https://github.com/");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/OrbitMPGH/Maki)");
+        client.Timeout = TimeSpan.FromSeconds(15);
+    }).ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler { AllowAutoRedirect = false });
     builder.Services.AddSingleton<UpdateCheckService>();
     builder.Services.AddSingleton<HostRestarter>();
     if (DesktopParentWatcher.Applies)
@@ -946,6 +960,7 @@ try
     builder.Services.AddSingleton<IDownloadQueueLiveness, DownloadQueueLiveness>();
     builder.Services.AddSingleton<DownloadBatchNotifier>();
     builder.Services.AddSingleton<IDownloadCooldown>(sp => sp.GetRequiredService<DownloadQueueService>());
+    builder.Services.AddSingleton<ChapterListingSchedule>();
     builder.Services.AddScoped<ChapterSyncService>();
     builder.Services.AddScoped<ReleaseOutlookService>();
     builder.Services.AddScoped<SourceMappingRemovalService>();
@@ -1027,6 +1042,7 @@ try
     builder.Services.AddSingleton<ExternalReadSyncService>();
     builder.Services.AddSingleton<VolumeBoundaryService>();
     builder.Services.AddSingleton<KavitaReadImportService>();
+    builder.Services.AddSingleton<KavitaLiveCoverage>();
     builder.Services.AddSingleton<KavitaLiveReadSync>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<KavitaLiveReadSync>());
     builder.Services.AddScoped<ReaderService>();
@@ -1035,7 +1051,8 @@ try
     builder.Services.AddScoped<ReadingProfileService>();
     builder.Services.AddScoped<Maki.Api.Services.Upscaling.EnhanceAvailability>();
     builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleModelCatalog>();
-    builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleModelStore>();
+    builder.Services.AddSingleton(sp => ActivatorUtilities.CreateInstance<Maki.Api.Services.Upscaling.UpscaleModelStore>(
+        sp, Path.Combine(AppContext.BaseDirectory, Maki.Api.Services.Upscaling.UpscaleModelStore.BundledFolder)));
     builder.Services.AddSingleton<Maki.Api.Services.Upscaling.OnnxPageUpscaler>();
     builder.Services.AddSingleton<Maki.Core.Images.Upscaling.IPageUpscaler>(sp =>
         sp.GetRequiredService<Maki.Api.Services.Upscaling.OnnxPageUpscaler>());
@@ -1282,6 +1299,15 @@ try
             .StartAt(downloadAtBoot ? DateTimeOffset.UtcNow.AddSeconds(5) : DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
+        // Once at startup, ahead of the refresh's first run: an installed dump from before the
+        // browse and franchise tables gets them in seconds instead of after the refresh's delay.
+        q.AddJob<Maki.Api.Jobs.MangaBakaTableBackfillJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.MangaBakaTableBackfillJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.MangaBakaTableBackfillJob.Key)
+            .WithIdentity("mangabaka-table-backfill-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddSeconds(10)));
+
         // Prebuilt embedding index. Runs before the local indexer's trigger so a fresh install
         // downloads the vectors instead of spending an hour deriving them; no-ops when the
         // artifact is absent, incompatible, or older than what's installed.
@@ -1436,7 +1462,9 @@ try
             .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Digests chapter files so KOReader's progress sync can name them. Does nothing while no user
-        // has the OPDS catalogue on; a sync for an unknown document also fires it.
+        // has the OPDS catalogue on; a sync for an unknown document also fires it. Daily, because a
+        // pass stats every file in the library: new files are caught by that early trigger and OPDS
+        // downloads record their own ids, so the sweep only finds files rewritten or copied by hand.
         q.AddJob<Maki.Api.Jobs.KoreaderDocumentIndexJob>(j => j
             .WithIdentity(Maki.Api.Jobs.KoreaderDocumentIndexJob.Key)
             .StoreDurably());
@@ -1444,7 +1472,7 @@ try
             .ForJob(Maki.Api.Jobs.KoreaderDocumentIndexJob.Key)
             .WithIdentity("koreader-document-index-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(18))
-            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Daily upgrade scan. Polls every 15 minutes and runs once per local day after the configured
         // hour (UpgradeScanJob checks the marker), so changing the hour needs no reschedule. First
@@ -1500,8 +1528,10 @@ try
                 handlerBuilder.Services.GetRequiredService<OutboundHttpLoggingHandler>())));
 
     // Images, archives and the SignalR event stream are not in the default MIME list, so they pass
-    // through untouched. Fastest because most of it is JSON built per request, where CPU matters more
-    // than the last few percent of size.
+    // through untouched. MVC writes JSON in flushes of about 4 KB, and Brotli at Fastest (quality 1)
+    // compresses each flushed block on its own, which left large lists at about half their size.
+    // Optimal (quality 4) keeps the window across flushes: /series went 242 to 113 KB for about the
+    // same CPU. Gzip keeps its window across flushes at any level, so it stays at Fastest.
     builder.Services.AddResponseCompression(o =>
     {
         o.EnableForHttps = true;
@@ -1509,11 +1539,12 @@ try
         o.Providers.Add<GzipCompressionProvider>();
         o.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(["application/atom+xml"]);
     });
-    builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
+    builder.Services.Configure<BrotliCompressionProviderOptions>(o => o.Level = CompressionLevel.Optimal);
     builder.Services.Configure<GzipCompressionProviderOptions>(o => o.Level = CompressionLevel.Fastest);
 
     var app = builder.Build();
     DataDiagnostics.Logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Maki.Data");
+    app.Lifetime.ApplicationStopped.Register(() => SqliteStartup.Release(paths));
 
     // Apply migrations + enable WAL on startup. Migrations are forward-only with no down path, so
     // snapshot the current DB *before* applying any pending migration — the recovery net for a bad
@@ -1542,6 +1573,20 @@ try
             preMigrationBackup = scope.ServiceProvider.GetRequiredService<BackupService>()
                 .CreateAsync("auto", CancellationToken.None).GetAwaiter().GetResult();
         }
+        // One process per config: with nothing else attached, a lock row older than this process can
+        // only be a dead run's.
+        using var self = System.Diagnostics.Process.GetCurrentProcess();
+        var migrationLock = SqliteStartup.AloneAtStart(paths)
+            ? MigrationLock.ClearAbandoned(db.Database, new DateTimeOffset(self.StartTime))
+            : MigrationLockState.None;
+        if (migrationLock == MigrationLockState.Cleared)
+        {
+            startupLog.LogWarning("Cleared the migration lock a previous start left when it stopped during a database upgrade");
+        }
+        else if (migrationLock == MigrationLockState.KeptNewer)
+        {
+            startupLog.LogInformation("Left the migration lock in place: it was taken after this process started, so another start may hold it");
+        }
         try { db.Database.Migrate(); }
         catch (Exception ex)
         {
@@ -1550,6 +1595,7 @@ try
         }
         scope.ServiceProvider.GetRequiredService<HealthOperationService>().RecoverAsync(CancellationToken.None).GetAwaiter().GetResult();
         db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
+        SqliteStartup.KeepAttached(paths);
 
         // Told after the migration, never before: the UserNotifications table is itself created by a
         // migration, so on the upgrade that introduces it there is nowhere to write this yet. Awaited
@@ -1589,6 +1635,18 @@ try
 
         scope.ServiceProvider.GetRequiredService<ImportPathRepairService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // Entries saved under a MangaBaka id that a dump installed while Maki was down merged away.
+        try
+        {
+            scope.ServiceProvider.GetRequiredService<ShortlistMergeService>()
+                .RekeyAsync(CancellationToken.None).GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            scope.ServiceProvider.GetRequiredService<ILogger<ShortlistMergeService>>()
+                .LogWarning(ex, "Could not move shortlist entries onto merged MangaBaka ids at startup");
+        }
 
         // Rewrites any pre-existing bare-sub AspNetUserLogins rows for the oidc provider to the
         // issuer-scoped key format. See OidcLoginIssuerRepairService.

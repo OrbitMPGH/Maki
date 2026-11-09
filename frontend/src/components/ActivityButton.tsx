@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { ActionIcon, Box, Button, Group, Popover, Progress, ScrollArea, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import { IconDownload } from '@tabler/icons-react'
+import { IconDownload } from '../lib/icons'
 import { Link, useNavigate } from 'react-router-dom'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'

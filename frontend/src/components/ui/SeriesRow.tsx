@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import {
   IconBellOff,
   IconCircleCheckFilled,
@@ -6,7 +6,7 @@ import {
   IconDeviceMobileCheck,
   IconEye,
   IconEyeOff,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import type { OfflineAvailability } from './CoverCard'
@@ -19,6 +19,7 @@ import {
 import { useLabel } from '../../i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
+import { cleanSynopsis, splitSynopsis } from '../../lib/synopsis'
 
 /**
  * List-view card for the library: a horizontal row with cover thumbnail, metadata, and
@@ -46,6 +47,7 @@ export const SeriesRow = memo(function SeriesRow({
 }) {
   const renderLabel = useLabel()
   const { t } = useLingui()
+  const synopsis = useMemo(() => splitSynopsis(cleanSynopsis(series.overview)).body, [series.overview])
   const status = seriesStatusVisual(series.status)
   const download = seriesDownloadStateVisual(series)
   const { total, nothingWanted, have, pct, complete, readPct, unread } = seriesProgressVisual(
@@ -150,9 +152,7 @@ export const SeriesRow = memo(function SeriesRow({
           )}
         </div>
 
-        {series.overview && (
-          <div className="row-description">{series.overview}</div>
-        )}
+        {synopsis && <div className="row-description">{synopsis}</div>}
 
         <div className="row-progress">
           {download && (
@@ -215,7 +215,7 @@ export const SeriesRow = memo(function SeriesRow({
                   : undefined
             }
           >
-            {total > 0 ? `${have}/${total}` : have > 0 ? have : t`None listed`}
+            {total > 0 ? `${have}/${total}` : have > 0 ? have : t`No chapters`}
           </span>
         </div>
       </div>

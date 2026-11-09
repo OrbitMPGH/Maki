@@ -7,10 +7,10 @@ import {
   IconChevronUp,
   IconHelpCircle,
   IconMessages,
-  IconSparkles,
+  IconMegaphone,
   IconStarFilled,
   IconX,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useAppVersion, useUpdateStatus } from '../../api/hooks'
 import { getSkippedVersion, setSkippedVersion, subscribeSkippedVersion } from '../../lib/updateSkip'
@@ -78,7 +78,7 @@ export default function SidebarFooter({
             className="nav-footer-link"
           >
             <Trans>Update {latestVersion} available</Trans>
-            <IconArrowUpRight size={14} stroke={1.8} />
+            <IconArrowUpRight size={16} />
           </a>
           <button
             type="button"
@@ -87,7 +87,7 @@ export default function SidebarFooter({
             title={t`Skip ${latestVersion}`}
             onClick={() => setSkippedVersion(latestVersion)}
           >
-            <IconX size={12} stroke={2} />
+            <IconX size={12} />
           </button>
         </div>
       ) : showStar ? (
@@ -101,7 +101,7 @@ export default function SidebarFooter({
           >
             <IconStarFilled size={13} className="nav-footer-star" />
             <Trans>Star on GitHub</Trans>
-            <IconArrowUpRight size={14} stroke={1.8} />
+            <IconArrowUpRight size={16} />
           </a>
           <button
             type="button"
@@ -110,7 +110,7 @@ export default function SidebarFooter({
             title={t`Dismiss`}
             onClick={dismissStar}
           >
-            <IconX size={12} stroke={2} />
+            <IconX size={12} />
           </button>
         </div>
       ) : null}
@@ -154,25 +154,25 @@ function HelpMenu({ version }: { version: string | null }) {
     <Menu position="top-start" withArrow offset={6} width={228}>
       <Menu.Target>
         <button type="button" className="nav-link nav-footer-help">
-          <IconHelpCircle size={18} stroke={1.7} className="nav-icon" />
+          <IconHelpCircle size={18} className="nav-icon" />
           <Trans>Help & feedback</Trans>
-          <IconChevronUp size={12} stroke={1.8} className="nav-footer-chevron" />
+          <IconChevronUp size={12} className="nav-footer-chevron" />
         </button>
       </Menu.Target>
       <Menu.Dropdown>
         {menuItem(
           `${REPO_URL}/issues/new/choose`,
-          <IconBug size={16} stroke={1.7} />,
+          <IconBug size={16} />,
           <Trans>Report a bug</Trans>,
           <Trans>Opens a GitHub issue with the template.</Trans>,
         )}
         {menuItem(
           `${REPO_URL}/discussions`,
-          <IconMessages size={16} stroke={1.7} />,
+          <IconMessages size={16} />,
           <Trans>Ask or suggest</Trans>,
           <Trans>GitHub Discussions.</Trans>,
         )}
-        {menuItem(`${REPO_URL}#readme`, <IconBook size={16} stroke={1.7} />, <Trans>Documentation</Trans>)}
+        {menuItem(`${REPO_URL}#readme`, <IconBook size={16} />, <Trans>Documentation</Trans>)}
         <Menu.Divider />
         {menuItem(
           REPO_URL,
@@ -182,12 +182,12 @@ function HelpMenu({ version }: { version: string | null }) {
         {version
           ? menuItem(
               `${REPO_URL}/releases/tag/v${version}`,
-              <IconSparkles size={16} stroke={1.7} />,
+              <IconMegaphone size={16} />,
               <Trans>What's new in v{version}</Trans>,
             )
           : menuItem(
               `${REPO_URL}/releases`,
-              <IconSparkles size={16} stroke={1.7} />,
+              <IconMegaphone size={16} />,
               <Trans>Release notes</Trans>,
             )}
       </Menu.Dropdown>

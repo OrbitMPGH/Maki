@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Alert, Badge, Button, Group, Paper, Select, Stack, Switch, Text, Title, Tooltip } from '@mantine/core'
 import { notifications } from '../../lib/toast'
-import { IconArrowRight, IconBell, IconCheck, IconEyeOff, IconFolder, IconPlus } from '@tabler/icons-react'
+import { IconArrowRight, IconBell, IconCheck, IconEyeOff, IconFolder, IconPlus } from '../../lib/icons'
 import {
   useAddSeries,
   useLibrarySettings,
@@ -21,7 +21,7 @@ import { RequestForm } from '../RequestForm'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useIncognitoOptions, type IncognitoMode } from '../ui/incognito'
 import { useLabel } from '../../i18n-context'
-import { MONITOR_OPTIONS } from '../series/SeriesActionsMenu'
+import { MONITOR_OPTIONS, MONITOR_SHORT } from '../series/SeriesActionsMenu'
 import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
 
 /**
@@ -239,7 +239,6 @@ export function DiscoverLibraryRail({
           <Button
             mt="md"
             fullWidth
-            color="var(--ok)"
             variant="light"
             rightSection={<IconArrowRight size={16} />}
             onClick={goToLibrary}
@@ -273,7 +272,7 @@ export function DiscoverLibraryRail({
           <Select
             aria-label={t`Root folder`}
             placeholder={t`Root folder`}
-            leftSection={<IconFolder size={15} />}
+            leftSection={<IconFolder size={16} />}
             data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
             value={rootFolderId}
             onChange={setRootFolderId}
@@ -299,7 +298,7 @@ export function DiscoverLibraryRail({
           >
             <Select
               aria-label={t`Incognito`}
-              leftSection={<IconEyeOff size={15} />}
+              leftSection={<IconEyeOff size={16} />}
               data={incognitoOptions.map(({ value, label: mode }) => ({
                 value,
                 // Deliberately not lower-cased. German capitalises nouns and Turkish has two
@@ -319,11 +318,16 @@ export function DiscoverLibraryRail({
           <Tooltip label={t`Which new chapters get fetched as they land`} withArrow zIndex={1001}>
             <Select
               aria-label={t`Monitor`}
-              leftSection={<IconBell size={15} />}
-              data={MONITOR_OPTIONS.map(({ value, label }) => {
-                const mode = renderLabel(label)
+              leftSection={<IconBell size={16} />}
+              // The short name in the closed field, which is narrow here; the full one in the list.
+              data={MONITOR_OPTIONS.map(({ value }) => {
+                const mode = renderLabel(MONITOR_SHORT[value])
                 return { value, label: t`Monitor: ${mode}` }
               })}
+              renderOption={({ option }) => {
+                const full = MONITOR_OPTIONS.find((o) => o.value === option.value)
+                return full ? renderLabel(full.label) : option.label
+              }}
               value={shownMonitorMode}
               onChange={(value) => value && setMonitorMode(value)}
               allowDeselect={false}

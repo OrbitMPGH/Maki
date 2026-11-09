@@ -194,7 +194,8 @@ public class FollowedCreatorReleaseService(
 
     /// <summary>
     /// Which of <paramref name="ids"/> each reader has already given an opinion on: thumbed up or
-    /// down, marked seen, hidden, or dismissed for now. The same set the follow rail leaves out.
+    /// down, marked seen, hidden, or dismissed for now. The same set the follow rail leaves out, plus
+    /// whatever they shortlisted.
     /// </summary>
     private static async Task<HashSet<(int UserId, long MangaBakaId)>> KnownAsync(
         MakiDbContext db, IReadOnlyList<int> userIds, IReadOnlyList<long> ids, CancellationToken ct)
@@ -210,7 +211,18 @@ public class FollowedCreatorReleaseService(
                  x.Suppression == RecommendationSuppression.Dismissed && x.DismissedUntilUtc > now))
             .Select(x => new { x.UserId, x.ProviderId })
             .ToListAsync(ct);
-        return rows.Select(x => (x.UserId, x.ProviderId)).ToHashSet();
+        var known = rows.Select(x => (x.UserId, x.ProviderId)).ToHashSet();
+
+        // Shortlisted titles are ones the reader has plainly seen already.
+        var keys = ids.Where(id => id is > 0 and <= int.MaxValue).Select(id => (int)id).ToList();
+        var shortlisted = await db.ShortlistEntries
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(x => userIds.Contains(x.UserId) && keys.Contains(x.MangaBakaId))
+            .Select(x => new { x.UserId, x.MangaBakaId })
+            .ToListAsync(ct);
+        known.UnionWith(shortlisted.Select(x => (x.UserId, (long)x.MangaBakaId)));
+        return known;
     }
 
     /// <summary>

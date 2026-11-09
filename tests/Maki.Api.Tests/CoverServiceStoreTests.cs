@@ -72,6 +72,53 @@ public class CoverServiceStoreTests : IDisposable
         var paths = await Task.WhenAll(uploads);
 
         Assert.All(paths, p => Assert.Equal(_covers.CoverPathFor(9), p));
-        Assert.Equal(["cover.jpg"], Directory.GetFiles(Path.GetDirectoryName(paths[0])!).Select(f => Path.GetFileName(f)));
+        Assert.Equal(
+            ["cover-sm.jpg", "cover.jpg"],
+            Directory.GetFiles(Path.GetDirectoryName(paths[0])!).Select(f => Path.GetFileName(f)).Order());
+    }
+
+    [Fact]
+    public async Task Storing_a_poster_also_writes_the_240_px_one()
+    {
+        await using var gif = AnimatedGif(1, new Rgba(0, 200, 0));
+
+        await _covers.StoreUploadedCoverAsync(11, gif);
+
+        var small = _covers.SmallCoverPathFor(11);
+        Assert.Equal(ImageFormat.Jpeg, ImageCodec.IdentifyFile(small).Format);
+        Assert.Equal(240, Raster.Decode(await File.ReadAllBytesAsync(small)).Width);
+    }
+
+    [Fact]
+    public async Task A_cover_without_a_small_one_gets_it_made_on_first_request()
+    {
+        await using var gif = AnimatedGif(1, new Rgba(0, 200, 0));
+        await _covers.StoreUploadedCoverAsync(12, gif);
+        File.Delete(_covers.SmallCoverPathFor(12));
+
+        var path = await _covers.EnsureSmallCoverAsync(12);
+
+        Assert.Equal(_covers.SmallCoverPathFor(12), path);
+        Assert.Equal(240, Raster.Decode(await File.ReadAllBytesAsync(path!)).Width);
+    }
+
+    [Fact]
+    public async Task A_small_cover_older_than_its_poster_is_remade()
+    {
+        await using var gif = AnimatedGif(1, new Rgba(0, 200, 0));
+        await _covers.StoreUploadedCoverAsync(13, gif);
+        var small = _covers.SmallCoverPathFor(13);
+        File.SetLastWriteTimeUtc(small, File.GetLastWriteTimeUtc(_covers.CoverPathFor(13)).AddMinutes(-5));
+        var stale = File.GetLastWriteTimeUtc(small);
+
+        await _covers.EnsureSmallCoverAsync(13);
+
+        Assert.True(File.GetLastWriteTimeUtc(small) > stale);
+    }
+
+    [Fact]
+    public async Task No_small_cover_exists_for_a_series_without_a_poster()
+    {
+        Assert.Null(await _covers.EnsureSmallCoverAsync(14));
     }
 }

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect } from 'storybook/test'
-import { IconBook2, IconClock, IconHourglassLow } from '@tabler/icons-react'
+import { IconBook2, IconClock, IconHourglassLow } from '../../lib/icons'
 import { cover } from '../../../.storybook/mocks/api'
 import { seriesById } from '../../../.storybook/mocks/shared'
 import { RankList } from './RankList'
@@ -21,7 +21,7 @@ const meta = {
   args: {
     icon: IconBook2,
     title: 'Most read',
-    emptyText: 'No chapters read in this period.',
+    emptyText: 'No chapters finished in this period.',
     items: [row(1, '34 ch.'), row(6, '23 ch.'), row(5, '18 ch.'), row(9, '12 ch.'), row(3, '9 ch.')],
   },
 } satisfies Meta<typeof RankList>

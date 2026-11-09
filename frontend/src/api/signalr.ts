@@ -2,10 +2,13 @@ import { HubConnectionBuilder, LogLevel, type HubConnection } from '@microsoft/s
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { notifications } from '../lib/toast'
+import { isPageScrolling } from '../lib/pageScrolling'
 import { api } from './client'
 import { inboxPrefsQuery, type InboxPush } from './inbox'
+import { refreshNotes } from './notes'
 import type { SourceMatchProgress, SourceMatchState } from './hooks'
-import type { QueueHistoryDto, QueueItemDto, QueuePauseDto } from './types'
+import { createSeriesListRefresher } from './seriesListPatch'
+import type { ChapterDto, QueueHistoryDto, QueueItemDto, QueuePauseDto } from './types'
 
 let connection: HubConnection | null = null
 let connectionPromise: Promise<HubConnection> | null = null
@@ -172,27 +175,90 @@ export function useLiveEvents() {
   const queryClient = useQueryClient()
 
   useEffect(() => {
+    const seriesList = createSeriesListRefresher(queryClient)
     let summaryTimer: ReturnType<typeof setTimeout> | null = null
     let seriesTimer: ReturnType<typeof setTimeout> | null = null
     const importedSeries = new Set<number>()
 
+    // A finished download leaves the series queue at once, but its chapter row only gets the file
+    // when flushSeriesRefresh refetches the chapters, so the row read Missing in between. The item's
+    // last state stays on the series queue until a chapter list with the file lands, re-added if a
+    // queue poll drops it first. The timeout covers a list nobody refetches (page closed).
+    const held = new Map<number, Map<number, QueueItemDto>>()
+    const heldTimers = new Map<number, ReturnType<typeof setTimeout>>()
+    const releaseHeld = (seriesId: number, itemIds: number[]) => {
+      const items = held.get(seriesId)
+      if (!items || itemIds.length === 0) return
+      for (const id of itemIds) {
+        items.delete(id)
+        clearTimeout(heldTimers.get(id))
+        heldTimers.delete(id)
+      }
+      if (items.size === 0) held.delete(seriesId)
+      const drop = new Set(itemIds)
+      queryClient.setQueryData<QueueHistoryDto>(['queue', 'series', seriesId], (old) =>
+        old && Array.isArray(old.items) ? { ...old, items: old.items.filter((q) => !drop.has(q.id)) } : old,
+      )
+    }
+    const holdCompleted = (item: QueueItemDto, shown: QueueItemDto) => {
+      let items = held.get(item.seriesId)
+      if (!items) held.set(item.seriesId, (items = new Map()))
+      items.set(item.id, shown)
+      clearTimeout(heldTimers.get(item.id))
+      heldTimers.set(item.id, setTimeout(() => releaseHeld(item.seriesId, [item.id]), 30_000))
+    }
+    const unsubscribeCache = queryClient.getQueryCache().subscribe((event) => {
+      if (event.type !== 'updated' || event.action.type !== 'success') return
+      const [root, a, b] = event.query.queryKey as unknown[]
+      if (root === 'chapters' && typeof a === 'number') {
+        const items = held.get(a)
+        if (!items) return
+        const data = event.query.state.data as ChapterDto[] | undefined
+        if (!data) return
+        const byId = new Map(data.map((c) => [c.id, c]))
+        releaseHeld(
+          a,
+          [...items.values()].filter((q) => {
+            const chapter = byId.get(q.chapterId)
+            return !chapter || chapter.hasFile
+          }).map((q) => q.id),
+        )
+      } else if (root === 'queue' && a === 'series' && typeof b === 'number') {
+        const items = held.get(b)
+        const data = event.query.state.data as QueueHistoryDto | undefined
+        if (!items || !data || !Array.isArray(data.items)) return
+        const present = new Set(data.items.map((q) => q.id))
+        const missing = [...items.values()].filter((q) => !present.has(q.id))
+        if (missing.length > 0) {
+          queryClient.setQueryData<QueueHistoryDto>(['queue', 'series', b], { ...data, items: [...missing, ...data.items] })
+        }
+      }
+    })
+
     // A bulk download fires one chapterImported per chapter. The library list is the heaviest thing
-    // they touch, so every event just marks work as pending and one timer refreshes it per second.
+    // they touch, so every event just marks work as pending and one timer refreshes it every few
+    // seconds. Refetching it parses the whole list and re-renders the page showing it, so a flush
+    // that comes due mid-scroll waits for the scroll to stop.
+    const flushSeriesRefresh = () => {
+      if (isPageScrolling()) {
+        seriesTimer = setTimeout(flushSeriesRefresh, 250)
+        return
+      }
+      seriesTimer = null
+      const ids = [...importedSeries]
+      importedSeries.clear()
+      for (const id of ids) {
+        void queryClient.invalidateQueries({ queryKey: ['chapters', id] })
+        void queryClient.invalidateQueries({ queryKey: ['reader-continue', id] })
+      }
+      if (ids.length > 0) {
+        void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })
+      }
+      seriesList.flush()
+    }
     const scheduleSeriesRefresh = () => {
       if (seriesTimer !== null) return
-      seriesTimer = setTimeout(() => {
-        seriesTimer = null
-        const ids = [...importedSeries]
-        importedSeries.clear()
-        for (const id of ids) {
-          void queryClient.invalidateQueries({ queryKey: ['chapters', id] })
-          void queryClient.invalidateQueries({ queryKey: ['reader-continue', id] })
-        }
-        if (ids.length > 0) {
-          void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })
-        }
-        void queryClient.invalidateQueries({ queryKey: ['series'] })
-      }, 1000)
+      seriesTimer = setTimeout(flushSeriesRefresh, 3000)
     }
 
     // Events sent while the socket was down are gone, and the queue lists are patched in place from
@@ -206,6 +272,7 @@ export function useLiveEvents() {
         ['queue-history'],
         ['queue-pause'],
         ['inbox'],
+        ['notes'],
         ['series'],
         ['chapters'],
         ['sourcemappings'],
@@ -229,6 +296,10 @@ export function useLiveEvents() {
 
     const unsubscribe = subscribe((conn) => {
       liveConn = conn
+      // These stop polling once the socket is up, so whatever changed between their first fetch and
+      // the handlers below being registered would otherwise stay missed.
+      void queryClient.invalidateQueries({ queryKey: ['queue-summary'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-pause'] })
       listen(conn, 'queueUpdated', (item: QueueItemDto) => {
         const isDone = item.status === 'Completed' || item.status === 'Cancelled'
         // Only the paged lists ['queue', page, pageSize] and the per-series ['queue', 'series', id]
@@ -256,7 +327,16 @@ export function useLiveEvents() {
           queryKey: ['queue'],
           predicate: (q) => typeof q.queryKey[1] === 'number',
         }, patch)
-        queryClient.setQueryData<QueueHistoryDto>(['queue', 'series', item.seriesId], patch)
+        const seriesKey = ['queue', 'series', item.seriesId]
+        const shown = queryClient.getQueryData<QueueHistoryDto>(seriesKey)?.items?.find((q) => q.id === item.id)
+        const chapter = queryClient
+          .getQueryData<ChapterDto[]>(['chapters', item.seriesId])
+          ?.find((c) => c.id === item.chapterId)
+        if (item.status === 'Completed' && shown && chapter && !chapter.hasFile) {
+          holdCompleted(item, shown)
+        } else {
+          queryClient.setQueryData<QueueHistoryDto>(seriesKey, patch)
+        }
         if (isDone) {
           // The item moved into history, so refresh the paginated history feed.
           void queryClient.invalidateQueries({ queryKey: ['queue-history'] })
@@ -279,6 +359,7 @@ export function useLiveEvents() {
       // an import just wrote) and the detail page's Read button gate (`reader-continue`).
       listen(conn, 'chapterImported', ({ seriesId }: { seriesId: number }) => {
         importedSeries.add(seriesId)
+        seriesList.mark(seriesId)
         scheduleSeriesRefresh()
       })
 
@@ -289,9 +370,13 @@ export function useLiveEvents() {
         queryClient.setQueryData(['sourcematch-failed', seriesId], failedSources ?? [])
         void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
+        // The scout-on-match run is registered before this push goes out; the refetch sees it running
+        // and starts the source order's progress polling.
+        void queryClient.invalidateQueries({ queryKey: ['source-order', seriesId] })
         // The detail row carries the pending flag the spinner reads, so it refreshes at once; the
         // library list joins the coalesced refresh.
         void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+        seriesList.mark(seriesId)
         scheduleSeriesRefresh()
         // The per-source states the card drew while it waited. Cleared here rather than when the
         // next match starts: the first `Searching` pushes of a run arrive *before* the client has
@@ -305,6 +390,7 @@ export function useLiveEvents() {
         void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['series-files', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+        seriesList.mark(seriesId)
         scheduleSeriesRefresh()
       })
 
@@ -341,8 +427,15 @@ export function useLiveEvents() {
         void queryClient.invalidateQueries({ queryKey: ['reader-progress', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+        seriesList.mark(seriesId)
         scheduleSeriesRefresh()
         void queryClient.invalidateQueries({ queryKey: ['home'] })
+        void queryClient.invalidateQueries({ queryKey: ['progress'] })
+      })
+
+      // Only ids travel: the text and the author come back through the filtered endpoints.
+      listen(conn, 'chapterNotesChanged', ({ seriesId, chapterId }: { seriesId: number; chapterId: number }) => {
+        refreshNotes(queryClient, seriesId, chapterId)
       })
 
       listen(conn, 'updateAvailable', () => {
@@ -391,6 +484,8 @@ export function useLiveEvents() {
       reconnectListeners.delete(onReconnected)
       if (summaryTimer !== null) clearTimeout(summaryTimer)
       if (seriesTimer !== null) clearTimeout(seriesTimer)
+      unsubscribeCache()
+      for (const timer of heldTimers.values()) clearTimeout(timer)
       for (const [name, handler] of registered) liveConn?.off(name, handler)
     }
   }, [queryClient])

@@ -20,13 +20,13 @@ export const QUALITY_TIER_LABELS: Record<QualityTierName, MessageDescriptor> = {
   volume: msg`Volume`,
 }
 
-/** Shared with `FileQualityBadge` and `SourceCompareModal`'s per-column quality badge. */
+/** Shared with `FileQualityBadge` and `SourceCompareModal`'s per-column quality badge: the medal scale, with volume in its own hue. */
 export const QUALITY_TIER_COLOR: Record<QualityTierName, string> = {
-  unknown: 'gray',
-  aggregator: 'orange',
-  scanlator: 'blue',
-  official: 'teal',
-  volume: 'indigo',
+  unknown: 'var(--neutral)',
+  aggregator: 'var(--q-aggregator)',
+  scanlator: 'var(--q-scanlator)',
+  official: 'var(--q-official)',
+  volume: 'var(--volume)',
 }
 
 export interface ProfileTierDto {
@@ -480,7 +480,7 @@ export const SPAN_VERDICT_LABELS: Record<SpanVerdictKey, MessageDescriptor> = {
 
 export const SPAN_VERDICT_COLOR: Record<SpanVerdictKey, string> = {
   autoGrab: 'var(--ok)',
-  proposal: 'var(--brand)',
+  proposal: 'var(--warn)',
   ignore: 'var(--neutral)',
   titleUncertain: 'var(--warn)',
 }
@@ -681,6 +681,8 @@ export function useUpgradeProfiles() {
   return useQuery({
     queryKey: ['upgrade-profiles'],
     queryFn: () => api<UpgradeProfileDto[]>('/upgrade-profiles'),
+    // Changes only through the profile editor, which invalidates it.
+    staleTime: 5 * 60 * 1000,
   })
 }
 

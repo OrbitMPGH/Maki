@@ -60,7 +60,9 @@ public class PageConversionEstimateService(
 
     private sealed record Pick(PageConversionPlanService.ScopeFile File, PageConversionSettings Settings);
 
-    private sealed record PageTime(double Ms, double Megapixels);
+    /// <param name="Ms">The page's share of its file's wall clock, times the pages that ran together.</param>
+    /// <param name="InFlight">How many pages like it the pass encodes at once.</param>
+    private sealed record PageTime(double Ms, double Megapixels, int InFlight);
 
     private sealed record FileSample(long Size, bool Hardlinked, double Ratio, IReadOnlyList<PageTime> Pages, long PageBytes);
 
@@ -383,18 +385,45 @@ public class PageConversionEstimateService(
             return null;
         }
 
-        long original = 0, kept = 0;
-        var times = new List<PageTime>();
-        foreach (var (bytes, extension) in pages)
+        // The pages encode together through the conversion gate, as the pass would run them, and the file's
+        // wall clock from the first encode starting to the last one ending is shared out by megapixels. Times
+        // the pages that actually ran together, it is lane time.
+        var running = 0;
+        var together = 0;
+        var first = long.MaxValue;
+        var last = 0L;
+        var sizes = await Task.WhenAll(pages.Select(p => Task.Run(() => ImageWorkGate.RunConversionAsync(() =>
         {
-            var (size, ms) = await ImageWorkGate.RunAsync(() => Task.FromResult(Encode(bytes, extension, pick.Settings)), ct);
-            original += bytes.Length;
-            kept += size;
-            if (ImageCodec.TryIdentify(bytes) is { Width: > 0, Height: > 0 } header)
+            InterlockedMin(ref first, Stopwatch.GetTimestamp());
+            InterlockedMax(ref together, Interlocked.Increment(ref running));
+            try
             {
-                times.Add(new PageTime(ms, (double)header.Width * header.Height / 1_000_000));
+                return Encode(p.Bytes, p.Extension, pick.Settings);
             }
-        }
+            finally
+            {
+                Interlocked.Decrement(ref running);
+                InterlockedMax(ref last, Stopwatch.GetTimestamp());
+            }
+        }, PageConversion.WeightOf(p.Bytes, p.Extension, pick.Settings), ct), ct)));
+        var wall = pages.Count == 0 ? 0 : Stopwatch.GetElapsedTime(first, last).TotalMilliseconds;
+
+        var original = pages.Sum(p => (long)p.Bytes.Length);
+        var kept = sizes.Sum();
+        var megapixels = pages
+            .Select(p => ImageCodec.TryIdentify(p.Bytes) is { Width: > 0, Height: > 0 } header
+                ? (double)header.Width * header.Height / 1_000_000
+                : 0)
+            .ToList();
+        var sampled = megapixels.Sum();
+        // Fewer pages ran together than were sampled when the gate held them back, and it holds the pass back
+        // the same way; when all of them did, the pass runs as many as its lanes allow.
+        var lanes = ImageWorkGate.ConversionsInFlight(pages.Any(p => PageConversion.WeightOf(p.Bytes, p.Extension, pick.Settings).Avif));
+        var inFlight = together < pages.Count ? Math.Max(1, together) : Math.Max(together, lanes);
+        var times = megapixels
+            .Where(mp => mp > 0)
+            .Select(mp => new PageTime(wall * Math.Max(1, together) * mp / sampled, mp, inFlight))
+            .ToList();
 
         var ratio = original == 0 ? 1 : (double)kept / original;
         if (ratio > 1 - PageConversion.MinFileSaving)
@@ -405,17 +434,40 @@ public class PageConversionEstimateService(
         return new FileSample(file.Size, false, ratio, times, original);
     }
 
-    private static (long Size, double Ms) Encode(byte[] bytes, string extension, PageConversionSettings settings)
+    private static long Encode(byte[] bytes, string extension, PageConversionSettings settings)
     {
-        var watch = Stopwatch.StartNew();
         try
         {
             var page = PageConversion.Convert(bytes, extension, settings);
-            return (page.Converted ? page.Bytes.Length : bytes.Length, watch.Elapsed.TotalMilliseconds);
+            return page.Converted ? page.Bytes.Length : bytes.Length;
         }
         catch (VipsException)
         {
-            return (bytes.Length, watch.Elapsed.TotalMilliseconds);
+            return bytes.Length;
+        }
+    }
+
+    private static void InterlockedMax(ref int target, int value)
+    {
+        int seen;
+        while (value > (seen = Volatile.Read(ref target)) && Interlocked.CompareExchange(ref target, value, seen) != seen)
+        {
+        }
+    }
+
+    private static void InterlockedMax(ref long target, long value)
+    {
+        long seen;
+        while (value > (seen = Interlocked.Read(ref target)) && Interlocked.CompareExchange(ref target, value, seen) != seen)
+        {
+        }
+    }
+
+    private static void InterlockedMin(ref long target, long value)
+    {
+        long seen;
+        while (value < (seen = Interlocked.Read(ref target)) && Interlocked.CompareExchange(ref target, value, seen) != seen)
+        {
         }
     }
 
@@ -462,8 +514,8 @@ public class PageConversionEstimateService(
 
     /// <summary>
     /// Measured files count their pages times the median page; unmeasured ones are extrapolated by
-    /// bytes. Hardlinked files are never encoded, so their share is left out. Samples are timed one
-    /// page at a time, and the pass encodes as many pages at once as the conversion limit allows.
+    /// bytes. Hardlinked files are never encoded, so their share is left out. Each sample is lane time,
+    /// and the pass encodes <see cref="PageTime.InFlight"/> pages like it at once.
     /// </summary>
     private static double Seconds(Group group, double hardShare, List<PageTime> pages, double p)
     {
@@ -487,13 +539,13 @@ public class PageConversionEstimateService(
             megapixels += unmeasuredBytes * perByte;
         }
 
-        var rates = pages.Where(x => x.Megapixels > 0).Select(x => x.Ms / x.Megapixels).Order().ToList();
+        var rates = pages.Where(x => x.Megapixels > 0).Select(x => x.Ms / x.Megapixels / x.InFlight).Order().ToList();
         if (rates.Count == 0)
         {
             return 0;
         }
 
         var rate = rates[(int)Math.Clamp(Math.Round(p * (rates.Count - 1)), 0, rates.Count - 1)];
-        return megapixels * (1 - hardShare) * rate / 1000 / ImageWorkGate.ConversionLimit;
+        return megapixels * (1 - hardShare) * rate / 1000;
     }
 }

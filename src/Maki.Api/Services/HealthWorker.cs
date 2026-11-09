@@ -10,7 +10,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Services;
 
-public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> logger) : BackgroundService
+public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> logger,
+    Maki.Api.Jobs.ArtifactBuildGate? buildGate = null) : BackgroundService
 {
     internal static readonly TimeSpan BusyInterval = TimeSpan.FromSeconds(15);
 
@@ -158,7 +159,13 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     await db.SaveChangesAsync(stoppingToken);
                     await AdvanceBaselineAsync(db, settings, baseline, DateTime.UtcNow, stoppingToken);
                 }
-                var scan = await db.HealthScans.Where(s => s.Status == "pending" || s.Status == "running").OrderBy(s => s.Id).FirstOrDefaultAsync(stoppingToken);
+                var active = db.HealthScans.Where(s => s.Status == "pending" || s.Status == "running");
+                // A verify reads every byte; while an artifact build runs it waits for a later pass
+                // (15 s while a scan is queued) rather than holding this one, so a cancel still lands.
+                // Scans that only stat files go ahead of it meanwhile.
+                var building = buildGate is { IsIdle: false };
+                var scan = await (building ? active.Where(s => !s.Verify) : active).OrderBy(s => s.Id).FirstOrDefaultAsync(stoppingToken);
+                var deferred = building && scan == null && await active.AnyAsync(s => s.Verify, stoppingToken);
                 if (scan != null)
                 {
                     var before = await db.HealthFindings.MaxAsync(f => (int?)f.Id, stoppingToken) ?? 0;
@@ -190,7 +197,7 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     }
                 }
                 var downloading = await db.HealthOperations.Where(o => o.Kind == "repair" && o.Status == "downloading").ToListAsync(stoppingToken);
-                busy = scan != null || arrivals || downloading.Count > 0;
+                busy = scan != null || deferred || arrivals || downloading.Count > 0;
                 foreach (var op in downloading)
                 {
                     var items = await db.DownloadQueue.Where(q => q.HealthOperationId == op.Id).ToListAsync(stoppingToken);

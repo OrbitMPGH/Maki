@@ -522,7 +522,7 @@ public class AniListTracker(
             query($userId:Int,$page:Int){ Page(page:$page, perPage:25){
               pageInfo { hasNextPage }
               mediaList(userId:$userId, type:ANIME, sort: [MEDIA_ID]){
-                score(format: POINT_10) status progress
+                score(format: POINT_10) status progress updatedAt
                 media { id idMal title { romaji english } format episodes
                   startDate { year month day } endDate { year month day }
                   relations { edges { relationType node { id idMal type format } } } } } } }
@@ -623,7 +623,8 @@ public class AniListTracker(
             StartDate: FuzzyDateOf(media, "startDate"),
             EndDate: FuzzyDateOf(media, "endDate"),
             Episodes: GetInt(media, "episodes") is { } episodes and > 0 ? episodes : null,
-            Progress: GetInt(row, "progress"));
+            Progress: GetInt(row, "progress"),
+            ListUpdatedAtUtc: AnimeListFields.FromUnixSeconds(GetInt(row, "updatedAt")));
     }
 
     private static DateOnly? FuzzyDateOf(JsonElement media, string name) =>

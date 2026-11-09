@@ -35,11 +35,12 @@ public class PageConversionController(
     public record SamplesDto(IReadOnlyList<PageConversionSample> Samples);
 
     /// <param name="ConvertedFiles">Library files whose pages Maki converted.</param>
-    /// <param name="PendingFiles">Archives conversion has not looked at yet.</param>
+    /// <param name="PendingFiles">Archives conversion has not looked at yet, for the pass.</param>
+    /// <param name="QueuedFiles">New downloads and torrent imports waiting for the background queue.</param>
     /// <param name="TrashBytes">Originals still waiting in the upgrade trash.</param>
     /// <param name="OverrideSeries">Series whose own page conversion choice is not Default.</param>
-    public record LibraryDto(int ConvertedFiles, long SavedBytes, int PendingFiles, long TrashBytes, int TrashFiles, int TrashDays,
-        int RuleCount, int OverrideSeries);
+    public record LibraryDto(int ConvertedFiles, long SavedBytes, int PendingFiles, int QueuedFiles, long TrashBytes, int TrashFiles,
+        int TrashDays, int RuleCount, int OverrideSeries);
 
     /// <param name="Action">"skip" or "convert".</param>
     /// <param name="Stop">The stop a matching file is converted at, lowercase; required with "convert".</param>
@@ -74,6 +75,7 @@ public class PageConversionController(
         var convertedFiles = await converted.CountAsync(ct);
         var savedBytes = await converted.SumAsync(f => f.ConversionSavedBytes, ct);
         var pending = await PageConversionWorker.PendingQuery(db).CountAsync(ct);
+        var queued = await PageConversionWorker.QueuedQuery(db).CountAsync(ct);
         var trashed = db.PageConversionHistory.IgnoreQueryFilters().Where(h => h.TrashPath != null);
         var trashFiles = await trashed.CountAsync(ct);
         var trashBytes = await trashed.SumAsync(h => h.TrashBytes ?? 0, ct);
@@ -91,7 +93,7 @@ public class PageConversionController(
                 PageConversionHold.SettingsChanged => "settingsChanged",
                 _ => null
             }, snapshot.CurrentFile, snapshot.Pass),
-            new LibraryDto(convertedFiles, savedBytes, pending, trashBytes, trashFiles,
+            new LibraryDto(convertedFiles, savedBytes, pending, queued, trashBytes, trashFiles,
                 options.TrashRetentionDays, ruleCount, overrideSeries),
             new ParallelDto(PageConversionOptions.ParseParallel(await settings.GetAsync(SettingKeys.PageConversionParallel, ct)),
                 ImageWorkGate.Parallelism, ImageWorkGate.MaxConversionLimit)));
@@ -142,6 +144,8 @@ public class PageConversionController(
         if (changed)
         {
             await plans.RecheckAsync(await PageConversionOptions.LoadPlanAsync(db, ct), null, ct);
+            // Turning conversion on leaves files queued while it was off waiting on the worker's idle wake.
+            PageConversionWorker.Signal();
         }
 
         return await Status(ct);
@@ -179,6 +183,8 @@ public class PageConversionController(
         if (changed)
         {
             await plans.RecheckAsync(await PageConversionOptions.LoadPlanAsync(db, ct), null, ct);
+            // Turning conversion on leaves files queued while it was off waiting on the worker's idle wake.
+            PageConversionWorker.Signal();
         }
 
         return Ok(await RulesAsync(ct));
@@ -243,6 +249,8 @@ public class PageConversionController(
         if (changed)
         {
             await plans.RecheckAsync(await PageConversionOptions.LoadPlanAsync(db, ct), null, ct);
+            // Turning conversion on leaves files queued while it was off waiting on the worker's idle wake.
+            PageConversionWorker.Signal();
         }
 
         return await Status(ct);

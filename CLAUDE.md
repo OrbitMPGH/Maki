@@ -2,7 +2,7 @@
 
 See [README.md](README.md) for overview. Before a release, or when asked to smoke-test one, work through [docs/release-checklist.md](docs/release-checklist.md).
 
-Subsystem gotchas live in `.claude/rules/*.md` and load automatically when you touch matching files: `auth.md`, `series-matching.md`, `reader-progress.md`, `recommendations.md`, `opds.md`, `komga.md`, `downloads.md`, `stats-notifications.md`, `i18n.md`, `infra.md`, `design-system.md`, `pwa.md`, `storybook.md`, `enhance.md`, `archive.md`, `native.md`. `distribution/CLAUDE.md` and `src/Maki.Sources/CLAUDE.md` are separate nested files, same deal.
+Subsystem gotchas live in `.claude/rules/*.md` and load automatically when you touch matching files: `auth.md`, `series-matching.md`, `reader-progress.md`, `recommendations.md`, `opds.md`, `komga.md`, `downloads.md`, `stats-notifications.md`, `i18n.md`, `infra.md`, `design-system.md`, `pwa.md`, `storybook.md`, `enhance.md`, `archive.md`, `native.md`, `notes.md`. `distribution/CLAUDE.md` and `src/Maki.Sources/CLAUDE.md` are separate nested files, same deal.
 
 **Adding a file to one of those subsystems? Check its rule file's `paths` frontmatter.** The globs are prefix/suffix wildcards (e.g. `Services/*Download*.cs`), not a static list — most naturally-named new files match automatically. If a new file doesn't fit any existing pattern (unusual name, new area within the subsystem), add its path to that rule file's frontmatter so future sessions actually load the gotchas instead of silently missing them.
 
@@ -11,6 +11,10 @@ Subsystem gotchas live in `.claude/rules/*.md` and load automatically when you t
 **All new user-facing text goes through `t`/`<Trans>` (frontend) or `this.Fail(localizer, key)`/`ILocalizer` (backend). Never a raw English literal.** The app ships in eleven languages; a literal is invisible to the extractor and silently stays English. `.claude/rules/i18n.md` has the details, but it does not load on page files, which is why this line is here.
 
 No em dashes, anywhere. Avoid "AI writing" tells: no "it's not just X, it's Y", no rule-of-three lists, no "leverage"/"seamless"/"robust"/"delve" filler, no over-hedged "note that"/"it's worth mentioning" throat-clearing. Write plain, direct sentences like a developer explaining something to a teammate.
+
+## Release notes
+
+**A commit that changes something a user of the last release would notice adds or edits a file in `changes/`.** See [changes/README.md](changes/README.md) for the format. Fixes and tweaks to unreleased work add nothing (edit that feature's entry if its final form changed); reworking or removing an unreleased feature means rewriting or deleting its entry. Contributor PRs merged without one: add it at merge.
 
 ## Directory ownership
 

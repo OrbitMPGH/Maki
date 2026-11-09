@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Button, type ButtonProps } from '@mantine/core'
-import { IconArchiveOff } from '@tabler/icons-react'
+import { IconArchiveOff } from '../../lib/icons'
 import { Trans } from '@lingui/react/macro'
 import { useRestoreSeries, useSeries } from '../../api/hooks'
 import { useAuth } from '../../auth/AuthProvider'

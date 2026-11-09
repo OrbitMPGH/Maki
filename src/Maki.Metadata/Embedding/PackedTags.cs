@@ -7,16 +7,20 @@ namespace Maki.Metadata.Embedding;
 /// </summary>
 public sealed class PackedTags
 {
-    private readonly byte[] _data;
-    private readonly int[] _offsets;
+    private readonly Column<byte> _data;
+    private readonly Column<int> _offsets;
 
-    public PackedTags(byte[] data, int[] offsets)
+    public PackedTags(Column<byte> data, Column<int> offsets)
     {
         _data = data;
         _offsets = offsets;
     }
 
     public int Count => _offsets.Length - 1;
+
+    internal Column<byte> Data => _data;
+
+    internal Column<int> Offsets => _offsets;
 
     public ReadOnlySpan<byte> this[int row] => _data.AsSpan(_offsets[row], _offsets[row + 1] - _offsets[row]);
 

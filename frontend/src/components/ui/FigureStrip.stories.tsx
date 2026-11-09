@@ -31,6 +31,39 @@ export const Flush: Story = {
   args: { flush: true },
 }
 
+/** Stats: the change against the previous window as a chip, left off a zero. */
+export const WithDelta: Story = {
+  args: {
+    deltaLabel: 'vs previous 30 days',
+    figures: [
+      { label: 'Chapters', value: 1284, delta: 0.12 },
+      { label: 'Pages', value: 0, delta: -1 },
+      { label: 'Time read', value: '14h 20m', delta: -0.08 },
+    ],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await waitFor(() => expect(canvas.getByText('+12%')).toHaveAttribute('title', 'vs previous 30 days'))
+    await waitFor(() => expect(canvasElement.querySelectorAll('.figure-strip-delta')).toHaveLength(2))
+  },
+}
+
+/** Taste: values formatted by the caller, a dash for nothing measured, and a hint line. */
+export const FormattedWithHints: Story = {
+  args: {
+    figures: [
+      { label: 'You finish', value: '62%', hint: '31 of 50 series' },
+      { label: 'Typical chapter', value: '-', zero: true },
+      { label: 'Biggest day', value: '24 chapters' },
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('31 of 50 series')).toBeVisible()
+    await waitFor(() =>
+      expect(canvas.getByText('Typical chapter').closest('.figure-strip-item')).toHaveAttribute('data-zero', 'true'),
+    )
+  },
+}
+
 export const Loading: Story = {
   args: { loading: true },
   play: async ({ canvas }) => {

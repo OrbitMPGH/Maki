@@ -78,12 +78,12 @@ public class ReaderPrefsTests
     }
 
     [Fact]
-    public void Parse_of_a_blob_from_before_enhance_uses_off_and_the_balanced_preset()
+    public void Parse_of_a_blob_from_before_enhance_uses_off_maki_2x_and_the_balanced_fallback()
     {
         var spec = ReaderPrefsSpec.Parse("""{"mode":"double","splitWide":"split"}""");
 
         Assert.Equal("off", spec.Enhance);
-        Assert.Equal("a4k-m", spec.EnhanceMethod);
+        Assert.Equal("server:maki-2x", spec.EnhanceMethod);
         Assert.Equal("a4k-m", spec.EnhanceFallback);
     }
 
@@ -93,7 +93,7 @@ public class ReaderPrefsTests
         var spec = new ReaderPrefsSpec(Enhance: "max", EnhanceMethod: "server:nope", EnhanceFallback: "server:span-s").Sanitized();
 
         Assert.Equal("off", spec.Enhance);
-        Assert.Equal("a4k-m", spec.EnhanceMethod);
+        Assert.Equal("server:maki-2x", spec.EnhanceMethod);
         Assert.Equal("a4k-m", spec.EnhanceFallback);
     }
 
@@ -113,6 +113,7 @@ public class ReaderPrefsTests
     [InlineData("a4k-a")]
     [InlineData("server:span-s")]
     [InlineData("server:realesrgan-av3")]
+    [InlineData("server:maki-2x")]
     public void Sanitized_keeps_every_known_enhance_method(string method)
     {
         Assert.Equal(method, new ReaderPrefsSpec(EnhanceMethod: method).Sanitized().EnhanceMethod);
@@ -138,6 +139,18 @@ public class ReaderPrefsTests
         Assert.Equal("server:span-s", spec.EnhanceMethod);
         Assert.Equal("a4k-a", spec.EnhanceFallback);
         Assert.Contains("\"enhanceMethod\":\"server:span-s\"", json);
+    }
+
+    [Theory]
+    [InlineData(null, "line")]
+    [InlineData("line", "line")]
+    [InlineData("detailed", "detailed")]
+    [InlineData("off", "off")]
+    [InlineData("loud", "line")]
+    public void Sanitized_keeps_known_enhance_progress_styles(string? stored, string expected)
+    {
+        var json = stored is null ? """{"enhance":"always"}""" : $$"""{"enhanceProgress":"{{stored}}"}""";
+        Assert.Equal(expected, ReaderPrefsSpec.Parse(json).EnhanceProgress);
     }
 
     [Fact]

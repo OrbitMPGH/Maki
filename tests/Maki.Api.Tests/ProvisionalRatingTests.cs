@@ -191,7 +191,7 @@ public sealed class ProvisionalRatingTests : IDisposable
     }
 
     [Fact]
-    public async Task Every_score_lands_in_the_history_and_a_repeat_does_not()
+    public async Task A_change_at_the_same_chapter_replaces_the_last_entry_of_its_kind()
     {
         var alice = _db.SeedUser("alice");
         var seriesId = SeedSeries();
@@ -206,9 +206,47 @@ public sealed class ProvisionalRatingTests : IDisposable
         }
 
         var history = History(alice, seriesId);
-        Assert.Equal([7, 8, 8], history.Select(s => s.Rating));
-        Assert.Equal([false, false, true], history.Select(s => s.Final));
+        Assert.Equal([8, 8], history.Select(s => s.Rating));
+        Assert.Equal([false, true], history.Select(s => s.Final));
         Assert.Equal(RatingSnapshotOrigin.Finish, history[^1].Origin);
+    }
+
+    [Fact]
+    public async Task A_score_at_a_later_chapter_is_a_new_entry_and_a_correction_keeps_its_origin()
+    {
+        var alice = _db.SeedUser("alice");
+        var seriesId = SeedSeries();
+
+        using (var db = _db.NewContext(alice))
+        {
+            await RatingSnapshotService.RecordAsync(db, alice, seriesId, 7, false, 5, RatingSnapshotOrigin.Manual, default);
+            await RatingSnapshotService.RecordAsync(db, alice, seriesId, 3, false, 12, RatingSnapshotOrigin.Checkpoint, default);
+            await RatingSnapshotService.RecordAsync(db, alice, seriesId, 8, false, 12, RatingSnapshotOrigin.Manual, default);
+            await RatingSnapshotService.RecordAsync(db, alice, seriesId, 8, false, 30, RatingSnapshotOrigin.Manual, default);
+        }
+
+        var history = History(alice, seriesId);
+        Assert.Equal([7, 8, 8], history.Select(s => s.Rating));
+        Assert.Equal([5.0, 12.0, 30.0], history.Select(s => s.AtChapter!.Value));
+        Assert.Equal(RatingSnapshotOrigin.Checkpoint, history[1].Origin);
+    }
+
+    [Fact]
+    public async Task A_correction_after_the_window_is_a_new_entry()
+    {
+        var alice = _db.SeedUser("alice");
+        var seriesId = SeedSeries();
+
+        using (var db = _db.NewContext(alice))
+        {
+            await RatingSnapshotService.RecordAsync(db, alice, seriesId, 7, false, 5, RatingSnapshotOrigin.Manual, default);
+            var first = db.RatingSnapshots.Single();
+            first.CreatedAt = DateTime.UtcNow - RatingSnapshotService.CorrectionWindow - TimeSpan.FromMinutes(1);
+            await db.SaveChangesAsync();
+            await RatingSnapshotService.RecordAsync(db, alice, seriesId, 8, false, 5, RatingSnapshotOrigin.Manual, default);
+        }
+
+        Assert.Equal([7, 8], History(alice, seriesId).Select(s => s.Rating));
     }
 
     [Fact]

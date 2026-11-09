@@ -17,6 +17,32 @@ namespace Maki.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
 
+            modelBuilder.Entity("Maki.Core.Entities.AnimeResumeRailDismissal", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double?>("CoveredTo")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime>("DismissedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("MangaBakaId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "MangaBakaId")
+                        .IsUnique();
+
+                    b.ToTable("AnimeResumeRailDismissals");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.AnimeSignal", b =>
                 {
                     b.Property<long>("Id")
@@ -36,6 +62,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Format")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ListUpdatedAtUtc")
                         .HasColumnType("TEXT");
 
                     b.Property<long?>("MalAnimeId")
@@ -108,6 +137,9 @@ namespace Maki.Data.Migrations
                     b.Property<int?>("ChapterFileId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("DelistedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("FileAutoRemoved")
                         .HasColumnType("INTEGER");
 
@@ -163,6 +195,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("ConversionCheckedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("ConversionQueuedAtUtc")
                         .HasColumnType("TEXT");
 
                     b.Property<long>("ConversionSavedBytes")
@@ -229,14 +264,73 @@ namespace Maki.Data.Migrations
                     b.HasIndex("ConversionCheckedAtUtc")
                         .HasFilter("ConversionCheckedAtUtc IS NULL");
 
+                    b.HasIndex("ConversionQueuedAtUtc")
+                        .HasFilter("ConversionQueuedAtUtc IS NOT NULL");
+
                     b.HasIndex("DateAdded");
 
                     b.HasIndex("MeasuredAtUtc")
                         .HasFilter("MeasuredAtUtc IS NULL");
 
+                    b.HasIndex("SeriesId", "DateAdded");
+
                     b.HasIndex("SeriesId", "SourceName");
 
                     b.ToTable("ChapterFiles");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.ChapterNote", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("AuthorId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ChapterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("DeletedByModerator")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("EditedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("PageIndex")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Visibility")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("ChapterId");
+
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("SeriesId");
+
+                    b.ToTable("ChapterNotes");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.ChapterProgress", b =>
@@ -765,6 +859,9 @@ namespace Maki.Data.Migrations
                     b.Property<string>("Kind")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("RelinkFileId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int?>("SourceMappingId")
                         .HasColumnType("INTEGER");
@@ -2299,6 +2396,83 @@ namespace Maki.Data.Migrations
                     b.ToTable("SeriesTags", (string)null);
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.ShortlistEntry", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("MangaBakaId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SavedFrom")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SavedFromDetail")
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("SavedStatus")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("SavedTotalChapters")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "MangaBakaId")
+                        .IsUnique();
+
+                    b.ToTable("ShortlistEntries");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.SourceFailure", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ErrorKey")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("OccurredAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SourceMappingId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OccurredAtUtc");
+
+                    b.HasIndex("SourceMappingId", "OccurredAtUtc");
+
+                    b.ToTable("SourceFailures");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.SourceMapping", b =>
                 {
                     b.Property<int>("Id")
@@ -3195,6 +3369,15 @@ namespace Maki.Data.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.AnimeResumeRailDismissal", b =>
+                {
+                    b.HasOne("Maki.Data.Identity.MakiUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.AnimeSignal", b =>
                 {
                     b.HasOne("Maki.Data.Identity.MakiUser", null)
@@ -3224,6 +3407,31 @@ namespace Maki.Data.Migrations
 
             modelBuilder.Entity("Maki.Core.Entities.ChapterFile", b =>
                 {
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.ChapterNote", b =>
+                {
+                    b.HasOne("Maki.Data.Identity.MakiUser", null)
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Maki.Core.Entities.Chapter", null)
+                        .WithMany()
+                        .HasForeignKey("ChapterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Maki.Core.Entities.ChapterNote", null)
+                        .WithMany()
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("Maki.Core.Entities.Series", null)
                         .WithMany()
                         .HasForeignKey("SeriesId")
@@ -3637,6 +3845,26 @@ namespace Maki.Data.Migrations
                         .HasForeignKey("TagId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.ShortlistEntry", b =>
+                {
+                    b.HasOne("Maki.Data.Identity.MakiUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.SourceFailure", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.SourceMapping", "SourceMapping")
+                        .WithMany()
+                        .HasForeignKey("SourceMappingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SourceMapping");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.SourceMapping", b =>

@@ -196,7 +196,7 @@ public class ActivityStatsService(
         int Count(StatsEventType t) => events.Count(e => e.Type == t);
 
         var daysActive = events
-            .Where(e => e.Type is StatsEventType.ChaptersRead or StatsEventType.VolumesRead)
+            .Where(e => e.Value > 0 && e.Type is StatsEventType.ChaptersRead or StatsEventType.VolumesRead or StatsEventType.ReadingTime)
             .Select(e => Local(e.Timestamp).Date)
             .Distinct()
             .Count();

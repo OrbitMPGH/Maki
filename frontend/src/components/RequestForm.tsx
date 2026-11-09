@@ -1,5 +1,5 @@
 import { Button, Group, NumberInput, Stack, Text, Textarea } from '@mantine/core'
-import { IconSend } from '@tabler/icons-react'
+import { IconSend } from '../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { FormEvent } from 'react'
 
@@ -54,8 +54,11 @@ export function RequestForm({
         onSubmit()
       }}
     >
-      <Text size="xs" fw={600} c="var(--ink-3)">
-        <Trans>Chapters - leave blank for all</Trans>
+      <Text size="xs" c="var(--ink-3)">
+        <Text span size="xs" fw={600}>
+          <Trans>Chapters</Trans>
+        </Text>{' '}
+        <Trans>Leave blank for all.</Trans>
       </Text>
       <Group gap="sm" align="flex-end" className="requests-form-range">
         <NumberInput

@@ -1,72 +1,10 @@
-import { Badge, Card, Group, Progress, SimpleGrid, Stack, Text, ThemeIcon, Title, Tooltip } from '@mantine/core'
-import {
-  IconArmchair,
-  IconBook,
-  IconCalendar,
-  IconCheck,
-  IconClock,
-  IconCompass,
-  IconConfetti,
-  IconDownload,
-  IconFlag,
-  IconFlame,
-  IconGhost,
-  IconHelpHexagon,
-  IconLibrary,
-  IconLock,
-  IconMoon,
-  IconMoonStars,
-  IconMountain,
-  IconSparkles,
-  IconSunrise,
-  IconWorld,
-  type Icon,
-} from '@tabler/icons-react'
+import { Badge, Card, Group, Progress, SimpleGrid, Stack, Text, Title, Tooltip } from '@mantine/core'
+import { IconLock } from '../../lib/icons'
+import { AchievementBadge, tierColor } from './AchievementBadge'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { Achievement } from '../../api/hooks'
 import { useAuth } from '../../auth/AuthProvider'
 import { formatNumber, formatReadingTime } from '../../format'
-
-/** Server icon keys (`AchievementCatalog.cs`) mapped to the closest Tabler glyph. No literal owl icon
- * exists, so night-owl borrows the starry moon instead. */
-const ICONS: Record<string, Icon> = {
-  book: IconBook,
-  clock: IconClock,
-  flag: IconFlag,
-  compass: IconCompass,
-  calendar: IconCalendar,
-  flame: IconFlame,
-  sparkle: IconSparkles,
-  moon: IconMoon,
-  sofa: IconArmchair,
-  mountain: IconMountain,
-  check: IconCheck,
-  globe: IconWorld,
-  owl: IconMoonStars,
-  sunrise: IconSunrise,
-  ghost: IconGhost,
-  confetti: IconConfetti,
-  library: IconLibrary,
-  download: IconDownload,
-}
-
-function iconFor(key: string): Icon {
-  return ICONS[key] ?? IconHelpHexagon
-}
-
-/**
- * Tier colours run cool to warm so the ladder reads at a glance without needing the label. Locked
- * rows deliberately keep their shape and lose only their colour: a badge you have not earned should
- * still show you what it takes.
- */
-const TIER_COLORS = [
-  'var(--tier-1)',
-  'var(--tier-2)',
-  'var(--tier-3)',
-  'var(--tier-4)',
-  'var(--tier-5)',
-  'var(--tier-6)',
-]
 
 const TIER_SOFT_COLORS = [
   'var(--tier-1-soft)',
@@ -76,10 +14,6 @@ const TIER_SOFT_COLORS = [
   'var(--tier-5-soft)',
   'var(--tier-6-soft)',
 ]
-
-function tierColor(tier: number): string {
-  return TIER_COLORS[Math.min(Math.max(tier, 1), TIER_COLORS.length) - 1]
-}
 
 /** Several tier hues miss 4.5:1 as small text; pulling them toward the ink keeps the hue and passes. */
 function tierTextColor(tier: number): string {
@@ -167,17 +101,7 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
       <Stack gap={6}>
         <Group justify="space-between" wrap="nowrap" gap="xs">
           <Group gap={8} wrap="nowrap" style={{ minWidth: 0 }}>
-            <ThemeIcon
-              size="sm"
-              radius="xl"
-              variant={earned ? 'light' : 'default'}
-              color={earned ? tierColor(achievement.tier) : 'var(--neutral)'}
-            >
-              {(() => {
-                const Icon = iconFor(achievement.icon)
-                return <Icon size={14} />
-              })()}
-            </ThemeIcon>
+            <AchievementBadge icon={achievement.icon} tier={achievement.tier} earned={earned} />
             <Text fw={600} size="sm" lineClamp={1}>
               {achievement.name}
             </Text>
@@ -187,17 +111,21 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
               <Badge
                 size="sm"
                 variant="light"
-                style={{ backgroundColor: tierSoftColor(achievement.tier), color: tierTextColor(achievement.tier) }}
+                style={{
+                  flexShrink: 0,
+                  backgroundColor: tierSoftColor(achievement.tier),
+                  color: tierTextColor(achievement.tier),
+                }}
               >
                 {achievement.tierName}
               </Badge>
             ) : (
-              <Badge size="sm" variant="light" color="var(--ok)">
+              <Badge size="sm" variant="light" color="var(--ok)" style={{ flexShrink: 0 }}>
                 <Trans>Earned</Trans>
               </Badge>
             )
           ) : (
-            <IconLock size={14} opacity={0.5} />
+            <IconLock size={16} opacity={0.5} />
           )}
         </Group>
 
@@ -215,12 +143,12 @@ function AchievementCard({ achievement }: { achievement: Achievement }) {
               aria-label={achievement.name}
             />
             <Group justify="space-between" gap="xs">
-              <Text size="xs" c="var(--ink-3)" className="tnum">
+              <Text size="xs" c="var(--ink-3)">
                 {formatValue(achievement, achievement.value)}
               </Text>
               {next !== null && (
                 <Tooltip label={t`Next tier at ${nextValue}`}>
-                  <Text size="xs" c="var(--ink-3)" className="tnum">
+                  <Text size="xs" c="var(--ink-3)">
                     / {nextValue}
                   </Text>
                 </Tooltip>

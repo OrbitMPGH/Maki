@@ -19,6 +19,8 @@ the owner.
 - Every browser step is done with the devtools console open (or, for an agent,
   `read_console_messages` after each page). A red console error on any page is a failure even if
   the page looks fine.
+- Run one test container at a time (the 4 GB Docker VM cannot hold several) and delete any `*-shm`
+  files from the config template before starting one.
 - After the run, read the Maki log in `{config}/logs/` and look at every `[ERR]` and `[WRN]` line
   written during the session. Anything that isn't explained by a deliberate failure test is a
   finding.
@@ -116,23 +118,23 @@ grows with the page number, so wrong page order is obvious in the reader.
 
 | Folder | What it tests | Expected |
 |---|---|---|
-| `Dandadan (2021)` | Plain CBZs, a decimal chapter no source lists, ComicInfo.xml in Ch.1 | Ch.1, 2 and 3 link. Dandadan has no chapter 2.5 anywhere, so Ch.2.5 stays on disk unlinked and the import row lists it as having no matching chapter |
+| `Dandadan (2021)` | Plain CBZs, a decimal chapter no source lists, ComicInfo.xml in Ch.1 | Ch.1, 2 and 3 link. Dandadan has no chapter 2.5 anywhere, so Ch.2.5 becomes its own chapter row built from the file |
 | `Chainsaw Man` | `.zip` | 3 chapters, placed as CBZ without a repack |
 | `Sousou no Frieren` | `.cbr`, romanised title | Matches Frieren, 3 chapters repacked to CBZ |
 | `Blue Period` | `.cb7`, `.7z`, `.cbt`, and a 7z named `.cbz` | 4 chapters, all real CBZ afterwards |
-| `Vagabond` | Folders of loose images | 2 volumes |
+| `Vagabond` | Folders of loose images whose page names carry chapter markers (`Vagabond v01 c001 p001.png`) | 2 volumes, built into CBZs that link to the chapters the page names mark (vol 1: chapters 1 and 2, vol 2: chapters 3 and 4) |
 | `Oyasumi Punpun` | `.pdf` | 2 volumes kept as PDF, 4 pages each |
 | `Spy x Family` | Ch.1 as both `.cbr` and `.cbz`, plus `.txt`/`.nfo` | 2 chapters, Ch.1 once, other files ignored |
 | `Berserk` | Ch.002 is a truncated archive | Ch.001 imports, the import row lists Ch.002 as unreadable, nothing crashes |
 | `ワンパンマン` | Non-ASCII folder and file names | Matches One-Punch Man, names survive the import |
 | `Totally Made Up Series 9999` | No catalogue match | Offers no match and can be left out |
-| `Empty Series Folder` | No comics | Listed with 0 comics, nothing to import |
+| `Empty Series Folder` | No comics | Skipped by the scan, so it is not listed |
 
 - [ ] **3.1** Scan `/import` from the Import page. Every row matches the table above.
 - [ ] **3.2** Import everything that matched. It finishes without errors and the series show up in
       the library with their chapters marked as on disk.
-- [ ] **3.3** In the run's `import` folder, every chapter is now a CBZ except the PDFs, and
-      unrelated files were left alone.
+- [ ] **3.3** In the run's `import` folder, every chapter has a CBZ, non-CBZ originals are left in
+      place next to the new CBZ, and unrelated files were left alone.
 - [ ] **3.4** Open one chapter of each kind in the reader (a repacked one, a loose-image volume, a
       PDF). Pages are in order.
 
@@ -157,8 +159,12 @@ grows with the page number, so wrong page order is obvious in the reader.
       a magnet-only result reaches the client. Then switch back to Prowlarr and check its indexer
       selection is still there.
 - [ ] **4.8** Page conversion, when the release touches images or the converter: under
-      **Settings → Library → Page conversion** pick WebP, download a chapter, and open the CBZ. JPEG
-      pages are WebP and PNG pages are lossless WebP. Repeat with AVIF. Run the library pass on a
+      **Settings → Library → Page conversion** pick WebP and download a chapter. The download
+      completes without waiting on the encode, the card shows it under New downloads, and within a
+      minute or so the CBZ has WebP pages for JPEG. PNG pages become lossless WebP only with **Keep PNG pages
+      lossless** on, otherwise they follow the chosen stop. Open a chapter in the
+      reader while it is still queued: it stays as downloaded until ten minutes after you stop
+      reading. Repeat with AVIF. Run the library pass on a
       small series: it shows what it saved, pausing and resuming works, and the originals are in
       `.maki-trash/<series id>/conv-*`. The chapter still opens in the reader.
 
@@ -170,8 +176,9 @@ Use a scratch series here: reaching a chapter's last page marks it read and adds
       the page strip all work.
 - [ ] **5.2** Switch paged, double-page, 1:1 and continuous scroll. Each renders correctly.
 - [ ] **5.3** Leave mid-chapter and reopen: it resumes on the right page.
-- [ ] **5.4** Finish the chapter. The end screen offers the next chapter, and the chapter now shows
-      as read on the series page and in **Continue reading** on Home.
+- [ ] **5.4** With **Auto-advance to next chapter** off, finish the chapter. The end screen offers the next
+      chapter, and the chapter now shows as read on the series page and in **Continue reading** on
+      Home. (With auto-next on, the reader goes straight into the next chapter instead, which is expected.)
 - [ ] **5.5** Incognito toggle: reading with it on writes no progress.
 - [ ] **5.6** Phone width (375px): the reader and the series page are usable, nothing overflows
       sideways.
@@ -259,6 +266,13 @@ builds some on the old version first.
       are all intact.
 - [ ] **8.4** Queue another download on the upgraded instance and read it: the same flow still
       works end to end.
+- [ ] **8.5** If `EmbeddingModelProfile.Base` changed since the previous tag (its `Version`,
+      `Dimensions` or `PrebuiltTag`), the prebuilt index for it is published **before** the release
+      is tagged: `./distribution/publish-embeddings.ps1 -Cuda -Publish` uploads to the profile's
+      `PrebuiltTag`. Without it every upgraded install skips its old-model vectors at load and has
+      no semantic search or recommendations until an admin presses Build in settings, which is
+      hours on a CPU. On the upgraded instance the log then shows the prebuilt index installing a
+      few minutes after startup.
 
 ## 9. Release-specific
 

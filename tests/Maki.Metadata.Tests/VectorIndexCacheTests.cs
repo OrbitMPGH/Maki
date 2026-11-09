@@ -169,6 +169,28 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task An_empty_build_is_not_repeated_until_the_vectors_change()
+    {
+        // After a model change every stored vector has the old width, and without a memo each
+        // search and recommendation request ran the full scan again to find nothing.
+        Store().UpsertBatch([(1L, "old", [1f, 0f, 0f, 0f])]);
+        var cache = Cache(dimensions: 8);
+        var builds = 0;
+        cache.AfterBuildForTest = () => builds++;
+
+        Assert.Null(await cache.GetAsync());
+        Assert.Null(await cache.GetAsync());
+        cache.WarmInBackground();
+        Assert.Equal(1, builds);
+
+        Store().UpsertBatch([(2L, "new", [0f, 1f, 0f, 0f, 0f, 0f, 0f, 0f])]);
+
+        var index = await cache.GetAsync();
+        Assert.Equal(2, builds);
+        Assert.Equal([2L], Enumerable.Range(0, index!.Count).Select(index.IdAt));
+    }
+
+    [Fact]
     public async Task A_taste_artifact_holding_a_null_vector_does_not_break_the_build()
     {
         Store().UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f]), (2L, "h", [0f, 1f, 0f, 0f])]);
@@ -207,6 +229,9 @@ public class VectorIndexCacheTests : IDisposable
         var cache = Cache(dimensions: 4);
 
         var first = await cache.GetAsync();
+        // A fresh build is swapped for its memory-mapped twin once the background snapshot save lands.
+        await cache.SnapshotSavedForTest;
+        first = await cache.GetAsync();
         Assert.Equal(1, first!.Count);
         Assert.Same(first, await cache.GetAsync()); // cached instance, not rebuilt
 
@@ -433,6 +458,9 @@ public class VectorIndexCacheTests : IDisposable
         Assert.NotSame(first, second);
         Assert.True(second!.TryGetRow(1, out row));
         Assert.Equal(20.0, second.RatingAt(row), 1);
+        // A fresh build is swapped for its memory-mapped twin once the background snapshot save lands.
+        await cache.SnapshotSavedForTest;
+        second = await cache.GetAsync();
         Assert.Same(second, await cache.GetAsync());
     }
 
@@ -442,6 +470,49 @@ public class VectorIndexCacheTests : IDisposable
             new EmbeddingOptions(_dir, Path.Combine(_dir, "missing.db"), _dir, EmbeddingModelProfile.Base),
             new MangaBakaDumpOptions(_dumpPath, _dir),
             NullLogger<VectorIndexCache>.Instance).GetAsync());
+
+    [Fact]
+    public async Task A_swap_copies_into_the_existing_database_instead_of_replacing_it()
+    {
+        Store().UpsertBatch([(1L, "old", [1f, 0f, 0f, 0f])]);
+        var staged = Path.Combine(_dir, "embeddings.db.partial");
+        var stagedStore = new EmbeddingStore(new EmbeddingOptions(_dir, staged, _dir, EmbeddingModelProfile.Base));
+        stagedStore.EnsureSchema();
+        stagedStore.UpsertBatch([(2L, "new", [0f, 1f, 0f, 0f]), (3L, "new", [0f, 0f, 1f, 0f])]);
+        SqliteKeeper.Release(staged);
+        SqliteConnection.ClearAllPools();
+        var logger = new RecordingLogger();
+
+        Assert.True(await Cache(dimensions: 4, logger).SwapDatabaseAsync(staged));
+
+        Assert.DoesNotContain(logger.Messages, m => m.Contains("replacing the file instead"));
+        Assert.Equal(["new", "new"], Store().GetHashes().OrderBy(kv => kv.Key).Select(kv => kv.Value));
+        Assert.True(!File.Exists(_vectorPath + "-wal") || new FileInfo(_vectorPath + "-wal").Length == 0);
+    }
+
+    [Fact]
+    public async Task A_swap_while_a_writer_holds_the_database_changes_nothing()
+    {
+        Store().UpsertBatch([(1L, "old", [1f, 0f, 0f, 0f])]);
+        var staged = Path.Combine(_dir, "embeddings.db.partial");
+        var stagedStore = new EmbeddingStore(new EmbeddingOptions(_dir, staged, _dir, EmbeddingModelProfile.Base));
+        stagedStore.EnsureSchema();
+        stagedStore.UpsertBatch([(2L, "new", [0f, 1f, 0f, 0f])]);
+        SqliteKeeper.Release(staged);
+
+        using (var writer = new SqliteConnection($"Data Source={_vectorPath};Pooling=False"))
+        {
+            writer.Open();
+            using var begin = writer.CreateCommand();
+            begin.CommandText = "BEGIN IMMEDIATE";
+            begin.ExecuteNonQuery();
+
+            Assert.False(await Cache(dimensions: 4).SwapDatabaseAsync(staged));
+        }
+
+        Assert.True(File.Exists(staged));
+        Assert.Equal(["old"], Store().GetHashes().Values);
+    }
 
     private EmbeddingStore Store()
     {

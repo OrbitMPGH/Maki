@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect } from 'storybook/test'
 import { Anchor } from '@mantine/core'
-import { IconBook, IconSparkles } from '@tabler/icons-react'
+import { IconBook, IconCompass } from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import { SectionHeader } from './SectionHeader'
 
@@ -17,7 +17,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {}
 
 export const WithCount: Story = {
-  args: { icon: IconSparkles, title: 'Recommended', count: 24 },
+  args: { icon: IconCompass, title: 'Recommended', count: 24 },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { level: 2, name: 'Recommended' })).toBeVisible()
     await expect(await canvas.findByText('24')).toBeVisible()
@@ -26,12 +26,12 @@ export const WithCount: Story = {
 
 export const WithAction: Story = {
   args: {
-    icon: IconSparkles,
+    icon: IconCompass,
     title: 'Recommended',
     chevron: true,
     action: (
       <Anchor component={Link} to="/discover/recommended" size="sm">
-        Find more
+        Show more
       </Anchor>
     ),
   },

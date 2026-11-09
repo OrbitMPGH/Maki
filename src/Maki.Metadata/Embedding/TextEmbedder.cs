@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Maki.Core.Io;
 using Microsoft.Extensions.Logging;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
@@ -122,6 +123,11 @@ public sealed class TextEmbedder(
                 throw;
             }
 
+            // The session holds its own copy of the weights, so the file's pages would only sit in
+            // the container's page cache (about 110 MB) until the next load.
+            PageCache.DropAfterScan(options.ModelPath);
+            PageCache.DropAfterScan(options.ModelDataPath);
+
             // Read the graph rather than assume it. token_type_ids is a BERT-family input that the
             // Gemma export simply does not declare, and ONNX Runtime rejects a run that feeds an
             // input the graph never asked for just as hard as one that omits a required input.
@@ -214,7 +220,7 @@ public sealed class TextEmbedder(
     /// reports whether it did.
     ///
     /// <para>
-    /// The default model is ~240 MB resident and was held for the life of the process once anything
+    /// The default model is ~140 MB resident and was held for the life of the process once anything
     /// touched it — a single natural-language search, or one local indexing pass — even though a
     /// self-hosted instance spends nearly all its time embedding nothing. Recommendations do not
     /// need it at all: they score seed vectors that already sit in the index, so only a typed query
@@ -522,6 +528,9 @@ public sealed class TextEmbedder(
         // is no half-precision case to handle here.
         var output = results.First(r => r.Name == outputName).AsTensor<float>();
         var dim = output.Dimensions[^1];
+        // A Matryoshka-trained model keeps its leading dimensions meaningful on their own, so a
+        // profile narrower than the graph takes those and renormalizes.
+        var width = Math.Min(dim, options.Dimensions);
         var mean = options.Model.Pooling == EmbeddingPooling.Mean;
 
         // The multi-index indexer on Tensor<T> takes a params array, so reading element by element
@@ -531,14 +540,14 @@ public sealed class TextEmbedder(
 
         if (pooled)
         {
-            // Already [batch, dim] and already unit length; the normalize below is a no-op kept for
-            // the invariant rather than for the arithmetic. Masking happened inside the graph, so
-            // padding is handled there and the row lengths are not needed here.
+            // Already [batch, dim] and unit length, so the normalize below only matters when the
+            // profile truncates. Masking happened inside the graph, so padding is handled there
+            // and the row lengths are not needed here.
             var done = new float[batch][];
             for (var b = 0; b < batch; b++)
             {
-                var vec = new float[dim];
-                for (var h = 0; h < dim; h++)
+                var vec = new float[width];
+                for (var h = 0; h < width; h++)
                 {
                     vec[h] = data[(b * dim) + h];
                 }
@@ -553,7 +562,7 @@ public sealed class TextEmbedder(
         var vectors = new float[batch][];
         for (var b = 0; b < batch; b++)
         {
-            var vec = new float[dim];
+            var vec = new float[width];
             if (options.Model.Pooling == EmbeddingPooling.LastToken)
             {
                 // The final REAL token, not the final padded one. Sequences are right-padded to the
@@ -561,7 +570,7 @@ public sealed class TextEmbedder(
                 // longest - and in a causal model only the last real position has attended to the
                 // whole sequence, which is the entire reason this pooling exists.
                 var last = rows[b].Length - 1;
-                for (var h = 0; h < dim; h++)
+                for (var h = 0; h < width; h++)
                 {
                     vec[h] = data[(((b * seq) + last) * dim) + h];
                 }
@@ -574,20 +583,20 @@ public sealed class TextEmbedder(
                 var length = rows[b].Length;
                 for (var t = 0; t < length; t++)
                 {
-                    for (var h = 0; h < dim; h++)
+                    for (var h = 0; h < width; h++)
                     {
                         vec[h] += data[(((b * seq) + t) * dim) + h];
                     }
                 }
 
-                for (var h = 0; h < dim; h++)
+                for (var h = 0; h < width; h++)
                 {
                     vec[h] /= length;
                 }
             }
             else
             {
-                for (var h = 0; h < dim; h++)
+                for (var h = 0; h < width; h++)
                 {
                     vec[h] = data[b * seq * dim + h]; // CLS token = position 0
                 }
@@ -620,6 +629,15 @@ public sealed class TextEmbedder(
     {
         BertTokenizer bert => bert.EncodeToIds(text, addSpecialTokens: true),
         _ => tokenizer.EncodeToIds(text),
+    };
+
+    /// <summary>A SentencePiece id in XLM-R's fairseq layout. See <see cref="EmbeddingModelProfile.FairseqTokenIds"/>.</summary>
+    internal static long FairseqId(int id) => id switch
+    {
+        0 => 3,
+        1 => 0,
+        2 => 2,
+        _ => id + 1L,
     };
 
     private IReadOnlyList<int> Encode(string text) => _tokenizer is { } t
@@ -660,10 +678,16 @@ public sealed class TextEmbedder(
             count = Math.Min(ids.Count, options.MaxTokens - 1);
         }
 
+        var fairseq = options.Model.FairseqTokenIds;
         var tokens = new long[isDecoder ? count + 1 : Math.Max(count, 2)];
         for (var i = 0; i < count; i++)
         {
-            tokens[i] = ids[i];
+            tokens[i] = fairseq ? FairseqId(ids[i]) : ids[i];
+        }
+
+        if (fairseq && ids.Count > options.MaxTokens)
+        {
+            tokens[count - 1] = options.Model.EndOfSequenceToken;
         }
 
         if (isDecoder)

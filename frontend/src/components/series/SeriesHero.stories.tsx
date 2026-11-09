@@ -4,6 +4,7 @@ import { Button, Tabs } from '@mantine/core'
 import { http, HttpResponse } from 'msw'
 import { api, neverResolve } from '../../../.storybook/mocks/api'
 import { seriesDto, seriesMsw } from '../../../.storybook/mocks/series'
+import { chaptersFor } from '../../../.storybook/mocks/series/fixtures'
 import { SeriesHero, SeriesHeroSkeleton } from './SeriesHero'
 
 const tabs = (
@@ -119,6 +120,46 @@ export const NothingWantedYet: Story = {
 export const NoReadTracking: Story = {
   args: { series: seriesDto(3) },
   parameters: { msw: seriesMsw(http.get(api('/reader/used'), () => HttpResponse.json({ used: false }))) },
+}
+
+/** Every count on the page explained: specials, an unwanted chapter, the sources' reach, MangaBaka's total and where the reader is. */
+export const ChapterCountsExplained: Story = {
+  args: {
+    series: seriesDto(1, {
+      knownChapterCount: 42,
+      wantedChapterCount: 41,
+      chapterFileCount: 41,
+      readChapterCount: 25,
+      totalChapters: 45,
+    }),
+    readUpTo: 24,
+    nextChapter: 'Vol.3 Ch.25',
+  },
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/chapter'), () =>
+        HttpResponse.json(chaptersFor(1, { limit: 40, specials: [10.5, 20.5], unwanted: [40], trailingMissing: 0 })),
+      ),
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const button = await canvas.findByRole('button', { name: 'How these chapter counts add up' })
+    await waitFor(() => expect(within(canvasElement).getByText('1 more listed, not wanted')).toBeVisible())
+    await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'false'))
+    button.focus()
+    await userEvent.keyboard('{Enter}')
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'How these chapter counts add up' })
+    await waitFor(() => expect(Array.from(dialog.querySelectorAll('p')).map((p) => p.textContent)).toEqual([
+      '42 chapters are listed, the count on the Chapters tab and under Chapters known.',
+      '2 of them have a decimal number or none, like extras or specials.',
+      'Downloads counts the 41 chapters you want or already have. 1 more is listed but not wanted.',
+      'Your sources go up to ch. 40.',
+      'MangaBaka lists 45 chapters.',
+      'You have finished 25 chapters, up to ch. 24. Next up is Vol.3 Ch.25.',
+    ]))
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'false'))
+  },
 }
 
 export const NoCover: Story = {

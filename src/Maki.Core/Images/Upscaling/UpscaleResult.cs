@@ -18,6 +18,7 @@ public static class UpscaleReasons
     public const string InferenceFailed = "inferenceFailed";
     public const string EncodeFailed = "encodeFailed";
     public const string CacheWriteFailed = "cacheWriteFailed";
+    public const string Abandoned = "abandoned";
 }
 
 /// <param name="Extension">"webp" or "jpg", without the dot. Null unless Ready.</param>

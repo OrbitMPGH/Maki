@@ -1,5 +1,5 @@
 import { ActionIcon, FocusTrap } from '@mantine/core'
-import { IconX } from '@tabler/icons-react'
+import { IconX } from '../../lib/icons'
 import { useEffect } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 
@@ -35,6 +35,15 @@ export default function ShortcutSheet({ rtl, onClose }: { rtl: boolean; onClose:
       ],
     },
     {
+      title: t`Continuous`,
+      items: [
+        { keys: [t`Space`, t`Page Down`], label: t`Down a screen` },
+        { keys: [t`Shift + Space`, t`Page Up`], label: t`Up a screen` },
+        { keys: ['A'], label: t`Auto-scroll on or off` },
+        { keys: ['[', ']'], label: t`Auto-scroll slower and faster` },
+      ],
+    },
+    {
       title: t`Layout`,
       items: [
         { keys: ['1'], label: t`Single page` },
@@ -42,6 +51,7 @@ export default function ShortcutSheet({ rtl, onClose }: { rtl: boolean; onClose:
         { keys: ['3'], label: t`Continuous` },
         { keys: ['D'], label: t`Switch reading direction` },
         { keys: ['C'], label: t`Crop borders on or off` },
+        { keys: ['E'], label: t`Enhance on Always, or back` },
         { keys: ['+', '−'], label: t`Zoom in and out` },
         { keys: ['0'], label: t`Reset zoom` },
       ],

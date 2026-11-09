@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Button, Group, Stack, Text, Title } from '@mantine/core'
-import { IconCloudOff, IconPlus, IconQuestionMark, type Icon } from '@tabler/icons-react'
+import { IconCloudOff, IconPlus, IconQuestionMark, type Icon } from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import { IconBrandMark } from '../IconBrandMark'
 
@@ -20,6 +20,10 @@ type Mood = 'asleep' | 'asking' | 'pleased'
  *
  * `mood` puts the mascot beside the text of the inline form (asleep for an empty queue or list,
  * pleased when there is nothing left to deal with, asking when it needs something from you).
+ *
+ * `framed` is for a section whose content is a table or list: the inline form sits in a dashed
+ * outline of the space the rows would fill, so the state holds the table's place on the page
+ * instead of floating above blank space. Inside a card that stays, leave it off: the card is the frame.
  */
 export function EmptyState({
   title,
@@ -28,6 +32,7 @@ export function EmptyState({
   actionTo,
   onAction,
   compact,
+  framed,
   art,
   mood,
   code,
@@ -43,6 +48,7 @@ export function EmptyState({
   actionTo?: string
   onAction?: () => void
   compact?: boolean
+  framed?: boolean
   art?: Art
   mood?: Mood
   /** Printed on the `missing` cover: the id or path that led nowhere. */
@@ -117,13 +123,23 @@ export function EmptyState({
         ))}
     </>
   )
-  const py = compact ? 'sm' : 'xl'
+  const py = framed ? 'lg' : compact ? 'sm' : 'xl'
+  const px = framed ? 'lg' : undefined
 
   if (mood) {
     return (
-      <Group className="empty-state" data-compact={compact || undefined} gap={16} wrap="nowrap" align="center" py={py}>
-        <span className="empty-state-mark">
-          <IconBrandMark mood={mood} size={56} />
+      <Group
+        className="empty-state"
+        data-compact={compact || undefined}
+        data-framed={framed || undefined}
+        gap={16}
+        wrap="nowrap"
+        align={description || actionLabel ? 'flex-start' : 'center'}
+        py={py}
+        px={px}
+      >
+        <span className="brand-mark empty-state-mark">
+          <IconBrandMark mood={mood} size={40} />
         </span>
         <Stack align="flex-start" gap={4}>
           {lines}
@@ -133,7 +149,15 @@ export function EmptyState({
   }
 
   return (
-    <Stack className="empty-state" data-compact={compact || undefined} align="flex-start" gap={4} py={py}>
+    <Stack
+      className="empty-state"
+      data-compact={compact || undefined}
+      data-framed={framed || undefined}
+      align="flex-start"
+      gap={4}
+      py={py}
+      px={px}
+    >
       {lines}
     </Stack>
   )
@@ -155,7 +179,7 @@ function ShelfArt({ addTo, icon: MiddleIcon }: { addTo?: string; icon: Icon }) {
     <>
       <span className="empty-shelf-cover">
         <span className="empty-shelf-plus">
-          <MiddleIcon size={24} stroke={2} />
+          <MiddleIcon size={24} />
         </span>
       </span>
       {lines}
@@ -184,7 +208,7 @@ function MissingArt({ code }: { code?: string }) {
       <span className="empty-missing-cover" data-back />
       <span className="empty-missing-cover">
         <span className="empty-missing-mark">
-          <IconQuestionMark size={26} stroke={2} />
+          <IconQuestionMark size={26} />
         </span>
         {code && <span className="empty-missing-code">{code}</span>}
       </span>

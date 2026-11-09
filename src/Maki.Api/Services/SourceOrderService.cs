@@ -25,9 +25,13 @@ public sealed record SourceOrderResult(
 /// under the series' upgrade profile, scoring each source on its recent measurements
 /// (<see cref="SourceQualitySamples"/>); a series with no profile is ranked under the default tier
 /// order at the starter weights, so the mode still means something before any profile is picked.
-/// A source this series has not measured is judged by its record across the library, and one never
-/// measured anywhere gets the lowest measured points there are: below the reference is the norm, so
-/// scoring it as average would put it ahead of nearly every source that has been measured.
+/// A source this series has not measured ranks after every allowed source it has, whatever its tier:
+/// the usual reason is that sampling it failed or hit a rate limit, so a guess must not beat a measurement.
+/// Among the unmeasured, one is judged by its record across the library, and one never measured
+/// anywhere gets the lowest measured points there are: below the reference is the norm, so scoring it
+/// as average would put it ahead of nearly every source that has been measured. Whatever the
+/// score, a source that keeps failing its downloads goes last (<see cref="SourceReliability"/>), and so does
+/// one whose page counts look like a preview (<see cref="SourcePageCounts"/>).
 /// </summary>
 public class SourceOrderService(SourceRegistry registry, ChapterFileQualityService quality)
 {
@@ -86,9 +90,59 @@ public class SourceOrderService(SourceRegistry registry, ChapterFileQualityServi
 
         var byId = mappings.ToDictionary(m => m.Id);
         var ranked = SourceRanking.Order(evaluator.Profile,
-            mappings.Select(m => new SourceRanking.Entry(m.Id, m.Priority, scores[m.Id])));
-        return new SourceOrderResult(seriesMode, defaultMode, [.. ranked.Select(e => byId[e.MappingId])], scores);
+            mappings.Select(m => new SourceRanking.Entry(m.Id, m.Priority, scores[m.Id], estimates.ContainsKey(m.Id))));
+        var outcomes = await OutcomesAsync(db, mappings, ct);
+        var truncated = SourcePageCounts.Truncated(await db.SourceQualitySamples.AsNoTracking()
+            .Where(q => q.SeriesId == seriesId && q.PageCount > 0)
+            .Select(q => new SourcePageCounts.Sample(q.SourceMappingId, q.ChapterId, q.PageCount, q.MedianWidth, q.MedianHeight))
+            .ToListAsync(ct));
+        var ordered = SourceReliability.Demote(
+            [.. ranked.Select(e => byId[e.MappingId])],
+            m => SourceReliability.IsUnreliable(outcomes[m.Id]) || truncated.Contains(m.Id));
+        return new SourceOrderResult(seriesMode, defaultMode, ordered, scores);
     }
+
+    /// <summary>
+    /// How each mapping's downloads have gone over the reliability window: on this series once that record
+    /// says something (enough failures to judge, or more downloads that worked than failed), otherwise
+    /// across the library, so a source that fails everywhere is not trusted on a series where it has
+    /// only failed once or twice yet. Failures are the attempts logged in <see cref="SourceFailure"/>,
+    /// not Failed queue rows, which a failover or a retry moves off the source that failed.
+    /// </summary>
+    private static async Task<Dictionary<int, SourceReliability.Outcome>> OutcomesAsync(
+        MakiDbContext db, IReadOnlyCollection<SourceMapping> mappings, CancellationToken ct)
+    {
+        var names = mappings.Select(m => m.SourceName).Distinct().ToList();
+        var since = DateTime.UtcNow - SourceReliability.Window;
+        var failed = await db.SourceFailures.AsNoTracking()
+            .Where(f => f.OccurredAtUtc >= since && names.Contains(f.SourceMapping!.SourceName))
+            .GroupBy(f => new { f.SourceMappingId, f.SourceMapping!.SourceName })
+            .Select(g => new Tally(g.Key.SourceMappingId, g.Key.SourceName, 0, g.Count()))
+            .ToListAsync(ct);
+        var completed = await db.DownloadQueue.AsNoTracking()
+            .Where(q => q.Status == QueueStatus.Completed && q.CompletedAt >= since &&
+                        q.SourceMapping != null && names.Contains(q.SourceMapping.SourceName))
+            .GroupBy(q => new { SourceMappingId = q.SourceMappingId!.Value, q.SourceMapping!.SourceName })
+            .Select(g => new Tally(g.Key.SourceMappingId, g.Key.SourceName, g.Count(), 0))
+            .ToListAsync(ct);
+        List<Tally> counts = [.. failed, .. completed];
+
+        static SourceReliability.Outcome Sum(IEnumerable<Tally> tallies) =>
+            tallies.Aggregate(new SourceReliability.Outcome(0, 0), (sum, t) => new(sum.Completed + t.Completed, sum.Failed + t.Failed));
+
+        var result = new Dictionary<int, SourceReliability.Outcome>();
+        foreach (var mapping in mappings)
+        {
+            var here = Sum(counts.Where(c => c.MappingId == mapping.Id));
+            result[mapping.Id] = here.Failed >= SourceReliability.MinFailures || here.Completed > here.Failed
+                ? here
+                : Sum(counts.Where(c => c.SourceName == mapping.SourceName));
+        }
+
+        return result;
+    }
+
+    private sealed record Tally(int MappingId, string SourceName, int Completed, int Failed);
 
     public static SourceOrderMode? Parse(string? value) => value?.Trim().ToLowerInvariant() switch
     {

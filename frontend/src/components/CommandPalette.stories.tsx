@@ -34,14 +34,33 @@ export const Opened: Story = {
     const body = within(canvasElement.ownerDocument.body)
     const input = await body.findByRole('combobox', { name: INPUT_NAME })
     await waitFor(() => expect(input).toHaveFocus())
-    // With nothing typed the palette lists every page.
+    // With nothing typed the palette lists every page, Notifications included.
     await waitFor(async () => expect(await body.findByRole('option', { name: /Library/ })).toBeVisible())
-    await waitFor(() => expect(body.getAllByRole('option')).toHaveLength(ALL_ITEMS.length))
+    await waitFor(() => expect(body.getAllByRole('option')).toHaveLength(ALL_ITEMS.length + 1))
+    await expect(body.getByRole('option', { name: /Notifications/ })).toBeVisible()
   },
 }
 
 export const OpenedWithShortcut: Story = {
   play: async ({ canvasElement, userEvent }) => {
+    await userEvent.keyboard('{Control>}k{/Control}')
+    const body = within(canvasElement.ownerDocument.body)
+    await waitFor(async () => expect(await body.findByRole('combobox', { name: INPUT_NAME })).toBeVisible())
+  },
+}
+
+/** The shortcut still opens the palette while the cursor sits in a text field elsewhere on the page. */
+export const OpenedWithShortcutFromField: Story = {
+  decorators: [
+    (Story) => (
+      <>
+        <input aria-label="Filter library" />
+        <Story />
+      </>
+    ),
+  ],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('textbox', { name: 'Filter library' }))
     await userEvent.keyboard('{Control>}k{/Control}')
     const body = within(canvasElement.ownerDocument.body)
     await waitFor(async () => expect(await body.findByRole('combobox', { name: INPUT_NAME })).toBeVisible())
@@ -57,6 +76,18 @@ export const SearchSeries: Story = {
     // The status sits under the title, and the last row hands the text to Add series.
     await expect(await within(await body.findByRole('option', { name: /Paper Moon Detective/ })).findByText('Hiatus')).toBeVisible()
     await expect(await body.findByRole('option', { name: /Search for “moon”/ })).toBeVisible()
+  },
+}
+
+/** A match through another title shows that title under the shown one, with the match marked. */
+export const SearchByOtherTitle: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: /^Search/ }))
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.type(await body.findByRole('combobox', { name: INPUT_NAME }), '紙の月')
+    const option = await body.findByRole('option', { name: /Paper Moon Detective/ })
+    await expect(await within(option).findByText('紙の月')).toHaveProperty('tagName', 'MARK')
+    await expect(option).toHaveTextContent('紙の月探偵')
   },
 }
 
@@ -118,11 +149,13 @@ export const LibraryStillLoading: Story = {
   },
 }
 
-export const NoMatches: Story = {
+// Notifications has no sidebar item, so it is listed even when the caller passes no pages.
+export const NotificationsWithoutNavItems: Story = {
   args: { navItems: [] },
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: /^Search/ }))
     const body = within(canvasElement.ownerDocument.body)
-    await waitFor(async () => expect(await body.findByText('No matches.')).toBeVisible())
+    await waitFor(async () => expect(await body.findByRole('option', { name: /Notifications/ })).toBeVisible())
+    await waitFor(() => expect(body.getAllByRole('option')).toHaveLength(1))
   },
 }

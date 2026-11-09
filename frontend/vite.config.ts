@@ -47,6 +47,31 @@ function precompress(): Plugin {
   }
 }
 
+// Lists each language catalogue's built file in a meta tag, which public/theme-init.js reads to
+// preload the one in use. A meta tag rather than an inline script: the CSP's script-src is 'self'.
+function catalogMap(): Plugin {
+  let base = '/'
+  return {
+    name: 'maki:catalog-map',
+    apply: 'build',
+    configResolved(config) {
+      base = config.base
+    },
+    transformIndexHtml: {
+      order: 'post',
+      handler(_html, ctx) {
+        const files: Record<string, string> = {}
+        for (const file of Object.keys(ctx.bundle ?? {})) {
+          const locale = file.match(/^assets\/catalog-(.+?)-[\w-]{8}\.js$/)?.[1]
+          if (locale) files[locale] = `${base}${file}`
+        }
+        if (Object.keys(files).length === 0) return undefined
+        return [{ tag: 'meta', attrs: { name: 'maki-catalogs', content: JSON.stringify(files) }, injectTo: 'head-prepend' }]
+      },
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   // `MAKI_API_URL` in `.env.<mode>` points the proxy at a backend other than the default 8990, so
@@ -57,6 +82,7 @@ export default defineConfig(({ mode }) => {
       react(),
       // Before precompress: both run in closeBundle, in array order, and sw.js wants a .br and .gz too.
       serviceWorker(),
+      catalogMap(),
       precompress(),
       // Turns an imported `.po` into runtime messages, so there is no `lingui compile` step and no
       // generated catalogs to keep in step with the source ones.
@@ -89,9 +115,8 @@ export default defineConfig(({ mode }) => {
           },
           advancedChunks: {
             groups: [
-              // One chunk for the icon set instead of dozens of one-icon modules, each of which was
-              // its own modulepreload request on a LAN served over HTTP/1.1.
-              { name: 'icons', test: /node_modules[\\/]@tabler[\\/]icons-react/ },
+              // Its own chunk, so the icon set stays cached across releases that don't change it.
+              { name: 'icons', test: /[\\/]src[\\/]lib[\\/]icons\.tsx$/ },
             ],
           },
         },

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Menu, UnstyledButton } from '@mantine/core'
-import { IconCheck, IconChevronDown, IconListDetails } from '@tabler/icons-react'
+import { IconCheck, IconChevronDown, IconListDetails } from '../../lib/icons'
 import { useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
 import type { SettingsEntry } from '../../pages/settings/registry'
@@ -114,7 +114,7 @@ export function SettingsJump({ entries }: { entries: SettingsEntry[] }) {
             <Menu.Item
               key={e.id}
               aria-current={e.id === current?.id ? 'location' : undefined}
-              rightSection={e.id === current?.id ? <IconCheck size={14} aria-hidden /> : undefined}
+              rightSection={e.id === current?.id ? <IconCheck size={16} aria-hidden /> : undefined}
               onClick={() => {
                 jumpTo(e)
                 setActive(e.id)

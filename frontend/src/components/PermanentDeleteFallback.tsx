@@ -1,6 +1,6 @@
 import { Button, Group, Stack, Text } from '@mantine/core'
 import { Trans } from '@lingui/react/macro'
-import { IconTrash } from '@tabler/icons-react'
+import { IconTrash } from '../lib/icons'
 
 /**
  * Shown in a delete dialog after the server refused to use the recycle bin (another volume, or no

@@ -89,23 +89,23 @@ public readonly record struct PlannedTerm(int GenreId, int[]? TagIds, byte MinCl
 /// </param>
 /// <param name="StartDays">
 /// <c>published_start_date</c> as a <see cref="DateOnly.DayNumber"/>, or <see cref="VectorIndex.Unknown"/>.
-/// Optional so fixtures built without it still sort, through <see cref="VectorIndex.StartDayAt"/>'s
-/// year fallback.
+/// Optional (empty) so fixtures built without it still sort, through
+/// <see cref="VectorIndex.StartDayAt"/>'s year fallback.
 /// </param>
 public sealed record VectorIndexColumns(
-    int[] Years,
-    float[] Ratings,
-    int[] Chapters,
-    byte[] Types,
-    byte[] Statuses,
+    Column<int> Years,
+    Column<float> Ratings,
+    Column<int> Chapters,
+    Column<byte> Types,
+    Column<byte> Statuses,
     JaggedInts Genres,
     JaggedInts Authors,
     JaggedInts Artists,
-    int[] Popularity,
+    Column<int> Popularity,
     PackedTags Tags,
-    byte[] ContentRatings,
+    Column<byte> ContentRatings,
     int[] Franchise,
-    int[]? StartDays = null);
+    Column<int> StartDays = default);
 
 /// <summary>
 /// The interned vocabularies behind <see cref="VectorIndexColumns"/>, so a per-row filter test is
@@ -145,14 +145,14 @@ public sealed record VectorIndexVocabularies(
 /// </summary>
 public sealed class TasteLayer
 {
-    private readonly int[] _slots;
-    private readonly sbyte[] _data;
-    private readonly float[] _scales;
+    private readonly Column<int> _slots;
+    private readonly Column<sbyte> _data;
+    private readonly Column<float> _scales;
 
     /// <param name="slots">Per index row, the slot holding its vector, or -1 for none.</param>
     /// <param name="data">The covered vectors, one per slot, <paramref name="dimensions"/> wide.</param>
     /// <param name="scales">One non-zero scale per slot.</param>
-    public TasteLayer(int[] slots, sbyte[] data, float[] scales, int dimensions)
+    public TasteLayer(Column<int> slots, Column<sbyte> data, Column<float> scales, int dimensions)
     {
         _slots = slots;
         _data = data;
@@ -167,6 +167,12 @@ public sealed class TasteLayer
     /// argument for the channel existing, so it is worth being able to print.
     /// </summary>
     public int Covered => _scales.Length;
+
+    internal Column<int> Slots => _slots;
+
+    internal Column<sbyte> Data => _data;
+
+    internal Column<float> Scales => _scales;
 
     public bool Has(int row) => _slots[row] >= 0;
 
@@ -226,9 +232,9 @@ public sealed class TasteLayer
 /// packing step, which is what that does.
 /// </param>
 public sealed class VectorIndex(
-    long[] ids,
-    byte[] data,
-    float[] scales,
+    Column<long> ids,
+    Column<byte> data,
+    Column<float> scales,
     int dimensions,
     VectorIndexColumns columns,
     VectorIndexVocabularies vocabularies,
@@ -280,6 +286,88 @@ public sealed class VectorIndex(
 
     public int Count => ids.Length;
 
+    /// <summary>True when the vectors are read from a mapped snapshot.</summary>
+    internal bool IsMapped => data.IsMapped;
+
+    internal VectorIndexVocabularies Vocabularies => vocabularies;
+
+    /// <summary>
+    /// A heap copy whose text vectors, and the behavioural ones when <paramref name="includeTaste"/>,
+    /// are rounded onto the grid a <paramref name="bits"/>-wide element would have, for
+    /// distribution/eval-reco-labels.cs --quant: it prices a narrower stored vector without
+    /// re-embedding. Rows wide enough to be packed are already 4-bit, so only narrower ones apply.
+    ///
+    /// <para>
+    /// This is the exact loss packing at that width would cause, not an approximation of it. A
+    /// packed element is a level index n, and scoring it means n times the step; writing n times the
+    /// step back as int8 and leaving the row's scale alone gives the identical dot product, since the
+    /// step factors out of the sum. The step is kept a whole number so the value is exactly
+    /// representable, which costs one level of range (±126 rather than ±127 at four bits) and makes
+    /// this very slightly pessimistic rather than optimistic.
+    /// </para>
+    /// </summary>
+    internal VectorIndex Requantized(
+        int bits, bool includeTaste, out (long Total, long Changed) text, out (long Total, long Changed) behavioural)
+    {
+        if (EmbeddingMath.ShouldPack(dimensions))
+        {
+            throw new InvalidOperationException($"{dimensions}-dim rows are already stored as 4-bit levels");
+        }
+
+        var rows = new sbyte[(long)Count * dimensions];
+        for (var row = 0; row < Count; row++)
+        {
+            UnpackRow(row, rows.AsSpan(row * dimensions, dimensions));
+        }
+
+        text = Requantize(rows, bits);
+        behavioural = (0, 0);
+        var layer = taste;
+        if (includeTaste && taste is not null)
+        {
+            var vectors = taste.Data.Span.ToArray();
+            behavioural = Requantize(vectors, bits);
+            layer = new TasteLayer(taste.Slots, vectors, taste.Scales, taste.Dimensions);
+        }
+
+        return FromQuantized(
+            ids.Span.ToArray(), rows, scales.Span.ToArray(), dimensions, columns, vocabularies, layer,
+            SharedFranchises);
+    }
+
+    private static (long Total, long Changed) Requantize(sbyte[] values, int bits)
+    {
+        var levels = (1 << (bits - 1)) - 1;
+        var step = 127 / levels;
+        long changed = 0;
+        for (var i = 0; i < values.Length; i++)
+        {
+            var level = Math.Clamp((int)MathF.Round(values[i] / (float)step), -levels, levels);
+            var rounded = (sbyte)(level * step);
+            if (rounded != values[i])
+            {
+                changed++;
+            }
+
+            values[i] = rounded;
+        }
+
+        return (values.LongLength, changed);
+    }
+
+    /// <summary>
+    /// This index's franchise components, for an index over the same rows: one load serves both,
+    /// including one already in flight.
+    /// </summary>
+    internal Func<int[]> SharedFranchises
+    {
+        get
+        {
+            var franchises = _franchises;
+            return () => franchises.Value;
+        }
+    }
+
     public int Dimensions => dimensions;
 
     public long IdAt(int row) => ids[row];
@@ -299,9 +387,9 @@ public sealed class VectorIndex(
     /// </summary>
     public int StartDayAt(int row)
     {
-        if (columns.StartDays is { } days && days[row] != Unknown)
+        if (columns.StartDays.Length > 0 && columns.StartDays[row] != Unknown)
         {
-            return days[row];
+            return columns.StartDays[row];
         }
 
         var year = columns.Years[row];
@@ -338,7 +426,7 @@ public sealed class VectorIndex(
             return _rowById.TryGetValue(id, out row);
         }
 
-        row = Array.BinarySearch(ids, id);
+        row = ids.Span.BinarySearch(id);
         return row >= 0;
     }
 
@@ -869,7 +957,7 @@ public sealed class VectorIndex(
         }
     }
 
-    private static bool IsSorted(long[] ids)
+    private static bool IsSorted(Column<long> ids)
     {
         for (var i = 1; i < ids.Length; i++)
         {
@@ -882,7 +970,7 @@ public sealed class VectorIndex(
         return true;
     }
 
-    private static Dictionary<long, int> BuildRowMap(long[] ids)
+    private static Dictionary<long, int> BuildRowMap(Column<long> ids)
     {
         var map = new Dictionary<long, int>(ids.Length);
         for (var i = 0; i < ids.Length; i++)

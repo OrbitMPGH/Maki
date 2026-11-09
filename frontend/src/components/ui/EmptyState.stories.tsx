@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor } from 'storybook/test'
-import { IconArrowLeft, IconPlus } from '@tabler/icons-react'
+import { IconArrowLeft, IconPlus } from '../../lib/icons'
 import { EmptyState } from './EmptyState'
 
 const meta = {
@@ -20,6 +20,11 @@ export const Inline: Story = {
 
 export const Compact: Story = {
   args: { title: 'No failed downloads', compact: true, mood: 'pleased' },
+  play: async ({ canvasElement }) => {
+    // One line and no action: the mascot centres on the line instead of hanging below it.
+    await expect(canvasElement.querySelector('.empty-state')).toHaveStyle({ alignItems: 'center' })
+    await expect(canvasElement.querySelector('.empty-state-mark')).toHaveClass('brand-mark')
+  },
 }
 
 export const WithMood: Story = {

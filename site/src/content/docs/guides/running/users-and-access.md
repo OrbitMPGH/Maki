@@ -26,6 +26,13 @@ While only one account is enabled, Maki hides requests, leaderboards and the oth
 It switches off by itself when a second account is enabled. The switch is at the top of
 **Settings → Users & security**.
 
+## Login names
+
+Someone without a display name shows up as "Another reader" to other people, on shared
+[chapter notes](/Maki/guides/reading/chapter-notes/), reply notifications, the leaderboard and
+metadata history. **Show login names to everyone** under **Settings → Users & security**, off by
+default, shows their login name there instead. Anyone who can sign in then sees every username.
+
 ## Kavita
 
 Kavita is one server with one API key, so everything it reports is a single person's reading.

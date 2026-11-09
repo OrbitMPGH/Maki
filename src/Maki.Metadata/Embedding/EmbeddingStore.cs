@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Maki.Core.Io;
 using Microsoft.Data.Sqlite;
 
 namespace Maki.Metadata.Embedding;
@@ -74,6 +75,9 @@ public class EmbeddingStore(EmbeddingOptions options)
             cmd.ExecuteNonQuery();
         }
 
+        // While this connection still holds the -shm the WAL switch above may have created.
+        Keeper.Attach();
+
         // A file from before the version was recorded is taken to hold the running model's vectors,
         // which is what every pass and install up to the release that started recording it wrote.
         using (var adopt = conn.CreateCommand())
@@ -87,6 +91,7 @@ public class EmbeddingStore(EmbeddingOptions options)
         MigrateFloat32Vectors(conn);
         AddTagVocabColumn(conn, "category");
         AddTagVocabColumn(conn, "name_path");
+        TruncateWal(conn);
         _schemaEnsured = true;
     }
 
@@ -218,6 +223,7 @@ public class EmbeddingStore(EmbeddingOptions options)
                 }
             }
 
+            BumpContentVersion(conn, tx);
             tx.Commit();
         }
 
@@ -329,6 +335,7 @@ public class EmbeddingStore(EmbeddingOptions options)
             cmd.ExecuteNonQuery();
         }
 
+        BumpContentVersion(conn, tx);
         tx.Commit();
     }
 
@@ -374,6 +381,7 @@ public class EmbeddingStore(EmbeddingOptions options)
             cmd.ExecuteNonQuery();
         }
 
+        BumpContentVersion(conn, tx);
         tx.Commit();
     }
 
@@ -470,6 +478,7 @@ public class EmbeddingStore(EmbeddingOptions options)
             cmd.ExecuteNonQuery();
         }
 
+        BumpContentVersion(conn, tx);
         tx.Commit();
     }
 
@@ -503,7 +512,16 @@ public class EmbeddingStore(EmbeddingOptions options)
     /// The model version every vector in the file was written with, or null when the file predates
     /// the record. The dimension check cannot tell two 768-dim models apart, so this is what can.
     /// </summary>
-    public string? GetModelVersion() => File.Exists(DbPath) ? ReadModelVersion(DbPath) : null;
+    public string? GetModelVersion()
+    {
+        if (!File.Exists(DbPath))
+        {
+            return null;
+        }
+
+        Keeper.Attach();
+        return ReadModelVersion(DbPath);
+    }
 
     /// <summary>Records <paramref name="version"/> as the model the whole file now holds.</summary>
     public void SetModelVersion(string version)
@@ -511,6 +529,29 @@ public class EmbeddingStore(EmbeddingOptions options)
         EnsureSchema();
         using var conn = OpenWritable();
         WriteModelVersion(conn, version);
+    }
+
+    /// <summary>
+    /// Rebuilds the file so pages left half empty by rows rewritten smaller are given back. A model
+    /// change that narrows the vectors otherwise keeps the old file size: 768 to 256 dims left
+    /// 157 MB on disk for 57 MB of rows.
+    /// </summary>
+    public void Compact()
+    {
+        using var conn = OpenWritable();
+        using var vacuum = conn.CreateCommand();
+        vacuum.CommandText = "VACUUM";
+        vacuum.CommandTimeout = 1800;
+        vacuum.ExecuteNonQuery();
+        TruncateWal(conn);
+    }
+
+    // The keeper never closes while Maki runs, so nothing else shrinks the -wal after a VACUUM.
+    private static void TruncateWal(SqliteConnection conn)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "PRAGMA wal_checkpoint(TRUNCATE)";
+        cmd.ExecuteNonQuery();
     }
 
     /// <summary>
@@ -554,6 +595,25 @@ public class EmbeddingStore(EmbeddingOptions options)
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value";
         cmd.Parameters.AddWithValue("$key", ModelVersionKey);
         cmd.Parameters.AddWithValue("$value", version);
+        cmd.ExecuteNonQuery();
+    }
+
+    /// <summary>
+    /// Changes whenever the vectors or tag blobs change: written in the same transaction as every
+    /// such write, and read by the vector index snapshot as its key into this file. File times
+    /// cannot serve: in WAL mode a commit can leave the main file untouched, and after a checkpoint
+    /// the log is rewritten from the start at the same length.
+    /// </summary>
+    internal const string ContentVersionKey = "content_version";
+
+    private static void BumpContentVersion(SqliteConnection conn, SqliteTransaction? tx)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = "INSERT INTO meta (key, value) VALUES ($key, $value) " +
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value";
+        cmd.Parameters.AddWithValue("$key", ContentVersionKey);
+        cmd.Parameters.AddWithValue("$value", Guid.NewGuid().ToString("N"));
         cmd.ExecuteNonQuery();
     }
 
@@ -762,6 +822,7 @@ public class EmbeddingStore(EmbeddingOptions options)
             drop.ExecuteNonQuery();
         }
 
+        BumpContentVersion(conn, tx);
         tx.Commit();
         return removed;
     }
@@ -791,16 +852,24 @@ public class EmbeddingStore(EmbeddingOptions options)
     /// <summary>Reinterprets the packed int8 vector as bytes for BLOB storage (no copy of meaning, just of bits).</summary>
     private static byte[] ToBytes(sbyte[] packed) => MemoryMarshal.AsBytes(packed.AsSpan()).ToArray();
 
+    private SqliteKeeper Keeper => SqliteKeeper.For(DbPath);
+
     private SqliteConnection OpenWritable()
     {
         _count = null;
+        SqliteFiles.CreateIfMissing(DbPath);
+        Keeper.Attach();
         var conn = new SqliteConnection($"Data Source={DbPath};Pooling=False");
         conn.Open();
+        using var limit = conn.CreateCommand();
+        limit.CommandText = "PRAGMA journal_size_limit=8388608";
+        limit.ExecuteNonQuery();
         return conn;
     }
 
     private SqliteConnection OpenReadOnly()
     {
+        Keeper.Attach();
         var conn = new SqliteConnection($"Data Source={DbPath};Mode=ReadOnly;Pooling=False");
         conn.Open();
         return conn;

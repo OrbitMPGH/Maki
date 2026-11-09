@@ -19,6 +19,7 @@ public readonly record struct UpscaleModelId
 {
     public static readonly UpscaleModelId SpanS = new("span-s");
     public static readonly UpscaleModelId RealEsrganAv3 = new("realesrgan-av3");
+    public static readonly UpscaleModelId Maki2x = new("maki-2x");
 
     private UpscaleModelId(string value) => Value = value;
 
@@ -65,6 +66,9 @@ public sealed class UpscaleModelCatalog
 {
     private static readonly UpscaleModelInfo[] Entries =
     [
+        new(UpscaleModelId.Maki2x, UpscaleAdapter.Plain2x, 2, 2, "input", UpscaleTensorType.Float32,
+            "maki-2x.onnx", "Maki 2x", "GPL-3.0",
+            "Maki", "https://github.com/OrbitMPGH/Maki/tree/main/distribution/upscale-models/distill"),
         new(UpscaleModelId.SpanS, UpscaleAdapter.Plain2x, 2, 2, "input", UpscaleTensorType.Float16,
             "span-s-2x.onnx", "SPAN-S (IllustrationJaNai V3)", "CC BY-NC 4.0",
             "the-database (IllustrationJaNai V3)", "https://github.com/the-database/MangaJaNai/releases/tag/3.0.0"),

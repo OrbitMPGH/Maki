@@ -62,9 +62,9 @@ public class OnnxPageUpscalerTests : IDisposable
         {
             var expected = source[x / 2, y / 2];
             var o = (y * page.Width + x) * 3;
-            if (page.Rgb[o] != expected.R || page.Rgb[o + 1] != expected.G || page.Rgb[o + 2] != expected.B)
+            if (page.Pixels[o] != expected.R || page.Pixels[o + 1] != expected.G || page.Pixels[o + 2] != expected.B)
             {
-                Assert.Fail($"Pixel ({x}, {y}) is ({page.Rgb[o]}, {page.Rgb[o + 1]}, {page.Rgb[o + 2]}), expected {expected}.");
+                Assert.Fail($"Pixel ({x}, {y}) is ({page.Pixels[o]}, {page.Pixels[o + 1]}, {page.Pixels[o + 2]}), expected {expected}.");
             }
         }
     }
@@ -79,10 +79,87 @@ public class OnnxPageUpscalerTests : IDisposable
         var tiles = 0;
         upscaler.TileCompleted = _ => tiles++;
 
-        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.SpanS), threads: 2, CancellationToken.None);
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.SpanS), threads: 2, luma: false, CancellationToken.None);
 
-        Assert.Equal(12, tiles);
+        Assert.Equal(10 * 14, tiles);
         AssertNearest2x(source, page);
+    }
+
+    [Fact]
+    public void Workers_are_capped_by_the_memory_budget()
+    {
+        var tile = UpscaleTiling.Plan(96, 96, multiple: 4).Single();
+
+        Assert.Equal(10, OnnxPageUpscaler.MaxWorkers(tile));
+        Assert.Equal(1, OnnxPageUpscaler.MaxWorkers(tile with { ContextWidth = 4000, ContextHeight = 4000 }));
+    }
+
+    [Fact]
+    public void More_threads_than_tiles_still_upscales_every_tile_once()
+    {
+        using var upscaler = NewUpscaler();
+        var source = Pattern(150, 100);
+        var tiles = new List<int>();
+        upscaler.TileCompleted = tiles.Add;
+
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.SpanS), threads: 16, luma: false, CancellationToken.None);
+
+        Assert.Equal([0, 1, 2, 3], tiles.Order());
+        AssertNearest2x(source, page);
+    }
+
+    [Fact]
+    public void Flat_tiles_are_filled_without_inference_and_match_the_model()
+    {
+        using var upscaler = NewUpscaler("identity-2x-fp16.onnx");
+        var source = Pattern(900, 1300);
+        for (var y = 0; y < 700; y++)
+        for (var x = 0; x < 900; x++)
+        {
+            source[x, y] = new Rgba(37, 37, 37);
+        }
+
+        var skipped = new List<int>();
+        upscaler.TileSkipped = skipped.Add;
+
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.SpanS), threads: 2, luma: false, CancellationToken.None);
+
+        // Ten columns, rows of 93 px with 12 px of context: row 6 reads y 546 to 663, row 7 639 to 756.
+        Assert.Equal(Enumerable.Range(0, 7 * 10), skipped);
+        AssertNearest2x(source, page);
+    }
+
+    [Theory]
+    [InlineData(255, true)]
+    [InlineData(0, true)]
+    [InlineData(128, false)]
+    public void Real_esrgan_skips_only_black_and_white_flat_tiles(byte level, bool skips)
+    {
+        using var upscaler = NewUpscaler("identity-4x.onnx", UpscaleModelId.RealEsrganAv3);
+        var source = new Raster(200, 200, new Rgba(level, level, level), bands: 3);
+        var skipped = 0;
+        upscaler.TileSkipped = _ => skipped++;
+
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.RealEsrganAv3), threads: 2, luma: true, CancellationToken.None);
+
+        Assert.Equal(skips ? 3 * 3 : 0, skipped);
+        Assert.All(page.Pixels, v => Assert.Equal(level, v));
+    }
+
+    [Theory]
+    [InlineData(128)]
+    [InlineData(200)]
+    public void Maki_2x_skips_flat_tiles_at_any_level(byte level)
+    {
+        using var upscaler = NewUpscaler("identity-2x.onnx", UpscaleModelId.Maki2x);
+        var source = new Raster(200, 200, new Rgba(level, level, level), bands: 3);
+        var skipped = 0;
+        upscaler.TileSkipped = _ => skipped++;
+
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.Maki2x), threads: 2, luma: true, CancellationToken.None);
+
+        Assert.Equal(3 * 3, skipped);
+        Assert.All(page.Pixels, v => Assert.Equal(level, v));
     }
 
     [Fact]
@@ -101,7 +178,7 @@ public class OnnxPageUpscalerTests : IDisposable
 
         var (expected, width, height) = ImageCodec.ResizeRgb(whole, source.Width * 4, source.Height * 4, 0.5);
 
-        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.RealEsrganAv3), threads: 2, CancellationToken.None);
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.RealEsrganAv3), threads: 2, luma: false, CancellationToken.None);
 
         Assert.Equal((width, height), (page.Width, page.Height));
         var edge = 0;
@@ -110,7 +187,7 @@ public class OnnxPageUpscalerTests : IDisposable
         for (var c = 0; c < 3; c++)
         {
             var o = (y * width + x) * 3 + c;
-            var diff = Math.Abs(page.Rgb[o] - expected[o]);
+            var diff = Math.Abs(page.Pixels[o] - expected[o]);
             var nearBorder = x < 4 || y < 4 || x >= width - 4 || y >= height - 4;
             if (nearBorder)
             {
@@ -118,12 +195,31 @@ public class OnnxPageUpscalerTests : IDisposable
             }
             else if (diff != 0)
             {
-                Assert.Fail($"Pixel ({x}, {y}) channel {c} is {page.Rgb[o]}, whole-page halving gives {expected[o]}.");
+                Assert.Fail($"Pixel ({x}, {y}) channel {c} is {page.Pixels[o]}, whole-page halving gives {expected[o]}.");
             }
         }
 
         // A tile's context is reflected at the page edge where vips extends the edge pixel instead.
         Assert.True(edge <= 16, $"Border pixels differ by up to {edge}.");
+    }
+
+    [Theory]
+    [InlineData("identity-2x-fp16.onnx", "span-s")]
+    [InlineData("identity-4x.onnx", "realesrgan-av3")]
+    public void A_luma_run_on_an_exact_grey_page_equals_the_colour_pass_and_band_average(string fixture, string model)
+    {
+        var id = UpscaleModelId.Parse(model);
+        using var upscaler = NewUpscaler(fixture, id);
+        var info = _catalog.Get(id);
+        var source = Pattern(500, 700, grey: true);
+
+        var rgb = upscaler.Run(source, info, threads: 2, luma: false, CancellationToken.None);
+        var luma = upscaler.Run(source, info, threads: 2, luma: true, CancellationToken.None);
+        var (original, _, _) = ImageCodec.ResizeRgb(source.Pixels, source.Width, source.Height, 2.0);
+        UpscalePixels.TakeColourFrom(rgb.Pixels, original);
+
+        Assert.Equal((1, rgb.Width, rgb.Height), (luma.Bands, luma.Width, luma.Height));
+        Assert.Equal(UpscalePixels.ToSingleBand(rgb.Pixels), luma.Pixels);
     }
 
     [Fact]
@@ -189,6 +285,20 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_page_over_the_server_pixel_limit_is_skipped_as_too_large()
+    {
+        using var upscaler = NewUpscaler();
+        var tiles = 0;
+        upscaler.TileCompleted = _ => tiles++;
+        using var big = NetVips.Image.Black(4000, 4001).Cast(NetVips.Enums.BandFormat.Uchar);
+
+        var result = await upscaler.UpscaleAsync(big.PngsaveBuffer(compression: 1), "span-s", CancellationToken.None);
+
+        Assert.Equal((UpscaleOutcome.Skipped, UpscaleReasons.TooLarge), (result.Outcome, result.Reason));
+        Assert.Equal(0, tiles);
+    }
+
+    [Fact]
     public async Task Cancelling_stops_between_tiles_with_an_operation_cancelled_exception()
     {
         using var upscaler = NewUpscaler();
@@ -203,7 +313,8 @@ public class OnnxPageUpscalerTests : IDisposable
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             upscaler.UpscaleAsync(Pattern(900, 1300).EncodePng(), "span-s", cts.Token));
 
-        Assert.Equal(1, tiles);
+        // Each of the two workers finishes at most the tile it was on.
+        Assert.InRange(tiles, 1, 2);
     }
 
     [Fact]

@@ -1,17 +1,18 @@
 import { memo } from 'react'
 import {
   IconBellOff,
-  IconCheck,
   IconDeviceMobileCheck,
   IconDownload,
   IconEyeOff,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import { seriesDownloadStateVisual, seriesProgressVisual, seriesStatusGlyph, seriesStatusVisual, statusColor, statusOnColor } from './status'
+import { coverSrcSet, COVER_CARD_SIZES } from '../../lib/coverSrcSet'
 import { useLabel } from '../../i18n-context'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
+import { CoverCardMenu } from './CoverCardMenu'
 
 /** What a library entry offers while the server is out of reach. */
 export type OfflineAvailability = 'saved' | 'unavailable'
@@ -37,6 +38,7 @@ export const CoverCard = memo(function CoverCard({
   readTracking,
   onToggle,
   offline,
+  menu = false,
 }: {
   series: SeriesDto
   selectMode: boolean
@@ -53,6 +55,8 @@ export const CoverCard = memo(function CoverCard({
    */
   readTracking: boolean
   onToggle: (id: number) => void
+  /** The library grid's menu button. Hidden in select mode and offline, where its actions cannot run. */
+  menu?: boolean
 }) {
   const renderLabel = useLabel()
   const { t } = useLingui()
@@ -68,12 +72,21 @@ export const CoverCard = memo(function CoverCard({
   )
   const { readChapterCount } = series
   // No total at all means no source has listed a chapter yet; "0 of ?" left that to be guessed.
+  // With the "N new" pill beside it the long form ran out of room ("30 of ..."), so it goes compact.
+  const showsNew = offline !== 'unavailable' && unread !== null && unread > 0
   const countLabel =
     total > 0
-      ? t`${have} of ${total}`
+      ? showsNew
+        ? (
+            <>
+              {have}
+              <span className="cover-count-total">/{total}</span>
+            </>
+          )
+        : t`${have} of ${total}`
       : have > 0
         ? plural(have, { one: '# chapter', other: '# chapters' })
-        : t`No chapters listed`
+        : t`No chapters`
   const savedTip = t`Saved on this device`
   const countTip = nothingWanted
     ? plural(total, {
@@ -83,16 +96,20 @@ export const CoverCard = memo(function CoverCard({
     : total === 0
       ? t`No source has listed this series' chapters yet, so there is no total to count against.`
       : undefined
-  // Only a download in progress earns the corner, and it stands in for the read ring until it ends.
-  // Queued is a list-view and series-page fact.
+  // Only a download in progress earns the left corner; queued is a list-view and series-page fact.
   const downloading = series.downloadingCount > 0
   const downloadTip = downloading && download ? renderLabel(download.label) : null
+  // Read progress wraps the status disc, so a cover carries one mark for both. Read through closes
+  // the ring; the disc keeps its status glyph.
+  const showsRead = readPct !== null && readPct > 0
+  const readThrough = showsRead && unread === 0
   const readTip = unread === 0 ? t`All downloaded chapters read` : t`${readChapterCount} of ${have} downloaded read`
   const notMonitoredTip = t`Not monitored`
   const mutedTip = t`Notifications muted`
-  const statusTip = series.monitored ? statusLabel : t`${statusLabel}, not monitored`
+  const statusOnly = series.monitored ? statusLabel : t`${statusLabel}, not monitored`
+  const statusTip = showsRead ? t`${statusOnly}. ${readTip}` : statusOnly
 
-  return (
+  const card = (
     <Link
       to={`/series/${series.id}`}
       className="cover-card"
@@ -115,7 +132,14 @@ export const CoverCard = memo(function CoverCard({
     >
       <div className="cover-poster">
         {series.coverUrl ? (
-          <img src={series.coverUrl} alt="" loading="lazy" decoding="async" />
+          <img
+            src={series.coverUrl}
+            srcSet={coverSrcSet(series.coverUrl)}
+            sizes={COVER_CARD_SIZES}
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           <div className="cover-placeholder" aria-hidden>{series.displayTitle}</div>
         )}
@@ -130,7 +154,8 @@ export const CoverCard = memo(function CoverCard({
           <span className="cover-title" title={series.title}>
             {series.displayTitle}
           </span>
-          <div className="cover-bar">
+          {/* With no total the bar would only ever read 0%; it keeps its space so the grid holds still. */}
+          <div className="cover-bar" data-empty={total === 0 || undefined}>
             <div
               className="cover-bar-fill"
               data-complete={complete || undefined}
@@ -145,7 +170,7 @@ export const CoverCard = memo(function CoverCard({
                 {countLabel}
               </span>
             )}
-            {offline !== 'unavailable' && unread !== null && unread > 0 && (
+            {showsNew && (
               <span className="cover-new">{plural(unread, { one: '# new', other: '# new' })}</span>
             )}
           </div>
@@ -155,24 +180,12 @@ export const CoverCard = memo(function CoverCard({
           <div className="cover-corner cover-corner-left">
             {offline === 'saved' && (
               <span className="cover-state" data-tone="saved" data-tip={savedTip} role="img" aria-label={savedTip}>
-                <IconDeviceMobileCheck size={13} stroke={2} />
-              </span>
-            )}
-            {!downloading && readPct !== null && readPct > 0 && (
-              <span
-                className="cover-ring"
-                data-complete={unread === 0 || undefined}
-                data-tip={readTip}
-                role="img"
-                aria-label={readTip}
-                style={{ '--ring-pct': `${readPct}%` } as React.CSSProperties}
-              >
-                {unread === 0 && <IconCheck size={14} stroke={2.2} className="cover-ring-check" />}
+                <IconDeviceMobileCheck size={13} />
               </span>
             )}
             {downloadTip && (
               <span className="cover-state" data-tone="info" data-tip={downloadTip} role="img" aria-label={downloadTip}>
-                <IconDownload size={13} stroke={2} />
+                <IconDownload size={13} />
               </span>
             )}
           </div>
@@ -186,7 +199,7 @@ export const CoverCard = memo(function CoverCard({
                 role="img"
                 aria-label={notMonitoredTip}
               >
-                <IconEyeOff size={15} />
+                <IconEyeOff size={16} />
               </span>
             )}
             {/* Only when muted: the other three modes are the normal case and would be noise. */}
@@ -198,7 +211,7 @@ export const CoverCard = memo(function CoverCard({
                 role="img"
                 aria-label={mutedTip}
               >
-                <IconBellOff size={15} />
+                <IconBellOff size={16} />
               </span>
             )}
             {/* Last in the row so it holds the corner; the eye and bell only show on hover. */}
@@ -206,16 +219,31 @@ export const CoverCard = memo(function CoverCard({
               className="cover-state"
               data-tone="status"
               data-unmonitored={!series.monitored || undefined}
+              data-read={readThrough ? 'all' : showsRead ? 'part' : undefined}
               data-tip={statusTip}
               role="img"
               aria-label={statusTip}
-              style={{ '--tone': statusColor(status.color), '--tone-on': statusOnColor(status.color) } as React.CSSProperties}
+              style={
+                {
+                  '--tone': statusColor(status.color),
+                  '--tone-on': statusOnColor(status.color),
+                  '--ring-pct': showsRead ? `${readThrough ? 100 : readPct}%` : undefined,
+                } as React.CSSProperties
+              }
             >
-              <StatusGlyph size={13} stroke={2} />
+              <StatusGlyph size={13} />
             </span>
           </div>
         </div>
       </div>
     </Link>
+  )
+
+  if (!menu) return card
+  return (
+    <div className="reading-card library-card">
+      {card}
+      {!selectMode && !offline && <CoverCardMenu series={series} />}
+    </div>
   )
 })

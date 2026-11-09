@@ -25,7 +25,7 @@ import {
   IconPhotoCheck,
   IconRefresh,
   IconX,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { notifications } from '../lib/toast'
 import {
   useChapters,
@@ -564,7 +564,7 @@ export function SourceCompareModal({
                       style={{ cursor: pick ? undefined : 'grab' }}
                     >
                       <Group gap={6} wrap="nowrap" mb="xs">
-                        {!pick && <IconGripVertical size={14} style={{ opacity: 0.5 }} />}
+                        {!pick && <IconGripVertical size={16} style={{ opacity: 0.5 }} />}
                         <Badge size="sm" variant="filled">
                           #{i + 1}
                         </Badge>
@@ -747,7 +747,7 @@ export function SourceCompareModal({
                   <Button
                     size="xs"
                     variant="light"
-                    leftSection={<IconRefresh size={14} />}
+                    leftSection={<IconRefresh size={16} />}
                     loading={redownload.isPending}
                     onClick={runRedownload}
                   >

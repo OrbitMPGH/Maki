@@ -17,7 +17,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('titles on the shelf')).toBeVisible()
+    await expect(await canvas.findByText('Titles on the shelf')).toBeVisible()
     await expect(await canvas.findByText('Recent feedback')).toBeVisible()
   },
 }
@@ -37,6 +37,24 @@ export const FallbackRanking: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText(/Catalogue fallback is active/)).toBeVisible()
+  },
+}
+
+const [liked] = feedbackLab.activity.items
+const repeated = {
+  ...feedbackLab,
+  activity: {
+    ...feedbackLab.activity,
+    items: [liked, { ...liked, id: 39, action: 'dismiss', occurredAtUtc: new Date(new Date(liked.occurredAtUtc).getTime() - 60_000).toISOString() }, ...feedbackLab.activity.items.slice(1)],
+  },
+}
+
+export const RepeatedTitleSharesRow: Story = {
+  parameters: { msw: discoverPage(http.get(api('/recommendations/feedback-lab'), () => HttpResponse.json(repeated))) },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/Liked/)).toBeVisible()
+    await waitFor(() => expect(canvas.getAllByText(liked.title!)).toHaveLength(1))
+    await waitFor(() => expect(canvas.getAllByText('Dismissed')).toHaveLength(2))
   },
 }
 

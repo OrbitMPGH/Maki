@@ -169,3 +169,20 @@ export const PastedUrlNoSourceKnows: Story = {
 export const MappingsFailToLoad: Story = {
   parameters: { msw: seriesMsw(http.get(api('/sourcemapping'), () => failWith(500))) },
 }
+
+/** The id and the last check sit behind the row's chevron; the id can still be copied there. */
+export const RowDetails: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByText('MangaDex')
+    await expect(canvas.queryByText(/Chapters last checked|Chapters never checked/)).toBeNull()
+    const toggle = await canvas.findByRole('button', { name: 'Details for MangaDex' })
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-expanded', 'false'))
+    await userEvent.click(toggle)
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-expanded', 'true'))
+    await expect(await canvas.findByText('Source ID')).toBeVisible()
+    await expect(await canvas.findByText(/Chapters last checked|Chapters never checked/)).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /copy/i })).toBeInTheDocument()
+    await userEvent.click(toggle)
+    await expect(canvas.queryByText('Source ID')).toBeNull()
+  },
+}

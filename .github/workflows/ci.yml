@@ -46,10 +46,17 @@ jobs:
       # Every story renders under the app's real providers against the MSW mocks in .storybook/mocks,
       # and a story whose component calls an endpoint nothing mocks fails, so a new API call has to
       # bring its mock along.
-      - name: Storybook stories render and pass their play functions
+      # Two shards, each in its own browsers: a single run of every story passed about six minutes on
+      # the runner, after which msw's service worker stopped answering in every page at once and the
+      # rest of the run timed out story by story.
+      - name: Storybook stories render and pass their play functions (1/2)
         # A story that wedges its page never times out inside the browser; fail here, not at the job cap.
-        timeout-minutes: 10
-        run: npm run test-storybook
+        timeout-minutes: 8
+        run: npm run test-storybook -- --shard=1/2
+      - name: Storybook stories render and pass their play functions (2/2)
+        if: success() || failure()
+        timeout-minutes: 8
+        run: npm run test-storybook -- --shard=2/2
 
       # Self-hosters open the app over plain HTTP on a LAN address, where crypto.randomUUID and
       # navigator.clipboard are undefined. It works on localhost, so it only surfaces after release.
@@ -77,3 +84,21 @@ jobs:
       # index.html, so it needs the build step above.
       - name: Only English is in the eager bundle
         run: npm run i18n:bundle
+
+  # Release notes are collected in changes/ as work lands (changes/README.md). A PR that touches the
+  # app without an entry is usually fine (refactor, fix to unreleased work), so this warns, never fails.
+  release-notes-entry:
+    if: github.event_name == 'pull_request' && github.base_ref == 'dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: PR has a changes/ entry if it touches the app
+        run: |
+          files=$(git diff --name-only "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}")
+          if echo "$files" | grep -qE '^(src/|frontend/src/)' \
+            && ! echo "$files" | grep -E '^changes/.+\.md$' | grep -qv '^changes/README\.md$'; then
+            echo "::warning title=No release notes entry::This PR changes src/ or frontend/src/ but adds nothing under changes/. Add one if a user of the last release would notice (see changes/README.md)."
+          fi

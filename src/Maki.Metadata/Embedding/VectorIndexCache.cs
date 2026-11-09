@@ -46,12 +46,24 @@ public sealed class VectorIndexCache(
     private sealed record Loaded(VectorIndex Index, long DumpTicks, long DumpLength, long Generation);
 
     private volatile Loaded? _loaded;
+
+    /// <summary>
+    /// A build that found nothing usable, with what it read. Without it every search and every
+    /// recommendation request after a model change re-runs a full scan that is still empty: the
+    /// stored vectors all have the old width until the prebuilt index or a local pass replaces them.
+    /// </summary>
+    private sealed record EmptyBuild(long DumpTicks, long DumpLength, long Generation, string Vectors);
+
+    private volatile EmptyBuild? _empty;
     private readonly IdleStamp _idle = new();
 
     // Bumped by every invalidation, so a build that was already reading when one landed cannot
     // publish what it read.
     private readonly object _publish = new();
     private long _generation;
+
+    /// <summary>Test hook: the latest background snapshot write.</summary>
+    internal Task SnapshotSavedForTest { get; private set; } = Task.CompletedTask;
 
     /// <summary>Test hook: runs after a build finishes reading and before it is published.</summary>
     internal Action? AfterBuildForTest { get; set; }
@@ -83,7 +95,7 @@ public sealed class VectorIndexCache(
     /// </summary>
     public void WarmInBackground()
     {
-        if (IsCurrent || _builds.IsRunning || Interlocked.CompareExchange(ref _warming, 1, 0) != 0)
+        if (IsCurrent || _builds.IsRunning || KnownEmpty() || Interlocked.CompareExchange(ref _warming, 1, 0) != 0)
         {
             return;
         }
@@ -103,6 +115,30 @@ public sealed class VectorIndexCache(
                 Volatile.Write(ref _warming, 0);
             }
         });
+    }
+
+    private bool KnownEmpty() =>
+        _empty is { } empty && DumpInfo() is { } info
+        && info.LastWriteTimeUtc.Ticks == empty.DumpTicks && info.Length == empty.DumpLength
+        && empty.Generation == Interlocked.Read(ref _generation) && empty.Vectors == VectorFileStamp();
+
+    /// <summary>
+    /// The vector database's content version, the same one the snapshot key carries. File times
+    /// cannot stand in: a checkpoint or a reader moves them without changing anything stored.
+    /// </summary>
+    private string VectorFileStamp()
+    {
+        try
+        {
+            SqliteKeeper.For(options.VectorDbPath).Attach();
+            using var conn = new SqliteConnection($"Data Source={options.VectorDbPath};Mode=ReadOnly;Pooling=False");
+            conn.Open();
+            return ContentStamp(conn);
+        }
+        catch (SqliteException)
+        {
+            return "-";
+        }
     }
 
     private bool MatchesDump(Loaded loaded) =>
@@ -161,6 +197,40 @@ public sealed class VectorIndexCache(
         return true;
     }
 
+    /// <summary>
+    /// Where the built index is kept between unloads (<see cref="VectorIndexSnapshot"/>), beside
+    /// the vector database it is built from.
+    /// </summary>
+    internal string SnapshotPath =>
+        Path.Combine(Path.GetDirectoryName(options.VectorDbPath) ?? ".", Path.GetFileNameWithoutExtension(options.VectorDbPath) + ".vecindex");
+
+    private void DeleteSnapshot()
+    {
+        try
+        {
+            File.Delete(SnapshotPath);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogDebug(ex, "Could not delete the search vector snapshot");
+        }
+    }
+
+    /// <summary>
+    /// Serves <paramref name="index"/> in place of the loaded one, for an eval tool grading a
+    /// modified copy (<see cref="VectorIndex.Requantized"/>) through the services that read this cache.
+    /// </summary>
+    internal void ReplaceLoadedForEval(VectorIndex index)
+    {
+        lock (_publish)
+        {
+            if (_loaded is { } loaded)
+            {
+                _loaded = loaded with { Index = index };
+            }
+        }
+    }
+
     /// <summary>Drops the cached index so the next search rebuilds it. Cheap; safe any time.</summary>
     public void Invalidate()
     {
@@ -168,6 +238,7 @@ public sealed class VectorIndexCache(
         {
             _generation++;
             _loaded = null;
+            DeleteSnapshot();
         }
 
         logger.LogDebug("Search vector index invalidated");
@@ -176,10 +247,22 @@ public sealed class VectorIndexCache(
     /// <summary>
     /// Replaces the vector database with <paramref name="stagedPath"/> and drops the cached index.
     /// Waits out any running build under the build lock, so a swap can never race a build that is
-    /// midway through reading the old file. The WAL sidecars belong to the file being replaced, so they go with it:
-    /// leaving them would let SQLite reconstruct pages of the *previous* database over the new one.
+    /// midway through reading the old file.
+    /// <para>
+    /// An existing database gets the new content copied into it with SQLite's backup API rather than
+    /// a file moved over it, so the file and its <c>-shm</c> stay the ones every connection and the
+    /// keeper share (see <see cref="SqliteKeeper"/>). Unlike the instant move it replaced, the copy
+    /// holds the build lock and the database's write lock for its whole length, seconds on a NAS.
+    /// A move is the fallback only when the copy cannot work (a page size the live file cannot take,
+    /// or a corrupt live file), and then the WAL sidecars go with the old file: leaving them would
+    /// let SQLite reconstruct pages of the *previous* database over the new one.
+    /// </para>
     /// </summary>
-    public async Task SwapDatabaseAsync(string stagedPath, CancellationToken ct = default)
+    /// <returns>
+    /// False when a writer held the database through the wait. Nothing changed and the staged file
+    /// is left where it was; the caller tries again on its next run.
+    /// </returns>
+    public async Task<bool> SwapDatabaseAsync(string stagedPath, CancellationToken ct = default)
     {
         await _lock.WaitAsync(ct);
         try
@@ -189,24 +272,79 @@ public sealed class VectorIndexCache(
             {
                 _generation++;
                 _loaded = null;
+                DeleteSnapshot();
             }
 
             SqliteConnection.ClearAllPools();
-
-            foreach (var sidecar in new[] { options.VectorDbPath + "-wal", options.VectorDbPath + "-shm" })
+            var copy = File.Exists(options.VectorDbPath) ? CopyInto(stagedPath) : CopyResult.Unusable;
+            if (copy == CopyResult.Busy)
             {
-                if (File.Exists(sidecar))
-                {
-                    File.Delete(sidecar);
-                }
+                logger.LogInformation("Did not swap in the new vector database: {Path} is being written to", options.VectorDbPath);
+                return false;
             }
 
-            File.Move(stagedPath, options.VectorDbPath, overwrite: true);
+            if (copy == CopyResult.Unusable)
+            {
+                using var keeperClosed = SqliteKeeper.For(options.VectorDbPath).Suspend();
+                foreach (var sidecar in new[] { options.VectorDbPath + "-wal", options.VectorDbPath + "-shm" })
+                {
+                    if (File.Exists(sidecar))
+                    {
+                        File.Delete(sidecar);
+                    }
+                }
+
+                File.Move(stagedPath, options.VectorDbPath, overwrite: true);
+            }
+
             logger.LogInformation("Swapped in a new vector database at {Path}", options.VectorDbPath);
+            return true;
         }
         finally
         {
             _lock.Release();
+        }
+    }
+
+    private enum CopyResult { Copied, Busy, Unusable }
+
+    private CopyResult CopyInto(string stagedPath)
+    {
+        try
+        {
+            SqliteKeeper.For(options.VectorDbPath).Attach();
+            using var source = new SqliteConnection($"Data Source={stagedPath};Mode=ReadOnly;Pooling=False");
+            using var live = new SqliteConnection($"Data Source={options.VectorDbPath};Mode=ReadWrite;Pooling=False");
+            source.Open();
+            live.Open();
+            using (var setup = live.CreateCommand())
+            {
+                setup.CommandText = "PRAGMA busy_timeout=5000; PRAGMA journal_size_limit=8388608;";
+                setup.ExecuteNonQuery();
+            }
+
+            source.BackupDatabase(live);
+
+            // The copy went through the WAL whole; give the space back.
+            using var truncate = live.CreateCommand();
+            truncate.CommandText = "PRAGMA wal_checkpoint(TRUNCATE)";
+            using var result = truncate.ExecuteReader();
+            if (result.Read() && result.GetInt32(0) != 0)
+            {
+                logger.LogInformation("The new vector database is in place, but a reader kept its WAL from being truncated");
+            }
+
+            return CopyResult.Copied;
+        }
+        catch (SqliteException ex) when ((ex.SqliteErrorCode & 0xFF) is 5 or 6)
+        {
+            return CopyResult.Busy;
+        }
+        catch (SqliteException ex) when ((ex.SqliteErrorCode & 0xFF) is 8 or 11 or 26)
+        {
+            logger.LogWarning("Could not copy the new vector database into {Path}, replacing the file instead: {Error}",
+                options.VectorDbPath, ex.Message);
+            return CopyResult.Unusable;
         }
     }
 
@@ -237,7 +375,7 @@ public sealed class VectorIndexCache(
                     return raced.Index;
                 }
 
-                if (!File.Exists(options.VectorDbPath) || DumpInfo() is null)
+                if (!File.Exists(options.VectorDbPath) || DumpInfo() is null || KnownEmpty())
                 {
                     return null;
                 }
@@ -282,20 +420,30 @@ public sealed class VectorIndexCache(
             generation = _generation;
         }
 
+        // Taken before the build, so a write landing while it reads clears the memo.
+        var vectors = VectorFileStamp();
         try
         {
-            var built = Build(CancellationToken.None);
+            var (built, fresh, key) = Build(ticks, length, CancellationToken.None);
             AfterBuildForTest?.Invoke();
             var loaded = built is null ? null : new Loaded(built, ticks, length, generation);
+            var current = false;
             lock (_publish)
             {
                 if (generation == _generation)
                 {
                     _loaded = loaded;
+                    _empty = loaded is null ? new EmptyBuild(ticks, length, generation, vectors) : null;
+                    current = true;
                 }
             }
 
             _idle.Touch();
+            if (current && fresh is not null && built is not null)
+            {
+                SaveSnapshot(built, fresh, key, generation);
+            }
+
             return loaded;
         }
         catch (Exception ex)
@@ -326,9 +474,10 @@ public sealed class VectorIndexCache(
         }
     }
 
-    private VectorIndex? Build(CancellationToken ct)
+    private (VectorIndex? Index, VectorIndexParts? Fresh, string Key) Build(long dumpTicks, long dumpLength, CancellationToken ct)
     {
         var started = DateTime.UtcNow;
+        SqliteKeeper.For(options.VectorDbPath).Attach();
         using var conn = new SqliteConnection($"Data Source={options.VectorDbPath};Mode=ReadOnly;Pooling=False");
         conn.Open();
         using (var attach = conn.CreateCommand())
@@ -352,7 +501,7 @@ public sealed class VectorIndexCache(
         if (total == 0)
         {
             logger.LogInformation("Search vector index empty — nothing embedded yet");
-            return null;
+            return (null, null, string.Empty);
         }
 
         // Served anyway: refusing would turn search off for the hours a local re-embed takes, and
@@ -364,6 +513,15 @@ public sealed class VectorIndexCache(
                 "The vector database holds {Stored} vectors but this install embeds queries with {Current}; "
                 + "search ranks poorly until the prebuilt index is installed or the index is rebuilt",
                 stored, options.ModelVersion);
+        }
+
+        var key = SnapshotKey(conn, dumpTicks, dumpLength);
+        if (TryReadSnapshot(key) is { } saved)
+        {
+            logger.LogInformation(
+                "Loaded the search vector index from its snapshot: {Rows} series × {Dim} dims in {Elapsed:F1}s",
+                saved.Ids.Length, saved.Dimensions, (DateTime.UtcNow - started).TotalSeconds);
+            return (Assemble(saved, conn), null, key);
         }
 
         var ids = new long[total];
@@ -392,7 +550,7 @@ public sealed class VectorIndexCache(
         if (cells > int.MaxValue)
         {
             logger.LogWarning("Vector index too large to hold in memory ({Cells} cells)", cells);
-            return null;
+            return (null, null, key);
         }
 
         // Packed as it is read, never materialized as int8: the int8 form of this table is 93 MB
@@ -410,9 +568,14 @@ public sealed class VectorIndexCache(
         // is what lets the recommender answer its author-match term without touching SQLite.
         var authorIds = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
+        // The browse table carries every dump column this reads, keyed and typed like series, so
+        // the 127k lookups below stay inside it instead of reading the 6 KB series rows, which after
+        // an idle unload are cold (the dump is dropped from the page cache after each scan).
+        var dumpTable = MangaBakaDumpService.BrowseSource(conn, "dump");
+
         // Older dumps have no publication date, and a missing column would fail the whole build
         // rather than just the date sort, which falls back to the year.
-        var startDateColumn = HasDumpColumn(conn, "published_start_date")
+        var startDateColumn = HasDumpColumn(conn, dumpTable, "published_start_date")
             ? "d.published_start_date"
             : "NULL";
 
@@ -424,7 +587,7 @@ public sealed class VectorIndexCache(
                        d.genres, t.tags, d.authors, d.popularity_global_current, d.content_rating,
                        d.artists, {startDateColumn}
                 FROM series_vectors v
-                CROSS JOIN dump.series d ON d.id = v.id
+                CROSS JOIN dump.{dumpTable} d ON d.id = v.id
                 LEFT JOIN series_tags t ON t.id = v.id
                 WHERE {CandidateWhere}
                 """;
@@ -487,7 +650,7 @@ public sealed class VectorIndexCache(
                 "Search vector index empty: no eligible catalogue rows with usable vectors " +
                 "({Mismatched} stored vector(s) have the wrong model width)",
                 mismatched);
-            return null;
+            return (null, null, key);
         }
 
         // The vector count includes missing/ineligible dump rows and old model widths. Trim to
@@ -528,8 +691,13 @@ public sealed class VectorIndexCache(
             rows, dimensions, rows * (double)stride / (1024 * 1024), (DateTime.UtcNow - started).TotalSeconds,
             mismatched > 0 ? $"; skipped {mismatched} vector(s) from an older model" : string.Empty);
 
-        var tagVocabulary = ReadTagVocabulary(conn);
-        return new VectorIndex(
+        var authorsById = new string[authorIds.Count];
+        foreach (var (name, id) in authorIds)
+        {
+            authorsById[id] = name;
+        }
+
+        var parts = new VectorIndexParts(
             ids,
             data,
             scales,
@@ -539,11 +707,149 @@ public sealed class VectorIndexCache(
                 JaggedInts.From(genreIdx), JaggedInts.From(authorIdx), JaggedInts.From(artistIdx),
                 popularity, new PackedTags(tagBytes.WrittenSpan.ToArray(), tagOffsets),
                 contentRatingIdx, [], startDays),
+            typeIds, statusIds, genreIds, authorsById, contentRatingIds, LoadTaste(ids));
+        return (Assemble(parts, conn), parts, key);
+    }
+
+    /// <summary>
+    /// The index over <paramref name="parts"/>, with the pieces that are read live whichever way
+    /// the parts arrived: the tag vocabulary (a few thousand rows) and the franchise components
+    /// (deferred to first use). The behavioural layer travels in the parts, so it is mapped from the
+    /// snapshot too; the snapshot key carries the taste file's stamp for that reason.
+    /// </summary>
+    private VectorIndex Assemble(VectorIndexParts parts, SqliteConnection conn)
+    {
+        var tagVocabulary = ReadTagVocabulary(conn);
+        var ids = parts.Ids;
+        return new VectorIndex(
+            ids,
+            parts.Data,
+            parts.Scales,
+            parts.Dimensions,
+            parts.Columns,
             new VectorIndexVocabularies(
-                typeIds, statusIds, genreIds, NameMap.From(authorIds), tagVocabulary.Tags, contentRatingIds,
-                tagVocabulary.Subtrees),
-            LoadTaste(ids),
+                parts.Types, parts.Statuses, parts.Genres, new NameMap(parts.AuthorsById), tagVocabulary.Tags,
+                parts.ContentRatings, tagVocabulary.Subtrees),
+            parts.Taste,
             franchiseLoader: () => LoadFranchises(ids));
+    }
+
+    /// <summary>
+    /// What a snapshot has to have been written under to stand in for a build: this assembly, the
+    /// dump file, the vector database's content (<see cref="EmbeddingStore.ContentVersionKey"/>,
+    /// or the file itself when nothing has written one yet, which is a downloaded artifact nothing
+    /// has modified), and the model.
+    /// </summary>
+    private string SnapshotKey(SqliteConnection conn, long dumpTicks, long dumpLength)
+    {
+        var content = ContentStamp(conn);
+        var tastePath = tasteOptions?.DatabasePath;
+        var taste = !string.IsNullOrWhiteSpace(tastePath) && new FileInfo(tastePath) is { Exists: true } tasteFile
+            ? $"taste:{tasteFile.LastWriteTimeUtc.Ticks}:{tasteFile.Length}"
+            : "taste:none";
+
+        return string.Join('|',
+            SnapshotFile.BuildIdentity, $"{dumpTicks}:{dumpLength}", content, StoredModelVersion(conn) ?? "-",
+            options.ModelVersion, options.Dimensions.ToString(CultureInfo.InvariantCulture), taste);
+    }
+
+    private string ContentStamp(SqliteConnection conn)
+    {
+        string? content = null;
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "SELECT value FROM main.meta WHERE key = $key";
+            cmd.Parameters.AddWithValue("$key", EmbeddingStore.ContentVersionKey);
+            try
+            {
+                content = cmd.ExecuteScalar() as string;
+            }
+            catch (SqliteException)
+            {
+            }
+        }
+
+        if (content is null)
+        {
+            var file = new FileInfo(options.VectorDbPath);
+            content = $"file:{file.LastWriteTimeUtc.Ticks}:{file.Length}";
+        }
+
+        return content;
+    }
+
+    private VectorIndexParts? TryReadSnapshot(string key)
+    {
+        try
+        {
+            return VectorIndexSnapshot.TryRead(SnapshotPath, key);
+        }
+        catch (Exception ex)
+        {
+            // A damaged or half-written file only costs this load its shortcut.
+            logger.LogInformation(ex, "Ignoring an unreadable search vector snapshot; rebuilding");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Writes the snapshot off the request path, then swaps the published index for one reading the
+    /// snapshot in place, so the built copy on the heap can be collected. A build that an
+    /// invalidation outdated while it was being written deletes its own file, so the next load
+    /// cannot read what the invalidation meant to throw away.
+    /// </summary>
+    private void SaveSnapshot(VectorIndex built, VectorIndexParts parts, string key, long generation)
+    {
+        SnapshotSavedForTest = Task.Run(() =>
+        {
+            try
+            {
+                var clock = System.Diagnostics.Stopwatch.StartNew();
+                VectorIndexSnapshot.Write(SnapshotPath, key, parts);
+                lock (_publish)
+                {
+                    if (generation != _generation)
+                    {
+                        DeleteSnapshot();
+                        return;
+                    }
+                }
+
+                logger.LogDebug("Saved the search vector snapshot in {Elapsed:F1}s", clock.Elapsed.TotalSeconds);
+                // A heap reread (mapping off or unavailable) would only be a second copy.
+                if (TryReadSnapshot(key) is not { Ids.IsMapped: true } mapped)
+                {
+                    return;
+                }
+
+                lock (_publish)
+                {
+                    // The exact index these parts built, not merely one of the same generation: a
+                    // dump swap rebuilds without bumping it, and this snapshot is the older dump's.
+                    if (generation == _generation && _loaded is { } current
+                        && ReferenceEquals(current.Index, built))
+                    {
+                        _loaded = current with { Index = Rehome(current.Index, mapped) };
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Only costs the next reload its shortcut.
+                logger.LogInformation(ex, "Could not save the search vector snapshot");
+            }
+        });
+    }
+
+    /// <summary>
+    /// <paramref name="built"/> over the mapped copy of its own parts, keeping everything that was
+    /// read live: vocabularies, the behavioural layer, and the franchise components, loaded or not.
+    /// </summary>
+    private VectorIndex Rehome(VectorIndex built, VectorIndexParts mapped)
+    {
+        return new VectorIndex(
+            mapped.Ids, mapped.Data, mapped.Scales, mapped.Dimensions, mapped.Columns, built.Vocabularies,
+            mapped.Taste ?? built.Taste, franchiseLoader: built.SharedFranchises);
     }
 
     /// <summary>
@@ -554,7 +860,7 @@ public sealed class VectorIndexCache(
     /// the Lazy behind it means the request after that pays nothing. Unions still cover every id
     /// the dump mentions, including unembedded connecting volumes.
     /// </summary>
-    private int[] LoadFranchises(long[] ids)
+    private int[] LoadFranchises(Column<long> ids)
     {
         var franchise = new int[ids.Length];
         Array.Fill(franchise, VectorIndex.Unknown);
@@ -571,7 +877,10 @@ public sealed class VectorIndexCache(
                 Pooling = false,
             }.ToString());
             conn.Open();
-            var componentOf = FranchiseGraph.Build(conn);
+
+            // Stored when the dump was installed; building it here parses every relation blob in
+            // the file, 3 to 7 s cold. Same components and ids either way.
+            var componentOf = FranchiseGraph.Read(conn) ?? FranchiseGraph.Build(conn);
             var covered = 0;
             for (var row = 0; row < ids.Length; row++)
             {
@@ -613,7 +922,7 @@ public sealed class VectorIndexCache(
     /// same way an indexing pass does.
     /// </para>
     /// </summary>
-    private TasteLayer? LoadTaste(long[] ids)
+    private TasteLayer? LoadTaste(Column<long> ids)
     {
         var path = tasteOptions?.DatabasePath;
         if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
@@ -827,10 +1136,10 @@ public sealed class VectorIndexCache(
         reader.IsDBNull(ordinal) ? null : reader.GetString(ordinal);
 
     /// <summary>total_chapters is TEXT and may be fractional (see the dump notes).</summary>
-    private static bool HasDumpColumn(SqliteConnection conn, string column)
+    private static bool HasDumpColumn(SqliteConnection conn, string table, string column)
     {
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "PRAGMA dump.table_info(series)";
+        cmd.CommandText = $"PRAGMA dump.table_info({table})";
         using var reader = cmd.ExecuteReader();
         while (reader.Read())
         {

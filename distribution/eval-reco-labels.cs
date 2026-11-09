@@ -114,6 +114,7 @@ var foldIndex = -1;
 var foldCount = 0;
 var csvMetric = "rr";
 var facetPassage = false;
+string? modelOverride = null;
 var quantBits = 0;
 var quantTaste = false;
 var variantArgs = new List<string>();
@@ -195,6 +196,11 @@ for (var i = 0; i < args.Length; i++)
         // empty index and a table of zeroes rather than an error.
         case "--facets":
             facetPassage = true;
+            break;
+        // Score an index built by `build-embeddings.cs <candidate>` with that candidate's model,
+        // one of EmbeddingModelProfile.Candidates, instead of the one the settings name.
+        case "--model":
+            modelOverride = args[++i];
             break;
         // Which per-request metric the .csv carries for eval-compare.py: rr (default), ndcg or r40.
         case "--csv":
@@ -309,8 +315,18 @@ var variants = variantArgs.Count > 0
     ? variantArgs.Select(Variants.Parse).ToList()
     : [Variants.Parse("nocrowd"), Variants.Parse("default")];
 
-var modelKind = Settings.ReadEmbeddingModel(Path.Combine(configDir, "maki.db")) ?? "base";
+var modelKind = modelOverride ?? Settings.ReadEmbeddingModel(Path.Combine(configDir, "maki.db")) ?? "base";
 var modelProfile = EmbeddingModelProfile.Resolve(modelKind);
+if (modelOverride is not null)
+{
+    if (!EmbeddingModelProfile.Candidates.TryGetValue(modelOverride, out var candidate))
+    {
+        Console.WriteLine($"error: unknown --model '{modelOverride}'. Known: {string.Join(", ", EmbeddingModelProfile.Candidates.Keys)}");
+        return 2;
+    }
+
+    modelProfile = candidate;
+}
 if (facetPassage)
 {
     modelProfile = modelProfile with
@@ -355,11 +371,18 @@ Console.WriteLine($"index    : {index.Count} series, built in {warm.Elapsed.Tota
 
 if (quantBits is > 0 and < 8)
 {
-    var text = Requantize(TextVectors(index), quantBits);
-    var taste = quantTaste && index.Taste is { } layer ? Requantize(layer.Data, quantBits) : (0L, 0L);
+    if (EmbeddingMath.ShouldPack(index.Dimensions))
+    {
+        Console.WriteLine($"error: --quant prices int8 rows, and this {index.Dimensions}-dim index already stores 4-bit levels.");
+        Console.WriteLine($"  Raise EmbeddingMath.PackMinimumDimensions above {index.Dimensions} to compare against int8.");
+        return 2;
+    }
+
+    index = index.Requantized(quantBits, quantTaste, out var text, out var taste);
+    cache.ReplaceLoadedForEval(index);
     Console.WriteLine(
         $"quant    : {quantBits}-bit grid, {text.Changed * 100.0 / text.Total:F1}% of text elements moved" +
-        (quantTaste ? $", {taste.Item2 * 100.0 / Math.Max(1, taste.Item1):F1}% of behavioural" : "") +
+        (quantTaste ? $", {taste.Changed * 100.0 / Math.Max(1, taste.Total):F1}% of behavioural" : "") +
         $" (text vectors would be {index.Count * (long)index.Dimensions * quantBits / 8 / 1048576.0:F0} MB packed" +
         $" against {index.Count * (long)index.Dimensions / 1048576.0:F0} MB)");
 }
@@ -1185,51 +1208,6 @@ static double Ndcg(List<long> ids, Dictionary<long, double> positives, int k)
         .Select((g, i) => g / Math.Log2(i + 2))
         .Sum();
     return ideal > 0 ? dcg / ideal : 0;
-}
-
-/// <summary>
-/// The index's packed text vectors. Reached reflectively because the index deliberately exposes
-/// only spans over them - this tool is pricing a change to the storage itself, which is not
-/// something the shipped type should offer a way to do.
-/// </summary>
-static sbyte[] TextVectors(VectorIndex index)
-{
-    var field = typeof(VectorIndex)
-        .GetFields(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
-        .Single(f => f.FieldType == typeof(sbyte[]) && f.Name.Contains("data", StringComparison.Ordinal));
-    return (sbyte[])field.GetValue(index)!;
-}
-
-/// <summary>
-/// Rounds every element onto the grid a <paramref name="bits"/>-wide vector would have, in place.
-///
-/// <para>
-/// This is the exact loss packing at that width would cause, not an approximation of it. A packed
-/// element is a level index n, and scoring it means n times the step; writing n times the step back
-/// into the int8 array and leaving the row's scale alone produces the identical dot product, since
-/// the step factors out of the sum. The step is kept a whole number so the value is exactly
-/// representable here, which costs one level of range (±126 rather than ±127 at four bits) and
-/// makes this very slightly pessimistic rather than optimistic.
-/// </para>
-/// </summary>
-static (long Total, long Changed) Requantize(sbyte[] values, int bits)
-{
-    var levels = (1 << (bits - 1)) - 1;
-    var step = 127 / levels;
-    long changed = 0;
-    for (var i = 0; i < values.Length; i++)
-    {
-        var level = Math.Clamp((int)MathF.Round(values[i] / (float)step), -levels, levels);
-        var rounded = (sbyte)(level * step);
-        if (rounded != values[i])
-        {
-            changed++;
-        }
-
-        values[i] = rounded;
-    }
-
-    return (values.LongLength, changed);
 }
 
 /// <summary>Round-trippable and culture-pinned, so a fit reads what the eval wrote.</summary>

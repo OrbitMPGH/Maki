@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties, type Reac
 import { Paper, Text, Title } from '@mantine/core'
 import { useLingui } from '@lingui/react/macro'
 import { getInitialize } from '../../api/client'
-import { IconBrandMark } from '../IconBrandMark'
+import { IconBrandMark, type BrandMood } from '../IconBrandMark'
 
 /** Accent strength of each shape in the band: fixed, so the art is the same on every visit. */
 const SHAPES = Array.from({ length: 50 }, (_, i) => 10 + ((i * 37) % 62))
@@ -111,6 +111,17 @@ function useAuthArt() {
   }
 }
 
+/** The band's own art: tilted cover shapes in the accent colour. Rewind's opening wall uses it too. */
+export function AuthBandShapes() {
+  return (
+    <div className="auth-band-shapes">
+      {SHAPES.map((shade, i) => (
+        <span key={i} style={{ '--shade': `${shade}%` } as CSSProperties} />
+      ))}
+    </div>
+  )
+}
+
 /**
  * The frame behind sign-in and first-run setup, with the page's one cinematic band.
  * <p>
@@ -125,11 +136,14 @@ export function AuthFrame({
   subtitle,
   children,
   footer,
+  mood = 'awake',
 }: {
   title: string
   subtitle?: ReactNode
   children: ReactNode
   footer?: ReactNode
+  /** The mascot's face: asking while the form shows an error, pleased on the way in. */
+  mood?: BrandMood
 }) {
   const { t } = useLingui()
   const { mode, mosaicUrl, onCoversLoad, onCoversError } = useAuthArt()
@@ -137,11 +151,7 @@ export function AuthFrame({
   return (
     <div className="auth-frame" data-art={mode}>
       <div className="auth-band" aria-hidden>
-        <div className="auth-band-shapes">
-          {SHAPES.map((shade, i) => (
-            <span key={i} style={{ '--shade': `${shade}%` } as CSSProperties} />
-          ))}
-        </div>
+        <AuthBandShapes />
         {mosaicUrl && (
           <img
             className="auth-band-covers"
@@ -158,9 +168,7 @@ export function AuthFrame({
 
       <div className="auth-content">
         <div className="auth-identity">
-          <span className="brand-mark auth-brand-mark">
-            <IconBrandMark />
-          </span>
+          <MoodMark mood={mood} />
           <h1 className="auth-wordmark">Maki</h1>
           <Text className="auth-tagline">{t`Self-hosted manga library and downloader.`}</Text>
         </div>
@@ -181,6 +189,27 @@ export function AuthFrame({
         </div>
       </div>
     </div>
+  )
+}
+
+/** The mascot on its tile. A new mood fades in while the face it replaces fades out. */
+function MoodMark({ mood }: { mood: BrandMood }) {
+  const [faces, setFaces] = useState([{ mood, key: 0 }])
+  const current = faces[faces.length - 1]
+  if (current.mood !== mood) setFaces([current, { mood, key: current.key + 1 }])
+  return (
+    <span className="brand-mark auth-brand-mark">
+      {faces.map((face) => (
+        <span
+          key={face.key}
+          className="brand-mood"
+          data-leaving={face !== current || undefined}
+          onAnimationEnd={face !== current ? () => setFaces((all) => all.filter((f) => f.key !== face.key)) : undefined}
+        >
+          <IconBrandMark mood={face.mood} />
+        </span>
+      ))}
+    </span>
   )
 }
 

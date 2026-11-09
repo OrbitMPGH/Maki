@@ -9,19 +9,52 @@ import {
   Text,
   Tooltip,
   UnstyledButton,
+  VisuallyHidden,
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import { IconAlertTriangle, IconBell, IconBellOff, IconCircleCheck } from '@tabler/icons-react'
-import { useNavigate } from 'react-router-dom'
+import {
+  IconAlertTriangle,
+  IconBell,
+  IconBellOff,
+  IconBook,
+  IconBooks,
+  IconCircleArrowUp,
+  IconCloudDownload,
+  IconDatabase,
+  IconDownload,
+  IconFeather,
+  IconFlag,
+  IconFolder,
+  IconHeartbeat,
+  IconInbox,
+  IconLink,
+  IconLinkOff,
+  IconListCheck,
+  IconPackage,
+  IconPencil,
+  IconMessages,
+  IconPuzzle,
+  IconRestore,
+  IconShieldLock,
+  IconThumbDown,
+  IconThumbUp,
+  IconTrendingUp,
+  IconTrophy,
+  IconWand,
+  type Icon,
+} from '../lib/icons'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   useInbox,
   useInboxPrefs,
   useInboxUnread,
   useMarkAllInboxRead,
   useMarkInboxRead,
+  type InboxEventType,
   type InboxItem,
 } from '../api/inbox'
 import { CountIndicator } from './ui/CountIndicator'
+import { AchievementBadge } from '../pages/stats/AchievementBadge'
 import { relativeTime } from './ui/time'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -36,6 +69,8 @@ export function NotificationBell({ position = 'bottom-end' }: { position?: 'bott
   const { t } = useLingui()
   const [opened, { toggle, close }] = useDisclosure(false)
   const navigate = useNavigate()
+  // The page has no sidebar item, so the bell is what marks it as the current place.
+  const onPage = useLocation().pathname.startsWith('/notifications')
 
   const { data: unread } = useInboxUnread()
   useInboxPrefs()
@@ -75,6 +110,8 @@ export function NotificationBell({ position = 'bottom-end' }: { position?: 'bott
             <ActionIcon
               variant="subtle"
               color="var(--neutral)"
+              className="notification-bell"
+              data-active={onPage || undefined}
               aria-label={
                 count > 0
                   ? plural(count, { one: 'Notifications, # unread', other: 'Notifications, # unread' })
@@ -160,6 +197,7 @@ function NotificationRow({
         </Box>
         <Stack gap={2} style={{ minWidth: 0 }}>
           <Text size="xs" fw={item.read ? 500 : 650} lineClamp={1}>
+            {!item.read && <UnreadMark />}
             {item.title}
           </Text>
           <Text size="xs" c="var(--ink-3)" lineClamp={2}>
@@ -168,7 +206,7 @@ function NotificationRow({
           {/* fz, not size: `size` takes a token ("xs"), and a raw number there resolves against
               --mantine-line-height-{n}, which does not exist and lands as line-height: 100px. */}
           <Text fz="var(--type-micro)" lh={1.5} c="var(--ink-4)">
-            {relativeTime(item.createdAt)}
+            {relativeTime(item.createdAt, 'narrow')}
           </Text>
         </Stack>
       </Group>
@@ -176,11 +214,53 @@ function NotificationRow({
   )
 }
 
-export function LevelIcon({ level }: { level: InboxItem['level'] }) {
-  if (level === 'error') return <IconAlertTriangle size={15} color="var(--danger)" />
-  if (level === 'warning') return <IconAlertTriangle size={15} color="var(--warn)" />
-  // Neutral, not the accent: under a red-leaning accent a brand-coloured tick reads as an error.
-  return <IconCircleCheck size={15} color="var(--ink-3)" />
+const TYPE_ICONS: Record<InboxEventType, Icon> = {
+  newChapterAvailable: IconBook,
+  smartDownloadQueued: IconWand,
+  chapterDownloaded: IconDownload,
+  downloadFailed: IconDownload,
+  achievementUnlocked: IconTrophy,
+  levelUp: IconTrendingUp,
+  requestSubmitted: IconInbox,
+  requestApproved: IconThumbUp,
+  requestRejected: IconThumbDown,
+  requestEdited: IconPencil,
+  healthIssue: IconHeartbeat,
+  updateAvailable: IconCloudDownload,
+  importFinished: IconFolder,
+  backupFinished: IconDatabase,
+  sourceMatchFinished: IconLink,
+  importListFinished: IconListCheck,
+  followedCreatorRelease: IconFeather,
+  chapterUpgraded: IconCircleArrowUp,
+  upgradeRestoreFailed: IconRestore,
+  torrentProposalPending: IconPackage,
+  volumeUpgraded: IconBooks,
+  accountSecurity: IconShieldLock,
+  seriesStatusChanged: IconFlag,
+  customSourceUpdated: IconPuzzle,
+  noteReply: IconMessages,
+  chapterDelisted: IconLinkOff,
+}
+
+/** A warning or error shows its severity; anything else shows what kind of event it was. */
+export function LevelIcon({ level, type }: { level: InboxItem['level']; type: InboxEventType }) {
+  if (level === 'error') return <IconAlertTriangle size={16} color="var(--danger)" />
+  if (level === 'warning') return <IconAlertTriangle size={16} color="var(--warn)" />
+  // Neutral, not the accent: under a red-leaning accent a brand-coloured icon reads as an error.
+  const TypeIcon = TYPE_ICONS[type] ?? IconBell
+  return <TypeIcon size={16} color="var(--ink-3)" />
+}
+
+/** Unread is said by a dot and the bolder title as well as the row's accent edge. */
+export function UnreadMark() {
+  const { t } = useLingui()
+  return (
+    <>
+      <span className="inbox-unread-dot" aria-hidden />
+      <VisuallyHidden>{t`Unread`} </VisuallyHidden>
+    </>
+  )
 }
 
 /**
@@ -192,8 +272,11 @@ export function LevelIcon({ level }: { level: InboxItem['level'] }) {
  * the one distinction the row's colour is carrying.
  */
 export function NotificationVisual({ item, size }: { item: InboxItem; size: number }) {
+  if (item.badge) {
+    return <AchievementBadge icon={item.badge.icon} tier={item.badge.tier} size={size < 30 ? 'sm' : 'md'} />
+  }
   if (!item.coverUrl) {
-    return <LevelIcon level={item.level} />
+    return <LevelIcon level={item.level} type={item.type} />
   }
 
   return (

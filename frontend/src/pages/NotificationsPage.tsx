@@ -11,11 +11,12 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core'
-import { IconSettings, IconX } from '@tabler/icons-react'
+import { IconChecks, IconSettings, IconTrash, IconX } from '../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { I18n } from '@lingui/core'
 import { useState } from 'react'
+import { useMediaQuery } from '@mantine/hooks'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   visibleInboxCategories,
@@ -29,7 +30,7 @@ import {
 } from '../api/inbox'
 import { useAuth } from '../auth/AuthProvider'
 import { useLabel } from '../i18n-context'
-import { NotificationVisual } from '../components/NotificationBell'
+import { NotificationVisual, UnreadMark } from '../components/NotificationBell'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
@@ -116,6 +117,18 @@ export default function NotificationsPage() {
   const clear = useClearInbox()
 
   const categories = visibleInboxCategories(isAdmin, singleUser)
+  // A phone has no room beside the tabs, so the switch joins the header actions instead of taking a
+  // row of its own above the rule.
+  const phone = useMediaQuery('(max-width: 36em)') ?? false
+  const unreadSwitch = (
+    <Switch
+      className="notifications-unread-switch"
+      size="xs"
+      label={t`Unread only`}
+      checked={unreadOnly}
+      onChange={(e) => setUnreadOnly(e.currentTarget.checked)}
+    />
+  )
 
   // Filtered client-side rather than through the endpoint's `type` parameter: a category is several
   // types, and the endpoint takes one. Paging still comes from the server, so this narrows the page
@@ -148,30 +161,30 @@ export default function NotificationsPage() {
               <ActionIcon
                 component={Link}
                 to="/settings?tab=preferences&s=notification-prefs"
-                variant="subtle"
-                color="var(--neutral)"
+                variant="default"
+                size="input-sm"
                 aria-label={t`Notification settings`}
               >
                 <IconSettings size={18} />
               </ActionIcon>
             </Tooltip>
             <Button
-              variant="light"
-              size="xs"
+              variant="default"
+              leftSection={<IconChecks size={16} />}
               disabled={unread === 0}
               onClick={() => markAll.mutate()}
             >
               <Trans>Mark all read</Trans>
             </Button>
             <Button
-              variant="subtle"
-              color="var(--danger)"
-              size="xs"
+              variant="default"
+              leftSection={<IconTrash size={16} />}
               disabled={all.length === 0 && !unreadOnly}
               onClick={() => setClearing(true)}
             >
               <Trans>Clear all</Trans>
             </Button>
+            {phone && unreadSwitch}
           </>
         }
       />
@@ -195,14 +208,7 @@ export default function NotificationsPage() {
             ))}
           </Tabs.List>
         </Tabs>
-        <Switch
-          className="notifications-unread-switch"
-          size="xs"
-          ml="auto"
-          label={t`Unread only`}
-          checked={unreadOnly}
-          onChange={(e) => setUnreadOnly(e.currentTarget.checked)}
-        />
+        {!phone && unreadSwitch}
       </div>
 
       {isLoading ? (
@@ -215,7 +221,9 @@ export default function NotificationsPage() {
         />
       ) : items.length === 0 ? (
         <EmptyState
-          mood={unreadOnly || category ? undefined : 'pleased'}
+          compact
+          framed
+          mood={olderMayMatch || unreadOnly || category ? 'asking' : 'pleased'}
           title={
             olderMayMatch
               ? t`None in the latest notifications`
@@ -286,7 +294,7 @@ function FeedSkeleton() {
       </Box>
       {[64, 48, 72, 56, 44, 60].map((width, i) => (
         <Group key={i} className="inbox-record" gap="sm" wrap="nowrap" align="flex-start" px="md" py="sm">
-          <Skeleton w={34} h={49} radius="sm" mt={2} style={{ flexShrink: 0 }} />
+          <Skeleton w={34} h={49} radius="xs" mt={2} style={{ flexShrink: 0 }} />
           <Stack gap={7} style={{ flex: 1 }} pt={3}>
             <Skeleton h={12} w={width * 5} maw="80%" />
             <Skeleton h={10} w={(width - 12) * 5} maw="70%" />
@@ -318,11 +326,13 @@ function Row({
         className="inbox-row"
       >
         <Group gap="sm" wrap="nowrap" align="flex-start">
-          <Box mt={2}>
+          {/* A fixed slot, so a row with a level icon starts its text where a row with a cover does. */}
+          <Box mt={2} w={34} style={{ flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
             <NotificationVisual item={item} size={34} />
           </Box>
           <Stack gap={2} style={{ minWidth: 0 }}>
             <Text size="sm" fw={item.read ? 500 : 650}>
+              {!item.read && <UnreadMark />}
               {item.title}
             </Text>
             <Text size="xs" c="var(--ink-3)">
@@ -333,7 +343,7 @@ function Row({
                   disagree with it ("yesterday" under Monday, 34 hours on), so those rows give the
                   clock time instead. */}
               {new Date(item.createdAt).toDateString() === new Date().toDateString()
-                ? relativeTime(item.createdAt)
+                ? relativeTime(item.createdAt, 'narrow')
                 : formatTime(item.createdAt)}
             </Text>
           </Stack>
@@ -347,7 +357,7 @@ function Row({
           onClick={onDismiss}
           m="sm"
         >
-          <IconX size={15} />
+          <IconX size={16} />
         </ActionIcon>
       </Tooltip>
     </Group>

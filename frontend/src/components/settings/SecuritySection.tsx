@@ -10,7 +10,7 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
-import { IconCheck, IconCopy } from '@tabler/icons-react'
+import { IconCheck, IconCopy } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import {
   useOidcSettings,
@@ -376,7 +376,7 @@ export function OidcSection() {
               size="xs"
               variant="default"
               onClick={() => void redirectCopy.copy(redirectUrl)}
-              leftSection={redirectCopy.copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+              leftSection={redirectCopy.copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
             >
               {redirectCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
             </Button>

@@ -1,7 +1,7 @@
 import { Component, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useLingui } from '@lingui/react/macro'
-import { IconArrowLeft, IconRefresh } from '@tabler/icons-react'
+import { IconArrowLeft, IconRefresh } from '../lib/icons'
 import { EmptyState } from './ui/EmptyState'
 
 /**

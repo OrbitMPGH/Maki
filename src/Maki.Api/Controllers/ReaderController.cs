@@ -53,9 +53,24 @@ public record SetChaptersStateRequest(int[] ChapterIds, string State);
 
 /// <summary>
 /// Pages of a chapter to upscale on the server, current page first, plus the first pages of the
-/// next chapter once the window runs past the last page. See <see cref="ReaderController.Enhance"/>.
+/// next chapter once the window runs past the last page. <c>WholeChapter</c> lifts the cap to
+/// <see cref="UpscaleQueue.MaxChapterPages"/> so the rest of the chapter can queue behind the window.
+/// <c>NotWanted</c> names pages of this chapter the reader shows plain (Enhance on Auto), dropped from
+/// whatever an earlier request queued. <c>Session</c> names the reader tab, so two tabs on one account
+/// keep separate queues. <c>Window</c> is how many leading <c>Pages</c> are the reading window (the rest
+/// is the whole chapter's backlog), and <c>Visible</c> false marks a request from a hidden tab, which
+/// does not make that tab active; absent means visible. See <see cref="ReaderController.Enhance"/>.
 /// </summary>
-public record EnhancePagesRequest(string? Model, int[]? Pages, int? NextChapterId = null, int[]? NextPages = null);
+public record EnhancePagesRequest(
+    string? Model,
+    int[]? Pages,
+    int? NextChapterId = null,
+    int[]? NextPages = null,
+    bool WholeChapter = false,
+    int[]? NotWanted = null,
+    string? Session = null,
+    int? Window = null,
+    bool? Visible = null);
 
 /// <summary>Chapters a device holds offline copies of. See <see cref="ReaderController.ChapterVersions"/>.</summary>
 public record ChapterVersionsRequest(int[]? Ids);
@@ -219,6 +234,11 @@ public class ReaderController(
             .Where(f => f.Id == slice.ChapterFileId)
             .Select(f => f.Tier)
             .FirstOrDefaultAsync(ct);
+        // Drawn with the first paint, so the toolbar badge and the page markers need no second request.
+        var notePages = await db.ChapterNotes
+            .Where(n => n.ChapterId == id && n.ParentId == null && n.DeletedAt == null)
+            .Select(n => n.PageIndex)
+            .ToListAsync(ct);
 
         return Ok(new
         {
@@ -247,7 +267,9 @@ public class ReaderController(
             autoProfileId = resolved.AutoProfileId,
             pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion),
             tier = QualitySnapshot.TierName(tier),
-            enhanceServer
+            enhanceServer,
+            noteCount = notePages.Count,
+            notedPages = notePages.OfType<int>().Where(p => p < slice.PageCount).Distinct().Order().ToList()
         });
     }
 
@@ -332,7 +354,8 @@ public class ReaderController(
             return NotFound();
         }
 
-        var pages = (request.Pages ?? []).Distinct().Take(UpscaleQueue.MaxPendingPerUser).ToList();
+        var cap = request.WholeChapter ? UpscaleQueue.MaxChapterPages : UpscaleQueue.MaxPendingPerUser;
+        var pages = (request.Pages ?? []).Distinct().Take(cap).ToList();
         var states = new string[pages.Count];
         var wanted = new List<(int Index, UpscaleRequestItem Item)>();
         for (var i = 0; i < pages.Count; i++)
@@ -365,7 +388,7 @@ public class ReaderController(
         }
 
         var items = wanted.Select(w => w.Item).ToList();
-        var room = UpscaleQueue.MaxPendingPerUser - items.Count;
+        var room = cap - items.Count;
         if (request.NextChapterId is { } nextId && nextId != id && request.NextPages is { Length: > 0 } nextPages && room > 0
             && await reader.PageSliceAsync(nextId, ct) is { } next)
         {
@@ -381,7 +404,13 @@ public class ReaderController(
                 .Take(room));
         }
 
-        var queued = queue.Replace(currentUser.UserId, id, model.Value, items);
+        var plain = (request.NotWanted ?? [])
+            .Where(page => page >= 0 && page < slice.PageCount && !pages.Contains(page))
+            .Select(page => new UpscaleWorkKey(slice.ChapterFileId, slice.ArchiveVersion, slice.StartPage + page, model.Value))
+            .ToHashSet();
+        int? window = request.WholeChapter && request.Window is { } shown ? wanted.Count(w => w.Index < shown) : null;
+        var queued = queue.Replace(
+            currentUser.UserId, id, model.Value, items, cap, plain, EnhanceSession(request.Session), window, request.Visible ?? true);
         for (var i = 0; i < wanted.Count; i++)
         {
             states[wanted[i].Index] = queued[i] == UpscaleJobState.Working ? "working" : "queued";
@@ -389,6 +418,16 @@ public class ReaderController(
 
         return Ok(new { pages = pages.Select((page, i) => new { page, state = states[i] }).ToList() });
     }
+
+    /// <summary>Drops this reader's pending upscales and stops a running one nobody else waits on. Sent as they leave the reader.</summary>
+    [HttpDelete("enhance")]
+    public IActionResult CancelEnhance([FromServices] UpscaleQueue queue, [FromQuery] string? session = null)
+    {
+        queue.Cancel(currentUser.UserId, EnhanceSession(session));
+        return NoContent();
+    }
+
+    private static string? EnhanceSession(string? session) => session is { Length: > 0 and <= 64 } ? session : null;
 
     /// <summary>A server upscale from the cache. 404 until it is there; this never queues one.</summary>
     [HttpGet("chapter/{id:int}/page/{page:int}/enhanced")]
@@ -419,13 +458,26 @@ public class ReaderController(
             return NotFound();
         }
 
-        var etag = new EntityTagHeaderValue($"\"{key.ChapterFileId}-{key.ArchiveVersion}-{key.AbsIndex}-{key.Model}\"");
+        var etag = new EntityTagHeaderValue(
+            $"\"{key.ChapterFileId}-{key.ArchiveVersion}-{key.AbsIndex}-{key.Model}-{UpscaleCache.Generation}\"");
         SetPageCacheControl(slice);
+        // A pipeline change raises the generation; a URL without the current one must not be kept for a year.
+        if (Request.Query["g"] != UpscaleCache.Generation)
+        {
+            Response.Headers.CacheControl = "private, no-cache";
+        }
         if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
         {
             return StatusCode(StatusCodes.Status304NotModified);
         }
 
+        // The browser keeps the page as immutable, so the server rarely reads it again; without this its
+        // pages stay in the container's page cache up to the upscale cache cap.
+        Response.OnCompleted(() =>
+        {
+            PageCache.DropAfterScan(cached);
+            return Task.CompletedTask;
+        });
         return PhysicalFile(cached, UpscaleCache.ContentType(cached), lastModified: null, entityTag: etag, enableRangeProcessing: false);
     }
 

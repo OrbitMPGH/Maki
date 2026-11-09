@@ -1,6 +1,6 @@
 import { Button, Group, Stack, Text } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
-import { IconPlus } from '@tabler/icons-react'
+import { IconPlus } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import {
   MAX_PAGE_CONVERSION_RULES,
@@ -110,7 +110,7 @@ export function ScopeStep({
         <Button
           variant="default"
           size="xs"
-          leftSection={<IconPlus size={14} />}
+          leftSection={<IconPlus size={16} />}
           disabled={atLimit}
           onClick={() => onRulesChange([...rules, newRuleDraft({ stop })])}
         >

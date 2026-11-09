@@ -8,6 +8,7 @@ import {
   ownedItem,
   resetTabState,
 } from '../../../.storybook/mocks/discover'
+import { shortlistMock } from '../../../.storybook/mocks/shortlist'
 import { DiscoverDetailModal } from './DiscoverDetailModal'
 
 const meta = {
@@ -148,5 +149,29 @@ export const CloseButton: Story = {
     const dialog = await dialogOf(canvasElement)
     await userEvent.click(await within(dialog).findByRole('button', { name: 'Close' }))
     await waitFor(() => expect(args.onClose).toHaveBeenCalled())
+  },
+}
+
+const modalShortlist = shortlistMock([])
+
+export const ShortlistFromTheModal: Story = {
+  args: { savedFrom: { savedFrom: 'rail:trending' } },
+  beforeEach: () => modalShortlist.reset(),
+  parameters: { msw: discoverPage(...modalShortlist.handlers) },
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = await dialogOf(canvasElement)
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Shortlist' }))
+    await expect(await within(dialog).findByRole('button', { name: 'Shortlisted' })).toHaveAttribute('aria-pressed', 'true')
+    await expect(await within(dialog).findByRole('textbox', { name: 'Note for later' })).toBeVisible()
+    await waitFor(() => expect(modalShortlist.snapshot().map((e) => e.savedFrom)).toEqual(['rail:trending']))
+  },
+}
+
+export const ShortlistHiddenWhenOwned: Story = {
+  args: { item: ownedItem(3), inLibrarySeriesId: 3 },
+  play: async ({ canvasElement }) => {
+    const dialog = await dialogOf(canvasElement)
+    await expect(await within(dialog).findByRole('heading', { level: 1 })).toBeVisible()
+    await expect(within(dialog).queryByRole('button', { name: 'Shortlist' })).toBeNull()
   },
 }

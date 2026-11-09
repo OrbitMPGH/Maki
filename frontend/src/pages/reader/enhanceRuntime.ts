@@ -97,6 +97,11 @@ export function measureTarget(
   }
 }
 
+/** Device pixels per source pixel on the axis shown largest, as `stretched` compares it. */
+export function shownScale(target: EnhanceTarget, regionWidth: number, regionHeight: number): number {
+  return Math.max(target.width / regionWidth, target.height / regionHeight)
+}
+
 /** The region of a decoded page as a bitmap the engine can take ownership of. */
 export async function regionBitmap(image: HTMLImageElement, region: Region): Promise<ImageBitmap> {
   const sx = Math.round(image.naturalWidth * region.x)
@@ -121,11 +126,15 @@ export function isEnhanceError(error: unknown, code: string): boolean {
   return error instanceof Error && error.name === 'EnhanceError' && (error as Error & { code?: string }).code === code
 }
 
+/** The pages `auto` measured as wanted, and the ones it measured as fine to show plain. */
+export type StretchedReport = (wanted: ReadonlySet<number>, plain: ReadonlySet<number>) => void
+
 /**
  * The cache keys one view has asked the engine for, grouped by page URL, so pages that leave the
  * view's window are evicted. It also remembers what each region size was last measured at, which
  * is how a page not yet on screen can be enhanced ahead at the size it will be shown, and which
- * pages `auto` wants (stretched or soft), which is all it asks the server for.
+ * pages `auto` wants (stretched or soft), which is all it asks the server for. The pages it measured
+ * and does not want are reported too, so the server can drop them.
  */
 export class EnhanceScope {
   private readonly keys = new Map<string, Set<string>>()
@@ -133,9 +142,9 @@ export class EnhanceScope {
   private readonly stretched = new Map<number, boolean>()
   private engine: EnhanceEngine | null = null
   private readonly onSize: () => void
-  private readonly onStretched: (pages: ReadonlySet<number>) => void
+  private readonly onStretched: StretchedReport
 
-  constructor(onSize: () => void = () => {}, onStretched: (pages: ReadonlySet<number>) => void = () => {}) {
+  constructor(onSize: () => void = () => {}, onStretched: StretchedReport = () => {}) {
     this.onSize = onSize
     this.onStretched = onStretched
   }
@@ -176,9 +185,10 @@ export class EnhanceScope {
   }
 
   private reportPages() {
-    const pages = new Set<number>()
-    for (const [page, stretched] of this.stretched) if (stretched) pages.add(page)
-    this.onStretched(pages)
+    const wanted = new Set<number>()
+    const plain = new Set<number>()
+    for (const [page, stretched] of this.stretched) (stretched ? wanted : plain).add(page)
+    this.onStretched(wanted, plain)
   }
 
   /** Evicts every page whose URL is not in `srcs`. */

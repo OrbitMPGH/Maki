@@ -3,13 +3,12 @@ import {
   IconBell,
   IconCompass,
   IconFlame,
-  IconHeartFilled,
   IconLayoutGrid,
   IconLibrary,
   IconStar,
   IconUsers,
   IconWand,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { DISCOVER_SECTIONS, DISCOVER_SECTION_LABELS } from '../../api/hooks'
 import type { LayoutConfig, SectionRegistry } from '../layout/pageLayout'
 
@@ -27,11 +26,6 @@ export const DISCOVER_SECTION_DEFS: SectionRegistry = {
     icon: IconStar,
     label: DISCOVER_SECTION_LABELS.hero,
     description: msg`A few large picks at the top, from your recent reading or what is trending.`,
-  },
-  taste: {
-    icon: IconHeartFilled,
-    label: DISCOVER_SECTION_LABELS.taste,
-    description: msg`A short strip of what your library leans towards.`,
   },
   recent: {
     icon: IconLibrary,

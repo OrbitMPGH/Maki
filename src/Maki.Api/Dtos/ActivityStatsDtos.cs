@@ -15,8 +15,9 @@ public record ActivityTotalsDto(
     /// </summary>
     int ReadingSeconds,
     /// <summary>
-    /// Local dates in the window on which anything was read. Counted from read events rather than
-    /// from <see cref="ReadingSeconds"/> so a Kavita-only user still gets a number.
+    /// Local dates in the window on which anything was read: a finished chapter or volume, or reading
+    /// time logged by the built-in reader. Read events count too, so a Kavita-only user still gets a
+    /// number. Matches the days Home's streak and week grid count.
     /// </summary>
     int DaysActive,
     /// <summary>

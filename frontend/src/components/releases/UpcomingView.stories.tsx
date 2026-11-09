@@ -43,7 +43,7 @@ export const Phone: Story = {
 export const NothingToPlace: Story = {
   parameters: { msw: [http.get(api('/upcoming'), () => HttpResponse.json([]))] },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Nothing to place yet')).toBeVisible()
+    await expect(await canvas.findByText('No release estimates yet')).toBeVisible()
   },
 }
 

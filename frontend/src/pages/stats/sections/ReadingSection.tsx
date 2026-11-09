@@ -8,12 +8,14 @@ import {
   IconHistory,
   IconHourglassLow,
   IconTrophy,
-} from '@tabler/icons-react'
+} from '../../../lib/icons'
 import { Trans, Plural, Select, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { useState } from 'react'
 import { useActivityStats, type ActivityTotals } from '../../../api/hooks'
 import { useStatsInsights, useStatsStanding } from '../../../api/stats'
+import { EmptyState } from '../../../components/ui/EmptyState'
+import { FigureStrip, type Figure } from '../../../components/ui/FigureStrip'
 import { Panel } from '../../../components/ui/Panel'
 import { SectionHeader } from '../../../components/ui/SectionHeader'
 import {
@@ -21,8 +23,7 @@ import {
   formatHour,
   formatNumber,
   formatPercent,
-  formatReadingTime,
-  formatSignedPercent,
+  formatTimeSpent,
   formatStatsBucket,
 } from '../../../format'
 import { ActivityFeed } from '../ActivityFeed'
@@ -31,6 +32,7 @@ import { ChartSkeleton } from '../ChartSkeleton'
 import { MidwayList } from '../MidwayList'
 import { RankList } from '../RankList'
 import { delta, type DateRange } from '../StatsRange'
+import { deltaHasBase } from '../sampleSize'
 import { StatsInsight } from '../StatsSection'
 import type { StatsSectionProps } from './types'
 
@@ -39,6 +41,31 @@ function daysInRange({ from, to }: DateRange): number {
   const f = new Date(`${from}T00:00:00`)
   const d = new Date(`${to}T00:00:00`)
   return Math.round((d.getTime() - f.getTime()) / 86_400_000) + 1
+}
+
+const pad = (n: number) => String(n).padStart(2, '0')
+const dayKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+
+/**
+ * Every bucket from the window's start to today (or its end), filled with zeros where nothing
+ * happened. The server only returns buckets with events, and a chart of those spaced Oct 13, 19, 23
+ * and 24 evenly along its axis. Day buckets mirror ActivityStatsService.TimelineDayBucketMaxDays.
+ */
+function bucketsFor(range: DateRange, sample: string | undefined): string[] {
+  const months = sample ? sample.split('-').length === 2 : daysInRange(range) > 62
+  const start = new Date(`${range.from}T00:00:00`)
+  const today = new Date()
+  const endDate = new Date(`${range.to}T00:00:00`)
+  const end = endDate > today ? today : endDate
+  const keys: string[] = []
+  if (months) {
+    for (let d = new Date(start.getFullYear(), start.getMonth(), 1); d <= end; d.setMonth(d.getMonth() + 1)) {
+      keys.push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`)
+    }
+  } else {
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) keys.push(dayKey(d))
+  }
+  return keys
 }
 
 /**
@@ -54,16 +81,13 @@ function ReadingSkeleton() {
         <Skeleton h="0.8em" w="40%" my="0.2em" />
       </div>
       <Stack gap="lg" aria-hidden>
-        <Panel p={0}>
-          <div className="stats-figures">
-            {[58, 72, 50, 64, 80, 68].map((width) => (
-              <div className="stats-figure" key={width}>
-                <Skeleton h={26} w={width} my={4} />
-                <Skeleton h={8} w={width + 16} mt={6} />
-              </div>
-            ))}
-          </div>
-        </Panel>
+        <FigureStrip
+          loading
+          className="stats-figures"
+          figures={[t`Chapters`, t`Time read`, t`Pages`, t`Days active`, t`Started`, t`Finished`].map(
+            (label) => ({ label, value: 0 }),
+          )}
+        />
         <div className="stats-grid-main">
           {[0, 1].map((i) => (
             <Panel p="md" key={i}>
@@ -100,6 +124,18 @@ function ReadingInsight({
   if (totals.chaptersRead === 0 && totals.readingSeconds === 0) {
     return null
   }
+  // Time without a finished chapter: the full sentence came out as "0 chapters across 0 reading
+  // days, most of it after 9:00 AM. Down 100% on the period before."
+  if (totals.chaptersRead === 0) {
+    const time = formatTimeSpent(totals.readingSeconds)
+    return (
+      <StatsInsight>
+        <Trans>
+          <em>{time}</em> of reading<span className="stats-insight-dim">, no chapter finished yet.</span>
+        </Trans>
+      </StatsInsight>
+    )
+  }
 
   const chapters = totals.chaptersRead
   const days = totals.daysActive
@@ -107,7 +143,7 @@ function ReadingInsight({
 
   let kind: 'up' | 'down' | 'flat' | 'none' = 'none'
   let pct = ''
-  if (prevTotals) {
+  if (prevTotals && deltaHasBase('chaptersRead', prevTotals.chaptersRead)) {
     const d = delta(chapters, prevTotals.chaptersRead)
     if (d === null) {
       kind = 'none'
@@ -193,59 +229,96 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
     const toLabel = formatCalendarDate(previous.to)
     deltaLabel = t`vs ${fromLabel} to ${toLabel}`
   }
-  const compare = (pick: (totals: ActivityTotals) => number) =>
-    comparing ? delta(pick(activity.totals), pick(prevActivity!.totals)) : undefined
+  const compare = (metric: keyof ActivityTotals) =>
+    comparing && deltaHasBase(metric, prevActivity!.totals[metric])
+      ? (delta(activity.totals[metric], prevActivity!.totals[metric]) ?? undefined)
+      : undefined
 
   const windowDays = daysInRange(range)
   const primeStartHour =
     insights && insights.rhythm.totalSeconds > 0 ? insights.rhythm.primeStartHour : null
 
-  const figures: { key: string; label: string; value: string; delta?: number | null }[] = [
+  const figures: Figure[] = [
     {
-      key: 'chapters',
+      zero: activity.totals.chaptersRead === 0,
       label: t`Chapters`,
       value: formatNumber(activity.totals.chaptersRead),
-      delta: compare((p) => p.chaptersRead),
+      delta: compare('chaptersRead'),
     },
     {
-      key: 'time',
+      zero: activity.totals.readingSeconds === 0,
       label: t`Time read`,
-      value: formatReadingTime(activity.totals.readingSeconds),
-      delta: compare((p) => p.readingSeconds),
+      value: formatTimeSpent(activity.totals.readingSeconds),
+      delta: compare('readingSeconds'),
     },
     {
-      key: 'pages',
+      zero: activity.totals.pagesRead === 0,
       label: t`Pages`,
       value: formatNumber(activity.totals.pagesRead),
-      delta: compare((p) => p.pagesRead),
+      delta: compare('pagesRead'),
     },
     {
-      key: 'days',
+      zero: activity.totals.daysActive === 0,
       label: t`Days active`,
       value: `${formatNumber(activity.totals.daysActive)}/${formatNumber(windowDays)}`,
-      delta: compare((p) => p.daysActive),
+      delta: compare('daysActive'),
     },
     {
-      key: 'started',
+      zero: activity.totals.seriesStarted === 0,
       label: t`Started`,
       value: formatNumber(activity.totals.seriesStarted),
-      delta: compare((p) => p.seriesStarted),
+      delta: compare('seriesStarted'),
     },
     {
-      key: 'finished',
+      zero: activity.totals.seriesFinished === 0,
       label: t`Finished`,
       value: formatNumber(activity.totals.seriesFinished),
-      delta: compare((p) => p.seriesFinished),
+      delta: compare('seriesFinished'),
     },
   ]
 
-  const timelineData = activity.timeline.map((p) => ({
-    bucket: formatStatsBucket(p.bucket),
-    Chapters: p.chaptersRead,
-    Hours: Math.round((p.readingSeconds / 3600) * 10) / 10,
-  }))
+  const byBucket = new Map(activity.timeline.map((p) => [p.bucket, p]))
+  const timelineData = bucketsFor(range, activity.timeline[0]?.bucket).map((bucket) => {
+    const p = byBucket.get(bucket)
+    return {
+      bucket: formatStatsBucket(bucket),
+      Chapters: p?.chaptersRead ?? 0,
+      Hours: p ? Math.round((p.readingSeconds / 3600) * 10) / 10 : 0,
+    }
+  })
+  const timelineEmpty = timelineData.every((p) => (metric === 'time' ? p.Hours === 0 : p.Chapters === 0))
 
   const midway = standing?.midway ?? []
+  const chapterCount = ({ count }: { count: number }) => plural(count, { one: '# ch.', other: '# ch.' })
+  const ranks = [
+    {
+      key: 'most',
+      icon: IconBook2,
+      title: t`Most read`,
+      items: activity.topRead.map((s) => ({ ...s, value: chapterCount(s) })),
+      emptyText: t`No chapters finished in this period.`,
+    },
+    ...(activity.topByTime.length > 0
+      ? [
+          {
+            key: 'time',
+            icon: IconClock,
+            title: t`Where the time went`,
+            items: activity.topByTime.map((s) => ({ ...s, value: formatTimeSpent(s.seconds) })),
+            emptyText: t`No reading time recorded.`,
+          },
+        ]
+      : []),
+    {
+      key: 'least',
+      icon: IconHourglassLow,
+      title: t`Barely touched`,
+      items: activity.leastRead.map((s) => ({ ...s, value: chapterCount(s) })),
+      emptyText: t`Everything you started, you kept reading.`,
+    },
+  ]
+  const filledRanks = ranks.filter((r) => r.items.length > 0)
+  const emptyRanks = ranks.filter((r) => r.items.length === 0)
   const hasFeed =
     activity.finished.length + activity.added.length + activity.removed.length + activity.dropped.length > 0
 
@@ -257,33 +330,13 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
         primeStartHour={primeStartHour}
       />
       <Stack gap="lg">
-        <Panel p={0}>
-          <div className="stats-figures">
-            {figures.map((f) => (
-              <div className="stats-figure" key={f.key}>
-                <div className="stats-figure-value">
-                  <span className="stats-figure-n tnum">{f.value}</span>
-                  {f.delta !== undefined && (
-                    <span
-                      className="stats-figure-delta tnum"
-                      data-tone={f.delta === null || Math.round(f.delta * 100) === 0 ? 'flat' : f.delta > 0 ? 'up' : 'down'}
-                      title={deltaLabel}
-                    >
-                      {f.delta === null
-                        ? t`no baseline`
-                        : formatSignedPercent(f.delta)}
-                    </span>
-                  )}
-                </div>
-                <span className="stats-figure-l">{f.label}</span>
-              </div>
-            ))}
-          </div>
-        </Panel>
+        <FigureStrip figures={figures} deltaLabel={deltaLabel} className="stats-figures" />
 
-        <div className="stats-grid-main">
+        {/* Empty, the chart is one line, so it takes the full width and Mid-way goes under it instead
+            of leaving a 350px box (or a hole) beside the list. */}
+        <div className="stats-grid-main" data-empty={timelineEmpty || undefined}>
           <Panel p="md">
-            <Group justify="space-between" align="flex-start" mb="sm">
+            <Group justify="space-between" align="flex-start" mb={timelineEmpty ? 4 : 'sm'}>
               <p className="stats-panel-title">
                 <IconCalendarStats size={16} style={{ color: 'var(--brand)' }} />
                 {t`Day by day`}
@@ -299,10 +352,18 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
                 ]}
               />
             </Group>
-            {timelineData.length === 0 ? (
-              <p className="stats-row-sub" style={{ margin: 0 }}>
-                {t`No activity in ${windowLabel}.`}
-              </p>
+            {timelineEmpty ? (
+              <EmptyState
+                compact
+                mood="asleep"
+                title={
+                  activity.totals.chaptersRead === 0 && activity.totals.readingSeconds === 0
+                    ? t`No activity in ${windowLabel}.`
+                    : metric === 'time'
+                      ? t`No reading time recorded.`
+                      : t`No chapters finished in this period.`
+                }
+              />
             ) : (
               <BarChart
                 h={240}
@@ -331,34 +392,20 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
 
         <div>
           <SectionHeader icon={IconTrophy} title={t`What you read`} />
-          <SimpleGrid cols={{ base: 1, lg: activity.topByTime.length > 0 ? 3 : 2 }} spacing="lg">
-            <RankList
-              icon={IconBook2}
-              title={t`Most read`}
-              items={activity.topRead.map((s) => {
-                const { count } = s
-                return { ...s, value: plural(count, { one: '# ch.', other: '# ch.' }) }
-              })}
-              emptyText={t`No chapters read in this period.`}
-            />
-            {activity.topByTime.length > 0 && (
-              <RankList
-                icon={IconClock}
-                title={t`Where the time went`}
-                items={activity.topByTime.map((s) => ({ ...s, value: formatReadingTime(s.seconds) }))}
-                emptyText={t`No reading time recorded.`}
-              />
-            )}
-            <RankList
-              icon={IconHourglassLow}
-              title={t`Barely touched`}
-              items={activity.leastRead.map((s) => {
-                const { count } = s
-                return { ...s, value: plural(count, { one: '# ch.', other: '# ch.' }) }
-              })}
-              emptyText={t`Everything you started, you kept reading.`}
-            />
-          </SimpleGrid>
+          {filledRanks.length > 0 && (
+            <SimpleGrid cols={{ base: 1, lg: filledRanks.length }} spacing="lg">
+              {filledRanks.map(({ key, ...rank }) => (
+                <RankList key={key} {...rank} />
+              ))}
+            </SimpleGrid>
+          )}
+          {emptyRanks.length > 0 && (
+            <SimpleGrid cols={{ base: 1, lg: emptyRanks.length }} spacing="lg" mt={filledRanks.length > 0 ? 'lg' : 0}>
+              {emptyRanks.map(({ key, ...rank }) => (
+                <RankList key={key} {...rank} />
+              ))}
+            </SimpleGrid>
+          )}
         </div>
 
         {hasFeed && (

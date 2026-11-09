@@ -56,6 +56,7 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
     private readonly ConcurrentDictionary<int, Entry> _cache = new();
     private readonly ConcurrentDictionary<(int Id, long Size), Task<ArchiveInfo>> _loading = new();
     private readonly ReaderArchiveHandles _handles = new(time);
+    private readonly ConcurrentDictionary<string, long> _lastRead = new(StringComparer.Ordinal);
     private long _clock;
     private long _invalidations;
     private int _loads;
@@ -119,12 +120,40 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
     /// </summary>
     public async Task<Stream?> OpenPageAsync(string absolutePath, string entryName, CancellationToken ct)
     {
+        MarkRead(absolutePath);
         if (ComicFile.IsPdf(absolutePath))
         {
             return await CbzReader.OpenPageAsync(absolutePath, entryName, ct);
         }
 
         return await _handles.ReadPageAsync(absolutePath, entryName, ct);
+    }
+
+    /// <summary>
+    /// Whether any reader (the web reader, OPDS, Komga, the upscale queue) was served a page of the file
+    /// within <paramref name="window"/>. Page requests are the only reading signal every client sends.
+    /// </summary>
+    public bool ReadWithin(string absolutePath, TimeSpan window) =>
+        _lastRead.TryGetValue(Path.GetFullPath(absolutePath), out var at) && Clock.GetElapsedTime(at) < window;
+
+    private const int MaxReadMarks = 512;
+    private static readonly TimeSpan ReadMarkLifetime = TimeSpan.FromHours(1);
+
+    private void MarkRead(string absolutePath)
+    {
+        _lastRead[Path.GetFullPath(absolutePath)] = Clock.GetTimestamp();
+        if (_lastRead.Count <= MaxReadMarks)
+        {
+            return;
+        }
+
+        foreach (var (path, at) in _lastRead)
+        {
+            if (Clock.GetElapsedTime(at) > ReadMarkLifetime)
+            {
+                _lastRead.TryRemove(new KeyValuePair<string, long>(path, at));
+            }
+        }
     }
 
     /// <summary>

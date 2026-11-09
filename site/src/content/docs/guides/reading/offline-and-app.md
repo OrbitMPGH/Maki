@@ -9,8 +9,8 @@ Browsers only allow service workers, offline storage and push on a secure connec
 certificate, as in [Exposing Maki to the internet](/Maki/installation/reverse-proxy-https/). "Add to
 Home Screen" still works over plain HTTP, without the offline parts.
 
-- **Saving.** Use **Save for offline** in a chapter row's menu, or **Save unread chapters for
-  offline** on a series. Or turn on **Keep upcoming chapters** under **Settings → Reading → Offline
+- **Saving.** Use **Save for offline** in a chapter row's menu, or **This device → Save unread
+  chapters for offline** in a series' actions menu. Or turn on **Keep upcoming chapters** under **Settings → Reading → Offline
   reading** to keep your next unread chapters (up to 10) on the device. That page also shows
   storage use and everything saved. Saved chapters are stored per device and per account, and
   signing out keeps them. A saved copy is removed when its file is gone from the server or you lose

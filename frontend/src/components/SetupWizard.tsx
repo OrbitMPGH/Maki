@@ -24,7 +24,7 @@ import {
   IconFolder,
   IconFolderPlus,
   IconTrash,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { useNavigate } from 'react-router-dom'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -54,6 +54,7 @@ import {
 } from '../api/hooks'
 import { languageName } from '../api/titles'
 import { formatBytes } from '../format'
+import { NO_TRANSITION } from '../lib/motion'
 import { useLanguageChoice } from '../i18n-context'
 import { AppearancePicker } from './AppearancePicker'
 import { ConnectionForm, type ConnectionFields } from './ConnectionSettingsCard'
@@ -492,8 +493,8 @@ function useServices(): ServiceSpec[] {
       fields: [
         { key: 'url', label: t`URL`, placeholder: 'http://localhost:5000' },
         { key: 'apiKey', label: t`API key`, secret: true },
-        { key: 'pathMapFrom', label: t`Path mapping - Maki side`, placeholder: t`C:\\Manga (optional)` },
-        { key: 'pathMapTo', label: t`Path mapping - Kavita side`, placeholder: t`/manga (optional)` },
+        { key: 'pathMapFrom', label: t`Path mapping, Maki side`, placeholder: t`C:\\Manga (optional)` },
+        { key: 'pathMapTo', label: t`Path mapping, Kavita side`, placeholder: t`/manga (optional)` },
       ],
     },
   ]
@@ -567,7 +568,7 @@ function SummaryLine({ tone, children, action }: { tone: Tone; children: ReactNo
   return (
     <div className="setup-summary-line" data-tone={tone}>
       <span className="setup-summary-icon">
-        {tone === 'warn' ? <IconAlertTriangle size={14} /> : <IconCheck size={14} />}
+        {tone === 'warn' ? <IconAlertTriangle size={16} /> : <IconCheck size={16} />}
       </span>
       <Text className="setup-summary-text">{children}</Text>
       {action}
@@ -815,7 +816,7 @@ function GuideRail({
                   aria-current={current ? 'step' : undefined}
                   onClick={() => onSelect(i)}
                 >
-                  <span className="setup-step-index">{done ? <IconCheck size={13} stroke={2.6} /> : i + 1}</span>
+                  <span className="setup-step-index">{done ? <IconCheck size={13} /> : i + 1}</span>
                   <span className="setup-step-text">
                     <span className="setup-step-label">{step.label}</span>
                     {step.hint && (
@@ -852,15 +853,27 @@ function GuideRail({
  * the whole query cache. Reading the query directly would unmount the guide and drop the step.
  */
 export default function SetupWizard() {
+  const { data: setup } = useSetupStatus()
+  const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (!setup) return
+    if (setup.completed) setOpen(false)
+    else if (!open) setOpen(true)
+  }, [setup, open])
+
+  // The guide's own queries (settings, connections, dump progress) only run while it is open.
+  return open ? <SetupGuide /> : null
+}
+
+function SetupGuide() {
   const { t } = useLingui()
   const navigate = useNavigate()
-  const { data: setup } = useSetupStatus()
   const complete = useCompleteSetup()
   const { data: metadata } = useMetadataSettings()
   const steps = useSteps()
   // Skip still leaves early: the gate in front of the app then waits for the database instead.
   const ready = Boolean(metadata?.dumpPresent)
-  const [open, setOpen] = useState(false)
   const [active, setActive] = useState(0)
   const [visited, setVisited] = useState<Set<number>>(() => new Set([0]))
   const titleRef = useRef<HTMLHeadingElement>(null)
@@ -876,17 +889,6 @@ export default function SetupWizard() {
     else unsaved.current.delete(id)
     setUnsavedCount(unsaved.current.size)
   }, [])
-
-  useEffect(() => {
-    if (!setup) return
-    if (setup.completed) {
-      setOpen(false)
-    } else if (!open) {
-      setOpen(true)
-      setActive(0)
-      setVisited(new Set([0]))
-    }
-  }, [setup, open])
 
   useEffect(() => {
     if (unsavedCount === 0) setConfirmLeave(false)
@@ -931,8 +933,6 @@ export default function SetupWizard() {
 
   const confirmedFinish = (then?: string) => requireConfirm(() => finish(then))
 
-  if (!open) return null
-
   const step = steps[active]
   const stepNumber = active + 1
   const stepTotal = steps.length
@@ -945,7 +945,7 @@ export default function SetupWizard() {
       withCloseButton={false}
       closeOnEscape={false}
       padding={0}
-      transitionProps={{ duration: 0 }}
+      transitionProps={NO_TRANSITION}
       classNames={{ content: 'setup-modal', body: 'setup-modal-body' }}
       attributes={{ content: { 'aria-label': t`Setup guide` } }}
     >

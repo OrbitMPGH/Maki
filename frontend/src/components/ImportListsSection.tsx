@@ -11,7 +11,7 @@ import {
   Switch,
   Text,
 } from '@mantine/core'
-import { IconDownload, IconRefresh } from '@tabler/icons-react'
+import { IconDownload, IconRefresh } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -43,7 +43,7 @@ import type {
 /** Mirrors the backend's `ScrobbleStatus` values, in the order they read best. */
 const STATUS_OPTIONS: { value: ImportListStatus; label: MessageDescriptor }[] = [
   { value: 'Reading', label: msg`Reading` },
-  { value: 'PlanToRead', label: msg`Plan to read` },
+  { value: 'PlanToRead', label: msg`Plan to read (to your shortlist)` },
   { value: 'Completed', label: msg`Completed` },
 ]
 
@@ -188,7 +188,7 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
           <Button
             size="compact-sm"
             variant="default"
-            leftSection={<IconRefresh size={14} />}
+            leftSection={<IconRefresh size={16} />}
             loading={runningPartial}
             disabled={!listsEnabled}
             onClick={() => run(false)}
@@ -198,7 +198,7 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
           <Button
             size="compact-sm"
             variant="subtle"
-            leftSection={<IconDownload size={14} />}
+            leftSection={<IconDownload size={16} />}
             loading={runningFull}
             disabled={!listsEnabled}
             onClick={() => setConfirmingFull(true)}
@@ -234,19 +234,29 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
 }
 
 function LastRunLine({ lastRun }: { lastRun: NonNullable<ImportListTrackerDto['lastRun']> }) {
-  const { added, requested, skipped, errors } = lastRun
+  const { added, requested, shortlisted, skipped, errors } = lastRun
   const when = relativeTime(lastRun.at)
   if (lastRun.dumpUnavailable) {
     return <Trans>Last run {when}: skipped, the local MangaBaka database is not downloaded yet</Trans>
   }
-  return errors > 0 ? (
-    <Trans>
-      Last run {when}: {added} added, {requested} requested, {skipped} skipped, {errors} errors
-    </Trans>
-  ) : (
-    <Trans>
-      Last run {when}: {added} added, {requested} requested, {skipped} skipped
-    </Trans>
+  return (
+    <>
+      {errors > 0 ? (
+        <Trans>
+          Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped, {errors} errors
+        </Trans>
+      ) : (
+        <Trans>
+          Last run {when}: {added} added, {requested} requested, {shortlisted} shortlisted, {skipped} skipped
+        </Trans>
+      )}
+      {lastRun.shortlistFull && (
+        <>
+          {' '}
+          <Trans>Your shortlist is full.</Trans>
+        </>
+      )}
+    </>
   )
 }
 
@@ -272,7 +282,7 @@ function SkipRow({ skip, trackerLabel }: { skip: ImportListSkipDto; trackerLabel
           )}
         </Group>
         <Text size="xs" c="var(--ink-3)" style={{ flexShrink: 0 }}>
-          {relativeTime(createdAt)}
+          {relativeTime(createdAt, 'narrow')}
         </Text>
       </Group>
       <Group gap="xs" mt="xs">

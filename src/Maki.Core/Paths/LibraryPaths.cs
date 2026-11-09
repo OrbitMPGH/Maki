@@ -228,7 +228,49 @@ public static class LibraryPaths
             return IsSameDirectory(Path.GetDirectoryName(fullA)!, parent);
         }
 
+        // Two folders can differ in case at more than one level; the parents have to be one too.
+        if (!IsSameDirectory(Path.GetDirectoryName(fullA)!, parent))
+        {
+            return false;
+        }
+
         var listed = Directory.EnumerateDirectories(parent).Select(Path.GetFileName).ToList();
+        return !(listed.Contains(nameA, StringComparer.Ordinal) && listed.Contains(nameB, StringComparer.Ordinal));
+    }
+
+    /// <summary>
+    /// <see cref="IsSameDirectory"/> for files: true when two spellings that differ only in case open
+    /// the same file, as they do on a case-insensitive mount. Paths that differ otherwise, or a file
+    /// that does not exist, are never the same file.
+    /// </summary>
+    public static bool IsSameFile(string a, string b)
+    {
+        var fullA = Path.GetFullPath(a);
+        var fullB = Path.GetFullPath(b);
+        if (string.Equals(fullA, fullB, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (!string.Equals(fullA, fullB, StringComparison.OrdinalIgnoreCase) || !File.Exists(fullA) || !File.Exists(fullB))
+        {
+            return false;
+        }
+
+        var parent = Path.GetDirectoryName(fullB);
+        if (parent is null || !IsSameDirectory(Path.GetDirectoryName(fullA)!, parent))
+        {
+            return false;
+        }
+
+        var nameA = Path.GetFileName(fullA);
+        var nameB = Path.GetFileName(fullB);
+        if (string.Equals(nameA, nameB, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        var listed = Directory.EnumerateFiles(parent).Select(Path.GetFileName).ToList();
         return !(listed.Contains(nameA, StringComparer.Ordinal) && listed.Contains(nameB, StringComparer.Ordinal));
     }
 

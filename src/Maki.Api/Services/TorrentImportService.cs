@@ -186,7 +186,8 @@ public class TorrentImportService(
     IAppSettings settings,
     UpgradeEvaluationService evaluation,
     InboxService inbox,
-    ILogger<TorrentImportService> logger)
+    ILogger<TorrentImportService> logger,
+    TorrentPollState? pollState = null)
 {
     public const int GuardSamplePages = 6;
 
@@ -491,6 +492,7 @@ public class TorrentImportService(
                     // Deliberately every exception: reading somebody else's archive is the part of
                     // an import most likely to throw something unforeseen, and a named file in the
                     // outcome beats an unhandled failure inside the completed-download job.
+                    if (ex is IOException or UnauthorizedAccessException) HealthWriteProbe.Shared.Expire();
                     return new TorrentImportOutcome(
                         false, ex.Message, 0, 0, 0, 0, skipped, [], "error.torrentImport.copyFailed",
                         new { file = source.Name });
@@ -522,7 +524,7 @@ public class TorrentImportService(
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
             series, seriesDir, imported, $"torrent:{ReleaseInfoOf(item)?.Indexer}",
             updateComicInfo: writeComicInfo, releaseName: ReleaseInfoOf(item)?.Title ?? item.Title,
-            replaceExisting: mode == TorrentImportMode.Replace, ct: ct,
+            replaceExisting: mode == TorrentImportMode.Replace, ct: ct, queueConversion: true,
             // An upgrade may only take chapters off the files its verdict marked; a protected or
             // already good file inside the volume's span keeps its chapter.
             displaceableFileIds: mode == TorrentImportMode.Replace && upgrade is { ReplacedFileIds.Count: > 0 }
@@ -611,6 +613,7 @@ public class TorrentImportService(
         item.ClientRemovalDeleteData = outcome is { Imported: > 0, PlacedFresh: true } &&
             await settings.GetAsync(SettingKeys.DownloadClientRemoveData, ct) != "false";
         item.ClientRemovalClient = DownloadClientSettingsStore.Fingerprint(client);
+        pollState?.RemovalMarked();
     }
 
     /// <summary>

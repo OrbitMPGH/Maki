@@ -124,7 +124,9 @@ export const SavedDefaultApplied: Story = {
     ),
   },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByRole('button', { name: 'Filters (2)' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Filters 2' })).toBeVisible()
+    // The defaults are named beside the results, not only counted on the button.
+    await expect(await canvas.findByText('Rated ★ 7.0 or more')).toBeVisible()
   },
 }
 

@@ -5,8 +5,13 @@ import { randomUUID } from '../../lib/uuid'
 import { ApiError } from '../../api/client'
 import { notifications } from '../../lib/toast'
 import {
-  IconDots, IconEye, IconEyeOff, IconClock, IconThumbUp, IconThumbDown,
-} from '@tabler/icons-react'
+  IconDots,
+  IconEye,
+  IconEyeOff,
+  IconClock,
+  IconThumbUp,
+  IconThumbDown,
+} from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import {
   useFeedbackState, useMutateFeedback, useMutateFranchiseFeedback, useUndoFeedback,
@@ -55,10 +60,13 @@ export function RecommendationFeedbackMenu({ providerId }: { providerId: string 
     }
     try {
       const result = await mutation.mutateAsync(command)
+      // The server drops the title from the shortlist on a hide or thumbs down, and Undo below
+      // does not put it back, so the toast says so.
+      const leftShortlist = result.shortlistRemoved ? ` ${t`It also left your shortlist.`}` : ''
       // Previously a no-op returned silently, so pressing Hide on an already-hidden title looked
       // like a dead button. Say that nothing changed instead.
       if (!result.changed) {
-        notifications.show({ message: t`No change: this title was already in that state.` })
+        notifications.show({ message: t`No change: this title was already in that state.` + leftShortlist })
         return
       }
       const eventId = result.eventId
@@ -73,12 +81,12 @@ export function RecommendationFeedbackMenu({ providerId }: { providerId: string 
       }
       const toast = notifications.show({
         message: <Group gap="xs" wrap="wrap">
-          <Text size="sm">{describe(result.feedbackEffect, result.queueEffect)}</Text>
+          <Text size="sm">{describe(result.feedbackEffect, result.queueEffect) + leftShortlist}</Text>
           {offerOpinion && <>
-            <Button size="xs" variant="subtle" leftSection={<IconThumbUp size={14} />} onClick={() => opinion('like')}>
+            <Button size="xs" variant="subtle" leftSection={<IconThumbUp size={16} />} onClick={() => opinion('like')}>
               <Trans>Liked it</Trans>
             </Button>
-            <Button size="xs" variant="subtle" leftSection={<IconThumbDown size={14} />} onClick={() => opinion('dislike')}>
+            <Button size="xs" variant="subtle" leftSection={<IconThumbDown size={16} />} onClick={() => opinion('dislike')}>
               <Trans>Disliked it</Trans>
             </Button>
           </>}
@@ -122,6 +130,7 @@ export function RecommendationFeedbackMenu({ providerId }: { providerId: string 
             <Plural value={count} one="Hidden # title" other="Hidden # titles" />
             {' '}
             <Trans>Restore any of them from Manage signals.</Trans>
+            {result.shortlistRemoved && <> <Trans>The ones on your shortlist left it.</Trans></>}
           </Text>,
         autoClose: 8000,
       })

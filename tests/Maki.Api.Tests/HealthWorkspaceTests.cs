@@ -425,6 +425,7 @@ public class HealthWorkspaceTests : IDisposable
             db.ReaderBookmarks.Add(new(){UserId=userId,SeriesId=chapters[0].SeriesId,ChapterId=chapters[0].Id,PageIndex=4});
             db.ChapterProgress.Add(new(){UserId=userId,SeriesId=chapters[0].SeriesId,ChapterId=chapters[0].Id,PageIndex=4,PageCount=5,Completed=true,ReadSeconds=120});
         }
+        db.ChapterNotes.Add(new(){AuthorId=other,SeriesId=chapters[0].SeriesId,ChapterId=chapters[0].Id,PageIndex=4,Body="page four"});
         await db.SaveChangesAsync();SeedKoreaderId(chapters[0].ChapterFileId!.Value);var op=await Stage(db,file);var service=Operations(db);
         await Assert.ThrowsAnyAsync<InvalidOperationException>(()=>service.ApplyAsync(op.Id,file.Version,true,false,default));
         Assert.True(File.Exists(Path.Combine(root,"one.cbz")));
@@ -432,6 +433,8 @@ public class HealthWorkspaceTests : IDisposable
         Assert.Equal("completed",op.Status);Assert.Equal(2,await db.ChapterFiles.CountAsync());Assert.Empty(db.ReaderBookmarks);
         Assert.All(db.ChapterProgress,p=>{Assert.Equal(0,p.PageIndex);Assert.True(p.Completed);Assert.Equal(120,p.ReadSeconds);});
         Assert.True(chapters[0].Wanted);Assert.False(chapters[1].Wanted);Assert.Empty(db.StatsEvents);
+        // A note outlives the reset, but its page no longer means anything.
+        var note=Assert.Single(db.ChapterNotes.AsNoTracking());Assert.Equal(chapters[0].Id,note.ChapterId);Assert.Null(note.PageIndex);
         // The pages moved, so a copy of the old archive on a device no longer reads true.
         Assert.Empty(db.KoreaderDocuments.AsNoTracking());
     }

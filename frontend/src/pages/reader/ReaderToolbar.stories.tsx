@@ -64,6 +64,9 @@ const meta = {
     bookmarked: false,
     bookmarkDisabled: false,
     onToggleBookmark: fn(),
+    noteCount: 3,
+    notesOpen: false,
+    onToggleNotes: fn(),
     stripOpen: false,
     onToggleStrip: fn(),
     visible: true,
@@ -87,7 +90,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await expect(await canvas.findByText('Lanterns Over Kasumi')).toBeVisible()
-    await expect(await canvas.findByText('131/142 chapters read, 150 in series')).toBeVisible()
+    await expect(await canvas.findByText('131 of 142 read, 150 in series')).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Toggle bookmark' }))
     await expect(args.onToggleBookmark).toHaveBeenCalledOnce()
     await userEvent.click(await canvas.findByRole('button', { name: 'Keyboard shortcuts' }))
@@ -99,141 +102,13 @@ export const SettingsOpen: Story = {
   play: async ({ args, canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
     const body = within(canvasElement.ownerDocument.body)
-    await expect(await body.findByText('Reading profile')).toBeVisible()
+    await expect(await body.findByRole('radiogroup', { name: 'Layout' })).toBeVisible()
     await userEvent.click(await body.findByText('Continuous'))
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ mode: 'vertical' }))
-    await userEvent.click(await body.findByLabelText('Incognito (don\'t record this session)'))
+    await userEvent.click(body.getByRole('button', { name: 'Incognito' }))
     await waitFor(() => expect(args.onIncognito).toHaveBeenCalledWith(true))
     // The toggle stays on after the click because the harness holds the state.
-    await waitFor(() => expect(body.getByLabelText('Incognito (don\'t record this session)')).toBeChecked())
-  },
-}
-
-export const ProfileDropdown: Story = {
-  // The profile Select portals its options outside the settings popover, so pressing one counts as an
-  // outside click; the popover's exit transition is what keeps the option mounted long enough to fire.
-  parameters: { realMotion: true },
-  play: async ({ args, canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
-    const body = within(canvasElement.ownerDocument.body)
-    await userEvent.click(await body.findByLabelText('Reading profile', { selector: 'input' }))
-    await userEvent.click(await body.findByRole('option', { name: 'Night reading' }))
-    await waitFor(() => expect(args.onSelection).toHaveBeenCalledWith(3))
-  },
-}
-
-export const EnhanceOn: Story = {
-  args: { prefs: { ...mangaPrefs, enhance: 'always', enhanceMethod: 'a4k-m' } },
-  parameters: { realMotion: true },
-  play: async ({ args, canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
-    const body = within(canvasElement.ownerDocument.body)
-    const level = await body.findByRole('radiogroup', { name: 'Enhance' })
-    await waitFor(() => expect(within(level).getByLabelText('Always')).toBeChecked())
-    const method = await body.findByLabelText('Method', { selector: 'input' })
-    await expect(method).toHaveValue('Balanced')
-    await expect(body.queryByRole('radiogroup', { name: 'While the server works' })).toBeNull()
-
-    await userEvent.click(method)
-    await expect(await body.findByRole('option', { name: /Light/ })).toBeVisible()
-    await expect(body.getByRole('option', { name: /Sharp \(server\)/ })).not.toHaveAttribute('data-combobox-disabled', 'true')
-    const downloading = body.getByRole('option', { name: /Crisp line art \(server\)/ })
-    await expect(downloading).toHaveAttribute('data-combobox-disabled', 'true')
-    await expect(within(downloading).getByText('Downloading')).toBeVisible()
-
-    await userEvent.click(body.getByRole('option', { name: /Sharp \(server\)/ }))
-    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceMethod: 'server:span-s' }))
-  },
-}
-
-export const EnhanceServerFallback: Story = {
-  args: { prefs: { ...mangaPrefs, enhance: 'always', enhanceMethod: 'server:span-s', enhanceFallback: 'a4k-m' } },
-  play: async ({ args, canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
-    const body = within(canvasElement.ownerDocument.body)
-    const fallback = await body.findByRole('radiogroup', { name: 'While the server works' })
-    await waitFor(() => expect(within(fallback).getByLabelText('Balanced')).toBeChecked())
-    await userEvent.click(within(fallback).getByText('Strong'))
-    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceFallback: 'a4k-a' }))
-    await userEvent.click(within(fallback).getByText('None'))
-    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceFallback: 'off' }))
-  },
-}
-
-export const EnhanceOffHidesMethod: Story = {
-  play: async ({ args, canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
-    const body = within(canvasElement.ownerDocument.body)
-    const level = await body.findByRole('radiogroup', { name: 'Enhance' })
-    await waitFor(() => expect(within(level).getByLabelText('Off')).toBeChecked())
-    await expect(body.queryByLabelText('Method', { selector: 'input' })).toBeNull()
-    await userEvent.click(within(level).getByText('Auto'))
-    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhance: 'auto' }))
-    await expect(await body.findByLabelText('Method', { selector: 'input' })).toBeVisible()
-  },
-}
-
-export const EnhanceSkippedForVolume: Story = {
-  args: {
-    manifest: { ...chapters[1132], tier: 'volume' },
-    prefs: { ...mangaPrefs, enhance: 'always' },
-  },
-  render: (args) => <StatefulToolbar {...args} />,
-  play: async ({ args, canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
-    const body = within(canvasElement.ownerDocument.body)
-    await expect(await body.findByText('Off for this chapter because of its quality.')).toBeVisible()
-    const skip = await body.findByLabelText("Don't enhance", { selector: 'input' })
-    await userEvent.click(skip)
-    await userEvent.click(await body.findByRole('option', { name: 'Volume' }))
-    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceSkipTiers: [] }))
-    await waitFor(() => expect(body.queryByText('Off for this chapter because of its quality.')).toBeNull())
-  },
-}
-
-export const EnhanceSavedServerModelGone: Story = {
-  args: {
-    prefs: { ...mangaPrefs, enhance: 'always', enhanceMethod: 'server:realesrgan-av3' },
-    manifest: makeManifest({ ...chapters[1132], enhanceServer: { enabled: false, models: [] } }),
-  },
-  parameters: { realMotion: true },
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
-    const body = within(canvasElement.ownerDocument.body)
-    const method = await body.findByLabelText('Method', { selector: 'input' })
-    await expect(method).toHaveValue('Crisp line art (server)')
-    await userEvent.click(method)
-    const gone = await body.findByRole('option', { name: /Crisp line art/ })
-    await expect(gone).toHaveAttribute('data-combobox-disabled', 'true')
-    await expect(within(gone).getByText('Not available')).toBeVisible()
-    await expect(body.queryByRole('option', { name: /Sharp \(server\)/ })).toBeNull()
-  },
-}
-
-export const SeriesOverride: Story = {
-  args: { selection: 'series', source: 'Series' },
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
-    const body = within(canvasElement.ownerDocument.body)
-    await expect(await body.findByText('Changes apply to this series only.')).toBeInTheDocument()
-  },
-}
-
-export const GlobalDefaults: Story = {
-  args: { selection: 'auto', source: 'Global', autoProfileId: null },
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
-    const body = within(canvasElement.ownerDocument.body)
-    await expect(await body.findByText('Changes apply to your reader defaults.')).toBeInTheDocument()
-  },
-}
-
-export const OriginalFitShowsScale: Story = {
-  args: { prefs: { ...mangaPrefs, fit: 'original', scale: 150 } },
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
-    const body = within(canvasElement.ownerDocument.body)
-    await expect(await body.findByText('Scale (150%)')).toBeInTheDocument()
+    await waitFor(() => expect(body.getByRole('button', { name: 'Incognito' })).toHaveAttribute('aria-pressed', 'true'))
   },
 }
 
@@ -266,7 +141,7 @@ export const NextChapterFromTheToolbar: Story = {
 export const EverythingRead: Story = {
   args: { manifest: chapters[2096], readingCounted: true, page: 23, pageLabel: '24' },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('all read')).toBeVisible()
+    await expect(await canvas.findByText(/^all \d+ read/)).toBeVisible()
   },
 }
 

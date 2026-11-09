@@ -11,7 +11,7 @@ import {
   TextInput,
   UnstyledButton,
 } from '@mantine/core'
-import { IconArrowUp, IconFolder, IconServer } from '@tabler/icons-react'
+import { IconArrowUp, IconFolder, IconServer } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useBrowseFolders } from '../../api/hooks'
 

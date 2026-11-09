@@ -83,6 +83,9 @@ export const readerPrefs: ReaderPrefs = {
   enhanceMethod: 'a4k-m',
   enhanceFallback: 'a4k-m',
   enhanceSkipTiers: ['volume'],
+  enhanceProgress: 'line',
+  notesBeside: true,
+  enhanceWholeChapter: false,
 }
 
 export const readerSettings: ReaderSettings = {
@@ -604,6 +607,7 @@ export const dumpProgressIdle: DumpProgress = {
   phase: 'idle',
   downloadedBytes: 0,
   totalBytes: null,
+  indexProgress: null,
   bytesPerSecond: null,
   estimatedSecondsRemaining: null,
   startedAt: null,
@@ -617,6 +621,7 @@ export const dumpProgressDownloading: DumpProgress = {
   phase: 'downloading',
   downloadedBytes: 1_100 * MB,
   totalBytes: 1_800 * MB,
+  indexProgress: null,
   bytesPerSecond: 14 * MB,
   estimatedSecondsRemaining: 50,
   startedAt: minutesAgo(2),
@@ -834,7 +839,7 @@ export const importListsStatus: ImportListsStatusDto = {
       label: 'AniList',
       connected: true,
       prefs: { enabled: true, statuses: ['Reading', 'PlanToRead'], rootFolderId: 1, monitored: true, monitorNewItems: 'Smart', maxPerRun: 25 },
-      lastRun: { at: hoursAgo(2), added: 3, requested: 0, skipped: 4, errors: 0, dumpUnavailable: false },
+      lastRun: { at: hoursAgo(2), added: 3, requested: 0, shortlisted: 2, skipped: 4, errors: 0, dumpUnavailable: false, shortlistFull: false },
     },
     {
       service: 'mal',
@@ -1030,7 +1035,7 @@ export const pageConversionIdle: PageConversionStatus = {
       savedBytes: 9.4 * GB,
     },
   },
-  library: { convertedFiles: 412, savedBytes: 9.4 * GB, pendingFiles: 64, trashBytes: 21.7 * GB, trashFiles: 412, trashDays: 14, ruleCount: 2, overrideSeries: 1 },
+  library: { convertedFiles: 412, savedBytes: 9.4 * GB, pendingFiles: 64, queuedFiles: 3, trashBytes: 21.7 * GB, trashFiles: 412, trashDays: 14, ruleCount: 2, overrideSeries: 1 },
   parallel: { limit: null, default: 4, max: 16 },
 }
 
@@ -1042,18 +1047,27 @@ export const pageConversionRunning: PageConversionStatus = {
     currentFile: 'Lanterns Over Kasumi (2021)/Lanterns Over Kasumi - c040.cbz',
     totals: { startedAtUtc: minutesAgo(40), finishedAtUtc: null, converted: 118, unchanged: 9, hardlinked: 0, failed: 0, savedBytes: 1.6 * GB },
   },
-  library: { convertedFiles: 118, savedBytes: 1.6 * GB, pendingFiles: 1530, trashBytes: 6.1 * GB, trashFiles: 118, trashDays: 14, ruleCount: 0, overrideSeries: 0 },
+  library: { convertedFiles: 118, savedBytes: 1.6 * GB, pendingFiles: 1530, queuedFiles: 0, trashBytes: 6.1 * GB, trashFiles: 118, trashDays: 14, ruleCount: 0, overrideSeries: 0 },
   parallel: { limit: null, default: 4, max: 16 },
 }
 
 export const pageConversionOff: PageConversionStatus = {
   settings: { format: null, stop: 'high', pngLossless: false },
   pass: { state: 'idle', hold: null, currentFile: null, totals: null },
-  library: { convertedFiles: 0, savedBytes: 0, pendingFiles: 1739, trashBytes: 0, trashFiles: 0, trashDays: 14, ruleCount: 0, overrideSeries: 0 },
+  library: { convertedFiles: 0, savedBytes: 0, pendingFiles: 1739, queuedFiles: 0, trashBytes: 0, trashFiles: 0, trashDays: 14, ruleCount: 0, overrideSeries: 0 },
   parallel: { limit: null, default: 4, max: 16 },
 }
 
 const upscaleCatalog = {
+  maki2x: {
+    id: 'maki-2x',
+    bytes: 1.2 * MB,
+    license: 'GPL-3.0',
+    author: 'Maki',
+    source: 'https://github.com/OrbitMPGH/Maki/tree/main/distribution/upscale-models/distill',
+    status: 'ready',
+    bundled: true,
+  },
   spanS: {
     id: 'span-s',
     bytes: 0.9 * MB,
@@ -1074,7 +1088,7 @@ const upscaleCatalog = {
 
 export const upscalingOff = {
   settings: { enabled: false, models: [], threads: 2, cacheMb: 1024, maxThreads: 8 },
-  catalog: [upscaleCatalog.spanS, { ...upscaleCatalog.realesrganAv3, bytes: null }].map((m) => ({
+  catalog: [upscaleCatalog.maki2x, upscaleCatalog.spanS, { ...upscaleCatalog.realesrganAv3, bytes: null }].map((m) => ({
     ...m,
     status: 'missing',
   })),
@@ -1083,8 +1097,9 @@ export const upscalingOff = {
 } satisfies UpscalingState
 
 export const upscalingOn = {
-  settings: { enabled: true, models: ['span-s', 'realesrgan-av3'], threads: 2, cacheMb: 1024, maxThreads: 8 },
+  settings: { enabled: true, models: ['maki-2x', 'span-s', 'realesrgan-av3'], threads: 2, cacheMb: 1024, maxThreads: 8 },
   catalog: [
+    upscaleCatalog.maki2x,
     upscaleCatalog.spanS,
     { ...upscaleCatalog.realesrganAv3, status: 'downloading' },
   ],
@@ -1095,6 +1110,7 @@ export const upscalingOn = {
 export const upscalingFailed = {
   ...upscalingOn,
   catalog: [
+    upscaleCatalog.maki2x,
     upscaleCatalog.spanS,
     {
       ...upscaleCatalog.realesrganAv3,

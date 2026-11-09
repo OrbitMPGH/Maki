@@ -1,5 +1,5 @@
 import { Button, Group, Loader, Stack, Text } from '@mantine/core'
-import { IconAlertTriangle } from '@tabler/icons-react'
+import { IconAlertTriangle } from '../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router-dom'
 import { useLogout } from '../api/auth'

@@ -229,7 +229,7 @@ Phase 3, committed 2026-10-30:
 
 Phase 4, committed 2026-10-30:
 
-- `RatingSnapshots` table (`RatingSnapshot`, user-owned with the query filter, cascades with the user and the series) and its migration. One row per score change, written by `SetRating`, `SetProvisionalRating`, finalising and the tracker import; an exact repeat of the last entry is skipped. `AtVolume` was dropped: the highest chapter read is what the score records, and a volume number would be missing for most webtoons anyway.
+- `RatingSnapshots` table (`RatingSnapshot`, user-owned with the query filter, cascades with the user and the series) and its migration. One row per score change, written by `SetRating`, `SetProvisionalRating`, finalising and the tracker import; a change to the last entry of the same kind at the same chapter replaces it (keeping its origin), so a misclick and its correction leave one entry. `AtVolume` was dropped: the highest chapter read is what the score records, and a volume number would be missing for most webtoons anyway.
 - `Origin`: `Manual`, `Checkpoint` (a prompt was waiting when the score was set), `Finish` (keeping a "so far" score) or `Import`.
 - `GET series/{id}/rating-history`, and a "Your rating over time" popover beside the series page's stars that appears once there are two entries.
 - Volume end: `RatingCheckpoints.VolumeEnd`, opt-in through "Also ask at the end of each volume" in Settings (`ratings.prompts.volumes`). It fires on a volume entry or the highest-numbered chapter of its volume, under the same 30-day gate and staleness test as Caught up.

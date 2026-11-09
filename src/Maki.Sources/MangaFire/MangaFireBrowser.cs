@@ -171,9 +171,13 @@ public sealed class MangaFireBrowser(
     /// succeeded. When false (a switch was attempted and failed), the caller is looking at
     /// whatever language was loaded before the attempt, not the one it asked for, so an unlabelled
     /// item here must not be assumed to match the request.
+    /// <para>
+    /// <paramref name="stopAt"/> is shown each page's items as it arrives (newest first) and ends the
+    /// walk when it returns true. <c>Complete</c> is false only when that left pages unread.
+    /// </para>
     /// </summary>
-    public async Task<(IReadOnlyList<string> Items, bool LanguageMatched)> ChaptersAsync(
-        string seriesId, string language, CancellationToken ct)
+    public async Task<(IReadOnlyList<string> Items, bool LanguageMatched, bool Complete)> ChaptersAsync(
+        string seriesId, string language, CancellationToken ct, Func<IReadOnlyList<string>, bool>? stopAt = null)
     {
         await _gate.WaitAsync(ct);
         try
@@ -181,10 +185,12 @@ public sealed class MangaFireBrowser(
             return await WithPageAsync(async page =>
             {
                 var items = new Dictionary<long, string>();
+                var pageItems = new List<string>();
                 int? lastPage = null;
 
                 async Task CollectAsync(IResponse response)
                 {
+                    pageItems.Clear();
                     if (!IsChaptersUrl(response.Url))
                     {
                         return;
@@ -203,7 +209,9 @@ public sealed class MangaFireBrowser(
                         {
                             if (item.TryGetProperty("id", out var id))
                             {
-                                items[id.GetInt64()] = item.GetRawText();
+                                var text = item.GetRawText();
+                                items[id.GetInt64()] = text;
+                                pageItems.Add(text);
                             }
                         }
                     }
@@ -258,6 +266,13 @@ public sealed class MangaFireBrowser(
                 var expected = lastPage ?? 1;
                 for (var pageNo = 2; pageNo <= expected; pageNo++)
                 {
+                    if (stopAt?.Invoke(pageItems) == true)
+                    {
+                        logger.LogDebug("MangaFire {Series}: stopped at page {Page} of {Last}, nothing new past it",
+                            seriesId, pageNo - 1, expected);
+                        return ((IReadOnlyList<string>)items.Values.ToList(), languageMatched, false);
+                    }
+
                     ct.ThrowIfCancellationRequested();
                     var wait = page.WaitForResponseAsync(
                         r => IsChaptersUrl(r.Url) && r.Url.Contains($"page={pageNo}", StringComparison.Ordinal),
@@ -274,7 +289,7 @@ public sealed class MangaFireBrowser(
                     await CollectAsync(await wait);
                 }
 
-                return ((IReadOnlyList<string>)items.Values.ToList(), languageMatched);
+                return ((IReadOnlyList<string>)items.Values.ToList(), languageMatched, true);
             }, ct);
         }
         finally

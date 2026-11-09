@@ -22,7 +22,9 @@ function formatter(style: Intl.RelativeTimeFormatStyle): Intl.RelativeTimeFormat
   }
   let format = formats.get(style)
   if (!format) {
-    format = new Intl.RelativeTimeFormat(locale, { numeric: 'auto', style })
+    // The narrow form always counts: with `auto`, English mixed "last mo." and "yesterday" into a
+    // row of "2mo ago" stamps.
+    format = new Intl.RelativeTimeFormat(locale, { numeric: style === 'narrow' ? 'always' : 'auto', style })
     formats.set(style, format)
   }
   return format
@@ -35,7 +37,9 @@ function formatter(style: Intl.RelativeTimeFormatStyle): Intl.RelativeTimeFormat
  * server that stamped the row and the browser rendering it routinely puts a fresh row a second or
  * two into the future, and "in 2 seconds" is a worse lie than "just now".
  *
- * `narrow` ("6h ago") is for tight spots like cover cards.
+ * `narrow` ("6h ago", "1d ago") is the app's timestamp: every stamp standing on its own in a meta line,
+ * card or list uses it. The long form is only for a stamp inside a sentence ("Last run yesterday: 3
+ * added", "Retrying in 5 minutes"), where the clipped form reads as a typo.
  */
 export function relativeTime(iso: string, style: Intl.RelativeTimeFormatStyle = 'long'): string {
   const then = new Date(iso).getTime()
@@ -45,10 +49,16 @@ export function relativeTime(iso: string, style: Intl.RelativeTimeFormatStyle = 
   const magnitude = Math.abs(seconds)
   if (magnitude < 60) return t`just now`
 
-  for (const [unit, size] of UNITS) {
-    if (magnitude >= size) {
-      return formatter(style).format(Math.round(seconds / size), unit)
+  for (let i = 0; i < UNITS.length; i++) {
+    const [unit, size] = UNITS[i]
+    if (magnitude < size) continue
+    const value = Math.round(seconds / size)
+    // 23h40m rounds to 24 hours and 350 days to 12 months: say "1d" and "1y" instead.
+    if (i > 0 && Math.abs(value) >= Math.round(UNITS[i - 1][1] / size)) {
+      const [larger, largerSize] = UNITS[i - 1]
+      return formatter(style).format(Math.round(seconds / largerSize), larger)
     }
+    return formatter(style).format(value, unit)
   }
 
   return t`just now`

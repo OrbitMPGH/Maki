@@ -14,7 +14,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { notifications } from '../../lib/toast'
-import { IconChevronDown, IconChevronUp, IconPlus, IconTrash } from '@tabler/icons-react'
+import { IconChevronDown, IconChevronUp, IconPlus, IconTrash } from '../../lib/icons'
 import {
   SERIES_TYPES,
   SERIES_TYPE_LABELS,
@@ -37,8 +37,10 @@ import { SettingsNumberInput } from './SettingsNumberInput'
 import { useReportUnsaved } from './SaveButton'
 import {
   ENHANCE_FALLBACKS,
+  ENHANCE_PROGRESS_STYLES,
   ENHANCE_LEVELS,
-  ENHANCE_METHODS,
+  BROWSER_ENHANCE_METHODS,
+  SERVER_ENHANCE_METHODS,
   ENHANCE_SKIP_TIERS,
   enhanceMethodInfo,
   isServerMethod,
@@ -105,7 +107,7 @@ export function ReadingProfilesSection() {
         <Button
           size="xs"
           variant="light"
-          leftSection={<IconPlus size={14} />}
+          leftSection={<IconPlus size={16} />}
           onClick={() => setCreating((open) => !open)}
         >
           <Trans>New profile</Trans>
@@ -484,7 +486,10 @@ function ProfileEditor({
             allowDeselect={false}
             value={prefs.enhanceMethod}
             onChange={(value) => value && set({ enhanceMethod: value as ReaderPrefs['enhanceMethod'] })}
-            data={ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label) }))}
+            data={[
+              { group: t`On this device`, items: BROWSER_ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label) })) },
+              { group: t`On the server`, items: SERVER_ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label) })) },
+            ]}
           />
         )}
       </Group>
@@ -506,6 +511,25 @@ function ProfileEditor({
           value={prefs.enhanceFallback}
           onChange={(value) => value && set({ enhanceFallback: value as ReaderPrefs['enhanceFallback'] })}
           data={ENHANCE_FALLBACKS.map((f) => ({ value: f.value, label: renderLabel(f.label) }))}
+        />
+      )}
+      {prefs.enhance !== 'off' && isServerMethod(prefs.enhanceMethod) && (
+        <Select
+          label={t`Upscale progress`}
+          description={t`How a page waiting for the server shows it while the reader's bars are hidden.`}
+          allowDeselect={false}
+          value={prefs.enhanceProgress}
+          onChange={(value) => value && set({ enhanceProgress: value as ReaderPrefs['enhanceProgress'] })}
+          data={ENHANCE_PROGRESS_STYLES.map((style) => ({ value: style.value, label: renderLabel(style.label) }))}
+        />
+      )}
+      {prefs.enhance !== 'off' && isServerMethod(prefs.enhanceMethod) && (
+        <Switch
+          size="sm"
+          label={t`Whole chapter`}
+          description={t`The server keeps working through every page of the open chapter, not only the next few, so fast stretches don't catch up with it. Pages left when you leave the chapter are cancelled.`}
+          checked={prefs.enhanceWholeChapter}
+          onChange={(e) => set({ enhanceWholeChapter: e.currentTarget.checked })}
         />
       )}
 
@@ -553,6 +577,12 @@ function ProfileEditor({
         label={t`Flash the chapter name on chapter change`}
         checked={prefs.chapterBanner}
         onChange={(e) => set({ chapterBanner: e.currentTarget.checked })}
+      />
+      <Switch
+        size="sm"
+        label={t`Show notes beside the page when there is room`}
+        checked={prefs.notesBeside}
+        onChange={(e) => set({ notesBeside: e.currentTarget.checked })}
       />
 
       <Group justify="flex-end" gap="xs">

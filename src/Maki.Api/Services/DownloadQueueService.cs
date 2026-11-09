@@ -847,7 +847,8 @@ public class DownloadQueueService(
             Exception? resolveError = null;
             try
             {
-                resolved = await sourceResolver.ResolveAsync(db, chapter, pin, ct, onlyPreferred: pin != null);
+                resolved = await sourceResolver.ResolveAsync(db, chapter, pin, ct, onlyPreferred: pin != null,
+                    lastResortSources: await HeldSourcesAsync(ct));
             }
             catch (SourceRateLimitedException ex)
             {
@@ -1255,6 +1256,89 @@ public class DownloadQueueService(
     /// <summary>Failures no retry can change, which <see cref="RequeueEligibleFailuresAsync"/> never picks up.</summary>
     public static readonly string[] PermanentErrorKeys = ["error.download.upgradeTargetGone"];
 
+    /// <summary>
+    /// Failures the automatic retry would only repeat, but which the user can clear (logging in or buying
+    /// the chapter in Suwayomi's WebView), so a retry somebody asks for still picks them up.
+    /// </summary>
+    public static readonly string[] ManualRetryOnlyErrorKeys = [DownloadFailureReason.NeedsPurchase];
+
+    /// <summary>Failures that say something about the source the row was on, which another source might not repeat.</summary>
+    private static readonly string[] SourceSideErrorKeys =
+    [
+        DownloadFailureReason.SourceRejected, DownloadFailureReason.SourceError, DownloadFailureReason.Network,
+        DownloadFailureReason.ChallengeNotSolved, DownloadFailureReason.Unexpected, "error.download.noPages",
+        "error.download.invalidPage", "error.download.noMoreSources", "error.download.itemTimedOut",
+    ];
+
+    /// <summary>
+    /// A retry somebody asks for sends a row that failed on its source back through the resolve when that
+    /// source is no longer the chapter's first choice, say a source that was off when the chapter was
+    /// queued is on again. Without this the row keeps the mapping it fell through to and replays the same
+    /// failure. The first choice is taken among the mappings that list the chapter, so a chapter only the
+    /// fallback carries keeps it. A pin, a health repair and an upgrade keep their source, and a paywall
+    /// keeps its source too, since buying the chapter there is what the manual retry is for.
+    /// </summary>
+    /// <returns>
+    /// The rows that stopped being Failed while this looked (a sweep or a worker got there first), which
+    /// the caller must not retry. The release is a conditional update, so such a row is left untouched.
+    /// </returns>
+    public async Task<HashSet<int>> ReleaseOutrankedSourcesAsync(
+        MakiDbContext db, IReadOnlyCollection<DownloadQueueItem> items, CancellationToken ct)
+    {
+        var candidates = items
+            .Where(q => q.Protocol == AcquisitionProtocol.Scraper && q.SourceMappingId != null && q.ChapterId != null &&
+                        q.PreferredMappingId == null && q.HealthOperationId == null && q.UpgradeInfoJson == null &&
+                        q.Origin != DownloadOrigin.Upgrade && q.ErrorKey is { } key && SourceSideErrorKeys.Contains(key))
+            .ToList();
+        if (candidates.Count == 0)
+        {
+            return [];
+        }
+
+        var held = await HeldSourcesAsync(ct);
+        var chapterIds = candidates.Select(q => q.ChapterId!.Value).Distinct().ToList();
+        var listedOn = (await db.ChapterSourceLinks
+                .Where(l => chapterIds.Contains(l.ChapterId))
+                .Select(l => new { l.ChapterId, l.SourceMappingId })
+                .ToListAsync(ct))
+            .ToLookup(l => l.ChapterId, l => l.SourceMappingId);
+        var orders = new Dictionary<int, List<SourceMapping>>();
+        var gone = new HashSet<int>();
+        foreach (var item in candidates)
+        {
+            if (!orders.TryGetValue(item.SeriesId, out var order))
+            {
+                order = await sourceResolver.CandidateOrderAsync(db, item.SeriesId, held, ct);
+                orders[item.SeriesId] = order;
+            }
+
+            var listing = listedOn[item.ChapterId!.Value].ToHashSet();
+            var first = order.FirstOrDefault(m => listing.Contains(m.Id)) ?? order.FirstOrDefault();
+            if (first is null || first.Id == item.SourceMappingId)
+            {
+                continue;
+            }
+
+            var mappingId = item.SourceMappingId;
+            var released = await db.DownloadQueue
+                .Where(q => q.Id == item.Id && q.Status == QueueStatus.Failed && q.SourceMappingId == mappingId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(q => q.SourceMappingId, (int?)null)
+                    .SetProperty(q => q.SourceChapterId, (string?)null), ct);
+            if (released == 0)
+            {
+                gone.Add(item.Id);
+                continue;
+            }
+
+            item.SourceMapping = null;
+            item.SourceMappingId = null;
+            item.SourceChapterId = null;
+        }
+
+        return gone;
+    }
+
     /// <summary>The source name <see cref="QueueItemDto"/> shows for a torrent grab, which has no mapping.</summary>
     public const string TorrentSourceName = "torrent";
 
@@ -1319,6 +1403,7 @@ public class DownloadQueueService(
         var events = scope.ServiceProvider.GetRequiredService<EventBroadcaster>();
 
         var now = time.GetUtcNow().UtcDateTime;
+        string[] skipped = manual ? PermanentErrorKeys : [.. PermanentErrorKeys, .. ManualRetryOnlyErrorKeys];
         var eligible = await FailedWhere(db.DownloadQueue, reasonKey, source)
             .Include(q => q.Chapter)
             .Include(q => q.Series)
@@ -1327,7 +1412,7 @@ public class DownloadQueueService(
                         q.HealthOperationId == null &&
                         q.Series!.ArchivedAt == null &&
                         q.RetryCount < maxAttempts &&
-                        (q.ErrorKey == null || !PermanentErrorKeys.Contains(q.ErrorKey)) &&
+                        (q.ErrorKey == null || !skipped.Contains(q.ErrorKey)) &&
                         (manual || q.NextAttempt == null || q.NextAttempt <= now) &&
                         (q.ChapterId == null || !db.DownloadQueue.Any(o => o.ActiveChapterId == q.ChapterId)) &&
                         (q.UpgradeInfoJson != null || q.Chapter == null || !(
@@ -1340,6 +1425,12 @@ public class DownloadQueueService(
             .GroupBy(q => q.ChapterId is { } chapterId ? (long)chapterId : -q.Id)
             .Select(g => g.MaxBy(q => q.Id)!)
             .ToList();
+
+        if (manual)
+        {
+            var gone = await ReleaseOutrankedSourcesAsync(db, eligible, ct);
+            eligible.RemoveAll(q => gone.Contains(q.Id));
+        }
 
         foreach (var item in eligible)
         {

@@ -47,7 +47,7 @@ The **Finished torrents** switches control what happens after an import:
 ## Getting a release
 
 - On a series page, select **Search releases**, pick a result and select **Grab**.
-- In the series actions menu, **Search volume releases** looks for a whole-volume release.
+- In the series actions menu, **Upgrades → Search volume releases** looks for a whole-volume release.
 - To search automatically, turn on **Search torrents for volume releases** under **Settings →
   Downloads → Volume releases**. **Auto-grab size limit (MB)** sets which releases Maki grabs on its
   own. Larger ones become proposals you approve by hand.

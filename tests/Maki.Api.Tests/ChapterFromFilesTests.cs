@@ -209,6 +209,10 @@ public class ChapterFromFilesTests : IDisposable
                 UserId = Reader, SeriesId = series.Id, ChapterId = entry.Id, Completed = true, PageCount = 200,
                 StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow, CompletedAt = DateTime.UtcNow
             });
+            db.ChapterNotes.Add(new ChapterNote
+            {
+                AuthorId = Reader, SeriesId = series.Id, ChapterId = entry.Id, PageIndex = 120, Body = "volume note", CreatedAt = DateTime.UtcNow,
+            });
             db.Chapters.AddRange(Enumerable.Range(1, 3).Select(n => new Chapter { SeriesId = series.Id, Number = n, Volume = 1, Language = "en" }));
             db.SaveChanges();
         }
@@ -223,6 +227,9 @@ public class ChapterFromFilesTests : IDisposable
         Assert.Equal(3, progress.Count);
         Assert.All(progress, p => Assert.True(p.Completed));
         Assert.Equal(3, check.ReadingStates.Single(r => r.SeriesId == series.Id).MaxChapter);
+        var note = check.ChapterNotes.Single();
+        Assert.Equal(chapters[0].Id, note.ChapterId);
+        Assert.Null(note.PageIndex);
     }
 
     [Fact]

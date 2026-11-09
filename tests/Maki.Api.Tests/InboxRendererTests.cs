@@ -41,6 +41,7 @@ public class InboxRendererTests
         { "inbox.request.declined", new { title = "Berserk" } },
         { "inbox.chapters.available", new { count = 2 } },
         { "inbox.chapters.queued", new { count = 1 } },
+        { "inbox.chapters.delisted", new { count = 2 } },
         { "inbox.backup.preUpgrade", new { name = "maki-2026.db", count = 3 } },
         { "inbox.achievement.unlocked", new { achievement = "reader", tier = 3 } },
         { "inbox.levelUp", new { level = 4, previous = 3 } },
@@ -56,13 +57,26 @@ public class InboxRendererTests
         { "inbox.sourceMatch.matched", new { sources = "MangaDex, MangaPill" } },
         { "inbox.sourceMatch.none", new { } },
         { "inbox.update.available", new { latest = "1.2.0", current = "1.1.0" } },
-        { "inbox.importList.finished", new { tracker = "AniList", added = 3, requested = 0, skipped = 2, errors = 1 } },
+        { "inbox.importList.finished", new { tracker = "AniList", added = 3, requested = 0, shortlisted = 4, skipped = 2, errors = 1 } },
         { "inbox.upgrade.torrentProposal", new { replaced = 10, missing = 47, sizeBytes = 480L * 1024 * 1024 } },
         { "inbox.upgrade.volume", new { fileName = "Berserk v03.cbz", replaced = 9 } },
         { "inbox.account.ssoLinked", new { account = "alice@idp" } },
         { "inbox.series.statusChanged", new { from = "ongoing", to = "completed" } },
         { "inbox.series.statusChanged", new { from = "ongoing", to = "completed" } },
+        { "inbox.noteReply", new { userName = "Ana", hasName = "yes", chapter = "Ch.12" } },
+        { "inbox.noteReply", new { userName = "", hasName = "no", chapter = "Ch.12" } },
     };
+
+    [Fact]
+    public void A_reply_from_someone_unnamed_reads_as_another_reader()
+    {
+        var (_, named) = Render("inbox.noteReply", new { userName = "Ana", hasName = "yes", chapter = "Ch.12" });
+        var (_, unnamed) = Render("inbox.noteReply", new { userName = "", hasName = "no", chapter = "Ch.12" });
+
+        Assert.StartsWith("Ana replied", named, StringComparison.Ordinal);
+        Assert.StartsWith("Another reader replied", unnamed, StringComparison.Ordinal);
+        Assert.EndsWith("Ch.12", unnamed, StringComparison.Ordinal);
+    }
 
     [Fact]
     public void A_torrent_proposal_words_its_size()

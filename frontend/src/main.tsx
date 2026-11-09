@@ -4,6 +4,7 @@ import { Notifications } from '@mantine/notifications'
 import { notifications } from './lib/toast'
 import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { unstable_HistoryRouter as HistoryRouter } from 'react-router-dom'
+import { MotionConfig } from 'motion/react'
 import '@mantine/core/styles.css'
 import '@mantine/notifications/styles.css'
 // Bundled rather than linked from a font CDN: a self-hosted instance may have no internet, and
@@ -14,8 +15,10 @@ import '@fontsource-variable/bricolage-grotesque/opsz.css'
 import './theme.css'
 // Before App: decides whether the window or the shell's <main> scrolls.
 import './lib/pageScroll'
+import './lib/pageScrolling'
 import './lib/coverFallback'
-import { appHistory, PageTransitionCommit } from './lib/pageTransition'
+import './lib/scrollFades'
+import { appHistory, holdCaptureWhile, PageTransitionCommit } from './lib/pageTransition'
 import { preloadingRoutes } from './lib/routePreload'
 import { AppThemeProvider } from './theme-context'
 import { AppI18nProvider } from './i18n-context'
@@ -103,6 +106,10 @@ const queryClient = new QueryClient({
       // the page's own state. Timeouts and rate limits are the 4xx worth another go.
       retry: (failureCount, error) => failureCount < 1 && !isFinalClientError(error),
       refetchOnWindowFocus: false,
+      // Several components on one page often read the same key, and a quick back-navigation used to
+      // refetch everything on the page. Mutations and live events invalidate what they change, and
+      // invalidation ignores staleTime; a query that must refetch on every mount says so itself.
+      staleTime: 15_000,
       ...(withWorker && { networkMode: 'offlineFirst' as const }),
     },
     mutations: withWorker ? { networkMode: 'always' } : {},
@@ -120,6 +127,11 @@ const queryClient = new QueryClient({
     onError: (error, _vars, _ctx, mutation) => reportError(error, mutation.meta),
   }),
 })
+
+// A query with no data yet that a mounted page is fetching: the page is still showing its skeletons.
+holdCaptureWhile(
+  () => queryClient.isFetching({ predicate: (q) => q.state.data === undefined && q.getObserversCount() > 0 }) > 0,
+)
 
 if (import.meta.env.PROD) {
   registerServiceWorker(() => {
@@ -155,7 +167,10 @@ createRoot(document.getElementById('root')!).render(
         <QueryClientProvider client={queryClient}>
           <HistoryRouter history={appHistory}>
             <PageTransitionCommit />
-            <App />
+            {/* Every motion/react animation follows the OS reduced-motion setting, opted in or not. */}
+            <MotionConfig reducedMotion="user">
+              <App />
+            </MotionConfig>
           </HistoryRouter>
         </QueryClientProvider>
       </AppThemeProvider>

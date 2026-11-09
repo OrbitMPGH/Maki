@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
 import { RingProgress, SimpleGrid, Skeleton, Stack, Text } from '@mantine/core'
 import { Trans, Plural, Select, useLingui } from '@lingui/react/macro'
-import { IconArchive, IconBooks, IconChartHistogram, IconFlame } from '@tabler/icons-react'
+import { IconArchive, IconBooks, IconChartHistogram, IconFlame } from '../../../lib/icons'
 import { useActivityStats, useLibraryComposition } from '../../../api/hooks'
 import type { BehaviourSeries } from '../../../api/hooks'
 import { useStatsStanding } from '../../../api/stats'
+import { EmptyState } from '../../../components/ui/EmptyState'
 import { Panel } from '../../../components/ui/Panel'
 import { formatNumber, formatPercent, formatReadingTime } from '../../../format'
 import { BacklogBars } from '../charts/BacklogBars'
@@ -13,6 +14,7 @@ import { ReadTrackingEmpty } from '../ReadTrackingEmpty'
 import { ChartSkeleton } from '../ChartSkeleton'
 import { SeriesLink, SeriesThumb } from '../SeriesLink'
 import { StatsInsight } from '../StatsSection'
+import { MIN_SERIES_STARTED } from '../sampleSize'
 import type { StatsSectionProps } from './types'
 
 function HabitsSkeleton() {
@@ -101,7 +103,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
 
   return (
     <>
-      {seriesStarted > 0 && finishRatePct && (
+      {seriesStarted >= MIN_SERIES_STARTED && finishRatePct && (
         <StatsInsight>
           <Trans>
             You finish <em>{finishRatePct}</em> of the series you start.
@@ -177,9 +179,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
             {stopPointHistogram.some((n) => n > 0) ? (
               <StopHistogram buckets={stopPointHistogram} medianFraction={medianStopPoint} />
             ) : (
-              <Text c="var(--ink-3)" size="sm">
-                {t`Nothing unfinished to chart.`}
-              </Text>
+              <EmptyState compact mood="pleased" title={t`Nothing unfinished to chart.`} />
             )}
           </Panel>
         </div>
@@ -190,9 +190,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
               <p className="stats-panel-title">{t`Savoured`}</p>
               <p className="stats-panel-sub">{t`Read slowly over a long span`}</p>
               {behaviour.savoured.length === 0 ? (
-                <Text c="var(--ink-3)" size="sm">
-                  {t`Nothing slow enough to call savoured yet.`}
-                </Text>
+                <EmptyState compact mood="asleep" title={t`Nothing slow enough to call savoured yet.`} />
               ) : (
                 <ul className="stats-rows">
                   {behaviour.savoured.map((item) => (
@@ -215,9 +213,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
               <p className="stats-panel-title">{t`Devoured`}</p>
               <p className="stats-panel-sub">{t`Finished in a rush`}</p>
               {behaviour.devoured.length === 0 ? (
-                <Text c="var(--ink-3)" size="sm">
-                  {t`Nothing fast enough to call a rush yet.`}
-                </Text>
+                <EmptyState compact mood="asleep" title={t`Nothing fast enough to call a rush yet.`} />
               ) : (
                 <ul className="stats-rows">
                   {behaviour.devoured.map((item) => (

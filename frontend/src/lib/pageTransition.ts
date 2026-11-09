@@ -1,7 +1,8 @@
 import { useLayoutEffect } from 'react'
 import { UNSAFE_createBrowserHistory, useLocation } from 'react-router-dom'
 import { holdTint, tintSettled } from './coverTint'
-import { motionEnabled, motionPace, prefersReducedMotion } from './motionPrefs'
+import { DUR, EASE_CSS, PAGE, pacedMs } from './motion'
+import { motionEnabled, prefersReducedMotion, syncMotionPace } from './motionPrefs'
 import { pageScroller } from './pageScroll'
 
 /**
@@ -30,8 +31,6 @@ export const appHistory = UNSAFE_createBrowserHistory({ v5Compat: true })
 // A lazy route can hold the commit back while its chunk loads, and the series poster waits on its
 // data. Past this the transition gives up waiting and the new page arrives whenever it is ready.
 const COMMIT_TIMEOUT_MS = 400
-
-const EASE = 'cubic-bezier(0.16, 1, 0.3, 1)'
 
 const disabled = () => !motionEnabled('pageTransitions') || prefersReducedMotion()
 
@@ -124,6 +123,54 @@ function clickedCover(id: string): HTMLElement | null {
 // No animation frame runs while the update callback is pending, so waits inside it use timers.
 const tick = (ms = 0) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
+let pageLoading: () => boolean = () => false
+/** Tells the transition when the new page is still waiting on its first data (main.tsx). */
+export function holdCaptureWhile(loading: () => boolean) {
+  pageLoading = loading
+}
+
+/**
+ * Holds the capture until the new page's first data is in, then lets React render it. Captured on
+ * its skeletons, the page swapped them for content in the middle of the fade, and that render (all
+ * of Home's rails at once) blocked the main thread for most of it: the fade dropped to a few frames
+ * and read as a snap. Rendered here, the old page stands still while it happens.
+ */
+async function pageDataReady(deadline: number) {
+  if (!pageLoading()) return
+  while (pageLoading() && performance.now() < deadline) await tick(16)
+  await tick()
+}
+
+// Firefox draws the cross-fade on the main thread, where Chrome hands it to the compositor.
+const fadeOnMainThread = typeof CSS !== 'undefined' && CSS.supports('-moz-appearance', 'none')
+
+/**
+ * The new page's first frame carries its mount work (rails measuring, observers reporting, images
+ * starting), and in Firefox one long frame there could swallow the whole fade into a cut. The fade
+ * waits on its first frame until frames come at speed again, or 200ms at most, then plays.
+ */
+function holdFadeUntilCalm(then: () => void) {
+  const fades = document.documentElement
+    .getAnimations({ subtree: true })
+    .filter((a) => (a.effect as KeyframeEffect | null)?.pseudoElement?.startsWith('::view-transition'))
+  for (const a of fades) a.pause()
+  const deadline = performance.now() + 200
+  // Two quick frames in a row: the first two after the capture always arrive back to back.
+  let last = 0
+  let quick = 0
+  const step = (now: number) => {
+    quick = last && now - last < 25 ? quick + 1 : 0
+    if (quick >= 2 || performance.now() > deadline) {
+      for (const a of fades) a.play()
+      then()
+      return
+    }
+    last = now
+    requestAnimationFrame(step)
+  }
+  requestAnimationFrame(step)
+}
+
 /** Waits for the series poster to render and decode, so the cover lands on a real image. */
 async function posterReady(deadline: number): Promise<HTMLImageElement | null> {
   while (performance.now() < deadline) {
@@ -168,7 +215,7 @@ function rise(fade: boolean, drift = true) {
     from.opacity = 0
     to.opacity = 1
   }
-  main.animate([from, to], { duration: 250 * motionPace(), easing: EASE })
+  main.animate([from, to], { duration: pacedMs(PAGE.rise), easing: EASE_CSS })
 }
 
 /**
@@ -229,13 +276,13 @@ function flyCover(
     target.style.removeProperty('visibility')
     if (restorePosition) scroller.style.removeProperty('position')
     // The card underneath carries its title and badges, which the copy doesn't; a short fade hands over.
-    ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140 * motionPace(), easing: 'ease-out' }).finished.finally(() => ghost.remove())
+    ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: pacedMs(DUR.base), easing: EASE_CSS }).finished.finally(() => ghost.remove())
   }
   return {
     decoded: ghost.decode().catch(() => {}),
     start: () => {
       ghost.style.transform = 'none'
-      ghost.animate([{ transform: launch }, { transform: 'none' }], { duration: 440 * motionPace(), easing: EASE }).finished.finally(end)
+      ghost.animate([{ transform: launch }, { transform: 'none' }], { duration: pacedMs(PAGE.coverFlight), easing: EASE_CSS }).finished.finally(end)
     },
     cancel: () => {
       ghost.remove()
@@ -269,7 +316,7 @@ function holdCover(cover: HTMLElement, at: DOMRect): (fade: boolean) => void {
   document.body.append(held)
   return (fade) => {
     if (!fade) return held.remove()
-    held.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140 * motionPace(), easing: 'ease-out' }).finished.finally(() => held.remove())
+    held.animate([{ opacity: 1 }, { opacity: 0 }], { duration: pacedMs(DUR.base), easing: EASE_CSS }).finished.finally(() => held.remove())
   }
 }
 
@@ -298,6 +345,8 @@ appHistory.listen = (listener) =>
     const from = shownPath
     const to = update.location.pathname
     shownPath = to
+    // Another tab may have flipped "Faster animations" since; the fade's length in theme.css keys off it.
+    syncMotionPace()
     if (from === to || (isReader(from) && isReader(to)) || disabled()) {
       listener(update)
       return
@@ -319,10 +368,6 @@ appHistory.listen = (listener) =>
       return
     }
 
-    // The cross-fade's length lives in theme.css, keyed off this.
-    const root = document.documentElement
-    if (motionEnabled('fastMotion')) root.dataset.motion = 'fast'
-    else delete root.dataset.motion
     let flight: ReturnType<typeof flyCover> = null
     let settled = 0
     // Set once the browser skips the transition: a hidden tab, or another navigation cutting in. The
@@ -357,11 +402,11 @@ appHistory.listen = (listener) =>
         // Lets the commit's passive effects run first, ScrollMemory's restore among them, so the
         // new page is captured where it will sit.
         await tick()
+        await pageDataReady(deadline)
         let incoming: HTMLElement | null = null
         if (outgoing && opening) incoming = await posterReady(deadline)
         else if (outgoing && leaving) incoming = linkedCover(leaving)
         if (fromRect && incoming && !skipped) flight = flyCover(fromRect, incoming)
-        if (!flight) rise(false)
         // The flight's image, and the new cover's tint so it can ease in with the cross-fade.
         await Promise.race([
           Promise.all([flight?.decoded, tintSettled()]),
@@ -372,8 +417,14 @@ appHistory.listen = (listener) =>
     })
     transition.ready.then(
       () => {
-        flight?.start()
-        releaseTint()
+        // The drift starts with the cross-fade so the two land together.
+        const go = () => {
+          if (flight) flight.start()
+          else rise(false)
+          releaseTint()
+        }
+        if (fadeOnMainThread) holdFadeUntilCalm(go)
+        else go()
       },
       () => {
         skipped = true

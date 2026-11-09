@@ -25,11 +25,17 @@ type Story = StoryObj<typeof meta>
 export const ReadyAndDownloading: Story = {
   play: async ({ canvas }) => {
     await waitFor(() => expect(canvas.getByRole('switch', { name: /Enable server upscaling/ })).toBeChecked())
-    await expect(await canvas.findByRole('checkbox', { name: 'Sharp (server)' })).toBeChecked()
-    await expect(canvas.getByRole('checkbox', { name: 'Crisp line art (server)' })).toBeChecked()
-    await expect(canvas.getByText('Ready')).toBeVisible()
+    await expect(await canvas.findByRole('checkbox', { name: 'Maki 2x' })).toBeChecked()
+    await expect(canvas.getByRole('checkbox', { name: 'SPAN-S' })).toBeChecked()
+    await expect(canvas.getByRole('checkbox', { name: 'Real-ESRGAN' })).toBeChecked()
+    await expect(canvas.getByText('Recommended')).toBeVisible()
+    await expect(canvas.getByRole('img', { name: 'Speed: Very fast' })).toBeVisible()
+    await expect(canvas.getByRole('img', { name: 'Quality: Best' })).toBeVisible()
+    await waitFor(() => expect(canvas.getAllByText('Ready')).toHaveLength(1))
+    await expect(canvas.getByText('Included')).toBeVisible()
+    await expect(canvas.getAllByRole('button', { name: 'Delete' })).toHaveLength(1)
     await expect(canvas.getByText('Downloading')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: 'Delete' })).toBeEnabled()
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Delete' })[0]).toBeEnabled())
     await expect(canvas.getAllByRole('button', { name: 'Test speed' })[0]).toBeEnabled()
     await expect(await canvas.findByText('312 MB of 1,024 MB, 280 pages')).toBeVisible()
     await expect(canvas.getByRole('textbox', { name: 'Threads' })).toHaveValue('2')
@@ -46,7 +52,7 @@ export const TierOff: Story = {
   },
   play: async ({ canvas }) => {
     await waitFor(() => expect(canvas.getByRole('switch', { name: /Enable server upscaling/ })).not.toBeChecked())
-    await expect(canvas.queryByRole('checkbox', { name: 'Sharp (server)' })).toBeNull()
+    await expect(canvas.queryByRole('checkbox', { name: 'SPAN-S' })).toBeNull()
     await expect(canvas.queryByRole('textbox', { name: 'Threads' })).toBeNull()
   },
 }
@@ -58,7 +64,7 @@ export const SwitchingOnMarksUnsaved: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('switch', { name: /Enable server upscaling/ }))
     await expect(await canvas.findByText('Unsaved')).toBeVisible()
-    await expect(await canvas.findByRole('checkbox', { name: 'Sharp (server)' })).not.toBeChecked()
+    await expect(await canvas.findByRole('checkbox', { name: 'SPAN-S' })).not.toBeChecked()
     await expect(canvas.getByRole('button', { name: 'Save' })).toBeEnabled()
     // A model with no size until its manifest is read goes straight to the licence.
     const unsized = (await canvas.findByRole('link', { name: 'xinntao (Real-ESRGAN)' })).closest('.meta-list')!

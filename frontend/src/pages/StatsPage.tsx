@@ -4,7 +4,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 // Imported here rather than in main.tsx so the chart stylesheet travels with this route's chunk,
 // and here in the shell rather than in a section so it loads once.
 import '@mantine/charts/styles.css'
-import { IconPlayerPlay } from '@tabler/icons-react'
+import { IconPlayerPlay } from '../lib/icons'
 import { useActivityStats, useActivityYears } from '../api/hooks'
 import { useUsers } from '../api/auth'
 import { useAuth } from '../auth/AuthProvider'
@@ -110,6 +110,7 @@ export default function StatsPage() {
 
       <PageHeader
         title={<Trans>Stats</Trans>}
+        className="stats-page-header"
         actions={
           <>
             {isAdmin && users && users.length > 1 && (
@@ -119,7 +120,7 @@ export default function StatsPage() {
                   .map((u) => ({ value: String(u.id), label: u.displayName || u.userName }))}
                 value={viewUserId === undefined ? String(me?.id ?? '') : String(viewUserId)}
                 onChange={(v) => setViewUserId(v && Number(v) !== me?.id ? Number(v) : undefined)}
-                w={180}
+                w={{ base: 'auto', xs: 180 }}
                 size="sm"
                 aria-label={t`Reader`}
               />

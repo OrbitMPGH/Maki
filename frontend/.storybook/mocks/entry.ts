@@ -49,6 +49,7 @@ const readerHandlers: HttpHandler[] = [
   http.put(api('/reader/chapter/:id/bookmark/:page'), () => HttpResponse.json({ bookmarked: true })),
   http.post(api('/reader/chapter/:id/read'), () => new HttpResponse(null, { status: 204 })),
   http.post(api('/reader/chapter/:id/unread'), () => new HttpResponse(null, { status: 204 })),
+  http.delete(api('/reader/enhance'), () => new HttpResponse(null, { status: 204 })),
   http.post(api('/reader/chapter/:id/enhance'), async ({ request }) => {
     const { pages } = (await request.json()) as { pages: number[] }
     return HttpResponse.json({ pages: pages.map((page) => ({ page, state: 'queued' })) })

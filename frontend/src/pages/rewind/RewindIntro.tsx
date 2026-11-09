@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ActionIcon } from '@mantine/core'
-import { IconPlayerPauseFilled, IconPlayerPlayFilled, IconX } from '@tabler/icons-react'
+import { IconPlayerPauseFilled, IconPlayerPlayFilled, IconX } from '../../lib/icons'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { CINEMATIC, DWELL, EASE, EASE_LOOP, paced } from '../../lib/motion'
 import { useLingui } from '@lingui/react/macro'
 import type { ActivityStats } from '../../api/hooks'
 import { buildSlides } from './slides'
+import { AuthBandShapes } from '../../components/auth/AuthFrame'
 
-const SLIDE_MS = 6000
+const SLIDE_MS = DWELL.rewindSlide * 1000
 
 /**
  * Fullscreen story-style overlay (Spotify-Wrapped feel): segmented progress bar,
@@ -48,14 +50,15 @@ export function RewindIntro({
     elapsed.current = 0
   }, [index])
   useEffect(() => {
-    if (isLast || paused) return
+    // Under reduced motion nothing moves on its own: the reader taps or presses through.
+    if (isLast || paused || reduced) return
     const started = performance.now()
     const timer = setTimeout(next, Math.max(0, SLIDE_MS - elapsed.current))
     return () => {
       clearTimeout(timer)
       elapsed.current += performance.now() - started
     }
-  }, [index, isLast, next, paused])
+  }, [index, isLast, next, paused, reduced])
 
   // Focus moves into the overlay while it is open and goes back to the Play button afterwards.
   useEffect(() => {
@@ -136,29 +139,40 @@ export function RewindIntro({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: reduced ? 0 : 0.9, ease: 'easeOut' }}
+            transition={{ duration: reduced ? 0 : paced(CINEMATIC.backdrop), ease: EASE }}
           >
             {slide.mosaic ? (
-              <motion.div
-                className="rewind-mosaic"
-                initial={reduced ? false : { y: 0 }}
-                animate={reduced ? undefined : { y: -120 }}
-                transition={{ duration: SLIDE_MS / 1000 + 2, ease: 'linear' }}
-              >
-                {Array.from({ length: 54 }, (_, i) => (
-                  <img key={i} src={slide.mosaic![i % slide.mosaic!.length]} alt="" />
-                ))}
-              </motion.div>
+              <div className="auth-band">
+                <motion.div
+                  className="rewind-wall"
+                  initial={reduced ? false : { y: 0 }}
+                  animate={reduced ? undefined : { y: -120 }}
+                  transition={{ duration: DWELL.rewindSlide + 2, ease: EASE_LOOP }}
+                >
+                  {slide.mosaic.length > 0 ? (
+                    <div className="auth-band-shapes rewind-wall-covers">
+                      {Array.from({ length: 60 }, (_, i) => (
+                        <img key={i} src={slide.mosaic![i % slide.mosaic!.length]} alt="" />
+                      ))}
+                    </div>
+                  ) : (
+                    <AuthBandShapes />
+                  )}
+                </motion.div>
+                <div className="auth-band-scrim" />
+              </div>
             ) : (
-              <motion.div
-                className="rewind-backdrop"
-                style={{ backgroundImage: `url("${slide.backdrop}")` }}
-                initial={reduced ? false : { scale: 1.12 }}
-                animate={{ scale: 1 }}
-                transition={{ duration: SLIDE_MS / 1000 + 1, ease: 'easeOut' }}
-              />
+              <>
+                <motion.div
+                  className="rewind-backdrop"
+                  style={{ backgroundImage: `url("${slide.backdrop}")` }}
+                  initial={reduced ? false : { scale: 1.12 }}
+                  animate={{ scale: 1 }}
+                  transition={{ duration: DWELL.rewindSlide + 1, ease: EASE }}
+                />
+                <div className="rewind-scrim" />
+              </>
             )}
-            <div className="rewind-scrim" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -182,7 +196,7 @@ export function RewindIntro({
       </div>
 
       <div className="rewind-controls">
-        {!isLast && (
+        {!isLast && !reduced && (
           <ActionIcon
             ref={pauseRef}
             variant="subtle"
@@ -217,10 +231,11 @@ export function RewindIntro({
         <motion.div
           key={slide.key}
           className="rewind-slide"
+          data-wall={slide.mosaic ? true : undefined}
           initial={reduced ? false : { opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           exit={reduced ? undefined : { opacity: 0, y: -40 }}
-          transition={{ duration: 0.4, ease: 'easeOut' }}
+          transition={{ duration: paced(CINEMATIC.enter), ease: EASE }}
         >
           {slide.node}
         </motion.div>

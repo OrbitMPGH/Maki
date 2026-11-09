@@ -8,17 +8,14 @@ The rails on the Discover Browse tab, in the order they ship. For how the engine
 [Discover](/Maki/features/discover/).
 
 Reorder or switch off rails with **Edit layout**. Most rails have a **Show more** button that opens
-the full list.
+the full list. When every card in a rail shares one reason, the rail states it once above the cards.
+Elsewhere a card names its reason, and no title is named as the reason more than twice in any run of
+20 cards.
 
 ## Spotlight
 
 The large picks at the top, taken from the rail built from your recent reading. With fewer than three
 titles there, it fills from **Trending now**.
-
-## Your taste
-
-A strip titled **Steering these picks**. It lists the five tags that most steer your recommendations,
-with the share of your read series carrying each, and links to the Taste tab.
 
 ## Based on your recent activity
 

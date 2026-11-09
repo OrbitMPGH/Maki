@@ -1,5 +1,5 @@
 import { Badge, Divider, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
-import { IconCalendarEvent } from '@tabler/icons-react'
+import { IconCalendarEvent } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { confidenceLevel, useSeriesOutlook, type ReleaseOutlookDto } from '../../api/releases'
@@ -8,19 +8,30 @@ import { useLabel } from '../../i18n-context'
 import { relativeTime } from '../ui/time'
 import { CONFIDENCE_LABEL, REFRESH_TIER_TEXT } from './outlookText'
 
+/** Why the refresh skips a series, when the page can tell: no enabled source, or finished and caught up. */
+export type OutlookIdleReason = 'noSource' | 'finished'
+
 /** The series page's "Next chapter" block. Renders nothing until the outlook has loaded. */
-export function ReleaseOutlookSummary({ seriesId, divided }: { seriesId: number; divided?: boolean }) {
+export function ReleaseOutlookSummary({
+  seriesId,
+  divided,
+  idleReason,
+}: {
+  seriesId: number
+  divided?: boolean
+  idleReason?: OutlookIdleReason
+}) {
   const { data } = useSeriesOutlook(seriesId)
   if (!data) return null
   return (
     <>
-      <ReleaseOutlookView outlook={data} />
+      <ReleaseOutlookView outlook={data} idleReason={idleReason} />
       {divided && <Divider my="md" color="var(--hairline)" />}
     </>
   )
 }
 
-export function ReleaseOutlookView({ outlook }: { outlook: ReleaseOutlookDto }) {
+export function ReleaseOutlookView({ outlook, idleReason }: { outlook: ReleaseOutlookDto; idleReason?: OutlookIdleReason }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
   const { state, windowStart, windowEnd, announcedAt, announcedBy, hits, checked, lastRelease, nextCheckAt } = outlook
@@ -94,6 +105,10 @@ export function ReleaseOutlookView({ outlook }: { outlook: ReleaseOutlookDto }) 
             {' '}
             {nextDue ? <Trans>The next check is due.</Trans> : next && <Trans>Next check {next}.</Trans>}
           </>
+        ) : idleReason === 'noSource' ? (
+          <Trans>Not checked for new chapters: no source is switched on.</Trans>
+        ) : idleReason === 'finished' ? (
+          <Trans>Not checked for new chapters: the series is finished and every chapter is listed.</Trans>
         ) : (
           <Trans>Not checked for new chapters: it is finished and complete, or has no source switched on.</Trans>
         )}

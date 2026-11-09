@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import type { Icon } from '@tabler/icons-react'
+import type { Icon } from '../../lib/icons'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { sectionElementId, type StatsSectionKey } from './sectionList'
 

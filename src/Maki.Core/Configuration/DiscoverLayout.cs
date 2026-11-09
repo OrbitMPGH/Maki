@@ -6,6 +6,10 @@ namespace Maki.Core.Configuration;
 public static class DiscoverSections
 {
     public const string Hero = "hero";
+    /// <summary>
+    /// A retired section key: the "Steering these picks" strip, which moved to the Your taste tab.
+    /// Kept for the tests and readers of old layouts; the merge drops it.
+    /// </summary>
     public const string Taste = "taste";
     public const string RecentActivity = "recent";
     public const string SideInterests = "sideinterests";
@@ -18,7 +22,7 @@ public static class DiscoverSections
     public const string Genres = "genres";
 
     public static readonly string[] All =
-        [Hero, Taste, RecentActivity, Following, SideInterests, Cohort, Trending, Catalogue, Genres];
+        [Hero, RecentActivity, Following, SideInterests, Cohort, Trending, Catalogue, Genres];
 }
 
 /// <summary>

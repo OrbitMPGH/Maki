@@ -17,7 +17,7 @@ import {
   UnstyledButton,
 } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
-import { IconChevronRight, IconSearch } from '@tabler/icons-react'
+import { IconChevronRight, IconSearch } from '../lib/icons'
 import { useRecommendationTags, type CatalogueTerm } from '../api/hooks'
 import { buildTagTree, PATH_SEPARATOR, rankTagMatches, tagKey, type TagNode } from '../lib/tagTree'
 import { useGenreOptions } from './CatalogueFilters'

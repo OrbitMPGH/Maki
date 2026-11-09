@@ -169,7 +169,9 @@ public sealed class ControllerAuthorizationInventoryTests
         "DiscoverFiltersController.Create",
         "DiscoverFiltersController.Delete",
         "DiscoverFiltersController.Update",
+        "HomeController.DismissFromAnime",
         "HomeController.HideFromReading",
+        "HomeController.RestoreFromAnime",
         "HomeController.UnhideFromReading",
         "InboxController.Clear",
         "InboxController.Dismiss",
@@ -179,6 +181,11 @@ public sealed class ControllerAuthorizationInventoryTests
         "LibraryFiltersController.Create",
         "LibraryFiltersController.Delete",
         "LibraryFiltersController.Update",
+        // Author only, or an admin deleting a shared note; checked in the action, invisible ids 404.
+        "NotesController.Create",
+        "NotesController.Delete",
+        "NotesController.Reply",
+        "NotesController.Update",
         "PreviewController.Release",
         "PreviewController.Start",
         "ProgressController.DeleteGoal",
@@ -188,6 +195,7 @@ public sealed class ControllerAuthorizationInventoryTests
         "PushController.Subscribe",
         "PushController.Test",
         "PushController.Unsubscribe",
+        "ReaderController.CancelEnhance",
         "ReaderController.ChapterVersions",
         "ReaderController.Enhance",
         "ReaderController.MarkRead",
@@ -231,6 +239,11 @@ public sealed class ControllerAuthorizationInventoryTests
         "SettingsController.SetRatingPrompts",
         "SettingsController.SetReader",
         "SettingsController.SetUi",
+        "ShortlistController.Acknowledge",
+        "ShortlistController.Remove",
+        "ShortlistController.Restore",
+        "ShortlistController.Save",
+        "ShortlistController.UpdateNote",
     ];
 
     /// <summary>

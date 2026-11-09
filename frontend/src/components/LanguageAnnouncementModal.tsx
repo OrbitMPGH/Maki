@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button, Group, Modal, Select, Stack, Text, ThemeIcon } from '@mantine/core'
-import { IconLanguage } from '@tabler/icons-react'
+import { IconLanguage } from '../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useAnnouncements, useSeenLanguageAnnouncement, useUiSettings } from '../api/hooks'
 import { useApplyLanguage, useLanguageOptions } from './ui/language'

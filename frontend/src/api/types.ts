@@ -30,8 +30,11 @@ export interface SeriesDto {
   /**
    * Other primary titles from the provider with the language each is written in, for the
    * "show more" expander next to `originalTitle` and as the pool `displayTitle` comes from.
+   * Not on library list rows, which carry `altTitleNames` instead.
    */
-  altTitles: LocalizedTitle[]
+  altTitles?: LocalizedTitle[]
+  /** The same titles as bare names, for title search. Library list rows only. */
+  altTitleNames?: string[]
   status: string
   /**
    * manga | manhwa | manhua | oel | other, or null on a series whose metadata hasn't been refreshed
@@ -76,7 +79,8 @@ export interface SeriesDto {
   aniListId: number | null
   malId: number | null
   kitsuId: number | null
-  links: MetadataLink[]
+  /** Not on library list rows. */
+  links?: MetadataLink[]
   /** "subChapterSource|wholeChapterSource" when sources disagree on numbering. */
   numberingClash: string | null
   added: string
@@ -322,8 +326,12 @@ export interface ChapterDto {
   fileRemovedAt: string | null
   /** The removal was read file cleanup's, which also turned Wanted off. False while the chapter has a file. */
   fileAutoRemoved: boolean
+  /** The last health scan found this chapter's file gone from disk. It still has a file record, so `hasFile` stays true. */
+  fileMissing: boolean
   /** When read file cleanup will delete this chapter's file, or null when it isn't scheduled. */
   fileDeleteDueAt: string | null
+  /** When the last enabled source that listed this chapter stopped listing it. Null while one does, or if none ever did. */
+  delistedAt: string | null
   filePath: string | null
   /**
    * Where the file came from: a registered source's name, the literal "import" for a file brought
@@ -828,10 +836,13 @@ export interface ImportListRunSummary {
   at: string
   added: number
   requested: number
+  shortlisted: number
   skipped: number
   errors: number
   /** Nothing ran because the local MangaBaka database is not downloaded yet. */
   dumpUnavailable: boolean
+  /** The run stopped shortlisting Plan to read entries because the shortlist is full. */
+  shortlistFull: boolean
 }
 
 export interface ImportListTrackerDto {
@@ -842,8 +853,8 @@ export interface ImportListTrackerDto {
   lastRun: ImportListRunSummary | null
 }
 
-/** Unmatched | Removed | Ignored | Added. */
-export type ImportListSkipReason = 'Unmatched' | 'Removed' | 'Ignored' | 'Added'
+/** Unmatched | Removed | Ignored | Added | Shortlisted. */
+export type ImportListSkipReason = 'Unmatched' | 'Removed' | 'Ignored' | 'Added' | 'Shortlisted'
 
 export interface ImportListSkipDto {
   id: number

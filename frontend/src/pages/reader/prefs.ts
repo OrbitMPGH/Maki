@@ -18,7 +18,9 @@ export type EnhanceMethod =
   | 'a4k-a'
   | 'server:span-s'
   | 'server:realesrgan-av3'
+  | 'server:maki-2x'
 export type EnhanceFallback = 'a4k-s' | 'a4k-m' | 'a4k-a' | 'off'
+export type EnhanceProgress = 'line' | 'detailed' | 'off'
 
 export interface ReaderPrefs {
   mode: ReaderMode
@@ -55,6 +57,12 @@ export interface ReaderPrefs {
   enhanceFallback: EnhanceFallback
   /** Chapters whose file has one of these quality tiers are never enhanced. */
   enhanceSkipTiers: QualityTierName[]
+  /** How a server upscale in progress shows while the bars are hidden. The toolbar shows it whenever they are up. */
+  enhanceProgress: EnhanceProgress
+  /** Show the chapter's notes in the margin beside the page when the screen leaves room. */
+  notesBeside: boolean
+  /** With a server method, keep upscaling the rest of the open chapter behind the window. Leaving cancels what is left. */
+  enhanceWholeChapter: boolean
 }
 
 /** The two page backgrounds. OLED is true black so the panel edge disappears on an OLED panel. */
@@ -68,6 +76,9 @@ export const BACKGROUNDS = {
  * base for a merge. What a series actually opens with is resolved on the server: its own override,
  * then a pinned reading profile, then the profile claiming its type, then these.
  */
+/** Maki 2x; the reader shows `enhanceFallback` wherever the server does not offer it. */
+export const DEFAULT_ENHANCE_METHOD: EnhanceMethod = 'server:maki-2x'
+
 export const DEFAULT_PREFS: ReaderPrefs = {
   mode: 'paged',
   direction: 'rtl',
@@ -87,9 +98,12 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   cropBorders: false,
   autoWebtoon: true,
   enhance: 'off',
-  enhanceMethod: 'a4k-m',
+  enhanceMethod: DEFAULT_ENHANCE_METHOD,
   enhanceFallback: 'a4k-m',
   enhanceSkipTiers: ['volume'],
+  enhanceProgress: 'line',
+  notesBeside: true,
+  enhanceWholeChapter: false,
 }
 
 /** The enhance level a chapter actually gets: off when its file's tier is one the prefs skip. */

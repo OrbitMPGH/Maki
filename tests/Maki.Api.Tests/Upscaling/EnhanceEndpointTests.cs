@@ -156,11 +156,15 @@ public sealed class EnhanceEndpointTests : IDisposable
         var slice = (await new ReaderService(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), null!, null!,
             new ReadingSessionService(db), NullLogger<ReaderService>.Instance).PageSliceAsync(_chapterId, default))!;
         var version = $"{slice.ChapterFileId}-{slice.ArchiveVersion}";
-        var controller = Reader(db, 1, $"?model=span-s&v={version}");
+        var controller = Reader(db, 1, $"?model=span-s&v={version}&g={UpscaleCache.Generation}");
         var file = Assert.IsType<PhysicalFileResult>(await controller.EnhancedPage(_chapterId, 1, "span-s", _store, _cache, default));
         Assert.Equal("image/webp", file.ContentType);
-        Assert.Equal($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-1-span-s\"", file.EntityTag!.Tag.ToString());
+        Assert.Equal($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-1-span-s-{UpscaleCache.Generation}\"", file.EntityTag!.Tag.ToString());
         Assert.Equal("private, max-age=31536000, immutable", controller.Response.Headers.CacheControl.ToString());
+
+        var olderGeneration = Reader(db, 1, $"?model=span-s&v={version}");
+        Assert.IsType<PhysicalFileResult>(await olderGeneration.EnhancedPage(_chapterId, 1, "span-s", _store, _cache, default));
+        Assert.Equal("private, no-cache", olderGeneration.Response.Headers.CacheControl.ToString());
 
         var stale = Reader(db, 1, "?model=span-s&v=old");
         Assert.IsType<PhysicalFileResult>(await stale.EnhancedPage(_chapterId, 1, "span-s", _store, _cache, default));
@@ -181,8 +185,8 @@ public sealed class EnhanceEndpointTests : IDisposable
         Assert.Equal("""[{"page":2,"state":"queued"}]""", posted.GetProperty("pages").GetRawText());
         Assert.Equal(3, _queue.Snapshot().Pending);
 
-        var opened = Json(await Reader(db, 1).Enhance(nextId, new EnhancePagesRequest("span-s", [1]), _store, _queue, _cache, default));
-        Assert.Equal("""[{"page":1,"state":"queued"}]""", opened.GetProperty("pages").GetRawText());
+        var opened = Json(await Reader(db, 1).Enhance(nextId, new EnhancePagesRequest("span-s", [0]), _store, _queue, _cache, default));
+        Assert.Equal("""[{"page":0,"state":"queued"}]""", opened.GetProperty("pages").GetRawText());
         Assert.Equal(2, _queue.Snapshot().Pending);
 
         using var upscaler = new OnnxPageUpscaler(_catalog, _store, _settings, NullLogger<OnnxPageUpscaler>.Instance);
@@ -191,7 +195,7 @@ public sealed class EnhanceEndpointTests : IDisposable
         Assert.True(await worker.RunOnceAsync(default));
         Assert.True(await worker.RunOnceAsync(default));
         Assert.Equal(
-            [(1, nextId, 1, "span-s", "working"), (1, nextId, 1, "span-s", "ready"), (1, nextId, 0, "span-s", "working"), (1, nextId, 0, "span-s", "ready")],
+            [(1, nextId, 0, "span-s", "working"), (1, nextId, 0, "span-s", "ready"), (1, nextId, 1, "span-s", "working"), (1, nextId, 1, "span-s", "ready")],
             _broadcaster.Sent);
     }
 
@@ -258,20 +262,47 @@ public sealed class EnhanceEndpointTests : IDisposable
         Assert.Equal(512, settings.GetProperty("cacheMb").GetInt32());
 
         var catalog = status.GetProperty("catalog").EnumerateArray().ToList();
-        Assert.Equal(["span-s", "realesrgan-av3"], catalog.Select(c => c.GetProperty("id").GetString()));
+        Assert.Equal(["maki-2x", "span-s", "realesrgan-av3"], catalog.Select(c => c.GetProperty("id").GetString()));
+        var span = catalog.Single(c => c.GetProperty("id").GetString() == "span-s");
         foreach (var name in (string[])["id", "bytes", "license", "author", "source", "status", "error"])
         {
-            Assert.True(catalog[0].TryGetProperty(name, out _), name);
+            Assert.True(span.TryGetProperty(name, out _), name);
         }
 
-        Assert.Equal("ready", catalog[0].GetProperty("status").GetString());
-        Assert.Equal("missing", catalog[1].GetProperty("status").GetString());
-        Assert.Equal(new FileInfo(UpscaleFixture.IdentityModelPath).Length, catalog[0].GetProperty("bytes").GetInt64());
+        Assert.Equal("ready", span.GetProperty("status").GetString());
+        Assert.Equal("missing", catalog.Single(c => c.GetProperty("id").GetString() == "realesrgan-av3").GetProperty("status").GetString());
+        Assert.Equal(new FileInfo(UpscaleFixture.IdentityModelPath).Length, span.GetProperty("bytes").GetInt64());
 
         Assert.Equal(10, status.GetProperty("cache").GetProperty("bytes").GetInt64());
         Assert.Equal(1, status.GetProperty("cache").GetProperty("files").GetInt32());
         Assert.Equal(0, status.GetProperty("queue").GetProperty("pending").GetInt32());
         Assert.Equal(0, status.GetProperty("queue").GetProperty("working").GetInt32());
+    }
+
+    [Fact]
+    public async Task A_bundled_model_is_flagged_and_refuses_deletion()
+    {
+        var bundle = Path.Combine(_configDir, "app", UpscaleModelStore.BundledFolder);
+        Directory.CreateDirectory(bundle);
+        File.Copy(UpscaleFixture.IdentityModelPath, Path.Combine(bundle, "maki-2x.onnx"));
+        var store = new UpscaleModelStore(new UpscaleTestKit.NoHttp(), _paths, _settings, _catalog,
+            NullLogger<UpscaleModelStore>.Instance, bundle);
+        var admin = new UpscalingController(_settings, _catalog, store,
+            new OnnxPageUpscaler(_catalog, store, _settings, NullLogger<OnnxPageUpscaler>.Instance), _cache, _queue, new TestLocalizer());
+        await _cache.WriteAsync(new UpscaleWorkKey(1, "1-1", 0, "maki-2x"), [1], "webp", default);
+
+        var catalog = Json(await admin.Status(default)).GetProperty("catalog").EnumerateArray().ToList();
+        var maki = catalog.Single(c => c.GetProperty("id").GetString() == "maki-2x");
+        Assert.True(maki.GetProperty("bundled").GetBoolean());
+        Assert.Equal("ready", maki.GetProperty("status").GetString());
+        Assert.False(catalog.Single(c => c.GetProperty("id").GetString() == "span-s").GetProperty("bundled").GetBoolean());
+
+        var result = await admin.Delete("maki-2x", default);
+
+        Assert.IsType<ConflictObjectResult>(result);
+        Assert.Equal("error.upscaling.modelBundled", Code(result));
+        Assert.True(store.IsReady(UpscaleModelId.Maki2x));
+        Assert.Equal(1, _cache.Stats().Files);
     }
 
     [Fact]
@@ -282,7 +313,7 @@ public sealed class EnhanceEndpointTests : IDisposable
         var status = Json(await Admin().Delete("span-s", default));
 
         Assert.False(File.Exists(_store.PathOf(UpscaleModelId.SpanS)));
-        Assert.Equal("missing", status.GetProperty("catalog")[0].GetProperty("status").GetString());
+        Assert.Equal("missing", status.GetProperty("catalog").EnumerateArray().Single(c => c.GetProperty("id").GetString() == "span-s").GetProperty("status").GetString());
         Assert.Equal(0, status.GetProperty("cache").GetProperty("files").GetInt32());
     }
 

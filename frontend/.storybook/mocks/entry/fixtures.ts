@@ -68,6 +68,8 @@ export function makeManifest(overrides: Partial<ReaderManifest> & Pick<ReaderMan
         { id: 'realesrgan-av3', ready: false },
       ],
     },
+    noteCount: 0,
+    notedPages: [],
     ...overrides,
   }
 }
@@ -92,6 +94,8 @@ export const chapters: Record<number, ReaderManifest> = {
     seriesChapterCount: 142,
     seriesReadCount: 131,
     seriesWantedCount: 150,
+    noteCount: 3,
+    notedPages: [1, 11],
   }),
   // The newest chapter on disk, with more wanted: the end screen has no next chapter to offer.
   1142: makeManifest({

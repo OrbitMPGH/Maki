@@ -6,7 +6,7 @@ import { SettingsNumberInput } from './SettingsNumberInput'
 const meta = {
   component: SettingsNumberInput,
   tags: ['ai-generated'],
-  args: { value: 5, onChange: fn(), label: 'Retry a failed download up to (attempts)', min: 1, max: 20, w: 280 },
+  args: { value: 5, onChange: fn(), label: 'Retry attempts for a failed download', min: 1, max: 20, w: 280 },
   render: function Render(args) {
     const [value, setValue] = useState(args.value)
     return (

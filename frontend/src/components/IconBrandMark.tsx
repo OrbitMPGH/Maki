@@ -12,8 +12,9 @@ const INK = '#1a1a1a'
  */
 export function IconBrandMark({ mood = 'awake', size = 30 }: { mood?: BrandMood; size?: number }) {
   const line = { fill: 'none', stroke: INK, strokeLinecap: 'round' } as const
+  // Cropped to the roll, so it fills the box it is given. Asleep keeps room for its z's.
   return (
-    <svg width={size} height={size} viewBox="0 0 96 96" fill="none" aria-hidden>
+    <svg width={size} height={size} viewBox={mood === 'asleep' ? '16 4 76 76' : '16 16 64 64'} fill="none" aria-hidden>
       <g stroke={INK} strokeWidth="3.5" strokeLinejoin="round">
         <rect x="22" y="20" width="52" height="56" rx="15" fill="#f4ecd8" />
         <path d="M22 35 a15 15 0 0 1 15 -15 h22 a15 15 0 0 1 15 15 v2 h-52 z" fill="#20301f" />

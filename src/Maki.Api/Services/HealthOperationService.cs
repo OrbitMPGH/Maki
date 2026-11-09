@@ -3,7 +3,10 @@ using System.Text.Json;
 using Maki.Api.Hubs;
 using Maki.Api.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Images;
+using Maki.Core.Paths;
 using Maki.Core.Reading;
+using Maki.Core.Io;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -42,9 +45,15 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
     /// otherwise be interrupted at. Always null outside tests.
     /// </summary>
     internal Action? TestHookAfterFileDeleted;
+
+    /// <summary>Test seam only: how two paths are told apart. <see cref="FileIdentity.Compare"/> outside tests.</summary>
+    internal Func<string, string, FileSameness> SameFile = FileIdentity.Compare;
     public static List<RepairCandidate> Candidates(HealthOperation op) => JsonSerializer.Deserialize<List<RepairCandidate>>(op.JournalJson, HealthScanService.Json) ?? [];
 
-    public async Task<(HealthFile File, RootFolder Root, List<Chapter> Chapters)> ValidateAsync(int id, string version, CancellationToken ct, int? operationId = null)
+    /// <param name="readBytes">False only where nothing acts on the bytes yet (a deletion preview):
+    /// the hash is a full read of the archive, and apply checks it again before anything happens.</param>
+    public async Task<(HealthFile File, RootFolder Root, List<Chapter> Chapters)> ValidateAsync(int id, string version, CancellationToken ct,
+        int? operationId = null, bool readBytes = true)
     {
         var file = await db.HealthFiles.FindAsync([id], ct) ?? throw new HealthRefusedException("error.health.fileGone");
         if (file.Removed || file.Version != version || file.Status == "pending") throw new HealthRefusedException("error.health.reviewStale");
@@ -54,13 +63,10 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         var info = new FileInfo(path);
         if ((info.Exists ? info.Length : -1) != file.Size || (info.Exists ? info.LastWriteTimeUtc : DateTime.MinValue) != file.ModifiedAt)
             throw new HealthRefusedException("error.health.fileChanged");
-        if (info.Exists)
-        {
-            await using var stream = File.OpenRead(path);
-            if (file.ContentHash == null || Convert.ToHexString(await SHA256.HashDataAsync(stream, ct)) != file.ContentHash)
-                throw new HealthRefusedException("error.health.fileContentChanged");
-        }
-        var chapterFiles = await db.ChapterFiles.Where(f => db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == root.Id) && f.RelativePath == file.RelativePath).Select(f => f.Id).ToListAsync(ct);
+        if (info.Exists && file.ContentHash == null) throw new HealthRefusedException("error.health.fileContentChanged");
+        if (info.Exists && readBytes && !await HashMatchesAsync(path, file.ContentHash!, ct))
+            throw new HealthRefusedException("error.health.fileContentChanged");
+        var chapterFiles = (await HealthInventory.RecordsAtAsync(db, root.Id, file.RelativePath, ct)).Select(f => f.Id).ToList();
         var chapters = await db.Chapters.Where(c => c.ChapterFileId != null && chapterFiles.Contains(c.ChapterFileId.Value)).ToListAsync(ct);
         if (await db.HealthOperations.AnyAsync(o => o.FileId == id && o.Id != operationId && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
             throw new HealthRefusedException("error.health.operationActive");
@@ -125,11 +131,168 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         await MutationGate.WaitAsync(ct);
         try
         {
-            await ValidateAsync(fileId, version, ct);
-            var op = new HealthOperation { Kind = "delete", Status = "review", FileId = fileId, Version = version, UserId = userId };
+            var (file, _, chapters) = await ValidateAsync(fileId, version, ct, readBytes: false);
+            var target = chapters.Count > 0 ? await HealthDuplicates.RelinkTargetAsync(db, file, ct, SameFile) : null;
+            var op = new HealthOperation { Kind = "delete", Status = "review", FileId = fileId, Version = version, UserId = userId, RelinkFileId = target?.Id };
             db.HealthOperations.Add(op);
             await db.SaveChangesAsync(ct);
             return op;
+        }
+        finally { MutationGate.Release(); }
+    }
+
+    /// <summary>
+    /// Preview and apply under one confirmation the caller already has. A refusal at apply fails the
+    /// operation instead of leaving it in review, where it would block every later request on the file.
+    /// </summary>
+    /// <param name="spare">The caller deletes a spare copy: refuse unless the file still backs nothing
+    /// and another copy of the same bytes is still on disk as a file of its own.</param>
+    public async Task<HealthOperation> DeleteNowAsync(int fileId, string version, int userId, CancellationToken ct, bool spare = false)
+    {
+        var op = await PreviewDeleteAsync(fileId, version, userId, ct);
+        try { await ApplyAsync(op.Id, version, true, false, ct, spare); }
+        catch (Exception ex) when (op.Status == "review" && ex is InvalidOperationException or IOException or UnauthorizedAccessException)
+        {
+            op.Status = "failed";
+            op.ErrorKey = ex is HealthRefusedException refused ? refused.Key : "health.operation.error.deleteFailed";
+            op.FinishedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync(CancellationToken.None);
+            throw;
+        }
+        return op;
+    }
+
+    /// <summary>
+    /// Points a missing file's record at the copy <see cref="HealthMovedFiles"/> found for it. Nothing
+    /// on disk changes: the record moves, so the chapters keep their file id, reads and quality.
+    /// </summary>
+    /// <param name="allowWeak">Accept a match on the name alone. Only a reviewer looking at the one
+    /// file sets it; a bulk relink never does.</param>
+    public async Task RelinkMovedAsync(int missingId, string missingVersion, int targetId, string targetVersion,
+        bool allowWeak, int userId, CancellationToken ct)
+    {
+        await MutationGate.WaitAsync(ct);
+        try
+        {
+            var missing = await db.HealthFiles.FindAsync([missingId], ct) ?? throw new HealthRefusedException("error.health.fileGone");
+            if (missing.Removed || missing.Version != missingVersion || missing.Size >= 0 || missing.ChapterFileId == null)
+                throw new HealthRefusedException("error.health.reviewStale");
+            var root = await db.RootFolders.FindAsync([missing.RootFolderId], ct) ?? throw new HealthRefusedException("error.health.rootGone");
+            if (!Directory.Exists(root.Path)) throw new HealthRefusedException("error.health.rootUnavailable");
+            if (File.Exists(HealthPaths.Resolve(root.Path, missing.RelativePath))) throw new HealthRefusedException("error.health.fileChanged");
+            var found = (await HealthMovedFiles.FindAsync(db, [missingId], ct)).GetValueOrDefault(missingId);
+            if (found == null || found.TargetId != targetId || found.TargetVersion != targetVersion)
+                throw new HealthRefusedException("error.health.movedTargetChanged");
+            if (!allowWeak && !HealthMovedFiles.Strong(found.Evidence)) throw new HealthRefusedException("error.health.relinkWeakMatch");
+            var target = await db.HealthFiles.FindAsync([targetId], ct) ?? throw new HealthRefusedException("error.health.movedTargetChanged");
+            var info = new FileInfo(HealthPaths.Resolve(root.Path, target.RelativePath));
+            if (!info.Exists || info.Length != target.Size || info.LastWriteTimeUtc != target.ModifiedAt)
+                throw new HealthRefusedException("error.health.movedTargetChanged");
+            var record = await db.ChapterFiles.FindAsync([missing.ChapterFileId], ct) ?? throw new HealthRefusedException("error.health.reviewStale");
+            if (await db.HealthOperations.AnyAsync(o => (o.FileId == missingId || o.FileId == targetId) && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
+                throw new HealthRefusedException("error.health.operationActive");
+            if (await db.DownloadQueue.AnyAsync(q => q.SeriesId == record.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Failed, ct))
+                throw new HealthRefusedException("error.health.downloadsActive");
+
+            using var seriesLock = await SeriesLocks.SeriesAsync(record.SeriesId, ct);
+            var oldPath = record.RelativePath;
+            // Other bytes under the same row: whatever was measured or converted was about the old file.
+            if (found.Evidence != HealthMovedFiles.Identical || record.Size != target.Size)
+            {
+                record.MeasuredAtUtc = null;
+                record.ResetConversion();
+            }
+            record.RelativePath = target.RelativePath;
+            record.Size = target.Size;
+            Invalidate(record.Id);
+            target.ChapterFileId = record.Id;
+            target.SeriesId = record.SeriesId;
+            target.Status = "pending";
+            missing.Removed = true;
+            foreach (var finding in await db.HealthFindings.Where(f => (f.FileId == missingId || (f.FileId == targetId && f.Kind == "unlinked")) && f.State != "resolved").ToListAsync(ct))
+                finding.State = "resolved";
+            db.HealthHistory.Add(new()
+            {
+                Kind = "relink", FileId = targetId, UserId = userId,
+                MessageKey = "health.history.relinkedMoved",
+                ParamsJson = JsonSerializer.Serialize(new { path = oldPath, target = target.RelativePath }),
+            });
+            db.HealthScans.Add(new() { FileIdsJson = JsonSerializer.Serialize(new[] { targetId }), Force = true });
+            await db.SaveChangesAsync(ct);
+            await FollowFolderAsync(record, oldPath, root, userId, ct);
+            HealthWorker.Wake();
+        }
+        finally { MutationGate.Release(); }
+    }
+
+    /// <summary>
+    /// Once the last record has left a series folder that no longer exists, the series moves with
+    /// it, so new downloads land beside the files instead of recreating the old folder.
+    /// </summary>
+    internal async Task FollowFolderAsync(ChapterFile moved, string oldPath, RootFolder root, int userId, CancellationToken ct)
+    {
+        var series = await db.Series.FindAsync([moved.SeriesId], ct);
+        var from = LibraryPaths.TopFolder(oldPath);
+        var to = LibraryPaths.TopFolder(moved.RelativePath);
+        if (series == null || from == null || to == null || string.Equals(from, to, StringComparison.Ordinal)) return;
+        // A rename that only changed case has to tell the two spellings apart.
+        var names = LibraryPaths.FolderComparer.Equals(from, to) ? StringComparer.Ordinal : LibraryPaths.FolderComparer;
+        var oldFolder = HealthPaths.Resolve(root.Path, from);
+        if (!names.Equals(series.FolderName, from)
+            || (Directory.Exists(oldFolder) && !LibraryPaths.IsSameDirectory(oldFolder, HealthPaths.Resolve(root.Path, to)))) return;
+        var others = await db.ChapterFiles.Where(f => f.SeriesId == series.Id && f.Id != moved.Id).Select(f => f.RelativePath).ToListAsync(ct);
+        if (others.Any(p => LibraryPaths.TopFolder(p) is { } top && names.Equals(top, from))) return;
+        using var folderNames = await SeriesLocks.FolderNamesAsync(ct);
+        var taken = await db.Series.Where(s => s.Id != series.Id && s.RootFolderId == root.Id).Select(s => s.FolderName).ToListAsync(ct);
+        if (taken.Any(n => LibraryPaths.FolderComparer.Equals(n, to))) return;
+        series.FolderName = to;
+        db.HealthHistory.Add(new()
+        {
+            Kind = "relink", UserId = userId,
+            MessageKey = "health.history.seriesFolderFollowed",
+            ParamsJson = JsonSerializer.Serialize(new { from, to }),
+        });
+        await db.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// Brings a record's size back in line with the file on disk, for a file changed outside Maki.
+    /// The same reset a rescan does when it sees new bytes under a known name; a rescan only
+    /// does it for names it has not seen.
+    /// </summary>
+    public async Task<int> RefreshRecordsAsync(IReadOnlyCollection<int> fileIds, int userId, CancellationToken ct)
+    {
+        await MutationGate.WaitAsync(ct);
+        try
+        {
+            var files = await db.HealthFiles.Where(f => fileIds.Contains(f.Id) && !f.Removed && f.ChapterFileId != null && f.Size >= 0).ToListAsync(ct);
+            var roots = await db.RootFolders.ToDictionaryAsync(r => r.Id, ct);
+            var updated = new List<int>();
+            foreach (var file in files)
+            {
+                if (!roots.TryGetValue(file.RootFolderId, out var root) || !Directory.Exists(root.Path)) continue;
+                var info = new FileInfo(HealthPaths.Resolve(root.Path, file.RelativePath));
+                var record = await db.ChapterFiles.FindAsync([file.ChapterFileId], ct);
+                if (!info.Exists || record == null || record.Size == info.Length) continue;
+                record.Size = info.Length;
+                record.MeasuredAtUtc = null;
+                record.ResetConversion();
+                Invalidate(record.Id);
+                updated.Add(file.Id);
+            }
+            if (updated.Count > 0)
+            {
+                db.HealthScans.Add(new() { FileIdsJson = JsonSerializer.Serialize(updated), Force = true });
+                db.HealthHistory.Add(new()
+                {
+                    Kind = "record", UserId = userId,
+                    MessageKey = "health.history.recordsRefreshed",
+                    ParamsJson = JsonSerializer.Serialize(new { count = updated.Count }),
+                });
+                await db.SaveChangesAsync(ct);
+                HealthWorker.Wake();
+            }
+            return updated.Count;
         }
         finally { MutationGate.Release(); }
     }
@@ -154,7 +317,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         return next;
     }
 
-    public async Task ApplyAsync(int operationId, string version, bool confirmed, bool resetPositions, CancellationToken ct)
+    public async Task ApplyAsync(int operationId, string version, bool confirmed, bool resetPositions, CancellationToken ct, bool spare = false)
     {
         if (!confirmed) throw new HealthRefusedException("error.health.confirmationRequired");
         await MutationGate.WaitAsync(ct);
@@ -165,6 +328,20 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             var (file, root, chapters) = await ValidateAsync(op.FileId, version, ct, op.Id);
             if (op.Kind == "delete")
             {
+                if (spare) await RequireSpareAsync(file, root, chapters, ct);
+                if (file.Size >= 0) await RefuseIfAnotherRecordReadsItAsync(file, root, ct);
+                if (op.RelinkFileId is { } relinkId)
+                {
+                    // The chapters were promised a home. If that copy changed or found another use
+                    // since the review, unlinking them instead is not what was confirmed.
+                    var target = await HealthDuplicates.RelinkTargetAsync(db, file, ct, SameFile);
+                    var targetPath = target == null ? null : HealthPaths.Resolve(root.Path, target.RelativePath);
+                    var targetInfo = targetPath == null ? null : new FileInfo(targetPath);
+                    if (target?.Id != relinkId || targetInfo is not { Exists: true } || targetInfo.Length != target.Size
+                        || targetInfo.LastWriteTimeUtc != target.ModifiedAt || SameFile(HealthPaths.Resolve(root.Path, file.RelativePath), targetPath!) != FileSameness.Different
+                        || !await HashMatchesAsync(targetPath!, file.ContentHash!, ct))
+                        throw new HealthRefusedException("error.health.relinkTargetChanged");
+                }
                 op.Status = "deleting";
                 await db.SaveChangesAsync(ct);
                 // An archive the inventory recorded as missing has nothing to delete, so the
@@ -250,13 +427,16 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                         if (reset)
                         {
                             db.ReaderBookmarks.RemoveRange(await db.ReaderBookmarks.IgnoreQueryFilters().Where(b => b.ChapterId == chapter.Id).ToListAsync(ct));
+                            // Unlike a bookmark, a note is still worth keeping when its page moved.
+                            foreach (var note in await db.ChapterNotes.IgnoreQueryFilters().Where(n => n.ChapterId == chapter.Id && n.PageIndex != null).ToListAsync(ct))
+                                note.PageIndex = null;
                             foreach (var progress in await db.ChapterProgress.IgnoreQueryFilters().Where(p => p.ChapterId == chapter.Id).ToListAsync(ct))
                             { progress.PageIndex = 0; progress.PageCount = candidate.Analysis.Pages.Count; }
                         }
                     }
                 }
                 // Include stale file rows even if no chapter still references them.
-                var oldFiles = await db.ChapterFiles.Where(f => f.RelativePath == file.RelativePath && db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == root.Id)).ToListAsync(ct);
+                var oldFiles = await HealthInventory.RecordsAtAsync(db, root.Id, file.RelativePath, ct);
                 // Same pages in the same places: a copy of the old archive on a KOReader device still reads true.
                 if (op.Kind == "repair" && !reset && chapters.Single().ChapterFileId is { } replacementId)
                     await KoreaderDocumentIndexer.MoveAsync(db, oldFiles.Select(f => f.Id).ToList(), replacementId, ct);
@@ -381,9 +561,33 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
     private async Task CompleteDeletionAsync(HealthOperation op, HealthFile file, RootFolder root, CancellationToken ct)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(ct);
-        var oldFiles = await db.ChapterFiles.Where(f => f.RelativePath == file.RelativePath && db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == root.Id)).ToListAsync(ct);
+        var oldFiles = await HealthInventory.RecordsAtAsync(db, root.Id, file.RelativePath, ct);
         var ids = oldFiles.Select(f => f.Id).ToArray();
-        foreach (var chapter in await db.Chapters.Where(c => c.ChapterFileId != null && ids.Contains(c.ChapterFileId.Value)).ToListAsync(ct)) chapter.ChapterFileId = null;
+        var chapters = await db.Chapters.Where(c => c.ChapterFileId != null && ids.Contains(c.ChapterFileId.Value)).ToListAsync(ct);
+        // Recovery after a crash lands here too, by which time the copy may have gone as well.
+        var target = op.RelinkFileId is { } relinkId ? await db.HealthFiles.FindAsync([relinkId], ct) : null;
+        if (target != null && (target.Removed || !File.Exists(HealthPaths.Resolve(root.Path, target.RelativePath)))) target = null;
+        if (target != null && chapters.Count > 0)
+        {
+            // The row moves rather than being rebuilt, so the chapters keep their file id and with it
+            // everything keyed on it: quality, conversion state, KOReader documents.
+            var kept = oldFiles.First(f => chapters.Any(c => c.ChapterFileId == f.Id));
+            kept.RelativePath = target.RelativePath;
+            // Whether a file is hardlinked belongs to the path, so conversion has to look again.
+            if (kept.CheckedWith == PlanAction.HardSkipName) { kept.CheckedWith = null; kept.ConversionCheckedAtUtc = null; }
+            foreach (var chapter in chapters) chapter.ChapterFileId = kept.Id;
+            target.ChapterFileId = kept.Id;
+            target.SeriesId = kept.SeriesId;
+            foreach (var finding in await db.HealthFindings.Where(f => f.FileId == target.Id && f.Kind == "unlinked" && f.State != "resolved").ToListAsync(ct))
+                finding.State = "resolved";
+            oldFiles.Remove(kept);
+            Invalidate(kept.Id);
+        }
+        else
+        {
+            target = null;
+            foreach (var chapter in chapters) chapter.ChapterFileId = null;
+        }
         db.ChapterFiles.RemoveRange(oldFiles);
         foreach (var old in oldFiles) Invalidate(old.Id);
         file.Removed = true;
@@ -392,11 +596,175 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         db.HealthHistory.Add(new()
         {
             Kind = "delete", FileId = file.Id, UserId = op.UserId,
-            MessageKey = file.Size < 0 ? "health.history.deletedMissing" : "health.history.deletedFile",
-            ParamsJson = JsonSerializer.Serialize(new { path = file.RelativePath }),
+            MessageKey = target != null ? "health.history.deletedRelinked" : file.Size < 0 ? "health.history.deletedMissing" : "health.history.deletedFile",
+            ParamsJson = target != null
+                ? JsonSerializer.Serialize(new { path = file.RelativePath, target = target.RelativePath })
+                : JsonSerializer.Serialize(new { path = file.RelativePath }),
         });
         await db.SaveChangesAsync(ct);
+        if (file.ContentHash != null) await HealthDuplicates.ResolveLonelyAsync(db, [file.ContentHash], ct);
         await transaction.CommitAsync(ct);
+    }
+
+    /// <summary>
+    /// A spare is only spare while nothing reads from it and another copy of its bytes is still on
+    /// disk. Checked at apply because the review can be stale: a relink can give the spare chapters,
+    /// and the copy it was spare to can have been deleted since. A copy counts only when the
+    /// filesystem proves it is another file: two roots can name one share, and a case-insensitive
+    /// mount opens two spellings as one file.
+    /// </summary>
+    private async Task RequireSpareAsync(HealthFile file, RootFolder root, List<Chapter> chapters, CancellationToken ct)
+    {
+        if (chapters.Count > 0 || file.ChapterFileId != null) throw new HealthRefusedException("error.health.spareInUse");
+        if (file.Size < 0 || file.ContentHash == null) throw new HealthRefusedException("error.health.spareLastCopy");
+        var path = HealthPaths.Resolve(root.Path, file.RelativePath);
+        var copies = await db.HealthFiles.AsNoTracking()
+            .Where(f => f.Id != file.Id && !f.Removed && f.Size >= 0 && f.ContentHash == file.ContentHash)
+            .OrderByDescending(f => f.ChapterFileId != null).ThenBy(f => f.Id)
+            .ToListAsync(ct);
+        var undistinguished = false;
+        foreach (var copy in copies)
+        {
+            var copyRoot = copy.RootFolderId == root.Id ? root : await db.RootFolders.FindAsync([copy.RootFolderId], ct);
+            if (copyRoot == null || !Directory.Exists(copyRoot.Path) || LibraryPaths.ResolveNoLinks(copyRoot.Path, copy.RelativePath) is not { } copyPath) continue;
+            var info = new FileInfo(copyPath);
+            if (!info.Exists || info.Length != copy.Size || info.LastWriteTimeUtc != copy.ModifiedAt) continue;
+            if (!Distinct(root, file.RelativePath, path, copyRoot, copy.RelativePath, copyPath))
+            {
+                undistinguished = true;
+                continue;
+            }
+            if (await HashMatchesAsync(copyPath, file.ContentHash, ct)) return;
+        }
+        throw new HealthRefusedException(undistinguished ? "error.health.spareNotDistinct" : "error.health.spareLastCopy");
+    }
+
+    /// <summary>
+    /// Whether the file at <paramref name="path"/> and a copy elsewhere are provably two files: the
+    /// filesystem says so, and a copy in another root is not on the same storage either.
+    /// </summary>
+    private bool Distinct(RootFolder root, string relative, string path, RootFolder otherRoot, string otherRelative, string otherPath) =>
+        SameFile(path, otherPath) == FileSameness.Different
+        && (otherRoot.Id == root.Id || !SharesStorage(root, relative, otherRoot, otherRelative));
+
+    /// <summary>Verdicts of <see cref="Probe"/> for this service's scope: one request, so one bulk operation.</summary>
+    private readonly Dictionary<(int, int, string), bool> sharedStorage = [];
+
+    /// <summary>
+    /// Whether two root folders may be one storage under two names. Two CIFS mounts of one share
+    /// report different devices, so file identity calls every file in one a separate copy of its
+    /// twin in the other. A probe written in one root that shows up in the other settles it. When
+    /// one copy's path ends with the other's, the leftover folders say where one root would sit
+    /// inside the other (a mount of a subfolder of the share), and that spot is probed too. Probes
+    /// are only ever written in a root's own <c>.maki/tmp</c>, and one that cannot be written or
+    /// looked for counts as shared.
+    /// </summary>
+    private bool SharesStorage(RootFolder root, string relative, RootFolder other, string otherRelative)
+    {
+        if (Probe(root, other, "")) return true;
+        var mine = LibraryPaths.ComparisonKey(relative).Split('/');
+        var theirs = LibraryPaths.ComparisonKey(otherRelative).Split('/');
+        if (Prefix(theirs, mine) is { } rootInOther && Probe(root, other, rootInOther)) return true;
+        return Prefix(mine, theirs) is { } otherInRoot && Probe(other, root, otherInRoot);
+    }
+
+    /// <summary>The leading folders of <paramref name="longer"/> when the rest of it is <paramref name="shorter"/>, ignoring case.</summary>
+    private static string? Prefix(string[] longer, string[] shorter) =>
+        longer.Length > shorter.Length && longer.TakeLast(shorter.Length).SequenceEqual(shorter, StringComparer.OrdinalIgnoreCase)
+            ? string.Join('/', longer.Take(longer.Length - shorter.Length))
+            : null;
+
+    /// <summary>
+    /// Writes a probe in <paramref name="writeIn"/>'s <c>.maki/tmp</c> and looks for it in
+    /// <paramref name="lookIn"/> at <paramref name="folder"/><c>/.maki/tmp</c>, by listing the folder:
+    /// a CIFS client can answer a single lookup from its cache. Folders it created are removed again.
+    /// </summary>
+    private bool Probe(RootFolder writeIn, RootFolder lookIn, string folder)
+    {
+        var key = (writeIn.Id, lookIn.Id, folder.ToUpperInvariant());
+        if (sharedStorage.TryGetValue(key, out var known)) return known;
+        var name = $"probe-{Guid.NewGuid():N}.tmp";
+        string? probe = null;
+        var created = new List<string>();
+        var shared = true;
+        try
+        {
+            probe = HealthPaths.Resolve(writeIn.Path, $".maki/tmp/{name}");
+            var seenIn = Path.GetDirectoryName(HealthPaths.Resolve(lookIn.Path, folder.Length == 0 ? $".maki/tmp/{name}" : $"{folder}/.maki/tmp/{name}"))!;
+            var tmp = Path.GetDirectoryName(probe)!;
+            var maki = Path.GetDirectoryName(tmp)!;
+            if (!Directory.Exists(maki)) created.Add(maki);
+            if (!Directory.Exists(tmp)) created.Insert(0, tmp);
+            Directory.CreateDirectory(tmp);
+            File.WriteAllBytes(probe, []);
+            try { shared = Directory.EnumerateFiles(seenIn).Any(f => string.Equals(Path.GetFileName(f), name, StringComparison.OrdinalIgnoreCase)); }
+            catch (DirectoryNotFoundException) { shared = false; }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException) { }
+        finally
+        {
+            try
+            {
+                if (probe != null) File.Delete(probe);
+                foreach (var made in created)
+                    if (Directory.Exists(made) && !Directory.EnumerateFileSystemEntries(made).Any()) Directory.Delete(made);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        }
+        return sharedStorage[key] = shared;
+    }
+
+    /// <summary>
+    /// Refuses to delete a file that a record anywhere may read under another name: another
+    /// spelling on a case-insensitive mount, another root naming the same share, or a root mounted
+    /// as a folder of another. Such a twin has the same bytes by definition, so the linked copies of
+    /// the file's hash are the whole list; each must provably be another file. A file with no hash
+    /// yet falls back to the records of its own root with the same file name.
+    /// </summary>
+    private async Task RefuseIfAnotherRecordReadsItAsync(HealthFile file, RootFolder root, CancellationToken ct)
+    {
+        var path = HealthPaths.Resolve(root.Path, file.RelativePath);
+        var own = (await HealthInventory.RecordsAtAsync(db, root.Id, file.RelativePath, ct)).Select(f => f.Id).ToHashSet();
+        if (file.ContentHash == null)
+        {
+            foreach (var record in await HealthInventory.RecordsNamedAsync(db, root.Id, Path.GetFileName(LibraryPaths.ComparisonKey(file.RelativePath)), ct))
+            {
+                if (own.Contains(record.Id) || LibraryPaths.Resolve(root.Path, record.RelativePath) is not { } other || !File.Exists(other)) continue;
+                if (SameFile(path, other) != FileSameness.Different) throw new HealthRefusedException("error.health.fileBacksChapters");
+            }
+            return;
+        }
+
+        // Twins by the current hash, by a hash an earlier version had (a scan of an empty mount point
+        // records the file missing and can drop its hash), and, for rows never verified, by name and size.
+        var hash = file.ContentHash;
+        var name = Path.GetFileName(LibraryPaths.ComparisonKey(file.RelativePath));
+        var twins = (await db.HealthFiles.AsNoTracking()
+                .Where(f => f.Id != file.Id && !f.Removed && f.ChapterFileId != null
+                    && (f.ContentHash == hash
+                        || db.HealthFileVersions.Any(v => v.FileId == f.Id && v.ContentHash == hash)
+                        || (f.ContentHash == null && f.Size == file.Size)))
+                .Select(f => new { f.RootFolderId, f.RelativePath, f.Size, f.ContentHash, ChapterFileId = f.ChapterFileId!.Value })
+                .ToListAsync(ct))
+            .Where(t => t.ContentHash != null || t.Size != file.Size
+                || string.Equals(Path.GetFileName(LibraryPaths.ComparisonKey(t.RelativePath)), name, StringComparison.OrdinalIgnoreCase))
+            .Where(t => !own.Contains(t.ChapterFileId));
+        foreach (var twin in twins)
+        {
+            var twinRoot = twin.RootFolderId == root.Id ? root : await db.RootFolders.FindAsync([twin.RootFolderId], ct);
+            if (twinRoot == null) continue;
+            // A root that cannot be looked at may be this one under another name, and a twin that reads
+            // as missing may be this file behind a mount that was not there when it was looked for.
+            if (twin.Size < 0 || !Directory.Exists(twinRoot.Path) || LibraryPaths.Resolve(twinRoot.Path, twin.RelativePath) is not { } other
+                || !File.Exists(other) || !Distinct(root, file.RelativePath, path, twinRoot, twin.RelativePath, other))
+                throw new HealthRefusedException("error.health.fileBacksChapters");
+        }
+    }
+
+    private static async Task<bool> HashMatchesAsync(string path, string hash, CancellationToken ct)
+    {
+        await using var stream = File.OpenRead(path);
+        return Convert.ToHexString(await SHA256.HashDataAsync(stream, ct)) == hash;
     }
 
     private void Invalidate(int id)

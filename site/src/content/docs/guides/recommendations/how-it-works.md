@@ -27,7 +27,10 @@ and open any rail fullscreen with **Show more**. See
 
 - **Genre and catalogue rails** browse the MangaBaka catalogue.
 - **Readers like you** looks at what people with similar reading go on to read.
-- **Your taste** shows your reading behaviour, grouped interests and how your taste has moved.
+
+The other tabs are **Recommended**, **Your taste** and **Shortlist**. **Your taste** shows your
+reading behaviour, grouped interests, the tags steering your picks and how your taste has moved.
+**Shortlist** holds titles you saved for later. See [Discover](/Maki/features/discover/).
 
 Detail cards show categorized tags, alternate titles, creators, per-source ratings and MyAnimeList
 reviews. The Discover page itself is described in [Discover](/Maki/features/discover/).

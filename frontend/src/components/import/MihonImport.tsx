@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Alert, Button, FileInput, Group, Progress, Stack, Text } from '@mantine/core'
-import { IconFileZip } from '@tabler/icons-react'
+import { IconFileZip } from '../../lib/icons'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { ApiError } from '../../api/client'

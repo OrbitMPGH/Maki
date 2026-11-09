@@ -14,6 +14,7 @@ const meta = {
     rtl: true,
     onNext: fn(),
     onStay: fn(),
+    onOpenNotes: fn(),
   },
   decorators: [
     (Story) => (
@@ -132,4 +133,21 @@ export const NoCover: Story = {
 export const Mobile: Story = {
   parameters: { viewport: { defaultViewport: 'mobile1' } },
   globals: { viewport: { value: 'mobile1', isRotated: false } },
+}
+
+export const SharedNotesOnTheChapter: Story = {
+  play: async ({ args, canvas, userEvent }) => {
+    await expect(await canvas.findByText(/The last line reads differently/)).toBeVisible()
+    await expect(await canvas.findByText(/Best fight so far/)).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'See all 2 notes' }))
+    await waitFor(() => expect(args.onOpenNotes).toHaveBeenCalledOnce())
+  },
+}
+
+export const NoNotesInvitesTheFirst: Story = {
+  args: { manifest: chapters[1142] },
+  play: async ({ args, canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Add a note' }))
+    await waitFor(() => expect(args.onOpenNotes).toHaveBeenCalledOnce())
+  },
 }

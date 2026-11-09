@@ -66,30 +66,30 @@ var problems = new List<string>();
 
 if (vectorRows < minRows)
 {
-    problems.Add($"only {vectorRows} vectors (expected at least {minRows}) — is the indexing pass still running?");
+    problems.Add($"only {vectorRows} vectors (expected at least {minRows}); is the indexing pass still running?");
 }
 
 // Mixed widths mean a model change is mid-migration: half the rows are from the previous model
 // and would be discarded by every client that installed this.
 if (minVec != maxVec)
 {
-    problems.Add($"mixed vector widths ({minVec} and {maxVec} bytes) — the re-embed after a model change hasn't finished");
+    problems.Add($"mixed vector widths ({minVec} and {maxVec} bytes); the re-embed after a model change hasn't finished");
 }
 else if (maxVec != expectedVecBytes)
 {
-    problems.Add($"vectors are {maxVec} bytes, expected {expectedVecBytes} ({expectedDims} dims) — the DB and the source tree disagree about the model");
+    problems.Add($"vectors are {maxVec} bytes, expected {expectedVecBytes} ({expectedDims} dims); the DB and the source tree disagree about the model");
 }
 
 // The vocabulary is written at the end of a pass; empty means the pass never completed, and the
 // tag channel would be dead for everyone who installed it.
 if (vocabRows == 0)
 {
-    problems.Add("tag_vocab is empty — the indexing pass hasn't finished");
+    problems.Add("tag_vocab is empty; the indexing pass hasn't finished");
 }
 
 if (tagRows == 0)
 {
-    problems.Add("series_tags is empty — the indexing pass hasn't finished");
+    problems.Add("series_tags is empty; the indexing pass hasn't finished");
 }
 
 if (problems.Count > 0)
@@ -103,16 +103,32 @@ if (problems.Count > 0)
     return 1;
 }
 
+Directory.CreateDirectory(outDir);
+
+// The build refreshes its database in place, so after a model change shrinks every row the old
+// pages stay allocated with the stale bytes still in them (157 MB on disk for 57 MB of rows when
+// 768 dims went to 256). Compressing the raw file would ship that garbage, so pack a compacted
+// copy instead.
+var packedDb = Path.Combine(outDir, "embeddings-compacted.db");
+File.Delete(packedDb);
+using (var vacuum = conn.CreateCommand())
+{
+    vacuum.CommandText = "VACUUM INTO $path";
+    vacuum.CommandTimeout = 1800;
+    vacuum.Parameters.AddWithValue("$path", packedDb);
+    vacuum.ExecuteNonQuery();
+}
+
 conn.Close();
 SqliteConnection.ClearAllPools();
 
-Directory.CreateDirectory(outDir);
 var stamp = DateTime.UtcNow.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
 var archiveName = $"embeddings-{expectedDims}d-{stamp}.db.zst";
 var archivePath = Path.Combine(outDir, archiveName);
 
-Console.WriteLine($"compressing {new FileInfo(dbPath).Length / 1_000_000.0:F0} MB → {archiveName} …");
-using (var source = File.OpenRead(dbPath))
+Console.WriteLine($"compacted {new FileInfo(dbPath).Length / 1_000_000.0:F0} MB -> {new FileInfo(packedDb).Length / 1_000_000.0:F0} MB");
+Console.WriteLine($"compressing -> {archiveName}...");
+using (var source = File.OpenRead(packedDb))
 using (var destination = File.Create(archivePath))
 using (var compressor = new CompressionStream(destination, level: 10))
 {
@@ -135,10 +151,11 @@ var manifest = new JsonObject
     ["generatedAt"] = DateTime.UtcNow.ToString("O", CultureInfo.InvariantCulture),
     ["fileName"] = archiveName,
     ["sizeBytes"] = new FileInfo(archivePath).Length,
-    ["uncompressedBytes"] = new FileInfo(dbPath).Length,
+    ["uncompressedBytes"] = new FileInfo(packedDb).Length,
     ["sha256"] = Sha256(archivePath),
-    ["uncompressedSha256"] = Sha256(dbPath),
+    ["uncompressedSha256"] = Sha256(packedDb),
 };
+File.Delete(packedDb);
 
 var manifestPath = Path.Combine(outDir, "manifest.json");
 File.WriteAllText(manifestPath, manifest.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));

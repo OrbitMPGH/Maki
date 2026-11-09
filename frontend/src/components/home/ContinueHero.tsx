@@ -1,7 +1,7 @@
 import { memo, type CSSProperties, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Skeleton } from '@mantine/core'
-import { IconPlayerPlay, IconPlayerTrackNext } from '@tabler/icons-react'
+import { IconBook, IconPlayerTrackNext } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { HomeReadingItem } from '../../api/hooks'
@@ -13,6 +13,7 @@ import { relativeTime } from '../ui/time'
 import { NextUpList } from './NextUpList'
 import { ReadingCardMenu } from './ReadingCardMenu'
 import { ReadingRail } from './ReadingRail'
+import { serverChapterLabel } from '../../format'
 
 /** Where the rest of the section goes: a tray of posters under the hero, or a list in a card beside it. */
 export type HeroQueue = 'tray' | 'beside'
@@ -29,7 +30,8 @@ function accentStyle(item: HomeReadingItem): CSSProperties | undefined {
   return item.coverAccent ? ({ '--series-accent': item.coverAccent } as CSSProperties) : undefined
 }
 
-export function ContinueHero({
+// Memoized: Home re-renders on every library refresh, and the hero's props rarely change with it.
+export const ContinueHero = memo(function ContinueHero({
   items,
   glance,
   queue = 'tray',
@@ -72,7 +74,7 @@ export function ContinueHero({
       {glance && <div className="continue-glance-below">{glance}</div>}
     </div>
   )
-}
+})
 
 /**
  * Continue reading's shape while it loads, built from the same classes so the page holds still
@@ -110,9 +112,11 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
   const resumePct = hasProgress ? Math.min(100, (item.page / item.pageCount) * 100) : 0
   // page 0 means the chapter was never opened, so "Resume" would be a lie.
   const started = item.page > 0
-  const lastRead = relativeTime(item.lastReadAt)
-  const { seriesTitle, chapterLabel, unreadChapters, pageCount } = item
+  const lastRead = relativeTime(item.lastReadAt, 'narrow')
+  const { seriesTitle, unreadChapters, pageCount } = item
+  const chapterLabel = serverChapterLabel(item.chapterLabel)
   const pageNumber = item.page + 1
+  const unreadLabel = plural(unreadChapters, { one: '# unread', other: '# unread' })
 
   return (
     <div className={item.coverAccent ? 'continue-hero has-accent' : 'continue-hero'} style={accentStyle(item)}>
@@ -151,7 +155,7 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
             </div>
           )}
 
-          <div className="continue-hero-chapter tnum">
+          <div className="continue-hero-chapter">
             <span>{chapterLabel}</span>
             {hasProgress && (
               <span className="continue-hero-pages">
@@ -160,6 +164,8 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
                 </Trans>
               </span>
             )}
+            {/* The phone's place for the count; the block under the bar is hidden there. */}
+            {unreadChapters > 0 && <span className="continue-hero-chapter-unread">{unreadLabel}</span>}
           </div>
 
           {hasProgress && (
@@ -176,13 +182,11 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
           )}
 
           {unreadChapters > 0 && (
-            <span className="continue-hero-unread tnum">
-              {plural(unreadChapters, { one: '# unread', other: '# unread' })}
-            </span>
+            <span className="continue-hero-unread">{unreadLabel}</span>
           )}
 
           <div className="continue-hero-actions">
-            <Button component={Link} to={`/read/${item.chapterId}`} leftSection={<IconPlayerPlay size={16} />}>
+            <Button component={Link} to={`/read/${item.chapterId}`} leftSection={<IconBook size={16} />}>
               {started ? <Trans>Resume</Trans> : <Trans>Start chapter</Trans>}
             </Button>
             <Button component={Link} to={`/series/${item.seriesId}`} variant="default">

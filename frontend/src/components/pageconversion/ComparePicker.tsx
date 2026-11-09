@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
+import { fuzzyFilter, titleIndex } from '../../lib/fuzzySearch'
 import { Alert, Button, Group, Loader, Modal, NumberInput, Stack, Text, TextInput } from '@mantine/core'
-import { IconArrowLeft, IconSearch } from '@tabler/icons-react'
+import { IconArrowLeft, IconSearch } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useChapters, useSeries } from '../../api/hooks'
 import type { SeriesDto } from '../../api/types'
@@ -60,16 +61,11 @@ function SeriesStage({ onPick }: { onPick: (series: SeriesDto) => void }) {
   const { data: all, isLoading } = useSeries()
   const [query, setQuery] = useState('')
 
+  const titlesOf = useMemo(() => titleIndex(all ?? [], (s) => [s.displayTitle, s.title]), [all])
   const rows = useMemo(() => {
-    const needle = query.trim().toLocaleLowerCase()
-    const matches = (all ?? []).filter(
-      (s) =>
-        needle === '' ||
-        s.displayTitle.toLocaleLowerCase().includes(needle) ||
-        s.title.toLocaleLowerCase().includes(needle),
-    )
-    return matches.sort((a, b) => a.sortTitle.localeCompare(b.sortTitle))
-  }, [all, query])
+    const sorted = [...(all ?? [])].sort((a, b) => a.sortTitle.localeCompare(b.sortTitle))
+    return fuzzyFilter(sorted, query, titlesOf)
+  }, [all, query, titlesOf])
 
   return (
     <Stack gap="sm">
@@ -135,7 +131,7 @@ function ChapterStage({
   return (
     <Stack gap="sm">
       <Group gap="xs" wrap="nowrap">
-        <Button variant="subtle" color="gray" size="xs" leftSection={<IconArrowLeft size={14} />} onClick={onBack}>
+        <Button variant="subtle" color="gray" size="xs" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>
           <Trans>Back</Trans>
         </Button>
         <Text fw={600} truncate="end">
@@ -200,7 +196,7 @@ function PageStage({
   return (
     <Stack gap="sm">
       <Group gap="xs" wrap="nowrap">
-        <Button variant="subtle" color="gray" size="xs" leftSection={<IconArrowLeft size={14} />} onClick={onBack}>
+        <Button variant="subtle" color="gray" size="xs" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>
           <Trans>Back</Trans>
         </Button>
         <Text fw={600} truncate="end">
@@ -209,7 +205,7 @@ function PageStage({
       </Group>
       {isLoading && <Loader size="sm" />}
       {isError && (
-        <Alert color="red" variant="light">
+        <Alert color="var(--danger)" variant="light">
           <Trans>Maki can only preview pages from CBZ and ZIP files, and could not open this one.</Trans>
         </Alert>
       )}

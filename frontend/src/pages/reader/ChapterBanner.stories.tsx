@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor } from 'storybook/test'
+import { cover } from '../../../.storybook/mocks/api'
 import ChapterBanner from './ChapterBanner'
 
 const meta = {
@@ -10,6 +11,7 @@ const meta = {
     seriesTitle: 'Lanterns Over Kasumi',
     label: 'Chapter 133',
     pageCount: 18,
+    coverUrl: cover(3040),
   },
   decorators: [
     (Story) => (
@@ -43,5 +45,13 @@ export const LongTitles: Story = {
     seriesTitle: 'Grave Robber of the Seventh Hall: The Complete Expedition Record',
     label: 'Chapter 22: What the lanterns remember when nobody is left to carry them',
     pageCount: 42,
+  },
+}
+
+export const NoCover: Story = {
+  args: { coverUrl: null },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(await canvas.findByText('Chapter 133')).toBeInTheDocument()
+    await expect(canvasElement.querySelector('img')).toBeNull()
   },
 }

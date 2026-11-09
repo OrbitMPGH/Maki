@@ -161,7 +161,7 @@ public class TrackerListTests
     {
         const string page = """
             {"data":{"Page":{"pageInfo":{"hasNextPage":false},"mediaList":[
-              {"score":9,"status":"COMPLETED","progress":25,
+              {"score":9,"status":"COMPLETED","progress":25,"updatedAt":1762128000,
                "media":{"id":16498,"idMal":16498,"title":{"romaji":"Shingeki no Kyojin","english":"Attack on Titan"},
                         "format":"TV","episodes":25,
                         "startDate":{"year":2013,"month":4,"day":7},"endDate":{"year":2013,"month":9,"day":29},
@@ -183,11 +183,13 @@ public class TrackerListTests
         Assert.Equal(("TV", 25, 25), (aot.Format, aot.Episodes, aot.Progress));
         Assert.Equal(new DateOnly(2013, 4, 7), aot.StartDate);
         Assert.Equal(new DateOnly(2013, 9, 29), aot.EndDate);
+        Assert.Equal(new DateTime(2025, 11, 3, 0, 0, 0, DateTimeKind.Utc), aot.ListUpdatedAtUtc);
         var airing = list[1];
         Assert.Equal(("ONA", (int?)null, 3), (airing.Format, airing.Episodes, airing.Progress));
         Assert.Null(airing.StartDate);
         Assert.Null(airing.EndDate);
         Assert.Null(airing.Score);
+        Assert.Null(airing.ListUpdatedAtUtc);
     }
 
     // ---- MyAnimeList ----
@@ -242,7 +244,8 @@ public class TrackerListTests
             {"data":[
               {"node":{"id":16498,"title":"Shingeki no Kyojin","media_type":"tv","num_episodes":25,
                        "start_date":"2013-04-07","end_date":"2013-09-29"},
-               "list_status":{"status":"completed","score":9,"num_episodes_watched":25}},
+               "list_status":{"status":"completed","score":9,"num_episodes_watched":25,
+                              "updated_at":"2025-11-03T09:30:00+01:00"}},
               {"node":{"id":2,"title":"Film","media_type":"movie","num_episodes":1,"start_date":"2015-08"},
                "list_status":{"status":"watching","score":0,"num_episodes_watched":0}},
               {"node":{"id":3,"title":"Mystery","media_type":"unknown","num_episodes":0,"start_date":"2027"},
@@ -259,6 +262,7 @@ public class TrackerListTests
         Assert.Equal(("TV", 25, 25, 9), (aot.Format, aot.Episodes, aot.Progress, aot.Score));
         Assert.Equal(new DateOnly(2013, 4, 7), aot.StartDate);
         Assert.Equal(new DateOnly(2013, 9, 29), aot.EndDate);
+        Assert.Equal(new DateTime(2025, 11, 3, 8, 30, 0, DateTimeKind.Utc), aot.ListUpdatedAtUtc);
         var film = list[1];
         Assert.Equal(("MOVIE", 1, 0), (film.Format, film.Episodes, film.Progress));
         Assert.Null(film.StartDate);

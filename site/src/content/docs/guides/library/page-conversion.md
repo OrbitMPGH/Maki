@@ -5,8 +5,10 @@ description: Store chapter pages as WebP or AVIF to save space, which readers ca
 
 Page conversion shrinks chapter files by re-encoding their pages as WebP or AVIF. It is off by
 default. Turn it on under **Settings, Library, Page conversion**, then pick a format and a quality.
-Maki converts new downloads as it places them, and a pausable pass works through files already on
-disk.
+New downloads, upgrades and torrent imports go through a background queue after they land, so
+downloads finish without waiting on the encoder. A file waits in the queue while someone is reading
+it, and the Page conversion card shows how many are queued. A pausable pass works through files
+already on disk.
 
 ## Which readers open which format
 
@@ -51,8 +53,8 @@ can match on **Kind of release**, **Source**, **Page format**, **Series type**, 
 **Bits per pixel** or **File size**. Its action is **Convert at** one of the stops, or **Skip**. A
 file no rule matches is converted at the stop set under **Everything else**.
 
-An admin can also set one series' pages from its actions menu, under **Page conversion**: **Follow
-the rules**, **Never**, or a stop. A series set to **Never** or to a fixed stop ignores the rules.
+An admin can also set one series' pages from its actions menu, under **Files → Page conversion**:
+**Follow the rules**, **Never**, or a stop. A series set to **Never** or to a fixed stop ignores the rules.
 Files already converted stay as they are.
 
 ## What gets converted
@@ -84,7 +86,7 @@ Each original goes to `.maki-trash/<SeriesId>/conv-*` and stays for the trash re
 ## Undo a conversion
 
 Once a series has converted files with originals in the trash, an admin can open
-**Undo conversion...** from its actions menu. The dialog says how many files still have their
+**Files → Undo conversion...** from its actions menu. The dialog says how many files still have their
 original and which settings they were converted with. Then choose one of two options:
 
 - **Restore the originals** puts the original pages back.

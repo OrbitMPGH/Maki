@@ -18,6 +18,11 @@
     </EmbeddedResource>
   </ItemGroup>
 
+  <!-- Maki 2x ships with the app; UpscaleModelStore reads it from here and never downloads it. -->
+  <ItemGroup>
+    <None Update="UpscaleModels\maki-2x.onnx" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\Maki.Core\Maki.Core.csproj" />
     <ProjectReference Include="..\Maki.Data\Maki.Data.csproj" />

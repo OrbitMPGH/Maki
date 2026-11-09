@@ -42,6 +42,7 @@ public class UpdateCheckService(
     ILogger<UpdateCheckService> logger)
 {
     public const string HttpClientName = "github-releases";
+    public const string ReleasePageClientName = "github-release-page";
     private const string Repo = "OrbitMPGH/Maki";
 
     public static readonly bool IsDocker = HostRuntime.Kind == HostRuntimeKind.Docker;
@@ -52,8 +53,11 @@ public class UpdateCheckService(
     /// <summary>Cached result of the last check — instant, no network call.</summary>
     public UpdateStatus GetStatus() => _lastStatus;
 
-    /// <summary>Checks GitHub for a newer release; notifies (once per version) if one is found.</summary>
-    public async Task<UpdateStatus> CheckAsync(CancellationToken ct = default)
+    /// <summary>
+    /// Checks GitHub for a newer release; notifies (once per version) if one is found. Null when
+    /// GitHub could not be asked, so a caller never reads a failed check as "up to date".
+    /// </summary>
+    public async Task<UpdateStatus?> CheckAsync(CancellationToken ct = default)
     {
         if (VersionInfo.IsDevBuild)
         {
@@ -62,29 +66,24 @@ public class UpdateCheckService(
             return _lastStatus;
         }
 
-        GitHubRelease? release;
-        try
-        {
-            var client = httpClientFactory.CreateClient(HttpClientName);
-            release = await client.GetFromJsonAsync<GitHubRelease>($"repos/{Repo}/releases/latest", ct);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
-        {
-            logger.LogWarning(ex, "Update check failed");
-            return _lastStatus;
-        }
-
+        var release = await LatestFromApiAsync(ct) ?? await LatestFromReleasePageAsync(ct);
         if (release?.TagName is null)
         {
-            return _lastStatus;
+            return null;
         }
 
         var latestVersion = release.TagName.TrimStart('v', 'V');
         var isNewer = IsNewer(latestVersion, VersionInfo.Version);
 
+        // The release page fallback carries no notes; keep the ones an earlier check fetched.
+        var notes = release.Body
+            ?? (string.Equals(_lastStatus.LatestVersion, latestVersion, StringComparison.OrdinalIgnoreCase)
+                ? _lastStatus.ReleaseNotes
+                : null);
+
         _lastStatus = new UpdateStatus(
             VersionInfo.Version, false, IsDocker, isNewer,
-            latestVersion, release.HtmlUrl, release.Body, DateTimeOffset.UtcNow);
+            latestVersion, release.HtmlUrl, notes, DateTimeOffset.UtcNow);
 
         if (isNewer)
         {
@@ -117,6 +116,67 @@ public class UpdateCheckService(
         }
 
         return _lastStatus;
+    }
+
+    private async Task<GitHubRelease?> LatestFromApiAsync(CancellationToken ct)
+    {
+        try
+        {
+            var client = httpClientFactory.CreateClient(HttpClientName);
+            return await client.GetFromJsonAsync<GitHubRelease>($"repos/{Repo}/releases/latest", ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            logger.LogWarning(ex, "Update check failed against the GitHub API, trying the release page");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// The unauthenticated API allows 60 requests an hour per public IP, shared with everything else
+    /// on that network. The release page's redirect to the latest tag is not counted against it.
+    /// </summary>
+    private async Task<GitHubRelease?> LatestFromReleasePageAsync(CancellationToken ct)
+    {
+        try
+        {
+            var client = httpClientFactory.CreateClient(ReleasePageClientName);
+            using var request = new HttpRequestMessage(HttpMethod.Head, $"{Repo}/releases/latest");
+            using var response = await client.SendAsync(request, ct);
+            var tag = TagFromReleaseLocation(response.Headers.Location);
+            if (tag is null)
+            {
+                logger.LogWarning("Update check failed: the release page answered {Status} without a release tag",
+                    (int)response.StatusCode);
+                return null;
+            }
+
+            return new GitHubRelease(tag, $"https://github.com/{Repo}/releases/tag/{Uri.EscapeDataString(tag)}", null);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            logger.LogWarning(ex, "Update check failed");
+            return null;
+        }
+    }
+
+    internal static string? TagFromReleaseLocation(Uri? location)
+    {
+        const string marker = "/releases/tag/";
+        if (location is null)
+        {
+            return null;
+        }
+
+        var path = location.IsAbsoluteUri ? location.AbsolutePath : location.OriginalString.Split('?', '#')[0];
+        var at = path.IndexOf(marker, StringComparison.Ordinal);
+        if (at < 0)
+        {
+            return null;
+        }
+
+        var tag = Uri.UnescapeDataString(path[(at + marker.Length)..].TrimEnd('/'));
+        return tag.Length == 0 || tag.Contains('/') ? null : tag;
     }
 
     /// <summary>Tags/versions here are plain "X.Y.Z" (see distribution/release.ps1) — strip any

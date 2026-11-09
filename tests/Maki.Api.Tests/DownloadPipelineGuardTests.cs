@@ -162,6 +162,47 @@ public class DownloadPipelineGuardTests : IDisposable
     }
 
     [Fact]
+    public async Task Smart_does_not_requeue_a_paywalled_chapter_or_walk_past_it()
+    {
+        var now = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var seriesId = _db.SeedSeries();
+        var before = SeedChapter(seriesId, 1m);
+        var paywalled = SeedChapter(seriesId, 2m);
+        SeedChapter(seriesId, 3m);
+        SeedChapter(seriesId, 4m);
+        var oneShot = SeedChapter(seriesId, null, title: "Extra");
+        SeedRow(seriesId, paywalled.Id, QueueStatus.Failed, 0, null, DownloadOrigin.SmartDownload,
+            DownloadFailureReason.NeedsPurchase);
+
+        using var db = _db.NewContext();
+        var chapters = db.Chapters.Where(c => c.SeriesId == seriesId).ToList();
+        var skipped = await SmartDownloadJob.BackingOffAsync(db, chapters, maxAttempts: 5, now, CancellationToken.None);
+        var walls = await SmartDownloadJob.WaitingOnManualRetryAsync(db, chapters, CancellationToken.None);
+
+        Assert.False(await SmartDownloadJob.PreviousBatchPendingAsync(db, chapters, maxAttempts: 5, now, CancellationToken.None));
+        Assert.Equal(new HashSet<int> { paywalled.Id }, skipped);
+        Assert.Equal([before.Id, oneShot.Id],
+            Chapter.NextWanted(SmartDownloadJob.BeforeWall(chapters, walls), 10, skipped));
+    }
+
+    [Theory]
+    [InlineData("error.download.upgradeTargetGone", DownloadOrigin.Upgrade)]
+    [InlineData(DownloadFailureReason.NeedsPurchase, DownloadOrigin.Upgrade)]
+    public async Task A_failed_upgrade_does_not_hold_a_missing_chapter_out_of_Smart(string errorKey, DownloadOrigin origin)
+    {
+        var now = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
+        var seriesId = _db.SeedSeries();
+        var chapter = SeedChapter(seriesId, 1m);
+        SeedRow(seriesId, chapter.Id, QueueStatus.Failed, 0, null, origin, errorKey);
+
+        using var db = _db.NewContext();
+        var chapters = db.Chapters.Where(c => c.SeriesId == seriesId).ToList();
+
+        Assert.Empty(await SmartDownloadJob.BackingOffAsync(db, chapters, maxAttempts: 5, now, CancellationToken.None));
+        Assert.Empty(await SmartDownloadJob.WaitingOnManualRetryAsync(db, chapters, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task Smart_is_not_held_back_by_a_download_somebody_else_queued()
     {
         var now = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);

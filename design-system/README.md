@@ -30,11 +30,11 @@ Borders are 1px `border`; hovered or emphasised edges take `border-strong`; row 
 
 **Ink.** Five steps, each 4.5:1 or better on `surface` in both schemes. `ink-hi` for titles, figures and the active item; `ink` for body copy; `ink-2` for secondary copy (chip labels, status words); `ink-3` for descriptions, labels and meta lines (Mantine's dimmed colour maps here); `ink-4` for timestamps and zero counts.
 
-**Status.** Semantic hues live in tokens, never in Mantine's stock palette, so "Completed" is the same green on a cover, a badge and a table row and follows the light theme: `ok`, `warn`, `info`, `danger`, `watched` (read state, kept apart from brand so a read row never looks selected), `suggestive` (olive, for the Suggestive rating and the 65 to 79 score band), `neutral` (unknown or idle). Each has a `-soft` partner at 15% for a tinted fill behind it. Every status fill carries its own foreground, near-black in dark and white in Light: `ok-on`, `warn-on`, `info-on`, `danger-on`, `watched-on` and `neutral-on`. Filled danger buttons are the exception: they sit on `danger-fill`, a deeper red, so their white labels hold 5.6:1. Status is always carried by a word or an icon as well as the hue.
+**Status.** Semantic hues live in tokens, never in Mantine's stock palette, so "Completed" is the same green on a cover, a badge and a table row and follows the light theme: `ok` (done, have it, good), `info` (happening now, still going), `warn` (waiting on you, or held up), `danger` (failed, broken, or removes something), `neutral` (nothing to report). The accent is never a status: it marks the user's own things and actions. Each has a `-soft` partner at 15% for a tinted fill behind it. Every status fill carries its own foreground, near-black in dark and white in Light: `ok-on`, `warn-on`, `info-on`, `danger-on` and `neutral-on`. Filled danger buttons are the exception: they sit on `danger-fill`, a deeper red, so their white labels hold 5.6:1. Status is always carried by a word or an icon as well as the hue.
 
-Content ratings run green to red on purpose: Safe `ok`, Suggestive `suggestive`, Erotica `warn`, Pornographic `danger`. Catalogue scores band the same way: 80 and up `ok`, 65 to 79 `suggestive`, 50 to 64 `warn`, below 50 `danger`.
+**Kinds and scales.** A kind gets a hue it shares with nothing: `anime` (violet) for anime and watched chapters, `volume` (dusty mauve) for volume files. Content rating and release quality are rankings, not states, so they have their own steps and never borrow a status hue. Content rating rises from cool to hot: Safe `cr-safe` (teal), Suggestive `cr-suggestive`, Erotica `cr-erotica`, Pornographic `cr-explicit`. Quality is a medal scale: Official `q-official`, Scanlator `q-scanlator`, Aggregator `q-aggregator`, Unknown `neutral`, Volume `volume`. Each of these has `-on` and `-soft` partners like the status hues. A catalogue score is not a state either: it is drawn in `rating` gold at every value, with the number in `ink-hi`. Tag buckets are the one accepted exception and keep status hues: Core `danger`, Defining `anime`, Recurrent `ok`, Incidental `neutral`.
 
-**Other palettes.** `rating` is the star colour. `tier-1` to `tier-6` (with `-soft` fills) colour the achievement ladder; locked badges keep their shape and drop the colour. `mark-cream`, `mark-nori`, `mark-ink` and `mark-blush` belong to the brand mark only. The raw Mantine palettes (`indigo-0` to `indigo-9`, `rose-*`, `emerald-*`, `amber-*`, `dark-0` to `dark-9`) exist for Mantine `color` props that need a shade; reach for the semantic tokens first.
+**Other palettes.** `rating` is the star colour. `tier-1` to `tier-6` (with `-soft` fills) colour the achievement ladder: bronze, silver, gold, platinum, diamond, then the accent at the top; locked badges keep their shape and drop the colour. `chart-1` to `chart-6` are the categorical set for charts only (`chart-1` is the accent); a chart uses a status hue only when the series shows that state. `mark-cream`, `mark-nori`, `mark-ink` and `mark-blush` belong to the brand mark only. The raw Mantine palettes (`indigo-0` to `indigo-9`, `rose-*`, `emerald-*`, `amber-*`, `dark-0` to `dark-9`) exist for Mantine `color` props that need a shade; reach for the semantic tokens first.
 
 **Contrast rules.** Text on a fill takes that fill's own foreground: `primary-on` on `primary` (Mantine autoContrast picks black on Emerald and Amber), the matching `-on` token on each status fill (`ok-on` on `ok`), white on `danger-fill`. Brand text on the surfaces is `brand-fg`; brand text over cover art is `brand-fg-on-art`, because the scrim stays dark in Light.
 
@@ -46,7 +46,7 @@ Two families. **Bricolage Grotesque** (`display`) is for names and figures: page
 
 - Display: `display` (series hero, Rewind), `route`, `page-title` (every `PageHeader`), `section-title` (every `SectionHeader`), `wordmark`. All at 700 with -0.025em tracking (-0.02em for section titles).
 - Headings: `h1` to `h4`, Mantine's Title scale (1.9rem 800, 1.5rem 800, 1.2rem 700, 1rem 700).
-- Roles: pick the tier by what the text is, not how big you want it. `body` (0.9375rem, Mantine `sm`) is the default. `meta` (0.8125rem, Mantine `xs`) for labels, chips and status words, `micro` (0.75rem) is the floor for anything read (counts, table headers), `label` for sentence-case labels over figures, `badge-text` for badges only. `figure` and `stat-value` for numbers.
+- Roles: pick the tier by what the text is, not how big you want it. `body` (0.9375rem, Mantine `sm`) is the default. `meta` (0.8125rem, Mantine `xs`) for labels, chips and status words, `micro` (0.8125rem, the same size as `meta`) is the floor for anything read (counts, table headers), `label` for sentence-case labels over figures, `badge-text` for badges only. `figure` for numbers.
 - Figures (strips, stat tiles, the hero figures and the level) set in the display face through the `.figure` class: 700, -0.02em, tabular. Sizes stay per call site. Their labels are sentence case at `meta` size in `ink-3`.
 - The same scale is exposed as CSS variables (`type-display` through `type-badge`); the three largest are fluid `clamp()` values. If no tier fits, the scale gains a tier; call sites never get an off-scale size.
 - Weights come from six steps: `fw-regular` 400, `fw-medium` 500, `fw-semibold` 600, `fw-strong` 650, `fw-bold` 700, `fw-heavy` 800. A weight between two steps belongs on one of them.
@@ -55,10 +55,11 @@ Two families. **Bricolage Grotesque** (`display`) is for names and figures: page
 
 ## Space and layout
 
-- Spacing is Mantine's default scale: `spacing-xs` 10px, `spacing-sm` 12px, `spacing-md` 16px, `spacing-lg` 20px, `spacing-xl` 32px. Panels and modals pad at `spacing-lg`; stat tiles and operational pages at `spacing-md`; a `SectionHeader` sits `spacing-xl` below the previous section and `spacing-sm` above its content.
+- Spacing is Mantine's default scale: `spacing-xs` 10px, `spacing-sm` 12px, `spacing-md` 16px, `spacing-lg` 20px, `spacing-xl` 32px. Panels and modals pad at `spacing-lg`; operational pages at `spacing-md`; a `SectionHeader` sits `spacing-xl` below the previous section and `spacing-sm` above its content.
 - `SectionHeader`: the count is plain tabular text in `ink-4` (no pill), the rule is a flat 1px `border`, and the action is a `subtle` button in `ink-3` that can end in a chevron.
-- `FigureStrip` has a `panel` variant for a page's headline row: a shadowed `surface` card with 27px figures, and an optional middle cell between them (Home puts the level there). `StatTile` has no coloured rail and no icon; the number carries it.
+- Every row of figures is a `FigureStrip`: equal cells in one bordered strip, number over label, an optional delta chip beside the number and a hint line under the label. Library, Health, Activity, the import plan, Stats and Discover's Taste tab all use it; there are no separate stat tiles.
 - `EmptyState` takes a `mood` for the inline form: the mascot at 56px beside the text (asleep for an empty queue or list, pleased when nothing is left to deal with, asking when it needs something from you). Page-level `art` states are unchanged.
+- One rule for a section with nothing to list: `EmptyState compact` with a mood. When it stands in for a table or list that has no card of its own (Activity, Scrobble, Import, Health, Requests, Notifications), add `framed` so the dashed outline holds the table's place. Inside a card that stays (Stats panels, a settings section), leave the frame off; the card is the frame.
 - `CoverCard` shows its monitor eye and mute bell only on hover or focus where there is a real pointer, and always on touch. A library with fewer than 12 series ends its grid in a dashed add cell.
 - Settings sections put the title in the display face and its explanation above the panel; the panel holds only the fields, and the content column is no longer capped.
 - Standard pages cap at `content-wide` (72rem); reading text at `content-prose` (42rem). Editorial sections breathe by `section-space`.
@@ -78,6 +79,7 @@ Two families. **Bricolage Grotesque** (`display`) is for names and figures: page
 
 {{MOTION}}
 - Cover cards lift 4px on hover and the art scales to 1.05. A `StatusDot` pulses for work in flight.
+- "Faster animations" (Settings > Appearance) sets `data-motion="fast"` on the root, which redefines every `--dur-*` at 0.55 of its length; script motion scales by the same factor.
 - Everything that moves stops under `prefers-reduced-motion`.
 
 ## Focus and states
@@ -92,8 +94,9 @@ Two families. **Bricolage Grotesque** (`display`) is for names and figures: page
 
 ## Iconography
 
-- Icons are **Tabler Icons** (`@tabler/icons-react`), outline style. 20px at stroke 1.8 to 1.9 in headers and tiles; 16px in buttons; 11 to 12px inside cover badges.
-- Icons inherit `currentColor`: an icon in a `SectionHeader` is `brand-fg`, in a badge white. The SVGs in the Icons group are the raw Tabler files, drawn in `currentColor`, so they show black where they are displayed as images.
+- Icons are **Phosphor** at the Regular weight, imported only from `frontend/src/lib/icons.tsx` (generated by `scripts/frontend/generate-icons.mjs` from `@phosphor-icons/core`; `*Filled` names use the Fill weight). Phosphor Regular is drawn on a 16px pixel grid, so **16px is the default** in buttons, menus, nav and table rows: it is the one size where its lines land on whole pixels. Avoid 14 and 15px, which render soft. 20 to 21px in headers and tiles; 11 to 13px inside badges, where the generator swaps in the Bold path automatically. There is no stroke setting.
+- Icons inherit `currentColor`: an icon in a `SectionHeader` is `brand-fg`, in a badge white. The SVGs in the Icons group are the raw Phosphor files, filled with `currentColor`, so they show black where they are displayed as images.
+- No sparkles. Recommendations and Discover use the compass, similarity the intersect, upgrades the circled up arrow.
 - A status always pairs its colour with an icon or a word (the status helpers return both).
 - No emoji in the interface.
 

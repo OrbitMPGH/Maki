@@ -61,15 +61,16 @@ export const EnhanceFields: Story = {
     await userEvent.click(level)
     await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole('option', { name: 'Always' }))
     const method = await canvas.findByLabelText('Method', { selector: 'input' })
-    await waitFor(() => expect(method).toHaveValue('Balanced'))
-
-    await userEvent.click(method)
-    const body = within(canvasElement.ownerDocument.body)
-    await waitFor(() => expect(body.getAllByRole('option')).toHaveLength(5))
-    await userEvent.click(await body.findByRole('option', { name: 'Crisp line art (server)' }))
+    await waitFor(() => expect(method).toHaveValue('Maki 2x'))
     await expect(
       await canvas.findByText('Server methods apply only when the admin has enabled them; otherwise the fallback is used.'),
     ).toBeVisible()
+
+    await userEvent.click(method)
+    const body = within(canvasElement.ownerDocument.body)
+    await waitFor(() => expect(body.getAllByRole('option')).toHaveLength(6))
+    await userEvent.click(await body.findByRole('option', { name: 'Balanced' }))
+    await expect(await canvas.findByText('Between Light and Strong')).toBeVisible()
   },
 }
 

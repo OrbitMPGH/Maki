@@ -8,9 +8,13 @@ namespace Maki.Api.Services;
 /// <summary>Writes the reader's rating history (<see cref="RatingSnapshot"/>). Display only.</summary>
 public static class RatingSnapshotService
 {
+    public static readonly TimeSpan CorrectionWindow = TimeSpan.FromMinutes(10);
+
     /// <summary>
-    /// Records one score on the caller's scoped context. A repeat of the last entry (same score, same
-    /// kind, same chapter) adds nothing; "still a 7" thirty chapters later does.
+    /// Records one score on the caller's scoped context. A change to the last entry's kind at the same
+    /// chapter within <see cref="CorrectionWindow"/> replaces it, since a misclick and its correction
+    /// are one score; "still a 7" thirty chapters later, or a rethink days later, is a new entry. The replaced entry keeps its origin, so a corrected prompt
+    /// answer is still a checkpoint.
     /// </summary>
     public static async Task RecordAsync(MakiDbContext db, int userId, int seriesId, int rating, bool final,
         double? atChapter, RatingSnapshotOrigin origin, CancellationToken ct)
@@ -18,10 +22,17 @@ public static class RatingSnapshotService
         var last = await db.RatingSnapshots
             .Where(s => s.UserId == userId && s.SeriesId == seriesId)
             .OrderByDescending(s => s.CreatedAt).ThenByDescending(s => s.Id)
-            .Select(s => new { s.Rating, s.Final, s.AtChapter })
             .FirstOrDefaultAsync(ct);
-        if (last is not null && last.Rating == rating && last.Final == final && last.AtChapter == atChapter)
+        if (last is not null && last.Final == final && last.AtChapter == atChapter
+            && DateTime.UtcNow - last.CreatedAt < CorrectionWindow)
         {
+            if (last.Rating != rating)
+            {
+                last.Rating = rating;
+                last.CreatedAt = DateTime.UtcNow;
+                await db.SaveChangesAsync(ct);
+            }
+
             return;
         }
 

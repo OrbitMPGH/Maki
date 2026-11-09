@@ -1,14 +1,17 @@
 import { memo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { Group, Modal, SimpleGrid, Text, ThemeIcon } from '@mantine/core'
-import { IconDeviceTv, IconPlus } from '@tabler/icons-react'
-import { useHomeFromAnimeAll, type HomeAnimeResumeItem } from '../../api/animeResume'
+import { ActionIcon, Button, Group, Menu, Modal, SimpleGrid, Text, ThemeIcon } from '@mantine/core'
+import { IconClock, IconDeviceTv, IconDots, IconEyeOff, IconPlus } from '../../lib/icons'
+import { useDismissFromAnimeRail, useHomeFromAnimeAll, type HomeAnimeResumeItem } from '../../api/animeResume'
+import { errorText } from '../../api/errorText'
+import { notifications } from '../../lib/toast'
 import type { RecommendationItem } from '../../api/hooks'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { PosterSkeletons } from '../CatalogueBrowser'
 import { EmptyState } from '../ui/EmptyState'
 import { Rail } from '../ui/Rail'
 import { DensityControl, useDensityPref } from '../ui/viewPrefs'
+import { chapterLabel, serverChapterLabel } from '../../format'
 
 /**
  * Horizontal rail of series whose anime the reader finished but the manga hasn't caught up to.
@@ -29,8 +32,9 @@ export function AnimeResumeRail({
   return (
     <Rail>
       {items.map((item) => (
-        <div key={item.seriesId ?? `mb-${item.catalogue?.providerId}`} className="discover-rail-item">
+        <div key={item.mangaBakaId} className="discover-rail-item reading-card">
           <AnimeResumeCard item={item} onOpen={onOpen} />
+          <AnimeResumeCardMenu item={item} />
         </div>
       ))}
     </Rail>
@@ -88,12 +92,90 @@ export function AnimeResumeExpandModal({
           </Group>
           <SimpleGrid cols={cols} spacing="md">
             {items.map((item) => (
-              <AnimeResumeCard key={item.seriesId ?? `mb-${item.catalogue?.providerId}`} item={item} onOpen={onOpen} />
+              <div key={item.mangaBakaId} className="reading-card">
+                <AnimeResumeCard item={item} onOpen={onOpen} />
+                <AnimeResumeCardMenu item={item} />
+              </div>
             ))}
           </SimpleGrid>
         </>
       )}
     </Modal>
+  )
+}
+
+/**
+ * Takes a card off the rail: until a newly watched season moves the frontier (another season is
+ * coming and the reader would rather watch it first), or for good (they liked the anime and have
+ * no interest in the manga). A sibling of the card's link, like `ReadingCardMenu`, so a click in
+ * the portalled dropdown never bubbles into the link.
+ */
+function AnimeResumeCardMenu({ item }: { item: HomeAnimeResumeItem }) {
+  const { t } = useLingui()
+  const dismiss = useDismissFromAnimeRail()
+  const { mangaBakaId, seriesTitle, coveredTo } = item
+
+  // mutateAsync for the same reason as ReadingCardMenu: the optimistic update unmounts this card.
+  const remove = async (untilNewSeason: boolean) => {
+    try {
+      await dismiss.mutateAsync({ mangaBakaId, coveredTo: untilNewSeason ? coveredTo : null })
+    } catch (error) {
+      const reason = errorText(error)
+      notifications.show({ color: 'var(--danger)', message: t`Could not remove ${seriesTitle}: ${reason}` })
+      return
+    }
+    const id = notifications.show({
+      autoClose: 8000,
+      message: (
+        <Group gap="xs" wrap="nowrap" justify="space-between">
+          <Text size="sm">
+            {untilNewSeason ? (
+              <Trans>Hid {seriesTitle}. It comes back when you finish a new season.</Trans>
+            ) : (
+              <Trans>Removed {seriesTitle}. It won't be suggested here again.</Trans>
+            )}
+          </Text>
+          <Button
+            size="xs"
+            variant="subtle"
+            style={{ flexShrink: 0 }}
+            onClick={() => {
+              notifications.hide(id)
+              dismiss.mutateAsync({ mangaBakaId, restore: true }).catch((error: unknown) => {
+                const reason = errorText(error)
+                notifications.show({ color: 'var(--danger)', message: t`Could not restore ${seriesTitle}: ${reason}` })
+              })
+            }}
+          >
+            <Trans>Undo</Trans>
+          </Button>
+        </Group>
+      ),
+    })
+  }
+
+  return (
+    <Menu withinPortal position="bottom-end" shadow="md">
+      <Menu.Target>
+        <ActionIcon
+          className="reading-card-menu"
+          variant="filled"
+          radius="xl"
+          size={28}
+          aria-label={t`More options for ${seriesTitle}`}
+        >
+          <IconDots size={16} />
+        </ActionIcon>
+      </Menu.Target>
+      <Menu.Dropdown>
+        <Menu.Item leftSection={<IconClock size={16} />} onClick={() => void remove(true)}>
+          <Trans>Hide until a new season</Trans>
+        </Menu.Item>
+        <Menu.Item leftSection={<IconEyeOff size={16} />} onClick={() => void remove(false)}>
+          <Trans>Not reading this one</Trans>
+        </Menu.Item>
+      </Menu.Dropdown>
+    </Menu>
   )
 }
 
@@ -149,7 +231,7 @@ function AnimeResumePoster({ item, children }: { item: HomeAnimeResumeItem; chil
       <div className="cover-corners">
         <div className="cover-corner cover-corner-left">
           <span className="cover-chapter" data-tip={item.animeTitle}>
-            <span>{item.resumeChapterLabel ?? <Trans>ch. {next}</Trans>}</span>
+            <span>{item.resumeChapterLabel ? serverChapterLabel(item.resumeChapterLabel) : chapterLabel(next)}</span>
           </span>
         </div>
       </div>

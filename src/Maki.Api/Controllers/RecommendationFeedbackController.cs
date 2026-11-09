@@ -48,6 +48,10 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
                     .Select(x => x.Rating).FirstOrDefault()
             }).ToListAsync(ct);
         var shelfIds = sources.Select(x => (long)x.MangaBakaId!.Value).Distinct().ToList();
+        // Named on the Lab so its shelf count can say why it is short of the library's.
+        var incognito = await db.Series.AsNoTracking()
+            .CountAsync(s => s.MangaBakaId != null && s.Incognito == IncognitoMode.Full &&
+                (s.ContentRating == null || allowed.Contains(s.ContentRating)), ct);
         // The same snapshot the recommender steers with, so the chips describe the set that is
         // actually being subtracted rather than a second count of the feedback rows. Its signals
         // are read over the same visible shelf, so they stand in for a second read.
@@ -81,6 +85,7 @@ public class RecommendationFeedbackController(RecommendationFeedbackService feed
                 ratedSources = sources.Where(x => x.Rating != null).Select(x => x.MangaBakaId).Distinct().Count(),
                 readSources = readIds.Count,
                 excluded = excludedIds.Count(shelfIds.Contains),
+                incognito,
                 hidden = feedbackCounts.Count(x => x.Suppression == RecommendationSuppression.Hidden),
                 dismissed = feedbackCounts.Count(x => x.Suppression == RecommendationSuppression.Dismissed && x.DismissedUntilUtc > now),
                 exposed = feedbackCounts.Count(x => x.Exposure != RecommendationExposure.None),

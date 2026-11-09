@@ -371,7 +371,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'smart-download',
     tab: 'downloads',
-    title: msg`Smart Download`,
+    title: msg`Smart download`,
     admin: true,
     keywords: msg({
       message: `smart download, unread trigger`,
@@ -548,6 +548,17 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     within: 'users',
     keywords: msg({
       message: `requests, request, single user, multi user, multi-user, household, family, sharing, leaderboard, reader picker`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
+    id: 'login-names',
+    tab: 'users',
+    title: msg`Show login names to everyone`,
+    admin: true,
+    within: 'users',
+    keywords: msg({
+      message: `username, login name, display name, another reader, privacy, names`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },

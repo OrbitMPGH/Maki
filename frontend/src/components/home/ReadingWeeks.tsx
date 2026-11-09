@@ -1,11 +1,10 @@
-import { useId, useMemo } from 'react'
+import { Fragment, useId, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Tooltip } from '@mantine/core'
-import { IconFlame } from '@tabler/icons-react'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { IconFlame } from '../../lib/icons'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { HeatmapDay, ProgressSummary, ReadingGoal } from '../../api/hooks'
-import { formatDate, formatNumber, formatReadingTime, monthName, weekdayName } from '../../format'
+import { formatDate, formatNumber, formatTimeSpent, monthName, weekdayName } from '../../format'
 import { useLabel } from '../../i18n-context'
 import { HEAT_SHADES, heatLevel } from '../../pages/stats/ReadingHeatmap'
 import { GOAL_LABELS, metricProgress } from '../../pages/stats/sections/ProgressSection'
@@ -49,10 +48,19 @@ export function rollingWeeks(days: HeatmapDay[], today = new Date()) {
     })
   }
 
+  const rows = Array.from({ length: WEEKS }, (_, r) => {
+    const days = cells.slice(r * 7, r * 7 + 7)
+    const first = days.find((c) => c.monthStart !== null)
+    // The row a month starts in names it; the top row names the month it opens in otherwise.
+    const month = first?.monthStart ?? (r === 0 ? Number(days[0].date.slice(5, 7)) : null)
+    return { days, month }
+  })
+
   const past = cells.filter((c) => !c.future)
   const read = (c: WeekCell) => c.chapters > 0 || c.seconds > 0
   return {
     cells,
+    rows,
     // This week alone, for the phone form, which draws only the grid's last row.
     weekChapters: cells.slice(-7).reduce((sum, c) => sum + c.chapters, 0),
     chapters: past.reduce((sum, c) => sum + c.chapters, 0),
@@ -103,8 +111,12 @@ export function ReadingWeeks({
     currentStreak === 0
       ? t`Read a chapter to start a streak`
       : weeks.readToday
-        ? plural(longestStreak, { one: 'Today counts. Best: # day', other: 'Today counts. Best: # days' })
+        ? plural(longestStreak, {
+            one: 'You read today. Longest streak: # day',
+            other: 'You read today. Longest streak: # days',
+          })
         : t`Read today to keep it going`
+  const currentStreakLabel = plural(currentStreak, { one: 'Current streak: # day', other: 'Current streak: # days' })
 
   return (
     <section
@@ -133,14 +145,13 @@ export function ReadingWeeks({
           {showStreaks && (
             <span
               role="img"
-              className="reading-weeks-streak tnum"
+              className="reading-weeks-streak"
               data-lit={weeks.readToday || undefined}
-              aria-label={plural(currentStreak, { one: '# day streak', other: '# day streak' })}
+              aria-label={currentStreakLabel}
             >
-              <IconFlame size={15} aria-hidden />
-              {formatNumber(currentStreak)}
-              <span className="reading-weeks-streak-l" aria-hidden>
-                <Trans>day streak</Trans>
+              <IconFlame size={16} aria-hidden />
+              <span aria-hidden>
+                <Plural value={currentStreak} one="#-day streak" other="#-day streak" />
               </span>
             </span>
           )}
@@ -151,44 +162,57 @@ export function ReadingWeeks({
           role="img"
           aria-label={t`Read on ${daysRead} of the last ${daysSoFar} days`}
         >
+          <span className="reading-weeks-month" aria-hidden />
           {weekdays.map((letter, i) => (
             <span key={`d${i}`} className="reading-weeks-weekday" aria-hidden>
               {letter}
             </span>
           ))}
-          {weeks.cells.map((cell) => {
-            // Level 0 is the Stats panel's ground, which is this card's too, so an empty day keeps its own fill.
-            const level = cell.future ? 0 : heatLevel(cell.chapters, cell.seconds)
-            const shade = level > 0 ? HEAT_SHADES[level] : undefined
-            const mark = cell.today ? String(Number(cell.date.slice(8))) : cell.monthStart ? monthName(cell.monthStart, 'short') : null
-            if (cell.future) {
-              return (
-                <span key={cell.date} className="reading-weeks-day" data-future>
-                  {mark}
-                </span>
-              )
-            }
-            const cellDate = formatDate(`${cell.date}T00:00:00`)
-            const chapters = cell.chapters
-            const label =
-              chapters === 0 && cell.seconds === 0
-                ? t`${cellDate}: nothing read`
-                : plural(chapters, { one: `${cellDate}: # chapter`, other: `${cellDate}: # chapters` })
-            return (
-              <Tooltip key={cell.date} label={label}>
-                <span
-                  role="img"
-                  aria-label={label}
-                  className="reading-weeks-day"
-                  data-today={cell.today || undefined}
-                  data-empty={level === 0 || undefined}
-                  style={shade ? { background: shade } : undefined}
-                >
-                  {mark}
-                </span>
-              </Tooltip>
-            )
-          })}
+          {weeks.rows.map((row) => (
+            <Fragment key={row.days[0].date}>
+              <span className="reading-weeks-month" aria-hidden>
+                {row.month !== null && monthName(row.month, 'short')}
+              </span>
+              {row.days.map((cell) => {
+                // Level 0 is the Stats panel's ground, which is this card's too, so an empty day keeps its own fill.
+                const level = cell.future ? 0 : heatLevel(cell.chapters, cell.seconds)
+                const shade = level > 0 ? HEAT_SHADES[level] : undefined
+                // Today and the 1st carry their day number, the 1st as the anchor for the month beside its row.
+                const mark = cell.today || cell.monthStart !== null ? String(Number(cell.date.slice(8))) : null
+                const monthMark = (!cell.today && cell.monthStart !== null) || undefined
+                if (cell.future) {
+                  return (
+                    <span key={cell.date} className="reading-weeks-day" data-future data-month={monthMark}>
+                      {mark}
+                    </span>
+                  )
+                }
+                const cellDate = formatDate(`${cell.date}T00:00:00`)
+                const chapters = cell.chapters
+                const label =
+                  chapters === 0 && cell.seconds === 0
+                    ? t`${cellDate}: nothing read`
+                    : plural(chapters, { one: `${cellDate}: # chapter`, other: `${cellDate}: # chapters` })
+                // The shared tip layer rather than a Mantine Tooltip per day: the glance renders twice
+                // (one copy hidden), so that was seventy floating instances on Home.
+                return (
+                  <span
+                    key={cell.date}
+                    role="img"
+                    aria-label={label}
+                    data-tip={label}
+                    className="reading-weeks-day"
+                    data-today={cell.today || undefined}
+                    data-month={monthMark}
+                    data-empty={level === 0 || undefined}
+                    style={shade ? { background: shade } : undefined}
+                  >
+                    {mark}
+                  </span>
+                )
+              })}
+            </Fragment>
+          ))}
         </div>
 
         <div className="reading-weeks-figures">
@@ -199,7 +223,7 @@ export function ReadingWeeks({
             </span>
           </div>
           <div className="reading-weeks-fig">
-            <span className="reading-weeks-n figure tnum">{formatReadingTime(weeks.seconds)}</span>
+            <span className="reading-weeks-n figure tnum">{formatTimeSpent(weeks.seconds)}</span>
             <span className="reading-weeks-l">
               <Trans>Time read</Trans>
             </span>
@@ -216,14 +240,14 @@ export function ReadingWeeks({
         </div>
 
         {!goal && (
-          <span className="reading-weeks-week tnum">
+          <span className="reading-weeks-week">
             {plural(weekChapters, { one: '# chapter this week', other: '# chapters this week' })}
           </span>
         )}
 
         {goal && (
           <div className="reading-weeks-goal">
-            <span className="reading-weeks-goal-t tnum">
+            <span className="reading-weeks-goal-t">
               {renderLabel(GOAL_LABELS[goal.period])}: <b>{formatNumber(goal.progress)}</b> / {metricProgress(goal.metric, goal.target)}
             </span>
             <div

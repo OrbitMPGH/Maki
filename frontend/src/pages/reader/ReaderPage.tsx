@@ -1,10 +1,10 @@
-import { Button, Center, Group, Stack, Text, VisuallyHidden } from '@mantine/core'
+import { Button, Center, Group, Stack, Switch, Text, VisuallyHidden } from '@mantine/core'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { IconCloudOff } from '@tabler/icons-react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { IconCloudOff } from '../../lib/icons'
 import { api, ApiError, isOfflineUnavailable } from '../../api/client'
-import { Trans } from '@lingui/react/macro'
+import { Trans, useLingui } from '@lingui/react/macro'
 import { useDocumentTitle } from '../../lib/documentTitle'
 import { getConnectivity, useConnectivity } from '../../lib/connectivity'
 import { settleQueuedProgress } from '../../pwa/progressQueue'
@@ -16,19 +16,25 @@ import {
   useToggleBookmark,
   type ReaderManifest,
 } from '../../api/reader'
+import NotesPanel from '../../components/notes/NotesPanel'
+import { NotesDropdown } from '../../components/notes/NotesDropdown'
+import { notesEscapeCloses } from '../../components/notes/notesEscape'
+import { usePhoneSheet } from '../../components/notes/phone'
 import ChapterBanner from './ChapterBanner'
 import ChapterEnd from './ChapterEnd'
+import NotesMargin from './NotesMargin'
 import { RatingCheckpointPrompt } from '../../components/series/RatingCheckpointPrompt'
 import { useDismissRatingCheckpoint, useRatingCheckpoint, useSetProvisionalRating } from '../../api/hooks'
 import { notifications } from '../../lib/toast'
 import { t as now } from '@lingui/core/macro'
 import ShortcutSheet from './ShortcutSheet'
 import ContinuousView from './ContinuousView'
-import ServerEnhanceStatus from './ServerEnhanceStatus'
-import { serverModelFor, useServerEnhance } from './useServerEnhance'
+import ServerEnhanceStatus, { useEnhancePhase } from './ServerEnhanceStatus'
+import { serverModelFor, useServerEnhance, type AutoPages } from './useServerEnhance'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
 import ReaderToolbar from './ReaderToolbar'
+import { OVERLAY_Z } from './ReaderSettings'
 import { probeWebtoon } from './pageShape'
 import { enhanceFor, toneFilter, useReaderPrefs, type ReaderPrefs } from './prefs'
 import { usePageUrls, usePreload, useWarmChapter } from './usePageUrls'
@@ -36,6 +42,9 @@ import { useReaderProgress } from './useReaderProgress'
 import { useReadingClock } from './useReadingClock'
 import { useWakeLock } from './useWakeLock'
 import { spreadIndexOf, usePageAspects, useSpreads } from './useSpreads'
+import { serverChapterLabel } from '../../format'
+import { scrollBehavior } from '../../lib/scrollBehavior'
+import { useAutoScroll, useAutoScrollLevel } from './useAutoScroll'
 
 const ZOOM_STEP = 0.25
 const ZOOM_MAX = 4
@@ -48,10 +57,17 @@ const DOUBLE_TAP_SLOP = 40
 const WARM_NEXT_WITHIN = 3
 const CHROME_HIDE_MS = 4000
 const NO_PAGES: ReadonlySet<number> = new Set()
+const NO_AUTO_PAGES: AutoPages = { wanted: NO_PAGES, plain: NO_PAGES }
 // A page turn this soon after moving to another chapter or the end screen is the tail of a double tap,
 // a fling or a held key, and must not carry on through the next chapter boundary.
 const CHAPTER_SETTLE_MS = 800
 const FLUSH_WAIT_MS = 2000
+// A screen step in continuous mode moves this share of the viewport, so the last lines read stay on
+// screen at the top and the eye finds its place again.
+const STRIP_STEP_SHARE = 0.85
+// A step pressed while the last one is still gliding goes on from where that one is headed.
+const STRIP_STEP_CHAIN_MS = 500
+const STRIP_BOTTOM_EPSILON = 2
 
 /**
  * Whether the chapter at `urls` reads as a webtoon, once known; undefined while the probe runs.
@@ -80,6 +96,7 @@ export default function ReaderPage() {
   const { chapterId: param } = useParams()
   const chapterId = Number(param)
   const navigate = useNavigate()
+  const { t } = useLingui()
   const queryClient = useQueryClient()
   const {
     data: manifest,
@@ -89,7 +106,7 @@ export default function ReaderPage() {
     isFetching,
     refetch,
   } = useReaderManifest(chapterId)
-  useDocumentTitle(manifest ? `${manifest.seriesTitle} - ${manifest.label}` : null)
+  useDocumentTitle(manifest ? `${manifest.seriesTitle} - ${serverChapterLabel(manifest.label)}` : null)
   const { prefs, update, keepForSeries, selection, setSelection, source, autoProfileId, profiles } =
     useReaderPrefs(manifest, !isFetching && !isError)
   // A layout or fit picked by hand during this visit to the series. Webtoon detection only stands
@@ -146,6 +163,15 @@ export default function ReaderPage() {
   // the completion back out of a write that has not gone out yet.
   const [finishedFor, setFinishedFor] = useState<number | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [notesOpen, setNotesOpen] = useState(false)
+  const [surface, setSurface] = useState<HTMLDivElement | null>(null)
+  const [autoScroll, setAutoScroll] = useState(false)
+  const [autoScrollLevel, setAutoScrollLevel] = useAutoScrollLevel()
+  // The thread an inbox link points at, tied to its chapter so paging on cannot carry it along.
+  const [notesThread, setNotesThread] = useState<{ chapterId: number; rootId: number } | null>(null)
+  const phoneSheet = usePhoneSheet()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const notesParam = searchParams.get('notes')
 
   const pageCount = manifest?.pageCount ?? 0
   const urls = usePageUrls(chapterId, pageCount, manifest?.pageVersion)
@@ -230,12 +256,40 @@ export default function ReaderPage() {
 
   const current = manifest?.chapterId === chapterId ? manifest : undefined
   const enhance = enhanceFor(prefs, manifest?.tier)
+
+  // E jumps to Always and a second press goes back to the level it came from. Starting on Always,
+  // there is nothing to go back to, so it goes Off.
+  const enhanceBefore = useRef<{ seriesId: number; level: ReaderPrefs['enhance'] } | null>(null)
+  useEffect(() => {
+    if (prefs.enhance !== 'always') enhanceBefore.current = null
+  }, [prefs.enhance])
+  const toggleAlwaysEnhance = () => {
+    const seriesId = manifest?.seriesId
+    if (seriesId == null) return
+    const before = enhanceBefore.current?.seriesId === seriesId ? enhanceBefore.current.level : null
+    const level = prefs.enhance !== 'always' ? 'always' : (before ?? 'off')
+    enhanceBefore.current = level === 'always' ? { seriesId, level: prefs.enhance } : null
+    update({ enhance: level })
+    const skipped = level !== 'off' && enhanceFor({ ...prefs, enhance: level }, manifest?.tier) === 'off'
+    const message = skipped
+      ? t`Enhance is set, but stays off for this chapter because of its quality.`
+      : level === 'always'
+        ? t`Enhance: Always`
+        : level === 'auto'
+          ? t`Enhance: Auto`
+          : t`Enhance: Off`
+    notifications.hide('reader-enhance')
+    notifications.show({ id: 'reader-enhance', message, autoClose: 1500 })
+  }
   const serverModel = current
     ? serverModelFor(enhance, prefs.enhanceMethod, current.enhanceServer, offline || manifestServedOffline(chapterId))
     : null
   // The strip sizes its own range from the pages' pixels, so the server follows it there.
   const [stripRange, setStripRange] = useState<{ pages: number[]; beyond: number }>({ pages: [], beyond: 0 })
-  const onEnhanceRange = useCallback((pages: number[], beyond: number) => setStripRange({ pages, beyond }), [])
+  const onEnhanceRange = useCallback(
+    (_pages: number[], beyond: number, server: number[]) => setStripRange({ pages: server, beyond }),
+    [],
+  )
   const enhanceWindow = useMemo(() => {
     if (!serverModel) return []
     if (mode !== 'vertical') return preloadPages.length > 0 ? preloadPages : (spreads[spreadIndex] ?? [])
@@ -258,15 +312,27 @@ export default function ReaderPage() {
         : null,
     [nextChapterId, beyondEnd],
   )
-  // On `auto` the server is asked only for pages a view has measured as stretched.
-  const [stretchedPages, setStretchedPages] = useState<ReadonlySet<number>>(NO_PAGES)
+  // On `auto` the server is asked only for pages a view has measured as wanted.
+  const [autoPages, setAutoPages] = useState<AutoPages>(NO_AUTO_PAGES)
+  const onStretched = useCallback((wanted: ReadonlySet<number>, plain: ReadonlySet<number>) => setAutoPages({ wanted, plain }), [])
+  const wholeFrom = mode === 'vertical' ? page : (spreads[spreadIndex]?.[0] ?? page)
+  const enhanceWhole = useMemo(
+    () =>
+      !current || resumedFor !== chapterId
+        ? undefined
+        : prefs.enhanceWholeChapter && serverModel
+          ? { from: wholeFrom, pageCount }
+          : null,
+    [current, resumedFor, chapterId, prefs.enhanceWholeChapter, serverModel, wholeFrom, pageCount],
+  )
   const server = useServerEnhance(
     chapterId,
     serverModel,
     enhanceWindow,
     current?.pageVersion,
-    enhance === 'auto' ? stretchedPages : null,
+    enhance === 'auto' ? autoPages : null,
     enhanceNext,
+    enhanceWhole,
   )
 
   const serverStates = server?.states
@@ -277,6 +343,18 @@ export default function ReaderPage() {
         : undefined,
     [serverStates],
   )
+  const upscalingPages = useMemo(
+    () =>
+      serverStates
+        ? new Set([...serverStates].filter(([, state]) => state === 'working').map(([index]) => index))
+        : undefined,
+    [serverStates],
+  )
+  const onScreen = useMemo(
+    () => (atEnd ? [] : mode === 'vertical' ? [page] : (spreads[spreadIndex] ?? [page])),
+    [atEnd, mode, page, spreads, spreadIndex],
+  )
+  const enhancePhase = useEnhancePhase(server, onScreen)
 
   const tone = useMemo(() => toneFilter(prefs), [prefs])
   useWakeLock(prefs.keepAwake)
@@ -287,6 +365,8 @@ export default function ReaderPage() {
       void queryClient.invalidateQueries({ queryKey: ['reader-continue', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
       void queryClient.invalidateQueries({ queryKey: ['home', 'reading'] })
+      void queryClient.invalidateQueries({ queryKey: ['progress'] })
+      void queryClient.invalidateQueries({ queryKey: ['stats'] })
     },
     [queryClient],
   )
@@ -314,7 +394,8 @@ export default function ReaderPage() {
   )
   // Lives here rather than inside the progress hook so a chapter change can hand its banked
   // seconds to the same flush that writes the position out.
-  const clock = useReadingClock(tracking)
+  // On a phone the notes sheet covers the page, so nothing is being read while it is up.
+  const clock = useReadingClock(tracking, notesOpen && phoneSheet)
   const { settle: settleProgress } = useReaderProgress(
     manifest?.chapterId,
     manifest?.seriesId,
@@ -385,6 +466,44 @@ export default function ReaderPage() {
     if (changingChapterRef.current) lastTransitionRef.current = Date.now()
     changingChapterRef.current = false
   }, [manifest, isFetching, isError, resumedFor, queued, seekToPage])
+
+  // An inbox link names a thread. It is read once and then dropped from the address, or paging to
+  // the next chapter (this component stays mounted) would open the panel again.
+  useEffect(() => {
+    if (notesParam === null) return
+    const rootId = Number(notesParam)
+    if (Number.isInteger(rootId) && rootId > 0) {
+      setNotesThread({ chapterId, rootId })
+      setNotesOpen(true)
+    }
+    setSearchParams(
+      (current) => {
+        const next = new URLSearchParams(current)
+        next.delete('notes')
+        return next
+      },
+      { replace: true },
+    )
+  }, [notesParam, chapterId, setSearchParams])
+
+  // Captured so it runs before the reader's own Escape, which leaves for the series page. The
+  // shortcut sheet sits above the notes and takes Escape first. In a text field Escape only leaves
+  // the field, and a composer holding unsaved text keeps the panel open.
+  useEffect(() => {
+    if (!notesOpen || shortcutsOpen) return
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || event.isComposing) return
+      event.preventDefault()
+      const panel = document.querySelector<HTMLElement>('.notes-dropdown-fixed, .notes-drawer')
+      if (!notesEscapeCloses(event, panel)) return
+      setNotesOpen(false)
+      setNotesThread(null)
+    }
+    window.addEventListener('keydown', onEscape, true)
+    return () => window.removeEventListener('keydown', onEscape, true)
+  }, [notesOpen, shortcutsOpen])
+
+  const notedPageSet = useMemo(() => new Set(manifest?.notedPages ?? []), [manifest?.notedPages])
 
   // Own the viewport: no page scrolling behind the reader, and always-dark chrome.
   useEffect(() => {
@@ -530,13 +649,13 @@ export default function ReaderPage() {
   /** Continuous mode's equivalent of `next()` hitting the chapter boundary: no spreads to check,
    *  the strip only ever has one more chapter to reach for. */
   const continuousPastEnd = useCallback(() => {
-    if (settling()) return
-    if (manifest?.nextChapterId == null) {
+    if (settling()) return false
+    if (manifest?.nextChapterId == null || !prefs.autoNextChapter) {
       reachEnd()
-      return
+      return false
     }
-    if (prefs.autoNextChapter) void goToChapter(manifest.nextChapterId, true)
-    else reachEnd()
+    void goToChapter(manifest.nextChapterId, true)
+    return true
   }, [manifest, prefs.autoNextChapter, goToChapter, reachEnd, settling])
 
   const previous = useCallback(() => {
@@ -557,13 +676,57 @@ export default function ReaderPage() {
     }
   }, [spreads, spreadIndex, manifest, goToChapter, atEnd, seekToPage, settling, splitting, half, wide])
 
+  /** Continuous mode's page turn: about a screen down or up, or on into the next or previous chapter at either end. */
+  const stripStep = useRef<{ top: number; at: number } | null>(null)
+  const stepStrip = useCallback(
+    (direction: 1 | -1) => {
+      if (!surface) return
+      const max = surface.scrollHeight - surface.clientHeight
+      const chained = stripStep.current && performance.now() - stripStep.current.at < STRIP_STEP_CHAIN_MS
+      const from = chained ? stripStep.current!.top : surface.scrollTop
+      if (direction > 0 && from >= max - STRIP_BOTTOM_EPSILON) {
+        continuousPastEnd()
+        return
+      }
+      if (direction < 0 && from <= 0) {
+        if (manifest?.previousChapterId != null && !settling()) void goToChapter(manifest.previousChapterId, false, true)
+        return
+      }
+      const top = Math.min(max, Math.max(0, from + direction * surface.clientHeight * STRIP_STEP_SHARE))
+      stripStep.current = { top, at: performance.now() }
+      surface.scrollTo({ top, behavior: scrollBehavior() })
+    },
+    [surface, continuousPastEnd, manifest, goToChapter, settling],
+  )
+
+  const toggleAutoScroll = useCallback(() => {
+    setAutoScroll((on) => !on)
+    // Starting it is a request to read, so the bars get out of the way at once.
+    setChrome(false)
+  }, [])
+
+  useEffect(() => {
+    if (mode !== 'vertical') setAutoScroll(false)
+  }, [mode])
+
+  // Paused whenever something sits over the page; the chrome hides itself after a few seconds, so a
+  // tap in the middle is a pause that lets go on its own.
+  useAutoScroll(
+    surface,
+    autoScroll && mode === 'vertical' && !atEnd && !chrome && !shortcutsOpen && !notesOpen,
+    autoScrollLevel,
+    continuousPastEnd,
+  )
+
   // The listener is registered once and reads the latest handler, so it is not torn down and
   // re-added on every render (a page change in continuous mode re-renders on each scroll step).
   const onKey = useRef<(event: KeyboardEvent) => void>(() => {})
   onKey.current = (event: KeyboardEvent) => {
     if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return
-    const target = event.target as HTMLElement | null
+    const target = event.target instanceof HTMLElement ? event.target : null
     if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+    // Keys inside the notes belong to them, not to the page behind.
+    if (target?.closest('.notes-surface')) return
     // Space on a control reached by keyboard presses that control, it does not turn the page.
     if (
       event.key === ' ' &&
@@ -599,13 +762,23 @@ export default function ReaderPage() {
         previous()
         break
       case ' ':
-        // Continuous mode keeps the browser's native space-to-scroll, except on the end screen,
-        // where there is nothing to scroll.
-        if (mode !== 'vertical' || atEnd) {
-          event.preventDefault()
-          if (event.shiftKey) previous()
-          else next()
-        }
+      case 'PageDown':
+      case 'PageUp': {
+        event.preventDefault()
+        const back = key === 'PageUp' || (key === ' ' && event.shiftKey)
+        if (mode === 'vertical' && !atEnd) stepStrip(back ? -1 : 1)
+        else if (back) previous()
+        else next()
+        break
+      }
+      case 'a':
+        if (mode === 'vertical') toggleAutoScroll()
+        break
+      case '[':
+        if (mode === 'vertical') setAutoScrollLevel(autoScrollLevel - 1)
+        break
+      case ']':
+        if (mode === 'vertical') setAutoScrollLevel(autoScrollLevel + 1)
         break
       case 'Home':
         event.preventDefault()
@@ -641,6 +814,9 @@ export default function ReaderPage() {
       case 'c':
         update({ cropBorders: !prefs.cropBorders })
         break
+      case 'e':
+        toggleAlwaysEnhance()
+        break
       case '+':
       case '=':
         zoomIn()
@@ -666,8 +842,17 @@ export default function ReaderPage() {
     return () => window.removeEventListener('keydown', listener)
   }, [])
 
-  /** Tap zones: outer thirds page, the middle toggles the chrome. */
-  const handleTap = (clientX: number, bounds: DOMRect) => {
+  /** Tap zones: outer thirds page, the middle toggles the chrome. Continuous mode splits top to bottom instead. */
+  const handleTap = (clientX: number, clientY: number, bounds: DOMRect) => {
+    if (prefs.tapZones && mode === 'vertical') {
+      const ratio = (clientY - bounds.top) / bounds.height
+      if (ratio < 0.33) {
+        if (!surface || surface.scrollTop > 0) stepStrip(-1)
+        else setChrome((visible) => !visible)
+      } else if (ratio > 0.67) stepStrip(1)
+      else setChrome((visible) => !visible)
+      return
+    }
     if (!prefs.tapZones || mode === 'vertical' || zoom !== 1) {
       setChrome((visible) => !visible)
       return
@@ -716,16 +901,21 @@ export default function ReaderPage() {
    * waits a moment for a second tap, which toggles zoom instead.
    */
   const onSurfaceClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    // A tap on the page is a tap outside the notes dropdown; it closes and the tap still counts.
+    if (notesOpen && !phoneSheet) {
+      setNotesOpen(false)
+      setNotesThread(null)
+    }
     const bounds = event.currentTarget.getBoundingClientRect()
     if (pointerKind.current !== 'touch' || mode === 'vertical') {
-      handleTap(event.clientX, bounds)
+      handleTap(event.clientX, event.clientY, bounds)
       return
     }
 
     const { clientX, clientY } = event
     const ratio = (clientX - bounds.left) / bounds.width
     if (zoom === 1 && prefs.tapZones && (ratio < 0.33 || ratio > 0.67)) {
-      handleTap(clientX, bounds)
+      handleTap(clientX, clientY, bounds)
       return
     }
 
@@ -737,11 +927,11 @@ export default function ReaderPage() {
         setZoom((z) => (z === 1 ? DOUBLE_TAP_ZOOM : 1))
         return
       }
-      tapRef.current(first.x, first.bounds)
+      tapRef.current(first.x, first.y, first.bounds)
     }
     const timer = setTimeout(() => {
       pendingTap.current = null
-      tapRef.current(clientX, bounds)
+      tapRef.current(clientX, clientY, bounds)
     }, DOUBLE_TAP_MS)
     pendingTap.current = { timer, x: clientX, y: clientY, bounds }
   }
@@ -770,7 +960,7 @@ export default function ReaderPage() {
             {isOfflineUnavailable(error) ? (
               <Stack align="center" gap={4}>
                 <Group gap={8} wrap="nowrap">
-                  <IconCloudOff size={18} stroke={1.75} color="var(--warn)" aria-hidden />
+                  <IconCloudOff size={18} color="var(--warn)" aria-hidden />
                   <Text c="var(--ink-2)" fw={600}>
                     <Trans>Not available offline</Trans>
                   </Text>
@@ -802,6 +992,24 @@ export default function ReaderPage() {
         </Center>
       </div>
     )
+  }
+
+  const closeNotes = () => {
+    setNotesOpen(false)
+    setNotesThread(null)
+  }
+  const notesBody = {
+    chapterId: manifest.chapterId,
+    seriesId: manifest.seriesId,
+    page: atEnd ? null : page,
+    pinPage: atEnd ? null : page,
+    pageCount: manifest.pageCount,
+    initialThreadId: notesThread?.chapterId === manifest.chapterId ? notesThread.rootId : null,
+    onGoToPage: (target: number) => {
+      setAtEnd(false)
+      seekToPage(target)
+      if (phoneSheet) setNotesOpen(false)
+    },
   }
 
   // The manifest's read count is a snapshot from when the chapter opened, so finishing this one on
@@ -842,6 +1050,12 @@ export default function ReaderPage() {
         bookmarked={bookmarked}
         bookmarkDisabled={bookmarkOffline}
         onToggleBookmark={() => toggleBookmark.mutate(page)}
+        noteCount={manifest.noteCount ?? 0}
+        notesOpen={notesOpen}
+        onToggleNotes={() => {
+          setNotesThread(null)
+          setNotesOpen((open) => !open)
+        }}
         stripOpen={stripOpen}
         onToggleStrip={() => setStripOpen((open) => !open)}
         visible={chrome}
@@ -850,8 +1064,16 @@ export default function ReaderPage() {
         onShortcuts={() => setShortcutsOpen(true)}
         serverEnhancing={server !== null}
         enhancedPages={enhancedPages}
+        upscalingPages={upscalingPages}
+        enhancePhase={enhancePhase}
         thumbs={thumbs}
         shownTo={shownTo}
+        autoScroll={{
+          on: autoScroll,
+          level: autoScrollLevel,
+          onToggle: toggleAutoScroll,
+          onLevel: setAutoScrollLevel,
+        }}
       />
 
       {atEnd ? (
@@ -861,6 +1083,7 @@ export default function ReaderPage() {
           rtl={prefs.direction === 'rtl'}
           onNext={() => void goToChapter(manifest.nextChapterId, true)}
           onStay={() => setAtEnd(false)}
+          onOpenNotes={() => setNotesOpen(true)}
           ratingPrompt={
             checkpoint?.checkpoint && (
               <RatingCheckpointPrompt
@@ -879,6 +1102,7 @@ export default function ReaderPage() {
         />
       ) : (
         <div
+          ref={setSurface}
           className="reader-surface"
           // Continuous mode scrolls one way only, unless the reader has been zoomed past 100%,
           // which is the one case where panning across a page is what was asked for.
@@ -900,16 +1124,17 @@ export default function ReaderPage() {
               seekVersion={seekVersion}
               onPastEnd={continuousPastEnd}
               hasNext={manifest.nextChapterId != null}
+              nextLabel={manifest.nextChapterLabel}
               fit={fit}
               scale={prefs.scale}
               tone={tone}
               gap={prefs.pageGap}
-              label={manifest.label}
+              label={serverChapterLabel(manifest.label)}
               enhance={enhance}
               enhanceMethod={prefs.enhanceMethod}
               enhanceFallback={prefs.enhanceFallback}
               server={server}
-              onStretched={setStretchedPages}
+              onStretched={onStretched}
               onEnhanceRange={onEnhanceRange}
             />
           ) : (
@@ -921,7 +1146,7 @@ export default function ReaderPage() {
               zoom={zoom}
               scale={prefs.scale}
               tone={tone}
-              label={manifest.label}
+              label={serverChapterLabel(manifest.label)}
               onMeasure={measure}
               cropBorders={prefs.cropBorders}
               splitWide={mode === 'paged' ? prefs.splitWide : 'off'}
@@ -931,18 +1156,18 @@ export default function ReaderPage() {
               enhanceFallback={prefs.enhanceFallback}
               server={server}
               preload={preloadPages}
-              onStretched={setStretchedPages}
+              onStretched={onStretched}
             />
           )}
         </div>
       )}
-      {!atEnd && (
-        <ServerEnhanceStatus
-          server={server}
-          pages={mode === 'vertical' ? [page] : (spreads[spreadIndex] ?? [page])}
-          method={prefs.enhanceMethod}
-        />
-      )}
+      <ServerEnhanceStatus
+        phase={enhancePhase}
+        method={prefs.enhanceMethod}
+        style={prefs.enhanceProgress}
+        chrome={chrome}
+        rtl={prefs.direction === 'rtl'}
+      />
 
       {stripOpen && (
         <div
@@ -963,6 +1188,7 @@ export default function ReaderPage() {
             urls={thumbs}
             page={page}
             bookmarks={bookmarkedPages}
+            notedPages={notedPageSet}
             onSelect={seekToPage}
             rtl={prefs.direction === 'rtl'}
           />
@@ -975,13 +1201,61 @@ export default function ReaderPage() {
         <ChapterBanner
           key={manifest.chapterId}
           seriesTitle={manifest.seriesTitle}
-          label={manifest.label}
+          label={serverChapterLabel(manifest.label)}
           pageCount={manifest.pageCount}
+          coverUrl={manifest.seriesCoverUrl}
         />
       )}
 
       {shortcutsOpen && (
         <ShortcutSheet rtl={prefs.direction === 'rtl'} onClose={() => setShortcutsOpen(false)} />
+      )}
+
+      {!phoneSheet && prefs.notesBeside && !atEnd && (
+        <NotesMargin
+          key={`notes-margin-${manifest.chapterId}`}
+          surface={surface}
+          vertical={mode === 'vertical'}
+          shownPages={spreads[spreadIndex] ?? [page]}
+          page={page}
+          chapterId={manifest.chapterId}
+          seriesId={manifest.seriesId}
+          pageCount={manifest.pageCount}
+          finished={manifest.completed || finished}
+          zoomed={zoom !== 1}
+          layoutKey={`${mode}:${fit}:${prefs.scale}:${spreadIndex}:${half}:${page}:${zoom}`}
+          lift={!chrome ? 'none' : stripOpen ? 'strip' : 'bar'}
+          onGoToPage={seekToPage}
+        />
+      )}
+
+      {phoneSheet ? (
+        <NotesPanel
+          key={`notes-${manifest.chapterId}`}
+          opened={notesOpen}
+          onClose={closeNotes}
+          chapterLabel={serverChapterLabel(manifest.label)}
+          inReader
+          zIndex={OVERLAY_Z}
+          {...notesBody}
+        />
+      ) : (
+        <NotesDropdown
+          key={`notes-${manifest.chapterId}`}
+          opened={notesOpen}
+          onClose={closeNotes}
+          title={t`Notes, ${serverChapterLabel(manifest.label)}`}
+          zIndex={OVERLAY_Z}
+          headerExtra={
+            <Switch
+              size="xs"
+              label={t`Beside the page`}
+              checked={prefs.notesBeside}
+              onChange={(event) => edit({ notesBeside: event.currentTarget.checked })}
+            />
+          }
+          {...notesBody}
+        />
       )}
 
       {prefs.showPageNumber && !chrome && !atEnd && (

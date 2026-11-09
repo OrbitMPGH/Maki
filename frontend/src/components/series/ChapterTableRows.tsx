@@ -3,8 +3,9 @@ import type { ReactNode } from 'react'
 import { plural, t as staticT } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { ActionIcon, Badge, Group, Loader, Menu, Progress, Skeleton, Switch, Table, Text, Tooltip } from '@mantine/core'
+import { ActionIcon, Badge, Box, Group, Loader, Menu, Popover, Progress, Skeleton, Switch, Table, Text, Tooltip } from '@mantine/core'
 import {
+  IconAlertTriangle,
   IconBook,
   IconChevronDown,
   IconCircleCheck,
@@ -20,30 +21,37 @@ import {
   IconEyeCheck,
   IconEyeOff,
   IconLink,
+  IconLinkOff,
   IconListCheck,
   IconLock,
   IconLockOpen,
   IconMinus,
+  IconNote,
   IconPhotoSearch,
-  IconSparkles,
+  IconCircleArrowUp,
   IconTrash,
   IconTrashX,
-} from '@tabler/icons-react'
+  IconUsers,
+} from '../../lib/icons'
+import type { NoteCountDto } from '../../api/notes'
+import { ChapterNotesDropdown } from '../notes/NotesDropdown'
+import { usePhoneSheet } from '../notes/phone'
 import { queueErrorMessage } from '../../api/queue'
 import type { ChapterProgressDto, ChapterReadState } from '../../api/reader'
 import type { ChapterDto, QueueItemDto } from '../../api/types'
-import { formatCalendarDate } from '../../format'
+import { chapterLabel as houseChapterLabel, chapterRangeLabel, formatCalendarDate } from '../../format'
 import type { OfflineChapter } from '../../pwa/contract'
 import type { SaveProgress } from '../../pwa/offlineChapters'
 import type { AnimeMarker, AnimeSpan } from '../../lib/animeCoverage'
 import { onPressKey, pressable } from '../../lib/pressable'
 import type { PickChapter } from '../SourceCompareModal'
 import { MetaList } from '../ui/MetaList'
-import { queueStatusVisual, statusColor } from '../ui/status'
+import { queueStatusVisual } from '../ui/status'
 import { FileQualityBadge } from './FileQualityBadge'
 import { HoverTooltip } from './HoverTooltip'
-import { LightActionIcon, LightBadge, LightGroup, LightStack, LightSwitch, LightText } from './lightMantine'
+import { LightActionIcon, LightBadge, LightGroup, LightSwitch, LightText } from './lightMantine'
 import { chapterLabel, readStateOf, type FileOrigin } from './chapterTable'
+import { displayChapterTitle } from '../../lib/chapterTitle'
 
 /** Stable for the page's lifetime (see `useStableActions`), so rows never re-render over a handler. */
 export type ChapterRowActions = {
@@ -58,6 +66,7 @@ export type ChapterRowActions = {
   deleteFile: (id: number) => void
   saveOffline: (id: number) => void
   removeOffline: (id: number) => void
+  openNotes: (id: number) => void
   toggleSpanFold: (key: string) => void
   setMarkerRef: (key: string, el: HTMLElement | null) => void
 }
@@ -72,6 +81,8 @@ export type ChapterSpanRowActions = {
 type ChapterRowProps = {
   chapter: ChapterDto
   progress: ChapterProgressDto | undefined
+  /** Notes on this chapter; absent when it has none or the counts are unavailable. */
+  noteCounts?: NoteCountDto
   queueItem: QueueItemDto | undefined
   selectMode: boolean
   selected: boolean
@@ -105,6 +116,7 @@ type ChapterRowProps = {
 export const ChapterRow = memo(function ChapterRow({
   chapter: c,
   progress: rowProgress,
+  noteCounts,
   queueItem,
   selectMode,
   selected: isSelected,
@@ -130,7 +142,6 @@ export const ChapterRow = memo(function ChapterRow({
 }: ChapterRowProps) {
   const { t } = useLingui()
   const chapterLbl = chapterLabel(c)
-  const chapterNumber = c.number
   const fileVolume = c.fileVolume
   const { read, inProgress, external, watched } = readStateOf(rowProgress)
   const pageIndex = rowProgress ? rowProgress.pageIndex + 1 : null
@@ -176,17 +187,19 @@ export const ChapterRow = memo(function ChapterRow({
         <Table.Td className={hasAnimeMarkers ? 'chapter-cell' : undefined} data-chapter-number={c.number ?? undefined}>
           <LightGroup gap={6} wrap="nowrap">
             {c.fileVolume !== null && !c.isOneShot && c.number !== null && (
-                <HoverTooltip label={t`Contained in a volume/compilation file`} withArrow>
-                  <LightBadge color="var(--watched)" className="tnum chapter-label">
-                    <Trans>Vol. {fileVolume}</Trans>
-                  </LightBadge>
-                </HoverTooltip>
+                <span className="chapter-lead-slot">
+                  <HoverTooltip label={t`Contained in a volume/compilation file`} withArrow>
+                    <LightBadge color="var(--volume)" className="tnum chapter-label">
+                      <Trans>Vol. {fileVolume}</Trans>
+                    </LightBadge>
+                  </HoverTooltip>
+                </span>
             )}
             <LightText fw={600} className="tnum chapter-label chapter-number">
               {c.isOneShot || c.number === null
                   ? chapterLabel(c)
                   : c.fileVolume !== null
-                      ? <Trans>Ch. {chapterNumber}</Trans>
+                      ? houseChapterLabel(c.number)
                       : chapterLabel(c)}
             </LightText>
           </LightGroup>
@@ -219,7 +232,7 @@ export const ChapterRow = memo(function ChapterRow({
                           withArrow
                       >
                         <LightBadge
-                            color={marker.kind === 'start' ? 'var(--info)' : 'var(--danger)'}
+                            color="var(--anime)"
                             className={`chapter-span-marker${span ? ' chapter-span-badge' : ''}`}
                             data-span-fold={span && marker.kind === 'start' ? span.key : undefined}
                             ref={
@@ -245,7 +258,7 @@ export const ChapterRow = memo(function ChapterRow({
         </Table.Td>
         <Table.Td>
           <LightText c="var(--ink-3)" lineClamp={1}>
-            {c.title}
+            {displayChapterTitle(c)}
           </LightText>
         </Table.Td>
         <Table.Td className="chapter-released">
@@ -263,15 +276,17 @@ export const ChapterRow = memo(function ChapterRow({
           ) : (
               (() => {
                 const origin = fileOrigin(c.fileSourceName, c.fileReleaseName)
+                // Side by side, wrapping only when the column is too narrow: stacked, the two
+                // pills made every row about 61px tall for one line of data.
                 return (
-                    <LightStack gap={4}>
+                    <LightGroup gap={4} wrap="wrap">
                       <HoverTooltip label={origin.hint} withArrow disabled={!origin.hint}>
                         <LightBadge variant={origin.scraped ? 'light' : 'outline'} color="var(--neutral)">
                           {origin.label}
                         </LightBadge>
                       </HoverTooltip>
                       <FileQualityBadge quality={c.fileQuality} />
-                    </LightStack>
+                    </LightGroup>
                 )
               })()
           )}
@@ -283,6 +298,7 @@ export const ChapterRow = memo(function ChapterRow({
                 (() => {
                   const visual = queueStatusVisual(queueItem.status)
                   const failure = queueErrorMessage(queueItem, renderLabel)
+                  const queueTone = visual.color
                   return (
                       <Tooltip
                         label={failure ?? renderLabel(visual.label)}
@@ -296,13 +312,13 @@ export const ChapterRow = memo(function ChapterRow({
                                   w={72}
                                   radius="xl"
                                   animated={queueItem.status === 'Downloading'}
-                                  color={queueItem.status === 'Failed' ? 'var(--danger)' : 'brand'}
+                                  color={queueTone}
                                   aria-label={t`Download progress`}
                               />
                           )}
                           <Badge
                               size="sm"
-                              color={statusColor(visual.color)}
+                              color={queueTone}
                               variant="light"
                               leftSection={<visual.Icon size={12} />}
                               className="tnum"
@@ -315,6 +331,17 @@ export const ChapterRow = memo(function ChapterRow({
                       </Tooltip>
                   )
                 })()
+            ) : c.hasFile && c.fileMissing ? (
+                <HoverTooltip
+                    label={t`The last health scan couldn't find this file on disk. Relink files finds it if it was moved or renamed.`}
+                    withArrow
+                    multiline
+                    w={280}
+                >
+                  <LightBadge color="var(--warn)" leftSection={<IconAlertTriangle size={12} />}>
+                    <Trans>File missing</Trans>
+                  </LightBadge>
+                </HoverTooltip>
             ) : c.hasFile ? (
                 <>
                   <LightBadge color="var(--ok)" leftSection={<IconCircleCheck size={12} />}>
@@ -369,9 +396,27 @@ export const ChapterRow = memo(function ChapterRow({
                 </HoverTooltip>
             ) : (
                 <LightBadge color="var(--neutral)">
-                  <Trans>Missing</Trans>
+                  <Trans>Not downloaded</Trans>
                 </LightBadge>
             )}
+            {c.delistedAt && (() => {
+              const delistedOn = formatCalendarDate(c.delistedAt)
+              return (
+                  <HoverTooltip
+                      label={t`No source has listed this chapter since ${delistedOn}. A source may have filed it here by mistake, so check the file. Sources also drop chapters after a licence takedown, and then the file is fine.`}
+                      withArrow
+                      multiline
+                      w={280}
+                  >
+                    <LightBadge
+                        color={c.hasFile ? 'var(--warn)' : 'var(--neutral)'}
+                        leftSection={<IconLinkOff size={12} />}
+                    >
+                      <Trans>Delisted</Trans>
+                    </LightBadge>
+                  </HoverTooltip>
+              )
+            })()}
             {offline && <OfflineBadge record={offline} saving={offlineSaving} />}
             {read && (
                 <HoverTooltip
@@ -385,9 +430,8 @@ export const ChapterRow = memo(function ChapterRow({
                     withArrow
                 >
                   <LightBadge
-                      color={watched ? 'var(--watched)' : 'var(--ok)'}
+                      color={watched ? 'var(--anime)' : 'var(--brand)'}
                       variant={watched || external ? 'light' : 'filled'}
-                      c={watched || external ? undefined : 'var(--ok-on)'}
                       leftSection={
                         watched ? <IconDeviceTv size={12} /> : <IconEyeCheck size={12} />
                       }
@@ -398,7 +442,7 @@ export const ChapterRow = memo(function ChapterRow({
             )}
             {/* Shown alongside Read when a finished chapter is being re-read. */}
             {inProgress && (
-                <LightBadge color="var(--info)" className="tnum">
+                <LightBadge color="var(--brand)" className="tnum">
                   {/* pageCount is 0 on rows imported from Kavita: the reader fills it
                       in on first open, so show a plain label until then. */}
                   {rowProgress && rowProgress.pageCount > 0 ? (
@@ -412,17 +456,39 @@ export const ChapterRow = memo(function ChapterRow({
         </Table.Td>
         <Table.Td onClick={(e) => e.stopPropagation()}>
           <LightGroup gap={2} wrap="nowrap" justify="flex-end">
-            {/* Marking read needs the file for its page count, so a removed chapter can only be un-read. */}
-            {(c.hasFile || (c.fileRemovedAt && read)) && (
+            {noteCounts && (noteCounts.mine > 0 || noteCounts.shared > 0) && (
+                <ChapterNotesCount
+                    chapter={c}
+                    counts={noteCounts}
+                    name={chapterLbl}
+                    spoilerGuard={!(read || watched)}
+                    onOpenSheet={actions.openNotes}
+                />
+            )}
+            {/* Marking read needs the file for its page count, so without one the button only clears progress. */}
+            {c.hasFile ? (
                 <HoverTooltip label={read ? t`Mark unread` : t`Mark read`} withArrow>
                   <LightActionIcon
                       variant={read ? 'light' : 'subtle'}
-                      color={read ? 'var(--ok)' : 'gray'}
+                      color={read ? 'var(--brand)' : 'gray'}
+                      data-row-action={read ? undefined : ''}
                       loading={readPending}
                       onClick={() => actions.setRead(c.id, !read)}
                       aria-label={t`Toggle read state of ${chapterLbl}`}
                   >
-                    {!read ? <IconEye size={17} /> : <IconEyeOff size={17} />}
+                    {!read ? <IconEye size={19} /> : <IconEyeOff size={19} />}
+                  </LightActionIcon>
+                </HoverTooltip>
+            ) : (read || inProgress) && (
+                <HoverTooltip label={read ? t`Mark unread` : t`Clear reading progress`} withArrow>
+                  <LightActionIcon
+                      variant="light"
+                      color="var(--brand)"
+                      loading={readPending}
+                      onClick={() => actions.setRead(c.id, false)}
+                      aria-label={read ? t`Mark ${chapterLbl} unread` : t`Clear reading progress of ${chapterLbl}`}
+                  >
+                    <IconEyeOff size={19} />
                   </LightActionIcon>
                 </HoverTooltip>
             )}
@@ -434,7 +500,7 @@ export const ChapterRow = memo(function ChapterRow({
                       color="brand"
                       aria-label={t`Read ${chapterLbl}`}
                   >
-                    <IconBook size={17} />
+                    <IconBook size={19} />
                   </LightActionIcon>
                 </HoverTooltip>
             )}
@@ -443,10 +509,11 @@ export const ChapterRow = memo(function ChapterRow({
                   <LightActionIcon
                       variant="subtle"
                       color="var(--neutral)"
+                      data-row-action=""
                       onClick={() => actions.link(c.id)}
                       aria-label={t`Link ${chapterLbl} to a file`}
                   >
-                    <IconLink size={17} />
+                    <IconLink size={19} />
                   </LightActionIcon>
                 </HoverTooltip>
             )}
@@ -462,7 +529,7 @@ export const ChapterRow = memo(function ChapterRow({
                       }}
                       aria-label={t`Download ${chapterLbl}`}
                   >
-                    <IconDownload size={17} />
+                    <IconDownload size={19} />
                   </LightActionIcon>
                 </HoverTooltip>
             )}
@@ -472,15 +539,16 @@ export const ChapterRow = memo(function ChapterRow({
                     <ActionIcon
                         variant="subtle"
                         color="var(--neutral)"
+                        data-row-action=""
                         aria-label={t`More actions for ${chapterLbl}`}
                     >
-                      <IconDotsVertical size={17} />
+                      <IconDotsVertical size={19} />
                     </ActionIcon>
                   </Menu.Target>
                   <Menu.Dropdown>
                     {canSaveOffline && (!offline || offline.state === 'error') && (
                         <Menu.Item
-                            leftSection={<IconDeviceMobileDown size={14} />}
+                            leftSection={<IconDeviceMobileDown size={16} />}
                             onClick={() => actions.saveOffline(c.id)}
                         >
                           <Trans>Save for offline</Trans>
@@ -488,7 +556,7 @@ export const ChapterRow = memo(function ChapterRow({
                     )}
                     {canSaveOffline && offline && (
                         <Menu.Item
-                            leftSection={<IconDeviceMobileOff size={14} />}
+                            leftSection={<IconDeviceMobileOff size={16} />}
                             onClick={() => actions.removeOffline(c.id)}
                         >
                           <Trans>Remove from this device</Trans>
@@ -498,7 +566,7 @@ export const ChapterRow = memo(function ChapterRow({
                     {canDownload && c.number !== null && canFindBetterCopy && !removing && (
                         <Tooltip label={sourceToolsDisabledReason} position="left" withArrow disabled={sourceToolsDisabledReason === null} events={{ hover: true, focus: true, touch: true }}>
                         <Menu.Item
-                            leftSection={<IconPhotoSearch size={14} />}
+                            leftSection={<IconPhotoSearch size={16} />}
                             data-disabled={sourceToolsDisabledReason !== null || undefined}
                             aria-disabled={sourceToolsDisabledReason !== null || undefined}
                             closeMenuOnClick={sourceToolsDisabledReason === null}
@@ -519,7 +587,7 @@ export const ChapterRow = memo(function ChapterRow({
                     {canDownload && !removing && (
                     <Tooltip label={sourceToolsDisabledReason} position="left" withArrow disabled={sourceToolsDisabledReason === null} events={{ hover: true, focus: true, touch: true }}>
                     <Menu.Item
-                        leftSection={upgradingThis ? <Loader size={14} /> : <IconSparkles size={14} />}
+                        leftSection={upgradingThis ? <Loader size={16} /> : <IconCircleArrowUp size={16} />}
                         disabled={upgradePending}
                         data-disabled={sourceToolsDisabledReason !== null || undefined}
                         aria-disabled={sourceToolsDisabledReason !== null || undefined}
@@ -536,8 +604,8 @@ export const ChapterRow = memo(function ChapterRow({
                         <Menu.Item
                             leftSection={
                               c.fileQuality.trusted
-                                  ? <IconLockOpen size={14} />
-                                  : <IconLock size={14} />
+                                  ? <IconLockOpen size={16} />
+                                  : <IconLock size={16} />
                             }
                             onClick={() => actions.setTrusted(c.fileQuality!.fileId, !c.fileQuality!.trusted)}
                         >
@@ -551,7 +619,7 @@ export const ChapterRow = memo(function ChapterRow({
                           {canDownload && <Menu.Divider />}
                           <Menu.Item
                               color="var(--danger)"
-                              leftSection={<IconTrash size={14} />}
+                              leftSection={<IconTrash size={16} />}
                               onClick={() => actions.deleteFile(c.id)}
                           >
                             <Trans>Delete file</Trans>
@@ -599,10 +667,10 @@ function OfflineBadge({ record, saving }: { record: OfflineChapter; saving: Save
   )
 }
 
-/** "Ch.1–270", or "Ch.315+" for a season with no end marker yet. */
+/** "Ch. 1–270", or "Ch. 315+" for a season with no end marker yet. */
 const spanRangeLabel = (span: AnimeSpan) => {
   const { from, to, openEnded } = span
-  return openEnded ? staticT`Ch.${from}+` : staticT`Ch.${from}–${to}`
+  return openEnded ? staticT`Ch. ${from}+` : chapterRangeLabel(from, to)
 }
 
 type ChapterSpanRowProps = {
@@ -631,7 +699,7 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
   const { label: spanLabel } = span
   const total = rows.length
   const downloaded = rows.filter((c) => c.hasFile)
-  const downloadedCount = downloaded.length
+  const downloadedCount = downloaded.filter((c) => !c.fileMissing).length
   const states = downloaded.map((c) => readStateOf(readProgress.get(c.id)))
   const watchedCount = states.filter((st) => st.watched).length
   const readCount = states.filter((st) => st.read && !st.watched).length
@@ -663,10 +731,10 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
               withArrow
           >
             <Switch
-                size="xs"
+                size="sm"
                 checked={allWanted}
                 classNames={mixed ? { track: 'chapter-span-wanted-mixed' } : undefined}
-                thumbIcon={mixed ? <IconMinus size={10} stroke={3} /> : undefined}
+                thumbIcon={mixed ? <IconMinus size={10} /> : undefined}
                 aria-label={plural(total, {
                   one: `Wanted for ${spanLabel}: ${wantedCount} of # chapter`,
                   other: `Wanted for ${spanLabel}: ${wantedCount} of # chapters`,
@@ -678,17 +746,19 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
         </Table.Td>
         <Table.Td className={hasAnimeMarkers ? 'chapter-cell' : undefined}>
           <Group gap={6} wrap="nowrap">
-            <Badge
-                size="sm"
-                color="var(--info)"
-                variant="light"
-                leftSection={<IconDeviceTv size={12} />}
-                className="chapter-span-badge"
-                data-span-fold={span.key}
-                {...pressable(() => actions.toggleSpanFold(span.key))}
-            >
-              {span.label}
-            </Badge>
+            <span className="chapter-lead-slot">
+              <Badge
+                  size="sm"
+                  color="var(--anime)"
+                  variant="light"
+                  leftSection={<IconDeviceTv size={12} />}
+                  className="chapter-span-badge"
+                  data-span-fold={span.key}
+                  {...pressable(() => actions.toggleSpanFold(span.key))}
+              >
+                {span.label}
+              </Badge>
+            </span>
             <Text size="sm" fw={600} className="tnum chapter-label chapter-number">
               {spanRangeLabel(span)}
             </Text>
@@ -713,63 +783,76 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
         <Table.Td />
         <Table.Td>
           {downloaded.length > 0 && (
-              <Progress
-                  value={(done / downloaded.length) * 100}
-                  color={watchedCount > readCount ? 'var(--watched)' : 'var(--ok)'}
-                  size="sm"
-                  radius="xl"
-                  aria-label={t`Reading progress`}
-              />
+              <div>
+                <Text size="xs" fw={600} c="var(--ink-3)" mb={4}>
+                  {watchedCount > 0 && readCount === 0
+                      ? <Trans>Watched in the anime</Trans>
+                      : readCount > 0 && watchedCount === 0
+                          ? <Trans>Read</Trans>
+                          : <Trans>Read or watched</Trans>}
+                </Text>
+                <Progress
+                    value={(done / downloaded.length) * 100}
+                    color={watchedCount > readCount ? 'var(--anime)' : 'var(--brand)'}
+                    size="sm"
+                    radius="xl"
+                    aria-label={t`Reading progress`}
+                />
+              </div>
           )}
         </Table.Td>
         <Table.Td onClick={(e) => e.stopPropagation()}>
           <Group gap={2} wrap="nowrap" justify="flex-end">
-            {readTracking && (
+            {/* The menu goes last, in the chapter rows' menu column; without one the chevron keeps its slot. */}
+            <Tooltip label={t`Expand`} withArrow>
+              <ActionIcon
+                  variant="subtle"
+                  color="var(--neutral)"
+                  data-row-action=""
+                  onClick={() => actions.toggleSpanFold(span.key)}
+                  aria-label={t`Expand ${spanLabel}`}
+              >
+                <IconChevronDown size={19} />
+              </ActionIcon>
+            </Tooltip>
+            {readTracking ? (
                 <Menu shadow="md" position="bottom-end" withinPortal>
                   <Menu.Target>
-                    <ActionIcon variant="subtle" color="var(--neutral)" aria-label={t`Actions for ${spanLabel}`}>
-                      <IconDotsVertical size={17} />
+                    <ActionIcon variant="subtle" color="var(--neutral)" data-row-action="" aria-label={t`Actions for ${spanLabel}`}>
+                      <IconDotsVertical size={19} />
                     </ActionIcon>
                   </Menu.Target>
                   <Menu.Dropdown>
                     <Menu.Item
-                        leftSection={<IconDeviceTv size={15} />}
+                        leftSection={<IconDeviceTv size={16} />}
                         onClick={() => actions.applyReadState(ids, 'watched')}
                     >
                       <Trans>Mark watched</Trans>
                     </Menu.Item>
                     <Menu.Item
-                        leftSection={<IconEyeCheck size={15} />}
+                        leftSection={<IconEyeCheck size={16} />}
                         onClick={() => actions.applyReadState(ids, 'read')}
                     >
                       <Trans>Mark read</Trans>
                     </Menu.Item>
                     <Menu.Item
-                        leftSection={<IconEyeOff size={15} />}
+                        leftSection={<IconEyeOff size={16} />}
                         onClick={() => actions.applyReadState(ids, 'unread')}
                     >
                       <Trans>Mark unread</Trans>
                     </Menu.Item>
                     <Menu.Divider />
                     <Menu.Item
-                        leftSection={<IconListCheck size={15} />}
+                        leftSection={<IconListCheck size={16} />}
                         onClick={() => actions.selectChapters(ids)}
                     >
                       <Trans>Select these chapters</Trans>
                     </Menu.Item>
                   </Menu.Dropdown>
                 </Menu>
+            ) : (
+                <Box w={32} style={{ flex: 'none' }} aria-hidden />
             )}
-            <Tooltip label={t`Expand`} withArrow>
-              <ActionIcon
-                  variant="subtle"
-                  color="var(--neutral)"
-                  onClick={() => actions.toggleSpanFold(span.key)}
-                  aria-label={t`Expand ${spanLabel}`}
-              >
-                <IconChevronDown size={17} />
-              </ActionIcon>
-            </Tooltip>
           </Group>
         </Table.Td>
       </Table.Tr>
@@ -811,4 +894,69 @@ export function ChunkedRows<T>({ rows, chunk = 100, children }: {
     else startTransition(() => setLimit(limit + chunk))
   }, [limit, rows.length, chunk])
   return children(limit >= rows.length ? rows : rows.slice(0, limit))
+}
+
+/** The row's note count. It opens the notes in a dropdown under itself, or the bottom sheet on a phone. */
+function ChapterNotesCount({
+  chapter,
+  counts,
+  name,
+  spoilerGuard,
+  onOpenSheet,
+}: {
+  chapter: ChapterDto
+  counts: NoteCountDto
+  name: string
+  spoilerGuard: boolean
+  onOpenSheet: (id: number) => void
+}) {
+  const { t } = useLingui()
+  const phone = usePhoneSheet()
+  const [opened, setOpened] = useState(false)
+  const { mine, shared } = counts
+  const label = t`Notes on ${name}: ${mine} yours, ${shared} shared`
+  const button = (
+    <button
+      type="button"
+      className="chapter-notes-button"
+      aria-label={label}
+      onClick={() => (phone ? onOpenSheet(chapter.id) : setOpened((open) => !open))}
+    >
+      {mine > 0 && (
+        <span className="chapter-notes-count" data-kind="mine">
+          <IconNote size={15} />
+          {mine}
+        </span>
+      )}
+      {shared > 0 && (
+        <span className="chapter-notes-count" data-kind="shared">
+          <IconUsers size={15} />
+          {shared}
+        </span>
+      )}
+    </button>
+  )
+  if (phone) {
+    return (
+      <HoverTooltip label={label} withArrow>
+        {button}
+      </HoverTooltip>
+    )
+  }
+  return (
+    <Popover opened={opened} onChange={setOpened} width={460} position="bottom-end" offset={4} shadow="lg" returnFocus>
+      <HoverTooltip label={label} withArrow>
+        <Popover.Target>{button}</Popover.Target>
+      </HoverTooltip>
+      {opened && (
+        <ChapterNotesDropdown
+          chapterId={chapter.id}
+          seriesId={chapter.seriesId}
+          chapterLabel={name}
+          spoilerGuard={spoilerGuard}
+          onClose={() => setOpened(false)}
+        />
+      )}
+    </Popover>
+  )
 }

@@ -1,7 +1,9 @@
 import { Center, Group, Loader, Modal, ScrollArea, Stack, Text, TextInput } from '@mantine/core'
 import { useDisclosure, useHotkeys, useOs } from '@mantine/hooks'
-import { IconAdjustments, IconArchive, IconBooks, IconPlus, IconSearch, IconSend } from '@tabler/icons-react'
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { IconAdjustments, IconArchive, IconBell, IconBooks, IconPlus, IconSearch, IconSend } from '../lib/icons'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { fuzzyFilter, titleIndex } from '../lib/fuzzySearch'
+import { DUR, EASE_CSS, pacedMs } from '../lib/motion'
 import { useNavigate } from 'react-router-dom'
 import { useSeries } from '../api/hooks'
 import { useAuth } from '../auth/AuthProvider'
@@ -14,6 +16,8 @@ import { useLabel } from '../i18n-context'
 import { seriesStatusVisual } from './ui/status'
 import type { SettingsTabKey } from '../pages/settings/registry'
 import type { NavItem } from '../nav'
+
+const LIST_MAX_HEIGHT = 360
 
 interface Props {
   navItems: NavItem[]
@@ -28,10 +32,49 @@ interface ModalProps extends Props {
 type Result =
   | { kind: 'nav'; key: string; label: string; sub: string; icon: NavItem['icon']; path: string }
   | { kind: 'setting'; key: string; label: string; sub: string; path: string }
-  | { kind: 'series'; key: string; label: string; sub: string; coverUrl: string | null; path: string }
+  | {
+      kind: 'series'
+      key: string
+      label: string
+      sub: string
+      coverUrl: string | null
+      path: string
+      /** The other title the query matched, when the shown one has no match to mark. */
+      alt: string | null
+    }
   | { kind: 'search'; key: string; label: string; sub: string; path: string }
 
 const MAX_SERIES_RESULTS = 8
+
+/**
+ * Wraps the parts of `label` that match a term in <mark>. The plain parts stay bare text nodes
+ * rather than spans (Mantine's Highlight wraps them), because the accessible name drops the space at
+ * the edge of a span and the row would be announced as "PaperMoon Detective".
+ */
+function markMatches(label: string, terms: string[]): ReactNode {
+  if (terms.length === 0) return label
+  const escaped = [...terms]
+    .sort((a, b) => b.length - a.length)
+    .map((term) => term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const parts = label.split(new RegExp(`(${escaped.join('|')})`, 'gi'))
+  return parts.map((part, i) => (i % 2 === 1 ? <mark key={i}>{part}</mark> : part))
+}
+
+function containsTerm(text: string, terms: string[]) {
+  const lower = text.toLowerCase()
+  return terms.some((term) => lower.includes(term.toLowerCase()))
+}
+
+/** The first other title holding the whole query, else any of its words; null when the shown one already has a match. */
+function matchingAltTitle(label: string, others: (string | null | undefined)[], terms: string[]): string | null {
+  if (terms.length === 0 || containsTerm(label, terms)) return null
+  const candidates = others.filter((o): o is string => !!o && o !== label)
+  return (
+    candidates.find((o) => containsTerm(o, terms.slice(0, 1))) ??
+    candidates.find((o) => containsTerm(o, terms)) ??
+    null
+  )
+}
 
 /** The search pill. `icon` is the bare circle the phone's top bar has room for. */
 export function CommandPaletteTrigger({
@@ -53,7 +96,7 @@ export function CommandPaletteTrigger({
       onClick={onOpen}
       aria-keyshortcuts={isMac ? 'Meta+K' : 'Control+K'}
     >
-      <IconSearch size={16} stroke={1.8} />
+      <IconSearch size={16} />
       <span className="command-palette-trigger-label">
         <Trans>Search</Trans>
       </span>
@@ -91,7 +134,8 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
   const optionId = (i: number) => `${listId}-option-${i}`
   const visibleSettings = useVisibleSettingsEntries()
 
-  useHotkeys([['mod+K', open]])
+  // No ignored tags: mod+K has no editing meaning, and people reach for it while typing in a field.
+  useHotkeys([['mod+K', open]], [])
 
   useEffect(() => {
     if (!opened) {
@@ -99,6 +143,24 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
       setSelected(0)
     }
   }, [opened])
+
+  // Typing the displayed name has to find the series even when a language preference has moved it
+  // off the canonical title, and typing the canonical name still has to.
+  const seriesTitles = useMemo(
+    () =>
+      titleIndex(series ?? [], (s) => [
+        s.title, s.displayTitle, s.sortTitle, s.originalTitle, ...(s.altTitleNames ?? []),
+      ]),
+    [series],
+  )
+
+  // The whole query first, then its words, since a fuzzy or multi-word match rarely contains the
+  // query as typed. A typo match highlights nothing, which is honest about what matched.
+  const highlightTerms = useMemo(() => {
+    const typed = query.trim()
+    if (!typed) return []
+    return [typed, ...typed.split(/\s+/).filter((w) => w.length > 1)]
+  }, [query])
 
   const results = useMemo<Result[]>(() => {
     const q = query.trim().toLowerCase()
@@ -141,6 +203,22 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
           ]
         : []
 
+    // Reached from the bell rather than the sidebar, and open to every signed-in user.
+    const notificationsLabel = _(msg`Notifications`)
+    const notificationsNav =
+      !q || notificationsLabel.toLowerCase().includes(q)
+        ? [
+            {
+              kind: 'nav' as const,
+              key: 'nav-/notifications',
+              label: notificationsLabel,
+              sub: _(msg`Page`),
+              icon: IconBell,
+              path: '/notifications',
+            },
+          ]
+        : []
+
     // Individual settings, not just the Settings page: a card is only reachable now if you know
     // which tab it sits under, and searching is the answer to that. Filtered by what the caller may
     // actually see, so a non-admin is never sent to a tab that doesn't exist for them.
@@ -157,17 +235,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
       : []
 
     const seriesMatches = q
-      ? (series ?? [])
-          .filter(
-            (s) =>
-              s.title.toLowerCase().includes(q) ||
-              // Typing the displayed name has to find the series even when a language preference
-              // has moved it off the canonical title, and typing the canonical name still has to.
-              s.displayTitle.toLowerCase().includes(q) ||
-              s.sortTitle.toLowerCase().includes(q) ||
-              s.originalTitle?.toLowerCase().includes(q) ||
-              s.altTitles.some((t) => t.title.toLowerCase().includes(q)),
-          )
+      ? fuzzyFilter(series ?? [], q, seriesTitles)
           .slice(0, MAX_SERIES_RESULTS)
           .map((s) => ({
             kind: 'series' as const,
@@ -176,6 +244,11 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
             sub: s.archivedAt != null ? archivedLabel : renderLabel(seriesStatusVisual(s.status).label),
             coverUrl: s.coverUrl,
             path: `/series/${s.id}`,
+            alt: matchingAltTitle(
+              s.displayTitle,
+              [s.title, s.originalTitle, ...(s.altTitles ?? []).map((a) => a.title)],
+              highlightTerms,
+            ),
           }))
       : []
 
@@ -195,12 +268,39 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
         ]
       : []
 
-    return [...navMatches, ...archivedNav, ...settingMatches, ...seriesMatches, ...searchFallback]
-  }, [query, navItems, series, visibleSettings, canAdd, renderLabel, _, i18n.locale])
+    return [...navMatches, ...notificationsNav, ...archivedNav, ...settingMatches, ...seriesMatches, ...searchFallback]
+  }, [query, navItems, series, seriesTitles, visibleSettings, canAdd, renderLabel, highlightTerms, _, i18n.locale])
 
   useEffect(() => {
     setSelected(0)
   }, [results.length])
+
+  // The list stops at the last row that fits whole under the cap, so the panel never ends on half
+  // a row. Rows differ in height (an alternate title adds a line), so it is measured, not fixed.
+  const rowsRef = useRef<HTMLDivElement | null>(null)
+  const [listMax, setListMax] = useState<number>()
+  const fitList = useCallback(() => {
+    const stack = rowsRef.current
+    if (!stack) return
+    const cap = Math.min(LIST_MAX_HEIGHT, window.innerHeight * 0.6)
+    const pad = parseFloat(getComputedStyle(stack).paddingBottom) || 0
+    let fit = cap
+    for (const row of Array.from(stack.children) as HTMLElement[]) {
+      const top = row.offsetParent === stack ? row.offsetTop : row.offsetTop - stack.offsetTop
+      const bottom = top + row.offsetHeight + pad
+      if (bottom > cap) break
+      fit = bottom
+    }
+    setListMax(Math.round(fit))
+  }, [])
+  const rowsRefCallback = useCallback(
+    (el: HTMLDivElement | null) => {
+      rowsRef.current = el
+      fitList()
+    },
+    [fitList],
+  )
+  useLayoutEffect(fitList, [fitList, results])
 
   // Only a keyboard move scrolls: a mouse hover is already on a visible row, and scrolling under
   // the pointer would make the list chase it.
@@ -246,7 +346,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
         radius="md"
         size="lg"
         centered
-        transitionProps={{ transition: 'pop', duration: 120 }}
+        transitionProps={{ transition: 'pop', duration: pacedMs(DUR.fast), timingFunction: EASE_CSS }}
         zIndex={1100}
         attributes={{ content: { 'aria-label': t`Search` } }}
       >
@@ -270,8 +370,14 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
             py={4}
             style={{ borderBottom: '1px solid var(--border)' }}
           />
-          <ScrollArea.Autosize mah="min(360px, 60dvh)" type="auto" viewportRef={listRef}>
-            <Stack gap={2} p="xs" id={listId} role={results.length > 0 ? 'listbox' : undefined}>
+          <ScrollArea.Autosize
+            mah={listMax ?? `min(${LIST_MAX_HEIGHT}px, 60dvh)`}
+            type="auto"
+            scrollbars="y"
+            viewportRef={listRef}
+            className="command-palette-list"
+          >
+            <Stack ref={rowsRefCallback} gap={2} p="xs" id={listId} role={results.length > 0 ? 'listbox' : undefined}>
               {results.length === 0 && (
                 // On a cold cache the library is still loading, so an empty list is not an answer yet.
                 seriesLoading && !series ? (
@@ -301,14 +407,14 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
                   style={{ cursor: 'pointer', borderRadius: 'var(--radius-thumb)' }}
                 >
                   {r.kind === 'nav' ? (
-                    <r.icon size={18} stroke={1.7} />
+                    <r.icon size={18} />
                   ) : r.kind === 'setting' ? (
-                    <IconAdjustments size={18} stroke={1.7} />
+                    <IconAdjustments size={18} />
                   ) : r.kind === 'search' ? (
                     canAdd ? (
-                      <IconPlus size={18} stroke={1.7} />
+                      <IconPlus size={18} />
                     ) : (
-                      <IconSend size={18} stroke={1.7} />
+                      <IconSend size={18} />
                     )
                   ) : r.coverUrl ? (
                     <img
@@ -319,12 +425,18 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
                       style={{ objectFit: 'cover', borderRadius: 'var(--mantine-radius-xs)', flexShrink: 0 }}
                     />
                   ) : (
-                    <IconBooks size={18} stroke={1.7} />
+                    <IconBooks size={18} />
                   )}
                   <Stack gap={0} style={{ minWidth: 0 }}>
                     <Text size="sm" fw={600} truncate>
-                      {r.label}
+                      {/* The fallback's label is the query itself, so marking it would mark all of it. */}
+                      {r.kind === 'search' ? r.label : markMatches(r.label, highlightTerms)}
                     </Text>
+                    {r.kind === 'series' && r.alt && (
+                      <Text size="xs" c="var(--ink-3)" truncate>
+                        {markMatches(r.alt, highlightTerms)}
+                      </Text>
+                    )}
                     <Text size="xs" c="var(--ink-3)" truncate>
                       {r.sub}
                     </Text>

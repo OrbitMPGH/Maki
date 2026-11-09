@@ -1,5 +1,5 @@
 import { Alert, Button, Group, Loader, Progress, Text, Tooltip } from '@mantine/core'
-import { IconCheck, IconRuler } from '@tabler/icons-react'
+import { IconCheck, IconRuler } from '../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { ScoutSourceProgress, SourceOrderDto } from '../api/upgrades'
@@ -57,7 +57,7 @@ export function MeasureProgress({ order }: { order: SourceOrderDto }) {
   const done = scout.done
   const probes = scout.probes
   return (
-    <Alert color="var(--info)" variant="light" icon={<Loader size={16} />} mb="sm">
+    <Alert color="var(--info)" variant="light" icon={<Loader size={16} />} mt="sm" mb="sm">
       <Text size="sm" fw={500}>
         {plural(sources, {
           one: `Measuring # source on chapters ${chapters}`,
@@ -99,9 +99,8 @@ export function MeasureResult({
   const { t } = useLingui()
   const problemText = useProblemText()
   const scout = order.scout!
-  const tried = scout.sources.filter((s) => s.state !== 'skipped')
-  const measured = tried.filter((s) => s.state === 'done').length
-  const total = tried.length
+  const measured = scout.sources.filter((s) => s.state === 'done').length
+  const total = scout.sources.length
   const failed = scout.sources.filter((s) => s.state === 'failed' || s.state === 'skipped')
   const best = order.qualityOrder[0]
   const current = order.order.find((id) => order.qualityOrder.includes(id))
@@ -117,6 +116,7 @@ export function MeasureResult({
       withCloseButton
       closeButtonLabel={t`Dismiss`}
       onClose={onDismiss}
+      mt="sm"
       mb="sm"
     >
       <Text size="sm" fw={500}>
@@ -135,7 +135,11 @@ export function MeasureResult({
         </Text>
       ) : order.mode === 'quality' ? (
         <Text size="sm" mt={4}>
-          <Trans>Downloads now try {bestName} first.</Trans>
+          {failed.length > 0 ? (
+            <Trans>Downloads now try {bestName} first. Sources that could not be measured are tried last.</Trans>
+          ) : (
+            <Trans>Downloads now try {bestName} first.</Trans>
+          )}
         </Text>
       ) : (
         <Text size="sm" mt={4}>

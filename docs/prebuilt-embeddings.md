@@ -90,19 +90,19 @@ Two published files per build:
 
 - `embeddings-<modelVersion>-<dumpDate>.db.zst` — the database.
 - `manifest.json` — small, polled frequently so the client can check compatibility and freshness
-  without pulling ~80 MB.
+  without pulling ~42 MB.
 
 ```json
 {
-  "modelVersion": "snowflake-arctic-embed-m-q5",
-  "dimensions": 768,
+  "modelVersion": "snowflake-arctic-embed-m-v1.5-256-q6",
+  "dimensions": 256,
   "quantized": true,
-  "dumpDate": "2026-07-20",
-  "rowCount": 95835,
-  "generatedAt": "2026-07-21T02:00:00Z",
+  "dumpDate": "2026-11-03",
+  "rowCount": 128403,
+  "generatedAt": "2026-11-03T02:00:00Z",
   "sha256": "…",
-  "sizeBytes": 83421000,
-  "url": "https://…/embeddings-snowflake-arctic-embed-m-q5-2026-07-20.db.zst"
+  "sizeBytes": 44040192,
+  "url": "https://…/embeddings-snowflake-arctic-embed-m-v1.5-256-q6-2026-11-03.db.zst"
 }
 ```
 
@@ -152,7 +152,7 @@ require the dates to match.
 
 ## Cadence and cost
 
-Nightly full artifacts would be ~80 MB × every user × 365. Better: **publish weekly.** The local
+Nightly full artifacts would be ~42 MB × every user × 365. Better: **publish weekly.** The local
 incremental pass only runs when an admin presses Build in settings, so series added to the dump
 between artifacts have no vectors until the next artifact lands or someone builds locally; a day's
 new series is a few hundred rows, well under a minute when that pass is run. That cuts hosting ~7×

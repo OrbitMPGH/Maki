@@ -355,7 +355,9 @@ public class BackupService(
         string? lastApplied;
         try
         {
-            using var conn = new SqliteConnection($"Data Source={dbPath};Mode=ReadOnly;Pooling=False");
+            // Read-write although it only reads: a read-only connection closing last leaves the -shm for
+            // the read-write open after it to truncate, which SIGBUSes on Docker Desktop (see SqliteKeeper).
+            using var conn = new SqliteConnection($"Data Source={dbPath};Mode=ReadWrite;Pooling=False");
             conn.Open();
 
             using (var check = conn.CreateCommand())

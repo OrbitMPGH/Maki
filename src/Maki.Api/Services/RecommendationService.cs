@@ -308,7 +308,8 @@ public class RecommendationService(
         // the top and say so, rather than an empty page: the client drops what it had and keeps
         // this, so paging restarts instead of dead-ending mid-scroll.
         var restart = request.PoolVersion is { Length: > 0 } paging && paging != version;
-        var similarVisible = Spread(pool.Similar.Where(p => !suppressed.Contains(CatalogueId(p))).ToList());
+        var similarVisible = RecommendationReasons.Balance(
+            Spread(pool.Similar.Where(p => !suppressed.Contains(CatalogueId(p))).ToList()));
         var relatedVisible = pool.Related.Where(p => !suppressed.Contains(CatalogueId(p))).ToList();
         var page = restart ? 0 : Math.Max(0, request.Page);
         return pool with

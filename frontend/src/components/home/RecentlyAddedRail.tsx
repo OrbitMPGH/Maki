@@ -1,8 +1,9 @@
 import { memo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { IconPlayerPlayFilled } from '@tabler/icons-react'
+import { IconBookFilled } from '../../lib/icons'
 import type { HomeRecentSeriesItem } from '../../api/hooks'
 import { Rail } from '../ui/Rail'
+import { coverChapterLabel } from '../../lib/chapterLabel'
 import { relativeTime } from '../ui/time'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -11,7 +12,7 @@ import { plural } from '@lingui/core/macro'
  * Horizontal rail of series that recently gained chapter files. Cards go to the series page;
  * the small Read button jumps straight into the next unread chapter.
  */
-export function RecentlyAddedRail({ items }: { items: HomeRecentSeriesItem[] }) {
+export const RecentlyAddedRail = memo(function RecentlyAddedRail({ items }: { items: HomeRecentSeriesItem[] }) {
   return (
     <Rail>
       {items.map((item) => (
@@ -22,7 +23,7 @@ export function RecentlyAddedRail({ items }: { items: HomeRecentSeriesItem[] }) 
       ))}
     </Rail>
   )
-}
+})
 
 // A sibling of the card link rather than inside it: interactive content nested in an anchor is invalid.
 function ReadNextButton({ chapterId }: { chapterId: number }) {
@@ -36,7 +37,7 @@ function ReadNextButton({ chapterId }: { chapterId: number }) {
       aria-label={t`Read next chapter`}
       onClick={() => navigate(`/read/${chapterId}`)}
     >
-      <IconPlayerPlayFilled size={10} />
+      <IconBookFilled size={10} />
     </button>
   )
 }
@@ -58,8 +59,8 @@ const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesIt
         <div className="cover-corners">
           {item.newestChapterLabel && (
             <div className="cover-corner cover-corner-left">
-              <span className="cover-chapter">
-                <span>{item.newestChapterLabel}</span>
+              <span className="cover-chapter" title={item.newestChapterLabel}>
+                <span>{coverChapterLabel(item.newestChapterLabel)}</span>
               </span>
             </div>
           )}
@@ -72,7 +73,7 @@ const RecentCard = memo(function RecentCard({ item }: { item: HomeRecentSeriesIt
           <div className="cover-row">
             <span>{relativeTime(item.addedAt, 'narrow')}</span>
             <span
-              className="cover-new cover-new-quiet"
+              className="cover-new"
               data-tip={plural(newChapterCount, {
                 one: '# recent chapter file',
                 other: '# recent chapter files',

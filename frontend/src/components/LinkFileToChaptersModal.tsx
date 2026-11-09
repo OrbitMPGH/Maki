@@ -13,17 +13,19 @@ import {
   TextInput,
   UnstyledButton,
 } from '@mantine/core'
-import { IconFileZip, IconSearch, IconX } from '@tabler/icons-react'
+import { IconFileZip, IconSearch, IconX } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
+import { chapterLabel as houseChapterLabel, serverChapterLabel } from '../format'
 import { useChapters, useLinkChapters, useUnlinkChapters } from '../api/hooks'
 import type { ChapterDto, SeriesFileDto } from '../api/types'
+import { displayChapterTitle } from '../lib/chapterTitle'
 
 function chapterLabel(c: ChapterDto): string {
-  if (!c.isOneShot && c.number === null && c.volume !== null) return now`Vol.${c.volume}`
+  if (!c.isOneShot && c.number === null && c.volume !== null) return serverChapterLabel(`Vol.${c.volume}`)
   if (c.isOneShot || c.number === null) return c.title ?? now`One-shot`
-  return c.volume !== null ? now`Vol.${c.volume} Ch.${c.number}` : now`Ch.${c.number}`
+  return houseChapterLabel(c.number, c.volume)
 }
 
 /**
@@ -150,7 +152,7 @@ export function LinkFileToChaptersModal({
               {file.fileName}
             </Text>
             {file.parsedLabel && (
-              <Badge size="sm" variant="light" color={file.isVolume ? 'indigo' : 'gray'} className="tnum">
+              <Badge size="sm" variant="light" color={file.isVolume ? 'var(--volume)' : 'var(--neutral)'} className="tnum">
                 {file.parsedLabel}
               </Badge>
             )}
@@ -181,7 +183,7 @@ export function LinkFileToChaptersModal({
                 style={{ flex: 1, minWidth: 160 }}
                 value={query}
                 onChange={(e) => setQuery(e.currentTarget.value)}
-                leftSection={<IconSearch size={14} />}
+                leftSection={<IconSearch size={16} />}
                 rightSection={
                   query ? (
                     <ActionIcon size={24} variant="subtle" color="var(--neutral)" aria-label={t`Clear search`} onClick={() => setQuery('')}>
@@ -235,9 +237,9 @@ export function LinkFileToChaptersModal({
                           <Text size="sm" className="tnum" style={{ whiteSpace: 'nowrap' }}>
                             {chapterLabel(c)}
                           </Text>
-                          {c.title && !c.isOneShot && (
+                          {!c.isOneShot && displayChapterTitle(c) && (
                             <Text size="sm" c="var(--ink-3)" truncate>
-                              {c.title}
+                              {displayChapterTitle(c)}
                             </Text>
                           )}
                         </Group>

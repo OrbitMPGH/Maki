@@ -219,12 +219,16 @@ public sealed class DumpDbBuilder : IDisposable
 
     public void Dispose()
     {
-        try
+        // The catalogue cache keeps its snapshot beside the dump.
+        foreach (var file in new[] { Path, System.IO.Path.ChangeExtension(Path, ".catalogue") })
         {
-            File.Delete(Path);
-        }
-        catch (IOException)
-        {
+            try
+            {
+                File.Delete(file);
+            }
+            catch (IOException)
+            {
+            }
         }
     }
 }

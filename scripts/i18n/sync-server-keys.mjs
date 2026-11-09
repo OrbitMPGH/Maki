@@ -133,11 +133,15 @@ for (const locale of localeDirs()) {
   // Rebuilt in the English catalogue's order, so the two files read the same way side by side.
   // Every block's comments come from English and the translation is carried over untouched, which
   // also repairs entries written before this script kept the source references.
+  // Comment order is gettext's (`#.` before `#:`), the order Weblate writes. Any other order and a
+  // single Weblate edit rewrites every entry, which conflicts with the next sync.
   const blocks = sourceOrder.map((key) => {
     const english = sourceText.get(key) ?? ''
+    const context = contextFrom(sourceComments.get(key) ?? [])
     return [
-      ...contextFrom(sourceComments.get(key) ?? []),
+      ...context.filter((l) => l.startsWith('#. ')),
       `#. English: ${english.replace(/\n/g, ' ')}`,
+      ...context.filter((l) => l.startsWith('#: ')),
       ...(byKey.has(key)
         ? translationLines(byKey.get(key))
         : [`msgid "${escapePo(key)}"`, 'msgstr ""']),

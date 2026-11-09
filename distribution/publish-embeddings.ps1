@@ -118,8 +118,9 @@ function Require-Command {
 function Get-ModelProfile {
   $profilePath = Join-Path $repoRoot "src\Maki.Metadata\Embedding\EmbeddingModelProfile.cs"
   $profileText = Get-Content $profilePath -Raw
-  # Grab just the `Base = new(...)` block.
-  if ($profileText -notmatch "(?s)EmbeddingModelProfile\s+Base\s*=\s*new\((.*?)\);") {
+  # Grab just the `Base = new(...)` arguments, up to and including PrebuiltTag: an object
+  # initializer after the arguments means the first `);` is no longer the end of Base.
+  if ($profileText -notmatch "(?s)EmbeddingModelProfile\s+Base\s*=\s*new\((.*?PrebuiltTag:\s*`"[^`"]+`")") {
     throw "Could not find the 'Base' model profile in $profilePath"
   }
   $block = $Matches[1]
@@ -230,7 +231,10 @@ $outDir = Join-Path $ArtifactsDir "out\$m"
 if (Test-Path $outDir) { Remove-Item $outDir -Recurse -Force }
 New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 
-$packExit = Invoke-Native { & dotnet run $packTool -- $indexDb $outDir $info.Dimensions $MinRows }
+# --no-cache: a temp cleaner can strip the dependency DLLs out of the cached build under
+# %TEMP%\dotnet\runfile while leaving its up-to-date stamp, and the run then dies on a missing
+# ZstdSharp assembly. The packer is small enough that rebuilding it every time costs seconds.
+$packExit = Invoke-Native { & dotnet run --no-cache $packTool -- $indexDb $outDir $info.Dimensions $MinRows }
 if ($packExit -ne 0) { throw "Validating/packing the $m index failed - nothing packed." }
 
 $manifestPath = Join-Path $outDir "manifest.json"

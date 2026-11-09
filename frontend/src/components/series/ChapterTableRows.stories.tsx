@@ -25,6 +25,7 @@ const actions: ChapterRowActions = {
   deleteFile: fn(),
   saveOffline: fn(),
   removeOffline: fn(),
+  openNotes: fn(),
   toggleSpanFold: fn(),
   setMarkerRef: fn(),
 }
@@ -111,10 +112,24 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+export const WithNotes: Story = {
+  args: { noteCounts: { chapterId: byNumber(5).id, mine: 2, shared: 3, total: 4 } },
+  play: async ({ args, canvas, canvasElement, userEvent }) => {
+    const name = /^Notes on .*Ch\. 5: 2 yours, 3 shared$/
+    // Hovering mounts the tooltip, which replaces the button; click the one that stays.
+    await userEvent.hover(await canvas.findByRole('button', { name }))
+    await userEvent.click(await canvas.findByRole('button', { name }))
+    // A wide screen opens the notes under the count; only a phone hands off to the bottom sheet.
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByRole('dialog', { name })).toBeVisible()
+    await expect(args.actions.openNotes).not.toHaveBeenCalled()
+  },
+}
+
 export const Downloaded: Story = {
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText(/Ch\.5/)).toBeVisible()
-    await waitFor(() => expect(canvas.getByRole('switch', { name: /Want .*Ch\.5/ })).toBeChecked())
+    await expect(await canvas.findByText(/Ch\. 5/)).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /Want .*Ch\. 5/ })).toBeChecked())
   },
 }
 
@@ -165,6 +180,15 @@ export const ProtectedFile: Story = {
 
 export const InsideVolumeFile: Story = {
   args: { chapter: { ...byNumber(8), fileVolume: '1' } },
+}
+
+export const FileMissing: Story = {
+  args: { chapter: { ...byNumber(8), fileVolume: '1', fileMissing: true } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('File missing')).toBeVisible()
+    await expect(canvas.queryByText('Downloaded')).toBeNull()
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /Want/ })).toBeEnabled())
+  },
 }
 
 export const ImportedFile: Story = {
@@ -227,10 +251,31 @@ export const FileAutoRemoved: Story = {
   },
 }
 
+export const DelistedWithFile: Story = {
+  args: { chapter: { ...byNumber(5), delistedAt: hoursAgo(20) } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Delisted')).toBeInTheDocument()
+    await expect(canvas.getByText('Downloaded')).toBeInTheDocument()
+  },
+}
+
+export const DelistedMissing: Story = {
+  args: {
+    chapter: {
+      ...byNumber(4),
+      delistedAt: hoursAgo(20),
+    },
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Delisted')).toBeInTheDocument()
+    await expect(canvas.getByText('Not downloaded')).toBeInTheDocument()
+  },
+}
+
 export const SelectModeSelected: Story = {
   args: { selectMode: true, selected: true },
   play: async ({ args, canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByText(/Ch\.5/))
+    await userEvent.click(await canvas.findByText(/Ch\. 5/))
     await waitFor(() => expect(args.actions.clickRow).toHaveBeenCalled())
   },
 }
@@ -238,7 +283,7 @@ export const SelectModeSelected: Story = {
 export const ReaderRow: Story = {
   args: { canEditMetadata: false, canDownload: false, canDelete: false, canFindBetterCopy: false },
   play: async ({ canvas }) => {
-    await waitFor(() => expect(canvas.getByRole('switch', { name: /Want .*Ch\.5/ })).toBeDisabled())
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /Want .*Ch\. 5/ })).toBeDisabled())
   },
 }
 

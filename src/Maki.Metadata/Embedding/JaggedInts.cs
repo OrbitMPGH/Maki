@@ -18,14 +18,21 @@ namespace Maki.Metadata.Embedding;
 /// </summary>
 public sealed class JaggedInts
 {
-    private readonly int[] _values;
-    private readonly int[] _offsets;
+    private readonly Column<int> _values;
+    private readonly Column<int> _offsets;
 
-    private JaggedInts(int[] values, int[] offsets)
+    private JaggedInts(Column<int> values, Column<int> offsets)
     {
         _values = values;
         _offsets = offsets;
     }
+
+    /// <summary>Rebuilds an instance from the arrays <see cref="Values"/> and <see cref="Offsets"/> hand out.</summary>
+    internal static JaggedInts FromParts(Column<int> values, Column<int> offsets) => new(values, offsets);
+
+    internal Column<int> Values => _values;
+
+    internal Column<int> Offsets => _offsets;
 
     /// <summary>An instance with no rows, for a column an index does not carry.</summary>
     public static JaggedInts Empty { get; } = new([], [0]);

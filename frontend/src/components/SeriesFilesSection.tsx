@@ -1,23 +1,25 @@
 import { useState } from 'react'
-import { ActionIcon, Badge, Button, Checkbox, Group, Modal, Paper, Skeleton, Stack, Table, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core'
+import { ActionIcon, Badge, Button, Checkbox, Group, Paper, Skeleton, Stack, Table, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core'
 import {
   IconFileTypePdf,
+  IconFileUnknown,
   IconFileZip,
   IconLink,
   IconLock,
   IconLockOpen,
   IconRefresh,
   IconWand,
+  IconListCheck,
   IconTrash,
   IconX,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { useSeriesFiles, useDeleteSeriesFiles } from '../api/hooks'
 import { offersPermanentDelete, useRecycleBinDays } from '../api/recycleBin'
 import { PermanentDeleteFallback } from './PermanentDeleteFallback'
 import { useSetFileTrusted } from '../api/upgrades'
 import type { SeriesFileDto } from '../api/types'
-import { formatBytes } from '../format'
+import { formatBytes, serverChapterLabel } from '../format'
 import { FileQualityBadge } from './series/FileQualityBadge'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -25,30 +27,53 @@ import { useLabel } from '../i18n-context'
 import { isPdfFile } from '../lib/files'
 import { fileStatusVisual, statusToken } from './ui/status'
 import { StatusDot } from './ui/StatusDot'
-import { MonoValue } from './ui/MonoValue'
+import { MonoValue, sharedPrefixLength, splitForTruncation } from './ui/MonoValue'
 import { Panel } from './ui/Panel'
 import { useAuth } from '../auth/AuthProvider'
 import { LinkFileToChaptersModal } from './LinkFileToChaptersModal'
 import { RelinkFilesModal } from './RelinkFilesModal'
 import { MetaList } from './ui/MetaList'
+import { ConfirmDialog } from './ui/ConfirmDialog'
 
-/** "21" → "Ch. 21"; ["21","22","23"] → "Ch. 21, 22, 23". */
+/** ["1", ..., "8", "8.5", "10"] → "1–8, 8.5, 10": whole-number runs collapse, so a long list never cuts mid-number. */
+export function chapterRuns(numbers: string[]): string {
+  const parts: string[] = []
+  let start: string | null = null
+  let prev: string | null = null
+  const close = () => {
+    if (start === null || prev === null) return
+    parts.push(start === prev ? start : `${start}–${prev}`)
+  }
+  for (const n of numbers) {
+    const value = Number(n)
+    const follows = prev !== null && Number.isInteger(value) && Number.isInteger(Number(prev)) && value === Number(prev) + 1
+    if (!follows) {
+      close()
+      start = n
+    }
+    prev = n
+  }
+  close()
+  return parts.join(', ')
+}
+
+/** "21" → "Ch. 21"; ["21","22","23","25"] → "Ch. 21–23, 25". */
 function mappedLabel(file: SeriesFileDto): string {
   const { mappedChapters } = file
   if (mappedChapters.length === 0) {
     // A linked volume with no chapter numbers backs volume entries, which carry its own label.
     if (file.status !== 'linked') return '-'
-    return file.isVolume && file.parsedLabel !== null ? file.parsedLabel : now`One-shot`
+    return file.isVolume && file.parsedLabel !== null ? serverChapterLabel(file.parsedLabel) : now`One-shot`
   }
-  const chapters = mappedChapters.join(', ')
+  const chapters = chapterRuns(mappedChapters)
   return now`Ch. ${chapters}`
 }
 
 const hasLinks = (file: SeriesFileDto) => file.mappedChapters.length > 0 || file.status === 'linked'
 const MAPPED_TOOLTIP_EVENTS = { hover: true, focus: true, touch: true }
-// The fixed columns take 742px; this leaves the file name about 140px, so a phone sees it and the
+// The fixed columns take 752px; this leaves the file name about 200px, so a phone sees it and the
 // parsed label before the table scrolls.
-const FILE_TABLE_MIN_WIDTH = 880
+const FILE_TABLE_MIN_WIDTH = 950
 
 export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   const { t } = useLingui()
@@ -100,6 +125,17 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
 
   const problems = files?.filter((f) => f.status !== 'linked').length ?? 0
   const unlinkedOnDisk = files?.filter((f) => f.onDisk && f.status !== 'linked').length ?? 0
+  const missingCount = files?.filter((f) => f.status === 'missing').length ?? 0
+  const fileCount = files?.length ?? 0
+  const sharedPrefix = sharedPrefixLength((files ?? []).map((f) => f.fileName))
+  const fileNameTailCh = Math.max(
+    0,
+    ...(files ?? []).map((f) =>
+      sharedPrefix ? f.fileName.length - sharedPrefix : splitForTruncation(f.fileName)[1].length,
+    ),
+  )
+  // When most of the folder is gone it is one problem, not twenty: one banner says so.
+  const mostlyMissing = missingCount >= 2 && missingCount >= fileCount * 0.8
 
   const exitSelectMode = () => {
     setSelectMode(false)
@@ -119,12 +155,12 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
       <Table.Tr>
         {selectMode && <Table.Th w={40}><VisuallyHidden><Trans>Select</Trans></VisuallyHidden></Table.Th>}
         <Table.Th><Trans>File</Trans></Table.Th>
-        <Table.Th w={90}><Trans>Parsed</Trans></Table.Th>
-        <Table.Th w={130}><Trans>Status</Trans></Table.Th>
-        <Table.Th w={150}><Trans>Mapped to</Trans></Table.Th>
-        <Table.Th w={100}><Trans>Size</Trans></Table.Th>
-        <Table.Th w={160}><Trans>Quality</Trans></Table.Th>
-        {!selectMode && <Table.Th w={40 + (canLink ? 36 : 0) + (canDownload ? 36 : 0)}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>}
+        <Table.Th w={100}><Trans>Parsed</Trans></Table.Th>
+        <Table.Th w={156}><Trans>Status</Trans></Table.Th>
+        <Table.Th w={152}><Trans>Mapped to</Trans></Table.Th>
+        <Table.Th w={84}><Trans>Size</Trans></Table.Th>
+        <Table.Th w={148}><Trans>Quality</Trans></Table.Th>
+        {!selectMode && <Table.Th w={52 + (canLink ? 34 : 0) + (canDownload ? 34 : 0)}><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>}
       </Table.Tr>
     </Table.Thead>
   )
@@ -132,9 +168,8 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
   return (
     <div>
       <Group justify="space-between" wrap="wrap" gap="sm">
-        <Group gap="xs" align="center">
-          <IconFileZip size={18} />
-          <Title order={3}>
+        <Group gap="xs" align="baseline">
+          <Title order={2} size="h3">
             <Trans>Files</Trans>
           </Title>
           {files && (
@@ -151,19 +186,20 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
         <Group gap="xs">
             <Button
               size="xs"
-              variant="subtle"
-              leftSection={<IconRefresh size={14} />}
+              variant="default"
+              leftSection={<IconRefresh size={16} />}
               loading={isFetching && !isLoading}
               onClick={() => void refetch()}
             >
               <Trans>Refresh</Trans>
             </Button>
-            {files && files.length > 0 && !selectMode && canLink && (
+            {/* While the missing-files banner shows, its button is the one place this lives. */}
+            {files && files.length > 0 && !selectMode && canLink && !mostlyMissing && (
               <Tooltip label={t`Rebuild chapter links from the folder, volumes first`} withArrow>
                 <Button
                   size="xs"
-                  variant="subtle"
-                  leftSection={<IconWand size={14} />}
+                  variant="default"
+                  leftSection={<IconWand size={16} />}
                   onClick={() => setRelinkOpen(true)}
                 >
                   <Trans>Relink files</Trans>
@@ -173,7 +209,8 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             {files && files.length > 0 && !selectMode && (
               <Button
                 size="xs"
-                variant="subtle"
+                variant="default"
+                leftSection={<IconListCheck size={16} />}
                 onClick={() => setSelectMode(true)}
               >
                 <Trans>Select</Trans>
@@ -202,6 +239,39 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
           </Text>
         ) : (
         <>
+          {mostlyMissing && !selectMode && (
+            <Paper className="series-files-hint" withBorder p="xs" radius="lg" mt="sm" role="status">
+              <Group gap="sm" wrap="wrap" justify="space-between">
+                <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: '1 1 20rem', minWidth: 0 }}>
+                  <IconFileUnknown size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} />
+                  <Text size="sm" c="var(--ink-2)">
+                    {missingCount === fileCount ? (
+                      <Plural
+                        value={missingCount}
+                        one="The file listed for this series is missing from disk."
+                        other="All # files listed for this series are missing from disk."
+                      />
+                    ) : (
+                      <Trans>{missingCount} of {fileCount} files listed for this series are missing from disk.</Trans>
+                    )}{' '}
+                    {canLink && (
+                      <Trans>If they are in the folder under other names, Relink files finds them.</Trans>
+                    )}
+                  </Text>
+                </Group>
+                {canLink && (
+                  <Button
+                    size="xs"
+                    variant="default"
+                    leftSection={<IconWand size={16} />}
+                    onClick={() => setRelinkOpen(true)}
+                  >
+                    <Trans>Relink files</Trans>
+                  </Button>
+                )}
+              </Group>
+            </Paper>
+          )}
           {unlinkedOnDisk > 0 && canLink && !selectMode && (
             <Paper className="series-files-hint" withBorder p="xs" radius="lg" mt="sm">
               <Group gap="xs" wrap="nowrap" align="flex-start">
@@ -243,7 +313,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                     size="xs"
                     variant="light"
                     color="var(--danger)"
-                    leftSection={<IconTrash size={15} />}
+                    leftSection={<IconTrash size={16} />}
                     disabled={selected.size === 0}
                     onClick={() => setConfirmOpen(true)}
                   >
@@ -252,7 +322,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                   <Button
                     size="xs"
                     variant="default"
-                    leftSection={<IconX size={15} />}
+                    leftSection={<IconX size={16} />}
                     onClick={exitSelectMode}
                   >
                     <Trans>Done</Trans>
@@ -262,11 +332,11 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             </Paper>
           )}
 
-          <Panel p={0} className="table-panel" mt="sm">
+          <Panel p={0} className="table-panel series-files-panel" mt="sm">
             <Table.ScrollContainer minWidth={FILE_TABLE_MIN_WIDTH}>
               {/* Fixed, so the file name takes what the other columns leave and loses its middle
                   rather than pushing them into wrapping. */}
-              <Table className="panel-table ops-table" layout="fixed" highlightOnHover>
+              <Table className="panel-table ops-table series-files-table" layout="fixed" highlightOnHover>
                 {tableHead}
                 <Table.Tbody>
                   {files.map((f) => {
@@ -275,7 +345,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                     return (
                       <Table.Tr key={f.relativePath} data-muted={f.status === 'missing' || undefined}>
                         {selectMode && (
-                          <Table.Td>
+                          <Table.Td className="files-cell-select">
                             <Checkbox
                               checked={selected.has(f.relativePath)}
                               onChange={() => toggleSelected(f.relativePath)}
@@ -284,25 +354,31 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             />
                           </Table.Td>
                         )}
-                        <Table.Td>
+                        <Table.Td className="files-cell-name">
                           <Group gap={6} wrap="nowrap">
                             {isPdfFile(f.fileName) ? (
-                              <IconFileTypePdf size={15} style={{ flexShrink: 0 }} />
+                              <IconFileTypePdf size={16} style={{ flexShrink: 0 }} />
                             ) : (
-                              <IconFileZip size={15} style={{ flexShrink: 0 }} />
+                              <IconFileZip size={16} style={{ flexShrink: 0 }} />
                             )}
-                            <MonoValue value={f.fileName} full={f.relativePath} copy />
+                            <MonoValue
+                              value={f.fileName}
+                              full={f.relativePath}
+                              splitAt={sharedPrefix || undefined}
+                              tailCh={fileNameTailCh}
+                              copy
+                            />
                           </Group>
                         </Table.Td>
-                        <Table.Td>
+                        <Table.Td className="files-cell-parsed">
                           {f.parsedLabel ? (
                             <Badge
                               size="sm"
                               variant="light"
-                              color={f.isVolume ? 'indigo' : 'gray'}
-                              className="tnum"
+                              color={f.isVolume ? 'var(--volume)' : 'var(--neutral)'}
+                              className="tnum files-parsed-pill"
                             >
-                              {f.parsedLabel}
+                              {serverChapterLabel(f.parsedLabel)}
                             </Badge>
                           ) : (
                             <Text size="sm" c="var(--ink-3)">
@@ -310,10 +386,12 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             </Text>
                           )}
                         </Table.Td>
-                        <Table.Td>
-                          <StatusDot tone={statusToken(v.color)}>{renderLabel(v.label)}</StatusDot>
+                        <Table.Td className="files-cell-status">
+                          <StatusDot tone={statusToken(v.color)}>
+                            {renderLabel(v.label)}
+                          </StatusDot>
                         </Table.Td>
-                        <Table.Td>
+                        <Table.Td className="files-cell-mapped">
                           {f.isVolume && f.mappedChapters.length > 0 ? (
                             <Tooltip
                               label={
@@ -356,16 +434,16 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                             </Text>
                           )}
                         </Table.Td>
-                        <Table.Td>
+                        <Table.Td className="files-cell-size">
                           <Text size="sm" c="var(--ink-3)" className="tnum" style={{ whiteSpace: 'nowrap' }}>
                             {formatBytes(f.size)}
                           </Text>
                         </Table.Td>
-                        <Table.Td>
+                        <Table.Td className="files-cell-quality">
                           <FileQualityBadge quality={f.quality} />
                         </Table.Td>
                         {!selectMode && (
-                          <Table.Td>
+                          <Table.Td className="files-cell-actions">
                             <Group gap={2} wrap="nowrap" justify="flex-end">
                             {canLink && (
                               <Tooltip
@@ -375,11 +453,12 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                                 <ActionIcon
                                   variant="subtle"
                                   color={hasLinks(f) ? 'gray' : 'brand'}
+                                  data-row-action={hasLinks(f) ? '' : undefined}
                                   disabled={!f.onDisk}
                                   onClick={() => setLinkFile(f)}
                                   aria-label={t`Link chapters to ${fileName}`}
                                 >
-                                  <IconLink size={17} />
+                                  <IconLink size={19} />
                                 </ActionIcon>
                               </Tooltip>
                             )}
@@ -391,6 +470,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                                 <ActionIcon
                                   variant="subtle"
                                   color="var(--neutral)"
+                                  data-row-action=""
                                   onClick={() =>
                                     setFileTrusted.mutate({
                                       fileId: f.quality!.fileId,
@@ -403,14 +483,15 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                                       : t`Protect ${fileName} from upgrades`
                                   }
                                 >
-                                  {f.quality.trusted ? <IconLockOpen size={17} /> : <IconLock size={17} />}
+                                  {f.quality.trusted ? <IconLockOpen size={19} /> : <IconLock size={19} />}
                                 </ActionIcon>
                               </Tooltip>
                             )}
-                            <Tooltip label={f.onDisk ? t`Delete from disk` : t`Missing from disk`} withArrow>
+                            <Tooltip label={f.onDisk ? t`Delete from disk` : t`File missing`} withArrow>
                               <ActionIcon
                                 variant="subtle"
                                 color="var(--danger)"
+                                data-row-action="danger"
                                 disabled={!f.onDisk}
                                 onClick={() => {
                                   setSelected(new Set([f.relativePath]))
@@ -419,7 +500,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                                 }}
                                 aria-label={t`Delete ${fileName}`}
                               >
-                                <IconTrash size={17} />
+                                <IconTrash size={19} />
                               </ActionIcon>
                             </Tooltip>
                             </Group>
@@ -433,12 +514,14 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             </Table.ScrollContainer>
           </Panel>
 
-          <Modal
+          <ConfirmDialog
             opened={confirmOpen}
             onClose={closeConfirm}
             title={t`Delete files?`}
-            centered
-            attributes={{ content: { 'data-edge': 'danger' } }}
+            confirmLabel={<Trans>Delete files</Trans>}
+            onConfirm={() => deleteSelected(false)}
+            loading={deleteFiles.isPending}
+            confirmDisabled={binRefused}
           >
             <Stack gap="md">
               <Text size="sm" c="var(--ink-3)">
@@ -456,25 +539,11 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                   other="Files can be restored from Settings for # days, then they are deleted for good."
                 />
               </Text>
-              <Group justify="flex-end">
-                <Button variant="default" onClick={closeConfirm}>
-                  <Trans>Cancel</Trans>
-                </Button>
-                <Button
-                  color="var(--danger-fill)"
-                  leftSection={<IconTrash size={16} />}
-                  loading={deleteFiles.isPending}
-                  disabled={binRefused}
-                  onClick={() => deleteSelected(false)}
-                >
-                  <Trans>Delete</Trans>
-                </Button>
-              </Group>
               {binRefused && (
                 <PermanentDeleteFallback loading={deleteFiles.isPending} onConfirm={() => deleteSelected(true)} />
               )}
             </Stack>
-          </Modal>
+          </ConfirmDialog>
         </>
       ))}
 

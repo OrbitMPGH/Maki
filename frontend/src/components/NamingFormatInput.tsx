@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { ActionIcon, Text, TextInput } from '@mantine/core'
-import { IconHelp } from '@tabler/icons-react'
+import { IconHelp } from '../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { NamingTokenModal } from './NamingTokenModal'
 

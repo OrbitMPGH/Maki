@@ -1,3 +1,4 @@
+using System.Text;
 using Maki.Core.Entities;
 using Maki.Core.Paths;
 using Maki.Data;
@@ -18,6 +19,61 @@ public static class HealthInventory
         Id = file.Version, FileId = file.Id, ContentHash = file.ContentHash, Size = file.Size,
         ModifiedAt = file.ModifiedAt, RelativePath = file.RelativePath, AnalyzerVersion = file.AnalyzerVersion,
     };
+
+    /// <summary>
+    /// The series' <c>ChapterFile</c> ids the last health scan found gone from disk (<c>Size &lt; 0</c>),
+    /// read from the inventory rather than the disk. A row only counts while it still names the record's
+    /// path in the series' root, so a relink or move reads as present before the next scan catches up.
+    /// </summary>
+    public static async Task<HashSet<int>> MissingChapterFilesAsync(MakiDbContext db, int seriesId, CancellationToken ct)
+    {
+        var rows = await db.HealthFiles.AsNoTracking()
+            .Where(h => !h.Removed && h.Size < 0 && h.ChapterFileId != null)
+            .Join(db.ChapterFiles.Where(f => f.SeriesId == seriesId), h => h.ChapterFileId, f => (int?)f.Id,
+                (h, f) => new { f.Id, HealthPath = h.RelativePath, FilePath = f.RelativePath, h.RootFolderId })
+            .Where(x => db.Series.Any(s => s.Id == seriesId && s.RootFolderId == x.RootFolderId))
+            .ToListAsync(ct);
+        return rows
+            .Where(x => KeyComparer.Equals(LibraryPaths.ComparisonKey(x.HealthPath), LibraryPaths.ComparisonKey(x.FilePath)))
+            .Select(x => x.Id)
+            .ToHashSet();
+    }
+
+    /// <summary>
+    /// The root's <c>ChapterFile</c> rows at a stored path, matched by <see cref="LibraryPaths.ComparisonKey"/>
+    /// the way the scan links them, so a record written with the other host's separator is the same file.
+    /// </summary>
+    public static async Task<List<ChapterFile>> RecordsAtAsync(MakiDbContext db, int rootId, string relativePath, CancellationToken ct)
+    {
+        var key = LibraryPaths.ComparisonKey(relativePath);
+        return (await RecordsNamedAsync(db, rootId, Path.GetFileName(key), ct))
+            .Where(f => KeyComparer.Equals(LibraryPaths.ComparisonKey(f.RelativePath), key))
+            .ToList();
+    }
+
+    /// <summary>
+    /// The root's <c>ChapterFile</c> rows whose file name is <paramref name="fileName"/> ignoring case,
+    /// in any folder. One query: SQLite's LIKE folds ASCII case only, so other cased letters match
+    /// any character there and the name is compared exactly here.
+    /// </summary>
+    public static async Task<List<ChapterFile>> RecordsNamedAsync(MakiDbContext db, int rootId, string fileName, CancellationToken ct)
+    {
+        var pattern = new StringBuilder("%");
+        foreach (var c in fileName)
+        {
+            if (c is '%' or '_' or '\\') pattern.Append('\\').Append(c);
+            else if (c > 127 && char.ToUpperInvariant(c) != char.ToLowerInvariant(c)) pattern.Append('_');
+            else pattern.Append(c);
+        }
+        var like = pattern.ToString();
+        var rows = await db.ChapterFiles
+            .Where(f => db.Series.Any(s => s.Id == f.SeriesId && s.RootFolderId == rootId))
+            .Where(f => EF.Functions.Like(f.RelativePath, like, "\\"))
+            .ToListAsync(ct);
+        return rows
+            .Where(f => string.Equals(Path.GetFileName(LibraryPaths.ComparisonKey(f.RelativePath)), fileName, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
 
     /// <summary>
     /// Repoints the series' live rows at <paramref name="destinationId"/> without saving. A path the
@@ -124,12 +180,7 @@ public static class HealthInventory
         await db.HealthFiles.Where(f => ids.Contains(f.Id)).ExecuteUpdateAsync(u => u.SetProperty(f => f.Removed, true), ct);
         await db.HealthFindings.Where(f => ids.Contains(f.FileId) && f.State != "resolved")
             .ExecuteUpdateAsync(u => u.SetProperty(f => f.State, "resolved"), ct);
-        if (hashes.Count > 0)
-            await db.HealthFindings
-                .Where(x => x.Kind == "duplicate" && x.State != "resolved")
-                .Where(x => db.HealthFiles.Any(f => f.Id == x.FileId && !f.Removed && f.ContentHash != null && hashes.Contains(f.ContentHash)
-                    && !db.HealthFiles.Any(o => o.Id != f.Id && !o.Removed && o.ContentHash == f.ContentHash)))
-                .ExecuteUpdateAsync(u => u.SetProperty(x => x.State, "resolved"), ct);
+        if (hashes.Count > 0) await HealthDuplicates.ResolveLonelyAsync(db, hashes, ct);
         return ids;
     }
 

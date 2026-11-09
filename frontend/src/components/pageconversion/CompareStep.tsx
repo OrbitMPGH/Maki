@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Alert, Button, Group, Skeleton, Slider, Stack, Text } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
-import { IconPhotoSearch, IconZoomIn } from '@tabler/icons-react'
+import { IconPhotoSearch, IconZoomIn } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import {
   PAGE_CONVERSION_STOPS,
@@ -100,7 +100,7 @@ export function CompareStep({
               variant={loupe ? 'filled' : 'default'}
               size="xs"
               aria-pressed={loupe}
-              leftSection={<IconZoomIn size={14} />}
+              leftSection={<IconZoomIn size={16} />}
               onClick={() => setLoupe((on) => !on)}
             >
               <Trans>Loupe, 2x</Trans>
@@ -108,7 +108,7 @@ export function CompareStep({
             <Button
               variant="default"
               size="xs"
-              leftSection={<IconPhotoSearch size={14} />}
+              leftSection={<IconPhotoSearch size={16} />}
               onClick={() => setPickerOpen(true)}
             >
               <Trans>Pick another page</Trans>
@@ -127,7 +127,7 @@ export function CompareStep({
         />
       )}
       {encoded.isError && (
-        <Alert color="red" variant="light">
+        <Alert color="var(--danger)" variant="light">
           <Trans>Maki could not encode this page. Try another page or another format.</Trans>
         </Alert>
       )}

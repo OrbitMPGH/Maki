@@ -38,14 +38,13 @@ view another reader. `/rewind` redirects to the Stats page.
 
 ## Keep a series out of stats
 
-Choose **Incognito** from the series' menu:
+Choose **Automation → Incognito** from the series' actions menu:
 
 - **Off** records everything.
 - **No scrobble** skips tracker pushes only. The series still counts in your stats.
 - **Full** also leaves the series out of Stats, and so out of Rewind.
 
-The reader toolbar has a separate **Incognito (don't record this session)** toggle for the current
-session.
+The reader's settings panel has a separate **Incognito** toggle for the current session.
 
 :::caution
 Reading recorded while a series is on **Full** never reaches your history, even after you switch the

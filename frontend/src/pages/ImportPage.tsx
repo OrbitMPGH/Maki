@@ -24,7 +24,7 @@ import {
   IconFolderSearch,
   IconPackageImport,
   IconSearch,
-} from '@tabler/icons-react'
+} from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
@@ -144,7 +144,7 @@ export default function ImportPage() {
         description={
           mihonMode
             ? t`Adds the manga in your Mihon library to Maki.`
-            : t`Brings series folders Maki doesn't know yet into the library.`
+            : t`Add series folders that Maki does not know about yet.`
         }
       />
       {mihonAvailable && (
@@ -159,7 +159,7 @@ export default function ImportPage() {
             setSearchParams(next, { replace: true })
           }}
         >
-          <Tabs.List mb="md">
+          <Tabs.List>
             <Tabs.Tab value="folders">
               <Trans>Folders</Trans>
             </Tabs.Tab>
@@ -412,15 +412,20 @@ function FolderImport() {
               if (v !== scannedRootFolderId) clearScan()
             }}
           />
-          <Button
-            variant={candidates && candidates.length > 0 ? 'default' : 'filled'}
-            leftSection={<IconFolderSearch size={16} />}
-            onClick={() => rootFolderId && scan.mutate(Number(rootFolderId))}
-            loading={scan.isPending}
-            disabled={!rootFolderId || doImport.isPending}
-          >
-            <Trans>Scan</Trans>
-          </Button>
+          {/* data-disabled while no root is picked, so the tooltip saying why can still show. */}
+          <Tooltip label={t`Choose a root folder first`} disabled={!!rootFolderId} events={{ hover: true, focus: true, touch: true }}>
+            <Button
+              variant={candidates && candidates.length > 0 ? 'default' : 'filled'}
+              leftSection={<IconFolderSearch size={16} />}
+              onClick={() => rootFolderId && scan.mutate(Number(rootFolderId))}
+              loading={scan.isPending}
+              data-disabled={!rootFolderId || undefined}
+              aria-disabled={!rootFolderId}
+              disabled={doImport.isPending}
+            >
+              <Trans>Scan</Trans>
+            </Button>
+          </Tooltip>
           {candidates && candidates.length > 0 && (
             <Group gap="sm" ml="auto" className="import-toolbar-actions">
               <Button
@@ -596,6 +601,8 @@ function FolderImport() {
 
       {rootFolders && rootFolders.length === 0 ? (
         <EmptyState
+          compact
+          framed
           mood="asking"
           title={t`No root folders yet`}
           description={t`Add a root folder in Settings, then come back to scan it for series to import.`}
@@ -606,6 +613,7 @@ function FolderImport() {
         !visibleCandidates && (
           <EmptyState
             compact
+            framed
             mood="asking"
             title={t`Choose a root folder`}
             description={t`Scanning finds the series folders Maki doesn't know yet.`}
@@ -660,6 +668,7 @@ function FolderImport() {
       {visibleCandidates.length === 0 && (
         <EmptyState
           compact
+          framed
           mood="asleep"
           title={t`Nothing to import`}
           description={t`Every folder in this root is already in the library, ignored, or holds no comics.`}
@@ -744,7 +753,7 @@ function FolderImport() {
                                   }
                                   disabled={doImport.isPending}
                                 >
-                                  <IconEye size={14} />
+                                  <IconEye size={16} />
                                 </ActionIcon>
                               </Tooltip>
                             )}
@@ -758,7 +767,7 @@ function FolderImport() {
                                   onClick={() => ignore(c.folderName)}
                                   disabled={doImport.isPending || !!rowProgress}
                                 >
-                                  <IconEyeOff size={14} />
+                                  <IconEyeOff size={16} />
                                 </ActionIcon>
                               </Tooltip>
                             )}
@@ -837,7 +846,7 @@ function FolderImport() {
                               <Button
                                 size="xs"
                                 variant="light"
-                                leftSection={<IconSearch size={14} />}
+                                leftSection={<IconSearch size={16} />}
                                 onClick={() => setFinderFor(c)}
                                 disabled={doImport.isPending}
                               >

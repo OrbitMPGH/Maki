@@ -2,6 +2,7 @@ using System.Globalization;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Images;
+using Maki.Core.Io;
 using Maki.Core.Paths;
 using Maki.Core.Storage;
 using Maki.Data;
@@ -58,11 +59,19 @@ public class PageConversionService(
     /// <summary>A file read-file cleanup will delete within this many days is not worth converting.</summary>
     public const int CleanupHorizonDays = 7;
 
+    /// <summary>
+    /// How long after its last page request a queued file still counts as being read. A swap mid-chapter
+    /// changes the archive version, which drops the chapter's server upscales and cached pages.
+    /// </summary>
+    public static readonly TimeSpan ReadingQuiet = TimeSpan.FromMinutes(10);
+
     internal Func<string, string, bool> Hardlink { get; init; } = FileLinker.TryHardlink;
 
     internal Action<string, string> MoveOver { get; init; } = (from, to) => File.Move(from, to, overwrite: true);
 
     internal Func<string, long?> FreeSpace { get; init; } = DiskSpace.AvailableFor;
+
+    internal Action<string> DropCache { get; init; } = PageCache.DropAfterScan;
 
     /// <summary>
     /// Windows refuses to rename an open file or move the folder it is in, and a conversion can take
@@ -85,8 +94,14 @@ public class PageConversionService(
 
     /// <param name="plan">The plan the pass started with; every file of a pass is decided by the same one.</param>
     /// <param name="cache">Shared across a pass.</param>
+    /// <param name="queued">
+    /// For <see cref="PageConversionWorker"/>'s queue of new files rather than a pass. A file Maki downloaded
+    /// from a source keeps no original, as when downloads converted before placement; an import's still goes
+    /// to the trash. Only a download of one of the file's own chapters holds it up, not one anywhere in the
+    /// series, and a file a reader was served a page of within <see cref="ReadingQuiet"/> waits as Busy.
+    /// </param>
     public async Task<FileConversion> ConvertAsync(int fileId, PageConversionPlan plan,
-        PageConversionPassCache cache, CancellationToken ct)
+        PageConversionPassCache cache, CancellationToken ct, bool queued = false)
     {
         var row = await db.ChapterFiles.IgnoreQueryFilters().AsNoTracking()
             .Where(f => f.Id == fileId)
@@ -120,11 +135,12 @@ public class PageConversionService(
             return new FileConversion(FileConversionStatus.Hardlinked);
         }
 
-        if (await BusyAsync(file.SeriesId, ct))
+        if (await BusyAsync(file, queued, ct) || (queued && archives.ReadWithin(path, ReadingQuiet)))
         {
             return new FileConversion(FileConversionStatus.Busy);
         }
 
+        var keepOriginal = !queued || file.SourceChapterId is null;
         var action = plan.Resolve(PageConversionPlanService.Candidate(file,
             await PageConversionPlanService.SeriesFactsAsync(db, file.SeriesId, ct)));
         if (action is not PlanAction.Convert { Settings: var settings })
@@ -139,16 +155,28 @@ public class PageConversionService(
             return new FileConversion(FileConversionStatus.Unchanged);
         }
 
+        // A pass reads each file end to end once and never again soon, so whatever it leaves as it was goes
+        // out of the page cache. A queued file is a fresh download, likely to be read next.
+        void LeaveCold()
+        {
+            if (!queued)
+            {
+                DropCache(path);
+            }
+        }
+
         if (!await Probe(path, settings, ct))
         {
             await MarkCheckedAsync(file, action.Name, ct);
+            LeaveCold();
             return new FileConversion(FileConversionStatus.Unchanged, Outcome: ArchiveConversionOutcome.NotSmaller);
         }
 
         var before = new FileInfo(path);
         var (length, written) = (before.Length, before.LastWriteTimeUtc);
         var tmp = Path.Combine(row.Root, ".maki", "tmp", $"{TrashPrefix}{fileId.ToString(CultureInfo.InvariantCulture)}.cbz");
-        if (!cache.Hardlinks.TryGetValue(row.Root, out var hardlinks))
+        var hardlinks = true;
+        if (keepOriginal && !cache.Hardlinks.TryGetValue(row.Root, out hardlinks))
         {
             hardlinks = HardlinksHoldUp(row.Root);
             cache.Hardlinks[row.Root] = hardlinks;
@@ -177,6 +205,7 @@ public class PageConversionService(
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             logger.LogDebug(ex, "Could not convert {Path}", path);
+            LeaveCold();
             return new FileConversion(FileConversionStatus.Failed);
         }
         finally
@@ -190,8 +219,11 @@ public class PageConversionService(
         if (result.Outcome != ArchiveConversionOutcome.Converted)
         {
             await MarkCheckedAsync(file, action.Name, ct);
+            LeaveCold();
             return new FileConversion(FileConversionStatus.Unchanged, Outcome: result.Outcome);
         }
+
+        var swapped = false;
 
         try
         {
@@ -199,8 +231,10 @@ public class PageConversionService(
             var current = await db.ChapterFiles.IgnoreQueryFilters().FirstOrDefaultAsync(f => f.Id == fileId, ct);
             var onDisk = new FileInfo(path);
             if (current is null || current.RelativePath != file.RelativePath || current.ConversionCheckedAtUtc is not null ||
-                !onDisk.Exists || onDisk.Length != length || onDisk.LastWriteTimeUtc != written || await BusyAsync(file.SeriesId, ct))
+                !onDisk.Exists || onDisk.Length != length || onDisk.LastWriteTimeUtc != written ||
+                await BusyAsync(current, queued, ct) || (queued && archives.ReadWithin(path, ReadingQuiet)))
             {
+                LeaveCold();
                 return new FileConversion(FileConversionStatus.Busy);
             }
 
@@ -209,10 +243,14 @@ public class PageConversionService(
                 .OrderBy(c => c.Id)
                 .Select(c => (int?)c.Id)
                 .FirstOrDefaultAsync(ct);
-            if (Swap(row.Root, current, path, tmp, hardlinks) is not { } trashRelative)
+            var trashRelative = keepOriginal ? Swap(row.Root, current, path, tmp, hardlinks) : null;
+            if (keepOriginal ? trashRelative is null : !Replace(path, tmp))
             {
+                LeaveCold();
                 return new FileConversion(FileConversionStatus.Failed);
             }
+
+            swapped = true;
 
             // The bytes have changed: from here the row has to be saved whatever happens.
             archives.Invalidate(current.Id);
@@ -220,26 +258,36 @@ public class PageConversionService(
             var now = DateTime.UtcNow;
             PageConversionOptions.Apply(current, result, acquired, action.Name, now);
             current.Size = new FileInfo(path).Length;
-            db.PageConversionHistory.Add(new PageConversionHistory
+            current.ConversionQueuedAtUtc = null;
+            if (trashRelative is not null)
             {
-                ChapterFileId = current.Id,
-                SeriesId = current.SeriesId,
-                ChapterId = chapterId,
-                PassId = cache.PassId,
-                TrashPath = trashRelative,
-                TrashBytes = length,
-                Action = action.Name,
-                BytesBefore = length,
-                BytesAfter = current.Size,
-                SourceFormat = result.SourceFormat,
-                ResultFormat = result.ResultFormat,
-                CreatedAtUtc = now
-            });
+                db.PageConversionHistory.Add(new PageConversionHistory
+                {
+                    ChapterFileId = current.Id,
+                    SeriesId = current.SeriesId,
+                    ChapterId = chapterId,
+                    PassId = cache.PassId,
+                    TrashPath = trashRelative,
+                    TrashBytes = length,
+                    Action = action.Name,
+                    BytesBefore = length,
+                    BytesAfter = current.Size,
+                    SourceFormat = result.SourceFormat,
+                    ResultFormat = result.ResultFormat,
+                    CreatedAtUtc = now
+                });
+            }
+
             await db.SaveChangesAsync(CancellationToken.None);
         }
         finally
         {
             TryDelete(tmp);
+            // The converted copy was flushed before it was renamed in, so its pages are clean and can go.
+            if (swapped)
+            {
+                LeaveCold();
+            }
         }
 
         var topFolder = file.RelativePath.Split('/', '\\')[0];
@@ -295,7 +343,29 @@ public class PageConversionService(
             logger.LogDebug(ex, "Could not stamp {Path} with its trash time", trash);
         }
 
+        // The original, the same inode when hardlinked, is only read again by an undo.
+        DropCache(trash);
         return trashRelative;
+    }
+
+    /// <summary>Renames the converted copy over the original, which is not kept. False when the file was left as it was.</summary>
+    private bool Replace(string path, string converted)
+    {
+        try
+        {
+            MoveOver(converted, path);
+            return true;
+        }
+        catch (Exception ex) when ((ex is IOException or UnauthorizedAccessException) && SameVolumeMove.Landed(converted, path))
+        {
+            logger.LogDebug(ex, "Replacing {Path} reported a failure but the converted copy is in place", path);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Could not replace {Path} with its converted copy; left as it was", path);
+            return false;
+        }
     }
 
     /// <summary>
@@ -367,8 +437,18 @@ public class PageConversionService(
         return false;
     }
 
-    private Task<bool> BusyAsync(int seriesId, CancellationToken ct) =>
-        SeriesLocks.InFlight(db.DownloadQueue.IgnoreQueryFilters()).AnyAsync(q => q.SeriesId == seriesId, ct);
+    /// <summary>
+    /// A download in flight for the series, or with <paramref name="queued"/> only one that can touch this
+    /// file: a chapter on it, or a row with no chapter (a torrent), which may place anything in the series.
+    /// </summary>
+    private Task<bool> BusyAsync(ChapterFile file, bool queued, CancellationToken ct)
+    {
+        var inFlight = SeriesLocks.InFlight(db.DownloadQueue.IgnoreQueryFilters()).Where(q => q.SeriesId == file.SeriesId);
+        return queued
+            ? inFlight.AnyAsync(q => q.ChapterId == null ||
+                                     db.Chapters.IgnoreQueryFilters().Any(c => c.Id == q.ChapterId && c.ChapterFileId == file.Id), ct)
+            : inFlight.AnyAsync(ct);
+    }
 
     /// <summary>
     /// Whether read-file cleanup will delete the file within <see cref="CleanupHorizonDays"/>, by its own

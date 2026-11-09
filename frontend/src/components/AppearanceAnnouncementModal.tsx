@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button, Group, Modal, Stack, Text, ThemeIcon } from '@mantine/core'
-import { IconPalette } from '@tabler/icons-react'
+import { IconPalette } from '../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useAnnouncements, useSeenAppearanceAnnouncement } from '../api/hooks'
 import { useThemeChoice } from '../theme-context'

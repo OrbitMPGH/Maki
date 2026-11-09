@@ -57,9 +57,11 @@ export interface Me {
   oidcUserName: string | null
   /** Effective single-user mode: the setting is on and only one account is enabled. */
   singleUser: boolean
+  /** An admin made login names visible to everyone wherever no display name is set. */
+  loginNamesVisible: boolean
 }
 
-export interface UserSummary extends Omit<Me, 'oidcUserName' | 'singleUser'> {
+export interface UserSummary extends Omit<Me, 'oidcUserName' | 'singleUser' | 'loginNamesVisible'> {
   disabled: boolean
   pendingSetup: boolean
   createdAt: string
@@ -155,16 +157,21 @@ export function useMe(enabled = true) {
   })
 }
 
-export function useLogin() {
+/**
+ * `beforeEnter` runs once the session exists but before the cached identity flips and the app
+ * replaces the form, so the sign-in page can show a moment of success first.
+ */
+export function useLogin(beforeEnter?: () => Promise<void>) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: { username: string; password: string }) =>
       api<Me & LoginResult>('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
     // The form shows the failure inline.
     meta: { silent: true },
-    onSuccess: (result) => {
+    onSuccess: async (result) => {
       // Two-factor is still pending, so there is no session yet and nothing to cache.
       if (result.requiresTwoFactor) return
+      await beforeEnter?.()
       noteSignedInUser(result.id)
       dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, result)
@@ -172,14 +179,15 @@ export function useLogin() {
   })
 }
 
-export function useVerifyTwoFactor() {
+export function useVerifyTwoFactor(beforeEnter?: () => Promise<void>) {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (body: { code: string; rememberMachine: boolean }) =>
       api<Me>('/auth/2fa', { method: 'POST', body: JSON.stringify(body) }),
     // The form shows the failure inline.
     meta: { silent: true },
-    onSuccess: (me) => {
+    onSuccess: async (me) => {
+      await beforeEnter?.()
       noteSignedInUser(me.id)
       dropAccountData(qc)
       qc.setQueryData(ME_QUERY_KEY, me)
@@ -420,6 +428,28 @@ export function useSetUserMode() {
     onSuccess: (mode) => {
       qc.setQueryData(USER_MODE_KEY, mode)
       void qc.invalidateQueries({ queryKey: ME_QUERY_KEY })
+    },
+  })
+}
+
+const LOGIN_NAMES_KEY = ['settings', 'loginnames'] as const
+
+export function useLoginNames() {
+  return useQuery({
+    queryKey: LOGIN_NAMES_KEY,
+    queryFn: () => api<{ visible: boolean }>('/settings/loginnames'),
+  })
+}
+
+export function useSetLoginNames() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (visible: boolean) =>
+      api<{ visible: boolean }>('/settings/loginnames', { method: 'PUT', body: JSON.stringify({ visible }) }),
+    onSuccess: (setting) => {
+      qc.setQueryData(LOGIN_NAMES_KEY, setting)
+      void qc.invalidateQueries({ queryKey: ME_QUERY_KEY })
+      void qc.invalidateQueries({ queryKey: ['notes'] })
     },
   })
 }

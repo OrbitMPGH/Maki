@@ -6,7 +6,7 @@ import {
   IconPlus,
   IconTrash,
   type Icon,
-} from '@tabler/icons-react'
+} from '../../lib/icons'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -55,7 +55,7 @@ function detailItem(entry: FeedEntry): RecommendationItem {
 
 const KIND: Record<FeedKind, { label: MessageDescriptor; icon: Icon; color: string }> = {
   finished: { label: msg`Finished`, icon: IconChecks, color: 'var(--ok)' },
-  added: { label: msg`Added`, icon: IconPlus, color: 'var(--info)' },
+  added: { label: msg`Added`, icon: IconPlus, color: 'var(--brand)' },
   removed: { label: msg`Removed`, icon: IconTrash, color: 'var(--danger)' },
   dropped: { label: msg`Stalled`, icon: IconClockPause, color: 'var(--warn)' },
 }
@@ -172,7 +172,7 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
                 variant="light"
                 style={{ color: kind.color, background: `color-mix(in srgb, ${kind.color} 14%, transparent)` }}
               >
-                <KindIcon size={15} />
+                <KindIcon size={16} />
               </ThemeIcon>
               <SeriesThumb url={e.coverUrl} alt={e.title} seriesId={e.seriesId} />
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -191,7 +191,7 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
                   <MetaList items={[renderLabel(kind.label), e.note]} />
                 </Text>
               </div>
-              <Text size="xs" c="var(--ink-3)" className="tnum" style={{ flexShrink: 0 }}>
+              <Text size="xs" c="var(--ink-3)" style={{ flexShrink: 0 }}>
                 {formatDate(e.at)}
               </Text>
             </Group>

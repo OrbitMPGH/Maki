@@ -28,8 +28,10 @@ public class UpscalingController(
 
     /// <param name="Status">"missing", "downloading", "ready" or "failed".</param>
     /// <param name="Error">Why the download failed, in the caller's language. Null unless failed.</param>
+    /// <param name="Bundled">Ships with Maki: never downloaded, cannot be deleted.</param>
     public record CatalogEntryDto(
-        string Id, string Name, long? Bytes, string License, string Author, string Source, string Status, string? Error);
+        string Id, string Name, long? Bytes, string License, string Author, string Source, string Status, string? Error,
+        bool Bundled);
 
     public record CacheDto(long Bytes, int Files);
 
@@ -71,13 +73,14 @@ public class UpscalingController(
             }
         }
 
+        var firstSave = await settings.GetAsync(SettingKeys.UpscalingModels, ct) is null;
         var before = await UpscaleOptions.LoadAsync(settings, ct);
         await settings.SetAsync(SettingKeys.UpscalingEnabled, request.Enabled ? "true" : "false", ct);
         await settings.SetAsync(SettingKeys.UpscalingModels, string.Join(',', models.Select(m => m.Value)), ct);
         await settings.SetAsync(SettingKeys.UpscalingThreads, request.Threads.ToString(CultureInfo.InvariantCulture), ct);
         await settings.SetAsync(SettingKeys.UpscalingCacheMb, request.CacheMb.ToString(CultureInfo.InvariantCulture), ct);
 
-        foreach (var id in models.Where(m => !before.Models.Contains(m)))
+        foreach (var id in models.Where(m => firstSave || !before.Models.Contains(m)))
         {
             if (store.GetStatus(id).State is UpscaleModelState.Missing or UpscaleModelState.Failed)
             {
@@ -113,6 +116,11 @@ public class UpscalingController(
         if (!UpscaleModelId.TryParse(id, out var model))
         {
             return this.NotFoundMessage(localizer, "error.upscaling.unknownModel");
+        }
+
+        if (store.IsBundled(model))
+        {
+            return this.Conflict(localizer, "error.upscaling.modelBundled");
         }
 
         upscaler.ReleaseModel(model);
@@ -184,7 +192,8 @@ public class UpscalingController(
                     UpscaleModelState.Failed => "failed",
                     _ => "missing"
                 },
-                status is { State: UpscaleModelState.Failed, ErrorKey: { } key } ? localizer.Get(key) : null);
+                status is { State: UpscaleModelState.Failed, ErrorKey: { } key } ? localizer.Get(key) : null,
+                store.IsBundled(info.Id));
         }).ToList();
 
         var (bytes, files) = cache.Stats();
