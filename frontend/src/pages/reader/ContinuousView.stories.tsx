@@ -37,7 +37,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** Scrolls the strip to its end once the pages there have loaded: the meter waits for them. */
+/**
+ * Scrolls the strip to its end once the pages there have loaded: the meter waits for them. Lazy
+ * pages the jump skipped above the viewport never load and the meter ignores them, so this does too.
+ */
 async function scrollToEnd(canvasElement: HTMLElement): Promise<HTMLElement> {
   const scroller = canvasElement.querySelector<HTMLElement>('.reader-surface')!
   await waitFor(() => expect(scroller.scrollHeight).toBeGreaterThan(scroller.clientHeight * 2))
@@ -45,7 +48,11 @@ async function scrollToEnd(canvasElement: HTMLElement): Promise<HTMLElement> {
   scroller.scrollTop = scroller.scrollHeight
   await waitFor(atEnd)
   const pages = [...canvasElement.querySelectorAll<HTMLImageElement>('img.reader-page')]
-  await waitFor(() => expect(pages.every((page) => page.complete)).toBe(true))
+  const pending = () => {
+    const top = scroller.getBoundingClientRect().top
+    return pages.filter((page) => !page.complete && page.getBoundingClientRect().bottom >= top).length
+  }
+  await waitFor(() => expect(pending()).toBe(0))
   scroller.scrollTop = scroller.scrollHeight
   await waitFor(atEnd)
   return scroller
