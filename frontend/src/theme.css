@@ -3693,9 +3693,10 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   margin-top: 1px;
 }
 /* Two shapes of about the same height. A sentence reason (author, taste, the anonymous crowd) takes
-   two lines over the matched-tag chips. A reason naming one of the reader's series is two lines
-   centred beside its cover: the kind on its own line, so an ellipsis never eats it, then the series
-   on one line; the chips go, since the seed already says why the pick is here. */
+   two lines over the matched-tag chips. A reason naming one of the reader's series sits centred
+   beside its cover: the kind on its own line, so an ellipsis never eats it, then the series on up
+   to two lines, which together are exactly the cover's height; the chips go, since the seed
+   already says why the pick is here. */
 .engine-why-text {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -3748,9 +3749,10 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 /* Quieter than the poster's own title, which is the pick; this is only the reason for it. */
 .engine-why-seed-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
   font-weight: var(--fw-medium);
   color: var(--ink-2);
 }
@@ -4259,7 +4261,10 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-weight: var(--fw-semibold);
   color: var(--ink-3);
 }
+/* Fills the line. Shrink-to-fit sized it from the pills alone, short of the gaps and the strip's
+   chevron cue, so the last pill always wrapped even with room to spare. */
 .discover-seeds-row {
+  flex: 1 1 0%;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
