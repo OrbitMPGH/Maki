@@ -54,11 +54,6 @@ msgstr "(действие нельзя отменить)"
 msgid "(inaccessible)"
 msgstr "(недоступно)"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "(no longer in the library)"
-#~ msgstr "(больше нет в библиотеке)"
-
 #. placeholder {0}: history.convertedFiles
 #. placeholder {1}: history.restorableFiles
 #. placeholder {2}: history.restorableFiles
@@ -273,12 +268,6 @@ msgstr "{0, plural, one {# файл возвращён отменой и ост�
 #, fuzzy
 msgid "{0, plural, one {# file, {size}} other {# files, {size}}}"
 msgstr "{0, plural, one {# файл, {size}} few {# файла, {size}} many {# файлов, {size}} other {# файла, {size}}}"
-
-#. placeholder {0}: entries.length
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "{0, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
-#~ msgstr "{0, plural, one {# файл, {totalSize}} few {# файла, {totalSize}} many {# файлов, {totalSize}} other {# файла, {totalSize}}}"
 
 #. placeholder {0}: files.length
 #. placeholder {0}: folder.fileCount
@@ -689,11 +678,6 @@ msgstr ""
 #, fuzzy
 msgid "{0, plural, one {Show all #} other {Show all #}}"
 msgstr "{0, plural, one {Показать все #} few {Показать все #} many {Показать все #} other {Показать все #}}"
-
-#. placeholder {0}: shown.length
-#: src/pages/RecycleBinPage.tsx
-#~ msgid "{0, plural, one {Showing # file.} other {Showing # files.}}"
-#~ msgstr ""
 
 #. placeholder {0}: shown.length
 #: src/components/settings/RecycleBinModal.tsx
@@ -1847,11 +1831,6 @@ msgstr "{latestVersion} доступна, пропущена"
 #: src/components/settings/RecycleBinModal.tsx
 msgid "{left, plural, one {# day left} other {# days left}}"
 msgstr ""
-
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "{left, plural, one {# day} other {# days}}"
-#~ msgstr "{left, plural, one {# день} few {# дня} many {# дней} other {# дня}}"
 
 #: src/pages/stats/MidwayList.tsx
 #, fuzzy
@@ -5524,11 +5503,6 @@ msgstr "Самый загруженный день"
 msgid "Button label"
 msgstr "Подпись кнопки"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "by {deletedBy}"
-#~ msgstr "пользователем {deletedBy}"
-
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "By an author you read"
@@ -7810,11 +7784,6 @@ msgstr "Дней после прочтения"
 msgid "Days before a proposal you haven't approved expires."
 msgstr "Дней до истечения предложения, которое вы не одобрили."
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "Days left"
-#~ msgstr "Осталось дней"
-
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
 msgid "Days read"
@@ -8098,11 +8067,6 @@ msgstr "Удалить эту метку?"
 #, fuzzy
 msgid "Delete user"
 msgstr "Удалить пользователя"
-
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "Deleted"
-#~ msgstr "Удалено"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -10497,10 +10461,6 @@ msgstr "Цели"
 #, fuzzy
 msgid "Gone from disk"
 msgstr "Нет на диске"
-
-#: src/pages/RecycleBinPage.tsx
-#~ msgid "Gone within {SOON_DAYS} days"
-#~ msgstr ""
 
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -18368,10 +18328,6 @@ msgstr "Повторяющиеся темы"
 msgid "Recycle bin"
 msgstr "Корзина"
 
-#: src/pages/RecycleBinPage.tsx
-#~ msgid "Recycle bin settings"
-#~ msgstr ""
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -22058,10 +22014,6 @@ msgstr "Пробел"
 msgid "Space ( )"
 msgstr "Пробел ( )"
 
-#: src/pages/RecycleBinPage.tsx
-#~ msgid "Space used"
-#~ msgstr ""
-
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Space-separated. Keep email to match existing accounts."
@@ -23445,6 +23397,10 @@ msgstr "Ниже источники Suwayomi, которые он вернул �
 #, fuzzy
 msgid "The test runs against this series and chapter. Replace them if the site took them down."
 msgstr "Проверка идёт по этой серии и главе. Замените их, если сайт их убрал."
+
+#: src/api/upgrades.ts
+msgid "The title doesn't say it's Japanese, needs your call"
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -26030,6 +25986,10 @@ msgstr "Записывает обложку серии в папку как cove
 msgid "Written <0>claim=value</0>, e.g. <1>groups=maki-admins</1>."
 msgstr "Записано <0>заявка=значение</0>, например <1>groups=maki-admins</1>."
 
+#: src/api/upgrades.ts
+msgid "Written in a different language from your files"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/RangeControl.tsx
 #: src/pages/stats/StatsRange.ts
@@ -26285,6 +26245,10 @@ msgstr "Ваш {label}"
 #, fuzzy
 msgid "Your device asks for reduced motion, so these stay off."
 msgstr "Ваше устройство запрашивает уменьшенное движение, поэтому эти параметры остаются выключены."
+
+#: src/api/upgrades.ts
+msgid "Your files are in more than one language, needs your call"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy

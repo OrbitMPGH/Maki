@@ -46,10 +46,6 @@ msgstr "(cannot be undone)"
 msgid "(inaccessible)"
 msgstr "(inaccessible)"
 
-#: src/pages/settings/LibraryCards.tsx
-#~ msgid "(no longer in the library)"
-#~ msgstr "(no longer in the library)"
-
 #. placeholder {0}: history.convertedFiles
 #. placeholder {1}: history.restorableFiles
 #. placeholder {2}: history.restorableFiles
@@ -235,11 +231,6 @@ msgstr "{0, plural, one {# file was put back by an undo and stays as it is} othe
 #: src/components/pageconversion/RuleCard.tsx
 msgid "{0, plural, one {# file, {size}} other {# files, {size}}}"
 msgstr "{0, plural, one {# file, {size}} other {# files, {size}}}"
-
-#. placeholder {0}: entries.length
-#: src/pages/settings/LibraryCards.tsx
-#~ msgid "{0, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
-#~ msgstr "{0, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
 
 #. placeholder {0}: files.length
 #. placeholder {0}: folder.fileCount
@@ -597,11 +588,6 @@ msgstr "{0, plural, one {Set page conversion for # series} other {Set page conve
 #: src/pages/stats/ActivityFeed.tsx
 msgid "{0, plural, one {Show all #} other {Show all #}}"
 msgstr "{0, plural, one {Show all #} other {Show all #}}"
-
-#. placeholder {0}: shown.length
-#: src/pages/RecycleBinPage.tsx
-#~ msgid "{0, plural, one {Showing # file.} other {Showing # files.}}"
-#~ msgstr "{0, plural, one {Showing # file.} other {Showing # files.}}"
 
 #. placeholder {0}: shown.length
 #: src/components/settings/RecycleBinModal.tsx
@@ -1553,10 +1539,6 @@ msgstr "{latestVersion} available, skipped"
 #: src/components/settings/RecycleBinModal.tsx
 msgid "{left, plural, one {# day left} other {# days left}}"
 msgstr "{left, plural, one {# day left} other {# days left}}"
-
-#: src/pages/settings/LibraryCards.tsx
-#~ msgid "{left, plural, one {# day} other {# days}}"
-#~ msgstr "{left, plural, one {# day} other {# days}}"
 
 #: src/pages/stats/MidwayList.tsx
 msgid "{left, plural, one {# left} other {# left}}"
@@ -4551,10 +4533,6 @@ msgstr "Busiest day"
 msgid "Button label"
 msgstr "Button label"
 
-#: src/pages/settings/LibraryCards.tsx
-#~ msgid "by {deletedBy}"
-#~ msgstr "by {deletedBy}"
-
 #: src/components/ui/DiscoverRail.tsx
 msgid "By an author you read"
 msgstr "By an author you read"
@@ -6425,10 +6403,6 @@ msgstr "Days after reading"
 msgid "Days before a proposal you haven't approved expires."
 msgstr "Days before a proposal you haven't approved expires."
 
-#: src/pages/settings/LibraryCards.tsx
-#~ msgid "Days left"
-#~ msgstr "Days left"
-
 #: src/components/home/ReadingWeeks.tsx
 msgid "Days read"
 msgstr "Days read"
@@ -6663,10 +6637,6 @@ msgstr "Delete this tag?"
 #: src/components/settings/UsersSection.tsx
 msgid "Delete user"
 msgstr "Delete user"
-
-#: src/pages/settings/LibraryCards.tsx
-#~ msgid "Deleted"
-#~ msgstr "Deleted"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -8633,10 +8603,6 @@ msgstr "Goals"
 #: src/pages/HealthPage.tsx
 msgid "Gone from disk"
 msgstr "Gone from disk"
-
-#: src/pages/RecycleBinPage.tsx
-#~ msgid "Gone within {SOON_DAYS} days"
-#~ msgstr "Gone within {SOON_DAYS} days"
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Good"
@@ -15083,10 +15049,6 @@ msgstr "Recurring themes"
 msgid "Recycle bin"
 msgstr "Recycle bin"
 
-#: src/pages/RecycleBinPage.tsx
-#~ msgid "Recycle bin settings"
-#~ msgstr "Recycle bin settings"
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "recycle bin, trash, deleted files, restore, undelete, empty bin, retention"
@@ -18106,10 +18068,6 @@ msgstr "Space"
 msgid "Space ( )"
 msgstr "Space ( )"
 
-#: src/pages/RecycleBinPage.tsx
-#~ msgid "Space used"
-#~ msgstr "Space used"
-
 #: src/components/settings/SecuritySection.tsx
 msgid "Space-separated. Keep email to match existing accounts."
 msgstr "Space-separated. Keep email to match existing accounts."
@@ -19234,6 +19192,10 @@ msgstr "The Suwayomi sources below are the ones it listed last time."
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "The test runs against this series and chapter. Replace them if the site took them down."
 msgstr "The test runs against this series and chapter. Replace them if the site took them down."
+
+#: src/api/upgrades.ts
+msgid "The title doesn't say it's Japanese, needs your call"
+msgstr "The title doesn't say it's Japanese, needs your call"
 
 #: src/api/upgrades.ts
 msgid "The title might be a different series"
@@ -21346,6 +21308,10 @@ msgstr "Writes the series cover into the folder as cover.jpg."
 msgid "Written <0>claim=value</0>, e.g. <1>groups=maki-admins</1>."
 msgstr "Written <0>claim=value</0>, e.g. <1>groups=maki-admins</1>."
 
+#: src/api/upgrades.ts
+msgid "Written in a different language from your files"
+msgstr "Written in a different language from your files"
+
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/RangeControl.tsx
 #: src/pages/stats/StatsRange.ts
@@ -21552,6 +21518,10 @@ msgstr "Your {label}"
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Your device asks for reduced motion, so these stay off."
 msgstr "Your device asks for reduced motion, so these stay off."
+
+#: src/api/upgrades.ts
+msgid "Your files are in more than one language, needs your call"
+msgstr "Your files are in more than one language, needs your call"
 
 #: src/components/SetupWizard.tsx
 msgid "Your folder is left alone. New chapters go into a folder Maki names."

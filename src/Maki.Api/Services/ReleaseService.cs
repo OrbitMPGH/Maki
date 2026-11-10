@@ -3,6 +3,7 @@ using Maki.Core.Configuration;
 using Maki.Core.Download;
 using Maki.Core.Entities;
 using Maki.Core.Indexers;
+using Maki.Core.Parsing;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -110,28 +111,63 @@ public class ReleaseService(
             ? SearchQuery.WithFallbacks(series.Title, series.OriginalTitle, series.AltTitles).ToList()
             : [query.Trim()];
 
+        // A series with Japanese chapters is only done searching once a Japanese release has turned up: an
+        // English title that finds an English pack must not stop the search before the Japanese title is
+        // tried. Any other series stops at the first query with results, as before.
+        var wanted = string.IsNullOrWhiteSpace(query)
+            ? await WantedLanguageAsync(seriesId, ct)
+            : null;
         var attempted = candidates[0];
-        List<ReleaseDto> results = [];
+        string? firstHit = null;
+        var done = false;
+        var found = new Dictionary<string, ReleaseDto>(StringComparer.Ordinal);
         foreach (var candidate in candidates)
         {
             attempted = candidate;
             var releases = await indexer.SearchAsync(indexerSettings, candidate, ct);
-            results = releases
+            var fresh = releases
                 .Where(r => r.Protocol.Equals("torrent", StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(r => r.Seeders ?? 0)
                 .Select(r => new ReleaseDto(
                     r.Guid, r.Title, r.Size, r.Indexer, r.Seeders, r.Leechers,
                     r.Protocol, r.DownloadUrl, r.MagnetUrl, r.InfoUrl, r.InfoHash))
                 .ToList();
-            if (results.Count > 0)
+            foreach (var release in fresh)
             {
+                found.TryAdd(release.Guid, release);
+            }
+
+            if (fresh.Count > 0)
+            {
+                firstHit ??= candidate;
+            }
+
+            if (found.Count > 0 && (wanted is null || found.Values.Any(r => ReleaseLanguage.Detect(r.Title) == wanted)))
+            {
+                done = true;
                 break;
             }
 
-            logger.LogInformation("No releases for '{Query}'", candidate);
+            if (fresh.Count == 0)
+            {
+                logger.LogInformation("No releases for '{Query}'", candidate);
+            }
         }
 
-        return new ReleaseSearchResult(attempted, results) { Backend = indexerSettings.Backend };
+        var results = found.Values.OrderByDescending(r => r.Seeders ?? 0).ToList();
+        return new ReleaseSearchResult(done ? attempted : firstHit ?? attempted, results) { Backend = indexerSettings.Backend };
+    }
+
+    /// <summary>"ja" when any of the series' chapters is marked Japanese, otherwise null.</summary>
+    private async Task<string?> WantedLanguageAsync(int seriesId, CancellationToken ct)
+    {
+        var languages = await db.Chapters.AsNoTracking()
+            .Where(c => c.SeriesId == seriesId && c.Language != null)
+            .Select(c => c.Language!)
+            .Distinct()
+            .ToListAsync(ct);
+        return languages.Any(l => l.Split('-', '_')[0].Equals(ReleaseLanguage.Japanese, StringComparison.OrdinalIgnoreCase))
+            ? ReleaseLanguage.Japanese
+            : null;
     }
 
     /// <param name="origin">What asked for it; an unattended grab notifies, a click does not.</param>
