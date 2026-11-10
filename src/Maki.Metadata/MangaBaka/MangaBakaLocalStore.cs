@@ -1727,6 +1727,12 @@ public class MangaBakaLocalStore(
             links.Add(new("myanimelist", $"https://myanimelist.net/manga/{mal}"));
         }
 
+        var kitsuId = GetInt(reader, 31);
+        if (kitsuId is int kitsu)
+        {
+            links.Add(new("kitsu", $"https://kitsu.app/manga/{kitsu}"));
+        }
+
         if (GetString(reader, 26) is { Length: > 0 } mangaUpdates)
         {
             links.Add(new("mangaupdates", $"https://www.mangaupdates.com/series/{mangaUpdates}"));
@@ -1760,7 +1766,7 @@ public class MangaBakaLocalStore(
             links,
             malId,
             aniListId,
-            GetInt(reader, 31),
+            kitsuId,
             GetInt(reader, 27) == 1,
             GetString(reader, 28) ?? string.Empty,
             GetString(reader, 29) ?? string.Empty);

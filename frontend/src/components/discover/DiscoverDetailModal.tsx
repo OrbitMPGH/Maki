@@ -173,7 +173,7 @@ export function DiscoverDetailModal({
   const titleLength = title.length > 70 ? 'long' : title.length > 36 ? 'medium' : undefined
 
   // Each site's score rides on its own link mark, so the ratings and the places they come from
-  // are one row. A rated site with no link (Kitsu has no id in the dump) keeps a plain mark.
+  // are one row. A rated site with no id in the dump keeps a plain mark.
   const ratingBySite = new Map((detail?.sourceRatings ?? []).map((r) => [r.source.toLowerCase(), r.rating]))
   const links: MetadataLink[] = (detail?.links ?? []).map((link) => {
     const rating = ratingBySite.get(link.site)

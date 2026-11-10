@@ -52,6 +52,7 @@ public class MangaBakaLocalStoreTests : IDisposable
         Assert.Equal(2, detail.MalId);
         Assert.Equal(30002, detail.AniListId);
         Assert.Equal(8, detail.KitsuId);
+        Assert.Contains(detail.Links, l => l.Site == "kitsu" && l.Url == "https://kitsu.app/manga/8");
     }
 
     [Fact]
