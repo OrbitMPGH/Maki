@@ -49,6 +49,21 @@ export const AdminAdd: Story = {
   },
 }
 
+/** The settings are a drill panel: a row opens its page, a pick returns to the first page with it shown. */
+export const ChangeSettingsBeforeAdding: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: /^Incognito/ }))
+    await userEvent.click(await canvas.findByRole('radio', { name: /^Full/ }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: /^Incognito.*Full/ })).toBeVisible())
+    await userEvent.click(canvas.getByRole('button', { name: /^Automation/ }))
+    await expect(await canvas.findByText('Monitor')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: /^Quality profile/ }))
+    await expect(await canvas.findByRole('radio', { name: /^Instance default/ })).toHaveAttribute('aria-checked', 'true')
+    await userEvent.click(canvas.getByRole('button', { name: /Back/ }))
+    await expect(await canvas.findByText('Monitor')).toBeVisible()
+  },
+}
+
 export const AddFails: Story = {
   parameters: {
     msw: discoverPage(http.post(api('/series'), () => failWith(409, 'That series is already in the library'))),

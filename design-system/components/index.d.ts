@@ -263,3 +263,47 @@ export declare function MonoValue(props: {
   fz?: CSSProperties['fontSize']
   c?: CSSProperties['color']
 }): JSX.Element
+
+/** A drill panel's row: the setting's icon in the accent, its name, its current value, a chevron. Opens a sub-page. */
+export declare function DrillRow(props: {
+  icon: ComponentType<{ size?: number; className?: string }>
+  label: ReactNode
+  value?: ReactNode
+  onClick: () => void
+}): JSX.Element
+
+/** A drill panel sub-page's header: back, and the page's name. */
+export declare function DrillBack(props: { title: ReactNode; onBack: () => void }): JSX.Element
+
+/** One choice from a list, each with a hint under it; the current one carries the check. */
+export declare function DrillChoices(props: {
+  /** Names the group for a screen reader. */
+  label: string
+  value: string
+  options: { value: string; label: ReactNode; hint?: ReactNode }[]
+  onPick: (value: string) => void
+}): JSX.Element
+
+/** A setting changed in place: icon and name over the control, one line under it on the current pick. */
+export declare function DrillField(props: {
+  icon: ComponentType<{ size?: number }>
+  title: ReactNode
+  help?: ReactNode
+  children: ReactNode
+}): JSX.Element
+
+/** Slides between a drill panel's pages and eases its height. Keyed on `page`; `depth` picks the direction. */
+export declare function DrillPanes(props: { page: string; depth: number; bleed?: number; children: ReactNode }): JSX.Element
+
+/** The current page, its depth, `open`/`back`, and the refs that put focus back where it was. */
+export declare function useDrillPages<P extends string>(
+  root: P,
+  parents: Record<P, P>,
+): {
+  page: P
+  depth: number
+  open: (to: P) => void
+  back: () => void
+  backRef: { current: HTMLButtonElement | null }
+  rowRef: (p: P) => (node: HTMLButtonElement | null) => void
+}

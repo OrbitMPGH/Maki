@@ -62,7 +62,7 @@ export const MONITOR_SHORT: Record<string, MessageDescriptor> = {
     None: msg`None`,
 }
 
-const MONITOR_HELP: Record<string, MessageDescriptor> = {
+export const MONITOR_HELP: Record<string, MessageDescriptor> = {
     All: msg`Every chapter released from now on is wanted.`,
     Smart: msg`Chapters released from now on are wanted and queued a batch at a time, ahead of where you're reading.`,
     MainOnly: msg`Chapters released from now on are wanted, except specials.`,

@@ -66,6 +66,16 @@ Two families. **Bricolage Grotesque** (`display`) is for names and figures: page
 - Three page styles: standard, editorial (more air), operational (denser: tables at 40px rows, panels at `spacing-md`).
 - The hero band (cover art bleeding behind the page title) is reserved for the series page, the Discover modal and Rewind. Panels over it are opaque `surface-2` with a `border` hairline, never glass. Never hang a panel or a band beside a `PageHeader`.
 
+## Drill panels
+
+Small settings panels that open in place share one grammar: the reader settings, the series page's "More actions" menu and the add card in the Discover modal (`DrillPanel` card).
+
+- **The first page is a list of rows that show their current value**: the setting's icon in `brand`, its name, the value in `ink-3` and a chevron. A glance at the first page answers "what will happen" without opening anything.
+- **A row opens a sub-page** that slides in from the right with a back header naming it; going back slides it out the other way and puts focus on the row that opened it. The panel's height eases to the new page.
+- **A short choice is a segmented control with one line under it** saying what the current pick does. A longer list, or one whose options each need a sentence, is its own page of choices with a hint under each; picking one goes back.
+- **What people check every time goes on the first page; what is usually left alone goes one level down** (the add card keeps Folder and Incognito up front and puts Monitor and the quality profile under Automation).
+- **No dropdowns inside a panel.** A floating list over a raised panel blends into it; a page of choices does not. The primary action stays outside the sliding pages so it never moves.
+
 ## Shape, borders and depth
 
 - Radii, smallest to largest: `radius-2xs` 2px (tiny marks), `radius-xs` 4px (small thumbnails, keys), `radius-sm`/`radius-control` 6px (badges, checkboxes), `radius-chip` 7px (tag chips, squarer than a pill), `radius-thumb` 8px (row thumbnails), `radius-md`/`radius-surface` 9px (buttons, inputs, strips), `radius-hero` 12px (hero posters, hero panels, the brand-mark tile), `radius-lg`/`radius-overlay` 13px (cards, panels, covers, modals, overlays), `radius-xl` 20px (large hero surfaces).
@@ -106,4 +116,4 @@ The mark is a maki roll with a face: a cream body (`mark-cream`), nori bands top
 
 ## Not synced
 
-Built from `OrbitMPGH/Maki` at {{REF}} (`frontend/src/theme.css`, `theme.ts`, `theme-context.tsx`, `components/ui/`). Left out: the per-feature rules in `theme.css` (reader, series hero, charts, and Discover beyond its cards); the `--ease` curve and `--dur-*` durations (motion has no token family here, so they live in the Motion section) and `--reader-overlay-z-index`; only the Latin subsets of both fonts. Components are static renditions styled by `components/bundle.css` rather than a built bundle. Every component in `components/ui/` has a card; `RecommendationCard` and `RecommendationRow` are covered by the DiscoverRail and SeriesRow cards, and the `.ts` helpers beside them (status, viewPrefs, useWindowedRows and the rest) are hooks and data, so they have none.
+Built from `OrbitMPGH/Maki` at {{REF}} (`frontend/src/theme.css`, `theme.ts`, `theme-context.tsx`, `components/ui/`). Left out: the per-feature rules in `theme.css` (reader, series hero, charts, and Discover beyond its cards); the `--ease` curve and `--dur-*` durations (motion has no token family here, so they live in the Motion section) and `--reader-overlay-z-index`; only the Latin subsets of both fonts. Components are static renditions styled by `components/bundle.css` rather than a built bundle. Every component in `components/ui/` has a card (`DrillPanes` and `useDrillPages` share the DrillPanel card); `RecommendationCard` and `RecommendationRow` are covered by the DiscoverRail and SeriesRow cards, and the `.ts` helpers beside them (status, viewPrefs, useWindowedRows and the rest) are hooks and data, so they have none.

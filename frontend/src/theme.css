@@ -3671,96 +3671,21 @@ button.site-chip:hover {
 .discover-add-panel {
   padding: 10px 16px 16px;
 }
-/* Each add setting is a label and its value on one row, the value right-aligned like a setting in
-   Settings. The whole row is the target: a soft tint on hover, a little more while its list is open
-   or it has focus, so a focused row reads without boxing the value in. */
-.discover-add-rows {
-  display: flex;
-  flex-direction: column;
-  margin-inline: -8px;
+/* The add card's settings are a drill panel (see Drill panels). Its pages sit flush with the
+   card's edge, so row hovers line up with the padding around them. */
+.discover-add-pages {
+  margin-inline: -10px;
 }
-.discover-add-row {
-  position: relative;
+.discover-add-switch {
   display: flex;
   align-items: center;
-  gap: 12px;
   min-height: 38px;
-  padding-inline: 8px;
-  border-radius: 7px;
-  transition: background-color 120ms ease;
+  padding: 4px 10px;
 }
-/* Mantine puts a hidden input after each select, so rows are siblings but not adjacent ones. The rule
-   above a tinted row, and the one below it, step aside so the tint reads as one shape. */
-.discover-add-row:not(:first-child)::before {
-  content: '';
-  position: absolute;
-  inset: 0 8px auto;
-  height: 1px;
-  background: var(--row-rule, var(--hairline));
-}
-.discover-add-row:is(:hover, :focus-within),
-.discover-add-row:is(:hover, :focus-within) + .discover-add-row,
-.discover-add-row:is(:hover, :focus-within) + input + .discover-add-row {
-  --row-rule: transparent;
-}
-.discover-add-row:hover {
-  background: color-mix(in srgb, var(--ink-hi) 5%, transparent);
-}
-.discover-add-row:has(.discover-add-input:is(:focus, [aria-expanded='true'])) {
-  background: color-mix(in srgb, var(--ink-hi) 8%, transparent);
-}
-.discover-add-label {
-  flex: none;
-  margin: 0;
-  padding: 0;
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-medium);
-  cursor: pointer;
-}
-.discover-add-field {
+.discover-add-switch > .mantine-Switch-root {
   flex: 1;
-  min-width: 0;
 }
-.discover-add-input.mantine-Input-input {
-  height: 38px;
-  min-height: 38px;
-  padding-inline-start: 0;
-  color: var(--ink);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-  text-align: end;
-  text-overflow: ellipsis;
-  caret-color: transparent;
-  user-select: none;
-  cursor: pointer;
-}
-.discover-add-input.mantine-Input-input::selection {
-  background: transparent;
-}
-.discover-add-input.mantine-Input-input::placeholder {
-  color: var(--ink-2);
-  opacity: 1;
-}
-.discover-add-row:hover .discover-add-input.mantine-Input-input,
-.discover-add-input.mantine-Input-input:is(:focus, [aria-expanded='true']) {
-  outline: none;
-  color: var(--ink-hi);
-}
-/* The card is the raised layer, so its dropdowns step up once more to stand apart from it. */
-[data-mantine-color-scheme] .discover-add-dropdown {
-  background-color: var(--surface-hover);
-  border: 1px solid var(--border-strong);
-  box-shadow: 0 14px 32px -10px rgb(0 0 0 / 0.6);
-}
-.discover-add-dropdown .mantine-Select-option[data-combobox-selected] {
-  background: color-mix(in srgb, var(--ink-hi) 8%, transparent);
-}
-.discover-add-row > .mantine-Switch-root {
-  flex: 1;
-  padding-block: 8px;
-}
-.discover-add-row .mantine-Switch-label {
+.discover-add-switch .mantine-Switch-label {
   color: var(--ink-3);
   font-size: var(--type-meta);
 }
@@ -10425,7 +10350,7 @@ body.reader-open {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: var(--mantine-font-size-sm);
+  font-size: var(--type-body);
   font-weight: 650;
   text-align: start;
 }
@@ -10442,6 +10367,107 @@ body.reader-open {
 .drill-back:hover .drill-back-icon,
 .drill-back:focus-visible .drill-back-icon {
   background: var(--surface-hover);
+}
+/* --- Drill panels ---------------------------------------------------------- */
+/* The reader settings, the series page's "More actions" menu and the Discover add card share one
+   grammar (components/ui/DrillPanel.tsx): rows that show their current value and open a page, a back
+   header naming that page, choices with a hint each, and fields that explain the current pick. */
+.drill-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  font-size: var(--type-body);
+  text-align: start;
+}
+.drill-row:hover,
+.drill-choice:hover {
+  background: var(--surface-hover);
+}
+.drill-row-icon {
+  flex-shrink: 0;
+  color: var(--brand);
+}
+.drill-row-label {
+  flex: 1;
+  min-width: 0;
+}
+.drill-row-value {
+  max-width: 9.5rem;
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.drill-row-chevron {
+  flex-shrink: 0;
+  color: var(--ink-3);
+}
+.drill-panel-back {
+  width: 100%;
+  min-height: 36px;
+  margin-bottom: 4px;
+  padding: 5px 10px 5px 5px;
+  border-radius: var(--radius-control);
+  color: var(--ink-hi);
+}
+.drill-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  font-size: var(--type-body);
+  text-align: start;
+}
+.drill-choice-check {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  color: var(--brand);
+}
+.drill-choice-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.drill-choice[data-checked] .drill-choice-label {
+  color: var(--ink-hi);
+  font-weight: var(--fw-semibold);
+}
+.drill-choice-hint {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  line-height: 1.4;
+}
+.drill-field {
+  padding: 8px 10px 10px;
+}
+.drill-field-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  color: var(--ink);
+  font-size: var(--type-body);
+}
+.drill-field-title svg {
+  flex-shrink: 0;
+  color: var(--brand);
+}
+.drill-field-help {
+  margin-top: 6px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  line-height: 1.45;
 }
 .reader-settings-back {
   width: calc(100% + 12px);
