@@ -22,7 +22,7 @@ public sealed class SeriesLookupSummaryTests : IDisposable
     {
         var settings = new FakeAppSettings();
         return new SeriesController(new TestLocalizer(), db, null!, null!, null!, null!, null!, null!, null!, null!,
-            null!, null!, null!, null!, null!, null!, null!, null!, null!, null!,
+            null!, settings, null!, null!, null!, null!, null!, null!, null!, null!,
             new SourceAvailability(settings, new SourceRegistry([])), null!, new NoUserSettings(), null!, null!, null!);
     }
 

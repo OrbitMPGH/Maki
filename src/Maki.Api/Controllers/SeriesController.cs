@@ -392,6 +392,8 @@ public class SeriesController(
             .ToDictionaryAsync(x => x.SeriesId, ct);
 
         var readCounts = await ReadChapterCountsBySeriesAsync(ids, ct);
+        var readSpecialCounts = await ReadSpecialCountsBySeriesAsync(ids, ct);
+        var unmonitorSpecials = await UnmonitorSpecialsAsync(ct);
 
         // Flat join-table read; the SeriesTag query filter keeps it to series the caller can see.
         var tagIdsBySeries = (await ForSeries(db.SeriesTags, ids, x => x.SeriesId)
@@ -462,6 +464,7 @@ public class SeriesController(
             int? readCount = readCounts.TryGetValue(s.Id, out var read) ? read : null;
             var mappings = mappingsBySeries.GetValueOrDefault(s.Id) ?? [];
             var userState = userStates.GetValueOrDefault(s.Id);
+            var progress = ProgressTotals(s, counts, readCount, readSpecialCounts.GetValueOrDefault(s.Id), unmonitorSpecials);
             return SeriesDto.FromEntity(
                 s, counts?.Wanted ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0,
                 queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount,
@@ -476,6 +479,11 @@ public class SeriesController(
                 AltTitleNames = [.. s.AltTitles.Select(t => t.Title)],
                 Links = null,
                 RemovedChapterCount = counts?.Removed ?? 0,
+                ProgressTotal = progress.Total,
+                ProgressHave = progress.Have,
+                ProgressRead = progress.Read,
+                SpecialsCounted = progress.SpecialsCounted,
+                ListedSpecials = progress.ListedSpecials,
                 ProvisionalRating = userState?.ProvisionalRating,
                 ProvisionalAtChapter = userState?.ProvisionalAtChapter,
                 Finished = finishedIds.Contains(s.Id),
@@ -538,7 +546,8 @@ public class SeriesController(
         }
     }
 
-    private sealed record ChapterTallies(int SeriesId, int Wanted, int WithFile, int Known, int Removed);
+    private sealed record ChapterTallies(
+        int SeriesId, int Wanted, int WithFile, int Known, int Removed, int Specials, int SpecialsHad, double? HighestMain);
 
     /// <summary>
     /// The chapter counts every series surface reports, keyed by series id. The list and detail
@@ -560,8 +569,36 @@ public class SeriesController(
                 g.Count(c => c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null),
                 g.Count(c => c.ChapterFileId != null),
                 g.Count(),
-                g.Count(c => c.ChapterFileId == null && c.FileRemovedAt != null)))
+                g.Count(c => c.ChapterFileId == null && c.FileRemovedAt != null),
+                // Chapter.IsSpecial in SQL: Number is stored as REAL, and the cast round trip is
+                // what EF translates (CAST(CAST(Number AS INTEGER) AS REAL)).
+                g.Count(c => c.Number != null && c.Number != (decimal)(long)c.Number),
+                g.Count(c => c.Number != null && c.Number != (decimal)(long)c.Number &&
+                             (c.ChapterFileId != null || c.FileRemovedAt != null)),
+                g.Where(c => c.Number != null && c.Number == (decimal)(long)c.Number).Max(c => (double?)(long)c.Number)))
             .ToDictionaryAsync(x => x.SeriesId, ct);
+
+    /// <summary>
+    /// Per series, how many of the read chapters <see cref="ReadChapterCountsBySeriesAsync"/> counts
+    /// are specials, so <see cref="SeriesProgressScope"/> can leave them out when specials are skipped.
+    /// </summary>
+    private async Task<Dictionary<int, int>> ReadSpecialCountsBySeriesAsync(int[]? ids, CancellationToken ct) =>
+        await ForSeries(ReadCounts.Read(db), ids, p => p.SeriesId)
+            .Where(p => db.Chapters.Any(c => c.Id == p.ChapterId && c.Number != null &&
+                                             c.Number != (decimal)(long)c.Number))
+            .GroupBy(p => p.SeriesId)
+            .Select(g => new { SeriesId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);
+
+    private static SeriesProgressScope.Totals ProgressTotals(
+        Series series, ChapterTallies? counts, int? read, int readSpecials, bool unmonitorSpecials) =>
+        SeriesProgressScope.Compute(
+            series, counts?.Known ?? 0, (counts?.WithFile ?? 0) + (counts?.Removed ?? 0),
+            counts?.Specials ?? 0, counts?.SpecialsHad ?? 0, counts?.HighestMain,
+            read, readSpecials, unmonitorSpecials);
+
+    private async Task<bool> UnmonitorSpecialsAsync(CancellationToken ct) =>
+        await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true";
 
     /// <summary>
     /// Per series, how many of its downloaded chapters are read — a straight count of completed
@@ -1101,6 +1138,8 @@ public class SeriesController(
         // Through ReadCounts so this page and the library grid can't disagree about what "read" is.
         var readRows = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == id, ct);
         int? readCount = readRows > 0 ? readRows : null;
+        var readSpecials = (await ReadSpecialCountsBySeriesAsync([id], ct)).GetValueOrDefault(id);
+        var progress = ProgressTotals(series, counts, readCount, readSpecials, await UnmonitorSpecialsAsync(ct));
 
         var userState = await db.UserSeriesStates
             .Where(x => x.SeriesId == id)
@@ -1138,6 +1177,11 @@ public class SeriesController(
             titleLanguage: await TitleLanguageAsync(ct)) with
         {
             RemovedChapterCount = counts?.Removed ?? 0,
+            ProgressTotal = progress.Total,
+            ProgressHave = progress.Have,
+            ProgressRead = progress.Read,
+            SpecialsCounted = progress.SpecialsCounted,
+            ListedSpecials = progress.ListedSpecials,
             ProvisionalRating = userState?.ProvisionalRating,
             ProvisionalAtChapter = userState?.ProvisionalAtChapter,
             Finished = finished,

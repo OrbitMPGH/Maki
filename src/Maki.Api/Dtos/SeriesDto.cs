@@ -272,6 +272,27 @@ public record SeriesDto(
     /// </summary>
     public int RemovedChapterCount { get; init; }
 
+    /// <summary>
+    /// The total Reading and Downloads count against (<see cref="SeriesProgressScope"/>):
+    /// the locked or MangaBaka total, specials added only while the reader keeps them.
+    /// </summary>
+    public int ProgressTotal { get; init; }
+
+    /// <summary>Chapters had (on disk or removed on purpose) within <see cref="ProgressTotal"/>'s scope.</summary>
+    public int ProgressHave { get; init; }
+
+    /// <summary>
+    /// <see cref="ReadChapterCount"/> within <see cref="ProgressTotal"/>'s scope: read specials left
+    /// out while specials are skipped. Null when nothing has been read.
+    /// </summary>
+    public int? ProgressRead { get; init; }
+
+    /// <summary>Specials count towards the progress totals: not unmonitored globally, not Main only.</summary>
+    public bool SpecialsCounted { get; init; }
+
+    /// <summary>Listed chapters with a decimal number (<see cref="Chapter.IsSpecial"/>).</summary>
+    public int ListedSpecials { get; init; }
+
     /// <summary>The series' pending torrent volume proposal, filled only by the detail endpoint.</summary>
     public int? PendingProposalId { get; init; }
 

@@ -150,7 +150,7 @@ export const ChapterCountsExplained: Story = {
     await userEvent.keyboard('{Enter}')
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'How these chapter counts add up' })
     await waitFor(() => expect(Array.from(dialog.querySelectorAll('p')).map((p) => p.textContent)).toEqual([
-      '42 chapters are listed, the count on the Chapters tab and under Chapters known.',
+      '42 chapters are listed, the count on the Chapters tab and under Listed.',
       '2 of them have a decimal number or none, like extras or specials.',
       'Downloads counts the 41 chapters you want or already have. 1 more is listed but not wanted.',
       'Your sources go up to ch. 40.',
@@ -159,6 +159,73 @@ export const ChapterCountsExplained: Story = {
     ]))
     await userEvent.keyboard('{Escape}')
     await waitFor(() => expect(button).toHaveAttribute('aria-expanded', 'false'))
+  },
+}
+
+/** The server's series total: Reading counts against it too, and skipped specials leave every count. */
+export const ProgressAgainstSeriesTotal: Story = {
+  args: {
+    series: seriesDto(1, {
+      knownChapterCount: 42,
+      wantedChapterCount: 5,
+      chapterFileCount: 12,
+      readChapterCount: 10,
+      totalChapters: 45,
+      progressTotal: 45,
+      progressHave: 11,
+      progressRead: 9,
+      specialsCounted: false,
+      listedSpecials: 2,
+    }),
+    readUpTo: 9,
+  },
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/chapter'), () =>
+        HttpResponse.json(chaptersFor(1, { limit: 40, specials: [10.5, 20.5], trailingMissing: 0 })),
+      ),
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByText('9 / 45 chapters')
+    await canvas.findByText('11 / 45 chapters')
+    expect(canvas.queryByText(/not wanted/)).toBeNull()
+    expect(canvas.queryByText(/extras included/)).toBeNull()
+    const button = await canvas.findByRole('button', { name: 'How these chapter counts add up' })
+    await userEvent.click(button)
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'How these chapter counts add up' })
+    await waitFor(() =>
+      expect(within(dialog).getByText('Reading and Downloads leave extras out, since specials are unmonitored.')).toBeVisible(),
+    )
+    expect(within(dialog).queryByText(/you want or already have/)).toBeNull()
+  },
+}
+
+export const ProgressWithKeptSpecials: Story = {
+  args: {
+    series: seriesDto(1, {
+      knownChapterCount: 42,
+      wantedChapterCount: 42,
+      chapterFileCount: 12,
+      readChapterCount: 10,
+      totalChapters: 40,
+      progressTotal: 42,
+      progressHave: 12,
+      progressRead: 10,
+      specialsCounted: true,
+      listedSpecials: 2,
+    }),
+  },
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/chapter'), () =>
+        HttpResponse.json(chaptersFor(1, { limit: 40, specials: [10.5, 20.5], trailingMissing: 0 })),
+      ),
+    ),
+  },
+  play: async ({ canvas }) => {
+    await canvas.findByText('10 / 42 chapters')
+    await canvas.findByText('2 extras included')
   },
 }
 

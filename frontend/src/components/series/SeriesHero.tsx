@@ -92,10 +92,8 @@ export function SeriesHero({
     /**
      * How far the linked sources fall short of the chapter count MangaBaka reports.
      *
-     * Without this a series reads "41 / 41" once every chapter the sources carry is downloaded,
-     * which looks finished, so it's easy to unmonitor a series that's actually missing its tail.
-     * The gap is deliberately kept out of the progress fraction: those chapters can't be fetched
-     * from the linked sources, so counting them would just make the bar unreachable instead.
+     * The progress total includes the gap (it is MangaBaka's total), so this line says why the
+     * Downloads bar cannot reach 100% from the sources linked here.
      *
      * Compared by highest chapter NUMBER, never the row count: sources list specials and one-shots
      * MangaBaka doesn't count, so a count reads "ahead" (365 rows against a reported 119) on a
@@ -134,7 +132,14 @@ export function SeriesHero({
     const wantedSwitches = useMemo(() => (chapters ?? []).filter((c) => c.wanted).length, [chapters])
 
     // The server counts a file the health scan found missing as obtained; the Chapters tab does not.
-    const fileMissing = useMemo(() => (chapters ?? []).filter((c) => c.fileMissing).length, [chapters])
+    // Only the ones inside the progress total come off it: skipped specials were never in it.
+    const fileMissing = useMemo(
+        () =>
+            (chapters ?? []).filter(
+                (c) => c.fileMissing && (series.specialsCounted !== false || c.number === null || Number.isInteger(c.number)),
+            ).length,
+        [chapters, series.specialsCounted],
+    )
     const progress = useMemo(
         () =>
             seriesProgressVisual(
@@ -149,7 +154,11 @@ export function SeriesHero({
             fileMissing === 0
                 ? progress
                 : seriesProgressVisual(
-                      { ...series, chapterFileCount: Math.max(0, series.chapterFileCount - fileMissing) },
+                      {
+                          ...series,
+                          chapterFileCount: Math.max(0, series.chapterFileCount - fileMissing),
+                          progressHave: Math.max(0, (series.progressHave ?? 0) - fileMissing),
+                      },
                       readTracking,
                   ),
         [progress, series, readTracking, fileMissing],
@@ -159,12 +168,18 @@ export function SeriesHero({
     // expression is a plain identifier, so `progress.have` would extract as {0} and tell a translator
     // nothing about what goes in the slot. The defaults on the gap are never rendered, since every
     // use of them sits behind `sourceGap &&`; they are here to keep the destructure typed as numbers.
-    const { have: haveCount } = progress
     const totalCount = downloads.total
-    // The total is the wanted chapters, so a series with unwanted ones read 100% here while the
-    // Chapters tab counted everything listed. Named, and the rest counted, so the two agree.
-    const notWanted = progress.nothingWanted ? 0 : Math.max(0, series.knownChapterCount - totalCount)
-    const readCount = series.readChapterCount ?? 0
+    const scoped = (series.progressTotal ?? 0) > 0
+    // Only the wanted-total fallback needs this: there a series with unwanted chapters read 100%
+    // while the Chapters tab counted everything listed. The scoped total isn't built from Wanted.
+    const notWanted = scoped || progress.nothingWanted ? 0 : Math.max(0, series.knownChapterCount - totalCount)
+    const readChapters = scoped && series.progressRead !== undefined ? series.progressRead : series.readChapterCount
+    const readCount = readChapters ?? 0
+    // Reading counts against the series' total, not what happens to be downloaded: Smart mode keeps
+    // only the next few on disk, which would read as nearly finished all the way through.
+    // Still named haveCount so the "{readCount} / {haveCount}" message keeps its translations.
+    const haveCount = scoped ? progress.total : progress.have
+    const extrasIncluded = scoped && series.specialsCounted ? (series.listedSpecials ?? 0) : 0
     const { highest = 0, total: listed = 0, missing = 0 } = sourceGap ?? {}
     const gapExplanation = series.lockedFields.includes('totalChapters') ? (
         <Trans>
@@ -376,15 +391,16 @@ export function SeriesHero({
                                         highestListed: numbering.highest,
                                         totalChapters: series.totalChapters,
                                         totalLocked: series.lockedFields.includes('totalChapters'),
-                                        readCount: readTracking ? series.readChapterCount : null,
+                                        readCount: readTracking ? readChapters : null,
                                         readUpTo: readTracking ? readUpTo : null,
                                         nextChapter,
+                                        specialsCounted: scoped ? (series.specialsCounted ?? true) : undefined,
                                     }}
                                 />
                             )}
                         </Group>
 
-                        {readTracking && series.readChapterCount != null && progress.have > 0 && (
+                        {readTracking && readChapters != null && haveCount > 0 && (
                             <Box mt="md" className="series-progress-meter">
                                 <Group gap={9} c="var(--ink-3)">
                                     <IconBook size={17} />
@@ -394,7 +410,7 @@ export function SeriesHero({
                                 </Group>
                                 <Progress
                                     mt={12}
-                                    value={Math.min(100, (series.readChapterCount / progress.have) * 100)}
+                                    value={Math.min(100, (readCount / haveCount) * 100)}
                                     color="brand"
                                     radius="xl"
                                     aria-label={t`Reading progress`}
@@ -407,9 +423,14 @@ export function SeriesHero({
                                         </Trans>
                                     </Text>
                                     <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
-                                        {Math.round((series.readChapterCount / progress.have) * 100)}%
+                                        {Math.round(Math.min(100, (readCount / haveCount) * 100))}%
                                     </Text>
                                 </Group>
+                                {extrasIncluded > 0 && (
+                                    <Text size="xs" c="var(--ink-4)" mt={3} className="tnum">
+                                        <Plural value={extrasIncluded} one="# extra included" other="# extras included" />
+                                    </Text>
+                                )}
                                 <Divider my="md" color="var(--hairline)" />
                             </Box>
                         )}

@@ -185,9 +185,9 @@ export interface SeriesProgressVisual {
  * "0/?" next to a Chapters tab listing every known chapter as missing. Fall back to the known
  * count so the card reads "0/207", and mark it so it isn't mistaken for real progress.
  *
- * The denominator only moves when the user changes what they want. Chapters merely waiting to
- * download are still wanted, so a series held back by Smart mode or fetched in batches reads
- * "10 / 207" rather than the "10 / 10" it used to.
+ * With the server's `progressTotal` (every list and detail row) the total is that: the locked or
+ * MangaBaka total, specials in only while the reader keeps them, so Smart mode's top-ups never move
+ * it. Rows without it (mutation responses, fixtures) fall back to the wanted total.
  *
  * `readTracking` false blanks the read fields: nothing is tracking reading, so a stale
  * ReadingState row from a Kavita connection that has since been removed can't linger on a card.
@@ -199,22 +199,27 @@ export function seriesProgressVisual(
     chapterFileCount: number
     removedChapterCount?: number
     readChapterCount: number | null
+    progressTotal?: number
+    progressHave?: number
+    progressRead?: number | null
   },
   readTracking: boolean,
 ): SeriesProgressVisual {
+  const scoped = (s.progressTotal ?? 0) > 0
   const wantedTotal = s.wantedChapterCount || 0
-  const total = wantedTotal || s.knownChapterCount || 0
-  const nothingWanted = wantedTotal === 0 && total > 0
-  const have = obtainedCount(s)
-  const tracked = readTracking && s.readChapterCount != null && have > 0
+  const total = scoped ? s.progressTotal! : wantedTotal || s.knownChapterCount || 0
+  const nothingWanted = !scoped && wantedTotal === 0 && total > 0
+  const have = scoped ? (s.progressHave ?? 0) : obtainedCount(s)
+  const read = scoped && s.progressRead !== undefined ? s.progressRead : s.readChapterCount
+  const tracked = readTracking && read != null && have > 0
   return {
     total,
     nothingWanted,
     have,
     pct: !nothingWanted && total > 0 ? Math.min(100, (have / total) * 100) : 0,
     complete: !nothingWanted && total > 0 && have >= total,
-    readPct: tracked ? Math.min(100, (s.readChapterCount! / have) * 100) : null,
-    unread: tracked ? Math.max(0, have - s.readChapterCount!) : null,
+    readPct: tracked ? Math.min(100, (read / have) * 100) : null,
+    unread: tracked ? Math.max(0, have - read) : null,
   }
 }
 
