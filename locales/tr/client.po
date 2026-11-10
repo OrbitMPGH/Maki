@@ -1511,6 +1511,7 @@ msgstr "{format}, {stop}, PNG kayıpsız"
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
 msgstr "{forwardKey} veya Boşluk ile açılır, Esc ile seriye dönülür."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "{free} free"
@@ -1900,6 +1901,10 @@ msgstr "{missingWanted, plural, one {İstenen # bölüm indirilsin mi?} other {�
 #, fuzzy
 msgid "{missingWanted, plural, one {This will add # chapter to the download queue.} other {This will add # chapters to the download queue.}}"
 msgstr "{missingWanted, plural, one {Bu işlem # bölümü indirme kuyruğuna ekler.} other {Bu işlem # bölümü indirme kuyruğuna ekler.}}"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "{monitorShort}, {profileName}"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -4912,6 +4917,7 @@ msgstr "Otomatik indirme başarısız oldu"
 msgid "Automatic upgrades are off, needs your call"
 msgstr "Otomatik yükseltmeler kapalı, kararınız gerekiyor"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
 #, fuzzy
@@ -4937,6 +4943,7 @@ msgstr "Kaçınıldı"
 #: src/components/pageconversion/ComparePicker.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SetupWizard.tsx
+#: src/components/ui/DrillPanel.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -9958,6 +9965,10 @@ msgstr "Yedeklerin güncelliği, Sağlık sayfasında ayarlanan değere göre iz
 msgid "Follows the default on your notification settings."
 msgstr "Bildirim ayarlarınızdaki varsayılanı takip eder."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Follows the default profile set in Settings."
+msgstr ""
+
 #: src/components/QueuePause.tsx
 #, fuzzy
 msgid "For 1 hour"
@@ -11649,8 +11660,8 @@ msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
-msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
-msgstr "Bu seriyi takip hizmetine göndermenin dışında tutar; Full ise onu istatistiklerden de tamamen hariç tutar."
+#~ msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
+#~ msgstr "Bu seriyi takip hizmetine göndermenin dışında tutar; Full ise onu istatistiklerden de tamamen hariç tutar."
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -15018,6 +15029,10 @@ msgstr "İzlenmiyor"
 msgid "Not rated"
 msgstr "Puanlanmamış"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Not reachable right now"
+msgstr ""
+
 #: src/components/home/AnimeResumeRail.tsx
 #, fuzzy
 msgid "Not reading this one"
@@ -16826,6 +16841,10 @@ msgstr "En iyi görüneni seçin, Maki oradan yeniden indirir."
 msgid "Pick the source a replacement comes from, or delete the file through a review."
 msgstr "Yedeğin geleceği kaynağı seçin ya da dosyayı bir inceleme üzerinden silin."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Picked by your content rating rule in Settings."
+msgstr ""
+
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "Picks based on the series you read most recently."
@@ -17260,7 +17279,6 @@ msgstr "HTTPS'in arkasına yerleştirin, ardından Ayarlar → Sistem → Ağ �
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
 msgstr "Bu kaynakları bu sırayla, yeni seriler otomatik eşleştiğinde kullanılan genel öncelik listesinin başına koyar."
 
-#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/pageconversion/CompareStep.tsx
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -17282,6 +17300,7 @@ msgstr "kalite biçimi, koşul, yüksek çözünürlük, biçim puanı, regex, g
 msgid "Quality formats"
 msgstr "Kalite biçimleri"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -25506,8 +25525,8 @@ msgstr "Bu serinin bölümleri hangi listede?"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
-msgid "Which new chapters get fetched as they land"
-msgstr "Yayınlandıkça hangi yeni bölümler alınır"
+#~ msgid "Which new chapters get fetched as they land"
+#~ msgstr "Yayınlandıkça hangi yeni bölümler alınır"
 
 #: src/components/notes/NotesPanel.tsx
 #, fuzzy

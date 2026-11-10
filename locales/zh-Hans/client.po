@@ -1511,6 +1511,7 @@ msgstr "{format}，{stop}，PNG 无损"
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
 msgstr "按 {forwardKey} 或空格键打开，按 Esc 返回系列。"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "{free} free"
@@ -1900,6 +1901,10 @@ msgstr "{missingWanted, plural, other {要下载 # 个想要的章节吗？}}"
 #, fuzzy
 msgid "{missingWanted, plural, one {This will add # chapter to the download queue.} other {This will add # chapters to the download queue.}}"
 msgstr "{missingWanted, plural, other {这会将 # 个章节加入下载队列。}}"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "{monitorShort}, {profileName}"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -4912,6 +4917,7 @@ msgstr "自动下载失败"
 msgid "Automatic upgrades are off, needs your call"
 msgstr "自动升级已关闭，需要你来决定"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
 #, fuzzy
@@ -4937,6 +4943,7 @@ msgstr "已避开"
 #: src/components/pageconversion/ComparePicker.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SetupWizard.tsx
+#: src/components/ui/DrillPanel.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -9958,6 +9965,10 @@ msgstr "遵循「健康」页面中设置的备份新鲜度。"
 msgid "Follows the default on your notification settings."
 msgstr "遵循通知设置中的默认值。"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Follows the default profile set in Settings."
+msgstr ""
+
 #: src/components/QueuePause.tsx
 #, fuzzy
 msgid "For 1 hour"
@@ -11649,8 +11660,8 @@ msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
-msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
-msgstr "让此系列不出现在跟踪器推送中，完整模式下还会将其完全排除在统计之外。"
+#~ msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
+#~ msgstr "让此系列不出现在跟踪器推送中，完整模式下还会将其完全排除在统计之外。"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -15018,6 +15029,10 @@ msgstr "未监控"
 msgid "Not rated"
 msgstr "未评分"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Not reachable right now"
+msgstr ""
+
 #: src/components/home/AnimeResumeRail.tsx
 #, fuzzy
 msgid "Not reading this one"
@@ -16826,6 +16841,10 @@ msgstr "选择看起来最好的那个，Maki 会从那里重新下载。"
 msgid "Pick the source a replacement comes from, or delete the file through a review."
 msgstr "选择替换版本的来源，或通过审核删除此文件。"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Picked by your content rating rule in Settings."
+msgstr ""
+
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "Picks based on the series you read most recently."
@@ -17260,7 +17279,6 @@ msgstr "请将它放在 HTTPS 之后，然后开启 设置 → 系统 → 网络
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
 msgstr "按此顺序将这些来源置于新系列自动匹配时使用的全局优先级列表前端。"
 
-#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/pageconversion/CompareStep.tsx
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -17282,6 +17300,7 @@ msgstr "质量格式，条件，高分辨率，格式分数，正则表达式，
 msgid "Quality formats"
 msgstr "质量格式"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -25506,8 +25525,8 @@ msgstr "哪个列表包含此系列的章节？"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
-msgid "Which new chapters get fetched as they land"
-msgstr "新章节出现时，哪些会被获取"
+#~ msgid "Which new chapters get fetched as they land"
+#~ msgstr "新章节出现时，哪些会被获取"
 
 #: src/components/notes/NotesPanel.tsx
 #, fuzzy

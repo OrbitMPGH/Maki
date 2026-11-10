@@ -1511,6 +1511,7 @@ msgstr "{format}, {stop}, PNG 무손실"
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
 msgstr "{forwardKey} 또는 스페이스로 열고, Esc를 눌러 시리즈로 돌아갑니다."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "{free} free"
@@ -1900,6 +1901,10 @@ msgstr "{missingWanted, plural, other {원하는 챕터 #개를 다운로드할�
 #, fuzzy
 msgid "{missingWanted, plural, one {This will add # chapter to the download queue.} other {This will add # chapters to the download queue.}}"
 msgstr "{missingWanted, plural, other {챕터 #개를 다운로드 대기열에 추가합니다.}}"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "{monitorShort}, {profileName}"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -4912,6 +4917,7 @@ msgstr "자동 다운로드 실패"
 msgid "Automatic upgrades are off, needs your call"
 msgstr "자동 업그레이드가 꺼져 있어 직접 결정해야 합니다"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
 #, fuzzy
@@ -4937,6 +4943,7 @@ msgstr "회피됨"
 #: src/components/pageconversion/ComparePicker.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SetupWizard.tsx
+#: src/components/ui/DrillPanel.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -9958,6 +9965,10 @@ msgstr "상태 페이지에서 정한 백업 최신성 기준을 따릅니다."
 msgid "Follows the default on your notification settings."
 msgstr "알림 설정의 기본값을 따릅니다."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Follows the default profile set in Settings."
+msgstr ""
+
 #: src/components/QueuePause.tsx
 #, fuzzy
 msgid "For 1 hour"
@@ -11649,8 +11660,8 @@ msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
-msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
-msgstr "이 시리즈를 트래커 전송에서 제외하며, 전체에서는 통계에서도 완전히 제외합니다."
+#~ msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
+#~ msgstr "이 시리즈를 트래커 전송에서 제외하며, 전체에서는 통계에서도 완전히 제외합니다."
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -15018,6 +15029,10 @@ msgstr "모니터링하지 않음"
 msgid "Not rated"
 msgstr "평점 없음"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Not reachable right now"
+msgstr ""
+
 #: src/components/home/AnimeResumeRail.tsx
 #, fuzzy
 msgid "Not reading this one"
@@ -16826,6 +16841,10 @@ msgstr "가장 좋아 보이는 것을 고르면 Maki가 그 소스에서 다시
 msgid "Pick the source a replacement comes from, or delete the file through a review."
 msgstr "교체 파일을 가져올 소스를 고르거나, 검토를 거쳐 파일을 삭제하세요."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Picked by your content rating rule in Settings."
+msgstr ""
+
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "Picks based on the series you read most recently."
@@ -17260,7 +17279,6 @@ msgstr "HTTPS 뒤에 두고, 설정 → 시스템 → 네트워크 → HTTPS 필
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
 msgstr "이 소스를 이 순서대로 새 시리즈를 자동으로 일치시킬 때 사용하는 전체 우선순위 목록의 앞쪽에 배치합니다."
 
-#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/pageconversion/CompareStep.tsx
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -17282,6 +17300,7 @@ msgstr "품질 형식, 조건, 고해상도, 형식 점수, 정규식, 그룹 �
 msgid "Quality formats"
 msgstr "품질 형식"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -25506,8 +25525,8 @@ msgstr "이 시리즈의 챕터는 어느 목록에 있나요?"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
-msgid "Which new chapters get fetched as they land"
-msgstr "새로 올라오는 챕터 중 가져올 항목"
+#~ msgid "Which new chapters get fetched as they land"
+#~ msgstr "새로 올라오는 챕터 중 가져올 항목"
 
 #: src/components/notes/NotesPanel.tsx
 #, fuzzy

@@ -1511,6 +1511,7 @@ msgstr "{format}, {stop}, PNG sin pérdida"
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
 msgstr "Pulsa {forwardKey} o Espacio para abrirlo. Pulsa Esc para volver a la serie."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "{free} free"
@@ -1900,6 +1901,10 @@ msgstr "{missingWanted, plural, one {¿Descargar # capítulo deseado?} many {¿D
 #, fuzzy
 msgid "{missingWanted, plural, one {This will add # chapter to the download queue.} other {This will add # chapters to the download queue.}}"
 msgstr "{missingWanted, plural, one {Esto añadirá # capítulo a la cola de descargas.} many {Esto añadirá # capítulos a la cola de descargas.} other {Esto añadirá # capítulos a la cola de descargas.}}"
+
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "{monitorShort}, {profileName}"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -4912,6 +4917,7 @@ msgstr "La descarga automática falló"
 msgid "Automatic upgrades are off, needs your call"
 msgstr "Las mejoras automáticas están desactivadas, requiere tu decisión"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/nav.ts
 #, fuzzy
@@ -4937,6 +4943,7 @@ msgstr "Evitado"
 #: src/components/pageconversion/ComparePicker.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SetupWizard.tsx
+#: src/components/ui/DrillPanel.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -9958,6 +9965,10 @@ msgstr "Sigue la antigüedad de copia de seguridad fijada en la página de Estad
 msgid "Follows the default on your notification settings."
 msgstr "Sigue el valor predeterminado de tus ajustes de notificaciones."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Follows the default profile set in Settings."
+msgstr ""
+
 #: src/components/QueuePause.tsx
 #, fuzzy
 msgid "For 1 hour"
@@ -11649,8 +11660,8 @@ msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
-msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
-msgstr "Mantiene esta serie fuera de los envíos a los rastreadores y, en Completo, también la excluye por completo de las estadísticas."
+#~ msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
+#~ msgstr "Mantiene esta serie fuera de los envíos a los rastreadores y, en Completo, también la excluye por completo de las estadísticas."
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -15018,6 +15029,10 @@ msgstr "No supervisado"
 msgid "Not rated"
 msgstr "Sin valorar"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Not reachable right now"
+msgstr ""
+
 #: src/components/home/AnimeResumeRail.tsx
 #, fuzzy
 msgid "Not reading this one"
@@ -16826,6 +16841,10 @@ msgstr "Elige la que mejor se vea y Maki la vuelve a descargar desde allí."
 msgid "Pick the source a replacement comes from, or delete the file through a review."
 msgstr "Elige la fuente de la que viene el reemplazo, o elimina el archivo mediante una revisión."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
+msgid "Picked by your content rating rule in Settings."
+msgstr ""
+
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "Picks based on the series you read most recently."
@@ -17260,7 +17279,6 @@ msgstr "Ponlo detrás de HTTPS y luego activa Ajustes → Sistema → Red → Ex
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
 msgstr "Coloca estas fuentes, en este orden, al principio de la lista de prioridad global que se usa cuando una serie nueva obtiene coincidencia automática."
 
-#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/pageconversion/CompareStep.tsx
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -17282,6 +17300,7 @@ msgstr "formato de calidad, condición, alta resolución, puntuación de formato
 msgid "Quality formats"
 msgstr "Formatos de calidad"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -25506,8 +25525,8 @@ msgstr "¿Qué lista contiene los capítulos de esta serie?"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
-msgid "Which new chapters get fetched as they land"
-msgstr "Qué capítulos nuevos se descargan en cuanto llegan"
+#~ msgid "Which new chapters get fetched as they land"
+#~ msgstr "Qué capítulos nuevos se descargan en cuanto llegan"
 
 #: src/components/notes/NotesPanel.tsx
 #, fuzzy
