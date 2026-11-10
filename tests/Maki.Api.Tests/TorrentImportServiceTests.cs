@@ -210,7 +210,7 @@ public class TorrentImportServiceTests : IDisposable
     public async Task Importing_the_same_download_twice_keeps_one_row_per_file()
     {
         var (series, item) = SeedLibrary(withFiles: false);
-        SeedVolumeDownload(1, 2, 3);
+        SeedVolumeDownload(1, 2, 3, 4, 5, 6);
 
         var first = await Service().ImportAsync(
             item, series, _downloads, TorrentImportMode.Replace, CancellationToken.None);
@@ -261,7 +261,7 @@ public class TorrentImportServiceTests : IDisposable
     public async Task A_row_stored_with_the_other_separator_is_reused_rather_than_duplicated()
     {
         var (series, item) = SeedLibrary(withFiles: false);
-        SeedVolumeDownload(1, 2, 3);
+        SeedVolumeDownload(1, 2, 3, 4, 5, 6);
         int existingId;
         using (var db = _db.NewContext())
         {

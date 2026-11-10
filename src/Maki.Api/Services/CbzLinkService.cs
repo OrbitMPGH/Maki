@@ -159,7 +159,7 @@ public class CbzLinkService(
         linked += FillVolumeContents(chapters, volumeFiles, volumeFileIds, replaceExisting, displaceableFileIds);
 
         linked += await LinkLoneFileAsync(series, chapters, ct);
-        await EstimateCompletedVolumeLinksAsync(series, chapters, ct);
+        await EstimateCompletedVolumeLinksAsync(series, chapters, Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(seriesDir))!, ct);
         // An upgrade links against part of the chapter list, so it builds nothing from what it left over.
         if (fromFiles is not null && language is null && displaceableFileIds is null)
         {
@@ -371,6 +371,8 @@ public class CbzLinkService(
             removed++;
         }
 
+        ReleaseUnmarkedChapters(chapters, dbFiles, rootFolder.Path);
+
         // 2. Known files no chapter points at: retry matching with current chapter data. A file only a
         // volume entry holds is retried too, so chapters a source lists since can take it over.
         var linkedFileIds = chapters
@@ -462,7 +464,7 @@ public class CbzLinkService(
         if (newFiles.Count == 0)
         {
             // LinkFilesAsync runs the estimator itself; cover the no-new-files path too.
-            await EstimateCompletedVolumeLinksAsync(series, chapters, ct);
+            await EstimateCompletedVolumeLinksAsync(series, chapters, rootFolder.Path, ct);
             await db.SaveChangesAsync(ct);
         }
 
@@ -603,9 +605,11 @@ public class CbzLinkService(
     /// volume the metadata provider knows about, every chapter is provably present.
     /// Unlinked chapters are assigned to files by proportional position (chapters ÷
     /// volumes) — approximate per file, but the completeness itself is certain.
-    /// Ongoing series are excluded because their chapter count runs ahead of the volumes.
+    /// Ongoing series are excluded because their chapter count runs ahead of the volumes, and a
+    /// volume with page markers is skipped: its markers already said which chapters it holds.
     /// </summary>
-    private async Task EstimateCompletedVolumeLinksAsync(Series series, List<Chapter> chapters, CancellationToken ct)
+    private async Task EstimateCompletedVolumeLinksAsync(
+        Series series, List<Chapter> chapters, string rootPath, CancellationToken ct)
     {
         if (series.Status is not (SeriesStatus.Completed or SeriesStatus.Cancelled) ||
             series.TotalVolumes is not > 0 || series.TotalChapters is not > 0 ||
@@ -626,14 +630,28 @@ public class CbzLinkService(
             return;
         }
 
+        var marked = new Dictionary<int, bool>();
+        bool HasMarkers(ChapterFile file)
+        {
+            if (!marked.TryGetValue(file.Id, out var has))
+            {
+                has = LibraryPaths.ResolveNoLinks(rootPath, file.RelativePath) is { } path &&
+                      VolumeChapterScanner.ScanCbz(path).Count > 0;
+                marked[file.Id] = has;
+            }
+
+            return has;
+        }
+
         var chaptersPerVolume = (decimal)series.TotalChapters.Value / series.TotalVolumes.Value;
         foreach (var chapter in chapters.Where(c => c.ChapterFileId == null && c.Number is > 0))
         {
             var volume = chapter.Volume
                 ?? Math.Clamp((int)Math.Ceiling(chapter.Number!.Value / chaptersPerVolume), 1, series.TotalVolumes.Value);
-            chapter.ChapterFileId = volumeFiles
-                .FirstOrDefault(x => volume >= x.Start && volume <= x.End)
-                .File?.Id ?? chapter.ChapterFileId;
+            if (volumeFiles.FirstOrDefault(x => volume >= x.Start && volume <= x.End).File is { } file && !HasMarkers(file))
+            {
+                chapter.ChapterFileId = file.Id;
+            }
         }
     }
 
@@ -750,6 +768,51 @@ public class CbzLinkService(
     }
 
     /// <summary>
+    /// Unlinks chapters a volume file's page markers do not name. Older builds linked every chapter
+    /// in the provider's range, so a source's splits and specials (2.1, 2.2) sat on a volume that
+    /// only holds 1 to 5 and opened as the whole archive. A file linked by hand is left alone, and so
+    /// is a volume whose markers name none of its chapters (no markers, or a per-volume numbering).
+    /// </summary>
+    private void ReleaseUnmarkedChapters(List<Chapter> chapters, List<ChapterFile> files, string rootPath)
+    {
+        foreach (var file in files)
+        {
+            if (file.SourceName == "Manual" || !ReleaseNameParser.ParseFileName(file.RelativePath).IsVolume)
+            {
+                continue;
+            }
+
+            var held = chapters
+                .Where(c => c.ChapterFileId == file.Id && c.Number is not null && !Chapter.IsVolumeEntry(c))
+                .ToList();
+            if (held.Count == 0 || LibraryPaths.ResolveNoLinks(rootPath, file.RelativePath) is not { } path ||
+                !File.Exists(path))
+            {
+                continue;
+            }
+
+            var markers = VolumeChapterScanner.ScanCbz(path).ToHashSet();
+            if (!VolumeChapterScanner.ListsContents(markers, held.Select(c => c.Number)))
+            {
+                continue;
+            }
+
+            var released = held.Where(c => !markers.Contains(c.Number!.Value)).ToList();
+            foreach (var chapter in released)
+            {
+                chapter.ChapterFileId = null;
+            }
+
+            if (released.Count > 0)
+            {
+                logger.LogInformation(
+                    "Unlinked {Count} chapter(s) from volume file {File}: its page names do not include them",
+                    released.Count, Path.GetFileName(path));
+            }
+        }
+    }
+
+    /// <summary>
     /// For each volume/compilation CBZ, links any chapter the file demonstrably contains
     /// (per the chapter markers in its page file names) that is still unlinked. Unlike the
     /// initial adopt path this runs even when the file already links other chapters, so a
@@ -803,9 +866,9 @@ public class CbzLinkService(
     /// <summary>Points matching chapters at the file; returns the chapters that were linked.</summary>
     /// <param name="filePath">
     /// The file on disk; a single file's name also says its language. A volume whose page names
-    /// carry chapter markers takes a chapter off another file only when the markers name it; the
-    /// provider's range alone would hand a partial volume every chapter of that volume and orphan
-    /// files it does not replace.
+    /// carry chapter markers links only the chapters the markers name. The provider's range alone
+    /// would hand it every split and special a source lists for that volume (2.1, 2.2), which the
+    /// reader can only open as the whole archive, and would orphan files it does not replace.
     /// </param>
     /// <param name="replaceExisting">
     /// False leaves a chapter that already has a file alone, so this file links only what nothing
@@ -837,21 +900,21 @@ public class CbzLinkService(
         else if (parsed.IsVolume)
         {
             var end = parsed.VolumeEnd ?? parsed.Volume;
-            HashSet<decimal>? markers = null;
-            targets = chapters
-                .Where(c => c.Volume >= parsed.Volume && c.Volume <= end && c.ChapterFileId != chapterFileId
-                            && ChapterFileLanguage.Allows(ChapterFileLanguage.ForVolume(languages), c)
-                            && VolumeMayTake(c, volumeFileIds, replaceExisting, displaceable))
-                .Where(c =>
-                {
-                    if (c.ChapterFileId is null)
-                    {
-                        return true;
-                    }
+            var inRange = chapters
+                .Where(c => c.Volume >= parsed.Volume && c.Volume <= end
+                            && ChapterFileLanguage.Allows(ChapterFileLanguage.ForVolume(languages), c))
+                .ToList();
+            if (inRange.Count == 0)
+            {
+                return [];
+            }
 
-                    markers ??= filePath is null ? [] : [.. VolumeChapterScanner.ScanCbz(filePath)];
-                    return markers.Count == 0 || (c.Number is { } number && markers.Contains(number));
-                })
+            HashSet<decimal> markers = filePath is null ? [] : [.. VolumeChapterScanner.ScanCbz(filePath)];
+            var listsContents = VolumeChapterScanner.ListsContents(markers, inRange.Select(c => c.Number));
+            targets = inRange
+                .Where(c => c.ChapterFileId != chapterFileId && VolumeMayTake(c, volumeFileIds, replaceExisting, displaceable))
+                .Where(c => (c.Number is { } number && markers.Contains(number)) ||
+                            (c.ChapterFileId is null ? !listsContents : markers.Count == 0))
                 .ToList();
         }
 
