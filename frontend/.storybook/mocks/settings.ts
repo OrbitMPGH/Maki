@@ -17,6 +17,7 @@ export const settingsHandlers: HttpHandler[] = [
   http.put(api('/health/options'), async ({ request }) => HttpResponse.json(await request.json())),
   // Account
   http.get(api('/account/2fa'), () => HttpResponse.json(d.twoFactorOff)),
+  http.get(api('/account/mint-proof'), () => HttpResponse.json(d.mintByPassword)),
   http.get(api('/account/apikeys'), () => HttpResponse.json(d.apiKeys)),
   http.post(api('/account/apikeys'), async ({ request }) => {
     const body = (await request.json()) as { name: string; scope?: 'Full' | 'Opds' }

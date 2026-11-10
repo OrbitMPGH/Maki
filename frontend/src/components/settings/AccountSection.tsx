@@ -47,6 +47,7 @@ import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { useCopyText } from '../ui/useCopyText'
 import { PanelTitle } from '../ui/PanelTitle'
+import { MintPasswordField, RecentSignInNotice, useMintConfirmation } from './MintConfirmation'
 
 /**
  * Self-service account management: password, two-factor, single sign-on, sessions.
@@ -572,8 +573,7 @@ function ApiKeysCard() {
   const { data: keys } = useApiKeys()
   const create = useCreateApiKey()
   const revoke = useRevokeApiKey()
-  const { data: status } = useTwoFactorStatus()
-  const needsPassword = status?.hasPassword ?? true
+  const mint = useMintConfirmation()
 
   const [name, setName] = useState('')
   const [keyPassword, setKeyPassword] = useState('')
@@ -593,7 +593,7 @@ function ApiKeysCard() {
         data-align="end"
         onSubmit={(e: FormEvent) => {
           e.preventDefault()
-          if (!name.trim()) return
+          if (!name.trim() || mint.signInStale) return
           create.mutate(
             { name: name.trim(), password: keyPassword },
             {
@@ -612,25 +612,20 @@ function ApiKeysCard() {
           value={name}
           onChange={(e) => setName(e.currentTarget.value)}
         />
-        {needsPassword && (
-          <PasswordInput
-            label={t`Your password`}
-            autoComplete="current-password"
-            value={keyPassword}
-            onChange={(e) => setKeyPassword(e.currentTarget.value)}
-          />
-        )}
+        {mint.needsPassword && <MintPasswordField value={keyPassword} onChange={setKeyPassword} />}
         <Tooltip label={t`Name the key first`} disabled={!!name.trim()} events={{ hover: true, focus: true, touch: true }}>
           <Button
             type="submit"
             loading={create.isPending}
-            data-disabled={!name.trim() || undefined}
-            aria-disabled={!name.trim()}
+            data-disabled={!name.trim() || mint.signInStale || undefined}
+            aria-disabled={!name.trim() || mint.signInStale}
           >
             <Trans>Create</Trans>
           </Button>
         </Tooltip>
       </Box>
+
+      {mint.signInStale && <RecentSignInNotice canSignInAgain={mint.canSignInAgain} anchor="api-keys" />}
 
       {fullKeys && fullKeys.length > 0 && (
         <Table.ScrollContainer minWidth={420} mt="xs">

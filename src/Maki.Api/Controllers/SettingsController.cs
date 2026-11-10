@@ -436,11 +436,12 @@ public class SettingsController(
         [FromBody] OpdsSettings request,
         [FromServices] UserManager<MakiUser> users,
         [FromServices] SignInManager<MakiUser> signIn,
+        [FromServices] OidcRuntimeOptions oidc,
         CancellationToken ct)
     {
         var existing = await CurrentOpdsKeyAsync(ct);
         var mints = request.Enabled && existing is null;
-        if (mints && await ConfirmOpdsPasswordAsync(users, signIn, request.Password) is { } refused)
+        if (mints && await ConfirmOpdsPasswordAsync(users, signIn, oidc, request.Password) is { } refused)
         {
             return refused;
         }
@@ -479,9 +480,10 @@ public class SettingsController(
         [FromBody] Maki.Api.Dtos.ConfirmPasswordRequest? request,
         [FromServices] UserManager<MakiUser> users,
         [FromServices] SignInManager<MakiUser> signIn,
+        [FromServices] OidcRuntimeOptions oidc,
         CancellationToken ct)
     {
-        if (await ConfirmOpdsPasswordAsync(users, signIn, request?.Password) is { } refused)
+        if (await ConfirmOpdsPasswordAsync(users, signIn, oidc, request?.Password) is { } refused)
         {
             return refused;
         }
@@ -500,7 +502,7 @@ public class SettingsController(
     }
 
     private async Task<IActionResult?> ConfirmOpdsPasswordAsync(
-        UserManager<MakiUser> users, SignInManager<MakiUser> signIn, string? password)
+        UserManager<MakiUser> users, SignInManager<MakiUser> signIn, OidcRuntimeOptions oidc, string? password)
     {
         var user = await users.FindByIdAsync(currentUser.UserId.ToString(CultureInfo.InvariantCulture));
         if (user is null)
@@ -508,7 +510,7 @@ public class SettingsController(
             return Unauthorized();
         }
 
-        if (await AccountCredentials.ConfirmForMintAsync(users, signIn, user, password, TimeProvider.System) is { } key)
+        if (await AccountCredentials.ConfirmForMintAsync(users, signIn, oidc, user, password, TimeProvider.System) is { } key)
         {
             return key == AccountCredentials.RecentSignInRequiredKey
                 ? this.Forbidden(localizer, key)

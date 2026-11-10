@@ -422,12 +422,13 @@ public sealed class AuthHardeningTests : IDisposable
         Assert.Equal("error.account.lockedOut", CodeOf(result));
     }
 
-    private AccountController Account(MakiDbContext db, int userId, UserManager<MakiUser>? existing = null)
+    private AccountController Account(
+        MakiDbContext db, int userId, UserManager<MakiUser>? existing = null, OidcRuntimeOptions? oidc = null)
     {
         var users = existing ?? IdentityTestKit.UserManager(db);
         return new AccountController(
             new TestLocalizer(), db, users, new TestSignInManager(users), new TestCurrentUser(userId),
-            new AuthEventLogger(db, _clock), new OidcRuntimeOptions(), _clock,
+            new AuthEventLogger(db, _clock), oidc ?? new OidcRuntimeOptions(), _clock,
             new UserSnapshotCache(new MemoryCache(new MemoryCacheOptions())))
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
@@ -513,6 +514,90 @@ public sealed class AuthHardeningTests : IDisposable
             Assert.Equal("error.account.recentSignInRequired", CodeOf(result));
             Assert.Empty(db.UserApiKeys);
         }
+    }
+
+    private async Task<OidcRuntimeOptions> OidcOnlyAsync(MakiDbContext db)
+    {
+        _db.SetConfig(
+            (SettingKeys.AuthOidcEnabled, "true"),
+            (SettingKeys.AuthOidcAuthority, "https://auth.example.com"),
+            (SettingKeys.AuthOidcClientId, "maki"),
+            (SettingKeys.AuthOidcOnly, "true"));
+        var oidc = new OidcRuntimeOptions();
+        await oidc.LoadAsync(db);
+        return oidc;
+    }
+
+    [Theory]
+    [InlineData(-5, true)]
+    [InlineData(-30, false)]
+    public async Task Under_oidc_only_a_stored_password_is_not_asked_for_and_a_recent_sign_in_is(
+        int minutesSinceSignIn, bool allowed)
+    {
+        var userId = _db.SeedUser("linked", MakiPermission.None, configure: u =>
+        {
+            u.PasswordHash = IdentityTestKit.Hash(u, Password);
+            u.LastLoginAt = _clock.GetUtcNow().UtcDateTime.AddMinutes(minutesSinceSignIn);
+        });
+        LinkOidc(userId, "linked-sub");
+        using var db = _db.NewContext(userId);
+        var oidc = await OidcOnlyAsync(db);
+
+        var result = await Account(db, userId, oidc: oidc).CreateApiKey(
+            new CreateApiKeyRequest("script", UserApiKeyScope.Full, null), default);
+
+        if (allowed)
+        {
+            Assert.IsType<OkObjectResult>(result);
+        }
+        else
+        {
+            Assert.Equal("error.account.recentSignInRequired", CodeOf(result));
+        }
+    }
+
+    [Fact]
+    public async Task Under_oidc_only_an_admin_still_confirms_the_password()
+    {
+        var userId = _db.SeedUser("admin", MakiPermission.Admin, configure: u =>
+        {
+            u.PasswordHash = IdentityTestKit.Hash(u, Password);
+            u.LastLoginAt = _clock.GetUtcNow().UtcDateTime;
+        });
+        using var db = _db.NewContext(userId);
+        var oidc = await OidcOnlyAsync(db);
+
+        var bare = await Account(db, userId, oidc: oidc).CreateApiKey(
+            new CreateApiKeyRequest("script", UserApiKeyScope.Full, null), default);
+        Assert.Equal("error.account.incorrectPassword", CodeOf(bare));
+
+        var confirmed = await Account(db, userId, oidc: oidc).CreateApiKey(
+            new CreateApiKeyRequest("script", UserApiKeyScope.Full, Password), default);
+        Assert.IsType<OkObjectResult>(confirmed);
+    }
+
+    [Fact]
+    public async Task Mint_proof_reports_the_password_or_the_sign_in_time_left()
+    {
+        var withPassword = SeedWithPassword("ada");
+        var sso = _db.SeedUser("sso", MakiPermission.None, configure: u =>
+            u.LastLoginAt = _clock.GetUtcNow().UtcDateTime.AddMinutes(-4));
+        LinkOidc(sso, "sso-sub");
+        using var db = _db.NewContext();
+        var oidc = await OidcAsync(db);
+        using var adaDb = _db.NewContext(withPassword);
+        using var ssoDb = _db.NewContext(sso);
+
+        var password = Assert.IsType<MintProofDto>(Assert.IsType<OkObjectResult>(
+            await Account(adaDb, withPassword, oidc: oidc).GetMintProof()).Value);
+        Assert.Equal(MintProof.Password, password.Proof);
+        Assert.False(password.CanSignInAgain);
+
+        var recent = Assert.IsType<MintProofDto>(Assert.IsType<OkObjectResult>(
+            await Account(ssoDb, sso, oidc: oidc).GetMintProof()).Value);
+        Assert.Equal(MintProof.RecentSignIn, recent.Proof);
+        Assert.Equal(6 * 60, recent.RecentSignInSecondsLeft);
+        Assert.True(recent.CanSignInAgain);
     }
 
     [Fact]

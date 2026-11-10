@@ -19,6 +19,7 @@ import type { IncognitoMode } from '../components/ui/incognito'
 import type { ReleaseParsedDto } from './upgrades'
 import { obtainedCount } from '../lib/chapterCounts'
 import { optimisticMerge, optimisticSeries } from './optimistic'
+import { refreshMintProofOn } from './auth'
 import { activeSeries } from '../lib/series'
 import { isProvisional, ratesProvisionally } from '../lib/rating'
 import { askSoFarSync } from '../lib/soFarSyncAsk'
@@ -3028,20 +3029,25 @@ export function useOpdsSettings() {
 
 export function useSaveOpdsSettings() {
   const queryClient = useQueryClient()
+  const merge = optimisticMerge(
+    queryClient,
+    ['settings', 'opds'],
+    ({ enabled, trackProgress, komga }: { enabled: boolean; trackProgress: boolean; komga?: boolean }) => ({
+      enabled,
+      trackProgress,
+      ...(komga !== undefined && { komga }),
+    }),
+    { seededBySave: true },
+  )
   return useMutation({
     // `password` is only needed when the save mints the token (first enable); the server decides.
     mutationFn: (settings: { enabled: boolean; trackProgress: boolean; komga?: boolean; password?: string }) =>
       api<OpdsSettings>('/settings/opds', { method: 'PUT', body: JSON.stringify(settings) }),
-    ...optimisticMerge(
-      queryClient,
-      ['settings', 'opds'],
-      ({ enabled, trackProgress, komga }: { enabled: boolean; trackProgress: boolean; komga?: boolean }) => ({
-        enabled,
-        trackProgress,
-        ...(komga !== undefined && { komga }),
-      }),
-      { seededBySave: true },
-    ),
+    ...merge,
+    onError: (error, vars, snapshot) => {
+      merge.onError(error, vars, snapshot)
+      refreshMintProofOn(queryClient, error)
+    },
     onSuccess: (data) => {
       // The PUT mints the token on first enable, so seed the cache from the response rather
       // than refetching, otherwise the URL box stays empty until the round-trip lands.
@@ -3061,6 +3067,7 @@ export function useRotateOpdsToken() {
     onSuccess: (data) => {
       queryClient.setQueryData(['settings', 'opds'], data)
     },
+    onError: (error) => refreshMintProofOn(queryClient, error),
   })
 }
 
