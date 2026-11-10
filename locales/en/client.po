@@ -7045,6 +7045,10 @@ msgid "Enabled for this series"
 msgstr "Enabled for this series"
 
 #: src/pages/settings/ReadingCards.tsx
+msgid "Enabling it creates the feed URL."
+msgstr "Enabling it creates the feed URL."
+
+#: src/pages/settings/ReadingCards.tsx
 msgid "Enabling it creates the feed URL. Confirm your password to continue."
 msgstr "Enabling it creates the feed URL. Confirm your password to continue."
 
@@ -16997,6 +17001,10 @@ msgstr "Side story of {relatedTo}"
 msgid "Sign in"
 msgstr "Sign in"
 
+#: src/components/settings/MintConfirmation.tsx
+msgid "Sign in again"
+msgstr "Sign in again"
+
 #: src/pages/LoginPage.tsx
 msgid "Sign in with a password"
 msgstr "Sign in with a password"
@@ -18713,6 +18721,10 @@ msgstr "this month"
 #: src/pages/stats/StatsRange.ts
 msgid "This month"
 msgstr "This month"
+
+#: src/components/settings/MintConfirmation.tsx
+msgid "This needs a sign-in from the last 10 minutes. Sign out and sign in again, then come back here."
+msgstr "This needs a sign-in from the last 10 minutes. Sign out and sign in again, then come back here."
 
 #: src/components/notes/NotesPanel.tsx
 msgid "This page"
@@ -20693,6 +20705,10 @@ msgstr "You rated this one yourself, so the anime is not counted again"
 msgid "You seem to avoid"
 msgstr "You seem to avoid"
 
+#: src/components/settings/MintConfirmation.tsx
+msgid "You sign in with single sign-on, so this needs a sign-in from the last 10 minutes."
+msgstr "You sign in with single sign-on, so this needs a sign-in from the last 10 minutes."
+
 #: src/pages/discover/TasteTab.tsx
 msgid "You slow down for"
 msgstr "You slow down for"
@@ -20783,7 +20799,7 @@ msgid "Your next read"
 msgstr "Your next read"
 
 #: src/components/settings/AccountSection.tsx
-#: src/pages/settings/ReadingCards.tsx
+#: src/components/settings/MintConfirmation.tsx
 msgid "Your password"
 msgstr "Your password"
 

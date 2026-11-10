@@ -8655,6 +8655,10 @@ msgid "Enabled for this series"
 msgstr "Włączone dla tej serii"
 
 #: src/pages/settings/ReadingCards.tsx
+msgid "Enabling it creates the feed URL."
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Enabling it creates the feed URL. Confirm your password to continue."
 msgstr "Włączenie tworzy adres kanału. Potwierdź hasło, aby kontynuować."
@@ -20887,6 +20891,10 @@ msgstr "Historia poboczna {relatedTo}"
 msgid "Sign in"
 msgstr "Zaloguj się"
 
+#: src/components/settings/MintConfirmation.tsx
+msgid "Sign in again"
+msgstr ""
+
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Sign in with a password"
@@ -23004,6 +23012,10 @@ msgstr "w tym miesiącu"
 #, fuzzy
 msgid "This month"
 msgstr "Ten miesiąc"
+
+#: src/components/settings/MintConfirmation.tsx
+msgid "This needs a sign-in from the last 10 minutes. Sign out and sign in again, then come back here."
+msgstr ""
 
 #: src/components/notes/NotesPanel.tsx
 #, fuzzy
@@ -25445,6 +25457,10 @@ msgstr "Ten tytuł został oceniony przez Ciebie, więc anime nie jest liczone p
 msgid "You seem to avoid"
 msgstr "Wygląda na to, że unikasz"
 
+#: src/components/settings/MintConfirmation.tsx
+msgid "You sign in with single sign-on, so this needs a sign-in from the last 10 minutes."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "You slow down for"
@@ -25557,7 +25573,7 @@ msgid "Your next read"
 msgstr "Twoja następna lektura"
 
 #: src/components/settings/AccountSection.tsx
-#: src/pages/settings/ReadingCards.tsx
+#: src/components/settings/MintConfirmation.tsx
 #, fuzzy
 msgid "Your password"
 msgstr "Twoje hasło"

@@ -8655,6 +8655,10 @@ msgid "Enabled for this series"
 msgstr "已为此系列启用"
 
 #: src/pages/settings/ReadingCards.tsx
+msgid "Enabling it creates the feed URL."
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Enabling it creates the feed URL. Confirm your password to continue."
 msgstr "启用后会生成订阅源 URL。请确认密码以继续。"
@@ -20887,6 +20891,10 @@ msgstr "{relatedTo} 的外传"
 msgid "Sign in"
 msgstr "登录"
 
+#: src/components/settings/MintConfirmation.tsx
+msgid "Sign in again"
+msgstr ""
+
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Sign in with a password"
@@ -23004,6 +23012,10 @@ msgstr "本月"
 #, fuzzy
 msgid "This month"
 msgstr "本月"
+
+#: src/components/settings/MintConfirmation.tsx
+msgid "This needs a sign-in from the last 10 minutes. Sign out and sign in again, then come back here."
+msgstr ""
 
 #: src/components/notes/NotesPanel.tsx
 #, fuzzy
@@ -25445,6 +25457,10 @@ msgstr "你已为此标题评分，因此不会再次计算动画"
 msgid "You seem to avoid"
 msgstr "你似乎会避开"
 
+#: src/components/settings/MintConfirmation.tsx
+msgid "You sign in with single sign-on, so this needs a sign-in from the last 10 minutes."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "You slow down for"
@@ -25557,7 +25573,7 @@ msgid "Your next read"
 msgstr "你的下一篇阅读"
 
 #: src/components/settings/AccountSection.tsx
-#: src/pages/settings/ReadingCards.tsx
+#: src/components/settings/MintConfirmation.tsx
 #, fuzzy
 msgid "Your password"
 msgstr "你的密码"

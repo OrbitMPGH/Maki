@@ -8655,6 +8655,10 @@ msgid "Enabled for this series"
 msgstr "이 시리즈에서 활성화됨"
 
 #: src/pages/settings/ReadingCards.tsx
+msgid "Enabling it creates the feed URL."
+msgstr ""
+
+#: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Enabling it creates the feed URL. Confirm your password to continue."
 msgstr "활성화하면 피드 URL이 만들어집니다. 계속하려면 비밀번호를 확인하세요."
@@ -20887,6 +20891,10 @@ msgstr "{relatedTo}의 외전"
 msgid "Sign in"
 msgstr "로그인"
 
+#: src/components/settings/MintConfirmation.tsx
+msgid "Sign in again"
+msgstr ""
+
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Sign in with a password"
@@ -23004,6 +23012,10 @@ msgstr "이번 달"
 #, fuzzy
 msgid "This month"
 msgstr "이번 달"
+
+#: src/components/settings/MintConfirmation.tsx
+msgid "This needs a sign-in from the last 10 minutes. Sign out and sign in again, then come back here."
+msgstr ""
 
 #: src/components/notes/NotesPanel.tsx
 #, fuzzy
@@ -25445,6 +25457,10 @@ msgstr "직접 평가한 작품이라 애니메이션은 다시 반영되지 않
 msgid "You seem to avoid"
 msgstr "회피하는 경향이 있는 작품"
 
+#: src/components/settings/MintConfirmation.tsx
+msgid "You sign in with single sign-on, so this needs a sign-in from the last 10 minutes."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "You slow down for"
@@ -25557,7 +25573,7 @@ msgid "Your next read"
 msgstr "다음 읽을 항목"
 
 #: src/components/settings/AccountSection.tsx
-#: src/pages/settings/ReadingCards.tsx
+#: src/components/settings/MintConfirmation.tsx
 #, fuzzy
 msgid "Your password"
 msgstr "내 비밀번호"
