@@ -2,10 +2,11 @@ import { errorText } from '../../api/errorText'
 import { useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import {
-  ActionIcon, Alert, Badge, Button, Card, Collapse, Group, Loader, Paper, Stack, Text, Tooltip,
+  ActionIcon, Alert, Badge, Button, Collapse, Group, Skeleton, Stack, Text, Tooltip,
 } from '@mantine/core'
 import {
-  IconAdjustmentsHorizontal, IconArrowBackUp, IconChevronRight, IconCompass, IconHelpCircle, IconThumbDown, IconThumbUp,
+  IconAdjustmentsHorizontal, IconArrowBackUp, IconBook, IconBookmark, IconChevronRight, IconClockPause, IconCompass,
+  IconEyeCheck, IconEyeOff, IconInfoCircle, IconRestore, IconStarFilled, IconThumbDown, IconThumbUp,
 } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { AvoidanceLabel, FeedbackActivity, FeedbackLabData } from '../../api/recommendationFeedback'
@@ -17,8 +18,11 @@ import { SeriesThumb } from '../stats/SeriesLink'
 import { formatDate, formatDecimal, formatRecentDate, formatTime } from '../../format'
 import { ManageSignalsModal } from './ManageSignalsModal'
 import { AnimeSignalsSection } from './AnimeSignalsSection'
-import { MetaList } from '../../components/ui/MetaList'
 import { PanelTitle } from '../../components/ui/PanelTitle'
+import { Panel } from '../../components/ui/Panel'
+import { EmptyState } from '../../components/ui/EmptyState'
+import { ErrorMessage } from '../../components/ErrorMessage'
+import { SignalStatus, type SignalStatusInfo } from './SignalStatus'
 
 /** Actions the undo endpoint can reverse: it replays the event's stored previous state. */
 const UNDOABLE = ['hide', 'dismiss', 'mark-exposed', 'clear-suppression', 'clear-exposure']
@@ -43,7 +47,6 @@ export function SignalsCard() {
   const untitled = (id: number) => t`Catalogue title ${id}`
   const { data: lab, isLoading, error } = useFeedbackLab()
   const undo = useUndoFeedback()
-  const loadError = error ? errorText(error) : ''
   const [manage, setManage] = useState<'titles' | 'anime' | null>(null)
   // The modal fetches its own data on mount, so it is only mounted once someone has opened it.
   const [manageOpened, setManageOpened] = useState(false)
@@ -138,38 +141,37 @@ export function SignalsCard() {
     }
   }
 
+  const statusOf = useEventStatus()
+  const shelfInfo = useShelfInfo()
+
   return (
     <>
       <SectionHeader
         icon={IconCompass}
         title={t`What shapes your recommendations`}
+        chevron
         action={
-          <Group gap="xs" wrap="nowrap">
-            <Button visibleFrom="xs" variant="default" size="xs" aria-expanded={howItWorks} onClick={() => setHowItWorks((v) => !v)}>
-              <Trans>How signals work</Trans>
-            </Button>
-            <Button visibleFrom="xs" variant="default" size="xs" onClick={() => setManage('titles')}>
-              <Trans>Manage signals</Trans>
-            </Button>
-            {/* A phone keeps both on the title row as icons; as words they dropped to a line of their own. */}
+          <Group gap={4} wrap="nowrap">
             <ActionIcon
-              hiddenFrom="xs"
-              variant="default"
-              size="lg"
+              variant="subtle"
+              color="var(--ink-3)"
               aria-label={t`How signals work`}
               aria-expanded={howItWorks}
               onClick={() => setHowItWorks((v) => !v)}
             >
-              <IconHelpCircle size={18} />
+              <IconInfoCircle size={16} />
             </ActionIcon>
+            <Button visibleFrom="xs" variant="subtle" size="compact-sm" onClick={() => setManage('titles')}>
+              <Trans>Manage signals</Trans>
+            </Button>
             <ActionIcon
               hiddenFrom="xs"
-              variant="default"
-              size="lg"
+              variant="subtle"
+              color="var(--ink-3)"
               aria-label={t`Manage signals`}
               onClick={() => setManage('titles')}
             >
-              <IconAdjustmentsHorizontal size={18} />
+              <IconAdjustmentsHorizontal size={16} />
             </ActionIcon>
           </Group>
         }
@@ -184,54 +186,55 @@ export function SignalsCard() {
         <DiscoverTasteStrip />
 
         <Collapse expanded={howItWorks}>
-          <Paper withBorder radius="md" p="md">
+          <Panel p="md">
             <Stack gap="sm">
-              <Text size="sm" fw={600}>
+              <PanelTitle icon={IconInfoCircle}>
                 <Trans>How signals work</Trans>
-              </Text>
-              <Text size="xs" c="var(--ink-3)">
+              </PanelTitle>
+              <Text size="sm" c="var(--ink-3)">
                 <Trans>
                   <b>Thumbs up</b> counts toward your taste. Similar titles rank higher.
                 </Trans>
               </Text>
-              <Text size="xs" c="var(--ink-3)">
+              <Text size="sm" c="var(--ink-3)">
                 <Trans>
                   <b>Thumbs down</b> and ratings of 4 or under push down titles that are
                   closer to what you rejected than to what you kept. What they share shows up
                   above once three or more agree.
                 </Trans>
               </Text>
-              <Text size="xs" c="var(--ink-3)">
+              <Text size="sm" c="var(--ink-3)">
                 <Trans>
                   <b>Hide and dismiss</b> only affect that one title.
                 </Trans>
               </Text>
-              <Text size="xs" c="var(--ink-3)">
+              <Text size="sm" c="var(--ink-3)">
                 <Trans>
                   <b>Seen elsewhere</b> stops a title being recommended without changing taste.
                 </Trans>
               </Text>
-              <Text size="xs" c="var(--ink-3)">
+              <Text size="sm" c="var(--ink-3)">
                 <Trans>
                   <b>Excluded from taste</b> keeps a shelf title out of the ranking. Reading
                   history is untouched.
                 </Trans>
               </Text>
             </Stack>
-          </Paper>
+          </Panel>
         </Collapse>
 
-        {isLoading && <Loader size="sm" />}
         {error && (
-          <Alert color="var(--danger)">
-            <Trans>Could not load your signals: {loadError}</Trans>
+          <Alert color="var(--danger)" variant="light" title={t`Could not load your signals`}>
+            <ErrorMessage error={error} />
           </Alert>
         )}
         {actionError && (
-          <Alert color="var(--danger)">
+          <Alert color="var(--danger)" variant="light">
             <Trans>{actionError} Refresh the page and try again.</Trans>
           </Alert>
         )}
+
+        {isLoading && <SignalsSkeleton />}
 
         {lab && summary && (
           <>
@@ -241,7 +244,8 @@ export function SignalsCard() {
                 {
                   label: t`Titles on the shelf`,
                   value: summary.visibleShelf,
-                  hint:
+                  hint: t`${adds} added by you`,
+                  tip:
                     incognito > 0
                       ? t`${adds} added by you, ${excluded} excluded from taste, ${incognito} incognito not counted`
                       : t`${adds} added by you, ${excluded} excluded from taste`,
@@ -272,26 +276,27 @@ export function SignalsCard() {
             {lab.avoids.length > 0 && <AvoidRow avoids={lab.avoids} />}
 
             {lab.rankingMode === 'fallback' && (
-              <Text size="xs" c="var(--ink-3)">
+              <Text size="sm" c="var(--ink-3)">
                 <Trans>
                   Catalogue fallback is active. Personal add weights need semantic ranking.
                 </Trans>
               </Text>
             )}
             {lab.rankingMode === 'semantic' && !lab.capabilities.personalAddWeighting && (
-              <Text size="xs" c="var(--ink-3)">
+              <Text size="sm" c="var(--ink-3)">
                 <Trans>Personal add weighting is disabled for this instance.</Trans>
               </Text>
             )}
 
-            <Card withBorder radius="lg" padding="md">
-              <Group justify="space-between" align="center" mb={4}>
+            <Panel className="signals-feed">
+              <Group justify="space-between" align="center" wrap="nowrap" className="signals-feed-head">
                 <PanelTitle>
                   <Trans>Recent feedback</Trans>
                 </PanelTitle>
                 <Button
                   variant="subtle"
-                  size="xs"
+                  size="compact-sm"
+                  color="var(--ink-2)"
                   rightSection={<IconChevronRight size={16} />}
                   onClick={() => setManage('titles')}
                 >
@@ -299,73 +304,73 @@ export function SignalsCard() {
                 </Button>
               </Group>
               {recent.length === 0 && padded.length === 0 && (
-                <Text size="sm" c="var(--ink-3)">
-                  <Trans>
-                    Thumbs, hide or dismiss a recommendation and it shows up here.
-                  </Trans>
-                </Text>
+                <EmptyState
+                  compact
+                  mood="asleep"
+                  title={t`No feedback yet`}
+                  description={t`Thumbs, hide or dismiss a recommendation and it shows up here.`}
+                />
               )}
-              <Stack gap={2}>
-                {recent.map(([item, ...earlier], index) => (
-                  <div key={item.id}>
-                    {dayOf(item) !== dayOf(recent[index - 1]?.[0]) && (
-                      <Text size="xs" fw={600} c="var(--ink-3)" mt={index === 0 ? 0 : 10}>
-                        <DayLabel value={item.occurredAtUtc} />
-                      </Text>
-                    )}
-                    <Group gap="sm" wrap="nowrap" py={6}>
-                      <SeriesThumb url={item.coverUrl} alt={item.title ?? ''} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <Text size="sm" fw={500} truncate>
-                          {item.title ?? untitled(item.mangaBakaId)}
-                        </Text>
-                        {[item, ...earlier].map((event) => (
-                          // Wraps rather than truncating: on a phone the pill's date was cut mid-way.
-                          <Group key={event.id} gap={6} wrap="wrap" mt={2}>
-                            <ActionPill item={event} />
-                            {/* The list form, not inline: a wrapped time takes its separator to the
-                                line start, where the list clips it, instead of leaving it alone. */}
-                            <Text component="div" size="xs" c="var(--ink-3)">
-                              <MetaList items={[phrase(event), formatTime(event.occurredAtUtc)]} />
-                            </Text>
-                          </Group>
-                        ))}
-                      </div>
-                      {newestPerTitle.has(item.id) && UNDOABLE.includes(item.action) && !dismissalEnded(item) && (
-                        <Button
-                          size="xs" variant="default"
-                          leftSection={<IconArrowBackUp size={16} />}
-                          style={{ flexShrink: 0 }}
-                          loading={undo.isPending && undo.variables?.eventId === item.id}
-                          onClick={() => void undoItem(item)}
-                        >
-                          <Trans>Undo</Trans>
-                        </Button>
-                      )}
-                    </Group>
-                  </div>
-                ))}
-                {padded.length > 0 && (
-                  <Text size="xs" fw={600} c="var(--ink-3)" mt={recent.length === 0 ? 0 : 10}>
-                    <Trans>From your shelf</Trans>
-                  </Text>
-                )}
-                {padded.map((item) => (
-                  <Group key={item.mangaBakaId} gap="sm" wrap="nowrap" py={6}>
-                    <SeriesThumb url={item.coverUrl} alt={item.title ?? ''} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <Text size="sm" fw={500} truncate>
+              {recent.map(([item, ...earlier], index) => (
+                <div key={item.id} className="signals-feed-group">
+                  {dayOf(item) !== dayOf(recent[index - 1]?.[0]) && (
+                    <Text className="signals-feed-day">
+                      <DayLabel value={item.occurredAtUtc} />
+                    </Text>
+                  )}
+                  <div className="signals-feed-row">
+                    <SeriesThumb url={item.coverUrl} alt="" large />
+                    <div className="signals-feed-main">
+                      <Text className="signals-feed-title" truncate>
                         {item.title ?? untitled(item.mangaBakaId)}
                       </Text>
-                      <Group gap={6} wrap="nowrap" mt={2}>
-                        <ShelfPill item={item} />
-                        <ShelfPhrase item={item} />
-                      </Group>
+                      {[item, ...earlier].map((event) => (
+                        <div key={event.id} className="signals-feed-line">
+                          <SignalStatus {...statusOf(event)} />
+                          <span className="signals-feed-phrase">{phrase(event)}</span>
+                          <span className="signals-feed-time tnum">{formatTime(event.occurredAtUtc)}</span>
+                        </div>
+                      ))}
                     </div>
-                  </Group>
-                ))}
-              </Stack>
-            </Card>
+                    {newestPerTitle.has(item.id) && UNDOABLE.includes(item.action) && !dismissalEnded(item) && (
+                      <Button
+                        size="compact-sm" variant="subtle" color="var(--ink-2)"
+                        leftSection={<IconArrowBackUp size={16} />}
+                        className="signals-feed-undo"
+                        loading={undo.isPending && undo.variables?.eventId === item.id}
+                        onClick={() => void undoItem(item)}
+                      >
+                        <Trans>Undo</Trans>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {padded.length > 0 && (
+                <div className="signals-feed-group">
+                  <Text className="signals-feed-day">
+                    <Trans>From your shelf</Trans>
+                  </Text>
+                  {padded.map((item) => {
+                    const info = shelfInfo(item)
+                    return (
+                      <div key={item.mangaBakaId} className="signals-feed-row">
+                        <SeriesThumb url={item.coverUrl} alt="" large />
+                        <div className="signals-feed-main">
+                          <Text className="signals-feed-title" truncate>
+                            {item.title ?? untitled(item.mangaBakaId)}
+                          </Text>
+                          <div className="signals-feed-line">
+                            <SignalStatus {...info.status} />
+                            <span className="signals-feed-phrase">{info.phrase}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </Panel>
 
             {lab.capabilities.animeSignals && (
               <AnimeSignalsSection onOpenList={() => setManage('anime')} />
@@ -378,6 +383,39 @@ export function SignalsCard() {
           opened={manage !== null} initialTab={manage ?? 'titles'} onClose={() => setManage(null)}
         />
       )}
+    </>
+  )
+}
+
+/** The figures and feed with their labels in place, numbers and rows blanked until the lab answers. */
+function SignalsSkeleton() {
+  const { t } = useLingui()
+  return (
+    <>
+      <FigureStrip
+        className="taste-figures"
+        loading
+        figures={[
+          { label: t`Titles on the shelf`, value: 0 },
+          { label: t`Read`, value: 0 },
+          { label: t`Thumbs up / down`, value: 0 },
+          { label: t`Hidden or dismissed`, value: 0 },
+        ]}
+      />
+      <Panel className="signals-feed" aria-hidden>
+        <PanelTitle>
+          <Trans>Recent feedback</Trans>
+        </PanelTitle>
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="signals-feed-row">
+            <Skeleton className="stats-thumb stats-thumb-lg" />
+            <div className="signals-feed-main">
+              <Skeleton h={14} w={`${50 + (i % 3) * 12}%`} />
+              <Skeleton h={12} w="40%" mt={8} />
+            </div>
+          </div>
+        ))}
+      </Panel>
     </>
   )
 }
@@ -447,65 +485,51 @@ function DayLabel({ value }: { value: string }) {
   return <>{formatDate(value)}</>
 }
 
-/** The coloured badge for one feedback action. Covers every action the service writes. */
-function ActionPill({ item }: { item: FeedbackActivity }) {
+/** Icon, word and colour for one feedback action. Covers every action the service writes. */
+function useEventStatus() {
   const { t } = useLingui()
-  const [label, color] = ((): [string, string] => {
+  return (item: FeedbackActivity): SignalStatusInfo => {
+    const quiet = 'var(--ink-2)'
     switch (item.action) {
-      case 'like': return [t`Liked`, 'var(--ok)']
-      case 'dislike': return [t`Disliked`, 'var(--danger)']
-      case 'hide': return [t`Hidden`, 'var(--neutral)']
+      case 'like': return { icon: IconThumbUp, label: t`Liked`, color: 'var(--ok)' }
+      case 'dislike': return { icon: IconThumbDown, label: t`Disliked`, color: 'var(--danger)' }
+      case 'hide': return { icon: IconEyeOff, label: t`Hidden`, color: quiet }
       case 'dismiss': {
         const until = item.dismissedUntilUtc ? formatRecentDate(item.dismissedUntilUtc) : ''
-        if (dismissalEnded(item)) return [t`Dismissed`, 'var(--neutral)']
-        return [until ? t`Dismissed until ${until}` : t`Dismissed`, 'var(--neutral)']
+        const label = dismissalEnded(item) || !until ? t`Dismissed` : t`Dismissed until ${until}`
+        return { icon: IconClockPause, label, color: quiet }
       }
-      case 'mark-exposed': return [t`Seen elsewhere`, 'var(--info)']
-      case 'clear-suppression': return [t`Restored`, 'var(--neutral)']
-      case 'clear-exposure': return [t`Seen cleared`, 'var(--neutral)']
-      case 'clear-sentiment': return [t`Rating cleared`, 'var(--neutral)']
-      case 'undo': return [t`Undone`, 'var(--neutral)']
-      default: return [item.action.replaceAll('-', ' '), 'var(--neutral)']
+      case 'mark-exposed': return { icon: IconEyeCheck, label: t`Seen elsewhere`, color: 'var(--info)' }
+      case 'clear-suppression': return { icon: IconRestore, label: t`Restored`, color: quiet }
+      case 'clear-exposure': return { icon: IconRestore, label: t`Seen cleared`, color: quiet }
+      case 'clear-sentiment': return { icon: IconRestore, label: t`Rating cleared`, color: quiet }
+      case 'undo': return { icon: IconArrowBackUp, label: t`Undone`, color: quiet }
+      default: return { icon: IconInfoCircle, label: item.action.replaceAll('-', ' '), color: quiet }
     }
-  })()
-  const icon =
-    item.action === 'like' ? <IconThumbUp size={12} /> : item.action === 'dislike' ? <IconThumbDown size={12} /> : undefined
-  return (
-    <Badge size="sm" variant="light" color={color} leftSection={icon} style={{ flexShrink: 0 }}>
-      {label}
-    </Badge>
-  )
+  }
 }
 
 type ShelfPadItem = FeedbackLabData['sources'][number] & { kind: 'rated' | 'read' | 'added' }
 
-function formatRating(rating: number): string {
-  return formatDecimal(rating)
-}
-
-/** Pill + tertiary label for a shelf-derived row padding the recent-feedback card. */
-function useShelfPillInfo(item: ShelfPadItem) {
+/** Status and phrase for a shelf-derived row padding the recent-feedback card. */
+function useShelfInfo() {
   const { t } = useLingui()
-  if (item.kind === 'rated' && item.rating != null) {
-    const label = t`★ ${formatRating(item.rating)} rated`
-    if (item.rating > 5) return { label, color: 'var(--ok)', phrase: t`counts toward your taste` }
-    if (item.rating <= AVOID_RATING_CEILING) {
-      return { label, color: 'var(--danger)', phrase: t`pushes down titles close to it` }
+  return (item: ShelfPadItem): { status: SignalStatusInfo; phrase: string } => {
+    if (item.kind === 'rated' && item.rating != null) {
+      const score = formatDecimal(item.rating)
+      const status = { icon: IconStarFilled, label: t`Rated ${score}`, color: 'var(--ink-2)', iconColor: 'var(--rating)' }
+      if (item.rating > 5) return { status, phrase: t`counts toward your taste` }
+      if (item.rating <= AVOID_RATING_CEILING) return { status, phrase: t`pushes down titles close to it` }
+      return { status, phrase: t`neutral, seeds at shelf weight` }
     }
-    return { label, color: 'var(--neutral)', phrase: t`neutral, seeds at shelf weight` }
+    if (item.kind === 'read') {
+      return { status: { icon: IconBook, label: t`Read`, color: 'var(--brand-fg)' }, phrase: t`weighted by how far you got` }
+    }
+    return {
+      status: { icon: IconBookmark, label: t`Added by you`, color: 'var(--brand-fg)' },
+      phrase: t`counts a little more than the rest`,
+    }
   }
-  if (item.kind === 'read') return { label: t`Read`, color: 'var(--brand)', phrase: t`weighted by how far you got` }
-  return { label: t`Added by you`, color: 'var(--brand)', phrase: t`counts a little more than the rest` }
-}
-
-function ShelfPill({ item }: { item: ShelfPadItem }) {
-  const { label, color } = useShelfPillInfo(item)
-  return <Badge size="sm" variant="light" color={color} style={{ flexShrink: 0 }}>{label}</Badge>
-}
-
-function ShelfPhrase({ item }: { item: ShelfPadItem }) {
-  const { phrase } = useShelfPillInfo(item)
-  return <Text size="xs" c="var(--ink-3)" truncate>{phrase}</Text>
 }
 
 /** The short "what it did" phrase beside an action's badge. */

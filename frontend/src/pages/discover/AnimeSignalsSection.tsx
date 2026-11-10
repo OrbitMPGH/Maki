@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { randomUUID } from '../../lib/uuid'
 import {
-  Alert, Badge, Button, Card, Group, SegmentedControl, Stack, Switch, Text, Tooltip,
+  Alert, Button, Group, SegmentedControl, Stack, Switch, Text, Tooltip,
 } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -15,6 +15,10 @@ import { useMutateSignalOverride, useSignalOverrides } from '../../api/recommend
 import { formatDateTime, formatDecimal, formatFixedDecimal } from '../../format'
 import { SeriesThumb } from '../stats/SeriesLink'
 import { MetaList } from '../../components/ui/MetaList'
+import { Panel } from '../../components/ui/Panel'
+import { PanelTitle } from '../../components/ui/PanelTitle'
+import { IconBan, IconBooks, IconDeviceTv, IconMinus, IconQuestionMark, IconStarFilled, IconThumbDown, IconThumbUp } from '../../lib/icons'
+import { SignalStatus, type SignalStatusInfo } from './SignalStatus'
 
 export type RoleFilter = AnimeSignalRole | 'all'
 
@@ -141,12 +145,12 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
   const noTracker = data.services.length === 0
 
   return (
-    <Card withBorder radius="lg" padding="md">
+    <Panel>
       <Stack gap="sm">
         <Group justify="space-between" align="center" wrap="wrap">
           <div>
-            <Text fw={600}><Trans>Anime you've watched</Trans></Text>
-            <Text size="xs" c="var(--ink-3)" maw={520}>
+            <PanelTitle icon={IconDeviceTv}><Trans>Anime you've watched</Trans></PanelTitle>
+            <Text size="sm" c="var(--ink-3)" maw={560} mt={4}>
               <Trans>
                 A show you scored well nudges recommendations toward similar manga. A low score or
                 a dropped show pushes them away. Finishing one can also suggest where to start
@@ -200,7 +204,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
           </Stack>
         )}
       </Stack>
-    </Card>
+    </Panel>
   )
 }
 
@@ -288,16 +292,16 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
     }
   })()
 
-  const roleBadge = ((): { label: string; color: string } => {
+  const role = ((): SignalStatusInfo => {
     switch (entry.role) {
-      case 'positive': return { label: t`Positive`, color: 'var(--ok)' }
-      case 'avoided': return { label: t`Avoided`, color: 'var(--danger)' }
-      case 'neutral': return { label: t`Neutral`, color: 'var(--neutral)' }
+      case 'positive': return { icon: IconThumbUp, label: t`Positive`, color: 'var(--ok)' }
+      case 'avoided': return { icon: IconThumbDown, label: t`Avoided`, color: 'var(--danger)' }
+      case 'neutral': return { icon: IconMinus, label: t`Neutral`, color: 'var(--ink-2)' }
       case 'superseded':
         return entry.supersededBy === 'ignored'
-          ? { label: t`Excluded`, color: 'var(--neutral)' }
-          : { label: t`Already yours`, color: 'var(--brand)' }
-      default: return { label: t`Unmatched`, color: 'var(--neutral)' }
+          ? { icon: IconBan, label: t`Excluded`, color: 'var(--ink-2)' }
+          : { icon: IconBooks, label: t`Already yours`, color: 'var(--brand-fg)' }
+      default: return { icon: IconQuestionMark, label: t`Unmatched`, color: 'var(--ink-3)' }
     }
   })()
 
@@ -342,34 +346,33 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
     <div className="signals-row">
       <SeriesThumb url={entry.mangaCoverUrl} alt={entry.mangaTitle ?? ''} large />
       <div className="signals-row-main">
-        <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
-          <Text size="sm" fw={500} truncate style={{ minWidth: 0 }}>{entry.title}</Text>
+        <Group gap={8} wrap="nowrap" style={{ minWidth: 0 }}>
+          <Text size="sm" fw={600} c="var(--ink-hi)" truncate style={{ minWidth: 0 }}>{entry.title}</Text>
           {entry.animeCount > 1 && (
-            <Badge size="xs" variant="default" style={{ flexShrink: 0 }}>
+            <Text span size="sm" c="var(--ink-4)" className="tnum" style={{ flexShrink: 0 }}>
               <Plural value={entry.animeCount} one="# season" other="# seasons" />
-            </Badge>
+            </Text>
           )}
         </Group>
-        <Text size="xs" c="var(--ink-3)" truncate>
+        <Text size="sm" c="var(--ink-3)" truncate>
           {supersededNote ?? entry.mangaTitle ?? t`No manga match`}
         </Text>
       </div>
       <div className="signals-col signals-col-services">
-        <Group gap={4} wrap="wrap">
-          {entry.services.map((service) => (
-            <Badge key={service} size="sm" variant="light" color="var(--neutral)">
-              {labelFor(service)}
-            </Badge>
-          ))}
-        </Group>
+        <Text size="sm" c="var(--ink-3)">
+          <MetaList inline items={entry.services.map(labelFor)} />
+        </Text>
       </div>
-      <Text size="sm" className="tnum signals-col signals-col-score">
-        {score !== null ? t`★ ${score}` : statusLabel}
+      <Text size="sm" c="var(--ink-2)" className="tnum signals-col signals-col-score">
+        {score !== null ? (
+          <span className="signal-status">
+            <IconStarFilled size={16} aria-hidden style={{ color: 'var(--rating)' }} />
+            {score}
+          </span>
+        ) : statusLabel}
       </Text>
       <div className="signals-col signals-col-role">
-        <Badge size="sm" variant="light" color={roleBadge.color}>
-          {roleBadge.label}
-        </Badge>
+        <SignalStatus {...role} />
       </div>
       <div className="signals-col signals-col-action">
         {showExclude && entry.supersededBy === 'ignored' && (

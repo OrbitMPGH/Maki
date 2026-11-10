@@ -1,20 +1,7 @@
 import { useState } from 'react'
-import {
-  ActionIcon,
-  Badge,
-  Button,
-  Card,
-  Group,
-  MultiSelect,
-  Select,
-  Stack,
-  Switch,
-  Text,
-  TextInput,
-  Tooltip,
-} from '@mantine/core'
+import { Button, Group, MultiSelect, Select, Stack, Switch, TextInput } from '@mantine/core'
 import { notifications } from '../../lib/toast'
-import { IconChevronDown, IconChevronUp, IconPlus, IconTrash } from '../../lib/icons'
+import { IconPlus, IconTrash } from '../../lib/icons'
 import {
   SERIES_TYPES,
   SERIES_TYPE_LABELS,
@@ -28,6 +15,8 @@ import {
 import { BACKGROUNDS, DEFAULT_PREFS, type ReaderPrefs } from '../../pages/reader/prefs'
 import { useReaderSettings, useSaveReaderSettings } from '../../api/reader'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
+import { TagChip } from '../ui/TagChip'
+import { SettingsRow, SettingsRows, SettingsRowsBlock } from './SettingsRow'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { useLabel } from '../../i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -106,41 +95,43 @@ export function ReadingProfilesSection() {
       actions={
         <Button
           size="xs"
-          variant="light"
+          variant="subtle"
           leftSection={<IconPlus size={16} />}
           onClick={() => setCreating((open) => !open)}
         >
           <Trans>New profile</Trans>
         </Button>
       }
+      panelProps={{ p: 0 }}
     >
-
       {creating && (
-        <ProfileEditor
-          key="new"
-          // A profile's layout is a deliberate choice, so detection stays off until asked for.
-          initial={{ name: '', prefs: { ...DEFAULT_PREFS, autoWebtoon: false }, seriesTypes: [] }}
-          taken={(profiles ?? []).flatMap((p) => p.seriesTypes)}
-          submitLabel={t`Create`}
-          busy={create.isPending}
-          onCancel={() => setCreating(false)}
-          onSubmit={(input) =>
-            create.mutate(input, {
-              onSuccess: () => {
-                setCreating(false)
-                notifications.show({ message: now`Profile created`, color: 'var(--ok)' })
-              },
-            })
-          }
-        />
+        <SettingsRowsBlock>
+          <ProfileEditor
+            key="new"
+            // A profile's layout is a deliberate choice, so detection stays off until asked for.
+            initial={{ name: '', prefs: { ...DEFAULT_PREFS, autoWebtoon: false }, seriesTypes: [] }}
+            taken={(profiles ?? []).flatMap((p) => p.seriesTypes)}
+            submitLabel={t`Create`}
+            busy={create.isPending}
+            onCancel={() => setCreating(false)}
+            onSubmit={(input) =>
+              create.mutate(input, {
+                onSuccess: () => {
+                  setCreating(false)
+                  notifications.show({ message: now`Profile created`, color: 'var(--ok)' })
+                },
+              })
+            }
+          />
+        </SettingsRowsBlock>
       )}
 
-      <Stack gap="xs" mt={creating ? 'md' : undefined}>
+      <SettingsRows>
         <DefaultRow />
         {(profiles ?? []).map((profile) => (
           <ProfileRow key={profile.id} profile={profile} all={profiles ?? []} />
         ))}
-      </Stack>
+      </SettingsRows>
     </SettingsSection>
   )
 }
@@ -156,33 +147,19 @@ function DefaultRow() {
   const name = t`Default`
 
   return (
-    <Card withBorder radius="sm" padding="xs">
-      <Group justify="space-between" wrap="nowrap">
-        <div style={{ minWidth: 0 }}>
-          <Group gap="xs" wrap="nowrap">
-            <Text fw={600} fz="sm" truncate>
-              {name}
-            </Text>
-            <Badge size="xs" variant="outline" color="var(--neutral)">
-              <Trans>Everything else</Trans>
-            </Badge>
-          </Group>
-          <Text fz="xs" c="var(--ink-3)">
-            {summarize(prefs, renderLabel)}
-          </Text>
-        </div>
-        <ActionIcon
-          variant="subtle"
-          color="var(--neutral)"
-          onClick={() => setOpen((value) => !value)}
-          aria-label={open ? t`Collapse` : t`Edit profile`}
-          disabled={!settings}
-        >
-          {open ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
-        </ActionIcon>
-      </Group>
-
-      {open && settings && (
+    <SettingsRow
+      title={name}
+      chips={
+        <TagChip size="sm">
+          <Trans>Everything else</Trans>
+        </TagChip>
+      }
+      summary={summarize(prefs, renderLabel)}
+      opened={open}
+      onToggle={settings ? () => setOpen((value) => !value) : undefined}
+      lazy
+    >
+      {settings && (
         <ProfileEditor
           fixed
           initial={{ name, prefs, seriesTypes: [] }}
@@ -198,7 +175,7 @@ function DefaultRow() {
           }
         />
       )}
-    </Card>
+    </SettingsRow>
   )
 }
 
@@ -212,65 +189,37 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
   const { name } = profile
 
   return (
-    <Card withBorder radius="sm" padding="xs">
-      <Group justify="space-between" wrap="nowrap">
-        <div style={{ minWidth: 0 }}>
-          <Group gap="xs" wrap="nowrap">
-            <Text fw={600} fz="sm" truncate>
-              {profile.name}
-            </Text>
-            {profile.seriesTypes.map((type) => (
-              <Badge key={type} size="xs" variant="light">
-                {renderLabel(SERIES_TYPE_LABELS[type] ?? type)}
-              </Badge>
-            ))}
-          </Group>
-          <Text fz="xs" c="var(--ink-3)">
-            {summarize(profile.prefs, renderLabel)}
-          </Text>
-        </div>
-        <Group gap={4} wrap="nowrap">
-          <Tooltip label={t`Delete profile`} withArrow>
-            <ActionIcon
-              variant="subtle"
-              color="var(--danger)"
-              loading={remove.isPending}
-              onClick={() => setConfirming(true)}
-              aria-label={t`Delete profile`}
-            >
-              <IconTrash size={16} />
-            </ActionIcon>
-          </Tooltip>
-          <ActionIcon
-            variant="subtle"
-            color="var(--neutral)"
-            onClick={() => setOpen((value) => !value)}
-            aria-label={open ? t`Collapse` : t`Edit profile`}
-          >
-            {open ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
-          </ActionIcon>
-        </Group>
-      </Group>
-
-      {open && (
-        <ProfileEditor
-          // Remounted on open rather than kept alive hidden, so reopening after a cancel starts
-          // from the saved profile instead of the abandoned edit.
-          initial={profile}
-          // Types claimed elsewhere are removed from the picker so a save can't fail on a clash
-          // the user had no way to see.
-          taken={all.filter((p) => p.id !== profile.id).flatMap((p) => p.seriesTypes)}
-          submitLabel={t`Save`}
-          busy={update.isPending}
-          onCancel={() => setOpen(false)}
-          onSubmit={(input) =>
-            update.mutate(
-              { id: profile.id, ...input },
-              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
-            )
-          }
-        />
-      )}
+    <SettingsRow
+      title={profile.name}
+      chips={profile.seriesTypes.map((type) => (
+        <TagChip key={type} size="sm">
+          {renderLabel(SERIES_TYPE_LABELS[type] ?? type)}
+        </TagChip>
+      ))}
+      summary={summarize(profile.prefs, renderLabel)}
+      opened={open}
+      onToggle={() => setOpen((value) => !value)}
+      // Mounted only while open, so reopening after a cancel starts from the saved profile instead
+      // of the abandoned edit.
+      lazy
+    >
+      <ProfileEditor
+        initial={profile}
+        // Types claimed elsewhere are removed from the picker so a save can't fail on a clash
+        // the user had no way to see.
+        taken={all.filter((p) => p.id !== profile.id).flatMap((p) => p.seriesTypes)}
+        submitLabel={t`Save`}
+        busy={update.isPending}
+        onCancel={() => setOpen(false)}
+        onDelete={() => setConfirming(true)}
+        deleting={remove.isPending}
+        onSubmit={(input) =>
+          update.mutate(
+            { id: profile.id, ...input },
+            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
+          )
+        }
+      />
 
       <ConfirmDialog
         opened={confirming}
@@ -289,7 +238,7 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
       >
         <Trans>The profile and its reader settings are removed. This can't be undone.</Trans>
       </ConfirmDialog>
-    </Card>
+    </SettingsRow>
   )
 }
 
@@ -301,6 +250,8 @@ function ProfileEditor({
   busy,
   onSubmit,
   onCancel,
+  onDelete,
+  deleting,
 }: {
   /** The Default row: no name to edit and no series types to claim. */
   fixed?: boolean
@@ -311,6 +262,9 @@ function ProfileEditor({
   busy: boolean
   onSubmit: (input: ReadingProfileInput) => void
   onCancel: () => void
+  /** Saved profiles only: puts Delete at the start of the editor's footer. */
+  onDelete?: () => void
+  deleting?: boolean
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -325,7 +279,7 @@ function ProfileEditor({
   )
 
   return (
-    <Stack gap="sm" mt="sm">
+    <Stack gap="sm">
       {!fixed && (
         <>
           <TextInput
@@ -585,19 +539,35 @@ function ProfileEditor({
         onChange={(e) => set({ notesBeside: e.currentTarget.checked })}
       />
 
-      <Group justify="flex-end" gap="xs">
-        <Button size="xs" variant="subtle" color="var(--neutral)" onClick={onCancel}>
-          <Trans>Cancel</Trans>
-        </Button>
-        <Button
-          size="xs"
-          loading={busy}
-          disabled={!fixed && name.trim().length === 0}
-          onClick={() => onSubmit({ name: name.trim(), prefs, seriesTypes: types })}
-        >
-          {submitLabel}
-        </Button>
-      </Group>
+      <div className="settings-row-foot">
+        {onDelete ? (
+          <Button
+            size="xs"
+            variant="subtle"
+            color="var(--danger)"
+            leftSection={<IconTrash size={16} />}
+            loading={deleting}
+            onClick={onDelete}
+          >
+            <Trans>Delete profile</Trans>
+          </Button>
+        ) : (
+          <span />
+        )}
+        <Group gap="xs">
+          <Button size="xs" variant="subtle" color="var(--neutral)" onClick={onCancel}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button
+            size="xs"
+            loading={busy}
+            disabled={!fixed && name.trim().length === 0}
+            onClick={() => onSubmit({ name: name.trim(), prefs, seriesTypes: types })}
+          >
+            {submitLabel}
+          </Button>
+        </Group>
+      </div>
     </Stack>
   )
 }

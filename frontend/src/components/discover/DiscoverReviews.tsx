@@ -1,15 +1,15 @@
-import { Anchor, Badge, Group, Loader, Paper, Spoiler, Stack, Text, Title } from '@mantine/core'
-import { IconExternalLink, IconStarFilled } from '../../lib/icons'
+import { Anchor, Badge, Group, Skeleton, Spoiler, Stack, Text } from '@mantine/core'
+import { IconExternalLink, IconMessage2, IconStarFilled } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useMangaReviews, type MangaReview } from '../../api/hooks'
+import { Panel } from '../ui/Panel'
+import { PanelTitle } from '../ui/PanelTitle'
 
 /**
  * What readers made of a series, scraped from MyAnimeList when the card opens.
  *
- * Sits at the foot of the reading column rather than behind a tab of its own: two or three
- * opinions are the last thing you read about a series you are deciding on, not a section worth
- * navigating to. Renders nothing at all when there is no MAL id to ask about, so the column simply
- * ends after the tags.
+ * Heads the column beside the synopsis, so the reviews are in view when the modal opens however
+ * long the synopsis and tags run. Renders nothing at all when there is no MAL id to ask about.
  */
 export function DiscoverReviews({ malId }: { malId: number | null }) {
   const { data: reviews, isLoading } = useMangaReviews(malId)
@@ -21,22 +21,22 @@ export function DiscoverReviews({ malId }: { malId: number | null }) {
   if (!isLoading && reviews !== null && (reviews?.length ?? 0) === 0) return null
 
   return (
-    <Paper withBorder radius="lg" p="lg">
-      <Group justify="space-between" align="baseline">
-        <Title order={2} size="h3" fz="var(--type-section)">
+    <Panel>
+      <Group justify="space-between" align="baseline" wrap="nowrap">
+        <PanelTitle order={2} icon={IconMessage2}>
           <Trans>Reviews</Trans>
-        </Title>
+        </PanelTitle>
         <Text size="xs" c="var(--ink-4)">
           <Trans>From MyAnimeList</Trans>
         </Text>
       </Group>
 
       <ReviewList reviews={reviews} isLoading={isLoading} />
-    </Paper>
+    </Panel>
   )
 }
 
-/** The loader, the upstream-failure line and the review cards, shared with the series page drawer. */
+/** The placeholder, the upstream-failure line and the reviews, shared with the series page drawer. */
 export function ReviewList({
   reviews,
   isLoading,
@@ -50,9 +50,12 @@ export function ReviewList({
   return (
     <>
       {isLoading && (
-        <Group justify="center" py="lg">
-          <Loader size="sm" />
-        </Group>
+        <Stack gap="xs" mt="md" aria-hidden>
+          <Skeleton h={14} w="40%" />
+          <Skeleton h={12} />
+          <Skeleton h={12} />
+          <Skeleton h={12} w="70%" />
+        </Stack>
       )}
 
       {/* Null is the upstream fetch failing, which is worth saying out loud: an empty list would
@@ -63,58 +66,56 @@ export function ReviewList({
         </Text>
       )}
 
-      <Stack gap="sm" mt="md">
-        {reviews?.map((review, i) => (
-          <Paper key={i} withBorder radius="md" p="sm" bg="var(--surface-2)">
-            <Group justify="space-between" wrap="nowrap" mb={6}>
-              <Group gap="xs">
-                {review.score != null && (
-                  <Badge
-                    size="sm"
-                    variant="light"
-                    color="var(--rating)"
-                    c="var(--ink-hi)"
-                    leftSection={<IconStarFilled size={11} color="var(--rating)" />}
+      {reviews && reviews.length > 0 && (
+        <div className="review-list">
+          {reviews.map((review, i) => (
+            <article key={i} className="review-row">
+              <Group justify="space-between" wrap="nowrap" mb={6} gap="xs">
+                <Group gap="xs" wrap="wrap" style={{ minWidth: 0 }}>
+                  {review.score != null && (
+                    <span className="review-score tnum">
+                      <IconStarFilled size={12} color="var(--rating)" aria-hidden />
+                      {review.score}
+                    </span>
+                  )}
+                  <Text size="sm" fw={600} c="var(--ink-hi)">
+                    {review.author}
+                  </Text>
+                  {review.tags.map((t) => (
+                    <Badge key={t} size="xs" variant="light" color="var(--neutral)">
+                      {t}
+                    </Badge>
+                  ))}
+                </Group>
+                {review.url && (
+                  <Anchor
+                    href={review.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    size="xs"
+                    c="var(--ink-3)"
+                    style={{ whiteSpace: 'nowrap' }}
                   >
-                    {review.score}
-                  </Badge>
+                    <Group gap={3} wrap="nowrap">
+                      <Trans>Full review</Trans> <IconExternalLink size={12} />
+                    </Group>
+                  </Anchor>
                 )}
-                <Text size="sm" fw={600}>
-                  {review.author}
-                </Text>
-                {review.tags.map((t) => (
-                  <Badge key={t} size="xs" variant="light" color="var(--neutral)">
-                    {t}
-                  </Badge>
-                ))}
               </Group>
-              {review.url && (
-                <Anchor
-                  href={review.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  size="xs"
-                  style={{ whiteSpace: 'nowrap' }}
-                >
-                  <Group gap={3}>
-                    <Trans>Full review</Trans> <IconExternalLink size={12} />
-                  </Group>
-                </Anchor>
-              )}
-            </Group>
-            <Spoiler
-              maxHeight={72}
-              showLabel={t`Show more`}
-              hideLabel={t`Show less`}
-              attributes={{ content: { 'aria-label': reviewLabel(review.author) } }}
-            >
-              <Text size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-line', overflowWrap: 'anywhere', lineHeight: 1.6 }}>
-                {review.text}
-              </Text>
-            </Spoiler>
-          </Paper>
-        ))}
-      </Stack>
+              <Spoiler
+                maxHeight={72}
+                showLabel={t`Show more`}
+                hideLabel={t`Show less`}
+                attributes={{ content: { 'aria-label': reviewLabel(review.author) } }}
+              >
+                <Text size="sm" c="var(--ink-3)" style={{ whiteSpace: 'pre-line', overflowWrap: 'anywhere', lineHeight: 1.6 }}>
+                  {review.text}
+                </Text>
+              </Spoiler>
+            </article>
+          ))}
+        </div>
+      )}
     </>
   )
 }

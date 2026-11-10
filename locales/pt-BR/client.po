@@ -710,6 +710,10 @@ msgid "{active, plural, one {Activity, # download in progress} other {Activity, 
 msgstr "{active, plural, one {Atividade, # download em andamento} many {Atividade, # downloads em andamento} other {Atividade, # downloads em andamento}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+msgid "{adds} added by you"
+msgstr ""
+
+#: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "{adds} added by you, {excluded} excluded from taste"
 msgstr "{adds} adicionados por você, {excluded} excluídos do gosto"
@@ -1165,9 +1169,8 @@ msgid "{count} results"
 msgstr "{count} resultados"
 
 #: src/pages/settings/SystemCards.tsx
-#, fuzzy
-msgid "{coverFileCount, plural, one {Posters: # file, {coverBytesLabel}} other {Posters: # files, {coverBytesLabel}}}"
-msgstr "{coverFileCount, plural, one {Capas: # arquivo, {coverBytesLabel}} many {Capas: # arquivos, {coverBytesLabel}} other {Capas: # arquivos, {coverBytesLabel}}}"
+msgid "{coverBytesLabel}, every series has one"
+msgstr ""
 
 #: src/components/import/MihonSummary.tsx
 #, fuzzy
@@ -1269,6 +1272,10 @@ msgstr "{downloaded} de {total}"
 msgid "{downloadedCount} downloaded"
 msgstr "{downloadedCount} baixados"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "{downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "{droppedCount, plural, one {# series is waiting} other {# series are waiting}}"
@@ -1335,6 +1342,9 @@ msgid "{feel}, {feelReasons}"
 msgstr "{feel}, {feelReasons}"
 
 #: src/components/RenameSeriesModal.tsx
+msgid "{fileCount, plural, one {# file will be renamed} other {# files will be renamed}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{fileCount, plural, one {# file} other {# files}}"
@@ -2221,6 +2231,10 @@ msgstr "{rest, plural, one {# min} many {# min}other {# min}}"
 msgid "{rest, plural, one {and # more} other {and # more}}"
 msgstr "{rest, plural, one {e mais #} many {e mais #} other {e mais #}}"
 
+#: src/components/ReleaseSearchModal.tsx
+msgid "{resultCount, plural, one {# result} other {# results}} from {indexerCount, plural, one {# indexer} other {# indexers}}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{retentionDays, plural, one {kept # day} other {kept # days}}"
@@ -2394,9 +2408,8 @@ msgid "{seriesTitle} has no {lowerLabel}. Refresh the series so the chapter exis
 msgstr "{seriesTitle} não tem {lowerLabel}. Atualize a série para que o capítulo exista e importe este arquivo compactado."
 
 #: src/pages/settings/SystemCards.tsx
-#, fuzzy
-msgid "{seriesTotalCount, plural, one {{coversMissingLabel} of # series has no usable poster} other {{coversMissingLabel} of # series have no usable poster}}"
-msgstr "{seriesTotalCount, plural, one {{coversMissingLabel} de # série não tem capa utilizável} many {{coversMissingLabel} de # séries não têm capa utilizável} other {{coversMissingLabel} de # séries não têm capa utilizável}}"
+msgid "{seriesTotalCount, plural, one {{coverBytesLabel}, {coversMissingLabel} of # series has no usable poster} other {{coverBytesLabel}, {coversMissingLabel} of # series have no usable poster}}"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -2602,11 +2615,6 @@ msgstr "{target, plural, one {# minuto} many {# minutos}other {# minutos}}"
 #, fuzzy
 msgid "{target, plural, one {# series finished} other {# series finished}}"
 msgstr "{target, plural, one {# série concluída} many {# séries concluídas}other {# séries concluídas}}"
-
-#: src/pages/settings/SystemCards.tsx
-#, fuzzy
-msgid "{thumbnailFileCount, plural, one {Reader thumbnails: # file, {thumbnailBytesLabel}} other {Reader thumbnails: # files, {thumbnailBytesLabel}}}"
-msgstr "{thumbnailFileCount, plural, one {Miniaturas do leitor: # arquivo, {thumbnailBytesLabel}} many {Miniaturas do leitor: # arquivos, {thumbnailBytesLabel}} other {Miniaturas do leitor: # arquivos, {thumbnailBytesLabel}}}"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -3139,22 +3147,6 @@ msgstr "<1min"
 msgid "−{abs} pt"
 msgstr "−{abs} pts."
 
-#. placeholder {0}: formatRating(item.rating)
-#: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "★ {0} rated"
-msgstr "★ {0} avaliado"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "★ {rating} rated"
-msgstr "★ {rating} avaliado"
-
-#: src/pages/discover/AnimeSignalsSection.tsx
-#, fuzzy
-msgid "★ {score}"
-msgstr "★ {score}"
-
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "0 deletes them for good on the next housekeeping pass."
@@ -3598,6 +3590,10 @@ msgstr "Ações para {displayTitle}"
 msgid "Actions for {spanLabel}"
 msgstr "Ações para {spanLabel}"
 
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Actions for {title}"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Active since"
@@ -3635,9 +3631,8 @@ msgid "Add"
 msgstr "Adicionar"
 
 #: src/components/RenameSeriesModal.tsx
-#, fuzzy
-msgid "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
-msgstr "Adicione {chapterLanguageToken} ao formato do capítulo em Configurações para diferenciá-los."
+msgid "Add {chapterLanguageToken} to the chapter format to tell them apart."
+msgstr ""
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -3696,11 +3691,6 @@ msgstr "Adicionar nota"
 #, fuzzy
 msgid "Add one"
 msgstr "Adicionar"
-
-#: src/components/TagManagerModal.tsx
-#, fuzzy
-msgid "Add one above, or tag a series from its detail page."
-msgstr "Adicione uma acima ou marque uma série na página de detalhes."
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -4191,6 +4181,10 @@ msgstr "Já existe uma conta com esse nome de usuário"
 msgid "An admin decides where it lands and what gets downloaded."
 msgstr "Um administrador escolhe onde ela será salva e o que será baixado."
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "An admin has to set this tracker up first."
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "An admin will see it on the Requests page."
@@ -4270,6 +4264,10 @@ msgstr "Cobertura de anime"
 #, fuzzy
 msgid "Anime ends at ch. {0}"
 msgstr "O anime termina no cap. {0}"
+
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Anime steers recommendations"
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -5303,6 +5301,10 @@ msgstr "Não foi possível acessar o Kavita com o endereço e a chave de API sal
 msgid "Can't read this download"
 msgstr "Não é possível ler este download"
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Can't sign in"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Can't sign in with the saved details."
@@ -5323,6 +5325,7 @@ msgstr "Não foi possível entrar com os dados salvos."
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
+#: src/components/RenameSeriesModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/RestoreSeriesDialog.tsx
 #: src/components/series/UndoConversionModal.tsx
@@ -6209,7 +6212,6 @@ msgstr "Limpar fila"
 
 #: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/series/SeriesHero.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Clear rating"
 msgstr "Limpar avaliação"
@@ -6241,11 +6243,6 @@ msgstr "Limpar registros"
 #, fuzzy
 msgid "Clear search"
 msgstr "Limpar pesquisa"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Clear seen"
-msgstr "Limpar visto"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -6318,6 +6315,7 @@ msgstr "Segredo do cliente"
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/ImportReviewModal.tsx
 #: src/components/LuckyButton.tsx
+#: src/components/ReleaseSearchModal.tsx
 #: src/components/RenameSeriesModal.tsx
 #: src/components/series/SeriesReviews.tsx
 #: src/components/SourceCompareModal.tsx
@@ -6383,7 +6381,6 @@ msgstr "cloudflare, challenge, proxy, 8191"
 msgid "Code from your app"
 msgstr "Código do aplicativo"
 
-#: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Collapse"
@@ -6630,6 +6627,10 @@ msgstr "Conecte-se na página Scrobble para importar."
 msgid "Connect one on the Scrobble page."
 msgstr "Conecte uma na página Scrobble."
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Connect your account on the Scrobble page."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Connect your trackers"
@@ -6638,6 +6639,7 @@ msgstr "Conecte seus rastreadores"
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ScrobblePage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Connected"
 msgstr "Conectado"
@@ -6986,9 +6988,8 @@ msgid "Could not load your shortlist"
 msgstr "Não foi possível carregar sua lista de interesse"
 
 #: src/pages/discover/FeedbackLab.tsx
-#, fuzzy
-msgid "Could not load your signals: {loadError}"
-msgstr "Não foi possível carregar seus sinais: {loadError}"
+msgid "Could not load your signals"
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -8523,7 +8524,6 @@ msgstr "Editar metadados"
 msgid "Edit note"
 msgstr "Editar nota"
 
-#: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Edit profile"
@@ -8900,11 +8900,6 @@ msgstr "Todas as séries"
 msgid "Every series folder ends up named the same way."
 msgstr "Todas as pastas de séries ficam com o mesmo padrão de nome."
 
-#: src/pages/settings/SystemCards.tsx
-#, fuzzy
-msgid "Every series has a poster."
-msgstr "Todas as séries têm capa."
-
 #: src/api/queue.ts
 #, fuzzy
 msgid "Every source failed for this chapter"
@@ -9034,6 +9029,7 @@ msgid "Exclude your tags"
 msgstr "Excluir suas tags"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Excluded"
 msgstr "Excluído"
@@ -9098,6 +9094,7 @@ msgstr "Exportar"
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Failed"
@@ -9369,6 +9366,7 @@ msgstr "Tamanho do arquivo em MB, abaixo de"
 
 #: src/components/import/ImportPlanModal.tsx
 #: src/components/pageconversion/EstimateTable.tsx
+#: src/components/RenameSeriesModal.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -9948,7 +9946,6 @@ msgid "General"
 msgstr "Geral"
 
 #: src/components/CatalogueRules.tsx
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/TagBrowserModal.tsx
@@ -10146,6 +10143,10 @@ msgstr "Visualização em grade"
 #, fuzzy
 msgid "Group matches (regex)"
 msgstr "Grupo corresponde a (regex)"
+
+#: src/components/TagManagerModal.tsx
+msgid "Group series in the library and filter by them."
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -10355,6 +10356,10 @@ msgstr "Ocultos ou dispensados"
 #, fuzzy
 msgid "Hidden while progression is switched off."
 msgstr "Oculto enquanto o acompanhamento de progresso está desativado."
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Hide"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -11684,9 +11689,8 @@ msgid "Last read {lastRead}"
 msgstr "Última leitura {lastRead}"
 
 #: src/pages/settings/SystemCards.tsx
-#, fuzzy
-msgid "Last run {finishedAtLabel}: {downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
-msgstr "Última execução {finishedAtLabel}: {downloadedCount} pôsteres baixados, {failedCount} com falha, {thumbnailsClearedCount} imagens em cache limpas"
+msgid "Last rebuild"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
@@ -11707,11 +11711,6 @@ msgstr "Última execução {when}: {added} adicionados, {requested} solicitados,
 #, fuzzy
 msgid "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
 msgstr "Última execução {when}: ignorada, o banco de dados local do MangaBaka ainda não foi baixado"
-
-#: src/pages/settings/SystemCards.tsx
-#, fuzzy
-msgid "Last run failed: {lastError}"
-msgstr "Última execução falhou: {lastError}"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -12455,6 +12454,10 @@ msgstr "O Maki não encontrou as imagens das páginas na página do capítulo. D
 msgid "Maki could not list the sample series under both versions to compare them."
 msgstr "O Maki não conseguiu listar as séries de amostra nas duas versões para compará-las."
 
+#: src/components/SourceCompareModal.tsx
+msgid "Maki downloads from the first column first."
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Maki downloads updates in the background and installs them when you restart it."
@@ -12490,6 +12493,10 @@ msgstr "O Maki está usando {used} de {quota} aqui. Remova alguns capítulos sal
 #, fuzzy
 msgid "Maki loaded the first page ({0})."
 msgstr "O Maki carregou a primeira página ({0})."
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "Maki searches releases through Prowlarr or Jackett."
+msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
 #, fuzzy
@@ -12773,6 +12780,10 @@ msgstr "Corresponde a uma série com qualquer uma destas tags."
 #, fuzzy
 msgid "Matches by meaning, description, and vibe. Falls back to title search on instances with no recommendation index."
 msgstr "Corresponde por significado, descrição e clima. Usa a pesquisa por título como alternativa em instâncias sem índice de recomendações."
+
+#: src/components/RenameSeriesModal.tsx
+msgid "Matches your naming formats. Only the highlighted parts change."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -13496,6 +13507,10 @@ msgstr "Formato de nomeação"
 msgid "Naming tokens"
 msgstr "Tokens de nomeação"
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Needs a client ID"
+msgstr ""
+
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 #, fuzzy
 msgid "Needs a newer Maki"
@@ -13974,6 +13989,10 @@ msgstr "Nenhum quadrinho encontrado no download concluído (ele está vazio)"
 msgid "No conditions, so this rule matches every file that reaches it."
 msgstr "Sem condições, então esta regra vale para todo arquivo que chega até ela."
 
+#: src/components/NotificationsSection.tsx
+msgid "No connections yet"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "No creator shows up often enough yet."
@@ -13988,6 +14007,10 @@ msgstr "Ainda não há dados demográficos"
 #, fuzzy
 msgid "No difference we could see."
 msgstr "Não encontramos diferença."
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "No feedback yet"
+msgstr ""
 
 #: src/components/pageconversion/EstimateTable.tsx
 #, fuzzy
@@ -14053,6 +14076,10 @@ msgstr "Ainda não há índice, os vetores predefinidos são baixados automatica
 #, fuzzy
 msgid "No indexer is configured"
 msgstr "Nenhum indexador está configurado"
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "No indexer set up"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -14148,11 +14175,6 @@ msgstr "Ainda não há notas neste capítulo."
 #, fuzzy
 msgid "No notes on this page."
 msgstr "Ainda não há notas nesta página."
-
-#: src/components/NotificationsSection.tsx
-#, fuzzy
-msgid "No notification connections yet."
-msgstr "Ainda não há conexões de notificação."
 
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -14250,14 +14272,10 @@ msgid "No release-year data yet"
 msgstr "Ainda não há dados de ano de lançamento"
 
 #: src/api/upgrades.ts
+#: src/components/ReleaseSearchModal.tsx
 #, fuzzy
 msgid "No releases found"
 msgstr "Nenhum lançamento encontrado"
-
-#: src/components/ReleaseSearchModal.tsx
-#, fuzzy
-msgid "No releases found."
-msgstr "Nenhum lançamento encontrado."
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -14338,6 +14356,10 @@ msgstr "Nenhuma série é dona da pasta em que estes ficam. Traga a pasta pela p
 #, fuzzy
 msgid "No shows match."
 msgstr "Nenhum anime corresponde."
+
+#: src/pages/settings/IntegrationCards.tsx
+msgid "No sign-in details saved."
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -14421,6 +14443,9 @@ msgid "No tags"
 msgstr "Sem tags"
 
 #: src/components/TagManagerModal.tsx
+msgid "No tags yet"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "No tags yet."
@@ -14600,8 +14625,10 @@ msgstr "Não verificado para novos capítulos: a série terminou e todos os cap�
 msgid "Not checked yet"
 msgstr "Ainda não verificado"
 
+#: src/components/ImportListsSection.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Not connected"
 msgstr "Não conectado"
@@ -14795,6 +14822,7 @@ msgid "Not set"
 msgstr "Não definido"
 
 #: src/components/ui/status.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Not set up"
 msgstr "Não configurado"
@@ -15179,6 +15207,14 @@ msgstr "Nenhuma série está pela metade agora."
 msgid "Nothing slow enough to call savoured yet."
 msgstr "Ainda não houve leitura lenta o bastante para chamar de leitura sem pressa."
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Nothing syncs"
+msgstr ""
+
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Nothing syncs until the API client is set up."
+msgstr ""
+
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Nothing to browse yet"
@@ -15334,6 +15370,10 @@ msgstr "Notificações silenciadas"
 msgid "Notifications of any kind"
 msgstr "Notificações de qualquer tipo"
 
+#: src/components/NotificationsSection.tsx
+msgid "Notifications stay in the bell until you add one."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Notifications: {notificationMode}"
@@ -15404,6 +15444,7 @@ msgstr "OEL"
 msgid "of reading time"
 msgstr "do tempo de leitura"
 
+#: src/components/ImportListsSection.tsx
 #: src/components/pageconversion/FormatStep.tsx
 #: src/components/pageconversion/labels.ts
 #: src/components/pageconversion/StartStep.tsx
@@ -15508,6 +15549,7 @@ msgstr "Mais antigos primeiro"
 msgid "OLED black"
 msgstr "Preto OLED"
 
+#: src/components/ImportListsSection.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -15791,6 +15833,10 @@ msgstr "Abrir integridade"
 #, fuzzy
 msgid "Open library"
 msgstr "Abrir biblioteca"
+
+#: src/components/RenameSeriesModal.tsx
+msgid "Open naming formats"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -16346,6 +16392,7 @@ msgstr "Pausar a varredura em andamento?"
 #: src/components/ActivityButton.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Paused"
 msgstr "Pausado"
@@ -16653,9 +16700,14 @@ msgid "Poster replaced"
 msgstr "Capa substituída"
 
 #: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Posters"
 msgstr "Pôsteres"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Posters and reader thumbnails Maki keeps on disk."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -17113,6 +17165,10 @@ msgstr "Avaliado"
 msgid "Rated {rated}"
 msgstr "Avaliação {rated}"
 
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Rated {rating}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -17130,6 +17186,10 @@ msgstr "Avaliada em {rating}/10 até agora"
 #, fuzzy
 msgid "Rated {ratingLabel} or more"
 msgstr "Avaliação {ratingLabel} ou mais"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "Rated {score}"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
@@ -17394,6 +17454,10 @@ msgstr "Perfis do leitor"
 #, fuzzy
 msgid "Reader settings"
 msgstr "Configurações do leitor"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Reader thumbnails"
+msgstr ""
 
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -18277,11 +18341,6 @@ msgstr "Séries removidas"
 msgid "Removing the series from Maki cannot be undone."
 msgstr "Remover a série do Maki não pode ser desfeito."
 
-#: src/components/RenameSeriesModal.tsx
-#, fuzzy
-msgid "Rename"
-msgstr "Renomear"
-
 #: src/components/TagManagerModal.tsx
 #, fuzzy
 msgid "Rename {label}"
@@ -18665,7 +18724,6 @@ msgstr "Reiniciar agora"
 msgid "Restart to update"
 msgstr "Reiniciar para atualizar"
 
-#: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -19164,6 +19222,7 @@ msgid "Run the daily scan"
 msgstr "Executar a verificação diária"
 
 #: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Running"
 msgstr "Em execução"
@@ -19717,6 +19776,10 @@ msgstr "Registrar leitura"
 msgid "Scrobble reading from these libraries"
 msgstr "Registrar a leitura destas bibliotecas"
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Scrobbles reading"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "Scrobbling"
@@ -19962,6 +20025,10 @@ msgstr "pesquisado como “{cleanedTitle}”"
 #, fuzzy
 msgid "Searches every source that isn't linked yet. Linked sources stay as they are."
 msgstr "Pesquisa em todas as fontes que ainda não estão vinculadas. Fontes vinculadas ficam como estão."
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "Searches your indexers. Grab sends a release to your download client."
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -20454,6 +20521,10 @@ msgstr "Configurar"
 msgid "Set up a site"
 msgstr "Configurar um site"
 
+#: src/components/ReleaseSearchModal.tsx
+msgid "Set up an indexer"
+msgstr ""
+
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Set up conversion"
@@ -20865,6 +20936,10 @@ msgstr "O acesso depende do seu provedor de identidade. Depois de configurado, u
 #, fuzzy
 msgid "Signed in as"
 msgstr "Conectado como"
+
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Signed in as {name}"
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -21819,6 +21894,10 @@ msgstr "Sincronizando agora"
 msgid "Syncing…"
 msgstr "Sincronizando…"
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Syncs ratings"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
@@ -21845,6 +21924,10 @@ msgstr "Verificações do sistema"
 #, fuzzy
 msgid "Tag"
 msgstr "Tag"
+
+#: src/components/TagManagerModal.tsx
+msgid "Tag a series from its page, or add one here."
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverTags.tsx
@@ -22269,6 +22352,10 @@ msgstr "A imagem da primeira página não carregou: {0}"
 msgid "The folder and every file already match the current naming formats."
 msgstr "A pasta e todos os arquivos já correspondem aos formatos de nomeação atuais."
 
+#: src/components/RenameSeriesModal.tsx
+msgid "The folder will be renamed"
+msgstr ""
+
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "The full breakdown is waiting behind this slide."
@@ -22503,6 +22590,10 @@ msgstr "O título da série de amostra. O Maki procura uma busca que a encontre.
 msgid "The saved chapters wouldn't open"
 msgstr "Os capítulos salvos não abriram"
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "The saved details were refused. Check them and save again."
+msgstr ""
+
 #: src/components/import/IgnoredFoldersModal.tsx
 #, fuzzy
 msgid "The scan skips these folders without searching for them."
@@ -22594,6 +22685,10 @@ msgstr "O login não foi concluído. Tente novamente."
 #, fuzzy
 msgid "The single biggest improvement if Maki is reachable from the internet."
 msgstr "A maior melhoria individual se o Maki puder ser acessado pela internet."
+
+#: src/pages/settings/IntegrationCards.tsx
+msgid "The site is refusing calls. Maki tries again {when}."
+msgstr ""
 
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
@@ -24255,11 +24350,6 @@ msgstr "Use pelo menos {MIN_PASSWORD_LENGTH} caracteres"
 #, fuzzy
 msgid "Use best quality first"
 msgstr "Usar melhor qualidade primeiro"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-#, fuzzy
-msgid "Use for taste"
-msgstr "Usar para o gosto"
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy

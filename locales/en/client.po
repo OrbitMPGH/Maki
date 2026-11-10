@@ -595,6 +595,10 @@ msgid "{active, plural, one {Activity, # download in progress} other {Activity, 
 msgstr "{active, plural, one {Activity, # download in progress} other {Activity, # downloads in progress}}"
 
 #: src/pages/discover/FeedbackLab.tsx
+msgid "{adds} added by you"
+msgstr "{adds} added by you"
+
+#: src/pages/discover/FeedbackLab.tsx
 msgid "{adds} added by you, {excluded} excluded from taste"
 msgstr "{adds} added by you, {excluded} excluded from taste"
 
@@ -960,8 +964,8 @@ msgid "{count} results"
 msgstr "{count} results"
 
 #: src/pages/settings/SystemCards.tsx
-msgid "{coverFileCount, plural, one {Posters: # file, {coverBytesLabel}} other {Posters: # files, {coverBytesLabel}}}"
-msgstr "{coverFileCount, plural, one {Posters: # file, {coverBytesLabel}} other {Posters: # files, {coverBytesLabel}}}"
+msgid "{coverBytesLabel}, every series has one"
+msgstr "{coverBytesLabel}, every series has one"
 
 #: src/components/import/MihonSummary.tsx
 msgid "{created, plural, one {# series added} other {# series added}}"
@@ -1043,6 +1047,10 @@ msgstr "{downloaded} of {total}"
 msgid "{downloadedCount} downloaded"
 msgstr "{downloadedCount} downloaded"
 
+#: src/pages/settings/SystemCards.tsx
+msgid "{downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
+msgstr "{downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
+
 #: src/pages/rewind/slides.tsx
 msgid "{droppedCount, plural, one {# series is waiting} other {# series are waiting}}"
 msgstr "{droppedCount, plural, one {# series is waiting} other {# series are waiting}}"
@@ -1096,6 +1104,9 @@ msgid "{feel}, {feelReasons}"
 msgstr "{feel}, {feelReasons}"
 
 #: src/components/RenameSeriesModal.tsx
+msgid "{fileCount, plural, one {# file will be renamed} other {# files will be renamed}}"
+msgstr "{fileCount, plural, one {# file will be renamed} other {# files will be renamed}}"
+
 #: src/pages/ActivityPage.tsx
 msgid "{fileCount, plural, one {# file} other {# files}}"
 msgstr "{fileCount, plural, one {# file} other {# files}}"
@@ -1808,6 +1819,10 @@ msgstr "{rest, plural, one {# min} other {# min}}"
 msgid "{rest, plural, one {and # more} other {and # more}}"
 msgstr "{rest, plural, one {and # more} other {and # more}}"
 
+#: src/components/ReleaseSearchModal.tsx
+msgid "{resultCount, plural, one {# result} other {# results}} from {indexerCount, plural, one {# indexer} other {# indexers}}"
+msgstr "{resultCount, plural, one {# result} other {# results}} from {indexerCount, plural, one {# indexer} other {# indexers}}"
+
 #: src/pages/ActivityPage.tsx
 msgid "{retentionDays, plural, one {kept # day} other {kept # days}}"
 msgstr "{retentionDays, plural, one {kept # day} other {kept # days}}"
@@ -1947,8 +1962,8 @@ msgid "{seriesTitle} has no {lowerLabel}. Refresh the series so the chapter exis
 msgstr "{seriesTitle} has no {lowerLabel}. Refresh the series so the chapter exists, then import this archive."
 
 #: src/pages/settings/SystemCards.tsx
-msgid "{seriesTotalCount, plural, one {{coversMissingLabel} of # series has no usable poster} other {{coversMissingLabel} of # series have no usable poster}}"
-msgstr "{seriesTotalCount, plural, one {{coversMissingLabel} of # series has no usable poster} other {{coversMissingLabel} of # series have no usable poster}}"
+msgid "{seriesTotalCount, plural, one {{coverBytesLabel}, {coversMissingLabel} of # series has no usable poster} other {{coverBytesLabel}, {coversMissingLabel} of # series have no usable poster}}"
+msgstr "{seriesTotalCount, plural, one {{coverBytesLabel}, {coversMissingLabel} of # series has no usable poster} other {{coverBytesLabel}, {coversMissingLabel} of # series have no usable poster}}"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "{seriesTotalCount, plural, one {This re-downloads the poster for the # series, one metadata lookup and one image each. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load.} other {This re-downloads the poster for all # series, one metadata lookup and one image each. On a large library it runs for several minutes. Use \"Rebuild missing\" instead if you are only fixing covers that fail to load.}}"
@@ -2113,10 +2128,6 @@ msgstr "{target, plural, one {# minute} other {# minutes}}"
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "{target, plural, one {# series finished} other {# series finished}}"
 msgstr "{target, plural, one {# series finished} other {# series finished}}"
-
-#: src/pages/settings/SystemCards.tsx
-msgid "{thumbnailFileCount, plural, one {Reader thumbnails: # file, {thumbnailBytesLabel}} other {Reader thumbnails: # files, {thumbnailBytesLabel}}}"
-msgstr "{thumbnailFileCount, plural, one {Reader thumbnails: # file, {thumbnailBytesLabel}} other {Reader thumbnails: # files, {thumbnailBytesLabel}}}"
 
 #: src/pages/ActivityPage.tsx
 msgid "{tierLabel} ({score})"
@@ -2544,19 +2555,6 @@ msgstr "<1m"
 msgid "−{abs} pt"
 msgstr "−{abs} pt"
 
-#. placeholder {0}: formatRating(item.rating)
-#: src/pages/discover/FeedbackLab.tsx
-msgid "★ {0} rated"
-msgstr "★ {0} rated"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-msgid "★ {rating} rated"
-msgstr "★ {rating} rated"
-
-#: src/pages/discover/AnimeSignalsSection.tsx
-msgid "★ {score}"
-msgstr "★ {score}"
-
 #: src/pages/settings/LibraryCards.tsx
 msgid "0 deletes them for good on the next housekeeping pass."
 msgstr "0 deletes them for good on the next housekeeping pass."
@@ -2915,6 +2913,10 @@ msgstr "Actions for {displayTitle}"
 msgid "Actions for {spanLabel}"
 msgstr "Actions for {spanLabel}"
 
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Actions for {title}"
+msgstr "Actions for {title}"
+
 #: src/pages/CreatorPage.tsx
 msgid "Active since"
 msgstr "Active since"
@@ -2946,8 +2948,8 @@ msgid "Add"
 msgstr "Add"
 
 #: src/components/RenameSeriesModal.tsx
-msgid "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
-msgstr "Add {chapterLanguageToken} to the chapter format in Settings to tell them apart."
+msgid "Add {chapterLanguageToken} to the chapter format to tell them apart."
+msgstr "Add {chapterLanguageToken} to the chapter format to tell them apart."
 
 #: src/pages/reader/ChapterEnd.tsx
 msgid "Add a note"
@@ -2995,10 +2997,6 @@ msgstr "Add note"
 #: src/components/SetupWizard.tsx
 msgid "Add one"
 msgstr "Add one"
-
-#: src/components/TagManagerModal.tsx
-msgid "Add one above, or tag a series from its detail page."
-msgstr "Add one above, or tag a series from its detail page."
 
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Add rail"
@@ -3398,6 +3396,10 @@ msgstr "An account with that username already exists"
 msgid "An admin decides where it lands and what gets downloaded."
 msgstr "An admin decides where it lands and what gets downloaded."
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "An admin has to set this tracker up first."
+msgstr "An admin has to set this tracker up first."
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "An admin will see it on the Requests page."
 msgstr "An admin will see it on the Requests page."
@@ -3462,6 +3464,10 @@ msgstr "Anime coverage"
 #: src/components/home/AnimeResumeRail.tsx
 msgid "Anime ends at ch. {0}"
 msgstr "Anime ends at ch. {0}"
+
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Anime steers recommendations"
+msgstr "Anime steers recommendations"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Anime you've watched"
@@ -4301,6 +4307,10 @@ msgstr "Can't reach Kavita with the saved address and API key."
 msgid "Can't read this download"
 msgstr "Can't read this download"
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Can't sign in"
+msgstr "Can't sign in"
+
 #: src/pages/ScrobblePage.tsx
 msgid "Can't sign in with the saved details."
 msgstr "Can't sign in with the saved details."
@@ -4320,6 +4330,7 @@ msgstr "Can't sign in with the saved details."
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
+#: src/components/RenameSeriesModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/RestoreSeriesDialog.tsx
 #: src/components/series/UndoConversionModal.tsx
@@ -5041,7 +5052,6 @@ msgstr "Clear queue"
 
 #: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/series/SeriesHero.tsx
-#: src/pages/discover/ManageSignalsModal.tsx
 msgid "Clear rating"
 msgstr "Clear rating"
 
@@ -5067,10 +5077,6 @@ msgstr "Clear records"
 #: src/components/TagBrowserModal.tsx
 msgid "Clear search"
 msgstr "Clear search"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-msgid "Clear seen"
-msgstr "Clear seen"
 
 #: src/pages/HealthPage.tsx
 msgid "Clear the record"
@@ -5130,6 +5136,7 @@ msgstr "Client secret"
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/ImportReviewModal.tsx
 #: src/components/LuckyButton.tsx
+#: src/components/ReleaseSearchModal.tsx
 #: src/components/RenameSeriesModal.tsx
 #: src/components/series/SeriesReviews.tsx
 #: src/components/SourceCompareModal.tsx
@@ -5184,7 +5191,6 @@ msgstr "cloudflare, challenge, proxy, 8191"
 msgid "Code from your app"
 msgstr "Code from your app"
 
-#: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Collapse"
 msgstr "Collapse"
@@ -5385,6 +5391,10 @@ msgstr "Connect on the Scrobble page to import."
 msgid "Connect one on the Scrobble page."
 msgstr "Connect one on the Scrobble page."
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Connect your account on the Scrobble page."
+msgstr "Connect your account on the Scrobble page."
+
 #: src/components/SetupWizard.tsx
 msgid "Connect your trackers"
 msgstr "Connect your trackers"
@@ -5392,6 +5402,7 @@ msgstr "Connect your trackers"
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ScrobblePage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 msgid "Connected"
 msgstr "Connected"
 
@@ -5676,8 +5687,8 @@ msgid "Could not load your shortlist"
 msgstr "Could not load your shortlist"
 
 #: src/pages/discover/FeedbackLab.tsx
-msgid "Could not load your signals: {loadError}"
-msgstr "Could not load your signals: {loadError}"
+msgid "Could not load your signals"
+msgstr "Could not load your signals"
 
 #: src/api/upgrades.ts
 msgid "Could not queue the release"
@@ -6928,7 +6939,6 @@ msgstr "Edit metadata"
 msgid "Edit note"
 msgstr "Edit note"
 
-#: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Edit profile"
 msgstr "Edit profile"
@@ -7236,10 +7246,6 @@ msgstr "Every series"
 msgid "Every series folder ends up named the same way."
 msgstr "Every series folder ends up named the same way."
 
-#: src/pages/settings/SystemCards.tsx
-msgid "Every series has a poster."
-msgstr "Every series has a poster."
-
 #: src/api/queue.ts
 msgid "Every source failed for this chapter"
 msgstr "Every source failed for this chapter"
@@ -7344,6 +7350,7 @@ msgid "Exclude your tags"
 msgstr "Exclude your tags"
 
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/discover/ManageSignalsModal.tsx
 msgid "Excluded"
 msgstr "Excluded"
 
@@ -7396,6 +7403,7 @@ msgstr "Export"
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
+#: src/pages/settings/SystemCards.tsx
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Failed"
 msgstr "Failed"
@@ -7615,6 +7623,7 @@ msgstr "File size in MB, under"
 
 #: src/components/import/ImportPlanModal.tsx
 #: src/components/pageconversion/EstimateTable.tsx
+#: src/components/RenameSeriesModal.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -8086,7 +8095,6 @@ msgid "General"
 msgstr "General"
 
 #: src/components/CatalogueRules.tsx
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/TagBrowserModal.tsx
@@ -8247,6 +8255,10 @@ msgstr "Grid view"
 #: src/api/upgrades.ts
 msgid "Group matches (regex)"
 msgstr "Group matches (regex)"
+
+#: src/components/TagManagerModal.tsx
+msgid "Group series in the library and filter by them."
+msgstr "Group series in the library and filter by them."
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Group with the tier above"
@@ -8416,6 +8428,10 @@ msgstr "Hidden or dismissed"
 #: src/pages/HomePage.tsx
 msgid "Hidden while progression is switched off."
 msgstr "Hidden while progression is switched off."
+
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Hide"
+msgstr "Hide"
 
 #: src/pages/HealthPage.tsx
 msgid "Hide affected series"
@@ -9494,8 +9510,8 @@ msgid "Last read {lastRead}"
 msgstr "Last read {lastRead}"
 
 #: src/pages/settings/SystemCards.tsx
-msgid "Last run {finishedAtLabel}: {downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
-msgstr "Last run {finishedAtLabel}: {downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
+msgid "Last rebuild"
+msgstr "Last rebuild"
 
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Last run {finishedDate}."
@@ -9512,10 +9528,6 @@ msgstr "Last run {when}: {added} added, {requested} requested, {shortlisted} sho
 #: src/components/ImportListsSection.tsx
 msgid "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
 msgstr "Last run {when}: skipped, the local MangaBaka database is not downloaded yet"
-
-#: src/pages/settings/SystemCards.tsx
-msgid "Last run failed: {lastError}"
-msgstr "Last run failed: {lastError}"
 
 #: src/components/settings/UsersSection.tsx
 msgid "Last sign-in"
@@ -10119,6 +10131,10 @@ msgstr "Maki could not find the page images on the chapter page. Describe them u
 msgid "Maki could not list the sample series under both versions to compare them."
 msgstr "Maki could not list the sample series under both versions to compare them."
 
+#: src/components/SourceCompareModal.tsx
+msgid "Maki downloads from the first column first."
+msgstr "Maki downloads from the first column first."
+
 #: src/pages/settings/SystemCards.tsx
 msgid "Maki downloads updates in the background and installs them when you restart it."
 msgstr "Maki downloads updates in the background and installs them when you restart it."
@@ -10147,6 +10163,10 @@ msgstr "Maki is using {used} of {quota} here. Remove some saved chapters and try
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Maki loaded the first page ({0})."
 msgstr "Maki loaded the first page ({0})."
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "Maki searches releases through Prowlarr or Jackett."
+msgstr "Maki searches releases through Prowlarr or Jackett."
 
 #: src/components/LanguageAnnouncementModal.tsx
 msgid "Maki speaks your language"
@@ -10379,6 +10399,10 @@ msgstr "Matches a series with any of these tags."
 #: src/components/CatalogueBrowser.tsx
 msgid "Matches by meaning, description, and vibe. Falls back to title search on instances with no recommendation index."
 msgstr "Matches by meaning, description, and vibe. Falls back to title search on instances with no recommendation index."
+
+#: src/components/RenameSeriesModal.tsx
+msgid "Matches your naming formats. Only the highlighted parts change."
+msgstr "Matches your naming formats. Only the highlighted parts change."
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Matching the remaining sources…"
@@ -10966,6 +10990,10 @@ msgstr "Naming format"
 msgid "Naming tokens"
 msgstr "Naming tokens"
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Needs a client ID"
+msgstr "Needs a client ID"
+
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 msgid "Needs a newer Maki"
 msgstr "Needs a newer Maki"
@@ -11353,6 +11381,10 @@ msgstr "No comics found in the completed download (it is empty)"
 msgid "No conditions, so this rule matches every file that reaches it."
 msgstr "No conditions, so this rule matches every file that reaches it."
 
+#: src/components/NotificationsSection.tsx
+msgid "No connections yet"
+msgstr "No connections yet"
+
 #: src/pages/discover/TasteTab.tsx
 msgid "No creator shows up often enough yet."
 msgstr "No creator shows up often enough yet."
@@ -11364,6 +11396,10 @@ msgstr "No demographic data yet"
 #: src/components/pageconversion/labels.ts
 msgid "No difference we could see."
 msgstr "No difference we could see."
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "No feedback yet"
+msgstr "No feedback yet"
 
 #: src/components/pageconversion/EstimateTable.tsx
 msgid "No files"
@@ -11416,6 +11452,10 @@ msgstr "No index yet, the prebuilt vectors download automatically."
 #: src/api/upgrades.ts
 msgid "No indexer is configured"
 msgstr "No indexer is configured"
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "No indexer set up"
+msgstr "No indexer set up"
 
 #: src/pages/settings/DownloadCards.tsx
 msgid "No indexers configured in {backendName}."
@@ -11494,10 +11534,6 @@ msgstr "No notes on this chapter yet."
 msgid "No notes on this page."
 msgstr "No notes on this page."
 
-#: src/components/NotificationsSection.tsx
-msgid "No notification connections yet."
-msgstr "No notification connections yet."
-
 #: src/pages/NotificationsPage.tsx
 msgid "No notifications yet"
 msgstr "No notifications yet"
@@ -11575,12 +11611,9 @@ msgid "No release-year data yet"
 msgstr "No release-year data yet"
 
 #: src/api/upgrades.ts
+#: src/components/ReleaseSearchModal.tsx
 msgid "No releases found"
 msgstr "No releases found"
-
-#: src/components/ReleaseSearchModal.tsx
-msgid "No releases found."
-msgstr "No releases found."
 
 #: src/pages/HealthPage.tsx
 msgid "No repairs or deletions requested."
@@ -11645,6 +11678,10 @@ msgstr "No series owns the folder these sit in. Bring the folder in from the Imp
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "No shows match."
 msgstr "No shows match."
+
+#: src/pages/settings/IntegrationCards.tsx
+msgid "No sign-in details saved."
+msgstr "No sign-in details saved."
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "No snapshot downloaded yet"
@@ -11712,6 +11749,9 @@ msgid "No tags"
 msgstr "No tags"
 
 #: src/components/TagManagerModal.tsx
+msgid "No tags yet"
+msgstr "No tags yet"
+
 #: src/pages/discover/TasteTab.tsx
 msgid "No tags yet."
 msgstr "No tags yet."
@@ -11858,8 +11898,10 @@ msgstr "Not checked for new chapters: the series is finished and every chapter i
 msgid "Not checked yet"
 msgstr "Not checked yet"
 
+#: src/components/ImportListsSection.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
+#: src/pages/settings/IntegrationCards.tsx
 msgid "Not connected"
 msgstr "Not connected"
 
@@ -12016,6 +12058,7 @@ msgid "Not set"
 msgstr "Not set"
 
 #: src/components/ui/status.tsx
+#: src/pages/settings/IntegrationCards.tsx
 msgid "Not set up"
 msgstr "Not set up"
 
@@ -12325,6 +12368,14 @@ msgstr "Nothing sits half read right now."
 msgid "Nothing slow enough to call savoured yet."
 msgstr "Nothing slow enough to call savoured yet."
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Nothing syncs"
+msgstr "Nothing syncs"
+
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Nothing syncs until the API client is set up."
+msgstr "Nothing syncs until the API client is set up."
+
 #: src/pages/DiscoverPage.tsx
 msgid "Nothing to browse yet"
 msgstr "Nothing to browse yet"
@@ -12451,6 +12502,10 @@ msgstr "Notifications muted"
 msgid "Notifications of any kind"
 msgstr "Notifications of any kind"
 
+#: src/components/NotificationsSection.tsx
+msgid "Notifications stay in the bell until you add one."
+msgstr "Notifications stay in the bell until you add one."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Notifications: {notificationMode}"
 msgstr "Notifications: {notificationMode}"
@@ -12507,6 +12562,7 @@ msgstr "OEL"
 msgid "of reading time"
 msgstr "of reading time"
 
+#: src/components/ImportListsSection.tsx
 #: src/components/pageconversion/FormatStep.tsx
 #: src/components/pageconversion/labels.ts
 #: src/components/pageconversion/StartStep.tsx
@@ -12594,6 +12650,7 @@ msgstr "Oldest first"
 msgid "OLED black"
 msgstr "OLED black"
 
+#: src/components/ImportListsSection.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -12823,6 +12880,10 @@ msgstr "Open health"
 #: src/pages/ActivityPage.tsx
 msgid "Open library"
 msgstr "Open library"
+
+#: src/components/RenameSeriesModal.tsx
+msgid "Open naming formats"
+msgstr "Open naming formats"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Open on"
@@ -13275,6 +13336,7 @@ msgstr "Pause the running pass?"
 #: src/components/ActivityButton.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/settings/IntegrationCards.tsx
 msgid "Paused"
 msgstr "Paused"
 
@@ -13522,8 +13584,13 @@ msgid "Poster replaced"
 msgstr "Poster replaced"
 
 #: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 msgid "Posters"
 msgstr "Posters"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Posters and reader thumbnails Maki keeps on disk."
+msgstr "Posters and reader thumbnails Maki keeps on disk."
 
 #: src/components/NotificationsSection.tsx
 msgid "Posts into one topic of a forum group."
@@ -13896,6 +13963,10 @@ msgstr "Rated"
 msgid "Rated {rated}"
 msgstr "Rated {rated}"
 
+#: src/pages/discover/ManageSignalsModal.tsx
+msgid "Rated {rating}"
+msgstr "Rated {rating}"
+
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Rated {rating}/10"
@@ -13910,6 +13981,10 @@ msgstr "Rated {rating}/10 so far"
 #: src/components/CatalogueFilters.tsx
 msgid "Rated {ratingLabel} or more"
 msgstr "Rated {ratingLabel} or more"
+
+#: src/pages/discover/FeedbackLab.tsx
+msgid "Rated {score}"
+msgstr "Rated {score}"
 
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
@@ -14125,6 +14200,10 @@ msgstr "Reader profiles"
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Reader settings"
 msgstr "Reader settings"
+
+#: src/pages/settings/SystemCards.tsx
+msgid "Reader thumbnails"
+msgstr "Reader thumbnails"
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Readers can pick the ticked models. Saving a ticked model that isn't downloaded yet starts its download."
@@ -14841,10 +14920,6 @@ msgstr "Removed series"
 msgid "Removing the series from Maki cannot be undone."
 msgstr "Removing the series from Maki cannot be undone."
 
-#: src/components/RenameSeriesModal.tsx
-msgid "Rename"
-msgstr "Rename"
-
 #: src/components/TagManagerModal.tsx
 msgid "Rename {label}"
 msgstr "Rename {label}"
@@ -15155,7 +15230,6 @@ msgstr "Restart now"
 msgid "Restart to update"
 msgstr "Restart to update"
 
-#: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SystemCards.tsx
 msgid "Restore"
@@ -15567,6 +15641,7 @@ msgid "Run the daily scan"
 msgstr "Run the daily scan"
 
 #: src/pages/HealthPage.tsx
+#: src/pages/settings/SystemCards.tsx
 msgid "Running"
 msgstr "Running"
 
@@ -16020,6 +16095,10 @@ msgstr "Scrobble reading"
 msgid "Scrobble reading from these libraries"
 msgstr "Scrobble reading from these libraries"
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Scrobbles reading"
+msgstr "Scrobbles reading"
+
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Scrobbling"
 msgstr "Scrobbling"
@@ -16217,6 +16296,10 @@ msgstr "searched as “{cleanedTitle}”"
 #: src/pages/LibraryPage.tsx
 msgid "Searches every source that isn't linked yet. Linked sources stay as they are."
 msgstr "Searches every source that isn't linked yet. Linked sources stay as they are."
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "Searches your indexers. Grab sends a release to your download client."
+msgstr "Searches your indexers. Grab sends a release to your download client."
 
 #: src/components/ReleaseSearchModal.tsx
 msgid "Searching indexers…"
@@ -16616,6 +16699,10 @@ msgstr "Set up"
 msgid "Set up a site"
 msgstr "Set up a site"
 
+#: src/components/ReleaseSearchModal.tsx
+msgid "Set up an indexer"
+msgstr "Set up an indexer"
+
 #: src/pages/settings/PageConversionSection.tsx
 msgid "Set up conversion"
 msgstr "Set up conversion"
@@ -16950,6 +17037,10 @@ msgstr "Sign-in relies on your identity provider. A code, once set up, protects 
 #: src/components/settings/AccountSection.tsx
 msgid "Signed in as"
 msgstr "Signed in as"
+
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Signed in as {name}"
+msgstr "Signed in as {name}"
 
 #: src/components/settings/AccountSection.tsx
 msgid "Signed in as <0>{oidcUserName}</0> on {displayName}."
@@ -17724,6 +17815,10 @@ msgstr "Syncing now"
 msgid "Syncing…"
 msgstr "Syncing…"
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "Syncs ratings"
+msgstr "Syncs ratings"
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
@@ -17746,6 +17841,10 @@ msgstr "System checks"
 #: src/components/NotificationsSection.tsx
 msgid "Tag"
 msgstr "Tag"
+
+#: src/components/TagManagerModal.tsx
+msgid "Tag a series from its page, or add one here."
+msgstr "Tag a series from its page, or add one here."
 
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverTags.tsx
@@ -18088,6 +18187,10 @@ msgstr "The first page image did not load: {0}"
 msgid "The folder and every file already match the current naming formats."
 msgstr "The folder and every file already match the current naming formats."
 
+#: src/components/RenameSeriesModal.tsx
+msgid "The folder will be renamed"
+msgstr "The folder will be renamed"
+
 #: src/pages/rewind/slides.tsx
 msgid "The full breakdown is waiting behind this slide."
 msgstr "The full breakdown is waiting behind this slide."
@@ -18276,6 +18379,10 @@ msgstr "The sample series' title. Maki looks for a search that finds it."
 msgid "The saved chapters wouldn't open"
 msgstr "The saved chapters wouldn't open"
 
+#: src/pages/settings/IntegrationCards.tsx
+msgid "The saved details were refused. Check them and save again."
+msgstr "The saved details were refused. Check them and save again."
+
 #: src/components/import/IgnoredFoldersModal.tsx
 msgid "The scan skips these folders without searching for them."
 msgstr "The scan skips these folders without searching for them."
@@ -18349,6 +18456,10 @@ msgstr "The sign-in did not complete. Please try again."
 #: src/components/settings/AccountSection.tsx
 msgid "The single biggest improvement if Maki is reachable from the internet."
 msgstr "The single biggest improvement if Maki is reachable from the internet."
+
+#: src/pages/settings/IntegrationCards.tsx
+msgid "The site is refusing calls. Maki tries again {when}."
+msgstr "The site is refusing calls. Maki tries again {when}."
 
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
@@ -19696,10 +19807,6 @@ msgstr "Use at least {MIN_PASSWORD_LENGTH} characters"
 #: src/components/SourceMeasurePanel.tsx
 msgid "Use best quality first"
 msgstr "Use best quality first"
-
-#: src/pages/discover/ManageSignalsModal.tsx
-msgid "Use for taste"
-msgstr "Use for taste"
 
 #: src/components/settings/UsersSection.tsx
 msgid "Use OPDS"

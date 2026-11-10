@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActionIcon,
-  Alert,
   Badge,
   Box,
   Button,
-  Card,
   Group,
   Image,
   Modal,
@@ -18,7 +16,6 @@ import {
   Tooltip,
 } from '@mantine/core'
 import {
-  IconAlertTriangle,
   IconChevronLeft,
   IconChevronRight,
   IconGripVertical,
@@ -48,6 +45,7 @@ import type { QualityTierName } from '../api/upgrades'
 import { formatBytes } from '../format'
 import { useLabel } from '../i18n-context'
 import { MetaList } from './ui/MetaList'
+import { ModalFooter, ModalHeading, ModalNote } from './ui/ModalShell'
 
 const COLUMN_WIDTH = 300
 
@@ -414,7 +412,18 @@ export function SourceCompareModal({
         opened={opened}
         onClose={onClose}
         size="min(1180px, calc(100vw - 3rem))"
-        title={pick ? t`Find a better copy of ${pickLabel}` : t`Compare sources`}
+        title={
+          <ModalHeading
+            title={pick ? t`Find a better copy of ${pickLabel}` : t`Compare sources`}
+            description={
+              pick ? (
+                <Trans>Pick the one that looks best and Maki downloads it again from there.</Trans>
+              ) : (
+                <Trans>Drag your favourite first and save to set this series' download order.</Trans>
+              )
+            }
+          />
+        }
         // Full height with the column row taking what's left, so the row scrolls inside the modal
         // and its horizontal scrollbar stays on screen. Otherwise the modal itself scrolls and a
         // webtoon's tall pages push that scrollbar far below the fold.
@@ -426,14 +435,7 @@ export function SourceCompareModal({
         // throws away the comparison behind it.
         closeOnEscape={zoom === null}
       >
-        <Stack gap="md" style={{ flex: 1, minHeight: 0 }}>
-          <Text size="sm" c="var(--ink-3)">
-            {pick ? (
-              <Trans>Pick the one that looks best and Maki downloads it again from there.</Trans>
-            ) : (
-              <Trans>Drag your favourite first and save to set this series' download order.</Trans>
-            )}
-          </Text>
+        <Stack gap="md" pt="md" style={{ flex: 1, minHeight: 0 }}>
 
           {currentQualityLine && currentQuality && (
             <Tooltip
@@ -496,12 +498,12 @@ export function SourceCompareModal({
           </Group>
 
           {snapshot?.mixedChapters && (
-            <Alert color="var(--warn)" icon={<IconAlertTriangle size={16} />}>
+            <ModalNote>
               <Trans>
                 Not every source carries chapter {chapterNumber}, so some columns are
                 showing their own first chapter instead. Each column says which one it got.
               </Trans>
-            </Alert>
+            </ModalNote>
           )}
 
           <ScrollArea type="auto" offsetScrollbars style={{ flex: 1, minHeight: 0 }}>
@@ -536,11 +538,9 @@ export function SourceCompareModal({
                         dragFromIndex !== null && i !== dragFromIndex ? 'none' : undefined,
                     }}
                   >
-                    <Card
-                      withBorder
-                      radius="md"
-                      padding="xs"
-                      h="100%"
+                    <div
+                      className="compare-panel"
+                      data-leading={i === 0 && panel.status !== 'failed' ? '' : undefined}
                       draggable={!pick}
                       onDragStart={(e) => {
                         if (pick) return
@@ -565,9 +565,7 @@ export function SourceCompareModal({
                     >
                       <Group gap={6} wrap="nowrap" mb="xs">
                         {!pick && <IconGripVertical size={16} style={{ opacity: 0.5 }} />}
-                        <Badge size="sm" variant="filled">
-                          #{i + 1}
-                        </Badge>
+                        <span className="compare-rank tnum">{i + 1}</span>
                         <Text size="sm" fw={500} truncate>
                           {blind ? (blindLabels.get(panel.mappingId) ?? '?') : panel.displayName}
                         </Text>
@@ -653,7 +651,7 @@ export function SourceCompareModal({
                           >
                             <Button
                               size="xs"
-                              variant="light"
+                              variant={i === 0 ? 'filled' : 'default'}
                               fullWidth
                               loading={
                                 downloadFrom.isPending &&
@@ -725,71 +723,72 @@ export function SourceCompareModal({
                           </Text>
                         </Stack>
                       )}
-                    </Card>
+                    </div>
                   </Box>
                 )
               })}
             </Group>
           </ScrollArea>
 
-          <Group justify="space-between">
-            <Group gap="xs">
-              {!pick && saved && staleChapters > 0 && winner && (
-                <Tooltip
-                  label={`${plural(staleChapters, {
-                    one: '# downloaded chapter came from another source.',
-                    other: '# downloaded chapters came from another source.',
-                  })} ${t`Chapters ${winnerDisplayName} doesn't carry are left alone, as are files imported from disk.`}`}
-                  withArrow
-                  multiline
-                  w={280}
-                >
-                  <Button
-                    size="xs"
-                    variant="light"
-                    leftSection={<IconRefresh size={16} />}
-                    loading={redownload.isPending}
-                    onClick={runRedownload}
-                  >
-                    <Trans>
-                      Re-download {staleChapters} from {winnerDisplayName}
-                    </Trans>
-                  </Button>
-                </Tooltip>
-              )}
-              {!pick && saved && isAdmin && (
-                <Tooltip
-                  label={t`Puts these sources, in this order, at the front of the global priority list used when new series auto-match.`}
-                  withArrow
-                  multiline
-                  w={260}
-                >
-                  <Button
-                    size="xs"
-                    variant="default"
-                    loading={saveGlobal.isPending}
-                    onClick={applyGlobally}
-                  >
-                    <Trans>Also make this my default order</Trans>
-                  </Button>
-                </Tooltip>
-              )}
-            </Group>
-            <Group gap="xs">
-              <Button variant="default" onClick={onClose}>
-                <Trans>Close</Trans>
+          <ModalFooter
+            status={
+              !pick && saved ? (
+                <Group gap="xs">
+                  {staleChapters > 0 && winner && (
+                    <Tooltip
+                      label={`${plural(staleChapters, {
+                        one: '# downloaded chapter came from another source.',
+                        other: '# downloaded chapters came from another source.',
+                      })} ${t`Chapters ${winnerDisplayName} doesn't carry are left alone, as are files imported from disk.`}`}
+                      withArrow
+                      multiline
+                      w={280}
+                    >
+                      <Button
+                        size="xs"
+                        variant="light"
+                        leftSection={<IconRefresh size={16} />}
+                        loading={redownload.isPending}
+                        onClick={runRedownload}
+                      >
+                        <Trans>
+                          Re-download {staleChapters} from {winnerDisplayName}
+                        </Trans>
+                      </Button>
+                    </Tooltip>
+                  )}
+                  {isAdmin && (
+                    <Tooltip
+                      label={t`Puts these sources, in this order, at the front of the global priority list used when new series auto-match.`}
+                      withArrow
+                      multiline
+                      w={260}
+                    >
+                      <Button
+                        size="xs"
+                        variant="default"
+                        loading={saveGlobal.isPending}
+                        onClick={applyGlobally}
+                      >
+                        <Trans>Also make this my default order</Trans>
+                      </Button>
+                    </Tooltip>
+                  )}
+                </Group>
+              ) : !pick ? (
+                <Trans>Maki downloads from the first column first.</Trans>
+              ) : null
+            }
+          >
+            <Button variant="default" onClick={onClose}>
+              <Trans>Close</Trans>
+            </Button>
+            {!pick && (
+              <Button loading={reorder.isPending} disabled={panels.length === 0} onClick={save}>
+                <Trans>Save order</Trans>
               </Button>
-              {!pick && (
-                <Button
-                  loading={reorder.isPending}
-                  disabled={panels.length === 0}
-                  onClick={save}
-                >
-                  <Trans>Save order</Trans>
-                </Button>
-              )}
-            </Group>
-          </Group>
+            )}
+          </ModalFooter>
         </Stack>
       </Modal>
 

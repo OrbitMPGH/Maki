@@ -4483,10 +4483,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
-  padding: 9px 12px;
-  border: 1px solid var(--border);
-  border-radius: var(--mantine-radius-lg);
-  background: var(--surface);
 }
 .discover-taste-lead {
   font-size: var(--type-meta);
@@ -5912,33 +5908,50 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .detail-split[data-even] {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
-/* A fifth of the modal is not enough for a label column beside its value, so the label sits over
-   it: publisher lists otherwise come out a word per line. */
-.detail-record {
+/* At a glance: label beside value, read down like the series page's Metadata panel but without a
+   hairline per row, so eight facts stay a short block under the reviews. */
+.detail-records {
   display: grid;
-  gap: 2px;
-  padding: 9px 0;
+  grid-template-columns: 7.5rem minmax(0, 1fr);
+  gap: 10px 14px;
+  align-items: baseline;
+  margin: var(--mantine-spacing-md) 0 0;
+}
+.detail-record {
+  display: contents;
+}
+.detail-record > dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Reviews as rows split by a hairline, the way the panel's other lists read, not cards in a card. */
+.review-list {
+  margin-top: var(--mantine-spacing-sm);
+}
+.review-row {
+  padding: 14px 0;
   border-top: 1px solid var(--hairline);
 }
-/* Given a full panel there is room for the pair on one line, which is easier to read down. */
-.detail-records[data-wide] .detail-record {
-  grid-template-columns: 132px minmax(0, 1fr);
-  gap: 18px;
-  align-items: baseline;
+.review-row:first-child {
+  border-top: 0;
+  padding-top: 4px;
 }
-.detail-records[data-wide] .detail-record > :last-child {
-  text-align: right;
+.review-row:last-child {
+  padding-bottom: 0;
 }
-.detail-source {
+.review-score {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-}
-.detail-records > .detail-record:first-child {
-  border-top: 0;
-}
-.detail-records {
-  margin-top: var(--mantine-spacing-sm);
+  gap: 5px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  color: var(--ink-hi);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
 }
 
 @media (max-width: 56.25em) {
@@ -7687,6 +7700,123 @@ body.column-resizing * {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+}
+
+/* A taste signal as an icon and a word in its colour. Pills read as buttons in a list of them. */
+.signal-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+.signal-status > svg {
+  flex-shrink: 0;
+}
+
+/* Taste tab: recent feedback, grouped by day with times in their own column. */
+.signals-feed {
+  padding-bottom: 6px;
+}
+.signals-feed-head {
+  margin-bottom: 4px;
+}
+.signals-feed-group + .signals-feed-group,
+.signals-feed-row + .signals-feed-row {
+  border-top: 1px solid var(--hairline);
+}
+.signals-feed-day {
+  padding: 12px 0 2px;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
+}
+.signals-feed-row {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  padding-block: 10px;
+}
+.signals-feed-main {
+  flex: 1;
+  min-width: 0;
+}
+.signals-feed-title {
+  font-weight: var(--fw-semibold);
+  color: var(--ink-hi);
+}
+.signals-feed-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 10px;
+  margin-top: 2px;
+  font-size: var(--type-meta);
+}
+.signals-feed-phrase {
+  color: var(--ink-3);
+}
+.signals-feed-time {
+  margin-inline-start: auto;
+  color: var(--ink-4);
+}
+.signals-feed-undo {
+  flex-shrink: 0;
+}
+
+/* Manage signals: filters as one row of underlined segments that scrolls instead of wrapping. */
+.signals-filters {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--hairline);
+}
+.signals-filters::-webkit-scrollbar {
+  display: none;
+}
+.signals-filter {
+  flex: none;
+}
+.signals-filter-icon {
+  display: none;
+}
+.signals-filter .signals-filter-label {
+  gap: 6px;
+  height: 36px;
+  padding-inline: 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.signals-filter .signals-filter-label:hover {
+  background: none;
+  color: var(--ink-hi);
+}
+.signals-filter .signals-filter-label[data-checked] {
+  padding-inline: 10px;
+  border-bottom-color: var(--brand);
+  background: none;
+  color: var(--ink-hi);
+}
+.signals-filter-count {
+  margin-inline-start: 6px;
+  color: var(--ink-4);
+  font-weight: var(--fw-medium);
+}
+.signals-statuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.signals-row-title {
+  align-items: center;
 }
 
 /* --- Misc ---------------------------------------------------------------- */
@@ -11749,6 +11879,123 @@ button.import-plan-folder-head:hover {
   padding: 4px 2px 18px;
 }
 
+/* --- Settings rows -----------------------------------------------------------
+   One panel of hairline rows instead of a card per item inside the card (SettingsRow). */
+.settings-rows-block {
+  padding: var(--mantine-spacing-lg);
+}
+.settings-rows-block + .settings-rows,
+.settings-rows + .settings-rows-block {
+  border-top: 1px solid var(--hairline);
+}
+.settings-row + .settings-row {
+  border-top: 1px solid var(--hairline);
+}
+.settings-row-head {
+  display: flex;
+  align-items: center;
+  gap: 12px 16px;
+  width: 100%;
+  min-height: 56px;
+  padding: 12px var(--mantine-spacing-lg);
+  color: var(--ink);
+  transition: background-color var(--dur-base) var(--ease);
+}
+button.settings-row-head:hover,
+.settings-row[data-open] {
+  background: var(--surface-hover);
+}
+.settings-row-head:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+.settings-row-text {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.settings-row-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  min-width: 0;
+}
+.settings-row-title {
+  color: var(--ink-hi);
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+}
+.settings-row-summary {
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.settings-row-status {
+  flex-shrink: 0;
+}
+.settings-row-chevron {
+  flex-shrink: 0;
+  color: var(--ink-3);
+  transition: transform var(--dur-medium) var(--ease), color var(--dur-base) var(--ease);
+}
+.settings-row-head:hover .settings-row-chevron {
+  color: var(--ink-hi);
+}
+.settings-row[data-open] .settings-row-chevron {
+  transform: rotate(180deg);
+}
+.settings-row-body {
+  display: grid;
+  gap: var(--mantine-spacing-sm);
+  padding: 4px var(--mantine-spacing-lg) var(--mantine-spacing-lg);
+}
+.settings-row-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: var(--mantine-spacing-sm);
+  border-top: 1px solid var(--hairline);
+}
+@media (max-width: 36em) {
+  .settings-row-head {
+    flex-wrap: wrap;
+  }
+  .settings-row-text {
+    flex-basis: calc(100% - 32px);
+  }
+  .settings-row-summary {
+    white-space: normal;
+  }
+}
+/* A one-line caution inside a settings panel, where a full alert block would outweigh the fields. */
+.settings-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--ink-2);
+  font-size: var(--type-meta);
+  line-height: 1.45;
+}
+.settings-note > svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--warn);
+}
+/* Delete stays quiet in a row of actions and only turns red when the pointer is on it. */
+.quiet-danger.mantine-ActionIcon-root {
+  color: var(--ink-3);
+}
+.quiet-danger.mantine-ActionIcon-root:hover {
+  color: var(--danger);
+}
+
 .save-control {
   display: inline-flex;
   align-items: center;
@@ -12828,6 +13075,189 @@ button.import-plan-folder-head:hover {
   --panel-edge: var(--danger);
 }
 
+/* ModalHeading: the title over one line saying what the dialog is for. The line sits inside the
+   header so it stays put while the body scrolls. */
+.modal-heading-title {
+  display: block;
+}
+.modal-heading-description {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--mantine-font-family);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-regular);
+  line-height: 1.45;
+  letter-spacing: 0;
+  color: var(--ink-3);
+}
+
+/* ModalFooter: pinned to the foot of the scrolling body, full width over its padding. */
+.modal-footer {
+  position: sticky;
+  bottom: calc(var(--mb-padding, var(--mantine-spacing-md)) * -1);
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+  margin: var(--mantine-spacing-md) calc(var(--mb-padding, var(--mantine-spacing-md)) * -1)
+    calc(var(--mb-padding, var(--mantine-spacing-md)) * -1);
+  padding: var(--mantine-spacing-sm) var(--mb-padding, var(--mantine-spacing-md));
+  border-top: 1px solid var(--hairline);
+  background-color: var(--surface-raised);
+}
+.modal-footer-status {
+  flex: 1 1 14rem;
+  min-width: 0;
+  font-size: var(--type-meta);
+  color: var(--ink-3);
+}
+.modal-footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--mantine-spacing-xs);
+  margin-left: auto;
+}
+
+/* ModalNote: one line of attention inside a dialog, not a filled alert block. */
+.modal-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mantine-spacing-xs);
+  font-size: var(--type-meta);
+  color: var(--ink-2);
+}
+.modal-note-icon {
+  flex: none;
+  margin-top: 1px;
+}
+.modal-note[data-tone='warn'] .modal-note-icon {
+  color: var(--warn);
+}
+.modal-note[data-tone='info'] .modal-note-icon {
+  color: var(--info);
+}
+.modal-note-body {
+  min-width: 0;
+}
+
+/* Search releases */
+.release-search-seeds {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.release-search-seeds[data-health='ok'] {
+  color: var(--ok);
+}
+.release-search-seeds[data-health='warn'] {
+  color: var(--warn);
+}
+.release-search-seeds[data-health='danger'] {
+  color: var(--danger);
+}
+
+/* Rename files: before over after, with only the part that changes marked. */
+.rename-list {
+  display: flex;
+  flex-direction: column;
+}
+.rename-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  padding-block: 8px;
+  border-bottom: 1px solid var(--hairline);
+}
+.rename-row:last-child {
+  border-bottom: 0;
+}
+.rename-from,
+.rename-to {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--type-meta);
+  overflow-wrap: anywhere;
+}
+.rename-from {
+  color: var(--ink-3);
+}
+.rename-to {
+  color: var(--ink);
+}
+.rename-arrow {
+  color: var(--ink-4);
+}
+.rename-change {
+  border-radius: var(--radius-2xs);
+  background-color: color-mix(in srgb, var(--brand) 18%, transparent);
+  color: var(--ink-hi);
+}
+@media (max-width: 47.9375em) {
+  .rename-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+  .rename-arrow {
+    display: none;
+  }
+}
+
+/* Manage tags: the row's own actions show on hover or focus where there is a real pointer. */
+.tag-manager-row {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  min-height: 40px;
+  border-bottom: 1px solid var(--hairline);
+}
+.tag-manager-row:last-child {
+  border-bottom: 0;
+}
+.tag-manager-count {
+  flex: 1;
+  font-size: var(--type-meta);
+  color: var(--ink-3);
+}
+.tag-manager-row .tag-manager-delete:hover {
+  --ai-color: var(--danger);
+  color: var(--danger);
+}
+@media (hover: hover) and (pointer: fine) {
+  .tag-manager-actions {
+    opacity: 0;
+    transition: opacity var(--dur-fast) var(--ease);
+  }
+  .tag-manager-row:hover .tag-manager-actions,
+  .tag-manager-row:focus-within .tag-manager-actions {
+    opacity: 1;
+  }
+}
+
+/* Compare sources: the leading column carries the brand ring, a flat edge rather than a glow. */
+.compare-panel {
+  height: 100%;
+  padding: var(--mantine-spacing-xs);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background-color: var(--surface);
+}
+.compare-panel[data-leading] {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 1px var(--brand);
+}
+.compare-rank {
+  font-family: var(--font-display);
+  font-size: var(--type-body);
+  font-weight: var(--fw-bold);
+  color: var(--ink-3);
+}
+.compare-panel[data-leading] .compare-rank {
+  color: var(--brand-fg);
+}
+
 /* --- Phone treatment for the pages that had none --------------------------
    Rewind, Scrobble, Activity, Requests, signal rows and the coverage bar were
    written desktop-first; everything below is the 47.9375em pass the rest of the
@@ -13839,6 +14269,11 @@ button.import-plan-folder-head:hover {
   width: 140px;
   text-align: right;
 }
+.signals-col-menu {
+  width: 28px;
+  display: flex;
+  justify-content: flex-end;
+}
 
 @media (max-width: 47.9375em) {
   .signals-row {
@@ -13860,6 +14295,18 @@ button.import-plan-folder-head:hover {
   }
   .signals-col-action {
     text-align: right;
+  }
+  /* The row menu stays beside the title; the statuses take the next line. */
+  .signals-row-title .signals-row-main {
+    flex-basis: calc(100% - 34px - 28px - 2 * var(--mantine-spacing-sm));
+  }
+  .signals-row-title .signals-col-menu {
+    order: 1;
+    flex: none;
+    width: 28px;
+  }
+  .signals-row-title .signals-col-state {
+    order: 2;
   }
 }
 

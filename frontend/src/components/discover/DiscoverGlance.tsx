@@ -1,17 +1,15 @@
-import { Paper, Title } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { IconInfoCircle } from '../../lib/icons'
 import { CONTENT_RATING_LABELS, type MangaBakaDetail } from '../../api/hooks'
 import { TYPE_LABELS } from '../CatalogueFilters'
 import { useLabel } from '../../i18n-context'
 import { Creators, DetailRecord } from './DiscoverRecord'
+import { Panel } from '../ui/Panel'
+import { PanelTitle } from '../ui/PanelTitle'
 
 /**
  * The facts about a series that are read rather than scanned: who made it, who prints it, and the
  * publication numbers the band doesn't carry.
- *
- * Label over value rather than the series page's two-column record grid: this sits in a rail about
- * a fifth of the modal wide, where a label column and a right-aligned value leave publisher lists
- * a word per line.
  */
 export function DiscoverGlance({
   detail,
@@ -27,12 +25,12 @@ export function DiscoverGlance({
   const ongoing = year != null && status === 'Ongoing'
 
   return (
-    <Paper withBorder radius="lg" p="md">
-      <Title order={2} size="h3" fz="var(--type-subhead)">
+    <Panel>
+      <PanelTitle order={2} icon={IconInfoCircle}>
         <Trans>At a glance</Trans>
-      </Title>
+      </PanelTitle>
 
-      <div className="detail-records">
+      <dl className="detail-records">
         {detail.authors.length > 0 && (
           <DetailRecord label={t`Story`}>
             <Creators values={detail.authors} role="author" onNavigate={onNavigate} />
@@ -73,7 +71,7 @@ export function DiscoverGlance({
             {renderLabel(CONTENT_RATING_LABELS[detail.contentRating] ?? detail.contentRating)}
           </DetailRecord>
         )}
-      </div>
-    </Paper>
+      </dl>
+    </Panel>
   )
 }

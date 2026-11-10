@@ -7,7 +7,6 @@ import {
   CloseButton, Divider,
   Group,
   Modal,
-  Paper,
   Skeleton,
   Spoiler,
   Stack,
@@ -16,6 +15,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import {
+  IconFileText,
   IconStarFilled,
   IconTrendingDown,
   IconTrendingUp,
@@ -39,7 +39,8 @@ import {
   statusToken,
 } from '../ui/status'
 import { ContentRatingChip } from '../ContentRatingChip'
-import { TagChip, TagChips } from '../ui/TagChip'
+import { Panel } from '../ui/Panel'
+import { PanelTitle } from '../ui/PanelTitle'
 import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
@@ -112,7 +113,6 @@ export function DiscoverDetailModal({
   // The card's 334x500 thumbnail stands in until the detail row's full-size art arrives: it is
   // already in the browser's image cache, so the modal opens with a cover rather than a hole.
   const cover = detail?.coverUrl ?? item?.thumbUrlHiDpi ?? item?.coverUrl ?? null
-  const genres = detail?.genres ?? item?.matchedGenres ?? []
 
   // Every one of these is on the card's own row as well as the detail response, so the band is
   // complete from the first frame and the detail request fills in rather than rearranges.
@@ -426,8 +426,12 @@ export function DiscoverDetailModal({
           <div className="discover-body">
           <div className="detail-split">
               <div className="detail-main">
-                <Paper withBorder radius="lg" p="lg">
+                <Panel>
                   <Stack gap="md">
+                    <PanelTitle order={2} icon={IconFileText}>
+                      <Trans>Synopsis</Trans>
+                    </PanelTitle>
+
                     {isLoading && !detail && (
                       <Stack gap="xs">
                         <Skeleton h={12} />
@@ -446,10 +450,6 @@ export function DiscoverDetailModal({
                       </Group>
                     )}
 
-                    <Title order={2} size="h3" fz="var(--type-section)">
-                      <Trans>Synopsis</Trans>
-                    </Title>
-
                     {(detail?.description || item.description) && (
                       <Spoiler
                         maxHeight={120}
@@ -462,9 +462,7 @@ export function DiscoverDetailModal({
                         </Text>
                       </Spoiler>
                     )}
-                    {/* Said out loud rather than left as an empty panel: a series with no
-                        synopsis, no anime dates and no genres would otherwise open on a bordered
-                        box with nothing in it. */}
+                    {/* Said out loud rather than left as a titled panel with nothing under it. */}
                     {detail && !detail.description && !item.description && (
                       <Text size="sm" c="var(--ink-4)">
                         <Trans>The catalogue has no synopsis for this one.</Trans>
@@ -494,25 +492,8 @@ export function DiscoverDetailModal({
                           />
                         </>
                     )}
-
-                    {genres.length > 0 && (
-                      <div>
-                        <Divider mb="md" color="var(--hairline)"/>
-                        <Text size="xs" fw={600} c="var(--ink-3)" mb={6}>
-                          <Trans>Genres</Trans>
-                        </Text>
-                        <TagChips>
-                          {genres.map((g) => (
-                            <TagChip key={g} dot="var(--neutral)">
-                              {genreLabel(g)}
-                            </TagChip>
-                          ))}
-                        </TagChips>
-                      </div>
-                    )}
-
                   </Stack>
-                </Paper>
+                </Panel>
 
                 {detail && detail.tags.length > 0 && <DiscoverTags tags={detail.tags} />}
               </div>

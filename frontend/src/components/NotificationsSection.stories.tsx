@@ -50,7 +50,7 @@ export const FailingConnectionShowsItsError: Story = {
 export const Empty: Story = {
   parameters: { msw: settingsMsw(http.get(api('/notifications'), () => HttpResponse.json([]))) },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('No notification connections yet.')).toBeVisible()
+    await expect(await canvas.findByText('No connections yet')).toBeVisible()
   },
 }
 

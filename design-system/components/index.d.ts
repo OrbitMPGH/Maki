@@ -212,6 +212,15 @@ export declare function ConfirmDialog(props: {
   loading?: boolean
 }): JSX.Element
 
+/** A utility modal's title with one line saying what the dialog is for. Pass as the Modal's `title`. */
+export declare function ModalHeading(props: { title: ReactNode; description?: ReactNode }): JSX.Element
+
+/** The pinned bar at a utility modal's foot: a status line left, the actions right. The body's last child. */
+export declare function ModalFooter(props: { status?: ReactNode; children?: ReactNode }): JSX.Element
+
+/** One line inside a dialog that needs attention: a tone icon, then the words. */
+export declare function ModalNote(props: { tone?: 'warn' | 'info'; children: ReactNode }): JSX.Element
+
 /** The app-wide delegated tooltip. Mount once; any element with data-tip gets one. */
 export declare function TipLayer(): JSX.Element
 
