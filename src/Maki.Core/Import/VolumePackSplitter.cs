@@ -1,3 +1,4 @@
+using Maki.Core.Naming;
 using Maki.Core.Parsing;
 
 namespace Maki.Core.Import;
@@ -45,10 +46,10 @@ public static class VolumePackSplitter
             .OrderBy(g => g.Value.Volume)
             .Select(g => source with
             {
-                Name = Path.GetFileName(g.Key.TrimEnd('/')) + ".cbz",
+                Name = FileNameSanitizer.Sanitize(Path.GetFileName(g.Key.TrimEnd('/'))) + ".cbz",
                 Kind = ComicSourceKind.Cbz,
                 Size = source.Size * g.Value.Pages / source.Pages.Count,
-                Pages = source.Pages.Where(p => p.StartsWith(g.Key, StringComparison.Ordinal)).ToList(),
+                Pages = source.Pages.Where(p => Normalized(p).StartsWith(g.Key, StringComparison.Ordinal)).ToList(),
                 Slice = g.Key
             })
             .ToList();
@@ -56,7 +57,7 @@ public static class VolumePackSplitter
 
     private static (string Prefix, int Volume)? VolumeFolderOf(string page)
     {
-        var segments = page.Replace((char)92, '/').Split('/');
+        var segments = Normalized(page).Split('/');
         var prefix = "";
         for (var i = 0; i < segments.Length - 1; i++)
         {
@@ -70,4 +71,6 @@ public static class VolumePackSplitter
 
         return null;
     }
+
+    private static string Normalized(string page) => page.Replace((char)92, '/');
 }

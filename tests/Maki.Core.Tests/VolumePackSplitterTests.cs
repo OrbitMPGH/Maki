@@ -76,6 +76,25 @@ public class VolumePackSplitterTests : IDisposable
     }
 
     [Fact]
+    public void Pages_listed_with_backslashes_stay_with_their_volume()
+    {
+        var parts = VolumePackSplitter.Split(Source("pack.cbr",
+            @"Title v01\001.jpg", @"Title v01\002.jpg", @"Title v02\001.jpg"));
+
+        Assert.Equal([2, 1], parts.Select(p => p.Pages.Count));
+        Assert.Equal(["Title v01/", "Title v02/"], parts.Select(p => p.Slice));
+    }
+
+    [Fact]
+    public void A_volume_folder_name_that_is_no_valid_file_name_is_cleaned()
+    {
+        var parts = VolumePackSplitter.Split(Source("pack.cbz", "Title: v01/001.jpg", "Title: v02/001.jpg"));
+
+        Assert.Equal(["Title v01.cbz", "Title v02.cbz"], parts.Select(p => p.Name));
+        Assert.Equal(["Title: v01/", "Title: v02/"], parts.Select(p => p.Slice));
+    }
+
+    [Fact]
     public void Written_volume_holds_only_its_own_pages_without_the_volume_folder()
     {
         var pack = Path.Combine(_root, "Sample Title vol 01-08.cbz");
