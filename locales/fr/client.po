@@ -1492,6 +1492,10 @@ msgstr ""
 msgid "{exposed} read or watched elsewhere"
 msgstr "{exposed} lus ou regardés ailleurs"
 
+#: src/components/series/SeriesHero.tsx
+msgid "{extrasIncluded, plural, one {# extra included} other {# extras included}}"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
@@ -1525,6 +1529,10 @@ msgstr "{fileCount, plural, one {# fichier individuel} many {# fichiers individu
 #, fuzzy
 msgid "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
 msgstr "{fileMissing, plural, one {# chapitre téléchargé n'a plus son fichier, Téléchargements le laisse donc de côté.} many {# chapitres téléchargés n'ont plus leurs fichiers, Téléchargements les laisse donc de côté.} other {# chapitres téléchargés n'ont plus leurs fichiers, Téléchargements les laisse donc de côté.}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk.} other {# chapters have no file on disk.}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1730,6 +1738,10 @@ msgstr "{kind, select, both {Scénario et dessin} story {Scénario} art {Dessin}
 msgid "{kind, select, up {Up {pct} on the period before.} down {Down {pct} on the period before.} flat {About the same as the period before.} none {} other {}}"
 msgstr "{kind, select, up {En hausse de {pct} par rapport à la période précédente.} down {En baisse de {pct} par rapport à la période précédente.} flat {À peu près le même niveau que la période précédente.} none {} other {}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{known, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #, fuzzy
@@ -1873,8 +1885,12 @@ msgstr "{linkingTotal, plural, one {Sources trouvées et fichiers liés pour # s
 
 #: src/components/series/ChapterCountsInfo.tsx
 #, fuzzy
-msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
-msgstr "{listed, plural, one {# chapitre est listé} many {# chapitres sont listés} other {# chapitres sont listés}}, le nombre affiché dans l'onglet Chapitres et sous Chapitres connus."
+#~ msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
+#~ msgstr "{listed, plural, one {# chapitre est listé} many {# chapitres sont listés} other {# chapitres sont listés}}, le nombre affiché dans l'onglet Chapitres et sous Chapitres connus."
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -1885,6 +1901,10 @@ msgstr "{lone, plural, one {# fichier sans numéro} many {# fichiers sans numér
 #, fuzzy
 msgid "{longestStreak, plural, one {You read today. Longest streak: # day} other {You read today. Longest streak: # days}}"
 msgstr "{longestStreak, plural, one {Vous avez lu aujourd'hui. Meilleure suite : # jour} many {Vous avez lu aujourd'hui. Meilleure suite : # jours} other {Vous avez lu aujourd'hui. Meilleure suite : # jours}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{main, plural, one {# chapter} other {# chapters}}, {specials, plural, one {# extra} other {# extras}}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -2336,13 +2356,17 @@ msgstr "{readerHintReaders, plural, one {# lecteur d'AniList aux habitudes de le
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "{readFilterCount} read"
-msgstr "{readFilterCount} lus"
+#~ msgid "{readFilterCount} read"
+#~ msgstr "{readFilterCount} lus"
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "{readGenreName} is {readShare} of what you read and {libraryShare} of the library."
 msgstr "{readGenreName} représente {readShare} de vos lectures et {libraryShare} de la bibliothèque."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{readInTotal} read"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -6193,8 +6217,8 @@ msgstr "Chapitres téléchargés automatiquement"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Chapters known"
-msgstr "Chapitres connus"
+#~ msgid "Chapters known"
+#~ msgstr "Chapitres connus"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -7743,6 +7767,7 @@ msgstr "Limite quotidienne de mises à niveau atteinte"
 msgid "Damaged image"
 msgstr "Image endommagée"
 
+#: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -11048,6 +11073,7 @@ msgid "Identical to another file"
 msgstr "Identique à un autre fichier"
 
 #: src/components/SeriesFilesSection.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "If they are in the folder under other names, Relink files finds them."
 msgstr "S'ils se trouvent dans le dossier sous d'autres noms, Réassocier les fichiers les retrouve."
@@ -12386,6 +12412,7 @@ msgstr "Titre de la bibliothèque"
 msgid "Library view"
 msgstr "Affichage de la bibliothèque"
 
+#: src/components/AppearancePicker.tsx
 #: src/pages/reader/enhanceMethods.ts
 #: src/theme-context.tsx
 #, fuzzy
@@ -12574,6 +12601,7 @@ msgid "List view"
 msgstr "Vue en liste"
 
 #: src/components/ui/status.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Listed"
 msgstr "Répertorié"
@@ -18064,6 +18092,14 @@ msgstr "Les lecteurs sans nom d'affichage apparaissent sous leur identifiant sur
 #, fuzzy
 msgid "Reading"
 msgstr "Lecture"
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Reading and Downloads count extras, since you keep specials."
+msgstr ""
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Reading and Downloads leave extras out, since specials are unmonitored."
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 msgid "Reading and sharing"
@@ -24210,6 +24246,7 @@ msgstr "Total d'octets des pages affichées. Plus gros n'est pas toujours mieux.
 
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Total chapters"
 msgstr "Nombre total de chapitres"

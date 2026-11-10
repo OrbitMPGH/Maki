@@ -1492,6 +1492,10 @@ msgstr ""
 msgid "{exposed} read or watched elsewhere"
 msgstr "다른 곳에서 읽거나 본 항목 {exposed}개"
 
+#: src/components/series/SeriesHero.tsx
+msgid "{extrasIncluded, plural, one {# extra included} other {# extras included}}"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
@@ -1525,6 +1529,10 @@ msgstr "{fileCount, plural, other {단일 챕터 파일 #개}}"
 #, fuzzy
 msgid "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
 msgstr "{fileMissing, plural, other {파일이 없는 다운로드 챕터 #개는 다운로드 집계에서 제외됩니다.}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk.} other {# chapters have no file on disk.}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1730,6 +1738,10 @@ msgstr "{kind, select, both {이야기와 그림} story {이야기} art {그림}
 msgid "{kind, select, up {Up {pct} on the period before.} down {Down {pct} on the period before.} flat {About the same as the period before.} none {} other {}}"
 msgstr "{kind, select, up {이전 기간보다 {pct} 올랐습니다.} down {이전 기간보다 {pct} 내렸습니다.} flat {이전 기간과 거의 같습니다.} none {} other {}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{known, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #, fuzzy
@@ -1873,8 +1885,12 @@ msgstr "{linkingTotal, plural, other {시리즈 #개의 소스를 찾고 파일�
 
 #: src/components/series/ChapterCountsInfo.tsx
 #, fuzzy
-msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
-msgstr "{listed, plural, other {목록에 있는 챕터 #개}}, 챕터 탭과 '확인된 챕터'에 표시되는 개수입니다."
+#~ msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
+#~ msgstr "{listed, plural, other {목록에 있는 챕터 #개}}, 챕터 탭과 '확인된 챕터'에 표시되는 개수입니다."
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -1885,6 +1901,10 @@ msgstr "{lone, plural, other {번호가 없는 파일 #개}}"
 #, fuzzy
 msgid "{longestStreak, plural, one {You read today. Longest streak: # day} other {You read today. Longest streak: # days}}"
 msgstr "{longestStreak, plural, other {오늘 읽었습니다. 최장 연속 기록: #일}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{main, plural, one {# chapter} other {# chapters}}, {specials, plural, one {# extra} other {# extras}}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -2336,13 +2356,17 @@ msgstr "{readerHintReaders, plural, other {내 독서 습관과 비슷한 AniLis
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "{readFilterCount} read"
-msgstr "{readFilterCount}개 읽음"
+#~ msgid "{readFilterCount} read"
+#~ msgstr "{readFilterCount}개 읽음"
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "{readGenreName} is {readShare} of what you read and {libraryShare} of the library."
 msgstr "읽은 작품 중 {readGenreName}은(는) {readShare}이고 라이브러리 중 {libraryShare}입니다."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{readInTotal} read"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -6193,8 +6217,8 @@ msgstr "자동으로 다운로드한 챕터"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Chapters known"
-msgstr "확인된 챕터"
+#~ msgid "Chapters known"
+#~ msgstr "확인된 챕터"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -7743,6 +7767,7 @@ msgstr "일일 업그레이드 한도에 도달함"
 msgid "Damaged image"
 msgstr "손상된 이미지"
 
+#: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -11048,6 +11073,7 @@ msgid "Identical to another file"
 msgstr "다른 파일과 동일함"
 
 #: src/components/SeriesFilesSection.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "If they are in the folder under other names, Relink files finds them."
 msgstr "폴더 안에 다른 이름으로 있다면 파일 다시 연결이 찾아냅니다."
@@ -12386,6 +12412,7 @@ msgstr "라이브러리 제목"
 msgid "Library view"
 msgstr "라이브러리 보기"
 
+#: src/components/AppearancePicker.tsx
 #: src/pages/reader/enhanceMethods.ts
 #: src/theme-context.tsx
 #, fuzzy
@@ -12574,6 +12601,7 @@ msgid "List view"
 msgstr "목록 보기"
 
 #: src/components/ui/status.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Listed"
 msgstr "목록에 있음"
@@ -18064,6 +18092,14 @@ msgstr "표시 이름이 없는 독자는 공유 노트, 순위표, 편집 기�
 #, fuzzy
 msgid "Reading"
 msgstr "읽는 중"
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Reading and Downloads count extras, since you keep specials."
+msgstr ""
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Reading and Downloads leave extras out, since specials are unmonitored."
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 msgid "Reading and sharing"
@@ -24210,6 +24246,7 @@ msgstr "보이는 페이지의 총 바이트 수입니다. 클수록 항상 좋�
 
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Total chapters"
 msgstr "전체 챕터"

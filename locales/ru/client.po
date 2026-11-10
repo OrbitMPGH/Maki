@@ -1492,6 +1492,10 @@ msgstr ""
 msgid "{exposed} read or watched elsewhere"
 msgstr "{exposed} прочитано или просмотрено в другом месте"
 
+#: src/components/series/SeriesHero.tsx
+msgid "{extrasIncluded, plural, one {# extra included} other {# extras included}}"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
@@ -1525,6 +1529,10 @@ msgstr "{fileCount, plural, one {# отдельный файл} few {# отде�
 #, fuzzy
 msgid "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
 msgstr "{fileMissing, plural, one {У # загруженной главы нет файла, поэтому «Загрузки» её пропускают.} few {У # загруженных глав нет файлов, поэтому «Загрузки» их пропускают.} many {У # загруженных глав нет файлов, поэтому «Загрузки» их пропускают.} other {У # загруженных глав нет файлов, поэтому «Загрузки» их пропускают.}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk.} other {# chapters have no file on disk.}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1730,6 +1738,10 @@ msgstr "{kind, select, both {Сценарий и художник} story {Сце
 msgid "{kind, select, up {Up {pct} on the period before.} down {Down {pct} on the period before.} flat {About the same as the period before.} none {} other {}}"
 msgstr "{kind, select, up {Вверх на {pct} по сравнению с предыдущим периодом.} down {Вниз на {pct} по сравнению с предыдущим периодом.} flat {Примерно так же, как в предыдущем периоде.} none {} other {}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{known, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 #, fuzzy
@@ -1873,8 +1885,12 @@ msgstr "{linkingTotal, plural, one {Источники найдены, файл�
 
 #: src/components/series/ChapterCountsInfo.tsx
 #, fuzzy
-msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
-msgstr "{listed, plural, one {# глава указана} few {# главы указаны} many {# глав указано} other {# главы указаны}}: это число на вкладке «Главы» и под строкой «Известные главы»."
+#~ msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
+#~ msgstr "{listed, plural, one {# глава указана} few {# главы указаны} many {# глав указано} other {# главы указаны}}: это число на вкладке «Главы» и под строкой «Известные главы»."
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -1885,6 +1901,10 @@ msgstr "{lone, plural, one {# файл без номера} few {# файла б
 #, fuzzy
 msgid "{longestStreak, plural, one {You read today. Longest streak: # day} other {You read today. Longest streak: # days}}"
 msgstr "{longestStreak, plural, one {Сегодня вы читали. Дольше всего подряд: # день} few {Сегодня вы читали. Дольше всего подряд: # дня} many {Сегодня вы читали. Дольше всего подряд: # дней} other {Сегодня вы читали. Дольше всего подряд: # дня}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{main, plural, one {# chapter} other {# chapters}}, {specials, plural, one {# extra} other {# extras}}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -2336,13 +2356,17 @@ msgstr "{readerHintReaders, plural, one {# читатель AniList с похо�
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "{readFilterCount} read"
-msgstr "Прочитано: {readFilterCount}"
+#~ msgid "{readFilterCount} read"
+#~ msgstr "Прочитано: {readFilterCount}"
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "{readGenreName} is {readShare} of what you read and {libraryShare} of the library."
 msgstr "На {readGenreName} приходится {readShare} прочитанного и {libraryShare} библиотеки."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{readInTotal} read"
+msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -6193,8 +6217,8 @@ msgstr "Главы загружены автоматически"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
-msgid "Chapters known"
-msgstr "Известные главы"
+#~ msgid "Chapters known"
+#~ msgstr "Известные главы"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -7743,6 +7767,7 @@ msgstr "Достигнут дневной лимит улучшений"
 msgid "Damaged image"
 msgstr "Повреждённое изображение"
 
+#: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -11048,6 +11073,7 @@ msgid "Identical to another file"
 msgstr "Идентично другому файлу"
 
 #: src/components/SeriesFilesSection.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "If they are in the folder under other names, Relink files finds them."
 msgstr "Если они лежат в папке под другими именами, «Перепривязать файлы» их найдёт."
@@ -12386,6 +12412,7 @@ msgstr "Название библиотеки"
 msgid "Library view"
 msgstr "Вид библиотеки"
 
+#: src/components/AppearancePicker.tsx
 #: src/pages/reader/enhanceMethods.ts
 #: src/theme-context.tsx
 #, fuzzy
@@ -12574,6 +12601,7 @@ msgid "List view"
 msgstr "Вид списком"
 
 #: src/components/ui/status.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Listed"
 msgstr "Перечислено"
@@ -18064,6 +18092,14 @@ msgstr "Читатели без отображаемого имени показ
 #, fuzzy
 msgid "Reading"
 msgstr "Чтение"
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Reading and Downloads count extras, since you keep specials."
+msgstr ""
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Reading and Downloads leave extras out, since specials are unmonitored."
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 msgid "Reading and sharing"
@@ -24210,6 +24246,7 @@ msgstr "Общий объём байт по показанным страниц�
 
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
+#: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Total chapters"
 msgstr "Всего глав"

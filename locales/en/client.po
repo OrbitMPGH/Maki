@@ -1261,6 +1261,10 @@ msgstr "{expiringSoon, plural, one {# goes within {SOON_DAYS} days} other {# go 
 msgid "{exposed} read or watched elsewhere"
 msgstr "{exposed} read or watched elsewhere"
 
+#: src/components/series/SeriesHero.tsx
+msgid "{extrasIncluded, plural, one {# extra included} other {# extras included}}"
+msgstr "{extrasIncluded, plural, one {# extra included} other {# extras included}}"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
 msgstr "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
@@ -1288,6 +1292,10 @@ msgstr "{fileCount, plural, one {# single file} other {# single files}}"
 #: src/components/series/ChapterCountsInfo.tsx
 msgid "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
 msgstr "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk.} other {# chapters have no file on disk.}}"
+msgstr "{fileMissingFilterCount, plural, one {# chapter has no file on disk.} other {# chapters have no file on disk.}}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk} other {# chapters have no file on disk}}"
@@ -1454,6 +1462,10 @@ msgstr "{kind, select, both {Story and art} story {Story} art {Art} other {}}"
 msgid "{kind, select, up {Up {pct} on the period before.} down {Down {pct} on the period before.} flat {About the same as the period before.} none {} other {}}"
 msgstr "{kind, select, up {Up {pct} on the period before.} down {Down {pct} on the period before.} flat {About the same as the period before.} none {} other {}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{known, plural, one {# chapter} other {# chapters}}"
+msgstr "{known, plural, one {# chapter} other {# chapters}}"
+
 #: src/pages/reader/ContinuousView.tsx
 #: src/pages/reader/PagedView.tsx
 msgid "{label} - page {pageNumber}"
@@ -1573,8 +1585,12 @@ msgid "{linkingTotal, plural, one {Sources found and files linked for # series} 
 msgstr "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 
 #: src/components/series/ChapterCountsInfo.tsx
-msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
-msgstr "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
+#~ msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
+#~ msgstr "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
+msgstr "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
 
 #: src/components/import/ImportPlanModal.tsx
 msgid "{lone, plural, one {# file with no number} other {# files with no number}}"
@@ -1583,6 +1599,10 @@ msgstr "{lone, plural, one {# file with no number} other {# files with no number
 #: src/components/home/ReadingWeeks.tsx
 msgid "{longestStreak, plural, one {You read today. Longest streak: # day} other {You read today. Longest streak: # days}}"
 msgstr "{longestStreak, plural, one {You read today. Longest streak: # day} other {You read today. Longest streak: # days}}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{main, plural, one {# chapter} other {# chapters}}, {specials, plural, one {# extra} other {# extras}}"
+msgstr "{main, plural, one {# chapter} other {# chapters}}, {specials, plural, one {# extra} other {# extras}}"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "{markerLabel} Anime adaptation ends here"
@@ -1949,12 +1969,16 @@ msgid "{readerHintReaders, plural, one {# AniList reader with reading habits lik
 msgstr "{readerHintReaders, plural, one {# AniList reader with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.} other {# AniList readers with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.}}"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "{readFilterCount} read"
-msgstr "{readFilterCount} read"
+#~ msgid "{readFilterCount} read"
+#~ msgstr "{readFilterCount} read"
 
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "{readGenreName} is {readShare} of what you read and {libraryShare} of the library."
 msgstr "{readGenreName} is {readShare} of what you read and {libraryShare} of the library."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{readInTotal} read"
+msgstr "{readInTotal} read"
 
 #: src/pages/rewind/slides.tsx
 msgid "{readValue, plural, one {chapter read} other {chapters read}}"
@@ -5103,8 +5127,8 @@ msgid "Chapters downloaded automatically"
 msgstr "Chapters downloaded automatically"
 
 #: src/pages/SeriesDetailPage.tsx
-msgid "Chapters known"
-msgstr "Chapters known"
+#~ msgid "Chapters known"
+#~ msgstr "Chapters known"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Chapters last checked {checked}"
@@ -6370,6 +6394,7 @@ msgstr "Daily upgrade cap reached"
 msgid "Damaged image"
 msgstr "Damaged image"
 
+#: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Dark"
@@ -9084,6 +9109,7 @@ msgid "Identical to another file"
 msgstr "Identical to another file"
 
 #: src/components/SeriesFilesSection.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "If they are in the folder under other names, Relink files finds them."
 msgstr "If they are in the folder under other names, Relink files finds them."
 
@@ -10177,6 +10203,7 @@ msgstr "Library title"
 msgid "Library view"
 msgstr "Library view"
 
+#: src/components/AppearancePicker.tsx
 #: src/pages/reader/enhanceMethods.ts
 #: src/theme-context.tsx
 msgid "Light"
@@ -10330,6 +10357,7 @@ msgid "List view"
 msgstr "List view"
 
 #: src/components/ui/status.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "Listed"
 msgstr "Listed"
 
@@ -14833,6 +14861,14 @@ msgstr "Readers without a display name appear under their login name on shared n
 #: src/pages/stats/sectionList.ts
 msgid "Reading"
 msgstr "Reading"
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Reading and Downloads count extras, since you keep specials."
+msgstr "Reading and Downloads count extras, since you keep specials."
+
+#: src/components/series/ChapterCountsInfo.tsx
+msgid "Reading and Downloads leave extras out, since specials are unmonitored."
+msgstr "Reading and Downloads leave extras out, since specials are unmonitored."
 
 #: src/components/settings/UsersSection.tsx
 msgid "Reading and sharing"
@@ -19857,6 +19893,7 @@ msgstr "Total bytes across the pages shown. Bigger is not always better."
 
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
+#: src/pages/SeriesDetailPage.tsx
 msgid "Total chapters"
 msgstr "Total chapters"
 
