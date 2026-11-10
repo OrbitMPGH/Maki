@@ -44,7 +44,7 @@ type Story = StoryObj<typeof meta>
 
 export const AdminAdd: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Add' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Add to library' }))
     await expect(await within(canvasElement.ownerDocument.body).findByText(/Added The Salt Cartographer/)).toBeVisible()
   },
 }
@@ -54,8 +54,8 @@ export const AddFails: Story = {
     msw: discoverPage(http.post(api('/series'), () => failWith(409, 'That series is already in the library'))),
   },
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Add' }))
-    await waitFor(() => expect(canvas.getByRole('button', { name: 'Add' })).toBeEnabled())
+    await userEvent.click(await canvas.findByRole('button', { name: 'Add to library' }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Add to library' })).toBeEnabled())
   },
 }
 
@@ -102,10 +102,10 @@ export const AddRunsIntoArchivedCopy: Story = {
     ),
   },
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Add' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Add to library' }))
     await expect(await canvas.findByText('Archived')).toBeVisible()
     await expect(await canvas.findByRole('button', { name: 'Restore' })).toBeVisible()
-    await expect(canvas.queryByRole('button', { name: 'Add' })).toBeNull()
+    await expect(canvas.queryByRole('button', { name: 'Add to library' })).toBeNull()
   },
 }
 

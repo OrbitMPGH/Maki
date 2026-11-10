@@ -1,5 +1,6 @@
 import { Trans, useLingui } from '@lingui/react/macro'
 import { IconInfoCircle } from '../../lib/icons'
+import { altTitleLabel, readableTitles } from '../../api/titles'
 import { CONTENT_RATING_LABELS, type MangaBakaDetail } from '../../api/hooks'
 import { TYPE_LABELS } from '../CatalogueFilters'
 import { useLabel } from '../../i18n-context'
@@ -19,9 +20,10 @@ export function DiscoverGlance({
   /** Closes the modal before a creator link navigates out from under it. */
   onNavigate: () => void
 }) {
-  const { t } = useLingui()
+  const { t, i18n } = useLingui()
   const renderLabel = useLabel()
   const { year, status } = detail
+  const altTitles = readableTitles(detail.altTitles, i18n.locale)
   const ongoing = year != null && status === 'Ongoing'
 
   return (
@@ -64,6 +66,18 @@ export function DiscoverGlance({
         {detail.finalVolume != null && (
           <DetailRecord label={t`Volumes`}>
             <span className="tnum">{detail.finalVolume}</span>
+          </DetailRecord>
+        )}
+        {/* The band keeps one line for the romanized and native titles; the rest live here. */}
+        {altTitles.length > 0 && (
+          <DetailRecord label={t`Also known as`}>
+            {altTitles.map((a, i) => (
+              <span key={i}>
+                {i > 0 && ', '}
+                <span lang={a.language ?? undefined}>{a.title}</span>
+                {altTitleLabel(a).slice(a.title.length)}
+              </span>
+            ))}
           </DetailRecord>
         )}
         {detail.contentRating && (

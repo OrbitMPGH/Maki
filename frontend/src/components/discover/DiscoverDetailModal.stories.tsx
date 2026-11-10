@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test'
-import { http } from 'msw'
+import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
 import {
   catalogueItem,
@@ -8,6 +8,7 @@ import {
   ownedItem,
   resetTabState,
 } from '../../../.storybook/mocks/discover'
+import { detailFor } from '../../../.storybook/mocks/discover/fixtures'
 import { shortlistMock } from '../../../.storybook/mocks/shortlist'
 import { DiscoverDetailModal } from './DiscoverDetailModal'
 
@@ -43,6 +44,28 @@ export const Default: Story = {
   },
 }
 
+const LONG_TITLE =
+  "I Was Reborn as the Lighthouse Keeper's Overly Honest Cartographer, and Now the Whole Salt Coast Wants Me to Redraw Every Border Before the Tide Comes In"
+
+/** A light-novel length title: capped at three lines so the band leaves the body its room. */
+export const LongTitle: Story = {
+  args: { item: { ...catalogueItem(0), title: LONG_TITLE } },
+  parameters: {
+    msw: discoverPage(
+      http.get(api('/recommendations/detail/:id'), ({ params }) =>
+        HttpResponse.json({ ...detailFor(String(params.id)), title: LONG_TITLE }),
+      ),
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const dialog = await dialogOf(canvasElement)
+    const heading = await within(dialog).findByRole('heading', { name: LONG_TITLE })
+    await expect(heading).toHaveAttribute('data-length', 'long')
+    await expect(await within(dialog).findByRole('img', { name: /^Score / })).toBeVisible()
+    await expect(await within(dialog).findByRole('button', { name: 'Add to library' })).toBeVisible()
+  },
+}
+
 export const Closed: Story = {
   args: { item: null },
 }
@@ -75,7 +98,7 @@ export const InLibrary: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await dialogOf(canvasElement)
     await expect(await within(dialog).findByRole('button', { name: 'View in library' })).toBeVisible()
-    await expect(within(dialog).queryByRole('button', { name: 'Preview first chapter' })).toBeNull()
+    await expect(within(dialog).queryByRole('button', { name: 'Preview' })).toBeNull()
   },
 }
 
@@ -139,7 +162,7 @@ export const ReaderAsksForTitle: Story = {
 export const OpenPreviewReader: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await dialogOf(canvasElement)
-    await userEvent.click(await within(dialog).findByRole('button', { name: 'Preview first chapter' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Preview' }))
     await expect(await within(canvasElement.ownerDocument.body).findByRole('button', { name: 'Close preview' })).toBeVisible()
   },
 }

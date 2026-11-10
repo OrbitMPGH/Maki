@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Alert, Badge, Button, Group, Paper, Select, Stack, Switch, Text, Title, Tooltip } from '@mantine/core'
+import { Alert, Badge, Button, Group, Select, Stack, Switch, Text, Title, Tooltip } from '@mantine/core'
 import { notifications } from '../../lib/toast'
-import { IconArrowRight, IconBell, IconCheck, IconEyeOff, IconFolder, IconPlus } from '../../lib/icons'
+import { IconArrowRight, IconCheck, IconPlus } from '../../lib/icons'
 import {
   useAddSeries,
   useLibrarySettings,
@@ -23,6 +23,14 @@ import { useIncognitoOptions, type IncognitoMode } from '../ui/incognito'
 import { useLabel } from '../../i18n-context'
 import { MONITOR_OPTIONS, MONITOR_SHORT } from '../series/SeriesActionsMenu'
 import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
+
+/** Mantine's Select laid out as one row: the label on the left, the value right-aligned. */
+const ADD_ROW = {
+  root: 'discover-add-row',
+  label: 'discover-add-label',
+  wrapper: 'discover-add-field',
+  input: 'discover-add-input',
+}
 
 /**
  * What this modal can actually do with the series it is showing: add it, ask an admin for it, or
@@ -203,12 +211,7 @@ export function DiscoverLibraryRail({
   }
 
   return (
-    <Paper
-      withBorder
-      radius="lg"
-      p="md"
-      className="series-hero-panel"
-    >
+    <div className="discover-add-panel">
       {seriesId != null && archived ? (
         <>
           <Group gap="sm" justify="space-between" wrap="nowrap">
@@ -262,95 +265,93 @@ export function DiscoverLibraryRail({
           </Alert>
         </>
       ) : canAdd ? (
-        // Every control here carries its own meaning, so none of them gets a field label: the path
-        // reads as a path, and the monitor and incognito selects spell their own state.
-        // This panel sits inside the band beside the title, and four labels' worth of height is
-        // what pushed the band past the poster.
-        <Stack gap={10}>
-          {/* A root folder is an absolute host path, so it gets the panel's full width and still
-              truncates; the dropdown is where the whole path is legible. */}
-          <Select
-            aria-label={t`Root folder`}
-            placeholder={t`Root folder`}
-            leftSection={<IconFolder size={16} />}
-            data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
-            value={rootFolderId}
-            onChange={setRootFolderId}
-            size="xs"
-            comboboxProps={{ zIndex: 1001, width: 340, position: 'bottom-end' }}
-          />
-          <Select
-            aria-label={t`Quality profile`}
-            placeholder={t`Instance default`}
-            data={(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name }))}
-            value={upgradeProfileId}
-            onChange={setUpgradeProfileId}
-            clearable
-            size="xs"
-            comboboxProps={{ zIndex: 1001, position: 'bottom-end' }}
-          />
-          {/* Pre-filled from the content-rating rules, so an explicit pick here is the exception
-              rather than something to remember on every add. */}
-          <Tooltip
-            label={t`Keeps this series out of tracker pushes, and out of stats entirely on Full.`}
-            withArrow
-            zIndex={1001}
-          >
+        // Label and value rows rather than four boxed fields, so the settings read as the quiet
+        // part of the card and the add button under them as the thing to do.
+        <Stack gap={0}>
+          <div className="discover-add-rows">
+            {/* A root folder is an absolute host path, so it truncates; the dropdown is where the
+                whole path is legible. */}
             <Select
-              aria-label={t`Incognito`}
-              leftSection={<IconEyeOff size={16} />}
-              data={incognitoOptions.map(({ value, label: mode }) => ({
-                value,
-                // Deliberately not lower-cased. German capitalises nouns and Turkish has two
-                // different i's, so case-folding a translated label damages it. Named rather than
-                // `o.label` so the placeholder extracts as {mode} instead of {0}.
-                label: t`Incognito: ${mode}`,
-              }))}
-              value={incognito ?? 'Off'}
-              onChange={(value) => {
-                setIncognitoPinned(true)
-                setIncognito((value as IncognitoMode | null) ?? 'Off')
-              }}
+              label={t`Folder`}
+              classNames={ADD_ROW}
+              variant="unstyled"
+              data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
+              value={rootFolderId}
+              onChange={setRootFolderId}
               size="xs"
-              comboboxProps={{ zIndex: 1001 }}
+              comboboxProps={{ zIndex: 1001, width: 340, position: 'bottom-end' }}
             />
-          </Tooltip>
-          <Tooltip label={t`Which new chapters get fetched as they land`} withArrow zIndex={1001}>
             <Select
-              aria-label={t`Monitor`}
-              leftSection={<IconBell size={16} />}
-              // The short name in the closed field, which is narrow here; the full one in the list.
-              data={MONITOR_OPTIONS.map(({ value }) => {
-                const mode = renderLabel(MONITOR_SHORT[value])
-                return { value, label: t`Monitor: ${mode}` }
-              })}
-              renderOption={({ option }) => {
-                const full = MONITOR_OPTIONS.find((o) => o.value === option.value)
-                return full ? renderLabel(full.label) : option.label
-              }}
-              value={shownMonitorMode}
-              onChange={(value) => value && setMonitorMode(value)}
-              allowDeselect={false}
+              label={t`Quality`}
+              classNames={ADD_ROW}
+              variant="unstyled"
+              placeholder={t`Instance default`}
+              data={(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name }))}
+              value={upgradeProfileId}
+              onChange={setUpgradeProfileId}
+              clearable
               size="xs"
-              comboboxProps={{ zIndex: 1001 }}
+              comboboxProps={{ zIndex: 1001, width: 240, position: 'bottom-end' }}
             />
-          </Tooltip>
-          {animeResume && (
-            <AnimeWatchedSwitch
-              coveredTo={animeResume.coveredTo}
-              checked={markAnimeWatched}
-              onChange={setMarkAnimeWatched}
-            />
-          )}
+            <Tooltip label={t`Which new chapters get fetched as they land`} withArrow zIndex={1001}>
+              <Select
+                label={t`Monitor`}
+                classNames={ADD_ROW}
+                variant="unstyled"
+                // The short name in the closed field; the full one in the list.
+                data={MONITOR_OPTIONS.map(({ value }) => ({ value, label: renderLabel(MONITOR_SHORT[value]) }))}
+                renderOption={({ option }) => {
+                  const full = MONITOR_OPTIONS.find((o) => o.value === option.value)
+                  return full ? renderLabel(full.label) : option.label
+                }}
+                value={shownMonitorMode}
+                onChange={(value) => value && setMonitorMode(value)}
+                allowDeselect={false}
+                size="xs"
+                comboboxProps={{ zIndex: 1001, width: 260, position: 'bottom-end' }}
+              />
+            </Tooltip>
+            {/* Pre-filled from the content-rating rules, so an explicit pick here is the exception
+                rather than something to remember on every add. */}
+            <Tooltip
+              label={t`Keeps this series out of tracker pushes, and out of stats entirely on Full.`}
+              withArrow
+              zIndex={1001}
+            >
+              <Select
+                label={t`Incognito`}
+                classNames={ADD_ROW}
+                variant="unstyled"
+                data={incognitoOptions.map(({ value, label }) => ({ value, label }))}
+                value={incognito ?? 'Off'}
+                onChange={(value) => {
+                  setIncognitoPinned(true)
+                  setIncognito((value as IncognitoMode | null) ?? 'Off')
+                }}
+                size="xs"
+                comboboxProps={{ zIndex: 1001, width: 200, position: 'bottom-end' }}
+              />
+            </Tooltip>
+            {animeResume && (
+              <div className="discover-add-row">
+                <AnimeWatchedSwitch
+                  coveredTo={animeResume.coveredTo}
+                  checked={markAnimeWatched}
+                  onChange={setMarkAnimeWatched}
+                />
+              </div>
+            )}
+          </div>
           <Button
             fullWidth
-            mt={2}
-            leftSection={<IconPlus size={16} />}
+            mt="sm"
+            size="md"
+            leftSection={<IconPlus size={18} />}
             onClick={add}
             loading={addSeries.isPending}
             disabled={!rootFolderId}
           >
-            <Trans>Add</Trans>
+            <Trans>Add to library</Trans>
           </Button>
         </Stack>
       ) : myRequest && (myRequest.status === 'Pending' || myRequest.status === 'Processing') ? (
@@ -395,8 +396,7 @@ export function DiscoverLibraryRail({
           />
         </>
       )}
-
-    </Paper>
+    </div>
   )
 }
 

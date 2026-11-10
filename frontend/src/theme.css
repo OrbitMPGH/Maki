@@ -3524,22 +3524,227 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   position: relative;
   z-index: 2;
 }
-/* Preview and Shortlist side by side under the add panel. The preview button's longer labels wrap
-   instead of truncating in the half column. */
-.discover-modal-actions {
+/* --- Discover modal: the band, its figures and the action card ------------ */
+/* At modal scale the band carries a smaller poster and a title capped at three lines, set smaller
+   as it gets longer, so a light-novel title can no longer take the card's height from the synopsis.
+   Scoped to the modal: the Discover page's own hero fits its title its own way. */
+.discover-modal-root .series-hero[data-compact] .series-hero-body {
+  /* Clears the floating close and reroll buttons above the card's top edge. */
+  padding-top: 58px;
+}
+.discover-modal-root .series-hero[data-compact] .series-hero-poster {
+  width: 150px;
+  height: 225px;
+}
+@media (min-width: 56.3125em) {
+  .discover-modal-root .series-hero[data-compact] .series-hero-content {
+    grid-template-columns: minmax(0, 1fr) clamp(260px, 27%, 310px);
+    gap: var(--mantine-spacing-xl);
+  }
+}
+.discover-modal-root .series-hero-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+.discover-modal-root .series-hero[data-compact] .series-hero-title[data-length='medium'] {
+  font-size: clamp(1.6rem, 2.6vw, 2.2rem);
+  line-height: 1.02;
+}
+.discover-modal-root .series-hero[data-compact] .series-hero-title[data-length='long'] {
+  font-size: clamp(1.35rem, 2.1vw, 1.7rem);
+  line-height: 1.1;
+}
+.discover-alt-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* An anime adaptation is a kind, so it takes the anime hue, outlined like the content rating. */
+.series-hero-status[data-kind='anime'] {
+  color: var(--anime);
+  background: color-mix(in srgb, var(--anime) 10%, color-mix(in srgb, var(--app-bg) 45%, transparent));
+  border-color: color-mix(in srgb, var(--anime) 45%, transparent);
+}
+.discover-figures {
+  flex-wrap: nowrap;
+  margin-top: 14px;
+}
+/* On a narrow card the figures wrap among themselves beside the ring, rather than dropping under
+   it as a block and leaving the rule hanging. */
+.discover-figures .hero-stats {
+  flex: 1;
+  min-width: 0;
+}
+/* "19 ch", "~2 h": the unit is set down a step so the number stays the figure. */
+.hero-stat-unit {
+  margin-inline-start: 3px;
+  color: var(--ink-3);
+  font-size: 0.68em;
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0;
+}
+/* The score as a ring in its own gold, the shape Home's level ring and the covers' read ring use. */
+.hero-ring {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+}
+.hero-ring svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.hero-ring-track {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 4.5;
+}
+.hero-ring-fill {
+  fill: none;
+  stroke: var(--rating);
+  stroke-width: 4.5;
+  stroke-linecap: round;
+}
+.hero-ring-n {
+  position: relative;
+  color: var(--ink-hi);
+  font-size: 1.0625rem;
+  line-height: 1;
+}
+/* A rated site with no link to open still shows its mark, as a plain square. */
+.site-mark-static {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+/* One card for everything there is to do with the series: settings, the add itself last, and the
+   lighter actions as its footer. */
+.discover-action-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  min-width: 0;
+}
+.discover-action-card {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-hero);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-object);
+}
+.discover-add-panel {
+  padding: 10px 16px 16px;
+}
+/* Each add setting is a label and its value on one row, the value right-aligned like a setting in
+   Settings rather than a boxed field. */
+.discover-add-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 38px;
+  border-top: 1px solid var(--hairline);
+}
+.discover-add-rows > :first-child {
+  border-top: 0;
+}
+.discover-add-label {
+  flex: none;
+  margin: 0;
+  padding: 0;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-medium);
+}
+.discover-add-field {
+  flex: 1;
+  min-width: 0;
+}
+.discover-add-input.mantine-Input-input {
+  height: 38px;
+  min-height: 38px;
+  padding-inline-start: 0;
+  color: var(--ink);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  text-align: end;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.discover-add-input.mantine-Input-input::placeholder {
+  color: var(--ink-2);
+  opacity: 1;
+}
+.discover-add-row:hover .discover-add-input.mantine-Input-input {
+  color: var(--ink-hi);
+}
+.discover-add-input.mantine-Input-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+.discover-add-row > .mantine-Switch-root {
+  flex: 1;
+  padding-block: 8px;
+}
+.discover-add-row .mantine-Switch-label {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.discover-card-footer {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--mantine-spacing-xs);
-  align-items: start;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--app-bg) 35%, var(--surface-2));
 }
-/* Side by side where both labels fit on one line, otherwise one per row; never a wrapped label. */
-.discover-modal-actions > * {
-  flex: 1 1 auto;
+.discover-card-footer:empty {
+  display: none;
 }
-.discover-modal-actions .preview-chapter-button,
-.discover-modal-actions .shortlist-button {
+.discover-card-footer .feedback-actions {
+  margin-inline-start: auto;
+}
+/* Quiet until pressed: footer actions sit in ink, not the accent a subtle Mantine button takes. */
+.discover-card-footer .mantine-Button-root[data-variant='subtle'],
+.discover-card-footer .mantine-ActionIcon-root[data-variant='subtle'] {
+  color: var(--ink-2);
+}
+.discover-card-footer .mantine-Button-root[data-variant='subtle']:hover,
+.discover-card-footer .mantine-ActionIcon-root[data-variant='subtle']:hover {
+  color: var(--ink-hi);
+  background: var(--surface-hover);
+}
+.discover-card-footer .preview-chapter-button,
+.discover-card-footer .shortlist-button {
   padding-inline: 8px;
   font-size: var(--type-meta);
+}
+.discover-card-footer .mantine-Button-section[data-position='left'] {
+  margin-inline-end: 6px;
+}
+/* The preview's caption takes a line of its own under the footer row. */
+.discover-card-footer-note {
+  flex-basis: 100%;
+  order: 1;
+  padding: 0 8px 4px;
+}
+.discover-card-footer-note:empty {
+  display: none;
 }
 /* MangaBaka's 0-100 score, shown out of 10, top-left. */
 .discover-rating {
