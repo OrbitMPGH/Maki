@@ -7,7 +7,7 @@ import { MetadataSiteIcon } from './MetadataSiteIcon'
 
 /**
  * Clickable external metadata links (MangaBaka / AniList / MAL / …), rendered as
- * small icon buttons. Each opens the site in a new tab. Rendered as buttons (not
+ * small square marks with the site's score beside each when there is one. Each opens the site in a new tab. Rendered as buttons (not
  * anchors) so it can sit inside a clickable card without invalid anchor nesting;
  * the click is stopped from bubbling to the parent. `compact` renders smaller
  * icons for grid cards.
@@ -30,31 +30,36 @@ export function MetadataLinks({
   }
 
   return (
-    <Group gap={compact ? 4 : 'xs'} wrap="wrap">
+    <Group gap={compact ? 8 : 12} wrap="wrap" align="center">
       {links.map((link) => {
         const info = siteInfo(link.site)
         const { label } = info
+        const score = link.score != null ? String(link.score) : null
+        const tip = link.votes != null ? t`${label}, ${link.votes.toLocaleString()} votes` : label
         return (
-          <Tooltip key={link.site} label={t`Open on ${label}`} withArrow openDelay={300}>
-            <ActionIcon
-              size={compact ? 'sm' : 'md'}
-              variant="light"
-              color={info.color}
-              role="link"
-              tabIndex={0}
-              aria-label={t`Open on ${label}`}
-              onClick={(e) => open(e, link.url)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  e.stopPropagation()
-                  window.open(link.url, '_blank', 'noopener,noreferrer')
-                }
-              }}
-            >
-              <MetadataSiteIcon site={link.site} monogram={info.short} size={compact ? 12 : 14} />
-            </ActionIcon>
-          </Tooltip>
+          <span key={link.site} className="site-mark-item">
+            <Tooltip label={tip} withArrow openDelay={300}>
+              <ActionIcon
+                size={compact ? 22 : 26}
+                variant="default"
+                className="site-mark"
+                role="link"
+                tabIndex={0}
+                aria-label={t`Open on ${label}`}
+                onClick={(e) => open(e, link.url)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    window.open(link.url, '_blank', 'noopener,noreferrer')
+                  }
+                }}
+              >
+                <MetadataSiteIcon site={link.site} monogram={info.short} size={compact ? 12 : 14} />
+              </ActionIcon>
+            </Tooltip>
+            {score && <span className="site-mark-score tnum">{score}</span>}
+          </span>
         )
       })}
     </Group>

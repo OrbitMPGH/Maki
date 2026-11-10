@@ -1,12 +1,17 @@
-import { Button, Group, Loader, Stack, Text } from '@mantine/core'
-import { IconAlertTriangle } from '../lib/icons'
+import { Button, Progress, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router-dom'
 import { useLogout } from '../api/auth'
 import { useAuth } from '../auth/AuthProvider'
-import { useDumpProgress, useHomeReading, useMetadataSettings } from '../api/hooks'
+import { useDumpProgress, useHomeReading, useMetadataSettings, type DumpProgress } from '../api/hooks'
 import { AuthFrame } from '../components/auth/AuthFrame'
-import MetadataDumpProgress, { MetadataDumpStatus } from '../components/MetadataDumpProgress'
+import { FigureStrip } from '../components/ui/FigureStrip'
+import { ModalNote } from '../components/ui/ModalShell'
+import { StatusDot } from '../components/ui/StatusDot'
+import { IconClock } from '../lib/icons'
+import { formatBytes, formatPercent, formatReadingTime } from '../format'
+import { useLabel } from '../i18n-context'
+import MetadataDumpProgress, { MetadataDumpStatus, dumpPercent, dumpPhaseLabel } from '../components/MetadataDumpProgress'
 
 /**
  * Stands in front of the SPA while the local MangaBaka database is missing: search, adding series,
@@ -29,12 +34,22 @@ export default function MetadataGatePage() {
   return (
     <AuthFrame
       title={t`Getting the metadata database ready`}
-      subtitle={
-        <Trans>About a 350 MB download. Maki opens as soon as it is installed.</Trans>
-      }
-      footer={
-        <Group justify="center">
+      subtitle={<Trans>About a 350 MB download. Maki opens as soon as it is installed.</Trans>}
+      mood="asleep"
+      cardFooter={
+        <div className="auth-card-actions">
+          {isAdmin && (
+            <>
+              <Button component={Link} to="/settings?tab=library&s=metadata" variant="default" size="xs">
+                <Trans>Open settings</Trans>
+              </Button>
+              <Button component={Link} to="/health" variant="default" size="xs">
+                <Trans>Open health</Trans>
+              </Button>
+            </>
+          )}
           <Button
+            className="auth-card-actions-end"
             variant="subtle"
             color="var(--neutral)"
             size="xs"
@@ -43,47 +58,123 @@ export default function MetadataGatePage() {
           >
             <Trans>Sign out</Trans>
           </Button>
-        </Group>
+        </div>
       }
     >
-      <Stack gap="md">
+      <div style={{ display: 'grid', gap: 16 }}>
         {isAdmin ? (
           <>
             <MetadataDumpProgress quiet />
-            <MetadataDumpStatus metadata={metadata} progress={progress} />
-            <Group gap="xs">
-              <Button component={Link} to="/settings?tab=library&s=metadata" variant="default" size="xs">
-                <Trans>Open settings</Trans>
-              </Button>
-              <Button component={Link} to="/health" variant="default" size="xs">
-                <Trans>Open health</Trans>
-              </Button>
-            </Group>
+            <GateProgress metadata={metadata} progress={progress} />
           </>
         ) : metadata?.dumpDownloadFailed ? (
-          <Group gap="sm" wrap="nowrap" align="flex-start">
-            <IconAlertTriangle size={20} color="var(--warn)" style={{ flexShrink: 0 }} />
-            <Text size="sm">
-              <Trans>
-                The download failed. Maki tries again by itself, and an admin can check what went wrong.
-                This page opens Maki by itself when it is done.
-              </Trans>
-            </Text>
-          </Group>
+          <ModalNote tone="warn">
+            <Trans>
+              The download failed. Maki tries again by itself, and an admin can check what went wrong.
+              This page opens Maki by itself when it is done.
+            </Trans>
+          </ModalNote>
         ) : (
-          <Group gap="sm" wrap="nowrap">
-            <Loader size="sm" />
-            <Text size="sm">
-              <Trans>The server is downloading it now. This page opens Maki by itself when it is done.</Trans>
-            </Text>
-          </Group>
+          <Text size="sm" className="auth-retry-line">
+            <StatusDot tone="info" live />
+            <Trans>The server is downloading it now. This page opens Maki by itself when it is done.</Trans>
+          </Text>
         )}
+        <GateWaitingList />
         <GateReadingList />
-        <Text size="xs" c="var(--ink-3)">
-          <Trans>Reading apps connected over OPDS, Komga or KOReader keep working in the meantime.</Trans>
-        </Text>
-      </Stack>
+      </div>
     </AuthFrame>
+  )
+}
+
+/** The bar and its numbers while a download is running; the shared status (ready, failed, retry) otherwise. */
+function GateProgress({
+  metadata,
+  progress,
+}: {
+  metadata: Parameters<typeof MetadataDumpStatus>[0]['metadata']
+  progress: DumpProgress | undefined
+}) {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
+  if (metadata?.dumpPresent || !progress?.running) {
+    return <MetadataDumpStatus metadata={metadata} progress={progress} />
+  }
+  const percent = dumpPercent(progress)
+  const phaseLabel = renderLabel(dumpPhaseLabel(progress.phase))
+  const downloading = progress.phase === 'downloading'
+  const total = progress.totalBytes ? formatBytes(progress.totalBytes) : null
+  return (
+    <div>
+      <div className="auth-wait-row" style={{ padding: 0, minHeight: 0, marginBottom: 6 }}>
+        <Text size="sm" fw={600} c="var(--ink-hi)">
+          {phaseLabel}
+        </Text>
+        {percent !== null && (
+          <Text size="sm" c="var(--ink-2)" className="tnum">
+            {formatPercent(percent / 100)}
+          </Text>
+        )}
+      </div>
+      <Progress
+        value={percent ?? 100}
+        animated={percent === null}
+        color="var(--info)"
+        size="md"
+        radius="xl"
+        aria-label={phaseLabel}
+      />
+      {downloading && (
+        <div style={{ marginTop: 12 }}>
+          <FigureStrip
+            className="auth-gate-figures"
+            figures={[
+              {
+                label: t`Downloaded`,
+                value: formatBytes(progress.downloadedBytes),
+                hint: total ? t`of ${total}` : undefined,
+                zero: false,
+              },
+              ...(progress.bytesPerSecond
+                ? [{ label: t`Speed`, value: `${formatBytes(progress.bytesPerSecond)}/s`, zero: false }]
+                : []),
+              ...(progress.estimatedSecondsRemaining !== null
+                ? [{ label: t`Left`, value: formatReadingTime(progress.estimatedSecondsRemaining), zero: false }]
+                : []),
+            ]}
+          />
+        </div>
+      )}
+    </div>
+  )
+}
+
+function GateWaitingList() {
+  return (
+    <div>
+      <div className="auth-label">
+        <Trans>What is waiting for it</Trans>
+      </div>
+      <div className="auth-wait-list">
+        <div className="auth-wait-row">
+          <span>
+            <Trans>Search, adding series, imports and Discover</Trans>
+          </span>
+          <span className="auth-wait-state">
+            <IconClock size={14} aria-hidden />
+            <Trans>Waiting</Trans>
+          </span>
+        </div>
+        <div className="auth-wait-row">
+          <span>
+            <Trans>Reader, OPDS, Komga and KOReader</Trans>
+          </span>
+          <StatusDot tone="ok">
+            <Trans>Working</Trans>
+          </StatusDot>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -101,10 +192,10 @@ function GateReadingList() {
   if (items.length === 0) return null
 
   return (
-    <Stack component="section" gap={2} aria-label={t`Continue reading`}>
-      <Text size="xs" c="var(--ink-3)" mb={2}>
+    <section aria-label={t`Continue reading`}>
+      <div className="auth-label">
         <Trans>Continue reading</Trans>
-      </Text>
+      </div>
       {items.map(({ chapterId, coverUrl, seriesTitle, chapterLabel }) => (
         <Link key={chapterId} to={`/read/${chapterId}`} className="next-up-row">
           <span className="next-up-thumb">
@@ -116,6 +207,6 @@ function GateReadingList() {
           </span>
         </Link>
       ))}
-    </Stack>
+    </section>
   )
 }

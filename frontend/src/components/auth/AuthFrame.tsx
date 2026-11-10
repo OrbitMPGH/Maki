@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { Paper, Text, Title } from '@mantine/core'
+import { Text, Title } from '@mantine/core'
 import { useLingui } from '@lingui/react/macro'
 import { getInitialize } from '../../api/client'
 import { IconBrandMark, type BrandMood } from '../IconBrandMark'
@@ -136,12 +136,15 @@ export function AuthFrame({
   subtitle,
   children,
   footer,
+  cardFooter,
   mood = 'awake',
 }: {
   title: string
   subtitle?: ReactNode
   children: ReactNode
   footer?: ReactNode
+  /** Inside the card under a hairline: actions or a note that belongs to this screen. */
+  cardFooter?: ReactNode
   /** The mascot's face: asking while the form shows an error, pleased on the way in. */
   mood?: BrandMood
 }) {
@@ -174,17 +177,16 @@ export function AuthFrame({
         </div>
 
         <div className="auth-column">
-          <Paper withBorder radius="lg" p="lg" className="series-hero-panel auth-panel">
-            <Title order={2} className="auth-panel-title">
-              {title}
-            </Title>
-            {subtitle && (
-              <Text fz="sm" c="var(--ink-3)" mt={6}>
-                {subtitle}
-              </Text>
-            )}
-            <div className="auth-panel-body">{children}</div>
-          </Paper>
+          <div className="auth-panel auth-card">
+            <header className="auth-card-head">
+              <Title order={2} className="auth-panel-title">
+                {title}
+              </Title>
+              {subtitle && <Text className="auth-card-description">{subtitle}</Text>}
+            </header>
+            <div className="auth-card-body">{children}</div>
+            {cardFooter && <div className="auth-card-foot">{cardFooter}</div>}
+          </div>
           {footer}
         </div>
       </div>

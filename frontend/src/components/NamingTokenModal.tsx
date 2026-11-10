@@ -1,20 +1,12 @@
 import { useMemo, useRef, useState } from 'react'
-import {
-  Code,
-  Divider,
-  Group,
-  Modal,
-  Select,
-  Stack,
-  Text,
-  TextInput,
-  UnstyledButton,
-} from '@mantine/core'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Button, Code, Modal, Select, Text, TextInput } from '@mantine/core'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useNamingTokens, type NamingToken } from '../api/hooks'
+import { IconPlus } from '../lib/icons'
+import { ModalFooter, ModalHeading, ModalNote } from './ui/ModalShell'
 
 /**
  * The separator and case pickers rewrite the token text itself rather than setting anything
@@ -58,48 +50,6 @@ function respell(token: string, separator: string, textCase: string) {
         ? separated.toUpperCase()
         : separated
   return `{${cased}}`
-}
-
-function TokenRow({ token, spelling, onPick }: {
-  token: NamingToken
-  spelling: string
-  onPick: (spelling: string) => void
-}) {
-  return (
-    <UnstyledButton
-      onClick={() => onPick(spelling)}
-      title={token.description}
-      style={{ display: 'block', width: '100%' }}
-    >
-      <Group
-        gap={0}
-        wrap="nowrap"
-        style={{
-          border: '1px solid var(--mantine-color-default-border)',
-          borderRadius: 'var(--mantine-radius-sm)',
-          overflow: 'hidden',
-        }}
-      >
-        <Code
-          style={{
-            flex: '0 0 55%',
-            padding: '8px 10px',
-            background: 'var(--mantine-color-default-hover)',
-            borderRadius: 0,
-          }}
-        >
-          {spelling}
-        </Code>
-        <Text size="sm" px="sm" py={8} truncate style={{ flex: 1 }}>
-          {token.example || (
-            <Text span c="var(--ink-3)" size="sm">
-              <Trans>(blank when unset)</Trans>
-            </Text>
-          )}
-        </Text>
-      </Group>
-    </UnstyledButton>
-  )
 }
 
 export function NamingTokenModal({
@@ -148,71 +98,116 @@ export function NamingTokenModal({
     return [...groups.entries()]
   }, [tokens])
 
+  const tokenCount = categories.reduce((n, [, list]) => n + list.length, 0)
+
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Naming tokens`} size="xl">
-      <Group justify="flex-end" gap="sm" mb="md">
-        <Select
-          data={separatorOptions}
-          value={separator}
-          onChange={(value) => setSeparator(value ?? ' ')}
-          allowDeselect={false}
-          w={180}
-          aria-label={t`Token separator`}
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      size="xl"
+      title={
+        <ModalHeading
+          title={t`Naming tokens`}
+          description={<Trans>Build the file name from these tokens. Click one to insert it.</Trans>}
+        />
+      }
+    >
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+        <TextInput
+          aria-label={t`Naming format`}
+          label={t`Naming format`}
+          ref={input}
+          value={format}
+          spellCheck={false}
+          styles={{ input: { fontFamily: 'var(--mantine-font-family-monospace)' } }}
+          style={{ flex: '2 1 240px' }}
+          onChange={(e) => onChange(e.currentTarget.value)}
         />
         <Select
+          label={t`Token case`}
           data={caseOptions}
           value={textCase}
           onChange={(value) => setTextCase(value ?? 'default')}
           allowDeselect={false}
-          w={180}
+          style={{ flex: '1 1 140px' }}
           aria-label={t`Token case`}
         />
-      </Group>
+        <Select
+          label={t`Token separator`}
+          data={separatorOptions}
+          value={separator}
+          onChange={(value) => setSeparator(value ?? ' ')}
+          allowDeselect={false}
+          style={{ flex: '1 1 140px' }}
+          aria-label={t`Token separator`}
+        />
+      </div>
 
-      <Text size="sm" c="var(--ink-3)" mb="md">
-        <Trans>Click a token to insert it.</Trans>{' '}
+      <ModalNote tone="info">
         <Trans>
           A token with no value for a given series renders as nothing, and the surrounding spaces and
           empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its
           title.
-        </Trans>
-      </Text>
-
-      <Stack gap="lg">
-        {categories.map(([category, list]) => (
-          <div key={category}>
-            <Text fw={600} size="sm" mb={4}>
-              {category}
-            </Text>
-            <Divider mb="xs" />
-            <Stack gap={6}>
-              {list.map((token) => (
-                <TokenRow
-                  key={token.token}
-                  token={token}
-                  spelling={respell(token.token, separator, textCase)}
-                  onPick={insert}
-                />
-              ))}
-            </Stack>
-          </div>
-        ))}
-      </Stack>
-
-      <Divider my="md" />
-      <Text size="sm" c="var(--ink-3)" mb={4}>
+        </Trans>{' '}
         <Trans>
           Chapter number and volume also take zero-padding: <Code>{paddingExampleToken}</Code>{' '}
           renders 24 as 024.
         </Trans>
-      </Text>
-      <TextInput
-        aria-label={t`Naming format`}
-        ref={input}
-        value={format}
-        spellCheck={false}
-        onChange={(e) => onChange(e.currentTarget.value)}
-      />
+      </ModalNote>
+
+      {categories.map(([category, list]) => (
+        <table key={category} className="token-table" style={{ marginTop: 12 }}>
+          <colgroup>
+            <col className="token-col-token" />
+            <col />
+            <col className="token-col-example" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col">
+                {category}
+              </th>
+              <th scope="col">
+                <Trans>Inserts</Trans>
+              </th>
+              <th scope="col">
+                <Trans>Example</Trans>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {list.map((token) => {
+              const spelling = respell(token.token, separator, textCase)
+              return (
+                <tr key={token.token} onClick={() => insert(spelling)} style={{ cursor: 'pointer' }}>
+                  <td>
+                    <button type="button" className="token-pick" onClick={(e) => { e.stopPropagation(); insert(spelling) }}>
+                      {spelling}
+                      <IconPlus size={12} aria-hidden />
+                    </button>
+                  </td>
+                  <td>
+                    <Text component="span" size="sm" c="var(--ink-3)">
+                      {token.description}
+                    </Text>
+                  </td>
+                  <td>
+                    <span className="token-example" data-blank={token.example ? undefined : 'true'}>
+                      {token.example || <Trans>(blank when unset)</Trans>}
+                    </span>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      ))}
+
+      <ModalFooter status={<Plural value={tokenCount} one="# token" other="# tokens" />}>
+        <Button onClick={onClose}>
+          <Trans>Done</Trans>
+        </Button>
+      </ModalFooter>
     </Modal>
   )
 }

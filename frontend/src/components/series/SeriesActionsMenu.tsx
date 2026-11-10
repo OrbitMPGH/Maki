@@ -1,4 +1,4 @@
-import { ActionIcon, Group, Loader, Menu, Text, UnstyledButton, VisuallyHidden } from '@mantine/core'
+import { ActionIcon, Group, Menu, Text, UnstyledButton, VisuallyHidden } from '@mantine/core'
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import {
   IconArchive,
@@ -38,6 +38,7 @@ import type { UpgradeProfileDto } from '../../api/upgrades'
 import { PAGE_CONVERSION_STOPS, type PageConversionStop } from '../../api/pageConversion'
 import { STOP_HINTS, STOP_LABELS } from '../pageconversion/labels'
 import { DrillPanes } from '../ui/DrillPanes'
+import { StatusDot } from '../ui/StatusDot'
 
 /** Sentinel for "Instance default" in the profile RadioGroup, which only carries strings. */
 const INSTANCE_DEFAULT = ''
@@ -272,7 +273,8 @@ export function SeriesActionsMenu({
             {text}
         </Text>
     )
-    const drill = (to: Page, icon: ReactNode, title: ReactNode, current?: ReactNode) => (
+    const workingDot = <StatusDot tone="info" live aria-hidden />
+    const drill = (to: Page, icon: ReactNode, title: ReactNode, current?: ReactNode, busy = false) => (
         <Menu.Item
             data-page={to}
             leftSection={icon}
@@ -280,6 +282,7 @@ export function SeriesActionsMenu({
             onClick={() => go(to)}
             rightSection={
                 <Group gap={6} wrap="nowrap">
+                    {busy && workingDot}
                     {current !== undefined && value(current)}
                     <IconChevronRight size={16} color="var(--ink-3)" />
                 </Group>
@@ -445,7 +448,9 @@ export function SeriesActionsMenu({
                             <>
                                 {reason}
                                 <Menu.Item
-                                    leftSection={refreshingChapters ? <Loader size={16} /> : <IconRefresh size={16} />}
+                                    leftSection={<IconRefresh size={16} />}
+                                    rightSection={refreshingChapters ? workingDot : undefined}
+                                    aria-busy={refreshingChapters || undefined}
                                     disabled={refreshingChapters}
                                     onClick={whenOn(onRefreshChapters)}
                                     {...offProps}
@@ -453,7 +458,9 @@ export function SeriesActionsMenu({
                                     <Trans>Refresh chapters</Trans>
                                 </Menu.Item>
                                 <Menu.Item
-                                    leftSection={refreshingMetadata ? <Loader size={16} /> : <IconPhoto size={16} />}
+                                    leftSection={<IconPhoto size={16} />}
+                                    rightSection={refreshingMetadata ? workingDot : undefined}
+                                    aria-busy={refreshingMetadata || undefined}
                                     disabled={refreshingMetadata}
                                     onClick={onRefreshMetadata}
                                 >
@@ -465,10 +472,10 @@ export function SeriesActionsMenu({
                                 <Menu.Divider />
                             </>
                         )}
-                        {hasFiles && drill('files', <IconFolder size={16} />, <Trans>Files</Trans>)}
+                        {hasFiles && drill('files', <IconFolder size={16} />, <Trans>Files</Trans>, undefined, rescanning)}
                         {/* A reader's Automation page would hold Notify alone, so for them it sits here. */}
                         {canEdit ? drill('automation', <IconEye size={16} />, <Trans>Automation</Trans>) : notifyField}
-                        {hasUpgrades && drill('upgrades', <IconCircleArrowUp size={16} />, <Trans>Upgrades</Trans>)}
+                        {hasUpgrades && drill('upgrades', <IconCircleArrowUp size={16} />, <Trans>Upgrades</Trans>, undefined, scanningUpgrades || searchingVolumes)}
                         {offlineSaved !== undefined &&
                             drill('device', <IconDeviceMobile size={16} />, <Trans>This device</Trans>)}
                         {(canArchive || canRemove) && <Menu.Divider />}
@@ -508,7 +515,9 @@ export function SeriesActionsMenu({
                         {canEdit && (
                             <>
                                 <Menu.Item
-                                    leftSection={rescanning ? <Loader size={16} /> : <IconScan size={16} />}
+                                    leftSection={<IconScan size={16} />}
+                                    rightSection={rescanning ? workingDot : undefined}
+                                    aria-busy={rescanning || undefined}
                                     disabled={rescanning}
                                     onClick={onRescan}
                                 >
@@ -567,7 +576,9 @@ export function SeriesActionsMenu({
                         {canEdit && drill('profile', <IconRanking size={16} />, <Trans>Quality profile</Trans>, upgradeProfileLabel)}
                         {canScanUpgrades && (
                             <Menu.Item
-                                leftSection={scanningUpgrades ? <Loader size={16} /> : <IconRefresh size={16} />}
+                                leftSection={<IconRefresh size={16} />}
+                                    rightSection={scanningUpgrades ? workingDot : undefined}
+                                    aria-busy={scanningUpgrades || undefined}
                                 disabled={scanningUpgrades}
                                 onClick={whenOn(onScanUpgrades)}
                                 {...offProps}
@@ -577,7 +588,9 @@ export function SeriesActionsMenu({
                         )}
                         {canScanUpgrades && (
                             <Menu.Item
-                                leftSection={searchingVolumes ? <Loader size={16} /> : <IconSearch size={16} />}
+                                leftSection={<IconSearch size={16} />}
+                                    rightSection={searchingVolumes ? workingDot : undefined}
+                                    aria-busy={searchingVolumes || undefined}
                                 disabled={searchingVolumes}
                                 onClick={whenOn(onSearchVolumes)}
                                 {...offProps}

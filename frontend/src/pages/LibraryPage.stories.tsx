@@ -67,7 +67,7 @@ export const ArchivedViewList: Story = {
   parameters: { router: { path: '/library/archived', initialEntries: ['/library/archived'] }, msw: archivedLibraryHandlers },
   beforeEach: () => seedLibraryPrefs({ view: 'list' }),
   play: async ({ canvasElement }) => {
-    await waitFor(() => expect(canvasElement.querySelectorAll('.series-row')).toHaveLength(3))
+    await waitFor(() => expect(canvasElement.querySelectorAll('.archived-row')).toHaveLength(3))
   },
 }
 

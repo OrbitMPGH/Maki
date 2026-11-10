@@ -115,6 +115,9 @@ export function SignalsCard() {
     return ids
   }, [lab])
 
+  const statusOf = useEventStatus()
+  const shelfInfo = useShelfInfo()
+
   if (lab && !lab.capabilities.labUi) return null
 
   const summary = lab?.summary
@@ -140,9 +143,6 @@ export function SignalsCard() {
       setActionError(errorText(cause))
     }
   }
-
-  const statusOf = useEventStatus()
-  const shelfInfo = useShelfInfo()
 
   return (
     <>

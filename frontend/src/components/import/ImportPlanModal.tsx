@@ -1,18 +1,18 @@
 import { useId, useMemo, useState } from 'react'
 import {
-  Alert,
   Badge,
+  Button,
   Collapse,
   Group,
-  Loader,
   Modal,
   SegmentedControl,
+  Skeleton,
   Stack,
   Text,
   TextInput,
   UnstyledButton,
 } from '@mantine/core'
-import { IconAlertTriangle, IconArrowRight, IconChevronDown, IconInfoCircle, IconSearch } from '../../lib/icons'
+import { IconArrowRight, IconChevronDown, IconSearch } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -28,6 +28,7 @@ import { formatBytes } from '../../format'
 import { useLabel } from '../../i18n-context'
 import { FigureStrip } from '../ui/FigureStrip'
 import { MetaList } from '../ui/MetaList'
+import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
 
 /** What the import builds a CBZ from (`ComicSourceKind`). */
 const KIND_LABELS: Record<string, MessageDescriptor> = {
@@ -166,7 +167,9 @@ function FileAction({ file }: { file: ImportPlanFile }) {
     case 'build': {
       const kind = label(KIND_LABELS[file.kind] ?? file.kind)
       return source && source !== '.' ? (
-        <Trans>CBZ built from {kind} ({source}), the original stays</Trans>
+        <Trans>
+          CBZ built from {kind} ({source}), the original stays
+        </Trans>
       ) : (
         <Trans>CBZ built from {kind}, the original stays</Trans>
       )
@@ -188,7 +191,7 @@ function FileRow({ file, deferred }: { file: ImportPlanFile; deferred: boolean }
   return (
     <div className="import-plan-file" data-warn={warn || undefined}>
       <div className="import-plan-file-name">
-        <Text size="xs" fw={500} lineClamp={1} title={name} style={{ overflowWrap: 'anywhere' }}>
+        <Text size="xs" lineClamp={1} title={name} className="modal-mono-text" style={{ overflowWrap: 'anywhere' }}>
           {name}
         </Text>
         {odd && (
@@ -273,13 +276,13 @@ function FolderHead({ plan }: { plan: ImportPlan }) {
   const title = seriesTitle ?? folderName
   return (
     <span className="import-plan-folder-line">
-      <Text span size="sm" fw={600} style={{ overflowWrap: 'anywhere' }}>
+      <Text span size="sm" className="modal-mono-text" style={{ overflowWrap: 'anywhere' }}>
         {folderName}
       </Text>
       {!plan.error && plan.folderAction !== 'keep' && (
         <>
           <IconArrowRight size={16} className="import-plan-arrow" aria-hidden />
-          <Text span size="sm" fw={600} c="var(--ink-2)" style={{ overflowWrap: 'anywhere' }}>
+          <Text span size="sm" className="modal-mono-text" style={{ overflowWrap: 'anywhere' }}>
             {targetFolderName}
           </Text>
         </>
@@ -290,7 +293,7 @@ function FolderHead({ plan }: { plan: ImportPlan }) {
         </Badge>
       ) : (
         plan.existingSeriesId !== null && (
-          <Badge size="xs" variant="light">
+          <Badge size="sm" variant="light" color="var(--ok)">
             <Trans>In library</Trans>
           </Badge>
         )
@@ -406,8 +409,16 @@ function PlanList({ plans }: { plans: ImportPlan[] }) {
     { label: t`Files`, value: allFiles.length },
     { label: t`Renamed`, value: renamed.length },
     { label: t`CBZs built`, value: allFiles.filter(isBuilt).length },
-    { label: t`Stay unlinked`, value: allFiles.filter((f) => f.unlinked).length, tone: 'warn' as const },
-    { label: t`Left out`, value: plans.reduce((n, p) => n + (p.skipped?.length ?? 0), 0), tone: 'warn' as const },
+    {
+      label: t`Stay unlinked`,
+      value: allFiles.filter((f) => f.unlinked).length,
+      tone: 'warn' as const,
+    },
+    {
+      label: t`Left out`,
+      value: plans.reduce((n, p) => n + (p.skipped?.length ?? 0), 0),
+      tone: 'warn' as const,
+    },
     ...(errors > 0 ? [{ label: t`Can't import`, value: errors, tone: 'danger' as const }] : []),
   ]
 
@@ -432,8 +443,16 @@ function PlanList({ plans }: { plans: ImportPlan[] }) {
           value={filter}
           onChange={(v) => setFilter(v as Filter)}
           data={[
-            { value: 'look', label: t`Worth a look (${lookCount})`, disabled: lookCount === 0 },
-            { value: 'renamed', label: t`Renamed (${renamedCount})`, disabled: renamedCount === 0 },
+            {
+              value: 'look',
+              label: t`Worth a look (${lookCount})`,
+              disabled: lookCount === 0,
+            },
+            {
+              value: 'renamed',
+              label: t`Renamed (${renamedCount})`,
+              disabled: renamedCount === 0,
+            },
             { value: 'all', label: t`All (${total})` },
           ]}
         />
@@ -450,8 +469,8 @@ function PlanList({ plans }: { plans: ImportPlan[] }) {
       {filter === 'look' && (
         <Text size="xs" c="var(--ink-3)">
           <Trans>
-            Folders with files that may not link, files left out, or files Maki changes. Everything else is
-            registered as it is.
+            Folders with files that may not link, files left out, or files Maki changes. Everything else is registered
+            as it is.
           </Trans>
         </Text>
       )}
@@ -488,33 +507,38 @@ export function ImportPlanModal({
   const deferred = plan.data?.some((p) => !p.error && p.linkDeferred) ?? false
   const plans = plan.data ?? []
 
+  const failed = plans.filter((p) => p.error).length
+  const ready = plans.length - failed
+
   return (
     <Modal
       opened
       onClose={onClose}
-      title={t`Import preview`}
+      title={
+        <ModalHeading
+          title={t`Import preview`}
+          description={<Trans>Nothing has been changed. This is what importing would do.</Trans>}
+        />
+      }
       size="xl"
       attributes={{ body: { tabIndex: 0 } }}
     >
       <Stack gap="sm">
-        <Text size="sm" c="var(--ink-2)">
-          <Trans>Nothing has been changed. This is what importing would do.</Trans>
-        </Text>
         {deferred && (
-          <Alert color="var(--info)" icon={<IconInfoCircle size={16} />}>
+          <ModalNote tone="info">
             <Trans>Chapters below are read off the file names until sources are found.</Trans>
-          </Alert>
+          </ModalNote>
         )}
         {plan.isPending && (
-          <Group justify="center" py="lg">
-            <Loader size="sm" />
-          </Group>
+          <div className="import-plan-folders" aria-busy="true">
+            {[52, 40, 46].map((w) => (
+              <div key={w} className="import-plan-folder-head">
+                <Skeleton h={12} w={`${w}%`} />
+              </div>
+            ))}
+          </div>
         )}
-        {plan.isError && (
-          <Alert color="var(--danger)" icon={<IconAlertTriangle size={16} />}>
-            {errorText(plan.error)}
-          </Alert>
-        )}
+        {plan.isError && <ModalNote>{errorText(plan.error)}</ModalNote>}
         {plans.length >= SEARCH_FROM ? (
           <PlanList plans={plans} />
         ) : (
@@ -527,6 +551,25 @@ export function ImportPlanModal({
           )
         )}
       </Stack>
+      <ModalFooter
+        status={
+          plan.isPending ? (
+            <Trans>Reading the folders…</Trans>
+          ) : plans.length > 0 ? (
+            failed > 0 ? (
+              <Trans>
+                <Plural value={ready} one="# folder ready" other="# folders ready" />, {failed} can't import
+              </Trans>
+            ) : (
+              <Plural value={ready} one="# folder ready" other="# folders ready" />
+            )
+          ) : null
+        }
+      >
+        <Button variant="default" onClick={onClose}>
+          <Trans>Close</Trans>
+        </Button>
+      </ModalFooter>
     </Modal>
   )
 }

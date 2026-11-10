@@ -302,3 +302,12 @@ export const RefreshRunning: Story = {
     await waitFor(() => expect(ctx.args.onEditMetadata).toHaveBeenCalledOnce())
   },
 }
+
+/** A scan in the Files group shows a pulsing dot on the group row at the root. */
+export const GroupBusy: Story = {
+  args: { rescanning: true },
+  play: async (ctx) => {
+    await openAt(ctx)
+    await waitFor(() => expect(document.querySelectorAll('.status-dot[data-live]').length).toBeGreaterThan(0))
+  },
+}

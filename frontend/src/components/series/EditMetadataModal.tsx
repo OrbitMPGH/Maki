@@ -15,7 +15,7 @@ import {
 } from '@mantine/core'
 import { notifications } from '../../lib/toast'
 import { IconArrowBackUp, IconLock, IconUpload } from '../../lib/icons'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { MetadataField, SeriesDto } from '../../api/types'
 import {
   type EditMetadataRequest,
@@ -26,6 +26,7 @@ import {
 import { seriesStatusVisual } from '../ui/status'
 import { useLabel } from '../../i18n-context'
 import { GENRE_LABELS } from '../CatalogueFilters'
+import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
 
 const STATUSES = ['Unknown', 'Ongoing', 'Completed', 'Hiatus', 'Cancelled']
 const GENRE_SUGGESTIONS = Object.keys(GENRE_LABELS)
@@ -163,7 +164,7 @@ export function EditMetadataModal({
   const fieldLabel = (field: MetadataField, label: ReactNode) => (
     <Group gap={6} wrap="nowrap" component="span" style={{ display: 'inline-flex' }}>
       {label}
-      {locked(field) && <MetadataLock />}
+      {locked(field) && <MetadataLock label />}
     </Group>
   )
 
@@ -177,30 +178,46 @@ export function EditMetadataModal({
   )
 
   return (
-    <Modal opened={opened} onClose={close} title={t`Edit metadata`} size="lg" centered>
+    <Modal
+      opened={opened}
+      onClose={close}
+      size="lg"
+      centered
+      title={
+        <ModalHeading
+          title={<Trans>Edit metadata</Trans>}
+          description={<Trans>Values you set here win over the provider until you reset them.</Trans>}
+        />
+      }
+    >
       <Stack gap="xs">
-        <Text size="sm" c="var(--ink-3)">
-          <Trans>
-            A field you save is locked, so metadata refreshes leave it alone. It applies to everyone who can see this
-            series.
-          </Trans>
-        </Text>
+        <ModalNote tone="info">
+          <Trans>A field you save is locked, so metadata refreshes leave it alone. It applies to everyone who can see this series.</Trans>
+        </ModalNote>
 
         <Group align="flex-start" gap="md" wrap="nowrap" mt="xs">
           {series.coverUrl && (
             <img
               src={series.coverUrl}
               alt=""
-              style={{ width: 72, borderRadius: 'var(--mantine-radius-sm)', objectFit: 'cover', flexShrink: 0 }}
+              style={{
+                width: 72,
+                borderRadius: 'var(--mantine-radius-sm)',
+                border: '1px solid var(--border)',
+                objectFit: 'cover',
+                flexShrink: 0,
+              }}
             />
           )}
           <Stack gap={4} style={{ flex: 1 }}>
             <Text size="sm" fw={500}>
               {fieldLabel('cover', <Trans>Poster</Trans>)}
             </Text>
-            <Text size="xs" c="var(--ink-3)">
-              <Trans>JPEG, PNG, GIF or WebP, up to 10 MB.</Trans>
-            </Text>
+            {locked('cover') && (
+              <Text size="sm" c="var(--ink-2)">
+                <Trans>Set by hand. Metadata refreshes leave it alone.</Trans>
+              </Text>
+            )}
             <Group gap="xs">
               <FileButton
                 accept={COVER_TYPES}
@@ -217,6 +234,9 @@ export function EditMetadataModal({
               </FileButton>
               {resetButton('cover')}
             </Group>
+            <Text size="xs" c="var(--ink-4)">
+              <Trans>JPEG, PNG, GIF or WebP, up to 10 MB.</Trans>
+            </Text>
           </Stack>
         </Group>
 
@@ -291,7 +311,15 @@ export function EditMetadataModal({
           />,
         )}
 
-        <Group justify="flex-end" mt="sm">
+        <ModalFooter
+          status={
+            dirty.length > 0 ? (
+              <Plural value={dirty.length} one="# unsaved change" other="# unsaved changes" />
+            ) : series.lockedFields.length > 0 ? (
+              <Plural value={series.lockedFields.length} one="# field set by hand" other="# fields set by hand" />
+            ) : null
+          }
+        >
           <Button variant="default" onClick={close}>
             <Trans>Cancel</Trans>
           </Button>
@@ -302,15 +330,23 @@ export function EditMetadataModal({
           >
             <Trans>Save</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Stack>
     </Modal>
   )
 }
 
-/** Marks a value somebody set by hand, which metadata refreshes leave alone. */
-export function MetadataLock({ size = 14 }: { size?: number }) {
+/** Marks a value somebody set by hand, which metadata refreshes leave alone. `label` spells it out beside the icon. */
+export function MetadataLock({ size = 14, label = false }: { size?: number; label?: boolean }) {
   const { t } = useLingui()
+  if (label) {
+    return (
+      <span className="metadata-lock-label">
+        <IconLock size={size} aria-hidden />
+        <Trans>Set by hand</Trans>
+      </span>
+    )
+  }
   return (
     <Tooltip label={t`Set by hand. Metadata refreshes leave it alone.`} withArrow>
       <IconLock

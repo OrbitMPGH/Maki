@@ -29,6 +29,7 @@ export const Default: Story = {
 export const RestoreOnly: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
+    await userEvent.click(await within(dialog).findByRole('radio', { name: /Restore only/ }))
     await userEvent.click(await within(dialog).findByRole('button', { name: 'Restore only' }))
     await waitFor(() => expect(args.onRestore).toHaveBeenCalledWith(false))
   },
@@ -48,6 +49,7 @@ export const WithoutDownloadPermission: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
     await expect(await within(dialog).findByRole('button', { name: 'Restore only' })).toBeVisible()
+    await expect(within(dialog).queryByRole('radio')).toBeNull()
     await expect(within(dialog).queryByRole('button', { name: 'Restore and download' })).toBeNull()
   },
 }
@@ -69,9 +71,8 @@ export const NothingToDownload: Story = {
   parameters: { msw: [archivePreview({ redownloadableChapters: 0 })] },
   play: async ({ canvasElement }) => {
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
-    await expect(await within(dialog).findByText('Restore to the library?')).toBeVisible()
-    await expect(within(dialog).getByRole('button', { name: 'Restore' })).toBeVisible()
-    await waitFor(() => expect(within(dialog).queryByRole('button', { name: 'Restore and download' })).toBeNull())
+    await expect(await within(dialog).findByRole('button', { name: 'Restore' })).toBeVisible()
+    await waitFor(() => expect(within(dialog).queryByRole('radio')).toBeNull())
   },
 }
 

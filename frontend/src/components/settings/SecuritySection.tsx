@@ -1,6 +1,5 @@
 import { useEffect, useReducer, useState, type ReactNode } from 'react'
 import {
-  Alert,
   Button,
   Code,
   Group,
@@ -10,7 +9,7 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
-import { IconCheck, IconCopy } from '../../lib/icons'
+import { IconAlertTriangle, IconCheck, IconCopy, IconInfoCircle, IconX } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import {
   useOidcSettings,
@@ -30,6 +29,30 @@ import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { savedToast, useSliceSync } from '../../pages/settings/sharedRecord'
 import { SettingsNumberInput } from './SettingsNumberInput'
 import { useHostInfo, useRestartMaki, useSetNetworkAccess } from '../../api/hooks'
+
+const NOTE_ICONS = { warn: IconAlertTriangle, info: IconInfoCircle, danger: IconX }
+
+/** One line of caution under a field, with an optional action at its end. */
+function SettingsNote({
+  tone = 'warn',
+  action,
+  children,
+}: {
+  tone?: keyof typeof NOTE_ICONS
+  action?: ReactNode
+  children: ReactNode
+}) {
+  const Icon = NOTE_ICONS[tone]
+  return (
+    <div className="settings-note" data-tone={tone} role={tone === 'info' ? undefined : 'status'}>
+      <Icon size={16} aria-hidden />
+      <div className="settings-note-body">
+        <span>{children}</span>
+        {action}
+      </div>
+    </div>
+  )
+}
 
 /**
  * Instance security settings. Admin-only.
@@ -234,20 +257,17 @@ export function NetworkSection() {
           />
         )}
         {accessEditable && !allowNetwork && host.configuredNetworkAccess && !onLoopback && (
-          <Alert color="var(--warn)" variant="light">
+          <SettingsNote>
             <Trans>
               You are on this page from another device. After the restart, Maki only answers on the
               computer it runs on.
             </Trans>
-          </Alert>
+          </SettingsNote>
         )}
         {restartPending && (
-          <Alert color="var(--warn)" variant="light">
-            <Group justify="space-between" wrap="nowrap" gap="sm">
-              <Text size="sm">
-                <Trans>Network access changes after Maki restarts.</Trans>
-              </Text>
-              {host.supervised && (
+          <SettingsNote
+            action={
+              host.supervised && (
                 <Button
                   size="xs"
                   variant="default"
@@ -264,9 +284,11 @@ export function NetworkSection() {
                 >
                   <Trans>Restart now</Trans>
                 </Button>
-              )}
-            </Group>
-          </Alert>
+              )
+            }
+          >
+            <Trans>Network access changes after Maki restarts.</Trans>
+          </SettingsNote>
         )}
         <Switch
           label={t`Require HTTPS`}
@@ -275,12 +297,12 @@ export function NetworkSection() {
           onChange={(e) => setDraft({ ...draft, requireHttps: e.currentTarget.checked })}
         />
         {onPlainHttp && draft.requireHttps && (
-          <Alert color="var(--danger)" variant="light">
+          <SettingsNote tone="danger">
             <Trans>
               You are on this page over plain HTTP. After a restart, signing in at this address will be
               refused. Open Maki through its HTTPS address first, or make sure you can reach it that way.
             </Trans>
-          </Alert>
+          </SettingsNote>
         )}
 
         <TextInput
@@ -440,13 +462,13 @@ export function OidcSection() {
         />
 
         {draft.breakGlassActive && (
-          <Alert color="var(--warn)" variant="light">
+          <SettingsNote>
             <Trans>
               <Code>MAKI_ALLOW_LOCAL_LOGIN</Code> is set in this instance&apos;s environment, so password
               sign-in is available to every account regardless of the switch above. Remove the variable
               and restart to enforce it again.
             </Trans>
-          </Alert>
+          </SettingsNote>
         )}
 
         <Switch
@@ -482,13 +504,13 @@ export function OidcSection() {
         </Group>
 
         {mapsPermissions && (
-          <Alert color="var(--info)" variant="light">
+          <SettingsNote tone="info">
             <Trans>
               With either claim set, your provider is the authority on permissions: they are recomputed
               on every sign-in, so changes made on the Users page are overwritten the next time that
               person signs in. Leave both empty to keep permissions here.
             </Trans>
-          </Alert>
+          </SettingsNote>
         )}
       </Stack>
 

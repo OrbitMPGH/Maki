@@ -131,6 +131,7 @@ import { ArchiveSeriesDialog } from '../components/series/ArchiveSeriesDialog'
 import { RestoreSeriesDialog } from '../components/series/RestoreSeriesDialog'
 import { RemoveArchivedFilesDialog } from '../components/series/RemoveArchivedFilesDialog'
 import { ArchivedSeriesCard, type ArchivedCardAction } from '../components/series/ArchivedSeriesCard'
+import { ArchivedList } from '../components/library/ArchivedList'
 import { showBulkRestoreQueued, showRestoreResult } from '../components/series/restoreToast'
 import {
   DensityMenuItems,
@@ -3051,26 +3052,23 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       )}
       {visible.length > 0 && viewMode === 'list' && (
         <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
-          <Stack ref={windowed.innerRef} gap="xs">
-            {visible.slice(windowed.start, windowed.end).map((s) =>
-              archivedScope ? (
-                <ArchivedSeriesCard
-                  key={s.id}
-                  series={s}
-                  variant="list"
-                  density={density}
-                  selectMode={selectMode}
-                  selected={selected.has(s.id)}
-                  readTracking={readTracking}
-                  onToggle={toggle}
-                  offline={offlineOf(s.id)}
-                  canRestore={canArchive}
-                  canRemoveFiles={canDelete}
-                  canDelete={canDelete}
-                  onRate={onRate}
-                  onAction={onCardAction}
-                />
-              ) : (
+          {archivedScope ? (
+            <ArchivedList
+              ref={windowed.innerRef}
+              series={visible.slice(windowed.start, windowed.end)}
+              selectMode={selectMode}
+              selectedIds={selected}
+              readTracking={readTracking}
+              onToggle={toggle}
+              canRestore={canArchive}
+              canRemoveFiles={canDelete}
+              canDelete={canDelete}
+              onRate={onRate}
+              onAction={onCardAction}
+            />
+          ) : (
+            <Stack ref={windowed.innerRef} gap="xs">
+              {visible.slice(windowed.start, windowed.end).map((s) => (
                 <SeriesRow
                   key={s.id}
                   series={s}
@@ -3081,9 +3079,9 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                   onToggle={toggle}
                   offline={offlineOf(s.id)}
                 />
-              ),
-            )}
-          </Stack>
+              ))}
+            </Stack>
+          )}
         </div>
       )}
     </SurfaceFrame>

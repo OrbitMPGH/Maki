@@ -65,18 +65,19 @@ export const ShowPassingChecks: Story = {
 
 export const Warnings: Story = {
   parameters: { msw: [withOverview({ checks: warningChecks, openFindings: 4 })] },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
     await expect(await canvas.findByText('/library/manhwa has 38 GB free (9%), below the 10% warning level')).toBeVisible()
-    await expect(await canvas.findByText('3 need attention')).toBeVisible()
+    await expect(canvasElement.querySelectorAll('.health-attention')).toHaveLength(3)
     await expect(await canvas.findByText(/Acknowledged, hidden from the header badge/)).toBeVisible()
   },
 }
 
 export const Errors: Story = {
   parameters: { msw: [withOverview({ checks: errorChecks, openFindings: 12 })] },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement }) => {
     await expect(await canvas.findByText('The database reported a failed integrity check')).toBeVisible()
-    await expect(await canvas.findByText('5 need attention')).toBeVisible()
+    await expect(canvasElement.querySelectorAll('.health-attention')).toHaveLength(5)
+    await expect(canvas.getByRole('button', { name: 'Acknowledge all' })).toBeVisible()
   },
 }
 

@@ -64,6 +64,7 @@ import { IndexerForm } from './settings/IndexerForm'
 import { ContentRatingCards } from './ContentRatingCards'
 import { IconBrandMark } from './IconBrandMark'
 import { MetadataDumpStatus } from './MetadataDumpProgress'
+import { StatusDot } from './ui/StatusDot'
 import { PriorityList } from './PriorityList'
 import { RecommendationModelSwitch } from './RecommendationModelSwitch'
 import { UnsavedSettingsContext } from './settings/SaveButton'
@@ -101,6 +102,10 @@ function SettingRow({
   )
 }
 
+function SetupPanel({ children }: { children: ReactNode }) {
+  return <div className="setup-panel">{children}</div>
+}
+
 function WelcomeStep() {
   const { t } = useLingui()
   const { data: ui } = useUiSettings()
@@ -111,7 +116,7 @@ function WelcomeStep() {
   const [languageChoice, setLanguageChoice] = useState<string | null>(null)
 
   return (
-    <>
+    <SetupPanel>
       <SettingRow
         label={<Trans>Language</Trans>}
         control={
@@ -136,7 +141,7 @@ function WelcomeStep() {
       >
         <AppearancePicker />
       </SettingRow>
-    </>
+    </SetupPanel>
   )
 }
 
@@ -177,31 +182,38 @@ function LibraryStep() {
 
   return (
     <>
-      <SettingRow
-        label={<Trans>Library folders</Trans>}
-        description={
+      <section className="setup-section">
+        <Text className="setup-section-title">
+          <IconFolder size={16} aria-hidden />
+          <Trans>Library folders</Trans>
+        </Text>
+        <Text className="setup-section-description">
           <Trans>Where your manga is stored. If you use Kavita, point it at the same place.</Trans>
-        }
-      >
-        <Stack gap="xs">
+        </Text>
+        <SetupPanel>
           {rootFolders?.map((f) => {
             const free = f.freeSpace != null ? formatBytes(f.freeSpace) : null
             return (
               <div key={f.id} className="setup-folder" data-broken={!f.accessible || undefined}>
-                <IconFolder size={18} className="setup-folder-icon" />
                 <div className="setup-folder-text">
                   <Text className="setup-folder-path">{f.path}</Text>
-                  <Text className="setup-folder-meta">
-                    {!f.accessible ? (
-                      <Trans>Maki can't reach this folder</Trans>
-                    ) : free ? (
+                  {f.accessible && free && (
+                    <Text className="setup-folder-meta tnum">
                       <Trans>{free} free</Trans>
-                    ) : null}
-                  </Text>
+                    </Text>
+                  )}
+                  {!f.accessible && (
+                    <Text className="setup-folder-meta">
+                      <Trans>Maki can't reach this folder</Trans>
+                    </Text>
+                  )}
                 </div>
+                <StatusDot tone={f.accessible ? 'ok' : 'danger'}>
+                  {f.accessible ? <Trans>Reachable</Trans> : <Trans>Unreachable</Trans>}
+                </StatusDot>
                 <ActionIcon
                   variant="subtle"
-                  color="var(--danger)"
+                  className="quiet-danger"
                   onClick={() => setDeleting({ id: f.id, path: f.path })}
                   aria-label={t`Remove root folder`}
                 >
@@ -210,7 +222,7 @@ function LibraryStep() {
               </div>
             )
           })}
-          <Group gap="xs">
+          <div className="setup-add-folder">
             <TextInput
               aria-label={t`Folder path`}
               placeholder={t`C:\\Manga or /library`}
@@ -226,9 +238,9 @@ function LibraryStep() {
             <Button onClick={add} loading={addFolder.isPending} disabled={!newPath.trim()}>
               <Trans>Add folder</Trans>
             </Button>
-          </Group>
-        </Stack>
-      </SettingRow>
+          </div>
+        </SetupPanel>
+      </section>
 
       <FolderBrowserModal
         opened={browsing}
@@ -261,15 +273,18 @@ function LibraryStep() {
         </Stack>
       </ConfirmDialog>
 
-      <SettingRow
-        label={<Trans>Existing folders on import</Trans>}
-      >
+      <section className="setup-section">
+        <Text className="setup-section-title">
+          <IconArrowRight size={16} aria-hidden />
+          <Trans>Existing folders on import</Trans>
+        </Text>
+        <SetupPanel>
         <Radio.Group
           aria-label={t`Existing folders on import`}
           value={settings?.folderNamingMode ?? 'rename'}
           onChange={(value) => patch({ folderNamingMode: value as FolderNamingMode })}
         >
-          <Stack gap="xs">
+          <Stack gap={0}>
             <Radio.Card value="rename" className="setup-choice">
               <Group wrap="nowrap" align="flex-start" gap="sm">
                 <Radio.Indicator />
@@ -311,8 +326,10 @@ function LibraryStep() {
             </Radio.Card>
           </Stack>
         </Radio.Group>
-      </SettingRow>
+        </SetupPanel>
+      </section>
 
+      <SetupPanel>
       <SettingRow
         label={<Trans>Write ComicInfo.xml into imported files</Trans>}
         description={
@@ -336,6 +353,7 @@ function LibraryStep() {
           />
         }
       />
+      </SetupPanel>
     </>
   )
 }
@@ -349,7 +367,7 @@ function DiscoveryStep() {
   const saveDiscover = useSaveDiscoverSettings()
 
   return (
-    <>
+    <SetupPanel>
       <SettingRow
         label={<Trans>Local MangaBaka database</Trans>}
         description={
@@ -381,7 +399,7 @@ function DiscoveryStep() {
           onChange={(rating) => saveDiscover.mutate(rating)}
         />
       </SettingRow>
-    </>
+    </SetupPanel>
   )
 }
 
@@ -403,7 +421,7 @@ function DownloadsStep() {
   }, [languages, order])
 
   return (
-    <>
+    <SetupPanel>
       <SettingRow
         label={<Trans>Languages to download</Trans>}
         description={
@@ -453,7 +471,7 @@ function DownloadsStep() {
           />
         }
       />
-    </>
+    </SetupPanel>
   )
 }
 
@@ -535,9 +553,9 @@ function ServiceRow({ service }: { service: ServiceSpec }) {
           <Text className="setup-row-label">{service.title}</Text>
           <Text className="setup-row-description">{service.description}</Text>
         </div>
-        <span className="setup-service-state" data-connected={connected || undefined}>
+        <StatusDot tone={connected ? 'ok' : 'neutral'}>
           {connected ? <Trans>Saved</Trans> : <Trans>Not set</Trans>}
-        </span>
+        </StatusDot>
         <IconChevronDown size={16} className="setup-service-chevron" />
       </UnstyledButton>
       <Collapse expanded={open} id={bodyId}>
@@ -556,7 +574,7 @@ function ServiceRow({ service }: { service: ServiceSpec }) {
 function ConnectionsStep() {
   const services = useServices()
   return (
-    <div className="setup-services">
+    <div className="setup-panel setup-services">
       {services.map((s) => (
         <ServiceRow key={s.name} service={s} />
       ))}
@@ -594,7 +612,7 @@ function FinishStep({
 
   return (
     <>
-      <div className="setup-summary">
+      <div className="setup-panel setup-summary">
         {folderCount > 0 ? (
           <SummaryLine tone="ok">
             {plural(folderCount, { one: '# library folder', other: '# library folders' })}
@@ -777,15 +795,11 @@ function GuideRail({
   active,
   visited,
   onSelect,
-  onSkip,
-  skipping,
 }: {
   steps: StepMeta[]
   active: number
   visited: Set<number>
   onSelect: (index: number) => void
-  onSkip: () => void
-  skipping: boolean
 }) {
   const { t } = useLingui()
   return (
@@ -832,14 +846,6 @@ function GuideRail({
         </ol>
       </nav>
 
-      <div className="setup-rail-foot">
-        <Button variant="subtle" color="var(--neutral)" size="xs" onClick={onSkip} loading={skipping}>
-          <Trans>Skip setup</Trans>
-        </Button>
-        <Text className="setup-rail-note">
-          <Trans>Nothing here is final. Every option is also in Settings.</Trans>
-        </Text>
-      </div>
     </aside>
   )
 }
@@ -956,8 +962,6 @@ function SetupGuide() {
             active={active}
             visited={visited}
             onSelect={confirmedGo}
-            onSkip={() => confirmedFinish()}
-            skipping={complete.isPending}
           />
 
           <main className="setup-main">
@@ -1009,24 +1013,35 @@ function SetupGuide() {
             <footer className="setup-footer">
               <div className="setup-footer-inner">
                 <Button
-                  variant="default"
-                  leftSection={<IconArrowLeft size={16} />}
-                  onClick={() => confirmedGo(active - 1)}
-                  style={{ visibility: active === 0 ? 'hidden' : undefined }}
+                  className="setup-footer-skip"
+                  variant="subtle"
+                  color="var(--neutral)"
+                  onClick={() => confirmedFinish()}
+                  loading={complete.isPending}
                 >
-                  <Trans>Back</Trans>
+                  <Trans>Skip setup</Trans>
                 </Button>
                 {confirmLeave ? (
-                  <Text className="setup-footer-warning" role="status">
+                  <Text className="setup-footer-note" data-tone="warn" role="status">
                     <Trans>A connection has unsaved changes.</Trans>
                   </Text>
+                ) : active === last && !ready ? (
+                  <Text className="setup-footer-note" data-tone="warn" role="status">
+                    <Trans>Waiting for the metadata database.</Trans>
+                  </Text>
                 ) : (
-                  active === last &&
-                  !ready && (
-                    <Text className="setup-footer-warning" role="status">
-                      <Trans>Waiting for the metadata database.</Trans>
-                    </Text>
-                  )
+                  <Text className="setup-footer-note">
+                    <Trans>Nothing here is final. Every option is also in Settings.</Trans>
+                  </Text>
+                )}
+                {active > 0 && (
+                  <Button
+                    variant="default"
+                    leftSection={<IconArrowLeft size={16} />}
+                    onClick={() => confirmedGo(active - 1)}
+                  >
+                    <Trans>Back</Trans>
+                  </Button>
                 )}
                 {active === last ? (
                   <Button onClick={() => confirmedFinish()} loading={complete.isPending} disabled={!ready}>

@@ -34,6 +34,8 @@ import {
 import { useLabel } from '../../i18n-context'
 import { CatalogueFilters, filtersFromSpec, useCatalogueFilters } from '../CatalogueFilters'
 import { RecommenderDials } from '../discover/RecommenderDials'
+import { ModalFooter, ModalHeading } from '../ui/ModalShell'
+import { IconPlus } from '../../lib/icons'
 
 /** A rail that doesn't exist yet: what the editor opens with when creating one. */
 export interface CustomRailDraft {
@@ -62,8 +64,19 @@ export function CustomRailEditor({
 }) {
   const { t } = useLingui()
   return (
-    <Modal opened onClose={onClose} title={rail ? t`Edit rail` : t`New rail`} size="xl">
+    <Modal
+      opened
+      onClose={onClose}
+      size="xl"
+      title={
+        <ModalHeading
+          title={rail ? t`Edit rail` : t`New rail`}
+          description={<Trans>A shelf of titles you define once and pin to Home or Discover.</Trans>}
+        />
+      }
+    >
       <CustomRailForm
+        inModal
         rail={rail}
         draft={draft}
         onSaved={(saved) => {
@@ -88,12 +101,15 @@ export function CustomRailForm({
   onSaved,
   onCancel,
   placementLocked = false,
+  inModal = false,
 }: {
   rail?: CustomRail
   draft?: CustomRailDraft
   onSaved?: (rail: CustomRail) => void
   onCancel?: () => void
   placementLocked?: boolean
+  /** Ends the form with the modal's pinned footer instead of an inline action row. */
+  inModal?: boolean
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -167,6 +183,18 @@ export function CustomRailForm({
     if (rail) update.mutate({ id: rail.id, ...body }, options)
     else create.mutate(body, options)
   }
+
+  const matchCount = count != null && <Plural value={count} one="# title matches" other="# titles match" />
+  const cancelButton = onCancel && (
+    <Button variant="subtle" onClick={onCancel}>
+      <Trans>Cancel</Trans>
+    </Button>
+  )
+  const saveButton = (
+    <Button loading={pending} onClick={save} leftSection={rail ? undefined : <IconPlus size={16} />}>
+      {rail ? <Trans>Save</Trans> : <Trans>Add rail</Trans>}
+    </Button>
+  )
 
   return (
       <Stack gap="md">
@@ -278,21 +306,22 @@ export function CustomRailForm({
           </Group>
         )}
 
-        <Group justify="space-between">
-          <Text size="sm" c="var(--ink-3)">
-            {count != null && <Plural value={count} one="# title matches" other="# titles match" />}
-          </Text>
-          <Group gap="xs">
-            {onCancel && (
-              <Button variant="subtle" onClick={onCancel}>
-                <Trans>Cancel</Trans>
-              </Button>
-            )}
-            <Button loading={pending} onClick={save}>
-              {rail ? <Trans>Save</Trans> : <Trans>Add rail</Trans>}
-            </Button>
+        {inModal ? (
+          <ModalFooter status={matchCount}>
+            {cancelButton}
+            {saveButton}
+          </ModalFooter>
+        ) : (
+          <Group justify="space-between">
+            <Text size="sm" c="var(--ink-3)">
+              {matchCount}
+            </Text>
+            <Group gap="xs">
+              {cancelButton}
+              {saveButton}
+            </Group>
           </Group>
-        </Group>
+        )}
       </Stack>
   )
 }

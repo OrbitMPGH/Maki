@@ -4,6 +4,9 @@ import type { QualityTierName, UpgradeQueueInfoDto } from './upgrades'
 export interface MetadataLink {
   site: string
   url: string
+  /** The site's own score as it writes it (8.4, 86), when the response carries one. */
+  score?: number | string | null
+  votes?: number | null
 }
 
 /** A series title plus the language it is written in. A null `language` means the provider didn't say. */

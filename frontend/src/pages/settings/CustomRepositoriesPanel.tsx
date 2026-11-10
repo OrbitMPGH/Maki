@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Alert, Anchor, Button, Card, Group, List, Modal, Stack, Switch, Table, Text, TextInput, Tooltip } from '@mantine/core'
-import { IconAlertTriangle, IconRefresh, IconTrash } from '../../lib/icons'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Button, Group, List, Modal, Stack, Switch, Text, TextInput, Tooltip } from '@mantine/core'
+import { IconRefresh, IconTrash } from '../../lib/icons'
+import { ModalFooter, ModalHeading, ModalNote } from '../../components/ui/ModalShell'
+import { Panel } from '../../components/ui/Panel'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { errorText } from '../../api/errorText'
 import { languageName } from '../../api/titles'
 import { formatDateTime } from '../../format'
@@ -30,16 +32,17 @@ function IdentityConfirm({ error, onConfirm, loading }: { error: unknown; onConf
   const reasons = useReasonLabels()
   if (!identity) return null
   return (
-    <Alert color="var(--warn)" variant="light" icon={<IconAlertTriangle size={16} />} title={identity.error}>
+    <ModalNote tone="warn">
+      <Text size="sm" fw={600}>{identity.error}</Text>
       <List size="sm" spacing={2}>
         {identity.reasons.map((r) => <List.Item key={r}>{reasons[r] ?? r}</List.Item>)}
       </List>
-      <Group justify="flex-end" mt="sm">
-        <Button size="xs" color="var(--warn)" loading={loading} onClick={onConfirm}>
+      <Group justify="flex-end" mt="xs">
+        <Button size="xs" variant="default" loading={loading} onClick={onConfirm}>
           <Trans>Go ahead anyway</Trans>
         </Button>
       </Group>
-    </Alert>
+    </ModalNote>
   )
 }
 
@@ -75,42 +78,56 @@ export function CustomSourceUpdateDialog({ id, opened, onClose, onApplied }: {
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} size={640} title={<Text fw={600}><Trans>Update {id}</Trans></Text>} closeButtonProps={{ 'aria-label': t`Close` }}>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      size={640}
+      title={<ModalHeading title={<Trans>Update {id}</Trans>} description={<Trans>Review what changes before it is applied.</Trans>} />}
+      closeButtonProps={{ 'aria-label': t`Close` }}
+    >
       <Stack gap="sm">
-        {preview.error && <Alert color="var(--danger)" variant="light">{errorText(preview.error)}</Alert>}
+        {preview.error && <ModalNote tone="danger">{errorText(preview.error)}</ModalNote>}
         {preview.data && (
           <>
             <Text size="sm">
               <Trans>Version {preview.data.fromVersion} to {preview.data.toVersion}. These parts of the definition change:</Trans>
             </Text>
-            <Table fz="xs" withRowBorders={false} striped>
-              <Table.Tbody>
-                {preview.data.changedFields.map((field) => (
-                  <Table.Tr key={field}>
-                    <Table.Td style={{ fontFamily: 'var(--mantine-font-family-monospace)', verticalAlign: 'top' }}>{field}</Table.Td>
-                    <Table.Td>
-                      <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: 'var(--type-micro)', color: 'var(--ink-3)' }}>
-                        {JSON.stringify(preview.data!.current[field] ?? null)}
-                      </pre>
-                      <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: 'var(--type-micro)' }}>
-                        {JSON.stringify(preview.data!.next[field] ?? null)}
-                      </pre>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
+            <div className="hair-table-wrap">
+              <table className="hair-table">
+                <thead>
+                  <tr>
+                    <th><Trans>Field</Trans></th>
+                    <th><Trans>Now and after</Trans></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {preview.data.changedFields.map((field) => (
+                    <tr key={field}>
+                      <td style={{ fontFamily: 'var(--mantine-font-family-monospace)', verticalAlign: 'top', paddingTop: 10 }}>{field}</td>
+                      <td style={{ paddingBlock: 8 }}>
+                        <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: 'var(--type-micro)', color: 'var(--ink-3)' }}>
+                          {JSON.stringify(preview.data!.current[field] ?? null)}
+                        </pre>
+                        <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: 'var(--type-micro)' }}>
+                          {JSON.stringify(preview.data!.next[field] ?? null)}
+                        </pre>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </>
         )}
-        {apply.error && !identity && <Alert color="var(--danger)" variant="light">{errorText(apply.error)}</Alert>}
+        {apply.error && !identity && <ModalNote tone="danger">{errorText(apply.error)}</ModalNote>}
         <IdentityConfirm error={apply.error} onConfirm={() => run(true)} loading={apply.isPending} />
-        <Group justify="flex-end" gap="xs">
-          <Button variant="default" onClick={onClose}><Trans>Cancel</Trans></Button>
-          <Button onClick={() => run(false)} loading={apply.isPending && !identity} disabled={!preview.data || identity !== null}>
-            <Trans>Apply update</Trans>
-          </Button>
-        </Group>
       </Stack>
+      <ModalFooter>
+        <Button variant="default" onClick={onClose}><Trans>Cancel</Trans></Button>
+        <Button onClick={() => run(false)} loading={apply.isPending && !identity} disabled={!preview.data || identity !== null}>
+          <Trans>Apply update</Trans>
+        </Button>
+      </ModalFooter>
     </Modal>
   )
 }
@@ -180,7 +197,7 @@ function RepositoryCard({ repository, onUpdate }: { repository: CustomRepository
   const installed = repository.definitions.filter((d) => d.installedVersion !== null)
 
   return (
-    <Card withBorder padding="sm">
+    <Panel p="md">
       <Stack gap="xs">
         <Group justify="space-between" wrap="nowrap" align="flex-start">
           <div style={{ minWidth: 0 }}>
@@ -222,30 +239,32 @@ function RepositoryCard({ repository, onUpdate }: { repository: CustomRepository
             ? <Trans>Last checked {formatDateTime(repository.lastCheckedUtc)}</Trans>
             : <Trans>Not checked yet</Trans>}
         </Text>
-        {repository.lastError && <Text size="xs" c="var(--warn)">{repository.lastError}</Text>}
+        {repository.lastError && <ModalNote tone="warn">{repository.lastError}</ModalNote>}
         {(autoUpdate.error || refresh.error || remove.error) && (
-          <Text size="xs" c="var(--danger)">{errorText(autoUpdate.error ?? refresh.error ?? remove.error)}</Text>
+          <ModalNote tone="danger">{errorText(autoUpdate.error ?? refresh.error ?? remove.error)}</ModalNote>
         )}
         {repository.definitions.length === 0 ? (
           <Text size="sm" c="var(--ink-3)"><Trans>This repository lists no definitions.</Trans></Text>
         ) : (
-          <Table fz="sm" verticalSpacing={6} withRowBorders>
-            <Table.Tbody>
-              {repository.definitions.map((entry) => (
-                <Table.Tr key={entry.id}>
-                  <Table.Td>
-                    <Text size="sm" fw={600}>{entry.name}</Text>
-                    <Text component="div" size="xs" c="var(--ink-3)">
-                      <MetaList items={[languageName(entry.language) ?? entry.language, <Trans key="version">version {entry.version}</Trans>]} />
-                    </Text>
-                  </Table.Td>
-                  <Table.Td ta="right">
-                    <EntryAction repository={repository} entry={entry} onUpdate={onUpdate} />
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
+          <div className="hair-table-wrap">
+            <table className="hair-table">
+              <tbody>
+                {repository.definitions.map((entry) => (
+                  <tr key={entry.id}>
+                    <td>
+                      <Text size="sm" fw={600} c="var(--ink-hi)">{entry.name}</Text>
+                      <Text component="div" size="xs" c="var(--ink-3)">
+                        <MetaList items={[languageName(entry.language) ?? entry.language, <Trans key="version">version {entry.version}</Trans>]} />
+                      </Text>
+                    </td>
+                    <td data-end style={{ paddingBlock: 6 }}>
+                      <EntryAction repository={repository} entry={entry} onUpdate={onUpdate} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Stack>
       <ConfirmDialog
@@ -267,7 +286,7 @@ function RepositoryCard({ repository, onUpdate }: { repository: CustomRepository
           </Stack>
         )}
       </ConfirmDialog>
-    </Card>
+    </Panel>
   )
 }
 
@@ -283,14 +302,25 @@ export function CustomRepositoriesPanel({ opened, onClose }: { opened: boolean; 
   const [updating, setUpdating] = useState<string | null>(null)
 
   return (
-    <Modal opened={opened} onClose={onClose} size={760} title={<Text fw={600}><Trans>Repositories</Trans></Text>} closeButtonProps={{ 'aria-label': t`Close` }}>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      size={760}
+      title={
+        <ModalHeading
+          title={<Trans>Repositories</Trans>}
+          description={<Trans>Lists of custom source definitions that Maki can install and keep up to date.</Trans>}
+        />
+      }
+      closeButtonProps={{ 'aria-label': t`Close` }}
+    >
       <Stack gap="md">
-        <Text size="sm" c="var(--ink-3)">
+        <ModalNote tone="info">
           <Trans>
             A repository is a list of custom source definitions someone publishes. Maki installs from it, and can
             keep what it installed up to date. Only add repositories you trust: a definition decides which site Maki reads.
           </Trans>
-        </Text>
+        </ModalNote>
         <Group align="flex-end" gap="xs" wrap="nowrap">
           <TextInput
             style={{ flex: 1 }}
@@ -303,18 +333,24 @@ export function CustomRepositoriesPanel({ opened, onClose }: { opened: boolean; 
             <Trans>Add</Trans>
           </Button>
         </Group>
-        {add.error && <Alert color="var(--danger)" variant="light">{errorText(add.error)}</Alert>}
-        {error && <Alert color="var(--danger)" variant="light">{errorText(error)}</Alert>}
+        {add.error && <ModalNote tone="danger">{errorText(add.error)}</ModalNote>}
+        {error && <ModalNote tone="danger">{errorText(error)}</ModalNote>}
         {repositories?.length === 0 && (
           <Text size="sm" c="var(--ink-3)"><Trans>No repositories yet.</Trans></Text>
         )}
         {repositories?.map((repository) => (
           <RepositoryCard key={repository.url} repository={repository} onUpdate={setUpdating} />
         ))}
-        <Group justify="flex-end">
-          <Anchor component="button" type="button" size="sm" onClick={onClose}><Trans>Done</Trans></Anchor>
-        </Group>
       </Stack>
+      <ModalFooter
+        status={
+          repositories && repositories.length > 0
+            ? <Plural value={repositories.length} one="# repository" other="# repositories" />
+            : null
+        }
+      >
+        <Button variant="default" onClick={onClose}><Trans>Done</Trans></Button>
+      </ModalFooter>
       <CustomSourceUpdateDialog id={updating} opened={updating !== null} onClose={() => setUpdating(null)} />
     </Modal>
   )
