@@ -18,8 +18,10 @@ public static partial class ChapterAccessReader
     private static partial Regex BareNumberInBrackets();
 
     // "【期間限定 無料お試し版 閲覧期限2026年11月4日】": a free trial of a volume that expires on the date given.
-    // Only the trial wording counts: 期間限定 alone also marks a limited-time free run of whole chapters.
-    private static bool IsTrial(string label) => label.Contains("お試し", StringComparison.Ordinal);
+    // Only the trial wording counts: 期間限定 alone also marks a limited-time free run of whole chapters,
+    // and a bare お試し turns up in titles ("お試し結婚").
+    private static bool IsTrial(string label) =>
+        label.Contains("お試し版", StringComparison.Ordinal) || label.Contains("無料お試し", StringComparison.Ordinal);
 
     /// <summary>
     /// What a Mihon extension's chapter label says about reading it: a lock or yen mark in front means

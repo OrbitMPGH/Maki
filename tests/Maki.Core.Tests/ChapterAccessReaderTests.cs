@@ -23,6 +23,8 @@ public class ChapterAccessReaderTests
     [InlineData("第5話 無料お試し", ChapterAccess.Preview)]
     [InlineData("【期間限定無料】第12話", ChapterAccess.Free)]
     [InlineData("第3話 閲覧期限なし", ChapterAccess.Free)]
+    [InlineData("第1話 お試し同棲はじめました", ChapterAccess.Free)]
+    [InlineData("お試し結婚 第4話", ChapterAccess.Free)]
     [InlineData(null, ChapterAccess.Free)]
     [InlineData("", ChapterAccess.Free)]
     public void Reads_the_access_a_label_announces(string? label, ChapterAccess expected) =>

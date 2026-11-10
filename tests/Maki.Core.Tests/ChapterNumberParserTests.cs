@@ -291,6 +291,7 @@ public class ChapterNumberParserTests
     [InlineData("隣のステラ（２）")]
     [InlineData("（４）")]
     [InlineData("twinkle episode ナイト")]
+    [InlineData("12【期間限定無料】")]
     public void A_title_with_a_bracketed_number_and_no_marker_is_not_a_volume(string input)
     {
         var result = ChapterNumberParser.Parse(input);
