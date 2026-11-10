@@ -18,6 +18,7 @@ import {
   IconBooks,
   IconDeviceTv,
   IconFileText,
+  IconStarFilled,
   IconTrendingDown,
   IconTrendingUp,
 } from '../../lib/icons'
@@ -60,6 +61,9 @@ import { MetaList } from '../ui/MetaList'
 import { TagChip, TagChips } from '../ui/TagChip'
 import { useModalHistory } from '../../lib/useModalHistory'
 
+/** The collapsed bar's height; also how far above the top edge the add card must go to bring it in. */
+const BAR_HEIGHT = 64
+
 export function DiscoverDetailModal({
   item,
   inLibrarySeriesId,
@@ -91,6 +95,35 @@ export function DiscoverDetailModal({
   const open = item != null
   const [previewFor, setPreviewFor] = useState<string | null>(null)
   const previewing = previewFor != null && previewFor === item?.providerId
+
+  // The band scrolls away with the body, and once the add card has gone under the top edge a slim
+  // bar slides in with the title and the add button, so the one thing to do stays in reach.
+  const [scroller, setScroller] = useState<HTMLDivElement | null>(null)
+  const [actionCard, setActionCard] = useState<HTMLDivElement | null>(null)
+  const [barSlot, setBarSlot] = useState<HTMLDivElement | null>(null)
+  const [barShown, setBarShown] = useState(false)
+  useEffect(() => {
+    if (!scroller || !actionCard) return
+    // A desktop card scrolls this element; on a phone it lets go and the modal scrolls band and all,
+    // so the observer watches whichever ancestor is doing the scrolling.
+    let root: HTMLElement | null = scroller
+    while (root && !/(auto|scroll)/.test(getComputedStyle(root).overflowY)) root = root.parentElement
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const top = entry.rootBounds?.top ?? 0
+        setBarShown(!entry.isIntersecting && entry.boundingClientRect.bottom <= top + 1)
+      },
+      { root, rootMargin: `-${BAR_HEIGHT}px 0px 0px 0px` },
+    )
+    observer.observe(actionCard)
+    return () => observer.disconnect()
+  }, [scroller, actionCard])
+  // A reroll swaps the series in place, so it starts again from the band.
+  const shownId = item?.providerId
+  useEffect(() => {
+    scroller?.scrollTo({ top: 0 })
+    setBarShown(false)
+  }, [shownId, scroller])
   useEffect(() => {
     if (open) return
     window.clearTimeout(rerollTimer.current)
@@ -198,7 +231,7 @@ export function DiscoverDetailModal({
         // The class carries the positioning the floating close button needs. Mantine's own content
         // element is not positioned, so without it the button anchors to the viewport and lands in
         // the top-right corner of the screen rather than of the card.
-        <div className="discover-modal-root">
+        <div className="discover-modal-root" data-bar={barShown || undefined}>
           <CloseButton
             className="discover-modal-close"
             size="lg"
@@ -218,6 +251,44 @@ export function DiscoverDetailModal({
               </ActionIcon>
             </Tooltip>
           )}
+
+          <div className="discover-scroll" ref={setScroller}>
+          {/* Sticky at zero height, so it costs the band no room and only shows once scrolled. */}
+          <div className="discover-bar-anchor">
+            <div className="discover-bar" data-shown={barShown || undefined} inert={!barShown}>
+              {cover && <img className="discover-bar-poster" src={cover} alt="" />}
+              <div className="discover-bar-identity">
+                <div className="discover-bar-title">{title}</div>
+                <Text component="div" size="xs" c="var(--ink-3)" className="discover-bar-meta">
+                  <MetaList
+                    inline
+                    items={[
+                      score != null ? (
+                        <span key="score" className="discover-bar-score">
+                          <IconStarFilled size={12} />
+                          {formatFixedDecimal(score / 10, 1)}
+                        </span>
+                      ) : null,
+                      <span key="status" style={{ color: `var(--${statusToken(status.color)})` }}>
+                        {renderLabel(status.label)}
+                      </span>,
+                      chapters != null ? plural(chapters, { one: '# chapter', other: '# chapters' }) : null,
+                      year,
+                    ]}
+                  />
+                </Text>
+              </div>
+              <div className="discover-bar-actions">
+                {inLibrarySeriesId == null && (
+                  <ShortlistButton compact providerId={item.providerId} title={title} source={savedFrom} />
+                )}
+                {/* The add panel portals its own primary action in here, so the bar's button is the
+                    same add with the same settings, not a second copy of the form's state. */}
+                <div ref={setBarSlot} className="discover-bar-slot" />
+              </div>
+              <CloseButton className="discover-bar-close" size="lg" aria-label={t`Close`} onClick={onClose} />
+            </div>
+          </div>
 
           <Box className="series-hero" data-compact>
             <HeroBackdrop coverUrl={cover} />
@@ -278,17 +349,20 @@ export function DiscoverDetailModal({
                         {renderLabel(status.label)}
                       </span>
                       <ContentRatingChip rating={detail?.contentRating} tooltipZIndex={1001} />
-                      {/* What kind of book it is: a fact, not a state, so it takes the quiet pill. */}
+                      {/* What kind of book it is: a fact, not a state, so it takes the quiet pill. An
+                          anime adaptation rides on the same pill as a violet mark rather than
+                          adding a fourth pill to the row. */}
                       {typeLabel && (
                         <span className="series-hero-status" data-quiet>
                           <IconBooks size={14} />
                           {typeLabel}
-                        </span>
-                      )}
-                      {detail?.hasAnime && (
-                        <span className="series-hero-status" data-kind="anime">
-                          <IconDeviceTv size={14} />
-                          <Trans>Anime adaptation</Trans>
+                          {detail?.hasAnime && (
+                            <Tooltip label={t`Has an anime adaptation`} withArrow zIndex={1001}>
+                              <span className="hero-anime-mark" role="img" aria-label={t`Has an anime adaptation`} tabIndex={0}>
+                                <IconDeviceTv size={14} />
+                              </span>
+                            </Tooltip>
+                          )}
                         </span>
                       )}
                     </Group>
@@ -380,21 +454,22 @@ export function DiscoverDetailModal({
                         number are one control rather than two rows. */}
                     {(links.length > 0 || unlinkedRatings.length > 0 || readerHint) && (
                       <Group gap="sm" mt={14} align="center" wrap="wrap">
-                        <MetadataLinks links={links} />
-                        {unlinkedRatings.map((r) => (
-                          <Tooltip key={r.source} label={r.source} withArrow zIndex={1001}>
-                            <span className="site-mark-item" tabIndex={0}>
-                              <span className="site-mark-static">
+                        <MetadataLinks
+                          links={links}
+                          chips
+                          extra={unlinkedRatings.map((r) => (
+                            <Tooltip key={r.source} label={r.source} withArrow zIndex={1001}>
+                              <span className="site-chip" data-static tabIndex={0}>
                                 <MetadataSiteIcon
                                   site={r.source.toLowerCase()}
                                   monogram={r.source.slice(0, 2).toUpperCase()}
-                                  size={14}
+                                  size={15}
                                 />
+                                <span className="tnum">{formatFixedDecimal(r.rating / 10, 1)}</span>
                               </span>
-                              <span className="site-mark-score tnum">{formatFixedDecimal(r.rating / 10, 1)}</span>
-                            </span>
-                          </Tooltip>
-                        ))}
+                            </Tooltip>
+                          ))}
+                        />
                         {/* Only ever rendered when the server decided there is something to say, which
                             is about one series in nine: the cohorts have to disagree with the wider
                             reader crowd by at least half a star. Deliberately a direction rather than a
@@ -447,7 +522,7 @@ export function DiscoverDetailModal({
                     add itself last, and the lighter actions as the card's footer. Top-aligned with
                     the poster, so the band has one top line. */}
                 <div className="discover-action-col">
-                  <div className="discover-action-card">
+                  <div className="discover-action-card" ref={setActionCard}>
                     {/* Keyed by provider id: a half-filled request belongs to the series it was
                         started for, and remounting is a cheaper reset than clearing six fields. */}
                     <DiscoverLibraryRail
@@ -458,6 +533,7 @@ export function DiscoverDetailModal({
                       rootFolders={rootFolders}
                       onClose={onClose}
                       addedFrom={feedbackContext ? 'recommendation' : 'library'}
+                      barSlot={barSlot}
                     />
                     <div className="discover-card-footer">
                       {inLibrarySeriesId == null && (
@@ -588,6 +664,7 @@ export function DiscoverDetailModal({
                 </div>
               )}
             </div>
+          </div>
           </div>
           {previewing && (
             <SeriesPreviewReader

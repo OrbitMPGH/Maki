@@ -3561,11 +3561,15 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* An anime adaptation is a kind, so it takes the anime hue, outlined like the content rating. */
-.series-hero-status[data-kind='anime'] {
+/* An anime adaptation is a mark on the type pill in the anime hue, past a hairline. */
+.hero-anime-mark {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-start: 3px;
+  padding-inline-start: 8px;
+  border-inline-start: 1px solid var(--border-strong);
   color: var(--anime);
-  background: color-mix(in srgb, var(--anime) 10%, color-mix(in srgb, var(--app-bg) 45%, transparent));
-  border-color: color-mix(in srgb, var(--anime) 45%, transparent);
+  border-radius: 2px;
 }
 .discover-figures {
   flex-wrap: nowrap;
@@ -3618,16 +3622,34 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-size: 1.0625rem;
   line-height: 1;
 }
-/* A rated site with no link to open still shows its mark, as a plain square. */
-.site-mark-static {
+/* A site and its score as one control: the logo, then the number, in a quiet chip. A rated site with
+   no link (data-static) looks the same but is not a button. */
+.site-chip {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
+  gap: 7px;
+  height: 28px;
+  padding: 0 10px 0 7px;
   border: 1px solid var(--border-strong);
-  background: var(--surface-2);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface-2) 82%, transparent);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+}
+.site-chip[data-bare] {
+  padding-inline-end: 7px;
+}
+button.site-chip {
+  cursor: pointer;
+}
+button.site-chip:hover {
+  color: var(--ink-hi);
+  background: var(--surface-hover);
+}
+.site-chip svg {
   color: var(--ink-2);
 }
 
@@ -3650,16 +3672,42 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   padding: 10px 16px 16px;
 }
 /* Each add setting is a label and its value on one row, the value right-aligned like a setting in
-   Settings rather than a boxed field. */
+   Settings. The whole row is the target: a soft tint on hover, a little more while its list is open
+   or it has focus, so a focused row reads without boxing the value in. */
+.discover-add-rows {
+  display: flex;
+  flex-direction: column;
+  margin-inline: -8px;
+}
 .discover-add-row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
   min-height: 38px;
-  border-top: 1px solid var(--hairline);
+  padding-inline: 8px;
+  border-radius: 7px;
+  transition: background-color 120ms ease;
 }
-.discover-add-rows > :first-child {
-  border-top: 0;
+/* Mantine puts a hidden input after each select, so rows are siblings but not adjacent ones. The rule
+   above a tinted row, and the one below it, step aside so the tint reads as one shape. */
+.discover-add-row:not(:first-child)::before {
+  content: '';
+  position: absolute;
+  inset: 0 8px auto;
+  height: 1px;
+  background: var(--row-rule, var(--hairline));
+}
+.discover-add-row:is(:hover, :focus-within),
+.discover-add-row:is(:hover, :focus-within) + .discover-add-row,
+.discover-add-row:is(:hover, :focus-within) + input + .discover-add-row {
+  --row-rule: transparent;
+}
+.discover-add-row:hover {
+  background: color-mix(in srgb, var(--ink-hi) 5%, transparent);
+}
+.discover-add-row:has(.discover-add-input:is(:focus, [aria-expanded='true'])) {
+  background: color-mix(in srgb, var(--ink-hi) 8%, transparent);
 }
 .discover-add-label {
   flex: none;
@@ -3668,6 +3716,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--ink-3);
   font-size: var(--type-meta);
   font-weight: var(--fw-medium);
+  cursor: pointer;
 }
 .discover-add-field {
   flex: 1;
@@ -3682,19 +3731,30 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-weight: var(--fw-semibold);
   text-align: end;
   text-overflow: ellipsis;
+  caret-color: transparent;
+  user-select: none;
   cursor: pointer;
+}
+.discover-add-input.mantine-Input-input::selection {
+  background: transparent;
 }
 .discover-add-input.mantine-Input-input::placeholder {
   color: var(--ink-2);
   opacity: 1;
 }
-.discover-add-row:hover .discover-add-input.mantine-Input-input {
+.discover-add-row:hover .discover-add-input.mantine-Input-input,
+.discover-add-input.mantine-Input-input:is(:focus, [aria-expanded='true']) {
+  outline: none;
   color: var(--ink-hi);
 }
-.discover-add-input.mantine-Input-input:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: -2px;
-  border-radius: 6px;
+/* The card is the raised layer, so its dropdowns step up once more to stand apart from it. */
+[data-mantine-color-scheme] .discover-add-dropdown {
+  background-color: var(--surface-hover);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 14px 32px -10px rgb(0 0 0 / 0.6);
+}
+.discover-add-dropdown .mantine-Select-option[data-combobox-selected] {
+  background: color-mix(in srgb, var(--ink-hi) 8%, transparent);
 }
 .discover-add-row > .mantine-Switch-root {
   flex: 1;
@@ -6249,18 +6309,148 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: var(--surface-hover);
 }
 
-/* The body scrolls, not the modal: the band stays put while the tab panel moves under it, and it
-   is this element the detail rail sticks to. Capped short of the viewport so the modal keeps its
-   card shape rather than growing into a full-height page. */
-.discover-body {
+/* Band and body scroll together inside the card, so a long synopsis is not read through a slot
+   under a fixed band. Capped short of the viewport by the modal itself, so it keeps its card
+   shape. The collapsed bar (below) brings the title and the add button back once the band is gone. */
+.discover-scroll {
   position: relative;
-  /* Whatever the band leaves, measured rather than guessed. The old cap subtracted an estimate of
-     the band's height from the viewport, which was wrong the moment the band gained the add panel
-     and wrong again when it lost the tab row. */
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.discover-body {
+  position: relative;
   padding: var(--mantine-spacing-lg) clamp(20px, 2.6vw, 36px) var(--mantine-spacing-xl);
+}
+
+/* The collapsed band: zero-height and sticky, so it takes no room in the flow, with the bar itself
+   hung from it. Opaque, never frosted: nothing reads through it. */
+.discover-bar-anchor {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  height: 0;
+}
+.discover-bar {
+  position: absolute;
+  inset: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 64px;
+  padding: 0 14px 0 clamp(16px, 2.2vw, 28px);
+  /* The modal's own top corners; the band rounds itself the same way. */
+  border-radius: var(--mantine-radius-lg) var(--mantine-radius-lg) 0 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 8px 20px -12px rgb(0 0 0 / 0.5);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease,
+    visibility 0s linear 160ms;
+}
+.discover-bar[data-shown] {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .discover-bar,
+  .discover-bar[data-shown] {
+    transform: none;
+    transition: none;
+  }
+}
+.discover-bar-poster {
+  flex: none;
+  width: 32px;
+  height: 48px;
+  border-radius: 5px;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+.discover-bar-identity {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.discover-bar-title {
+  overflow: hidden;
+  color: var(--ink-hi);
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: var(--fw-bold);
+  line-height: 1.2;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.discover-bar-meta {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.discover-bar-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-hi);
+  font-weight: var(--fw-semibold);
+}
+.discover-bar-score svg {
+  color: var(--rating);
+}
+.discover-bar-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+.discover-bar-actions .mantine-Button-root[data-variant='subtle'] {
+  color: var(--ink-2);
+}
+.discover-bar-slot:empty {
+  display: none;
+}
+/* A phone has room for the title and one button; Shortlist stays in the card's footer. */
+@media (max-width: 47.9375em) {
+  .discover-bar {
+    gap: 10px;
+    padding-inline: 14px 8px;
+  }
+  .discover-bar-actions .shortlist-button {
+    display: none;
+  }
+  /* The plus alone, so the title keeps the width; the label stays for screen readers. */
+  .discover-bar-add.mantine-Button-root {
+    padding-inline: 12px;
+  }
+  .discover-bar-add .mantine-Button-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .discover-bar-add .mantine-Button-section {
+    margin: 0;
+  }
+}
+.discover-bar-close {
+  flex: none;
+  color: var(--ink-2);
+}
+/* The bar carries its own close; the floating pair would sit on top of it. */
+.discover-modal-root[data-bar] > :is(.discover-modal-close, .discover-modal-reroll) {
+  visibility: hidden;
 }
 
 /* The reading column against the acting column. 4fr/1fr is the 80/20 split; the 250px floor is
@@ -7464,8 +7654,7 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   .discover-modal-root {
     display: block;
   }
-  .discover-body {
-    flex: none;
+  .discover-scroll {
     overflow-y: visible;
   }
   /* The series page keeps a small poster, floated so only the title's first lines give way to it

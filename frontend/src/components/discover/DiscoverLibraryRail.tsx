@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { randomUUID } from '../../lib/uuid'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -30,6 +31,7 @@ const ADD_ROW = {
   label: 'discover-add-label',
   wrapper: 'discover-add-field',
   input: 'discover-add-input',
+  dropdown: 'discover-add-dropdown',
 }
 
 /**
@@ -47,6 +49,7 @@ export function DiscoverLibraryRail({
   rootFolders,
   onClose,
   addedFrom,
+  barSlot,
 }: {
   item: RecommendationItem
   /** Undefined until the detail request lands; only the content rating is read from it. */
@@ -56,6 +59,8 @@ export function DiscoverLibraryRail({
   rootFolders: RootFolder[] | undefined
   onClose: () => void
   addedFrom?: 'recommendation' | 'library'
+  /** The modal's collapsed bar. When set, the panel's primary action is portalled into it too. */
+  barSlot?: HTMLElement | null
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -210,8 +215,28 @@ export function DiscoverLibraryRail({
     )
   }
 
+  // The bar repeats only a one-press action. A request needs its form, so it stays up in the card.
+  const barAction =
+    seriesId != null ? (
+      <Button size="sm" variant="light" rightSection={<IconArrowRight size={16} />} onClick={goToLibrary}>
+        {addedSeriesId != null ? <Trans>Go to series</Trans> : <Trans>View in library</Trans>}
+      </Button>
+    ) : canAdd && rootFolders !== undefined && rootFolders.length > 0 ? (
+      <Button
+        className="discover-bar-add"
+        size="sm"
+        leftSection={<IconPlus size={16} />}
+        onClick={add}
+        loading={addSeries.isPending}
+        disabled={!rootFolderId}
+      >
+        <Trans>Add to library</Trans>
+      </Button>
+    ) : null
+
   return (
     <div className="discover-add-panel">
+      {barSlot && barAction && createPortal(barAction, barSlot)}
       {seriesId != null && archived ? (
         <>
           <Group gap="sm" justify="space-between" wrap="nowrap">

@@ -1,5 +1,5 @@
 import { ActionIcon, Group, Tooltip } from '@mantine/core'
-import type { MouseEvent } from 'react'
+import type { MouseEvent, ReactNode } from 'react'
 import { useLingui } from '@lingui/react/macro'
 import type { MetadataLink } from '../api/types'
 import { siteInfo } from '../lib/metadataSites'
@@ -15,9 +15,18 @@ import { MetadataSiteIcon } from './MetadataSiteIcon'
 export function MetadataLinks({
   links,
   compact = false,
+  chips = false,
+  extra,
 }: {
   links: MetadataLink[]
   compact?: boolean
+  /**
+   * One button per site with its score inside, as on the Discover detail header, instead of a
+   * square mark with the score beside it.
+   */
+  chips?: boolean
+  /** Trailing items in the same row, such as a rated site that has no link. */
+  extra?: ReactNode
 }) {
   const { t } = useLingui()
 
@@ -27,6 +36,35 @@ export function MetadataLinks({
     e.preventDefault()
     e.stopPropagation()
     window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
+  if (chips) {
+    return (
+      <Group gap={6} wrap="wrap" align="center">
+        {links.map((link) => {
+          const info = siteInfo(link.site)
+          const { label } = info
+          const score = link.score != null ? String(link.score) : null
+          const tip = link.votes != null ? t`${label}, ${link.votes.toLocaleString()} votes` : label
+          return (
+            <Tooltip key={link.site} label={tip} withArrow openDelay={300} zIndex={1001}>
+              <button
+                type="button"
+                className="site-chip"
+                data-bare={score ? undefined : true}
+                role="link"
+                aria-label={score ? t`Open on ${label}, rated ${score}` : t`Open on ${label}`}
+                onClick={(e) => open(e, link.url)}
+              >
+                <MetadataSiteIcon site={link.site} monogram={info.short} size={15} />
+                {score && <span className="tnum">{score}</span>}
+              </button>
+            </Tooltip>
+          )
+        })}
+        {extra}
+      </Group>
+    )
   }
 
   return (

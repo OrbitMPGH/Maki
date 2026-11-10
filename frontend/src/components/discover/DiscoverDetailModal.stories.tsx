@@ -66,6 +66,24 @@ export const LongTitle: Story = {
   },
 }
 
+/** Scrolled past the add card: the band collapses to a bar that keeps the title and the add button. */
+export const CollapsedBar: Story = {
+  args: LongTitle.args,
+  parameters: LongTitle.parameters,
+  play: async ({ canvasElement }) => {
+    const dialog = await dialogOf(canvasElement)
+    await within(dialog).findByRole('heading', { name: LONG_TITLE })
+    const bar = dialog.querySelector('.discover-bar')
+    await expect(bar).not.toHaveAttribute('data-shown')
+    const scroller = dialog.querySelector('.discover-scroll')
+    await waitFor(() => {
+      scroller?.scrollTo({ top: scroller.scrollHeight })
+      expect(bar).toHaveAttribute('data-shown')
+    })
+    await expect(within(bar as HTMLElement).getByRole('button', { name: 'Add to library' })).toBeVisible()
+  },
+}
+
 export const Closed: Story = {
   args: { item: null },
 }
