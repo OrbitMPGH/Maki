@@ -7,7 +7,7 @@ import '@mantine/notifications/styles.css'
 import '@fontsource-variable/onest'
 import '@fontsource-variable/bricolage-grotesque/opsz.css'
 import '../src/theme.css'
-import { ACCENTS, BACKGROUNDS } from '../src/theme-context'
+import { ACCENTS, BACKGROUNDS, DEFAULT_ACCENT, DEFAULT_BACKGROUND } from '../src/theme-context'
 import { loadLocale, SUPPORTED_LOCALES, type LocaleCode } from '../src/i18n'
 import { StoryProviders } from './StoryProviders'
 import type { MemoryRouterProps } from 'react-router-dom'
@@ -152,8 +152,8 @@ const preview: Preview = {
     throw new Error(`Requests with no MSW handler (add them under .storybook/mocks):\n  ${missing.join('\n  ')}`)
   },
   initialGlobals: {
-    background: 'tinted',
-    accent: 'indigo',
+    background: DEFAULT_BACKGROUND,
+    accent: DEFAULT_ACCENT,
     locale: 'en',
   },
   globalTypes: {

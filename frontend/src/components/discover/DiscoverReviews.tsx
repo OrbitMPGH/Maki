@@ -1,4 +1,4 @@
-import { Anchor, Badge, Group, Skeleton, Spoiler, Stack, Text, ThemeIcon, Tooltip } from '@mantine/core'
+import { Anchor, Badge, Group, Skeleton, Spoiler, Stack, Text, Tooltip } from '@mantine/core'
 import { IconExternalLink, IconMessage2, IconStarFilled, IconThumbUp } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -189,13 +189,13 @@ function ReviewByline({ review }: { review: MangaReview }) {
 /** The review's site as its logo, named by the tooltip and to screen readers. */
 function SourceMark({ site }: { site: string }) {
   const { t } = useLingui()
-  const { label, short, color } = siteInfo(site)
+  const { label, short } = siteInfo(site)
 
   return (
     <Tooltip label={t`From ${label}`} withArrow zIndex={TOOLTIP_Z}>
-      <ThemeIcon size={22} radius="sm" variant="light" color={color} role="img" aria-label={t`From ${label}`}>
-        <MetadataSiteIcon site={site} monogram={short} size={13} />
-      </ThemeIcon>
+      <span style={{ display: 'inline-flex', flex: 'none' }} role="img" aria-label={t`From ${label}`}>
+        <MetadataSiteIcon site={site} monogram={short} size={20} />
+      </span>
     </Tooltip>
   )
 }

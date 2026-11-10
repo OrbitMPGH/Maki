@@ -10,10 +10,16 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const BrandGlyph: Story = {}
+export const SiteIcon: Story = {}
 
-export const RasterMark: Story = {
-  args: { site: 'mangabaka', monogram: 'MB' },
+export const AllSites: Story = {
+  render: (args) => (
+    <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+      {['mangabaka', 'anilist', 'myanimelist', 'mangaupdates', 'kitsu', 'mangadex'].map((site) => (
+        <MetadataSiteIcon key={site} {...args} site={site} />
+      ))}
+    </div>
+  ),
 }
 
 export const MonogramFallback: Story = {

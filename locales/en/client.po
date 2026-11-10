@@ -126,6 +126,11 @@ msgstr "{0, plural, one {# chapter} other {# chapters}}"
 msgid "{0, plural, one {# could not be moved (locked or permission denied)} other {# could not be moved (locked or permission denied)}}"
 msgstr "{0, plural, one {# could not be moved (locked or permission denied)} other {# could not be moved (locked or permission denied)}}"
 
+#. placeholder {0}: creators.length
+#: src/components/discover/FollowingRail.tsx
+msgid "{0, plural, one {# creator} other {# creators}}"
+msgstr "{0, plural, one {# creator} other {# creators}}"
+
 #. placeholder {0}: alertDelistedIds.length
 #: src/pages/SeriesDetailPage.tsx
 msgid "{0, plural, one {# downloaded chapter is no longer listed} other {# downloaded chapters are no longer listed}}"
@@ -310,6 +315,11 @@ msgstr "{0, plural, one {# recovery code left. A new set replaces the old codes.
 msgid "{0, plural, one {# repository} other {# repositories}}"
 msgstr "{0, plural, one {# repository} other {# repositories}}"
 
+#. placeholder {0}: results.length
+#: src/components/import/ImportMatchFinder.tsx
+msgid "{0, plural, one {# result} other {# results}}"
+msgstr "{0, plural, one {# result} other {# results}}"
+
 #. placeholder {0}: rules.length
 #: src/pages/PageConversionWizardPage.tsx
 msgid "{0, plural, one {# rule} other {# rules}}"
@@ -421,6 +431,11 @@ msgstr "{0, plural, one {Deletes # file for good.} other {Deletes # files for go
 msgid "{0, plural, one {Downloaded # embedded series} other {Downloaded # embedded series}}"
 msgstr "{0, plural, one {Downloaded # embedded series} other {Downloaded # embedded series}}"
 
+#. placeholder {0}: draft.lockoutMinutes
+#: src/components/settings/SecuritySection.tsx
+msgid "{0, plural, one {for # minute} other {for # minutes}}"
+msgstr "{0, plural, one {for # minute} other {for # minutes}}"
+
 #. placeholder {0}: profile.libraryCount
 #: src/pages/discover/TasteTab.tsx
 msgid "{0, plural, one {From {readSeriesCount} of your # series} other {From {readSeriesCount} of your # series}}"
@@ -440,6 +455,11 @@ msgstr "{0, plural, one {Import # series} other {Import # series}}"
 #: src/pages/SeriesDetailPage.tsx
 msgid "{0, plural, one {Kept # chapter} other {Kept # chapters}}"
 msgstr "{0, plural, one {Kept # chapter} other {Kept # chapters}}"
+
+#. placeholder {0}: draft.lockoutMaxAttempts
+#: src/components/settings/SecuritySection.tsx
+msgid "{0, plural, one {Lock after # failed sign-in} other {Lock after # failed sign-ins}}"
+msgstr "{0, plural, one {Lock after # failed sign-in} other {Lock after # failed sign-ins}}"
 
 #. placeholder {0}: r.updated
 #: src/pages/SeriesDetailPage.tsx
@@ -530,6 +550,11 @@ msgstr "{0, plural, one {Restored and linked to # chapter} other {Restored and l
 #: src/components/import/MihonReview.tsx
 msgid "{0, plural, one {Select all # in this view} other {Select all # in this view}}"
 msgstr "{0, plural, one {Select all # in this view} other {Select all # in this view}}"
+
+#. placeholder {0}: draft.sessionDays
+#: src/components/settings/SecuritySection.tsx
+msgid "{0, plural, one {sessions last # day} other {sessions last # days}}"
+msgstr "{0, plural, one {sessions last # day} other {sessions last # days}}"
 
 #. placeholder {0}: selected.size
 #: src/pages/LibraryPage.tsx
@@ -625,6 +650,10 @@ msgstr "{0} rows right now"
 #: src/pages/stats/charts/LeanBars.tsx
 msgid "{abs} pt"
 msgstr "{abs} pt"
+
+#: src/components/settings/UsersSection.tsx
+msgid "{accountCount, plural, one {# account} other {# accounts}}"
+msgstr "{accountCount, plural, one {# account} other {# accounts}}"
 
 #: src/pages/HealthPage.tsx
 msgid "{acknowledged, plural, one {# acknowledged} other {# acknowledged}}"
@@ -924,6 +953,10 @@ msgstr "{count, plural, one {# deletion} other {# deletions}}"
 msgid "{count, plural, one {# file gone, nowhere else in the library} other {# files gone, nowhere else in the library}}"
 msgstr "{count, plural, one {# file gone, nowhere else in the library} other {# files gone, nowhere else in the library}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# file} other {# files}}"
+msgstr "{count, plural, one {# file} other {# files}}"
+
 #: src/components/import/IgnoredFoldersModal.tsx
 msgid "{count, plural, one {# ignored} other {# ignored}}"
 msgstr "{count, plural, one {# ignored} other {# ignored}}"
@@ -1007,6 +1040,10 @@ msgstr "{count, plural, one {I confirm permanent deletion of # archive.} other {
 #: src/components/SourceMappingsSection.tsx
 msgid "{count, plural, one {Median of # measured chapter: {width}px wide, {bpp} bits per pixel (JPG equivalent).} other {Median of # measured chapters: {width}px wide, {bpp} bits per pixel (JPG equivalent).}}"
 msgstr "{count, plural, one {Median of # measured chapter: {width}px wide, {bpp} bits per pixel (JPG equivalent).} other {Median of # measured chapters: {width}px wide, {bpp} bits per pixel (JPG equivalent).}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {No chapter reads from it.} other {No chapter reads from them.}} Deleting frees the space and clears the duplicate findings. Nothing else changes."
+msgstr "{count, plural, one {No chapter reads from it.} other {No chapter reads from them.}} Deleting frees the space and clears the duplicate findings. Nothing else changes."
 
 #: src/components/NotificationBell.tsx
 msgid "{count, plural, one {Notifications, # unread} other {Notifications, # unread}}"
@@ -1290,8 +1327,12 @@ msgid "{gone, plural, one {Moved # file to the recycle bin} other {Moved # files
 msgstr "{gone, plural, one {Moved # file to the recycle bin} other {Moved # files to the recycle bin}}"
 
 #: src/components/settings/UsersSection.tsx
-msgid "{granted, plural, one {# granted} other {# granted}}"
-msgstr "{granted, plural, one {# granted} other {# granted}}"
+msgid "{granted, plural, one {# permission} other {# permissions}}"
+msgstr "{granted, plural, one {# permission} other {# permissions}}"
+
+#: src/components/settings/UsersSection.tsx
+msgid "{grantedCount, plural, one {# permission} other {# permissions}}"
+msgstr "{grantedCount, plural, one {# permission} other {# permissions}}"
 
 #: src/components/ui/CoverCard.tsx
 msgid "{have, plural, one {# chapter} other {# chapters}}"
@@ -3017,6 +3058,7 @@ msgstr "Access all root folders"
 msgid "Access token"
 msgstr "Access token"
 
+#: src/components/settings/UsersSection.tsx
 #: src/pages/settings/registry.ts
 msgid "Account"
 msgstr "Account"
@@ -3070,7 +3112,6 @@ msgstr "Action for rule {number}"
 #: src/components/NotificationsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
-#: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -3284,6 +3325,10 @@ msgstr "Adjusted by {editedBy}, asked for {askedFor}"
 msgid "Adjusted, asked for {askedFor}"
 msgstr "Adjusted, asked for {askedFor}"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Admin"
+msgstr "Admin"
+
 #: src/components/settings/SecuritySection.tsx
 msgid "Admin claim"
 msgstr "Admin claim"
@@ -3293,6 +3338,10 @@ msgstr "Admin claim"
 #: src/components/UserMenu.tsx
 msgid "Administrator"
 msgstr "Administrator"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Administrator, every permission"
+msgstr "Administrator, every permission"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Administrators keep password sign-in."
@@ -3764,6 +3813,10 @@ msgstr "Appearance"
 #: src/components/NotificationsSection.tsx
 msgid "Application token"
 msgstr "Application token"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Applies after Maki restarts"
+msgstr "Applies after Maki restarts"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Applies automatically to"
@@ -4403,6 +4456,10 @@ msgstr "Browse tags to include"
 msgid "Browse the catalogue"
 msgstr "Browse the catalogue"
 
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "Browse the server to pick a root folder."
+msgstr "Browse the server to pick a root folder."
+
 #: src/components/CatalogueBrowser.tsx
 msgid "Browsing the catalogue"
 msgstr "Browsing the catalogue"
@@ -4446,6 +4503,10 @@ msgstr "By status"
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "By type"
 msgstr "By type"
+
+#: src/pages/HealthPage.tsx
+msgid "Byte for byte the same as a file that stays in the library."
+msgstr "Byte for byte the same as a file that stays in the library."
 
 #: src/pages/HealthPage.tsx
 msgid "Byte for byte the same as another file. The Duplicate filter deletes the spare copy."
@@ -4502,6 +4563,7 @@ msgid "Can't sign in with the saved details."
 msgstr "Can't sign in with the saved details."
 
 #: src/components/DiscoverPresets.tsx
+#: src/components/import/ImportMatchFinder.tsx
 #: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/layout/PageLayoutEditor.tsx
@@ -4519,6 +4581,7 @@ msgstr "Can't sign in with the saved details."
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/RestoreSeriesDialog.tsx
 #: src/components/series/UndoConversionModal.tsx
+#: src/components/settings/AccountSection.tsx
 #: src/components/settings/FolderBrowserModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -4790,6 +4853,10 @@ msgstr "Change the chapter range"
 msgid "Change the issuer URL?"
 msgstr "Change the issuer URL?"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Change the sign-in, permissions or library access for this account."
+msgstr "Change the sign-in, permissions or library access for this account."
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Change this title only"
 msgstr "Change this title only"
@@ -4827,8 +4894,8 @@ msgid "Changes take effect after Maki restarts."
 msgstr "Changes take effect after Maki restarts."
 
 #: src/components/settings/AccountSection.tsx
-msgid "Changing your password signs out your other devices."
-msgstr "Changing your password signs out your other devices."
+msgid "Changing it signs out your other devices."
+msgstr "Changing it signs out your other devices."
 
 #: src/components/NotificationsSection.tsx
 msgid "Channel"
@@ -4922,6 +4989,10 @@ msgstr "Chapter page"
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Chapter pages"
 msgstr "Chapter pages"
+
+#: src/pages/HealthPage.tsx
+msgid "Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. A file with an identical copy in the same series folder hands its chapters to that copy instead. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
+msgstr "Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. A file with an identical copy in the same series folder hands its chapters to that copy instead. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Chapter snapshots refreshed"
@@ -5202,6 +5273,10 @@ msgstr "Choose how this download lands in {0}."
 msgid "Choose Register / Login. The username is your OPDS token, the part of the feed URL after <0>{feedPath}</0>. Type anything as the password; Maki doesn't use it."
 msgstr "Choose Register / Login. The username is your OPDS token, the part of the feed URL after <0>{feedPath}</0>. Type anything as the password; Maki doesn't use it."
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Claims"
+msgstr "Claims"
+
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
 msgid "Clean up read chapters"
@@ -5336,6 +5411,7 @@ msgid "Client secret"
 msgstr "Client secret"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/discover/FollowingRail.tsx
 #: src/components/import/IgnoredFoldersModal.tsx
 #: src/components/import/ImportPlanModal.tsx
 #: src/components/ImportReviewModal.tsx
@@ -6980,6 +7056,7 @@ msgstr "Downloading…"
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
 #: src/components/series/SeriesHero.tsx
+#: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/registry.ts
@@ -7052,6 +7129,10 @@ msgstr "Each bar spans the days a chapter is likely, never a promise. A diamond 
 msgid "Each chapter's file is deleted for good some days after everyone has read it."
 msgstr "Each chapter's file is deleted for good some days after everyone has read it."
 
+#: src/components/settings/AccountSection.tsx
+msgid "Each code works once if you lose your authenticator."
+msgstr "Each code works once if you lose your authenticator."
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Each language adds its own chapter rows and files."
 msgstr "Each language adds its own chapter rows and files."
@@ -7063,10 +7144,6 @@ msgstr "Each language you pick is searched separately."
 #: src/components/import/MihonReview.tsx
 msgid "Each Mihon category becomes a tag on the series. Manga in Mihon's Default category get no tag."
 msgstr "Each Mihon category becomes a tag on the series. Manga in Mihon's Default category get no tag."
-
-#: src/pages/HealthPage.tsx
-msgid "Each of these is byte for byte the same as another file that stays in the library, and no chapter reads from it. Deleting them frees the space and clears the duplicate findings. Nothing else changes."
-msgstr "Each of these is byte for byte the same as another file that stays in the library, and no chapter reads from it. Deleting them frees the space and clears the duplicate findings. Nothing else changes."
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Each page takes several seconds of server CPU, and upscaled pages are kept in a disk cache. Nothing runs until a reader turns Enhance on."
@@ -8168,6 +8245,10 @@ msgstr "Folders with files that may not link, files left out, or files Maki chan
 msgid "Follow"
 msgstr "Follow"
 
+#: src/components/discover/FollowingRail.tsx
+msgid "Follow one from a series page."
+msgstr "Follow one from a series page."
+
 #: src/api/inbox.ts
 msgid "Follow someone from their creator page."
 msgstr "Follow someone from their creator page."
@@ -8486,6 +8567,10 @@ msgstr "Grabbed from {indexer}"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Grabbed from {indexer}: {releaseName}"
 msgstr "Grabbed from {indexer}: {releaseName}"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Grants every permission and the Settings pages."
+msgstr "Grants every permission and the Settings pages."
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Gray"
@@ -8891,6 +8976,10 @@ msgstr "How to import"
 #: src/pages/discover/TasteTab.tsx
 msgid "How you read"
 msgstr "How you read"
+
+#: src/components/settings/AccountSection.tsx
+msgid "How you sign in, and the devices that stay signed in."
+msgstr "How you sign in, and the devices that stay signed in."
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -9818,9 +9907,14 @@ msgstr "Last upgrade scan: {at}, {checked, plural, one {# chapter checked} other
 msgid "Last upgrade scan: {at}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
 msgstr "Last upgrade scan: {at}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
 
+#. placeholder {0}: formatDateTime(key.lastUsedAt)
 #: src/components/settings/AccountSection.tsx
-msgid "Last used"
-msgstr "Last used"
+msgid "Last used {0}"
+msgstr "Last used {0}"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Last used never"
+msgstr "Last used never"
 
 #: src/pages/ActivityPage.tsx
 msgid "Last volume search: {lastVolumeSearchText}"
@@ -9980,6 +10074,7 @@ msgstr "Level up"
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
 #: src/components/series/SeriesHero.tsx
+#: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
 #: src/pages/discover/ShortlistTab.tsx
@@ -9990,6 +10085,10 @@ msgstr "Level up"
 #: src/pages/stats/sectionList.ts
 msgid "Library"
 msgstr "Library"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Library access"
+msgstr "Library access"
 
 #: src/components/SetupWizard.tsx
 msgid "Library folders"
@@ -10225,6 +10324,10 @@ msgstr "Local MangaBaka database ready"
 #: src/components/settings/SecuritySection.tsx
 msgid "Lockout duration (minutes)"
 msgstr "Lockout duration (minutes)"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Lockout is off"
+msgstr "Lockout is off"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -11356,7 +11459,6 @@ msgstr "Neutral"
 msgid "neutral, seeds at shelf weight"
 msgstr "neutral, seeds at shelf weight"
 
-#: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/ActivityPage.tsx
 msgid "never"
@@ -11446,6 +11548,10 @@ msgstr "New format"
 msgid "New from creators you follow"
 msgstr "New from creators you follow"
 
+#: src/components/settings/AccountSection.tsx
+msgid "New key"
+msgstr "New key"
+
 #: src/pages/settings/ReadingCards.tsx
 msgid "New OPDS feed URL generated"
 msgstr "New OPDS feed URL generated"
@@ -11487,6 +11593,10 @@ msgstr "New series find their sources in the background. Chapters you read in Mi
 #: src/api/inbox.ts
 msgid "New series from creators you follow"
 msgstr "New series from creators you follow"
+
+#: src/components/discover/FollowingRail.tsx
+msgid "New series from them show up on Discover."
+msgstr "New series from them show up on Discover."
 
 #: src/components/TagManagerModal.tsx
 msgid "New tag…"
@@ -11686,6 +11796,10 @@ msgstr "No connections yet"
 msgid "No creator shows up often enough yet."
 msgstr "No creator shows up often enough yet."
 
+#: src/components/discover/FollowingRail.tsx
+msgid "No creators followed"
+msgstr "No creators followed"
+
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "No demographic data yet"
 msgstr "No demographic data yet"
@@ -11761,6 +11875,10 @@ msgstr "No indexer set up"
 #: src/pages/settings/DownloadCards.tsx
 msgid "No indexers configured in {backendName}."
 msgstr "No indexers configured in {backendName}."
+
+#: src/components/settings/AccountSection.tsx
+msgid "No keys yet. New key makes one for a script or an app."
+msgstr "No keys yet. New key makes one for a script or an app."
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "No language matches"
@@ -12284,6 +12402,7 @@ msgid "Not in your library yet"
 msgstr "Not in your library yet"
 
 #: src/components/LinkChaptersModal.tsx
+#: src/components/settings/AccountSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
 msgid "Not linked"
@@ -12366,6 +12485,7 @@ msgstr "Not scanned"
 msgid "Not set"
 msgstr "Not set"
 
+#: src/components/settings/AccountSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Not set up"
@@ -12378,6 +12498,10 @@ msgstr "Not set up yet."
 #: src/pages/ScrobblePage.tsx
 msgid "Not set up yet. An admin can add it in Settings."
 msgstr "Not set up yet. An admin can add it in Settings."
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Not set up. Open to add an issuer, client and claims."
+msgstr "Not set up. Open to add an issuer, client and claims."
 
 #: src/pages/ScrobblePage.tsx
 msgid "Not started"
@@ -12886,6 +13010,7 @@ msgstr "of reading time"
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/OfflineReadingSection.tsx
+#: src/components/settings/SecuritySection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -12972,6 +13097,7 @@ msgstr "OLED black"
 #: src/components/ImportListsSection.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/AccountSection.tsx
+#: src/components/settings/SecuritySection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/LibraryPage.tsx
 msgid "On"
@@ -13253,9 +13379,17 @@ msgstr "Open the page to check it's the right series"
 msgid "Open the search with these filters from now on"
 msgstr "Open the search with these filters from now on"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Open to edit the issuer, client, claims and who gets an account."
+msgstr "Open to edit the issuer, client, claims and who gets an account."
+
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Open webtoon chapters in Continuous layout"
 msgstr "Open webtoon chapters in Continuous layout"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "OpenID Connect provider"
+msgstr "OpenID Connect provider"
 
 #: src/pages/reader/NextChapterHint.tsx
 msgctxt "next chapter gesture"
@@ -13950,10 +14084,6 @@ msgstr "Posts into one topic of a forum group."
 msgid "Preferences"
 msgstr "Preferences"
 
-#: src/components/settings/AccountSection.tsx
-msgid "Prefix"
-msgstr "Prefix"
-
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Preload"
 msgstr "Preload"
@@ -14092,6 +14222,7 @@ msgstr "Protect from upgrades"
 msgid "Protected from upgrades"
 msgstr "Protected from upgrades"
 
+#: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Provider"
 msgstr "Provider"
@@ -14633,6 +14764,10 @@ msgstr "Readers without a display name appear under their login name on shared n
 msgid "Reading"
 msgstr "Reading"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Reading and sharing"
+msgstr "Reading and sharing"
+
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Reading counts in your stats and goes to your trackers."
 msgstr "Reading counts in your stats and goes to your trackers."
@@ -14825,6 +14960,10 @@ msgstr "Record"
 #: src/pages/LoginPage.tsx
 msgid "Recovery code"
 msgstr "Recovery code"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Recovery codes are shown once you verify."
+msgstr "Recovery codes are shown once you verify."
 
 #: src/components/TagBuckets.tsx
 msgid "Recurrent"
@@ -15936,8 +16075,8 @@ msgid "Revoke {revokingName}?"
 msgstr "Revoke {revokingName}?"
 
 #: src/components/settings/AccountSection.tsx
-msgid "revoked"
-msgstr "revoked"
+msgid "Revoked"
+msgstr "Revoked"
 
 #: src/pages/stats/sectionList.ts
 msgid "Rhythm"
@@ -16596,6 +16735,10 @@ msgstr "Search by title, description, or author:\"Junji Ito\""
 msgid "Search by title, description, or by feel"
 msgstr "Search by title, description, or by feel"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Search by title, or paste an id or link."
+msgstr "Search by title, or paste an id or link."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Search chapters"
 msgstr "Search chapters"
@@ -16904,6 +17047,10 @@ msgid "Sends what you read to your trackers every {intervalMinutes, plural, one 
 msgstr "Sends what you read to your trackers every {intervalMinutes, plural, one {# minute} other {# minutes}}. Progress on a tracker is never lowered."
 
 #: src/components/settings/AccountSection.tsx
+msgid "Sent as <0>X-Api-Key</0>"
+msgstr "Sent as <0>X-Api-Key</0>"
+
+#: src/components/settings/AccountSection.tsx
 msgid "Sent in the <0>X-Api-Key</0> header. A key acts as you."
 msgstr "Sent in the <0>X-Api-Key</0> header. A key acts as you."
 
@@ -17092,6 +17239,10 @@ msgstr "Session lifetime (days)"
 msgid "Sessions"
 msgstr "Sessions"
 
+#: src/components/settings/AccountSection.tsx
+msgid "Set"
+msgstr "Set"
+
 #: src/components/series/MetadataHistoryModal.tsx
 msgid "Set by {user}"
 msgstr "Set by {user}"
@@ -17169,10 +17320,6 @@ msgstr "Set up this site as a source"
 #: src/pages/ScrobblePage.tsx
 msgid "Set up trackers"
 msgstr "Set up trackers"
-
-#: src/components/settings/AccountSection.tsx
-msgid "Set up two-factor authentication"
-msgstr "Set up two-factor authentication"
 
 #: src/nav.ts
 #: src/pages/SettingsPage.tsx
@@ -17462,6 +17609,10 @@ msgstr "Sign out everywhere else"
 #: src/pages/settings/SuwayomiCards.tsx
 msgid "Sign-in"
 msgstr "Sign-in"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Sign-in behaviour"
+msgstr "Sign-in behaviour"
 
 #: src/api/ssoErrors.ts
 msgid "Sign-in failed"
@@ -19025,6 +19176,10 @@ msgstr "theme, dark mode, light mode, accent colour, accent color, colour, match
 msgid "Then"
 msgstr "Then"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Then they can try again."
+msgstr "Then they can try again."
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "There is no safe automatic merge."
 msgstr "There is no safe automatic merge."
@@ -19072,6 +19227,10 @@ msgstr "They are still on this device. Reload the page, or remove and save them 
 #: src/pages/discover/TasteTab.tsx
 msgid "They come from the catalogue, so a library the dump does not cover has none."
 msgstr "They come from the catalogue, so a library the dump does not cover has none."
+
+#: src/components/settings/UsersSection.tsx
+msgid "They sign in with these details and see only what you grant here."
+msgstr "They sign in with these details and see only what you grant here."
 
 #: src/components/settings/UsersSection.tsx
 msgid "They will have to link single sign-on again, or use a password, to sign in."
@@ -19205,8 +19364,8 @@ msgid "This pass:"
 msgstr "This pass:"
 
 #: src/pages/HealthPage.tsx
-msgid "This permanently deletes {count, plural, one {the file} other {these files}} from disk. Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. A file with an identical copy in the same series folder hands its chapters to that copy instead. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
-msgstr "This permanently deletes {count, plural, one {the file} other {these files}} from disk. Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. A file with an identical copy in the same series folder hands its chapters to that copy instead. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
+msgid "This permanently deletes {count, plural, one {the file} other {these files}} from disk."
+msgstr "This permanently deletes {count, plural, one {the file} other {these files}} from disk."
 
 #: src/pages/HealthPage.tsx
 msgid "This permanently deletes the archive, and {chapterLabel} read from it. They will show as not downloaded. Chapter records and reading history remain."
@@ -19395,6 +19554,10 @@ msgstr "Thumbs up. This title now steers your recommendations, and it will not b
 #: src/pages/discover/FeedbackLab.tsx
 msgid "Thumbs, hide or dismiss a recommendation and it shows up here."
 msgstr "Thumbs, hide or dismiss a recommendation and it shows up here."
+
+#: src/pages/HealthPage.tsx
+msgid "Tick the box to continue"
+msgstr "Tick the box to continue"
 
 #: src/components/LinkFileToChaptersModal.tsx
 msgid "Tick the chapters this file contains. Shift-click for a range. Unticking one unlinks it."
@@ -19719,6 +19882,10 @@ msgstr "Try the preview again"
 #: src/components/SourceMappingsSection.tsx
 msgid "Turkish"
 msgstr "Turkish"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Turn it off"
+msgstr "Turn it off"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Turn it off if an app reports progress you didn't make."
@@ -20333,6 +20500,10 @@ msgstr "Use this copy"
 #: src/components/settings/FolderBrowserModal.tsx
 msgid "Use this folder"
 msgstr "Use this folder"
+
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "Use this folder, or go up a level."
+msgstr "Use this folder, or go up a level."
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Use this title for taste"
@@ -21157,10 +21328,6 @@ msgstr "You finished {animeTitle} ({coveredLabel}). That likely covers up to ch.
 #: src/components/series/AnimeResumeCallout.tsx
 msgid "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
 msgstr "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
-
-#: src/components/discover/FollowingRail.tsx
-msgid "You follow nobody yet. Open a creator or studio and press Follow."
-msgstr "You follow nobody yet. Open a creator or studio and press Follow."
 
 #: src/components/series/RateHint.tsx
 msgid "You had this at {soFar} so far. Keep it?"

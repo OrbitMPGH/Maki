@@ -673,7 +673,7 @@ export const users: UserSummary[] = [
   u(3, 'noa', 'Noa', {
     permissions: 'AddSeries, DownloadChapters, UseTrackers, UseOpds',
     permissionNames: ['AddSeries', 'DownloadChapters', 'UseTrackers', 'UseOpds'],
-    maxContentRating: 'Erotica',
+    maxContentRating: 'erotica',
     allRootFolders: true,
     rootFolderIds: [],
     oidcLinked: true,

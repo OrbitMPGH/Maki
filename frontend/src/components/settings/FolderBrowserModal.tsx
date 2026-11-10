@@ -3,7 +3,6 @@ import {
   ActionIcon,
   Button,
   Group,
-  Loader,
   Modal,
   ScrollArea,
   Stack,
@@ -11,9 +10,12 @@ import {
   TextInput,
   UnstyledButton,
 } from '@mantine/core'
-import { IconArrowUp, IconFolder, IconServer } from '../../lib/icons'
+import { IconArrowUp, IconChevronRight, IconFolder, IconServer } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useBrowseFolders } from '../../api/hooks'
+import { EmptyState } from '../ui/EmptyState'
+import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
+import { StatusDot } from '../ui/StatusDot'
 
 /**
  * Walks the server's filesystem (not the browser's) so an admin can pick a root folder instead of
@@ -59,7 +61,17 @@ export function FolderBrowserModal({
   const current = listing && !isPlaceholderData ? listing.path : ''
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Choose a folder`} size="lg">
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={
+        <ModalHeading
+          title={t`Choose a folder`}
+          description={<Trans>Browse the server to pick a root folder.</Trans>}
+        />
+      }
+      size="lg"
+    >
       <Stack gap="sm">
         <Group gap="xs" wrap="nowrap">
           <ActionIcon
@@ -81,7 +93,7 @@ export function FolderBrowserModal({
                 go(typed.trim())
               }
             }}
-            rightSection={isFetching ? <Loader size="xs" /> : null}
+            rightSection={isFetching ? <StatusDot tone="info" live aria-hidden /> : null}
             ff="monospace"
             style={{ flex: 1 }}
           />
@@ -90,15 +102,20 @@ export function FolderBrowserModal({
         <ScrollArea h={320} className="folder-browser-list" type="auto">
           {error ? (
             <Stack gap="xs" p="md" align="flex-start">
-              <Text size="sm" c="var(--danger)">{error.message}</Text>
+              <ModalNote tone="danger">{error.message}</ModalNote>
               <Button size="xs" variant="default" onClick={() => go(previous)}>
                 <Trans>Go back</Trans>
               </Button>
             </Stack>
           ) : listing && listing.folders.length === 0 ? (
-            <Text size="sm" c="var(--ink-3)" p="md">
-              <Trans>No folders in here.</Trans>
-            </Text>
+            <div className="folder-browser-empty">
+              <EmptyState
+                compact
+                mood="asleep"
+                title={t`No folders in here.`}
+                description={<Trans>Use this folder, or go up a level.</Trans>}
+              />
+            </div>
           ) : (
             listing?.folders.map((f) => (
               <UnstyledButton
@@ -109,12 +126,13 @@ export function FolderBrowserModal({
               >
                 {atDriveList ? <IconServer size={16} /> : <IconFolder size={16} />}
                 <Text span size="sm" className="folder-browser-name">{f.name}</Text>
+                <IconChevronRight size={16} className="folder-browser-chevron" aria-hidden />
               </UnstyledButton>
             ))
           )}
         </ScrollArea>
 
-        <Group justify="flex-end" gap="xs">
+        <ModalFooter>
           <Button variant="default" onClick={onClose}>
             <Trans>Cancel</Trans>
           </Button>
@@ -127,7 +145,7 @@ export function FolderBrowserModal({
           >
             <Trans>Use this folder</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Stack>
     </Modal>
   )

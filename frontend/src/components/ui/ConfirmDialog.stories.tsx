@@ -34,3 +34,17 @@ export const Default: Story = {
 export const Loading: Story = {
   args: { loading: true },
 }
+
+export const WithDetails: Story = {
+  args: {
+    description: 'Removes "Favourites" from 14 series. The series themselves stay in your library.',
+    children: (
+      <ul style={{ margin: 0, paddingLeft: 18 }}>
+        <li>The Salt Cartographer</li>
+        <li>Crown of Ash and Rain</li>
+        <li>Glass Harbor Nocturne</li>
+      </ul>
+    ),
+    status: '14 series affected',
+  },
+}

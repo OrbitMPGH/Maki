@@ -89,8 +89,8 @@ const ACCENT_KEY = 'maki-accent'
 const LEGACY_KEY = 'maki-theme'
 
 // Nothing stored means the user never picked, so they follow the defaults. Stored ids are kept.
-const DEFAULT_BACKGROUND = 'tinted'
-const DEFAULT_ACCENT: AccentOption['id'] = 'blush'
+export const DEFAULT_BACKGROUND = 'tinted'
+export const DEFAULT_ACCENT: AccentOption['id'] = 'blush'
 
 // A returning user keeps exactly what they had: the old presets all sat on the night ground.
 const LEGACY_PRESETS: Record<string, [background: string, accent: AccentOption['id']]> = {

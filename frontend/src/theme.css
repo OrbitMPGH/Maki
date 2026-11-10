@@ -5624,8 +5624,19 @@ button.site-chip:hover {
   opacity: 0.6;
 }
 .folder-browser-name {
+  flex: 1;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+.folder-browser-row svg.folder-browser-chevron {
+  color: var(--ink-4);
+}
+.folder-browser-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 318px;
+  padding: 24px;
 }
 
 .setup-choice {
@@ -11889,9 +11900,8 @@ tr:hover .mono-value-copy {
   outline-offset: 2px;
   border-radius: var(--radius-2xs);
 }
-/* A switch greyed because its source is off keeps the track's edge, or only the knob shows and it
-   sits off-centre under the header. */
-.sources-table .mantine-Switch-input:is(:disabled, [data-disabled]) + .mantine-Switch-track {
+/* A disabled switch keeps the track's edge, or only the knob shows and reads as a stray dot. */
+.mantine-Switch-input:is(:disabled, [data-disabled]) + .mantine-Switch-track {
   box-shadow: inset 0 0 0 1px var(--border-control);
 }
 
@@ -12159,15 +12169,6 @@ tr:hover .mono-value-copy {
 .import-table .mantine-Table-td:last-child {
   min-width: 22rem;
 }
-.import-match-option {
-  border-radius: var(--radius-control);
-  padding: 0.35rem 0.5rem;
-}
-.import-match-option:hover,
-.import-match-option:focus-visible {
-  background: var(--surface-2);
-}
-
 @media (max-width: 47.9375em) {
   .import-step {
     flex-direction: column;
@@ -12730,6 +12731,117 @@ button.settings-row-head:hover,
   margin-top: 1px;
   color: var(--warn);
 }
+/* --- Users & security -------------------------------------------------------- */
+.users-count {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.users-switch-row {
+  margin: 0;
+  padding: 14px var(--mantine-spacing-lg);
+  border-bottom: 1px solid var(--hairline);
+}
+.users-switch-row:empty {
+  display: none;
+}
+.users-switch-row .mantine-Switch-body {
+  justify-content: space-between;
+  width: 100%;
+  gap: var(--mantine-spacing-lg);
+}
+.users-switch-row .mantine-Switch-labelWrapper {
+  flex: 1;
+}
+.users-table thead th:first-child,
+.users-table tbody td:first-child {
+  padding-left: var(--mantine-spacing-lg);
+}
+.users-table thead th:last-child,
+.users-table tbody td:last-child {
+  padding-right: var(--mantine-spacing-lg);
+}
+.user-avatar {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface-hover);
+  color: var(--ink-2);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.user-disabled {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--type-meta);
+}
+
+.user-form-group {
+  display: grid;
+  gap: var(--mantine-spacing-sm);
+  padding-top: var(--mantine-spacing-md);
+  border-top: 1px solid var(--hairline);
+}
+.user-form-title {
+  color: var(--ink-hi);
+  font-size: var(--type-body);
+  font-weight: var(--fw-semibold);
+}
+.user-form-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.user-form-group > :is(.user-form-heading, .user-form-title) ~ * {
+  margin: 0;
+}
+
+.policy-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.policy-strip > * {
+  padding: var(--mantine-spacing-md) var(--mantine-spacing-lg);
+}
+.policy-strip > * + * {
+  border-left: 1px solid var(--hairline);
+}
+.policy-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.policy-strip + .policy-foot {
+  padding: var(--mantine-spacing-sm) var(--mantine-spacing-lg);
+  border-top: 1px solid var(--hairline);
+}
+@media (max-width: 36em) {
+  .policy-strip {
+    grid-template-columns: 1fr;
+  }
+  .policy-strip > * + * {
+    border-top: 1px solid var(--hairline);
+    border-left: 0;
+  }
+}
+.sso-group + .sso-group {
+  padding-top: var(--mantine-spacing-md);
+  border-top: 1px solid var(--hairline);
+}
+.sso-group-title {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+
 /* External site marks: a small square in the neutral surface, the site's score beside it in gold.
    The site's own colour stays out of it; the tooltip carries the name. */
 .site-mark-item {
@@ -12758,6 +12870,74 @@ button.settings-row-head:hover,
 }
 .quiet-danger.mantine-ActionIcon-root:hover {
   color: var(--danger);
+}
+.quiet-danger.mantine-Button-root {
+  --button-color: var(--ink-3);
+  color: var(--ink-3);
+}
+.quiet-danger.mantine-Button-root:hover {
+  --button-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Settings > Account: identity line, in-row two-factor setup, one-time secrets. */
+.account-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 14px var(--mantine-spacing-lg);
+  border-bottom: 1px solid var(--hairline);
+}
+.account-setup {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr);
+  gap: var(--mantine-spacing-lg);
+  align-items: start;
+}
+.account-setup-qr {
+  width: 160px;
+  height: 160px;
+  border-radius: var(--radius-sm, 8px);
+  background: #fff;
+}
+.account-turn-off {
+  padding-top: var(--mantine-spacing-md);
+  border-top: 1px solid var(--hairline);
+}
+.account-codes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-sm, 8px);
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--type-body);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-hi);
+  user-select: all;
+}
+.account-secret {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.account-secret > code {
+  flex: 1 1 260px;
+  min-width: 0;
+  padding: 8px 10px;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+[data-revoked] {
+  opacity: 0.55;
+}
+@media (max-width: 36em) {
+  .account-setup {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .save-control {
@@ -13861,6 +14041,54 @@ button.settings-row-head:hover,
   --panel-edge: var(--danger);
 }
 
+/* Confirm dialogs: a danger tile before the heading, no coloured edge. */
+.confirm-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.confirm-tile {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background-color: color-mix(in srgb, var(--danger) 14%, transparent);
+  color: var(--danger);
+}
+.confirm-title-text {
+  min-width: 0;
+}
+.modal-role-chip {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background-color: color-mix(in srgb, var(--neutral) 14%, transparent);
+  font-size: var(--type-meta);
+  color: var(--ink-2);
+}
+.confirm-files {
+  max-height: 14rem;
+  overflow-y: auto;
+  padding-block: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background-color: var(--surface-sunken);
+}
+.confirm-file {
+  padding: 7px 12px;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--type-meta);
+  line-height: 1.4;
+  color: var(--ink-2);
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+.confirm-file + .confirm-file {
+  border-top: 1px solid var(--hairline);
+}
+
 /* ModalHeading: the title over one line saying what the dialog is for. The line sits inside the
    header so it stays put while the body scrolls. */
 .modal-heading-title {
@@ -14182,6 +14410,23 @@ button.settings-row-head:hover,
   min-width: 28px;
   font-weight: 600;
   color: var(--rating);
+}
+/* The format field and its pickers stay pinned under the header, so a token far down the list can
+   be inserted and checked without scrolling back up. Full width over the body padding, like the
+   footer. */
+.token-modal-controls {
+  position: sticky;
+  top: calc(var(--mb-padding, var(--mantine-spacing-md)) * -1);
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: calc(var(--mb-padding, var(--mantine-spacing-md)) * -1)
+    calc(var(--mb-padding, var(--mantine-spacing-md)) * -1) 12px;
+  padding: var(--mb-padding, var(--mantine-spacing-md)) var(--mb-padding, var(--mantine-spacing-md))
+    var(--mantine-spacing-sm);
+  border-bottom: 1px solid var(--hairline);
+  background-color: var(--surface-raised);
 }
 /* One table per token group, all on the same fixed columns so token, meaning and example line up
    from group to group. */

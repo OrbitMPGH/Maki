@@ -134,9 +134,14 @@ export const SignInPageTurnOnCovers: Story = {
   },
 }
 
+async function openProvider(canvas: ReturnType<typeof within>, userEvent: { click: (el: Element) => Promise<void> }) {
+  await userEvent.click(await canvas.findByRole('button', { name: /OpenID Connect provider/ }))
+}
+
 export const SingleSignOn: Story = {
   render: () => <OidcSection />,
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
+    await openProvider(canvas, userEvent)
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Issuer URL' })).toHaveValue('https://sso.example.test/application/o/maki/'))
     await waitFor(() => expect(canvas.getByRole('switch', { name: /^Enable single sign-on/ })).toBeChecked())
     await expect(await canvas.findByText(/\/signin-oidc$/)).toBeVisible()
@@ -145,7 +150,8 @@ export const SingleSignOn: Story = {
 
 export const SingleSignOnClaimsOverridePermissions: Story = {
   render: () => <OidcSection />,
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
+    await openProvider(canvas, userEvent)
     await expect(await canvas.findByText(/your provider is the authority on permissions/)).toBeVisible()
   },
 }
@@ -157,7 +163,8 @@ export const SingleSignOnBreakGlass: Story = {
       http.get(api('/settings/oidc'), () => HttpResponse.json({ ...oidcSettings, oidcOnly: true, breakGlassActive: true, adminClaim: '' })),
     ),
   },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
+    await openProvider(canvas, userEvent)
     await expect(await canvas.findByText('MAKI_ALLOW_LOCAL_LOGIN')).toBeVisible()
     await expect(canvas.queryByText(/your provider is the authority on permissions/)).toBeNull()
   },
@@ -172,7 +179,8 @@ export const SingleSignOnNotConfigured: Story = {
       ),
     ),
   },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
+    await openProvider(canvas, userEvent)
     const toggle = await canvas.findByRole('switch', { name: /^Enable single sign-on/ })
     await waitFor(() => expect(toggle).not.toBeChecked())
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Issuer URL' })).toHaveValue(''))
@@ -182,6 +190,7 @@ export const SingleSignOnNotConfigured: Story = {
 export const SingleSignOnIssuerChangeAsksFirst: Story = {
   render: () => <OidcSection />,
   play: async ({ canvas, canvasElement, userEvent }) => {
+    await openProvider(canvas, userEvent)
     const issuer = await canvas.findByRole('textbox', { name: 'Issuer URL' })
     await waitFor(() => expect(issuer).toHaveValue('https://sso.example.test/application/o/maki/'))
     await userEvent.clear(issuer)
@@ -209,6 +218,7 @@ export const SingleSignOnSaveWithoutIssuerChange: Story = {
   },
   beforeEach: () => onOidcSave.mockClear(),
   play: async ({ canvas, userEvent }) => {
+    await openProvider(canvas, userEvent)
     const name = await canvas.findByRole('textbox', { name: 'Button label' })
     await waitFor(() => expect(name).toHaveValue('Authentik'))
     await userEvent.type(name, ' SSO')
