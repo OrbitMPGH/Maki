@@ -1023,6 +1023,9 @@ try
     builder.Services.AddScoped<UpgradeRevertService>();
     builder.Services.AddScoped<UpgradeTrashService>();
     builder.Services.AddScoped<TorrentUpgradeService>();
+    builder.Services.AddSingleton<VolumeFirstSearches>();
+    builder.Services.AddSingleton<VolumeFirstDeferrals>();
+    builder.Services.AddScoped<VolumeFirstGate>();
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<TagService>();
     builder.Services.AddScoped<NamingService>();

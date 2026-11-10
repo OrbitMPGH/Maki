@@ -422,6 +422,7 @@ export const downloadSettings: DownloadSettings = {
   adaptiveRefresh: true,
   removeCompleted: 'never',
   removeData: true,
+  volumeFirst: false,
 }
 
 export const readFileCleanup: ReadFileCleanupSettings = { enabled: false, days: 7, keepLast: true }
@@ -488,6 +489,8 @@ export const upgradeSettings: UpgradeSettings = {
   volumeMissingTolerance: 3,
   volumeSearchesPerRun: 10,
   proposalExpiryDays: 30,
+  autoApprove: false,
+  autoApproveMaxBytes: 12884901888,
 }
 
 export const qualityFormats: QualityFormatDto[] = [

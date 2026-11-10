@@ -902,8 +902,9 @@ public class TorrentImportService(
 
     /// <summary>
     /// What the unattended job does with a finished download. An auto-grabbed upgrade whose verdict named
-    /// files to replace imports on its own once the guard passes, skipping the suggested files; anything
-    /// else, a grabbed proposal or an upgrade that names no file included, parks when it would displace one.
+    /// files to replace imports on its own once the guard passes, skipping the suggested files, and so does
+    /// a proposal Maki approved itself; anything else, a grabbed proposal or an upgrade that names no
+    /// file included, parks when it would displace one.
     /// </summary>
     public async Task<UnattendedDecision> DecideUnattendedAsync(
         DownloadQueueItem item, Series series, string contentPath, TorrentImportPlan plan, CancellationToken ct)
@@ -917,8 +918,9 @@ public class TorrentImportService(
         item.UpgradeInfoJson = upgrade.Serialize();
 
         // A proposal the user grabbed waits for them with the plan filled in; only the search's own
-        // auto-grabs replace files unattended.
-        if (upgrade.ProposalId is not null || upgrade.ReplacedFileIds.Count == 0)
+        // auto-grabs, and proposals Maki approved itself under the automatic approval rule, replace
+        // files unattended. Both pass the volume guard below first.
+        if (!upgrade.AutoApproved && (upgrade.ProposalId is not null || upgrade.ReplacedFileIds.Count == 0))
         {
             return new UnattendedDecision(plan.HasConflicts, null, null);
         }

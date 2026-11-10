@@ -428,6 +428,8 @@ export const upgradeSettings: UpgradeSettings = {
   volumeMissingTolerance: 2,
   volumeSearchesPerRun: 10,
   proposalExpiryDays: 14,
+  autoApprove: false,
+  autoApproveMaxBytes: 12884901888,
 }
 
 export const upgradesSummary: UpgradesSummaryDto = {

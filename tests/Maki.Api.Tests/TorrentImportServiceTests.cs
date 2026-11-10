@@ -1132,6 +1132,66 @@ public class TorrentImportServiceTests : IDisposable
         Assert.Equal(plan.SuggestedSkips, TorrentUpgradeInfo.Parse(item.UpgradeInfoJson)!.SkipFileNames);
     }
 
+    private void MarkAutoApprovedProposal(DownloadQueueItem item, int proposalId = 42)
+    {
+        using var db = _db.NewContext();
+        var info = TorrentUpgradeInfo.Parse(item.UpgradeInfoJson)!;
+        info.ProposalId = proposalId;
+        info.AutoApproved = true;
+        item.UpgradeInfoJson = info.Serialize();
+        db.DownloadQueue.Single(q => q.Id == item.Id).UpgradeInfoJson = item.UpgradeInfoJson;
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task A_proposal_Maki_approved_itself_imports_unattended_with_its_skips()
+    {
+        var (series, item) = SeedLibrary();
+        MakeUpgrade(series, item);
+        MarkAutoApprovedProposal(item);
+        TestQuality.WriteCbz(Path.Combine(_downloads, "Berserk v01 (Digital) (1r0n).cbz"), 120, 40, 60);
+        var service = Service();
+        var plan = await service.PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        var decision = await service.DecideUnattendedAsync(item, series, _downloads, plan, CancellationToken.None);
+
+        Assert.False(decision.Park);
+        Assert.Null(decision.Guard);
+        Assert.NotNull(decision.SkipFiles);
+    }
+
+    [Fact]
+    public async Task A_proposal_Maki_approved_itself_that_names_no_files_still_imports_unattended()
+    {
+        var (series, item) = SeedLibrary();
+        MakeUpgrade(series, item, replaces: _ => []);
+        MarkAutoApprovedProposal(item);
+        SeedVolumeDownload(1, 2, 3, 4, 5, 6);
+        var service = Service();
+        var plan = await service.PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        var decision = await service.DecideUnattendedAsync(item, series, _downloads, plan, CancellationToken.None);
+
+        Assert.False(decision.Park);
+        Assert.Null(decision.Guard);
+    }
+
+    [Fact]
+    public async Task A_proposal_Maki_approved_itself_is_still_held_back_by_the_volume_guard()
+    {
+        var (series, item) = SeedLibrary();
+        MakeUpgrade(series, item);
+        MarkAutoApprovedProposal(item);
+        TestQuality.WriteCbz(Path.Combine(_downloads, "Berserk c001 (Digital).cbz"), 5, 40, 60);
+        var service = Service();
+        var plan = await service.PlanAsync(item, series, _downloads, CancellationToken.None);
+
+        var decision = await service.DecideUnattendedAsync(item, series, _downloads, plan, CancellationToken.None);
+
+        Assert.True(decision.Park);
+        Assert.Equal(new VolumeGuardFailure("Berserk c001 (Digital).cbz", "fewer_pages"), decision.Guard);
+    }
+
     [Fact]
     public async Task The_guard_measures_a_chapter_file_that_replaces_one_too()
     {

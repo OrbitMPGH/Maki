@@ -190,6 +190,10 @@ export interface UpgradeSettings {
   volumeMissingTolerance: number
   volumeSearchesPerRun: number
   proposalExpiryDays: number
+  /** Grab a volume release proposal on its own when it is digital, within the ceiling and nothing about it is uncertain. */
+  autoApprove: boolean
+  /** Bytes on the wire; the settings page shows MB. */
+  autoApproveMaxBytes: number
 }
 
 /** A file's release tier and archive stats at one point in time, as carried on a queue/history row. */

@@ -122,6 +122,53 @@ public class TorrentUpgradeServiceTests : IDisposable
             ignoreGlobalSwitch);
     }
 
+    [Fact]
+    public async Task A_series_with_nothing_to_upgrade_but_chapters_missing_is_searched_only_when_volume_first_is_on()
+    {
+        Chapter(1, 1, file: f => f.Trusted = true);
+        Chapter(2, 1, withFile: false);
+
+        Assert.Equal(VolumeSearchReasons.NothingBelowCutoff, (await SearchAsync()).Reason);
+
+        _world.Settings.Set(SettingKeys.DownloadsVolumeFirst, "true");
+        var result = await SearchAsync();
+
+        Assert.True(result.Searched);
+        Assert.Null(result.Reason);
+    }
+
+    [Fact]
+    public async Task A_series_with_no_files_at_all_is_searched_when_volume_first_is_on()
+    {
+        using (var db = _world.Db.NewContext())
+        {
+            db.Chapters.RemoveRange(db.Chapters);
+            db.ChapterFiles.RemoveRange(db.ChapterFiles);
+            db.SaveChanges();
+        }
+
+        Chapter(1, 1, withFile: false);
+        Assert.Equal(VolumeSearchReasons.NothingBelowCutoff, (await SearchAsync()).Reason);
+
+        _world.Settings.Set(SettingKeys.DownloadsVolumeFirst, "true");
+
+        Assert.True((await SearchAsync()).Searched);
+    }
+
+    [Fact]
+    public async Task A_volume_release_for_a_series_with_nothing_yet_is_only_considered_when_volume_first_is_on()
+    {
+        Chapter(1, 1, withFile: false);
+        Chapter(2, 1, withFile: false);
+
+        var off = await EvaluateAsync("Kaguya v01 (2022) (Digital) (1r0n)");
+        _world.Settings.Set(SettingKeys.DownloadsVolumeFirst, "true");
+        var on = await EvaluateAsync("Kaguya v01 (2022) (Digital) (1r0n)");
+
+        Assert.Equal(SpanOutcome.Ignore, off.Verdict.Outcome);
+        Assert.NotEqual(SpanOutcome.Ignore, on.Verdict.Outcome);
+    }
+
     private async Task<TorrentCandidateView> EvaluateAsync(string title, long size = 100L * 1024 * 1024)
     {
         using var db = _world.Db.NewContext();
@@ -493,6 +540,151 @@ public class TorrentUpgradeServiceTests : IDisposable
         Assert.False(spinOff.TitleMatched);
         Assert.Equal("Kaguya Gaiden", spinOff.RivalTitle);
         Assert.True(own.TitleMatched);
+    }
+
+    private void AutoApprove(bool on, long? ceilingBytes = null)
+    {
+        _world.Settings.Set(SettingKeys.UpgradesAutoApprove, on ? "true" : "false");
+        if (ceilingBytes is { } bytes)
+        {
+            _world.Settings.Set(SettingKeys.UpgradesAutoApproveMaxBytes, bytes.ToString());
+        }
+    }
+
+    [Fact]
+    public async Task A_proposal_the_rule_allows_is_approved_at_once_when_automatic_approval_is_on()
+    {
+        Chapter(1, 1);
+        AutoApprove(true, 2L * 1024 * 1024 * 1024);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)", size: 900L * 1024 * 1024));
+
+        var result = await SearchAsync();
+
+        var grab = Assert.Single(_releases.Grabs);
+        Assert.Equal(DownloadOrigin.Upgrade, grab.Origin);
+        Assert.True(TorrentUpgradeInfo.Parse(grab.Info)!.AutoApproved);
+        Assert.NotNull(result.Grabbed);
+        Assert.Null(result.ProposalId);
+        using var db = _world.Db.NewContext();
+        var row = db.TorrentProposals.Single();
+        Assert.Equal(TorrentProposalStatus.Accepted, row.Status);
+        Assert.Null(row.ResolvedByUserId);
+    }
+
+    [Fact]
+    public async Task A_proposal_stays_a_proposal_when_automatic_approval_is_off()
+    {
+        Chapter(1, 1);
+        AutoApprove(false);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)", size: 900L * 1024 * 1024));
+
+        var result = await SearchAsync();
+
+        Assert.Empty(_releases.Grabs);
+        Assert.NotNull(result.ProposalId);
+    }
+
+    [Fact]
+    public async Task A_release_over_the_ceiling_stays_a_proposal_even_with_automatic_approval_on()
+    {
+        Chapter(1, 1);
+        AutoApprove(true, 100L * 1024 * 1024);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)", size: 900L * 1024 * 1024));
+
+        var result = await SearchAsync();
+
+        Assert.Empty(_releases.Grabs);
+        Assert.NotNull(result.ProposalId);
+    }
+
+    private int PendingProposal(string title, string reasonsJson, long sizeBytes)
+    {
+        using var db = _world.Db.NewContext();
+        var row = new TorrentProposal
+        {
+            SeriesId = _world.SeriesId, ReleaseGuid = title, Title = title, Indexer = "Nyaa", SizeBytes = sizeBytes,
+            ReasonsJson = reasonsJson, Status = TorrentProposalStatus.Pending, CreatedAtUtc = DateTime.UtcNow,
+            ReleaseInfoJson = System.Text.Json.JsonSerializer.Serialize(
+                FakeReleases.Release(title, sizeBytes), QualitySnapshot.Json)
+        };
+        db.TorrentProposals.Add(row);
+        db.SaveChanges();
+        return row.Id;
+    }
+
+    private async Task<int> SweepAsync()
+    {
+        using var db = _world.Db.NewContext();
+        return await Service(db).AutoApprovePendingAsync(CancellationToken.None);
+    }
+
+    [Fact]
+    public async Task The_sweep_approves_the_pending_proposals_the_rule_allows_and_leaves_the_rest()
+    {
+        Chapter(1, 1);
+        AutoApprove(true, 5L * 1024 * 1024 * 1024);
+        var allowed = PendingProposal("Kaguya (2021) (Digital) (danke-Empire)", "[\"whole_series_pack\"]", 800L * 1024 * 1024);
+        var unsure = PendingProposal("Kaguya v02 (Digital) (1r0n)", "[\"unknown_chapters\"]", 100L * 1024 * 1024);
+        var notDigital = PendingProposal("Kaguya vol 3 scans", "[\"whole_series_pack\"]", 100L * 1024 * 1024);
+
+        var approved = await SweepAsync();
+
+        Assert.Equal(1, approved);
+        Assert.Equal("Kaguya (2021) (Digital) (danke-Empire)", Assert.Single(_releases.Grabs).Release.Title);
+        using var db = _world.Db.NewContext();
+        Assert.Equal(TorrentProposalStatus.Accepted, db.TorrentProposals.Single(p => p.Id == allowed).Status);
+        Assert.Equal(TorrentProposalStatus.Pending, db.TorrentProposals.Single(p => p.Id == unsure).Status);
+        Assert.Equal(TorrentProposalStatus.Pending, db.TorrentProposals.Single(p => p.Id == notDigital).Status);
+    }
+
+    [Fact]
+    public async Task The_sweep_does_nothing_when_automatic_approval_is_off()
+    {
+        Chapter(1, 1);
+        AutoApprove(false);
+        PendingProposal("Kaguya (2021) (Digital) (danke-Empire)", "[\"whole_series_pack\"]", 100L * 1024 * 1024);
+
+        Assert.Equal(0, await SweepAsync());
+        Assert.Empty(_releases.Grabs);
+    }
+
+    [Fact]
+    public async Task The_sweep_approves_a_bounded_number_per_run()
+    {
+        Chapter(1, 1);
+        AutoApprove(true, 5L * 1024 * 1024 * 1024);
+        for (var i = 0; i < TorrentUpgradeService.MaxAutoApprovalsPerSweep + 3; i++)
+        {
+            PendingProposal($"Kaguya {i} (2021) (Digital) (danke-Empire)", "[\"whole_series_pack\"]", 100L * 1024 * 1024);
+        }
+
+        Assert.Equal(TorrentUpgradeService.MaxAutoApprovalsPerSweep, await SweepAsync());
+    }
+
+    [Theory]
+    [InlineData("Kaguya (2021) (Digital) (danke-Empire)")]
+    [InlineData("Kaguya (2021) (Digital) [ENG] (danke-Empire)")]
+    public async Task The_sweep_judges_the_language_of_a_pending_proposal_again(string title)
+    {
+        Chapter(1, 1, language: "ja");
+        AutoApprove(true, 5L * 1024 * 1024 * 1024);
+        PendingProposal(title, "[\"whole_series_pack\"]", 100L * 1024 * 1024);
+
+        Assert.Equal(0, await SweepAsync());
+        Assert.Empty(_releases.Grabs);
+    }
+
+    [Fact]
+    public async Task Automatic_approval_never_takes_a_release_whose_language_is_in_doubt()
+    {
+        Chapter(1, 1, language: "ja");
+        AutoApprove(true, 5L * 1024 * 1024 * 1024);
+        _releases.Results.Add(FakeReleases.Release("Kaguya (2021) (Digital) (danke-Empire)", size: 100L * 1024 * 1024));
+
+        var result = await SearchAsync();
+
+        Assert.Empty(_releases.Grabs);
+        Assert.NotNull(result.ProposalId);
     }
 
     [Fact]

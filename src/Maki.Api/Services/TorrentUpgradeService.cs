@@ -54,7 +54,7 @@ public static class VolumeSearchReasons
 }
 
 /// <summary>The instance settings a volume search reads, loaded once per job run rather than per series.</summary>
-public sealed record VolumeSearchSettings(UpgradeOptions Options, bool IndexerConfigured);
+public sealed record VolumeSearchSettings(UpgradeOptions Options, bool IndexerConfigured, bool VolumeFirst = false);
 
 public enum ProposalActionError
 {
@@ -148,6 +148,7 @@ public class TorrentUpgradeService(
 
         var evaluator = await evaluation.ForSeriesAsync(seriesId, ct);
         var options = await UpgradeOptions.LoadAsync(settings, ct);
+        var volumeFirst = await settings.GetAsync(SettingKeys.DownloadsVolumeFirst, ct) == "true";
         var library = evaluator is null ? null : await LibraryAsync(series, ct);
         var fileLanguages = await db.Chapters.AsNoTracking()
             .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
@@ -186,7 +187,7 @@ public class TorrentUpgradeService(
                 ? (library.All(evaluator, score), true)
                 : library.Covered(parsed.Span, evaluator, score);
             var verdict = SpanVerdicts.Evaluate(new SpanVerdictInput(parsed.Span, matched, mappingKnown, chapters,
-                release.Size, options.TorrentAutoGrabMaxBytes, options.VolumeMissingTolerance, wholeSeries));
+                release.Size, options.TorrentAutoGrabMaxBytes, options.VolumeMissingTolerance, wholeSeries, volumeFirst));
             if (trailing)
             {
                 verdict = verdict.AtMostProposal(SpanVerdictReasons.TrailingNumber);
@@ -409,6 +410,14 @@ public class TorrentUpgradeService(
             {
                 if (await ProposeAsync(seriesId, proposal, ct) is { } row)
                 {
+                    if (options.AutoApprove && !switchesOff &&
+                        ProposalAutoApproval.Allows(proposal.Verdict.Reasons, proposal.Release.Size, proposal.Parsed.IsDigital,
+                            options.AutoApproveMaxBytes) &&
+                        await TryAutoApproveAsync(row, series.Title, ct) is { } approvedItem)
+                    {
+                        return new SeriesVolumeSearchResult(true, result.Releases.Count, approvedItem, null, null);
+                    }
+
                     return new SeriesVolumeSearchResult(true, result.Releases.Count, null, row.Id, null);
                 }
             }
@@ -422,9 +431,27 @@ public class TorrentUpgradeService(
         }
     }
 
+    /// <summary>
+    /// The highest chapter number a release covers in the series, so volume first holds only those and
+    /// lets later chapters download. Null when that cannot be told (no span, or volumes the series
+    /// cannot place), which holds every chapter.
+    /// </summary>
+    public async Task<decimal?> CoveredThroughAsync(int seriesId, string releaseTitle, CancellationToken ct)
+    {
+        var span = ReleaseTitleParser.Parse(releaseTitle).Span;
+        if (span.IsEmpty)
+        {
+            return null;
+        }
+
+        var series = await db.Series.AsNoTracking().Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
+        return series is null ? null : (await LibraryAsync(series, ct)).Through(span);
+    }
+
     public async Task<VolumeSearchSettings> LoadSettingsAsync(CancellationToken ct) => new(
         await UpgradeOptions.LoadAsync(settings, ct),
-        (await IndexerSettingsStore.LoadAsync(settings, ct)).IsConfigured);
+        (await IndexerSettingsStore.LoadAsync(settings, ct)).IsConfigured,
+        await settings.GetAsync(SettingKeys.DownloadsVolumeFirst, ct) == "true");
 
     /// <param name="offset">Added to now; negative values make the series eligible again sooner.</param>
     private Task StampSearchedAsync(int seriesId, TimeSpan offset = default)
@@ -435,7 +462,8 @@ public class TorrentUpgradeService(
     }
 
     /// <summary>Queues the proposal's release with the verdict as it reads against the library now.</summary>
-    public async Task<(int? QueueItemId, ProposalActionError Error)> GrabProposalAsync(int proposalId, int? userId, CancellationToken ct)
+    public async Task<(int? QueueItemId, ProposalActionError Error)> GrabProposalAsync(
+        int proposalId, int? userId, CancellationToken ct, bool autoApproved = false)
     {
         var row = await db.TorrentProposals.FirstOrDefaultAsync(p => p.Id == proposalId, ct);
         if (row is null)
@@ -454,6 +482,7 @@ public class TorrentUpgradeService(
         var info = evaluator is not null && view is not null
             ? InfoFor(evaluator, view, row.Id)
             : new TorrentUpgradeInfo { ProposalId = row.Id, Reasons = [SpanVerdictReasons.NoProfile] };
+        info.AutoApproved = autoApproved;
 
         var item = await releases.GrabAsync(row.SeriesId, release, DownloadOrigin.Upgrade, userId, info.Serialize(), ct);
         row.Status = TorrentProposalStatus.Accepted;
@@ -462,6 +491,84 @@ public class TorrentUpgradeService(
         row.ResolvedAtUtc = time.GetUtcNow().UtcDateTime;
         await db.SaveChangesAsync(ct);
         return (item.Id, ProposalActionError.None);
+    }
+
+    /// <summary>The most proposals one sweep approves, so a long backlog does not flood the download client at once.</summary>
+    public const int MaxAutoApprovalsPerSweep = 10;
+
+    private async Task<int?> TryAutoApproveAsync(TorrentProposal row, string title, CancellationToken ct)
+    {
+        try
+        {
+            var (queueItemId, error) = await GrabProposalAsync(row.Id, null, ct, autoApproved: true);
+            if (queueItemId is { } item)
+            {
+                logger.LogInformation("Approved '{Release}' for '{Title}' automatically", row.Title, title);
+                return item;
+            }
+
+            logger.LogDebug("Proposal {Id} for '{Title}' was not approved automatically: {Error}", row.Id, title, error);
+            return null;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or TaskCanceledException
+                                       && !ct.IsCancellationRequested)
+        {
+            logger.LogWarning(ex, "Could not approve '{Release}' for '{Title}' automatically; it stays a proposal",
+                row.Title, title);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// With automatic approval on, approves the pending proposals that were left before it was switched
+    /// on, or while the release was still being judged. Same rule as a fresh search; the rest keep waiting.
+    /// </summary>
+    public async Task<int> AutoApprovePendingAsync(CancellationToken ct)
+    {
+        var options = await UpgradeOptions.LoadAsync(settings, ct);
+        if (!options.AutoApprove || !options.Enabled || !options.VolumeSearch)
+        {
+            return 0;
+        }
+
+        var approved = 0;
+        var pending = await db.TorrentProposals.AsNoTracking()
+            .Where(p => p.Status == TorrentProposalStatus.Pending)
+            .OrderBy(p => p.CreatedAtUtc)
+            .ToListAsync(ct);
+        foreach (var row in pending)
+        {
+            if (approved >= MaxAutoApprovalsPerSweep)
+            {
+                break;
+            }
+
+            var reasons = JsonSerializer.Deserialize<string[]>(row.ReasonsJson) ?? [];
+            if (!ProposalAutoApproval.Allows(reasons, row.SizeBytes, ReleaseTitleParser.Parse(row.Title).IsDigital,
+                    options.AutoApproveMaxBytes))
+            {
+                continue;
+            }
+
+            // Reasons stored before the language check, or before the series got files in another
+            // language, say nothing about it, so the release is judged again against the files now.
+            var fileLanguages = await db.Chapters.AsNoTracking()
+                .Where(c => c.SeriesId == row.SeriesId && c.ChapterFileId != null)
+                .Select(c => c.Language)
+                .Distinct()
+                .ToListAsync(ct);
+            if (ReleaseLanguage.Judge(fileLanguages, row.Title) is not null)
+            {
+                continue;
+            }
+
+            if (await TryAutoApproveAsync(row, row.Title, ct) is not null)
+            {
+                approved++;
+            }
+        }
+
+        return approved;
     }
 
     public async Task<ProposalActionError> DismissAsync(int proposalId, int? userId, CancellationToken ct)
@@ -583,8 +690,16 @@ public class TorrentUpgradeService(
             .Include(c => c.ChapterFile)
             .ToListAsync(ct);
         var removing = await ReadFileCleanupService.PendingAsync(db, settings, series.Id, ct);
-        return chapters.Any(c => TorrentUpgradeRules.StateOf(evaluator, c, c.ChapterFile, volume,
-                removing.ContainsKey(c.Id)) == ChapterSpanState.Upgrade)
+        if (chapters.Any(c => TorrentUpgradeRules.StateOf(evaluator, c, c.ChapterFile, volume,
+                removing.ContainsKey(c.Id)) == ChapterSpanState.Upgrade))
+        {
+            return null;
+        }
+
+        // Volume first: a series that has nothing yet, or only what it has already, still wants a look.
+        return run.VolumeFirst &&
+               await db.Chapters.AnyAsync(c => c.SeriesId == series.Id && c.Wanted && c.ChapterFileId == null &&
+                                               c.FileRemovedAt == null, ct)
             ? null
             : VolumeSearchReasons.NothingBelowCutoff;
     }
@@ -808,6 +923,27 @@ public class TorrentUpgradeService(
             .. chapters.Select(c => new SpanChapter(c.Number ?? 0, VolumeOf(c),
                 TorrentUpgradeRules.StateOf(evaluator, c, c.ChapterFile, score, removing.Contains(c.Id)), c.ChapterFileId))
         ];
+
+        public decimal? Through(ReleaseSpan span)
+        {
+            decimal? through = span.ChapterSegments.Count > 0 ? span.ChapterSegments.Max(s => s.End) : null;
+            if (span.Volumes is not { } volumes)
+            {
+                return through;
+            }
+
+            var first = (int)decimal.Ceiling(volumes.Start);
+            var last = (int)decimal.Floor(volumes.End);
+            var placed = chapters.Where(c => c.Number is not null && VolumeOf(c) is not null).ToList();
+            if (Enumerable.Range(first, Math.Max(0, last - first + 1)).Any(v => placed.All(c => VolumeOf(c) != v)))
+            {
+                return null;
+            }
+
+            var inVolumes = placed.Where(c => VolumeOf(c) >= volumes.Start && VolumeOf(c) <= volumes.End)
+                .Max(c => c.Number);
+            return through is { } t && inVolumes is { } n ? Math.Max(t, n) : inVolumes ?? through;
+        }
 
         public (List<SpanChapter> Chapters, bool MappingKnown) Covered(ReleaseSpan span, UpgradeEvaluator evaluator, QualityScore score)
         {

@@ -188,6 +188,7 @@ public class SourceMatchWorkerHostedService(
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
 
+        var paced = queue.TakeQueuedInBackground(seriesId);
         var series = await db.Series.FirstOrDefaultAsync(s => s.Id == seriesId, ct);
         if (series is null)
         {
@@ -218,10 +219,22 @@ public class SourceMatchWorkerHostedService(
 
             if (mapped.Count > 0)
             {
+                // Held from before the sync, so a Smart tick in between cannot start on the sources.
+                var upgrades = scope.ServiceProvider.GetRequiredService<TorrentUpgradeService>();
+                var run = await upgrades.LoadSettingsAsync(ct);
+                using var searching = run.VolumeFirst && !paced
+                    ? scope.ServiceProvider.GetRequiredService<VolumeFirstSearches>().Begin(series.Id)
+                    : null;
+
                 var sync = scope.ServiceProvider.GetRequiredService<ChapterSyncService>();
                 await sync.SyncSeriesAsync(series.Id, ct);
                 var scouting = await scope.ServiceProvider.GetRequiredService<SourceScoutService>()
                     .StartIfEnabledAsync(db, series.Id, ct);
+                if (searching is not null)
+                {
+                    await SearchVolumesFirstAsync(upgrades, run, series.Id, ct);
+                    searching.Dispose();
+                }
 
                 // A scout triggers Smart Download when it finishes; without one the first batch can go now.
                 if (!scouting && series.MonitorNewItems == NewChapterMonitorMode.Smart &&
@@ -558,6 +571,33 @@ public class SourceMatchWorkerHostedService(
             {
                 // Deliberately quiet: see the class summary.
             }
+        }
+    }
+
+    /// <summary>
+    /// Volume first: once a new series' sources are matched, ask the indexers for a volume release
+    /// before anything is downloaded from them. Automatic source downloads wait while it runs
+    /// (<see cref="VolumeFirstGate"/>). A series that came in on the background lane (library import,
+    /// import lists) is left to the daily volume search, so a bulk add never floods the indexers. A
+    /// failure is the search's own business and never fails the match.
+    /// </summary>
+    private async Task SearchVolumesFirstAsync(
+        TorrentUpgradeService upgrades, VolumeSearchSettings run, int seriesId, CancellationToken ct)
+    {
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        deadline.CancelAfter(VolumeFirstSearches.Deadline);
+        try
+        {
+            await upgrades.SearchSeriesAsync(seriesId, deadline.Token, respectInterval: false, ignoreGlobalSwitch: true, run);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            logger.LogWarning("Volume-first search for series {SeriesId} ran past {Deadline}; sources take over",
+                seriesId, VolumeFirstSearches.Deadline);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Volume-first search failed for series {SeriesId}", seriesId);
         }
     }
 }

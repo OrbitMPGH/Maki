@@ -43,6 +43,12 @@ public class UpgradeVolumeSearchJob(
         try
         {
             await torrents.ExpireAsync(options.ProposalExpiryDays, ct);
+            var approved = await torrents.AutoApprovePendingAsync(ct);
+            if (approved > 0)
+            {
+                logger.LogInformation("Approved {Count} pending volume release(s) automatically", approved);
+            }
+
             var run = await torrents.LoadSettingsAsync(ct);
             var searched = 0;
             // Every series would answer the same instance-wide refusal, so there is nothing to walk.

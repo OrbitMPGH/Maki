@@ -2,6 +2,7 @@ using Maki.Api.Jobs;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Data;
 using Maki.Core.Sources;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -119,6 +120,9 @@ public class RefreshMonitoredSeriesJobTests : IDisposable
 public class RefreshSmartGateTests : IDisposable
 {
     private readonly TestDb _db = new();
+    private readonly VolumeFirstSearches _searches = new(TimeProvider.System);
+    private readonly VolumeFirstDeferrals _deferrals = new();
+    private RefreshMonitoredSeriesJob? _job;
     private readonly DownloadBatchNotifier _batches = new(
         new RecordingNotifications(), new RecordingInbox(), new TestLocalizer(), new TestUserLocaleResolver(), TimeProvider.System,
         NullLogger<DownloadBatchNotifier>.Instance);
@@ -137,13 +141,19 @@ public class RefreshSmartGateTests : IDisposable
     /// <summary>The job resolves ChapterSyncService per series, so the scope has to supply one.</summary>
     private IServiceScopeFactory ScopeFactoryWith(ISource source, IAppSettings? settings = null)
     {
+        settings ??= new FakeAppSettings();
         var services = new ServiceCollection();
         services.AddScoped(_ => _db.NewContext());
         services.AddSingleton(new SourceRegistry([source]));
         services.AddSingleton(Sources.AllEnabled);
         services.AddSingleton(new SourceChapterListCache(
             TimeProvider.System, NullLogger<SourceChapterListCache>.Instance));
-        services.AddSingleton(settings ?? new FakeAppSettings());
+        services.AddSingleton(settings);
+        services.AddSingleton(_searches);
+        services.AddSingleton(TimeProvider.System);
+        services.AddScoped(sp => new TorrentUpgradeService(sp.GetRequiredService<MakiDbContext>(), null!, null!, null!,
+            settings, TimeProvider.System, null!, NullLogger<TorrentUpgradeService>.Instance));
+        services.AddScoped<VolumeFirstGate>();
         services.AddSingleton(_ => new DownloadQueueService(
             _db.ScopeFactory(), TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance));
         services.AddLogging();
@@ -153,14 +163,16 @@ public class RefreshSmartGateTests : IDisposable
 
     private async Task<(List<Chapter> Chapters, int Queued)> RefreshAsync(
         NewChapterMonitorMode mode, int chapterCount = 2, IAppSettings? settings = null,
-        RecordingNotifications? notifications = null, Action<Series>? configure = null)
+        RecordingNotifications? notifications = null, Action<Series>? configure = null,
+        Action<int>? before = null, Func<int, int?>? volumeOf = null)
     {
         var seriesId = Seed(mode, configure);
+        before?.Invoke(seriesId);
         var fake = new FakeSource { Name = "fake" };
         var source = new FakeSource
         {
             Name = "fake",
-            OnListChapters = _ => [.. Enumerable.Range(1, chapterCount).Select(n => fake.Chapter(n))]
+            OnListChapters = _ => [.. Enumerable.Range(1, chapterCount).Select(n => fake.Chapter(n, volumeOf?.Invoke(n)))]
         };
 
         var registry = new SourceRegistry([source]);
@@ -171,7 +183,8 @@ public class RefreshSmartGateTests : IDisposable
         var job = new RefreshMonitoredSeriesJob(
             ScopeFactoryWith(source, settings), queue, notifications ?? new RecordingNotifications(), new RecordingInbox(),
             _batches, Sources.AllEnabled, new TestLocalizer(), new TestUserLocaleResolver(),
-            NullLogger<RefreshMonitoredSeriesJob>.Instance);
+            NullLogger<RefreshMonitoredSeriesJob>.Instance, _deferrals);
+        _job = job;
 
         await job.RefreshSeriesAsync(seriesId, CancellationToken.None);
 
@@ -200,6 +213,140 @@ public class RefreshSmartGateTests : IDisposable
 
         Assert.Empty(chapters);
         Assert.Equal(0, queued);
+    }
+
+    private static FakeAppSettings VolumeFirst() => new FakeAppSettings().Set(SettingKeys.DownloadsVolumeFirst, "true");
+
+    [Fact]
+    public async Task A_series_whose_volume_search_is_running_wants_new_chapters_but_queues_none()
+    {
+        IDisposable? search = null;
+        var (chapters, queued) = await RefreshAsync(NewChapterMonitorMode.All, settings: VolumeFirst(),
+            before: id => search = _searches.Begin(id));
+        search?.Dispose();
+
+        Assert.Equal(2, chapters.Count);
+        Assert.All(chapters, c => Assert.True(c.Wanted));
+        Assert.Equal(0, queued);
+    }
+
+    [Fact]
+    public async Task A_pending_volume_proposal_holds_only_the_chapters_it_covers()
+    {
+        var (chapters, queued) = await RefreshAsync(NewChapterMonitorMode.All, chapterCount: 4, settings: VolumeFirst(),
+            volumeOf: n => n <= 2 ? 1 : 2,
+            before: id =>
+            {
+                using var db = _db.NewContext();
+                db.TorrentProposals.Add(new TorrentProposal
+                {
+                    SeriesId = id, ReleaseGuid = "g", Title = "Test Series v01 (Digital)",
+                    Status = TorrentProposalStatus.Pending, CreatedAtUtc = DateTime.UtcNow
+                });
+                db.SaveChanges();
+            });
+
+        Assert.All(chapters, c => Assert.True(c.Wanted));
+        Assert.Equal(2, queued);
+        using var check = _db.NewContext();
+        var queuedNumbers = check.DownloadQueue.Where(q => q.SeriesId == chapters[0].SeriesId)
+            .Select(q => q.Chapter!.Number).ToList();
+        Assert.Equal([3m, 4m], queuedNumbers.Order());
+    }
+
+    private void PendingVolumeProposal(int seriesId)
+    {
+        using var db = _db.NewContext();
+        db.TorrentProposals.Add(new TorrentProposal
+        {
+            SeriesId = seriesId, ReleaseGuid = "g", Title = "Test Series v01 (Digital)",
+            Status = TorrentProposalStatus.Pending, CreatedAtUtc = DateTime.UtcNow
+        });
+        db.SaveChanges();
+    }
+
+    private int QueuedFor(int seriesId)
+    {
+        using var db = _db.NewContext();
+        return db.DownloadQueue.Count(q => q.SeriesId == seriesId);
+    }
+
+    [Fact]
+    public async Task Chapters_a_volume_hold_kept_back_are_queued_once_the_proposal_is_answered()
+    {
+        var (chapters, queued) = await RefreshAsync(NewChapterMonitorMode.All, chapterCount: 4, settings: VolumeFirst(),
+            volumeOf: n => n <= 2 ? 1 : 2, before: PendingVolumeProposal);
+        var seriesId = chapters[0].SeriesId;
+        Assert.Equal(2, queued);
+
+        await _job!.ReleaseDeferredAsync(CancellationToken.None);
+        Assert.Equal(2, QueuedFor(seriesId));
+
+        using (var db = _db.NewContext())
+        {
+            db.TorrentProposals.Single(p => p.SeriesId == seriesId).Status = TorrentProposalStatus.Dismissed;
+            db.SaveChanges();
+        }
+
+        await _job.ReleaseDeferredAsync(CancellationToken.None);
+        Assert.Equal(4, QueuedFor(seriesId));
+        Assert.Empty(_deferrals.SeriesIds);
+
+        await _job.ReleaseDeferredAsync(CancellationToken.None);
+        Assert.Equal(4, QueuedFor(seriesId));
+    }
+
+    [Fact]
+    public async Task A_held_chapter_that_got_its_file_from_the_release_is_not_queued_again()
+    {
+        var (chapters, _) = await RefreshAsync(NewChapterMonitorMode.All, chapterCount: 4, settings: VolumeFirst(),
+            volumeOf: n => n <= 2 ? 1 : 2, before: PendingVolumeProposal);
+        var seriesId = chapters[0].SeriesId;
+
+        using (var db = _db.NewContext())
+        {
+            var file = new ChapterFile { SeriesId = seriesId, RelativePath = "Test Series/Test Series v01.cbz" };
+            db.ChapterFiles.Add(file);
+            db.SaveChanges();
+            foreach (var chapter in db.Chapters.Where(c => c.SeriesId == seriesId && c.Number <= 2))
+            {
+                chapter.ChapterFileId = file.Id;
+            }
+
+            db.TorrentProposals.Single(p => p.SeriesId == seriesId).Status = TorrentProposalStatus.Accepted;
+            db.SaveChanges();
+        }
+
+        await _job!.ReleaseDeferredAsync(CancellationToken.None);
+
+        Assert.Equal(2, QueuedFor(seriesId));
+        Assert.Empty(_deferrals.SeriesIds);
+    }
+
+    [Fact]
+    public async Task A_bulk_held_burst_is_not_released_by_the_volume_hold()
+    {
+        var (chapters, queued) = await RefreshAsync(NewChapterMonitorMode.All, chapterCount: 8, settings: VolumeFirst(),
+            volumeOf: n => (n + 3) / 4, before: PendingVolumeProposal);
+        Assert.Equal(0, queued);
+        Assert.Empty(_deferrals.SeriesIds);
+
+        using (var db = _db.NewContext())
+        {
+            db.TorrentProposals.Single(p => p.SeriesId == chapters[0].SeriesId).Status = TorrentProposalStatus.Dismissed;
+            db.SaveChanges();
+        }
+
+        await _job!.ReleaseDeferredAsync(CancellationToken.None);
+        Assert.Equal(0, QueuedFor(chapters[0].SeriesId));
+    }
+
+    [Fact]
+    public async Task Volume_first_changes_nothing_while_no_release_is_pending()
+    {
+        var (_, queued) = await RefreshAsync(NewChapterMonitorMode.All, settings: VolumeFirst());
+
+        Assert.Equal(2, queued);
     }
 
     [Fact]

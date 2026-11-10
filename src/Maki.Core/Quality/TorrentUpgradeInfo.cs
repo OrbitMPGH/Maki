@@ -12,6 +12,9 @@ public sealed class TorrentUpgradeInfo
 
     public string Kind { get; set; } = KindName;
     public int? ProposalId { get; set; }
+
+    /// <summary>The proposal was approved by Maki under the automatic approval rule, so the import needs no review either.</summary>
+    public bool AutoApproved { get; set; }
     public int ProfileId { get; set; }
     public int ProfileVersion { get; set; }
     public List<int> ReplacedFileIds { get; set; } = [];
