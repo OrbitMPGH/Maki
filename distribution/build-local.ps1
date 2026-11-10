@@ -25,6 +25,10 @@
 .PARAMETER NoPush
   Build only, don't push (image stays local as <Registry>:<Tag>).
 
+.PARAMETER SkipDeploy
+  Don't run distribution/local/post-push.ps1 after pushing. That script is git-ignored and
+  optional; when present it receives -Image and -Version (for example to update a server).
+
 .EXAMPLE
   # One-time login (do this yourself — create a PAT with write:packages):
   #   $env:CR_PAT | docker login ghcr.io -u OrbitMPGH --password-stdin
@@ -36,7 +40,8 @@ param(
   [string]$Tag = "nightly",
   [string]$Registry = "ghcr.io/orbitmpgh/maki",
   [string]$NextVersion,
-  [switch]$NoPush
+  [switch]$NoPush,
+  [switch]$SkipDeploy
 )
 
 $ErrorActionPreference = "Stop"
@@ -94,4 +99,10 @@ docker push "${Registry}:$Tag"
 if ($LASTEXITCODE -ne 0) { throw "docker push failed (logged in to ghcr?)" }
 
 Write-Host "Pushed ${Registry}:$Tag" -ForegroundColor Green
-Write-Host "On Unraid: docker pull ${Registry}:$Tag  then restart the container." -ForegroundColor Cyan
+
+$postPush = Join-Path $PSScriptRoot "local/post-push.ps1"
+if ((Test-Path $postPush) -and -not $SkipDeploy) {
+  & $postPush -Image "${Registry}:$Tag" -Version $version
+} else {
+  Write-Host "On Unraid: docker pull ${Registry}:$Tag  then restart the container." -ForegroundColor Cyan
+}

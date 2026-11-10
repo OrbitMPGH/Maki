@@ -62,3 +62,6 @@ scripts/readme-images/raw/
 # Native build output (distribution/native/)
 /out/
 .shots-tmp/
+
+# Machine-specific build hooks (distribution/build-local.ps1 runs local/post-push.ps1)
+/distribution/local/
