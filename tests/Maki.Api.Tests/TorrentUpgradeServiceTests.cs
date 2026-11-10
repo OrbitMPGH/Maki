@@ -5,6 +5,7 @@ using Maki.Core.Entities;
 using Maki.Core.Inbox;
 using Maki.Core.Parsing;
 using Maki.Core.Quality;
+using Maki.Core.Sources;
 using Maki.Data;
 using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
@@ -95,9 +96,12 @@ public class TorrentUpgradeServiceTests : IDisposable
 
     public void Dispose() => _world.Dispose();
 
+    private SourceRegistry? _sources;
+
     private TorrentUpgradeService Service(MakiDbContext db) => new(db,
         new UpgradeEvaluationService(db, TestQuality.Create(_world.Registry)), _releases, _world.Inbox, _world.Settings,
-        _clock, _store.Provider(), NullLogger<TorrentUpgradeService>.Instance);
+        _clock, _store.Provider(), NullLogger<TorrentUpgradeService>.Instance, _sources,
+        _sources is null ? null : new SourceAvailability(_world.Settings, _sources));
 
     private int Chapter(decimal number, int? volume, bool withFile = true, bool wanted = true, Action<ChapterFile>? file = null,
         string language = "en")
@@ -213,6 +217,138 @@ public class TorrentUpgradeServiceTests : IDisposable
         Assert.Equal(4, known.Verdict.UpgradeCount);
         Assert.Contains(volumeFileId, known.Verdict.ReplacedFileIds);
         Assert.Contains(SpanVerdictReasons.VolumeSpanUnknown, unknown.Verdict.Reasons);
+    }
+
+    [Fact]
+    public async Task Chapter_rows_without_a_volume_take_it_from_the_mangadex_map()
+    {
+        foreach (var number in new[] { 1m, 2m, 3m, 4m })
+        {
+            Chapter(number, null);
+        }
+
+        var unmapped = await EvaluateAsync("Kaguya v01-02 (Digital) (1r0n)");
+
+        MangaDexMap(() => new Dictionary<decimal, int> { [1] = 1, [2] = 1, [3] = 2, [4] = 2 });
+        var mapped = await EvaluateAsync("Kaguya v01-02 (Digital) (1r0n)");
+
+        Assert.Equal(0, unmapped.Verdict.UpgradeCount);
+        Assert.DoesNotContain(SpanVerdictReasons.VolumeSpanUnknown, mapped.Verdict.Reasons);
+        Assert.Equal(4, mapped.Verdict.UpgradeCount);
+        Assert.All(StoredVolumes().Values, Assert.Null);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task A_switched_off_mangadex_mapping_or_source_is_not_asked(bool sourceOff)
+    {
+        foreach (var number in new[] { 1m, 2m, 3m, 4m })
+        {
+            Chapter(number, null);
+        }
+
+        var calls = 0;
+        MangaDexMap(() =>
+        {
+            calls++;
+            return new Dictionary<decimal, int> { [1] = 1, [2] = 1, [3] = 2, [4] = 2 };
+        }, mappingEnabled: sourceOff);
+        if (sourceOff)
+        {
+            _world.Settings.Set(SettingKeys.SourcesDisabled, "mangadex");
+        }
+
+        var view = await EvaluateAsync("Kaguya v01-02 (Digital) (1r0n)");
+
+        Assert.Equal(0, view.Verdict.UpgradeCount);
+        Assert.Equal(0, calls);
+    }
+
+    private void MangaDexMap(Func<IReadOnlyDictionary<decimal, int>> map, bool mappingEnabled = true)
+    {
+        var uuid = Guid.NewGuid().ToString();
+        using (var db = _world.Db.NewContext())
+        {
+            db.SourceMappings.Add(new SourceMapping
+            {
+                SeriesId = _world.SeriesId, SourceName = "mangadex", SourceSeriesId = uuid,
+                Url = $"https://mangadex.org/title/{uuid}", Enabled = mappingEnabled
+            });
+            db.SaveChanges();
+        }
+
+        _sources = new SourceRegistry([new FakeSource
+        {
+            Name = "mangadex",
+            OnChapterVolumes = id => id == uuid ? map() : new Dictionary<decimal, int>()
+        }]);
+    }
+
+    private Dictionary<decimal, int?> StoredVolumes()
+    {
+        using var db = _world.Db.NewContext();
+        return db.Chapters.Where(c => c.SeriesId == _world.SeriesId).ToDictionary(c => c.Number!.Value, c => c.Volume);
+    }
+
+    [Fact]
+    public async Task A_volume_the_library_already_knows_outranks_the_mangadex_map()
+    {
+        Chapter(1, 1);
+        Chapter(2, 1);
+        Chapter(3, null);
+        Chapter(4, null);
+        MangaDexMap(() => new Dictionary<decimal, int> { [1] = 2, [2] = 2, [3] = 2, [4] = 2 });
+
+        var view = await EvaluateAsync("Kaguya v02 (Digital) (1r0n)");
+
+        Assert.Equal(2, view.Verdict.UpgradeCount);
+        Assert.Equal(new Dictionary<decimal, int?> { [1] = 1, [2] = 1, [3] = null, [4] = null }, StoredVolumes());
+    }
+
+    [Fact]
+    public async Task A_chapter_the_mangadex_map_leaves_out_stays_without_a_volume()
+    {
+        foreach (var number in new[] { 1m, 2m, 3m, 4m })
+        {
+            Chapter(number, null);
+        }
+
+        MangaDexMap(() => new Dictionary<decimal, int> { [1] = 1, [2] = 1, [3] = 2 });
+
+        var view = await EvaluateAsync("Kaguya v01-02 (Digital) (1r0n)");
+
+        Assert.Equal(3, view.Verdict.UpgradeCount);
+    }
+
+    public static TheoryData<Exception> MangaDexFailures() =>
+    [
+        new Maki.Core.Http.RateLimitException("Rate limited by api.mangadex.org (HTTP 429)"),
+        new HttpRequestException("503"),
+        new System.Text.Json.JsonException("odd answer"),
+        new TaskCanceledException("timeout")
+    ];
+
+    [Theory]
+    [MemberData(nameof(MangaDexFailures))]
+    public async Task A_failed_mangadex_read_costs_the_verdict_the_map_and_is_tried_again(Exception failure)
+    {
+        foreach (var number in new[] { 1m, 2m, 3m, 4m })
+        {
+            Chapter(number, null);
+        }
+
+        var calls = 0;
+        MangaDexMap(() => ++calls == 1
+            ? throw failure
+            : new Dictionary<decimal, int> { [1] = 1, [2] = 1, [3] = 2, [4] = 2 });
+
+        var failed = await EvaluateAsync("Kaguya v01-02 (Digital) (1r0n)");
+        var recovered = await EvaluateAsync("Kaguya v01-02 (Digital) (1r0n)");
+
+        Assert.Equal(0, failed.Verdict.UpgradeCount);
+        Assert.Equal(4, recovered.Verdict.UpgradeCount);
+        Assert.All(StoredVolumes().Values, Assert.Null);
     }
 
     [Fact]

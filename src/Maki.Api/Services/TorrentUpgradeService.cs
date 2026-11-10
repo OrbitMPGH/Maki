@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Core.Configuration;
@@ -11,6 +12,7 @@ using Maki.Core.Paths;
 using Maki.Core.Quality;
 using Maki.Core.Reading;
 using Maki.Core.Scrobbling;
+using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -125,7 +127,9 @@ public class TorrentUpgradeService(
     IAppSettings settings,
     TimeProvider time,
     RivalTitleProvider rivalTitles,
-    ILogger<TorrentUpgradeService> logger)
+    ILogger<TorrentUpgradeService> logger,
+    SourceRegistry? sources = null,
+    SourceAvailability? availability = null)
 {
     public static readonly TimeSpan SearchInterval = TimeSpan.FromDays(7);
 
@@ -718,7 +722,67 @@ public class TorrentUpgradeService(
             }
         }
 
+        // Scraped chapter rows carry no volume. The map comes from the same mapping the linker's volume
+        // backfill reads, so the import can place every chapter the verdict counts.
+        if (chapters.Any(c => c.Volume is null && c.Number is not null)
+            && await VolumeMapAsync(series.Id, ct) is { Count: > 0 } byNumber)
+        {
+            foreach (var chapter in chapters.Where(c => c.Volume is null && c.Number is not null))
+            {
+                if (!inferred.ContainsKey(chapter.Id) && byNumber.TryGetValue(chapter.Number!.Value, out var volume))
+                {
+                    inferred[chapter.Id] = volume;
+                }
+            }
+        }
+
         return new LibraryState(language, chapters, inferred, removing.Keys.ToHashSet());
+    }
+
+    private static readonly TimeSpan VolumeMapLifetime = TimeSpan.FromHours(12);
+    private static readonly ConcurrentDictionary<(string Source, string Id), (DateTimeOffset At, IReadOnlyDictionary<decimal, int> Map)> VolumeMaps = new();
+
+    /// <summary>Chapter number to volume from the series' first enabled volume-capable mapping, kept for a while; empty when it cannot be had.</summary>
+    private async Task<IReadOnlyDictionary<decimal, int>> VolumeMapAsync(int seriesId, CancellationToken ct)
+    {
+        if (sources is null)
+        {
+            return new Dictionary<decimal, int>();
+        }
+
+        List<string> disabled = availability is null ? [] : await availability.DisabledAsync(ct);
+        var mappings = await db.SourceMappings.AsNoTracking()
+            .Where(m => m.SeriesId == seriesId && m.Enabled && !disabled.Contains(m.SourceName))
+            .OrderBy(m => m.Priority)
+            .Select(m => new { m.SourceName, m.SourceSeriesId })
+            .ToListAsync(ct);
+        foreach (var mapping in mappings)
+        {
+            if (sources.Find(mapping.SourceName) is not IChapterVolumeSource source)
+            {
+                continue;
+            }
+
+            var key = (mapping.SourceName, mapping.SourceSeriesId);
+            if (VolumeMaps.TryGetValue(key, out var cached) && time.GetUtcNow() - cached.At < VolumeMapLifetime)
+            {
+                return cached.Map;
+            }
+
+            try
+            {
+                var map = await source.GetChapterVolumesAsync(mapping.SourceSeriesId, ct);
+                VolumeMaps[key] = (time.GetUtcNow(), map);
+                return map;
+            }
+            catch (Exception ex) when (!ct.IsCancellationRequested)
+            {
+                logger.LogDebug(ex, "Could not read the volume map of {Source} {Id}", mapping.SourceName, mapping.SourceSeriesId);
+                return new Dictionary<decimal, int>();
+            }
+        }
+
+        return new Dictionary<decimal, int>();
     }
 
     private sealed class LibraryState(
