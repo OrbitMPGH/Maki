@@ -788,6 +788,10 @@ msgstr "{chapterPhrase} will read from {pickedName}"
 msgid "{chapters, plural, one {{cellDate}: # chapter} other {{cellDate}: # chapters}}"
 msgstr "{chapters, plural, one {{cellDate}: # chapter} other {{cellDate}: # chapters}}"
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "{chapters, plural, one {# chapter} other {# chapters}}"
+msgstr "{chapters, plural, one {# chapter} other {# chapters}}"
+
 #: src/pages/LibraryPage.tsx
 msgid "{chapters} chapters"
 msgstr "{chapters} chapters"
@@ -3585,7 +3589,6 @@ msgstr "anime"
 msgid "Anime"
 msgstr "Anime"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/SeriesHero.tsx
 msgid "Anime adaptation"
 msgstr "Anime adaptation"
@@ -8512,6 +8515,10 @@ msgstr "Has all of"
 msgid "Has an anime"
 msgstr "Has an anime"
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Has an anime adaptation"
+msgstr "Has an anime adaptation"
+
 #: src/components/CatalogueRules.tsx
 msgid "Has any of"
 msgstr "Has any of"
@@ -13148,6 +13155,10 @@ msgstr "Open on"
 #: src/components/MetadataLinks.tsx
 msgid "Open on {label}"
 msgstr "Open on {label}"
+
+#: src/components/MetadataLinks.tsx
+msgid "Open on {label}, rated {score}"
+msgstr "Open on {label}, rated {score}"
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Open on MangaBaka"

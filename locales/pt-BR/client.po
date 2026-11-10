@@ -933,6 +933,10 @@ msgstr ""
 msgid "{chapters, plural, one {{cellDate}: # chapter} other {{cellDate}: # chapters}}"
 msgstr "{chapters, plural, one {{cellDate}: # capítulo} many {{cellDate}: # capítulos} other {{cellDate}: # capítulos}}"
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "{chapters, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{chapters} chapters"
@@ -4379,7 +4383,6 @@ msgstr "anime"
 msgid "Anime"
 msgstr "Anime"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Anime adaptation"
@@ -10404,6 +10407,10 @@ msgstr "Contém todos estes"
 msgid "Has an anime"
 msgstr "Tem um anime"
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Has an anime adaptation"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Has any of"
@@ -16090,6 +16097,10 @@ msgstr "Abrir em"
 #, fuzzy
 msgid "Open on {label}"
 msgstr "Abrir em {label}"
+
+#: src/components/MetadataLinks.tsx
+msgid "Open on {label}, rated {score}"
+msgstr ""
 
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
