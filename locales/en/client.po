@@ -4051,7 +4051,6 @@ msgstr "Avoided"
 #: src/components/ui/DrillPanel.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
-#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Back"
 msgstr "Back"
@@ -4476,7 +4475,6 @@ msgstr "Can't sign in with the saved details."
 #: src/components/NotificationsSection.tsx
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/QueueActions.tsx
-#: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
@@ -8157,6 +8155,7 @@ msgid "Follows the default on your notification settings."
 msgstr "Follows the default on your notification settings."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Follows the default profile set in Settings."
 msgstr "Follows the default profile set in Settings."
 
@@ -9216,10 +9215,6 @@ msgstr "Incognito, this session isn't being recorded"
 msgid "Incognito: {incognito}"
 msgstr "Incognito: {incognito}"
 
-#: src/components/discover/DiscoverLibraryRail.tsx
-#~ msgid "Incognito: {mode}"
-#~ msgstr "Incognito: {mode}"
-
 #: src/pages/HealthPage.tsx
 msgid "Index"
 msgstr "Index"
@@ -9533,10 +9528,6 @@ msgstr "Keeps taking better scoring copies until one scores {upgradeUntilScore}"
 #: src/components/series/RestoreSeriesDialog.tsx
 msgid "Keeps the series as it is. Nothing is downloaded."
 msgstr "Keeps the series as it is. Nothing is downloaded."
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-#~ msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
-#~ msgstr "Keeps this series out of tracker pushes, and out of stats entirely on Full."
 
 #: src/components/ImportReviewModal.tsx
 msgid "kept"
@@ -10926,10 +10917,6 @@ msgstr "Monitor catches"
 #: src/components/ui/CoverCardMenu.tsx
 msgid "Monitor for new chapters"
 msgstr "Monitor for new chapters"
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-#~ msgid "Monitor: {mode}"
-#~ msgstr "Monitor: {mode}"
 
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/LibraryPage.tsx
@@ -13751,6 +13738,10 @@ msgstr "Pick tags to leave out. Open a group to see its subtags."
 msgid "Pick tags to require. Open a group to see its subtags."
 msgstr "Pick tags to require. Open a group to see its subtags."
 
+#: src/components/QueuePause.tsx
+msgid "Pick the date and time below."
+msgstr "Pick the date and time below."
+
 #: src/components/LinkChaptersModal.tsx
 msgid "Pick the file in the series folder these chapters are contained in."
 msgstr "Pick the file in the series folder these chapters are contained in."
@@ -15730,6 +15721,10 @@ msgstr "Resume rotating picks"
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Resumed since you saved it"
 msgstr "Resumed since you saved it"
+
+#: src/components/QueuePause.tsx
+msgid "Resumes at {time}."
+msgstr "Resumes at {time}."
 
 #: src/pages/ActivityPage.tsx
 msgid "Retried {retryCount}x"
@@ -18009,6 +18004,10 @@ msgstr "stay where they are"
 #: src/api/libraryImport.ts
 msgid "stays in the folder, the series folder already has a file with this name"
 msgstr "stays in the folder, the series folder already has a file with this name"
+
+#: src/components/QueuePause.tsx
+msgid "Stays paused until you press Resume."
+msgstr "Stays paused until you press Resume."
 
 #: src/components/import/ImportPlanModal.tsx
 msgid "stays unlinked: {reason}"
@@ -20855,10 +20854,6 @@ msgstr "Which languages Maki looks for, and which chapters it leaves alone."
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Which list holds this series' chapters?"
 msgstr "Which list holds this series' chapters?"
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-#~ msgid "Which new chapters get fetched as they land"
-#~ msgstr "Which new chapters get fetched as they land"
 
 #: src/components/notes/NotesPanel.tsx
 msgid "Which notes to show"

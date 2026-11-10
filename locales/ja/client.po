@@ -4946,7 +4946,6 @@ msgstr "回避"
 #: src/components/ui/DrillPanel.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
-#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Back"
@@ -5468,7 +5467,6 @@ msgstr "保存された情報ではサインインできません。"
 #: src/components/NotificationsSection.tsx
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/QueueActions.tsx
-#: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
@@ -9966,6 +9964,7 @@ msgid "Follows the default on your notification settings."
 msgstr "通知設定の既定値に従います。"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Follows the default profile set in Settings."
 msgstr ""
 
@@ -11266,11 +11265,6 @@ msgstr "シークレット、このセッションは記録されません"
 msgid "Incognito: {incognito}"
 msgstr "シークレット：{incognito}"
 
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
-#~ msgid "Incognito: {mode}"
-#~ msgstr "シークレット：{mode}"
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Index"
@@ -11657,11 +11651,6 @@ msgstr "スコアが{upgradeUntilScore}に達するまで、よりスコアの�
 #: src/components/series/RestoreSeriesDialog.tsx
 msgid "Keeps the series as it is. Nothing is downloaded."
 msgstr ""
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
-#~ msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
-#~ msgstr "トラッカーへの送信からこのシリーズを除外し、Fullでは統計からも完全に除外します。"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -13360,11 +13349,6 @@ msgstr "監視で取得"
 #, fuzzy
 msgid "Monitor for new chapters"
 msgstr "新しい章を監視"
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
-#~ msgid "Monitor: {mode}"
-#~ msgstr "監視：{mode}"
 
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/LibraryPage.tsx
@@ -16822,6 +16806,10 @@ msgstr ""
 msgid "Pick tags to require. Open a group to see its subtags."
 msgstr ""
 
+#: src/components/QueuePause.tsx
+msgid "Pick the date and time below."
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 msgid "Pick the file in the series folder these chapters are contained in."
 msgstr ""
@@ -19239,6 +19227,10 @@ msgstr "おすすめの入れ替えを再開"
 #, fuzzy
 msgid "Resumed since you saved it"
 msgstr "保存後に再開されました"
+
+#: src/components/QueuePause.tsx
+msgid "Resumes at {time}."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -22024,6 +22016,10 @@ msgstr "現在の場所に保持"
 #, fuzzy
 msgid "stays in the folder, the series folder already has a file with this name"
 msgstr "フォルダーに残ります。シリーズフォルダーには既に同じ名前のファイルがあります"
+
+#: src/components/QueuePause.tsx
+msgid "Stays paused until you press Resume."
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -25522,11 +25518,6 @@ msgstr "Makiが探す言語と、ダウンロードしない章を選びます�
 #, fuzzy
 msgid "Which list holds this series' chapters?"
 msgstr "このシリーズの章はどの一覧にありますか？"
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
-#~ msgid "Which new chapters get fetched as they land"
-#~ msgstr "新しく公開された章のうち、取得する対象"
 
 #: src/components/notes/NotesPanel.tsx
 #, fuzzy

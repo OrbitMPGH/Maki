@@ -4946,7 +4946,6 @@ msgstr "Evitado"
 #: src/components/ui/DrillPanel.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
-#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Back"
@@ -5468,7 +5467,6 @@ msgstr "No se puede iniciar sesión con los datos guardados."
 #: src/components/NotificationsSection.tsx
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/QueueActions.tsx
-#: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
@@ -9966,6 +9964,7 @@ msgid "Follows the default on your notification settings."
 msgstr "Sigue el valor predeterminado de tus ajustes de notificaciones."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Follows the default profile set in Settings."
 msgstr ""
 
@@ -11266,11 +11265,6 @@ msgstr "Incógnito, esta sesión no se está registrando"
 msgid "Incognito: {incognito}"
 msgstr "Incógnito: {incognito}"
 
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
-#~ msgid "Incognito: {mode}"
-#~ msgstr "Incógnito: {mode}"
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Index"
@@ -11657,11 +11651,6 @@ msgstr "Sigue aceptando copias con mejor puntuación hasta que una llegue a {upg
 #: src/components/series/RestoreSeriesDialog.tsx
 msgid "Keeps the series as it is. Nothing is downloaded."
 msgstr ""
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
-#~ msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
-#~ msgstr "Mantiene esta serie fuera de los envíos a los rastreadores y, en Completo, también la excluye por completo de las estadísticas."
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -13360,11 +13349,6 @@ msgstr "Capítulos detectados por el monitor"
 #, fuzzy
 msgid "Monitor for new chapters"
 msgstr "Buscar capítulos nuevos"
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
-#~ msgid "Monitor: {mode}"
-#~ msgstr "Seguimiento: {mode}"
 
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/LibraryPage.tsx
@@ -16822,6 +16806,10 @@ msgstr ""
 msgid "Pick tags to require. Open a group to see its subtags."
 msgstr ""
 
+#: src/components/QueuePause.tsx
+msgid "Pick the date and time below."
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 msgid "Pick the file in the series folder these chapters are contained in."
 msgstr ""
@@ -19239,6 +19227,10 @@ msgstr "Reanudar las selecciones rotativas"
 #, fuzzy
 msgid "Resumed since you saved it"
 msgstr "Reanudado desde que lo guardaste"
+
+#: src/components/QueuePause.tsx
+msgid "Resumes at {time}."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -22024,6 +22016,10 @@ msgstr "seguir donde están"
 #, fuzzy
 msgid "stays in the folder, the series folder already has a file with this name"
 msgstr "se queda en la carpeta, la carpeta de la serie ya tiene un archivo con este nombre"
+
+#: src/components/QueuePause.tsx
+msgid "Stays paused until you press Resume."
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -25522,11 +25518,6 @@ msgstr "Qué idiomas busca Maki y qué capítulos deja sin tocar."
 #, fuzzy
 msgid "Which list holds this series' chapters?"
 msgstr "¿Qué lista contiene los capítulos de esta serie?"
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
-#~ msgid "Which new chapters get fetched as they land"
-#~ msgstr "Qué capítulos nuevos se descargan en cuanto llegan"
 
 #: src/components/notes/NotesPanel.tsx
 #, fuzzy

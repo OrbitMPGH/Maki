@@ -4946,7 +4946,6 @@ msgstr "Исключено"
 #: src/components/ui/DrillPanel.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
-#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Back"
@@ -5468,7 +5467,6 @@ msgstr "Не удаётся войти с сохранёнными данным�
 #: src/components/NotificationsSection.tsx
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/QueueActions.tsx
-#: src/components/QueuePause.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
@@ -9966,6 +9964,7 @@ msgid "Follows the default on your notification settings."
 msgstr "Следует значению по умолчанию в настройках уведомлений."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Follows the default profile set in Settings."
 msgstr ""
 
@@ -11266,11 +11265,6 @@ msgstr "Инкогнито, этот сеанс не записывается"
 msgid "Incognito: {incognito}"
 msgstr "Инкогнито: {incognito}"
 
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
-#~ msgid "Incognito: {mode}"
-#~ msgstr "Инкогнито: {mode}"
-
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Index"
@@ -11657,11 +11651,6 @@ msgstr "Продолжает брать копии с более высокой 
 #: src/components/series/RestoreSeriesDialog.tsx
 msgid "Keeps the series as it is. Nothing is downloaded."
 msgstr ""
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
-#~ msgid "Keeps this series out of tracker pushes, and out of stats entirely on Full."
-#~ msgstr "Исключает эту серию из отправки трекерам, а Полный также полностью исключает её из статистики."
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -13360,11 +13349,6 @@ msgstr "Найдено монитором"
 #, fuzzy
 msgid "Monitor for new chapters"
 msgstr "Следить за новыми главами"
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
-#~ msgid "Monitor: {mode}"
-#~ msgstr "Отслеживание: {mode}"
 
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/LibraryPage.tsx
@@ -16822,6 +16806,10 @@ msgstr ""
 msgid "Pick tags to require. Open a group to see its subtags."
 msgstr ""
 
+#: src/components/QueuePause.tsx
+msgid "Pick the date and time below."
+msgstr ""
+
 #: src/components/LinkChaptersModal.tsx
 msgid "Pick the file in the series folder these chapters are contained in."
 msgstr ""
@@ -19239,6 +19227,10 @@ msgstr "Возобновить смену подборок"
 #, fuzzy
 msgid "Resumed since you saved it"
 msgstr "Возобновлено с момента сохранения"
+
+#: src/components/QueuePause.tsx
+msgid "Resumes at {time}."
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -22024,6 +22016,10 @@ msgstr "останутся на месте"
 #, fuzzy
 msgid "stays in the folder, the series folder already has a file with this name"
 msgstr "остаётся в папке, в папке серии уже есть файл с таким именем"
+
+#: src/components/QueuePause.tsx
+msgid "Stays paused until you press Resume."
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -25522,11 +25518,6 @@ msgstr "На каких языках Maki ищет главы и какие пр
 #, fuzzy
 msgid "Which list holds this series' chapters?"
 msgstr "В каком списке находятся главы этой серии?"
-
-#: src/components/discover/DiscoverLibraryRail.tsx
-#, fuzzy
-#~ msgid "Which new chapters get fetched as they land"
-#~ msgstr "Какие новые главы загружаются по мере выхода"
 
 #: src/components/notes/NotesPanel.tsx
 #, fuzzy
