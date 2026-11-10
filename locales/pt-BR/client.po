@@ -54,11 +54,6 @@ msgstr "(não pode ser desfeito)"
 msgid "(inaccessible)"
 msgstr "(inacessível)"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "(no longer in the library)"
-#~ msgstr "(não está mais na biblioteca)"
-
 #. placeholder {0}: history.convertedFiles
 #. placeholder {1}: history.restorableFiles
 #. placeholder {2}: history.restorableFiles
@@ -273,12 +268,6 @@ msgstr "{0, plural, one {# arquivo foi devolvido pelo desfazer e fica como está
 #, fuzzy
 msgid "{0, plural, one {# file, {size}} other {# files, {size}}}"
 msgstr "{0, plural, one {# arquivo, {size}} many {# arquivos, {size}} other {# arquivos, {size}}}"
-
-#. placeholder {0}: entries.length
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "{0, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
-#~ msgstr "{0, plural, one {# arquivo, {totalSize}} many {# arquivos, {totalSize}} other {# arquivos, {totalSize}}}"
 
 #. placeholder {0}: files.length
 #. placeholder {0}: folder.fileCount
@@ -1838,11 +1827,6 @@ msgstr "{latestVersion} disponível, ignorada"
 #: src/pages/RecycleBinPage.tsx
 msgid "{left, plural, one {# day left} other {# days left}}"
 msgstr ""
-
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "{left, plural, one {# day} other {# days}}"
-#~ msgstr "{left, plural, one {# dia} many {# dias} other {# dias}}"
 
 #: src/pages/stats/MidwayList.tsx
 #, fuzzy
@@ -5511,11 +5495,6 @@ msgstr "Dia mais movimentado"
 msgid "Button label"
 msgstr "Rótulo do botão"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "by {deletedBy}"
-#~ msgstr "por {deletedBy}"
-
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "By an author you read"
@@ -7797,11 +7776,6 @@ msgstr "Dias após a leitura"
 msgid "Days before a proposal you haven't approved expires."
 msgstr "Dias antes de uma proposta que você não aprovou expirar."
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "Days left"
-#~ msgstr "Dias restantes"
-
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
 msgid "Days read"
@@ -8085,11 +8059,6 @@ msgstr "Excluir esta tag?"
 #, fuzzy
 msgid "Delete user"
 msgstr "Excluir usuário"
-
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "Deleted"
-#~ msgstr "Excluído"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx

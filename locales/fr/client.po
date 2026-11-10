@@ -54,11 +54,6 @@ msgstr "(action irréversible)"
 msgid "(inaccessible)"
 msgstr "(inaccessible)"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "(no longer in the library)"
-#~ msgstr "(plus dans la bibliothèque)"
-
 #. placeholder {0}: history.convertedFiles
 #. placeholder {1}: history.restorableFiles
 #. placeholder {2}: history.restorableFiles
@@ -273,12 +268,6 @@ msgstr "{0, plural, one {# fichier a été rétabli par une annulation et reste 
 #, fuzzy
 msgid "{0, plural, one {# file, {size}} other {# files, {size}}}"
 msgstr "{0, plural, one {# fichier, {size}} many {# fichiers, {size}} other {# fichiers, {size}}}"
-
-#. placeholder {0}: entries.length
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "{0, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
-#~ msgstr "{0, plural, one {# fichier, {totalSize}} many {# fichiers, {totalSize}} other {# fichiers, {totalSize}}}"
 
 #. placeholder {0}: files.length
 #. placeholder {0}: folder.fileCount
@@ -1838,11 +1827,6 @@ msgstr "{latestVersion} disponible, ignorée"
 #: src/pages/RecycleBinPage.tsx
 msgid "{left, plural, one {# day left} other {# days left}}"
 msgstr ""
-
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "{left, plural, one {# day} other {# days}}"
-#~ msgstr "{left, plural, one {# jour} many {# jours} other {# jours}}"
 
 #: src/pages/stats/MidwayList.tsx
 #, fuzzy
@@ -5511,11 +5495,6 @@ msgstr "Jour le plus chargé"
 msgid "Button label"
 msgstr "Libellé du bouton"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "by {deletedBy}"
-#~ msgstr "par {deletedBy}"
-
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "By an author you read"
@@ -7797,11 +7776,6 @@ msgstr "Jours après la lecture"
 msgid "Days before a proposal you haven't approved expires."
 msgstr "Jours avant l'expiration d'une proposition non approuvée."
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "Days left"
-#~ msgstr "Jours restants"
-
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
 msgid "Days read"
@@ -8085,11 +8059,6 @@ msgstr "Supprimer ce tag ?"
 #, fuzzy
 msgid "Delete user"
 msgstr "Supprimer l'utilisateur"
-
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "Deleted"
-#~ msgstr "Supprimé"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx

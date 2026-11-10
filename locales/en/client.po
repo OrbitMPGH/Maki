@@ -46,10 +46,6 @@ msgstr "(cannot be undone)"
 msgid "(inaccessible)"
 msgstr "(inaccessible)"
 
-#: src/pages/settings/LibraryCards.tsx
-#~ msgid "(no longer in the library)"
-#~ msgstr "(no longer in the library)"
-
 #. placeholder {0}: history.convertedFiles
 #. placeholder {1}: history.restorableFiles
 #. placeholder {2}: history.restorableFiles
@@ -235,11 +231,6 @@ msgstr "{0, plural, one {# file was put back by an undo and stays as it is} othe
 #: src/components/pageconversion/RuleCard.tsx
 msgid "{0, plural, one {# file, {size}} other {# files, {size}}}"
 msgstr "{0, plural, one {# file, {size}} other {# files, {size}}}"
-
-#. placeholder {0}: entries.length
-#: src/pages/settings/LibraryCards.tsx
-#~ msgid "{0, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
-#~ msgstr "{0, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
 
 #. placeholder {0}: files.length
 #. placeholder {0}: folder.fileCount
@@ -1544,10 +1535,6 @@ msgstr "{latestVersion} available, skipped"
 #: src/pages/RecycleBinPage.tsx
 msgid "{left, plural, one {# day left} other {# days left}}"
 msgstr "{left, plural, one {# day left} other {# days left}}"
-
-#: src/pages/settings/LibraryCards.tsx
-#~ msgid "{left, plural, one {# day} other {# days}}"
-#~ msgstr "{left, plural, one {# day} other {# days}}"
 
 #: src/pages/stats/MidwayList.tsx
 msgid "{left, plural, one {# left} other {# left}}"
@@ -4538,10 +4525,6 @@ msgstr "Busiest day"
 msgid "Button label"
 msgstr "Button label"
 
-#: src/pages/settings/LibraryCards.tsx
-#~ msgid "by {deletedBy}"
-#~ msgstr "by {deletedBy}"
-
 #: src/components/ui/DiscoverRail.tsx
 msgid "By an author you read"
 msgstr "By an author you read"
@@ -6412,10 +6395,6 @@ msgstr "Days after reading"
 msgid "Days before a proposal you haven't approved expires."
 msgstr "Days before a proposal you haven't approved expires."
 
-#: src/pages/settings/LibraryCards.tsx
-#~ msgid "Days left"
-#~ msgstr "Days left"
-
 #: src/components/home/ReadingWeeks.tsx
 msgid "Days read"
 msgstr "Days read"
@@ -6650,10 +6629,6 @@ msgstr "Delete this tag?"
 #: src/components/settings/UsersSection.tsx
 msgid "Delete user"
 msgstr "Delete user"
-
-#: src/pages/settings/LibraryCards.tsx
-#~ msgid "Deleted"
-#~ msgstr "Deleted"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx

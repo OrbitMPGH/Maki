@@ -54,11 +54,6 @@ msgstr "(geri alınamaz)"
 msgid "(inaccessible)"
 msgstr "(erişilemiyor)"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "(no longer in the library)"
-#~ msgstr "(artık kitaplıkta değil)"
-
 #. placeholder {0}: history.convertedFiles
 #. placeholder {1}: history.restorableFiles
 #. placeholder {2}: history.restorableFiles
@@ -273,12 +268,6 @@ msgstr "{0, plural, one {# dosya bir geri alma işlemiyle geri konuldu ve olduğ
 #, fuzzy
 msgid "{0, plural, one {# file, {size}} other {# files, {size}}}"
 msgstr "{0, plural, one {# dosya, {size}} other {# dosya, {size}}}"
-
-#. placeholder {0}: entries.length
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "{0, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
-#~ msgstr "{0, plural, one {# dosya, {totalSize}} other {# dosya, {totalSize}}}"
 
 #. placeholder {0}: files.length
 #. placeholder {0}: folder.fileCount
@@ -1838,11 +1827,6 @@ msgstr "{latestVersion} mevcut, atlandı"
 #: src/pages/RecycleBinPage.tsx
 msgid "{left, plural, one {# day left} other {# days left}}"
 msgstr ""
-
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "{left, plural, one {# day} other {# days}}"
-#~ msgstr "{left, plural, one {# gün} other {# gün}}"
 
 #: src/pages/stats/MidwayList.tsx
 #, fuzzy
@@ -5511,11 +5495,6 @@ msgstr "En yoğun gün"
 msgid "Button label"
 msgstr "Düğme etiketi"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "by {deletedBy}"
-#~ msgstr "{deletedBy} tarafından"
-
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "By an author you read"
@@ -7797,11 +7776,6 @@ msgstr "Okuduktan sonra geçen gün"
 msgid "Days before a proposal you haven't approved expires."
 msgstr "Onaylamadığınız bir teklifin sona ermesinden önceki gün sayısı."
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "Days left"
-#~ msgstr "Kalan gün"
-
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
 msgid "Days read"
@@ -8085,11 +8059,6 @@ msgstr "Bu etiket silinsin mi?"
 #, fuzzy
 msgid "Delete user"
 msgstr "Kullanıcıyı sil"
-
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-#~ msgid "Deleted"
-#~ msgstr "Silindi"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
