@@ -836,9 +836,13 @@ export const ServerEnhanceAutoStretched: Story = {
       http.get(api('/reader/chapter/7715/page/:n/enhanced'), () => new HttpResponse(null, { status: 404 })),
     ],
   },
+  beforeEach: () => {
+    stretchedAsked.length = 0
+  },
   play: async ({ canvas }) => {
     await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
-    await waitFor(() => expect(stretchedAsked[0]?.[0]).toBe(5))
+    // A chapter's first request goes out even when empty; on a slow runner it can beat the measurement.
+    await waitFor(() => expect(stretchedAsked.find((pages) => pages.length > 0)?.[0]).toBe(5))
     await waitFor(() => expect(stretchedAsked.flat()).toContain(6))
     await waitFor(() => expect(stretchedAsked.every((pages) => pages.length <= 12 && pages.every((page) => page >= 5))).toBe(true))
   },

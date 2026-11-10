@@ -15104,6 +15104,38 @@ button.settings-row-head:hover,
   width: 190px;
 }
 
+/* A series' burst of downloads folds into one row; opened, its chapters sit under it as chips, one
+   cluster per volume. A dashed chip came from a source other than the run's main one. */
+.history-run-head {
+  cursor: pointer;
+}
+.history-run-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding-block: 2px 6px;
+}
+.history-run-segment {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.history-run-volume {
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
+  margin-inline-end: 2px;
+}
+.tag-chip.history-chip {
+  font-variant-numeric: tabular-nums;
+  min-width: 2.25rem;
+  justify-content: center;
+}
+.tag-chip.history-chip-alt {
+  border-style: dashed;
+}
+
 /* An upgrade's rejection reason is a sentence. On one line it widened the status column until the
    series column was left a few words wide. */
 .activity-queue-table .status-dot {

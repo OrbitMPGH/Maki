@@ -251,7 +251,7 @@ public class QueueBulkFailedTests : IDisposable
         var queue = Assert.IsType<QueueHistoryDto>(
             Assert.IsType<OkObjectResult>(await Controller().List(ct: CancellationToken.None)).Value);
         var history = Assert.IsType<QueueHistoryDto>(
-            Assert.IsType<OkObjectResult>(await Controller().History(1, 25, CancellationToken.None)).Value);
+            Assert.IsType<OkObjectResult>(await Controller().History(1, 25, ct: CancellationToken.None)).Value);
 
         Assert.NotNull(Assert.Single(queue.Items).SeriesCoverUrl);
         Assert.NotNull(Assert.Single(history.Items).SeriesCoverUrl);

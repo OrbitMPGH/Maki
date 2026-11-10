@@ -51,6 +51,8 @@ import type {
   QueuePauseRequest,
   QueueFailureGroupDto,
   QueueHistoryDto,
+  QueueHistoryGroupsDto,
+  QueueHistoryStatusFilter,
   QueueSummaryDto,
   TorrentImportPlanDto,
   RootFolder,
@@ -2332,12 +2334,47 @@ export function useQueueSummary() {
   })
 }
 
-export function useQueueHistory(page: number, pageSize = 25) {
+function queueHistoryParams(page: number, pageSize: number, status: QueueHistoryStatusFilter, search: string) {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
+  if (status !== 'all') params.set('status', status)
+  if (search.trim()) params.set('search', search.trim())
+  return params.toString()
+}
+
+export function useQueueHistory(
+  page: number,
+  pageSize = 25,
+  status: QueueHistoryStatusFilter = 'all',
+  search = '',
+  enabled = true,
+) {
   return useQuery({
-    queryKey: ['queue-history', page, pageSize],
-    queryFn: ({ signal }) => api<QueueHistoryDto>(`/queue/history?page=${page}&pageSize=${pageSize}`, { signal }),
+    queryKey: ['queue-history', 'flat', page, pageSize, status, search.trim()],
+    queryFn: ({ signal }) =>
+      api<QueueHistoryDto>(`/queue/history?${queueHistoryParams(page, pageSize, status, search)}`, { signal }),
     placeholderData: keepPreviousData,
     refetchInterval: 10_000,
+    enabled,
+  })
+}
+
+/** The history with each series' bursts folded into one entry, paged by entry. */
+export function useGroupedQueueHistory(
+  page: number,
+  pageSize = 25,
+  status: QueueHistoryStatusFilter = 'all',
+  search = '',
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ['queue-history', 'grouped', page, pageSize, status, search.trim()],
+    queryFn: ({ signal }) =>
+      api<QueueHistoryGroupsDto>(`/queue/history/grouped?${queueHistoryParams(page, pageSize, status, search)}`, {
+        signal,
+      }),
+    placeholderData: keepPreviousData,
+    refetchInterval: 10_000,
+    enabled,
   })
 }
 
