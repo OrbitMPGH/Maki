@@ -118,6 +118,8 @@ public class ReleaseService(
             ? await WantedLanguageAsync(seriesId, ct)
             : null;
         var attempted = candidates[0];
+        string? firstHit = null;
+        var done = false;
         var found = new Dictionary<string, ReleaseDto>(StringComparer.Ordinal);
         foreach (var candidate in candidates)
         {
@@ -134,8 +136,14 @@ public class ReleaseService(
                 found.TryAdd(release.Guid, release);
             }
 
+            if (fresh.Count > 0)
+            {
+                firstHit ??= candidate;
+            }
+
             if (found.Count > 0 && (wanted is null || found.Values.Any(r => ReleaseLanguage.Detect(r.Title) == wanted)))
             {
+                done = true;
                 break;
             }
 
@@ -146,7 +154,7 @@ public class ReleaseService(
         }
 
         var results = found.Values.OrderByDescending(r => r.Seeders ?? 0).ToList();
-        return new ReleaseSearchResult(attempted, results) { Backend = indexerSettings.Backend };
+        return new ReleaseSearchResult(done ? attempted : firstHit ?? attempted, results) { Backend = indexerSettings.Backend };
     }
 
     /// <summary>"ja" when any of the series' chapters is marked Japanese, otherwise null.</summary>

@@ -303,6 +303,7 @@ public class ReleaseServiceTests : IDisposable
 
         Assert.Single(result.Releases);
         Assert.True(http.Queries.Count >= 2);
+        Assert.Equal("The Witch and the Mercenary", result.Query);
     }
 
     [Fact]

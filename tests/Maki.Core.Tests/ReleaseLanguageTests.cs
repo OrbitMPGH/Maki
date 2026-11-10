@@ -17,6 +17,10 @@ public class ReleaseLanguageTests
     [InlineData("Some Title v01 (English)", "en")]
     [InlineData("Some Title v01 [ENG]", "en")]
     [InlineData("나 혼자만 레벨업 v01", "ko")]
+    [InlineData("葬送のフリーレン Frieren v01 (Digital) (English)", "en")]
+    [InlineData("[漫画] 葬送のフリーレン 第01巻 [中文]", "zh")]
+    [InlineData("Sousou no Frieren v01 (Chinese)", "zh")]
+    [InlineData("[CHS] 葬送的芙莉莲 01", "zh")]
     public void Reads_the_language_a_release_says_it_is_in(string title, string expected) =>
         Assert.Equal(expected, ReleaseLanguage.Detect(title));
 
@@ -27,7 +31,9 @@ public class ReleaseLanguageTests
     [InlineData("Japanese Folktales v01 (Digital)")]
     [InlineData("Raw Hero v02 (Digital) (Group)")]
     [InlineData("魔女 傭兵 01巻")]
+    [InlineData("进击的巨人・最终卷")]
     [InlineData("Some Title v01 (Japanese-English)")]
+    [InlineData("ぼくの地球を守って v01 (Japanese-English)")]
     [InlineData("[Japanese] Some Title v01 [English]")]
     [InlineData("")]
     [InlineData(null)]
@@ -43,6 +49,8 @@ public class ReleaseLanguageTests
     [InlineData(new[] { "ja-JP" }, English)]
     [InlineData(new[] { "ja" }, "나 혼자만 레벨업 v01")]
     [InlineData(new[] { "en" }, Japanese)]
+    [InlineData(new[] { "ja" }, "[漫画] 葬送のフリーレン 第01巻 [中文]")]
+    [InlineData(new[] { "ja" }, "葬送のフリーレン v01 (Digital) (English)")]
     public void A_series_all_in_one_of_japanese_and_english_ignores_a_release_that_says_another_language(
         string[] files, string title) =>
         Assert.Equal((true, SpanVerdictReasons.LanguageMismatch), ReleaseLanguage.Judge(files, title));

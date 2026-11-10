@@ -5,20 +5,22 @@ namespace Maki.Core.Parsing;
 
 /// <summary>
 /// The language a torrent release is written in, read from its title, so a Japanese series is not
-/// offered an English digital release and the other way round. Kana or a Japanese tag says Japanese,
-/// an English tag says English, Hangul says Korean. Anything else says nothing: a title in plain Latin
-/// letters is as often a romanized Japanese release as an English one, and Han alone can be Chinese.
+/// offered an English digital release and the other way round. A language tag wins over the script:
+/// Chinese and English scans often carry the Japanese title in kana. Without a tag, kana says Japanese
+/// and Hangul says Korean. Anything else says nothing: a title in plain Latin letters is as often a
+/// romanized Japanese release as an English one, and Han alone can be Chinese.
 /// </summary>
 public static partial class ReleaseLanguage
 {
     public const string Japanese = "ja";
     public const string English = "en";
+    public const string Korean = "ko";
+    public const string Chinese = "zh";
 
-    [GeneratedRegex(@"[぀-ヿｦ-ﾟ]")]
+    // Hiragana and katakana letters, full and halfwidth, without the middle dot and long vowel mark,
+    // which Chinese titles borrow.
+    [GeneratedRegex(@"[ぁ-ゖァ-ヺｦ-ﾝ]")]
     private static partial Regex Kana();
-
-    [GeneratedRegex(@"[一-鿿㐀-䶿]")]
-    private static partial Regex Han();
 
     [GeneratedRegex(@"[가-힯ᄀ-ᇿ]")]
     private static partial Regex Hangul();
@@ -32,13 +34,15 @@ public static partial class ReleaseLanguage
     [GeneratedRegex(@"[\[(]\s*(?:english|eng|en)\s*[\])]", RegexOptions.IgnoreCase)]
     private static partial Regex EnglishTag();
 
+    // "中文", "汉化", "[繁體]", "(Chinese)", "[CHS]": a Chinese scan, whatever script the title is in.
+    [GeneratedRegex(@"中文|中国語|中國語|汉化|漢化|繁体|繁體|简体|簡體|[\[(][^\[\]()]*\b(?:chinese|chs|cht|zh|cn)\b[^\[\]()]*[\])]", RegexOptions.IgnoreCase)]
+    private static partial Regex ChineseTag();
+
     // "(Japanese-English)", "[JP/EN]": a bilingual release, which is neither.
     [GeneratedRegex(@"[\[(][^\[\]()]*\b(?:japanese|jpn|jp|ja)\b[^\[\]()]*\b(?:english|eng|en)\b[^\[\]()]*[\])]|[\[(][^\[\]()]*\b(?:english|eng|en)\b[^\[\]()]*\b(?:japanese|jpn|jp|ja)\b[^\[\]()]*[\])]", RegexOptions.IgnoreCase)]
     private static partial Regex BilingualTag();
 
-    public const string Korean = "ko";
-
-    /// <summary>"ja", "en" or "ko", or null when the title does not say.</summary>
+    /// <summary>"ja", "en", "ko" or "zh", or null when the title does not say.</summary>
     public static string? Detect(string? title)
     {
         if (string.IsNullOrWhiteSpace(title))
@@ -46,14 +50,9 @@ public static partial class ReleaseLanguage
             return null;
         }
 
-        if (Kana().IsMatch(title))
+        if (ChineseTag().IsMatch(title))
         {
-            return Japanese;
-        }
-
-        if (Hangul().IsMatch(title))
-        {
-            return Korean;
+            return Chinese;
         }
 
         if (BilingualTag().IsMatch(title))
@@ -63,12 +62,14 @@ public static partial class ReleaseLanguage
 
         var japanese = JapaneseTag().IsMatch(title);
         var english = EnglishTag().IsMatch(title);
-        if (japanese != english)
+        if (japanese || english)
         {
-            return japanese ? Japanese : English;
+            return japanese == english ? null : japanese ? Japanese : English;
         }
 
-        return null;
+        var kana = Kana().IsMatch(title);
+        var hangul = Hangul().IsMatch(title);
+        return kana == hangul ? null : kana ? Japanese : Korean;
     }
 
     /// <summary>
