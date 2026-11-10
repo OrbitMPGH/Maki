@@ -82,6 +82,11 @@ msgstr "{0, plural, one {# CBZ built} other {# CBZs built}}"
 msgid "{0, plural, one {# change} other {# changes}}"
 msgstr "{0, plural, one {# change} other {# changes}}"
 
+#. placeholder {0}: chapters ?? 0
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "{0, plural, one {# chapter at your usual {paceMinutes} min a chapter.} other {# chapters at your usual {paceMinutes} min a chapter.}}"
+msgstr "{0, plural, one {# chapter at your usual {paceMinutes} min a chapter.} other {# chapters at your usual {paceMinutes} min a chapter.}}"
+
 #. placeholder {0}: counts.moves
 #: src/components/RelinkFilesModal.tsx
 msgid "{0, plural, one {# chapter moves onto a volume} other {# chapters move onto volumes}}"
@@ -786,6 +791,10 @@ msgstr "{chapters, plural, one {{cellDate}: # chapter} other {{cellDate}: # chap
 #: src/pages/LibraryPage.tsx
 msgid "{chapters} chapters"
 msgstr "{chapters} chapters"
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "{chapters}<0>ch</0>"
+msgstr "{chapters}<0>ch</0>"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
@@ -2508,6 +2517,10 @@ msgstr "{vectorCount, plural, one {# series embedded.} other {# series embedded.
 msgid "{visibleCount} of {totalCount}"
 msgstr "{visibleCount} of {totalCount}"
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "{volumes, plural, one {In # volume} other {In # volumes}}"
+msgstr "{volumes, plural, one {In # volume} other {In # volumes}}"
+
 #: src/pages/rewind/slides.tsx
 msgid "{volumesRead, plural, one {…plus # whole volume.} other {…plus # whole volumes.}}"
 msgstr "{volumesRead, plural, one {…plus # whole volume.} other {…plus # whole volumes.}}"
@@ -2652,6 +2665,15 @@ msgstr "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
 #: src/format.ts
 msgid "<1m"
 msgstr "<1m"
+
+#. placeholder {0}: Math.round(catchUpMinutes / 60)
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "~{0}<0>h</0>"
+msgstr "~{0}<0>h</0>"
+
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "~{catchUpMinutes}<0>min</0>"
+msgstr "~{catchUpMinutes}<0>min</0>"
 
 #: src/pages/stats/charts/LeanBars.tsx
 msgid "−{abs} pt"
@@ -3049,7 +3071,6 @@ msgstr "Activity log"
 msgid "Adaptation"
 msgstr "Adaptation"
 
-#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/CustomRepositoriesPanel.tsx
@@ -3453,6 +3474,10 @@ msgstr "Also delete the downloaded files"
 #: src/components/discover/DiscoverHero.tsx
 msgid "Also for you"
 msgstr "Also for you"
+
+#: src/components/discover/DiscoverGlance.tsx
+msgid "Also known as"
+msgstr "Also known as"
 
 #: src/components/SourceCompareModal.tsx
 msgid "Also make this my default order"
@@ -7989,6 +8014,10 @@ msgstr "First page"
 msgid "First page image"
 msgstr "First page image"
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "First released"
+msgstr "First released"
+
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Fit"
 msgstr "Fit"
@@ -8041,6 +8070,7 @@ msgstr "FlareSolverr"
 msgid "Flash the chapter name on chapter change"
 msgstr "Flash the chapter name on chapter change"
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/RenameSeriesModal.tsx
 #: src/pages/ImportPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -9169,8 +9199,8 @@ msgid "Incognito: {incognito}"
 msgstr "Incognito: {incognito}"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
-msgid "Incognito: {mode}"
-msgstr "Incognito: {mode}"
+#~ msgid "Incognito: {mode}"
+#~ msgstr "Incognito: {mode}"
 
 #: src/pages/HealthPage.tsx
 msgid "Index"
@@ -10880,8 +10910,8 @@ msgid "Monitor for new chapters"
 msgstr "Monitor for new chapters"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
-msgid "Monitor: {mode}"
-msgstr "Monitor: {mode}"
+#~ msgid "Monitor: {mode}"
+#~ msgstr "Monitor: {mode}"
 
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/LibraryPage.tsx
@@ -13872,6 +13902,7 @@ msgstr "Press Enter to add a genre"
 msgid "Press Enter to create a new tag"
 msgstr "Press Enter to create a new tag"
 
+#: src/components/discover/PreviewChapterButton.tsx
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Preview"
 msgstr "Preview"
@@ -14064,6 +14095,7 @@ msgstr "Put it behind HTTPS, then turn on Settings → System → Network → Re
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
 msgstr "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
 
+#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/pageconversion/CompareStep.tsx
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -14082,7 +14114,6 @@ msgstr "quality format, condition, high resolution, format score, regex, group m
 msgid "Quality formats"
 msgstr "Quality formats"
 
-#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Quality profile"
@@ -14306,6 +14337,7 @@ msgstr "Reachable"
 msgid "Reached for {ratioValue} more than owning it would predict, across {seriesPhrase}"
 msgstr "Reached for {ratioValue} more than owning it would predict, across {seriesPhrase}"
 
+#: src/components/discover/PreviewChapterButton.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
@@ -14882,7 +14914,6 @@ msgstr "Release notes"
 msgid "Release number may be a sequel, not a chapter"
 msgstr "Release number may be a sequel, not a chapter"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Released"
@@ -15861,7 +15892,6 @@ msgstr "Romance"
 msgid "Romanized"
 msgstr "Romanized"
 
-#: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/import/MihonReview.tsx
 #: src/components/ImportListsSection.tsx
 #: src/pages/ImportPage.tsx
@@ -16355,6 +16385,10 @@ msgstr "score {score}"
 msgid "Score {score}"
 msgstr "Score {score}"
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "Score {value} out of 10"
+msgstr "Score {value} out of 10"
+
 #. placeholder {0}: format.name
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Score for {0}"
@@ -16611,6 +16645,10 @@ msgstr "Searches every source that isn't linked yet. Linked sources stay as they
 #: src/components/ReleaseSearchModal.tsx
 msgid "Searches your indexers. Grab sends a release to your download client."
 msgstr "Searches your indexers. Grab sends a release to your download client."
+
+#: src/components/discover/PreviewChapterButton.tsx
+msgid "Searching"
+msgstr "Searching"
 
 #: src/components/ReleaseSearchModal.tsx
 msgid "Searching indexers…"
@@ -19392,6 +19430,10 @@ msgstr "to"
 msgid "To"
 msgstr "To"
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "To catch up"
+msgstr "To catch up"
+
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/NotificationsPage.tsx
@@ -19559,6 +19601,7 @@ msgid "Try a shorter or alternative query."
 msgstr "Try a shorter or alternative query."
 
 #: src/auth/OfflineStartPage.tsx
+#: src/components/discover/PreviewChapterButton.tsx
 #: src/components/home/OfflineHome.tsx
 #: src/components/MetadataDumpProgress.tsx
 #: src/components/notes/NotesPanel.tsx
