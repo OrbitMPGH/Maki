@@ -42,6 +42,19 @@ public class MangaBakaLocalStoreTests : IDisposable
     public void Dispose() => _db.Dispose();
 
     [Fact]
+    public async Task GetDetailAsync_carries_every_review_site_id()
+    {
+        _db.AddSeries(1, "Berserk", aniListId: 30002, malId: 2, kitsuId: 8);
+
+        var detail = await Store.GetDetailAsync(1);
+
+        Assert.NotNull(detail);
+        Assert.Equal(2, detail.MalId);
+        Assert.Equal(30002, detail.AniListId);
+        Assert.Equal(8, detail.KitsuId);
+    }
+
+    [Fact]
     public async Task GetRatingsAsync_returns_scores_for_known_ids_and_skips_unscored_and_missing()
     {
         _db.AddSeries(1, "Scored", rating: 82.5);

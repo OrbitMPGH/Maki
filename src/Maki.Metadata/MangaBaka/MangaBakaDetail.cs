@@ -31,7 +31,8 @@ public record ReaderCohortHint(double Score, double Baseline, int Readers);
 
 /// <summary>
 /// Rich detail for one MangaBaka series, used by the Discover detail card. Everything here
-/// comes from the local dump; MAL reviews are fetched separately (lazily) by scraping MAL.
+/// comes from the local dump; reviews are fetched separately (lazily) from MAL, AniList and Kitsu
+/// by the ids carried here.
 /// </summary>
 public record MangaBakaDetail(
     string ProviderId,
@@ -56,6 +57,8 @@ public record MangaBakaDetail(
     IReadOnlyList<MangaBakaTag> Tags,
     IReadOnlyList<MetadataLink> Links,
     int? MalId,
+    int? AniListId,
+    int? KitsuId,
     bool HasAnime,
     string? AnimeStart,
     string? AnimeEnd,

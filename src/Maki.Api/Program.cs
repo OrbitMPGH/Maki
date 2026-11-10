@@ -192,6 +192,32 @@ try
         .AddHttpMessageHandler(() => new RateLimitingHandler(malLimiter));
     builder.Services.AddSingleton<MalReviewClient>();
 
+    // AniList reviews and Kitsu reactions beside MAL's. AniList allows 30 requests a minute
+    // (90 when not degraded) across the whole instance, so stay under the lower figure.
+    var aniListReviewLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(2), burst: 3);
+    builder.Services.AddHttpClient(AniListReviewClient.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://graphql.anilist.co/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
+            client.Timeout = TimeSpan.FromSeconds(20);
+        })
+        .AddHttpMessageHandler(() => new TransientRetryHandler())
+        .AddHttpMessageHandler(() => new RateLimitingHandler(aniListReviewLimiter));
+    builder.Services.AddSingleton<AniListReviewClient>();
+
+    var kitsuReactionLimiter = RateLimitingHandler.TokenBucket(1, TimeSpan.FromSeconds(1), burst: 3);
+    builder.Services.AddHttpClient(KitsuReactionClient.HttpClientName, client =>
+        {
+            client.BaseAddress = new Uri("https://kitsu.app/api/edge/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("Maki/1.0 (+https://github.com/Maki)");
+            client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.api+json");
+            client.Timeout = TimeSpan.FromSeconds(20);
+        })
+        .AddHttpMessageHandler(() => new TransientRetryHandler())
+        .AddHttpMessageHandler(() => new RateLimitingHandler(kitsuReactionLimiter));
+    builder.Services.AddSingleton<KitsuReactionClient>();
+    builder.Services.AddSingleton<SeriesReviewService>();
+
     builder.Services.AddSingleton(new MangaBakaDumpOptions(paths.MangaBakaDbPath, paths.CacheDir));
     builder.Services.AddSingleton<MangaBakaDumpStatus>();
     builder.Services.AddSingleton<MangaBakaDumpService>();

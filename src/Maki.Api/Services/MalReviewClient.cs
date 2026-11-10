@@ -1,25 +1,8 @@
+using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
 
 namespace Maki.Api.Services;
-
-/// <summary>
-/// A single reader review, surfaced on the Discover detail card.
-/// <para>
-/// A null <see cref="Author"/> means "anonymous", and each of <see cref="Tags"/> is a catalogue
-/// key rather than display text: this client is a singleton caching reviews per MAL id across
-/// every caller for twelve hours (<see cref="CacheFor"/>), so it cannot render "Anonymous" or a
-/// sentiment label without freezing one language into the cache for everyone who hits it before it
-/// expires. The controller renders them with the caller's own <c>ILocalizer</c>.
-/// </para>
-/// </summary>
-public record MangaReview(
-    string? Author,
-    int? Score,
-    string Text,
-    string? Url,
-    string? Date,
-    IReadOnlyList<string> Tags);
 
 /// <summary>
 /// Fetches a handful of MyAnimeList reviews for a series for the Discover detail card.
@@ -38,49 +21,20 @@ public partial class MalReviewClient(IHttpClientFactory httpClientFactory, ILogg
     public const string HttpClientName = "mal-web";
 
     private const int MaxReviews = 3;
-    private const int MaxTextLength = 1400;
-    private static readonly TimeSpan CacheFor = TimeSpan.FromHours(12);
 
-    private readonly SemaphoreSlim _lock = new(1, 1);
-    private readonly Dictionary<int, (DateTime At, IReadOnlyList<MangaReview> Reviews)> _cache = new();
+    private readonly ReviewCache<int> _cache = new(TimeSpan.FromHours(12));
 
     public async Task<IReadOnlyList<MangaReview>?> GetReviewsAsync(int malId, CancellationToken ct = default)
     {
-        await _lock.WaitAsync(ct);
-        try
+        if (_cache.TryGet(malId, out var cached))
         {
-            if (_cache.TryGetValue(malId, out var hit) && DateTime.UtcNow - hit.At < CacheFor)
-            {
-                return hit.Reviews;
-            }
-        }
-        finally
-        {
-            _lock.Release();
+            return cached;
         }
 
         var reviews = await FetchAsync(malId, ct);
-        if (reviews is null)
+        if (reviews is not null)
         {
-            // Fetch failed (MAL outage / blocked) — don't cache the failure, so the user can
-            // retry by reopening the card instead of being stuck showing "unavailable".
-            return null;
-        }
-
-        await _lock.WaitAsync(ct);
-        try
-        {
-            var now = DateTime.UtcNow;
-            foreach (var expired in _cache.Where(e => now - e.Value.At >= CacheFor).Select(e => e.Key).ToList())
-            {
-                _cache.Remove(expired);
-            }
-
-            _cache[malId] = (now, reviews);
-        }
-        finally
-        {
-            _lock.Release();
+            _cache.Set(malId, reviews);
         }
 
         return reviews;
@@ -132,13 +86,14 @@ public partial class MalReviewClient(IHttpClientFactory httpClientFactory, ILogg
                 continue;
             }
 
-            if (body.Length > MaxTextLength)
-            {
-                body = body[..MaxTextLength].TrimEnd() + "…";
-            }
+            body = ReviewText.Truncate(body);
 
             var author = FirstGroup(AuthorRegex().Match(block));
             var date = FirstGroup(DateRegex().Match(block));
+            if (DateTime.TryParse(date, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsed))
+            {
+                date = parsed.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            }
             var url = UrlRegex().Match(block) is { Success: true } u
                 ? "https://myanimelist.net/" + WebUtility.HtmlDecode(u.Groups[1].Value)
                 : null;
