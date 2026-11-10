@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import {
-  Alert,
   Badge,
   Button,
   Chip,
@@ -11,13 +10,13 @@ import {
   Switch,
   Text,
 } from '@mantine/core'
-import { IconDownload, IconRefresh } from '../lib/icons'
+import { IconDownload, IconInfoCircle, IconRefresh } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useNavigate } from 'react-router-dom'
-import { Panel } from './ui/Panel'
+import { SettingsRow, SettingsRows, SettingsRowsBlock } from './settings/SettingsRow'
 import { TagChip } from './ui/TagChip'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { relativeTime } from './ui/time'
@@ -47,7 +46,17 @@ const STATUS_OPTIONS: { value: ImportListStatus; label: MessageDescriptor }[] = 
   { value: 'Completed', label: msg`Completed` },
 ]
 
-function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto; listsEnabled: boolean }) {
+function TrackerRow({
+  tracker,
+  listsEnabled,
+  opened,
+  onToggle,
+}: {
+  tracker: ImportListTrackerDto
+  listsEnabled: boolean
+  opened: boolean
+  onToggle: () => void
+}) {
   const { t } = useLingui()
   const renderLabel = useLabel()
   const { can } = useAuth()
@@ -77,12 +86,11 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
 
   if (!connected) {
     return (
-      <Panel p="md">
-        <Text fw={700}>{label}</Text>
-        <Text size="sm" c="var(--ink-3)" mt={4}>
-          <Trans>Connect {label} on the Scrobble page to import from it.</Trans>
-        </Text>
-      </Panel>
+      <SettingsRow
+        title={label}
+        status={{ tone: 'neutral', label: t`Not connected` }}
+        summary={<Trans>Connect {label} on the Scrobble page to import from it.</Trans>}
+      />
     )
   }
 
@@ -90,17 +98,20 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
   const runningFull = runList.isPending && runList.variables?.service === service && runList.variables?.full
 
   return (
-    <Panel p="md">
-      <Group justify="space-between" wrap="nowrap" align="flex-start">
-        <Text fw={700}>{label}</Text>
-        <Switch
-          checked={prefs.enabled}
-          onChange={(e) => save({ enabled: e.currentTarget.checked })}
-          aria-label={t`Import from ${label}`}
-        />
-      </Group>
+    <SettingsRow
+      title={label}
+      status={prefs.enabled ? { tone: 'ok', label: t`On` } : { tone: 'neutral', label: t`Off` }}
+      summary={lastRun ? <LastRunLine lastRun={lastRun} /> : <Trans>Never run.</Trans>}
+      opened={opened}
+      onToggle={onToggle}
+    >
+      <Switch
+        label={t`Import from ${label}`}
+        checked={prefs.enabled}
+        onChange={(e) => save({ enabled: e.currentTarget.checked })}
+      />
 
-      <Stack gap={10} mt="sm">
+      <Stack gap={10}>
         <div>
           <Text size="xs" c="var(--ink-3)" mb={4}>
             <Trans>Import entries with status</Trans>
@@ -176,14 +187,6 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
           size="xs"
         />
 
-        <Text size="xs" c="var(--ink-3)">
-          {lastRun ? (
-            <LastRunLine lastRun={lastRun} />
-          ) : (
-            <Trans>Never run.</Trans>
-          )}
-        </Text>
-
         <Group gap="xs" mt={4}>
           <Button
             size="compact-sm"
@@ -229,7 +232,7 @@ function TrackerPanel({ tracker, listsEnabled }: { tracker: ImportListTrackerDto
           </Trans>
         )}
       </ConfirmDialog>
-    </Panel>
+    </SettingsRow>
   )
 }
 
@@ -261,6 +264,7 @@ function LastRunLine({ lastRun }: { lastRun: NonNullable<ImportListTrackerDto['l
 }
 
 function SkipRow({ skip, trackerLabel }: { skip: ImportListSkipDto; trackerLabel: string }) {
+  const { t } = useLingui()
   const navigate = useNavigate()
   const retry = useRetryImportListSkip()
   const ignore = useIgnoreImportListSkip()
@@ -268,24 +272,13 @@ function SkipRow({ skip, trackerLabel }: { skip: ImportListSkipDto; trackerLabel
   const isIgnored = reason === 'Ignored'
 
   return (
-    <Panel p="sm">
-      <Group justify="space-between" wrap="nowrap" gap="xs">
-        <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
-          <TagChip size="sm">{trackerLabel}</TagChip>
-          <Text size="sm" fw={600} lineClamp={1} style={{ minWidth: 0 }}>
-            {title}
-          </Text>
-          {isIgnored && (
-            <Badge size="sm" variant="light" color="var(--ink-3)">
-              <Trans>Ignored</Trans>
-            </Badge>
-          )}
-        </Group>
-        <Text size="xs" c="var(--ink-3)" style={{ flexShrink: 0 }}>
-          {relativeTime(createdAt, 'narrow')}
-        </Text>
-      </Group>
-      <Group gap="xs" mt="xs">
+    <SettingsRow
+      title={title}
+      chips={<TagChip size="sm">{trackerLabel}</TagChip>}
+      status={isIgnored ? { tone: 'neutral', label: t`Ignored` } : null}
+      summary={relativeTime(createdAt)}
+      aside={
+      <Group gap="xs" wrap="nowrap">
         <Button size="compact-xs" variant="light" onClick={() => navigate(`/add?q=${encodeURIComponent(title)}`)}>
           <Trans>Search</Trans>
         </Button>
@@ -319,7 +312,8 @@ function SkipRow({ skip, trackerLabel }: { skip: ImportListSkipDto; trackerLabel
           </>
         )}
       </Group>
-    </Panel>
+      }
+    />
   )
 }
 
@@ -336,6 +330,7 @@ function trackerLabelFor(data: ImportListsStatusDto, service: string): string {
  */
 export function ImportListsSection() {
   const { data } = useImportLists()
+  const [open, setOpen] = useState<string | null>(null)
   const review = data?.skipped.filter((s) => s.reason === 'Unmatched' || s.reason === 'Ignored') ?? []
 
   if (!data) return null
@@ -343,36 +338,48 @@ export function ImportListsSection() {
   return (
     <>
       {data.enabled === false && (
-        <Alert color="var(--ink-3)" mb="md">
-          <Trans>Import lists are turned off for this instance.</Trans>
-        </Alert>
+        <SettingsRowsBlock>
+          <div className="settings-note">
+            <IconInfoCircle size={16} aria-hidden />
+            <Trans>Import lists are turned off for this instance.</Trans>
+          </div>
+        </SettingsRowsBlock>
       )}
-      <Stack gap="sm" mb="lg">
+      <SettingsRows>
         {data.trackers.map((tr) => (
-          <TrackerPanel key={tr.service} tracker={tr} listsEnabled={data.enabled !== false} />
+          <TrackerRow
+            key={tr.service}
+            tracker={tr}
+            listsEnabled={data.enabled !== false}
+            opened={open === tr.service}
+            onToggle={() => setOpen((current) => (current === tr.service ? null : tr.service))}
+          />
         ))}
-      </Stack>
+      </SettingsRows>
 
-      <Group gap="xs" mb="sm">
-        <Text fw={600} size="sm">
-          <Trans>Not matched or ignored</Trans>
-        </Text>
-        {review.length > 0 && (
-          <Badge variant="light" color="var(--warn)">
-            {review.length}
-          </Badge>
+      <SettingsRowsBlock>
+        <Group gap="xs">
+          <Text fw={600} size="sm">
+            <Trans>Not matched or ignored</Trans>
+          </Text>
+          {review.length > 0 && (
+            <Badge variant="light" color="var(--warn)">
+              {review.length}
+            </Badge>
+          )}
+        </Group>
+        {review.length === 0 && (
+          <Text size="sm" c="var(--ink-3)" mt={4}>
+            <Trans>Nothing unmatched.</Trans>
+          </Text>
         )}
-      </Group>
-      {review.length > 0 ? (
-        <Stack gap="sm" mb="lg">
+      </SettingsRowsBlock>
+      {review.length > 0 && (
+        <SettingsRows>
           {review.map((s) => (
             <SkipRow key={s.id} skip={s} trackerLabel={trackerLabelFor(data, s.service)} />
           ))}
-        </Stack>
-      ) : (
-        <Text size="sm" c="var(--ink-3)">
-          <Trans>Nothing unmatched.</Trans>
-        </Text>
+        </SettingsRows>
       )}
     </>
   )

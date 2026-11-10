@@ -219,7 +219,7 @@ export function useLiveEvents() {
         releaseHeld(
           a,
           [...items.values()].filter((q) => {
-            const chapter = byId.get(q.chapterId)
+            const chapter = q.chapterId == null ? undefined : byId.get(q.chapterId)
             return !chapter || chapter.hasFile
           }).map((q) => q.id),
         )

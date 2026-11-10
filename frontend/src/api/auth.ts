@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { stopConnection } from './signalr'
-import { api, beginSession, invalidateInitialize } from './client'
+import { api, ApiError, beginSession, invalidateInitialize } from './client'
 import { noteSignedInUser, noteSignedOut } from '../lib/pageState'
 import { useSaveSettingsRecord } from './settingsRecord'
 import { postToWorker } from '../lib/pwa/serviceWorker'
@@ -307,6 +307,31 @@ export function useApiKeys() {
   })
 }
 
+export interface MintProof {
+  /** `Password` when the account can sign in with one, otherwise a sign-in in the last ten minutes. */
+  proof: 'Password' | 'RecentSignIn'
+  recentSignInSecondsLeft: number
+  canSignInAgain: boolean
+}
+
+export const MINT_PROOF_QUERY_KEY = ['account', 'mint-proof'] as const
+
+/** What creating an API key or OPDS token will ask for. */
+export function useMintProof(enabled = true) {
+  return useQuery({
+    queryKey: MINT_PROOF_QUERY_KEY,
+    queryFn: () => api<MintProof>('/account/mint-proof'),
+    enabled,
+  })
+}
+
+/** A refused mint because the sign-in went stale: refetch so the form shows why. */
+export function refreshMintProofOn(qc: QueryClient, error: unknown) {
+  if (error instanceof ApiError && error.code === 'error.account.recentSignInRequired') {
+    void qc.invalidateQueries({ queryKey: MINT_PROOF_QUERY_KEY })
+  }
+}
+
 export function useCreateApiKey() {
   const qc = useQueryClient()
   return useMutation({
@@ -317,6 +342,7 @@ export function useCreateApiKey() {
         body: JSON.stringify({ ...body, scope: 'Full' }),
       }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['account', 'apikeys'] }),
+    onError: (error) => refreshMintProofOn(qc, error),
   })
 }
 

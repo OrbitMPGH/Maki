@@ -538,7 +538,12 @@ export function NotificationsSection() {
           </Table.Tbody>
         </Table>
       ) : (
-        <EmptyState compact mood="asleep" title={t`No notification connections yet.`} />
+        <EmptyState
+          compact
+          mood="asleep"
+          title={t`No connections yet`}
+          description={t`Notifications stay in the bell until you add one.`}
+        />
       )}
 
       <ConfirmDialog

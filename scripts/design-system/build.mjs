@@ -326,7 +326,7 @@ const CLASSES = new RegExp(
       String.raw`cover-(card|poster|placeholder|scrim|corners?|badge|ring|meta|title|progress-row|bar|count|check|state|row|new)`,
       String.raw`tip\b`, String.raw`discover-(card|card-action|rating|corner|meta|reason|sub|sub-status|rail|rail-item)\b`,
       'engine-', 'series-row', String.raw`row-(check|cover|cover-placeholder|body|header|title|year|description|progress|bar)\b`,
-      'surface-frame', 'disclosure', 'mono-value', 'meta-list', 'table-panel', 'panel-table', 'ops-table', 'utility-modal', String.raw`tnum\b`, String.raw`figure\b`,
+      'surface-frame', 'disclosure', String.raw`drill-(row|back|panel-back|choices?|choice-check|choice-text|choice-label|choice-hint|field)`, 'mono-value', 'meta-list', 'table-panel', 'panel-table', 'ops-table', 'utility-modal', String.raw`modal-(heading|footer|note)`, String.raw`tnum\b`, String.raw`figure\b`,
     ].join('|') +
     ')',
 )
@@ -341,6 +341,7 @@ const VAR_MAP = [
   [/--mantine-color-brand-filled-hover\b/g, '--primary-hover'],
   [/--mantine-color-brand-filled\b/g, '--primary'],
   [/--mantine-font-family-monospace\b/g, '--font-mono'],
+  [/--mantine-font-family(?![-\w])/g, '--font-sans'],
   [/var\(--mantine-color-white\)/g, '#ffffff'],
   [/var\(--mantine-color-black\)/g, '#000000'],
   // Mantine's own grays, which the tooltip copies.

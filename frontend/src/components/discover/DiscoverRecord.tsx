@@ -2,17 +2,14 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Anchor, Text } from '@mantine/core'
 
-/**
- * One labelled fact. Label over value by default, which is what fits the rail; a `.detail-records`
- * wrapper marked `data-wide` puts the two on one line for the full-width panels.
- */
+/** One labelled fact, label beside value. Goes inside a `<dl className="detail-records">`. */
 export function DetailRecord({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="detail-record">
-      <Text size="xs" c="var(--ink-4)">
+      <Text component="dt" size="xs" c="var(--ink-3)">
         {label}
       </Text>
-      <Text size="sm" c="var(--ink-2)">
+      <Text component="dd" size="sm" c="var(--ink)">
         {children}
       </Text>
     </div>

@@ -3,7 +3,7 @@ import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../../.storybook/mocks/settings'
 import { adminMe, api, failWith, signedInAs } from '../../../.storybook/mocks/api'
-import { twoFactorOff, twoFactorOn } from '../../../.storybook/mocks/settings/data'
+import { mintSsoFresh, mintSsoStale, twoFactorOff, twoFactorOn } from '../../../.storybook/mocks/settings/data'
 import { ApiKeysSection, SignInSection } from './AccountSection'
 
 const meta = {
@@ -200,14 +200,28 @@ export const ApiKeyCreateShowsSecretOnce: Story = {
   },
 }
 
-export const ApiKeyCreateWithoutPasswordField: Story = {
+export const ApiKeyCreateWithRecentSso: Story = {
   render: () => <ApiKeysSection />,
-  parameters: {
-    msw: settingsMsw(http.get(api('/account/2fa'), () => HttpResponse.json({ ...twoFactorOff, hasPassword: false, available: false }))),
+  parameters: { msw: settingsMsw(http.get(api('/account/mint-proof'), () => HttpResponse.json(mintSsoFresh))) },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.type(await canvas.findByLabelText('Name'), 'Phone reader')
+    await expect(canvas.queryByLabelText('Your password')).toBeNull()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Create' }))
+    const dialog = await dialogOf(canvasElement)
+    await expect(await dialog.findByText('mk_9z8y_example-secret-shown-once')).toBeVisible()
   },
-  play: async ({ canvas }) => {
-    await canvas.findByLabelText('Name')
-    await waitFor(() => expect(canvas.queryByLabelText('Your password')).toBeNull())
+}
+
+export const ApiKeyCreateWithStaleSso: Story = {
+  render: () => <ApiKeysSection />,
+  parameters: { msw: settingsMsw(http.get(api('/account/mint-proof'), () => HttpResponse.json(mintSsoStale))) },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.type(await canvas.findByLabelText('Name'), 'Phone reader')
+    await expect(await canvas.findByText(/needs a sign-in from the last 10 minutes/)).toBeVisible()
+    const again = await canvas.findByRole('link', { name: 'Sign in again' })
+    await expect(again.getAttribute('href')).toMatch(/^\/api\/v1\/auth\/oidc\/challenge\?returnUrl=.*%23api-keys$/)
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Create' })).toHaveAttribute('aria-disabled', 'true'))
+    await expect(canvas.queryByLabelText('Your password')).toBeNull()
   },
 }
 

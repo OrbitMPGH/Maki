@@ -32,12 +32,14 @@ import {
 import {
   IconArchive,
   IconArchiveOff,
+  IconBook,
   IconBookmark,
   IconCheck,
   IconChevronDown,
   IconDeviceFloppy,
   IconDeviceMobileCheck,
   IconEye,
+  IconEyeOff,
   IconRanking,
   IconFileOff,
   IconFileText,
@@ -45,9 +47,12 @@ import {
   IconFolderDown,
   IconFolderSymlink,
   IconListCheck,
+  IconPencil,
   IconPhoto,
+  IconPhotoCog,
   IconPlus,
   IconRefresh,
+  IconScan,
   IconSearch,
   IconSettings,
   IconSortAscending,
@@ -55,9 +60,14 @@ import {
   IconBell,
   IconTag,
   IconTrash,
+  IconTrashX,
   IconWand,
   IconX,
 } from '../lib/icons'
+import { useIncognitoOptions } from '../components/ui/incognito'
+import { INCOGNITO_HELP } from '../components/series/SeriesActionsMenu'
+import { PAGE_CONVERSION_STOPS } from '../api/pageConversion'
+import { STOP_HINTS, STOP_LABELS } from '../components/pageconversion/labels'
 import { notifications } from '../lib/toast'
 import {
   useSeriesNotificationHelp,
@@ -121,6 +131,7 @@ import { ArchiveSeriesDialog } from '../components/series/ArchiveSeriesDialog'
 import { RestoreSeriesDialog } from '../components/series/RestoreSeriesDialog'
 import { RemoveArchivedFilesDialog } from '../components/series/RemoveArchivedFilesDialog'
 import { ArchivedSeriesCard, type ArchivedCardAction } from '../components/series/ArchivedSeriesCard'
+import { ArchivedList } from '../components/library/ArchivedList'
 import { showBulkRestoreQueued, showRestoreResult } from '../components/series/restoreToast'
 import {
   DensityMenuItems,
@@ -385,10 +396,32 @@ const BULK_ACTION_LABELS: Record<string, MessageDescriptor> = {
   'Set monitoring': msg`Set monitoring`,
   'Quality profile': msg`Quality profile`,
   Move: msg`Move`,
+  Rescan: msg`Rescan files`,
+  Rename: msg`Rename files`,
+  'Mark read': msg`Mark read`,
+  'Mark unread': msg`Mark unread`,
+  Incognito: msg`Incognito`,
+  'Read file cleanup': msg`Clean up read files`,
+  'Page conversion': msg`Page conversion`,
   Archive: msg({ message: 'Archive', context: 'series' }),
   Restore: msg({ message: 'Restore', context: 'series' }),
   'Remove files': msg`Remove files`,
   Delete: msg`Delete`,
+}
+
+/** Per-series settings the selection can set in one go, each with its own endpoint and busy key. */
+type BulkSetting = 'Incognito' | 'Read file cleanup' | 'Page conversion'
+
+const BULK_SETTING_ENDPOINTS: Record<BulkSetting, string> = {
+  Incognito: 'incognito',
+  'Read file cleanup': 'readcleanup',
+  'Page conversion': 'pageconversion',
+}
+
+const BULK_SETTING_FIRST: Record<BulkSetting, string> = {
+  Incognito: 'Off',
+  'Read file cleanup': 'Default',
+  'Page conversion': 'Default',
 }
 
 const MATCH_MODE_LABELS: Record<string, MessageDescriptor> = {
@@ -532,6 +565,11 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const [moveModalOpen, setMoveModalOpen] = useState(false)
   const [moveTarget, setMoveTarget] = useState<string | null>(null)
   const [moveFiles, setMoveFiles] = useState(true)
+  const [renameModalOpen, setRenameModalOpen] = useState(false)
+  const [readStateModalOpen, setReadStateModalOpen] = useState(false)
+  const [settingModal, setSettingModal] = useState<BulkSetting | null>(null)
+  const [settingValue, setSettingValue] = useState('')
+  const incognitoOptions = useIncognitoOptions()
   const [archiveModalOpen, setArchiveModalOpen] = useState(false)
   const [archiveRemoveFiles, setArchiveRemoveFiles] = useState(false)
   // Ids the recycle bin refused during a bulk archive with files; the dialog then offers to delete them for good.
@@ -1304,6 +1342,64 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     </div>
   )
 
+  const openSetting = (setting: BulkSetting) => {
+    setSettingValue(BULK_SETTING_FIRST[setting])
+    setSettingModal(setting)
+  }
+
+  const runReadState = (state: 'read' | 'unread') => {
+    setReadStateModalOpen(false)
+    void runBulk(state === 'read' ? 'Mark read' : 'Mark unread', (id) =>
+      api(`/reader/series/${id}/state`, { method: 'POST', body: JSON.stringify({ state }) }),
+    ).then(() => {
+      void queryClient.invalidateQueries({ queryKey: ['reader-progress'] })
+      void queryClient.invalidateQueries({ queryKey: ['reader-continue'] })
+      void queryClient.invalidateQueries({ queryKey: ['home'] })
+      void queryClient.invalidateQueries({ queryKey: ['progress'] })
+    })
+  }
+
+  const settingOptions: Record<BulkSetting, { value: string; label: ReactNode; hint?: ReactNode }[]> = {
+    Incognito: incognitoOptions.map((o) => ({
+      value: o.value,
+      label: o.label,
+      hint: INCOGNITO_HELP[o.value] && _(INCOGNITO_HELP[o.value]),
+    })),
+    'Read file cleanup': [
+      { value: 'Default', label: <Trans>Use the Downloads setting</Trans> },
+      {
+        value: 'On',
+        label: <Trans>On</Trans>,
+        hint: <Trans>Each chapter's file is deleted for good some days after everyone has read it.</Trans>,
+      },
+      { value: 'Off', label: <Trans>Off</Trans>, hint: <Trans>Read files stay on disk.</Trans> },
+    ],
+    'Page conversion': [
+      {
+        value: 'Default',
+        label: <Trans>Follow the rules</Trans>,
+        hint: <Trans>The page conversion rules in Settings decide.</Trans>,
+      },
+      { value: 'Never', label: <Trans>Never</Trans>, hint: <Trans>Pages stay as they were downloaded.</Trans> },
+      ...PAGE_CONVERSION_STOPS.map((stop) => ({
+        value: stop.charAt(0).toUpperCase() + stop.slice(1),
+        label: _(STOP_LABELS[stop]),
+        hint: _(STOP_HINTS[stop]),
+      })),
+    ],
+  }
+  const settingTitles: Record<BulkSetting, string> = {
+    Incognito: plural(selected.size, { one: 'Set incognito for # series', other: 'Set incognito for # series' }),
+    'Read file cleanup': plural(selected.size, {
+      one: 'Clean up read files for # series',
+      other: 'Clean up read files for # series',
+    }),
+    'Page conversion': plural(selected.size, {
+      one: 'Set page conversion for # series',
+      other: 'Set page conversion for # series',
+    }),
+  }
+
   // `key` is compared against `busy` (see runBulk) and must stay an untranslated identifier;
   // `label` is what actually renders, so it's the only part that gets translated.
   // In priority order: the first four the user may run are buttons, the rest sit under More.
@@ -1358,6 +1454,12 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       icon: <IconPhoto size={16} />,
       run: () => runBulk('Metadata', (id) => api(`/series/${id}/refreshmetadata`, { method: 'POST' })),
     },
+    can('EditMetadata') && {
+      key: 'Rescan',
+      label: <Trans>Rescan files</Trans>,
+      icon: <IconScan size={16} />,
+      run: () => runBulk('Rescan', (id) => api(`/series/${id}/rescan`, { method: 'POST' })),
+    },
     can('ManageSources') && {
       key: 'Auto-match',
       label: <Trans>Auto-match</Trans>,
@@ -1379,6 +1481,18 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       icon: <IconBell size={16} />,
       run: () => setNotifyModalOpen(true),
     },
+    {
+      key: 'Read state',
+      label: <Trans>Mark read or unread</Trans>,
+      icon: <IconBook size={16} />,
+      run: () => setReadStateModalOpen(true),
+    },
+    can('EditMetadata') && {
+      key: 'Incognito',
+      label: <Trans>Incognito</Trans>,
+      icon: <IconEyeOff size={16} />,
+      run: () => openSetting('Incognito'),
+    },
     // "ComicInfo" is the ComicInfo.xml format name, not translated (see rule 5).
     can('EditMetadata') && {
       key: 'ComicInfo',
@@ -1395,6 +1509,24 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         setMoveFiles(true)
         setMoveModalOpen(true)
       },
+    },
+    can('EditMetadata') && {
+      key: 'Rename',
+      label: <Trans>Rename files</Trans>,
+      icon: <IconPencil size={16} />,
+      run: () => setRenameModalOpen(true),
+    },
+    canDelete && {
+      key: 'Read file cleanup',
+      label: <Trans>Clean up read files</Trans>,
+      icon: <IconTrashX size={16} />,
+      run: () => openSetting('Read file cleanup'),
+    },
+    can('Admin') && {
+      key: 'Page conversion',
+      label: <Trans>Page conversion</Trans>,
+      icon: <IconPhotoCog size={16} />,
+      run: () => openSetting('Page conversion'),
     },
   ]).filter((a) => a !== false)
   // The danger button's busy key and toast name; it reads Delete in Archived, beside Remove files.
@@ -2414,6 +2546,111 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         </Group>
       </Modal>
 
+      <Modal
+        opened={renameModalOpen}
+        onClose={() => setRenameModalOpen(false)}
+        title={plural(selectedCount, { one: 'Rename files of # series', other: 'Rename files of # series' })}
+      >
+        <Text size="sm" mb="md">
+          <Trans>
+            Renames each series folder and its chapter files to match the naming formats in Settings.
+          </Trans>
+        </Text>
+        <Text size="sm" c="var(--ink-3)" mb="lg">
+          <Trans>
+            A series with a download in progress, or with two chapters that would get the same name, is
+            skipped.
+          </Trans>
+        </Text>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => setRenameModalOpen(false)}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button
+            leftSection={<IconPencil size={16} />}
+            onClick={() => {
+              setRenameModalOpen(false)
+              void runBulk('Rename', (id) => api(`/series/${id}/rename`, { method: 'POST' }))
+            }}
+          >
+            <Trans>Rename</Trans>
+          </Button>
+        </Group>
+      </Modal>
+
+      <Modal
+        opened={readStateModalOpen}
+        onClose={() => setReadStateModalOpen(false)}
+        title={plural(selectedCount, { one: 'Mark # series read or unread', other: 'Mark # series read or unread' })}
+      >
+        <Text size="sm" mb="md">
+          <Trans>
+            Read marks every chapter that has a file. It isn't logged as reading, so Rewind and your reading
+            days stay as they are.
+          </Trans>
+        </Text>
+        <Text size="sm" c="var(--ink-3)" mb="lg">
+          <Trans>Unread clears your progress and resume position in every chapter.</Trans>
+        </Text>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => setReadStateModalOpen(false)}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button variant="light" onClick={() => runReadState('unread')}>
+            <Trans>Mark unread</Trans>
+          </Button>
+          <Button leftSection={<IconCheck size={16} />} onClick={() => runReadState('read')}>
+            <Trans>Mark read</Trans>
+          </Button>
+        </Group>
+      </Modal>
+
+      <Modal
+        opened={settingModal != null}
+        onClose={() => setSettingModal(null)}
+        title={settingModal ? settingTitles[settingModal] : undefined}
+      >
+        {settingModal === 'Page conversion' && (
+          <Text size="sm" mb="md">
+            <Trans>Files already converted stay as they are.</Trans>
+          </Text>
+        )}
+        <Radio.Group
+          value={settingValue}
+          onChange={setSettingValue}
+          aria-label={settingModal ? _(BULK_ACTION_LABELS[settingModal]) : undefined}
+          mb="lg"
+        >
+          <Stack gap="sm">
+            {settingModal &&
+              settingOptions[settingModal].map((o) => (
+                <Radio key={o.value} value={o.value} label={o.label} description={o.hint} />
+              ))}
+          </Stack>
+        </Radio.Group>
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => setSettingModal(null)}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button
+            onClick={() => {
+              if (!settingModal) return
+              const setting = settingModal
+              const mode = settingValue
+              setSettingModal(null)
+              void runBulk(setting, (id) =>
+                api(`/series/${id}/${BULK_SETTING_ENDPOINTS[setting]}`, {
+                  method: 'POST',
+                  body: JSON.stringify({ mode }),
+                }),
+              )
+            }}
+          >
+            <Trans>Apply</Trans>
+          </Button>
+        </Group>
+      </Modal>
+
       <RemoveSeriesDialog
         opened={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
@@ -2815,26 +3052,23 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       )}
       {visible.length > 0 && viewMode === 'list' && (
         <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
-          <Stack ref={windowed.innerRef} gap="xs">
-            {visible.slice(windowed.start, windowed.end).map((s) =>
-              archivedScope ? (
-                <ArchivedSeriesCard
-                  key={s.id}
-                  series={s}
-                  variant="list"
-                  density={density}
-                  selectMode={selectMode}
-                  selected={selected.has(s.id)}
-                  readTracking={readTracking}
-                  onToggle={toggle}
-                  offline={offlineOf(s.id)}
-                  canRestore={canArchive}
-                  canRemoveFiles={canDelete}
-                  canDelete={canDelete}
-                  onRate={onRate}
-                  onAction={onCardAction}
-                />
-              ) : (
+          {archivedScope ? (
+            <ArchivedList
+              ref={windowed.innerRef}
+              series={visible.slice(windowed.start, windowed.end)}
+              selectMode={selectMode}
+              selectedIds={selected}
+              readTracking={readTracking}
+              onToggle={toggle}
+              canRestore={canArchive}
+              canRemoveFiles={canDelete}
+              canDelete={canDelete}
+              onRate={onRate}
+              onAction={onCardAction}
+            />
+          ) : (
+            <Stack ref={windowed.innerRef} gap="xs">
+              {visible.slice(windowed.start, windowed.end).map((s) => (
                 <SeriesRow
                   key={s.id}
                   series={s}
@@ -2845,9 +3079,9 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                   onToggle={toggle}
                   offline={offlineOf(s.id)}
                 />
-              ),
-            )}
-          </Stack>
+              ))}
+            </Stack>
+          )}
         </div>
       )}
     </SurfaceFrame>

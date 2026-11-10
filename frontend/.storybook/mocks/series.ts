@@ -305,7 +305,7 @@ export const seriesPageHandlers: HttpHandler[] = [
     const entry = catalogue.find((s) => String(s.mangaBakaId) === String(params.id))
     return entry ? HttpResponse.json(providerDetail(entry.id)) : failWith(404, 'Not found')
   }),
-  http.get(api('/recommendations/reviews/:malId'), () => HttpResponse.json([])),
+  http.get(api('/recommendations/reviews'), () => HttpResponse.json({ reviews: [], quickTakes: [], unavailable: [] })),
   http.get(api('/tags'), () => HttpResponse.json(tags)),
   http.get(api('/search/sources'), () => HttpResponse.json(sourceInfos)),
   http.get(api('/upgrade-profiles'), () => HttpResponse.json(upgradeProfiles)),

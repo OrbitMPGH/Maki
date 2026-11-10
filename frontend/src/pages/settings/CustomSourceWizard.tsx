@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
-  Alert, Anchor, Button, Collapse, FileButton, Group, List, Modal, MultiSelect, NumberInput, Radio, Select, Stack,
-  Stepper, Switch, Table, Text, TextInput, Textarea,
+  Anchor, Button, Collapse, FileButton, Group, List, Modal, MultiSelect, NumberInput, Radio, Select, Stack,
+  Switch, Text, TextInput, Textarea,
 } from '@mantine/core'
+import { ModalFooter, ModalHeading, ModalNote } from '../../components/ui/ModalShell'
 import {
-  IconAlertTriangle,
   IconCheck,
   IconChevronDown,
   IconChevronRight,
@@ -78,16 +78,16 @@ function StepRow({ step }: { step: CustomSourceTestStep }) {
   else if (step.name === 'image' && kb !== null) summary = t`${kb} KB`
   else if (step.name === 'series' && typeof step.detail?.title === 'string') summary = step.detail.title
   return (
-    <Group gap={8} wrap="nowrap" align="flex-start">
-      <span style={{ paddingTop: 3 }}><StepIcon status={step.status} /></span>
+    <li className="report-row">
+      <StepIcon status={step.status} />
       <div style={{ minWidth: 0 }}>
-        <Text size="sm" fw={600}>
-          {label}
-          {summary && <Text span size="sm" c="var(--ink-3)" fw={400}>{'  '}{summary}</Text>}
-        </Text>
-        {step.error && <Text size="xs" c="var(--danger)">{step.error}</Text>}
+        <div>
+          <span className="report-row-name">{label}</span>
+          {summary && <span className="report-row-summary">{summary}</span>}
+        </div>
+        {step.error && <div className="report-row-error">{step.error}</div>}
       </div>
-    </Group>
+    </li>
   )
 }
 
@@ -97,9 +97,12 @@ function Report({ report, only }: { report: CustomSourceTestReport; only?: Custo
   const steps = only ? report.steps.filter((s) => only.includes(s.name)) : report.steps
   const passed = steps.every((s) => s.status !== 'failed')
   return (
-    <Alert color={passed ? 'var(--ok)' : 'var(--warn)'} variant="light" title={passed ? t`Every check passed` : t`Some checks failed`}>
-      <Stack gap={6}>{steps.map((step) => <StepRow key={step.name} step={step} />)}</Stack>
-    </Alert>
+    <Stack gap={4}>
+      <ModalNote tone={passed ? 'ok' : 'warn'}>
+        <Text span fw={600}>{passed ? t`Every check passed` : t`Some checks failed`}</Text>
+      </ModalNote>
+      <ul className="report-rows">{steps.map((step) => <StepRow key={step.name} step={step} />)}</ul>
+    </Stack>
   )
 }
 
@@ -149,28 +152,30 @@ function ChapterTable({ rows, count }: { rows: { number: number | null; text: st
   const rest = count - shown.length
   return (
     <Stack gap={4}>
-      <Table fz="xs" verticalSpacing={4} withRowBorders={false} striped>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th><Trans>Number</Trans></Table.Th>
-            <Table.Th><Trans>Text</Trans></Table.Th>
-            <Table.Th><Trans>Date</Trans></Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {shown.map((row, i) => (
-            <Table.Tr key={`${row.link ?? ''}-${i}`}>
-              <Table.Td c={row.number === null ? 'var(--danger)' : undefined}>
-                {row.number === null ? <Trans>none</Trans> : i18n.number(row.number)}
-              </Table.Td>
-              <Table.Td style={{ maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={row.link ?? undefined}>
-                {row.text}
-              </Table.Td>
-              <Table.Td>{row.date ? i18n.date(new Date(row.date), { dateStyle: 'medium' }) : ''}</Table.Td>
-            </Table.Tr>
-          ))}
-        </Table.Tbody>
-      </Table>
+      <div className="hair-table-wrap">
+        <table className="hair-table">
+          <thead>
+            <tr>
+              <th><Trans>Number</Trans></th>
+              <th><Trans>Text</Trans></th>
+              <th><Trans>Date</Trans></th>
+            </tr>
+          </thead>
+          <tbody>
+            {shown.map((row, i) => (
+              <tr key={`${row.link ?? ''}-${i}`}>
+                <td className="tnum" style={row.number === null ? { color: 'var(--danger)' } : undefined}>
+                  {row.number === null ? <Trans>none</Trans> : i18n.number(row.number)}
+                </td>
+                <td style={{ maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={row.link ?? undefined}>
+                  {row.text}
+                </td>
+                <td>{row.date ? i18n.date(new Date(row.date), { dateStyle: 'medium' }) : ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       {rest > 0 && <Text size="xs" c="var(--ink-3)"><Trans>and {rest} more</Trans></Text>}
     </Stack>
   )
@@ -408,35 +413,33 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
             <Trans>Read the site</Trans>
           </Button>
         </Group>
-        {probe.error && <Alert color="var(--danger)" variant="light">{errorText(probe.error)}</Alert>}
+        {probe.error && <ModalNote tone="danger">{errorText(probe.error)}</ModalNote>}
         {site && (
           <Stack gap="xs">
-            <Alert color="var(--ok)" variant="light" icon={<IconCheck size={16} />}>
+            <ModalNote tone="ok">
               {site.viaFlareSolverr
                 ? <Trans>Read {site.title ?? site.seriesId} through FlareSolverr. The source will use it too.</Trans>
                 : <Trans>Read {site.title ?? site.seriesId} directly.</Trans>}
-            </Alert>
+            </ModalNote>
             {site.chapterError && (
-              <Alert color="var(--warn)" variant="light"><Trans>The chapter page did not load: {site.chapterError}</Trans></Alert>
+              <ModalNote tone="warn"><Trans>The chapter page did not load: {site.chapterError}</Trans></ModalNote>
             )}
             {site.hostTaken && (
-              <Alert color="var(--warn)" variant="light" icon={<IconAlertTriangle size={16} />}>
-                <Stack gap={6}>
-                  <Text size="sm"><Trans>{site.hostTaken.displayName} already reads this site.</Trans></Text>
+              <ModalNote tone="warn">
+                <Group justify="space-between" gap="xs">
+                  <span><Trans>{site.hostTaken.displayName} already reads this site.</Trans></span>
                   {site.hostTaken.custom && onEditExisting && (
-                    <Group>
-                      <Button size="xs" variant="default" onClick={() => onEditExisting(site.hostTaken!.custom!)}>
-                        <Trans>Edit {site.hostTaken.displayName}</Trans>
-                      </Button>
-                    </Group>
+                    <Button size="compact-xs" variant="default" onClick={() => onEditExisting(site.hostTaken!.custom!)}>
+                      <Trans>Edit {site.hostTaken.displayName}</Trans>
+                    </Button>
                   )}
-                </Stack>
-              </Alert>
+                </Group>
+              </ModalNote>
             )}
             {site.engine && (
-              <Alert color="var(--info)" variant="light">
+              <ModalNote tone="info">
                 <Trans>This site runs {siteEngine}, which Maki already knows how to read. The next steps are filled in.</Trans>
-              </Alert>
+              </ModalNote>
             )}
           </Stack>
         )}
@@ -445,9 +448,9 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
     chapters: engine ? presetNote : (
       <Stack gap="sm">
         {site && site.chapters.length === 0 && (
-          <Alert color="var(--warn)" variant="light">
+          <ModalNote tone="warn">
             <Trans>Maki could not find a chapter list on the series page. Describe it under Advanced.</Trans>
-          </Alert>
+          </ModalNote>
         )}
         {site && site.chapters.length > 1 && (
           <Radio.Group value={String(choice)} onChange={(v) => chooseChapters(Number(v))} label={t`Which list holds this series' chapters?`}>
@@ -477,11 +480,11 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
     pages: engine ? presetNote : (
       <Stack gap="sm">
         {site && !site.pages && (
-          <Alert color="var(--warn)" variant="light">
+          <ModalNote tone="warn">
             {chapterUrl.trim()
               ? <Trans>Maki could not find the page images on the chapter page. Describe them under Advanced.</Trans>
               : <Trans>Without a chapter page Maki can't guess where the images are. Go back and paste one, or describe them under Advanced.</Trans>}
-          </Alert>
+          </ModalNote>
         )}
         {site?.pages && !report && (
           <Stack gap="xs">
@@ -501,7 +504,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
             </Group>
             {site.pages.image.ok
               ? <Text size="xs" c="var(--ok)"><Trans>Maki loaded the first page ({site.pages.image.format}).</Trans></Text>
-              : <Alert color="var(--danger)" variant="light"><Trans>The first page image did not load: {site.pages.image.error ?? t`not an image`}</Trans></Alert>}
+              : <ModalNote tone="danger"><Trans>The first page image did not load: {site.pages.image.error ?? t`not an image`}</Trans></ModalNote>}
           </Stack>
         )}
         {report && <Report report={report} only={['pages', 'image']} />}
@@ -527,7 +530,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
             <Trans>Find search</Trans>
           </Button>
         </Group>
-        {probeSearch.error && <Alert color="var(--danger)" variant="light">{errorText(probeSearch.error)}</Alert>}
+        {probeSearch.error && <ModalNote tone="danger">{errorText(probeSearch.error)}</ModalNote>}
         {found && (
           <Radio.Group value={searchChoice} onChange={(v) => chooseSearch(v as 'found' | 'none')}>
             <Stack gap="xs">
@@ -549,11 +552,12 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
           </Radio.Group>
         )}
         {found && !found.search && !found.catalogue && (
-          <Alert color="var(--warn)" variant="light" title={t`No search found`}>
+          <ModalNote tone="warn">
+            <Text size="sm" fw={600}>{t`No search found`}</Text>
             <List size="xs" spacing={2}>
               {found.tried.map((a) => <List.Item key={a.url}>{a.url}{a.error ? `: ${a.error}` : ''}</List.Item>)}
             </List>
-          </Alert>
+          </ModalNote>
         )}
         <Advanced
           label={t`Search section`}
@@ -565,12 +569,12 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
     details: (
       <Stack gap="sm">
         {origin?.updateAvailable && (
-          <Alert color="var(--info)" variant="light">
-            <Group justify="space-between" wrap="nowrap">
-              <Text size="sm"><Trans>Version {origin.latestVersion} is available from {repositoryName}.</Trans></Text>
-              <Button size="xs" variant="default" onClick={() => setUpdateOpen(true)}><Trans>Review update</Trans></Button>
+          <ModalNote tone="info">
+            <Group justify="space-between" gap="xs">
+              <span><Trans>Version {origin.latestVersion} is available from {repositoryName}.</Trans></span>
+              <Button size="compact-xs" variant="default" onClick={() => setUpdateOpen(true)}><Trans>Review update</Trans></Button>
             </Group>
-          </Alert>
+          </ModalNote>
         )}
         {origin && !state?.detached && (
           <Text size="xs" c="var(--ink-3)">
@@ -591,16 +595,17 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
           </Group>
         )}
         {identityChangeOf(revert.error) && (
-          <Alert color="var(--warn)" variant="light" icon={<IconAlertTriangle size={16} />} title={identityChangeOf(revert.error)!.error}>
+          <ModalNote tone="warn">
+            <Text size="sm" fw={600}>{identityChangeOf(revert.error)!.error}</Text>
             <List size="sm" spacing={2}>
               {identityChangeOf(revert.error)!.reasons.map((r) => <List.Item key={r}>{reasonLabels[r] ?? r}</List.Item>)}
             </List>
-            <Group justify="flex-end" mt="sm">
-              <Button size="xs" color="var(--warn)" loading={revert.isPending} onClick={() => runRevert(true)}>
+            <Group justify="flex-end" mt="xs">
+              <Button size="xs" variant="default" loading={revert.isPending} onClick={() => runRevert(true)}>
                 <Trans>Revert anyway</Trans>
               </Button>
             </Group>
-          </Alert>
+          </ModalNote>
         )}
         {jsonMode ? (
           <Stack gap="xs">
@@ -723,30 +728,32 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
           </Anchor>
         </Group>
         {idChanged && (
-          <Alert color="var(--danger)" variant="light">
+          <ModalNote tone="danger">
             <Trans>The id of a saved source can't change. Import it as a new source instead.</Trans>
-          </Alert>
+          </ModalNote>
         )}
         {problems && (
-          <Alert color="var(--danger)" variant="light" icon={<IconAlertTriangle size={16} />} title={t`The definition has problems`}>
+          <ModalNote tone="danger">
+            <Text size="sm" fw={600}>{t`The definition has problems`}</Text>
             <List size="sm" spacing={2}>
               {problems.map((p, i) => <List.Item key={`${p.code}-${i}`}>{p.error}</List.Item>)}
             </List>
-          </Alert>
+          </ModalNote>
         )}
-        {otherError && <Alert color="var(--danger)" variant="light">{errorText(otherError)}</Alert>}
+        {otherError && <ModalNote tone="danger">{errorText(otherError)}</ModalNote>}
         {report && <Report report={report} />}
         {identity && (
-          <Alert color="var(--warn)" variant="light" icon={<IconAlertTriangle size={16} />} title={identity.error}>
+          <ModalNote tone="warn">
+            <Text size="sm" fw={600}>{identity.error}</Text>
             <List size="sm" spacing={2}>
               {identity.reasons.map((r) => <List.Item key={r}>{reasonLabels[r] ?? r}</List.Item>)}
             </List>
-            <Group justify="flex-end" mt="sm">
-              <Button size="xs" color="var(--warn)" loading={save.isPending} onClick={() => runSave(true)}>
+            <Group justify="flex-end" mt="xs">
+              <Button size="xs" variant="default" loading={save.isPending} onClick={() => runSave(true)}>
                 <Trans>Save anyway</Trans>
               </Button>
             </Group>
-          </Alert>
+          </ModalNote>
         )}
       </Stack>
     ),
@@ -766,51 +773,76 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
 
   const title = mode === 'edit' ? <Trans>Edit custom source</Trans> : mode === 'import' ? <Trans>Import a custom source</Trans> : <Trans>Set up a site</Trans>
 
+  const stepsDone = (i: number) => (i < step ? 'done' : i === step ? 'current' : 'todo')
+  const description =
+    mode === 'edit'
+      ? <Trans>Change how Maki reads this site, then test it.</Trans>
+      : mode === 'import'
+        ? <Trans>Paste or open a definition, then test it.</Trans>
+        : <Trans>Five short steps. Maki reads the site and guesses the rest.</Trans>
+
   return (
-    <Modal opened={opened} onClose={onClose} size={760} closeButtonProps={{ 'aria-label': t`Close` }} title={<Text fw={600}>{title}</Text>}>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      size={760}
+      closeButtonProps={{ 'aria-label': t`Close` }}
+      title={<ModalHeading title={title} description={description} />}
+    >
       <Stack gap="md">
-        <Stepper active={step} onStepClick={(i) => reachable(i) && setStep(i)} size="xs" allowNextStepsSelect={mode !== 'setup'}>
+        <ol className="wizard-steps" aria-label={t`Steps`}>
           {STEPS.map((name, i) => (
-            <Stepper.Step key={name} label={stepLabels[name]} allowStepSelect={reachable(i)} />
+            <li key={name} data-current={i === step || undefined}>
+              <button
+                type="button"
+                className="wizard-step"
+                data-state={stepsDone(i)}
+                aria-current={i === step ? 'step' : undefined}
+                disabled={!reachable(i) || (mode === 'setup' && i > step)}
+                onClick={() => setStep(i)}
+              >
+                <span className="wizard-step-mark" aria-hidden>
+                  {i < step ? <IconCheck size={12} /> : i + 1}
+                </span>
+                <span className="wizard-step-label">{stepLabels[name]}</span>
+              </button>
+            </li>
           ))}
-        </Stepper>
+        </ol>
         {stepBody[STEPS[step]]}
-        <Group justify="space-between">
-          <Group gap="xs">
-            {step > 0 && (
-              <Button variant="default" onClick={previousStep}><Trans>Back</Trans></Button>
-            )}
-          </Group>
-          <Group gap="xs">
-            <Button variant="default" onClick={onClose}><Trans>Cancel</Trans></Button>
-            {step < DETAILS ? (
-              <Button onClick={nextStep} disabled={!definition || (mode === 'setup' && step === 0 && !site)}>
-                <Trans>Next</Trans>
-              </Button>
-            ) : (
-              <>
-                <Button variant="default" onClick={runTest} disabled={!definition} loading={test.isPending}>
-                  <Trans>Test</Trans>
-                </Button>
-                <Button onClick={() => runSave(false)} disabled={!canSave || identity !== null} loading={save.isPending && !identity}>
-                  {mode === 'edit' && report && !report.passed ? <Trans>Save anyway</Trans> : <Trans>Save</Trans>}
-                </Button>
-              </>
-            )}
-          </Group>
-        </Group>
-        <CustomSourceUpdateDialog
-          id={updateOpen ? editingId : null}
-          opened={updateOpen}
-          onClose={() => setUpdateOpen(false)}
-          onApplied={finishedElsewhere}
-        />
-        {step === DETAILS && mode !== 'edit' && definition && !report?.passed && (
-          <Text size="xs" c="var(--ink-4)" ta="right">
-            <Trans>Saving a new source needs a test that passes.</Trans>
-          </Text>
-        )}
       </Stack>
+      <CustomSourceUpdateDialog
+        id={updateOpen ? editingId : null}
+        opened={updateOpen}
+        onClose={() => setUpdateOpen(false)}
+        onApplied={finishedElsewhere}
+      />
+      <ModalFooter
+        status={
+          step === DETAILS && mode !== 'edit' && definition && !report?.passed
+            ? <Trans>Saving a new source needs a test that passes.</Trans>
+            : null
+        }
+      >
+        {step > 0 && (
+          <Button variant="default" onClick={previousStep}><Trans>Back</Trans></Button>
+        )}
+        <Button variant="default" onClick={onClose}><Trans>Cancel</Trans></Button>
+        {step < DETAILS ? (
+          <Button onClick={nextStep} disabled={!definition || (mode === 'setup' && step === 0 && !site)}>
+            <Trans>Next</Trans>
+          </Button>
+        ) : (
+          <>
+            <Button variant="default" onClick={runTest} disabled={!definition} loading={test.isPending}>
+              <Trans>Test</Trans>
+            </Button>
+            <Button onClick={() => runSave(false)} disabled={!canSave || identity !== null} loading={save.isPending && !identity}>
+              {mode === 'edit' && report && !report.passed ? <Trans>Save anyway</Trans> : <Trans>Save</Trans>}
+            </Button>
+          </>
+        )}
+      </ModalFooter>
     </Modal>
   )
 }

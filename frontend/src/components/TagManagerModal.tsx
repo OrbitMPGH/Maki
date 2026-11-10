@@ -15,6 +15,8 @@ import { IconCheck, IconPencil, IconPlus, IconTrash, IconX } from '../lib/icons'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { useCreateTag, useDeleteTag, useTags, useUpdateTag } from '../api/hooks'
 import { ConfirmDialog } from './ui/ConfirmDialog'
+import { EmptyState } from './ui/EmptyState'
+import { ModalHeading } from './ui/ModalShell'
 
 const COLORS = ['blue', 'grape', 'teal', 'orange', 'violet', 'cyan', 'pink', 'lime', 'indigo', 'red', 'gray']
 
@@ -45,7 +47,17 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Manage tags`} size="md">
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      size="md"
+      title={
+        <ModalHeading
+          title={<Trans>Manage tags</Trans>}
+          description={<Trans>Group series in the library and filter by them.</Trans>}
+        />
+      }
+    >
       <Stack gap="sm">
         <Group gap="xs">
           <TextInput
@@ -66,97 +78,107 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
           </Button>
         </Group>
 
-        {(tags ?? []).length === 0 && (
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>No tags yet.</Trans> <Trans>Add one above, or tag a series from its detail page.</Trans>
-          </Text>
+        {tags && tags.length === 0 && (
+          <EmptyState
+            compact
+            mood="asleep"
+            title={t`No tags yet`}
+            description={<Trans>Tag a series from its page, or add one here.</Trans>}
+          />
         )}
 
-        {(tags ?? []).map((tag) => {
-          const { id, label, color, seriesCount } = tag
-          return (
-            <Group key={id} gap="xs" wrap="nowrap">
-              {editingId === id ? (
-                <>
-                  <TextInput
-                    aria-label={t`Rename ${label}`}
-                    value={editLabel}
-                    onChange={(e) => setEditLabel(e.currentTarget.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && saveLabel(id)}
-                    size="xs"
-                    style={{ flex: 1 }}
-                    autoFocus
-                  />
-                  <ActionIcon variant="subtle" color="var(--ok)" onClick={() => saveLabel(id)} aria-label={t`Save`}>
-                    <IconCheck size={16} />
-                  </ActionIcon>
-                  <ActionIcon variant="subtle" color="var(--neutral)" onClick={() => setEditingId(null)} aria-label={t`Cancel`}>
-                    <IconX size={16} />
-                  </ActionIcon>
-                </>
-              ) : (
-                <>
-                  <Popover position="bottom-start" withArrow>
-                    <Popover.Target>
-                      <Badge
-                        color={color}
-                        variant="light"
-                        style={{ cursor: 'pointer' }}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            e.currentTarget.click()
-                          }
-                        }}
-                      >
-                        {label}
-                      </Badge>
-                    </Popover.Target>
-                    <Popover.Dropdown p="xs">
-                      <Group gap={6} maw={200}>
-                        {COLORS.map((c) => (
-                          <ColorSwatch
-                            key={c}
-                            component="button"
-                            color={`var(--mantine-color-${c}-6)`}
-                            size={20}
+        {tags && tags.length > 0 && (
+          <div>
+            {tags.map((tag) => {
+              const { id, label, color, seriesCount } = tag
+              return (
+                <div key={id} className="tag-manager-row">
+                  {editingId === id ? (
+                    <>
+                      <TextInput
+                        aria-label={t`Rename ${label}`}
+                        value={editLabel}
+                        onChange={(e) => setEditLabel(e.currentTarget.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && saveLabel(id)}
+                        size="xs"
+                        style={{ flex: 1 }}
+                        autoFocus
+                      />
+                      <ActionIcon variant="subtle" color="var(--ok)" onClick={() => saveLabel(id)} aria-label={t`Save`}>
+                        <IconCheck size={16} />
+                      </ActionIcon>
+                      <ActionIcon variant="subtle" color="var(--neutral)" onClick={() => setEditingId(null)} aria-label={t`Cancel`}>
+                        <IconX size={16} />
+                      </ActionIcon>
+                    </>
+                  ) : (
+                    <>
+                      <Popover position="bottom-start" withArrow>
+                        <Popover.Target>
+                          <Badge
+                            color={color}
+                            variant="light"
                             style={{ cursor: 'pointer' }}
-                            aria-label={t`Colour ${c}`}
-                            onClick={() => updateTag.mutate({ id, color: c })}
-                          />
-                        ))}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                e.currentTarget.click()
+                              }
+                            }}
+                          >
+                            {label}
+                          </Badge>
+                        </Popover.Target>
+                        <Popover.Dropdown p="xs">
+                          <Group gap={6} maw={200}>
+                            {COLORS.map((c) => (
+                              <ColorSwatch
+                                key={c}
+                                component="button"
+                                color={`var(--mantine-color-${c}-6)`}
+                                size={20}
+                                style={{ cursor: 'pointer' }}
+                                aria-label={t`Colour ${c}`}
+                                onClick={() => updateTag.mutate({ id, color: c })}
+                              />
+                            ))}
+                          </Group>
+                        </Popover.Dropdown>
+                      </Popover>
+                      <span className="tag-manager-count tnum">
+                        <Plural value={seriesCount} one="# series" other="# series" />
+                      </span>
+                      <Group gap={2} wrap="nowrap" className="tag-manager-actions">
+                        <ActionIcon
+                          variant="subtle"
+                          color="var(--ink-3)"
+                          onClick={() => {
+                            setEditingId(id)
+                            setEditLabel(label)
+                          }}
+                          aria-label={t`Rename ${label}`}
+                        >
+                          <IconPencil size={16} />
+                        </ActionIcon>
+                        <ActionIcon
+                          variant="subtle"
+                          color="var(--ink-3)"
+                          className="tag-manager-delete"
+                          onClick={() => setDeleting({ id, label, seriesCount })}
+                          aria-label={t`Delete ${label}`}
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
                       </Group>
-                    </Popover.Dropdown>
-                  </Popover>
-                  <Text size="xs" c="var(--ink-3)" style={{ flex: 1 }} className="tnum">
-                    <Plural value={seriesCount} one="# series" other="# series" />
-                  </Text>
-                  <ActionIcon
-                    variant="subtle"
-                    color="var(--neutral)"
-                    onClick={() => {
-                      setEditingId(id)
-                      setEditLabel(label)
-                    }}
-                    aria-label={t`Rename ${label}`}
-                  >
-                    <IconPencil size={16} />
-                  </ActionIcon>
-                  <ActionIcon
-                    variant="subtle"
-                    color="var(--danger)"
-                    onClick={() => setDeleting({ id, label, seriesCount })}
-                    aria-label={t`Delete ${label}`}
-                  >
-                    <IconTrash size={16} />
-                  </ActionIcon>
-                </>
-              )}
-            </Group>
-          )
-        })}
+                    </>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </Stack>
 
       <ConfirmDialog

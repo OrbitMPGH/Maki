@@ -6,7 +6,6 @@ import { plural, t as now } from '@lingui/core/macro'
 import {
   ActionIcon,
   Alert,
-  Badge,
   Button,
   Code,
   Collapse,
@@ -35,6 +34,9 @@ import {
 } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { FigureStrip } from '../../components/ui/FigureStrip'
+import { TagChip } from '../../components/ui/TagChip'
+import { relativeTime } from '../../components/ui/time'
 import { SettingsSection } from './SettingsSection'
 import {
   useBackups,
@@ -135,14 +137,17 @@ export function BackupSection() {
         )
       }
     >
-      <Alert color="var(--warn)" icon={<IconAlertTriangle size={16} />} mb="md" variant="light">
-        <Trans>
-          Backups hold API keys and passwords in plain text. Treat a downloaded one like a
-          password.
-        </Trans>
-      </Alert>
-
       <Stack>
+        <div className="settings-note">
+          <IconAlertTriangle size={16} aria-hidden />
+          <span>
+            <Trans>
+              Backups hold API keys and passwords in plain text. Treat a downloaded one like a
+              password.
+            </Trans>
+          </span>
+        </div>
+
         {backups && backups.length > 0 && (
           <Table.ScrollContainer minWidth={520}>
             <Table className="panel-table ops-table">
@@ -158,29 +163,29 @@ export function BackupSection() {
               <Table.Tbody>
                 {backups.map((b) => (
                   <Table.Tr key={b.name}>
-                    <Table.Td style={{ whiteSpace: 'nowrap' }}>{formatDateTime(b.manifest.createdUtc)}</Table.Td>
+                    <Table.Td className="tnum" style={{ whiteSpace: 'nowrap' }}>{formatDateTime(b.manifest.createdUtc)}</Table.Td>
                     <Table.Td>
-                      <Badge size="sm" variant="light" color={b.manifest.kind === 'auto' ? 'var(--neutral)' : 'var(--info)'}>
-                        {kindLabel(b.manifest.kind)}
-                      </Badge>
+                      <TagChip size="sm">{kindLabel(b.manifest.kind)}</TagChip>
                     </Table.Td>
-                    <Table.Td>
+                    <Table.Td className="tnum">
                       <Text size="xs" c="var(--ink-3)">
                         {b.manifest.appVersion}
                       </Text>
                     </Table.Td>
-                    <Table.Td>{formatBytes(b.sizeBytes)}</Table.Td>
+                    <Table.Td className="tnum">{formatBytes(b.sizeBytes)}</Table.Td>
                     <Table.Td>
-                      <Group gap="xs" justify="flex-end" wrap="nowrap">
+                      <Group gap={4} justify="flex-end" wrap="nowrap">
                         <Button
                           size="xs"
-                          variant="light"
+                          variant="subtle"
+                          color="var(--ink-hi)"
                           onClick={() => setTarget({ kind: 'existing', name: b.name })}
                         >
                           <Trans>Restore</Trans>
                         </Button>
                         <ActionIcon
                           variant="subtle"
+                          color="var(--neutral)"
                           onClick={() => void downloadBackup(b.name)}
                           aria-label={t`Download backup`}
                         >
@@ -188,7 +193,7 @@ export function BackupSection() {
                         </ActionIcon>
                         <ActionIcon
                           variant="subtle"
-                          color="var(--danger)"
+                          className="quiet-danger"
                           onClick={() => setDeleting(b.name)}
                           aria-label={t`Delete backup`}
                         >
@@ -522,41 +527,71 @@ export function ImageCacheSection() {
       },
     })
 
+  const lastRunValue = running
+    ? t`Running`
+    : lastError
+      ? t`Failed`
+      : status?.finishedAt
+        ? relativeTime(status.finishedAt)
+        : t`Not run yet`
+
+  const lastRunHint = running ? (
+    status?.phase === 'clearing' ? (
+      <Trans>Clearing cached images...</Trans>
+    ) : (
+      <Trans>
+        Rebuilding posters, {processedCount} of {totalCount}
+      </Trans>
+    )
+  ) : lastError ? (
+    lastError
+  ) : finishedAtLabel ? (
+    <span title={finishedAtLabel}>
+      <Trans>
+        {downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached
+        images cleared
+      </Trans>
+    </span>
+  ) : undefined
+
   return (
     <SettingsSection
       id="image-cache"
       title={<Trans>Image cache</Trans>}
+      description={<Trans>Posters and reader thumbnails Maki keeps on disk.</Trans>}
     >
-      {usage && (
-        <Stack gap={4} mb="md">
-          <Text size="sm" c="var(--ink-3)">
-            {plural(coverFileCount, {
-              one: `Posters: # file, ${coverBytesLabel}`,
-              other: `Posters: # files, ${coverBytesLabel}`,
-            })}
-          </Text>
-          <Text size="sm" c="var(--ink-3)">
-            {usage.coversMissing > 0 ? (
-              plural(seriesTotalCount, {
-                one: `${coversMissingLabel} of # series has no usable poster`,
-                other: `${coversMissingLabel} of # series have no usable poster`,
-              })
-            ) : (
-              <Trans>Every series has a poster.</Trans>
-            )}
-          </Text>
-          <Text size="sm" c="var(--ink-3)">
-            {plural(thumbnailFileCount, {
-              one: `Reader thumbnails: # file, ${thumbnailBytesLabel}`,
-              other: `Reader thumbnails: # files, ${thumbnailBytesLabel}`,
-            })}
-          </Text>
-        </Stack>
-      )}
+      <FigureStrip
+        loading={!usage}
+        figures={[
+          {
+            label: t`Posters`,
+            value: coverFileCount,
+            hint:
+              usage && usage.coversMissing > 0
+                ? plural(seriesTotalCount, {
+                    one: `${coverBytesLabel}, ${coversMissingLabel} of # series has no usable poster`,
+                    other: `${coverBytesLabel}, ${coversMissingLabel} of # series have no usable poster`,
+                  })
+                : usage && <Trans>{coverBytesLabel}, every series has one</Trans>,
+          },
+          {
+            label: t`Reader thumbnails`,
+            value: thumbnailFileCount,
+            hint: thumbnailBytesLabel,
+          },
+          {
+            label: t`Last rebuild`,
+            value: lastRunValue,
+            tone: running ? 'info' : lastError ? 'danger' : undefined,
+            zero: !running && !lastError && !status?.finishedAt,
+            hint: lastRunHint,
+          },
+        ]}
+      />
 
       {(running || pct !== null) && (
         <Progress
-          mb="sm"
+          mt="sm"
           value={pct ?? 100}
           animated={running}
           striped={running}
@@ -565,46 +600,24 @@ export function ImageCacheSection() {
         />
       )}
 
-      <Group justify="space-between">
-        <Text size="sm">
-          {running ? (
-            status?.phase === 'clearing' ? (
-              <Trans>Clearing cached images...</Trans>
-            ) : (
-              <Trans>
-                Rebuilding posters, {processedCount} of {totalCount}
-              </Trans>
-            )
-          ) : lastError ? (
-            <Trans>Last run failed: {lastError}</Trans>
-          ) : finishedAtLabel ? (
-            <Trans>
-              Last run {finishedAtLabel}: {downloadedCount} posters downloaded, {failedCount}{' '}
-              failed, {thumbnailsClearedCount} cached images cleared
-            </Trans>
-          ) : (
-            <Trans>Not run yet</Trans>
-          )}
-        </Text>
-        <Group gap="xs">
-          <Button
-            variant="default"
-            size="xs"
-            loading={rebuild.isPending}
-            disabled={running}
-            onClick={() => start(false)}
-          >
-            <Trans>Rebuild missing</Trans>
-          </Button>
-          <Button
-            variant="default"
-            size="xs"
-            disabled={running || rebuild.isPending}
-            onClick={() => setConfirmForce(true)}
-          >
-            <Trans>Rebuild all</Trans>
-          </Button>
-        </Group>
+      <Group gap="xs" mt="md">
+        <Button
+          variant="default"
+          size="xs"
+          loading={rebuild.isPending}
+          disabled={running}
+          onClick={() => start(false)}
+        >
+          <Trans>Rebuild missing</Trans>
+        </Button>
+        <Button
+          variant="default"
+          size="xs"
+          disabled={running || rebuild.isPending}
+          onClick={() => setConfirmForce(true)}
+        >
+          <Trans>Rebuild all</Trans>
+        </Button>
       </Group>
 
       <Modal

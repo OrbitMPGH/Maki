@@ -612,6 +612,36 @@ public class ReaderController(
         return Ok(new { updated = await reader.MarkReadAsync(visible, ct) });
     }
 
+    public record SetSeriesStateRequest(string State);
+
+    /// <summary>
+    /// Marks every chapter of a series read or unread, for the Library's bulk action. Read is the
+    /// chapter table's silent tick, so only chapters with a file are marked.
+    /// </summary>
+    [HttpPost("series/{seriesId:int}/state")]
+    public async Task<IActionResult> SetSeriesState(int seriesId, SetSeriesStateRequest req, CancellationToken ct)
+    {
+        var state = (req.State ?? string.Empty).ToLowerInvariant();
+        if (state is not ("read" or "unread"))
+        {
+            return this.Fail(localizer, "error.reader.invalidState");
+        }
+
+        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
+        {
+            return NotFound();
+        }
+
+        var ids = await db.Chapters.Where(c => c.SeriesId == seriesId).Select(c => c.Id).ToListAsync(ct);
+        if (state == "unread")
+        {
+            await reader.ClearProgressAsync(ids, ct);
+            return Ok(new { updated = ids.Count });
+        }
+
+        return Ok(new { updated = await reader.MarkReadAsync(ids, ct) });
+    }
+
     /// <summary>Largest set one <see cref="ChapterVersions"/> call answers.</summary>
     internal const int MaxVersionChapters = 500;
 

@@ -325,4 +325,86 @@ public class CbzLinkVolumeTests : IDisposable
         Assert.All(chapters, c => Assert.Null(c.Volume));
         Assert.All(chapters, c => Assert.NotNull(c.ChapterFileId));
     }
+    /// <summary>Gives every chapter of the series volume 1 and adds a source's splits of chapter 2.</summary>
+    private void AddSplitsInVolumeOne(Series series, params decimal[] splits)
+    {
+        using var db = _db.NewContext();
+        foreach (var chapter in db.Chapters.Where(c => c.SeriesId == series.Id))
+        {
+            chapter.Volume = 1;
+        }
+
+        db.Chapters.AddRange(splits.Select(n => new Chapter { SeriesId = series.Id, Number = n, Volume = 1, Language = "en" }));
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task A_volume_with_page_markers_leaves_splits_its_pages_do_not_name()
+    {
+        var series = SeedSeries(chapterCount: 3);
+        AddSplitsInVolumeOne(series, 2.1m, 2.2m);
+
+        await LinkAsync(series, WriteVolume("Berserk v01 (Digital) (Oak).cbz", 1, 2, 3));
+
+        using var db = _db.NewContext();
+        var chapters = db.Chapters.Where(c => c.SeriesId == series.Id).ToList();
+        Assert.All(chapters.Where(c => c.Number is 1 or 2 or 3), c => Assert.NotNull(c.ChapterFileId));
+        Assert.All(chapters.Where(c => c.Number is 2.1m or 2.2m), c => Assert.Null(c.ChapterFileId));
+    }
+
+    [Fact]
+    public async Task A_volume_whose_markers_restart_per_volume_still_links_by_range()
+    {
+        var series = SeedSeries(chapterCount: 0);
+        using (var seed = _db.NewContext())
+        {
+            seed.Chapters.AddRange(new[] { 7m, 8m, 9m }.Select(n =>
+                new Chapter { SeriesId = series.Id, Number = n, Volume = 2, Language = "en" }));
+            seed.SaveChanges();
+        }
+
+        await LinkAsync(series, WriteVolume("Berserk v02 (Digital) (Oak).cbz", 1, 2, 3));
+
+        using var db = _db.NewContext();
+        Assert.All(db.Chapters.Where(c => c.SeriesId == series.Id).ToList(), c => Assert.NotNull(c.ChapterFileId));
+    }
+
+    [Theory]
+    [InlineData("torrent", "Berserk v01 (Digital) (Oak).cbz", true)]
+    [InlineData("Manual", "Berserk v01 (Digital) (Oak).cbz", false)]
+    // A rename that sorted the split first called the volume "Ch.2.1-3", which reads as a chapter.
+    [InlineData("torrent", "Berserk Ch.2.1-3.cbz", true)]
+    public async Task A_rescan_unlinks_splits_an_older_build_put_on_a_marked_volume(
+        string sourceName, string fileName, bool released)
+    {
+        var series = SeedSeries(chapterCount: 3);
+        AddSplitsInVolumeOne(series, 2.1m);
+        var path = WriteVolume(fileName, 1, 2, 3);
+        using (var seed = _db.NewContext())
+        {
+            var file = new ChapterFile
+            {
+                SeriesId = series.Id, RelativePath = Path.Combine("Berserk", Path.GetFileName(path)),
+                SourceName = sourceName, DateAdded = DateTime.UtcNow
+            };
+            seed.ChapterFiles.Add(file);
+            seed.SaveChanges();
+            foreach (var chapter in seed.Chapters.Where(c => c.SeriesId == series.Id))
+            {
+                chapter.ChapterFileId = file.Id;
+            }
+
+            seed.SaveChanges();
+        }
+
+        using (var db = _db.NewContext())
+        {
+            await Service(db).RescanSeriesAsync(db.Series.Include(s => s.RootFolder).Single(s => s.Id == series.Id));
+        }
+
+        using var check = _db.NewContext();
+        var chapters = check.Chapters.Where(c => c.SeriesId == series.Id).ToList();
+        Assert.All(chapters.Where(c => c.Number is 1 or 2 or 3), c => Assert.NotNull(c.ChapterFileId));
+        Assert.Equal(released, chapters.Single(c => c.Number == 2.1m).ChapterFileId is null);
+    }
 }

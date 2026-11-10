@@ -985,8 +985,10 @@ public class TorrentImportService(
     /// <summary>
     /// The chapters a downloaded file would end up backing: its own number for a chapter file, and
     /// for a compilation both the volume range the provider assigns and the chapter markers in its
-    /// page names, which is the pair <c>CbzLinkService</c> links on. When the page names carry
-    /// markers, the range only reaches chapters nothing backs yet, the same limit the linker has.
+    /// page names, which is the pair <c>CbzLinkService</c> links on. When the markers list the
+    /// volume's contents (<see cref="VolumeChapterScanner.ListsContents"/>) the range adds nothing,
+    /// so a source's 2.1 split is not counted; otherwise markers keep the range off chapters that
+    /// already have a file, the same limits the linker has.
     /// A chapter already on one of <paramref name="volumeFileIds"/> is never counted: the linker does
     /// not take chapters off a volume it was not told to displace, so the import would neither gain
     /// nor replace it.
@@ -1026,10 +1028,11 @@ public class TorrentImportService(
 
         var end = parsed.VolumeEnd ?? parsed.Volume;
         var contained = VolumeChapterScanner.ChaptersInNames(pages).ToHashSet();
+        bool InRange(Chapter c) => c.Volume >= parsed.Volume && c.Volume <= end;
+        var listsContents = VolumeChapterScanner.ListsContents(contained, chapters.Where(InRange).Select(c => c.Number));
         return chapters
             .Where(c => (c.Number is { } n && contained.Contains(n)) ||
-                        (c.Volume >= parsed.Volume && c.Volume <= end
-                         && (contained.Count == 0 || c.ChapterFileId is null)))
+                        (InRange(c) && (c.ChapterFileId is null ? !listsContents : contained.Count == 0)))
             .ToList();
     }
 

@@ -99,6 +99,8 @@ public class FileRelinkPlanner(
         /// <summary>Chapters this file contains and how sure we are, keyed by chapter id.</summary>
         public Dictionary<int, RelinkConfidence> Covers { get; } = [];
         public bool HasMarkers { get; set; }
+        /// <summary>The markers list everything the volume holds; see <see cref="VolumeChapterScanner.ListsContents"/>.</summary>
+        public bool ListsContents { get; set; }
         /// <summary>Languages a single-chapter file may back; null for any.</summary>
         public HashSet<string>? Languages { get; set; }
         public int Span => Parsed.IsVolume ? (Parsed.VolumeEnd ?? Parsed.Volume!.Value) - Parsed.Volume!.Value : 0;
@@ -328,11 +330,14 @@ public class FileRelinkPlanner(
             .Where(c => c.Record is not null)
             .ToDictionary(c => c.Record!.Id);
 
-        // What a file backs today is evidence too, on top of what its name and pages say.
+        // What a file backs today is evidence too, on top of what its name and pages say, except on a
+        // volume whose markers list its contents and leave the chapter out: older builds linked a
+        // source's splits and specials there by range. A hand-made link still counts.
         foreach (var chapter in chapters)
         {
             if (chapter.ChapterFileId is { } fileId && candidateByRecordId.TryGetValue(fileId, out var holder)
-                && ChapterFileLanguage.Allows(holder.Languages, chapter))
+                && ChapterFileLanguage.Allows(holder.Languages, chapter)
+                && (!holder.ListsContents || holder.Record is { SourceName: "Manual" }))
             {
                 holder.Covers.TryAdd(chapter.Id, RelinkConfidence.Existing);
             }
@@ -441,19 +446,17 @@ public class FileRelinkPlanner(
         var end = parsed.VolumeEnd ?? start;
         var markers = VolumeChapterScanner.ScanCbz(candidate.AbsolutePath).ToHashSet();
         candidate.HasMarkers = markers.Count > 0;
-        foreach (var chapter in chapters)
+        // An English volume does not cover the Spanish row of the same chapter.
+        var allowed = chapters.Where(c => ChapterFileLanguage.Allows(languages, c)).ToList();
+        candidate.ListsContents = VolumeChapterScanner.ListsContents(markers,
+            allowed.Where(c => c.Volume >= start && c.Volume <= end).Select(c => c.Number));
+        foreach (var chapter in allowed)
         {
-            // An English volume does not cover the Spanish row of the same chapter.
-            if (!ChapterFileLanguage.Allows(languages, chapter))
-            {
-                continue;
-            }
-
             if (chapter.Number is { } number && markers.Contains(number))
             {
                 candidate.Covers[chapter.Id] = RelinkConfidence.PageMarkers;
             }
-            else if (chapter.Volume is { } volume && volume >= start && volume <= end)
+            else if (!candidate.ListsContents && chapter.Volume is { } volume && volume >= start && volume <= end)
             {
                 candidate.Covers[chapter.Id] = RelinkConfidence.VolumeRange;
             }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type HTMLAttributes, type Ref } from 'react'
 import {
   ActionIcon,
   Badge,
@@ -7,7 +7,6 @@ import {
   CloseButton, Divider,
   Group,
   Modal,
-  Paper,
   Skeleton,
   Spoiler,
   Stack,
@@ -16,6 +15,9 @@ import {
   Tooltip,
 } from '@mantine/core'
 import {
+  IconBooks,
+  IconDeviceTv,
+  IconFileText,
   IconStarFilled,
   IconTrendingDown,
   IconTrendingUp,
@@ -23,11 +25,11 @@ import {
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import {
+  useReadingBehaviour,
   useRecommendationDetail,
   type RecommendationItem,
 } from '../../api/hooks'
-import { altTitleLabel, readableTitles } from '../../api/titles'
-import type { RootFolder } from '../../api/types'
+import type { MetadataLink, RootFolder } from '../../api/types'
 import { formatFixedDecimal } from '../../format'
 import { AnimeCoverageBar } from '../AnimeCoverageBar'
 import { AnimeResumeCallout } from '../series/AnimeResumeCallout'
@@ -39,7 +41,8 @@ import {
   statusToken,
 } from '../ui/status'
 import { ContentRatingChip } from '../ContentRatingChip'
-import { TagChip, TagChips } from '../ui/TagChip'
+import { Panel } from '../ui/Panel'
+import { PanelTitle } from '../ui/PanelTitle'
 import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
@@ -55,7 +58,11 @@ import { cleanSynopsis } from '../../lib/synopsis'
 import { useLabel } from '../../i18n-context'
 import { GENRE_LABELS, TYPE_LABELS } from '../CatalogueFilters'
 import { MetaList } from '../ui/MetaList'
+import { TagChip, TagChips } from '../ui/TagChip'
 import { useModalHistory } from '../../lib/useModalHistory'
+
+/** The collapsed bar's height; also how far above the top edge the add card must go to bring it in. */
+const BAR_HEIGHT = 64
 
 export function DiscoverDetailModal({
   item,
@@ -88,6 +95,35 @@ export function DiscoverDetailModal({
   const open = item != null
   const [previewFor, setPreviewFor] = useState<string | null>(null)
   const previewing = previewFor != null && previewFor === item?.providerId
+
+  // The band scrolls away with the body, and once the add card has gone under the top edge a slim
+  // bar slides in with the title and the add button, so the one thing to do stays in reach.
+  const [scroller, setScroller] = useState<HTMLDivElement | null>(null)
+  const [actionCard, setActionCard] = useState<HTMLDivElement | null>(null)
+  const [barSlot, setBarSlot] = useState<HTMLDivElement | null>(null)
+  const [barShown, setBarShown] = useState(false)
+  useEffect(() => {
+    if (!scroller || !actionCard) return
+    // A desktop card scrolls this element; on a phone it lets go and the modal scrolls band and all,
+    // so the observer watches whichever ancestor is doing the scrolling.
+    let root: HTMLElement | null = scroller
+    while (root && !/(auto|scroll)/.test(getComputedStyle(root).overflowY)) root = root.parentElement
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const top = entry.rootBounds?.top ?? 0
+        setBarShown(!entry.isIntersecting && entry.boundingClientRect.bottom <= top + 1)
+      },
+      { root, rootMargin: `-${BAR_HEIGHT}px 0px 0px 0px` },
+    )
+    observer.observe(actionCard)
+    return () => observer.disconnect()
+  }, [scroller, actionCard])
+  // A reroll swaps the series in place, so it starts again from the band.
+  const shownId = item?.providerId
+  useEffect(() => {
+    scroller?.scrollTo({ top: 0 })
+    setBarShown(false)
+  }, [shownId, scroller])
   useEffect(() => {
     if (open) return
     window.clearTimeout(rerollTimer.current)
@@ -112,32 +148,40 @@ export function DiscoverDetailModal({
   // The card's 334x500 thumbnail stands in until the detail row's full-size art arrives: it is
   // already in the browser's image cache, so the modal opens with a cover rather than a hole.
   const cover = detail?.coverUrl ?? item?.thumbUrlHiDpi ?? item?.coverUrl ?? null
-  const genres = detail?.genres ?? item?.matchedGenres ?? []
 
   // Every one of these is on the card's own row as well as the detail response, so the band is
   // complete from the first frame and the detail request fills in rather than rearranges.
   const renderLabel = useLabel()
-  const { t, i18n } = useLingui()
+  const { t } = useLingui()
   const status = seriesStatusVisual(detail?.status ?? item?.status ?? '')
   const score = detail?.rating ?? item?.rating ?? null
-  const altTitles = readableTitles(detail?.altTitles ?? [], i18n.locale)
-  // `id` is a stable key: `label` is translated text, and keying the row off it would remount the
-  // whole figures block on a language switch.
-  const figures = [
-    { id: 'released', label: t`Released`, value: detail?.year ?? item?.year },
-    { id: 'chapters', label: t`Chapters`, value: detail?.totalChapters ?? item?.totalChapters },
-    // Only ever set on a series that has finished a volume run, so an ongoing web series shows two
-    // figures rather than a third reading "0".
-    { id: 'volumes', label: t`Volumes`, value: detail?.finalVolume },
-  ].filter((f): f is { id: string; label: string; value: number } => f.value != null)
+  const year = detail?.year ?? item?.year ?? null
+  const chapters = detail?.totalChapters ?? item?.totalChapters ?? null
+  // Only ever set on a series that has finished a volume run, so an ongoing web series never
+  // reads "in 0 volumes".
+  const volumes = detail?.finalVolume ?? null
+  // The reader's own median, so the estimate is theirs rather than a site average. Null until the
+  // native reader has timed enough chapters, and then the figure stays out rather than guessing.
+  const { data: behaviour } = useReadingBehaviour()
+  const pace = behaviour?.medianSecondsPerChapter ?? null
+  const catchUpMinutes = pace != null && chapters ? Math.max(1, Math.round((pace * chapters) / 60)) : null
+  const paceMinutes = pace != null ? Math.max(1, Math.round(pace / 60)) : 0
   // The wire value picks the label and an unknown one falls through as itself, which is what
   // `useLabel` does with a plain string.
   const genreLabel = (g: string) => renderLabel(GENRE_LABELS[g] ?? g)
-  const facts = [
-    detail?.type ? renderLabel(TYPE_LABELS[detail.type] ?? detail.type) : null,
-    detail?.hasAnime ? t`Anime adaptation` : null,
-    detail?.genres.slice(0, 5).map(genreLabel).join(', ') || null,
-  ].filter(Boolean)
+  const typeLabel = detail?.type ? renderLabel(TYPE_LABELS[detail.type] ?? detail.type) : null
+  const titleLength = title.length > 70 ? 'long' : title.length > 36 ? 'medium' : undefined
+
+  // Each site's score rides on its own link mark, so the ratings and the places they come from
+  // are one row. A rated site with no id in the dump keeps a plain mark.
+  const ratingBySite = new Map((detail?.sourceRatings ?? []).map((r) => [r.source.toLowerCase(), r.rating]))
+  const links: MetadataLink[] = (detail?.links ?? []).map((link) => {
+    const rating = ratingBySite.get(link.site)
+    return rating != null && link.score == null ? { ...link, score: formatFixedDecimal(rating / 10, 1) } : link
+  })
+  const unlinkedRatings = (detail?.sourceRatings ?? []).filter(
+    (r) => !links.some((link) => link.site === r.source.toLowerCase()),
+  )
 
   // Named locals for the tooltip sentence below: Lingui only names a placeholder after the
   // expression when it is a plain identifier, so a member access or a formatter call would
@@ -187,7 +231,7 @@ export function DiscoverDetailModal({
         // The class carries the positioning the floating close button needs. Mantine's own content
         // element is not positioned, so without it the button anchors to the viewport and lands in
         // the top-right corner of the screen rather than of the card.
-        <div className="discover-modal-root">
+        <div className="discover-modal-root" data-bar={barShown || undefined}>
           <CloseButton
             className="discover-modal-close"
             size="lg"
@@ -208,6 +252,44 @@ export function DiscoverDetailModal({
             </Tooltip>
           )}
 
+          <div className="discover-scroll" ref={setScroller}>
+          {/* Sticky at zero height, so it costs the band no room and only shows once scrolled. */}
+          <div className="discover-bar-anchor">
+            <div className="discover-bar" data-shown={barShown || undefined} inert={!barShown}>
+              {cover && <img className="discover-bar-poster" src={cover} alt="" />}
+              <div className="discover-bar-identity">
+                <div className="discover-bar-title">{title}</div>
+                <Text component="div" size="xs" c="var(--ink-3)" className="discover-bar-meta">
+                  <MetaList
+                    inline
+                    items={[
+                      score != null ? (
+                        <span key="score" className="discover-bar-score">
+                          <IconStarFilled size={12} />
+                          {formatFixedDecimal(score / 10, 1)}
+                        </span>
+                      ) : null,
+                      <span key="status" style={{ color: `var(--${statusToken(status.color)})` }}>
+                        {renderLabel(status.label)}
+                      </span>,
+                      chapters != null ? plural(chapters, { one: '# chapter', other: '# chapters' }) : null,
+                      year,
+                    ]}
+                  />
+                </Text>
+              </div>
+              <div className="discover-bar-actions">
+                {inLibrarySeriesId == null && (
+                  <ShortlistButton compact providerId={item.providerId} title={title} source={savedFrom} />
+                )}
+                {/* The add panel portals its own primary action in here, so the bar's button is the
+                    same add with the same settings, not a second copy of the form's state. */}
+                <div ref={setBarSlot} className="discover-bar-slot" />
+              </div>
+              <CloseButton className="discover-bar-close" size="lg" aria-label={t`Close`} onClick={onClose} />
+            </div>
+          </div>
+
           <Box className="series-hero" data-compact>
             <HeroBackdrop coverUrl={cover} />
 
@@ -226,36 +308,34 @@ export function DiscoverDetailModal({
                     <Skeleton
                       animate={!isError}
                       className="discover-poster-skeleton"
-                      w={176}
-                      h={264}
+                      w={150}
+                      h={225}
                       radius="var(--radius-hero)"
                       style={{ flexShrink: 0 }}
                     />
                   )}
 
                   <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-                    <Title order={1} className="series-hero-title">
+                    {/* Capped at three lines, set smaller as the title gets longer: a light-novel
+                        title at display size filled half the card before the synopsis started. The
+                        whole title is the tooltip. */}
+                    <Title
+                      order={1}
+                      className="series-hero-title"
+                      data-length={titleLength}
+                      title={title || undefined}
+                    >
                       {title || (isError ? t`Couldn't load this title` : '')}
                     </Title>
 
+                    {/* One line, truncated. Every other alternative title is under At a glance. */}
                     {(detail?.nativeTitle || detail?.romanizedTitle) && (
-                      <Text component="div" size="sm" pt="xs" c="var(--ink-3)">
-                        <MetaList items={[detail?.romanizedTitle, detail?.nativeTitle]} />
-                      </Text>
-                    )}
-                    {altTitles.length > 0 && (
-                      <Text size="xs" c="var(--ink-4)" mt={4} lineClamp={2}>
-                        {altTitles.map((a, i) => (
-                          <span key={i}>
-                            {i > 0 && ', '}
-                            <span lang={a.language ?? undefined}>{a.title}</span>
-                            {altTitleLabel(a).slice(a.title.length)}
-                          </span>
-                        ))}
+                      <Text component="div" size="sm" mt={8} c="var(--ink-3)" className="discover-alt-line">
+                        <MetaList inline items={[detail?.romanizedTitle, detail?.nativeTitle]} />
                       </Text>
                     )}
 
-                    <Group gap={9} mt={16} wrap="wrap">
+                    <Group gap={8} mt={14} wrap="wrap">
                       {/* Same pills as the series page's band, from the same two maps: a result and
                           the series it becomes have to read as one object, not two vocabularies. */}
                       <span
@@ -269,39 +349,127 @@ export function DiscoverDetailModal({
                         {renderLabel(status.label)}
                       </span>
                       <ContentRatingChip rating={detail?.contentRating} tooltipZIndex={1001} />
+                      {/* What kind of book it is: a fact, not a state, so it takes the quiet pill. An
+                          anime adaptation rides on the same pill as a violet mark rather than
+                          adding a fourth pill to the row. */}
+                      {typeLabel && (
+                        <span className="series-hero-status" data-quiet>
+                          <IconBooks size={14} />
+                          {typeLabel}
+                          {detail?.hasAnime && (
+                            <Tooltip label={t`Has an anime adaptation`} withArrow zIndex={1001}>
+                              <span className="hero-anime-mark" role="img" aria-label={t`Has an anime adaptation`} tabIndex={0}>
+                                <IconDeviceTv size={14} />
+                              </span>
+                            </Tooltip>
+                          )}
+                        </span>
+                      )}
                     </Group>
 
-                    {/* The numbers people open a card to check. Every one of them is on the item the
-                        card was built from, so they are set at this size from the first frame rather
-                        than arriving with the detail request and shoving the row about. */}
-                    <div className="hero-figures">
+                    {/* The numbers people open a card to check, each labelled for the question it
+                        answers. The score ring and the chapter count are on the card's own row, so
+                        they are set from the first frame rather than arriving with the detail. */}
+                    <div className="hero-figures discover-figures">
                       {score != null && (
                         <Tooltip label={t`MangaBaka aggregate score`} withArrow zIndex={1001}>
-                          <span className="hero-score">
-                            <IconStarFilled size={18} />
-                            <span className="hero-score-n figure">{formatFixedDecimal(score / 10, 1)}</span>
-                          </span>
+                          <ScoreRing score={score} />
                         </Tooltip>
                       )}
-                      {score != null && figures.length > 0 && (
+                      {score != null && (chapters != null || volumes != null || year != null) && (
                         <span className="hero-figure-rule" aria-hidden />
                       )}
-                      {figures.length > 0 && (
-                        <div className="hero-stats">
-                          {figures.map((f) => (
-                            <div key={f.id} className="hero-stat">
-                              <span className="hero-stat-n figure">{f.value}</span>
-                              <span className="hero-stat-l">{f.label}</span>
+                      <div className="hero-stats">
+                        {chapters != null ? (
+                          <div className="hero-stat">
+                            <span className="hero-stat-n figure">
+                              {volumes != null ? (
+                                <Trans>
+                                  {chapters}
+                                  <small className="hero-stat-unit">ch</small>
+                                </Trans>
+                              ) : (
+                                chapters
+                              )}
+                            </span>
+                            <span className="hero-stat-l">
+                              {volumes != null
+                                ? plural(volumes, { one: 'In # volume', other: 'In # volumes' })
+                                : t`Chapters`}
+                            </span>
+                          </div>
+                        ) : (
+                          volumes != null && (
+                            <div className="hero-stat">
+                              <span className="hero-stat-n figure">{volumes}</span>
+                              <span className="hero-stat-l">
+                                <Trans>Volumes</Trans>
+                              </span>
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          )
+                        )}
+                        {catchUpMinutes != null && (
+                          <Tooltip
+                            withArrow
+                            multiline
+                            w={260}
+                            zIndex={1001}
+                            label={plural(chapters ?? 0, {
+                              one: `# chapter at your usual ${paceMinutes} min a chapter.`,
+                              other: `# chapters at your usual ${paceMinutes} min a chapter.`,
+                            })}
+                          >
+                            <div className="hero-stat" tabIndex={0}>
+                              <span className="hero-stat-n figure">
+                                {catchUpMinutes < 90 ? (
+                                  <Trans>
+                                    ~{catchUpMinutes}
+                                    <small className="hero-stat-unit">min</small>
+                                  </Trans>
+                                ) : (
+                                  <Trans>
+                                    ~{Math.round(catchUpMinutes / 60)}
+                                    <small className="hero-stat-unit">h</small>
+                                  </Trans>
+                                )}
+                              </span>
+                              <span className="hero-stat-l">
+                                <Trans>To catch up</Trans>
+                              </span>
+                            </div>
+                          </Tooltip>
+                        )}
+                        {year != null && (
+                          <div className="hero-stat">
+                            <span className="hero-stat-n figure">{year}</span>
+                            <span className="hero-stat-l">
+                              <Trans>First released</Trans>
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    {/* The other sites' scores are a set under the headline number, not four more
-                        headline numbers. */}
-                    {(readerHint || (detail?.sourceRatings.length ?? 0) > 0) && (
-                      <Group gap="xs" align="center" mt={14}>
+                    {/* The sites with their own scores on them: where a number comes from and the
+                        number are one control rather than two rows. */}
+                    {(links.length > 0 || unlinkedRatings.length > 0 || readerHint) && (
+                      <Group gap="sm" mt={14} align="center" wrap="wrap">
+                        <MetadataLinks
+                          links={links}
+                          chips
+                          extra={unlinkedRatings.map((r) => (
+                            <Tooltip key={r.source} label={r.source} withArrow zIndex={1001}>
+                              <span className="site-chip" data-static tabIndex={0}>
+                                <MetadataSiteIcon
+                                  site={r.source.toLowerCase()}
+                                  monogram={r.source.slice(0, 2).toUpperCase()}
+                                  size={15}
+                                />
+                                <span className="tnum">{formatFixedDecimal(r.rating / 10, 1)}</span>
+                              </span>
+                            </Tooltip>
+                          ))}
+                        />
                         {/* Only ever rendered when the server decided there is something to say, which
                             is about one series in nine: the cohorts have to disagree with the wider
                             reader crowd by at least half a star. Deliberately a direction rather than a
@@ -345,79 +513,54 @@ export function DiscoverDetailModal({
                             </Badge>
                           </Tooltip>
                         )}
-                        {detail?.sourceRatings.map((r) => (
-                          <Tooltip key={r.source} label={r.source} withArrow zIndex={1001}>
-                            <Badge
-                              size="sm"
-                              variant="light"
-                              color="var(--neutral)"
-                              leftSection={
-                                <MetadataSiteIcon
-                                  site={r.source.toLowerCase()}
-                                  monogram={r.source.slice(0, 2).toUpperCase()}
-                                  size={11}
-                                />
-                              }
-                            >
-                              {formatFixedDecimal(r.rating / 10, 1)}
-                            </Badge>
-                          </Tooltip>
-                        ))}
                       </Group>
                     )}
-
-                    {facts.length > 0 && (
-                        <Text component="div" size="sm" c="var(--ink-4)" mt={9}>
-                          <MetaList items={facts} />
-                        </Text>
-                    )}
-
-                    <Box mt="sm">
-                      <MetadataLinks links={detail?.links ?? []} />
-                    </Box>
                   </Stack>
                 </Group>
 
-                {/* One grid cell, not two. `.series-hero-content` is a two-column grid, so a
-                    feedback control rendered as its own child became a third item and wrapped onto a
-                    row of its own under the poster. It belongs under the add panel it relates to.
-
-                    `alignSelf: end` because the grid sets `align-items: start`: the cell hugs its
-                    content, so without it the panel rides at the top of the band and leaves the gap
-                    underneath. Bottom is where the panel sat before the feedback row joined it. */}
-                <Stack gap="sm" style={{ minWidth: 0, alignSelf: 'end' }}>
-                  {/* Keyed by provider id: a half-filled request belongs to the series it was started
-                      for, and remounting is a cheaper reset than clearing six fields. */}
-                  <DiscoverLibraryRail
-                    key={item.providerId}
-                    item={item}
-                    detail={detail}
-                    inLibrarySeriesId={inLibrarySeriesId}
-                    rootFolders={rootFolders}
-                    onClose={onClose}
-                    addedFrom={feedbackContext ? 'recommendation' : 'library'}
-                  />
-                  {inLibrarySeriesId == null && (
-                    <>
-                      <div className="discover-modal-actions">
-                        <PreviewChapterButton
-                          key={`preview-${item.providerId}`}
-                          providerId={item.providerId}
-                          title={title}
-                          onRead={() => setPreviewFor(item.providerId)}
-                        />
-                        <ShortlistButton
-                          key={`shortlist-${item.providerId}`}
-                          providerId={item.providerId}
-                          title={title}
-                          source={savedFrom}
-                        />
-                      </div>
-                      {shortlisted && <ShortlistNote key={`note-${item.providerId}`} providerId={item.providerId} />}
-                    </>
+                {/* One card for everything there is to do with the series: the add settings, the
+                    add itself last, and the lighter actions as the card's footer. Top-aligned with
+                    the poster, so the band has one top line. */}
+                <div className="discover-action-col">
+                  <div className="discover-action-card" ref={setActionCard}>
+                    {/* Keyed by provider id: a half-filled request belongs to the series it was
+                        started for, and remounting is a cheaper reset than clearing six fields. */}
+                    <DiscoverLibraryRail
+                      key={item.providerId}
+                      item={item}
+                      detail={detail}
+                      inLibrarySeriesId={inLibrarySeriesId}
+                      rootFolders={rootFolders}
+                      onClose={onClose}
+                      addedFrom={feedbackContext ? 'recommendation' : 'library'}
+                      barSlot={barSlot}
+                    />
+                    <div className="discover-card-footer">
+                      {inLibrarySeriesId == null && (
+                        <>
+                          <PreviewChapterButton
+                            key={`preview-${item.providerId}`}
+                            compact
+                            providerId={item.providerId}
+                            title={title}
+                            onRead={() => setPreviewFor(item.providerId)}
+                          />
+                          <ShortlistButton
+                            key={`shortlist-${item.providerId}`}
+                            compact
+                            providerId={item.providerId}
+                            title={title}
+                            source={savedFrom}
+                          />
+                        </>
+                      )}
+                      <RecommendationFeedbackMenu providerId={item.providerId} compact />
+                    </div>
+                  </div>
+                  {inLibrarySeriesId == null && shortlisted && (
+                    <ShortlistNote key={`note-${item.providerId}`} providerId={item.providerId} />
                   )}
-                  <RecommendationFeedbackMenu providerId={item.providerId} />
-                </Stack>
+                </div>
               </div>
 
             </div>
@@ -426,8 +569,12 @@ export function DiscoverDetailModal({
           <div className="discover-body">
           <div className="detail-split">
               <div className="detail-main">
-                <Paper withBorder radius="lg" p="lg">
+                <Panel>
                   <Stack gap="md">
+                    <PanelTitle order={2} icon={IconFileText}>
+                      <Trans>Synopsis</Trans>
+                    </PanelTitle>
+
                     {isLoading && !detail && (
                       <Stack gap="xs">
                         <Skeleton h={12} />
@@ -446,10 +593,6 @@ export function DiscoverDetailModal({
                       </Group>
                     )}
 
-                    <Title order={2} size="h3" fz="var(--type-section)">
-                      <Trans>Synopsis</Trans>
-                    </Title>
-
                     {(detail?.description || item.description) && (
                       <Spoiler
                         maxHeight={120}
@@ -462,9 +605,7 @@ export function DiscoverDetailModal({
                         </Text>
                       </Spoiler>
                     )}
-                    {/* Said out loud rather than left as an empty panel: a series with no
-                        synopsis, no anime dates and no genres would otherwise open on a bordered
-                        box with nothing in it. */}
+                    {/* Said out loud rather than left as a titled panel with nothing under it. */}
                     {detail && !detail.description && !item.description && (
                       <Text size="sm" c="var(--ink-4)">
                         <Trans>The catalogue has no synopsis for this one.</Trans>
@@ -495,24 +636,20 @@ export function DiscoverDetailModal({
                         </>
                     )}
 
-                    {genres.length > 0 && (
-                      <div>
-                        <Divider mb="md" color="var(--hairline)"/>
-                        <Text size="xs" fw={600} c="var(--ink-3)" mb={6}>
-                          <Trans>Genres</Trans>
-                        </Text>
+                    {/* The genres close the synopsis they summarise. The band only carries what a
+                        glance needs, and the tags have a panel of their own below. */}
+                    {detail && detail.genres.length > 0 && (
+                      <>
+                        <Divider color="var(--hairline)" />
                         <TagChips>
-                          {genres.map((g) => (
-                            <TagChip key={g} dot="var(--neutral)">
-                              {genreLabel(g)}
-                            </TagChip>
+                          {detail.genres.map((g) => (
+                            <TagChip key={g}>{genreLabel(g)}</TagChip>
                           ))}
                         </TagChips>
-                      </div>
+                      </>
                     )}
-
                   </Stack>
-                </Paper>
+                </Panel>
 
                 {detail && detail.tags.length > 0 && <DiscoverTags tags={detail.tags} />}
               </div>
@@ -522,11 +659,12 @@ export function DiscoverDetailModal({
                   `.detail-split` drop the track and give the synopsis the whole width. */}
               {detail && (
                 <div className="detail-aside">
-                  <DiscoverReviews malId={detail.malId} />
+                  <DiscoverReviews ids={detail} />
                   <DiscoverGlance detail={detail} onNavigate={onClose} />
                 </div>
               )}
             </div>
+          </div>
           </div>
           {previewing && (
             <SeriesPreviewReader
@@ -540,5 +678,42 @@ export function DiscoverDetailModal({
         </div>
       )}
     </Modal>
+  )
+}
+
+/**
+ * MangaBaka's 0-100 aggregate as a gold ring around the score out of ten. The ring is the same
+ * shape Home's level ring and the covers' read ring use, in the score's own gold. Takes a ref and
+ * passes the rest through, because a Tooltip wraps it.
+ */
+function ScoreRing({
+  score,
+  ref,
+  ...rest
+}: { score: number; ref?: Ref<HTMLSpanElement> } & HTMLAttributes<HTMLSpanElement>) {
+  const { t } = useLingui()
+  const value = formatFixedDecimal(score / 10, 1)
+  const radius = 22
+  const circumference = 2 * Math.PI * radius
+  const filled = (Math.min(100, Math.max(0, score)) / 100) * circumference
+  return (
+    // The spread goes first: the Tooltip hands the child's own props back, an undefined className
+    // among them, and spread last it wiped the ring's class.
+    <span {...rest} ref={ref} className="hero-ring" role="img" aria-label={t`Score ${value} out of 10`} tabIndex={0}>
+      <svg viewBox="0 0 52 52" aria-hidden>
+        <circle className="hero-ring-track" cx="26" cy="26" r={radius} />
+        <circle
+          className="hero-ring-fill"
+          cx="26"
+          cy="26"
+          r={radius}
+          strokeDasharray={`${filled} ${circumference}`}
+          transform="rotate(-90 26 26)"
+        />
+      </svg>
+      <span className="hero-ring-n figure" aria-hidden>
+        {value}
+      </span>
+    </span>
   )
 }

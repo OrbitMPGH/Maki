@@ -1,10 +1,12 @@
-import { Group, Modal, Stack, Text } from '@mantine/core'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Button, Modal, Stack, Text } from '@mantine/core'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import { upgradeReasonLabel } from '../../api/upgrades'
 import type { UpgradeCandidateOutcomeDto, UpgradeScanResultDto } from '../../api/upgrades'
 import { useLabel } from '../../i18n-context'
 import { useSourceLabel } from '../../sourceLabels'
+import { EmptyState } from '../ui/EmptyState'
+import { ModalFooter, ModalHeading } from '../ui/ModalShell'
 
 /**
  * Skip codes a chapter scan can record for the chapter itself rather than any one candidate, which
@@ -54,57 +56,72 @@ export function UpgradeNowResultModal({
     result?.candidates.find((c) => c.mappingId === result.queuedFromMappingId && result.queuedFromMappingId != null) ??
     null
   const winnerSource = winner ? sourceLabel(winner.sourceName) : null
-  const title = winnerSource ? now`Queued upgrade from ${winnerSource}` : t`No better copy found`
+  const headline = winnerSource ? now`Queued upgrade from ${winnerSource}` : t`No better copy found`
   const winnerMeasurement = winner ? measurementText(winner) : null
 
   const chapterSkip =
     result && result.candidates.length === 0
       ? CHAPTER_LEVEL_SKIPS.find((code) => (result.skipped[code] ?? 0) > 0)
       : undefined
+  const summary = chapterSkip
+    ? upgradeReasonLabel(renderLabel, chapterSkip)
+    : result && result.candidates.length === 0
+      ? t`No sources to compare against.`
+      : (winnerMeasurement ?? undefined)
 
   return (
-    <Modal opened={opened} onClose={onClose} title={title} size="sm" centered>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      size="sm"
+      centered
+      title={
+        <ModalHeading
+          title={<Trans>Upgrade now</Trans>}
+          description={<Trans>Looked for a better copy of this chapter.</Trans>}
+        />
+      }
+    >
       {result && (
         <Stack gap="sm">
-          {winnerMeasurement && (
-            <Text size="sm" c="var(--ink-3)">
-              {winnerMeasurement}
-            </Text>
-          )}
-          {result.candidates.length > 0 ? (
-            <Stack gap={6}>
+          <EmptyState
+            compact
+            mood={result.candidates.length === 0 && !winner ? 'asleep' : 'pleased'}
+            title={headline}
+            description={summary}
+          />
+          {result.candidates.length > 0 && (
+            <div className="modal-rows">
               {result.candidates.map((candidate) => {
                 const reasonText = upgradeReasonLabel(renderLabel, candidate.reason)
                 const measurement = candidate.probed ? measurementText(candidate) : null
                 return (
-                  <Group
-                    key={`${candidate.mappingId}-${candidate.sourceChapterId}`}
-                    justify="space-between"
-                    wrap="nowrap"
-                    align="flex-start"
-                    gap="sm"
-                  >
+                  <div key={`${candidate.mappingId}-${candidate.sourceChapterId}`} className="modal-row">
                     <Text size="sm" truncate>
                       {sourceLabel(candidate.sourceName)}
                     </Text>
-                    <Text size="xs" c="var(--ink-3)" ta="right">
+                    <Text size="sm" c="var(--ink-3)" ta="right">
                       {measurement ? now`${reasonText} - ${measurement}` : reasonText}
                     </Text>
-                  </Group>
+                  </div>
                 )
               })}
-            </Stack>
-          ) : chapterSkip ? (
-            <Text size="sm" c="var(--ink-3)">
-              {upgradeReasonLabel(renderLabel, chapterSkip)}
-            </Text>
-          ) : (
-            <Text size="sm" c="var(--ink-3)">
-              <Trans>No sources to compare against.</Trans>
-            </Text>
+            </div>
           )}
         </Stack>
       )}
+
+      <ModalFooter
+        status={
+          result && result.candidates.length > 0 ? (
+            <Plural value={result.candidates.length} one="# source checked" other="# sources checked" />
+          ) : null
+        }
+      >
+        <Button onClick={onClose}>
+          <Trans>Close</Trans>
+        </Button>
+      </ModalFooter>
     </Modal>
   )
 }

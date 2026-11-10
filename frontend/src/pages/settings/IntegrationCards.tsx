@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { Code, Group, MultiSelect, Select, Stack, Switch, Text, TextInput } from '@mantine/core'
@@ -15,8 +15,17 @@ import {
   useKavitaLibraries,
   useScrobbleSettings,
   useScrobbleStatus,
+  type ScrobbleConnection,
   type ScrobbleSettings,
 } from '../../api/hooks'
+import { MetaList } from '../../components/ui/MetaList'
+import { relativeTime } from '../../components/ui/time'
+import {
+  SettingsRow,
+  SettingsRows,
+  SettingsRowsBlock,
+  type RowStatus,
+} from '../../components/settings/SettingsRow'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { ImportListsSection } from '../../components/ImportListsSection'
 import { TrackerSyncControls } from '../../components/TrackerSyncControls'
@@ -32,10 +41,12 @@ const SETTINGS_STATUS_POLL_MS = 30_000
 
 export function ScrobbleSection() {
   const { t } = useLingui()
+  const { trackerStatus, trackerSummary } = useTrackerText()
   const { data } = useScrobbleSettings()
   const { data: status } = useScrobbleStatus(SETTINGS_STATUS_POLL_MS)
   const save = useSaveScrobbleSettings()
   const [form, setForm] = useState<ScrobbleSettings | null>(null)
+  const [open, setOpen] = useState<string | null>(null)
 
   useEffect(() => {
     if (data && form === null) setForm(data)
@@ -52,6 +63,23 @@ export function ScrobbleSection() {
   const dirty = form !== null && data !== undefined && withoutLibraries(form) !== withoutLibraries(data)
 
   const origin = window.location.origin
+
+  const row = (service: string, label: string, needsApp: boolean, fields: ReactNode) => {
+    const connection = conn(service)
+    return (
+      <SettingsRow
+        key={service}
+        title={label}
+        status={trackerStatus(connection, needsApp && isAdmin)}
+        summary={trackerSummary(connection, needsApp && isAdmin)}
+        opened={open === service}
+        onToggle={() => setOpen((current) => (current === service ? null : service))}
+      >
+        {fields}
+        <TrackerSyncControls service={service} label={label} connection={connection} />
+      </SettingsRow>
+    )
+  }
 
   return (
     <SettingsSection
@@ -73,150 +101,204 @@ export function ScrobbleSection() {
           },
         })
       }}
+      panelProps={{ p: 0 }}
     >
-      <Stack gap="xs">
-        <Text size="sm" fw={600}>
-          AniList
-        </Text>
-        {isAdmin && (
-          <>
-            <Text size="xs" c="var(--ink-3)">
-              <Trans>
-                Create an API client at anilist.co/settings/developer with redirect URL{' '}
-                <Code style={{ overflowWrap: 'anywhere' }}>{origin}/api/v1/scrobble/oauth/anilist</Code>
-              </Trans>
-            </Text>
-            <Group grow>
-              <TextInput
-                label={t`Client ID`}
-                autoComplete="off"
-                value={form?.aniListClientId ?? ''}
-                onChange={(e) => set({ aniListClientId: e.currentTarget.value })}
-              />
-              <TextInput
-                label={t`Client secret`}
-                type="password"
-                autoComplete="new-password"
-                value={form?.aniListClientSecret ?? ''}
-                onChange={(e) => set({ aniListClientSecret: e.currentTarget.value })}
-              />
-            </Group>
-          </>
+      <SettingsRows>
+        {row(
+          'anilist',
+          'AniList',
+          true,
+          isAdmin && (
+            <>
+              <Text size="xs" c="var(--ink-3)">
+                <Trans>
+                  Create an API client at anilist.co/settings/developer with redirect URL{' '}
+                  <Code style={{ overflowWrap: 'anywhere' }}>{origin}/api/v1/scrobble/oauth/anilist</Code>
+                </Trans>
+              </Text>
+              <Group grow>
+                <TextInput
+                  label={t`Client ID`}
+                  autoComplete="off"
+                  value={form?.aniListClientId ?? ''}
+                  onChange={(e) => set({ aniListClientId: e.currentTarget.value })}
+                />
+                <TextInput
+                  label={t`Client secret`}
+                  type="password"
+                  autoComplete="new-password"
+                  value={form?.aniListClientSecret ?? ''}
+                  onChange={(e) => set({ aniListClientSecret: e.currentTarget.value })}
+                />
+              </Group>
+            </>
+          ),
         )}
-        <TrackerSyncControls service="anilist" label="AniList" connection={conn('anilist')} />
-
-        <Text size="sm" fw={600} mt="xs">
-          MyAnimeList
-        </Text>
-        {isAdmin && (
-          <>
-            <SettingsHelp>
-              <Trans>
-                Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL{' '}
-                <Code style={{ overflowWrap: 'anywhere' }}>{origin}/api/v1/scrobble/oauth/mal</Code>
-              </Trans>
-            </SettingsHelp>
-            <Group grow>
-              <TextInput
-                label={t`Client ID`}
-                autoComplete="off"
-                value={form?.malClientId ?? ''}
-                onChange={(e) => set({ malClientId: e.currentTarget.value })}
-              />
-              <TextInput
-                label={t`Client secret`}
-                type="password"
-                autoComplete="new-password"
-                value={form?.malClientSecret ?? ''}
-                onChange={(e) => set({ malClientSecret: e.currentTarget.value })}
-              />
-            </Group>
-          </>
+        {row(
+          'mal',
+          'MyAnimeList',
+          true,
+          isAdmin && (
+            <>
+              <SettingsHelp>
+                <Trans>
+                  Create an API client at myanimelist.net/apiconfig (App Type: web) with redirect URL{' '}
+                  <Code style={{ overflowWrap: 'anywhere' }}>{origin}/api/v1/scrobble/oauth/mal</Code>
+                </Trans>
+              </SettingsHelp>
+              <Group grow>
+                <TextInput
+                  label={t`Client ID`}
+                  autoComplete="off"
+                  value={form?.malClientId ?? ''}
+                  onChange={(e) => set({ malClientId: e.currentTarget.value })}
+                />
+                <TextInput
+                  label={t`Client secret`}
+                  type="password"
+                  autoComplete="new-password"
+                  value={form?.malClientSecret ?? ''}
+                  onChange={(e) => set({ malClientSecret: e.currentTarget.value })}
+                />
+              </Group>
+            </>
+          ),
         )}
-        <TrackerSyncControls service="mal" label="MyAnimeList" connection={conn('mal')} />
-
-        <Text size="sm" fw={600} mt="xs">
-          MangaBaka
-        </Text>
-        <TextInput
-          label={t`Personal Access Token`}
-          description={t`From your MangaBaka settings. No OAuth needed.`}
-          type="password"
-          autoComplete="new-password"
-          placeholder={form?.mangaBakaTokenSet ? t`Saved` : 'mb-...'}
-          value={form?.mangaBakaToken ?? ''}
-          onChange={(e) => set({ mangaBakaToken: e.currentTarget.value })}
-        />
-        <TrackerSyncControls service="mangabaka" label="MangaBaka" connection={conn('mangabaka')} />
-
-        <Text size="sm" fw={600} mt="xs">
-          Kitsu
-        </Text>
-        <Group grow>
+        {row(
+          'mangabaka',
+          'MangaBaka',
+          false,
           <TextInput
-            label={t`Email`}
-            autoComplete="off"
-            value={form?.kitsuEmail ?? ''}
-            onChange={(e) => set({ kitsuEmail: e.currentTarget.value })}
-          />
-          <TextInput
-            label={t`Password`}
+            label={t`Personal Access Token`}
+            description={t`From your MangaBaka settings. No OAuth needed.`}
             type="password"
             autoComplete="new-password"
-            placeholder={form?.kitsuPasswordSet ? t`Saved` : undefined}
-            value={form?.kitsuPassword ?? ''}
-            onChange={(e) => set({ kitsuPassword: e.currentTarget.value })}
-          />
-        </Group>
-        <TrackerSyncControls service="kitsu" label="Kitsu" connection={conn('kitsu')} />
-
-        <Text size="sm" fw={600} mt="xs">
-          MangaUpdates
-        </Text>
-        <Group grow>
-          <TextInput
-            label={t`Username`}
-            autoComplete="off"
-            value={form?.mangaUpdatesUsername ?? ''}
-            onChange={(e) => set({ mangaUpdatesUsername: e.currentTarget.value })}
-          />
-          <TextInput
-            label={t`Password`}
-            type="password"
-            autoComplete="new-password"
-            placeholder={form?.mangaUpdatesPasswordSet ? t`Saved` : undefined}
-            value={form?.mangaUpdatesPassword ?? ''}
-            onChange={(e) => set({ mangaUpdatesPassword: e.currentTarget.value })}
-          />
-        </Group>
-        <TrackerSyncControls
-          service="mangaupdates"
-          label="MangaUpdates"
-          connection={conn('mangaupdates')}
-        />
-
-        {isAdmin && (
-          <SettingsNumberInput
-            mt="xs"
-            label={t`Sync interval (minutes)`}
-            min={5}
-            max={1440}
-            value={form?.intervalMinutes ?? 30}
-            onChange={(value) => set({ intervalMinutes: value })}
-          />
+            placeholder={form?.mangaBakaTokenSet ? t`Saved` : 'mb-...'}
+            value={form?.mangaBakaToken ?? ''}
+            onChange={(e) => set({ mangaBakaToken: e.currentTarget.value })}
+          />,
         )}
-        <Switch
-          label={t`Add unread series as plan-to-read`}
-          description={t`Entries already on your lists are never changed.`}
-          checked={form?.planToRead ?? false}
-          onChange={(e) => {
-            const checked = e.currentTarget.checked
-            set({ planToRead: checked })
-          }}
-        />
-      </Stack>
+        {row(
+          'kitsu',
+          'Kitsu',
+          false,
+          <Group grow>
+            <TextInput
+              label={t`Email`}
+              autoComplete="off"
+              value={form?.kitsuEmail ?? ''}
+              onChange={(e) => set({ kitsuEmail: e.currentTarget.value })}
+            />
+            <TextInput
+              label={t`Password`}
+              type="password"
+              autoComplete="new-password"
+              placeholder={form?.kitsuPasswordSet ? t`Saved` : undefined}
+              value={form?.kitsuPassword ?? ''}
+              onChange={(e) => set({ kitsuPassword: e.currentTarget.value })}
+            />
+          </Group>,
+        )}
+        {row(
+          'mangaupdates',
+          'MangaUpdates',
+          false,
+          <Group grow>
+            <TextInput
+              label={t`Username`}
+              autoComplete="off"
+              value={form?.mangaUpdatesUsername ?? ''}
+              onChange={(e) => set({ mangaUpdatesUsername: e.currentTarget.value })}
+            />
+            <TextInput
+              label={t`Password`}
+              type="password"
+              autoComplete="new-password"
+              placeholder={form?.mangaUpdatesPasswordSet ? t`Saved` : undefined}
+              value={form?.mangaUpdatesPassword ?? ''}
+              onChange={(e) => set({ mangaUpdatesPassword: e.currentTarget.value })}
+            />
+          </Group>,
+        )}
+      </SettingsRows>
+
+      <SettingsRowsBlock>
+        <Stack gap="sm">
+          {isAdmin && (
+            <SettingsNumberInput
+              label={t`Sync interval (minutes)`}
+              min={5}
+              max={1440}
+              value={form?.intervalMinutes ?? 30}
+              onChange={(value) => set({ intervalMinutes: value })}
+            />
+          )}
+          <Switch
+            label={t`Add unread series as plan-to-read`}
+            description={t`Entries already on your lists are never changed.`}
+            checked={form?.planToRead ?? false}
+            onChange={(e) => {
+              const checked = e.currentTarget.checked
+              set({ planToRead: checked })
+            }}
+          />
+        </Stack>
+      </SettingsRowsBlock>
     </SettingsSection>
   )
+}
+
+const backingOff = (connection: ScrobbleConnection) =>
+  connection.backOffUntil != null && new Date(connection.backOffUntil).getTime() > Date.now()
+
+function useTrackerText() {
+  const { t } = useLingui()
+
+  /**
+   * One word for where a tracker stands. `needsApp` is set for an admin looking at a tracker that
+   * signs in through an API client registered on the instance (AniList, MyAnimeList).
+   */
+  const trackerStatus = (connection: ScrobbleConnection | undefined, needsApp: boolean): RowStatus | null => {
+    if (!connection) return null
+    if (backingOff(connection)) return { tone: 'warn', label: t`Paused` }
+    if (connection.connected) return { tone: 'ok', label: t`Connected` }
+    if (!connection.configured) {
+      return needsApp ? { tone: 'warn', label: t`Needs a client ID` } : { tone: 'neutral', label: t`Not set up` }
+    }
+    if (connection.savedDetails === false) return { tone: 'neutral', label: t`Not set up` }
+    if (connection.savedDetails === true) return { tone: 'danger', label: t`Can't sign in` }
+    return { tone: 'neutral', label: t`Not connected` }
+  }
+
+  const trackerSummary = (connection: ScrobbleConnection | undefined, needsApp: boolean): ReactNode => {
+    if (!connection) return null
+    if (backingOff(connection)) {
+      const when = relativeTime(connection.backOffUntil!)
+      return t`The site is refusing calls. Maki tries again ${when}.`
+    }
+    if (connection.connected) {
+      const syncing = [
+        connection.syncReading && t`Scrobbles reading`,
+        connection.syncRatings && t`Syncs ratings`,
+        connection.animeList && connection.animeSignals && t`Anime steers recommendations`,
+      ]
+      const name = connection.username
+      return (
+        <MetaList
+          inline
+          items={[name && t`Signed in as ${name}`, ...(syncing.some(Boolean) ? syncing : [t`Nothing syncs`])]}
+        />
+      )
+    }
+    if (!connection.configured) {
+      return needsApp ? t`Nothing syncs until the API client is set up.` : t`An admin has to set this tracker up first.`
+    }
+    if (connection.savedDetails === false) return t`No sign-in details saved.`
+    if (connection.savedDetails === true) return t`The saved details were refused. Check them and save again.`
+    return t`Connect your account on the Scrobble page.`
+  }
+
+  return { trackerStatus, trackerSummary }
 }
 
 /**
@@ -317,8 +399,13 @@ function ImportListSettingsCard({ form }: { form?: ReturnType<typeof useImportLi
       saving={form?.saving}
       onDiscard={form?.reset}
       onSave={form?.save}
+      panelProps={{ p: 0 }}
     >
-      {form && <ImportListInstanceControls form={form} />}
+      {form && (
+        <SettingsRowsBlock>
+          <ImportListInstanceControls form={form} />
+        </SettingsRowsBlock>
+      )}
       <ImportListsSection />
     </SettingsSection>
   )
@@ -367,7 +454,7 @@ function ImportListInstanceControls({ form: { data, form, set } }: { form: Retur
   const { t } = useLingui()
 
   return (
-    <Stack gap="xs" mb="lg">
+    <Stack gap="xs">
       <Switch
         label={t`Enable import lists for everyone`}
         checked={form?.enabled ?? true}

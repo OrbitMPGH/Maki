@@ -44,23 +44,43 @@ public static class AccountCredentials
     public static readonly TimeSpan PasswordlessSignInWindow = TimeSpan.FromMinutes(10);
 
     /// <summary>
+    /// What minting an API key or OPDS token asks for. A password only when the account can actually
+    /// sign in with one: a password hash that <c>auth.oidconly</c> refuses at login is one the owner
+    /// has likely forgotten, and asking for it would leave them no way to mint at all.
+    /// </summary>
+    public static async Task<MintProof> MintProofForAsync(
+        UserManager<MakiUser> users, OidcRuntimeOptions oidc, MakiUser user) =>
+        await PasswordLoginAvailableAsync(users, oidc, user) ? MintProof.Password : MintProof.RecentSignIn;
+
+    /// <summary>How much of <see cref="PasswordlessSignInWindow"/> is left since the last sign-in.</summary>
+    public static TimeSpan RecentSignInLeft(MakiUser user, TimeProvider clock)
+    {
+        if (user.LastLoginAt is not { } at)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var left = at + PasswordlessSignInWindow - clock.GetUtcNow().UtcDateTime;
+        return left > TimeSpan.Zero ? left : TimeSpan.Zero;
+    }
+
+    /// <summary>
     /// The check for minting something that outlives the session: an API key or an OPDS token. An
-    /// account with a password confirms it as usual. One without (single sign-on only) has nothing to
-    /// type, so it must have signed in within <see cref="PasswordlessSignInWindow"/> instead, which
-    /// keeps a stolen session from minting a durable credential on its own.
+    /// account that signs in with a password confirms it. One that signs in only through single
+    /// sign-on has nothing to type, so it must have signed in within
+    /// <see cref="PasswordlessSignInWindow"/> instead, which keeps a stolen session from minting a
+    /// durable credential on its own.
     /// </summary>
     public static async Task<string?> ConfirmForMintAsync(
-        UserManager<MakiUser> users, SignInManager<MakiUser> signIn, MakiUser user, string? password,
-        TimeProvider clock)
+        UserManager<MakiUser> users, SignInManager<MakiUser> signIn, OidcRuntimeOptions oidc, MakiUser user,
+        string? password, TimeProvider clock)
     {
-        if (await users.HasPasswordAsync(user))
+        if (await MintProofForAsync(users, oidc, user) == MintProof.Password)
         {
             return await ConfirmPasswordAsync(users, signIn, user, password, requirePassword: true);
         }
 
-        return user.LastLoginAt is { } at && clock.GetUtcNow().UtcDateTime - at <= PasswordlessSignInWindow
-            ? null
-            : RecentSignInRequiredKey;
+        return RecentSignInLeft(user, clock) > TimeSpan.Zero ? null : RecentSignInRequiredKey;
     }
 
     /// <summary>
@@ -70,4 +90,10 @@ public static class AccountCredentials
     public static async Task<bool> PasswordLoginAvailableAsync(
         UserManager<MakiUser> users, OidcRuntimeOptions oidc, MakiUser user) =>
         await users.HasPasswordAsync(user) && (!oidc.OidcOnly || user.Permissions.Grants(MakiPermission.Admin));
+}
+
+public enum MintProof
+{
+    Password,
+    RecentSignIn
 }

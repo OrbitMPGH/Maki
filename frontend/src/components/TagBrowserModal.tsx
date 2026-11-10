@@ -8,9 +8,9 @@ import {
   Checkbox,
   CloseButton,
   Group,
-  Loader,
   Modal,
   ScrollArea,
+  Skeleton,
   Stack,
   Text,
   TextInput,
@@ -22,6 +22,7 @@ import { useRecommendationTags, type CatalogueTerm } from '../api/hooks'
 import { buildTagTree, PATH_SEPARATOR, rankTagMatches, tagKey, type TagNode } from '../lib/tagTree'
 import { useGenreOptions } from './CatalogueFilters'
 import { formatNumber } from '../format'
+import { ModalFooter, ModalHeading, ModalNote } from './ui/ModalShell'
 
 const SEARCH_LIMIT = 100
 const BROWSE_LIMIT = 300
@@ -182,7 +183,18 @@ export function TagBrowserModal({
       onClose={close}
       size="lg"
       withinPortal
-      title={tone === 'include' ? t`Browse tags to include` : t`Browse tags to exclude`}
+      title={
+        <ModalHeading
+          title={tone === 'include' ? t`Browse tags to include` : t`Browse tags to exclude`}
+          description={
+            tone === 'include' ? (
+              <Trans>Pick tags to require. Open a group to see its subtags.</Trans>
+            ) : (
+              <Trans>Pick tags to leave out. Open a group to see its subtags.</Trans>
+            )
+          }
+        />
+      }
       closeButtonProps={{ 'aria-label': t`Close` }}
       // Every open Mantine modal closes on Escape from a window listener, so a browser opened from
       // another modal would close both. Marking focused elements opts them out; Escape is handled here.
@@ -217,6 +229,13 @@ export function TagBrowserModal({
           }
         />
 
+        <Checkbox
+          size="xs"
+          label={t`Include subtags when adding`}
+          checked={withSubtags}
+          onChange={(e) => setWithSubtags(e.currentTarget.checked)}
+        />
+
         {!searching && <Breadcrumbs separatorMargin={6}>{crumbs}</Breadcrumbs>}
 
         <ScrollArea.Autosize mah="55vh" type="auto" offsetScrollbars>
@@ -241,11 +260,13 @@ export function TagBrowserModal({
                 onOpen={() => openNode(row.id)}
               />
             ))}
-            {isLoading && (
-              <Group justify="center" py="md">
-                <Loader size="sm" />
-              </Group>
-            )}
+            {isLoading &&
+              [58, 40, 66, 48, 52].map((w) => (
+                <div key={w} className="tag-browser-row" aria-hidden>
+                  <Skeleton h={16} w={16} />
+                  <Skeleton h={10} w={`${w}%`} my={12} />
+                </div>
+              ))}
             {!isLoading && rows.length === 0 && !showRootGenres && (
               <Text size="sm" c="var(--ink-3)" ta="center" py="md">
                 {noTags && !searching ? t`Tags appear once the recommendation index is built` : t`No matches`}
@@ -255,31 +276,20 @@ export function TagBrowserModal({
         </ScrollArea.Autosize>
 
         {total > shown && (
-          <Text size="xs" c="var(--ink-3)">
+          <ModalNote tone="info">
             <Plural
               value={shown}
               one="Showing the first # result. Search to narrow it down."
               other="Showing the first # results. Search to narrow it down."
             />
-          </Text>
+          </ModalNote>
         )}
 
-        <Group justify="space-between" wrap="wrap" gap="sm" pt="sm" className="tag-browser-footer">
-          <Checkbox
-            size="xs"
-            label={t`Include subtags when adding`}
-            checked={withSubtags}
-            onChange={(e) => setWithSubtags(e.currentTarget.checked)}
-          />
-          <Group gap="sm" wrap="nowrap">
-            <Text size="sm" c="var(--ink-3)">
-              <Plural value={value.length} one="# selected" other="# selected" />
-            </Text>
-            <Button size="xs" variant="default" onClick={close}>
-              <Trans>Done</Trans>
-            </Button>
-          </Group>
-        </Group>
+        <ModalFooter status={<Plural value={value.length} one="# selected" other="# selected" />}>
+          <Button onClick={close}>
+            <Trans>Done</Trans>
+          </Button>
+        </ModalFooter>
       </Stack>
     </Modal>
   )

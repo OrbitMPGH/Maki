@@ -22,6 +22,7 @@ export const Results: Story = {
     const dialog = await dialogOf(canvasElement)
     await expect(await within(dialog).findByText(/Northwind\] Lanterns Over Kasumi v01-v05/)).toBeVisible()
     await waitFor(() => expect(within(dialog).getAllByRole('button', { name: 'Grab' }).length).toBe(releases.length))
+    await expect(await within(dialog).findByText(/results? from \d+ indexers?/)).toBeVisible()
   },
 }
 
@@ -68,6 +69,25 @@ export const Searching: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await dialogOf(canvasElement)
     await expect(await within(dialog).findByText(/Searching indexers/)).toBeVisible()
+  },
+}
+
+export const NoIndexer: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/release'), () =>
+        failWith(400, 'No indexer is configured (Settings → Downloads → Indexer)', 'error.release.indexerNotConfigured'),
+      ),
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const dialog = await dialogOf(canvasElement)
+    await expect(await within(dialog).findByText('No indexer set up')).toBeVisible()
+    await expect(await within(dialog).findByRole('link', { name: 'Set up an indexer' })).toHaveAttribute(
+      'href',
+      '/settings?tab=downloads&s=indexer',
+    )
+    await expect(within(dialog).queryByRole('textbox', { name: 'Search query' })).toBeNull()
   },
 }
 

@@ -1,16 +1,13 @@
 import { useState } from 'react'
 import {
   ActionIcon,
-  Badge,
   Button,
-  Card,
   Group,
   MultiSelect,
   NumberInput,
   Select,
   Stack,
   Switch,
-  Table,
   Text,
   TextInput,
   Textarea,
@@ -21,8 +18,6 @@ import { SettingsNumberInput } from './SettingsNumberInput'
 import {
   IconArrowDown,
   IconArrowUp,
-  IconChevronDown,
-  IconChevronUp,
   IconLink,
   IconLinkOff,
   IconPlus,
@@ -32,6 +27,8 @@ import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { EmptyState } from '../ui/EmptyState'
+import { TagChip } from '../ui/TagChip'
+import { SettingsRow, SettingsRows, SettingsRowsBlock } from './SettingsRow'
 import {
   FORMAT_CONDITION_TYPE_LABELS,
   FORMAT_CONDITION_TYPES,
@@ -153,44 +150,48 @@ export function UpgradeProfilesSection() {
       actions={
         <Button
           size="xs"
-          variant="light"
+          variant="subtle"
           leftSection={<IconPlus size={16} />}
           onClick={() => setCreating((open) => !open)}
         >
           <Trans>New profile</Trans>
         </Button>
       }
+      panelProps={{ p: 0 }}
     >
-
       {creating && (
-        <ProfileEditor
-          key="new"
-          initial={DEFAULT_PROFILE}
-          formats={formats ?? []}
-          submitLabel={t`Create`}
-          busy={create.isPending}
-          onCancel={() => setCreating(false)}
-          onSubmit={(input) =>
-            create.mutate(input, {
-              onSuccess: () => {
-                setCreating(false)
-                notifications.show({ message: now`Profile created`, color: 'var(--ok)' })
-              },
-            })
-          }
-        />
+        <SettingsRowsBlock>
+          <ProfileEditor
+            key="new"
+            initial={DEFAULT_PROFILE}
+            formats={formats ?? []}
+            submitLabel={t`Create`}
+            busy={create.isPending}
+            onCancel={() => setCreating(false)}
+            onSubmit={(input) =>
+              create.mutate(input, {
+                onSuccess: () => {
+                  setCreating(false)
+                  notifications.show({ message: now`Profile created`, color: 'var(--ok)' })
+                },
+              })
+            }
+          />
+        </SettingsRowsBlock>
       )}
 
-      <Stack gap="xs" mt={creating ? 'md' : undefined}>
+      <SettingsRows>
         {(profiles ?? []).map((profile) => (
           <ProfileRow key={profile.id} profile={profile} formats={formats ?? []} />
         ))}
-        {profiles && profiles.length === 0 && !creating && (
+      </SettingsRows>
+      {profiles && profiles.length === 0 && !creating && (
+        <SettingsRowsBlock>
           <Text size="sm" c="var(--ink-3)">
             <Trans>No quality profiles yet. Series without one use whatever the instance default is set to.</Trans>
           </Text>
-        )}
-      </Stack>
+        </SettingsRowsBlock>
+      )}
     </SettingsSection>
   )
 }
@@ -211,72 +212,54 @@ function ProfileRow({ profile, formats }: { profile: UpgradeProfileDto; formats:
         ? t`Pick another default profile first`
         : null
 
-  return (
-    <Card withBorder radius="sm" padding="xs">
-      <Group justify="space-between" wrap="nowrap" align="flex-start">
-        <div style={{ minWidth: 0 }}>
-          <Text fw={600} fz="sm" truncate>
-            {name}
-          </Text>
-          <Text fz="xs" fw={500} c={profile.upgradesEnabled ? 'var(--ok)' : 'var(--ink-3)'}>
-            {!profile.upgradesEnabled ? (
-              <Trans>Never upgrades</Trans>
-            ) : upgradeUntilScore > 0 ? (
-              <Trans>Keeps taking better scoring copies until one scores {upgradeUntilScore}</Trans>
-            ) : (
-              renderLabel(CUTOFF_SUMMARIES[groupCutoff(profile.tiers, profile.cutoff) ?? profile.cutoff])
-            )}
-          </Text>
-          {profile.description && (
-            <Text fz="xs" c="var(--ink-2)" mt={2}>
-              {profile.description}
-            </Text>
-          )}
-          <Text fz="xs" c="var(--ink-3)" mt={2}>
-            <Plural value={seriesCount} one="# series" other="# series" />
-          </Text>
-        </div>
-        <Group gap={4} wrap="nowrap">
-          <Tooltip label={deleteBlocker ?? t`Delete profile`} withArrow>
-            <span>
-              <ActionIcon
-                variant="subtle"
-                color="var(--danger)"
-                loading={remove.isPending}
-                disabled={deleteBlocker !== null}
-                onClick={() => setConfirming(true)}
-                aria-label={t`Delete profile`}
-              >
-                <IconTrash size={16} />
-              </ActionIcon>
-            </span>
-          </Tooltip>
-          <ActionIcon
-            variant="subtle"
-            color="var(--neutral)"
-            onClick={() => setOpen((value) => !value)}
-            aria-label={open ? t`Collapse` : t`Edit profile`}
-          >
-            {open ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
-          </ActionIcon>
-        </Group>
-      </Group>
+  const isDefault = upgradeSettings?.defaultProfileId === profile.id
+  const summary = !profile.upgradesEnabled
+    ? t`Never upgrades`
+    : upgradeUntilScore > 0
+      ? t`Keeps taking better scoring copies until one scores ${upgradeUntilScore}`
+      : renderLabel(CUTOFF_SUMMARIES[groupCutoff(profile.tiers, profile.cutoff) ?? profile.cutoff])
 
-      {open && (
-        <ProfileEditor
-          initial={profile}
-          formats={formats}
-          submitLabel={t`Save`}
-          busy={update.isPending}
-          onCancel={() => setOpen(false)}
-          onSubmit={(input) =>
-            update.mutate(
-              { id: profile.id, ...input },
-              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
-            )
-          }
-        />
-      )}
+  return (
+    <SettingsRow
+      title={name}
+      chips={
+        <>
+          {isDefault && (
+            <TagChip size="sm">
+              <Trans>Default</Trans>
+            </TagChip>
+          )}
+          <TagChip size="sm">
+            <Plural value={seriesCount} one="# series" other="# series" />
+          </TagChip>
+        </>
+      }
+      status={
+        profile.upgradesEnabled
+          ? { tone: 'ok', label: t`Upgrades on` }
+          : { tone: 'neutral', label: t`Upgrades off` }
+      }
+      summary={profile.description ? `${summary}. ${profile.description}` : summary}
+      opened={open}
+      onToggle={() => setOpen((value) => !value)}
+      lazy
+    >
+      <ProfileEditor
+        initial={profile}
+        formats={formats}
+        submitLabel={t`Save`}
+        busy={update.isPending}
+        onCancel={() => setOpen(false)}
+        onDelete={() => setConfirming(true)}
+        deleting={remove.isPending}
+        deleteBlocker={deleteBlocker}
+        onSubmit={(input) =>
+          update.mutate(
+            { id: profile.id, ...input },
+            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
+          )
+        }
+      />
 
       <ConfirmDialog
         opened={confirming}
@@ -295,7 +278,7 @@ function ProfileRow({ profile, formats }: { profile: UpgradeProfileDto; formats:
       >
         <Trans>The profile is removed. This can't be undone.</Trans>
       </ConfirmDialog>
-    </Card>
+    </SettingsRow>
   )
 }
 
@@ -327,6 +310,9 @@ function ProfileEditor({
   busy,
   onSubmit,
   onCancel,
+  onDelete,
+  deleting,
+  deleteBlocker,
 }: {
   initial: UpgradeProfileInput
   formats: QualityFormatDto[]
@@ -334,6 +320,9 @@ function ProfileEditor({
   busy: boolean
   onSubmit: (input: UpgradeProfileInput) => void
   onCancel: () => void
+  onDelete?: () => void
+  deleting?: boolean
+  deleteBlocker?: string | null
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -384,9 +373,10 @@ function ProfileEditor({
 
   const tierRow = (row: ProfileTierDto, index: number) => {
     const tierLabel = renderLabel(QUALITY_TIER_LABELS[row.tier])
+    const rank = groups.findIndex((group) => group.includes(row)) + 1
     return (
-      <Group key={row.tier} gap="xs" wrap="nowrap" justify="space-between">
-        <Group gap="xs" wrap="nowrap">
+      <tr key={row.tier}>
+        <td>
           <Group gap={2} wrap="nowrap">
             <ActionIcon
               size="sm"
@@ -409,9 +399,10 @@ function ProfileEditor({
               <IconArrowDown size={16} />
             </ActionIcon>
           </Group>
-          <Text size="sm" fw={500} w={100}>
-            {renderLabel(QUALITY_TIER_LABELS[row.tier])}
-          </Text>
+        </td>
+        <td data-hi>{tierLabel}</td>
+        <td className="tnum">{rank}</td>
+        <td>
           {index > 0 && (
             <Tooltip label={row.grouped ? t`Split from the tier above` : t`Group with the tier above`}>
               <ActionIcon
@@ -426,19 +417,21 @@ function ProfileEditor({
               </ActionIcon>
             </Tooltip>
           )}
-        </Group>
-        <Switch
-          size="sm"
-          label={t`Allowed`}
-          checked={row.allowed}
-          onChange={(e) => setTierAllowed(row.tier, e.currentTarget.checked)}
-        />
-      </Group>
+        </td>
+        <td data-end>
+          <Switch
+            size="sm"
+            aria-label={t`Allowed`}
+            checked={row.allowed}
+            onChange={(e) => setTierAllowed(row.tier, e.currentTarget.checked)}
+          />
+        </td>
+      </tr>
     )
   }
 
   return (
-    <Stack gap="sm" mt="sm">
+    <Stack gap="md">
       <TextInput
         label={t`Name`}
         value={name}
@@ -461,24 +454,30 @@ function ProfileEditor({
         <SettingsHelp mb="xs">
           <Trans>Highest priority first. Grouped tiers rank the same.</Trans>
         </SettingsHelp>
-        <Stack gap={4}>
-          {groups.map((group) => {
-            const first = tiers.indexOf(group[0])
-            const rows = group.map((row, i) => tierRow(row, first + i))
-            return group.length > 1 ? (
-              <Stack
-                key={group[0].tier}
-                gap={4}
-                p={4}
-                style={{ border: '1px solid var(--hairline)', borderRadius: 'var(--mantine-radius-sm)' }}
-              >
-                {rows}
-              </Stack>
-            ) : (
-              rows
-            )
-          })}
-        </Stack>
+        <div className="hair-table-wrap">
+          <table className="hair-table">
+            <thead>
+              <tr>
+                <th>
+                  <Trans>Move</Trans>
+                </th>
+                <th>
+                  <Trans>Tier</Trans>
+                </th>
+                <th>
+                  <Trans>Rank</Trans>
+                </th>
+                <th>
+                  <Trans>Group</Trans>
+                </th>
+                <th data-end>
+                  <Trans>Allowed</Trans>
+                </th>
+              </tr>
+            </thead>
+            <tbody>{tiers.map((row, index) => tierRow(row, index))}</tbody>
+          </table>
+        </div>
       </div>
 
       <Select
@@ -574,43 +573,79 @@ function ProfileEditor({
             <Trans>No quality formats defined yet. Add one below to score files by it.</Trans>
           </Text>
         ) : (
-          <Table withRowBorders={false}>
-            <Table.Tbody>
-              {formats.map((format) => (
-                <Table.Tr key={format.id}>
-                  <Table.Td>
-                    <Text size="sm">{format.name}</Text>
-                  </Table.Td>
-                  <Table.Td w={120}>
-                    <NumberInput
-                      size="xs"
-                      aria-label={t`Score for ${format.name}`}
-                      value={scoreOf(formatScores, format.id)}
-                      onChange={(value) =>
-                        setFormatScores((current) => withScore(current, format.id, Number(value) || 0))
-                      }
-                    />
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
+          <div className="hair-table-wrap">
+            <table className="hair-table">
+              <thead>
+                <tr>
+                  <th>
+                    <Trans>Format</Trans>
+                  </th>
+                  <th data-end>
+                    <Trans>Score</Trans>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {formats.map((format) => (
+                  <tr key={format.id}>
+                    <td data-hi>{format.name}</td>
+                    <td data-end>
+                      <NumberInput
+                        size="xs"
+                        w={110}
+                        ml="auto"
+                        aria-label={t`Score for ${format.name}`}
+                        value={scoreOf(formatScores, format.id)}
+                        onChange={(value) =>
+                          setFormatScores((current) => withScore(current, format.id, Number(value) || 0))
+                        }
+                      />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      <Group justify="flex-end" gap="xs">
-        <Button size="xs" variant="subtle" color="var(--neutral)" onClick={onCancel}>
-          <Trans>Cancel</Trans>
-        </Button>
-        <Button
-          size="xs"
-          loading={busy}
-          disabled={name.trim().length === 0}
-          onClick={() => onSubmit(draft)}
-        >
-          {submitLabel}
-        </Button>
-      </Group>
+      <div className="settings-row-foot">
+        {onDelete ? (
+          <Group gap="xs" wrap="nowrap">
+            <Button
+              size="xs"
+              variant="subtle"
+              color="var(--danger)"
+              leftSection={<IconTrash size={16} />}
+              loading={deleting}
+              disabled={Boolean(deleteBlocker)}
+              onClick={onDelete}
+            >
+              <Trans>Delete profile</Trans>
+            </Button>
+            {deleteBlocker && (
+              <Text size="xs" c="var(--ink-4)">
+                {deleteBlocker}
+              </Text>
+            )}
+          </Group>
+        ) : (
+          <span />
+        )}
+        <Group gap="xs">
+          <Button size="xs" variant="subtle" color="var(--neutral)" onClick={onCancel}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button
+            size="xs"
+            loading={busy}
+            disabled={name.trim().length === 0}
+            onClick={() => onSubmit(draft)}
+          >
+            {submitLabel}
+          </Button>
+        </Group>
+      </div>
     </Stack>
   )
 }
@@ -642,41 +677,46 @@ export function QualityFormatsSection() {
       actions={
         <Button
           size="xs"
-          variant="light"
+          variant="subtle"
           leftSection={<IconPlus size={16} />}
           onClick={() => setCreating((open) => !open)}
         >
           <Trans>New format</Trans>
         </Button>
       }
+      panelProps={{ p: 0 }}
     >
 
       {creating && (
-        <FormatEditor
-          key="new"
-          initial={DEFAULT_FORMAT}
-          submitLabel={t`Create`}
-          busy={create.isPending}
-          onCancel={() => setCreating(false)}
-          onSubmit={(input) =>
-            create.mutate(input, {
-              onSuccess: () => {
-                setCreating(false)
-                notifications.show({ message: now`Format created`, color: 'var(--ok)' })
-              },
-            })
-          }
-        />
+        <SettingsRowsBlock>
+          <FormatEditor
+            key="new"
+            initial={DEFAULT_FORMAT}
+            submitLabel={t`Create`}
+            busy={create.isPending}
+            onCancel={() => setCreating(false)}
+            onSubmit={(input) =>
+              create.mutate(input, {
+                onSuccess: () => {
+                  setCreating(false)
+                  notifications.show({ message: now`Format created`, color: 'var(--ok)' })
+                },
+              })
+            }
+          />
+        </SettingsRowsBlock>
       )}
 
-      <Stack gap="xs" mt={creating ? 'md' : undefined}>
+      <SettingsRows>
         {(formats ?? []).map((format) => (
           <FormatRow key={format.id} format={format} />
         ))}
-        {formats && formats.length === 0 && !creating && (
+      </SettingsRows>
+      {formats && formats.length === 0 && !creating && (
+        <SettingsRowsBlock>
           <EmptyState compact mood="asleep" title={t`No quality formats yet.`} />
-        )}
-      </Stack>
+        </SettingsRowsBlock>
+      )}
     </SettingsSection>
   )
 }
@@ -691,58 +731,32 @@ function FormatRow({ format }: { format: QualityFormatDto }) {
   const conditionCount = format.conditions.length
 
   return (
-    <Card withBorder radius="sm" padding="xs">
-      <Group justify="space-between" wrap="nowrap">
-        <div style={{ minWidth: 0 }}>
-          <Group gap="xs" wrap="nowrap">
-            <Text fw={600} fz="sm" truncate>
-              {name}
-            </Text>
-            <Badge size="xs" variant="light">
-              <Plural value={conditionCount} one="# condition" other="# conditions" />
-            </Badge>
-          </Group>
-          <Text fz="xs" c="var(--ink-3)">
-            <Plural value={profileCount} one="Scored in # profile" other="Scored in # profiles" />
-          </Text>
-        </div>
-        <Group gap={4} wrap="nowrap">
-          <Tooltip label={t`Delete format`} withArrow>
-            <ActionIcon
-              variant="subtle"
-              color="var(--danger)"
-              loading={remove.isPending}
-              onClick={() => setConfirming(true)}
-              aria-label={t`Delete format`}
-            >
-              <IconTrash size={16} />
-            </ActionIcon>
-          </Tooltip>
-          <ActionIcon
-            variant="subtle"
-            color="var(--neutral)"
-            onClick={() => setOpen((value) => !value)}
-            aria-label={open ? t`Collapse` : t`Edit format`}
-          >
-            {open ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />}
-          </ActionIcon>
-        </Group>
-      </Group>
-
-      {open && (
-        <FormatEditor
-          initial={format}
-          submitLabel={t`Save`}
-          busy={update.isPending}
-          onCancel={() => setOpen(false)}
-          onSubmit={(input) =>
-            update.mutate(
-              { id: format.id, ...input },
-              { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
-            )
-          }
-        />
-      )}
+    <SettingsRow
+      title={name}
+      chips={
+        <TagChip size="sm">
+          <Plural value={conditionCount} one="# condition" other="# conditions" />
+        </TagChip>
+      }
+      summary={<Plural value={profileCount} one="Scored in # profile" other="Scored in # profiles" />}
+      opened={open}
+      onToggle={() => setOpen((value) => !value)}
+      lazy
+    >
+      <FormatEditor
+        initial={format}
+        submitLabel={t`Save`}
+        busy={update.isPending}
+        onCancel={() => setOpen(false)}
+        onDelete={() => setConfirming(true)}
+        deleting={remove.isPending}
+        onSubmit={(input) =>
+          update.mutate(
+            { id: format.id, ...input },
+            { onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }) },
+          )
+        }
+      />
 
       <ConfirmDialog
         opened={confirming}
@@ -761,7 +775,7 @@ function FormatRow({ format }: { format: QualityFormatDto }) {
       >
         <Trans>Removed from every profile that scores it. This can't be undone.</Trans>
       </ConfirmDialog>
-    </Card>
+    </SettingsRow>
   )
 }
 
@@ -787,12 +801,16 @@ function FormatEditor({
   busy,
   onSubmit,
   onCancel,
+  onDelete,
+  deleting,
 }: {
   initial: QualityFormatInput
   submitLabel: string
   busy: boolean
   onSubmit: (input: QualityFormatInput) => void
   onCancel: () => void
+  onDelete?: () => void
+  deleting?: boolean
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -815,7 +833,7 @@ function FormatEditor({
     setConditions((current) => [...current, { type: 'minWidth', value: '', required: true, negate: false }])
 
   return (
-    <Stack gap="sm" mt="sm">
+    <Stack gap="md">
       <TextInput
         label={t`Name`}
         value={name}
@@ -829,7 +847,7 @@ function FormatEditor({
         </Text>
         <Stack gap="xs">
           {conditions.map((condition, index) => (
-            <Card key={index} withBorder radius="sm" padding="xs">
+            <div key={index} className="condition-row">
               <Group align="flex-end" gap="xs" wrap="wrap">
                 <Select
                   label={t`Type`}
@@ -914,7 +932,7 @@ function FormatEditor({
 
                 <ActionIcon
                   variant="subtle"
-                  color="var(--danger)"
+                  className="quiet-danger"
                   onClick={() => removeCondition(index)}
                   disabled={conditions.length <= 1}
                   aria-label={t`Remove condition`}
@@ -922,7 +940,7 @@ function FormatEditor({
                   <IconTrash size={16} />
                 </ActionIcon>
               </Group>
-            </Card>
+            </div>
           ))}
         </Stack>
         <Button
@@ -936,19 +954,35 @@ function FormatEditor({
         </Button>
       </div>
 
-      <Group justify="flex-end" gap="xs">
-        <Button size="xs" variant="subtle" color="var(--neutral)" onClick={onCancel}>
-          <Trans>Cancel</Trans>
-        </Button>
-        <Button
-          size="xs"
-          loading={busy}
-          disabled={name.trim().length === 0 || conditions.length === 0}
-          onClick={() => onSubmit({ name: name.trim(), conditions })}
-        >
-          {submitLabel}
-        </Button>
-      </Group>
+      <div className="settings-row-foot">
+        {onDelete ? (
+          <Button
+            size="xs"
+            variant="subtle"
+            color="var(--danger)"
+            leftSection={<IconTrash size={16} />}
+            loading={deleting}
+            onClick={onDelete}
+          >
+            <Trans>Delete format</Trans>
+          </Button>
+        ) : (
+          <span />
+        )}
+        <Group gap="xs">
+          <Button size="xs" variant="subtle" color="var(--neutral)" onClick={onCancel}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button
+            size="xs"
+            loading={busy}
+            disabled={name.trim().length === 0 || conditions.length === 0}
+            onClick={() => onSubmit({ name: name.trim(), conditions })}
+          >
+            {submitLabel}
+          </Button>
+        </Group>
+      </div>
     </Stack>
   )
 }

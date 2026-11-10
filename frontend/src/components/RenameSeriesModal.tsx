@@ -1,24 +1,44 @@
-import {
-  Alert,
-  Button,
-  Code,
-  Group,
-  Loader,
-  Modal,
-  Stack,
-  Table,
-  Text,
-} from '@mantine/core'
-import { IconAlertTriangle, IconArrowRight } from '../lib/icons'
+import { Anchor, Button, Modal, Skeleton, Stack, Text } from '@mantine/core'
+import { Link } from 'react-router-dom'
+import { IconArrowRight } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { useRenameSeries, useSeriesRenamePreview } from '../api/hooks'
 import { ApiError } from '../api/client'
+import { ModalFooter, ModalHeading, ModalNote } from './ui/ModalShell'
+
+const NAMING_SETTINGS = '/settings?tab=library&s=naming'
+
+/** Splits `to` around the part that differs from `from`, by common prefix and suffix. */
+function changedPart(from: string, to: string): [string, string, string] {
+  const a = Array.from(from)
+  const b = Array.from(to)
+  let start = 0
+  while (start < a.length && start < b.length && a[start] === b[start]) start++
+  let end = 0
+  while (end < a.length - start && end < b.length - start && a[a.length - 1 - end] === b[b.length - 1 - end]) end++
+  return [b.slice(0, start).join(''), b.slice(start, b.length - end).join(''), b.slice(b.length - end).join('')]
+}
+
+function RenameRow({ from, to }: { from: string; to: string }) {
+  const [head, change, tail] = changedPart(from, to)
+  return (
+    <div className="rename-row">
+      <span className="rename-from">{from}</span>
+      <IconArrowRight size={16} className="rename-arrow" aria-hidden />
+      <span className="rename-to">
+        {head}
+        {change && <mark className="rename-change">{change}</mark>}
+        {tail}
+      </span>
+    </div>
+  )
+}
 
 /**
  * Applies the configured naming formats to a series already on disk. Changing a format never moves
- * a file by itself, so this dialog is the only way an existing series takes a new one — which is
+ * a file by itself, so this dialog is the only way an existing series takes a new one, which is
  * also why it shows the full list of moves before doing anything.
  */
 export function RenameSeriesModal({
@@ -44,12 +64,23 @@ export function RenameSeriesModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      title={t`Rename files`}
+      title={
+        <ModalHeading
+          title={t`Rename files`}
+          description={<Trans>Matches your naming formats. Only the highlighted parts change.</Trans>}
+        />
+      }
       size="lg"
       centered
     >
       <Stack gap="md">
-        {isLoading && <Loader size="sm" />}
+        {isLoading && (
+          <Stack gap="xs" aria-hidden>
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} h={12} w={i % 2 ? '70%' : '85%'} />
+            ))}
+          </Stack>
+        )}
 
         {plan && !plan.hasChanges && (
           <Text size="sm">
@@ -58,65 +89,68 @@ export function RenameSeriesModal({
         )}
 
         {conflicted && (
-          <Alert color="var(--danger)" icon={<IconAlertTriangle size={18} />} title={t`Two chapters want one name`}>
-            <Stack gap={4}>
-              {plan?.conflicts.map((c) => (
-                <Text key={c} size="sm">
-                  {c}
-                </Text>
-              ))}
-              <Text size="sm">
-                <Trans>
-                  Add {chapterLanguageToken} to the chapter format in Settings to tell them apart.
-                </Trans>
+          <ModalNote>
+            <Text size="sm" fw={600} c="var(--ink-hi)">
+              <Trans>Two chapters want one name</Trans>
+            </Text>
+            {plan?.conflicts.map((c) => (
+              <Text key={c} size="sm">
+                {c}
               </Text>
-            </Stack>
-          </Alert>
+            ))}
+            <Text size="sm" c="var(--ink-3)">
+              <Trans>
+                Add {chapterLanguageToken} to the chapter format to tell them apart.
+              </Trans>{' '}
+              <Anchor component={Link} to={NAMING_SETTINGS} size="sm">
+                <Trans>Open naming formats</Trans>
+              </Anchor>
+            </Text>
+          </ModalNote>
         )}
 
         {plan?.folderChanged && (
           <div>
-            <Text fw={500} size="sm" mb={4}>
+            <Text fw={600} size="sm" mb={4}>
               <Trans>Folder</Trans>
             </Text>
-            <Group gap="xs" wrap="nowrap">
-              <Code>{plan.folderFrom}</Code>
-              <IconArrowRight size={16} />
-              <Code>{plan.folderTo}</Code>
-            </Group>
+            <RenameRow from={plan.folderFrom} to={plan.folderTo} />
           </div>
         )}
 
         {plan && plan.files.length > 0 && (
           <div>
-            <Text fw={500} size="sm" mb={4}>
-              <Plural value={fileCount} one="# file" other="# files" />
+            <Text fw={600} size="sm" mb={4}>
+              <Trans>Files</Trans>
             </Text>
-            <Table highlightOnHover fz="sm">
-              <Table.Tbody>
-                {plan.files.map((file) => (
-                  <Table.Tr key={file.chapterFileId}>
-                    <Table.Td>{file.from}</Table.Td>
-                    <Table.Td w={20}>
-                      <IconArrowRight size={16} />
-                    </Table.Td>
-                    <Table.Td>{file.to}</Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
+            <div className="rename-list">
+              {plan.files.map((file) => (
+                <RenameRow key={file.chapterFileId} from={file.from} to={file.to} />
+              ))}
+            </div>
           </div>
         )}
+      </Stack>
 
-        <Group justify="flex-end">
-          <Button variant="default" onClick={onClose}>
-            <Trans>Close</Trans>
-          </Button>
+      <ModalFooter
+        status={
+          plan?.hasChanges && !conflicted ? (
+            fileCount > 0 ? (
+              <Plural value={fileCount} one="# file will be renamed" other="# files will be renamed" />
+            ) : (
+              <Trans>The folder will be renamed</Trans>
+            )
+          ) : null
+        }
+      >
+        <Button variant="default" onClick={onClose}>
+          {plan?.hasChanges ? <Trans>Cancel</Trans> : <Trans>Close</Trans>}
+        </Button>
+        {plan?.hasChanges && (
           <Button
             loading={rename.isPending}
-            disabled={!plan?.hasChanges || conflicted}
+            disabled={conflicted}
             onClick={() =>
-              plan &&
               rename.mutate(plan.fingerprint, {
                 onError: (error) => {
                   // The plan moved on since this preview; show the current one before anything runs.
@@ -133,10 +167,10 @@ export function RenameSeriesModal({
               })
             }
           >
-            <Trans>Rename</Trans>
+            <Trans>Rename files</Trans>
           </Button>
-        </Group>
-      </Stack>
+        )}
+      </ModalFooter>
     </Modal>
   )
 }

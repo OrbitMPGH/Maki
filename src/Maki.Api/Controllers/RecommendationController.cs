@@ -31,7 +31,7 @@ public class RecommendationController(
     IUserSettings userSettings,
     HiddenContentService hidden,
     CustomRailService customRails,
-    MalReviewClient reviews,
+    SeriesReviewService seriesReviews,
     AnimeResumeService animeResume) : ControllerBase
 {
     [HttpPost]
@@ -600,37 +600,63 @@ public class RecommendationController(
         });
     }
 
-    /// <summary>A few MyAnimeList reviews for a series (lazy; best-effort, scraped from MAL).</summary>
-    [HttpGet("reviews/{malId:int}")]
-    public async Task<IActionResult> Reviews(int malId, CancellationToken ct)
+    /// <summary>
+    /// Reviews from MyAnimeList and AniList, plus Kitsu's top reactions, for whichever ids the
+    /// series has. Each fetch is cached per id upstream, so reopening a card stays cheap.
+    /// </summary>
+    [HttpGet("reviews")]
+    public async Task<IActionResult> SeriesReviews(
+        [FromQuery] int? malId, [FromQuery] int? aniListId, [FromQuery] int? kitsuId, CancellationToken ct)
     {
         // Reviews quote the work, so the ceiling applies to them as it does to the detail card they
-        // sit under. Only a restricted account pays for the lookup, and one whose MAL id cannot be
-        // traced back to a catalogue row gets nothing rather than an unchecked answer.
+        // sit under. Under a ceiling, every id must trace back to a catalogue row that passes it, or the
+        // caller could pair a permitted MAL id with an AniList id for something else. An id that
+        // traces to nothing is dropped rather than fetched unchecked.
         if (ContentRating.Allowed(currentUser.MaxContentRating).Count < ContentRating.All.Length)
         {
-            var ids = await store.GetIdsByExternalIdsAsync(
-                MangaBakaLocalStore.ExternalSource.MyAnimeList, [malId], ct);
-            var detail = ids.TryGetValue(malId, out var seriesId) ? await store.GetDetailAsync(seriesId, ct) : null;
-            if (detail is null)
+            var checkedIds = new Dictionary<MangaBakaLocalStore.ExternalSource, int?>
             {
-                return Ok(null);
+                [MangaBakaLocalStore.ExternalSource.MyAnimeList] = malId,
+                [MangaBakaLocalStore.ExternalSource.AniList] = aniListId,
+                [MangaBakaLocalStore.ExternalSource.Kitsu] = kitsuId,
+            };
+            foreach (var (source, id) in checkedIds.ToList())
+            {
+                if (id is not int externalId)
+                {
+                    continue;
+                }
+
+                var ids = await store.GetIdsByExternalIdsAsync(source, [externalId], ct);
+                var detail = ids.TryGetValue(externalId, out var seriesId) ? await store.GetDetailAsync(seriesId, ct) : null;
+                if (detail is null)
+                {
+                    checkedIds[source] = null;
+                }
+                else if (!ContentRating.Permits(detail.ContentRating, currentUser.MaxContentRating))
+                {
+                    return this.Forbidden(localizer, "error.preview.contentRating");
+                }
             }
 
-            if (!ContentRating.Permits(detail.ContentRating, currentUser.MaxContentRating))
-            {
-                return this.Forbidden(localizer, "error.preview.contentRating");
-            }
+            malId = checkedIds[MangaBakaLocalStore.ExternalSource.MyAnimeList];
+            aniListId = checkedIds[MangaBakaLocalStore.ExternalSource.AniList];
+            kitsuId = checkedIds[MangaBakaLocalStore.ExternalSource.Kitsu];
         }
 
-        var found = await reviews.GetReviewsAsync(malId, ct);
-
-        // Author and Tags are catalogue keys, not display text; MalReviewClient caches reviews per
-        // MAL id across every caller, so it cannot render "Anonymous" or a sentiment label itself.
-        return Ok(found?.Select(r => r with
+        var found = await seriesReviews.GetAsync(malId, aniListId, kitsuId, ct);
+        return Ok(found with
         {
-            Author = r.Author ?? localizer.Get("discover.review.anonymousAuthor"),
-            Tags = r.Tags.Select(t => localizer.Get(t)).ToList(),
-        }).ToList());
+            Reviews = found.Reviews.Select(Localize).ToList(),
+            QuickTakes = found.QuickTakes.Select(Localize).ToList(),
+        });
     }
+
+    // Author and Tags are catalogue keys, not display text: the review clients cache per series id
+    // across every caller, so they cannot render "Anonymous" or a sentiment label themselves.
+    private MangaReview Localize(MangaReview review) => review with
+    {
+        Author = review.Author ?? localizer.Get("discover.review.anonymousAuthor"),
+        Tags = review.Tags.Select(t => localizer.Get(t)).ToList(),
+    };
 }

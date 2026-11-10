@@ -1,3 +1,4 @@
+using Maki.Api.Auth;
 using Maki.Api.Controllers;
 using Maki.Api.Dtos;
 using Maki.Api.Services;
@@ -58,7 +59,7 @@ public sealed class OpdsSettingsPasswordTests : IDisposable
         var users = IdentityTestKit.UserManager(db);
 
         var result = await Controller(userId, db).SetOpds(
-            new SettingsController.OpdsSettings(true, true), users, new TestSignInManager(users), default);
+            new SettingsController.OpdsSettings(true, true), users, new TestSignInManager(users), new OidcRuntimeOptions(), default);
 
         Assert.Equal("error.account.incorrectPassword", CodeOf(result));
         Assert.Equal(0, LiveOpdsKeys(userId));
@@ -74,7 +75,7 @@ public sealed class OpdsSettingsPasswordTests : IDisposable
         var users = IdentityTestKit.UserManager(db);
 
         var result = await Controller(userId, db).SetOpds(
-            new SettingsController.OpdsSettings(true, true, Password), users, new TestSignInManager(users), default);
+            new SettingsController.OpdsSettings(true, true, Password), users, new TestSignInManager(users), new OidcRuntimeOptions(), default);
 
         var body = Assert.IsType<SettingsController.OpdsSettingsResponse>(Assert.IsType<OkObjectResult>(result).Value);
         Assert.NotNull(body.FeedUrl);
@@ -90,7 +91,7 @@ public sealed class OpdsSettingsPasswordTests : IDisposable
         var users = IdentityTestKit.UserManager(db);
 
         var result = await Controller(userId, db).SetOpds(
-            new SettingsController.OpdsSettings(true, false), users, new TestSignInManager(users), default);
+            new SettingsController.OpdsSettings(true, false), users, new TestSignInManager(users), new OidcRuntimeOptions(), default);
 
         Assert.IsType<OkObjectResult>(result);
     }
@@ -109,7 +110,7 @@ public sealed class OpdsSettingsPasswordTests : IDisposable
             var users = IdentityTestKit.UserManager(db);
 
             var result = await Controller(userId, db).SetOpds(
-                new SettingsController.OpdsSettings(true, true), users, new TestSignInManager(users), default);
+                new SettingsController.OpdsSettings(true, true), users, new TestSignInManager(users), new OidcRuntimeOptions(), default);
 
             if (expected)
             {
@@ -134,11 +135,11 @@ public sealed class OpdsSettingsPasswordTests : IDisposable
         var controller = Controller(userId, db);
 
         var refused = await controller.RotateOpdsToken(
-            new ConfirmPasswordRequest("wrong password"), users, new TestSignInManager(users), default);
+            new ConfirmPasswordRequest("wrong password"), users, new TestSignInManager(users), new OidcRuntimeOptions(), default);
         Assert.Equal("error.account.incorrectPassword", CodeOf(refused));
 
         var rotated = await controller.RotateOpdsToken(
-            new ConfirmPasswordRequest(Password), users, new TestSignInManager(users), default);
+            new ConfirmPasswordRequest(Password), users, new TestSignInManager(users), new OidcRuntimeOptions(), default);
         Assert.IsType<OkObjectResult>(rotated);
         Assert.Equal(1, LiveOpdsKeys(userId));
     }

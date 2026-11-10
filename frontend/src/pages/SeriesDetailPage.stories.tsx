@@ -17,6 +17,7 @@ import {
 } from '../../.storybook/mocks/series'
 import { noteCounts, readerNotes } from '../../.storybook/mocks/notes'
 import SeriesDetailPage from './SeriesDetailPage'
+import type { QueueItemDto } from '../api/types'
 import { monoText } from '../../.storybook/monoText'
 
 const at = (id: number, query = '') => ({ router: { path: '/series/:id', initialEntries: [`/series/${id}${query}`] } })
@@ -377,6 +378,62 @@ export const PendingTorrentProposal: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('button', { name: 'Grab' })).toBeVisible()
+  },
+}
+
+const torrentRow = (id: number, over: Partial<QueueItemDto>): QueueItemDto => ({
+  id,
+  chapterId: null,
+  seriesId: 1,
+  seriesTitle: '',
+  releaseTitle: null,
+  chapterTitle: null,
+  chapterVolume: null,
+  chapterNumber: null,
+  sourceName: 'torrent:Nyaa Mirror',
+  status: 'Downloading',
+  pagesTotal: 100,
+  pagesDone: 0,
+  retryCount: 0,
+  nextAttempt: null,
+  errorKey: null,
+  errorParams: null,
+  errorMessage: null,
+  queuedAt: hoursAgo(1),
+  completedAt: null,
+  origin: 'manual',
+  upgrade: null,
+  seriesCoverUrl: null,
+  ...over,
+})
+
+/** Torrent grabs have no chapter row, so the page lists them under the hero on every tab. */
+export const TorrentDownloads: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/queue'), () =>
+        HttpResponse.json({
+          items: [
+            torrentRow(901, { releaseTitle: 'Series v01-v04 (2021) (Digital) (1r0n)', pagesDone: 42 }),
+            torrentRow(902, { releaseTitle: 'Series v05 (2022) (Digital) (LuCaZ)', status: 'AwaitingImport', pagesDone: 100 }),
+            torrentRow(903, {
+              releaseTitle: 'Series v06 (2023) (Digital) (danke-Empire)',
+              status: 'Failed',
+              errorKey: 'error.download.torrentRemoved',
+            }),
+          ],
+          total: 3,
+          page: 1,
+          pageSize: 200,
+        }),
+      ),
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Series v01-v04 (2021) (Digital) (1r0n)')).toBeVisible()
+    await expect(await canvas.findByText('42%')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Review' })).toBeVisible()
+    await expect(await canvas.findByText('The torrent is no longer in the download client')).toBeVisible()
   },
 }
 

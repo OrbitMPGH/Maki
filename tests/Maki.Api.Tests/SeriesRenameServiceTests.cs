@@ -527,6 +527,26 @@ public class SeriesRenameServiceTests : IDisposable
             db.ChapterFiles.Single(f => f.Id == compilation).RelativePath);
     }
 
+    /// <summary>
+    /// A chapter with no volume sorted ahead of the volume's own chapters and named the file
+    /// "Ch.2.1-5", which reads back as chapter 2.1 and stops being a volume.
+    /// </summary>
+    [Fact]
+    public async Task A_chapter_without_a_volume_does_not_lead_the_span()
+    {
+        var id = SeedSeries("Berserk", "Berserk (1989)");
+        var compilation = SeedCompilationAt(
+            id, Path.Combine("Berserk (1989)", "Berserk v01 (Digital) (Oak).cbz"),
+            (1m, 1), (2m, 1), (2.1m, null), (3m, 1));
+
+        var result = await Service().RenameFilesAsync(id, [compilation], CancellationToken.None);
+
+        Assert.True(result.Applied);
+        using var db = _db.NewContext();
+        Assert.Equal(Path.Combine("Berserk (1989)", "Berserk Vol.1 Ch.1-3.cbz"),
+            db.ChapterFiles.Single(f => f.Id == compilation).RelativePath);
+    }
+
     /// <summary>Half a volume can't claim the volume's name: the other half wants it too.</summary>
     [Fact]
     public async Task Compilation_covering_part_of_a_volume_keeps_its_chapter_range()

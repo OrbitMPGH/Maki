@@ -622,6 +622,8 @@ export function providerDetail(id: number, overrides: Partial<MangaBakaDetail> =
     tags: entry.tags.map((name, i) => ({ name, weight: String(90 - i * 10), description: null, isSpoiler: i === 2 })),
     links: links(entry),
     malId: entry.mangaBakaId + 200,
+    aniListId: entry.mangaBakaId + 100,
+    kitsuId: null,
     hasAnime: false,
     animeStart: null,
     animeEnd: null,

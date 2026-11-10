@@ -8,9 +8,9 @@ const meta = {
   args: { label: 'Published', children: '2021 - present' },
   decorators: [
     (Story) => (
-      <div className="detail-records" style={{ maxWidth: 280 }}>
+      <dl className="detail-records" style={{ maxWidth: 360 }}>
         <Story />
-      </div>
+      </dl>
     ),
   ],
   parameters: { layout: 'padded' },

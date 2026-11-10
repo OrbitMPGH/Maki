@@ -18,7 +18,7 @@ import './lib/pageScroll'
 import './lib/pageScrolling'
 import './lib/coverFallback'
 import './lib/scrollFades'
-import { appHistory, PageTransitionCommit } from './lib/pageTransition'
+import { appHistory, holdCaptureWhile, PageTransitionCommit } from './lib/pageTransition'
 import { preloadingRoutes } from './lib/routePreload'
 import { AppThemeProvider } from './theme-context'
 import { AppI18nProvider } from './i18n-context'
@@ -127,6 +127,11 @@ const queryClient = new QueryClient({
     onError: (error, _vars, _ctx, mutation) => reportError(error, mutation.meta),
   }),
 })
+
+// A query with no data yet that a mounted page is fetching: the page is still showing its skeletons.
+holdCaptureWhile(
+  () => queryClient.isFetching({ predicate: (q) => q.state.data === undefined && q.getObserversCount() > 0 }) > 0,
+)
 
 if (import.meta.env.PROD) {
   registerServiceWorker(() => {

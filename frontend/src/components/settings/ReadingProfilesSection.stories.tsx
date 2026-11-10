@@ -34,7 +34,7 @@ export const EditAProfile: Story = {
   play: async ({ canvas, userEvent }) => {
     // The first row is the fixed default, which has no name to edit.
     await canvas.findByText('Manga, right to left')
-    const [, edit] = await canvas.findAllByRole('button', { name: 'Edit profile' })
+    const [, edit] = await canvas.findAllByRole('button', { expanded: false })
     await userEvent.click(edit)
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Name' })).toHaveValue('Manga, right to left'))
     await expect(await canvas.findByRole('button', { name: 'Cancel' })).toBeVisible()
@@ -76,8 +76,8 @@ export const EnhanceFields: Story = {
 
 export const DeleteAProfile: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await canvas.findByText('Manga, right to left')
-    const [remove] = await canvas.findAllByRole('button', { name: 'Delete profile' })
+    await userEvent.click(await canvas.findByRole('button', { name: /^Manga, right to left/ }))
+    const remove = await canvas.findByRole('button', { name: 'Delete profile' })
     await userEvent.click(remove)
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
     await waitFor(() => expect(dialog).toBeVisible())
@@ -89,7 +89,7 @@ export const NoProfiles: Story = {
   parameters: { msw: settingsMsw(http.get(api('/readingprofiles'), () => HttpResponse.json([]))) },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('button', { name: 'New profile' })).toBeVisible()
-    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Edit profile' })).toHaveLength(1))
+    await waitFor(() => expect(canvas.getAllByRole('button', { expanded: false })).toHaveLength(1))
   },
 }
 

@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Button, List, PasswordInput, Stack, Text, TextInput } from '@mantine/core'
+import { Button, List, PasswordInput, Stack, TextInput } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { AuthError, AuthFrame } from '../components/auth/AuthFrame'
+import { IconAlertTriangle } from '../lib/icons'
 import { useSetup } from '../api/auth'
 
 /** Matches the server's Identity policy, so the failure is shown before a round trip. */
@@ -43,12 +44,13 @@ export function SetupAccountPage() {
           already attached to it.
         </Trans>
       }
-      footer={
-        <div className="auth-note">
-          <Text fz="sm" fw={600} mb={6}>
+      cardFooter={
+        <div>
+          <div className="auth-card-note-title">
+            <IconAlertTriangle size={16} aria-hidden />
             <Trans>Before exposing Maki to the internet</Trans>
-          </Text>
-          <List fz="sm" c="var(--ink-3)" spacing={4}>
+          </div>
+          <List fz="sm" c="var(--ink-3)" spacing={4} size="sm">
             <List.Item>
               <Trans>Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS.</Trans>
             </List.Item>

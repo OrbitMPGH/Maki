@@ -10,7 +10,6 @@ import {
   Group,
   List,
   Modal,
-  PasswordInput,
   Stack,
   Switch,
   Text,
@@ -28,6 +27,7 @@ import {
   useSaveReaderSettings,
 } from '../../api/reader'
 import { useCopyText } from '../../components/ui/useCopyText'
+import { MintPasswordField, RecentSignInNotice, useMintConfirmation } from '../../components/settings/MintConfirmation'
 
 /**
  * Keeping Maki's reader and Kavita in step. The reader's own settings live on the Reader card
@@ -168,6 +168,7 @@ export function OpdsSection() {
   const [rotateModalOpen, setRotateModalOpen] = useState(false)
   const [enableModalOpen, setEnableModalOpen] = useState(false)
   const [password, setPassword] = useState('')
+  const mint = useMintConfirmation()
   const { copy: copyFeedUrl } = useCopyText()
 
   // The token itself is never stored, only its SHA-256 digest, so the full feed URL exists exactly
@@ -363,23 +364,24 @@ export function OpdsSection() {
           component="form"
           onSubmit={(e: FormEvent) => {
             e.preventDefault()
+            if (!mint.ready(password)) return
             saveWith({ enabled: true }, password)
           }}
         >
           <Text size="sm">
-            <Trans>Enabling it creates the feed URL. Confirm your password to continue.</Trans>
+            {mint.needsPassword ? (
+              <Trans>Enabling it creates the feed URL. Confirm your password to continue.</Trans>
+            ) : (
+              <Trans>Enabling it creates the feed URL.</Trans>
+            )}
           </Text>
-          <PasswordInput
-            label={t`Your password`}
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.currentTarget.value)}
-          />
+          {mint.needsPassword && <MintPasswordField value={password} onChange={setPassword} />}
+          {mint.signInStale && <RecentSignInNotice canSignInAgain={mint.canSignInAgain} anchor="opds" />}
           <Group justify="flex-end">
             <Button variant="default" onClick={closePasswordModals}>
               <Trans>Cancel</Trans>
             </Button>
-            <Button type="submit" loading={save.isPending} disabled={!password}>
+            <Button type="submit" loading={save.isPending} disabled={!mint.ready(password)}>
               <Trans>Enable</Trans>
             </Button>
           </Group>
@@ -391,6 +393,7 @@ export function OpdsSection() {
           component="form"
           onSubmit={(e: FormEvent) => {
             e.preventDefault()
+            if (!mint.ready(password)) return
             rotate.mutate(password, {
               onSuccess: (result) => {
                 closePasswordModals()
@@ -407,17 +410,18 @@ export function OpdsSection() {
               one.
             </Trans>
           </Text>
-          <PasswordInput
-            label={t`Your password`}
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.currentTarget.value)}
-          />
+          {mint.needsPassword && <MintPasswordField value={password} onChange={setPassword} />}
+          {mint.signInStale && <RecentSignInNotice canSignInAgain={mint.canSignInAgain} anchor="opds" />}
           <Group justify="flex-end">
             <Button variant="default" onClick={closePasswordModals}>
               <Trans>Cancel</Trans>
             </Button>
-            <Button type="submit" color="var(--danger-fill)" loading={rotate.isPending} disabled={!password}>
+            <Button
+              type="submit"
+              color="var(--danger-fill)"
+              loading={rotate.isPending}
+              disabled={!mint.ready(password)}
+            >
               <Trans>Regenerate</Trans>
             </Button>
           </Group>

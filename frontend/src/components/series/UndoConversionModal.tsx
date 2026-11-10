@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { i18n } from '@lingui/core'
-import { Button, Checkbox, Group, Modal, Radio, Stack, Text } from '@mantine/core'
+import { Button, Checkbox, Modal, Radio, Stack, Text } from '@mantine/core'
 import { notifications } from '../../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import { useUndoSeriesConversion, type SeriesConversion } from '../../api/pageConversion'
 import { formatBytes } from '../../format'
 import { useCheckedWithLabel } from '../pageconversion/labels'
+import { IconArrowBackUp } from '../../lib/icons'
+import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
 
 type Choice = 'restore' | 'again'
 
@@ -67,31 +69,47 @@ export function UndoConversionModal({
   }
 
   return (
-    <Modal opened={opened} onClose={close} title={<Trans>Undo conversion</Trans>} centered>
+    <Modal
+      opened={opened}
+      onClose={close}
+      centered
+      title={
+        <ModalHeading
+          title={<Trans>Undo conversion</Trans>}
+          description={<Trans>Put back the files as they were downloaded.</Trans>}
+        />
+      }
+    >
       <Stack gap="md">
-        <Stack gap={4}>
-          <Text size="sm">
-            <Plural
-              value={history.restorableFiles}
-              one={`# file has its original in the trash (${size}).`}
-              other={`# files have their original in the trash (${size}).`}
-            />
-          </Text>
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>The others were converted on download or their original has been purged.</Trans>
-          </Text>
-          {settings.length > 0 && (
-            <Text size="sm" c="var(--ink-3)">
-              <Trans>Converted with {list}.</Trans>
-            </Text>
-          )}
-        </Stack>
+        <Text size="sm">
+          <Plural
+            value={history.restorableFiles}
+            one={`# file has its original in the trash (${size}).`}
+            other={`# files have their original in the trash (${size}).`}
+          />
+        </Text>
+        <ModalNote tone="info">
+          <Stack gap={2}>
+            <span>
+              <Trans>The others were converted on download or their original has been purged.</Trans>
+            </span>
+            {settings.length > 0 && (
+              <span>
+                <Trans>Converted with {list}.</Trans>
+              </span>
+            )}
+          </Stack>
+        </ModalNote>
 
-        <Radio.Group value={choice} onChange={(value) => setChoice(value as Choice)} aria-label={t`What to do with them`}>
-          <Stack gap="xs">
+        <Radio.Group
+          value={choice}
+          onChange={(value) => setChoice(value as Choice)}
+          label={t`What to do with them`}
+        >
+          <div className="modal-choice-list">
             <Radio value="restore" label={t`Restore the originals`} />
             <Radio value="again" label={t`Restore and convert again with the current settings`} />
-          </Stack>
+          </div>
         </Radio.Group>
 
         <Checkbox
@@ -100,16 +118,24 @@ export function UndoConversionModal({
           disabled={again}
           onChange={(e) => setSetNever(e.currentTarget.checked)}
         />
-
-        <Group justify="flex-end">
-          <Button variant="default" onClick={close}>
-            <Trans>Cancel</Trans>
-          </Button>
-          <Button loading={undo.isPending} onClick={submit}>
-            <Trans>Undo</Trans>
-          </Button>
-        </Group>
       </Stack>
+
+      <ModalFooter
+        status={
+          <Plural
+            value={history.convertedFiles}
+            one={`${history.restorableFiles} of # file`}
+            other={`${history.restorableFiles} of # files`}
+          />
+        }
+      >
+        <Button variant="default" onClick={close}>
+          <Trans>Cancel</Trans>
+        </Button>
+        <Button leftSection={<IconArrowBackUp size={16} />} loading={undo.isPending} onClick={submit}>
+          <Trans>Undo</Trans>
+        </Button>
+      </ModalFooter>
     </Modal>
   )
 }

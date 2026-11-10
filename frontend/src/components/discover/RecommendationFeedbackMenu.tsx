@@ -33,7 +33,14 @@ type Command = {
  * meaningless: a synthetic activity row has nothing to record feedback against. Every other card is
  * fair game, including the browse rails: hiding a title there is the same fact about the same work.
  */
-export function RecommendationFeedbackMenu({ providerId }: { providerId: string }) {
+export function RecommendationFeedbackMenu({
+  providerId,
+  compact = false,
+}: {
+  providerId: string
+  /** Borderless icons for a card footer; a pressed thumb still fills. */
+  compact?: boolean
+}) {
   const id = Number(providerId)
   const { t } = useLingui()
   const describe = useDescribe()
@@ -148,12 +155,14 @@ export function RecommendationFeedbackMenu({ providerId }: { providerId: string 
   }
 
   const busy = mutation.isPending || franchise.isPending || undo.isPending || isLoading
+  const idle = compact ? 'subtle' : 'default'
+  const iconSize = compact ? 'md' : 'lg'
 
   return (
-    <Group gap="xs" wrap="nowrap" justify="center">
+    <Group gap={compact ? 2 : 'xs'} wrap="nowrap" justify="center" className={compact ? 'feedback-actions' : undefined}>
       <Tooltip label={sentiment === 'liked' ? t`Remove your thumbs up` : t`More like this`} withArrow zIndex={2001}>
         <ActionIcon
-          size="lg" variant={sentiment === 'liked' ? 'filled' : 'default'} color="var(--ok)"
+          size={iconSize} variant={sentiment === 'liked' ? 'filled' : idle} color="var(--ok)"
           c={sentiment === 'liked' ? 'var(--ok-on)' : undefined}
           loading={busy} aria-pressed={sentiment === 'liked'} aria-label={t`Thumbs up`}
           onClick={() => void submit(sentiment === 'liked' ? 'clear-sentiment' : 'like')}
@@ -163,7 +172,7 @@ export function RecommendationFeedbackMenu({ providerId }: { providerId: string 
       </Tooltip>
       <Tooltip label={sentiment === 'disliked' ? t`Remove your thumbs down` : t`Not for me`} withArrow zIndex={2001}>
         <ActionIcon
-          size="lg" variant={sentiment === 'disliked' ? 'filled' : 'default'} color="var(--danger)"
+          size={iconSize} variant={sentiment === 'disliked' ? 'filled' : idle} color="var(--danger)"
           c={sentiment === 'disliked' ? 'var(--danger-on)' : undefined}
           loading={busy} aria-pressed={sentiment === 'disliked'} aria-label={t`Thumbs down`}
           onClick={() => void submit(sentiment === 'disliked' ? 'clear-sentiment' : 'dislike')}
@@ -175,7 +184,7 @@ export function RecommendationFeedbackMenu({ providerId }: { providerId: string 
       <Menu withinPortal position="bottom-end" width={260} zIndex={2000} shadow="md">
         <Menu.Target>
           <Tooltip label={t`More feedback options`} withArrow zIndex={2001}>
-            <ActionIcon size="lg" variant="default" aria-label={t`More recommendation feedback actions`}>
+            <ActionIcon size={iconSize} variant={idle} aria-label={t`More recommendation feedback actions`}>
               <IconDots size={18} />
             </ActionIcon>
           </Tooltip>

@@ -1,21 +1,12 @@
 import { errorText } from '../api/errorText'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  Alert,
-  Button,
-  Center,
-  Checkbox,
-  Group,
-  Loader,
-  Modal,
-  Rating,
-  ScrollArea,
-  Stack,
-  Text,
-} from '@mantine/core'
+import { Button, Checkbox, Modal, ScrollArea, Skeleton, Stack, Text } from '@mantine/core'
 import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
+import { IconArrowRight } from '../lib/icons'
+import { EmptyState } from './ui/EmptyState'
+import { ModalFooter, ModalHeading, ModalNote } from './ui/ModalShell'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   useApplyRatingImport,
@@ -105,120 +96,114 @@ export function RatingImportModal({
       },
     )
 
+  const errorMessage = start.error
+    ? errorText(start.error)
+    : queryError
+      ? errorText(queryError)
+      : requestFailed
+        ? t`Couldn't reach ${label}.`
+        : (data?.error ?? null)
+
   const body = useMemo(() => {
-    if (requestFailed) {
+    if (errorMessage) {
       return (
-        <Alert color="var(--danger)" variant="light">
-          <Stack gap="xs">
-            <Text size="sm">
-              {start.error ? errorText(start.error) : queryError ? errorText(queryError) : <Trans>Couldn't reach {label}.</Trans>}
-            </Text>
-            <Group justify="flex-end">
-              <Button size="xs" variant="light" color="var(--danger)" onClick={retry}>
-                <Trans>Retry</Trans>
-              </Button>
-            </Group>
-          </Stack>
-        </Alert>
+        <Stack gap="xs" align="flex-start">
+          <ModalNote>{errorMessage}</ModalNote>
+          <Button size="xs" variant="default" onClick={retry}>
+            <Trans>Retry</Trans>
+          </Button>
+        </Stack>
       )
     }
     if (running) {
       return (
-        <Center py={40}>
-          <Stack align="center" gap="xs">
-            <Loader />
-            <Text size="sm" c="var(--ink-3)">
-              <Trans>Reading your ratings from {label}…</Trans>
-            </Text>
-          </Stack>
-        </Center>
-      )
-    }
-    if (data?.error) {
-      return (
-        <Alert color="var(--danger)" variant="light">
-          <Stack gap="xs">
-            <Text size="sm">{data.error}</Text>
-            <Group justify="flex-end">
-              <Button size="xs" variant="light" color="var(--danger)" onClick={retry}>
-                <Trans>Retry</Trans>
-              </Button>
-            </Group>
-          </Stack>
-        </Alert>
+        <Stack gap={0}>
+          {[70, 52, 62, 44, 58].map((w) => (
+            <div key={w} className="modal-row">
+              <Skeleton h={14} w={14} />
+              <Skeleton h={10} w={`${w}%`} />
+            </div>
+          ))}
+          <Text size="sm" c="var(--ink-3)" mt="xs">
+            <Trans>Reading your ratings from {label}…</Trans>
+          </Text>
+        </Stack>
       )
     }
     if (items.length === 0) {
       return (
-        <Text size="sm" c="var(--ink-3)" py="md">
-          <Trans>Nothing to import, no scores on {label} differ from your local ratings.</Trans>
-        </Text>
+        <EmptyState
+          compact
+          mood="pleased"
+          title={t`Nothing to import`}
+          description={<Trans>No scores on {label} differ from your local ratings.</Trans>}
+        />
       )
     }
     return (
-      <Stack gap="xs">
-        <Group justify="space-between">
+      <ScrollArea.Autosize mah="min(360px, 45dvh)">
+        <div className="modal-rows">
+          <div className="modal-row modal-row-head">
+            <span style={{ width: 16 }} />
+            <span className="modal-row-grow">
+              <Trans>Series</Trans>
+            </span>
+            <span className="modal-score-old" style={{ textAlign: 'right' }}>
+              <Trans>Local</Trans>
+            </span>
+            <span style={{ width: 14 }} />
+            <span style={{ minWidth: 28 }}>{label}</span>
+          </div>
+          {items.map((i) => (
+            <label key={i.seriesId} className="modal-row" style={{ cursor: 'pointer' }}>
+              <Checkbox
+                aria-label={i.title}
+                size="xs"
+                checked={selected.has(i.seriesId)}
+                onChange={() => toggle(i.seriesId)}
+              />
+              <Text size="sm" lineClamp={1} className="modal-row-grow" c="var(--ink-hi)">
+                {i.title}
+              </Text>
+              <span className="modal-score-old tnum">{i.localRating ? i.localRating : '-'}</span>
+              <IconArrowRight size={14} aria-hidden style={{ color: 'var(--ink-4)' }} />
+              <span className="modal-score-new tnum">{i.remoteScore}</span>
+            </label>
+          ))}
+        </div>
+      </ScrollArea.Autosize>
+    )
+  }, [errorMessage, retry, running, items, selected, label, t, i18n.locale])
+
+  const showFooterSelection = !errorMessage && !running && items.length > 0
+
+  return (
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      size="lg"
+      centered
+      title={
+        <ModalHeading
+          title={t`Import ratings from ${label}`}
+          description={<Trans>Scores on {label} that differ from your local ratings.</Trans>}
+        />
+      }
+    >
+      {body}
+      <ModalFooter status={showFooterSelection ? t`${selectedCount} of ${totalCount} selected` : undefined}>
+        {showFooterSelection && (
           <Checkbox
             size="xs"
-            label={t`${selectedCount} of ${totalCount} selected`}
+            label={t`Select all`}
             checked={allChecked}
             indeterminate={selected.size > 0 && !allChecked}
             onChange={() =>
               setSelected(allChecked ? new Set() : new Set(items.map((i) => i.seriesId)))
             }
+            mr="xs"
           />
-        </Group>
-        <ScrollArea.Autosize mah="min(360px, 45dvh)">
-          <Stack gap={4}>
-            {items.map((i) => (
-              <Group key={i.seriesId} justify="space-between" wrap="nowrap" gap="sm">
-                <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
-                  <Checkbox
-                    aria-label={i.title}
-                    size="xs"
-                    checked={selected.has(i.seriesId)}
-                    onChange={() => toggle(i.seriesId)}
-                  />
-                  <Text size="sm" lineClamp={1}>
-                    {i.title}
-                  </Text>
-                </Group>
-                <Group gap={6} wrap="nowrap">
-                  <Text size="xs" c="var(--ink-3)" className="tnum">
-                    {i.localRating ? `${i.localRating}/10` : '-'} →
-                  </Text>
-                  <Rating size="xs" count={5} fractions={2} value={i.remoteScore / 2} readOnly />
-                  <Text size="xs" c="var(--ink-3)" className="tnum" w={34} ta="right">
-                    {i.remoteScore}/10
-                  </Text>
-                </Group>
-              </Group>
-            ))}
-          </Stack>
-        </ScrollArea.Autosize>
-      </Stack>
-    )
-  }, [
-    requestFailed,
-    start.error,
-    queryError,
-    retry,
-    running,
-    data?.error,
-    items,
-    selected,
-    allChecked,
-    label,
-    selectedCount,
-    totalCount,
-    t,
-    i18n.locale,
-  ])
-
-  return (
-    <Modal opened={opened} onClose={onClose} title={t`Import ratings from ${label}`} size="lg" centered>
-      {body}
-      <Group justify="flex-end" mt="md">
+        )}
         <Button variant="default" onClick={onClose}>
           <Trans>Cancel</Trans>
         </Button>
@@ -229,7 +214,7 @@ export function RatingImportModal({
         >
           {selectedCount > 0 ? t`Apply ${selectedCount}` : t`Apply`}
         </Button>
-      </Group>
+      </ModalFooter>
     </Modal>
   )
 }

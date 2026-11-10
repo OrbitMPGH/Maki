@@ -30,7 +30,8 @@ export const Default: Story = {
 }
 
 export const ConnectedTrackerControls: Story = {
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: /^AniList/ }))
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Max per run' })).toHaveValue('25'))
     await expect(await canvas.findByRole('button', { name: 'Run now' })).toBeVisible()
     await expect(await canvas.findByRole('button', { name: 'Sync everything' })).toBeVisible()
@@ -39,6 +40,7 @@ export const ConnectedTrackerControls: Story = {
 
 export const SyncEverythingConfirm: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: /^AniList/ }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Sync everything' }))
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
     await waitFor(() => expect(dialog).toBeVisible())
@@ -48,6 +50,7 @@ export const SyncEverythingConfirm: Story = {
 
 export const RunNow: Story = {
   play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: /^AniList/ }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Run now' }))
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Run now' })).toBeEnabled())
   },
@@ -55,7 +58,8 @@ export const RunNow: Story = {
 
 export const ReaderFilesRequests: Story = {
   parameters: { auth: 'reader' },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: /^AniList/ }))
     await expect(await canvas.findByText('Entries are filed as requests for an admin to approve.')).toBeVisible()
   },
 }

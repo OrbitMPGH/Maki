@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { CSSProperties } from 'react'
-import { Button, Loader, Stack, Text } from '@mantine/core'
+import { Button, Loader, Stack, Text, Tooltip } from '@mantine/core'
 import { notifications } from '../../lib/toast'
 import { IconBook, IconCircleCheckFilled, IconRefresh } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -16,10 +16,16 @@ export function PreviewChapterButton({
   providerId,
   title,
   onRead,
+  compact = false,
 }: {
   providerId: string
   title: string
   onRead: () => void
+  /**
+   * A short label for a card footer, with the full one as the tooltip. The caption becomes a
+   * note on its own line under the footer row, which wraps for it.
+   */
+  compact?: boolean
 }) {
   const { t } = useLingui()
   const { mutate: start, error: startError, isPending: starting, isSuccess: started } = useStartSeriesPreview()
@@ -124,6 +130,58 @@ export function PreviewChapterButton({
     else start(providerId)
   }
 
+  const icon = working ? (
+    <Loader size={14} color="var(--brand)" />
+  ) : failure ? (
+    <IconRefresh size={16} />
+  ) : (
+    <IconBook size={16} />
+  )
+  const progressStyle =
+    progress != null ? ({ '--preview-progress': `${Math.round(progress * 100)}%` } as CSSProperties) : undefined
+
+  if (compact) {
+    const shortLabel = failure ? (
+      <Trans>Try again</Trans>
+    ) : status === 'ready' ? (
+      <Trans>Read</Trans>
+    ) : status === 'fetching' && pageCount > 0 ? (
+      `${donePages}/${pageCount}`
+    ) : working ? (
+      <Trans>Searching</Trans>
+    ) : (
+      <Trans>Preview</Trans>
+    )
+    return (
+      <>
+        <Tooltip label={label} withArrow zIndex={1001}>
+          <Button
+            className="preview-chapter-button"
+            data-compact
+            data-working={working || undefined}
+            data-indeterminate={working && progress == null ? true : undefined}
+            aria-disabled={working || undefined}
+            variant={status === 'ready' && !failure ? 'light' : 'subtle'}
+            size="sm"
+            leftSection={icon}
+            style={progressStyle}
+            onClick={onClick}
+          >
+            <span className="tnum">{shortLabel}</span>
+          </Button>
+        </Tooltip>
+        <Text
+          size="xs"
+          className="discover-card-footer-note"
+          c={failure ? 'var(--danger)' : 'var(--ink-4)'}
+          aria-live="polite"
+        >
+          {caption}
+        </Text>
+      </>
+    )
+  }
+
   return (
     <Stack gap={4}>
       <Button
@@ -133,16 +191,8 @@ export function PreviewChapterButton({
         aria-disabled={working || undefined}
         variant={status === 'ready' && !failure ? 'filled' : 'default'}
         fullWidth
-        leftSection={
-          working ? (
-            <Loader size={14} color="var(--brand)" />
-          ) : failure ? (
-            <IconRefresh size={16} />
-          ) : (
-            <IconBook size={16} />
-          )
-        }
-        style={progress != null ? ({ '--preview-progress': `${Math.round(progress * 100)}%` } as CSSProperties) : undefined}
+        leftSection={icon}
+        style={progressStyle}
         onClick={onClick}
       >
         <span className="tnum">{label}</span>

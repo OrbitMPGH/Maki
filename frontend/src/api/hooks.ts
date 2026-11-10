@@ -19,6 +19,7 @@ import type { IncognitoMode } from '../components/ui/incognito'
 import type { ReleaseParsedDto } from './upgrades'
 import { obtainedCount } from '../lib/chapterCounts'
 import { optimisticMerge, optimisticSeries } from './optimistic'
+import { refreshMintProofOn } from './auth'
 import { activeSeries } from '../lib/series'
 import { isProvisional, ratesProvisionally } from '../lib/rating'
 import { askSoFarSync } from '../lib/soFarSyncAsk'
@@ -1518,6 +1519,8 @@ export interface MangaBakaDetail {
   tags: MangaBakaTag[]
   links: MetadataLink[]
   malId: number | null
+  aniListId: number | null
+  kitsuId: number | null
   hasAnime: boolean
   /** Free text from MangaBaka, e.g. "Vol 1, Chap 1 (S1) / Vol 31, Chap 270 (Film + OVA)". */
   animeStart: string | null
@@ -1541,6 +1544,13 @@ export interface ReaderCohortHint {
   readers: number
 }
 
+export type ReviewSource = 'myanimelist' | 'anilist' | 'kitsu'
+
+/**
+ * One reader review. `score` is out of 10 whatever the site uses, `source` matches the
+ * `MetadataLink` site keys, `title` is the review's own headline (AniList has one) and `likes`
+ * its upvotes where the site counts them.
+ */
 export interface MangaReview {
   author: string
   score: number | null
@@ -1548,7 +1558,29 @@ export interface MangaReview {
   url: string | null
   date: string | null
   tags: string[]
+  source: ReviewSource
+  title: string | null
+  likes: number | null
 }
+
+/**
+ * Reviews from every site the series has an id for. `reviews` alternates MyAnimeList and AniList,
+ * `quickTakes` are Kitsu's one-line reactions, and `unavailable` names the sites that didn't
+ * answer, so a failure reads differently from a series nobody reviewed.
+ */
+export interface SeriesReviews {
+  reviews: MangaReview[]
+  quickTakes: MangaReview[]
+  unavailable: ReviewSource[]
+}
+
+export interface ReviewIds {
+  malId: number | null
+  aniListId: number | null
+  kitsuId: number | null
+}
+
+export const hasReviewIds = (ids: ReviewIds) => ids.malId != null || ids.aniListId != null || ids.kitsuId != null
 
 /** Rich detail for a Discover recommendation. `id` is a MangaBaka id; null disables the query. */
 export function useRecommendationDetail(id: string | null, inlineError = false) {
@@ -1561,14 +1593,19 @@ export function useRecommendationDetail(id: string | null, inlineError = false) 
   })
 }
 
-/** MAL reviews for a series, fetched lazily when the detail card opens. `null` means the
- *  upstream fetch failed (Jikan/MAL outage), distinct from an empty array (fetched fine,
- *  series genuinely has none) so the UI can tell the two apart. */
-export function useMangaReviews(malId: number | null) {
+/** Reviews for a series, fetched lazily when the card or drawer opens. */
+export function useSeriesReviews(ids: ReviewIds, enabled = true) {
+  const { malId, aniListId, kitsuId } = ids
   return useQuery({
-    queryKey: ['manga-reviews', malId],
-    queryFn: () => api<MangaReview[] | null>(`/recommendations/reviews/${malId}`),
-    enabled: malId != null,
+    queryKey: ['series-reviews', malId, aniListId, kitsuId],
+    queryFn: () => {
+      const query = new URLSearchParams()
+      if (malId != null) query.set('malId', String(malId))
+      if (aniListId != null) query.set('aniListId', String(aniListId))
+      if (kitsuId != null) query.set('kitsuId', String(kitsuId))
+      return api<SeriesReviews>(`/recommendations/reviews?${query}`)
+    },
+    enabled: enabled && hasReviewIds(ids),
     staleTime: 30 * 60 * 1000,
     retry: false,
   })
@@ -3065,20 +3102,25 @@ export function useOpdsSettings() {
 
 export function useSaveOpdsSettings() {
   const queryClient = useQueryClient()
+  const merge = optimisticMerge(
+    queryClient,
+    ['settings', 'opds'],
+    ({ enabled, trackProgress, komga }: { enabled: boolean; trackProgress: boolean; komga?: boolean }) => ({
+      enabled,
+      trackProgress,
+      ...(komga !== undefined && { komga }),
+    }),
+    { seededBySave: true },
+  )
   return useMutation({
     // `password` is only needed when the save mints the token (first enable); the server decides.
     mutationFn: (settings: { enabled: boolean; trackProgress: boolean; komga?: boolean; password?: string }) =>
       api<OpdsSettings>('/settings/opds', { method: 'PUT', body: JSON.stringify(settings) }),
-    ...optimisticMerge(
-      queryClient,
-      ['settings', 'opds'],
-      ({ enabled, trackProgress, komga }: { enabled: boolean; trackProgress: boolean; komga?: boolean }) => ({
-        enabled,
-        trackProgress,
-        ...(komga !== undefined && { komga }),
-      }),
-      { seededBySave: true },
-    ),
+    ...merge,
+    onError: (error, vars, snapshot) => {
+      merge.onError(error, vars, snapshot)
+      refreshMintProofOn(queryClient, error)
+    },
     onSuccess: (data) => {
       // The PUT mints the token on first enable, so seed the cache from the response rather
       // than refetching, otherwise the URL box stays empty until the round-trip lands.
@@ -3098,6 +3140,7 @@ export function useRotateOpdsToken() {
     onSuccess: (data) => {
       queryClient.setQueryData(['settings', 'opds'], data)
     },
+    onError: (error) => refreshMintProofOn(queryClient, error),
   })
 }
 

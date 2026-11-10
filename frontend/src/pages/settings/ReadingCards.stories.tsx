@@ -3,7 +3,7 @@ import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../../.storybook/mocks/settings'
 import { api, neverResolve } from '../../../.storybook/mocks/api'
-import { opdsOff, opdsOn, readerSettings } from '../../../.storybook/mocks/settings/data'
+import { mintSsoFresh, mintSsoStale, opdsOff, opdsOn, readerSettings } from '../../../.storybook/mocks/settings/data'
 import { KavitaSyncSection, KoreaderSyncSection, OpdsSection } from './ReadingCards'
 
 const meta = {
@@ -173,6 +173,44 @@ export const OpdsRegenerate: Story = {
     await userEvent.type(await within(dialog).findByLabelText('Your password'), 'correct horse')
     await userEvent.click(await within(dialog).findByRole('button', { name: 'Regenerate' }))
     await expect(await canvas.findByText(/f07be2c19a44d85e7a30/)).toBeVisible()
+  },
+}
+
+export const OpdsEnableWithRecentSso: Story = {
+  render: () => <OpdsSection />,
+  parameters: {
+    msw: settingsMsw(
+      http.get(api('/account/mint-proof'), () => HttpResponse.json(mintSsoFresh)),
+      http.get(api('/settings/opds'), () => HttpResponse.json(opdsOff)),
+      http.put(api('/settings/opds'), () =>
+        HttpResponse.json({ ...opdsOn, tokenPrefix: 'd4e8b1', feedUrl: '/api/v1/opds/d4e8b1aa90c25f73e6b0' }),
+      ),
+    ),
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await canvas.findByRole('switch', { name: /^Enable the OPDS catalogue/ }))
+    const dialog = within(await body.findByRole('dialog'))
+    await expect(await dialog.findByText('Enabling it creates the feed URL.')).toBeVisible()
+    await expect(dialog.queryByLabelText('Your password')).toBeNull()
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Enable' })).toBeEnabled())
+    await userEvent.click(dialog.getByRole('button', { name: 'Enable' }))
+    await expect(await canvas.findByText(/\/api\/v1\/opds\/d4e8b1aa90c25f73e6b0/)).toBeVisible()
+  },
+}
+
+export const OpdsRegenerateWithStaleSso: Story = {
+  render: () => <OpdsSection />,
+  parameters: { msw: settingsMsw(http.get(api('/account/mint-proof'), () => HttpResponse.json(mintSsoStale))) },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await canvas.findByRole('button', { name: 'Regenerate' }))
+    const dialog = within(await body.findByRole('dialog'))
+    await expect(await dialog.findByText(/needs a sign-in from the last 10 minutes/)).toBeVisible()
+    const again = await dialog.findByRole('link', { name: 'Sign in again' })
+    await expect(again.getAttribute('href')).toMatch(/^\/api\/v1\/auth\/oidc\/challenge\?returnUrl=.*%23opds$/)
+    await expect(dialog.queryByLabelText('Your password')).toBeNull()
+    await waitFor(() => expect(dialog.getByRole('button', { name: 'Regenerate' })).toBeDisabled())
   },
 }
 

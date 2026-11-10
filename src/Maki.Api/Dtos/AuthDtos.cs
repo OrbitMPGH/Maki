@@ -1,3 +1,4 @@
+using Maki.Api.Auth;
 using Maki.Core.Security;
 using Maki.Data.Identity;
 
@@ -18,6 +19,9 @@ public record DisableTwoFactorRequest(string? Password);
 public record CreateApiKeyRequest(string? Name, UserApiKeyScope Scope, string? Password = null);
 
 public record ConfirmPasswordRequest(string? Password);
+
+/// <param name="CanSignInAgain">Single sign-on is set up and linked, so the form can offer the round trip.</param>
+public record MintProofDto(MintProof Proof, int RecentSignInSecondsLeft, bool CanSignInAgain);
 
 /// <summary>
 /// Who the caller is and what they may do. The SPA drives every permission-dependent control off

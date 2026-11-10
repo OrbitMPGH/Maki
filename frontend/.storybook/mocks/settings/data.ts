@@ -28,6 +28,7 @@ import type {
 } from '../../../src/api/hooks'
 import type {
   ApiKey,
+  MintProof,
   AuthEvent,
   OidcSettings,
   SecuritySettings,
@@ -728,6 +729,10 @@ export const twoFactorOff = {
 }
 
 export const twoFactorOn = { ...twoFactorOff, enabled: true, hasAuthenticator: true, recoveryCodesLeft: 8 }
+
+export const mintByPassword: MintProof = { proof: 'Password', recentSignInSecondsLeft: 0, canSignInAgain: false }
+export const mintSsoFresh: MintProof = { proof: 'RecentSignIn', recentSignInSecondsLeft: 420, canSignInAgain: true }
+export const mintSsoStale: MintProof = { proof: 'RecentSignIn', recentSignInSecondsLeft: 0, canSignInAgain: true }
 
 export const opdsOff: OpdsSettings = { enabled: false, trackProgress: true, hasToken: false, tokenPrefix: null, feedUrl: null, komga: false }
 export const opdsOn: OpdsSettings = { enabled: true, trackProgress: true, hasToken: true, tokenPrefix: 'a91f3c', feedUrl: null, komga: false }
