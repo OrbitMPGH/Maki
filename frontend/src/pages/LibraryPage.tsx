@@ -117,6 +117,7 @@ import { CoverCard, type OfflineAvailability } from '../components/ui/CoverCard'
 import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Disclosure } from '../components/ui/Disclosure'
+import { DrillChoices } from '../components/ui/DrillPanel'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { FigureStrip } from '../components/ui/FigureStrip'
@@ -2784,28 +2785,25 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         <Text size="sm" mb="md">
           <Trans>Instance default clears each series' own choice.</Trans>
         </Text>
-        <Select
-          aria-label={t`Quality profile`}
-          data={[
-            { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
-            ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
-          ]}
-          value={bulkProfile}
-          onChange={(v) => setBulkProfile(v ?? DEFAULT_PROFILE_FILTER)}
-          allowDeselect={false}
-          comboboxProps={{ withinPortal: true }}
-          mb="xs"
-        />
-        {(() => {
-          const description = upgradeProfiles?.find((p) => String(p.id) === bulkProfile)?.description
-          return description ? (
-            <Text size="xs" c="var(--ink-3)" mb="lg">
-              {description}
-            </Text>
-          ) : (
-            <div style={{ height: 'var(--mantine-spacing-lg)' }} />
-          )
-        })()}
+        <div className="library-profile-choices">
+          <DrillChoices
+            label={t`Quality profile`}
+            value={bulkProfile}
+            options={[
+              {
+                value: DEFAULT_PROFILE_FILTER,
+                label: t`Instance default`,
+                hint: t`Follows the default profile set in Settings.`,
+              },
+              ...(upgradeProfiles ?? []).map((p) => ({
+                value: String(p.id),
+                label: p.name,
+                hint: p.description ?? undefined,
+              })),
+            ]}
+            onPick={setBulkProfile}
+          />
+        </div>
         <Group justify="flex-end">
           <Button variant="default" onClick={() => setProfileModalOpen(false)}>
             <Trans>Cancel</Trans>

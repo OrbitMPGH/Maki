@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
-import { Alert, Button, Group, Modal, Select, Stack, Text, TextInput } from '@mantine/core'
-import { IconPlayerPause, IconPlayerPlay } from '../lib/icons'
+import { Alert, Button, Group, Popover, Stack, Text, TextInput } from '@mantine/core'
+import { IconClockPlay, IconPlayerPause, IconPlayerPlay, IconWorld } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { usePauseQueue, useQueuePause, useResumeQueue, useSources } from '../api/hooks'
 import { formatDateTime, formatTime } from '../format'
 import { useSourceLabel } from '../sourceLabels'
+import { DrillPanes } from './ui/DrillPanes'
+import { DrillBack, DrillChoices, DrillRow, useDrillPages } from './ui/DrillPanel'
 
 const ALL_SOURCES = '*'
 
@@ -40,12 +42,17 @@ function resumeTime(choice: ResumeChoice, custom: string): Date | null {
   return null
 }
 
-/** Opens the dialog for pausing every scraper download, or one source's. */
+type PausePage = 'main' | 'scope' | 'resume'
+
+const PAUSE_PARENTS: Record<PausePage, PausePage> = { main: 'main', scope: 'main', resume: 'main' }
+
+/** A drill panel for pausing every scraper download, or one source's. */
 export function QueuePauseButton() {
   const { t } = useLingui()
   const sourceLabel = useSourceLabel()
   const sources = useSources().data
   const pause = usePauseQueue()
+  const pages = useDrillPages<PausePage>('main', PAUSE_PARENTS)
 
   const [open, setOpen] = useState(false)
   const [scope, setScope] = useState(ALL_SOURCES)
@@ -62,18 +69,26 @@ export function QueuePauseButton() {
     [sources, sourceLabel, t],
   )
 
+  const resumeHint = (option: ResumeChoice): string => {
+    if (option === 'manual') return t`Stays paused until you press Resume.`
+    if (option === 'custom') return t`Pick the date and time below.`
+    const at = resumeTime(option, '')
+    const time = at ? untilText(at.toISOString()) : ''
+    return t`Resumes at ${time}.`
+  }
   const resumeOptions = [
     { value: 'manual', label: t`Until I resume` },
     { value: 'hour', label: t`For 1 hour` },
     { value: 'tomorrow', label: t`Until tomorrow morning` },
     { value: 'custom', label: t`Until a time I choose` },
-  ]
+  ] as const
 
   const resumeAt = resumeTime(choice, custom)
   const invalid = choice === 'custom' && (resumeAt === null || resumeAt.getTime() <= Date.now())
 
-  const openDialog = () => {
+  const openPanel = () => {
     setCustom(toLocalInput(new Date(Date.now() + 60 * 60 * 1000)))
+    pages.reset()
     setOpen(true)
   }
 
@@ -90,56 +105,109 @@ export function QueuePauseButton() {
     )
 
   return (
-    <>
-      <Button variant="default" leftSection={<IconPlayerPause size={16} />} onClick={openDialog}>
-        <Trans>Pause downloads</Trans>
-      </Button>
-
-      <Modal opened={open} onClose={() => setOpen(false)} centered title={<Trans>Pause downloads</Trans>}>
-        <Stack gap="sm">
-          <Text size="sm">
-            <Trans>
-              Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the
-              queue. Torrents already handed to the download client keep downloading.
-            </Trans>
-          </Text>
-          <Select
-            label={t`What to pause`}
-            data={scopeOptions}
-            value={scope}
-            onChange={(value) => setScope(value ?? ALL_SOURCES)}
-            allowDeselect={false}
-            searchable
-            comboboxProps={{ withinPortal: true }}
-          />
-          <Select
-            label={t`Resume`}
-            data={resumeOptions}
-            value={choice}
-            onChange={(value) => setChoice((value as ResumeChoice | null) ?? 'manual')}
-            allowDeselect={false}
-            comboboxProps={{ withinPortal: true }}
-          />
-          {choice === 'custom' && (
-            <TextInput
-              type="datetime-local"
-              label={t`Resume at`}
-              value={custom}
-              onChange={(e) => setCustom(e.currentTarget.value)}
-              error={invalid ? t`Pick a time in the future` : undefined}
-            />
+    <Popover
+      opened={open}
+      onChange={setOpen}
+      position="bottom-end"
+      width={320}
+      shadow="md"
+      trapFocus
+      returnFocus
+      closeOnEscape={false}
+    >
+      <Popover.Target>
+        <Button
+          variant="default"
+          leftSection={<IconPlayerPause size={16} />}
+          aria-expanded={open}
+          onClick={() => (open ? setOpen(false) : openPanel())}
+        >
+          <Trans>Pause downloads</Trans>
+        </Button>
+      </Popover.Target>
+      <Popover.Dropdown
+        p={6}
+        aria-label={t`Pause downloads`}
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape') return
+          event.stopPropagation()
+          if (pages.page === 'main') setOpen(false)
+          else pages.back()
+        }}
+      >
+        <DrillPanes page={pages.page} depth={pages.depth} bleed={6}>
+          {pages.page === 'main' && (
+            <>
+              <Text size="xs" c="var(--ink-3)" px={10} pt={4} pb={6}>
+                <Trans>
+                  Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the
+                  queue. Torrents already handed to the download client keep downloading.
+                </Trans>
+              </Text>
+              <DrillRow
+                ref={pages.rowRef('scope')}
+                icon={IconWorld}
+                label={<Trans>What to pause</Trans>}
+                value={scopeOptions.find((o) => o.value === scope)?.label}
+                onClick={() => pages.open('scope')}
+              />
+              <DrillRow
+                ref={pages.rowRef('resume')}
+                icon={IconClockPlay}
+                label={<Trans>Resume</Trans>}
+                value={resumeOptions.find((o) => o.value === choice)?.label}
+                onClick={() => pages.open('resume')}
+              />
+              {choice === 'custom' && (
+                <div className="drill-field">
+                  <TextInput
+                    type="datetime-local"
+                    size="xs"
+                    label={t`Resume at`}
+                    value={custom}
+                    onChange={(e) => setCustom(e.currentTarget.value)}
+                    error={invalid ? t`Pick a time in the future` : undefined}
+                  />
+                </div>
+              )}
+            </>
           )}
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setOpen(false)}>
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button loading={pause.isPending} disabled={invalid} onClick={submit}>
-              <Trans>Pause</Trans>
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
-    </>
+          {pages.page === 'scope' && (
+            <>
+              <DrillBack ref={pages.backRef} title={<Trans>What to pause</Trans>} onBack={pages.back} />
+              <div className="drill-scroll">
+                <DrillChoices
+                  label={t`What to pause`}
+                  value={scope}
+                  options={scopeOptions}
+                  onPick={(value) => {
+                    setScope(value)
+                    pages.back()
+                  }}
+                />
+              </div>
+            </>
+          )}
+          {pages.page === 'resume' && (
+            <>
+              <DrillBack ref={pages.backRef} title={<Trans>Resume</Trans>} onBack={pages.back} />
+              <DrillChoices
+                label={t`Resume`}
+                value={choice}
+                options={resumeOptions.map((o) => ({ ...o, hint: resumeHint(o.value) }))}
+                onPick={(value) => {
+                  setChoice(value as ResumeChoice)
+                  pages.back()
+                }}
+              />
+            </>
+          )}
+        </DrillPanes>
+        <Button fullWidth mt={6} loading={pause.isPending} disabled={invalid} onClick={submit}>
+          <Trans>Pause</Trans>
+        </Button>
+      </Popover.Dropdown>
+    </Popover>
   )
 }
 

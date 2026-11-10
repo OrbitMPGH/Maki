@@ -10270,24 +10270,13 @@ body.reader-open {
   padding-top: 4px;
   border-top: 1px solid var(--border);
 }
-.reader-settings-row,
+.reader-settings-inline-row,
+.reader-settings-choices {
+  margin-inline: -6px;
+}
 .reader-settings-chip {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-.reader-settings-row {
-  padding: 9px 10px;
-  border-radius: var(--radius-control);
-}
-.reader-settings-row:hover {
-  background: var(--surface-hover);
-}
-.reader-settings-row-icon {
-  flex-shrink: 0;
-  color: var(--brand);
-}
-.reader-settings-chip {
   flex: 1;
   min-width: 0;
   min-height: 32px;
@@ -10447,6 +10436,32 @@ body.reader-open {
   color: var(--ink-3);
   font-size: var(--type-meta);
   line-height: 1.4;
+}
+.drill-choice:disabled {
+  cursor: not-allowed;
+}
+.drill-choice:disabled .drill-choice-label {
+  color: var(--ink-3);
+}
+.drill-choice:disabled:hover {
+  background: transparent;
+}
+.drill-choices-heading {
+  padding: 8px 10px 2px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+}
+.drill-choices + .drill-choices {
+  margin-top: 4px;
+}
+.library-profile-choices {
+  margin: 0 -10px var(--mantine-spacing-md);
+}
+/* A choices page that can run long (one entry per source) scrolls under its back header. */
+.drill-scroll {
+  max-height: min(20rem, 55dvh);
+  overflow-y: auto;
 }
 .drill-field {
   padding: 8px 10px 10px;

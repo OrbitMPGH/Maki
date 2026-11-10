@@ -6,7 +6,6 @@ import {
   MultiSelect,
   Popover,
   SegmentedControl,
-  Select,
   Slider,
   Stack,
   Switch,
@@ -18,10 +17,8 @@ import {
 import {
   IconArrowAutofitHeight,
   IconArrowAutofitWidth,
-  IconArrowLeft,
   IconArrowsMaximize,
   IconChevronDown,
-  IconChevronRight,
   IconEyeOff,
   IconListCheck,
   IconMoon,
@@ -32,14 +29,16 @@ import {
   IconSun,
   IconUserCircle,
   IconViewportWide,
+  IconWand,
 } from '../../lib/icons'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { PrefsSource, ReaderManifest } from '../../api/reader'
 import type { ReadingProfile } from '../../api/readingProfiles'
 import { wakeLockSupported } from '../../lib/wakeLock'
 import { useLabel } from '../../i18n-context'
 import { DrillPanes } from '../../components/ui/DrillPanes'
+import { DrillBack, DrillChoices, DrillRow, useDrillPages, type DrillChoice } from '../../components/ui/DrillPanel'
 import {
   BROWSER_ENHANCE_METHODS,
   ENHANCE_FALLBACKS,
@@ -66,7 +65,16 @@ export const OVERLAY_Z = 500
 // both, so it could never be scrolled. Rendered in place, fixed so the popover does not clip it.
 const NESTED_COMBOBOX = { zIndex: OVERLAY_Z + 1, withinPortal: false, floatingStrategy: 'fixed' } as const
 
-type View = 'main' | 'wide' | 'look' | 'enhance' | 'reading'
+type View = 'main' | 'wide' | 'look' | 'enhance' | 'method' | 'reading'
+
+const PARENTS: Record<View, View> = {
+  main: 'main',
+  wide: 'main',
+  look: 'main',
+  enhance: 'main',
+  method: 'enhance',
+  reading: 'main',
+}
 
 type Toggle =
   | 'tapZones'
@@ -110,16 +118,9 @@ function SubPage({
   backRef: React.Ref<HTMLButtonElement>
   children: ReactNode
 }) {
-  const { t } = useLingui()
   return (
     <div>
-      <UnstyledButton ref={backRef} className="drill-back reader-settings-back" onClick={onBack}>
-        <span className="drill-back-icon" aria-hidden>
-          <IconArrowLeft size={16} />
-        </span>
-        <VisuallyHidden>{t`Back`}</VisuallyHidden>
-        <span>{title}</span>
-      </UnstyledButton>
+      <DrillBack ref={backRef} className="reader-settings-back" title={title} onBack={onBack} />
       {children}
     </div>
   )
@@ -172,34 +173,17 @@ export default function ReaderSettings({
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
-  const [view, setView] = useState<View>('main')
+  const pages = useDrillPages<View>('main', PARENTS)
+  const { page: view, open, back, backRef } = pages
   const [profileMenu, setProfileMenu] = useState(false)
 
   // Reset as the popover opens, not as it closes, so its closing fade doesn't show a page sliding.
   const [wasOpened, setWasOpened] = useState(opened)
   if (opened !== wasOpened) {
     setWasOpened(opened)
-    if (opened) setView('main')
+    if (opened) pages.reset()
     else setProfileMenu(false)
   }
-
-  // Opening a page puts focus on its back button; going back returns it to the row that opened it.
-  const backRef = useRef<HTMLButtonElement>(null)
-  const rowRefs = useRef<Partial<Record<View, HTMLButtonElement | null>>>({})
-  const cameFrom = useRef<View | null>(null)
-  useEffect(() => {
-    if (view !== 'main') backRef.current?.focus({ preventScroll: true })
-    else if (cameFrom.current) rowRefs.current[cameFrom.current]?.focus({ preventScroll: true })
-  }, [view])
-  const open = (next: View) => {
-    cameFrom.current = next
-    setView(next)
-  }
-  const back = () => setView('main')
-
-  useEffect(() => {
-    if (!opened) cameFrom.current = null
-  }, [opened])
 
   // Mantine only closes on Escape when focus is inside the dropdown, and focus is usually still on
   // the gear, so the reader's own Escape (leave the reader) would win. Captured on the window so it
@@ -211,11 +195,11 @@ export default function ReaderSettings({
       event.preventDefault()
       if (profileMenu) setProfileMenu(false)
       else if (view === 'main') onOpenedChange(false)
-      else setView('main')
+      else back()
     }
     window.addEventListener('keydown', onKey, true)
     return () => window.removeEventListener('keydown', onKey, true)
-  }, [opened, view, profileMenu, onOpenedChange])
+  }, [opened, view, profileMenu, onOpenedChange, back])
 
   const autoProfile = profiles.find((p) => p.id === autoProfileId)
   const autoProfileName = autoProfile?.name
@@ -254,18 +238,6 @@ export default function ReaderSettings({
     prefs.enhanceFallback,
     !!enhanceModels?.some((entry) => entry.id === serverModelId(prefs.enhanceMethod)),
   )
-  const serverOptions = SERVER_ENHANCE_METHODS.flatMap((m) => {
-    const model = enhanceModels?.find((entry) => entry.id === serverModelId(m.id))
-    if (!model && m.id !== method) return []
-    return [{ value: m.id, label: renderLabel(m.label), disabled: !model || !model.ready }]
-  })
-  const enhanceOptions = [
-    {
-      group: t`On this device`,
-      items: BROWSER_ENHANCE_METHODS.map((m) => ({ value: m.id, label: renderLabel(m.label), disabled: browserUnsupported })),
-    },
-    ...(serverOptions.length ? [{ group: t`On the server`, items: serverOptions }] : []),
-  ]
   const enhanceNote = (value: string): string | undefined => {
     const model = enhanceModels?.find((entry) => entry.id === serverModelId(value))
     if (serverModelId(value) !== null) {
@@ -276,6 +248,21 @@ export default function ReaderSettings({
     }
     const info = enhanceMethodInfo(value)
     return info ? renderLabel(info.hint) : undefined
+  }
+  const browserMethods: DrillChoice[] = BROWSER_ENHANCE_METHODS.map((m) => ({
+    value: m.id,
+    label: renderLabel(m.label),
+    hint: enhanceNote(m.id),
+    disabled: browserUnsupported,
+  }))
+  const serverMethods: DrillChoice[] = SERVER_ENHANCE_METHODS.flatMap((m) => {
+    const model = enhanceModels?.find((entry) => entry.id === serverModelId(m.id))
+    if (!model && m.id !== method) return []
+    return [{ value: m.id, label: renderLabel(m.label), hint: enhanceNote(m.id), disabled: !model || !model.ready }]
+  })
+  const pickMethod = (value: string) => {
+    onPrefs({ enhanceMethod: value as ReaderPrefs['enhanceMethod'] })
+    back()
   }
   const skippedHere = enhanceOn && enhanceFor(prefs, manifest.tier) === 'off'
 
@@ -324,22 +311,7 @@ export default function ReaderSettings({
   const togglesTotal = toggles.length
 
   const row = (target: View, Icon: typeof IconAperture, label: string, value: string) => (
-    <UnstyledButton
-      ref={(node) => {
-        rowRefs.current[target] = node
-      }}
-      className="reader-settings-row"
-      onClick={() => open(target)}
-    >
-      <Icon size={16} className="reader-settings-row-icon" aria-hidden />
-      <Text fz="sm" style={{ flex: 1 }}>
-        {label}
-      </Text>
-      <Text fz="xs" c="var(--ink-3)" truncate maw={140}>
-        {value}
-      </Text>
-      <IconChevronRight size={16} color="var(--ink-3)" aria-hidden />
-    </UnstyledButton>
+    <DrillRow ref={pages.rowRef(target)} icon={Icon} label={label} value={value} onClick={() => open(target)} />
   )
 
   return (
@@ -367,7 +339,7 @@ export default function ReaderSettings({
           The scroller sits inside the dropdown so the arrow, which hangs below it, is not overflow. */}
       <Popover.Dropdown className="reader-settings" p={0}>
         <div className="reader-settings-scroll">
-          <DrillPanes page={view} depth={view === 'main' ? 0 : 1} bleed={8}>
+          <DrillPanes page={view} depth={pages.depth} bleed={8}>
             {view === 'main' && (
               <Stack gap="md">
                 <div>
@@ -668,28 +640,7 @@ export default function ReaderSettings({
                     )}
                   </div>
                   {enhanceOn && (
-                    <div>
-                      <FieldLabel>
-                        <Trans>Method</Trans>
-                      </FieldLabel>
-                      <Select
-                        aria-label={t`Method`}
-                        size="xs"
-                        comboboxProps={NESTED_COMBOBOX}
-                        allowDeselect={false}
-                        value={method}
-                        onChange={(value) => value && onPrefs({ enhanceMethod: value as ReaderPrefs['enhanceMethod'] })}
-                        data={enhanceOptions}
-                        renderOption={({ option }) => (
-                          <div>
-                            <Text fz="xs">{option.label}</Text>
-                            <Text fz="xs" c="var(--ink-3)">
-                              {enhanceNote(option.value)}
-                            </Text>
-                          </div>
-                        )}
-                      />
-                    </div>
+                    <div className="reader-settings-inline-row">{row('method', IconWand, t`Method`, methodName)}</div>
                   )}
                   {enhanceOn && isServerMethod(method) && (
                     <div>
@@ -758,6 +709,29 @@ export default function ReaderSettings({
                     </div>
                   )}
                 </Stack>
+              </SubPage>
+            )}
+
+            {view === 'method' && (
+              <SubPage title={t`Method`} onBack={back} backRef={backRef}>
+                <div className="reader-settings-choices">
+                  <DrillChoices
+                    label={t`On this device`}
+                    heading={<Trans>On this device</Trans>}
+                    value={method}
+                    options={browserMethods}
+                    onPick={pickMethod}
+                  />
+                  {serverMethods.length > 0 && (
+                    <DrillChoices
+                      label={t`On the server`}
+                      heading={<Trans>On the server</Trans>}
+                      value={method}
+                      options={serverMethods}
+                      onPick={pickMethod}
+                    />
+                  )}
+                </div>
               </SubPage>
             )}
 

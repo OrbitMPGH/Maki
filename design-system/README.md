@@ -68,7 +68,7 @@ Two families. **Bricolage Grotesque** (`display`) is for names and figures: page
 
 ## Drill panels
 
-Small settings panels that open in place share one grammar: the reader settings, the series page's "More actions" menu and the add card in the Discover modal (`DrillPanel` card).
+Small settings panels that open in place share one grammar: the reader settings, the series page's "More actions" menu, the add card in the Discover modal and the Pause downloads panel (`DrillPanel` card).
 
 - **The first page is a list of rows that show their current value**: the setting's icon in `brand`, its name, the value in `ink-3` and a chevron. A glance at the first page answers "what will happen" without opening anything.
 - **A row opens a sub-page** that slides in from the right with a back header naming it; going back slides it out the other way and puts focus on the row that opened it. The panel's height eases to the new page.

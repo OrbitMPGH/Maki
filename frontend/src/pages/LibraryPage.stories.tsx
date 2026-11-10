@@ -494,9 +494,10 @@ export const BulkQualityProfileDialog: Story = {
     await pick(canvas, userEvent, 'Snowfield Letters')
     await openMoreAction(canvas, canvasElement, userEvent, 'Quality profile')
     const dialog = await body(canvasElement).findByRole('dialog', { name: 'Set quality profile for 1 series' })
-    await userEvent.click(await within(dialog).findByRole('combobox', { name: 'Quality profile' }))
-    await userEvent.click(await body(canvasElement).findByRole('option', { name: 'Official first' }))
-    await expect(await within(dialog).findByText(/Prefers official and volume releases/)).toBeVisible()
+    const official = await within(dialog).findByRole('radio', { name: /^Official first/ })
+    await expect(within(official).getByText(/Prefers official and volume releases/)).toBeVisible()
+    await userEvent.click(official)
+    await waitFor(() => expect(official).toHaveAttribute('aria-checked', 'true'))
     await userEvent.click(await within(dialog).findByRole('button', { name: 'Apply' }))
     await expect(await body(canvasElement).findByText('Quality profile set for 1 series')).toBeVisible()
   },

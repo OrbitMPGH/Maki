@@ -273,14 +273,21 @@ export declare function DrillRow(props: {
 }): JSX.Element
 
 /** A drill panel sub-page's header: back, and the page's name. */
-export declare function DrillBack(props: { title: ReactNode; onBack: () => void }): JSX.Element
+export declare function DrillBack(props: {
+  title: ReactNode
+  onBack: () => void
+  /** Replaces the panel spacing, for a panel whose content is not inset like rows are. */
+  className?: string
+}): JSX.Element
 
 /** One choice from a list, each with a hint under it; the current one carries the check. */
 export declare function DrillChoices(props: {
   /** Names the group for a screen reader. */
   label: string
+  /** A visible name over the list, for a page that splits its choices into groups. */
+  heading?: ReactNode
   value: string
-  options: { value: string; label: ReactNode; hint?: ReactNode }[]
+  options: { value: string; label: ReactNode; hint?: ReactNode; disabled?: boolean }[]
   onPick: (value: string) => void
 }): JSX.Element
 
@@ -304,6 +311,8 @@ export declare function useDrillPages<P extends string>(
   depth: number
   open: (to: P) => void
   back: () => void
+  /** Straight back to the first page without moving focus, for a panel that is reopening. */
+  reset: () => void
   backRef: { current: HTMLButtonElement | null }
   rowRef: (p: P) => (node: HTMLButtonElement | null) => void
 }

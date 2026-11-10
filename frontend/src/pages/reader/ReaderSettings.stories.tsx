@@ -222,19 +222,21 @@ export const EnhanceOn: Story = {
     await userEvent.click(await b.findByRole('button', { name: /^Enhance\s*Always, Balanced$/ }))
     const level = await b.findByRole('radiogroup', { name: 'Enhance' })
     await waitFor(() => expect(within(level).getByLabelText('Always')).toBeChecked())
-    const method = await b.findByLabelText('Method', { selector: 'input' })
-    await expect(method).toHaveValue('Balanced')
     await expect(b.queryByRole('radiogroup', { name: 'While the server works' })).toBeNull()
 
-    await userEvent.click(method)
-    await expect(await b.findByRole('option', { name: /^Light/ })).toBeVisible()
-    await expect(b.getByRole('option', { name: /SPAN-S/ })).not.toHaveAttribute('data-combobox-disabled', 'true')
-    const downloading = b.getByRole('option', { name: /Real-ESRGAN/ })
-    await expect(downloading).toHaveAttribute('data-combobox-disabled', 'true')
-    await expect(within(downloading).getByText('Downloading')).toBeVisible()
+    await userEvent.click(await b.findByRole('button', { name: /^Method\s*Balanced$/ }))
+    const light = await b.findByRole('radio', { name: /^Light/ })
+    await waitFor(() => expect(light).toBeVisible())
+    await waitFor(() => expect(b.getByRole('radio', { name: /^Balanced/ })).toHaveAttribute('aria-checked', 'true'))
+    await waitFor(() => expect(b.getByRole('radio', { name: /SPAN-S/ })).toBeEnabled())
+    const downloading = b.getByRole('radio', { name: /Real-ESRGAN/ })
+    await waitFor(() => expect(downloading).toBeDisabled())
+    await waitFor(() => expect(within(downloading).getByText('Downloading')).toBeVisible())
 
-    await userEvent.click(b.getByRole('option', { name: /SPAN-S/ }))
+    await userEvent.click(b.getByRole('radio', { name: /SPAN-S/ }))
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceMethod: 'server:span-s' }))
+    // Picking one steps back to the Enhance page, focus on the row that opened the list.
+    await waitFor(() => expect(b.getByRole('button', { name: /^Method/ })).toHaveFocus())
   },
 }
 
@@ -262,10 +264,10 @@ export const EnhanceOffHidesMethod: Story = {
     await userEvent.click(await b.findByRole('button', { name: /^Enhance\s*Off$/ }))
     const level = await b.findByRole('radiogroup', { name: 'Enhance' })
     await waitFor(() => expect(within(level).getByLabelText('Off')).toBeChecked())
-    await expect(b.queryByLabelText('Method', { selector: 'input' })).toBeNull()
+    await expect(b.queryByRole('button', { name: /^Method/ })).toBeNull()
     await userEvent.click(within(level).getByText('Auto'))
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhance: 'auto' }))
-    await expect(await b.findByLabelText('Method', { selector: 'input' })).toBeVisible()
+    await expect(await b.findByRole('button', { name: /^Method/ })).toBeVisible()
   },
 }
 
@@ -294,13 +296,11 @@ export const EnhanceSavedServerModelGone: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const b = body(canvasElement)
     await userEvent.click(await b.findByRole('button', { name: /^Enhance/ }))
-    const method = await b.findByLabelText('Method', { selector: 'input' })
-    await expect(method).toHaveValue('Real-ESRGAN')
-    await userEvent.click(method)
-    const gone = await b.findByRole('option', { name: /Real-ESRGAN/ })
-    await expect(gone).toHaveAttribute('data-combobox-disabled', 'true')
-    await expect(within(gone).getByText('Not available')).toBeVisible()
-    await expect(b.queryByRole('option', { name: /SPAN-S/ })).toBeNull()
+    await userEvent.click(await b.findByRole('button', { name: /^Method\s*Real-ESRGAN$/ }))
+    const gone = await b.findByRole('radio', { name: /Real-ESRGAN/ })
+    await waitFor(() => expect(gone).toBeDisabled())
+    await waitFor(() => expect(within(gone).getByText('Not available')).toBeVisible())
+    await expect(b.queryByRole('radio', { name: /SPAN-S/ })).toBeNull()
   },
 }
 

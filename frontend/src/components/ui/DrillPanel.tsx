@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState, type ComponentType, type ReactNode, type Ref } from 'react'
+import { useEffect, useId, useRef, useState, type ComponentType, type ReactNode, type Ref } from 'react'
 import { UnstyledButton, VisuallyHidden } from '@mantine/core'
 import { useLingui } from '@lingui/react/macro'
 import { IconArrowLeft, IconCheck, IconChevronRight } from '../../lib/icons'
 
 /**
- * The pieces of a drill panel: the reader settings, the series page's "More actions" menu and the
- * Discover add card. A first page of rows that each show their current value, sub-pages that slide
+ * The pieces of a drill panel: the reader settings, the series page's "More actions" menu, the
+ * Discover add card and the Pause downloads panel. A first page of rows that each show their current value, sub-pages that slide
  * in with a back header, and on them either a list of choices with a hint each or a labelled field.
  * `DrillPanes` does the sliding; `useDrillPages` keeps the page and puts focus back where it was.
  */
@@ -37,10 +37,21 @@ export function DrillRow({
 }
 
 /** A sub-page's header: back, and the page's name. The hidden word keeps "Back" in its name. */
-export function DrillBack({ title, onBack, ref }: { title: ReactNode; onBack: () => void; ref?: Ref<HTMLButtonElement> }) {
+export function DrillBack({
+  title,
+  onBack,
+  ref,
+  className = 'drill-panel-back',
+}: {
+  title: ReactNode
+  onBack: () => void
+  ref?: Ref<HTMLButtonElement>
+  /** Replaces the panel spacing, for a panel whose content is not inset like rows are. */
+  className?: string
+}) {
   const { t } = useLingui()
   return (
-    <UnstyledButton ref={ref} className="drill-back drill-panel-back" onClick={onBack}>
+    <UnstyledButton ref={ref} className={`drill-back ${className}`} onClick={onBack}>
       <span className="drill-back-icon" aria-hidden>
         <IconArrowLeft size={16} />
       </span>
@@ -53,25 +64,40 @@ export function DrillBack({ title, onBack, ref }: { title: ReactNode; onBack: ()
 export interface DrillChoice {
   value: string
   label: ReactNode
-  /** One line on what choosing it does. */
+  /** One line on what choosing it does, or why it can't be chosen. */
   hint?: ReactNode
+  disabled?: boolean
 }
 
 /** One choice from a list, each with its hint under it. The current one carries the check. */
 export function DrillChoices({
   label,
+  heading,
   value,
   options,
   onPick,
 }: {
   /** Names the group for a screen reader; the back header shows it to everyone else. */
   label: string
+  /** A visible name over the list, for a page that splits its choices into groups. */
+  heading?: ReactNode
   value: string
   options: DrillChoice[]
   onPick: (value: string) => void
 }) {
+  const headingId = useId()
   return (
-    <div role="radiogroup" aria-label={label} className="drill-choices">
+    <div
+      role="radiogroup"
+      aria-label={heading ? undefined : label}
+      aria-labelledby={heading ? headingId : undefined}
+      className="drill-choices"
+    >
+      {heading && (
+        <div id={headingId} className="drill-choices-heading">
+          {heading}
+        </div>
+      )}
       {options.map((o) => {
         const checked = o.value === value
         return (
@@ -80,6 +106,7 @@ export function DrillChoices({
             role="radio"
             aria-checked={checked}
             data-checked={checked || undefined}
+            disabled={o.disabled}
             className="drill-choice"
             onClick={() => onPick(o.value)}
           >
@@ -154,6 +181,11 @@ export function useDrillPages<P extends string>(root: P, parents: Record<P, P>) 
     back: () => {
       from.current = page
       setPage(parents[page])
+    },
+    /** Straight back to the first page without moving focus, for a panel that is reopening. */
+    reset: () => {
+      from.current = null
+      setPage(root)
     },
     backRef,
     /** The ref for the row that opens `p`, so going back can focus it. */
