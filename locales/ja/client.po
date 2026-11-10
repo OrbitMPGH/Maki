@@ -418,6 +418,11 @@ msgstr "{0, plural, other {承認済み、#章をキューに追加}}"
 msgid "{0, plural, one {becomes readable} other {become readable}}"
 msgstr "{0, plural, other {読めるようになります}}"
 
+#. placeholder {0}: selected.size
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {Clean up read files for # series} other {Clean up read files for # series}}"
+msgstr ""
+
 #. placeholder {0}: queue?.total ?? 0
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -580,6 +585,16 @@ msgstr "{0, plural, other {復元して#章にリンクしました}}"
 #, fuzzy
 msgid "{0, plural, one {Select all # in this view} other {Select all # in this view}}"
 msgstr "{0, plural, other {この表示の#件をすべて選択}}"
+
+#. placeholder {0}: selected.size
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {Set incognito for # series} other {Set incognito for # series}}"
+msgstr ""
+
+#. placeholder {0}: selected.size
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {Set page conversion for # series} other {Set page conversion for # series}}"
+msgstr ""
 
 #. placeholder {0}: entries.length
 #: src/pages/stats/ActivityFeed.tsx
@@ -2324,6 +2339,10 @@ msgid "{selectedCount, plural, one {Import # selected} other {Import # selected}
 msgstr "{selectedCount, plural, other {選択した#件をインポート}}"
 
 #: src/pages/LibraryPage.tsx
+msgid "{selectedCount, plural, one {Mark # series read or unread} other {Mark # series read or unread}}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {Move # series} other {Move # series}}"
 msgstr "{selectedCount, plural, other {#件のシリーズを移動}}"
@@ -2342,6 +2361,10 @@ msgstr "{selectedCount, plural, other {#件のシリーズを削除しますか�
 #, fuzzy
 msgid "{selectedCount, plural, one {Remove the files of # series?} other {Remove the files of # series?}}"
 msgstr "{selectedCount, plural, other {#件のシリーズのファイルを削除しますか？}}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{selectedCount, plural, one {Rename files of # series} other {Rename files of # series}}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -3424,6 +3447,10 @@ msgstr "インポート後にダウンロードや読書が行われたシリー
 #, fuzzy
 msgid "A series was archived."
 msgstr "シリーズをアーカイブしました。"
+
+#: src/pages/LibraryPage.tsx
+msgid "A series with a download in progress, or with two chapters that would get the same name, is skipped."
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -6163,6 +6190,7 @@ msgid "Clean up read chapters"
 msgstr "既読の章を整理"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Clean up read files"
 msgstr "既読のファイルを整理"
@@ -8402,6 +8430,7 @@ msgid "Each bar spans the days a chapter is likely, never a promise. A diamond m
 msgstr "各バーは、章が出る可能性のある日の範囲を示すもので、確約ではありません。ひし形は、ソースが発表した日を示します。"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Each chapter's file is deleted for good some days after everyone has read it."
 msgstr "各章のファイルは、全員が読み終えてから数日後に完全に削除されます。"
@@ -9391,6 +9420,7 @@ msgid "Files"
 msgstr "ファイル"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Files already converted stay as they are."
 msgstr "変換済みのファイルはそのまま残ります。"
@@ -9755,6 +9785,7 @@ msgid "Follow the quality"
 msgstr "品質に従う"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Follow the rules"
 msgstr "ルールに従う"
@@ -11035,6 +11066,7 @@ msgstr "後から追加したルートフォルダーも含む。"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Incognito"
@@ -12701,6 +12733,7 @@ msgid "Mark chapters watched"
 msgstr "章を視聴済みにする"
 
 #: src/components/series/ChapterTableRows.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark read"
@@ -12712,7 +12745,12 @@ msgstr "既読にする"
 msgid "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
 msgstr "Kavitaで既読にする, mark read in kavita, Kavitaにプッシュ, push to kavita, 既読状況のインポート, import read status, Kavitaの進捗, kavita progress, ライブ同期, live sync, 即時, instant"
 
+#: src/pages/LibraryPage.tsx
+msgid "Mark read or unread"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark unread"
@@ -13610,6 +13648,7 @@ msgid "never"
 msgstr "なし"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Never"
 msgstr "なし"
@@ -15456,6 +15495,7 @@ msgstr "読書時間の"
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/PageConversionWizardPage.tsx
 #: src/pages/reader/enhanceMethods.ts
 #: src/pages/reader/ReaderSettings.tsx
@@ -15557,6 +15597,7 @@ msgstr "OLEDブラック"
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "On"
 msgstr "オン"
@@ -16092,6 +16133,7 @@ msgid "Page {pageNumber} of {pageCount}"
 msgstr "{pageCount}ページ中{pageNumber}ページ"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -16229,6 +16271,7 @@ msgid "Pages stay as they are downloaded. Files already converted stay converted
 msgstr "ページはダウンロードされたままの形式で残ります。すでに変換されたファイルは、変換されたままです。"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Pages stay as they were downloaded."
 msgstr "ページはダウンロードされたままの状態で残ります。"
@@ -17351,6 +17394,7 @@ msgid "Read file cleanup is going to delete this file"
 msgstr "既読ファイルの整理により、このファイルは削除される予定です"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Read files stay on disk."
 msgstr "読んだファイルはディスクに残ります。"
@@ -17379,6 +17423,10 @@ msgstr "Makiで読んだ"
 #, fuzzy
 msgid "Read manga elsewhere"
 msgstr "他の場所で読んだ"
+
+#: src/pages/LibraryPage.tsx
+msgid "Read marks every chapter that has a file. It isn't logged as reading, so Rewind and your reading days stay as they are."
+msgstr ""
 
 #: src/components/series/SeriesReviews.tsx
 msgid "Read more on AniList"
@@ -18353,6 +18401,10 @@ msgstr "削除したシリーズ"
 msgid "Removing the series from Maki cannot be undone."
 msgstr "Makiからシリーズを削除すると、元に戻せません。"
 
+#: src/pages/LibraryPage.tsx
+msgid "Rename"
+msgstr ""
+
 #: src/components/TagManagerModal.tsx
 #, fuzzy
 msgid "Rename {label}"
@@ -18375,6 +18427,7 @@ msgstr "すべてのシリーズを現在の形式に名前変更"
 
 #: src/components/RenameSeriesModal.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Rename files"
 msgstr "ファイル名を変更"
@@ -18404,6 +18457,10 @@ msgstr "名前変更済み"
 #, fuzzy
 msgid "Renamed ({renamedCount})"
 msgstr "名前変更（{renamedCount}）"
+
+#: src/pages/LibraryPage.tsx
+msgid "Renames each series folder and its chapter files to match the naming formats in Settings."
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -18624,6 +18681,7 @@ msgid "Rescan"
 msgstr "再スキャン"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Rescan files"
 msgstr "ファイルを再スキャン"
@@ -22525,6 +22583,7 @@ msgid "The others were converted on download or their original has been purged."
 msgstr "残りは、ダウンロード時に変換されたか、元のファイルが削除されています。"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "The page conversion rules in Settings decide."
 msgstr "設定のページ変換ルールに従います。"
@@ -23995,6 +24054,10 @@ msgstr "未読"
 msgid "Unread ({unreadFilterCount})"
 msgstr "未読（{unreadFilterCount}）"
 
+#: src/pages/LibraryPage.tsx
+msgid "Unread clears your progress and resume position in every chapter."
+msgstr ""
+
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Unread only"
@@ -24386,6 +24449,7 @@ msgid "Use the bookmark on any cover in Discover, or Shortlist on its card, to k
 msgstr "「見つける」の任意のカバーのブックマーク、またはカードのショートリストを使うと、追加せずにタイトルをここに残せます。"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Use the Downloads setting"
 msgstr "ダウンロードの設定を使う"

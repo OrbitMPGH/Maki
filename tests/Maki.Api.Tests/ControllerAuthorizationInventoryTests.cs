@@ -204,6 +204,7 @@ public sealed class ControllerAuthorizationInventoryTests
         "ReaderController.SetChaptersState",
         "ReaderController.SetSeriesPrefs",
         "ReaderController.SetSeriesProfile",
+        "ReaderController.SetSeriesState",
         "ReaderController.StartKavitaImport",
         "ReaderController.ToggleBookmark",
         "ReadingProfilesController.Create",

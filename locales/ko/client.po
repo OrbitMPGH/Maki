@@ -418,6 +418,11 @@ msgstr "{0, plural, other {승인 및 대기 중인 챕터 #개}}"
 msgid "{0, plural, one {becomes readable} other {become readable}}"
 msgstr "{0, plural, other {읽을 수 있게 됨}}"
 
+#. placeholder {0}: selected.size
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {Clean up read files for # series} other {Clean up read files for # series}}"
+msgstr ""
+
 #. placeholder {0}: queue?.total ?? 0
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -580,6 +585,16 @@ msgstr "{0, plural, other {복원하고 챕터 #개에 연결함}}"
 #, fuzzy
 msgid "{0, plural, one {Select all # in this view} other {Select all # in this view}}"
 msgstr "{0, plural, other {이 보기의 #개 모두 선택}}"
+
+#. placeholder {0}: selected.size
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {Set incognito for # series} other {Set incognito for # series}}"
+msgstr ""
+
+#. placeholder {0}: selected.size
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {Set page conversion for # series} other {Set page conversion for # series}}"
+msgstr ""
 
 #. placeholder {0}: entries.length
 #: src/pages/stats/ActivityFeed.tsx
@@ -2324,6 +2339,10 @@ msgid "{selectedCount, plural, one {Import # selected} other {Import # selected}
 msgstr "{selectedCount, plural, other {선택 항목 #개 가져오기}}"
 
 #: src/pages/LibraryPage.tsx
+msgid "{selectedCount, plural, one {Mark # series read or unread} other {Mark # series read or unread}}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {Move # series} other {Move # series}}"
 msgstr "{selectedCount, plural, other {시리즈 #개 이동}}"
@@ -2342,6 +2361,10 @@ msgstr "{selectedCount, plural, other {시리즈 #개를 제거할까요?}}"
 #, fuzzy
 msgid "{selectedCount, plural, one {Remove the files of # series?} other {Remove the files of # series?}}"
 msgstr "{selectedCount, plural, other {시리즈 #개의 파일을 제거할까요?}}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{selectedCount, plural, one {Rename files of # series} other {Rename files of # series}}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -3424,6 +3447,10 @@ msgstr "다운로드하거나 읽은 적이 있는 시리즈는 되돌릴 수 �
 #, fuzzy
 msgid "A series was archived."
 msgstr "시리즈를 보관했습니다."
+
+#: src/pages/LibraryPage.tsx
+msgid "A series with a download in progress, or with two chapters that would get the same name, is skipped."
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -6163,6 +6190,7 @@ msgid "Clean up read chapters"
 msgstr "읽은 챕터 정리"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Clean up read files"
 msgstr "읽은 파일 정리"
@@ -8402,6 +8430,7 @@ msgid "Each bar spans the days a chapter is likely, never a promise. A diamond m
 msgstr "각 막대는 챕터가 나올 가능성이 있는 날짜 범위를 나타내며, 약속이 아닙니다. 다이아몬드는 소스가 공지한 날입니다."
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Each chapter's file is deleted for good some days after everyone has read it."
 msgstr "챕터 파일은 모두가 읽은 뒤 며칠 후에 영구 삭제됩니다."
@@ -9391,6 +9420,7 @@ msgid "Files"
 msgstr "파일"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Files already converted stay as they are."
 msgstr "이미 변환된 파일은 그대로 둡니다."
@@ -9755,6 +9785,7 @@ msgid "Follow the quality"
 msgstr "품질 따르기"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Follow the rules"
 msgstr "규칙 따르기"
@@ -11035,6 +11066,7 @@ msgstr "나중에 추가한 루트 폴더도 포함."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Incognito"
@@ -12701,6 +12733,7 @@ msgid "Mark chapters watched"
 msgstr "챕터를 시청 완료로 표시"
 
 #: src/components/series/ChapterTableRows.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark read"
@@ -12712,7 +12745,12 @@ msgstr "읽음으로 표시"
 msgid "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
 msgstr "kavita에서 읽음 표시, kavita로 보내기, 읽기 상태 가져오기, kavita 진행 상황, 실시간 동기화, 즉시"
 
+#: src/pages/LibraryPage.tsx
+msgid "Mark read or unread"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark unread"
@@ -13610,6 +13648,7 @@ msgid "never"
 msgstr "절대 안 함"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Never"
 msgstr "절대 안 함"
@@ -15456,6 +15495,7 @@ msgstr "독서 시간 중"
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/PageConversionWizardPage.tsx
 #: src/pages/reader/enhanceMethods.ts
 #: src/pages/reader/ReaderSettings.tsx
@@ -15557,6 +15597,7 @@ msgstr "OLED 블랙"
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "On"
 msgstr "켬"
@@ -16092,6 +16133,7 @@ msgid "Page {pageNumber} of {pageCount}"
 msgstr "{pageCount}개 중 {pageNumber}페이지"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -16229,6 +16271,7 @@ msgid "Pages stay as they are downloaded. Files already converted stay converted
 msgstr "페이지는 받은 그대로 유지됩니다. 이미 변환된 파일은 변환된 상태를 유지합니다."
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Pages stay as they were downloaded."
 msgstr "페이지는 다운로드된 그대로 유지됩니다."
@@ -17351,6 +17394,7 @@ msgid "Read file cleanup is going to delete this file"
 msgstr "읽은 파일 정리가 이 파일을 삭제할 예정입니다"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Read files stay on disk."
 msgstr "읽은 파일은 디스크에 남습니다."
@@ -17379,6 +17423,10 @@ msgstr "Maki에서 읽음"
 #, fuzzy
 msgid "Read manga elsewhere"
 msgstr "다른 곳에서 만화를 읽음"
+
+#: src/pages/LibraryPage.tsx
+msgid "Read marks every chapter that has a file. It isn't logged as reading, so Rewind and your reading days stay as they are."
+msgstr ""
 
 #: src/components/series/SeriesReviews.tsx
 msgid "Read more on AniList"
@@ -18353,6 +18401,10 @@ msgstr "제거된 시리즈"
 msgid "Removing the series from Maki cannot be undone."
 msgstr "Maki에서 시리즈를 제거하면 되돌릴 수 없습니다."
 
+#: src/pages/LibraryPage.tsx
+msgid "Rename"
+msgstr ""
+
 #: src/components/TagManagerModal.tsx
 #, fuzzy
 msgid "Rename {label}"
@@ -18375,6 +18427,7 @@ msgstr "모든 시리즈를 현재 형식으로 이름 변경"
 
 #: src/components/RenameSeriesModal.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Rename files"
 msgstr "파일 이름 변경"
@@ -18404,6 +18457,10 @@ msgstr "이름 변경됨"
 #, fuzzy
 msgid "Renamed ({renamedCount})"
 msgstr "이름 변경됨 ({renamedCount})"
+
+#: src/pages/LibraryPage.tsx
+msgid "Renames each series folder and its chapter files to match the naming formats in Settings."
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -18624,6 +18681,7 @@ msgid "Rescan"
 msgstr "다시 스캔"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Rescan files"
 msgstr "파일 다시 스캔"
@@ -22525,6 +22583,7 @@ msgid "The others were converted on download or their original has been purged."
 msgstr "나머지는 다운로드할 때 변환되었거나 원본이 정리되었습니다."
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "The page conversion rules in Settings decide."
 msgstr "설정의 페이지 변환 규칙에 따라 결정됩니다."
@@ -23995,6 +24054,10 @@ msgstr "읽지 않음"
 msgid "Unread ({unreadFilterCount})"
 msgstr "읽지 않음 ({unreadFilterCount})"
 
+#: src/pages/LibraryPage.tsx
+msgid "Unread clears your progress and resume position in every chapter."
+msgstr ""
+
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Unread only"
@@ -24386,6 +24449,7 @@ msgid "Use the bookmark on any cover in Discover, or Shortlist on its card, to k
 msgstr "탐색에서 표지의 책갈피 아이콘이나 카드의 찜 목록 버튼을 누르면, 추가하지 않고 작품을 여기에 보관할 수 있습니다."
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Use the Downloads setting"
 msgstr "다운로드 설정 사용"

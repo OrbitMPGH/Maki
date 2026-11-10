@@ -418,6 +418,11 @@ msgstr "{0, plural, one {Onaylandı, # bölüm kuyruğa alındı} other {Onaylan
 msgid "{0, plural, one {becomes readable} other {become readable}}"
 msgstr "{0, plural, one {okunabilir hale gelir} other {okunabilir hale gelir}}"
 
+#. placeholder {0}: selected.size
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {Clean up read files for # series} other {Clean up read files for # series}}"
+msgstr ""
+
 #. placeholder {0}: queue?.total ?? 0
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -580,6 +585,16 @@ msgstr "{0, plural, one {Geri yüklendi ve # bölüme bağlandı} other {Geri y�
 #, fuzzy
 msgid "{0, plural, one {Select all # in this view} other {Select all # in this view}}"
 msgstr "{0, plural, one {Bu görünümdeki # öğenin tümünü seç} other {Bu görünümdeki # öğenin tümünü seç}}"
+
+#. placeholder {0}: selected.size
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {Set incognito for # series} other {Set incognito for # series}}"
+msgstr ""
+
+#. placeholder {0}: selected.size
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {Set page conversion for # series} other {Set page conversion for # series}}"
+msgstr ""
 
 #. placeholder {0}: entries.length
 #: src/pages/stats/ActivityFeed.tsx
@@ -2324,6 +2339,10 @@ msgid "{selectedCount, plural, one {Import # selected} other {Import # selected}
 msgstr "{selectedCount, plural, one {Seçilen # tanesini içe aktar} other {Seçilen # tanesini içe aktar}}"
 
 #: src/pages/LibraryPage.tsx
+msgid "{selectedCount, plural, one {Mark # series read or unread} other {Mark # series read or unread}}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {Move # series} other {Move # series}}"
 msgstr "{selectedCount, plural, one {# seriyi taşı} other {# seriyi taşı}}"
@@ -2342,6 +2361,10 @@ msgstr "{selectedCount, plural, one {# seri kaldırılsın mı?} other {# seri k
 #, fuzzy
 msgid "{selectedCount, plural, one {Remove the files of # series?} other {Remove the files of # series?}}"
 msgstr "{selectedCount, plural, one {# serinin dosyaları kaldırılsın mı?} other {# serinin dosyaları kaldırılsın mı?}}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{selectedCount, plural, one {Rename files of # series} other {Rename files of # series}}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -3424,6 +3447,10 @@ msgstr "Bu işlemden sonra bir seriye indirme yapılmış veya seri okunmuşsa g
 #, fuzzy
 msgid "A series was archived."
 msgstr "Bir seri arşivlendi."
+
+#: src/pages/LibraryPage.tsx
+msgid "A series with a download in progress, or with two chapters that would get the same name, is skipped."
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -6163,6 +6190,7 @@ msgid "Clean up read chapters"
 msgstr "Okunmuş bölümleri temizle"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Clean up read files"
 msgstr "Okunmuş dosyaları temizle"
@@ -8402,6 +8430,7 @@ msgid "Each bar spans the days a chapter is likely, never a promise. A diamond m
 msgstr "Her çubuk, bir bölümün büyük olasılıkla çıkacağı günleri gösterir, bir söz değildir. Kaynağın duyurduğu bir gün elmasla işaretlenir."
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Each chapter's file is deleted for good some days after everyone has read it."
 msgstr "Her bölümün dosyası, herkes okuduktan birkaç gün sonra kalıcı olarak silinir."
@@ -9391,6 +9420,7 @@ msgid "Files"
 msgstr "Dosyalar"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Files already converted stay as they are."
 msgstr "Zaten dönüştürülmüş dosyalar olduğu gibi kalır."
@@ -9755,6 +9785,7 @@ msgid "Follow the quality"
 msgstr "Kaliteyi takip et"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Follow the rules"
 msgstr "Kuralları takip et"
@@ -11035,6 +11066,7 @@ msgstr "Daha sonra eklenen kök klasörler dahil."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Incognito"
@@ -12701,6 +12733,7 @@ msgid "Mark chapters watched"
 msgstr "Bölümleri izlendi olarak işaretle"
 
 #: src/components/series/ChapterTableRows.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark read"
@@ -12712,7 +12745,12 @@ msgstr "Okundu işaretle"
 msgid "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
 msgstr "kavita'da okundu işaretle, kavita'ya gönder, okuma durumunu içe aktar, kavita ilerlemesi, canlı eşitleme, anında"
 
+#: src/pages/LibraryPage.tsx
+msgid "Mark read or unread"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark unread"
@@ -13610,6 +13648,7 @@ msgid "never"
 msgstr "asla"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Never"
 msgstr "Asla"
@@ -15456,6 +15495,7 @@ msgstr "okuma süresinin"
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/PageConversionWizardPage.tsx
 #: src/pages/reader/enhanceMethods.ts
 #: src/pages/reader/ReaderSettings.tsx
@@ -15557,6 +15597,7 @@ msgstr "OLED siyahı"
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "On"
 msgstr "Açık"
@@ -16092,6 +16133,7 @@ msgid "Page {pageNumber} of {pageCount}"
 msgstr "Sayfa {pageNumber} / {pageCount}"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -16229,6 +16271,7 @@ msgid "Pages stay as they are downloaded. Files already converted stay converted
 msgstr "Sayfalar indirildiği gibi kalır. Daha önce dönüştürülmüş dosyalar dönüştürülmüş kalır."
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Pages stay as they were downloaded."
 msgstr "Sayfalar indirildikleri gibi kalır."
@@ -17351,6 +17394,7 @@ msgid "Read file cleanup is going to delete this file"
 msgstr "Okunmuş dosya temizliği bu dosyayı silecek"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Read files stay on disk."
 msgstr "Okunmuş dosyalar diskte kalır."
@@ -17379,6 +17423,10 @@ msgstr "Maki'de oku"
 #, fuzzy
 msgid "Read manga elsewhere"
 msgstr "Mangayı başka yerde okudum"
+
+#: src/pages/LibraryPage.tsx
+msgid "Read marks every chapter that has a file. It isn't logged as reading, so Rewind and your reading days stay as they are."
+msgstr ""
 
 #: src/components/series/SeriesReviews.tsx
 msgid "Read more on AniList"
@@ -18353,6 +18401,10 @@ msgstr "Kaldırılan seriler"
 msgid "Removing the series from Maki cannot be undone."
 msgstr "Seriyi Maki'den kaldırmak geri alınamaz."
 
+#: src/pages/LibraryPage.tsx
+msgid "Rename"
+msgstr ""
+
 #: src/components/TagManagerModal.tsx
 #, fuzzy
 msgid "Rename {label}"
@@ -18375,6 +18427,7 @@ msgstr "Her seriyi geçerli biçime yeniden adlandır"
 
 #: src/components/RenameSeriesModal.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Rename files"
 msgstr "Dosyaları yeniden adlandır"
@@ -18404,6 +18457,10 @@ msgstr "Yeniden adlandırıldı"
 #, fuzzy
 msgid "Renamed ({renamedCount})"
 msgstr "Yeniden adlandırıldı ({renamedCount})"
+
+#: src/pages/LibraryPage.tsx
+msgid "Renames each series folder and its chapter files to match the naming formats in Settings."
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -18624,6 +18681,7 @@ msgid "Rescan"
 msgstr "Yeniden tara"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Rescan files"
 msgstr "Dosyaları yeniden tara"
@@ -22525,6 +22583,7 @@ msgid "The others were converted on download or their original has been purged."
 msgstr "Diğerleri indirilirken dönüştürüldü ya da orijinalleri silindi."
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "The page conversion rules in Settings decide."
 msgstr "Ayarlar'daki sayfa dönüştürme kuralları belirler."
@@ -23995,6 +24054,10 @@ msgstr "Okunmamış"
 msgid "Unread ({unreadFilterCount})"
 msgstr "Okunmamış ({unreadFilterCount})"
 
+#: src/pages/LibraryPage.tsx
+msgid "Unread clears your progress and resume position in every chapter."
+msgstr ""
+
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Unread only"
@@ -24386,6 +24449,7 @@ msgid "Use the bookmark on any cover in Discover, or Shortlist on its card, to k
 msgstr "Bir başlığı eklemeden burada tutmak için Keşfet'teki herhangi bir kapaktaki yer imini ya da kartındaki Kısa liste düğmesini kullanın."
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Use the Downloads setting"
 msgstr "İndirmeler ayarını kullan"

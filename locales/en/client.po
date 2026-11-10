@@ -352,6 +352,11 @@ msgstr "{0, plural, one {Approved, queued # chapter} other {Approved, queued # c
 msgid "{0, plural, one {becomes readable} other {become readable}}"
 msgstr "{0, plural, one {becomes readable} other {become readable}}"
 
+#. placeholder {0}: selected.size
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {Clean up read files for # series} other {Clean up read files for # series}}"
+msgstr "{0, plural, one {Clean up read files for # series} other {Clean up read files for # series}}"
+
 #. placeholder {0}: queue?.total ?? 0
 #: src/pages/ActivityPage.tsx
 msgid "{0, plural, one {Clear # queued download?} other {Clear # queued downloads?}}"
@@ -487,6 +492,16 @@ msgstr "{0, plural, one {Restored and linked to # chapter} other {Restored and l
 #: src/components/import/MihonReview.tsx
 msgid "{0, plural, one {Select all # in this view} other {Select all # in this view}}"
 msgstr "{0, plural, one {Select all # in this view} other {Select all # in this view}}"
+
+#. placeholder {0}: selected.size
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {Set incognito for # series} other {Set incognito for # series}}"
+msgstr "{0, plural, one {Set incognito for # series} other {Set incognito for # series}}"
+
+#. placeholder {0}: selected.size
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {Set page conversion for # series} other {Set page conversion for # series}}"
+msgstr "{0, plural, one {Set page conversion for # series} other {Set page conversion for # series}}"
 
 #. placeholder {0}: entries.length
 #: src/pages/stats/ActivityFeed.tsx
@@ -1896,6 +1911,10 @@ msgid "{selectedCount, plural, one {Import # selected} other {Import # selected}
 msgstr "{selectedCount, plural, one {Import # selected} other {Import # selected}}"
 
 #: src/pages/LibraryPage.tsx
+msgid "{selectedCount, plural, one {Mark # series read or unread} other {Mark # series read or unread}}"
+msgstr "{selectedCount, plural, one {Mark # series read or unread} other {Mark # series read or unread}}"
+
+#: src/pages/LibraryPage.tsx
 msgid "{selectedCount, plural, one {Move # series} other {Move # series}}"
 msgstr "{selectedCount, plural, one {Move # series} other {Move # series}}"
 
@@ -1910,6 +1929,10 @@ msgstr "{selectedCount, plural, one {Remove # series?} other {Remove # series?}}
 #: src/pages/LibraryPage.tsx
 msgid "{selectedCount, plural, one {Remove the files of # series?} other {Remove the files of # series?}}"
 msgstr "{selectedCount, plural, one {Remove the files of # series?} other {Remove the files of # series?}}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{selectedCount, plural, one {Rename files of # series} other {Rename files of # series}}"
+msgstr "{selectedCount, plural, one {Rename files of # series} other {Rename files of # series}}"
 
 #: src/pages/LibraryPage.tsx
 msgid "{selectedCount, plural, one {Set monitoring for # series} other {Set monitoring for # series}}"
@@ -2779,6 +2802,10 @@ msgstr "A series that has been downloaded into or read since cannot be undone. C
 #: src/components/NotificationsSection.tsx
 msgid "A series was archived."
 msgstr "A series was archived."
+
+#: src/pages/LibraryPage.tsx
+msgid "A series with a download in progress, or with two chapters that would get the same name, is skipped."
+msgstr "A series with a download in progress, or with two chapters that would get the same name, is skipped."
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "A show you scored well nudges recommendations toward similar manga. A low score or a dropped show pushes them away. Finishing one can also suggest where to start reading its manga."
@@ -5013,6 +5040,7 @@ msgid "Clean up read chapters"
 msgstr "Clean up read chapters"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Clean up read files"
 msgstr "Clean up read files"
 
@@ -6841,6 +6869,7 @@ msgid "Each bar spans the days a chapter is likely, never a promise. A diamond m
 msgstr "Each bar spans the days a chapter is likely, never a promise. A diamond marks a day the source announced."
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Each chapter's file is deleted for good some days after everyone has read it."
 msgstr "Each chapter's file is deleted for good some days after everyone has read it."
 
@@ -7647,6 +7676,7 @@ msgid "Files"
 msgstr "Files"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Files already converted stay as they are."
 msgstr "Files already converted stay as they are."
 
@@ -7943,6 +7973,7 @@ msgid "Follow the quality"
 msgstr "Follow the quality"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Follow the rules"
 msgstr "Follow the rules"
 
@@ -8983,6 +9014,7 @@ msgstr "Including root folders added later."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Incognito"
 msgstr "Incognito"
@@ -10338,6 +10370,7 @@ msgid "Mark chapters watched"
 msgstr "Mark chapters watched"
 
 #: src/components/series/ChapterTableRows.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Mark read"
 msgstr "Mark read"
@@ -10347,7 +10380,12 @@ msgstr "Mark read"
 msgid "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
 msgstr "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
 
+#: src/pages/LibraryPage.tsx
+msgid "Mark read or unread"
+msgstr "Mark read or unread"
+
 #: src/components/series/ChapterTableRows.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Mark unread"
 msgstr "Mark unread"
@@ -11078,6 +11116,7 @@ msgid "never"
 msgstr "never"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Never"
 msgstr "Never"
 
@@ -12577,6 +12616,7 @@ msgstr "of reading time"
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/PageConversionWizardPage.tsx
 #: src/pages/reader/enhanceMethods.ts
 #: src/pages/reader/ReaderSettings.tsx
@@ -12661,6 +12701,7 @@ msgstr "OLED black"
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/LibraryPage.tsx
 msgid "On"
 msgstr "On"
 
@@ -13096,6 +13137,7 @@ msgid "Page {pageNumber} of {pageCount}"
 msgstr "Page {pageNumber} of {pageCount}"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/registry.ts
 msgid "Page conversion"
@@ -13207,6 +13249,7 @@ msgid "Pages stay as they are downloaded. Files already converted stay converted
 msgstr "Pages stay as they are downloaded. Files already converted stay converted."
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Pages stay as they were downloaded."
 msgstr "Pages stay as they were downloaded."
 
@@ -14122,6 +14165,7 @@ msgid "Read file cleanup is going to delete this file"
 msgstr "Read file cleanup is going to delete this file"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Read files stay on disk."
 msgstr "Read files stay on disk."
 
@@ -14144,6 +14188,10 @@ msgstr "Read in Maki"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Read manga elsewhere"
 msgstr "Read manga elsewhere"
+
+#: src/pages/LibraryPage.tsx
+msgid "Read marks every chapter that has a file. It isn't logged as reading, so Rewind and your reading days stay as they are."
+msgstr "Read marks every chapter that has a file. It isn't logged as reading, so Rewind and your reading days stay as they are."
 
 #: src/components/series/SeriesReviews.tsx
 msgid "Read more on AniList"
@@ -14935,6 +14983,10 @@ msgstr "Removed series"
 msgid "Removing the series from Maki cannot be undone."
 msgstr "Removing the series from Maki cannot be undone."
 
+#: src/pages/LibraryPage.tsx
+msgid "Rename"
+msgstr "Rename"
+
 #: src/components/TagManagerModal.tsx
 msgid "Rename {label}"
 msgstr "Rename {label}"
@@ -14953,6 +15005,7 @@ msgstr "Rename every series to current format"
 
 #: src/components/RenameSeriesModal.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Rename files"
 msgstr "Rename files"
 
@@ -14976,6 +15029,10 @@ msgstr "Renamed"
 #: src/components/import/ImportPlanModal.tsx
 msgid "Renamed ({renamedCount})"
 msgstr "Renamed ({renamedCount})"
+
+#: src/pages/LibraryPage.tsx
+msgid "Renames each series folder and its chapter files to match the naming formats in Settings."
+msgstr "Renames each series folder and its chapter files to match the naming formats in Settings."
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Renames the folders and files of all {seriesCount, plural, one {# series} other {# series}} on disk to match the formats above. This can take a while."
@@ -15155,6 +15212,7 @@ msgid "Rescan"
 msgstr "Rescan"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Rescan files"
 msgstr "Rescan files"
 
@@ -18334,6 +18392,7 @@ msgid "The others were converted on download or their original has been purged."
 msgstr "The others were converted on download or their original has been purged."
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "The page conversion rules in Settings decide."
 msgstr "The page conversion rules in Settings decide."
 
@@ -19527,6 +19586,10 @@ msgstr "Unread"
 msgid "Unread ({unreadFilterCount})"
 msgstr "Unread ({unreadFilterCount})"
 
+#: src/pages/LibraryPage.tsx
+msgid "Unread clears your progress and resume position in every chapter."
+msgstr "Unread clears your progress and resume position in every chapter."
+
 #: src/pages/NotificationsPage.tsx
 msgid "Unread only"
 msgstr "Unread only"
@@ -19844,6 +19907,7 @@ msgid "Use the bookmark on any cover in Discover, or Shortlist on its card, to k
 msgstr "Use the bookmark on any cover in Discover, or Shortlist on its card, to keep a title here without adding it."
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 msgid "Use the Downloads setting"
 msgstr "Use the Downloads setting"
 

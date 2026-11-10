@@ -75,7 +75,7 @@ const NOTIFY_SHORT: Record<SeriesNotificationMode, MessageDescriptor> = {
     Muted: msg`Muted`,
 }
 
-const INCOGNITO_HELP: Record<string, MessageDescriptor> = {
+export const INCOGNITO_HELP: Record<string, MessageDescriptor> = {
     Off: msg`Reading counts in your stats and goes to your trackers.`,
     ScrobbleOnly: msg`Reading counts in your stats but isn't sent to your trackers.`,
     Full: msg`Kept out of your trackers, Rewind, stats and reading history.`,

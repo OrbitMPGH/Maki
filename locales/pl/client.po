@@ -418,6 +418,11 @@ msgstr "{0, plural, one {Zatwierdzono, dodano do kolejki # rozdział} few {Zatwi
 msgid "{0, plural, one {becomes readable} other {become readable}}"
 msgstr "{0, plural, one {staje się dostępny do czytania} few {stają się dostępne do czytania} many {staje się dostępnych do czytania} other {staje się dostępny do czytania}}"
 
+#. placeholder {0}: selected.size
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {Clean up read files for # series} other {Clean up read files for # series}}"
+msgstr ""
+
 #. placeholder {0}: queue?.total ?? 0
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -580,6 +585,16 @@ msgstr "{0, plural, one {Przywrócono i powiązano z # rozdziałem} few {Przywr�
 #, fuzzy
 msgid "{0, plural, one {Select all # in this view} other {Select all # in this view}}"
 msgstr "{0, plural, one {Zaznacz wszystkie # w tym widoku} few {Zaznacz wszystkie # w tym widoku} many {Zaznacz wszystkie # w tym widoku} other {Zaznacz wszystkie # w tym widoku}}"
+
+#. placeholder {0}: selected.size
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {Set incognito for # series} other {Set incognito for # series}}"
+msgstr ""
+
+#. placeholder {0}: selected.size
+#: src/pages/LibraryPage.tsx
+msgid "{0, plural, one {Set page conversion for # series} other {Set page conversion for # series}}"
+msgstr ""
 
 #. placeholder {0}: entries.length
 #: src/pages/stats/ActivityFeed.tsx
@@ -2324,6 +2339,10 @@ msgid "{selectedCount, plural, one {Import # selected} other {Import # selected}
 msgstr "{selectedCount, plural, one {Importuj # zaznaczony} few {Importuj # zaznaczone} many {Importuj # zaznaczonych} other {Importuj # zaznaczonego}}"
 
 #: src/pages/LibraryPage.tsx
+msgid "{selectedCount, plural, one {Mark # series read or unread} other {Mark # series read or unread}}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {Move # series} other {Move # series}}"
 msgstr "{selectedCount, plural, one {Przenieś # serię} few {Przenieś # serie} many {Przenieś # serii} other {Przenieś # serii}}"
@@ -2342,6 +2361,10 @@ msgstr "{selectedCount, plural, one {Usunąć # serię?} few {Usunąć # serie?}
 #, fuzzy
 msgid "{selectedCount, plural, one {Remove the files of # series?} other {Remove the files of # series?}}"
 msgstr "{selectedCount, plural, one {Usunąć pliki # serii?} few {Usunąć pliki # serii?} many {Usunąć pliki # serii?} other {Usunąć pliki # serii?}}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{selectedCount, plural, one {Rename files of # series} other {Rename files of # series}}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -3424,6 +3447,10 @@ msgstr "Serii, do której od tego czasu coś pobrano lub przeczytano, nie można
 #, fuzzy
 msgid "A series was archived."
 msgstr "Seria została zarchiwizowana."
+
+#: src/pages/LibraryPage.tsx
+msgid "A series with a download in progress, or with two chapters that would get the same name, is skipped."
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -6163,6 +6190,7 @@ msgid "Clean up read chapters"
 msgstr "Porządkuj przeczytane rozdziały"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Clean up read files"
 msgstr "Porządkuj przeczytane pliki"
@@ -8402,6 +8430,7 @@ msgid "Each bar spans the days a chapter is likely, never a promise. A diamond m
 msgstr "Każdy słupek obejmuje dni, w których rozdział jest prawdopodobny, nigdy nie jest obietnicą. Romb oznacza dzień, który źródło ogłosiło."
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Each chapter's file is deleted for good some days after everyone has read it."
 msgstr "Plik każdego rozdziału jest usuwany na stałe kilka dni po tym, jak wszyscy go przeczytali."
@@ -9391,6 +9420,7 @@ msgid "Files"
 msgstr "Pliki"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Files already converted stay as they are."
 msgstr "Pliki już przekonwertowane zostają bez zmian."
@@ -9755,6 +9785,7 @@ msgid "Follow the quality"
 msgstr "Przestrzegaj jakości"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Follow the rules"
 msgstr "Stosuj reguły"
@@ -11035,6 +11066,7 @@ msgstr "Łącznie z folderami głównymi dodanymi później."
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Incognito"
@@ -12701,6 +12733,7 @@ msgid "Mark chapters watched"
 msgstr "Oznacz rozdziały jako obejrzane"
 
 #: src/components/series/ChapterTableRows.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark read"
@@ -12712,7 +12745,12 @@ msgstr "Oznacz jako przeczytane"
 msgid "mark read in kavita, push to kavita, import read status, kavita progress, live sync, instant"
 msgstr "oznacz jako przeczytane w kavita, wypchnij do kavita, importuj stan przeczytania, postęp kavita, synchronizacja na żywo, natychmiast"
 
+#: src/pages/LibraryPage.tsx
+msgid "Mark read or unread"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Mark unread"
@@ -13610,6 +13648,7 @@ msgid "never"
 msgstr "nigdy"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Never"
 msgstr "Nigdy"
@@ -15456,6 +15495,7 @@ msgstr "czasu czytania"
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/PageConversionWizardPage.tsx
 #: src/pages/reader/enhanceMethods.ts
 #: src/pages/reader/ReaderSettings.tsx
@@ -15557,6 +15597,7 @@ msgstr "Czerń OLED"
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "On"
 msgstr "Włączone"
@@ -16092,6 +16133,7 @@ msgid "Page {pageNumber} of {pageCount}"
 msgstr "Strona {pageNumber} z {pageCount}"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -16229,6 +16271,7 @@ msgid "Pages stay as they are downloaded. Files already converted stay converted
 msgstr "Strony zostają w formacie, w jakim zostały pobrane. Pliki już przekonwertowane pozostają przekonwertowane."
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Pages stay as they were downloaded."
 msgstr "Strony zostają w stanie z pobrania."
@@ -17351,6 +17394,7 @@ msgid "Read file cleanup is going to delete this file"
 msgstr "Porządkowanie przeczytanych plików usunie ten plik"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Read files stay on disk."
 msgstr "Przeczytane pliki zostają na dysku."
@@ -17379,6 +17423,10 @@ msgstr "Czytaj w Maki"
 #, fuzzy
 msgid "Read manga elsewhere"
 msgstr "Czytane gdzie indziej"
+
+#: src/pages/LibraryPage.tsx
+msgid "Read marks every chapter that has a file. It isn't logged as reading, so Rewind and your reading days stay as they are."
+msgstr ""
 
 #: src/components/series/SeriesReviews.tsx
 msgid "Read more on AniList"
@@ -18353,6 +18401,10 @@ msgstr "Usunięta seria"
 msgid "Removing the series from Maki cannot be undone."
 msgstr "Usunięcia serii z Maki nie można cofnąć."
 
+#: src/pages/LibraryPage.tsx
+msgid "Rename"
+msgstr ""
+
 #: src/components/TagManagerModal.tsx
 #, fuzzy
 msgid "Rename {label}"
@@ -18375,6 +18427,7 @@ msgstr "Zmień nazwę każdej serii na bieżący format"
 
 #: src/components/RenameSeriesModal.tsx
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Rename files"
 msgstr "Zmień nazwy plików"
@@ -18404,6 +18457,10 @@ msgstr "Zmieniono nazwę"
 #, fuzzy
 msgid "Renamed ({renamedCount})"
 msgstr "Zmieniono nazwę ({renamedCount})"
+
+#: src/pages/LibraryPage.tsx
+msgid "Renames each series folder and its chapter files to match the naming formats in Settings."
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -18624,6 +18681,7 @@ msgid "Rescan"
 msgstr "Przeskanuj ponownie"
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Rescan files"
 msgstr "Przeskanuj ponownie pliki"
@@ -22525,6 +22583,7 @@ msgid "The others were converted on download or their original has been purged."
 msgstr "Pozostałe zostały przekonwertowane przy pobieraniu albo ich oryginał został usunięty."
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "The page conversion rules in Settings decide."
 msgstr "Decydują reguły konwersji stron w Ustawieniach."
@@ -23995,6 +24054,10 @@ msgstr "Nieprzeczytane"
 msgid "Unread ({unreadFilterCount})"
 msgstr "Nieprzeczytane ({unreadFilterCount})"
 
+#: src/pages/LibraryPage.tsx
+msgid "Unread clears your progress and resume position in every chapter."
+msgstr ""
+
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
 msgid "Unread only"
@@ -24386,6 +24449,7 @@ msgid "Use the bookmark on any cover in Discover, or Shortlist on its card, to k
 msgstr "Użyj zakładki na okładce w Odkrywaniu albo przycisku Krótka lista na jej karcie, żeby zachować tytuł tutaj bez dodawania go."
 
 #: src/components/series/SeriesActionsMenu.tsx
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Use the Downloads setting"
 msgstr "Użyj ustawienia Pobrania"
