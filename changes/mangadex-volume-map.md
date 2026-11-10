@@ -1,6 +1,7 @@
 ---
 type: improvement
 section: Downloads
+issue: 176
 by: avalynnrose
 ---
-The volume search can now tell what a volume release covers for a series whose sources list chapters without volumes, by reading the chapter-to-volume list from MangaDex when the series has a MangaDex id. MangaDex volume info also fills in from every language where the English chapters don't cover a volume.
+The volume search can now tell what a volume release covers when your sources list chapters without volumes, by reading MangaDex's chapter-to-volume list for series linked to MangaDex. Where the English chapters on MangaDex have no volume, the other languages fill it in.

@@ -139,7 +139,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
     /// <summary>
     /// Chapter number → volume map from the full feed with includeUnavailable=1: unlike
     /// the aggregate endpoint (and the default feed), this still lists delisted chapters
-    /// of licensed titles, whose volume assignment is exactly what we're after. Volume
+    /// of licensed titles, whose volume assignment is exactly what we're after.
     /// English answers first; the feed of all languages fills the chapters English leaves out, as
     /// long as the volume it gives fits between the English volumes around it. A translated
     /// edition can split volumes differently (an omnibus numbers them lower), and that is the
@@ -148,9 +148,6 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
     public async Task<IReadOnlyDictionary<decimal, int>> GetChapterVolumesAsync(
         string sourceSeriesId, CancellationToken ct = default)
     {
-        // English wins where it has an answer. Its feed often covers only the first chapters of a
-        // series (only chapters 1 to 3 of a title had an English volume while every translation
-        // together assigned 55), so the all-language feed fills the numbers English leaves out.
         var english = await WalkVolumesAsync(sourceSeriesId, "&translatedLanguage[]=en", ct);
         var every = await WalkVolumesAsync(sourceSeriesId, string.Empty, ct);
         if (english.Count == 0)

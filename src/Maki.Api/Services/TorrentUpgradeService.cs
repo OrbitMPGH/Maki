@@ -128,7 +128,8 @@ public class TorrentUpgradeService(
     TimeProvider time,
     RivalTitleProvider rivalTitles,
     ILogger<TorrentUpgradeService> logger,
-    SourceRegistry? sources = null)
+    SourceRegistry? sources = null,
+    SourceAvailability? availability = null)
 {
     public static readonly TimeSpan SearchInterval = TimeSpan.FromDays(7);
 
@@ -721,10 +722,10 @@ public class TorrentUpgradeService(
             }
         }
 
-        // Chapter rows from a scraping source carry no volume. MangaDex lists which chapters sit in which
-        // volume, so a series with a MangaDex id can still say what a volume release covers.
-        if (series.MangaDexUuid is { Length: > 0 } uuid && chapters.Any(c => c.Volume is null && c.Number is not null)
-            && await MangaDexVolumesAsync(uuid, ct) is { Count: > 0 } byNumber)
+        // Scraped chapter rows carry no volume. The map comes from the same mapping the linker's volume
+        // backfill reads, so the import can place every chapter the verdict counts.
+        if (chapters.Any(c => c.Volume is null && c.Number is not null)
+            && await VolumeMapAsync(series.Id, ct) is { Count: > 0 } byNumber)
         {
             foreach (var chapter in chapters.Where(c => c.Volume is null && c.Number is not null))
             {
@@ -739,33 +740,49 @@ public class TorrentUpgradeService(
     }
 
     private static readonly TimeSpan VolumeMapLifetime = TimeSpan.FromHours(12);
-    private static readonly ConcurrentDictionary<string, (DateTimeOffset At, IReadOnlyDictionary<decimal, int> Map)> VolumeMaps = new();
+    private static readonly ConcurrentDictionary<(string Source, string Id), (DateTimeOffset At, IReadOnlyDictionary<decimal, int> Map)> VolumeMaps = new();
 
-    /// <summary>Chapter number to volume from MangaDex, kept for a while; empty when it cannot be had.</summary>
-    private async Task<IReadOnlyDictionary<decimal, int>> MangaDexVolumesAsync(string uuid, CancellationToken ct)
+    /// <summary>Chapter number to volume from the series' first enabled volume-capable mapping, kept for a while; empty when it cannot be had.</summary>
+    private async Task<IReadOnlyDictionary<decimal, int>> VolumeMapAsync(int seriesId, CancellationToken ct)
     {
-        if (VolumeMaps.TryGetValue(uuid, out var cached) && time.GetUtcNow() - cached.At < VolumeMapLifetime)
-        {
-            return cached.Map;
-        }
-
-        if (sources?.Find("mangadex") is not IChapterVolumeSource source)
+        if (sources is null)
         {
             return new Dictionary<decimal, int>();
         }
 
-        try
+        List<string> disabled = availability is null ? [] : await availability.DisabledAsync(ct);
+        var mappings = await db.SourceMappings.AsNoTracking()
+            .Where(m => m.SeriesId == seriesId && m.Enabled && !disabled.Contains(m.SourceName))
+            .OrderBy(m => m.Priority)
+            .Select(m => new { m.SourceName, m.SourceSeriesId })
+            .ToListAsync(ct);
+        foreach (var mapping in mappings)
         {
-            var map = await source.GetChapterVolumesAsync(uuid, ct);
-            VolumeMaps[uuid] = (time.GetUtcNow(), map);
-            return map;
+            if (sources.Find(mapping.SourceName) is not IChapterVolumeSource source)
+            {
+                continue;
+            }
+
+            var key = (mapping.SourceName, mapping.SourceSeriesId);
+            if (VolumeMaps.TryGetValue(key, out var cached) && time.GetUtcNow() - cached.At < VolumeMapLifetime)
+            {
+                return cached.Map;
+            }
+
+            try
+            {
+                var map = await source.GetChapterVolumesAsync(mapping.SourceSeriesId, ct);
+                VolumeMaps[key] = (time.GetUtcNow(), map);
+                return map;
+            }
+            catch (Exception ex) when (!ct.IsCancellationRequested)
+            {
+                logger.LogDebug(ex, "Could not read the volume map of {Source} {Id}", mapping.SourceName, mapping.SourceSeriesId);
+                return new Dictionary<decimal, int>();
+            }
         }
-        catch (Exception ex) when (!ct.IsCancellationRequested)
-        {
-            // A rate limit, an outage or an odd answer only costs the verdict the map, never the search.
-            logger.LogDebug(ex, "Could not read the MangaDex volume map of {Id}", uuid);
-            return new Dictionary<decimal, int>();
-        }
+
+        return new Dictionary<decimal, int>();
     }
 
     private sealed class LibraryState(
