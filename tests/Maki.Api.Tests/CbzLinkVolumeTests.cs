@@ -370,13 +370,16 @@ public class CbzLinkVolumeTests : IDisposable
     }
 
     [Theory]
-    [InlineData("torrent", true)]
-    [InlineData("Manual", false)]
-    public async Task A_rescan_unlinks_splits_an_older_build_put_on_a_marked_volume(string sourceName, bool released)
+    [InlineData("torrent", "Berserk v01 (Digital) (Oak).cbz", true)]
+    [InlineData("Manual", "Berserk v01 (Digital) (Oak).cbz", false)]
+    // A rename that sorted the split first called the volume "Ch.2.1-3", which reads as a chapter.
+    [InlineData("torrent", "Berserk Ch.2.1-3.cbz", true)]
+    public async Task A_rescan_unlinks_splits_an_older_build_put_on_a_marked_volume(
+        string sourceName, string fileName, bool released)
     {
         var series = SeedSeries(chapterCount: 3);
         AddSplitsInVolumeOne(series, 2.1m);
-        var path = WriteVolume("Berserk v01 (Digital) (Oak).cbz", 1, 2, 3);
+        var path = WriteVolume(fileName, 1, 2, 3);
         using (var seed = _db.NewContext())
         {
             var file = new ChapterFile

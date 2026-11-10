@@ -777,15 +777,17 @@ public class CbzLinkService(
     {
         foreach (var file in files)
         {
-            if (file.SourceName == "Manual" || !ReleaseNameParser.ParseFileName(file.RelativePath).IsVolume)
+            if (file.SourceName == "Manual")
             {
                 continue;
             }
 
+            // Not only files named as volumes: a rename of such a span could name it "Ch.2.1-5".
             var held = chapters
                 .Where(c => c.ChapterFileId == file.Id && c.Number is not null && !Chapter.IsVolumeEntry(c))
                 .ToList();
-            if (held.Count == 0 || LibraryPaths.ResolveNoLinks(rootPath, file.RelativePath) is not { } path ||
+            if ((held.Count < 2 && !ReleaseNameParser.ParseFileName(file.RelativePath).IsVolume) ||
+                held.Count == 0 || LibraryPaths.ResolveNoLinks(rootPath, file.RelativePath) is not { } path ||
                 !File.Exists(path))
             {
                 continue;

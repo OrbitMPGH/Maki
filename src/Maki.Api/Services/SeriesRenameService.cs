@@ -146,11 +146,17 @@ public class SeriesRenameService(
         // name that chapter's own file wants — on a case-sensitive filesystem that lands a second
         // file beside the first rather than being refused.
         var ordered = chapters.OrderBy(c => c.Volume).ThenBy(c => c.Number).ToList();
-        foreach (var span in ordered
+        foreach (var group in ordered
                      .Where(c => c.ChapterFile is not null)
                      .GroupBy(c => c.ChapterFileId!.Value))
         {
-            var chapter = span.First();
+            // A chapter with no volume sorts before every volume, which named v01 holding 1-5 and a
+            // source's 2.1 "Ch.2.1-5", a name that reads back as chapter 2.1. Without a volume on
+            // every chapter, the numbers alone order the span.
+            var span = group.Any(c => c.Volume is null)
+                ? group.OrderBy(c => c.Number ?? decimal.MaxValue).ToList()
+                : group.ToList();
+            var chapter = span[0];
             var file = chapter.ChapterFile!;
 
             if (scope.FileIds is { } wanted && !wanted.Contains(file.Id))
@@ -158,7 +164,7 @@ public class SeriesRenameService(
                 continue;
             }
 
-            var through = span.Last();
+            var through = span[^1];
             var existingExtension = Path.GetExtension(file.RelativePath);
             var to = Path.Combine(folderTo, ComicFile.IsPdf(existingExtension)
                 ? await naming.BuildChapterFileNameAsync(
