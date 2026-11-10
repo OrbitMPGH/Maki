@@ -8208,6 +8208,7 @@ msgstr "Maki에서 다운로드 경로에 접근할 수 없습니다: {path}"
 #: src/components/ActivityButton.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
+#: src/components/series/SeriesTorrentDownloads.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Download progress"
@@ -15750,6 +15751,7 @@ msgid "Open a chapter and it will show up here, ready to resume."
 msgstr "챕터를 열면 여기 표시되어 이어서 읽을 수 있습니다."
 
 #: src/components/ActivityButton.tsx
+#: src/components/series/SeriesTorrentDownloads.tsx
 #, fuzzy
 msgid "Open Activity"
 msgstr "활동 열기"
@@ -18941,6 +18943,7 @@ msgstr "되돌림"
 msgid "Reverted by a user"
 msgstr "사용자가 되돌림"
 
+#: src/components/series/SeriesTorrentDownloads.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx

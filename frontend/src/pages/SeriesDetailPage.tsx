@@ -168,6 +168,7 @@ import {
   type FileOrigin,
 } from '../components/series/chapterTable'
 import { ArchivedBanner } from '../components/series/ArchivedBanner'
+import { SeriesTorrentDownloads } from '../components/series/SeriesTorrentDownloads'
 import { ArchiveHint } from '../components/series/ArchiveHint'
 import { RateHint } from '../components/series/RateHint'
 import { RatingCheckpointPrompt } from '../components/series/RatingCheckpointPrompt'
@@ -548,6 +549,10 @@ function SeriesDetailBody() {
   const { data: queue } = useSeriesQueue(seriesId)
   const queueByChapterId = useMemo(
       () => new Map((queue?.items ?? []).filter((q) => q.seriesId === seriesId).map((q) => [q.chapterId, q])),
+      [queue, seriesId],
+  )
+  const torrentDownloads = useMemo(
+      () => (queue?.items ?? []).filter((q) => q.seriesId === seriesId && q.releaseTitle != null),
       [queue, seriesId],
   )
   const deleteSeries = useDeleteSeries()
@@ -2411,6 +2416,8 @@ function SeriesDetailBody() {
             }
           />
         )}
+
+        <SeriesTorrentDownloads items={torrentDownloads} canReview={can('ManageDownloadQueue')} />
 
         <Tabs.Panel value="details">
           <Stack className="series-detail-overview" gap="lg">

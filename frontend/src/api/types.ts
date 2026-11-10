@@ -417,7 +417,8 @@ export type QueueOrigin =
  */
 export interface QueueItemDto {
   id: number
-  chapterId: number
+  /** Null for a series-level torrent grab. */
+  chapterId: number | null
   seriesId: number
   seriesTitle: string
   /** The release title, for a series-level torrent grab. Null for a per-chapter scraper item. */

@@ -6671,6 +6671,7 @@ msgstr "Download path not accessible from Maki: {path}"
 #: src/components/ActivityButton.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
+#: src/components/series/SeriesTorrentDownloads.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Download progress"
 msgstr "Download progress"
@@ -12790,6 +12791,7 @@ msgid "Open a chapter and it will show up here, ready to resume."
 msgstr "Open a chapter and it will show up here, ready to resume."
 
 #: src/components/ActivityButton.tsx
+#: src/components/series/SeriesTorrentDownloads.tsx
 msgid "Open Activity"
 msgstr "Open Activity"
 
@@ -15385,6 +15387,7 @@ msgstr "Reverted"
 msgid "Reverted by a user"
 msgstr "Reverted by a user"
 
+#: src/components/series/SeriesTorrentDownloads.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
