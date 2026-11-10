@@ -230,8 +230,8 @@ export const DetailWithAddForm: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'View and add Iron Petal Academy' }))
     const body = modalOf(canvasElement)
     await expect(await body.findByRole('dialog')).toBeVisible()
-    await waitFor(() => expect(body.getByRole('button', { name: 'Add' })).toBeEnabled())
-    await waitFor(() => expect(body.getByLabelText('Root folder', { selector: 'input' })).toHaveValue('/library/manga'))
+    await waitFor(() => expect(body.getByRole('button', { name: 'Add to library' })).toBeEnabled())
+    await waitFor(() => expect(body.getByRole('button', { name: /^Folder/ })).toHaveTextContent('/library/manga'))
   },
 }
 
@@ -239,7 +239,7 @@ export const AddingASeries: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'View and add Iron Petal Academy' }))
     const body = modalOf(canvasElement)
-    const add = await body.findByRole('button', { name: 'Add' })
+    const add = await body.findByRole('button', { name: 'Add to library' })
     await waitFor(() => expect(add).toBeEnabled())
     await userEvent.click(add)
     await expect(await body.findByRole('button', { name: 'Go to series' })).toBeVisible()
@@ -257,11 +257,11 @@ export const AddFails: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'View and add Iron Petal Academy' }))
     const body = modalOf(canvasElement)
-    const add = await body.findByRole('button', { name: 'Add' })
+    const add = await body.findByRole('button', { name: 'Add to library' })
     await waitFor(() => expect(add).toBeEnabled())
     await userEvent.click(add)
-    // The failure toast belongs to the app's own query client; here the button just stays an Add.
-    await waitFor(() => expect(body.getByRole('button', { name: 'Add' })).toBeEnabled())
+    // The failure toast belongs to the app's own query client; here the button just stays enabled.
+    await waitFor(() => expect(body.getByRole('button', { name: 'Add to library' })).toBeEnabled())
     await expect(body.queryByRole('button', { name: 'Go to series' })).not.toBeInTheDocument()
   },
 }
@@ -282,7 +282,7 @@ export const DetailWithoutRootFolders: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'View and add Iron Petal Academy' }))
     const body = modalOf(canvasElement)
-    await waitFor(() => expect(body.getByRole('button', { name: 'Add' })).toBeDisabled())
+    await waitFor(() => expect(body.getByRole('button', { name: 'Add to library' })).toBeDisabled())
   },
 }
 
