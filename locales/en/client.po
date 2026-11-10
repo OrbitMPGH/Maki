@@ -19227,6 +19227,10 @@ msgid "The test runs against this series and chapter. Replace them if the site t
 msgstr "The test runs against this series and chapter. Replace them if the site took them down."
 
 #: src/api/upgrades.ts
+msgid "The title doesn't say it's Japanese, needs your call"
+msgstr "The title doesn't say it's Japanese, needs your call"
+
+#: src/api/upgrades.ts
 msgid "The title might be a different series"
 msgstr "The title might be a different series"
 
@@ -21337,6 +21341,10 @@ msgstr "Writes the series cover into the folder as cover.jpg."
 msgid "Written <0>claim=value</0>, e.g. <1>groups=maki-admins</1>."
 msgstr "Written <0>claim=value</0>, e.g. <1>groups=maki-admins</1>."
 
+#: src/api/upgrades.ts
+msgid "Written in a different language from your files"
+msgstr "Written in a different language from your files"
+
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/RangeControl.tsx
 #: src/pages/stats/StatsRange.ts
@@ -21543,6 +21551,10 @@ msgstr "Your {label}"
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Your device asks for reduced motion, so these stay off."
 msgstr "Your device asks for reduced motion, so these stay off."
+
+#: src/api/upgrades.ts
+msgid "Your files are in more than one language, needs your call"
+msgstr "Your files are in more than one language, needs your call"
 
 #: src/components/SetupWizard.tsx
 msgid "Your folder is left alone. New chapters go into a folder Maki names."

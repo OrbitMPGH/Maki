@@ -149,6 +149,11 @@ public class TorrentUpgradeService(
         var evaluator = await evaluation.ForSeriesAsync(seriesId, ct);
         var options = await UpgradeOptions.LoadAsync(settings, ct);
         var library = evaluator is null ? null : await LibraryAsync(series, ct);
+        var fileLanguages = await db.Chapters.AsNoTracking()
+            .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
+            .Select(c => c.Language)
+            .Distinct()
+            .ToListAsync(ct);
         var ourTitles = ReleaseTitleMatcher.Titles(series.Title, series.OriginalTitle, series.AltTitles);
         var rivals = await rivalTitles.ForAsync(db, series, ourTitles, ct);
 
@@ -188,6 +193,12 @@ public class TorrentUpgradeService(
             }
 
             verdict = WithMarkersOff(WithRival(verdict, match.Rival), markersOff);
+            verdict = ReleaseLanguage.Judge(fileLanguages, release.Title) switch
+            {
+                { Ignore: true } judged => verdict with { Outcome = SpanOutcome.Ignore, Reasons = [judged.Reason] },
+                { } judged => verdict.AtMostProposal(judged.Reason),
+                null => verdict
+            };
 
             views.Add(new TorrentCandidateView(release, parsed, matched, candidate.Tier, score.Score, verdict, wholeSeries,
                 library.Language, match.Rival));

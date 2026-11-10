@@ -496,6 +496,103 @@ public class TorrentUpgradeServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task An_untagged_release_for_a_japanese_series_waits_for_a_click_instead_of_replacing_its_files()
+    {
+        Chapter(1, 1, language: "ja");
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)"));
+
+        var view = await EvaluateAsync("Kaguya v01 (Digital) (1r0n)");
+        var result = await SearchAsync();
+
+        Assert.Equal(SpanOutcome.Proposal, view.Verdict.Outcome);
+        Assert.Equal([SpanVerdictReasons.LanguageUnknown], view.Verdict.Reasons);
+        Assert.NotNull(result.ProposalId);
+        Assert.Empty(_releases.Grabs);
+    }
+
+    [Fact]
+    public async Task The_same_untagged_release_is_still_grabbed_for_an_english_series()
+    {
+        Chapter(1, 1);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)"));
+
+        var view = await EvaluateAsync("Kaguya v01 (Digital) (1r0n)");
+        await SearchAsync();
+
+        Assert.Equal(SpanOutcome.AutoGrab, view.Verdict.Outcome);
+        Assert.Single(_releases.Grabs);
+    }
+
+    [Fact]
+    public async Task A_release_tagged_english_is_ignored_for_a_japanese_series()
+    {
+        Chapter(1, 1, language: "ja");
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (English)", size: 900L * 1024 * 1024));
+
+        var view = await EvaluateAsync("Kaguya v01 (Digital) (English)");
+        var result = await SearchAsync();
+
+        Assert.Equal(SpanOutcome.Ignore, view.Verdict.Outcome);
+        Assert.Equal([SpanVerdictReasons.LanguageMismatch], view.Verdict.Reasons);
+        Assert.Null(result.ProposalId);
+        Assert.Empty(_releases.Grabs);
+        using var db = _world.Db.NewContext();
+        Assert.Empty(db.TorrentProposals);
+    }
+
+    [Fact]
+    public async Task A_japanese_release_is_judged_normally_for_a_japanese_series()
+    {
+        Chapter(1, 1, language: "ja");
+
+        var view = await EvaluateAsync("Kaguya v01 (Digital) (Japanese)");
+
+        Assert.Equal(SpanOutcome.AutoGrab, view.Verdict.Outcome);
+    }
+
+    [Fact]
+    public async Task A_release_tagged_japanese_is_ignored_for_an_english_series()
+    {
+        Chapter(1, 1);
+
+        var view = await EvaluateAsync("Kaguya v01 (Digital) [JP]");
+
+        Assert.Equal(SpanOutcome.Ignore, view.Verdict.Outcome);
+        Assert.Equal([SpanVerdictReasons.LanguageMismatch], view.Verdict.Reasons);
+    }
+
+    [Theory]
+    [InlineData("Kaguya v01 (Digital) (1r0n)")]
+    [InlineData("Kaguya v01 (Digital) (English)")]
+    [InlineData("Kaguya v01 (Digital) (Japanese)")]
+    public async Task A_mostly_japanese_series_with_one_english_file_never_has_a_volume_replaced_unattended(string title)
+    {
+        var japanese = new[] { Chapter(1, 1, language: "ja"), Chapter(2, 1, language: "ja"), Chapter(3, 1, language: "ja") };
+        Chapter(4, 1);
+        _releases.Results.Add(FakeReleases.Release(title));
+
+        var view = await EvaluateAsync(title);
+        await SearchAsync();
+
+        using var db = _world.Db.NewContext();
+        var japaneseFiles = db.Chapters.Where(c => japanese.Contains(c.Id)).Select(c => c.ChapterFileId!.Value).ToHashSet();
+        Assert.NotEqual(SpanOutcome.AutoGrab, view.Verdict.Outcome);
+        Assert.Contains(SpanVerdictReasons.LanguageMixed, view.Verdict.Reasons);
+        Assert.DoesNotContain(view.Verdict.ReplacedFileIds, japaneseFiles.Contains);
+        Assert.Empty(_releases.Grabs);
+    }
+
+    [Fact]
+    public async Task A_series_in_another_language_is_not_judged_on_language()
+    {
+        Chapter(1, 1, language: "fr");
+
+        var view = await EvaluateAsync("Kaguya v01 (Digital) [JP]");
+
+        Assert.Equal(SpanOutcome.AutoGrab, view.Verdict.Outcome);
+    }
+
+    [Fact]
     public async Task A_duplicate_library_entry_is_not_a_rival()
     {
         Chapter(1, 1);
