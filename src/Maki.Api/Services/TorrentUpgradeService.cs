@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
 using Maki.Core.Configuration;
@@ -11,6 +12,7 @@ using Maki.Core.Paths;
 using Maki.Core.Quality;
 using Maki.Core.Reading;
 using Maki.Core.Scrobbling;
+using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -125,7 +127,8 @@ public class TorrentUpgradeService(
     IAppSettings settings,
     TimeProvider time,
     RivalTitleProvider rivalTitles,
-    ILogger<TorrentUpgradeService> logger)
+    ILogger<TorrentUpgradeService> logger,
+    SourceRegistry? sources = null)
 {
     public static readonly TimeSpan SearchInterval = TimeSpan.FromDays(7);
 
@@ -718,7 +721,51 @@ public class TorrentUpgradeService(
             }
         }
 
+        // Chapter rows from a scraping source carry no volume. MangaDex lists which chapters sit in which
+        // volume, so a series with a MangaDex id can still say what a volume release covers.
+        if (series.MangaDexUuid is { Length: > 0 } uuid && chapters.Any(c => c.Volume is null && c.Number is not null)
+            && await MangaDexVolumesAsync(uuid, ct) is { Count: > 0 } byNumber)
+        {
+            foreach (var chapter in chapters.Where(c => c.Volume is null && c.Number is not null))
+            {
+                if (!inferred.ContainsKey(chapter.Id) && byNumber.TryGetValue(chapter.Number!.Value, out var volume))
+                {
+                    inferred[chapter.Id] = volume;
+                }
+            }
+        }
+
         return new LibraryState(language, chapters, inferred, removing.Keys.ToHashSet());
+    }
+
+    private static readonly TimeSpan VolumeMapLifetime = TimeSpan.FromHours(12);
+    private static readonly ConcurrentDictionary<string, (DateTimeOffset At, IReadOnlyDictionary<decimal, int> Map)> VolumeMaps = new();
+
+    /// <summary>Chapter number to volume from MangaDex, kept for a while; empty when it cannot be had.</summary>
+    private async Task<IReadOnlyDictionary<decimal, int>> MangaDexVolumesAsync(string uuid, CancellationToken ct)
+    {
+        if (VolumeMaps.TryGetValue(uuid, out var cached) && time.GetUtcNow() - cached.At < VolumeMapLifetime)
+        {
+            return cached.Map;
+        }
+
+        if (sources?.Find("mangadex") is not IChapterVolumeSource source)
+        {
+            return new Dictionary<decimal, int>();
+        }
+
+        try
+        {
+            var map = await source.GetChapterVolumesAsync(uuid, ct);
+            VolumeMaps[uuid] = (time.GetUtcNow(), map);
+            return map;
+        }
+        catch (Exception ex) when (!ct.IsCancellationRequested)
+        {
+            // A rate limit, an outage or an odd answer only costs the verdict the map, never the search.
+            logger.LogDebug(ex, "Could not read the MangaDex volume map of {Id}", uuid);
+            return new Dictionary<decimal, int>();
+        }
     }
 
     private sealed class LibraryState(
