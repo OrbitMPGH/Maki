@@ -6,6 +6,7 @@ import type {
   HiddenContent,
   MangaBakaDetail,
   MangaReview,
+  SeriesReviews,
   ReadingBehaviour,
   RecommendationDefaults,
   RecommendationIndexStatus,
@@ -247,6 +248,8 @@ export function detailFor(providerId: string): MangaBakaDetail {
         tags: owned.tags.map((name, i) => ({ name, weight: i === 0 ? 'core' : 'defining', description: null, isSpoiler: false })),
         links: [{ site: 'mangabaka', url: `https://mangabaka.example/series/${providerId}` }],
         malId: null,
+        aniListId: null,
+        kitsuId: null,
         hasAnime: false,
         animeStart: null,
         animeEnd: null,
@@ -286,6 +289,8 @@ export function detailFor(providerId: string): MangaBakaDetail {
           { site: 'myanimelist', url: 'https://myanimelist.example/manga/1' },
         ],
         malId: 5000 + seedIndex,
+        aniListId: 7000 + seedIndex,
+        kitsuId: 9000 + seedIndex,
         hasAnime: false,
         animeStart: null,
         animeEnd: null,
@@ -329,13 +334,23 @@ detailExtras[NO_SYNOPSIS_PROVIDER_ID] = {
   links: [],
   sourceRatings: [],
   malId: null,
+  aniListId: null,
+  kitsuId: null,
 }
 
 export const reviews: MangaReview[] = [
-  { author: 'quietpageturner', score: 9, tags: ['Recommended'], date: daysAgo(40), url: 'https://myanimelist.example/review/1', text: 'The pacing is unhurried but it never wastes a chapter. By the halfway mark every side character has earned a scene, and the ending lands because of them.\n\nThe art is clean and the panel flow is easy to follow, even in the busy sequences.' },
-  { author: 'nightowl_reads', score: 7, tags: ['Mixed feelings'], date: daysAgo(120), url: null, text: 'Lovely first third, then a long stretch that circles the same ideas. I stayed for the last arc and was glad I did.' },
-  { author: 'mapmaker99', score: 10, tags: ['Preliminary'], date: daysAgo(9), url: 'https://myanimelist.example/review/3', text: 'Short and to the point: read it.' },
+  { source: 'myanimelist', author: 'quietpageturner', score: 9, tags: ['Recommended'], date: daysAgo(40), url: 'https://myanimelist.example/review/1', title: null, likes: null, text: 'The pacing is unhurried but it never wastes a chapter. By the halfway mark every side character has earned a scene, and the ending lands because of them.\n\nThe art is clean and the panel flow is easy to follow, even in the busy sequences.' },
+  { source: 'anilist', author: 'lanternlit', score: 8.5, tags: [], date: daysAgo(60), url: 'https://anilist.example/review/7', title: 'A slow burn that earns its ending', likes: 214, text: 'It takes four volumes to show its hand, and every one of them matters once it does. The quiet chapters are the reason the loud ones hit.' },
+  { source: 'myanimelist', author: 'nightowl_reads', score: 7, tags: ['Mixed feelings'], date: daysAgo(120), url: null, title: null, likes: null, text: 'Lovely first third, then a long stretch that circles the same ideas. I stayed for the last arc and was glad I did.' },
+  { source: 'anilist', author: 'mapmaker99', score: 10, tags: [], date: daysAgo(9), url: 'https://anilist.example/review/3', title: 'Read it', likes: 1, text: 'Short and to the point: read it.' },
 ]
+
+export const quickTakes: MangaReview[] = [
+  { source: 'kitsu', author: 'Josh', score: 10, tags: [], date: daysAgo(300), url: null, title: null, likes: 98, text: 'A well-crafted story of quiet grief. Not as painful, however, as waiting for the next volume.' },
+  { source: 'kitsu', author: 'Reposer', score: null, tags: [], date: daysAgo(420), url: null, title: null, likes: 12, text: 'Comfort reading with teeth.' },
+]
+
+export const seriesReviews: SeriesReviews = { reviews, quickTakes, unavailable: [] }
 
 export const tagOptions: TagOption[] = [
   { name: 'Found Family', path: '', count: 812, hasSubtags: false },

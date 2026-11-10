@@ -105,6 +105,7 @@ import {
   useDeleteChapters,
   useSeriesQueue, useSeriesFilesSummary,
   useRecommendationDetail,
+  hasReviewIds,
 } from '../api/hooks'
 import {
   useContinueReading,
@@ -2544,7 +2545,7 @@ function SeriesDetailBody() {
                         </Title>
                         <Group gap="xs" wrap="wrap">
                           <MetadataLinks links={series.links} />
-                          {series.malId != null && <SeriesReviews malId={series.malId} />}
+                          {hasReviewIds(series) && <SeriesReviews ids={series} />}
                         </Group>
                       </div>
                   )}

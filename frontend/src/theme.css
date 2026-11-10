@@ -5953,6 +5953,19 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
 }
+.review-likes {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-4);
+  font-size: var(--type-micro);
+}
+/* Kitsu's one-liners sit under the full reviews, set off by the same hairline the rows use. */
+.review-quick-takes {
+  margin-top: var(--mantine-spacing-md);
+  padding-top: var(--mantine-spacing-sm);
+  border-top: 1px solid var(--hairline);
+}
 
 @media (max-width: 56.25em) {
   /* The `:has()` rule is spelled out again: it outweighs a bare `.detail-split`, so a modal with

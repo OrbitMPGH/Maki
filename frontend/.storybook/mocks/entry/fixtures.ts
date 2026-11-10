@@ -323,6 +323,8 @@ export function catalogueDetail(entry: CatalogueEntry): MangaBakaDetail {
     tags: entry.tags.map((name, i) => ({ name, weight: i === 0 ? 'Defining' : 'Supporting', description: null, isSpoiler: false })),
     links: [],
     malId: null,
+    aniListId: null,
+    kitsuId: null,
     hasAnime: false,
     animeStart: null,
     animeEnd: null,

@@ -1577,6 +1577,10 @@ msgstr "{label}에 이미 파일이 있습니다. 결정하기 전에 두 파일
 msgid "{label} as a push notification"
 msgstr "{label}을(를) 푸시 알림으로"
 
+#: src/components/discover/DiscoverReviews.tsx
+msgid "{label} didn't respond, so its reviews are missing for now."
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "{label} ends at ch. {num}"
@@ -1661,6 +1665,10 @@ msgstr "{left, plural, other {#개 남음}}, 약 {eta}"
 #, fuzzy
 msgid "{levelName}, {methodName}"
 msgstr "{levelName}, {methodName}"
+
+#: src/components/discover/DiscoverReviews.tsx
+msgid "{likes, plural, one {# reader found this helpful} other {# readers found this helpful}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -9836,6 +9844,10 @@ msgstr "프랑스어"
 msgid "From"
 msgstr "출처"
 
+#: src/components/discover/DiscoverReviews.tsx
+msgid "From {label}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "From {origins}"
@@ -9865,12 +9877,6 @@ msgstr "페이지 파일명에서"
 #, fuzzy
 msgid "From metadata"
 msgstr "메타데이터에서"
-
-#: src/components/discover/DiscoverReviews.tsx
-#: src/components/series/SeriesReviews.tsx
-#, fuzzy
-msgid "From MyAnimeList"
-msgstr "MyAnimeList에서"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -13444,11 +13450,6 @@ msgstr "내 평점 최대"
 msgid "MyAnimeList"
 msgstr "MyAnimeList"
 
-#: src/components/discover/DiscoverReviews.tsx
-#, fuzzy
-msgid "MyAnimeList didn't respond, so there are no reviews to show right now."
-msgstr "MyAnimeList가 응답하지 않아 지금은 표시할 리뷰가 없습니다."
-
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Mystery"
@@ -14301,11 +14302,6 @@ msgstr "아직 저장소가 없습니다."
 msgid "No results."
 msgstr "결과 없음."
 
-#: src/components/series/SeriesReviews.tsx
-#, fuzzy
-msgid "No reviews on MyAnimeList yet."
-msgstr "MyAnimeList에 아직 리뷰가 없습니다."
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "No root folders yet"
@@ -14494,6 +14490,10 @@ msgstr "제목에 권이나 챕터 범위가 없습니다"
 #, fuzzy
 msgid "Nobody by that name is credited in the local MangaBaka database."
 msgstr "로컬 MangaBaka 데이터베이스에 그 이름으로 등록된 사람이 없습니다."
+
+#: src/components/series/SeriesReviews.tsx
+msgid "Nobody has reviewed this yet."
+msgstr ""
 
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -17080,6 +17080,10 @@ msgstr "{winnerSource}에서 업그레이드를 대기열에 추가함"
 msgid "Quick links"
 msgstr "빠른 링크"
 
+#: src/components/discover/DiscoverReviews.tsx
+msgid "Quick takes"
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #, fuzzy
 msgid "Quiet for longer than its usual rhythm, so there is no estimate."
@@ -17375,6 +17379,10 @@ msgstr "Maki에서 읽음"
 #, fuzzy
 msgid "Read manga elsewhere"
 msgstr "다른 곳에서 만화를 읽음"
+
+#: src/components/series/SeriesReviews.tsx
+msgid "Read more on AniList"
+msgstr ""
 
 #: src/components/series/SeriesReviews.tsx
 #, fuzzy
@@ -19069,6 +19077,10 @@ msgstr "업데이트 검토"
 #, fuzzy
 msgid "Reviews"
 msgstr "검토"
+
+#: src/components/discover/DiscoverReviews.tsx
+msgid "Reviews couldn't be loaded right now."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy

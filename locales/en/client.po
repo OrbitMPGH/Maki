@@ -1293,6 +1293,10 @@ msgstr "{label} already has a file. Compare the two before deciding: importing t
 msgid "{label} as a push notification"
 msgstr "{label} as a push notification"
 
+#: src/components/discover/DiscoverReviews.tsx
+msgid "{label} didn't respond, so its reviews are missing for now."
+msgstr "{label} didn't respond, so its reviews are missing for now."
+
 #: src/components/AnimeCoverageBar.tsx
 msgid "{label} ends at ch. {num}"
 msgstr "{label} ends at ch. {num}"
@@ -1360,6 +1364,10 @@ msgstr "{left, plural, one {# left} other {# left}}, about {eta}"
 #: src/pages/reader/ReaderSettings.tsx
 msgid "{levelName}, {methodName}"
 msgstr "{levelName}, {methodName}"
+
+#: src/components/discover/DiscoverReviews.tsx
+msgid "{likes, plural, one {# reader found this helpful} other {# readers found this helpful}}"
+msgstr "{likes, plural, one {# reader found this helpful} other {# readers found this helpful}}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{lineLabel}. Click to collapse."
@@ -8007,6 +8015,10 @@ msgstr "French"
 msgid "From"
 msgstr "From"
 
+#: src/components/discover/DiscoverReviews.tsx
+msgid "From {label}"
+msgstr "From {label}"
+
 #: src/pages/LibraryPage.tsx
 msgid "From {origins}"
 msgstr "From {origins}"
@@ -8030,11 +8042,6 @@ msgstr "From its pages"
 #: src/components/RelinkFilesModal.tsx
 msgid "From metadata"
 msgstr "From metadata"
-
-#: src/components/discover/DiscoverReviews.tsx
-#: src/components/series/SeriesReviews.tsx
-msgid "From MyAnimeList"
-msgstr "From MyAnimeList"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "From outside your network, replace the host with the address you use there."
@@ -10939,10 +10946,6 @@ msgstr "My rating to"
 msgid "MyAnimeList"
 msgstr "MyAnimeList"
 
-#: src/components/discover/DiscoverReviews.tsx
-msgid "MyAnimeList didn't respond, so there are no reviews to show right now."
-msgstr "MyAnimeList didn't respond, so there are no reviews to show right now."
-
 #: src/components/CatalogueFilters.tsx
 msgid "Mystery"
 msgstr "Mystery"
@@ -11635,10 +11638,6 @@ msgstr "No repositories yet."
 msgid "No results."
 msgstr "No results."
 
-#: src/components/series/SeriesReviews.tsx
-msgid "No reviews on MyAnimeList yet."
-msgstr "No reviews on MyAnimeList yet."
-
 #: src/pages/ImportPage.tsx
 msgid "No root folders yet"
 msgstr "No root folders yet"
@@ -11791,6 +11790,10 @@ msgstr "No volume or chapter range in the title"
 #: src/pages/CreatorPage.tsx
 msgid "Nobody by that name is credited in the local MangaBaka database."
 msgstr "Nobody by that name is credited in the local MangaBaka database."
+
+#: src/components/series/SeriesReviews.tsx
+msgid "Nobody has reviewed this yet."
+msgstr "Nobody has reviewed this yet."
 
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -13895,6 +13898,10 @@ msgstr "Queued upgrade from {winnerSource}"
 msgid "Quick links"
 msgstr "Quick links"
 
+#: src/components/discover/DiscoverReviews.tsx
+msgid "Quick takes"
+msgstr "Quick takes"
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Quiet for longer than its usual rhythm, so there is no estimate."
 msgstr "Quiet for longer than its usual rhythm, so there is no estimate."
@@ -14137,6 +14144,10 @@ msgstr "Read in Maki"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Read manga elsewhere"
 msgstr "Read manga elsewhere"
+
+#: src/components/series/SeriesReviews.tsx
+msgid "Read more on AniList"
+msgstr "Read more on AniList"
 
 #: src/components/series/SeriesReviews.tsx
 msgid "Read more on MyAnimeList"
@@ -15517,6 +15528,10 @@ msgstr "Review update"
 #: src/components/series/SeriesReviews.tsx
 msgid "Reviews"
 msgstr "Reviews"
+
+#: src/components/discover/DiscoverReviews.tsx
+msgid "Reviews couldn't be loaded right now."
+msgstr "Reviews couldn't be loaded right now."
 
 #: src/components/settings/AccountSection.tsx
 msgid "Revoke"

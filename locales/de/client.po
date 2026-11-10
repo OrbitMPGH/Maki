@@ -1577,6 +1577,10 @@ msgstr "{label} hat bereits eine Datei. Vergleiche beide, bevor du entscheidest:
 msgid "{label} as a push notification"
 msgstr "{label} als Push-Benachrichtigung"
 
+#: src/components/discover/DiscoverReviews.tsx
+msgid "{label} didn't respond, so its reviews are missing for now."
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "{label} ends at ch. {num}"
@@ -1661,6 +1665,10 @@ msgstr "{left, plural, one {# übrig} other {# übrig}}, etwa {eta}"
 #, fuzzy
 msgid "{levelName}, {methodName}"
 msgstr "{levelName}, {methodName}"
+
+#: src/components/discover/DiscoverReviews.tsx
+msgid "{likes, plural, one {# reader found this helpful} other {# readers found this helpful}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -9836,6 +9844,10 @@ msgstr "Französisch"
 msgid "From"
 msgstr "Von"
 
+#: src/components/discover/DiscoverReviews.tsx
+msgid "From {label}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "From {origins}"
@@ -9865,12 +9877,6 @@ msgstr "Anhand ihrer Seiten"
 #, fuzzy
 msgid "From metadata"
 msgstr "Anhand der Metadaten"
-
-#: src/components/discover/DiscoverReviews.tsx
-#: src/components/series/SeriesReviews.tsx
-#, fuzzy
-msgid "From MyAnimeList"
-msgstr "Von MyAnimeList"
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -13444,11 +13450,6 @@ msgstr "Meine Bewertung bis"
 msgid "MyAnimeList"
 msgstr "MyAnimeList"
 
-#: src/components/discover/DiscoverReviews.tsx
-#, fuzzy
-msgid "MyAnimeList didn't respond, so there are no reviews to show right now."
-msgstr "MyAnimeList hat nicht geantwortet, daher gibt es derzeit keine Rezensionen anzuzeigen."
-
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Mystery"
@@ -14301,11 +14302,6 @@ msgstr "Noch keine Repositories."
 msgid "No results."
 msgstr "Keine Ergebnisse."
 
-#: src/components/series/SeriesReviews.tsx
-#, fuzzy
-msgid "No reviews on MyAnimeList yet."
-msgstr "Noch keine Rezensionen auf MyAnimeList."
-
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "No root folders yet"
@@ -14494,6 +14490,10 @@ msgstr "Kein Band- oder Kapitelbereich im Titel"
 #, fuzzy
 msgid "Nobody by that name is credited in the local MangaBaka database."
 msgstr "Niemand mit diesem Namen ist in der lokalen MangaBaka-Datenbank als Mitwirkender eingetragen."
+
+#: src/components/series/SeriesReviews.tsx
+msgid "Nobody has reviewed this yet."
+msgstr ""
 
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -17080,6 +17080,10 @@ msgstr "Upgrade von {winnerSource} in die Warteschlange gestellt"
 msgid "Quick links"
 msgstr "Schnellzugriffe"
 
+#: src/components/discover/DiscoverReviews.tsx
+msgid "Quick takes"
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #, fuzzy
 msgid "Quiet for longer than its usual rhythm, so there is no estimate."
@@ -17375,6 +17379,10 @@ msgstr "In Maki lesen"
 #, fuzzy
 msgid "Read manga elsewhere"
 msgstr "Manga anderswo gelesen"
+
+#: src/components/series/SeriesReviews.tsx
+msgid "Read more on AniList"
+msgstr ""
 
 #: src/components/series/SeriesReviews.tsx
 #, fuzzy
@@ -19069,6 +19077,10 @@ msgstr "Update prüfen"
 #, fuzzy
 msgid "Reviews"
 msgstr "Rezensionen"
+
+#: src/components/discover/DiscoverReviews.tsx
+msgid "Reviews couldn't be loaded right now."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy

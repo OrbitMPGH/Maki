@@ -503,7 +503,7 @@ export function DiscoverDetailModal({
                   `.detail-split` drop the track and give the synopsis the whole width. */}
               {detail && (
                 <div className="detail-aside">
-                  <DiscoverReviews malId={detail.malId} />
+                  <DiscoverReviews ids={detail} />
                   <DiscoverGlance detail={detail} onNavigate={onClose} />
                 </div>
               )}
