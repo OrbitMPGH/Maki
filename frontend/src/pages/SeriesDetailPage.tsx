@@ -60,6 +60,7 @@ import {
   IconSortDescendingNumbers,
   IconDatabase,
   IconFileText,
+  IconFileUnknown,
 } from '../lib/icons'
 import { useMediaQuery } from '@mantine/hooks'
 import { notifications } from '../lib/toast'
@@ -3033,49 +3034,58 @@ function SeriesDetailBody() {
             {isMobile && chapterSearchInput}
 
             {!selectMode && fileMissingFilterCount > 0 && (
-                <div className="series-detail-chapter-hint" role="status">
-                  <IconAlertTriangle size={16} className="series-detail-chapter-hint-icon" aria-hidden />
-                  <Text size="sm" c="var(--ink-2)" className="tnum series-detail-chapter-hint-text">
-                    <Plural
-                        value={fileMissingFilterCount}
-                        one="# chapter has no file on disk"
-                        other="# chapters have no file on disk"
-                    />
-                  </Text>
-                  {canEditMetadata && (
-                      <div className="series-detail-chapter-hint-actions">
-                        <Button size="compact-sm" variant="subtle" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
+                <Paper className="series-files-hint" withBorder p="xs" radius="lg" role="status">
+                  <Group gap="sm" wrap="wrap" justify="space-between">
+                    <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: '1 1 20rem', minWidth: 0 }}>
+                      <IconFileUnknown size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} aria-hidden />
+                      <Text size="sm" c="var(--ink-2)" className="tnum">
+                        <Plural
+                            value={fileMissingFilterCount}
+                            one="# chapter has no file on disk."
+                            other="# chapters have no file on disk."
+                        />{' '}
+                        {canEditMetadata && (
+                            <Trans>If they are in the folder under other names, Relink files finds them.</Trans>
+                        )}
+                      </Text>
+                    </Group>
+                    {canEditMetadata && (
+                        <Button size="xs" variant="default" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
                           <Trans>Relink files</Trans>
                         </Button>
-                      </div>
-                  )}
-                </div>
+                    )}
+                  </Group>
+                </Paper>
             )}
 
             {/* Two closed issues came from people who had a file on disk and could not find how to
                 tell Maki which chapters it holds. Point at it from the tab they were looking at. */}
             {!selectMode && canEditMetadata && unlinkedFilesOnDisk > 0 && (
-                <div className="series-detail-chapter-hint">
-                  <IconLink size={16} className="series-detail-chapter-hint-icon" aria-hidden />
-                  <Text size="sm" c="var(--ink-2)" className="series-detail-chapter-hint-text">
-                    <Plural
-                        value={unlinkedFilesOnDisk}
-                        one="# file in the series folder isn't linked to any chapter."
-                        other="# files in the series folder aren't linked to any chapter."
-                    />{' '}
-                    <Text span inherit c="var(--ink-3)">
-                      <Trans>Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand.</Trans>
-                    </Text>
-                  </Text>
-                  <div className="series-detail-chapter-hint-actions">
-                    <Button size="compact-sm" variant="subtle" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
-                      <Trans>Relink files</Trans>
-                    </Button>
-                    <Button size="compact-sm" variant="subtle" color="var(--ink-3)" onClick={() => changeTab('files')}>
-                      <Trans>Link by hand</Trans>
-                    </Button>
-                  </div>
-                </div>
+                <Paper className="series-files-hint" withBorder p="xs" radius="lg">
+                  <Group gap="sm" wrap="wrap" justify="space-between">
+                    <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: '1 1 20rem', minWidth: 0 }}>
+                      <IconLink size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} aria-hidden />
+                      <Text size="sm" c="var(--ink-2)">
+                        <Plural
+                            value={unlinkedFilesOnDisk}
+                            one="# file in the series folder isn't linked to any chapter."
+                            other="# files in the series folder aren't linked to any chapter."
+                        />{' '}
+                        <Text span inherit c="var(--ink-3)">
+                          <Trans>Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand.</Trans>
+                        </Text>
+                      </Text>
+                    </Group>
+                    <Group gap="xs" wrap="nowrap">
+                      <Button size="xs" variant="default" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
+                        <Trans>Relink files</Trans>
+                      </Button>
+                      <Button size="xs" variant="subtle" color="var(--ink-3)" onClick={() => changeTab('files')}>
+                        <Trans>Link by hand</Trans>
+                      </Button>
+                    </Group>
+                  </Group>
+                </Paper>
             )}
 
             {!selectMode && canDownload && pendingProposal && (

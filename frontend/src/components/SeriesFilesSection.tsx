@@ -25,8 +25,7 @@ import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import { useLabel } from '../i18n-context'
 import { isPdfFile } from '../lib/files'
-import { fileStatusVisual, statusToken } from './ui/status'
-import { StatusDot } from './ui/StatusDot'
+import { fileStatusVisual } from './ui/status'
 import { MonoValue, sharedPrefixLength, splitForTruncation } from './ui/MonoValue'
 import { Panel } from './ui/Panel'
 import { useAuth } from '../auth/AuthProvider'
@@ -387,9 +386,9 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                           )}
                         </Table.Td>
                         <Table.Td className="files-cell-status">
-                          <StatusDot tone={statusToken(v.color)}>
+                          <Badge size="sm" variant="light" color={v.color} leftSection={<v.Icon size={12} />}>
                             {renderLabel(v.label)}
-                          </StatusDot>
+                          </Badge>
                         </Table.Td>
                         <Table.Td className="files-cell-mapped">
                           {f.isVolume && f.mappedChapters.length > 0 ? (

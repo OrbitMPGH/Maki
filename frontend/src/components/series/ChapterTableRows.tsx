@@ -5,7 +5,6 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { ActionIcon, Badge, Box, Group, Loader, Menu, Popover, Progress, Skeleton, Switch, Table, Text, Tooltip } from '@mantine/core'
 import {
-  IconAlertTriangle,
   IconBook,
   IconChevronDown,
   IconCircleCheck,
@@ -20,6 +19,7 @@ import {
   IconEye,
   IconEyeCheck,
   IconEyeOff,
+  IconFileUnknown,
   IconLink,
   IconLinkOff,
   IconListCheck,
@@ -338,7 +338,7 @@ export const ChapterRow = memo(function ChapterRow({
                     multiline
                     w={280}
                 >
-                  <LightBadge color="var(--warn)" leftSection={<IconAlertTriangle size={12} />}>
+                  <LightBadge color="var(--warn)" leftSection={<IconFileUnknown size={12} />}>
                     <Trans>File missing</Trans>
                   </LightBadge>
                 </HoverTooltip>
