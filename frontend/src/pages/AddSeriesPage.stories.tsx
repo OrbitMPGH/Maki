@@ -5,7 +5,7 @@ import { api, failWith, neverResolve, readerMe, signedInAs } from '../../.storyb
 import { addSeriesHandlers, requestOnlyHandlers } from '../../.storybook/mocks/entry'
 import { catalogue } from '../../.storybook/mocks/shared'
 import { catalogueDetail, catalogueItem } from '../../.storybook/mocks/entry/fixtures'
-import { notifications } from '@mantine/notifications'
+import { notifications } from '../lib/toast'
 import { clearTabState } from '../lib/pageState'
 import type { RecommendationIndexStatus } from '../api/hooks'
 import AddSeriesPage from './AddSeriesPage'

@@ -1,9 +1,8 @@
 import type { Decorator, Preview } from '@storybook/react-vite'
 import { mswLoader } from 'msw-storybook-addon/csf3'
-import { notifications } from '@mantine/notifications'
 import { configure } from 'storybook/test'
+import { notifications } from '../src/lib/toast'
 import '@mantine/core/styles.css'
-import '@mantine/notifications/styles.css'
 import '@fontsource-variable/onest'
 import '@fontsource-variable/bricolage-grotesque/opsz.css'
 import '../src/theme.css'
@@ -75,7 +74,6 @@ function resetBrowserState() {
     }
   }
   notifications.clean()
-  notifications.cleanQueue()
 }
 
 // AppThemeProvider reads the choice from localStorage once on mount, so the toolbar writes it there
