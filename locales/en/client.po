@@ -590,11 +590,6 @@ msgid "{0, plural, one {Show all #} other {Show all #}}"
 msgstr "{0, plural, one {Show all #} other {Show all #}}"
 
 #. placeholder {0}: shown.length
-#: src/pages/RecycleBinPage.tsx
-#~ msgid "{0, plural, one {Showing # file.} other {Showing # files.}}"
-#~ msgstr "{0, plural, one {Showing # file.} other {Showing # files.}}"
-
-#. placeholder {0}: shown.length
 #: src/components/settings/RecycleBinModal.tsx
 msgid "{0, plural, one {Showing # of {total} files} other {Showing # of {total} files}}"
 msgstr "{0, plural, one {Showing # of {total} files} other {Showing # of {total} files}}"
@@ -8609,10 +8604,6 @@ msgstr "Goals"
 msgid "Gone from disk"
 msgstr "Gone from disk"
 
-#: src/pages/RecycleBinPage.tsx
-#~ msgid "Gone within {SOON_DAYS} days"
-#~ msgstr "Gone within {SOON_DAYS} days"
-
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Good"
 msgstr "Good"
@@ -15058,10 +15049,6 @@ msgstr "Recurring themes"
 msgid "Recycle bin"
 msgstr "Recycle bin"
 
-#: src/pages/RecycleBinPage.tsx
-#~ msgid "Recycle bin settings"
-#~ msgstr "Recycle bin settings"
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "recycle bin, trash, deleted files, restore, undelete, empty bin, retention"
@@ -18080,10 +18067,6 @@ msgstr "Space"
 #: src/components/NamingTokenModal.tsx
 msgid "Space ( )"
 msgstr "Space ( )"
-
-#: src/pages/RecycleBinPage.tsx
-#~ msgid "Space used"
-#~ msgstr "Space used"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Space-separated. Keep email to match existing accounts."

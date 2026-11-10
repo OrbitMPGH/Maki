@@ -680,11 +680,6 @@ msgid "{0, plural, one {Show all #} other {Show all #}}"
 msgstr "{0, plural, other {#件すべて表示}}"
 
 #. placeholder {0}: shown.length
-#: src/pages/RecycleBinPage.tsx
-#~ msgid "{0, plural, one {Showing # file.} other {Showing # files.}}"
-#~ msgstr ""
-
-#. placeholder {0}: shown.length
 #: src/components/settings/RecycleBinModal.tsx
 msgid "{0, plural, one {Showing # of {total} files} other {Showing # of {total} files}}"
 msgstr ""
@@ -10467,10 +10462,6 @@ msgstr "目標"
 msgid "Gone from disk"
 msgstr "ディスクからなくなりました"
 
-#: src/pages/RecycleBinPage.tsx
-#~ msgid "Gone within {SOON_DAYS} days"
-#~ msgstr ""
-
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Good"
@@ -18337,10 +18328,6 @@ msgstr "繰り返し現れるテーマ"
 msgid "Recycle bin"
 msgstr "ごみ箱"
 
-#: src/pages/RecycleBinPage.tsx
-#~ msgid "Recycle bin settings"
-#~ msgstr ""
-
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -22026,10 +22013,6 @@ msgstr "スペース"
 #, fuzzy
 msgid "Space ( )"
 msgstr "スペース（ ）"
-
-#: src/pages/RecycleBinPage.tsx
-#~ msgid "Space used"
-#~ msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
