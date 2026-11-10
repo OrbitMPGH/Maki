@@ -10,6 +10,7 @@ import {
 } from '../../../.storybook/mocks/discover'
 import { detailFor } from '../../../.storybook/mocks/discover/fixtures'
 import { shortlistMock } from '../../../.storybook/mocks/shortlist'
+import { upgradeProfiles } from '../../../.storybook/mocks/series/fixtures'
 import { DiscoverDetailModal } from './DiscoverDetailModal'
 
 const meta = {
@@ -81,6 +82,48 @@ export const CollapsedBar: Story = {
       expect(bar).toHaveAttribute('data-shown')
     })
     await expect(within(bar as HTMLElement).getByRole('button', { name: 'Add to library' })).toBeVisible()
+  },
+}
+
+const starterProfiles = [
+  ['Best copy from any source', 'Takes the sharpest copy from any site and keeps looking.'],
+  ['Never upgrade', 'Keeps the first copy. Pin a series here to skip upgrades.'],
+  ['Replace aggregator copies', 'Takes a scanlator or official copy, then stops.'],
+  ['Upgrade to digital volumes', 'Needs an indexer and a torrent client. Volumes lag by months.'],
+  ['Upgrade to official releases', 'Replaces scanlations once MANGA Plus or Webtoons has it.'],
+].map(([name, description], i) => ({ ...upgradeProfiles[0], id: 10 + i, name, description }))
+
+/** A deeper page of the add card hangs over the body rather than stretching the band. */
+export const QualityProfilePage: Story = {
+  parameters: {
+    msw: discoverPage(http.get(api('/upgrade-profiles'), () => HttpResponse.json(starterProfiles))),
+  },
+  play: async ({ canvasElement }) => {
+    const dialog = await dialogOf(canvasElement)
+    await within(dialog).findByRole('heading', { name: 'The Salt Cartographer' })
+    const root = dialog.querySelector<HTMLElement>('.discover-modal-root')!
+    const band = dialog.querySelector<HTMLElement>('.series-hero')!
+    await within(dialog).findByText('quietpageturner')
+    await waitFor(() => expect(root).toHaveAttribute('data-card-rest'))
+    const bandHeight = band.offsetHeight
+
+    await userEvent.click(await within(dialog).findByRole('button', { name: /^Automation/ }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: /^Quality profile/ }))
+    await expect(await within(dialog).findByRole('radio', { name: /Upgrade to digital volumes/ })).toBeVisible()
+    await expect(root).toHaveAttribute('data-card-deep')
+    if (window.matchMedia('(min-width: 56.3125em)').matches) {
+      await waitFor(() => expect(Math.abs(band.offsetHeight - bandHeight)).toBeLessThan(2))
+    }
+
+    // Escape steps back a page instead of closing the modal.
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(within(dialog).getByText('Monitor')).toBeVisible())
+    await expect(dialog).toBeInTheDocument()
+
+    // A press outside the card folds it back to its first page.
+    await userEvent.click(within(dialog).getByText('Synopsis'))
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: /^Folder/ })).toBeVisible())
+    await waitFor(() => expect(root).not.toHaveAttribute('data-card-deep'))
   },
 }
 

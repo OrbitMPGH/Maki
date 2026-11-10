@@ -3542,6 +3542,37 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     gap: var(--mantine-spacing-xl);
   }
 }
+/* The add card's deeper pages hang over the body like a popover rather than stretching the band, so
+   the band paints above the body and no longer clips. The art takes the clip instead: at inset -7%
+   it would otherwise spill past the modal's corners and give the band scroll range. */
+.discover-modal-root .series-hero[data-compact] {
+  overflow: visible;
+  z-index: 2;
+}
+.discover-hero-art-clip {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  border-radius: inherit;
+}
+@media (min-width: 56.3125em) {
+  /* The slot keeps the height of the card's first page; the card sits on it and grows past it. */
+  .discover-modal-root[data-card-rest] .discover-action-slot {
+    position: relative;
+    height: var(--card-rest);
+  }
+  .discover-modal-root[data-card-rest] .discover-action-card {
+    position: absolute;
+    inset: 0 0 auto;
+  }
+  .discover-modal-root[data-card-deep] .discover-action-card {
+    border-color: var(--border-strong);
+  }
+  /* A short body (still loading, no synopsis) would end above the card's foot. */
+  .discover-modal-root[data-card-deep] .discover-body {
+    min-height: calc(var(--card-overhang, 0px) + var(--mantine-spacing-xl));
+  }
+}
 .discover-modal-root .series-hero-title {
   display: -webkit-box;
   -webkit-box-orient: vertical;
@@ -3675,6 +3706,18 @@ button.site-chip:hover {
    card's edge, so row hovers line up with the padding around them. */
 .discover-add-pages {
   margin-inline: -10px;
+}
+/* Starter profiles are written to fit two lines here; an admin's own description stops at two. */
+.discover-add-pages .drill-choice-hint {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+/* Tall enough for the six starter profiles without a scrollbar; a longer list scrolls. */
+.discover-add-pages .drill-scroll {
+  max-height: min(34rem, 60dvh);
 }
 .discover-add-switch {
   display: flex;

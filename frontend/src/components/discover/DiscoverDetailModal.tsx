@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type HTMLAttributes, type Ref } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type Ref } from 'react'
 import {
   ActionIcon,
   Badge,
@@ -118,6 +118,52 @@ export function DiscoverDetailModal({
     observer.observe(actionCard)
     return () => observer.disconnect()
   }, [scroller, actionCard])
+
+  // On desktop the add card's deeper pages hang over the body instead of stretching the band: the
+  // band keeps the height of the card's first page, and the body grows enough to scroll to the rest.
+  const [cardDeep, setCardDeep] = useState(false)
+  const [cardRest, setCardRest] = useState<number>()
+  const [cardOverhang, setCardOverhang] = useState(0)
+  const cardRestRef = useRef<number | undefined>(undefined)
+  // Refs as well as state: the card starts growing in the same frame the page changes, before a
+  // re-render could reach the observer below.
+  const cardDeepRef = useRef(false)
+  const cardSettling = useRef(false)
+  const onCardDeep = useCallback((deep: boolean) => {
+    // Back on the first page the card is still easing down to its height, so the band waits for it
+    // to stop rather than following it down.
+    if (cardDeepRef.current && !deep) cardSettling.current = true
+    cardDeepRef.current = deep
+    setCardDeep(deep)
+  }, [])
+  useEffect(() => {
+    if (!actionCard) return
+    let timer: number | undefined
+    const rest = (height: number) => {
+      cardRestRef.current = height
+      setCardRest(height)
+      setCardOverhang(0)
+    }
+    const observer = new ResizeObserver(() => {
+      const height = actionCard.offsetHeight
+      if (cardDeepRef.current) {
+        setCardOverhang(Math.max(0, height - (cardRestRef.current ?? height)))
+      } else if (!cardSettling.current) {
+        rest(height)
+      } else {
+        window.clearTimeout(timer)
+        timer = window.setTimeout(() => {
+          cardSettling.current = false
+          rest(actionCard.offsetHeight)
+        }, 80)
+      }
+    })
+    observer.observe(actionCard)
+    return () => {
+      observer.disconnect()
+      window.clearTimeout(timer)
+    }
+  }, [actionCard])
   // A reroll swaps the series in place, so it starts again from the band.
   const shownId = item?.providerId
   useEffect(() => {
@@ -205,7 +251,8 @@ export function DiscoverDetailModal({
       onClose={onClose}
       // The preview reader portals out of the card, so while it is up the card must neither take
       // Escape for itself nor pull focus back from the reader's controls.
-      closeOnEscape={!previewing}
+      // A deeper page of the add card takes Escape to step back a page.
+      closeOnEscape={!previewing && !cardDeep}
       trapFocus={!previewing}
       // A width, not a Mantine size step: the two-column body wants ~1180px, and the calc keeps it
       // off the edges of a laptop screen rather than relying on the modal's own max-width.
@@ -231,7 +278,18 @@ export function DiscoverDetailModal({
         // The class carries the positioning the floating close button needs. Mantine's own content
         // element is not positioned, so without it the button anchors to the viewport and lands in
         // the top-right corner of the screen rather than of the card.
-        <div className="discover-modal-root" data-bar={barShown || undefined}>
+        <div
+          className="discover-modal-root"
+          data-bar={barShown || undefined}
+          data-card-rest={cardRest != null || undefined}
+          data-card-deep={cardDeep || undefined}
+          style={
+            {
+              '--card-rest': cardRest != null ? `${cardRest}px` : undefined,
+              '--card-overhang': `${cardOverhang}px`,
+            } as CSSProperties
+          }
+        >
           <CloseButton
             className="discover-modal-close"
             size="lg"
@@ -291,7 +349,9 @@ export function DiscoverDetailModal({
           </div>
 
           <Box className="series-hero" data-compact>
-            <HeroBackdrop coverUrl={cover} />
+            <div className="discover-hero-art-clip" aria-hidden>
+              <HeroBackdrop coverUrl={cover} />
+            </div>
 
             <div className="series-hero-body">
               {/* Identity against the one thing there is to do with it, the way the series page
@@ -522,39 +582,42 @@ export function DiscoverDetailModal({
                     add itself last, and the lighter actions as the card's footer. Top-aligned with
                     the poster, so the band has one top line. */}
                 <div className="discover-action-col">
-                  <div className="discover-action-card" ref={setActionCard}>
-                    {/* Keyed by provider id: a half-filled request belongs to the series it was
-                        started for, and remounting is a cheaper reset than clearing six fields. */}
-                    <DiscoverLibraryRail
-                      key={item.providerId}
-                      item={item}
-                      detail={detail}
-                      inLibrarySeriesId={inLibrarySeriesId}
-                      rootFolders={rootFolders}
-                      onClose={onClose}
-                      addedFrom={feedbackContext ? 'recommendation' : 'library'}
-                      barSlot={barSlot}
-                    />
-                    <div className="discover-card-footer">
-                      {inLibrarySeriesId == null && (
-                        <>
-                          <PreviewChapterButton
-                            key={`preview-${item.providerId}`}
-                            compact
-                            providerId={item.providerId}
-                            title={title}
-                            onRead={() => setPreviewFor(item.providerId)}
-                          />
-                          <ShortlistButton
-                            key={`shortlist-${item.providerId}`}
-                            compact
-                            providerId={item.providerId}
-                            title={title}
-                            source={savedFrom}
-                          />
-                        </>
-                      )}
-                      <RecommendationFeedbackMenu providerId={item.providerId} compact />
+                  <div className="discover-action-slot">
+                    <div className="discover-action-card" ref={setActionCard}>
+                      {/* Keyed by provider id: a half-filled request belongs to the series it was
+                          started for, and remounting is a cheaper reset than clearing six fields. */}
+                      <DiscoverLibraryRail
+                        key={item.providerId}
+                        item={item}
+                        detail={detail}
+                        inLibrarySeriesId={inLibrarySeriesId}
+                        rootFolders={rootFolders}
+                        onClose={onClose}
+                        addedFrom={feedbackContext ? 'recommendation' : 'library'}
+                        barSlot={barSlot}
+                        onDeepChange={onCardDeep}
+                      />
+                      <div className="discover-card-footer">
+                        {inLibrarySeriesId == null && (
+                          <>
+                            <PreviewChapterButton
+                              key={`preview-${item.providerId}`}
+                              compact
+                              providerId={item.providerId}
+                              title={title}
+                              onRead={() => setPreviewFor(item.providerId)}
+                            />
+                            <ShortlistButton
+                              key={`shortlist-${item.providerId}`}
+                              compact
+                              providerId={item.providerId}
+                              title={title}
+                              source={savedFrom}
+                            />
+                          </>
+                        )}
+                        <RecommendationFeedbackMenu providerId={item.providerId} compact />
+                      </div>
                     </div>
                   </div>
                   {inLibrarySeriesId == null && shortlisted && (

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { randomUUID } from '../../lib/uuid'
 import { useNavigate } from 'react-router-dom'
@@ -55,6 +55,7 @@ export function DiscoverLibraryRail({
   onClose,
   addedFrom,
   barSlot,
+  onDeepChange,
 }: {
   item: RecommendationItem
   /** Undefined until the detail request lands; only the content rating is read from it. */
@@ -66,6 +67,8 @@ export function DiscoverLibraryRail({
   addedFrom?: 'recommendation' | 'library'
   /** The modal's collapsed bar. When set, the panel's primary action is portalled into it too. */
   barSlot?: HTMLElement | null
+  /** True while a page below the first is open, when the card hangs over the body below the band. */
+  onDeepChange?: (deep: boolean) => void
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -221,6 +224,38 @@ export function DiscoverLibraryRail({
   }
 
   const pages = useDrillPages<AddPage>('main', ADD_PARENTS)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const deep = pages.depth > 0
+  const pageBack = useEffectEvent(() => pages.back())
+  const pageReset = useEffectEvent(() => pages.reset())
+
+  // Layout, not passive: the modal has to know before the card starts growing, or it takes the first
+  // frame of the new page's height for the band's.
+  useLayoutEffect(() => {
+    onDeepChange?.(deep)
+  }, [deep, onDeepChange])
+  useEffect(() => () => onDeepChange?.(false), [onDeepChange])
+
+  // A deeper page hangs over the synopsis like a popover, so it leaves like one: Escape steps back a
+  // page instead of closing the modal, and a press or focus anywhere else folds the card up.
+  useEffect(() => {
+    if (!deep) return
+    const card = panelRef.current?.closest('.discover-action-card') ?? panelRef.current
+    const outside = (e: Event) => {
+      if (card && e.target instanceof Node && !card.contains(e.target)) pageReset()
+    }
+    const escape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.defaultPrevented) pageBack()
+    }
+    document.addEventListener('pointerdown', outside, true)
+    document.addEventListener('focusin', outside, true)
+    window.addEventListener('keydown', escape)
+    return () => {
+      document.removeEventListener('pointerdown', outside, true)
+      document.removeEventListener('focusin', outside, true)
+      window.removeEventListener('keydown', escape)
+    }
+  }, [deep])
   const incognitoLabel = incognitoOptions.find((o) => o.value === (incognito ?? 'Off'))?.label
   const profileName = upgradeProfiles?.find((p) => String(p.id) === upgradeProfileId)?.name
   const monitorShort = renderLabel(MONITOR_SHORT[shownMonitorMode] ?? shownMonitorMode)
@@ -246,7 +281,7 @@ export function DiscoverLibraryRail({
     ) : null
 
   return (
-    <div className="discover-add-panel">
+    <div className="discover-add-panel" ref={panelRef}>
       {barSlot && barAction && createPortal(barAction, barSlot)}
       {seriesId != null && archived ? (
         <>
@@ -344,26 +379,28 @@ export function DiscoverLibraryRail({
               {pages.page === 'folder' && (
                 <>
                   <DrillBack ref={pages.backRef} title={<Trans>Folder</Trans>} onBack={pages.back} />
-                  <DrillChoices
-                    label={t`Folder`}
-                    value={rootFolderId ?? ''}
-                    options={(rootFolders ?? []).map((f) => {
-                      const free = formatBytes(f.freeSpace)
-                      return {
-                        value: String(f.id),
-                        label: f.path,
-                        hint: !f.accessible
-                          ? t`Not reachable right now`
-                          : f.freeSpace != null
-                            ? t`${free} free`
-                            : undefined,
-                      }
-                    })}
-                    onPick={(value) => {
-                      setRootFolderId(value)
-                      pages.back()
-                    }}
-                  />
+                  <div className="drill-scroll">
+                    <DrillChoices
+                      label={t`Folder`}
+                      value={rootFolderId ?? ''}
+                      options={(rootFolders ?? []).map((f) => {
+                        const free = formatBytes(f.freeSpace)
+                        return {
+                          value: String(f.id),
+                          label: f.path,
+                          hint: !f.accessible
+                            ? t`Not reachable right now`
+                            : f.freeSpace != null
+                              ? t`${free} free`
+                              : undefined,
+                        }
+                      })}
+                      onPick={(value) => {
+                        setRootFolderId(value)
+                        pages.back()
+                      }}
+                    />
+                  </div>
                 </>
               )}
               {pages.page === 'incognito' && (
@@ -420,26 +457,28 @@ export function DiscoverLibraryRail({
               {pages.page === 'quality' && (
                 <>
                   <DrillBack ref={pages.backRef} title={<Trans>Quality profile</Trans>} onBack={pages.back} />
-                  <DrillChoices
-                    label={t`Quality profile`}
-                    value={upgradeProfileId ?? INSTANCE_DEFAULT}
-                    options={[
-                      {
-                        value: INSTANCE_DEFAULT,
-                        label: t`Instance default`,
-                        hint: t`Follows the default profile set in Settings.`,
-                      },
-                      ...(upgradeProfiles ?? []).map((p) => ({
-                        value: String(p.id),
-                        label: p.name,
-                        hint: p.description ?? undefined,
-                      })),
-                    ]}
-                    onPick={(value) => {
-                      setUpgradeProfileId(value === INSTANCE_DEFAULT ? null : value)
-                      pages.back()
-                    }}
-                  />
+                  <div className="drill-scroll">
+                    <DrillChoices
+                      label={t`Quality profile`}
+                      value={upgradeProfileId ?? INSTANCE_DEFAULT}
+                      options={[
+                        {
+                          value: INSTANCE_DEFAULT,
+                          label: t`Instance default`,
+                          hint: t`Follows the default profile set in Settings.`,
+                        },
+                        ...(upgradeProfiles ?? []).map((p) => ({
+                          value: String(p.id),
+                          label: p.name,
+                          hint: p.description ?? undefined,
+                        })),
+                      ]}
+                      onPick={(value) => {
+                        setUpgradeProfileId(value === INSTANCE_DEFAULT ? null : value)
+                        pages.back()
+                      }}
+                    />
+                  </div>
                 </>
               )}
             </DrillPanes>
