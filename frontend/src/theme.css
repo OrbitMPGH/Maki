@@ -13668,11 +13668,8 @@ button.settings-row-head:hover,
   }
 }
 
-/* --- recycle bin page --- */
+/* --- recycle bin modal (Settings > Library) --- */
 
-.recycle-bin-figures {
-  margin-bottom: var(--mantine-spacing-md);
-}
 .recycle-bin-rail {
   display: flex;
   flex-wrap: wrap;
@@ -13694,17 +13691,16 @@ button.settings-row-head:hover,
   padding-bottom: 8px;
 }
 .recycle-bin-list {
-  overflow: hidden;
-  box-shadow: none;
+  border-bottom: 1px solid var(--hairline);
 }
 .recycle-bin-group + .recycle-bin-group {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--hairline);
 }
 .recycle-bin-group-head {
   display: flex;
   align-items: center;
   gap: var(--mantine-spacing-sm);
-  padding: 0.6rem 1rem;
+  padding: 0.6rem 0;
 }
 .recycle-bin-group-toggle {
   display: flex;
@@ -13766,8 +13762,8 @@ button.settings-row-head:hover,
   grid-template-columns: minmax(0, 1fr) 5.5rem 6.5rem auto;
   align-items: center;
   gap: var(--mantine-spacing-md);
-  margin-inline-start: calc(1rem + 40px);
-  padding: 0.55rem 1rem 0.55rem 0;
+  margin-inline-start: 40px;
+  padding: 0.55rem 0;
   border-top: 1px solid var(--line-soft);
 }
 .recycle-bin-file {
@@ -13789,15 +13785,13 @@ button.settings-row-head:hover,
   }
   .recycle-bin-group-head {
     flex-wrap: wrap;
-    padding-inline: 0.75rem;
   }
   .recycle-bin-group-actions {
     margin-inline-start: 40px;
   }
   .recycle-bin-row {
     grid-template-columns: auto auto 1fr;
-    margin-inline-start: 0.75rem;
-    padding-inline-end: 0.75rem;
+    margin-inline-start: 0;
     row-gap: 4px;
   }
   .recycle-bin-row-main {

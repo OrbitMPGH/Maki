@@ -476,24 +476,24 @@ msgid "{0, plural, one {Clear # queued download?} other {Clear # queued download
 msgstr "{0, plural, one {Очистить очередь загрузок для # элемента?} few {Очистить очередь загрузок для # элементов?} many {Очистить очередь загрузок для # элементов?} other {Очистить очередь загрузок для # элемента?}}"
 
 #. placeholder {0}: r.failed
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{0, plural, one {Couldn't delete # file, check the log} other {Couldn't delete # files, check the log}}"
 msgstr "{0, plural, one {Не удалось удалить # файл, проверьте журнал} few {Не удалось удалить # файла, проверьте журнал} many {Не удалось удалить # файлов, проверьте журнал} other {Не удалось удалить # файла, проверьте журнал}}"
 
 #. placeholder {0}: result.failed
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "{0, plural, one {Couldn't finish # file, check the log} other {Couldn't finish # files, check the log}}"
 msgstr ""
 
 #. placeholder {0}: deleting.entries.length
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "{0, plural, one {Delete # file permanently?} other {Delete # files permanently?}}"
 msgstr ""
 
 #. placeholder {0}: result.done
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "{0, plural, one {Deleted # file for good} other {Deleted # files for good}}"
 msgstr ""
 
@@ -504,7 +504,7 @@ msgid "{0, plural, one {Deleted # file} other {Deleted # files}}"
 msgstr "{0, plural, one {Удалён # файл} few {Удалены # файла} many {Удалено # файлов} other {Удалён # файл}}"
 
 #. placeholder {0}: entries.length
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #, fuzzy
 msgid "{0, plural, one {Deletes # file for good.} other {Deletes # files for good.}}"
 msgstr "{0, plural, one {Удаляет # файл окончательно.} few {Удаляет # файла окончательно.} many {Удаляет # файлов окончательно.} other {Удаляет # файла окончательно.}}"
@@ -580,7 +580,7 @@ msgid "{0, plural, one {Moves # file to the recycle bin.} other {Moves # files t
 msgstr "{0, plural, one {Переместит # файл в корзину.} few {Переместит # файла в корзину.} many {Переместит # файлов в корзину.} other {Переместит # файла в корзину.}}"
 
 #. placeholder {0}: group.soonest
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "{0, plural, one {next goes in # day} other {next goes in # days}}"
 msgstr ""
 
@@ -647,19 +647,19 @@ msgstr "{0, plural, one {Удалена # неподдерживаемая гл�
 #. placeholder {0}: result.done
 #. placeholder {0}: result.restored
 #: src/components/series/UndoConversionModal.tsx
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #, fuzzy
 msgid "{0, plural, one {Restored # file} other {Restored # files}}"
 msgstr "{0, plural, one {Восстановлен # файл} few {Восстановлено # файла} many {Восстановлено # файлов} other {Восстановлено # файла}}"
 
 #. placeholder {0}: r.chapters
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #, fuzzy
 msgid "{0, plural, one {Restored and linked to # chapter} other {Restored and linked to # chapters}}"
 msgstr "{0, plural, one {Восстановлен и привязан к # главе} few {Восстановлен и привязан к # главам} many {Восстановлен и привязан к # главам} other {Восстановлен и привязан к # главе}}"
 
 #. placeholder {0}: result.unlinked
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "{0, plural, one {Restored. # file came back unlinked, Health can import it.} other {Restored. # files came back unlinked, Health can import them.}}"
 msgstr ""
 
@@ -692,7 +692,12 @@ msgstr "{0, plural, one {Показать все #} few {Показать все
 
 #. placeholder {0}: shown.length
 #: src/pages/RecycleBinPage.tsx
-msgid "{0, plural, one {Showing # file.} other {Showing # files.}}"
+#~ msgid "{0, plural, one {Showing # file.} other {Showing # files.}}"
+#~ msgstr ""
+
+#. placeholder {0}: shown.length
+#: src/components/settings/RecycleBinModal.tsx
+msgid "{0, plural, one {Showing # of {total} files} other {Showing # of {total} files}}"
 msgstr ""
 
 #. placeholder {0}: bucket.files
@@ -756,7 +761,7 @@ msgid "{0} already reads this site."
 msgstr "{0} уже работает с этим сайтом."
 
 #. placeholder {0}: formatDate(entry.deletedAt)
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "{0} by {deletedBy}"
 msgstr ""
 
@@ -1162,7 +1167,7 @@ msgstr "{count, plural, one {# удаление} few {# удаления} many {
 msgid "{count, plural, one {# file gone, nowhere else in the library} other {# files gone, nowhere else in the library}}"
 msgstr "{count, plural, one {# файл пропал, и больше нигде в библиотеке его нет} few {# файла пропали, и больше нигде в библиотеке их нет} many {# файлов пропали, и больше нигде в библиотеке их нет} other {# файла пропали, и больше нигде в библиотеке их нет}}"
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "{count, plural, one {# file, {size}} other {# files, {size}}}"
 msgstr ""
 
@@ -1366,7 +1371,7 @@ msgstr "{cycles, plural, one {снова добавлено #×} few {снова
 msgid "{damagedCount, plural, one {Get a new copy} other {Get # new copies}}"
 msgstr "{damagedCount, plural, one {Получить новую копию} few {Получить # новые копии} many {Получить # новых копий} other {Получить # новые копии}}"
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "{days, plural, one {Deleted files wait here for # day, then they're gone for good.} other {Deleted files wait here for # days, then they're gone for good.}}"
 msgstr ""
 
@@ -1493,6 +1498,10 @@ msgstr "осталось {eta}"
 #, fuzzy
 msgid "{existing, plural, one {# already in the library} other {# already in the library}}"
 msgstr "{existing, plural, one {# серия уже в библиотеке} few {# серии уже в библиотеке} many {# серий уже в библиотеке} other {# серии уже в библиотеке}}"
+
+#: src/components/settings/RecycleBinModal.tsx
+msgid "{expiringSoon, plural, one {# goes within {SOON_DAYS} days} other {# go within {SOON_DAYS} days}}"
+msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
@@ -1835,7 +1844,7 @@ msgstr "{languagesOn, plural, =0 {Языки не включены} one {Вкл�
 msgid "{latestVersion} available, skipped"
 msgstr "{latestVersion} доступна, пропущена"
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "{left, plural, one {# day left} other {# days left}}"
 msgstr ""
 
@@ -2947,6 +2956,10 @@ msgstr "{total, plural, one {# глава} few {# главы} many {# глав} 
 #, fuzzy
 msgid "{total, plural, one {# file found at a new path} other {# files found at a new path}}"
 msgstr "{total, plural, one {# файл найден по новому пути} few {# файла найдены по новому пути} many {# файлов найдено по новому пути} other {# файла найдены по новому пути}}"
+
+#: src/components/settings/RecycleBinModal.tsx
+msgid "{total, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -4153,13 +4166,13 @@ msgstr "Агрегатор"
 #: src/components/CatalogueRules.tsx
 #: src/components/ChapterMapParts.tsx
 #: src/components/import/MihonReview.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/discover/ShortlistTab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
-#: src/pages/RecycleBinPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -5796,13 +5809,13 @@ msgid "Ch. {chapters}"
 msgstr "Гл. {chapters}"
 
 #: src/components/ChapterMapParts.tsx
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #, fuzzy
 msgid "Ch. {first}"
 msgstr "Гл. {first}"
 
 #: src/components/ChapterMapParts.tsx
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #, fuzzy
 msgid "Ch. {first} to {last}"
 msgstr "Главы {first}–{last}"
@@ -7408,7 +7421,7 @@ msgstr "Не удалось загрузить Scrobble"
 msgid "Couldn't load the details for this title."
 msgstr "Не удалось загрузить сведения об этом тайтле."
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "Couldn't load the recycle bin"
 msgstr ""
 
@@ -7923,7 +7936,7 @@ msgstr "Удалить {label}"
 msgid "Delete {name}?"
 msgstr "Удалить {name}?"
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "Delete all permanently"
 msgstr ""
 
@@ -7975,8 +7988,8 @@ msgid "Delete from disk"
 msgstr "Удалить с диска"
 
 #: src/components/PermanentDeleteFallback.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #: src/pages/HealthPage.tsx
-#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "Delete permanently"
 msgstr "Удалить навсегда"
@@ -8061,7 +8074,7 @@ msgstr "Удалить этот файл с диска? {span} после это
 msgid "Delete this file from disk? The kept copy stays and no chapter changes."
 msgstr "Удалить этот файл с диска? Оставленная копия остаётся, главы не меняются."
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #, fuzzy
 msgid "Delete this file permanently?"
 msgstr "Удалить этот файл окончательно?"
@@ -8102,7 +8115,7 @@ msgstr "Удалено «{name}»"
 msgid "Deleted account"
 msgstr "Удалённый аккаунт"
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #, fuzzy
 msgid "Deleted file"
 msgstr "Удалённый файл"
@@ -8931,12 +8944,12 @@ msgstr "Изумрудный"
 msgid "Empty"
 msgstr "Пусто"
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #, fuzzy
 msgid "Empty bin"
 msgstr "Очистить корзину"
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #, fuzzy
 msgid "Empty the recycle bin?"
 msgstr "Очистить корзину?"
@@ -9196,7 +9209,7 @@ msgid "Every file already meets the cutoff"
 msgstr "Все файлы уже достигают порога"
 
 #. placeholder {0}: deleting?.title
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "Every file from {0} in the bin."
 msgstr ""
 
@@ -9731,7 +9744,6 @@ msgstr "Размер файла в МБ, меньше"
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/RecycleBinPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/SourceReliability.tsx
 #, fuzzy
@@ -9787,7 +9799,7 @@ msgstr "Файлов проверено"
 msgid "Files that hold chapters marked missing"
 msgstr "Файлы с главами, отмеченными как отсутствующие"
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "Files you delete from the library or a series page land here first, so a slip can be undone."
 msgstr ""
 
@@ -9820,7 +9832,7 @@ msgstr "Фильтр по корневой папке"
 msgid "Filter by series"
 msgstr ""
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "Filter by series or file"
 msgstr ""
 
@@ -10487,8 +10499,8 @@ msgid "Gone from disk"
 msgstr "Нет на диске"
 
 #: src/pages/RecycleBinPage.tsx
-msgid "Gone within {SOON_DAYS} days"
-msgstr ""
+#~ msgid "Gone within {SOON_DAYS} days"
+#~ msgstr ""
 
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -14588,7 +14600,7 @@ msgstr "больше нет в Suwayomi"
 msgid "No longer in Suwayomi"
 msgstr "Больше нет в Suwayomi"
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "No longer in the library"
 msgstr ""
 
@@ -15631,8 +15643,8 @@ msgstr "В очередь добавлять нечего. Все запроше
 msgid "Nothing lives at this address. The link may be old or mistyped."
 msgstr "По этому адресу ничего нет. Возможно, ссылка устарела или в ней допущена ошибка."
 
+#: src/components/settings/RecycleBinModal.tsx
 #: src/pages/NotificationsPage.tsx
-#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "Nothing matches"
 msgstr "Совпадений нет"
@@ -18349,9 +18361,7 @@ msgstr "Повторяющийся"
 msgid "Recurring themes"
 msgstr "Повторяющиеся темы"
 
-#: src/components/CommandPalette.tsx
-#: src/nav.ts
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -18359,8 +18369,8 @@ msgid "Recycle bin"
 msgstr "Корзина"
 
 #: src/pages/RecycleBinPage.tsx
-msgid "Recycle bin settings"
-msgstr ""
+#~ msgid "Recycle bin settings"
+#~ msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -18904,7 +18914,7 @@ msgstr "{title} убран из шорт-листа."
 msgid "Removed by an admin"
 msgstr "Удалено администратором"
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #, fuzzy
 msgid "Removed chapter"
 msgstr "Удалённая глава"
@@ -18929,7 +18939,7 @@ msgstr "Убрано из рекомендаций. Только это назв
 msgid "Removed once read. Chapters you save yourself stay."
 msgstr "Удаляется после прочтения. Главы, которые вы сохранили сами, остаются."
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #, fuzzy
 msgid "Removed series"
 msgstr "Удалённая серия"
@@ -19332,7 +19342,7 @@ msgstr "Перезапустить сейчас"
 msgid "Restart to update"
 msgstr "Перезапустите для обновления"
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Restore"
@@ -19365,7 +19375,7 @@ msgstr "Восстановить {title}"
 msgid "Restore & restart"
 msgstr "Восстановить и перезапустить"
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "Restore all"
 msgstr ""
 
@@ -19445,7 +19455,7 @@ msgstr "Вернуть в библиотеку?"
 msgid "Restored"
 msgstr "Восстановлено"
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #, fuzzy
 msgid "Restored as an unlinked file. Health can import it."
 msgstr "Восстановлен как файл без привязки. Состояние системы может его импортировать."
@@ -19540,6 +19550,7 @@ msgstr "Повторено {retryCount} раз"
 #: src/components/RatingImportModal.tsx
 #: src/components/releases/UpcomingView.tsx
 #: src/components/SectionErrorBoundary.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/discover/ShortlistTab.tsx
@@ -19547,7 +19558,6 @@ msgstr "Повторено {retryCount} раз"
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
-#: src/pages/RecycleBinPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -20928,7 +20938,6 @@ msgstr "Продолжение {relatedTo}"
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/RecycleBinPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -20965,7 +20974,7 @@ msgstr "Серии и главы, которые вы запросили у ад
 msgid "Series archived"
 msgstr "Серия архивирована"
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #, fuzzy
 msgctxt "series"
 msgid "Series archived"
@@ -22050,8 +22059,8 @@ msgid "Space ( )"
 msgstr "Пробел ( )"
 
 #: src/pages/RecycleBinPage.tsx
-msgid "Space used"
-msgstr ""
+#~ msgid "Space used"
+#~ msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -22983,7 +22992,7 @@ msgstr "С тех пор файл не менялся, поэтому можно
 msgid "The file is already off the disk, so nothing is deleted. This drops the record that still says the chapters are downloaded, which is why they read as available on the series page."
 msgstr "Файл уже отсутствует на диске, поэтому ничего не удаляется. Удаляется запись, которая всё ещё указывает, что главы загружены, поэтому на странице серии они снова считаются доступными."
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 #, fuzzy
 msgid "The file is missing from the bin folder."
 msgstr "Файла нет в папке корзины."
@@ -23232,7 +23241,7 @@ msgstr "Служба push не приняла тестовое уведомле�
 msgid "The record of the missing archive was removed."
 msgstr "Запись о пропавшем архиве удалена."
 
-#: src/pages/RecycleBinPage.tsx
+#: src/components/settings/RecycleBinModal.tsx
 msgid "The recycle bin is empty"
 msgstr ""
 
@@ -23607,8 +23616,8 @@ msgstr "У этого аккаунта уже есть вход через ед�
 msgid "This account has no password login for two-factor to protect."
 msgstr "В этом аккаунте нет входа по паролю, который могла бы защищать двухфакторная аутентификация."
 
+#: src/components/settings/RecycleBinModal.tsx
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "This action cannot be undone."
 msgstr "Это действие нельзя отменить."
@@ -24362,8 +24371,8 @@ msgstr "Попробовать снова"
 msgid "Try again in a moment. If it keeps failing, the details help with a bug report."
 msgstr "Попробуйте ещё раз через минуту. Если ошибка повторяется, подробности помогут составить отчёт об ошибке."
 
+#: src/components/settings/RecycleBinModal.tsx
 #: src/pages/NotificationsPage.tsx
-#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "Try clearing the filters."
 msgstr "Попробуйте очистить фильтры."
