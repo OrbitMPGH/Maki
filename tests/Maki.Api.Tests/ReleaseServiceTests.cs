@@ -205,7 +205,104 @@ public class ReleaseServiceTests : IDisposable
         var result = await Build().SearchAsync(seriesId);
 
         Assert.Empty(result.Releases);
-        Assert.Equal("Alt 3", result.Query);
+        Assert.Equal("Original", result.Query);
+    }
+
+    /// <summary>Answers an indexer search by what the query contains, and remembers every query.</summary>
+    private sealed class QueryStub(params (string Term, string Body)[] answers) : IHttpClientFactory
+    {
+        public List<string> Queries { get; } = [];
+
+        public HttpClient CreateClient(string name) => new(new Handler(this));
+
+        private sealed class Handler(QueryStub owner) : HttpMessageHandler
+        {
+            protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+            {
+                var query = Uri.UnescapeDataString(request.RequestUri?.Query ?? "");
+                owner.Queries.Add(query);
+                var body = owner.AnswerFor(query);
+                return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+                {
+                    Content = new StringContent(body)
+                });
+            }
+        }
+
+        private string AnswerFor(string query) =>
+            answers.FirstOrDefault(a => query.Contains(a.Term, StringComparison.OrdinalIgnoreCase)).Body ?? "[]";
+    }
+
+    private int SeedSeriesWithFiles(string title, string original, string language)
+    {
+        var seriesId = _db.SeedSeries(title);
+        using var db = _db.NewContext();
+        db.Series.First(s => s.Id == seriesId).OriginalTitle = original;
+        db.Chapters.Add(new Chapter { SeriesId = seriesId, Number = 1, NumberRaw = "1", Language = language });
+        db.SaveChanges();
+        return seriesId;
+    }
+
+    [Fact]
+    public async Task A_japanese_series_keeps_searching_past_an_english_hit_until_a_japanese_release_turns_up()
+    {
+        var seriesId = SeedSeriesWithFiles("The Witch and the Mercenary", "魔女と傭兵", "ja");
+        await ConfigureProwlarr();
+        var http = new QueryStub(
+            ("Witch", "[" + Release("Witch EN pack", "torrent", 9) + "]"),
+            ("魔女と傭兵", "[" + Release("魔女と傭兵 第01-04巻", "torrent", 7) + "]"));
+
+        var result = await Build(http).SearchAsync(seriesId);
+
+        Assert.Equal(2, result.Releases.Count);
+        Assert.Contains(result.Releases, r => r.Title.StartsWith("魔女と傭兵"));
+        Assert.Contains(result.Releases, r => r.Title.StartsWith("Witch EN pack"));
+        Assert.Equal("魔女と傭兵", result.Query);
+        Assert.Contains(http.Queries, q => q.Contains("魔女と傭兵"));
+    }
+
+    [Fact]
+    public async Task An_english_series_stops_at_its_first_hit_as_before()
+    {
+        var seriesId = SeedSeriesWithFiles("The Witch and the Mercenary", "魔女と傭兵", "en");
+        await ConfigureProwlarr();
+        var http = new QueryStub(
+            ("Witch", "[" + Release("Witch EN pack", "torrent", 9) + "]"),
+            ("魔女と傭兵", "[" + Release("魔女と傭兵 第01-04巻", "torrent", 7) + "]"));
+
+        var result = await Build(http).SearchAsync(seriesId);
+
+        Assert.Single(result.Releases);
+        Assert.Single(http.Queries);
+        Assert.Equal("The Witch and the Mercenary", result.Query);
+    }
+
+    [Fact]
+    public async Task A_series_in_another_language_stops_at_its_first_hit_as_before()
+    {
+        var seriesId = SeedSeriesWithFiles("The Witch and the Mercenary", "魔女と傭兵", "fr");
+        await ConfigureProwlarr();
+        var http = new QueryStub(
+            ("Witch", "[" + Release("Witch EN pack", "torrent", 9) + "]"),
+            ("魔女と傭兵", "[" + Release("魔女と傭兵 第01-04巻", "torrent", 7) + "]"));
+
+        var result = await Build(http).SearchAsync(seriesId);
+
+        Assert.Single(result.Releases);
+        Assert.Single(http.Queries);
+    }
+
+    [Fact]
+    public async Task A_japanese_series_that_finds_nothing_in_japanese_still_returns_the_english_hit()
+    {
+        var seriesId = SeedSeriesWithFiles("The Witch and the Mercenary", "魔女と傭兵", "ja");
+        await ConfigureProwlarr();
+        var http = new QueryStub(("Witch", "[" + Release("Witch EN pack", "torrent", 9) + "]"));
+
+        var result = await Build(http).SearchAsync(seriesId);
+
+        Assert.Single(result.Releases);
+        Assert.True(http.Queries.Count >= 2);
     }
 
     [Fact]
