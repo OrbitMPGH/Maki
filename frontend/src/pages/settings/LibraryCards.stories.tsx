@@ -286,13 +286,12 @@ export const NameParsingToggle: Story = {
 
 export const RecycleBinWithFiles: Story = {
   render: () => <RecycleBinSection />,
-  play: async ({ canvas }) => {
+  play: async ({ canvas, canvasElement, userEvent }) => {
     await expect(await canvas.findByText('3 files, 312 MB')).toBeVisible()
-    await expect(await canvas.findByRole('link', { name: 'Open recycle bin' })).toHaveAttribute(
-      'href',
-      '/library/recycle-bin',
-    )
     await expect(canvas.queryByText('Lanterns Over Kasumi - c131.cbz')).toBeNull()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Open recycle bin' }))
+    const dialog = await dialogOf(canvasElement.ownerDocument.body)
+    await expect(await dialog.findByText('Lanterns Over Kasumi - c131.cbz')).toBeVisible()
   },
 }
 

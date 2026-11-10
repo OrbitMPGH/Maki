@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import {
   ActionIcon,
   Button,
   Collapse,
   Group,
+  Modal,
   Skeleton,
   Stack,
   Tabs,
@@ -16,8 +16,8 @@ import {
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { IconChevronDown, IconRestore, IconSearch, IconSettings, IconTrash } from '../lib/icons'
-import { notifications } from '../lib/toast'
+import { IconChevronDown, IconRestore, IconSearch, IconTrash } from '../../lib/icons'
+import { notifications } from '../../lib/toast'
 import {
   useDeleteManyFromRecycleBin,
   useEmptyRecycleBin,
@@ -27,18 +27,14 @@ import {
   type BulkResult,
   type RecycleBinEntry,
   type RecycleReason,
-} from '../api/recycleBin'
-import { useSeries } from '../api/hooks'
-import { useAuth } from '../auth/AuthProvider'
-import { useLabel } from '../i18n-context'
-import { formatBytes, formatDate, formatNumber } from '../format'
-import { ConfirmDialog } from '../components/ui/ConfirmDialog'
-import { EmptyState } from '../components/ui/EmptyState'
-import { FigureStrip } from '../components/ui/FigureStrip'
-import { MetaList } from '../components/ui/MetaList'
-import { PageHeader } from '../components/ui/PageHeader'
-import { Panel } from '../components/ui/Panel'
-import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+} from '../../api/recycleBin'
+import { useSeries } from '../../api/hooks'
+import { useLabel } from '../../i18n-context'
+import { formatBytes, formatDate, formatNumber } from '../../format'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
+import { EmptyState } from '../ui/EmptyState'
+import { MetaList } from '../ui/MetaList'
+import { ModalFooter, ModalHeading } from '../ui/ModalShell'
 
 const REASON_ORDER: RecycleReason[] = ['deleteFile', 'removeChapter', 'seriesDelete', 'seriesArchive']
 
@@ -133,16 +129,14 @@ function bulkToast(result: BulkResult, restored: boolean) {
 }
 
 /**
- * Files deleted from the library, waiting to be restored or purged. Grouped by series, newest
- * deletion first. Settings keeps only how long they wait.
+ * Files deleted from the library, waiting to be restored or purged, opened from the Settings card.
+ * Grouped by series, newest deletion first, so one removed series is a single folded line.
  */
-export default function RecycleBinPage() {
+export function RecycleBinModal({ opened, onClose }: { opened: boolean; onClose: () => void }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
-  const { can } = useAuth()
-  const isAdmin = can('Admin')
-  const { data: bin, isLoading, isError, refetch } = useRecycleBin()
-  const { data: series } = useSeries()
+  const { data: bin, isLoading, isError, refetch } = useRecycleBin(opened)
+  const { data: series } = useSeries(opened)
   const restoreMany = useRestoreManyFromRecycleBin()
   const removeMany = useDeleteManyFromRecycleBin()
   const empty = useEmptyRecycleBin()
@@ -156,6 +150,7 @@ export default function RecycleBinPage() {
 
   const entries = useMemo(() => bin?.entries ?? [], [bin])
   const days = bin?.retentionDays ?? 14
+  const totalSize = formatBytes(bin?.totalBytes)
   const covers = useMemo(() => new Map((series ?? []).map((s) => [s.id, s.coverUrl])), [series])
 
   const reasonCounts = useMemo(() => {
@@ -172,14 +167,8 @@ export default function RecycleBinPage() {
   )
   const groups = groupBySeries(shown)
   const filtered = reason !== null || needle !== ''
-
   const expiringSoon = entries.filter((e) => daysLeft(e.expiresAt) <= SOON_DAYS).length
-  const figures = [
-    { label: t`Files`, value: entries.length },
-    { label: t`Series`, value: new Set(entries.map((e) => e.seriesId)).size },
-    { label: t`Space used`, value: formatBytes(bin?.totalBytes), zero: entries.length === 0 },
-    { label: t`Gone within ${SOON_DAYS} days`, value: expiringSoon, tone: 'warn' as const },
-  ]
+  const total = entries.length
 
   const isOpen = (group: BinGroup) =>
     needle !== '' || (group.entries.length <= OPEN_UP_TO) !== toggled.has(group.seriesId)
@@ -198,61 +187,36 @@ export default function RecycleBinPage() {
     )
 
   return (
-    <SurfaceFrame pageStyle="operational" className="recycle-bin-surface">
-      <PageHeader
-        compact
-        title={t`Recycle bin`}
-        description={
-          <Plural
-            value={days}
-            one="Deleted files wait here for # day, then they're gone for good."
-            other="Deleted files wait here for # days, then they're gone for good."
-          />
-        }
-        actions={
-          <>
-            {isAdmin && (
-              <Tooltip label={t`Recycle bin settings`} withArrow>
-                <ActionIcon
-                  component={Link}
-                  to="/settings?tab=library&s=recycle-bin"
-                  variant="default"
-                  size="input-sm"
-                  aria-label={t`Recycle bin settings`}
-                >
-                  <IconSettings size={18} />
-                </ActionIcon>
-              </Tooltip>
-            )}
-            <Button
-              variant="default"
-              color="var(--danger)"
-              leftSection={<IconTrash size={16} />}
-              disabled={entries.length === 0}
-              onClick={() => setEmptying(true)}
-            >
-              <Trans>Empty bin</Trans>
-            </Button>
-          </>
-        }
-      />
-
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      size="xl"
+      title={
+        <ModalHeading
+          title={t`Recycle bin`}
+          description={
+            <Plural
+              value={days}
+              one="Deleted files wait here for # day, then they're gone for good."
+              other="Deleted files wait here for # days, then they're gone for good."
+            />
+          }
+        />
+      }
+    >
       {isLoading ? (
         <BinSkeleton />
       ) : isError ? (
-        <EmptyState title={t`Couldn't load the recycle bin`} actionLabel={t`Retry`} onAction={() => void refetch()} />
-      ) : entries.length === 0 ? (
+        <EmptyState compact title={t`Couldn't load the recycle bin`} actionLabel={t`Retry`} onAction={() => void refetch()} />
+      ) : total === 0 ? (
         <EmptyState
           compact
-          framed
           mood="pleased"
           title={t`The recycle bin is empty`}
           description={t`Files you delete from the library or a series page land here first, so a slip can be undone.`}
         />
       ) : (
         <>
-          <FigureStrip className="recycle-bin-figures" figures={figures} />
-
           <div className="recycle-bin-rail">
             <Tabs
               className="recycle-bin-tabs"
@@ -285,15 +249,9 @@ export default function RecycleBinPage() {
           </div>
 
           {groups.length === 0 ? (
-            <EmptyState
-              compact
-              framed
-              mood="asking"
-              title={t`Nothing matches`}
-              description={t`Try clearing the filters.`}
-            />
+            <EmptyState compact mood="asking" title={t`Nothing matches`} description={t`Try clearing the filters.`} />
           ) : (
-            <Panel className="recycle-bin-list" p={0}>
+            <div className="recycle-bin-list">
               {groups.map((group) => (
                 <BinGroupSection
                   key={group.seriesId}
@@ -307,15 +265,51 @@ export default function RecycleBinPage() {
                   onDelete={(entry) => setDeleting({ entries: [entry], title: group.seriesTitle })}
                 />
               ))}
-            </Panel>
-          )}
-          {filtered && groups.length > 0 && (
-            <Text size="xs" c="var(--ink-3)" mt="xs">
-              <Plural value={shown.length} one="Showing # file." other="Showing # files." />
-            </Text>
+            </div>
           )}
         </>
       )}
+
+      <ModalFooter
+        status={
+          total > 0 && (
+            <MetaList
+              inline
+              items={[
+                filtered ? (
+                  <Plural
+                    key="shown"
+                    value={shown.length}
+                    one={`Showing # of ${total} files`}
+                    other={`Showing # of ${total} files`}
+                  />
+                ) : (
+                  <Plural key="all" value={total} one={`# file, ${totalSize}`} other={`# files, ${totalSize}`} />
+                ),
+                expiringSoon > 0 && (
+                  <span key="soon" className="recycle-bin-soon">
+                    <Plural
+                      value={expiringSoon}
+                      one={`# goes within ${SOON_DAYS} days`}
+                      other={`# go within ${SOON_DAYS} days`}
+                    />
+                  </span>
+                ),
+              ]}
+            />
+          )
+        }
+      >
+        <Button
+          variant="default"
+          color="var(--danger)"
+          leftSection={<IconTrash size={16} />}
+          disabled={total === 0}
+          onClick={() => setEmptying(true)}
+        >
+          <Trans>Empty bin</Trans>
+        </Button>
+      </ModalFooter>
 
       <ConfirmDialog
         opened={deleting !== null}
@@ -394,7 +388,7 @@ export default function RecycleBinPage() {
           </Text>
         </Stack>
       </ConfirmDialog>
-    </SurfaceFrame>
+    </Modal>
   )
 }
 
@@ -568,7 +562,7 @@ function BinRow({ entry, onDelete }: { entry: RecycleBinEntry; onDelete: () => v
 
 function BinSkeleton() {
   return (
-    <Panel className="recycle-bin-list" p={0} aria-hidden>
+    <div className="recycle-bin-list" aria-hidden>
       {[60, 44, 52].map((width, i) => (
         <Group key={i} className="recycle-bin-group-head" gap="sm" wrap="nowrap">
           <Skeleton w={28} h={40} radius="xs" />
@@ -578,6 +572,6 @@ function BinSkeleton() {
           </Stack>
         </Group>
       ))}
-    </Panel>
+    </div>
   )
 }

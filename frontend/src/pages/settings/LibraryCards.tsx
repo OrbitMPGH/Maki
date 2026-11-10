@@ -1,6 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
 import { useLabel } from '../../i18n-context'
 import { useDebouncedValue } from '@mantine/hooks'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -61,6 +60,7 @@ import { formatBytes, formatDateTime, formatNumber } from '../../format'
 import { useAuth } from '../../auth/AuthProvider'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 import { useRecycleBin, useSetRecycleBinRetention } from '../../api/recycleBin'
+import { RecycleBinModal } from '../../components/settings/RecycleBinModal'
 
 export function RootFoldersSection() {
   const { t } = useLingui()
@@ -607,8 +607,8 @@ export function NameParsingSection() {
 }
 
 /**
- * How long deleted files wait, and the way into the bin itself. The list lives on its own page:
- * one removed series can put hundreds of files in it.
+ * How long deleted files wait, and the way into the bin itself. The list opens in a modal: one
+ * removed series can put hundreds of files in it, too many for a settings card.
  */
 export function RecycleBinSection() {
   const { t } = useLingui()
@@ -617,6 +617,7 @@ export function RecycleBinSection() {
   const { data: bin } = useRecycleBin()
   const setRetention = useSetRecycleBinRetention()
   const [retention, setRetentionDraft] = useState<number | null>(null)
+  const [browsing, setBrowsing] = useState(false)
 
   const count = bin?.entries.length ?? 0
   const days = bin?.retentionDays ?? 14
@@ -651,9 +652,8 @@ export function RecycleBinSection() {
             )}
           </Text>
           <Button
-            component={Link}
-            to="/library/recycle-bin"
             variant="default"
+            onClick={() => setBrowsing(true)}
             size="xs"
             leftSection={<IconTrash size={16} />}
           >
@@ -671,6 +671,7 @@ export function RecycleBinSection() {
           />
         )}
       </Stack>
+      <RecycleBinModal opened={browsing} onClose={() => setBrowsing(false)} />
     </SettingsSection>
   )
 }
