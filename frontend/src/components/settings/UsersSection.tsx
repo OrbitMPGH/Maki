@@ -1,6 +1,6 @@
-import { type FormEvent, useMemo, useState } from 'react'
+import { type FormEvent, type ReactNode, useMemo, useState } from 'react'
 import {
-  Alert,
+  ActionIcon,
   Badge,
   Button,
   Checkbox,
@@ -9,6 +9,7 @@ import {
   MultiSelect,
   PasswordInput,
   Select,
+  SimpleGrid,
   Stack,
   Switch,
   Table,
@@ -17,7 +18,16 @@ import {
   VisuallyHidden,
 } from '@mantine/core'
 import { notifications } from '../../lib/toast'
-import { IconPlus } from '../../lib/icons'
+import {
+  IconBan,
+  IconDownload,
+  IconLibrary,
+  IconBook,
+  IconPencil,
+  IconPlus,
+  IconShield,
+  IconTrash,
+} from '../../lib/icons'
 import {
   useCreateUser,
   useDeleteUser,
@@ -42,6 +52,8 @@ import { Trans, Plural, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
+import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
+import { contentRatingVisual } from '../ui/status'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 
 /**
@@ -53,25 +65,37 @@ import { SettingsSection } from '../../pages/settings/SettingsSection'
  * would be stuck in whichever language was active at that moment. `useGrantablePermissions` renders
  * them at the call site.
  */
-const GRANTABLE_DEFS: { value: Exclude<Permission, 'Admin'>; label: MessageDescriptor; hint?: MessageDescriptor }[] = [
-  { value: 'AddSeries', label: msg`Add series` },
-  { value: 'DeleteSeries', label: msg`Delete series` },
-  { value: 'DownloadChapters', label: msg`Download chapters` },
-  { value: 'ManageDownloadQueue', label: msg`Manage queue` },
-  { value: 'ManageSources', label: msg`Manage sources` },
-  { value: 'EditMetadata', label: msg`Edit metadata`, hint: msg`Refresh metadata, rewrite ComicInfo, change monitoring` },
-  { value: 'ManageTags', label: msg`Manage tags` },
-  { value: 'ChangeContentRating', label: msg`Change own content rating` },
-  { value: 'UseTrackers', label: msg`Use trackers` },
-  { value: 'UseOpds', label: msg`Use OPDS` },
-  { value: 'ImportLibrary', label: msg`Import library` },
-  { value: 'ArchiveSeries', label: msg({ message: 'Archive series', context: 'series' }) },
+type PermissionGroup = 'library' | 'downloads' | 'sharing'
+
+const GRANTABLE_DEFS: {
+  value: Exclude<Permission, 'Admin'>
+  group: PermissionGroup
+  label: MessageDescriptor
+  hint?: MessageDescriptor
+}[] = [
+  { value: 'AddSeries', group: 'library', label: msg`Add series` },
+  { value: 'DeleteSeries', group: 'library', label: msg`Delete series` },
+  { value: 'DownloadChapters', group: 'downloads', label: msg`Download chapters` },
+  { value: 'ManageDownloadQueue', group: 'downloads', label: msg`Manage queue` },
+  { value: 'ManageSources', group: 'downloads', label: msg`Manage sources` },
+  {
+    value: 'EditMetadata',
+    group: 'library',
+    label: msg`Edit metadata`,
+    hint: msg`Refresh metadata, rewrite ComicInfo, change monitoring`,
+  },
+  { value: 'ManageTags', group: 'library', label: msg`Manage tags` },
+  { value: 'ChangeContentRating', group: 'sharing', label: msg`Change own content rating` },
+  { value: 'UseTrackers', group: 'sharing', label: msg`Use trackers` },
+  { value: 'UseOpds', group: 'sharing', label: msg`Use OPDS` },
+  { value: 'ImportLibrary', group: 'library', label: msg`Import library` },
+  { value: 'ArchiveSeries', group: 'library', label: msg({ message: 'Archive series', context: 'series' }) },
 ]
 
 function useGrantablePermissions() {
   const { _, i18n } = useLingui()
   return useMemo(
-    () => GRANTABLE_DEFS.map((g) => ({ value: g.value, label: _(g.label), hint: g.hint && _(g.hint) })),
+    () => GRANTABLE_DEFS.map((g) => ({ value: g.value, group: g.group, label: _(g.label), hint: g.hint && _(g.hint) })),
     [_, i18n.locale],
   )
 }
@@ -108,12 +132,13 @@ function UserModeSwitch() {
   // The wrapper is there before the mode loads and stays the same element after, so a palette deep
   // link finds it on arrival and its flash class is not wiped when the switch fills in.
   return (
-    <div id="setting-user-mode" className="settings-inline-target">
+    <div id="setting-user-mode" className="settings-inline-target users-switch-row">
       {mode && (
         <Switch
           checked={checked}
           disabled={!mode.available || save.isPending}
           onChange={(e) => save.mutate(e.currentTarget.checked)}
+          labelPosition="left"
           label={t`Single-user mode`}
           description={
             mode.available
@@ -138,12 +163,13 @@ function LoginNamesSwitch() {
   const checked = save.isPending && save.variables !== undefined ? save.variables : setting?.visible
 
   return (
-    <div id="setting-login-names" className="settings-inline-target">
+    <div id="setting-login-names" className="settings-inline-target users-switch-row">
       {setting && (
         <Switch
           checked={checked}
           disabled={save.isPending}
           onChange={(e) => save.mutate(e.currentTarget.checked)}
+          labelPosition="left"
           label={t`Show login names to everyone`}
           description={t`Readers without a display name appear under their login name on shared notes, the leaderboard and edit history, instead of "Another reader". Anyone who can sign in then sees every username.`}
         />
@@ -153,6 +179,7 @@ function LoginNamesSwitch() {
 }
 
 export function UsersSection() {
+  const { t } = useLinguiMacro()
   const renderLabel = useLabel()
   const { data: users } = useUsers()
   const { me, singleUser } = useAuth()
@@ -161,22 +188,31 @@ export function UsersSection() {
   const remove = useDeleteUser()
   const deletingName = deleting ? deleting.displayName?.trim() || deleting.userName : ''
 
+  const accountCount = users?.length
+
   return (
     <SettingsSection
       id="users"
       title={<Trans>Users</Trans>}
       actions={
-        <Button size="xs" leftSection={<IconPlus size={16} />} onClick={() => setEditing('new')}>
-          <Trans>Add user</Trans>
-        </Button>
+        <>
+          {accountCount !== undefined && (
+            <span className="users-count">
+              <Plural value={accountCount} one="# account" other="# accounts" />
+            </span>
+          )}
+          <Button size="xs" leftSection={<IconPlus size={16} />} onClick={() => setEditing('new')}>
+            <Trans>Add user</Trans>
+          </Button>
+        </>
       }
-      panelProps={{ p: 'md' }}
+      panelProps={{ p: 0 }}
     >
       <UserModeSwitch />
       {!singleUser && <LoginNamesSwitch />}
 
       <Table.ScrollContainer minWidth={576}>
-        <Table className="panel-table ops-table">
+        <Table className="panel-table ops-table users-table">
           <Table.Thead>
             <Table.Tr>
               <Table.Th><Trans>User</Trans></Table.Th>
@@ -189,58 +225,77 @@ export function UsersSection() {
           <Table.Tbody>
             {users?.map((user) => {
               const granted = user.permissionNames.length
+              const name = user.displayName?.trim() || user.userName
+              const rating = contentRatingVisual(user.maxContentRating)
               return (
                 <Table.Tr key={user.id} data-muted={user.disabled || undefined}>
                   <Table.Td>
-                    <Group gap={6}>
-                      <Text fz="sm">{user.displayName?.trim() || user.userName}</Text>
+                    <Group gap={10} wrap="nowrap">
+                      <span className="user-avatar" aria-hidden>
+                        {name.charAt(0).toUpperCase()}
+                      </span>
+                      <Text fz="sm" fw={600} c="var(--ink-hi)">{name}</Text>
                       {user.id === me?.id && (
                         <Badge size="xs" variant="outline">
                           <Trans>you</Trans>
                         </Badge>
                       )}
                       {user.disabled && (
-                        <Badge size="xs" color="var(--danger)" variant="light">
+                        <span className="user-disabled">
+                          <IconBan size={14} aria-hidden />
                           <Trans>disabled</Trans>
-                        </Badge>
+                        </span>
                       )}
                     </Group>
                   </Table.Td>
                   <Table.Td>
                     {user.isAdmin ? (
-                      <Badge size="xs" variant="light">
+                      <Badge size="sm" variant="light" leftSection={<IconShield size={12} />}>
                         <Trans>Administrator</Trans>
                       </Badge>
                     ) : (
-                      <Text fz="xs" c="var(--ink-3)">
-                        <Plural value={granted} one="# granted" other="# granted" />
-                      </Text>
+                      <Badge size="sm" variant="default">
+                        <Plural value={granted} one="# permission" other="# permissions" />
+                      </Badge>
                     )}
                   </Table.Td>
                   <Table.Td>
-                    <Text fz="xs" c="var(--ink-3)">
-                      {renderLabel(CONTENT_RATING_LABELS[user.maxContentRating] ?? user.maxContentRating)}
-                    </Text>
+                    {rating ? (
+                      <Badge size="sm" variant="light" color={rating.color} leftSection={<rating.Icon size={12} />}>
+                        {renderLabel(rating.label)}
+                      </Badge>
+                    ) : (
+                      <Text fz="xs" c="var(--ink-3)">
+                        {renderLabel(CONTENT_RATING_LABELS[user.maxContentRating] ?? user.maxContentRating)}
+                      </Text>
+                    )}
                   </Table.Td>
                   <Table.Td c="var(--ink-3)">
                     {user.lastLoginAt ? formatDateTime(user.lastLoginAt) : <Trans>never</Trans>}
                   </Table.Td>
                   <Table.Td ta="right">
-                    <Group gap={4} justify="flex-end">
-                      <Button size="compact-xs" variant="subtle" onClick={() => setEditing(user)}>
-                        <Trans>Edit</Trans>
-                      </Button>
+                    <Group gap={2} justify="flex-end" wrap="nowrap">
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        data-row-action
+                        aria-label={t`Edit`}
+                        onClick={() => setEditing(user)}
+                      >
+                        <IconPencil size={16} />
+                      </ActionIcon>
                       {/* Hidden for your own row: the server refuses it anyway, so offering it would
                           only produce an error message. */}
                       {user.id !== me?.id && (
-                        <Button
-                          size="compact-xs"
+                        <ActionIcon
                           variant="subtle"
-                          color="var(--danger)"
+                          color="gray"
+                          data-row-action="danger"
+                          aria-label={t`Delete`}
                           onClick={() => setDeleting(user)}
                         >
-                          <Trans>Delete</Trans>
-                        </Button>
+                          <IconTrash size={16} />
+                        </ActionIcon>
                       )}
                     </Group>
                   </Table.Td>
@@ -340,36 +395,58 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
 
   const editName = existing?.userName
 
+  const grantedCount = granted.size
+  const permissionGroups: { key: PermissionGroup; label: ReactNode; icon: ReactNode }[] = [
+    { key: 'library', label: <Trans>Library</Trans>, icon: <IconLibrary size={14} /> },
+    { key: 'downloads', label: <Trans>Downloads</Trans>, icon: <IconDownload size={14} /> },
+    { key: 'sharing', label: <Trans>Reading and sharing</Trans>, icon: <IconBook size={14} /> },
+  ]
+  const cannotSubmit = !username.trim() || (isNew && password.length < 10)
+
   return (
     <Modal
       opened
       onClose={onClose}
       closeOnEscape={!confirming}
       closeOnClickOutside={!confirming}
-      title={isNew ? t`Add user` : t`Edit ${editName}`}
+      title={
+        <ModalHeading
+          title={isNew ? t`Add user` : t`Edit ${editName}`}
+          description={
+            isNew ? (
+              <Trans>They sign in with these details and see only what you grant here.</Trans>
+            ) : (
+              <Trans>Change the sign-in, permissions or library access for this account.</Trans>
+            )
+          }
+        />
+      }
       centered
       size="lg"
     >
       <Stack
         component="form"
+        gap="md"
         onSubmit={(e: FormEvent) => {
           e.preventDefault()
-          if (!username.trim() || (isNew && password.length < 10)) return
+          if (cannotSubmit) return
           submit()
         }}
       >
-        <TextInput
-          label={t`Username`}
-          autoComplete="off"
-          required
-          value={username}
-          onChange={(e) => setUsername(e.currentTarget.value)}
-        />
-        <TextInput
-          label={t`Display name`}
-          value={displayName}
-          onChange={(e) => setDisplayName(e.currentTarget.value)}
-        />
+        <SimpleGrid cols={{ base: 1, xs: 2 }}>
+          <TextInput
+            label={t`Username`}
+            autoComplete="off"
+            required
+            value={username}
+            onChange={(e) => setUsername(e.currentTarget.value)}
+          />
+          <TextInput
+            label={t`Display name`}
+            value={displayName}
+            onChange={(e) => setDisplayName(e.currentTarget.value)}
+          />
+        </SimpleGrid>
         <PasswordInput
           label={isNew ? t`Password` : t`New password`}
           description={isNew ? t`At least 10 characters` : t`Leave blank to keep the current one`}
@@ -379,116 +456,138 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
           onChange={(e) => setPassword(e.currentTarget.value)}
         />
 
-        <Switch
-          label={t`Administrator`}
-          checked={isAdmin}
-          // An admin cannot demote themselves: the server refuses it, since the last admin standing
-          // could otherwise lock the instance out of its own settings.
-          disabled={editingSelf && existing?.isAdmin}
-          onChange={(e) => setIsAdmin(e.currentTarget.checked)}
-        />
-        {editingSelf && existing?.isAdmin && (
-          <Alert variant="light" color="var(--info)">
-            <Trans>
-              You cannot remove your own administrator permission. Promote another account first, then
-              edit this one from there.
-            </Trans>
-          </Alert>
-        )}
+        <div className="user-form-group">
+          <div className="user-form-title">
+            <Trans>Admin</Trans>
+          </div>
+          <Switch
+            label={t`Administrator`}
+            description={t`Grants every permission and the Settings pages.`}
+            checked={isAdmin}
+            // An admin cannot demote themselves: the server refuses it, since the last admin standing
+            // could otherwise lock the instance out of its own settings.
+            disabled={editingSelf && existing?.isAdmin}
+            onChange={(e) => setIsAdmin(e.currentTarget.checked)}
+          />
+          {editingSelf && existing?.isAdmin && (
+            <ModalNote tone="info">
+              <Trans>
+                You cannot remove your own administrator permission. Promote another account first, then
+                edit this one from there.
+              </Trans>
+            </ModalNote>
+          )}
+        </div>
 
         {!isAdmin && (
-          <Stack gap={6}>
-            <Text fz="sm" fw={500}>
+          <div className="user-form-group">
+            <div className="user-form-title">
               <Trans>Permissions</Trans>
-            </Text>
-            {grantable.map((permission) => (
-              <Checkbox
-                key={permission.value}
-                label={permission.label}
-                description={permission.hint}
-                checked={granted.has(permission.value)}
-                onChange={(e) => {
-                  const next = new Set(granted)
-                  if (e.currentTarget.checked) next.add(permission.value)
-                  else next.delete(permission.value)
-                  setGranted(next)
-                }}
-              />
-            ))}
-          </Stack>
+            </div>
+            <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="lg" verticalSpacing="md">
+              {permissionGroups.map((group) => (
+                <Stack key={group.key} gap={6} className="user-permission-group">
+                  <div className="user-form-heading">
+                    {group.icon}
+                    {group.label}
+                  </div>
+                  {grantable
+                    .filter((permission) => permission.group === group.key)
+                    .map((permission) => (
+                      <Checkbox
+                        key={permission.value}
+                        label={permission.label}
+                        description={permission.hint}
+                        checked={granted.has(permission.value)}
+                        onChange={(e) => {
+                          const next = new Set(granted)
+                          if (e.currentTarget.checked) next.add(permission.value)
+                          else next.delete(permission.value)
+                          setGranted(next)
+                        }}
+                      />
+                    ))}
+                </Stack>
+              ))}
+            </SimpleGrid>
+          </div>
         )}
 
-        <Select
-          label={t`Maximum content rating`}
-          data={CONTENT_RATINGS.map((r) => ({ value: r, label: renderLabel(CONTENT_RATING_LABELS[r]) }))}
-          value={rating}
-          onChange={(v) => setRating(v ?? 'safe')}
-          allowDeselect={false}
-        />
-
-        <Switch
-          label={t`Access all root folders`}
-          description={t`Including root folders added later.`}
-          checked={allRootFolders}
-          onChange={(e) => setAllRootFolders(e.currentTarget.checked)}
-        />
-        {!allRootFolders && (
-          <MultiSelect
-            label={t`Root folders`}
-            description={t`None selected means an empty library.`}
-            data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
-            value={folderIds}
-            onChange={setFolderIds}
+        <div className="user-form-group">
+          <div className="user-form-title">
+            <Trans>Library access</Trans>
+          </div>
+          <Select
+            label={t`Maximum content rating`}
+            data={CONTENT_RATINGS.map((r) => ({ value: r, label: renderLabel(CONTENT_RATING_LABELS[r]) }))}
+            value={rating}
+            onChange={(v) => setRating(v ?? 'safe')}
+            allowDeselect={false}
           />
-        )}
-
-        {!isNew && (
           <Switch
-            label={t`Disabled`}
-            description={t`Blocks sign-in. Keeps the account and its history.`}
-            checked={disabled}
-            disabled={editingSelf}
-            onChange={(e) => setDisabled(e.currentTarget.checked)}
+            label={t`Access all root folders`}
+            description={t`Including root folders added later.`}
+            checked={allRootFolders}
+            onChange={(e) => setAllRootFolders(e.currentTarget.checked)}
           />
+          {!allRootFolders && (
+            <MultiSelect
+              label={t`Root folders`}
+              description={t`None selected means an empty library.`}
+              data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
+              value={folderIds}
+              onChange={setFolderIds}
+            />
+          )}
+        </div>
+
+        {(!isNew || (existing && !editingSelf && (existing.twoFactorEnabled || existing.oidcLinked))) && (
+          <div className="user-form-group">
+            <div className="user-form-title">
+              <Trans>Account</Trans>
+            </div>
+            {!isNew && (
+              <Switch
+                label={t`Disabled`}
+                description={t`Blocks sign-in. Keeps the account and its history.`}
+                checked={disabled}
+                disabled={editingSelf}
+                onChange={(e) => setDisabled(e.currentTarget.checked)}
+              />
+            )}
+            {existing && !editingSelf && (existing.twoFactorEnabled || existing.oidcLinked) && (
+              <Group gap="xs">
+                {existing.twoFactorEnabled && (
+                  <Button size="xs" variant="default" onClick={() => setConfirming('twoFactor')}>
+                    <Trans>Reset two-factor</Trans>
+                  </Button>
+                )}
+                {existing.oidcLinked && (
+                  <Button size="xs" variant="default" onClick={() => setConfirming('sso')}>
+                    <Trans>Remove single sign-on</Trans>
+                  </Button>
+                )}
+              </Group>
+            )}
+          </div>
         )}
 
-        {existing && !editingSelf && (existing.twoFactorEnabled || existing.oidcLinked) && (
-          <Group gap="xs">
-            {existing.twoFactorEnabled && (
-              <Button
-                size="xs"
-                variant="light"
-                color="var(--warn)"
-                onClick={() => setConfirming('twoFactor')}
-              >
-                <Trans>Reset two-factor</Trans>
-              </Button>
-            )}
-            {existing.oidcLinked && (
-              <Button
-                size="xs"
-                variant="light"
-                color="var(--warn)"
-                onClick={() => setConfirming('sso')}
-              >
-                <Trans>Remove single sign-on</Trans>
-              </Button>
-            )}
-          </Group>
-        )}
-
-        <Group justify="flex-end">
+        <ModalFooter
+          status={
+            isAdmin ? (
+              <Trans>Administrator, every permission</Trans>
+            ) : (
+              <Plural value={grantedCount} one="# permission" other="# permissions" />
+            )
+          }
+        >
           <Button variant="default" onClick={onClose}>
             <Trans>Cancel</Trans>
           </Button>
-          <Button
-            type="submit"
-            loading={busy}
-            disabled={!username.trim() || (isNew && password.length < 10)}
-          >
+          <Button type="submit" loading={busy} disabled={cannotSubmit}>
             {isNew ? <Trans>Create</Trans> : <Trans>Save</Trans>}
           </Button>
-        </Group>
+        </ModalFooter>
       </Stack>
 
       <ConfirmDialog

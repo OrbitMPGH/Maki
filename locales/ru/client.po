@@ -144,6 +144,11 @@ msgstr "{0, plural, one {# глава} few {# главы} many {# глав} othe
 msgid "{0, plural, one {# could not be moved (locked or permission denied)} other {# could not be moved (locked or permission denied)}}"
 msgstr "{0, plural, one {Не удалось переместить # файл (заблокирован или нет прав)} few {Не удалось переместить # файла (заблокированы или нет прав)} many {Не удалось переместить # файлов (заблокированы или нет прав)} other {Не удалось переместить # файла (заблокированы или нет прав)}}"
 
+#. placeholder {0}: creators.length
+#: src/components/discover/FollowingRail.tsx
+msgid "{0, plural, one {# creator} other {# creators}}"
+msgstr ""
+
 #. placeholder {0}: alertDelistedIds.length
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -361,6 +366,11 @@ msgstr "{0, plural, one {Остался # резервный код. Новый 
 msgid "{0, plural, one {# repository} other {# repositories}}"
 msgstr ""
 
+#. placeholder {0}: results.length
+#: src/components/import/ImportMatchFinder.tsx
+msgid "{0, plural, one {# result} other {# results}}"
+msgstr ""
+
 #. placeholder {0}: rules.length
 #: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
@@ -490,6 +500,11 @@ msgstr "{0, plural, one {Удаляет # файл окончательно.} fe
 msgid "{0, plural, one {Downloaded # embedded series} other {Downloaded # embedded series}}"
 msgstr "{0, plural, one {Загружена # встроенная серия} few {Загружены # встроенные серии} many {Загружено # встроенных серий} other {Загружена # встроенная серия}}"
 
+#. placeholder {0}: draft.lockoutMinutes
+#: src/components/settings/SecuritySection.tsx
+msgid "{0, plural, one {for # minute} other {for # minutes}}"
+msgstr ""
+
 #. placeholder {0}: profile.libraryCount
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -513,6 +528,11 @@ msgstr "{0, plural, one {Импортировать # серию} few {Импо�
 #, fuzzy
 msgid "{0, plural, one {Kept # chapter} other {Kept # chapters}}"
 msgstr "{0, plural, one {Оставлена # глава} few {Оставлены # главы} many {Оставлено # глав} other {Оставлены # главы}}"
+
+#. placeholder {0}: draft.lockoutMaxAttempts
+#: src/components/settings/SecuritySection.tsx
+msgid "{0, plural, one {Lock after # failed sign-in} other {Lock after # failed sign-ins}}"
+msgstr ""
 
 #. placeholder {0}: r.updated
 #: src/pages/SeriesDetailPage.tsx
@@ -621,6 +641,11 @@ msgstr "{0, plural, one {Восстановлен и привязан к # гл�
 #, fuzzy
 msgid "{0, plural, one {Select all # in this view} other {Select all # in this view}}"
 msgstr "{0, plural, one {Выбрать все # в текущем списке} few {Выбрать все # в текущем списке} many {Выбрать все # в текущем списке} other {Выбрать все # в текущем списке}}"
+
+#. placeholder {0}: draft.sessionDays
+#: src/components/settings/SecuritySection.tsx
+msgid "{0, plural, one {sessions last # day} other {sessions last # days}}"
+msgstr ""
 
 #. placeholder {0}: selected.size
 #: src/pages/LibraryPage.tsx
@@ -733,6 +758,10 @@ msgstr "Сейчас рядов: {0}"
 #, fuzzy
 msgid "{abs} pt"
 msgstr "{abs} очк."
+
+#: src/components/settings/UsersSection.tsx
+msgid "{accountCount, plural, one {# account} other {# accounts}}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -1096,6 +1125,10 @@ msgstr "{count, plural, one {# удаление} few {# удаления} many {
 msgid "{count, plural, one {# file gone, nowhere else in the library} other {# files gone, nowhere else in the library}}"
 msgstr "{count, plural, one {# файл пропал, и больше нигде в библиотеке его нет} few {# файла пропали, и больше нигде в библиотеке их нет} many {# файлов пропали, и больше нигде в библиотеке их нет} other {# файла пропали, и больше нигде в библиотеке их нет}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {# file} other {# files}}"
+msgstr ""
+
 #: src/components/import/IgnoredFoldersModal.tsx
 msgid "{count, plural, one {# ignored} other {# ignored}}"
 msgstr ""
@@ -1199,6 +1232,10 @@ msgstr "{count, plural, one {Подтверждаю безвозвратное �
 #, fuzzy
 msgid "{count, plural, one {Median of # measured chapter: {width}px wide, {bpp} bits per pixel (JPG equivalent).} other {Median of # measured chapters: {width}px wide, {bpp} bits per pixel (JPG equivalent).}}"
 msgstr "{count, plural, one {Медиана по # измеренной главе: ширина {width}px, {bpp} бит на пиксель (эквивалент JPG).} few {Медиана по # измеренным главам: ширина {width}px, {bpp} бит на пиксель (эквивалент JPG).} many {Медиана по # измеренным главам: ширина {width}px, {bpp} бит на пиксель (эквивалент JPG).} other {Медиана по # измеренным главам: ширина {width}px, {bpp} бит на пиксель (эквивалент JPG).}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{count, plural, one {No chapter reads from it.} other {No chapter reads from them.}} Deleting frees the space and clears the duplicate findings. Nothing else changes."
+msgstr ""
 
 #: src/components/NotificationBell.tsx
 #, fuzzy
@@ -1549,9 +1586,12 @@ msgid "{gone, plural, one {Moved # file to the recycle bin} other {Moved # files
 msgstr "{gone, plural, one {Перемещён # файл в корзину} few {Перемещены # файла в корзину} many {Перемещены # файлов в корзину} other {Перемещены # файла в корзину}}"
 
 #: src/components/settings/UsersSection.tsx
-#, fuzzy
-msgid "{granted, plural, one {# granted} other {# granted}}"
-msgstr "{granted, plural, one {# предоставлено} few {# предоставлено} many {# предоставлено} other {# предоставлено}}"
+msgid "{granted, plural, one {# permission} other {# permissions}}"
+msgstr ""
+
+#: src/components/settings/UsersSection.tsx
+msgid "{grantedCount, plural, one {# permission} other {# permissions}}"
+msgstr ""
 
 #: src/components/ui/CoverCard.tsx
 #, fuzzy
@@ -3676,6 +3716,7 @@ msgstr "Доступ ко всем корневым папкам"
 msgid "Access token"
 msgstr "Токен доступа"
 
+#: src/components/settings/UsersSection.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Account"
@@ -3741,7 +3782,6 @@ msgstr "Действие для правила {number}"
 #: src/components/NotificationsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
-#: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -4000,6 +4040,10 @@ msgstr "Изменено: {editedBy}, запрошено: {askedFor}"
 msgid "Adjusted, asked for {askedFor}"
 msgstr "Изменено, запрошено: {askedFor}"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Admin"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Admin claim"
@@ -4011,6 +4055,10 @@ msgstr "Заявка администратора"
 #, fuzzy
 msgid "Administrator"
 msgstr "Администратор"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Administrator, every permission"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -4588,6 +4636,10 @@ msgstr "Внешний вид"
 msgid "Application token"
 msgstr "Токен приложения"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Applies after Maki restarts"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Applies automatically to"
@@ -5049,9 +5101,8 @@ msgid "Background"
 msgstr "Фоновые задачи"
 
 #: src/components/AppearanceAnnouncementModal.tsx
-#, fuzzy
 msgid "Background and accent colour are now picked separately, with new backgrounds to choose from. Tinted black is the new default. To keep the old look, pick Night. You can change this any time under Settings, Appearance."
-msgstr "Фон и акцентный цвет теперь выбираются отдельно, появились новые фоны. Новый вариант по умолчанию: «Чёрный с оттенком». Чтобы сохранить прежний вид, выберите «Ночь». Это можно изменить в любой момент в разделе Настройки → Внешний вид."
+msgstr ""
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -5373,6 +5424,10 @@ msgstr "Выбрать метки для включения"
 msgid "Browse the catalogue"
 msgstr "Просмотреть каталог"
 
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "Browse the server to pick a root folder."
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Browsing the catalogue"
@@ -5426,6 +5481,10 @@ msgstr "По статусу"
 #, fuzzy
 msgid "By type"
 msgstr "По типу"
+
+#: src/pages/HealthPage.tsx
+msgid "Byte for byte the same as a file that stays in the library."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -5494,6 +5553,7 @@ msgid "Can't sign in with the saved details."
 msgstr "Не удаётся войти с сохранёнными данными."
 
 #: src/components/DiscoverPresets.tsx
+#: src/components/import/ImportMatchFinder.tsx
 #: src/components/import/MihonImport.tsx
 #: src/components/import/RecentImports.tsx
 #: src/components/layout/PageLayoutEditor.tsx
@@ -5511,6 +5571,7 @@ msgstr "Не удаётся войти с сохранёнными данным�
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/RestoreSeriesDialog.tsx
 #: src/components/series/UndoConversionModal.tsx
+#: src/components/settings/AccountSection.tsx
 #: src/components/settings/FolderBrowserModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -5840,6 +5901,10 @@ msgstr "Изменить диапазон глав"
 msgid "Change the issuer URL?"
 msgstr "Изменить URL издателя?"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Change the sign-in, permissions or library access for this account."
+msgstr ""
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
 msgid "Change this title only"
@@ -5886,9 +5951,8 @@ msgid "Changes take effect after Maki restarts."
 msgstr "Изменения вступят в силу после перезапуска Maki."
 
 #: src/components/settings/AccountSection.tsx
-#, fuzzy
-msgid "Changing your password signs out your other devices."
-msgstr "Смена пароля выходит из ваших остальных устройств."
+msgid "Changing it signs out your other devices."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -6005,6 +6069,10 @@ msgstr "Страница главы"
 #, fuzzy
 msgid "Chapter pages"
 msgstr "Страницы главы"
+
+#: src/pages/HealthPage.tsx
+msgid "Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. A file with an identical copy in the same series folder hands its chapters to that copy instead. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -6348,6 +6416,10 @@ msgstr ""
 msgid "Choose Register / Login. The username is your OPDS token, the part of the feed URL after <0>{feedPath}</0>. Type anything as the password; Maki doesn't use it."
 msgstr "Выберите Register / Login. Имя пользователя: ваш токен OPDS, часть адреса ленты после <0>{feedPath}</0>. Пароль можно ввести любой, Maki его не использует."
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Claims"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
@@ -6511,6 +6583,7 @@ msgid "Client secret"
 msgstr "Секрет клиента"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/discover/FollowingRail.tsx
 #: src/components/import/IgnoredFoldersModal.tsx
 #: src/components/import/ImportPlanModal.tsx
 #: src/components/ImportReviewModal.tsx
@@ -8520,6 +8593,7 @@ msgstr "Загрузка…"
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
 #: src/components/series/SeriesHero.tsx
+#: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/registry.ts
@@ -8609,6 +8683,10 @@ msgstr "Каждая полоса охватывает дни, когда гла
 msgid "Each chapter's file is deleted for good some days after everyone has read it."
 msgstr "Файл каждой главы удаляется окончательно через несколько дней после того, как её прочитают все."
 
+#: src/components/settings/AccountSection.tsx
+msgid "Each code works once if you lose your authenticator."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Each language adds its own chapter rows and files."
@@ -8623,11 +8701,6 @@ msgstr "Каждый выбранный язык ищется отдельно."
 #, fuzzy
 msgid "Each Mihon category becomes a tag on the series. Manga in Mihon's Default category get no tag."
 msgstr "Каждая категория Mihon становится меткой серии. Манга из категории Default в Mihon меток не получает."
-
-#: src/pages/HealthPage.tsx
-#, fuzzy
-msgid "Each of these is byte for byte the same as another file that stays in the library, and no chapter reads from it. Deleting them frees the space and clears the duplicate findings. Nothing else changes."
-msgstr "Каждый из них побайтно совпадает с другим файлом, который остаётся в библиотеке, и ни одна глава с него не читается. Удаление освободит место и уберёт находки о дубликатах. Больше ничего не меняется."
 
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -9970,6 +10043,10 @@ msgstr "Папки с файлами, которые могут не привя�
 msgid "Follow"
 msgstr "Подписаться"
 
+#: src/components/discover/FollowingRail.tsx
+msgid "Follow one from a series page."
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Follow someone from their creator page."
@@ -10360,6 +10437,10 @@ msgstr "Получено из {indexer}"
 #, fuzzy
 msgid "Grabbed from {indexer}: {releaseName}"
 msgstr "Получено из {indexer}: {releaseName}"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Grants every permission and the Settings pages."
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -10855,6 +10936,10 @@ msgstr "Как импортировать"
 #, fuzzy
 msgid "How you read"
 msgstr "Как вы читаете"
+
+#: src/components/settings/AccountSection.tsx
+msgid "How you sign in, and the devices that stay signed in."
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -11994,10 +12079,14 @@ msgstr "Последняя проверка улучшений: {at}, {checked, 
 msgid "Last upgrade scan: {at}, {probed, plural, one {# probed} other {# probed}}, {queued, plural, one {# queued} other {# queued}}"
 msgstr "Последняя проверка улучшений: {at}, {probed, plural, one {# проба} few {# пробы} many {# проб} other {# пробы}}, {queued, plural, one {# в очереди} few {# в очереди} many {# в очереди} other {# в очереди}}"
 
+#. placeholder {0}: formatDateTime(key.lastUsedAt)
 #: src/components/settings/AccountSection.tsx
-#, fuzzy
-msgid "Last used"
-msgstr "Последнее использование"
+msgid "Last used {0}"
+msgstr ""
+
+#: src/components/settings/AccountSection.tsx
+msgid "Last used never"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -12193,6 +12282,7 @@ msgstr "Новый уровень"
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
 #: src/components/series/SeriesHero.tsx
+#: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/nav.ts
 #: src/pages/discover/ShortlistTab.tsx
@@ -12204,6 +12294,10 @@ msgstr "Новый уровень"
 #, fuzzy
 msgid "Library"
 msgstr "Библиотека"
+
+#: src/components/settings/UsersSection.tsx
+msgid "Library access"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -12491,6 +12585,10 @@ msgstr "Локальная база MangaBaka готова"
 #, fuzzy
 msgid "Lockout duration (minutes)"
 msgstr "Длительность блокировки (минуты)"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Lockout is off"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -12806,9 +12904,8 @@ msgid "Maki won't find series on this site by itself. You'll link each series by
 msgstr "Maki сам не найдёт серии на этом сайте. Вы привяжете каждую серию, вставив её адрес на странице серии."
 
 #: src/components/LanguageAnnouncementModal.tsx
-#, fuzzy
 msgid "Maki's interface is now translated into {languageCount} languages. Pick yours here, or change it any time under Settings, Language."
-msgstr "Интерфейс Maki теперь переведён на {languageCount} языков. Выберите свой здесь или измените его в любое время в разделе Настройки, Язык."
+msgstr ""
 
 #: src/pages/reader/enhanceMethods.ts
 #, fuzzy
@@ -13875,7 +13972,6 @@ msgstr "Нейтрально"
 msgid "neutral, seeds at shelf weight"
 msgstr "нейтрально, вес как у полки"
 
-#: src/components/settings/AccountSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -13986,6 +14082,10 @@ msgstr "Новый формат"
 msgid "New from creators you follow"
 msgstr "Новое от создателей, на которых вы подписаны"
 
+#: src/components/settings/AccountSection.tsx
+msgid "New key"
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "New OPDS feed URL generated"
@@ -14037,6 +14137,10 @@ msgstr "Новые серии ищут источники в фоновом ре
 #, fuzzy
 msgid "New series from creators you follow"
 msgstr "Новые серии от создателей, на которых вы подписаны"
+
+#: src/components/discover/FollowingRail.tsx
+msgid "New series from them show up on Discover."
+msgstr ""
 
 #: src/components/TagManagerModal.tsx
 #, fuzzy
@@ -14281,6 +14385,10 @@ msgstr ""
 msgid "No creator shows up often enough yet."
 msgstr "Пока нет создателя, который встречается достаточно часто."
 
+#: src/components/discover/FollowingRail.tsx
+msgid "No creators followed"
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "No demographic data yet"
@@ -14372,6 +14480,10 @@ msgstr ""
 #, fuzzy
 msgid "No indexers configured in {backendName}."
 msgstr "В {backendName} не настроено ни одного индексатора."
+
+#: src/components/settings/AccountSection.tsx
+msgid "No keys yet. New key makes one for a script or an app."
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -15015,6 +15127,7 @@ msgid "Not in your library yet"
 msgstr "Пока нет в библиотеке"
 
 #: src/components/LinkChaptersModal.tsx
+#: src/components/settings/AccountSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -15115,6 +15228,7 @@ msgstr "Не просканировано"
 msgid "Not set"
 msgstr "Не задано"
 
+#: src/components/settings/AccountSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
@@ -15130,6 +15244,10 @@ msgstr "Пока не настроено."
 #, fuzzy
 msgid "Not set up yet. An admin can add it in Settings."
 msgstr "Пока не настроено. Администратор может добавить это в настройках."
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Not set up. Open to add an issuer, client and claims."
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -15752,6 +15870,7 @@ msgstr "времени чтения"
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/OfflineReadingSection.tsx
+#: src/components/settings/SecuritySection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -15855,6 +15974,7 @@ msgstr "Чёрный OLED"
 #: src/components/ImportListsSection.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/AccountSection.tsx
+#: src/components/settings/SecuritySection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -16199,10 +16319,18 @@ msgstr "Откройте страницу и убедитесь, что это �
 msgid "Open the search with these filters from now on"
 msgstr "В дальнейшем открывать поиск с этими фильтрами"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Open to edit the issuer, client, claims and who gets an account."
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Open webtoon chapters in Continuous layout"
 msgstr "Открывать главы вебтуна в непрерывном режиме"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "OpenID Connect provider"
+msgstr ""
 
 #: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
@@ -17052,11 +17180,6 @@ msgstr "Публикует в одну тему форумной группы."
 msgid "Preferences"
 msgstr "Предпочтения"
 
-#: src/components/settings/AccountSection.tsx
-#, fuzzy
-msgid "Prefix"
-msgstr "Префикс"
-
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Preload"
@@ -17225,6 +17348,7 @@ msgstr "Защитить от улучшений"
 msgid "Protected from upgrades"
 msgstr "Защищено от улучшений"
 
+#: src/components/settings/SecuritySection.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Provider"
@@ -17877,6 +18001,10 @@ msgstr "Читатели без отображаемого имени показ
 msgid "Reading"
 msgstr "Чтение"
 
+#: src/components/settings/UsersSection.tsx
+msgid "Reading and sharing"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Reading counts in your stats and goes to your trackers."
@@ -18114,6 +18242,10 @@ msgstr "Запись"
 #, fuzzy
 msgid "Recovery code"
 msgstr "Код восстановления"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Recovery codes are shown once you verify."
+msgstr ""
 
 #: src/components/TagBuckets.tsx
 #, fuzzy
@@ -19471,9 +19603,8 @@ msgid "Revoke {revokingName}?"
 msgstr "Отозвать {revokingName}?"
 
 #: src/components/settings/AccountSection.tsx
-#, fuzzy
-msgid "revoked"
-msgstr "отозвано"
+msgid "Revoked"
+msgstr ""
 
 #: src/pages/stats/sectionList.ts
 #, fuzzy
@@ -20276,6 +20407,10 @@ msgstr "Ищите по названию, описанию или автору: 
 msgid "Search by title, description, or by feel"
 msgstr "Поиск по названию, описанию или ощущению"
 
+#: src/components/import/ImportMatchFinder.tsx
+msgid "Search by title, or paste an id or link."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Search chapters"
@@ -20653,6 +20788,10 @@ msgid "Sends what you read to your trackers every {intervalMinutes, plural, one 
 msgstr "Отправляет прочитанное в ваши трекеры каждые {intervalMinutes, plural, one {# минуту} few {# минуты} many {# минут} other {# минуты}}. Прогресс в трекере никогда не понижается."
 
 #: src/components/settings/AccountSection.tsx
+msgid "Sent as <0>X-Api-Key</0>"
+msgstr ""
+
+#: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Sent in the <0>X-Api-Key</0> header. A key acts as you."
 msgstr "Передаётся в заголовке <0>X-Api-Key</0>. Ключ действует от вашего имени."
@@ -20884,6 +21023,10 @@ msgstr "Срок сеанса (дни)"
 msgid "Sessions"
 msgstr "Сеансы"
 
+#: src/components/settings/AccountSection.tsx
+msgid "Set"
+msgstr ""
+
 #: src/components/series/MetadataHistoryModal.tsx
 #, fuzzy
 msgid "Set by {user}"
@@ -20979,11 +21122,6 @@ msgstr "Настроить этот сайт как источник"
 #, fuzzy
 msgid "Set up trackers"
 msgstr "Настроить трекеры"
-
-#: src/components/settings/AccountSection.tsx
-#, fuzzy
-msgid "Set up two-factor authentication"
-msgstr "Настроить двухфакторную аутентификацию"
 
 #: src/nav.ts
 #: src/pages/SettingsPage.tsx
@@ -21337,6 +21475,10 @@ msgstr "Выйти из всех остальных мест"
 #, fuzzy
 msgid "Sign-in"
 msgstr "Вход"
+
+#: src/components/settings/SecuritySection.tsx
+msgid "Sign-in behaviour"
+msgstr ""
 
 #: src/api/ssoErrors.ts
 #, fuzzy
@@ -23260,6 +23402,10 @@ msgstr "тема, тёмная тема, светлая тема, цвет ак�
 msgid "Then"
 msgstr "Затем"
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Then they can try again."
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "There is no safe automatic merge."
@@ -23319,6 +23465,10 @@ msgstr "Они по-прежнему на этом устройстве. Обн�
 #, fuzzy
 msgid "They come from the catalogue, so a library the dump does not cover has none."
 msgstr "Они поступают из каталога, поэтому для библиотеки, которую дамп не охватывает, их нет."
+
+#: src/components/settings/UsersSection.tsx
+msgid "They sign in with these details and see only what you grant here."
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -23483,9 +23633,8 @@ msgid "This pass:"
 msgstr "Этот проход:"
 
 #: src/pages/HealthPage.tsx
-#, fuzzy
-msgid "This permanently deletes {count, plural, one {the file} other {these files}} from disk. Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. A file with an identical copy in the same series folder hands its chapters to that copy instead. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
-msgstr "{count, plural, one {Это навсегда удаляет файл с диска.} few {Это навсегда удаляет эти файлы с диска.} many {Это навсегда удаляет эти файлы с диска.} other {Это навсегда удаляет эти файлы с диска.}} Записи глав, отметки «Запрошено» и история чтения сохраняются, поэтому всё ещё нужное можно загрузить снова. Файл с идентичной копией в той же папке серии передаёт свои главы этой копии. Архивы, которых уже нет на диске, удалять нечего: для них это лишь очищает запись, где сказано, что их главы загружены."
+msgid "This permanently deletes {count, plural, one {the file} other {these files}} from disk."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -23720,6 +23869,10 @@ msgstr "Лайк. Это название теперь влияет на рек�
 #, fuzzy
 msgid "Thumbs, hide or dismiss a recommendation and it shows up here."
 msgstr "Поставьте лайк, дизлайк, скройте или отклоните рекомендацию, и она появится здесь."
+
+#: src/pages/HealthPage.tsx
+msgid "Tick the box to continue"
+msgstr ""
 
 #: src/components/LinkFileToChaptersModal.tsx
 msgid "Tick the chapters this file contains. Shift-click for a range. Unticking one unlinks it."
@@ -24027,9 +24180,8 @@ msgid "Translations are machine-made and may be incomplete."
 msgstr "Переводы сделаны машиной и могут быть неполными."
 
 #: src/components/LanguageAnnouncementModal.tsx
-#, fuzzy
 msgid "Translations other than English are machine-made and being corrected over time; anything still untranslated falls back to English."
-msgstr "Переводы, кроме английского, созданы машиной и постепенно исправляются. Всё ещё непереведённые строки отображаются на английском."
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -24112,6 +24264,10 @@ msgstr "Повторить предпросмотр"
 #, fuzzy
 msgid "Turkish"
 msgstr "Турецкий"
+
+#: src/components/settings/AccountSection.tsx
+msgid "Turn it off"
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -24863,6 +25019,10 @@ msgstr "Использовать эту копию"
 #, fuzzy
 msgid "Use this folder"
 msgstr "Использовать эту папку"
+
+#: src/components/settings/FolderBrowserModal.tsx
+msgid "Use this folder, or go up a level."
+msgstr ""
 
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -25877,11 +26037,6 @@ msgstr "Ты досмотрел {animeTitle} ({coveredLabel}). Вероятно,
 #, fuzzy
 msgid "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
 msgstr "Ты досмотрел {animeTitle}. Аниме охватывает главы до {coveredTo}. Начни читать с главы {resumeAt}."
-
-#: src/components/discover/FollowingRail.tsx
-#, fuzzy
-msgid "You follow nobody yet. Open a creator or studio and press Follow."
-msgstr "Вы пока ни на кого не подписаны. Откройте страницу создателя или студии и нажмите «Подписаться»."
 
 #: src/components/series/RateHint.tsx
 #, fuzzy

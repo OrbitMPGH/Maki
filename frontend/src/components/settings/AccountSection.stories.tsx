@@ -22,6 +22,11 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+async function openRow(canvas: ReturnType<typeof within>, userEvent: { click: (el: Element) => Promise<void> }, name: RegExp | string) {
+  const head = await canvas.findByRole('button', { name })
+  if (head.getAttribute('aria-expanded') !== 'true') await userEvent.click(head)
+}
+
 async function dialogOf(canvasElement: HTMLElement) {
   const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog')
   await waitFor(() => expect(dialog).toBeVisible())
@@ -32,8 +37,11 @@ export const SignIn: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('maki')).toBeVisible()
     await expect(await canvas.findByText('Administrator')).toBeVisible()
-    await expect(await canvas.findByRole('button', { name: 'Set up' })).toBeVisible()
+    await expect(await canvas.findByText('Two-factor authentication')).toBeVisible()
+    await expect(await canvas.findByText('Not set up')).toBeVisible()
+    await expect(await canvas.findByText('Set')).toBeVisible()
     await expect(await canvas.findByText(/Not linked yet/)).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Sign out everywhere else' })).toBeVisible()
   },
 }
 
@@ -47,6 +55,7 @@ export const SignInReader: Story = {
 
 export const ChangePassword: Story = {
   play: async ({ canvas, userEvent }) => {
+    await openRow(canvas, userEvent, /^Password/)
     const change = await canvas.findByRole('button', { name: 'Change' })
     await waitFor(() => expect(change).toHaveAttribute('aria-disabled', 'true'))
     await userEvent.type(await canvas.findByLabelText('Current'), 'old-password')
@@ -59,6 +68,7 @@ export const ChangePassword: Story = {
 
 export const ChangePasswordTooShort: Story = {
   play: async ({ canvas, userEvent }) => {
+    await openRow(canvas, userEvent, /^Password/)
     await userEvent.type(await canvas.findByLabelText('Current'), 'old-password')
     await userEvent.type(await canvas.findByLabelText('New'), 'short')
     const change = canvas.getByRole('button', { name: 'Change' })
@@ -73,9 +83,10 @@ export const ChangePasswordTooShort: Story = {
 
 export const TwoFactorEnabled: Story = {
   parameters: { msw: settingsMsw(http.get(api('/account/2fa'), () => HttpResponse.json(twoFactorOn))) },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
     await expect(await canvas.findByText('On')).toBeVisible()
     await expect(await canvas.findByText('8 recovery codes left. A new set replaces the old codes.')).toBeVisible()
+    await openRow(canvas, userEvent, /^Two-factor/)
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Disable' })).toBeDisabled())
   },
 }
@@ -83,28 +94,29 @@ export const TwoFactorEnabled: Story = {
 export const TwoFactorDisable: Story = {
   parameters: { msw: settingsMsw(http.get(api('/account/2fa'), () => HttpResponse.json(twoFactorOn))) },
   play: async ({ canvas, userEvent }) => {
+    await openRow(canvas, userEvent, /^Two-factor/)
     await userEvent.type(await canvas.findByLabelText('Confirm your password to turn it off'), 'my-password')
     await userEvent.click(await canvas.findByRole('button', { name: 'Disable' }))
     await expect(await within(document.body).findByText('Two-factor authentication disabled')).toBeVisible()
   },
 }
 
-export const TwoFactorSetupModal: Story = {
-  play: async ({ canvas, canvasElement, userEvent }) => {
+export const TwoFactorSetup: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await openRow(canvas, userEvent, /^Two-factor/)
     await userEvent.click(await canvas.findByRole('button', { name: 'Set up' }))
-    const dialog = await dialogOf(canvasElement)
-    await expect(await dialog.findByText('JBSW Y3DP EHPK 3PXP')).toBeVisible()
-    await expect(await dialog.findByRole('button', { name: 'Verify and enable' })).toBeVisible()
+    await expect(await canvas.findByText('JBSW Y3DP EHPK 3PXP')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Verify and enable' })).toBeVisible()
   },
 }
 
 export const TwoFactorEnableShowsRecoveryCodes: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
+    await openRow(canvas, userEvent, /^Two-factor/)
     await userEvent.click(await canvas.findByRole('button', { name: 'Set up' }))
-    const dialog = await dialogOf(canvasElement)
-    await userEvent.type(await dialog.findByLabelText('Code from your app'), '123456')
-    await userEvent.type(await dialog.findByLabelText('Your password'), 'my-password')
-    await userEvent.click(await dialog.findByRole('button', { name: 'Verify and enable' }))
+    await userEvent.type(await canvas.findByLabelText('Code from your app'), '123456')
+    await userEvent.type(await canvas.findByLabelText('Your password'), 'my-password')
+    await userEvent.click(await canvas.findByRole('button', { name: 'Verify and enable' }))
     const codes = await within(canvasElement.ownerDocument.body).findByText(/a1b2-c3d4/)
     await waitFor(() => expect(codes).toBeVisible())
     await expect(await within(canvasElement.ownerDocument.body).findByRole('button', { name: 'I have saved them' })).toBeVisible()
@@ -172,7 +184,7 @@ export const ApiKeysList: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Home automation')).toBeVisible()
     await expect(await canvas.findByText('Old laptop')).toBeVisible()
-    await expect(await canvas.findByText('revoked')).toBeVisible()
+    await expect(await canvas.findByText('Revoked')).toBeVisible()
     // The OPDS feed key is managed on the OPDS card, not listed here.
     await expect(canvas.queryByText('Reading app')).toBeNull()
   },
@@ -181,15 +193,17 @@ export const ApiKeysList: Story = {
 export const ApiKeysEmpty: Story = {
   render: () => <ApiKeysSection />,
   parameters: { msw: settingsMsw(http.get(api('/account/apikeys'), () => HttpResponse.json([]))) },
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText(/No keys yet/)).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'New key' }))
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Create' })).toHaveAttribute('aria-disabled', 'true'))
-    await expect(canvas.queryByRole('table')).toBeNull()
   },
 }
 
 export const ApiKeyCreateShowsSecretOnce: Story = {
   render: () => <ApiKeysSection />,
   play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'New key' }))
     await userEvent.type(await canvas.findByLabelText('Name'), 'Phone reader')
     await userEvent.type(await canvas.findByLabelText('Your password'), 'my-password')
     await userEvent.click(await canvas.findByRole('button', { name: 'Create' }))
@@ -204,6 +218,7 @@ export const ApiKeyCreateWithRecentSso: Story = {
   render: () => <ApiKeysSection />,
   parameters: { msw: settingsMsw(http.get(api('/account/mint-proof'), () => HttpResponse.json(mintSsoFresh))) },
   play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'New key' }))
     await userEvent.type(await canvas.findByLabelText('Name'), 'Phone reader')
     await expect(canvas.queryByLabelText('Your password')).toBeNull()
     await userEvent.click(await canvas.findByRole('button', { name: 'Create' }))
@@ -216,6 +231,7 @@ export const ApiKeyCreateWithStaleSso: Story = {
   render: () => <ApiKeysSection />,
   parameters: { msw: settingsMsw(http.get(api('/account/mint-proof'), () => HttpResponse.json(mintSsoStale))) },
   play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'New key' }))
     await userEvent.type(await canvas.findByLabelText('Name'), 'Phone reader')
     await expect(await canvas.findByText(/needs a sign-in from the last 10 minutes/)).toBeVisible()
     const again = await canvas.findByRole('link', { name: 'Sign in again' })
@@ -242,6 +258,7 @@ export const ApiKeyCreateRejected: Story = {
     msw: settingsMsw(http.post(api('/account/apikeys'), () => failWith(403, 'That password is not right.'))),
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'New key' }))
     await userEvent.type(await canvas.findByLabelText('Name'), 'Phone reader')
     await userEvent.type(await canvas.findByLabelText('Your password'), 'wrong')
     await userEvent.click(await canvas.findByRole('button', { name: 'Create' }))

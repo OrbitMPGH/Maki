@@ -93,7 +93,7 @@ export function MetadataLinks({
                   }
                 }}
               >
-                <MetadataSiteIcon site={link.site} monogram={info.short} size={compact ? 12 : 14} />
+                <MetadataSiteIcon site={link.site} monogram={info.short} size={compact ? 15 : 18} />
               </ActionIcon>
             </Tooltip>
             {score && <span className="site-mark-score tnum">{score}</span>}

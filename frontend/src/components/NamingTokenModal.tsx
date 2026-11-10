@@ -112,7 +112,7 @@ export function NamingTokenModal({
         />
       }
     >
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+      <div className="token-modal-controls">
         <TextInput
           aria-label={t`Naming format`}
           label={t`Naming format`}

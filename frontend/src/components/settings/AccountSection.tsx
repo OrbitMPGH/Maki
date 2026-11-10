@@ -1,27 +1,10 @@
 import { i18n } from '@lingui/core'
-import { FieldAction } from './FieldAction'
 import { ssoLinkErrorLabel } from '../../api/ssoErrors'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import {
-  Alert,
-  Badge,
-  Box,
-  Button,
-  Code,
-  Divider,
-  Group,
-  Modal,
-  PasswordInput,
-  Stack,
-  Table,
-  Text,
-  TextInput,
-  Tooltip,
-  VisuallyHidden,
-} from '@mantine/core'
+import { Badge, Button, Code, Group, Modal, PasswordInput, Stack, Text, TextInput, Tooltip } from '@mantine/core'
 import { notifications } from '../../lib/toast'
-import { IconCheck, IconCopy } from '../../lib/icons'
+import { IconCheck, IconCopy, IconPlus } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
@@ -45,8 +28,10 @@ import { getInitialize } from '../../api/client'
 import { formatDateTime } from '../../format'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
-import { useCopyText } from '../ui/useCopyText'
-import { PanelTitle } from '../ui/PanelTitle'
+import { useCopyText } from '../ui/useCopyText'
+
+import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
+import { SettingsRow, SettingsRows, SettingsRowsBlock } from './SettingsRow'
 import { MintPasswordField, RecentSignInNotice, useMintConfirmation } from './MintConfirmation'
 
 /**
@@ -63,10 +48,11 @@ export function SignInSection() {
       id="sign-in"
       title={<Trans>Sign-in</Trans>}
       description={
-        <Trans>Changing your password signs out your other devices.</Trans>
+        <Trans>How you sign in, and the devices that stay signed in.</Trans>
       }
+      panelProps={{ p: 0 }}
     >
-      <Group gap="xs" mb="md">
+      <div className="account-identity">
         <Text size="sm" c="var(--ink-3)">
           <Trans>Signed in as</Trans>
         </Text>
@@ -78,21 +64,21 @@ export function SignInSection() {
             <Trans>Administrator</Trans>
           </Badge>
         )}
-      </Group>
+      </div>
 
-      <Stack gap="lg">
-        <PasswordCard />
-        <Divider />
-        <TwoFactorCard />
-        <SsoCard />
-        <Divider />
-        <SessionsCard />
-      </Stack>
+      <SettingsRows>
+        <PasswordRow />
+        <TwoFactorRow />
+        <SsoRow />
+        <SessionsRow />
+      </SettingsRows>
     </SettingsSection>
   )
 }
 
 export function ApiKeysSection() {
+  const [creating, setCreating] = useState(false)
+
   return (
     <SettingsSection
       id="api-keys"
@@ -102,16 +88,28 @@ export function ApiKeysSection() {
           Sent in the <Code>X-Api-Key</Code> header. A key acts as you.
         </Trans>
       }
+      actions={
+        <Button
+          size="xs"
+          variant="subtle"
+          leftSection={<IconPlus size={16} />}
+          onClick={() => setCreating((open) => !open)}
+        >
+          <Trans>New key</Trans>
+        </Button>
+      }
+      panelProps={{ p: 0 }}
     >
-      <ApiKeysCard />
+      <ApiKeysCard creating={creating} onCloseCreate={() => setCreating(false)} />
     </SettingsSection>
   )
 }
 
-function SsoCard() {
+function SsoRow() {
   const { t } = useLingui()
   const { me } = useAuth()
   const [sso, setSso] = useState<{ enabled: boolean; displayName: string } | null>(null)
+  const [open, setOpen] = useState(false)
   const [linkPassword, setLinkPassword] = useState('')
   const confirmLink = useConfirmOidcLink()
   const unlink = useUnlinkOidc()
@@ -166,80 +164,97 @@ function SsoCard() {
   const displayName = sso.displayName || t`Single sign-on`
   const oidcUserName = me?.oidcUserName
 
-  // Brings its own divider: with SSO off the card is gone, and a divider left in the parent stacked
-  // on the next one.
+  if (me?.oidcLinked) {
+    return (
+      <SettingsRow
+        title={<Trans>Single sign-on</Trans>}
+        status={{ tone: 'ok', label: t`Linked` }}
+        summary={
+          <Trans>
+            Signed in as <Code>{oidcUserName}</Code> on {displayName}.
+          </Trans>
+        }
+        aside={
+          <Button
+            size="compact-xs"
+            variant="subtle"
+            color="var(--neutral)"
+            className="quiet-danger"
+            loading={unlink.isPending}
+            onClick={() =>
+              unlink.mutate(undefined, {
+                onSuccess: () =>
+                  notifications.show({ message: now`Single sign-on removed from your account`, color: 'var(--ok)' }),
+              })
+            }
+          >
+            <Trans>Remove</Trans>
+          </Button>
+        }
+      />
+    )
+  }
+
   return (
-    <>
-      <Divider />
-      <Stack gap="xs">
-        <Text fw={600} size="sm">
-          <Trans>Single sign-on</Trans>
-        </Text>
-        {me?.oidcLinked ? (
+    <SettingsRow
+      title={<Trans>Single sign-on</Trans>}
+      status={{ tone: 'neutral', label: t`Not linked` }}
+      summary={
+        <Trans>
+          Not linked yet. Confirm your password, then sign in with {displayName} to link it to this account.
+        </Trans>
+      }
+      opened={open}
+      onToggle={() => setOpen((value) => !value)}
+      lazy
+    >
+      <Stack
+        component="form"
+        gap="sm"
+        onSubmit={(e: FormEvent) => {
+          e.preventDefault()
+          confirmLink.mutate(linkPassword, {
+            // The link is a top-level navigation to the provider; the confirmation it needs
+            // was just set as a cookie.
+            onSuccess: () => window.location.assign('/api/v1/auth/oidc/link'),
+          })
+        }}
+      >
+        <PasswordInput
+          label={t`Confirm your password to link`}
+          autoComplete="current-password"
+          value={linkPassword}
+          onChange={(e) => setLinkPassword(e.currentTarget.value)}
+          maw={320}
+        />
+        <div className="settings-row-foot">
+          <span />
           <Group gap="xs">
-            <Badge color="var(--ok)" variant="light">
-              <Trans>Linked</Trans>
-            </Badge>
-            <Text size="xs" c="var(--ink-3)">
-              <Trans>
-                Signed in as <Code>{oidcUserName}</Code> on {displayName}.
-              </Trans>
-            </Text>
             <Button
-              size="compact-xs"
-              variant="light"
-              color="var(--danger)"
-              loading={unlink.isPending}
-              onClick={() =>
-                unlink.mutate(undefined, {
-                  onSuccess: () =>
-                    notifications.show({ message: now`Single sign-on removed from your account`, color: 'var(--ok)' }),
-                })
-              }
-            >
-              <Trans>Remove</Trans>
-            </Button>
-          </Group>
-        ) : (
-          <Stack gap="xs">
-            <Text size="xs" c="var(--ink-3)">
-              <Trans>
-                Not linked yet. Confirm your password, then sign in with {displayName} to link it to
-                this account.
-              </Trans>
-            </Text>
-            <Group
-              component="form"
-              align="flex-end"
-              onSubmit={(e: FormEvent) => {
-                e.preventDefault()
-                confirmLink.mutate(linkPassword, {
-                  // The link is a top-level navigation to the provider; the confirmation it needs
-                  // was just set as a cookie.
-                  onSuccess: () => window.location.assign('/api/v1/auth/oidc/link'),
-                })
+              size="xs"
+              variant="subtle"
+              color="var(--neutral)"
+              onClick={() => {
+                setLinkPassword('')
+                setOpen(false)
               }}
             >
-              <PasswordInput
-                label={t`Confirm your password to link`}
-                autoComplete="current-password"
-                value={linkPassword}
-                onChange={(e) => setLinkPassword(e.currentTarget.value)}
-                w={260}
-              />
-              <Button type="submit" size="xs" variant="default" loading={confirmLink.isPending}>
-                <Trans>Link {displayName}</Trans>
-              </Button>
-            </Group>
-          </Stack>
-        )}
+              <Trans>Cancel</Trans>
+            </Button>
+            <Button type="submit" size="xs" loading={confirmLink.isPending}>
+              <Trans>Link {displayName}</Trans>
+            </Button>
+          </Group>
+        </div>
       </Stack>
-    </>
+    </SettingsRow>
   )
 }
 
-function PasswordCard() {
+function PasswordRow() {
   const { t } = useLingui()
+  const { data: status } = useTwoFactorStatus()
+  const [open, setOpen] = useState(false)
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const change = useChangePassword()
@@ -249,14 +264,26 @@ function PasswordCard() {
       ? t`The new password needs at least 10 characters`
       : null
 
+  const close = () => {
+    setCurrent('')
+    setNext('')
+    setOpen(false)
+  }
+
   return (
-    <Stack gap="xs">
-      <PanelTitle>
-        <Trans>Password</Trans>
-      </PanelTitle>
-      <Box
+    <SettingsRow
+      title={<Trans>Password</Trans>}
+      status={
+        status ? (status.hasPassword ? { tone: 'ok', label: t`Set` } : { tone: 'neutral', label: t`Not set up` }) : null
+      }
+      summary={<Trans>Changing it signs out your other devices.</Trans>}
+      opened={open}
+      onToggle={() => setOpen((value) => !value)}
+      lazy
+    >
+      <Stack
         component="form"
-        className="settings-field-grid"
+        gap="sm"
         onSubmit={(e: FormEvent) => {
           e.preventDefault()
           if (blocked) return
@@ -264,8 +291,7 @@ function PasswordCard() {
             { currentPassword: current, newPassword: next },
             {
               onSuccess: () => {
-                setCurrent('')
-                setNext('')
+                close()
                 notifications.show({
                   // Worth stating plainly: changing the password rotates the security stamp, which
                   // is what invalidates every other issued cookie.
@@ -277,40 +303,48 @@ function PasswordCard() {
           )
         }}
       >
-        <PasswordInput
-          label={t`Current`}
-          autoComplete="current-password"
-          value={current}
-          onChange={(e) => setCurrent(e.currentTarget.value)}
-        />
-        <PasswordInput
-          label={t`New`}
-          description={t`At least 10 characters`}
-          autoComplete="new-password"
-          value={next}
-          onChange={(e) => setNext(e.currentTarget.value)}
-        />
-        {/* The hint sits under New, so the row aligns on the labels and the button takes a blank one. */}
-        <FieldAction>
-          {/* data-disabled rather than disabled: a disabled button gets no hover or focus, so the
-              tooltip saying why could never show. The submit handler holds the guard. */}
-          <Tooltip label={blocked} disabled={!blocked} events={{ hover: true, focus: true, touch: true }}>
-            <Button
-              type="submit"
-              loading={change.isPending}
-              data-disabled={blocked !== null || undefined}
-              aria-disabled={blocked !== null}
-            >
-              <Trans>Change</Trans>
+        <Group grow align="flex-start">
+          <PasswordInput
+            label={t`Current`}
+            autoComplete="current-password"
+            value={current}
+            onChange={(e) => setCurrent(e.currentTarget.value)}
+          />
+          <PasswordInput
+            label={t`New`}
+            description={t`At least 10 characters`}
+            autoComplete="new-password"
+            value={next}
+            onChange={(e) => setNext(e.currentTarget.value)}
+          />
+        </Group>
+        <div className="settings-row-foot">
+          <span />
+          <Group gap="xs">
+            <Button size="xs" variant="subtle" color="var(--neutral)" onClick={close}>
+              <Trans>Cancel</Trans>
             </Button>
-          </Tooltip>
-        </FieldAction>
-      </Box>
-    </Stack>
+            {/* data-disabled rather than disabled: a disabled button gets no hover or focus, so the
+                tooltip saying why could never show. The submit handler holds the guard. */}
+            <Tooltip label={blocked} disabled={!blocked} events={{ hover: true, focus: true, touch: true }}>
+              <Button
+                type="submit"
+                size="xs"
+                loading={change.isPending}
+                data-disabled={blocked !== null || undefined}
+                aria-disabled={blocked !== null}
+              >
+                <Trans>Change</Trans>
+              </Button>
+            </Tooltip>
+          </Group>
+        </div>
+      </Stack>
+    </SettingsRow>
   )
 }
 
-function TwoFactorCard() {
+function TwoFactorRow() {
   const { t } = useLingui()
   const { data: status } = useTwoFactorStatus()
   const start = useStartTwoFactorSetup()
@@ -318,6 +352,7 @@ function TwoFactorCard() {
   const disable = useDisableTwoFactor()
   const regenerate = useRegenerateRecoveryCodes()
 
+  const [open, setOpen] = useState(false)
   const [enrolling, setEnrolling] = useState<{ sharedKey: string; authenticatorUri: string } | null>(null)
   const [code, setCode] = useState('')
   const [enablePassword, setEnablePassword] = useState('')
@@ -349,226 +384,269 @@ function TwoFactorCard() {
     }
   }, [enrolling])
 
-  return (
-    <Stack gap="xs">
-      <Group justify="space-between">
-        <div>
-          <PanelTitle>
-            <Trans>Two-factor authentication</Trans>
-          </PanelTitle>
-          <Text size="xs" c="var(--ink-3)">
-            {status?.ssoDelegated && !status.enabled ? (
-              <Trans>
-                Sign-in relies on your identity provider. A code, once set up, protects password
-                sign-in only.
-              </Trans>
-            ) : status && !status.available ? (
-              <Trans>This account has no password login for two-factor to protect.</Trans>
-            ) : (
-              <Trans>The single biggest improvement if Maki is reachable from the internet.</Trans>
-            )}
-          </Text>
-        </div>
-        {status?.enabled ? (
-          <Badge color="var(--ok)" variant="light">
-            <Trans>On</Trans>
-          </Badge>
-        ) : (
-          status && status.available && !status.ssoDelegated && (
-            <Button
-              size="xs"
-              variant="default"
-              loading={start.isPending}
-              onClick={() =>
-                start.mutate(undefined, {
-                  onSuccess: setEnrolling,
-                })
-              }
-            >
-              <Trans>Set up</Trans>
-            </Button>
-          )
-        )}
-      </Group>
+  const cancelSetup = () => {
+    setEnrolling(null)
+    setCode('')
+    setEnablePassword('')
+    setOpen(false)
+  }
+  const canSetUp = !!status && status.available && !status.ssoDelegated
+  const expandable = !!status && (status.enabled || canSetUp)
 
-      {status?.enabled && (
-        <Stack gap={4}>
-          <Text size="xs" c="var(--ink-3)">
-            {plural(status.recoveryCodesLeft, {
-              one: '# recovery code left. A new set replaces the old codes.',
-              other: '# recovery codes left. A new set replaces the old codes.',
-            })}
-          </Text>
-          <Group
+  const summary = status?.enabled ? (
+    plural(status.recoveryCodesLeft, {
+      one: '# recovery code left. A new set replaces the old codes.',
+      other: '# recovery codes left. A new set replaces the old codes.',
+    })
+  ) : status?.ssoDelegated ? (
+    <Trans>
+      Sign-in relies on your identity provider. A code, once set up, protects password sign-in only.
+    </Trans>
+  ) : status && !status.available ? (
+    <Trans>This account has no password login for two-factor to protect.</Trans>
+  ) : (
+    <Trans>The single biggest improvement if Maki is reachable from the internet.</Trans>
+  )
+
+  return (
+    <>
+      <SettingsRow
+        title={<Trans>Two-factor authentication</Trans>}
+        status={
+          status ? (status.enabled ? { tone: 'ok', label: t`On` } : { tone: 'neutral', label: t`Not set up` }) : null
+        }
+        summary={summary}
+        opened={open}
+        onToggle={expandable ? () => setOpen((value) => !value) : undefined}
+        lazy
+      >
+        {status?.enabled ? (
+          <Stack gap="md">
+            <Stack
+              component="form"
+              gap="xs"
+              onSubmit={(e: FormEvent) => {
+                e.preventDefault()
+                if (!regenPassword || regenCode.length < 6) return
+                regenerate.mutate({ code: regenCode, password: regenPassword }, {
+                  onSuccess: (result) => {
+                    setRegenPassword('')
+                    setRegenCode('')
+                    setRecoveryCodes(result.recoveryCodes)
+                  },
+                })
+              }}
+            >
+              <Text size="sm" fw={600} c="var(--ink-hi)">
+                <Trans>New recovery codes</Trans>
+              </Text>
+              <Group align="flex-end">
+                <PasswordInput
+                  label={t`Your password`}
+                  autoComplete="current-password"
+                  value={regenPassword}
+                  onChange={(e) => setRegenPassword(e.currentTarget.value)}
+                  w={220}
+                />
+                <TextInput
+                  label={t`Code from your app`}
+                  inputMode="numeric"
+                  value={regenCode}
+                  onChange={(e) => setRegenCode(e.currentTarget.value)}
+                  w={170}
+                />
+                <Button
+                  type="submit"
+                  variant="default"
+                  loading={regenerate.isPending}
+                  disabled={!regenPassword || regenCode.length < 6}
+                >
+                  <Trans>New recovery codes</Trans>
+                </Button>
+              </Group>
+            </Stack>
+
+            <Stack
+              component="form"
+              gap="xs"
+              className="account-turn-off"
+              onSubmit={(e: FormEvent) => {
+                e.preventDefault()
+                if (!disablePassword) return
+                disable.mutate(disablePassword, {
+                  onSuccess: () => {
+                    setDisablePassword('')
+                    setOpen(false)
+                    notifications.show({ message: now`Two-factor authentication disabled`, color: 'var(--warn)' })
+                  },
+                })
+              }}
+            >
+              <Text size="sm" fw={600} c="var(--ink-hi)">
+                <Trans>Turn it off</Trans>
+              </Text>
+              <Group align="flex-end">
+                <PasswordInput
+                  label={t`Confirm your password to turn it off`}
+                  autoComplete="current-password"
+                  value={disablePassword}
+                  onChange={(e) => setDisablePassword(e.currentTarget.value)}
+                  w={280}
+                />
+                <Button
+                  type="submit"
+                  variant="subtle"
+                  color="var(--danger)"
+                  loading={disable.isPending}
+                  disabled={!disablePassword}
+                >
+                  <Trans>Disable</Trans>
+                </Button>
+              </Group>
+            </Stack>
+          </Stack>
+        ) : enrolling ? (
+          <Stack
             component="form"
-            align="flex-end"
+            gap="sm"
             onSubmit={(e: FormEvent) => {
               e.preventDefault()
-              if (!regenPassword || regenCode.length < 6) return
-              regenerate.mutate({ code: regenCode, password: regenPassword }, {
+              if (code.length < 6 || !enablePassword) return
+              enable.mutate({ code, password: enablePassword }, {
                 onSuccess: (result) => {
-                  setRegenPassword('')
-                  setRegenCode('')
+                  setEnrolling(null)
+                  setCode('')
+                  setEnablePassword('')
+                  setOpen(false)
                   setRecoveryCodes(result.recoveryCodes)
                 },
               })
             }}
           >
-            <PasswordInput
-              label={t`Your password`}
-              autoComplete="current-password"
-              value={regenPassword}
-              onChange={(e) => setRegenPassword(e.currentTarget.value)}
-              w={200}
-            />
-            <TextInput
-              label={t`Code from your app`}
-              inputMode="numeric"
-              value={regenCode}
-              onChange={(e) => setRegenCode(e.currentTarget.value)}
-              w={160}
-            />
-            <Button
-              type="submit"
-              variant="default"
-              loading={regenerate.isPending}
-              disabled={!regenPassword || regenCode.length < 6}
-            >
-              <Trans>New recovery codes</Trans>
-            </Button>
-          </Group>
-        </Stack>
-      )}
-
-      {status?.enabled && (
-        <Group
-          component="form"
-          align="flex-end"
-          onSubmit={(e: FormEvent) => {
-            e.preventDefault()
-            if (!disablePassword) return
-            disable.mutate(disablePassword, {
-              onSuccess: () => {
-                setDisablePassword('')
-                notifications.show({ message: now`Two-factor authentication disabled`, color: 'var(--warn)' })
-              },
-            })
-          }}
-        >
-          <PasswordInput
-            label={t`Confirm your password to turn it off`}
-            autoComplete="current-password"
-            value={disablePassword}
-            onChange={(e) => setDisablePassword(e.currentTarget.value)}
-            w={260}
-          />
-          <Button
-            type="submit"
-            color="var(--danger)"
-            variant="light"
-            loading={disable.isPending}
-            disabled={!disablePassword}
-          >
-            <Trans>Disable</Trans>
-          </Button>
-        </Group>
-      )}
-
-      <Modal
-        opened={enrolling !== null}
-        onClose={() => {
-          setEnrolling(null)
-          setCode('')
-          setEnablePassword('')
-        }}
-        title={t`Set up two-factor authentication`}
-        centered
-      >
-        <Stack
-          component="form"
-          onSubmit={(e: FormEvent) => {
-            e.preventDefault()
-            if (code.length < 6 || !enablePassword) return
-            enable.mutate({ code, password: enablePassword }, {
-              onSuccess: (result) => {
-                setEnrolling(null)
-                setCode('')
-                setEnablePassword('')
-                setRecoveryCodes(result.recoveryCodes)
-              },
-            })
-          }}
-        >
-          <Text size="sm">
-            <Trans>
-              Scan this with your authenticator app, or enter the key manually, then enter the code
-              it shows. The key is only active once a code has verified, so a mistyped key cannot
-              lock you out.
-            </Trans>
-          </Text>
-          {qrDataUrl && (
-            <Group justify="center">
-              <img src={qrDataUrl} alt={t`Two-factor authenticator QR code`} width={200} height={200} />
+            <div className="account-setup">
+              {qrDataUrl ? (
+                <img
+                  className="account-setup-qr"
+                  src={qrDataUrl}
+                  alt={t`Two-factor authenticator QR code`}
+                  width={160}
+                  height={160}
+                />
+              ) : (
+                <div className="account-setup-qr" aria-hidden />
+              )}
+              <Stack gap="sm">
+                <Text size="sm">
+                  <Trans>
+                    Scan this with your authenticator app, or enter the key manually, then enter the code
+                    it shows. The key is only active once a code has verified, so a mistyped key cannot
+                    lock you out.
+                  </Trans>
+                </Text>
+                <Group gap="xs">
+                  <Code>{enrolling.sharedKey}</Code>
+                  <Button
+                    size="compact-xs"
+                    variant="default"
+                    onClick={() => void keyCopy.copy(enrolling.sharedKey)}
+                    leftSection={keyCopy.copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                  >
+                    {keyCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
+                  </Button>
+                </Group>
+                <Group grow align="flex-start">
+                  <TextInput
+                    label={t`Code from your app`}
+                    inputMode="numeric"
+                    value={code}
+                    onChange={(e) => setCode(e.currentTarget.value)}
+                  />
+                  <PasswordInput
+                    label={t`Your password`}
+                    autoComplete="current-password"
+                    value={enablePassword}
+                    onChange={(e) => setEnablePassword(e.currentTarget.value)}
+                  />
+                </Group>
+              </Stack>
+            </div>
+            <div className="settings-row-foot">
+              <Text size="xs" c="var(--ink-3)">
+                <Trans>Recovery codes are shown once you verify.</Trans>
+              </Text>
+              <Group gap="xs">
+                <Button size="xs" variant="subtle" color="var(--neutral)" onClick={cancelSetup}>
+                  <Trans>Cancel</Trans>
+                </Button>
+                <Button type="submit" size="xs" loading={enable.isPending} disabled={code.length < 6 || !enablePassword}>
+                  <Trans>Verify and enable</Trans>
+                </Button>
+              </Group>
+            </div>
+          </Stack>
+        ) : (
+          <div className="settings-row-foot">
+            <span />
+            <Group gap="xs">
+              <Button size="xs" variant="subtle" color="var(--neutral)" onClick={() => setOpen(false)}>
+                <Trans>Cancel</Trans>
+              </Button>
+              <Button
+                size="xs"
+                loading={start.isPending}
+                onClick={() => start.mutate(undefined, { onSuccess: setEnrolling })}
+              >
+                <Trans>Set up</Trans>
+              </Button>
             </Group>
-          )}
-          <Group gap="xs">
-            <Code>{enrolling?.sharedKey}</Code>
-            <Button
-              size="xs"
-              variant="default"
-              onClick={() => void keyCopy.copy(enrolling?.sharedKey ?? '')}
-              leftSection={keyCopy.copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-            >
-              {keyCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
-            </Button>
-          </Group>
-          <TextInput
-            label={t`Code from your app`}
-            inputMode="numeric"
-            value={code}
-            onChange={(e) => setCode(e.currentTarget.value)}
-          />
-          <PasswordInput
-            label={t`Your password`}
-            autoComplete="current-password"
-            value={enablePassword}
-            onChange={(e) => setEnablePassword(e.currentTarget.value)}
-          />
-          <Button type="submit" loading={enable.isPending} disabled={code.length < 6 || !enablePassword}>
-            <Trans>Verify and enable</Trans>
-          </Button>
-        </Stack>
-      </Modal>
+          </div>
+        )}
+      </SettingsRow>
 
       <Modal
         opened={recoveryCodes !== null}
         onClose={() => setRecoveryCodes(null)}
-        title={t`Save your recovery codes`}
+        title={
+          <ModalHeading
+            title={<Trans>Save your recovery codes</Trans>}
+            description={<Trans>Each code works once if you lose your authenticator.</Trans>}
+          />
+        }
         centered
         closeOnClickOutside={false}
         closeOnEscape={false}
       >
-        <Stack>
-          <Alert color="var(--warn)" variant="light">
+        <Stack gap="md">
+          <ModalNote tone="warn">
             <Trans>
               These are shown once. They are stored hashed, so nobody (including you) can read them
               back. Keep them somewhere you can reach without your authenticator.
             </Trans>
-          </Alert>
-          <Code block>{recoveryCodes?.join('\n')}</Code>
-          <Button variant="default" onClick={() => void codesCopy.copy(recoveryCodes?.join('\n') ?? '')}>
+          </ModalNote>
+          <div className="account-codes">
+            {recoveryCodes?.map((recoveryCode) => (
+              <span key={recoveryCode}>{recoveryCode}</span>
+            ))}
+          </div>
+        </Stack>
+        <ModalFooter>
+          <Button
+            variant="default"
+            onClick={() => void codesCopy.copy(recoveryCodes?.join('\n') ?? '')}
+            leftSection={codesCopy.copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+          >
             {codesCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy codes</Trans>}
           </Button>
           <Button onClick={() => setRecoveryCodes(null)}>
             <Trans>I have saved them</Trans>
           </Button>
-        </Stack>
+        </ModalFooter>
       </Modal>
-    </Stack>
+    </>
   )
 }
 
-function ApiKeysCard() {
+function ApiKeysCard({ creating, onCloseCreate }: { creating: boolean; onCloseCreate: () => void }) {
   const { t } = useLingui()
   const { data: keys } = useApiKeys()
   const create = useCreateApiKey()
@@ -585,118 +663,155 @@ function ApiKeysCard() {
   // The OPDS feed token is a key row too, but it is minted, shown and rotated on the OPDS card.
   const fullKeys = keys?.filter((key) => key.scope === 'Full')
 
+  const closeCreate = () => {
+    setName('')
+    setKeyPassword('')
+    onCloseCreate()
+  }
+
   return (
-    <Stack gap="xs">
-      <Box
-        component="form"
-        className="settings-field-grid"
-        data-align="end"
-        onSubmit={(e: FormEvent) => {
-          e.preventDefault()
-          if (!name.trim() || mint.signInStale) return
-          create.mutate(
-            { name: name.trim(), password: keyPassword },
-            {
-              onSuccess: (result) => {
-                setCreated(result)
-                setName('')
-                setKeyPassword('')
-              },
-            },
-          )
-        }}
-      >
-        <TextInput
-          label={t`Name`}
-          placeholder={t`Phone reader`}
-          value={name}
-          onChange={(e) => setName(e.currentTarget.value)}
-        />
-        {mint.needsPassword && <MintPasswordField value={keyPassword} onChange={setKeyPassword} />}
-        <Tooltip label={t`Name the key first`} disabled={!!name.trim()} events={{ hover: true, focus: true, touch: true }}>
-          <Button
-            type="submit"
-            loading={create.isPending}
-            data-disabled={!name.trim() || mint.signInStale || undefined}
-            aria-disabled={!name.trim() || mint.signInStale}
+    <>
+      {creating && (
+        <SettingsRowsBlock>
+          <Stack
+            component="form"
+            gap="sm"
+            onSubmit={(e: FormEvent) => {
+              e.preventDefault()
+              if (!name.trim() || mint.signInStale) return
+              create.mutate(
+                { name: name.trim(), password: keyPassword },
+                {
+                  onSuccess: (result) => {
+                    setCreated(result)
+                    closeCreate()
+                  },
+                },
+              )
+            }}
           >
-            <Trans>Create</Trans>
-          </Button>
-        </Tooltip>
-      </Box>
+            <Group grow align="flex-start">
+              <TextInput
+                label={t`Name`}
+                placeholder={t`Phone reader`}
+                value={name}
+                onChange={(e) => setName(e.currentTarget.value)}
+                data-autofocus
+              />
+              {mint.needsPassword && <MintPasswordField value={keyPassword} onChange={setKeyPassword} />}
+            </Group>
 
-      {mint.signInStale && <RecentSignInNotice canSignInAgain={mint.canSignInAgain} anchor="api-keys" />}
+            {mint.signInStale && <RecentSignInNotice canSignInAgain={mint.canSignInAgain} anchor="api-keys" />}
 
-      {fullKeys && fullKeys.length > 0 && (
-        <Table.ScrollContainer minWidth={420} mt="xs">
-          <Table className="panel-table ops-table">
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th><Trans>Name</Trans></Table.Th>
-                <Table.Th><Trans>Prefix</Trans></Table.Th>
-                <Table.Th><Trans>Last used</Trans></Table.Th>
-                <Table.Th className="sticky-end-cell"><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {fullKeys.map((key) => (
-                <Table.Tr key={key.id} opacity={key.revokedAt ? 0.5 : 1}>
-                  <Table.Td>{key.name}</Table.Td>
-                  <Table.Td>
-                    <Code>{key.prefix}…</Code>
-                  </Table.Td>
-                  <Table.Td c="var(--ink-3)">
-                    {key.lastUsedAt ? formatDateTime(key.lastUsedAt) : <Trans>never</Trans>}
-                  </Table.Td>
-                  <Table.Td ta="right" className="sticky-end-cell">
-                    {key.revokedAt ? (
-                      <Text size="xs" c="var(--ink-3)">
-                        <Trans>revoked</Trans>
-                      </Text>
-                    ) : (
-                      <Button
-                        size="xs"
-                        variant="light"
-                        color="var(--danger)"
-                        onClick={() => setRevoking(key)}
-                      >
-                        <Trans>Revoke</Trans>
-                      </Button>
-                    )}
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </Table.ScrollContainer>
+            <div className="settings-row-foot">
+              <span />
+              <Group gap="xs">
+                <Button size="xs" variant="subtle" color="var(--neutral)" onClick={closeCreate}>
+                  <Trans>Cancel</Trans>
+                </Button>
+                <Tooltip
+                  label={t`Name the key first`}
+                  disabled={!!name.trim()}
+                  events={{ hover: true, focus: true, touch: true }}
+                >
+                  <Button
+                    type="submit"
+                    size="xs"
+                    loading={create.isPending}
+                    data-disabled={!name.trim() || mint.signInStale || undefined}
+                    aria-disabled={!name.trim() || mint.signInStale}
+                  >
+                    <Trans>Create</Trans>
+                  </Button>
+                </Tooltip>
+              </Group>
+            </div>
+          </Stack>
+        </SettingsRowsBlock>
+      )}
+
+      {fullKeys && fullKeys.length > 0 ? (
+        <SettingsRows>
+          {fullKeys.map((key) => (
+            <SettingsRow
+              key={key.id}
+              title={<span data-revoked={key.revokedAt ? '' : undefined}>{key.name}</span>}
+              chips={<Code data-revoked={key.revokedAt ? '' : undefined}>{key.prefix}…</Code>}
+              status={key.revokedAt ? { tone: 'neutral', label: t`Revoked` } : null}
+              summary={
+                <span data-revoked={key.revokedAt ? '' : undefined}>
+                  {key.lastUsedAt ? (
+                    <Trans>Last used {formatDateTime(key.lastUsedAt)}</Trans>
+                  ) : (
+                    <Trans>Last used never</Trans>
+                  )}
+                </span>
+              }
+              aside={
+                key.revokedAt ? undefined : (
+                  <Button
+                    size="compact-xs"
+                    variant="subtle"
+                    color="var(--neutral)"
+                    className="quiet-danger"
+                    onClick={() => setRevoking(key)}
+                  >
+                    <Trans>Revoke</Trans>
+                  </Button>
+                )
+              }
+            />
+          ))}
+        </SettingsRows>
+      ) : (
+        !creating && (
+          <SettingsRowsBlock>
+            <Text size="sm" c="var(--ink-3)">
+              <Trans>No keys yet. New key makes one for a script or an app.</Trans>
+            </Text>
+          </SettingsRowsBlock>
+        )
       )}
 
       <Modal
         opened={created !== null}
         onClose={() => setCreated(null)}
-        title={t`Your new API key`}
+        title={<ModalHeading title={<Trans>Your new API key</Trans>} description={created?.key.name} />}
         centered
         size="lg"
         closeOnClickOutside={false}
         closeOnEscape={false}
       >
-        <Stack>
-          <Alert color="var(--warn)" variant="light">
+        <Stack gap="md">
+          <ModalNote tone="warn">
             <Trans>
               Copy this now. Only its fingerprint is stored, so it cannot be shown again: if you lose
               it, revoke this one and create another.
             </Trans>
-          </Alert>
-          <Code block style={{ wordBreak: 'break-all' }}>
-            {created?.secret}
-          </Code>
-          <Button variant="default" onClick={() => void secretCopy.copy(created?.secret ?? '')}>
-            {secretCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
-          </Button>
+          </ModalNote>
+          <div className="account-secret">
+            <Code>{created?.secret}</Code>
+            <Button
+              size="xs"
+              variant="default"
+              onClick={() => void secretCopy.copy(created?.secret ?? '')}
+              leftSection={secretCopy.copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+            >
+              {secretCopy.copied ? <Trans>Copied</Trans> : <Trans>Copy</Trans>}
+            </Button>
+          </div>
+        </Stack>
+        <ModalFooter
+          status={
+            <Trans>
+              Sent as <Code>X-Api-Key</Code>
+            </Trans>
+          }
+        >
           <Button onClick={() => setCreated(null)}>
             <Trans>I have copied it</Trans>
           </Button>
-        </Stack>
+        </ModalFooter>
       </Modal>
 
       <ConfirmDialog
@@ -709,37 +824,32 @@ function ApiKeysCard() {
       >
         <Trans>Anything still using this key stops working straight away. This can't be undone.</Trans>
       </ConfirmDialog>
-    </Stack>
+    </>
   )
 }
 
-function SessionsCard() {
+function SessionsRow() {
   const revoke = useRevokeSessions()
 
   return (
-    <Group justify="space-between">
-      <div>
-        <PanelTitle>
-          <Trans>Sessions</Trans>
-        </PanelTitle>
-        <Text size="xs" c="var(--ink-3)">
-          <Trans>Signs out every other browser and device. This one stays signed in.</Trans>
-        </Text>
-      </div>
-      <Button
-        variant="light"
-        color="var(--danger)"
-        size="xs"
-        loading={revoke.isPending}
-        onClick={() =>
-          revoke.mutate(undefined, {
-            onSuccess: () =>
-              notifications.show({ message: now`Other sessions signed out`, color: 'var(--ok)' }),
-          })
-        }
-      >
-        <Trans>Sign out everywhere else</Trans>
-      </Button>
-    </Group>
+    <SettingsRow
+      title={<Trans>Sessions</Trans>}
+      summary={<Trans>Signs out every other browser and device. This one stays signed in.</Trans>}
+      aside={
+        <Button
+          variant="default"
+          size="xs"
+          loading={revoke.isPending}
+          onClick={() =>
+            revoke.mutate(undefined, {
+              onSuccess: () =>
+                notifications.show({ message: now`Other sessions signed out`, color: 'var(--ok)' }),
+            })
+          }
+        >
+          <Trans>Sign out everywhere else</Trans>
+        </Button>
+      }
+    />
   )
 }
