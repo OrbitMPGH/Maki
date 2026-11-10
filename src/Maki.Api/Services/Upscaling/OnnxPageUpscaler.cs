@@ -323,6 +323,7 @@ public sealed class OnnxPageUpscaler(
         }
 
         StitchTile(rgb, tileWidth, tile, scale, output, width, bands);
+        SnapFlat(source, info, tile, scale, output, width, bands);
     }
 
     private void Report(Action<int>? hook, int tile)
@@ -368,6 +369,54 @@ public sealed class OnnxPageUpscaler(
     // further than the 12 px pad), so filling is closer to the model than running it is.
     private static bool KeepsFlat(UpscaleModelInfo info, byte value) =>
         info.Id == UpscaleModelId.SpanS || info.Id == UpscaleModelId.Maki2x || value is 0 or 255;
+
+    /// <summary>
+    /// Sets each output pixel whose source pixel and its eight neighbours are one grey value the model
+    /// keeps flat to exactly that value, the same value <see cref="FillTile"/> gives a whole flat tile.
+    /// Maki 2x answers flats about a level off (black comes back with green at 1), so on an OLED screen
+    /// a black panel showed every inferred tile as a lit box beside the filled ones.
+    /// </summary>
+    internal static void SnapFlat(
+        Raster source, UpscaleModelInfo info, UpscaleTile tile, int scale, byte[] output, int outputWidth, int bands)
+    {
+        for (var y = tile.Y; y < tile.Y + tile.Height; y++)
+        {
+            for (var x = tile.X; x < tile.X + tile.Width; x++)
+            {
+                if (FlatAround(source, x, y) is not { } value || !KeepsFlat(info, value))
+                {
+                    continue;
+                }
+
+                for (var dy = 0; dy < scale; dy++)
+                {
+                    output.AsSpan(((y * scale + dy) * outputWidth + x * scale) * bands, scale * bands).Fill(value);
+                }
+            }
+        }
+    }
+
+    private static byte? FlatAround(Raster source, int x, int y)
+    {
+        var pixels = source.Pixels;
+        var value = pixels[y * source.Stride + x * 3];
+        var bottom = Math.Min(source.Height - 1, y + 1);
+        var right = Math.Min(source.Width - 1, x + 1);
+        for (var ny = Math.Max(0, y - 1); ny <= bottom; ny++)
+        {
+            var row = ny * source.Stride;
+            for (var nx = Math.Max(0, x - 1); nx <= right; nx++)
+            {
+                var p = row + nx * 3;
+                if (pixels[p] != value || pixels[p + 1] != value || pixels[p + 2] != value)
+                {
+                    return null;
+                }
+            }
+        }
+
+        return value;
+    }
 
     private static void FillTile(UpscaleTile tile, int scale, byte[] output, int outputWidth, int bands, byte value)
     {

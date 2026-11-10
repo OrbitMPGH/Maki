@@ -163,6 +163,29 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
+    public void Flat_areas_inside_an_inferred_tile_are_snapped_to_their_exact_value()
+    {
+        var source = new Raster(40, 40, new Rgba(0, 0, 0), bands: 3);
+        for (var y = 0; y < 40; y++)
+        {
+            source[20, y] = new Rgba(255, 255, 255);
+        }
+
+        var tile = UpscaleTiling.Plan(40, 40, multiple: 4).Single();
+        var output = new byte[80 * 80 * 3];
+        Array.Fill(output, (byte)1);
+
+        OnnxPageUpscaler.SnapFlat(source, _catalog.Get(UpscaleModelId.Maki2x), tile, 2, output, 80, 3);
+
+        for (var x = 0; x < 80; x++)
+        {
+            var o = (30 * 80 + x) * 3;
+            var nearLine = x / 2 is >= 19 and <= 21;
+            Assert.Equal(nearLine ? (byte)1 : (byte)0, output[o]);
+        }
+    }
+
+    [Fact]
     public void A_4x_model_is_halved_per_tile_like_halving_the_whole_page()
     {
         using var upscaler = NewUpscaler("identity-4x.onnx", UpscaleModelId.RealEsrganAv3);
