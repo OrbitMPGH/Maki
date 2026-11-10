@@ -15,6 +15,7 @@ import * as ImportStories from './pages/ImportPage.stories'
 import * as LibraryStories from './pages/LibraryPage.stories'
 import * as NotificationsStories from './pages/NotificationsPage.stories'
 import * as ReaderStories from './pages/reader/ReaderPage.stories'
+import * as RecycleBinStories from './pages/RecycleBinPage.stories'
 import * as RequestsStories from './pages/RequestsPage.stories'
 import * as ScrobbleStories from './pages/ScrobblePage.stories'
 import * as SeriesStories from './pages/SeriesDetailPage.stories'
@@ -84,6 +85,7 @@ export const StartPageRedirect: Story = mirror('/', LibraryStories, LibraryStori
 ])
 export const Library: Story = library()
 export const LibraryArchived: Story = mirror('/library/archived', LibraryStories, LibraryStories.ArchivedView)
+export const RecycleBin: Story = mirror('/library/recycle-bin', RecycleBinStories, RecycleBinStories.Default)
 export const Series: Story = mirror('/series/1', SeriesStories, SeriesStories.Ongoing)
 export const AddSeries: Story = mirror('/add', AddSeriesStories, AddSeriesStories.BrowsingTheCatalogue)
 export const Creator: Story = mirror('/creator/Aoi%20Mizuhara', CreatorStories, CreatorStories.Default)

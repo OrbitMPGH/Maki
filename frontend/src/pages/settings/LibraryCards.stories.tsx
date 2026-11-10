@@ -287,10 +287,12 @@ export const NameParsingToggle: Story = {
 export const RecycleBinWithFiles: Story = {
   render: () => <RecycleBinSection />,
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Lanterns Over Kasumi - c131.cbz')).toBeVisible()
-    await expect(await canvas.findByText('(no longer in the library)')).toBeVisible()
-    await expect(await canvas.findByText('The file is missing from the bin folder.')).toBeVisible()
-    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Restore' })[2]).toBeDisabled())
+    await expect(await canvas.findByText('3 files, 312 MB')).toBeVisible()
+    await expect(await canvas.findByRole('link', { name: 'Open recycle bin' })).toHaveAttribute(
+      'href',
+      '/library/recycle-bin',
+    )
+    await expect(canvas.queryByText('Lanterns Over Kasumi - c131.cbz')).toBeNull()
   },
 }
 
@@ -301,7 +303,6 @@ export const RecycleBinEmpty: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('The recycle bin is empty.')).toBeVisible()
-    await waitFor(() => expect(canvas.getByRole('button', { name: 'Empty bin' })).toBeDisabled())
   },
 }
 
@@ -309,29 +310,8 @@ export const RecycleBinNonAdmin: Story = {
   render: () => <RecycleBinSection />,
   parameters: { auth: 'reader' },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Lanterns Over Kasumi - c131.cbz')).toBeVisible()
+    await expect(await canvas.findByText('3 files, 312 MB')).toBeVisible()
     await expect(canvas.queryByRole('textbox', { name: /Keep deleted files/ })).toBeNull()
-  },
-}
-
-export const RecycleBinDeletePermanently: Story = {
-  render: () => <RecycleBinSection />,
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    const [first] = await canvas.findAllByRole('button', { name: 'Delete permanently' })
-    await userEvent.click(first)
-    const dialog = await dialogOf(canvasElement.ownerDocument.body)
-    await expect(await dialog.findByText('This action cannot be undone.')).toBeVisible()
-  },
-}
-
-export const RecycleBinEmptyConfirm: Story = {
-  render: () => <RecycleBinSection />,
-  play: async ({ canvas, canvasElement, userEvent }) => {
-    const empty = await canvas.findByRole('button', { name: 'Empty bin' })
-    await waitFor(() => expect(empty).toBeEnabled())
-    await userEvent.click(empty)
-    const dialog = await dialogOf(canvasElement.ownerDocument.body)
-    await expect(await dialog.findByText('Empty the recycle bin?')).toBeVisible()
   },
 }
 

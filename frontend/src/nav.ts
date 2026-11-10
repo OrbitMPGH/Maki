@@ -134,5 +134,6 @@ export function pageTitle(pathname: string): MessageDescriptor | null {
   if (pathname.startsWith('/series/')) return msg`Series`
   // Reached from the header bell rather than the nav, so it has no NavItem to take a label from.
   if (pathname.startsWith('/notifications')) return msg`Notifications`
+  if (pathname.startsWith('/library/recycle-bin')) return msg`Recycle bin`
   return ALL_ITEMS.find((i) => isActive(i, pathname))?.label ?? null
 }

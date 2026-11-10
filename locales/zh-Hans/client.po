@@ -56,8 +56,8 @@ msgstr "（无法访问）"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "(no longer in the library)"
-msgstr "（已不在资料库中）"
+#~ msgid "(no longer in the library)"
+#~ msgstr "（已不在资料库中）"
 
 #. placeholder {0}: history.convertedFiles
 #. placeholder {1}: history.restorableFiles
@@ -277,8 +277,8 @@ msgstr "{0, plural, other {# 个文件，{size}}}"
 #. placeholder {0}: entries.length
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "{0, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
-msgstr "{0, plural, other {# 个文件，{totalSize}}}"
+#~ msgid "{0, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
+#~ msgstr "{0, plural, other {# 个文件，{totalSize}}}"
 
 #. placeholder {0}: files.length
 #. placeholder {0}: folder.fileCount
@@ -476,11 +476,26 @@ msgid "{0, plural, one {Clear # queued download?} other {Clear # queued download
 msgstr "{0, plural, other {清除队列中的 # 个下载？}}"
 
 #. placeholder {0}: r.failed
+#: src/pages/RecycleBinPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "{0, plural, one {Couldn't delete # file, check the log} other {Couldn't delete # files, check the log}}"
 msgstr "{0, plural, other {无法删除 # 个文件，请查看日志}}"
+
+#. placeholder {0}: result.failed
+#: src/pages/RecycleBinPage.tsx
+msgid "{0, plural, one {Couldn't finish # file, check the log} other {Couldn't finish # files, check the log}}"
+msgstr ""
+
+#. placeholder {0}: deleting.entries.length
+#: src/pages/RecycleBinPage.tsx
+msgid "{0, plural, one {Delete # file permanently?} other {Delete # files permanently?}}"
+msgstr ""
+
+#. placeholder {0}: result.done
+#: src/pages/RecycleBinPage.tsx
+msgid "{0, plural, one {Deleted # file for good} other {Deleted # files for good}}"
+msgstr ""
 
 #. placeholder {0}: r.deleted
 #: src/components/SeriesFilesSection.tsx
@@ -489,7 +504,7 @@ msgid "{0, plural, one {Deleted # file} other {Deleted # files}}"
 msgstr "{0, plural, other {已删除 # 个文件}}"
 
 #. placeholder {0}: entries.length
-#: src/pages/settings/LibraryCards.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "{0, plural, one {Deletes # file for good.} other {Deletes # files for good.}}"
 msgstr "{0, plural, other {将永久删除 # 个文件。}}"
@@ -564,6 +579,11 @@ msgstr "{0, plural, other {已将 # 个文件移入回收站}}"
 msgid "{0, plural, one {Moves # file to the recycle bin.} other {Moves # files to the recycle bin.}}"
 msgstr "{0, plural, other {将 # 个文件移入回收站。}}"
 
+#. placeholder {0}: group.soonest
+#: src/pages/RecycleBinPage.tsx
+msgid "{0, plural, one {next goes in # day} other {next goes in # days}}"
+msgstr ""
+
 #. placeholder {0}: r.updated
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -624,17 +644,24 @@ msgstr "{0, plural, other {已移除 # 个章节}}"
 msgid "{0, plural, one {Removed # unsupported chapter} other {Removed # unsupported chapters}}"
 msgstr "{0, plural, other {已移除 # 个不受支持的章节}}"
 
+#. placeholder {0}: result.done
 #. placeholder {0}: result.restored
 #: src/components/series/UndoConversionModal.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "{0, plural, one {Restored # file} other {Restored # files}}"
 msgstr "{0, plural, other {已恢复 # 个文件}}"
 
 #. placeholder {0}: r.chapters
-#: src/pages/settings/LibraryCards.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "{0, plural, one {Restored and linked to # chapter} other {Restored and linked to # chapters}}"
 msgstr "{0, plural, other {已恢复并关联到 # 个章节}}"
+
+#. placeholder {0}: result.unlinked
+#: src/pages/RecycleBinPage.tsx
+msgid "{0, plural, one {Restored. # file came back unlinked, Health can import it.} other {Restored. # files came back unlinked, Health can import them.}}"
+msgstr ""
 
 #. placeholder {0}: selectable.length
 #: src/components/import/MihonReview.tsx
@@ -662,6 +689,11 @@ msgstr ""
 #, fuzzy
 msgid "{0, plural, one {Show all #} other {Show all #}}"
 msgstr "{0, plural, other {显示全部 # 条}}"
+
+#. placeholder {0}: shown.length
+#: src/pages/RecycleBinPage.tsx
+msgid "{0, plural, one {Showing # file.} other {Showing # files.}}"
+msgstr ""
 
 #. placeholder {0}: bucket.files
 #: src/components/pageconversion/EstimateTable.tsx
@@ -722,6 +754,11 @@ msgstr "{0, plural, other {领先 #}}"
 #, fuzzy
 msgid "{0} already reads this site."
 msgstr "已有 {0} 读取此站点。"
+
+#. placeholder {0}: formatDate(entry.deletedAt)
+#: src/pages/RecycleBinPage.tsx
+msgid "{0} by {deletedBy}"
+msgstr ""
 
 #. placeholder {0}: percent(item.measure)
 #: src/pages/discover/TasteTab.tsx
@@ -1125,6 +1162,14 @@ msgstr "{count, plural, other {# 项删除}}"
 msgid "{count, plural, one {# file gone, nowhere else in the library} other {# files gone, nowhere else in the library}}"
 msgstr "{count, plural, other {# 个文件已丢失，资料库中没有其他副本}}"
 
+#: src/pages/RecycleBinPage.tsx
+msgid "{count, plural, one {# file, {size}} other {# files, {size}}}"
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "{count, plural, one {# file, {totalSize}} other {# files, {totalSize}}}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "{count, plural, one {# file} other {# files}}"
 msgstr ""
@@ -1320,6 +1365,10 @@ msgstr "{cycles, plural, other {重新添加 #×}}"
 #, fuzzy
 msgid "{damagedCount, plural, one {Get a new copy} other {Get # new copies}}"
 msgstr "{damagedCount, plural, other {获取 # 个新副本}}"
+
+#: src/pages/RecycleBinPage.tsx
+msgid "{days, plural, one {Deleted files wait here for # day, then they're gone for good.} other {Deleted files wait here for # days, then they're gone for good.}}"
+msgstr ""
 
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
@@ -1786,10 +1835,14 @@ msgstr "{languagesOn, plural, =0 {未开启任何语言} other {已开启 # 种�
 msgid "{latestVersion} available, skipped"
 msgstr "{latestVersion} 已发布，已跳过"
 
+#: src/pages/RecycleBinPage.tsx
+msgid "{left, plural, one {# day left} other {# days left}}"
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "{left, plural, one {# day} other {# days}}"
-msgstr "{left, plural, other {# 天}}"
+#~ msgid "{left, plural, one {# day} other {# days}}"
+#~ msgstr "{left, plural, other {# 天}}"
 
 #: src/pages/stats/MidwayList.tsx
 #, fuzzy
@@ -4106,6 +4159,7 @@ msgstr "聚合站"
 #: src/pages/discover/ShortlistTab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
+#: src/pages/RecycleBinPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -5459,8 +5513,8 @@ msgstr "按钮标签"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "by {deletedBy}"
-msgstr "由 {deletedBy}"
+#~ msgid "by {deletedBy}"
+#~ msgstr "由 {deletedBy}"
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -5742,13 +5796,13 @@ msgid "Ch. {chapters}"
 msgstr "第 {chapters} 章"
 
 #: src/components/ChapterMapParts.tsx
-#: src/pages/settings/LibraryCards.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "Ch. {first}"
 msgstr "第 {first} 章"
 
 #: src/components/ChapterMapParts.tsx
-#: src/pages/settings/LibraryCards.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "Ch. {first} to {last}"
 msgstr "第 {first} 至 {last} 章"
@@ -7354,6 +7408,10 @@ msgstr "无法加载阅读记录"
 msgid "Couldn't load the details for this title."
 msgstr "无法加载此条目的详情。"
 
+#: src/pages/RecycleBinPage.tsx
+msgid "Couldn't load the recycle bin"
+msgstr ""
+
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
@@ -7741,8 +7799,8 @@ msgstr "未批准的提议在过期前的天数。"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Days left"
-msgstr "剩余天数"
+#~ msgid "Days left"
+#~ msgstr "剩余天数"
 
 #: src/components/home/ReadingWeeks.tsx
 #, fuzzy
@@ -7865,6 +7923,10 @@ msgstr "删除 {label}"
 msgid "Delete {name}?"
 msgstr "删除 {name}？"
 
+#: src/pages/RecycleBinPage.tsx
+msgid "Delete all permanently"
+msgstr ""
+
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Delete backup"
@@ -7914,7 +7976,7 @@ msgstr "从磁盘删除"
 
 #: src/components/PermanentDeleteFallback.tsx
 #: src/pages/HealthPage.tsx
-#: src/pages/settings/LibraryCards.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "Delete permanently"
 msgstr "永久删除"
@@ -7999,7 +8061,7 @@ msgstr "要从磁盘删除此文件吗？{span} 之后将改为从 {relinkPath} 
 msgid "Delete this file from disk? The kept copy stays and no chapter changes."
 msgstr "要从磁盘删除此文件吗？保留的副本会保留，章节不会有任何变化。"
 
-#: src/pages/settings/LibraryCards.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "Delete this file permanently?"
 msgstr "要永久删除此文件吗？"
@@ -8026,8 +8088,8 @@ msgstr "删除用户"
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
-msgid "Deleted"
-msgstr "已删除"
+#~ msgid "Deleted"
+#~ msgstr "已删除"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -8040,10 +8102,14 @@ msgstr "已删除“{name}”"
 msgid "Deleted account"
 msgstr "已删除的账户"
 
-#: src/pages/settings/LibraryCards.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "Deleted file"
 msgstr "已删除的文件"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Deleted files wait here before they are removed for good."
+msgstr ""
 
 #: src/components/DiscoverPresets.tsx
 #: src/pages/LibraryPage.tsx
@@ -8865,12 +8931,12 @@ msgstr "翡翠色"
 msgid "Empty"
 msgstr "为空"
 
-#: src/pages/settings/LibraryCards.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "Empty bin"
 msgstr "清空回收站"
 
-#: src/pages/settings/LibraryCards.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "Empty the recycle bin?"
 msgstr "要清空回收站吗？"
@@ -9128,6 +9194,11 @@ msgstr "所有已启用的来源都已关联。"
 #, fuzzy
 msgid "Every file already meets the cutoff"
 msgstr "所有文件都已达截止线"
+
+#. placeholder {0}: deleting?.title
+#: src/pages/RecycleBinPage.tsx
+msgid "Every file from {0} in the bin."
+msgstr ""
 
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
@@ -9579,7 +9650,6 @@ msgid "Field"
 msgstr ""
 
 #: src/components/SeriesFilesSection.tsx
-#: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "File"
 msgstr "文件"
@@ -9661,6 +9731,7 @@ msgstr "文件大小（MB），小于"
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/RecycleBinPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/SourceReliability.tsx
 #, fuzzy
@@ -9716,6 +9787,10 @@ msgstr "已扫描文件"
 msgid "Files that hold chapters marked missing"
 msgstr "包含当前标记为缺失的章节的文件"
 
+#: src/pages/RecycleBinPage.tsx
+msgid "Files you delete from the library or a series page land here first, so a slip can be undone."
+msgstr ""
+
 #: src/components/AnimeCoverageBar.tsx
 #, fuzzy
 msgid "Film / OVA"
@@ -9743,6 +9818,10 @@ msgstr "按根文件夹筛选"
 
 #: src/pages/ActivityPage.tsx
 msgid "Filter by series"
+msgstr ""
+
+#: src/pages/RecycleBinPage.tsx
+msgid "Filter by series or file"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -10406,6 +10485,10 @@ msgstr "目标"
 #, fuzzy
 msgid "Gone from disk"
 msgstr "已从磁盘消失"
+
+#: src/pages/RecycleBinPage.tsx
+msgid "Gone within {SOON_DAYS} days"
+msgstr ""
 
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -14505,6 +14588,10 @@ msgstr "已不在 Suwayomi 中"
 msgid "No longer in Suwayomi"
 msgstr "已不在 Suwayomi 中"
 
+#: src/pages/RecycleBinPage.tsx
+msgid "No longer in the library"
+msgstr ""
+
 #: src/pages/discover/FeedbackLab.tsx
 #, fuzzy
 msgid "no longer steers your taste"
@@ -15545,6 +15632,7 @@ msgid "Nothing lives at this address. The link may be old or mistyped."
 msgstr "此地址没有对应页面。链接可能已过期或输入有误。"
 
 #: src/pages/NotificationsPage.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "Nothing matches"
 msgstr "没有匹配项"
@@ -16285,6 +16373,10 @@ msgstr "在 MangaBaka 上打开"
 #, fuzzy
 msgid "Open Recommended with these filters from now on"
 msgstr "以后使用这些筛选条件打开推荐内容"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Open recycle bin"
+msgstr ""
 
 #: src/components/home/ContinueHero.tsx
 #: src/components/home/ReadingCardMenu.tsx
@@ -18257,11 +18349,18 @@ msgstr "重复"
 msgid "Recurring themes"
 msgstr "反复出现的主题"
 
+#: src/components/CommandPalette.tsx
+#: src/nav.ts
+#: src/pages/RecycleBinPage.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Recycle bin"
 msgstr "回收站"
+
+#: src/pages/RecycleBinPage.tsx
+msgid "Recycle bin settings"
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -18805,7 +18904,7 @@ msgstr "已将 {title} 从待读清单移除。"
 msgid "Removed by an admin"
 msgstr "已由管理员移除"
 
-#: src/pages/settings/LibraryCards.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "Removed chapter"
 msgstr "已移除的章节"
@@ -18830,7 +18929,7 @@ msgstr "已从推荐中移除。仅此标题受影响，其类型和作者不受
 msgid "Removed once read. Chapters you save yourself stay."
 msgstr "读完后即移除。你自行保存的章节会保留。"
 
-#: src/pages/settings/LibraryCards.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "Removed series"
 msgstr "已移除的系列"
@@ -19233,7 +19332,7 @@ msgstr "立即重启"
 msgid "Restart to update"
 msgstr "重启以更新"
 
-#: src/pages/settings/LibraryCards.tsx
+#: src/pages/RecycleBinPage.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Restore"
@@ -19265,6 +19364,10 @@ msgstr "恢复 {title}"
 #, fuzzy
 msgid "Restore & restart"
 msgstr "恢复并重启"
+
+#: src/pages/RecycleBinPage.tsx
+msgid "Restore all"
+msgstr ""
 
 #: src/components/series/UndoConversionModal.tsx
 #, fuzzy
@@ -19342,7 +19445,7 @@ msgstr "要恢复到资料库吗？"
 msgid "Restored"
 msgstr "已恢复"
 
-#: src/pages/settings/LibraryCards.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "Restored as an unlinked file. Health can import it."
 msgstr "已恢复为未关联文件。健康检查可以将其导入。"
@@ -19444,6 +19547,7 @@ msgstr "已重试 {retryCount} 次"
 #: src/pages/HomePage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx
+#: src/pages/RecycleBinPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -20824,6 +20928,7 @@ msgstr "{relatedTo} 的续篇"
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/reader/ReaderToolbar.tsx
+#: src/pages/RecycleBinPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -20860,7 +20965,7 @@ msgstr "你向管理员请求的系列和章节。"
 msgid "Series archived"
 msgstr "系列已归档"
 
-#: src/pages/settings/LibraryCards.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgctxt "series"
 msgid "Series archived"
@@ -21619,7 +21724,6 @@ msgstr "每周阅读次数"
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
-#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #: src/pages/stats/SourceReliability.tsx
 #, fuzzy
@@ -21944,6 +22048,10 @@ msgstr "空格"
 #, fuzzy
 msgid "Space ( )"
 msgstr "空格（ ）"
+
+#: src/pages/RecycleBinPage.tsx
+msgid "Space used"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -22875,7 +22983,7 @@ msgstr "此后文件未更改，因此你可以再次运行。"
 msgid "The file is already off the disk, so nothing is deleted. This drops the record that still says the chapters are downloaded, which is why they read as available on the series page."
 msgstr "文件已经不在磁盘上，因此不会删除任何内容。这会删除仍表明章节已下载的记录，所以系列页面不再将它们显示为可用。"
 
-#: src/pages/settings/LibraryCards.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "The file is missing from the bin folder."
 msgstr "回收站文件夹中找不到该文件。"
@@ -23123,6 +23231,10 @@ msgstr "推送服务未接受此测试通知。"
 #, fuzzy
 msgid "The record of the missing archive was removed."
 msgstr "已移除缺失归档的记录。"
+
+#: src/pages/RecycleBinPage.tsx
+msgid "The recycle bin is empty"
+msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
@@ -23496,7 +23608,7 @@ msgid "This account has no password login for two-factor to protect."
 msgstr "此账户没有密码登录可供双重身份验证保护。"
 
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/settings/LibraryCards.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "This action cannot be undone."
 msgstr "此操作无法撤销。"
@@ -24251,6 +24363,7 @@ msgid "Try again in a moment. If it keeps failing, the details help with a bug r
 msgstr "请稍后再试。如果仍然失败，详细信息有助于提交错误报告。"
 
 #: src/pages/NotificationsPage.tsx
+#: src/pages/RecycleBinPage.tsx
 #, fuzzy
 msgid "Try clearing the filters."
 msgstr "尝试清除筛选条件。"

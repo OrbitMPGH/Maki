@@ -70,6 +70,51 @@ export function useRestoreFromRecycleBin() {
   })
 }
 
+export interface BulkResult {
+  done: number
+  failed: number
+  /** Restored files that came back without a chapter to link to. */
+  unlinked: number
+}
+
+/** One request per file, then one refresh: the server has no batch endpoint, and a refetch per file would redraw the list mid-run. */
+async function eachEntry(ids: number[], run: (id: number) => Promise<boolean>): Promise<BulkResult> {
+  const result: BulkResult = { done: 0, failed: 0, unlinked: 0 }
+  for (const id of ids) {
+    try {
+      if (!(await run(id))) result.unlinked++
+      result.done++
+    } catch {
+      result.failed++
+    }
+  }
+  return result
+}
+
+export function useRestoreManyFromRecycleBin() {
+  const invalidate = useInvalidateLibrary()
+  return useMutation({
+    mutationFn: (ids: number[]) =>
+      eachEntry(ids, async (id) => {
+        const r = await api<{ linked: boolean }>(`/recyclebin/${id}/restore`, { method: 'POST' })
+        return r.linked
+      }),
+    onSettled: invalidate,
+  })
+}
+
+export function useDeleteManyFromRecycleBin() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (ids: number[]) =>
+      eachEntry(ids, async (id) => {
+        await api<void>(`/recyclebin/${id}`, { method: 'DELETE' })
+        return true
+      }),
+    onSettled: () => void queryClient.invalidateQueries({ queryKey: ['recycle-bin'] }),
+  })
+}
+
 export function useDeleteFromRecycleBin() {
   const queryClient = useQueryClient()
   return useMutation({

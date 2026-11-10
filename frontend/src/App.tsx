@@ -72,6 +72,7 @@ const ImportPage = lazyRoute(() => import('./pages/ImportPage'))
 const ScrobblePage = lazyRoute(() => import('./pages/ScrobblePage'))
 const StatsPage = lazyRoute(() => import('./pages/StatsPage'))
 const NotificationsPage = lazyRoute(() => import('./pages/NotificationsPage'))
+const RecycleBinPage = lazyRoute(() => import('./pages/RecycleBinPage'))
 const SettingsPage = lazyRoute(() => import('./pages/SettingsPage'))
 const HealthPage = lazyRoute(() => import('./pages/HealthPage'))
 const PageConversionWizardPage = lazyRoute(() => import('./pages/PageConversionWizardPage'))
@@ -668,6 +669,10 @@ function AppShellRoutes() {
             />
             <Route path="/library" element={<LibraryPage />} />
             <Route path="/library/archived" element={<LibraryPage scope="archived" />} />
+            <Route
+              path="/library/recycle-bin"
+              element={can('DeleteSeries') ? <RecycleBinPage /> : <Navigate to="/" replace />}
+            />
             <Route path="/series/:id" element={<SeriesDetailPage />} />
             <Route path="/add" element={<AddSeriesPage />} />
             <Route path="/creator/:name" element={<CreatorPage />} />

@@ -13668,6 +13668,147 @@ button.settings-row-head:hover,
   }
 }
 
+/* --- recycle bin page --- */
+
+.recycle-bin-figures {
+  margin-bottom: var(--mantine-spacing-md);
+}
+.recycle-bin-rail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
+  margin-bottom: var(--mantine-spacing-md);
+  border-bottom: 1px solid var(--hairline);
+}
+.recycle-bin-tabs {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.recycle-bin-tab-count {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.recycle-bin-search {
+  flex: 0 1 260px;
+  padding-bottom: 8px;
+}
+.recycle-bin-list {
+  overflow: hidden;
+  box-shadow: none;
+}
+.recycle-bin-group + .recycle-bin-group {
+  border-top: 1px solid var(--border);
+}
+.recycle-bin-group-head {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-sm);
+  padding: 0.6rem 1rem;
+}
+.recycle-bin-group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+  border-radius: var(--radius-control);
+}
+.recycle-bin-cover {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: var(--radius-2xs);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line-soft);
+  color: var(--ink-4);
+}
+.recycle-bin-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.recycle-bin-group-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.recycle-bin-group-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recycle-bin-chevron {
+  flex-shrink: 0;
+  margin-left: auto;
+  color: var(--ink-3);
+  transition: transform var(--dur-medium) var(--ease), color var(--dur-base) var(--ease);
+}
+.recycle-bin-group-toggle:hover .recycle-bin-chevron {
+  color: var(--ink-hi);
+}
+.recycle-bin-group[data-open] .recycle-bin-chevron {
+  transform: rotate(180deg);
+}
+.recycle-bin-soon,
+.recycle-bin-row-left[data-soon] {
+  color: var(--warn);
+}
+.recycle-bin-rows {
+  padding-bottom: 0.4rem;
+}
+.recycle-bin-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 5.5rem 6.5rem auto;
+  align-items: center;
+  gap: var(--mantine-spacing-md);
+  margin-inline-start: calc(1rem + 40px);
+  padding: 0.55rem 1rem 0.55rem 0;
+  border-top: 1px solid var(--line-soft);
+}
+.recycle-bin-file {
+  overflow-wrap: anywhere;
+}
+.recycle-bin-row-size,
+.recycle-bin-row-left {
+  color: var(--ink-3);
+  text-align: right;
+}
+
+@media (max-width: 47.9375em) {
+  .recycle-bin-rail {
+    align-items: stretch;
+  }
+  .recycle-bin-tabs,
+  .recycle-bin-search {
+    flex-basis: 100%;
+  }
+  .recycle-bin-group-head {
+    flex-wrap: wrap;
+    padding-inline: 0.75rem;
+  }
+  .recycle-bin-group-actions {
+    margin-inline-start: 40px;
+  }
+  .recycle-bin-row {
+    grid-template-columns: auto auto 1fr;
+    margin-inline-start: 0.75rem;
+    padding-inline-end: 0.75rem;
+    row-gap: 4px;
+  }
+  .recycle-bin-row-main {
+    grid-column: 1 / -1;
+  }
+  .recycle-bin-row-size,
+  .recycle-bin-row-left {
+    text-align: left;
+  }
+}
+
 /* --- home page (ported from redesignv2) --- */
 
 /* ── Home: Continue reading hero ──────────────────────────────────────────────

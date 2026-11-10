@@ -1,6 +1,6 @@
 import { Center, Group, Loader, Modal, ScrollArea, Stack, Text, TextInput } from '@mantine/core'
 import { useDisclosure, useHotkeys, useOs } from '@mantine/hooks'
-import { IconAdjustments, IconArchive, IconBell, IconBooks, IconPlus, IconSearch, IconSend } from '../lib/icons'
+import { IconAdjustments, IconArchive, IconBell, IconBooks, IconPlus, IconSearch, IconSend, IconTrash } from '../lib/icons'
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { fuzzyFilter, titleIndex } from '../lib/fuzzySearch'
 import { DUR, EASE_CSS, pacedMs } from '../lib/motion'
@@ -128,6 +128,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
   const { t } = useLinguiMacro()
   const renderLabel = useLabel()
   const canAdd = can('AddSeries')
+  const canBin = can('DeleteSeries')
   const listRef = useRef<HTMLDivElement>(null)
   const keyboardMoved = useRef(false)
   const listId = useId()
@@ -203,6 +204,22 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
           ]
         : []
 
+    // Not in the sidebar either: reached from Settings, or found here by name.
+    const binLabel = _(msg`Recycle bin`)
+    const binNav =
+      q && canBin && binLabel.toLowerCase().includes(q)
+        ? [
+            {
+              kind: 'nav' as const,
+              key: 'nav-/library/recycle-bin',
+              label: binLabel,
+              sub: _(msg`Page`),
+              icon: IconTrash,
+              path: '/library/recycle-bin',
+            },
+          ]
+        : []
+
     // Reached from the bell rather than the sidebar, and open to every signed-in user.
     const notificationsLabel = _(msg`Notifications`)
     const notificationsNav =
@@ -268,8 +285,8 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
         ]
       : []
 
-    return [...navMatches, ...notificationsNav, ...archivedNav, ...settingMatches, ...seriesMatches, ...searchFallback]
-  }, [query, navItems, series, seriesTitles, visibleSettings, canAdd, renderLabel, highlightTerms, _, i18n.locale])
+    return [...navMatches, ...notificationsNav, ...archivedNav, ...binNav, ...settingMatches, ...seriesMatches, ...searchFallback]
+  }, [query, navItems, series, seriesTitles, visibleSettings, canAdd, canBin, renderLabel, highlightTerms, _, i18n.locale])
 
   useEffect(() => {
     setSelected(0)
