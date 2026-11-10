@@ -219,7 +219,7 @@ public static class ComicSourceConverter
                             readFrom = scratch;
                         }
 
-                        CopyImages(readFrom, archive);
+                        CopyImages(readFrom, archive, source.Slice);
                     });
                 }
             }
@@ -244,7 +244,7 @@ public static class ComicSourceConverter
         }
     }
 
-    private static void CopyImages(string archivePath, ZipArchive target)
+    private static void CopyImages(string archivePath, ZipArchive target, string? slice = null)
     {
         using var source = ArchiveFactory.OpenArchive(archivePath);
 
@@ -258,12 +258,12 @@ public static class ComicSourceConverter
             while (reader.MoveToNextEntry())
             {
                 if (reader.Entry.IsDirectory || reader.Entry.Key is not { Length: > 0 } solidKey ||
-                    !CbzReader.IsImage(solidKey))
+                    !CbzReader.IsImage(solidKey) || !InSlice(solidKey, slice))
                 {
                     continue;
                 }
 
-                using var writingSolid = Entry(target, solidKey);
+                using var writingSolid = Entry(target, WithoutSlice(solidKey, slice));
                 using var readingSolid = reader.OpenEntryStream();
                 readingSolid.CopyTo(writingSolid);
             }
@@ -272,14 +272,23 @@ public static class ComicSourceConverter
         }
 
         foreach (var entry in source.Entries
-                     .Where(e => !e.IsDirectory && e.Key is { Length: > 0 } key && CbzReader.IsImage(key))
+                     .Where(e => !e.IsDirectory && e.Key is { Length: > 0 } key && CbzReader.IsImage(key)
+                                 && InSlice(key, slice))
                      .OrderBy(e => e.Key, StringComparer.OrdinalIgnoreCase))
         {
-            using var writing = Entry(target, entry.Key!);
+            using var writing = Entry(target, WithoutSlice(entry.Key!, slice));
             using var reading = entry.OpenEntryStream();
             reading.CopyTo(writing);
         }
     }
+
+    /// <summary>Whether a page belongs to the volume folder <paramref name="slice"/> names; any page when null.</summary>
+    private static bool InSlice(string key, string? slice) =>
+        slice is null || key.Replace(Backslash, '/').StartsWith(slice, StringComparison.Ordinal);
+
+    /// <summary>The page's name inside its volume: the volume folder is the file now, so it is not repeated.</summary>
+    private static string WithoutSlice(string key, string? slice) =>
+        slice is null ? key : key.Replace(Backslash, '/')[slice.Length..];
 
     private static Stream Entry(ZipArchive target, string key) =>
         target.CreateEntry(key.Replace(Backslash, '/'), CompressionLevel.NoCompression).Open();

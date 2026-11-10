@@ -270,7 +270,7 @@ public class TorrentImportService(
             return Empty("error.torrentImport.pathNotAccessible", new { path = contentPath });
         }
 
-        var sources = ComicSourceScanner.Scan(contentPath);
+        var sources = ScanSplittingPacks(contentPath);
         if (sources.Count == 0)
         {
             // Naming what was actually there: "no comics found" on its own reads exactly like a
@@ -933,7 +933,32 @@ public class TorrentImportService(
     }
 
     private static IReadOnlyList<ComicSource> SourcesOf(TorrentImportPlan plan, string contentPath) =>
-        plan.Sources.Count > 0 ? plan.Sources : ComicSourceScanner.Scan(contentPath);
+        plan.Sources.Count > 0 ? plan.Sources : ScanSplittingPacks(contentPath);
+
+    /// <summary>
+    /// A multi-volume pack becomes one comic per volume here and not in the scanner, because the
+    /// library import registers a CBZ where it lies and would register the pack once per volume.
+    /// A pack whose volume names clash with another comic in the download stays whole, since the
+    /// import keys comics by name.
+    /// </summary>
+    internal static List<ComicSource> ScanSplittingPacks(string contentPath)
+    {
+        var scanned = ComicSourceScanner.Scan(contentPath);
+        var split = scanned.Select(VolumePackSplitter.Split).ToList();
+        var clashing = split
+            .SelectMany(parts => parts)
+            .GroupBy(s => Path.GetFileNameWithoutExtension(s.Name), StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return
+        [
+            .. scanned.Zip(split, (whole, parts) =>
+                parts.Count > 1 && parts.Any(p => clashing.Contains(Path.GetFileNameWithoutExtension(p.Name)))
+                    ? [whole]
+                    : parts).SelectMany(parts => parts)
+        ];
+    }
 
     /// <summary>Parks an upgrade download that failed <see cref="CheckVolumeGuardAsync"/> for the user to settle.</summary>
     public static void ParkForGuard(DownloadQueueItem item, VolumeGuardFailure failure)
@@ -952,7 +977,7 @@ public class TorrentImportService(
     {
         try
         {
-            if (source.Entry is null && source.Kind is ComicSourceKind.Cbz or ComicSourceKind.Zip)
+            if (source.Entry is null && source.Slice is null && source.Kind is ComicSourceKind.Cbz or ComicSourceKind.Zip)
             {
                 return ChapterFileMeasurer.MeasureArchive(source.Path, GuardSamplePages, ct);
             }
