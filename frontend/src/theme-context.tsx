@@ -29,46 +29,116 @@ export interface BackgroundOption {
   scheme: 'dark' | 'light' | 'system'
   /** Surface ramp key in theme.ts `grounds`, used while the scheme resolves to dark. */
   ground: keyof typeof grounds
-  /** Swatch for the picker, given the active accent's hex: tinted surfaces follow the accent. */
-  swatch: (accentHex: string) => string
+  /** Colours for the picker's preview tile, taken from this ground's theme.css block. */
+  preview: (accentHex: string) => BackgroundPreview
+}
+
+/** CSS backgrounds for a picker tile: page ground, sidebar strip, a card with its border and ink. */
+export interface BackgroundPreview {
+  ground: string
+  side?: string
+  sideEdge?: string
+  surface: string
+  border: string
+  ink?: string
+  accent: string
 }
 
 export interface AccentOption {
   id: keyof typeof accents
   label: MessageDescriptor
-  /** The accent's primary shade, also the hex that background swatches derive from. */
+  /** The accent's primary shade, also the hex that background previews derive from. */
   swatch: string
 }
 
-const tintedSwatch = (accentHex: string) => `color-mix(in srgb, #1b1b1b 96%, ${accentHex})`
+const mix = (hex: string, pct: number, toward: string) => `color-mix(in srgb, ${hex} ${pct}%, ${toward})`
+const between = (a: string, b: string) => `color-mix(in srgb, ${a}, ${b})`
+
+/** A plain ramp, with the sidebar strip halfway between the page and the card. */
+function ramp(ground: string, surface: string, border: string, ink: string, accent: string): BackgroundPreview {
+  return { ground, side: between(ground, surface), surface, border, ink, accent }
+}
+
+const lightAccent = (accentHex: string) => mix(accentHex, 85, '#000000')
 
 export const BACKGROUNDS: BackgroundOption[] = [
-  { id: 'tinted', label: msg`Tinted black`, scheme: 'dark', ground: 'tinted', swatch: tintedSwatch },
+  {
+    id: 'tinted',
+    label: msg`Tinted black`,
+    scheme: 'dark',
+    ground: 'tinted',
+    preview: (a) => ramp(mix('#0b0b0b', 96, a), mix('#1b1b1b', 96, a), mix('#303030', 96, a), '#dee2e6', a),
+  },
   {
     id: 'cover',
     label: msg`Cover tint`,
     scheme: 'dark',
     ground: 'cover',
-    swatch: () => 'linear-gradient(135deg, #3a2420 0 33%, #1f2a3a 33% 66%, #23331f 66%)',
+    preview: (a) => ({
+      ground: 'linear-gradient(135deg, #2a1a17 0 33%, #161d29 33% 66%, #192417 66%)',
+      side: 'rgba(0, 0, 0, 0.25)',
+      surface: mix('#1b1b1b', 94, a),
+      border: mix('#303030', 93, a),
+      ink: '#dee2e6',
+      accent: a,
+    }),
   },
-  { id: 'night', label: msg`Night`, scheme: 'dark', ground: 'night', swatch: () => '#161922' },
-  { id: 'charcoal', label: msg`Charcoal`, scheme: 'dark', ground: 'charcoal', swatch: () => '#181818' },
-  { id: 'moss', label: msg`Moss`, scheme: 'dark', ground: 'moss', swatch: () => '#1b1e1b' },
-  { id: 'oled', label: msg`OLED black`, scheme: 'dark', ground: 'ink', swatch: () => '#000000' },
-  { id: 'light', label: msg`Light`, scheme: 'light', ground: 'tinted', swatch: () => '#f4f5fa' },
+  {
+    id: 'night',
+    label: msg`Night`,
+    scheme: 'dark',
+    ground: 'night',
+    preview: (a) => ramp('#0b0d13', '#161922', '#262b36', '#dee2e6', a),
+  },
+  {
+    id: 'charcoal',
+    label: msg`Charcoal`,
+    scheme: 'dark',
+    ground: 'charcoal',
+    preview: (a) => ramp('#0f0f0f', '#181818', '#2a2a2a', '#e3e1dc', a),
+  },
+  {
+    id: 'moss',
+    label: msg`Moss`,
+    scheme: 'dark',
+    ground: 'moss',
+    preview: (a) => ramp('#0e100e', '#1b1e1b', '#2e332e', '#dee2e6', a),
+  },
+  {
+    id: 'oled',
+    label: msg`OLED black`,
+    scheme: 'dark',
+    ground: 'ink',
+    preview: (a) => {
+      const border = mix('#2a2a2a', 88, a)
+      return { ground: '#000000', side: '#000000', sideEdge: border, surface: '#000000', border, ink: '#dee2e6', accent: a }
+    },
+  },
+  {
+    id: 'light',
+    label: msg`Light`,
+    scheme: 'light',
+    ground: 'tinted',
+    preview: (a) => ramp('#f3f4fa', '#ffffff', '#e3e6f0', '#252a38', lightAccent(a)),
+  },
   {
     id: 'paper',
     label: msg`Paper`,
     scheme: 'light',
     ground: 'paper',
-    swatch: (accentHex) => `color-mix(in srgb, #efe9dd 96%, ${accentHex})`,
+    preview: (a) => ramp(mix('#efe9dd', 96, a), '#fbf8f1', '#e0d8c8', '#2c261f', lightAccent(a)),
   },
   {
     id: 'system',
     label: msg`Match system`,
     scheme: 'system',
     ground: 'tinted',
-    swatch: (accentHex) => `linear-gradient(135deg, #f4f5fa 50%, ${tintedSwatch(accentHex)} 50%)`,
+    preview: (a) => ({
+      ground: `linear-gradient(135deg, #f3f4fa 50%, ${mix('#0b0b0b', 96, a)} 50%)`,
+      surface: `linear-gradient(135deg, #ffffff 50%, ${mix('#1b1b1b', 96, a)} 50%)`,
+      border: '#6b6f7a',
+      accent: a,
+    }),
   },
 ]
 

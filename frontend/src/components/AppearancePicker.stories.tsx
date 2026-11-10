@@ -19,6 +19,30 @@ export const Default: Story = {
   },
 }
 
+// Arrow keys rove across the Dark and Light groups as one radiogroup.
+export const KeyboardAcrossGroups: Story = {
+  globals: { background: 'oled' },
+  play: async ({ canvas, userEvent }) => {
+    const group = within(await canvas.findByRole('radiogroup', { name: 'Background' }))
+    await expect(await group.findByText('Dark')).toBeVisible()
+    const oled = await group.findByRole('radio', { name: 'OLED black' })
+    await waitFor(() => expect(group.getAllByRole('radio')).toHaveLength(9))
+    oled.focus()
+    await userEvent.keyboard('{ArrowRight}')
+    const light = await group.findByRole('radio', { name: 'Light' })
+    await waitFor(() => expect(light).toHaveAttribute('aria-checked', 'true'))
+    await waitFor(() => expect(light).toHaveFocus())
+  },
+}
+
+export const LightGroundSelected: Story = {
+  globals: { background: 'paper' },
+  play: async ({ canvas }) => {
+    const group = within(await canvas.findByRole('radiogroup', { name: 'Background' }))
+    await waitFor(() => expect(group.getByRole('radio', { name: 'Paper' })).toHaveAttribute('aria-checked', 'true'))
+  },
+}
+
 export const WithBackgroundHints: Story = {
   args: { backgroundHints: { tinted: { label: 'Default' }, night: { label: 'Dim', muted: true } } },
   play: async ({ canvas }) => {

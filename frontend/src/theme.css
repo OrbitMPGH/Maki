@@ -5563,6 +5563,98 @@ button.site-chip:hover {
   font-weight: var(--fw-semibold);
   color: var(--ink-3);
 }
+.ground-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 12px;
+}
+.ground-tiles-group {
+  grid-column: 1 / -1;
+  margin-bottom: -4px;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-4);
+}
+.ground-tiles-group:not(:first-child) {
+  margin-top: 6px;
+}
+.ground-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  min-width: 0;
+  border-radius: var(--radius-card);
+}
+.ground-tiles .ground-tile:focus-visible {
+  outline-offset: 7px;
+}
+.ground-tile-screen {
+  position: relative;
+  align-self: stretch;
+  height: 84px;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  box-shadow: 0 0 0 1px var(--border-strong);
+  transition: box-shadow var(--dur-base) var(--ease);
+}
+.ground-tile:hover .ground-tile-screen {
+  box-shadow: 0 0 0 1px var(--ink-4);
+}
+.ground-tile[data-active] .ground-tile-screen {
+  box-shadow:
+    0 0 0 2px var(--brand),
+    0 0 0 5px color-mix(in srgb, var(--brand) 25%, transparent);
+}
+.ground-tile-side {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: 26px;
+}
+.ground-tile-card {
+  position: absolute;
+  top: 12px;
+  inset-inline: 36px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  height: 46px;
+  padding: 7px 8px;
+  border: 1px solid;
+  border-radius: var(--radius-control);
+}
+.ground-tile-card[data-full] {
+  inset-inline-start: 18px;
+}
+.ground-tile-card i {
+  display: block;
+  height: 5px;
+  border-radius: var(--radius-pill);
+}
+.ground-tile-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-2);
+}
+.ground-tile[data-active] .ground-tile-name {
+  color: var(--ink-hi);
+}
+.ground-tile-check {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: var(--brand-on);
+}
 .setup-swatch-dot {
   width: 16px;
   height: 16px;
