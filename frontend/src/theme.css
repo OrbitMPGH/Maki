@@ -14411,6 +14411,23 @@ button.settings-row-head:hover,
   font-weight: 600;
   color: var(--rating);
 }
+/* The format field and its pickers stay pinned under the header, so a token far down the list can
+   be inserted and checked without scrolling back up. Full width over the body padding, like the
+   footer. */
+.token-modal-controls {
+  position: sticky;
+  top: calc(var(--mb-padding, var(--mantine-spacing-md)) * -1);
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: calc(var(--mb-padding, var(--mantine-spacing-md)) * -1)
+    calc(var(--mb-padding, var(--mantine-spacing-md)) * -1) 12px;
+  padding: var(--mb-padding, var(--mantine-spacing-md)) var(--mb-padding, var(--mantine-spacing-md))
+    var(--mantine-spacing-sm);
+  border-bottom: 1px solid var(--hairline);
+  background-color: var(--surface-raised);
+}
 /* One table per token group, all on the same fixed columns so token, meaning and example line up
    from group to group. */
 .token-table {
