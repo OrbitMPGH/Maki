@@ -80,6 +80,7 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
+import { ModalFooter, ModalHeading, ModalNote } from '../components/ui/ModalShell'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { IconBrandMark } from '../components/IconBrandMark'
@@ -1379,39 +1380,53 @@ function BulkDeleteModal({
     <Modal
       opened={opened}
       onClose={dismiss}
-      title={title}
       centered
       size="lg"
-      attributes={{ content: spares ? undefined : { 'data-edge': 'danger' } }}
+      title={
+        <span className="confirm-title">
+          <span className="confirm-tile" aria-hidden>
+            <IconTrash size={16} />
+          </span>
+          <span className="confirm-title-text">
+            <ModalHeading
+              title={title}
+              description={
+                spares ? (
+                  <Trans>Byte for byte the same as a file that stays in the library.</Trans>
+                ) : (
+                  <Trans>
+                    This permanently deletes <Plural value={count} one="the file" other="these files" /> from disk.
+                  </Trans>
+                )
+              }
+            />
+          </span>
+        </span>
+      }
     >
       <Stack gap="md">
-        {spares ? (
-          <Note tone="info">
+        <ModalNote tone={spares ? 'info' : 'danger'}>
+          {spares ? (
             <Trans>
-              Each of these is byte for byte the same as another file that stays in the library, and no chapter
-              reads from it. Deleting them frees the space and clears the duplicate findings. Nothing else changes.
+              <Plural value={count} one="No chapter reads from it." other="No chapter reads from them." /> Deleting
+              frees the space and clears the duplicate findings. Nothing else changes.
             </Trans>
-          </Note>
-        ) : (
-          <Note tone="danger">
+          ) : (
             <Trans>
-              This permanently deletes <Plural value={count} one="the file" other="these files" /> from disk.
               Chapter records, Wanted flags and reading history are kept, so anything still wanted can be
               downloaded again. A file with an identical copy in the same series folder hands its chapters to that
               copy instead. Archives already missing from disk have nothing to delete: for those this only clears
               the record that still says their chapters are downloaded.
             </Trans>
-          </Note>
-        )}
-        <Panel p="sm">
-          <Stack gap={4}>
-            {files.map((file) => (
-              <Text key={file.id} size="xs" c="var(--ink-3)" style={{ overflowWrap: 'anywhere' }}>
-                {file.relativePath}
-              </Text>
-            ))}
-          </Stack>
-        </Panel>
+          )}
+        </ModalNote>
+        <div className="confirm-files">
+          {files.map((file) => (
+            <div key={file.id} className="confirm-file">
+              {file.relativePath}
+            </div>
+          ))}
+        </div>
         {!spares && (
           <Checkbox
             checked={confirmed}
@@ -1419,7 +1434,17 @@ function BulkDeleteModal({
             label={confirmLabel}
           />
         )}
-        <Group justify="flex-end">
+        <ModalFooter
+          status={
+            spares ? (
+              <Plural value={count} one="# file" other="# files" />
+            ) : confirmed ? (
+              <Plural value={count} one="# file" other="# files" />
+            ) : (
+              <Trans>Tick the box to continue</Trans>
+            )
+          }
+        >
           <Button variant="default" onClick={dismiss}>
             <Trans>Cancel</Trans>
           </Button>
@@ -1430,7 +1455,7 @@ function BulkDeleteModal({
               <Trans>Delete permanently</Trans>
             )}
           </Button>
-        </Group>
+        </ModalFooter>
       </Stack>
     </Modal>
   )

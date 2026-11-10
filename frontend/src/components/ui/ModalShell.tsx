@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { IconAlertTriangle, IconCheck, IconInfoCircle, IconX } from '../../lib/icons'
+import { IconAlertOctagon, IconAlertTriangle, IconCheck, IconInfoCircle } from '../../lib/icons'
 
 /**
  * A utility modal's title with one line under it saying what the dialog is for. Pass as the Modal's
@@ -42,7 +42,7 @@ export function ModalNote({
   children: ReactNode
 }) {
   const Icon =
-    tone === 'info' ? IconInfoCircle : tone === 'ok' ? IconCheck : tone === 'danger' ? IconX : IconAlertTriangle
+    tone === 'info' ? IconInfoCircle : tone === 'ok' ? IconCheck : tone === 'danger' ? IconAlertOctagon : IconAlertTriangle
   return (
     <div className="modal-note" data-tone={tone} role={tone === 'warn' || tone === 'danger' ? 'status' : undefined}>
       <Icon size={16} className="modal-note-icon" aria-hidden />

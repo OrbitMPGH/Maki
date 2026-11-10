@@ -12,3 +12,6 @@ Screens that had fallen behind the rest of the app now match it:
 - Dialogs for importing, linking files, editing metadata, restoring series, naming tokens, rating imports, tags and custom rails share one layout, with a clear message when there is nothing to show.
 - The series page shows external sites as small marks and keeps the chapter selection bar at the foot of the list.
 - The archived library's list view shows what each series still keeps on disk.
+- Settings > Account: password, two-factor, single sign-on, sessions and API keys are rows that open in place.
+- Settings > Users & security: the users table shows roles and content ratings as pills with quieter edit and delete buttons, sign-in policy reads back as one sentence, and single sign-on opens in place. Permissions in the add and edit user dialogs are grouped.
+- Delete confirmations, finding a match on import, creators you follow and the folder browser use the same dialog layout as the rest of the app.
