@@ -1066,6 +1066,27 @@ public class SeriesController(
     }
 
     /// <summary>
+    /// The caller's reading time in this series for the "Your reading" panel. 204 when the built-in
+    /// reader has recorded none, so a series read elsewhere shows no panel at all.
+    /// </summary>
+    [HttpGet("{id:int}/reading-stats")]
+    public async Task<IActionResult> ReadingStats(
+        int id, [FromServices] SeriesReadingStatsService readingStats, CancellationToken ct)
+    {
+        var series = await db.Series.AsNoTracking()
+            .Where(s => s.Id == id)
+            .Select(s => new { s.Type })
+            .FirstOrDefaultAsync(ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        var stats = await readingStats.ForAsync(currentUser.UserId, id, series.Type, DateTime.UtcNow, ct);
+        return stats is null ? NoContent() : Ok(stats);
+    }
+
+    /// <summary>
     /// Series that <em>feel</em> like this one, for the series page's "More like this" rail — the
     /// semantic recommender seeded by this series alone. Complements
     /// <see cref="Related"/>, which only knows relations MangaBaka has declared.

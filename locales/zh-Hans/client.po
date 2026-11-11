@@ -441,6 +441,11 @@ msgstr ""
 msgid "{0, plural, one {#× chapter row} other {#× chapter rows}}"
 msgstr "{0, plural, other {#× 个章节行}}"
 
+#. placeholder {0}: stats.sittings
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "{0, plural, one {across # sitting} other {across # sittings}}"
+msgstr ""
+
 #. placeholder {0}: result.queuedCount
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -584,6 +589,11 @@ msgstr "{0, plural, other {已将 # 个章节标记为不想要}}"
 #, fuzzy
 msgid "{0, plural, one {Nothing is saved until you press a button below. The pass will check # file that has not been looked at yet. Files converted earlier are not converted again.} other {Nothing is saved until you press a button below. The pass will check # files that have not been looked at yet. Files converted earlier are not converted again.}}"
 msgstr "{0, plural, other {在你按下下方按钮之前不会保存任何内容。此次处理将检查 # 个尚未查看过的文件。之前已转换的文件不会再次转换。}}"
+
+#. placeholder {0}: stats.timedChapters
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "{0, plural, one {over # chapter} other {over # chapters}}"
+msgstr ""
 
 #. placeholder {0}: result.queued
 #: src/components/SourceCompareModal.tsx
@@ -1030,10 +1040,18 @@ msgstr "{chaptersDownloaded, plural, other {已下载章节}}"
 msgid "{chaptersHave}/{chaptersCounted} downloaded"
 msgstr "已下载 {chaptersHave}/{chaptersCounted}"
 
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "{chaptersLeft} at your paged pace"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{chaptersLeft} at your paged pace, {basis}."
 msgstr "按你翻页阅读的速度，还剩 {chaptersLeft}，{basis}。"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "{chaptersLeft} at your scrolling pace"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2405,6 +2423,7 @@ msgstr ""
 msgid "{relinked, plural, one {Relinked # file} other {Relinked # files}}"
 msgstr "{relinked, plural, other {已重新关联 # 个文件}}"
 
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
@@ -3225,10 +3244,6 @@ msgstr "{visibleCount}/{totalCount}"
 msgid "{volumes, plural, one {# volume} other {# volumes}}"
 msgstr ""
 
-#: src/components/discover/DiscoverDetailModal.tsx
-#~ msgid "{volumes, plural, one {In # volume} other {In # volumes}}"
-#~ msgstr ""
-
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "{volumesRead, plural, one {…plus # whole volume.} other {…plus # whole volumes.}}"
@@ -3747,6 +3762,7 @@ msgstr "其中约 {hardlinked} 个已硬链接到种子，将保持原样。"
 msgid "about {hourPhrase} {restPhrase} left"
 msgstr "还剩约 {hourPhrase} {restPhrase}"
 
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "About {readingTime}"
@@ -10025,10 +10041,6 @@ msgstr "第一页"
 msgid "First page image"
 msgstr "第一页图片"
 
-#: src/components/discover/DiscoverDetailModal.tsx
-#~ msgid "First released"
-#~ msgstr ""
-
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Fit"
@@ -12148,6 +12160,7 @@ msgid "Last pass, finished {finished}:"
 msgstr "上次检查，完成于 {finished}："
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/series/SeriesReadingPanel.tsx
 #, fuzzy
 msgid "Last read {lastRead}"
 msgstr "上次阅读 {lastRead}"
@@ -13090,11 +13103,6 @@ msgstr "漫画"
 #, fuzzy
 msgid "Manga manager"
 msgstr "漫画管理器"
-
-#: src/components/discover/DiscoverDetailModal.tsx
-#, fuzzy
-#~ msgid "MangaBaka aggregate score"
-#~ msgstr "MangaBaka 综合评分"
 
 #: src/components/import/mihonRows.ts
 #, fuzzy
@@ -17012,6 +17020,7 @@ msgstr "待处理的下载将被移除。已经开始的下载将被取消。"
 msgid "per chapter"
 msgstr "每章"
 
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Per chapter"
@@ -18212,6 +18221,10 @@ msgstr "已移除章节行的阅读进度和书签也会被删除。"
 #, fuzzy
 msgid "Reading progress from Kavita…"
 msgstr "正在读取 Kavita 的阅读进度……"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Reading since"
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -20399,10 +20412,6 @@ msgstr "分数 {score}"
 #, fuzzy
 msgid "Score {score}"
 msgstr "分数 {score}"
-
-#: src/components/discover/DiscoverDetailModal.tsx
-#~ msgid "Score {value} out of 10"
-#~ msgstr ""
 
 #. placeholder {0}: format.name
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -23756,6 +23765,10 @@ msgstr "本月"
 msgid "This month"
 msgstr "本月"
 
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "This month: {currentTime}"
+msgstr ""
+
 #: src/components/settings/MintConfirmation.tsx
 msgid "This needs a sign-in from the last 10 minutes. Sign out and sign in again, then come back here."
 msgstr ""
@@ -23958,6 +23971,10 @@ msgstr "此次升级已被还原"
 msgid "This week"
 msgstr "本周"
 
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "This week: {currentTime}"
+msgstr ""
+
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
 msgid "This year"
@@ -24067,17 +24084,27 @@ msgstr "请求间隔（毫秒）"
 msgid "Time limit per chapter"
 msgstr "每章时间限制"
 
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Time per month"
+msgstr ""
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Time per week"
+msgstr ""
+
 #: src/pages/stats/RangeControl.tsx
 #, fuzzy
 msgid "Time range"
 msgstr "时间范围"
 
 #: src/components/home/ReadingWeeks.tsx
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time read"
 msgstr "阅读时间"
 
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Time to finish"
@@ -25321,6 +25348,11 @@ msgstr "使用 Suwayomi 中已安装扩展的来源。"
 msgid "Uses volume or chapter words from a language that is off in Settings > Library > File name parsing"
 msgstr "使用来自未开启语言的卷或章节标记词。这些语言可在 设置 → 资料库 → 文件名解析 中开启。"
 
+#. placeholder {0}: formatReadingTime(usual)
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Usually {0} in other series"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "UTC"
@@ -25762,6 +25794,10 @@ msgstr "WebP"
 #, fuzzy
 msgid "Webtoon"
 msgstr "Webtoon"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Week of {label}: {time}"
+msgstr ""
 
 #: src/components/releases/UpcomingView.tsx
 #, fuzzy
@@ -26433,6 +26469,10 @@ msgstr "你的评分变化"
 #, fuzzy
 msgid "Your rating, score, how much you've read"
 msgstr "你的评分、分数和阅读进度"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Your reading"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy

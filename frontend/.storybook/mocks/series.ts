@@ -26,7 +26,8 @@ import {
   undoRestored,
   upgradeProfiles,
 } from './series/fixtures'
-import { api, failWith, hoursAgo } from './api'
+import { api, daysAgo, failWith, hoursAgo } from './api'
+import type { SeriesReadingStats } from '../../src/api/seriesReadingStats'
 import { catalogue, seriesLookupHandler } from './shared'
 import { notesHandlers } from './notes'
 import { outlookFor } from './operations/upcoming'
@@ -237,6 +238,9 @@ export const seriesHandlers: HttpHandler[] = [
     return known(id) ? HttpResponse.json(filesFor(id, chaptersFor(id, shapeOf(id)))) : notFound()
   }),
   http.get(api('/series/:id/pageconversion/history'), () => HttpResponse.json(seriesConversionNone)),
+  http.get(api('/series/:id/reading-stats'), ({ params }) =>
+    idOf(params) === 1 ? HttpResponse.json(seriesReadingStats) : noContent(),
+  ),
   http.get(api('/series/:id/related'), ({ params }) => HttpResponse.json(relatedItems(idOf(params)))),
   http.get(api('/series/:id/similar'), ({ params }) => HttpResponse.json(similarItems(idOf(params)))),
   http.get(api('/series/:id/scrobble'), () => HttpResponse.json(scrobble)),
@@ -317,4 +321,22 @@ export const seriesPageHandlers: HttpHandler[] = [
 ]
 
 /** `parameters.msw` for a series page story: its variants first, then the shared page endpoints. */
+const weeklyMinutes = [0, 0, 35, 62, 48, 0, 20, 95, 120, 74, 40, 0, 58, 88, 110, 66, 30, 52, 77, 41]
+
+/** Series 1's reading time: twenty weeks of the built-in reader, last read yesterday. */
+export const seriesReadingStats: SeriesReadingStats = {
+  seconds: 42_240,
+  timedChapters: 88,
+  chapterMedianSeconds: 480,
+  elsewhereMedianSeconds: 360,
+  sittings: 37,
+  firstReadAt: daysAgo(115),
+  lastReadAt: hoursAgo(26),
+  bucketUnit: 'week',
+  timeline: weeklyMinutes.map((minutes, i) => ({
+    bucket: new Date(Date.UTC(2026, 5, 8 + i * 7)).toISOString().slice(0, 10),
+    seconds: minutes * 60,
+  })),
+}
+
 export const seriesMsw = (...variants: HttpHandler[]): HttpHandler[] => [seriesLookupHandler, ...variants, ...seriesPageHandlers]

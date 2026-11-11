@@ -187,6 +187,8 @@ import { MetadataHistoryModal } from '../components/series/MetadataHistoryModal'
 import { UpgradeNowResultModal } from '../components/series/UpgradeNowResultModal'
 import { SeriesHero, SeriesHeroSkeleton } from '../components/series/SeriesHero'
 import { SeriesReviews } from '../components/series/SeriesReviews'
+import { SeriesReadingPanel } from '../components/series/SeriesReadingPanel'
+import { useSeriesReadingStats } from '../api/seriesReadingStats'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
 import { SeriesScrobbleSection } from '../components/SeriesScrobbleSection'
@@ -516,6 +518,7 @@ function SeriesDetailBody() {
     wasLinking.current = linking
   }, [series?.importLinkPending, seriesId, queryClient])
   const readTracking = useReadTracking()
+  const { data: readingStats } = useSeriesReadingStats(seriesId, readTracking)
   const { data: progressRows } = useSeriesReadProgress(seriesId)
   const { data: continueAt } = useContinueReading(seriesId)
   const { data: filesSummary } = useSeriesFilesSummary(seriesId)
@@ -2699,6 +2702,9 @@ function SeriesDetailBody() {
                     )}
                   </Text>
                 </Panel>
+                {readingStats && (
+                    <SeriesReadingPanel stats={readingStats} estimate={series.readTimeEstimate ?? null} />
+                )}
                 <Panel className="series-detail-metadata-panel series-machine">
                   <Group justify="space-between" align="baseline" mb="sm" wrap="nowrap">
                     <PanelTitle order={2} icon={IconDatabase}>
@@ -2768,7 +2774,7 @@ function SeriesDetailBody() {
                     <RecordRow label={t`Listed`}>
                       <ListedChapters known={series.knownChapterCount} specials={series.listedSpecials ?? 0} />
                     </RecordRow>
-                    {series.readTimeEstimate && (
+                    {series.readTimeEstimate && !readingStats && (
                         <RecordRow label={t`Time to finish`}>
                           <ReadTimeEstimateText estimate={series.readTimeEstimate} />
                         </RecordRow>

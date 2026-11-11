@@ -381,6 +381,11 @@ msgstr "{0, plural, one {# unsaved change} other {# unsaved changes}}"
 msgid "{0, plural, one {#× chapter row} other {#× chapter rows}}"
 msgstr "{0, plural, one {#× chapter row} other {#× chapter rows}}"
 
+#. placeholder {0}: stats.sittings
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "{0, plural, one {across # sitting} other {across # sittings}}"
+msgstr "{0, plural, one {across # sitting} other {across # sittings}}"
+
 #. placeholder {0}: result.queuedCount
 #: src/pages/RequestsPage.tsx
 msgid "{0, plural, one {Approved, queued # chapter} other {Approved, queued # chapters}}"
@@ -506,6 +511,11 @@ msgstr "{0, plural, one {No longer want # chapter} other {No longer want # chapt
 #: src/components/pageconversion/StartStep.tsx
 msgid "{0, plural, one {Nothing is saved until you press a button below. The pass will check # file that has not been looked at yet. Files converted earlier are not converted again.} other {Nothing is saved until you press a button below. The pass will check # files that have not been looked at yet. Files converted earlier are not converted again.}}"
 msgstr "{0, plural, one {Nothing is saved until you press a button below. The pass will check # file that has not been looked at yet. Files converted earlier are not converted again.} other {Nothing is saved until you press a button below. The pass will check # files that have not been looked at yet. Files converted earlier are not converted again.}}"
+
+#. placeholder {0}: stats.timedChapters
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "{0, plural, one {over # chapter} other {over # chapters}}"
+msgstr "{0, plural, one {over # chapter} other {over # chapters}}"
 
 #. placeholder {0}: result.queued
 #: src/components/SourceCompareModal.tsx
@@ -881,9 +891,17 @@ msgstr "{chaptersDownloaded, plural, one {chapter downloaded} other {chapters do
 msgid "{chaptersHave}/{chaptersCounted} downloaded"
 msgstr "{chaptersHave}/{chaptersCounted} downloaded"
 
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "{chaptersLeft} at your paged pace"
+msgstr "{chaptersLeft} at your paged pace"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "{chaptersLeft} at your paged pace, {basis}."
 msgstr "{chaptersLeft} at your paged pace, {basis}."
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "{chaptersLeft} at your scrolling pace"
+msgstr "{chaptersLeft} at your scrolling pace"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{chaptersLeft} at your scrolling pace, {basis}."
@@ -2014,6 +2032,7 @@ msgstr "{rejected, plural, one {# not upgraded} other {# not upgraded}}"
 msgid "{relinked, plural, one {Relinked # file} other {Relinked # files}}"
 msgstr "{relinked, plural, one {Relinked # file} other {Relinked # files}}"
 
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
 msgstr "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
@@ -2679,10 +2698,6 @@ msgstr "{visibleCount} of {totalCount}"
 msgid "{volumes, plural, one {# volume} other {# volumes}}"
 msgstr "{volumes, plural, one {# volume} other {# volumes}}"
 
-#: src/components/discover/DiscoverDetailModal.tsx
-#~ msgid "{volumes, plural, one {In # volume} other {In # volumes}}"
-#~ msgstr "{volumes, plural, one {In # volume} other {In # volumes}}"
-
 #: src/pages/rewind/slides.tsx
 msgid "{volumesRead, plural, one {…plus # whole volume.} other {…plus # whole volumes.}}"
 msgstr "{volumesRead, plural, one {…plus # whole volume.} other {…plus # whole volumes.}}"
@@ -3102,6 +3117,7 @@ msgstr "About {hardlinked} are hardlinked to torrents and stay as they are."
 msgid "about {hourPhrase} {restPhrase} left"
 msgstr "about {hourPhrase} {restPhrase} left"
 
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "About {readingTime}"
 msgstr "About {readingTime}"
@@ -8257,10 +8273,6 @@ msgstr "First page"
 msgid "First page image"
 msgstr "First page image"
 
-#: src/components/discover/DiscoverDetailModal.tsx
-#~ msgid "First released"
-#~ msgstr "First released"
-
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Fit"
 msgstr "Fit"
@@ -9994,6 +10006,7 @@ msgid "Last pass, finished {finished}:"
 msgstr "Last pass, finished {finished}:"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/series/SeriesReadingPanel.tsx
 msgid "Last read {lastRead}"
 msgstr "Last read {lastRead}"
 
@@ -10770,10 +10783,6 @@ msgstr "Manga"
 #: src/App.tsx
 msgid "Manga manager"
 msgstr "Manga manager"
-
-#: src/components/discover/DiscoverDetailModal.tsx
-#~ msgid "MangaBaka aggregate score"
-#~ msgstr "MangaBaka aggregate score"
 
 #: src/components/import/mihonRows.ts
 msgid "MangaBaka id"
@@ -13979,6 +13988,7 @@ msgstr "Pending downloads will be removed. Downloads already in progress will be
 msgid "per chapter"
 msgstr "per chapter"
 
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Per chapter"
 msgstr "Per chapter"
@@ -14972,6 +14982,10 @@ msgstr "Reading progress and bookmarks for removed chapter rows will also be del
 #: src/pages/settings/ReadingCards.tsx
 msgid "Reading progress from Kavita…"
 msgstr "Reading progress from Kavita…"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Reading since"
+msgstr "Reading since"
 
 #: src/components/RelinkFilesModal.tsx
 msgid "Reading the folder and every volume archive…"
@@ -16764,10 +16778,6 @@ msgstr "score {score}"
 #: src/pages/LibraryPage.tsx
 msgid "Score {score}"
 msgstr "Score {score}"
-
-#: src/components/discover/DiscoverDetailModal.tsx
-#~ msgid "Score {value} out of 10"
-#~ msgstr "Score {value} out of 10"
 
 #. placeholder {0}: format.name
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -19502,6 +19512,10 @@ msgstr "this month"
 msgid "This month"
 msgstr "This month"
 
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "This month: {currentTime}"
+msgstr "This month: {currentTime}"
+
 #: src/components/settings/MintConfirmation.tsx
 msgid "This needs a sign-in from the last 10 minutes. Sign out and sign in again, then come back here."
 msgstr "This needs a sign-in from the last 10 minutes. Sign out and sign in again, then come back here."
@@ -19666,6 +19680,10 @@ msgstr "This upgrade was already reverted"
 msgid "This week"
 msgstr "This week"
 
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "This week: {currentTime}"
+msgstr "This week: {currentTime}"
+
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "This year"
 msgstr "This year"
@@ -19756,15 +19774,25 @@ msgstr "Time between requests (ms)"
 msgid "Time limit per chapter"
 msgstr "Time limit per chapter"
 
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Time per month"
+msgstr "Time per month"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Time per week"
+msgstr "Time per week"
+
 #: src/pages/stats/RangeControl.tsx
 msgid "Time range"
 msgstr "Time range"
 
 #: src/components/home/ReadingWeeks.tsx
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "Time read"
 msgstr "Time read"
 
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Time to finish"
 msgstr "Time to finish"
@@ -20790,6 +20818,11 @@ msgstr "Uses the sources of the extensions installed in Suwayomi."
 msgid "Uses volume or chapter words from a language that is off in Settings > Library > File name parsing"
 msgstr "Uses volume or chapter words from a language that is off in Settings > Library > File name parsing"
 
+#. placeholder {0}: formatReadingTime(usual)
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Usually {0} in other series"
+msgstr "Usually {0} in other series"
+
 #: src/components/settings/ProgressSection.tsx
 msgid "UTC"
 msgstr "UTC"
@@ -21150,6 +21183,10 @@ msgstr "WebP"
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Webtoon"
 msgstr "Webtoon"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Week of {label}: {time}"
+msgstr "Week of {label}: {time}"
 
 #: src/components/releases/UpcomingView.tsx
 msgid "Week of {start}"
@@ -21694,6 +21731,10 @@ msgstr "Your rating over time"
 #: src/pages/LibraryPage.tsx
 msgid "Your rating, score, how much you've read"
 msgstr "Your rating, score, how much you've read"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Your reading"
+msgstr "Your reading"
 
 #: src/components/settings/ProgressSection.tsx
 msgid "Your reading history is not affected. You can set a new goal at any time."

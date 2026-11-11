@@ -1088,6 +1088,7 @@ try
     builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleWorker>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<Maki.Api.Services.Upscaling.UpscaleWorker>());
     builder.Services.AddScoped<ReadingTimeEstimateService>();
+    builder.Services.AddScoped<SeriesReadingStatsService>();
     builder.Services.AddScoped<OpdsCatalogService>();
     builder.Services.AddScoped<OpdsAccessService>();
     builder.Services.AddScoped<Maki.Api.Komga.KomgaAuthenticator>();

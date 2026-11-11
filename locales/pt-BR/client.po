@@ -441,6 +441,11 @@ msgstr ""
 msgid "{0, plural, one {#× chapter row} other {#× chapter rows}}"
 msgstr "{0, plural, one {#× linha de capítulo} many {#× linhas de capítulo}other {#× linhas de capítulo}}"
 
+#. placeholder {0}: stats.sittings
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "{0, plural, one {across # sitting} other {across # sittings}}"
+msgstr ""
+
 #. placeholder {0}: result.queuedCount
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -584,6 +589,11 @@ msgstr "{0, plural, one {Não quer mais # capítulo} many {Não quer mais # cap�
 #, fuzzy
 msgid "{0, plural, one {Nothing is saved until you press a button below. The pass will check # file that has not been looked at yet. Files converted earlier are not converted again.} other {Nothing is saved until you press a button below. The pass will check # files that have not been looked at yet. Files converted earlier are not converted again.}}"
 msgstr "{0, plural, one {Nada é salvo até você apertar um dos botões abaixo. A varredura vai verificar # arquivo que ainda não foi analisado. Arquivos convertidos antes não são convertidos de novo.} many {Nada é salvo até você apertar um dos botões abaixo. A varredura vai verificar # arquivos que ainda não foram analisados. Arquivos convertidos antes não são convertidos de novo.} other {Nada é salvo até você apertar um dos botões abaixo. A varredura vai verificar # arquivos que ainda não foram analisados. Arquivos convertidos antes não são convertidos de novo.}}"
+
+#. placeholder {0}: stats.timedChapters
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "{0, plural, one {over # chapter} other {over # chapters}}"
+msgstr ""
 
 #. placeholder {0}: result.queued
 #: src/components/SourceCompareModal.tsx
@@ -1030,10 +1040,18 @@ msgstr "{chaptersDownloaded, plural, one {capítulo baixado} many {capítulos ba
 msgid "{chaptersHave}/{chaptersCounted} downloaded"
 msgstr "{chaptersHave}/{chaptersCounted} baixados"
 
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "{chaptersLeft} at your paged pace"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{chaptersLeft} at your paged pace, {basis}."
 msgstr "{chaptersLeft} no seu ritmo paginado, {basis}."
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "{chaptersLeft} at your scrolling pace"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2405,6 +2423,7 @@ msgstr ""
 msgid "{relinked, plural, one {Relinked # file} other {Relinked # files}}"
 msgstr "{relinked, plural, one {Reassociado # arquivo} many {Reassociados # arquivos} other {Reassociados # arquivos}}"
 
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
@@ -3225,10 +3244,6 @@ msgstr "{visibleCount} de {totalCount}"
 msgid "{volumes, plural, one {# volume} other {# volumes}}"
 msgstr ""
 
-#: src/components/discover/DiscoverDetailModal.tsx
-#~ msgid "{volumes, plural, one {In # volume} other {In # volumes}}"
-#~ msgstr ""
-
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "{volumesRead, plural, one {…plus # whole volume.} other {…plus # whole volumes.}}"
@@ -3747,6 +3762,7 @@ msgstr "Cerca de {hardlinked} têm hardlink com torrents e ficam como estão."
 msgid "about {hourPhrase} {restPhrase} left"
 msgstr "restam cerca de {hourPhrase} {restPhrase}"
 
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "About {readingTime}"
@@ -10025,10 +10041,6 @@ msgstr "Primeira página"
 msgid "First page image"
 msgstr "Imagem da primeira página"
 
-#: src/components/discover/DiscoverDetailModal.tsx
-#~ msgid "First released"
-#~ msgstr ""
-
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Fit"
@@ -12148,6 +12160,7 @@ msgid "Last pass, finished {finished}:"
 msgstr "Última passagem, concluída em {finished}:"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/series/SeriesReadingPanel.tsx
 #, fuzzy
 msgid "Last read {lastRead}"
 msgstr "Última leitura {lastRead}"
@@ -13090,11 +13103,6 @@ msgstr "Manga"
 #, fuzzy
 msgid "Manga manager"
 msgstr "Gerenciador de mangás"
-
-#: src/components/discover/DiscoverDetailModal.tsx
-#, fuzzy
-#~ msgid "MangaBaka aggregate score"
-#~ msgstr "Pontuação agregada do MangaBaka"
 
 #: src/components/import/mihonRows.ts
 #, fuzzy
@@ -17012,6 +17020,7 @@ msgstr "Downloads pendentes serão removidos. Downloads já em andamento serão 
 msgid "per chapter"
 msgstr "por capítulo"
 
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Per chapter"
@@ -18212,6 +18221,10 @@ msgstr "O progresso de leitura e os favoritos das linhas de capítulos removidas
 #, fuzzy
 msgid "Reading progress from Kavita…"
 msgstr "Progresso de leitura do Kavita…"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Reading since"
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -20399,10 +20412,6 @@ msgstr "pontuação {score}"
 #, fuzzy
 msgid "Score {score}"
 msgstr "Pontuação {score}"
-
-#: src/components/discover/DiscoverDetailModal.tsx
-#~ msgid "Score {value} out of 10"
-#~ msgstr ""
 
 #. placeholder {0}: format.name
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -23756,6 +23765,10 @@ msgstr "este mês"
 msgid "This month"
 msgstr "Este mês"
 
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "This month: {currentTime}"
+msgstr ""
+
 #: src/components/settings/MintConfirmation.tsx
 msgid "This needs a sign-in from the last 10 minutes. Sign out and sign in again, then come back here."
 msgstr ""
@@ -23958,6 +23971,10 @@ msgstr "Este upgrade já foi revertido"
 msgid "This week"
 msgstr "Esta semana"
 
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "This week: {currentTime}"
+msgstr ""
+
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
 msgid "This year"
@@ -24067,17 +24084,27 @@ msgstr "Tempo entre requisições (ms)"
 msgid "Time limit per chapter"
 msgstr "Tempo limite por capítulo"
 
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Time per month"
+msgstr ""
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Time per week"
+msgstr ""
+
 #: src/pages/stats/RangeControl.tsx
 #, fuzzy
 msgid "Time range"
 msgstr "Período"
 
 #: src/components/home/ReadingWeeks.tsx
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time read"
 msgstr "Tempo lido"
 
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Time to finish"
@@ -25321,6 +25348,11 @@ msgstr "Usa as fontes das extensões instaladas no Suwayomi."
 msgid "Uses volume or chapter words from a language that is off in Settings > Library > File name parsing"
 msgstr "Usa palavras de volume ou capítulo de um idioma desativado em Configurações > Biblioteca > Leitura de nomes de arquivo"
 
+#. placeholder {0}: formatReadingTime(usual)
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Usually {0} in other series"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "UTC"
@@ -25762,6 +25794,10 @@ msgstr "WebP"
 #, fuzzy
 msgid "Webtoon"
 msgstr "Webtoon"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Week of {label}: {time}"
+msgstr ""
 
 #: src/components/releases/UpcomingView.tsx
 #, fuzzy
@@ -26433,6 +26469,10 @@ msgstr "Sua nota ao longo do tempo"
 #, fuzzy
 msgid "Your rating, score, how much you've read"
 msgstr "Sua avaliação, nota, quanto você leu"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Your reading"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy

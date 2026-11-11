@@ -40,6 +40,22 @@ export const Ongoing: Story = {
   },
 }
 
+export const YourReading: Story = {
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('heading', { name: 'Your reading' })).toBeVisible()
+    await expect(canvas.getByText('11h 44m')).toBeVisible()
+  },
+}
+
+/** Read in another app: the built-in reader recorded no time, so there is no panel at all. */
+export const NoReadingTimeRecorded: Story = {
+  parameters: at(2),
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('heading', { name: 'Metadata' })).toBeVisible()
+    await expect(canvas.queryByRole('heading', { name: 'Your reading' })).toBeNull()
+  },
+}
+
 export const Completed: Story = {
   parameters: at(2),
   play: async ({ canvas }) => {

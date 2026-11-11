@@ -441,6 +441,11 @@ msgstr ""
 msgid "{0, plural, one {#× chapter row} other {#× chapter rows}}"
 msgstr "{0, plural, one {#× строка главы} few {#× строки главы} many {#× строк глав} other {#× строки главы}}"
 
+#. placeholder {0}: stats.sittings
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "{0, plural, one {across # sitting} other {across # sittings}}"
+msgstr ""
+
 #. placeholder {0}: result.queuedCount
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -584,6 +589,11 @@ msgstr "{0, plural, one {Больше не нужна # глава} few {Бол�
 #, fuzzy
 msgid "{0, plural, one {Nothing is saved until you press a button below. The pass will check # file that has not been looked at yet. Files converted earlier are not converted again.} other {Nothing is saved until you press a button below. The pass will check # files that have not been looked at yet. Files converted earlier are not converted again.}}"
 msgstr "{0, plural, one {Ничего не сохраняется, пока вы не нажмёте кнопку ниже. Проход проверит # файл, который ещё не проверялся. Файлы, преобразованные ранее, не преобразуются повторно.} few {Ничего не сохраняется, пока вы не нажмёте кнопку ниже. Проход проверит # файла, которые ещё не проверялись. Файлы, преобразованные ранее, не преобразуются повторно.} many {Ничего не сохраняется, пока вы не нажмёте кнопку ниже. Проход проверит # файлов, которые ещё не проверялись. Файлы, преобразованные ранее, не преобразуются повторно.} other {Ничего не сохраняется, пока вы не нажмёте кнопку ниже. Проход проверит # файла, которые ещё не проверялись. Файлы, преобразованные ранее, не преобразуются повторно.}}"
+
+#. placeholder {0}: stats.timedChapters
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "{0, plural, one {over # chapter} other {over # chapters}}"
+msgstr ""
 
 #. placeholder {0}: result.queued
 #: src/components/SourceCompareModal.tsx
@@ -1030,10 +1040,18 @@ msgstr "{chaptersDownloaded, plural, one {глава загружена} few {г
 msgid "{chaptersHave}/{chaptersCounted} downloaded"
 msgstr "{chaptersHave}/{chaptersCounted} загружено"
 
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "{chaptersLeft} at your paged pace"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{chaptersLeft} at your paged pace, {basis}."
 msgstr "{chaptersLeft} при вашем постраничном темпе, {basis}."
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "{chaptersLeft} at your scrolling pace"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2405,6 +2423,7 @@ msgstr ""
 msgid "{relinked, plural, one {Relinked # file} other {Relinked # files}}"
 msgstr "{relinked, plural, one {Привязан # файл} few {Привязаны # файла} many {Привязано # файлов} other {Привязаны # файла}}"
 
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "{remainingChapters, plural, one {# chapter left} other {# chapters left}}"
@@ -3225,10 +3244,6 @@ msgstr "{visibleCount} из {totalCount}"
 msgid "{volumes, plural, one {# volume} other {# volumes}}"
 msgstr ""
 
-#: src/components/discover/DiscoverDetailModal.tsx
-#~ msgid "{volumes, plural, one {In # volume} other {In # volumes}}"
-#~ msgstr ""
-
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "{volumesRead, plural, one {…plus # whole volume.} other {…plus # whole volumes.}}"
@@ -3747,6 +3762,7 @@ msgstr "Около {hardlinked} связаны жёсткой ссылкой с 
 msgid "about {hourPhrase} {restPhrase} left"
 msgstr "осталось около {hourPhrase} {restPhrase}"
 
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "About {readingTime}"
@@ -10025,10 +10041,6 @@ msgstr "Первая страница"
 msgid "First page image"
 msgstr "Изображение первой страницы"
 
-#: src/components/discover/DiscoverDetailModal.tsx
-#~ msgid "First released"
-#~ msgstr ""
-
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Fit"
@@ -12148,6 +12160,7 @@ msgid "Last pass, finished {finished}:"
 msgstr "Последний проход, завершён {finished}:"
 
 #: src/components/home/ContinueHero.tsx
+#: src/components/series/SeriesReadingPanel.tsx
 #, fuzzy
 msgid "Last read {lastRead}"
 msgstr "Последнее чтение: {lastRead}"
@@ -13090,11 +13103,6 @@ msgstr "Манга"
 #, fuzzy
 msgid "Manga manager"
 msgstr "Менеджер манги"
-
-#: src/components/discover/DiscoverDetailModal.tsx
-#, fuzzy
-#~ msgid "MangaBaka aggregate score"
-#~ msgstr "Итоговая оценка MangaBaka"
 
 #: src/components/import/mihonRows.ts
 #, fuzzy
@@ -17012,6 +17020,7 @@ msgstr "Ожидающие загрузки будут удалены. Уже в
 msgid "per chapter"
 msgstr "на главу"
 
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Per chapter"
@@ -18212,6 +18221,10 @@ msgstr "Прогресс чтения и закладки для удалённ�
 #, fuzzy
 msgid "Reading progress from Kavita…"
 msgstr "Прогресс чтения из Kavita…"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Reading since"
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -20399,10 +20412,6 @@ msgstr "оценка {score}"
 #, fuzzy
 msgid "Score {score}"
 msgstr "Оценка {score}"
-
-#: src/components/discover/DiscoverDetailModal.tsx
-#~ msgid "Score {value} out of 10"
-#~ msgstr ""
 
 #. placeholder {0}: format.name
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -23756,6 +23765,10 @@ msgstr "в этом месяце"
 msgid "This month"
 msgstr "В этом месяце"
 
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "This month: {currentTime}"
+msgstr ""
+
 #: src/components/settings/MintConfirmation.tsx
 msgid "This needs a sign-in from the last 10 minutes. Sign out and sign in again, then come back here."
 msgstr ""
@@ -23958,6 +23971,10 @@ msgstr "Это улучшение уже откачено"
 msgid "This week"
 msgstr "На этой неделе"
 
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "This week: {currentTime}"
+msgstr ""
+
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
 msgid "This year"
@@ -24067,17 +24084,27 @@ msgstr "Время между запросами (мс)"
 msgid "Time limit per chapter"
 msgstr "Лимит времени на главу"
 
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Time per month"
+msgstr ""
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Time per week"
+msgstr ""
+
 #: src/pages/stats/RangeControl.tsx
 #, fuzzy
 msgid "Time range"
 msgstr "Период"
 
 #: src/components/home/ReadingWeeks.tsx
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time read"
 msgstr "Время чтения"
 
+#: src/components/series/SeriesReadingPanel.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Time to finish"
@@ -25321,6 +25348,11 @@ msgstr "Использует источники расширений, устан
 msgid "Uses volume or chapter words from a language that is off in Settings > Library > File name parsing"
 msgstr "Использует слова для томов и глав из языка, который выключен в разделе Настройки → Библиотека → Разбор имён файлов"
 
+#. placeholder {0}: formatReadingTime(usual)
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Usually {0} in other series"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "UTC"
@@ -25762,6 +25794,10 @@ msgstr "WebP"
 #, fuzzy
 msgid "Webtoon"
 msgstr "Вебтун"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Week of {label}: {time}"
+msgstr ""
 
 #: src/components/releases/UpcomingView.tsx
 #, fuzzy
@@ -26433,6 +26469,10 @@ msgstr "Ваши оценки по времени"
 #, fuzzy
 msgid "Your rating, score, how much you've read"
 msgstr "Ваш рейтинг, оценка, сколько вы прочитали"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Your reading"
+msgstr ""
 
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
