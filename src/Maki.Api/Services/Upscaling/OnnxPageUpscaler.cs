@@ -60,17 +60,26 @@ public sealed class OnnxPageUpscaler(
             ? UpscaleAsync(page, id, ct)
             : Task.FromResult(UpscaleResult.Failed(UpscaleReasons.UnknownModel));
 
-    public async Task<UpscaleResult> UpscaleAsync(byte[] page, UpscaleModelId model, CancellationToken ct)
+    public async Task<UpscaleResult> UpscaleAsync(byte[] page, UpscaleModelId model, CancellationToken ct) =>
+        await (await StartAsync(page, model, ct)).FinishAsync(ct);
+
+    public Task<PendingUpscale> StartAsync(byte[] page, string modelId, CancellationToken ct) =>
+        UpscaleModelId.TryParse(modelId, out var id)
+            ? StartAsync(page, id, ct)
+            : Task.FromResult(PendingUpscale.Done(UpscaleResult.Failed(UpscaleReasons.UnknownModel)));
+
+    /// <summary>Decode and inference. The colour pass and encode wait for <see cref="PendingUpscale.FinishAsync"/>.</summary>
+    public async Task<PendingUpscale> StartAsync(byte[] page, UpscaleModelId model, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         if (!catalog.TryGet(model, out var info))
         {
-            return UpscaleResult.Failed(UpscaleReasons.UnknownModel);
+            return PendingUpscale.Done(UpscaleResult.Failed(UpscaleReasons.UnknownModel));
         }
 
         if (!store.IsReady(model))
         {
-            return UpscaleResult.Failed(UpscaleReasons.ModelUnavailable);
+            return PendingUpscale.Done(UpscaleResult.Failed(UpscaleReasons.ModelUnavailable));
         }
 
         var (source, skip) = await ImageWorkGate.RunAsync(
@@ -78,7 +87,7 @@ public sealed class OnnxPageUpscaler(
         if (source is null)
         {
             logger.LogDebug("Skipped upscaling a page with {Model}: {Reason}", model, skip);
-            return UpscaleResult.Skipped(skip ?? UpscaleReasons.Unreadable);
+            return PendingUpscale.Done(UpscaleResult.Skipped(skip ?? UpscaleReasons.Unreadable));
         }
 
         var grey = UpscalePixels.IsGreyscale(source.Pixels);
@@ -96,14 +105,20 @@ public sealed class OnnxPageUpscaler(
         catch (ModelLoadException ex)
         {
             logger.LogInformation(ex.InnerException, "Upscale model {Model} could not be loaded", model);
-            return UpscaleResult.Failed(UpscaleReasons.ModelUnavailable);
+            return PendingUpscale.Done(UpscaleResult.Failed(UpscaleReasons.ModelUnavailable));
         }
         catch (Exception ex)
         {
             logger.LogInformation(ex, "Upscaling a {Width}x{Height} page with {Model} failed", source.Width, source.Height, model);
-            return UpscaleResult.Failed(UpscaleReasons.InferenceFailed);
+            return PendingUpscale.Done(UpscaleResult.Failed(UpscaleReasons.InferenceFailed));
         }
 
+        return new PendingUpscale(finish => FinishAsync(source, stitched, grey, luma, threads, model, finish));
+    }
+
+    private async Task<UpscaleResult> FinishAsync(
+        Raster source, StitchedPage stitched, bool grey, bool luma, int threads, UpscaleModelId model, CancellationToken ct)
+    {
         try
         {
             var outputWeight = ImageWorkGate.Weigh(stitched.Width, stitched.Height);

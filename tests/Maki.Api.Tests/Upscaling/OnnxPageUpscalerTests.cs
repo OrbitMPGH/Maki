@@ -307,6 +307,22 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
+    public async Task Two_stages_give_the_same_bytes_as_one_call_and_the_session_is_free_in_between()
+    {
+        using var upscaler = NewUpscaler();
+        var png = Pattern(400, 500).EncodePng();
+
+        var whole = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None);
+        var pending = await ((IPageUpscaler)upscaler).StartAsync(png, "span-s", CancellationToken.None);
+        upscaler.ReleaseModel(UpscaleModelId.SpanS);
+        Assert.False(upscaler.IsLoaded(UpscaleModelId.SpanS));
+        var staged = await pending.FinishAsync(CancellationToken.None);
+
+        Assert.Equal(UpscaleOutcome.Ready, staged.Outcome);
+        Assert.Equal(whole.Bytes, staged.Bytes);
+    }
+
+    [Fact]
     public async Task A_grey_page_is_encoded_from_a_single_channel()
     {
         using var upscaler = NewUpscaler();

@@ -151,6 +151,7 @@ public sealed class EnhanceEndpointTests : IDisposable
         var worker = new UpscaleWorker(_queue, _cache, upscaler, _store, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
             _paths, _settings, _broadcaster, NullLogger<UpscaleWorker>.Instance);
         Assert.True(await worker.RunOnceAsync(default));
+        await worker.Finishing;
         Assert.Equal([(1, _chapterId, 1, "span-s", "working"), (1, _chapterId, 1, "span-s", "ready")], _broadcaster.Sent);
 
         var slice = (await new ReaderService(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), null!, null!,
@@ -193,7 +194,9 @@ public sealed class EnhanceEndpointTests : IDisposable
         var worker = new UpscaleWorker(_queue, _cache, upscaler, _store, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
             _paths, _settings, _broadcaster, NullLogger<UpscaleWorker>.Instance);
         Assert.True(await worker.RunOnceAsync(default));
+        await worker.Finishing;
         Assert.True(await worker.RunOnceAsync(default));
+        await worker.Finishing;
         Assert.Equal(
             [(1, nextId, 0, "span-s", "working"), (1, nextId, 0, "span-s", "ready"), (1, nextId, 1, "span-s", "working"), (1, nextId, 1, "span-s", "ready")],
             _broadcaster.Sent);
