@@ -6418,6 +6418,155 @@ button.site-chip:hover {
   font-weight: var(--fw-semibold);
 }
 
+/* --- The shelf ------------------------------------------------------------- */
+/* Status, figures and the next things to do or check, as one object in the add card's material:
+   the pills as its head, the figures as its body, sites or actions as its footer strip. It sits on
+   the poster's bottom edge, and a title too long for that makes the poster taller
+   (useHeroShelfFit) instead of pushing the shelf past it. */
+.series-hero-row[data-shelf] > .hero-column {
+  display: flex;
+  flex-direction: column;
+}
+/* A container only beside the poster: a container is its own formatting context, which would stop
+   the phone layout's text flowing under the floated poster. */
+@media (min-width: 48em) {
+  .series-hero-row[data-shelf] > .hero-column {
+    container: hero-column / inline-size;
+  }
+}
+.hero-shelf {
+  width: fit-content;
+  max-width: 100%;
+  margin-top: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-hero);
+  overflow: hidden;
+  background: var(--surface-2);
+  box-shadow: var(--shadow-object);
+}
+.hero-shelf-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--hairline);
+}
+/* On the shelf's lighter ground the 15% tint leaves the status word under 4.5:1, so the pill takes
+   its tint over the app ground instead. Important: the tone arrives as an inline style. */
+:root:not([data-theme='light']) .hero-shelf-head .series-hero-status:not([data-quiet], [data-content-rating]) {
+  background: color-mix(in srgb, currentColor 12%, var(--app-bg)) !important;
+}
+/* The figures flow as one row of cells. `.hero-stats` steps aside so a wrap can move any figure to
+   the front of a line, where its hairline falls outside the shelf's clip. */
+.hero-shelf-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+.hero-shelf-main:empty {
+  display: none;
+}
+.hero-shelf-main .hero-stats {
+  display: contents;
+}
+.hero-shelf-main > *,
+.hero-shelf-main .hero-stat {
+  flex: 1 0 auto;
+}
+.hero-shelf-main .hero-stat {
+  align-content: center;
+  padding: 10px 14px;
+  box-shadow: -1px 0 0 var(--hairline);
+}
+.hero-shelf-main .hero-stat-l {
+  white-space: nowrap;
+}
+.hero-shelf-main .score-figure {
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+}
+.hero-shelf-main .score-dist {
+  width: 64px;
+}
+.hero-shelf-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-top: 1px solid var(--hairline);
+  background: color-mix(in srgb, var(--app-bg) 35%, var(--surface-2));
+}
+.hero-shelf-main:empty + .hero-shelf-foot {
+  border-top: 0;
+}
+/* The series page: your rating is the first cell, and the actions are the footer, a step smaller
+   than the page's buttons so the strip stays a strip. */
+.series-hero:not([data-compact]) {
+  --hero-poster-min: 336px;
+}
+.hero-rating-cell .mantine-Group-root {
+  min-height: 29px;
+}
+.hero-shelf-foot.series-hero-actions {
+  gap: 6px;
+  padding: 8px;
+}
+.hero-shelf-foot.series-hero-actions .mantine-Button-root {
+  --button-height: 2.125rem !important;
+  --button-padding-x: 14px !important;
+  font-size: var(--type-meta);
+}
+.hero-shelf-foot.series-hero-actions .mantine-ActionIcon-root {
+  --ai-size: 2.125rem !important;
+}
+.hero-shelf-foot.series-hero-actions:empty {
+  display: none;
+}
+/* A column too narrow for one row of figures gives the score a row of its own and shares the next
+   between the rest, rather than wrapping one figure at a time. */
+@container hero-column (max-width: 34rem) {
+  .hero-shelf {
+    width: 100%;
+  }
+  .hero-shelf-main .score-figure,
+  .hero-shelf-main .hero-rating-cell {
+    flex: 1 0 100%;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .hero-shelf-main .hero-stat:not(.hero-rating-cell) {
+    flex: 1 1 0;
+  }
+}
+@media (max-width: 47.9375em) {
+  .hero-shelf {
+    width: 100%;
+  }
+  .hero-shelf-main .score-figure,
+  .hero-shelf-main .hero-rating-cell {
+    flex: 1 0 100%;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .hero-shelf-main .hero-stat:not(.hero-rating-cell) {
+    flex: 1 1 0;
+  }
+}
+/* The poster follows the column when the column is the taller one, at 2:3, up to a ceiling: past
+   it a narrow modal would hand the title's width to the poster and wrap the title further. */
+@media (min-width: 48em) {
+  .series-hero .series-hero-row[data-shelf] > .series-hero-poster {
+    width: auto;
+    height: clamp(
+      var(--hero-poster-min, 264px),
+      var(--hero-content-h, 0px),
+      calc(var(--hero-poster-min, 264px) * 1.2)
+    );
+    aspect-ratio: 2 / 3;
+  }
+}
+
 /* Mantine's modal content is not a positioned element, so the floating close button needs one:
    without this it anchors to the viewport and lands in the corner of the screen. */
 .discover-modal-root {
@@ -7818,6 +7967,9 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
     width: 176px;
     height: 264px;
   }
+  .series-hero:not([data-compact]) {
+    --hero-poster-min: 264px;
+  }
 }
 
 /* Below `xs` the poster costs the title most of its width, and the title is the point. */
@@ -7859,6 +8011,10 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
      margin that hides its leading hairline. Its wrapper steps clear instead, and the list keeps it. */
   .series-hero:not([data-compact]) .series-hero-row div:has(> .meta-list) {
     display: flow-root;
+  }
+  .series-hero:not([data-compact]) .hero-shelf {
+    clear: both;
+    margin-top: 16px;
   }
   .series-hero:not([data-compact]) .series-hero-poster {
     display: block;

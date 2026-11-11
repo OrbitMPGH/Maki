@@ -14,7 +14,7 @@ import {
     Tooltip,
     VisuallyHidden,
 } from '@mantine/core'
-import { IconAlertTriangle, IconArrowLeft, IconBook, IconCheck, IconDownload, IconX } from '../../lib/icons'
+import { IconAlertTriangle, IconArrowLeft, IconBook, IconBooks, IconCheck, IconDeviceTv, IconDownload, IconX } from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import { otherTitles, readableTitles } from '../../api/titles'
 import type { SeriesDto } from '../../api/types'
@@ -33,8 +33,9 @@ import { useBackTarget } from '../../lib/navHistory'
 import { useCoverTint } from '../../lib/coverTint'
 import {HeroBackdrop} from './HeroBackdrop'
 import { MetadataLock } from './EditMetadataModal'
-import { GENRE_LABELS, TYPE_LABELS } from '../CatalogueFilters'
+import { TYPE_LABELS } from '../CatalogueFilters'
 import { MetaList } from '../ui/MetaList'
+import { useHeroShelfFit } from './useHeroShelfFit'
 
 /** Where the back link points for a series nobody navigated to: a bookmark, or a pasted link. */
 const LIBRARY_FALLBACK = { to: '/library', label: msg`Library` }
@@ -87,6 +88,7 @@ export function SeriesHero({
     // fallback for a series opened cold, from a bookmark or a fresh tab.
     const back = useBackTarget(LIBRARY_FALLBACK)
     const label = useLabel()
+    const shelfFit = useHeroShelfFit()
     useCoverTint(series.coverUrl)
 
     /**
@@ -195,16 +197,10 @@ export function SeriesHero({
         </Trans>
     )
 
-    // One quiet line of facts rather than a row of coloured pills: none of these is a state anyone
-    // acts on, so none of them earns a colour.
-    // Through the same label maps as the Discover modal, so the type and genres read the same (and
-    // in the reader's language) on a result and on the series it becomes.
-    const facts = [
-        series.type ? label(TYPE_LABELS[series.type] ?? series.type) : null,
-        series.year ? String(series.year) : null,
-        series.hasAnime ? (series.animeName ?? t`Anime adaptation`) : null,
-        series.genres.slice(0, 5).map((g) => label(GENRE_LABELS[g] ?? g)).join(', ') || null,
-    ].filter(Boolean)
+    // Through the same label map as the Discover modal, so the type reads the same (and in the
+    // reader's language) on a result and on the series it becomes.
+    const typeLabel = series.type ? label(TYPE_LABELS[series.type] ?? series.type) : null
+    const chapterTotal = series.totalChapters ?? (series.knownChapterCount || null)
 
     // The canonical title is in this line too when a language preference moved the heading off it —
     // otherwise picking "Japanese" makes the name everything else in Maki uses (the folder on disk,
@@ -242,7 +238,7 @@ export function SeriesHero({
 
                 <Group className={"series-hero-content"}>
 
-                    <Group align="flex-start" gap={32} wrap="nowrap" className="series-hero-row">
+                    <Group align="stretch" gap={32} wrap="nowrap" className="series-hero-row" data-shelf style={shelfFit.style}>
                         {series.coverUrl && (
                             <img
                                 className="series-hero-poster"
@@ -252,7 +248,8 @@ export function SeriesHero({
                             />
                         )}
 
-                        <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
+                        <Stack gap={16} className="hero-column" style={{ flex: 1, minWidth: 0 }}>
+                            <div ref={shelfFit.identRef}>
                             <Title order={1} className="series-hero-title" title={series.title}>
                                 {series.displayTitle}
                                 {series.lockedFields.includes('title') && <>{' '}<MetadataLock size={18} /></>}
@@ -291,87 +288,122 @@ export function SeriesHero({
                                 </Text>
                             )}
 
-                            <Group gap="md" mt={15} wrap="wrap">
-                                {/* Status and rating are one cluster at a tighter gap, so they read as two facts
-                  about the same thing rather than as two separate items in the row. */}
-                                <Group gap={8} wrap="nowrap">
-                <span
-                    className="series-hero-status"
-                    style={{
-                        color: `var(--${statusToken(status.color)})`,
-                        background: `var(--${statusToken(status.color)}-soft)`,
-                    }}
-                >
-                  <status.Icon size={14} />
-                    {label(status.label)}
-                </span>
+                            </div>
 
+                            {/* Status, your rating and the counts as one object on the poster's bottom
+                                edge, the same shelf as the Discover modal's; here the footer holds
+                                what there is to do rather than where else the series is listed. */}
+                            <div className="hero-shelf" ref={shelfFit.shelfRef}>
+                                <div className="hero-shelf-head">
+                                    <span
+                                        className="series-hero-status"
+                                        style={{
+                                            color: `var(--${statusToken(status.color)})`,
+                                            background: `var(--${statusToken(status.color)}-soft)`,
+                                        }}
+                                    >
+                                        <status.Icon size={14} />
+                                        {label(status.label)}
+                                    </span>
                                     <ContentRatingChip rating={series.contentRating} />
-                                </Group>
-
-                                <Group gap={8} wrap="nowrap">
-                                    <Rating
-                                        count={5}
-                                        fractions={2}
-                                        value={rating ? rating / 2 : 0}
-                                        color={soFar ? 'var(--ink-3)' : undefined}
-                                        onChange={(v) => onRate(Math.round(v * 2) || null)}
-                                    />
-                                    {rating ? (
-                                        <>
-                                            <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
-                                                {rating}/10
-                                            </Text>
-                                            {soFar && (
-                                                <>
-                                                    <Text size="sm" c="var(--ink-4)">
-                                                        {soFarChapter != null
-                                                            ? <Trans>so far, at ch. {soFarChapter}</Trans>
-                                                            : <Trans>so far</Trans>}
-                                                    </Text>
-                                                    <Tooltip label={t`Make this my rating`} withArrow>
-                                                        <ActionIcon
-                                                            size="sm"
-                                                            variant="subtle"
-                                                            color="var(--neutral)"
-                                                            onClick={onFinalize}
-                                                            aria-label={t`Make this my rating`}
-                                                        >
-                                                            <IconCheck size={16} />
-                                                        </ActionIcon>
-                                                    </Tooltip>
-                                                </>
+                                    {typeLabel && (
+                                        <span className="series-hero-status" data-quiet>
+                                            <IconBooks size={14} />
+                                            {typeLabel}
+                                            {series.hasAnime && (
+                                                <Tooltip label={series.animeName ?? t`Has an anime adaptation`} withArrow>
+                                                    <span
+                                                        className="hero-anime-mark"
+                                                        role="img"
+                                                        aria-label={series.animeName ?? t`Has an anime adaptation`}
+                                                        tabIndex={0}
+                                                    >
+                                                        <IconDeviceTv size={14} />
+                                                    </span>
+                                                </Tooltip>
                                             )}
-                                            <Tooltip label={t`Clear rating`} withArrow>
-                                                <ActionIcon
-                                                    size="sm"
-                                                    variant="subtle"
-                                                    color="var(--neutral)"
-                                                    onClick={() => onRate(null)}
-                                                    aria-label={t`Clear rating`}
-                                                >
-                                                    <IconX size={16} />
-                                                </ActionIcon>
-                                            </Tooltip>
-                                            <RatingHistoryButton seriesId={series.id} />
-                                        </>
-                                    ) : (
-                                        <Text size="sm" c="var(--ink-4)">
-                                            <Trans>Not rated</Trans>
-                                        </Text>
+                                        </span>
                                     )}
-                                </Group>
-                            </Group>
+                                </div>
 
-                            {facts.length > 0 && (
-                                <Text component="div" size="sm" c="var(--ink-4)" mt={9}>
-                                    <MetaList items={facts} />
-                                </Text>
-                            )}
+                                <div className="hero-shelf-main">
+                                    <div className="hero-stat hero-rating-cell">
+                                    <Group gap={8} wrap="nowrap">
+                                        <Rating
+                                            count={5}
+                                            fractions={2}
+                                            value={rating ? rating / 2 : 0}
+                                            color={soFar ? 'var(--ink-3)' : undefined}
+                                            onChange={(v) => onRate(Math.round(v * 2) || null)}
+                                        />
+                                        {rating ? (
+                                            <>
+                                                <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
+                                                    {rating}/10
+                                                </Text>
+                                                {soFar && (
+                                                    <>
+                                                        <Text size="sm" c="var(--ink-4)">
+                                                            {soFarChapter != null
+                                                                ? <Trans>so far, at ch. {soFarChapter}</Trans>
+                                                                : <Trans>so far</Trans>}
+                                                        </Text>
+                                                        <Tooltip label={t`Make this my rating`} withArrow>
+                                                            <ActionIcon
+                                                                size="sm"
+                                                                variant="subtle"
+                                                                color="var(--neutral)"
+                                                                onClick={onFinalize}
+                                                                aria-label={t`Make this my rating`}
+                                                            >
+                                                                <IconCheck size={16} />
+                                                            </ActionIcon>
+                                                        </Tooltip>
+                                                    </>
+                                                )}
+                                                <Tooltip label={t`Clear rating`} withArrow>
+                                                    <ActionIcon
+                                                        size="sm"
+                                                        variant="subtle"
+                                                        color="var(--neutral)"
+                                                        onClick={() => onRate(null)}
+                                                        aria-label={t`Clear rating`}
+                                                    >
+                                                        <IconX size={16} />
+                                                    </ActionIcon>
+                                                </Tooltip>
+                                                <RatingHistoryButton seriesId={series.id} />
+                                            </>
+                                        ) : (
+                                            <Text size="sm" c="var(--ink-4)">
+                                                <Trans>Not rated</Trans>
+                                            </Text>
+                                        )}
+                                    </Group>
+                                        <span className="hero-stat-l">
+                                            <Trans>Your rating</Trans>
+                                        </span>
+                                    </div>
+                                    {chapterTotal != null && (
+                                        <div className="hero-stat">
+                                            <span className="hero-stat-n figure">{chapterTotal}</span>
+                                            <span className="hero-stat-l">
+                                                <Trans>Chapters</Trans>
+                                            </span>
+                                        </div>
+                                    )}
+                                    {series.year != null && series.year > 0 && (
+                                        <div className="hero-stat">
+                                            <span className="hero-stat-n figure">{series.year}</span>
+                                            <span className="hero-stat-l">
+                                                <Trans>Released</Trans>
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
 
-                            <Group gap="xs" mt="lg" wrap="wrap" className="series-hero-actions">
-                                {actions}
-                            </Group>
+                                <div className="hero-shelf-foot series-hero-actions">{actions}</div>
+                            </div>
                         </Stack>
                     </Group>
                     <Paper withBorder radius="lg" p="lg" className="series-hero-panel">
@@ -574,23 +606,13 @@ export function SeriesHeroSkeleton() {
             <div className="series-hero-body">
                 <Skeleton h={14} w={84} mb="md" />
                 <Group className="series-hero-content">
-                    <Group align="flex-start" gap={32} wrap="nowrap" className="series-hero-row">
+                    <Group align="stretch" gap={32} wrap="nowrap" className="series-hero-row">
                         <Skeleton className="series-hero-poster" radius="var(--radius-hero)" />
                         <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
                             <Skeleton h={58} w="62%" />
                             <Skeleton h={14} w="38%" mt="md" />
                             <Skeleton h={18} w="24%" mt={12} />
-                            <Group gap={8} mt={18}>
-                                <Skeleton h={28} w={92} radius="md" />
-                                <Skeleton h={28} w={76} radius="md" />
-                                <Skeleton h={18} w={110} ml="xs" />
-                            </Group>
-                            <Skeleton h={12} w="32%" mt={14} />
-                            <Group gap="xs" mt="lg">
-                                <Skeleton h={42} w={168} radius="md" />
-                                <Skeleton h={42} w={196} radius="md" />
-                                <Skeleton h={42} w={132} radius="md" />
-                            </Group>
+                            <Skeleton h={174} w={560} maw="100%" mt="auto" radius="var(--radius-hero)" />
                         </Stack>
                     </Group>
                     <Paper withBorder radius="lg" p="lg" className="series-hero-panel">

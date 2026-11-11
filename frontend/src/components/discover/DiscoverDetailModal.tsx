@@ -34,6 +34,7 @@ import { formatFixedDecimal } from '../../format'
 import { AnimeCoverageBar } from '../AnimeCoverageBar'
 import { AnimeResumeCallout } from '../series/AnimeResumeCallout'
 import { HeroBackdrop } from '../series/HeroBackdrop'
+import { useHeroShelfFit } from '../series/useHeroShelfFit'
 import { MetadataLinks } from '../MetadataLinks'
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
 import {
@@ -102,6 +103,7 @@ export function DiscoverDetailModal({
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null)
   const [actionCard, setActionCard] = useState<HTMLDivElement | null>(null)
   const [barSlot, setBarSlot] = useState<HTMLDivElement | null>(null)
+  const shelfFit = useHeroShelfFit()
   const [barShown, setBarShown] = useState(false)
   useEffect(() => {
     if (!scroller || !actionCard) return
@@ -361,7 +363,7 @@ export function DiscoverDetailModal({
               {/* Identity against the one thing there is to do with it, the way the series page
                   puts Progress beside its own title block. */}
               <div className="series-hero-content">
-                <Group align="flex-start" gap={26} wrap="nowrap" className="series-hero-row">
+                <Group align="stretch" gap={26} wrap="nowrap" className="series-hero-row" data-shelf style={shelfFit.style}>
                   {cover ? (
                     <img className="series-hero-poster" src={cover} alt="" />
                   ) : (
@@ -379,200 +381,205 @@ export function DiscoverDetailModal({
                     />
                   )}
 
-                  <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-                    {/* Capped at three lines, set smaller as the title gets longer: a light-novel
-                        title at display size filled half the card before the synopsis started. The
-                        whole title is the tooltip. */}
-                    <Title
-                      order={1}
-                      className="series-hero-title"
-                      data-length={titleLength}
-                      title={title || undefined}
-                    >
-                      {title || (isError ? t`Couldn't load this title` : '')}
-                    </Title>
-
-                    {/* One line, truncated. Every other alternative title is under At a glance. */}
-                    {(detail?.nativeTitle || detail?.romanizedTitle) && (
-                      <Text component="div" size="sm" mt={8} c="var(--ink-3)" className="discover-alt-line">
-                        <MetaList inline items={[detail?.romanizedTitle, detail?.nativeTitle]} />
-                      </Text>
-                    )}
-
-                    <Group gap={8} mt={14} wrap="wrap">
-                      {/* Same pills as the series page's band, from the same two maps: a result and
-                          the series it becomes have to read as one object, not two vocabularies. */}
-                      <span
-                        className="series-hero-status"
-                        style={{
-                          color: `var(--${statusToken(status.color)})`,
-                          background: `var(--${statusToken(status.color)}-soft)`,
-                        }}
+                  <Stack gap={16} className="hero-column" style={{ flex: 1, minWidth: 0 }}>
+                    <div ref={shelfFit.identRef}>
+                      {/* Capped at three lines, set smaller as the title gets longer: a light-novel
+                          title at display size filled half the card before the synopsis started. The
+                          whole title is the tooltip. */}
+                      <Title
+                        order={1}
+                        className="series-hero-title"
+                        data-length={titleLength}
+                        title={title || undefined}
                       >
-                        <status.Icon size={14} />
-                        {renderLabel(status.label)}
-                      </span>
-                      <ContentRatingChip rating={detail?.contentRating} tooltipZIndex={1001} />
-                      {/* What kind of book it is: a fact, not a state, so it takes the quiet pill. An
-                          anime adaptation rides on the same pill as a violet mark rather than
-                          adding a fourth pill to the row. */}
-                      {typeLabel && (
-                        <span className="series-hero-status" data-quiet>
-                          <IconBooks size={14} />
-                          {typeLabel}
-                          {detail?.hasAnime && (
-                            <Tooltip label={t`Has an anime adaptation`} withArrow zIndex={1001}>
-                              <span className="hero-anime-mark" role="img" aria-label={t`Has an anime adaptation`} tabIndex={0}>
-                                <IconDeviceTv size={14} />
-                              </span>
-                            </Tooltip>
-                          )}
-                        </span>
-                      )}
-                    </Group>
+                        {title || (isError ? t`Couldn't load this title` : '')}
+                      </Title>
 
-                    {/* The numbers people open a card to check, each labelled for the question it
-                        answers. The score and the chapter count are on the card's own row, so they
-                        are set from the first frame; the standing arrives with the detail. The score
-                        takes a line of its own: beside the other figures it overflowed the column. */}
-                    <div className="hero-figures discover-figures">
-                      {score != null && <ScoreFigure score={score} standing={detail?.scoreStanding} />}
-                      <div className="hero-stats">
-                        {chapters != null ? (
-                          <div className="hero-stat">
-                            <span className="hero-stat-n figure">
-                              {volumes != null ? (
-                                <Trans>
-                                  {chapters}
-                                  <small className="hero-stat-unit">ch</small>
-                                </Trans>
-                              ) : (
-                                chapters
-                              )}
-                            </span>
-                            <span className="hero-stat-l">
-                              {volumes != null
-                                ? plural(volumes, { one: '# volume', other: '# volumes' })
-                                : t`Chapters`}
-                            </span>
-                          </div>
-                        ) : (
-                          volumes != null && (
-                            <div className="hero-stat">
-                              <span className="hero-stat-n figure">{volumes}</span>
-                              <span className="hero-stat-l">
-                                <Trans>Volumes</Trans>
-                              </span>
-                            </div>
-                          )
+                      {/* One line, truncated. Every other alternative title is under At a glance. */}
+                      {(detail?.nativeTitle || detail?.romanizedTitle) && (
+                        <Text component="div" size="sm" mt={8} c="var(--ink-3)" className="discover-alt-line">
+                          <MetaList inline items={[detail?.romanizedTitle, detail?.nativeTitle]} />
+                        </Text>
+                      )}
+                    </div>
+
+                    {/* Status, the figures and the sites as one object on the poster's bottom edge,
+                        built like the add card beside it: a head, the body, a footer strip. */}
+                    <div className="hero-shelf" ref={shelfFit.shelfRef}>
+                      <div className="hero-shelf-head">
+                        {/* Same pills as the series page's band, from the same two maps: a result and
+                            the series it becomes have to read as one object, not two vocabularies. */}
+                        <span
+                          className="series-hero-status"
+                          style={{
+                            color: `var(--${statusToken(status.color)})`,
+                            background: `var(--${statusToken(status.color)}-soft)`,
+                          }}
+                        >
+                          <status.Icon size={14} />
+                          {renderLabel(status.label)}
+                        </span>
+                        <ContentRatingChip rating={detail?.contentRating} tooltipZIndex={1001} />
+                        {/* What kind of book it is: a fact, not a state, so it takes the quiet pill. An
+                            anime adaptation rides on the same pill as a violet mark rather than
+                            adding a fourth pill to the row. */}
+                        {typeLabel && (
+                          <span className="series-hero-status" data-quiet>
+                            <IconBooks size={14} />
+                            {typeLabel}
+                            {detail?.hasAnime && (
+                              <Tooltip label={t`Has an anime adaptation`} withArrow zIndex={1001}>
+                                <span className="hero-anime-mark" role="img" aria-label={t`Has an anime adaptation`} tabIndex={0}>
+                                  <IconDeviceTv size={14} />
+                                </span>
+                              </Tooltip>
+                            )}
+                          </span>
                         )}
-                        {catchUpMinutes != null && (
-                          <Tooltip
-                            withArrow
-                            multiline
-                            w={260}
-                            zIndex={1001}
-                            label={plural(chapters ?? 0, {
-                              one: `# chapter at your usual ${paceMinutes} min a chapter.`,
-                              other: `# chapters at your usual ${paceMinutes} min a chapter.`,
-                            })}
-                          >
-                            <div className="hero-stat" tabIndex={0}>
+                      </div>
+
+                      {/* The numbers people open a card to check, each labelled for the question it
+                          answers. The score and the chapter count are on the card's own row, so they
+                          are set from the first frame; the standing arrives with the detail. */}
+                      <div className="hero-shelf-main">
+                        {score != null && <ScoreFigure score={score} standing={detail?.scoreStanding} />}
+                        <div className="hero-stats">
+                          {chapters != null ? (
+                            <div className="hero-stat">
                               <span className="hero-stat-n figure">
-                                {catchUpMinutes < 90 ? (
+                                {volumes != null ? (
                                   <Trans>
-                                    ~{catchUpMinutes}
-                                    <small className="hero-stat-unit">min</small>
+                                    {chapters}
+                                    <small className="hero-stat-unit">ch</small>
                                   </Trans>
                                 ) : (
-                                  <Trans>
-                                    ~{Math.round(catchUpMinutes / 60)}
-                                    <small className="hero-stat-unit">h</small>
-                                  </Trans>
+                                  chapters
                                 )}
                               </span>
                               <span className="hero-stat-l">
-                                <Trans>To catch up</Trans>
+                                {volumes != null
+                                  ? plural(volumes, { one: '# volume', other: '# volumes' })
+                                  : t`Chapters`}
                               </span>
                             </div>
-                          </Tooltip>
-                        )}
-                        {year != null && (
-                          <div className="hero-stat">
-                            <span className="hero-stat-n figure">{year}</span>
-                            <span className="hero-stat-l">
-                              <Trans>Released</Trans>
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* The sites with their own scores on them: where a number comes from and the
-                        number are one control rather than two rows. */}
-                    {(links.length > 0 || unlinkedRatings.length > 0 || readerHint) && (
-                      <Group gap="sm" mt={14} align="center" wrap="wrap">
-                        <MetadataLinks
-                          links={links}
-                          chips
-                          extra={unlinkedRatings.map((r) => (
-                            <Tooltip key={r.source} label={r.source} withArrow zIndex={1001}>
-                              <span className="site-chip" data-static tabIndex={0}>
-                                <MetadataSiteIcon
-                                  site={r.source.toLowerCase()}
-                                  monogram={r.source.slice(0, 2).toUpperCase()}
-                                  size={15}
-                                />
-                                <span className="tnum">{formatFixedDecimal(r.rating / 10, 1)}</span>
-                              </span>
+                          ) : (
+                            volumes != null && (
+                              <div className="hero-stat">
+                                <span className="hero-stat-n figure">{volumes}</span>
+                                <span className="hero-stat-l">
+                                  <Trans>Volumes</Trans>
+                                </span>
+                              </div>
+                            )
+                          )}
+                          {catchUpMinutes != null && (
+                            <Tooltip
+                              withArrow
+                              multiline
+                              w={260}
+                              zIndex={1001}
+                              label={plural(chapters ?? 0, {
+                                one: `# chapter at your usual ${paceMinutes} min a chapter.`,
+                                other: `# chapters at your usual ${paceMinutes} min a chapter.`,
+                              })}
+                            >
+                              <div className="hero-stat" tabIndex={0}>
+                                <span className="hero-stat-n figure">
+                                  {catchUpMinutes < 90 ? (
+                                    <Trans>
+                                      ~{catchUpMinutes}
+                                      <small className="hero-stat-unit">min</small>
+                                    </Trans>
+                                  ) : (
+                                    <Trans>
+                                      ~{Math.round(catchUpMinutes / 60)}
+                                      <small className="hero-stat-unit">h</small>
+                                    </Trans>
+                                  )}
+                                </span>
+                                <span className="hero-stat-l">
+                                  <Trans>To catch up</Trans>
+                                </span>
+                              </div>
                             </Tooltip>
-                          ))}
-                        />
-                        {/* Only ever rendered when the server decided there is something to say, which
-                            is about one series in nine: the cohorts have to disagree with the wider
-                            reader crowd by at least half a star. Deliberately a direction rather than a
-                            second number - measured, a cohort score shown on every series renders the
-                            same digits as the aggregate beside it nine times out of ten. */}
-                        {readerHint && (
-                          <Tooltip
-                            withArrow
-                            multiline
-                            w={260}
-                            zIndex={1001}
-                            label={
-                              readerHintHigher
-                                ? plural(readerHintReaders, {
-                                    one: `# AniList reader with reading habits like yours scored this ${readerHintGap} higher than AniList readers overall.`,
-                                    other: `# AniList readers with reading habits like yours scored this ${readerHintGap} higher than AniList readers overall.`,
-                                  })
-                                : plural(readerHintReaders, {
-                                    one: `# AniList reader with reading habits like yours scored this ${readerHintGap} lower than AniList readers overall.`,
-                                    other: `# AniList readers with reading habits like yours scored this ${readerHintGap} lower than AniList readers overall.`,
-                                  })
-                            }
-                          >
-                            <Badge
-                              size="sm"
-                              variant="light"
-                              color={readerHintHigher ? 'var(--ok)' : 'var(--warn)'}
-                              leftSection={
-                                readerHintHigher ? (
-                                  <IconTrendingUp size={12} />
-                                ) : (
-                                  <IconTrendingDown size={12} />
-                                )
+                          )}
+                          {year != null && (
+                            <div className="hero-stat">
+                              <span className="hero-stat-n figure">{year}</span>
+                              <span className="hero-stat-l">
+                                <Trans>Released</Trans>
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* The sites with their own scores on them: where a number comes from and the
+                          number are one control rather than two rows. */}
+                      {(links.length > 0 || unlinkedRatings.length > 0 || readerHint) && (
+                        <div className="hero-shelf-foot">
+                          <MetadataLinks
+                            links={links}
+                            chips
+                            extra={unlinkedRatings.map((r) => (
+                              <Tooltip key={r.source} label={r.source} withArrow zIndex={1001}>
+                                <span className="site-chip" data-static tabIndex={0}>
+                                  <MetadataSiteIcon
+                                    site={r.source.toLowerCase()}
+                                    monogram={r.source.slice(0, 2).toUpperCase()}
+                                    size={15}
+                                  />
+                                  <span className="tnum">{formatFixedDecimal(r.rating / 10, 1)}</span>
+                                </span>
+                              </Tooltip>
+                            ))}
+                          />
+                          {/* Only ever rendered when the server decided there is something to say, which
+                              is about one series in nine: the cohorts have to disagree with the wider
+                              reader crowd by at least half a star. Deliberately a direction rather than a
+                              second number - measured, a cohort score shown on every series renders the
+                              same digits as the aggregate beside it nine times out of ten. */}
+                          {readerHint && (
+                            <Tooltip
+                              withArrow
+                              multiline
+                              w={260}
+                              zIndex={1001}
+                              label={
+                                readerHintHigher
+                                  ? plural(readerHintReaders, {
+                                      one: `# AniList reader with reading habits like yours scored this ${readerHintGap} higher than AniList readers overall.`,
+                                      other: `# AniList readers with reading habits like yours scored this ${readerHintGap} higher than AniList readers overall.`,
+                                    })
+                                  : plural(readerHintReaders, {
+                                      one: `# AniList reader with reading habits like yours scored this ${readerHintGap} lower than AniList readers overall.`,
+                                      other: `# AniList readers with reading habits like yours scored this ${readerHintGap} lower than AniList readers overall.`,
+                                    })
                               }
                             >
-                              {readerHintHigher ? (
-                                <Trans>Higher for readers like you</Trans>
-                              ) : (
-                                <Trans>Lower for readers like you</Trans>
-                              )}
-                            </Badge>
-                          </Tooltip>
-                        )}
-                      </Group>
-                    )}
+                              <Badge
+                                size="sm"
+                                variant="light"
+                                color={readerHintHigher ? 'var(--ok)' : 'var(--warn)'}
+                                leftSection={
+                                  readerHintHigher ? (
+                                    <IconTrendingUp size={12} />
+                                  ) : (
+                                    <IconTrendingDown size={12} />
+                                  )
+                                }
+                              >
+                                {readerHintHigher ? (
+                                  <Trans>Higher for readers like you</Trans>
+                                ) : (
+                                  <Trans>Lower for readers like you</Trans>
+                                )}
+                              </Badge>
+                            </Tooltip>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </Stack>
                 </Group>
 

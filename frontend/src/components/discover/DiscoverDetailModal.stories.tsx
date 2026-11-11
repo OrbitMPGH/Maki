@@ -67,6 +67,34 @@ export const LongTitle: Story = {
   },
 }
 
+/** A long title with every site rated, the band at its tallest. */
+export const AllSites: Story = {
+  args: { item: { ...catalogueItem(0), title: LONG_TITLE } },
+  parameters: {
+    msw: discoverPage(
+      http.get(api('/recommendations/detail/:id'), ({ params }) =>
+        HttpResponse.json({
+          ...detailFor(String(params.id)),
+          title: LONG_TITLE,
+          romanizedTitle: 'Toudai Mori no Bakashoujiki na Chizushi ni Tensei Shita no de, Shio no Kaigan Zenbu ga Kokkyou wo Hikinaose to Iu',
+          links: [
+            { site: 'mangabaka', url: 'https://mangabaka.example/series/1' },
+            { site: 'anilist', url: 'https://anilist.example/manga/1' },
+            { site: 'myanimelist', url: 'https://myanimelist.example/manga/1' },
+            { site: 'kitsu', url: 'https://kitsu.example/manga/1' },
+            { site: 'mangaupdates', url: 'https://mangaupdates.example/series/1' },
+          ],
+          sourceRatings: [
+            { source: 'AniList', rating: 67 },
+            { source: 'MyAnimeList', rating: 67 },
+            { source: 'MangaUpdates', rating: 68 },
+          ],
+        }),
+      ),
+    ),
+  },
+}
+
 /** Scrolled past the add card: the band collapses to a bar that keeps the title and the add button. */
 export const CollapsedBar: Story = {
   args: LongTitle.args,
