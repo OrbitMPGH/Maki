@@ -38,6 +38,7 @@ import {
   previewReady,
   readingBehaviour,
   recentRail,
+  scoreShares,
   recommendationsPage,
   searchDefaults,
   seriesReviews,
@@ -120,6 +121,7 @@ export function feedbackMutation(id: number, action: string, medium?: string): F
  */
 export const discoverHandlers: HttpHandler[] = [
   http.get(api('/recommendations/discover'), () => HttpResponse.json(discoverRails)),
+  http.get(api('/recommendations/score-shares'), () => HttpResponse.json(scoreShares)),
   http.get(api('/recommendations/discover/recent'), () => HttpResponse.json(recentRail)),
   http.get(api('/recommendations/discover/side-interests'), () => HttpResponse.json(sideInterestRails)),
   http.get(api('/recommendations/discover/genres'), () => HttpResponse.json(genreRails)),

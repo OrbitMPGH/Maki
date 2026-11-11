@@ -12,6 +12,13 @@ namespace Maki.Metadata.MangaBaka;
 public sealed record ScoreStanding(string Group, int GroupSize, double Percentile, IReadOnlyList<int> Histogram);
 
 /// <summary>
+/// Share of all popular series (the <see cref="ScoreStandings.AllGroup"/> group) scoring at or above
+/// each whole point of the dump's 0-100 scale, as a percentage: <c>AtOrAbove[70]</c> is the share
+/// rated 7.0 or more. Labels the minimum-rating filter in the same terms the detail card uses.
+/// </summary>
+public sealed record ScoreShares(int GroupSize, IReadOnlyList<double> AtOrAbove);
+
+/// <summary>
 /// Puts a MangaBaka score in context for the Discover detail card. Scores cluster tightly (half of
 /// all rated series sit between 6.0 and 6.9), so the number alone hardly separates a good series
 /// from an ordinary one.
@@ -66,6 +73,23 @@ public class ScoreStandings(MangaBakaDumpOptions options, int minGroupSize = Sco
 
         var below = LowerBound(sorted, score);
         return new ScoreStanding(group, sorted.Length, 100.0 * below / sorted.Length, snapshot.Histograms[group]);
+    }
+
+    public virtual async Task<ScoreShares?> GetSharesAsync(CancellationToken ct = default)
+    {
+        var snapshot = await LoadAsync(ct);
+        if (snapshot is null || !snapshot.Groups.TryGetValue(AllGroup, out var sorted) || sorted.Length == 0)
+        {
+            return null;
+        }
+
+        var shares = new double[101];
+        for (var point = 0; point <= 100; point++)
+        {
+            shares[point] = 100.0 * (sorted.Length - LowerBound(sorted, point)) / sorted.Length;
+        }
+
+        return new ScoreShares(sorted.Length, shares);
     }
 
     private async Task<Snapshot?> LoadAsync(CancellationToken ct)

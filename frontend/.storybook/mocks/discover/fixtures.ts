@@ -12,6 +12,7 @@ import type {
   RecommendationIndexStatus,
   RecommendationItem,
   RecommendationsResult,
+  ScoreShares,
   SearchDefaults,
   TagOption,
   TasteFacet,
@@ -368,6 +369,20 @@ export const quickTakes: MangaReview[] = [
 ]
 
 export const seriesReviews: SeriesReviews = { reviews, quickTakes, unavailable: [] }
+
+/** Shaped like the real popular-series curve: most score 6.5 to 8, a thin tail above. */
+const SHARE_ANCHORS: [number, number][] = [[0, 100], [50, 99], [60, 97], [65, 90], [70, 66], [75, 31.5], [80, 8], [85, 1], [90, 0.2], [100, 0]]
+
+export const scoreShares = {
+  groupSize: 32000,
+  atOrAbove: Array.from({ length: 101 }, (_, point) => {
+    const upper = SHARE_ANCHORS.findIndex(([at]) => at >= point)
+    const [x1, y1] = SHARE_ANCHORS[upper]
+    if (x1 === point || upper === 0) return y1
+    const [x0, y0] = SHARE_ANCHORS[upper - 1]
+    return y0 + ((y1 - y0) * (point - x0)) / (x1 - x0)
+  }),
+} satisfies ScoreShares
 
 export const tagOptions: TagOption[] = [
   { name: 'Found Family', path: '', count: 812, hasSubtags: false },

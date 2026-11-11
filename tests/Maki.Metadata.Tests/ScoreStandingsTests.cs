@@ -74,6 +74,23 @@ public class ScoreStandingsTests : IDisposable
     }
 
     [Fact]
+    public async Task Shares_count_popular_series_at_or_above_each_point()
+    {
+        SeedManga(15);
+
+        var shares = await Standings().GetSharesAsync();
+
+        Assert.NotNull(shares);
+        Assert.Equal(3, shares.GroupSize);
+        Assert.Equal(101, shares.AtOrAbove.Count);
+        Assert.Equal(100, shares.AtOrAbove[40], 6);
+        Assert.Equal(200.0 / 3, shares.AtOrAbove[41], 6);
+        Assert.Equal(200.0 / 3, shares.AtOrAbove[70], 6);
+        Assert.Equal(100.0 / 3, shares.AtOrAbove[71], 6);
+        Assert.Equal(0, shares.AtOrAbove[81], 6);
+    }
+
+    [Fact]
     public async Task An_unrated_series_has_no_standing()
     {
         SeedManga();

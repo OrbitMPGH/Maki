@@ -4618,7 +4618,7 @@ msgid "Another user"
 msgstr "Anderer Benutzer"
 
 #: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
+#: src/components/MinRatingSlider.tsx
 #, fuzzy
 msgid "any"
 msgstr "beliebig"
@@ -13526,26 +13526,15 @@ msgstr "Minimale Kapitelanzahl"
 msgid "Minimum pages"
 msgstr "Mindestseitenzahl"
 
-#: src/components/CatalogueFilters.tsx
-#: src/pages/DiscoverPage.tsx
+#: src/components/MinRatingSlider.tsx
 #, fuzzy
 msgid "Minimum rating"
 msgstr "Mindestbewertung"
 
-#: src/components/CatalogueFilters.tsx
+#: src/components/MinRatingSlider.tsx
 #, fuzzy
 msgid "Minimum rating: {ratingLabel}"
 msgstr "Mindestbewertung: {ratingLabel}"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Minimum rating: ★ {minRatingDisplay}"
-msgstr "Mindestbewertung: ★ {minRatingDisplay}"
-
-#: src/pages/DiscoverPage.tsx
-#, fuzzy
-msgid "Minimum rating: any"
-msgstr "Mindestbewertung: beliebig"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -24294,6 +24283,7 @@ msgid "Top {pct} of popular OEL titles"
 msgstr ""
 
 #: src/components/discover/ScoreFigure.tsx
+#: src/components/MinRatingSlider.tsx
 msgid "Top {pct} of popular series"
 msgstr ""
 

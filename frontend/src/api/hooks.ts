@@ -1545,6 +1545,24 @@ export interface ScoreStanding {
 }
 
 /**
+ * `atOrAbove[n]` is the percentage of all popular series (the detail card's "all" group) scoring
+ * n or more on the 0-100 scale, so `atOrAbove[74]` is the share rated 7.4 or better.
+ */
+export interface ScoreShares {
+  groupSize: number
+  atOrAbove: number[]
+}
+
+/** Changes only with the dump, which installs every few hours at most. */
+export function useScoreShares() {
+  return useQuery({
+    queryKey: ['recommendations', 'score-shares'],
+    queryFn: async () => (await api<ScoreShares | undefined>('/recommendations/score-shares')) ?? null,
+    staleTime: 6 * 60 * 60 * 1000,
+  })
+}
+
+/**
  * What readers with your reading habits scored a series, when that differs enough from what the
  * same crowd scored it overall to be worth saying. Null on most series: only about one in nine
  * clears the gap, which is exactly why this is a hint and not a second rating.

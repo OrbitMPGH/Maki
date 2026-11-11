@@ -16,7 +16,6 @@ import {
   RangeSlider,
   SimpleGrid,
   Skeleton,
-  Slider,
   Stack,
   Tabs,
   Text,
@@ -106,6 +105,7 @@ import {
 } from '../components/ui/DiscoverRail'
 import { type CatalogueSeed, PosterSkeletons as SharedPosterSkeletons } from '../components/CatalogueBrowser'
 import { FilterMatchCount, TermFilters, useRuleChips, useTermFilters } from '../components/CatalogueRules'
+import { MinRatingSlider } from '../components/MinRatingSlider'
 import { HiddenContentButton, PresetMenu } from '../components/DiscoverPresets'
 import { AddRailButton, CustomRailSection } from '../components/rails/CustomRailSection'
 import { PageLayoutEditor, PageLayoutEditorLoading } from '../components/layout/PageLayoutEditor'
@@ -604,7 +604,6 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
   const chapterRangeMax = chapters[1] >= CHAPTER_MAX ? `${CHAPTER_MAX}+` : chapters[1]
   const yearRangeMin = years[0]
   const yearRangeMax = years[1]
-  const minRatingDisplay = formatFixedDecimal(minRating, 1)
 
   return (
     <div className="discover-tab-body">
@@ -723,29 +722,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
                   ]}
                 />
               </div>
-              <div>
-                <Text size="sm" fw={500} mb={4}>
-                  {minRating > 0 ? (
-                    <Trans>Minimum rating: ★ {minRatingDisplay}</Trans>
-                  ) : (
-                    <Trans>Minimum rating: any</Trans>
-                  )}
-                </Text>
-                <Slider
-                  thumbLabel={t`Minimum rating`}
-                  min={0}
-                  max={9.5}
-                  step={0.5}
-                  value={minRating}
-                  onChange={setMinRating}
-                  label={(v) => (v > 0 ? `★ ${formatFixedDecimal(v, 1)}` : t`any`)}
-                  marks={[
-                    { value: 0, label: t`any` },
-                    { value: 7, label: '7' },
-                    { value: 9, label: '9' },
-                  ]}
-                />
-              </div>
+              <MinRatingSlider value={minRating} onChange={setMinRating} />
               <RecommenderDials
                 obscurity={obscurity}
                 setObscurity={setObscurity}

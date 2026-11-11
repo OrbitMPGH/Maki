@@ -602,6 +602,19 @@ public class RecommendationController(
         });
     }
 
+    /// <summary>How much of the popular catalogue clears each score, for the minimum-rating filter's labels.</summary>
+    [HttpGet("score-shares")]
+    public async Task<IActionResult> ScoreShares(CancellationToken ct)
+    {
+        if (!await store.IsAvailableAsync(ct))
+        {
+            return this.Fail(localizer, "error.recommendation.localDbUnavailable");
+        }
+
+        var shares = await scoreStandings.GetSharesAsync(ct);
+        return shares is null ? NoContent() : Ok(shares);
+    }
+
     /// <summary>
     /// Reviews from MyAnimeList and AniList, plus Kitsu's top reactions, for whichever ids the
     /// series has. Each fetch is cached per id upstream, so reopening a card stays cheap.
