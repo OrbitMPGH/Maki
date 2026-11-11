@@ -10,3 +10,5 @@ frontend/dist/
 *.md
 !THIRD_PARTY_NOTICES.md
 .release-test/
+research/
+specs/
