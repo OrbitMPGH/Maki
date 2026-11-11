@@ -33,9 +33,9 @@ public sealed class OnnxPageUpscaler(
 
     /// <summary>
     /// A worker's peak per context pixel: SPAN-S measured 22 MB on 120 px contexts (fp32 activations
-    /// of 48 channels in ORT's blocked layout), Real-ESRGAN 18 MB.
+    /// of 48 channels in ORT's blocked layout), Real-ESRGAN 18 MB, Maki 2x 11 to 12 MB.
     /// </summary>
-    private const int WorkerBytesPerPixel = 1600;
+    private static int WorkerBytesPerPixel(UpscaleModelInfo info) => info.Id == UpscaleModelId.Maki2x ? 960 : 1600;
 
     private readonly object _gate = new();
     private readonly Lock _hooks = new();
@@ -229,7 +229,7 @@ public sealed class OnnxPageUpscaler(
             }
         }
 
-        var workers = Math.Min(Math.Min(threads, MaxWorkers(tiles[0])), pending.Count);
+        var workers = Math.Min(Math.Min(threads, MaxWorkers(tiles[0], info)), pending.Count);
         if (workers == 0)
         {
             return page;
@@ -283,8 +283,8 @@ public sealed class OnnxPageUpscaler(
     }
 
     /// <summary>How many tiles of this shape may run at once inside <see cref="WorkerBudgetBytes"/>.</summary>
-    internal static int MaxWorkers(UpscaleTile tile) =>
-        (int)Math.Max(1, WorkerBudgetBytes / ((long)tile.ContextWidth * tile.ContextHeight * WorkerBytesPerPixel));
+    internal static int MaxWorkers(UpscaleTile tile, UpscaleModelInfo info) =>
+        (int)Math.Max(1, WorkerBudgetBytes / ((long)tile.ContextWidth * tile.ContextHeight * WorkerBytesPerPixel(info)));
 
     private static void RunTile(
         LoadedModel loaded, TileBuffers buffers, RunOptions runOptions, Raster source, UpscaleModelInfo info,

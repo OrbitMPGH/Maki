@@ -90,8 +90,11 @@ public class OnnxPageUpscalerTests : IDisposable
     {
         var tile = UpscaleTiling.Plan(96, 96, multiple: 4).Single();
 
-        Assert.Equal(10, OnnxPageUpscaler.MaxWorkers(tile));
-        Assert.Equal(1, OnnxPageUpscaler.MaxWorkers(tile with { ContextWidth = 4000, ContextHeight = 4000 }));
+        var span = _catalog.Get(UpscaleModelId.SpanS);
+
+        Assert.Equal(10, OnnxPageUpscaler.MaxWorkers(tile, span));
+        Assert.Equal(18, OnnxPageUpscaler.MaxWorkers(tile, _catalog.Get(UpscaleModelId.Maki2x)));
+        Assert.Equal(1, OnnxPageUpscaler.MaxWorkers(tile with { ContextWidth = 4000, ContextHeight = 4000 }, span));
     }
 
     [Fact]
