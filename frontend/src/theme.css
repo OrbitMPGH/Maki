@@ -6259,6 +6259,25 @@ button.site-chip:hover {
   hyphens: auto;
   overflow-wrap: anywhere;
 }
+/* The page's title shrinks with its length (`--title-chars`, from SeriesHero) toward about three
+   lines of the column, and never below 2rem. It is never clamped: on its own page the heading is
+   the series' name. A 200-character light novel title at the 4rem cap took nine lines on a laptop
+   and pushed the shelf off the screen. */
+.series-hero:not([data-compact]) .series-hero-title {
+  font-size: clamp(2rem, calc(600cqi / var(--title-chars, 1)), var(--type-display));
+}
+.series-hero:not([data-compact]) .series-hero-title[data-length='long'] {
+  line-height: 0.98;
+}
+/* Alt titles on two lines at most, then an ellipsis; the full list is the title attribute and the
+   Metadata card. One line cut the second title to a letter. */
+.series-hero-alt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
 .series-hero-status {
   display: inline-flex;
   align-items: center;
@@ -8009,7 +8028,7 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   }
   /* A meta list is a flex box, which steps clear of the float and so loses the negative start
      margin that hides its leading hairline. Its wrapper steps clear instead, and the list keeps it. */
-  .series-hero:not([data-compact]) .series-hero-row div:has(> .meta-list) {
+  .series-hero:not([data-compact]) .series-hero-row div:has(> .meta-list):not(.series-hero-alt) {
     display: flow-root;
   }
   .series-hero:not([data-compact]) .hero-shelf {
@@ -8025,30 +8044,6 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
     margin-inline-end: 14px;
     border-radius: var(--radius-cover);
     box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.8);
-  }
-  /* Alt titles on two lines at most, then an ellipsis; the full list is the title attribute and the
-     Metadata card. One line cut the second title to a letter. */
-  .series-hero-alt {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    overflow: hidden;
-  }
-  .series-hero-alt .meta-list,
-  .series-hero-alt .meta-list > li {
-    display: inline;
-  }
-  .series-hero-alt .meta-list {
-    margin-inline-start: 0;
-    clip-path: none;
-  }
-  .series-hero-alt .meta-list > li::before {
-    display: inline-block;
-    vertical-align: -0.1em;
-  }
-  .series-hero-alt .meta-list > li:first-child::before {
-    content: none;
   }
 }
 

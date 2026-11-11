@@ -99,6 +99,31 @@ export const LockedTitleAndManyAltTitles: Story = {
   },
 }
 
+const longTitle =
+  'Exiled From the Lantern Guild on My Very First Night: My Childhood Friends Left Me in the Fog, But Thanks to a Cursed Teapot I Brewed a LVL 999 Tea Ceremony and Now the Whole Kingdom Wants a Cup'
+
+/** A light novel title at the length they really run to: it shrinks toward three lines, and the alt titles stop at two. */
+export const VeryLongTitle: Story = {
+  args: {
+    series: seriesDto(1, {
+      title: longTitle,
+      displayTitle: longTitle,
+      altTitles: [
+        { title: '初夜にランタン組合を追放された僕、呪いの急須でレベル999の茶会を開いたら王国中が一杯欲しがるようになりました', language: 'ja' },
+        { title: 'Exiled From the Lantern Guild: My Friends Left Me in the Fog, But My Cursed Teapot Brews LVL 999 Tea', language: 'en' },
+        { title: 'My Cursed Teapot Is LVL 999', language: 'en' },
+        { title: 'Cursed Teapot: Exiled From the Lantern Guild, I Brew for the Kingdom Now!', language: 'en' },
+        { title: 'Lantern Guild Exile', language: 'en' },
+      ],
+    }),
+  },
+  play: async ({ canvas }) => {
+    const heading = await canvas.findByRole('heading', { level: 1, name: /Exiled From the Lantern Guild/ })
+    await expect(heading).toHaveAttribute('data-length', 'long')
+    await expect(await canvas.findByText('+1 more')).toBeInTheDocument()
+  },
+}
+
 export const WithAnimeAdaptation: Story = {
   args: { series: seriesDto(1, { hasAnime: true, animeName: 'Lanterns Over Kasumi (TV)' }) },
 }

@@ -1,4 +1,4 @@
-import {type ReactNode, useMemo} from 'react'
+import {type CSSProperties, type ReactNode, useMemo} from 'react'
 import {
     ActionIcon,
     Box,
@@ -42,6 +42,13 @@ const LIBRARY_FALLBACK = { to: '/library', label: msg`Library` }
 
 /** How many alt titles fit under the heading before the line stops being readable. */
 const MAX_HERO_ALT_TITLES = 4
+
+/** A title's length in half-em units: CJK and full-width characters set about twice as wide as Latin ones. */
+function titleWidth(title: string) {
+    let width = 0
+    for (const ch of title) width += /[ᄀ-ᇿ⺀-꓏가-힯豈-﫿＀-￯]/.test(ch) ? 2 : 1
+    return width
+}
 
 /**
  * The masthead of a series page: the art, the poster, the identity, and the row of actions and
@@ -216,6 +223,7 @@ export function SeriesHero({
     // `overflow` also makes the message identical to the one TagBuckets already produces, which
     // means this reuses that translation in all ten languages instead of adding a new entry.
     const overflow = altTitles.length - MAX_HERO_ALT_TITLES
+    const titleChars = titleWidth(series.displayTitle)
 
     return (
         <Box className="series-hero">
@@ -250,15 +258,21 @@ export function SeriesHero({
 
                         <Stack gap={16} className="hero-column" style={{ flex: 1, minWidth: 0 }}>
                             <div ref={shelfFit.identRef}>
-                            <Title order={1} className="series-hero-title" title={series.title}>
+                            <Title
+                                order={1}
+                                className="series-hero-title"
+                                title={series.title}
+                                data-length={titleChars > 70 ? 'long' : undefined}
+                                style={{ '--title-chars': titleChars } as CSSProperties}
+                            >
                                 {series.displayTitle}
                                 {series.lockedFields.includes('title') && <>{' '}<MetadataLock size={18} /></>}
                             </Title>
 
                             {altTitles.length > 0 && (
-                                // Capped: a well-covered series carries dozens of these (One Piece
-                                // has 37), and the full list belongs in the Metadata card, not
-                                // wrapped across four lines under the heading.
+                                // Capped at four and two lines: a well-covered series carries dozens
+                                // of these (One Piece has 37), and the full list belongs in the
+                                // Metadata card, not wrapped across six lines under the heading.
                                 <Text
                                     component="div"
                                     size="sm"
@@ -268,6 +282,7 @@ export function SeriesHero({
                                     title={altTitles.map((a) => a.title).join(', ')}
                                 >
                                     <MetaList
+                                        inline
                                         items={[
                                             ...altTitles.slice(0, MAX_HERO_ALT_TITLES).map((a, i) => (
                                                 <span key={i} lang={a.language ?? undefined}>
@@ -275,7 +290,9 @@ export function SeriesHero({
                                                 </span>
                                             )),
                                             overflow > 0 && (
-                                                <Plural key="more" value={overflow} one="+# more" other="+# more" />
+                                                <span key="more" style={{ whiteSpace: 'nowrap' }}>
+                                                    <Plural value={overflow} one="+# more" other="+# more" />
+                                                </span>
                                             ),
                                         ]}
                                     />
