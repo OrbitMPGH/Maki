@@ -2,4 +2,4 @@
 type: fix
 section: Enhance
 ---
-Fixed Maki 2x leaving faint boxes on black and other flat grey panels, most visible on OLED screens. Pages upscaled before the update are made again the next time you read them.
+Fixed server upscaling leaving faint boxes on black and dark panels, most visible on OLED screens: Maki 2x lifted black by a level next to untouched tiles, and the slight tint of each JPEG block showed once the grain was gone. Pages upscaled before the update are made again the next time you read them.

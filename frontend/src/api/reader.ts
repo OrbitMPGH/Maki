@@ -110,7 +110,7 @@ export async function pageUrl(chapterId: number, page: number, thumb = false, ve
  * `UpscaleCache.Generation` on the server. The enhanced page is kept as immutable, so a pipeline change
  * only reaches a browser that already has the page when its URL changes. Raise the two together.
  */
-const ENHANCE_GENERATION = 'g4'
+const ENHANCE_GENERATION = 'g5'
 
 function enhancedUrl(apiRoot: string, chapterId: number, page: number, model: string, pageVersion: string): string {
   const query = `?model=${encodeURIComponent(model)}&v=${encodeURIComponent(pageVersion)}&g=${ENHANCE_GENERATION}`

@@ -238,8 +238,7 @@ public class OnnxPageUpscalerTests : IDisposable
 
         var rgb = upscaler.Run(source, info, threads: 2, luma: false, CancellationToken.None);
         var luma = upscaler.Run(source, info, threads: 2, luma: true, CancellationToken.None);
-        var (original, _, _) = ImageCodec.ResizeRgb(source.Pixels, source.Width, source.Height, 2.0);
-        UpscalePixels.TakeColourFrom(rgb.Pixels, original);
+        UpscalePixels.TakeColourFrom(rgb.Pixels, rgb.Width, rgb.Height, source.Pixels, source.Width, source.Height, 2);
 
         Assert.Equal((1, rgb.Width, rgb.Height), (luma.Bands, luma.Width, luma.Height));
         Assert.Equal(UpscalePixels.ToSingleBand(rgb.Pixels), luma.Pixels);

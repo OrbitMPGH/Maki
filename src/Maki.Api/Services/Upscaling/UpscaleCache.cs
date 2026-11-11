@@ -27,11 +27,12 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
     /// <c>ENHANCE_GENERATION</c> with it: the browser keeps enhanced pages as immutable by URL. g2: colour comes
     /// from the source page, so grey pages carry no model tint. g3: pages with an embedded profile are
     /// converted to sRGB first. g4: flat grey areas inside inferred tiles are snapped to their exact
-    /// value, so Maki 2x no longer leaves lit boxes on black panels.
+    /// value, so Maki 2x no longer leaves lit boxes on black panels. g5: the source colour is smoothed
+    /// within flat areas, so JPEG blocks no longer show as tinted boxes.
     /// </summary>
-    internal const string Generation = "g4";
+    internal const string Generation = "g5";
 
-    [GeneratedRegex(@"^(\d+)-(\d+)-(\d+)\.([a-z0-9-]+)\.g4\.(webp|jpg)$")]
+    [GeneratedRegex(@"^(\d+)-(\d+)-(\d+)\.([a-z0-9-]+)\.g5\.(webp|jpg)$")]
     internal static partial Regex FileName();
 
     public string Root { get; } = Path.GetFullPath(Path.Combine(paths.CacheDir, "upscale"));
