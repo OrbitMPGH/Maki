@@ -3624,7 +3624,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 /* The score on a line of its own and the other figures under it: side by side they needed more
    room than the column has, and the figures stacked one per line beside the score. */
-.discover-figures {
+.hero-figures.discover-figures {
   flex-direction: column;
   align-items: flex-start;
   gap: 14px;

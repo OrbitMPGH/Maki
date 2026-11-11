@@ -53,10 +53,12 @@ export function ScoreFigure({ score, standing }: { score: number; standing: Scor
           <span className="score-figure-head">
             <span className="score-figure-n figure">
               <IconStarFilled size={16} aria-hidden />
-              {value}
-              <small className="hero-stat-unit" aria-hidden>
-                /10
-              </small>
+              <span>
+                {value}
+                <small className="hero-stat-unit" aria-hidden>
+                  /10
+                </small>
+              </span>
               <VisuallyHidden>
                 <Trans>out of 10</Trans>
               </VisuallyHidden>
