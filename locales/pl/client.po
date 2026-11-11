@@ -1884,11 +1884,6 @@ msgid "{linkingTotal, plural, one {Sources found and files linked for # series} 
 msgstr "{linkingTotal, plural, one {Znaleziono źródła i powiązano pliki dla # serii} few {Znaleziono źródła i powiązano pliki dla # serii} many {Znaleziono źródła i powiązano pliki dla # serii} other {Znaleziono źródła i powiązano pliki dla # serii}}"
 
 #: src/components/series/ChapterCountsInfo.tsx
-#, fuzzy
-#~ msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
-#~ msgstr "{listed, plural, one {# rozdział jest na liście} few {# rozdziały są na liście} many {# rozdziałów jest na liście} other {# rozdziału jest na liście}}, liczba z zakładki Rozdziały i pod pozycją Znane rozdziały."
-
-#: src/components/series/ChapterCountsInfo.tsx
 msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
 msgstr ""
 
@@ -2353,11 +2348,6 @@ msgstr "{readerHintReaders, plural, one {# czytelnik AniList o podobnych nawykac
 #, fuzzy
 msgid "{readerHintReaders, plural, one {# AniList reader with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.} other {# AniList readers with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.}}"
 msgstr "{readerHintReaders, plural, one {# czytelnik AniList o podobnych nawykach czytelniczych ocenił to o {readerHintGap} niżej niż czytelnicy AniList ogólnie.} few {# czytelnicy AniList o podobnych nawykach czytelniczych ocenili to o {readerHintGap} niżej niż czytelnicy AniList ogólnie.} many {# czytelników AniList o podobnych nawykach czytelniczych ocenia to o {readerHintGap} niżej niż czytelnicy AniList ogólnie.} other {# czytelnika AniList o podobnych nawykach czytelniczych ocenił to o {readerHintGap} niżej niż czytelnicy AniList ogólnie.}}"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "{readFilterCount} read"
-#~ msgstr "Przeczytano: {readFilterCount}"
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -6214,11 +6204,6 @@ msgstr "Poniższe rozdziały są odczytywane z nazw plików, dopóki nie zostan�
 #, fuzzy
 msgid "Chapters downloaded automatically"
 msgstr "Rozdziały pobrane automatycznie"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "Chapters known"
-#~ msgstr "Znane rozdziały"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -15846,6 +15831,7 @@ msgstr "Adresy URL powiadomień"
 #: src/components/CommandPalette.tsx
 #: src/components/NotificationBell.tsx
 #: src/components/settings/NotificationPrefsSection.tsx
+#: src/lib/toast.tsx
 #: src/nav.ts
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx

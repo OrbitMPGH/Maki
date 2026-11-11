@@ -491,8 +491,6 @@ const themeBase: MantineThemeOverride = {
         transitionTimingFunction: EASE_CSS,
       }),
     },
-    // Toasts (@mantine/notifications); the curve is set in theme.css, since Mantine puts it inline.
-    Notifications: { defaultProps: () => ({ transitionDuration: pacedMs(DUR.medium) }) },
     Table: Table.extend({
       defaultProps: { verticalSpacing: 'sm', horizontalSpacing: 'md' },
     }),

@@ -1884,11 +1884,6 @@ msgid "{linkingTotal, plural, one {Sources found and files linked for # series} 
 msgstr "{linkingTotal, plural, one {Источники найдены, файлы привязаны для # серии} few {Источники найдены, файлы привязаны для # серий} many {Источники найдены, файлы привязаны для # серий} other {Источники найдены, файлы привязаны для # серии}}"
 
 #: src/components/series/ChapterCountsInfo.tsx
-#, fuzzy
-#~ msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
-#~ msgstr "{listed, plural, one {# глава указана} few {# главы указаны} many {# глав указано} other {# главы указаны}}: это число на вкладке «Главы» и под строкой «Известные главы»."
-
-#: src/components/series/ChapterCountsInfo.tsx
 msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
 msgstr ""
 
@@ -2353,11 +2348,6 @@ msgstr "{readerHintReaders, plural, one {# читатель AniList с похо�
 #, fuzzy
 msgid "{readerHintReaders, plural, one {# AniList reader with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.} other {# AniList readers with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.}}"
 msgstr "{readerHintReaders, plural, one {# читатель AniList с похожими на ваши привычками чтения оценил это на {readerHintGap} ниже, чем читатели AniList в среднем.} few {# читателя AniList с похожими на ваши привычками чтения оценили это на {readerHintGap} ниже, чем читатели AniList в среднем.} many {# читателей AniList с похожими на ваши привычками чтения оценили это на {readerHintGap} ниже, чем читатели AniList в среднем.} other {# читателя AniList с похожими на ваши привычками чтения оценили это на {readerHintGap} ниже, чем читатели AniList в среднем.}}"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "{readFilterCount} read"
-#~ msgstr "Прочитано: {readFilterCount}"
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -6214,11 +6204,6 @@ msgstr "Главы ниже определяются по именам файл�
 #, fuzzy
 msgid "Chapters downloaded automatically"
 msgstr "Главы загружены автоматически"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "Chapters known"
-#~ msgstr "Известные главы"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -15846,6 +15831,7 @@ msgstr "URL уведомлений"
 #: src/components/CommandPalette.tsx
 #: src/components/NotificationBell.tsx
 #: src/components/settings/NotificationPrefsSection.tsx
+#: src/lib/toast.tsx
 #: src/nav.ts
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx

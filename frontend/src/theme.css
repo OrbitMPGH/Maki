@@ -718,11 +718,6 @@ body {
   transition-duration: var(--dur-base);
   transition-timing-function: var(--ease);
 }
-/* Mantine sets the toast's curve inline, an overshooting bezier that bounces each toast in; only
-   !important reaches past an inline style. The third value is the max-height collapse. */
-.mantine-Notifications-notification {
-  transition-timing-function: var(--ease), var(--ease), linear !important;
-}
 
 /* Overlays sit on the raised layer in both themes. Previously these were dark-only,
    so light overlays fell through to the blanket rule and rendered at the same
@@ -838,6 +833,34 @@ body {
 }
 
 /* --- Toasts ---------------------------------------------------------------- */
+/* Sonner lays the toasts out, stacks and swipes them; Mantine's Notification inside draws each one
+   (lib/toast). Sonner's motion runs on Maki's curve and pace instead of its own 0.4s ease. Its
+   stylesheet is injected after this one, so these rules carry the toaster's class for weight. */
+.maki-toaster [data-sonner-toast] {
+  transition-duration: var(--dur-slow), var(--dur-slow), var(--dur-slow), var(--dur-base);
+  transition-timing-function: var(--ease);
+}
+.maki-toaster [data-sonner-toast] > .maki-toast {
+  width: 100%;
+  transition: opacity var(--dur-base) var(--ease);
+}
+/* Sonner sizes only toasts it draws itself; a custom one would shrink to its text. Below 600px its
+   own rule already stretches every toast across the screen. */
+@media (min-width: 601px) {
+  .maki-toaster [data-sonner-toast] {
+    width: var(--width);
+  }
+}
+/* A collapsed toast behind the front one keeps its card at the front one's height and hides its
+   content, as Sonner does for its own look, so the stack reads as a deck rather than overlapping text. */
+.maki-toaster [data-sonner-toast][data-expanded='false'][data-front='false'] > .maki-toast {
+  height: 100%;
+  overflow: hidden;
+}
+.maki-toaster [data-sonner-toast][data-expanded='false'][data-front='false'] > .maki-toast > * {
+  opacity: 0;
+}
+
 /* lib/toast gives every toast an icon in its tone, which also turns off Mantine's coloured bar down
    the left edge. The tone tints the surface and border instead of filling a disc behind the icon. */
 .mantine-Notification-root {

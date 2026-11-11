@@ -1884,11 +1884,6 @@ msgid "{linkingTotal, plural, one {Sources found and files linked for # series} 
 msgstr "{linkingTotal, plural, one {Quellen gefunden und Dateien für # Serie verknüpft} other {Quellen gefunden und Dateien für # Serien verknüpft}}"
 
 #: src/components/series/ChapterCountsInfo.tsx
-#, fuzzy
-#~ msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
-#~ msgstr "{listed, plural, one {# Kapitel ist gelistet} other {# Kapitel sind gelistet}}, die Anzahl im Tab Kapitel und unter Bekannte Kapitel."
-
-#: src/components/series/ChapterCountsInfo.tsx
 msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
 msgstr ""
 
@@ -2353,11 +2348,6 @@ msgstr "{readerHintReaders, plural, one {# AniList-Leser mit ähnlichen Lesegewo
 #, fuzzy
 msgid "{readerHintReaders, plural, one {# AniList reader with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.} other {# AniList readers with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.}}"
 msgstr "{readerHintReaders, plural, one {# AniList-Leser mit ähnlichen Lesegewohnheiten bewertet diesen Titel {readerHintGap} niedriger als AniList-Leser insgesamt.} other {# AniList-Leser mit ähnlichen Lesegewohnheiten bewerten diesen Titel {readerHintGap} niedriger als AniList-Leser insgesamt.}}"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "{readFilterCount} read"
-#~ msgstr "{readFilterCount} gelesen"
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -6214,11 +6204,6 @@ msgstr "Die Kapitel unten werden aus den Dateinamen gelesen, bis Quellen gefunde
 #, fuzzy
 msgid "Chapters downloaded automatically"
 msgstr "Kapitel automatisch heruntergeladen"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "Chapters known"
-#~ msgstr "Bekannte Kapitel"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -15846,6 +15831,7 @@ msgstr "Benachrichtigungs-URLs"
 #: src/components/CommandPalette.tsx
 #: src/components/NotificationBell.tsx
 #: src/components/settings/NotificationPrefsSection.tsx
+#: src/lib/toast.tsx
 #: src/nav.ts
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx

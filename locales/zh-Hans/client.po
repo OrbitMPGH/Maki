@@ -1884,11 +1884,6 @@ msgid "{linkingTotal, plural, one {Sources found and files linked for # series} 
 msgstr "{linkingTotal, plural, other {已为 # 个系列找到来源并关联文件}}"
 
 #: src/components/series/ChapterCountsInfo.tsx
-#, fuzzy
-#~ msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
-#~ msgstr "{listed, plural, other {# 个章节已列出}}，即章节标签页和「已知章节」下的计数。"
-
-#: src/components/series/ChapterCountsInfo.tsx
 msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
 msgstr ""
 
@@ -2353,11 +2348,6 @@ msgstr "{readerHintReaders, plural, other {# 位阅读习惯与你相似的 AniL
 #, fuzzy
 msgid "{readerHintReaders, plural, one {# AniList reader with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.} other {# AniList readers with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.}}"
 msgstr "{readerHintReaders, plural, other {# 位阅读习惯与你相似的 AniList 读者，给这部作品的评分比 AniList 读者整体低 {readerHintGap}。}}"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "{readFilterCount} read"
-#~ msgstr "{readFilterCount} 已读"
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -6214,11 +6204,6 @@ msgstr "在找到来源之前，下方章节根据文件名读取。"
 #, fuzzy
 msgid "Chapters downloaded automatically"
 msgstr "章节已自动下载"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "Chapters known"
-#~ msgstr "已知章节"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -15846,6 +15831,7 @@ msgstr "通知 URL"
 #: src/components/CommandPalette.tsx
 #: src/components/NotificationBell.tsx
 #: src/components/settings/NotificationPrefsSection.tsx
+#: src/lib/toast.tsx
 #: src/nav.ts
 #: src/pages/LibraryPage.tsx
 #: src/pages/NotificationsPage.tsx

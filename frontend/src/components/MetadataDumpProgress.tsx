@@ -188,10 +188,6 @@ export default function MetadataDumpProgress({ quiet = false }: { quiet?: boolea
 
       const body = {
         id: TOAST_ID,
-        // Pinned bottom-right rather than inheriting the app's top-centre default: this one sits
-        // there for the length of a 350 MB transfer, and the centre of the screen is where every
-        // other toast appears for six seconds and leaves.
-        position: 'bottom-right' as const,
         loading: true,
         autoClose: false as const,
         withCloseButton: true,
@@ -217,9 +213,6 @@ export default function MetadataDumpProgress({ quiet = false }: { quiet?: boolea
     if (progress.lastError) {
       notifications.update({
         id: TOAST_ID,
-        // update replaces the payload rather than merging it, so the position has to be repeated
-        // or the closing frame jumps to the app's top-centre default.
-        position: 'bottom-right',
         loading: false,
         color: 'var(--danger)',
         autoClose: 10000,
@@ -235,7 +228,6 @@ export default function MetadataDumpProgress({ quiet = false }: { quiet?: boolea
     if (progress.lastInstalled) {
       notifications.update({
         id: TOAST_ID,
-        position: 'bottom-right',
         loading: false,
         color: 'var(--ok)',
         autoClose: 8000,
