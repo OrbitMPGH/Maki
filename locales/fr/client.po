@@ -1884,11 +1884,6 @@ msgid "{linkingTotal, plural, one {Sources found and files linked for # series} 
 msgstr "{linkingTotal, plural, one {Sources trouvées et fichiers liés pour # série} many {Sources trouvées et fichiers liés pour # séries} other {Sources trouvées et fichiers liés pour # séries}}"
 
 #: src/components/series/ChapterCountsInfo.tsx
-#, fuzzy
-#~ msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
-#~ msgstr "{listed, plural, one {# chapitre est listé} many {# chapitres sont listés} other {# chapitres sont listés}}, le nombre affiché dans l'onglet Chapitres et sous Chapitres connus."
-
-#: src/components/series/ChapterCountsInfo.tsx
 msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
 msgstr ""
 
@@ -2353,11 +2348,6 @@ msgstr "{readerHintReaders, plural, one {# lecteur d'AniList aux habitudes de le
 #, fuzzy
 msgid "{readerHintReaders, plural, one {# AniList reader with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.} other {# AniList readers with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.}}"
 msgstr "{readerHintReaders, plural, one {# lecteur d'AniList aux habitudes de lecture proches des vôtres a noté cette série {readerHintGap} de moins que l'ensemble des lecteurs d'AniList.} many {# lecteurs d'AniList aux habitudes de lecture proches des vôtres ont noté cette série {readerHintGap} de moins que l'ensemble des lecteurs d'AniList.} other {# lecteurs d'AniList aux habitudes de lecture proches des vôtres ont noté cette série {readerHintGap} de moins que l'ensemble des lecteurs d'AniList.}}"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "{readFilterCount} read"
-#~ msgstr "{readFilterCount} lus"
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -6214,11 +6204,6 @@ msgstr "Les chapitres ci-dessous sont lus d'après les noms de fichiers jusqu'à
 #, fuzzy
 msgid "Chapters downloaded automatically"
 msgstr "Chapitres téléchargés automatiquement"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "Chapters known"
-#~ msgstr "Chapitres connus"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy

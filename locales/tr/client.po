@@ -1884,11 +1884,6 @@ msgid "{linkingTotal, plural, one {Sources found and files linked for # series} 
 msgstr "{linkingTotal, plural, one {# seri için kaynaklar bulundu ve dosyalar bağlandı} other {# seri için kaynaklar bulundu ve dosyalar bağlandı}}"
 
 #: src/components/series/ChapterCountsInfo.tsx
-#, fuzzy
-#~ msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
-#~ msgstr "{listed, plural, one {# bölüm listelendi} other {# bölüm listelendi}}, Bölümler sekmesindeki ve Bilinen bölümler altındaki sayı."
-
-#: src/components/series/ChapterCountsInfo.tsx
 msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
 msgstr ""
 
@@ -2353,11 +2348,6 @@ msgstr "{readerHintReaders, plural, one {Okuma alışkanlıkları sizinkine benz
 #, fuzzy
 msgid "{readerHintReaders, plural, one {# AniList reader with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.} other {# AniList readers with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.}}"
 msgstr "{readerHintReaders, plural, one {Okuma alışkanlıkları sizinkine benzeyen # AniList okuyucusu bunu AniList okuyucularının genelinden {readerHintGap} daha düşük puanladı.} other {Okuma alışkanlıkları sizinkine benzeyen # AniList okuyucusu bunu AniList okuyucularının genelinden {readerHintGap} daha düşük puanladı.}}"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "{readFilterCount} read"
-#~ msgstr "{readFilterCount} okundu"
 
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
@@ -6214,11 +6204,6 @@ msgstr "Kaynaklar bulunana kadar aşağıdaki bölümler dosya adlarından okunu
 #, fuzzy
 msgid "Chapters downloaded automatically"
 msgstr "Bölümler otomatik olarak indirildi"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-#~ msgid "Chapters known"
-#~ msgstr "Bilinen bölümler"
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy

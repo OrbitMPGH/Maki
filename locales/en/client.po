@@ -1585,10 +1585,6 @@ msgid "{linkingTotal, plural, one {Sources found and files linked for # series} 
 msgstr "{linkingTotal, plural, one {Sources found and files linked for # series} other {Sources found and files linked for # series}}"
 
 #: src/components/series/ChapterCountsInfo.tsx
-#~ msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
-#~ msgstr "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Chapters known."
-
-#: src/components/series/ChapterCountsInfo.tsx
 msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
 msgstr "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
 
@@ -1967,10 +1963,6 @@ msgstr "{readerHintReaders, plural, one {# AniList reader with reading habits li
 #: src/components/discover/DiscoverDetailModal.tsx
 msgid "{readerHintReaders, plural, one {# AniList reader with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.} other {# AniList readers with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.}}"
 msgstr "{readerHintReaders, plural, one {# AniList reader with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.} other {# AniList readers with reading habits like yours scored this {readerHintGap} lower than AniList readers overall.}}"
-
-#: src/pages/SeriesDetailPage.tsx
-#~ msgid "{readFilterCount} read"
-#~ msgstr "{readFilterCount} read"
 
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "{readGenreName} is {readShare} of what you read and {libraryShare} of the library."
@@ -5125,10 +5117,6 @@ msgstr "Chapters below are read off the file names until sources are found."
 #: src/api/inbox.ts
 msgid "Chapters downloaded automatically"
 msgstr "Chapters downloaded automatically"
-
-#: src/pages/SeriesDetailPage.tsx
-#~ msgid "Chapters known"
-#~ msgstr "Chapters known"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Chapters last checked {checked}"
