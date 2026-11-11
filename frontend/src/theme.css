@@ -3548,16 +3548,13 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   z-index: 2;
 }
 /* --- Discover modal: the band, its figures and the action card ------------ */
-/* At modal scale the band carries a smaller poster and a title capped at three lines, set smaller
-   as it gets longer, so a light-novel title can no longer take the card's height from the synopsis.
-   Scoped to the modal: the Discover page's own hero fits its title its own way. */
+/* At modal scale the band caps the title at three lines, set smaller as it gets longer, so a
+   light-novel title can no longer take the card's height from the synopsis. The poster keeps the
+   compact band's size, which matches the height of the score and figures beside it. Scoped to the
+   modal: the Discover page's own hero fits its title its own way. */
 .discover-modal-root .series-hero[data-compact] .series-hero-body {
   /* Clears the floating close and reroll buttons above the card's top edge. */
   padding-top: 58px;
-}
-.discover-modal-root .series-hero[data-compact] .series-hero-poster {
-  width: 150px;
-  height: 225px;
 }
 @media (min-width: 56.3125em) {
   .discover-modal-root .series-hero[data-compact] .series-hero-content {
@@ -3625,15 +3622,13 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--anime);
   border-radius: 2px;
 }
+/* The score on a line of its own and the other figures under it: side by side they needed more
+   room than the column has, and the figures stacked one per line beside the score. */
 .discover-figures {
-  flex-wrap: nowrap;
-  margin-top: 14px;
-}
-/* On a narrow card the figures wrap among themselves beside the ring, rather than dropping under
-   it as a block and leaving the rule hanging. */
-.discover-figures .hero-stats {
-  flex: 1;
-  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 16px;
 }
 /* "19 ch", "~2 h": the unit is set down a step so the number stays the figure. */
 .hero-stat-unit {
@@ -3643,38 +3638,87 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-weight: var(--fw-semibold);
   letter-spacing: 0;
 }
-/* The score as a ring in its own gold, the shape Home's level ring and the covers' read ring use. */
-.hero-ring {
-  position: relative;
-  display: inline-grid;
-  place-items: center;
-  flex: none;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
+/* The score, its word and where it stands, beside the spread of the series it is compared with.
+   A score is not a state: the star and the marker carry the gold, the word stays ink. */
+.score-figure {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
 }
-.hero-ring svg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+.score-figure-text {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border-radius: var(--radius-control);
 }
-.hero-ring-track {
-  fill: none;
-  stroke: var(--border-strong);
-  stroke-width: 4.5;
-}
-.hero-ring-fill {
-  fill: none;
-  stroke: var(--rating);
-  stroke-width: 4.5;
-  stroke-linecap: round;
-}
-.hero-ring-n {
-  position: relative;
-  color: var(--ink-hi);
-  font-size: 1.0625rem;
+.score-figure-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   line-height: 1;
+}
+.score-figure-n {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-hi);
+  font-size: var(--type-figure);
+  font-weight: var(--fw-bold);
+}
+.score-figure-n svg {
+  color: var(--rating);
+}
+.score-figure-word {
+  color: var(--ink-hi);
+  font-size: var(--type-subhead);
+  font-weight: var(--fw-strong);
+}
+/* A chart reads low to high left to right in every language. */
+.score-dist {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 3px;
+  width: 108px;
+  direction: ltr;
+}
+.score-dist-bars {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 28px;
+  border-bottom: 1px solid var(--border-strong);
+}
+.score-dist-bar {
+  flex: 1;
+  border-radius: 2px 2px 0 0;
+  background: color-mix(in srgb, var(--ink-4) 62%, transparent);
+}
+.score-dist-marker {
+  position: absolute;
+  top: -3px;
+  bottom: 0;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--rating);
+}
+.score-dist-axis {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  color: var(--ink-4);
+  font-size: var(--type-micro);
+  line-height: 1;
+}
+.score-dist-caret {
+  position: absolute;
+  top: 0;
+  margin-left: -4px;
+  border-right: 4px solid transparent;
+  border-left: 4px solid transparent;
+  border-bottom: 5px solid var(--rating);
 }
 /* A site and its score as one control: the logo, then the number, in a quiet chip. A rated site with
    no link (data-static) looks the same but is not a button. */
@@ -6500,6 +6544,9 @@ button.site-chip:hover {
 }
 .discover-bar-score svg {
   color: var(--rating);
+}
+.discover-bar-word {
+  margin-inline-start: 2px;
 }
 .discover-bar-actions {
   display: flex;

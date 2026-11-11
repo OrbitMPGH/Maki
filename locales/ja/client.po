@@ -1643,6 +1643,14 @@ msgstr ""
 msgid "{grantedCount, plural, one {# permission} other {# permissions}}"
 msgstr ""
 
+#: src/components/discover/ScoreFigure.tsx
+msgid "{groupSize, plural, one {Compared with the # most popular series of its type.} other {Compared with the # most popular series of its type.}}"
+msgstr ""
+
+#: src/components/discover/ScoreFigure.tsx
+msgid "{groupSize, plural, one {Compared with the # most popular series.} other {Compared with the # most popular series.}}"
+msgstr ""
+
 #: src/components/ui/CoverCard.tsx
 #, fuzzy
 msgid "{have, plural, one {# chapter} other {# chapters}}"
@@ -3214,8 +3222,12 @@ msgid "{visibleCount} of {totalCount}"
 msgstr "{totalCount}件中{visibleCount}件"
 
 #: src/components/discover/DiscoverDetailModal.tsx
-msgid "{volumes, plural, one {In # volume} other {In # volumes}}"
+msgid "{volumes, plural, one {# volume} other {# volumes}}"
 msgstr ""
+
+#: src/components/discover/DiscoverDetailModal.tsx
+#~ msgid "{volumes, plural, one {In # volume} other {In # volumes}}"
+#~ msgstr ""
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -5424,6 +5436,30 @@ msgstr "両方"
 #, fuzzy
 msgid "Bottom"
 msgstr "下"
+
+#: src/components/discover/ScoreFigure.tsx
+msgid "Bottom {pct} of other popular titles"
+msgstr ""
+
+#: src/components/discover/ScoreFigure.tsx
+msgid "Bottom {pct} of popular manga"
+msgstr ""
+
+#: src/components/discover/ScoreFigure.tsx
+msgid "Bottom {pct} of popular manhua"
+msgstr ""
+
+#: src/components/discover/ScoreFigure.tsx
+msgid "Bottom {pct} of popular manhwa"
+msgstr ""
+
+#: src/components/discover/ScoreFigure.tsx
+msgid "Bottom {pct} of popular OEL titles"
+msgstr ""
+
+#: src/components/discover/ScoreFigure.tsx
+msgid "Bottom {pct} of popular series"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -9346,6 +9382,11 @@ msgstr ""
 msgid "Example: {example}"
 msgstr "例：{example}"
 
+#: src/components/discover/ScoreFigure.tsx
+msgctxt "score"
+msgid "Exceptional"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "Exclude"
@@ -9985,8 +10026,8 @@ msgid "First page image"
 msgstr "最初のページ画像"
 
 #: src/components/discover/DiscoverDetailModal.tsx
-msgid "First released"
-msgstr ""
+#~ msgid "First released"
+#~ msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -10477,6 +10518,11 @@ msgstr "ディスクからなくなりました"
 msgid "Good"
 msgstr "良い"
 
+#: src/components/discover/ScoreFigure.tsx
+msgctxt "score"
+msgid "Good"
+msgstr ""
+
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Good quality"
@@ -10516,6 +10562,11 @@ msgstr "グレー"
 #, fuzzy
 msgid "Grayscale"
 msgstr "グレースケール"
+
+#: src/components/discover/ScoreFigure.tsx
+msgctxt "score"
+msgid "Great"
+msgstr ""
 
 #: src/components/pageconversion/labels.ts
 #, fuzzy
@@ -13042,8 +13093,8 @@ msgstr "マンガ管理ツール"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #, fuzzy
-msgid "MangaBaka aggregate score"
-msgstr "MangaBaka総合スコア"
+#~ msgid "MangaBaka aggregate score"
+#~ msgstr "MangaBaka総合スコア"
 
 #: src/components/import/mihonRows.ts
 #, fuzzy
@@ -13054,6 +13105,10 @@ msgstr "MangaBaka ID"
 #, fuzzy
 msgid "MangaBaka id, or a MangaBaka, AniList or MyAnimeList link"
 msgstr "MangaBakaのID、またはMangaBaka、AniList、MyAnimeListのリンク"
+
+#: src/components/discover/ScoreFigure.tsx
+msgid "MangaBaka score, {value} out of 10."
+msgstr ""
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -16535,6 +16590,10 @@ msgstr "管理者がアカウントに表示名を設定するまで、ほかの
 msgid "Others will see your login name, {loginName}."
 msgstr "ほかの人にはログイン名の{loginName}が表示されます。"
 
+#: src/components/discover/ScoreFigure.tsx
+msgid "out of 10"
+msgstr ""
+
 #: src/components/pageconversion/RuleCard.tsx
 #, fuzzy
 msgid "Over"
@@ -18537,6 +18596,7 @@ msgstr "リリースノート"
 msgid "Release number may be a sequel, not a chapter"
 msgstr "リリース番号は章ではなく続編の可能性があります"
 
+#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -20341,8 +20401,8 @@ msgid "Score {score}"
 msgstr "スコア{score}"
 
 #: src/components/discover/DiscoverDetailModal.tsx
-msgid "Score {value} out of 10"
-msgstr ""
+#~ msgid "Score {value} out of 10"
+#~ msgstr ""
 
 #. placeholder {0}: format.name
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -24185,6 +24245,30 @@ msgstr "すでに使っているツール"
 #, fuzzy
 msgid "Top"
 msgstr "上"
+
+#: src/components/discover/ScoreFigure.tsx
+msgid "Top {pct} of other popular titles"
+msgstr ""
+
+#: src/components/discover/ScoreFigure.tsx
+msgid "Top {pct} of popular manga"
+msgstr ""
+
+#: src/components/discover/ScoreFigure.tsx
+msgid "Top {pct} of popular manhua"
+msgstr ""
+
+#: src/components/discover/ScoreFigure.tsx
+msgid "Top {pct} of popular manhwa"
+msgstr ""
+
+#: src/components/discover/ScoreFigure.tsx
+msgid "Top {pct} of popular OEL titles"
+msgstr ""
+
+#: src/components/discover/ScoreFigure.tsx
+msgid "Top {pct} of popular series"
+msgstr ""
 
 #: src/api/customRails.ts
 #: src/api/hooks.ts

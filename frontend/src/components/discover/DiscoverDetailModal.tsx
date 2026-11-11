@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type HTMLAttributes, type Ref } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
 import {
   ActionIcon,
   Badge,
@@ -46,6 +46,7 @@ import { PanelTitle } from '../ui/PanelTitle'
 import { DiscoverGlance } from './DiscoverGlance'
 import { DiscoverLibraryRail } from './DiscoverLibraryRail'
 import { DiscoverReviews } from './DiscoverReviews'
+import { ScoreFigure, scoreWord } from './ScoreFigure'
 import { RecommendationFeedbackMenu } from './RecommendationFeedbackMenu'
 import { PreviewChapterButton } from './PreviewChapterButton'
 import { ShortlistButton, ShortlistNote } from './ShortlistButton'
@@ -201,6 +202,8 @@ export function DiscoverDetailModal({
   const { t } = useLingui()
   const status = seriesStatusVisual(detail?.status ?? item?.status ?? '')
   const score = detail?.rating ?? item?.rating ?? null
+  const scoreWordLabel = score != null ? scoreWord(score) : null
+  const scoreWordShown = scoreWordLabel ? renderLabel(scoreWordLabel) : null
   const year = detail?.year ?? item?.year ?? null
   const chapters = detail?.totalChapters ?? item?.totalChapters ?? null
   // Only ever set on a series that has finished a volume run, so an ongoing web series never
@@ -325,6 +328,7 @@ export function DiscoverDetailModal({
                         <span key="score" className="discover-bar-score">
                           <IconStarFilled size={12} />
                           {formatFixedDecimal(score / 10, 1)}
+                          {scoreWordShown && <span className="discover-bar-word">{scoreWordShown}</span>}
                         </span>
                       ) : null,
                       <span key="status" style={{ color: `var(--${statusToken(status.color)})` }}>
@@ -368,8 +372,8 @@ export function DiscoverDetailModal({
                     <Skeleton
                       animate={!isError}
                       className="discover-poster-skeleton"
-                      w={150}
-                      h={225}
+                      w={176}
+                      h={264}
                       radius="var(--radius-hero)"
                       style={{ flexShrink: 0 }}
                     />
@@ -428,17 +432,11 @@ export function DiscoverDetailModal({
                     </Group>
 
                     {/* The numbers people open a card to check, each labelled for the question it
-                        answers. The score ring and the chapter count are on the card's own row, so
-                        they are set from the first frame rather than arriving with the detail. */}
+                        answers. The score and the chapter count are on the card's own row, so they
+                        are set from the first frame; the standing arrives with the detail. The score
+                        takes a line of its own: beside the other figures it overflowed the column. */}
                     <div className="hero-figures discover-figures">
-                      {score != null && (
-                        <Tooltip label={t`MangaBaka aggregate score`} withArrow zIndex={1001}>
-                          <ScoreRing score={score} />
-                        </Tooltip>
-                      )}
-                      {score != null && (chapters != null || volumes != null || year != null) && (
-                        <span className="hero-figure-rule" aria-hidden />
-                      )}
+                      {score != null && <ScoreFigure score={score} standing={detail?.scoreStanding} />}
                       <div className="hero-stats">
                         {chapters != null ? (
                           <div className="hero-stat">
@@ -454,7 +452,7 @@ export function DiscoverDetailModal({
                             </span>
                             <span className="hero-stat-l">
                               {volumes != null
-                                ? plural(volumes, { one: 'In # volume', other: 'In # volumes' })
+                                ? plural(volumes, { one: '# volume', other: '# volumes' })
                                 : t`Chapters`}
                             </span>
                           </div>
@@ -503,7 +501,7 @@ export function DiscoverDetailModal({
                           <div className="hero-stat">
                             <span className="hero-stat-n figure">{year}</span>
                             <span className="hero-stat-l">
-                              <Trans>First released</Trans>
+                              <Trans>Released</Trans>
                             </span>
                           </div>
                         )}
@@ -741,42 +739,5 @@ export function DiscoverDetailModal({
         </div>
       )}
     </Modal>
-  )
-}
-
-/**
- * MangaBaka's 0-100 aggregate as a gold ring around the score out of ten. The ring is the same
- * shape Home's level ring and the covers' read ring use, in the score's own gold. Takes a ref and
- * passes the rest through, because a Tooltip wraps it.
- */
-function ScoreRing({
-  score,
-  ref,
-  ...rest
-}: { score: number; ref?: Ref<HTMLSpanElement> } & HTMLAttributes<HTMLSpanElement>) {
-  const { t } = useLingui()
-  const value = formatFixedDecimal(score / 10, 1)
-  const radius = 22
-  const circumference = 2 * Math.PI * radius
-  const filled = (Math.min(100, Math.max(0, score)) / 100) * circumference
-  return (
-    // The spread goes first: the Tooltip hands the child's own props back, an undefined className
-    // among them, and spread last it wiped the ring's class.
-    <span {...rest} ref={ref} className="hero-ring" role="img" aria-label={t`Score ${value} out of 10`} tabIndex={0}>
-      <svg viewBox="0 0 52 52" aria-hidden>
-        <circle className="hero-ring-track" cx="26" cy="26" r={radius} />
-        <circle
-          className="hero-ring-fill"
-          cx="26"
-          cy="26"
-          r={radius}
-          strokeDasharray={`${filled} ${circumference}`}
-          transform="rotate(-90 26 26)"
-        />
-      </svg>
-      <span className="hero-ring-n figure" aria-hidden>
-        {value}
-      </span>
-    </span>
   )
 }

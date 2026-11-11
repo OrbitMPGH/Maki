@@ -297,7 +297,24 @@ export function detailFor(providerId: string): MangaBakaDetail {
         readerHint: null,
         animeResume: null,
       }
-  return { ...base, ...detailExtras[providerId] }
+  return { ...base, scoreStanding: standingFor(base.type, base.rating), ...detailExtras[providerId] }
+}
+
+/** The popular fifth of manga from the real dump, binned the way the server bins it. */
+const POPULAR_MANGA_HISTOGRAM = [158, 826, 3997, 8742, 6856, 2296, 512, 63, 3, 0]
+
+/**
+ * A believable standing for a fixture score: the share of the real dump's popular manga that score
+ * beats, read off the same histogram, so a story's word, line and marker agree with each other.
+ */
+export function standingFor(type: string | null, rating: number | null): MangaBakaDetail['scoreStanding'] {
+  if (rating == null) return null
+  const total = POPULAR_MANGA_HISTOGRAM.reduce((a, b) => a + b, 0)
+  const bin = Math.min(9, Math.max(0, Math.floor((rating - 50) / 5)))
+  const below = POPULAR_MANGA_HISTOGRAM.slice(0, bin).reduce((a, b) => a + b, 0)
+  const within = rating < 50 ? 0 : (POPULAR_MANGA_HISTOGRAM[bin] * ((rating - 50) % 5)) / 5
+  const group = type && ['manga', 'manhwa', 'manhua', 'other'].includes(type) ? type : 'all'
+  return { group, groupSize: total, percentile: (100 * (below + within)) / total, histogram: POPULAR_MANGA_HISTOGRAM }
 }
 
 /** The first card of the rich variants: one with an anime, one with a reader-cohort hint. */

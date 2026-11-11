@@ -8,7 +8,7 @@ import {
   ownedItem,
   resetTabState,
 } from '../../../.storybook/mocks/discover'
-import { detailFor } from '../../../.storybook/mocks/discover/fixtures'
+import { detailFor, standingFor } from '../../../.storybook/mocks/discover/fixtures'
 import { shortlistMock } from '../../../.storybook/mocks/shortlist'
 import { upgradeProfiles } from '../../../.storybook/mocks/series/fixtures'
 import { DiscoverDetailModal } from './DiscoverDetailModal'
@@ -62,7 +62,7 @@ export const LongTitle: Story = {
     const dialog = await dialogOf(canvasElement)
     const heading = await within(dialog).findByRole('heading', { name: LONG_TITLE })
     await expect(heading).toHaveAttribute('data-length', 'long')
-    await expect(await within(dialog).findByRole('img', { name: /^Score / })).toBeVisible()
+    await expect(await within(dialog).findByText(/^(Top|Bottom) .+ of popular /)).toBeVisible()
     await expect(await within(dialog).findByRole('button', { name: 'Add to library' })).toBeVisible()
   },
 }
@@ -124,6 +124,53 @@ export const QualityProfilePage: Story = {
     await userEvent.click(within(dialog).getByText('Synopsis'))
     await waitFor(() => expect(within(dialog).getByRole('button', { name: /^Folder/ })).toBeVisible())
     await waitFor(() => expect(root).not.toHaveAttribute('data-card-deep'))
+  },
+}
+
+const withScore = (rating: number, type: string, scoreStanding: ReturnType<typeof standingFor>) =>
+  discoverPage(
+    http.get(api('/recommendations/detail/:id'), ({ params }) =>
+      HttpResponse.json({ ...detailFor(String(params.id)), rating, type, scoreStanding }),
+    ),
+  )
+
+/** A score in the top band: its word, where it stands among popular series of its type, the spread. */
+export const ScoreWithStanding: Story = {
+  parameters: {
+    msw: withScore(86, 'manhwa', {
+      group: 'manhwa',
+      groupSize: 3227,
+      percentile: 99.7,
+      histogram: [8, 34, 199, 839, 1228, 693, 209, 15, 2, 0],
+    }),
+  },
+  play: async ({ canvasElement }) => {
+    const dialog = await dialogOf(canvasElement)
+    await expect(await within(dialog).findByText('Top 1% of popular manhwa')).toBeVisible()
+    await expect(dialog.querySelector('.score-figure-word')).toHaveTextContent('Exceptional')
+    await expect(dialog.querySelector('.score-dist-marker')).toBeInTheDocument()
+  },
+}
+
+/** Under 7 the word stays out and the standing line says where it is. */
+export const ScoreBelowTheWords: Story = {
+  parameters: { msw: withScore(65, 'manga', { ...standingFor('manga', 65)!, percentile: 21.3 }) },
+  play: async ({ canvasElement }) => {
+    const dialog = await dialogOf(canvasElement)
+    await expect(await within(dialog).findByText('Bottom 21% of popular manga')).toBeVisible()
+    await expect(dialog.querySelector('.score-figure-word')).toBeNull()
+  },
+}
+
+/** No standing (an unrated group, an old server): the score and its word, no line and no chart. */
+export const ScoreWithoutStanding: Story = {
+  parameters: { msw: withScore(81, 'manga', null) },
+  play: async ({ canvasElement }) => {
+    const dialog = await dialogOf(canvasElement)
+    await expect(await within(dialog).findByText('Synopsis')).toBeVisible()
+    await expect(dialog.querySelector('.score-figure-word')).toHaveTextContent('Great')
+    await expect(within(dialog).queryByText(/of popular/)).toBeNull()
+    await expect(dialog.querySelector('.score-dist')).toBeNull()
   },
 }
 

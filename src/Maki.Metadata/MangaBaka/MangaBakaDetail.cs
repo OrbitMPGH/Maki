@@ -71,7 +71,9 @@ public record MangaBakaDetail(
     /// </summary>
     ReaderCohortHint? ReaderHint = null,
     /// <summary>Filled by the controller, never the store.</summary>
-    CatalogueAnimeResumeDto? AnimeResume = null);
+    CatalogueAnimeResumeDto? AnimeResume = null,
+    /// <summary>Filled by the controller from <see cref="ScoreStandings"/>; null when unrated.</summary>
+    ScoreStanding? ScoreStanding = null);
 
 /// <summary>
 /// One dump row reduced to what a taste profile aggregates over. Tags carry their bucket and

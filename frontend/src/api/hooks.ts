@@ -1528,6 +1528,20 @@ export interface MangaBakaDetail {
   readerHint: ReaderCohortHint | null
   /** Where to pick the manga back up, when the reader finished this one's anime. Null otherwise. */
   animeResume: AnimeResume | null
+  /** Where the score sits among popular series of its type. Null on an unrated series. */
+  scoreStanding?: ScoreStanding | null
+}
+
+/**
+ * Where a series' score sits among the most popular fifth of its type (`group` is the dump's type,
+ * or "all" for a type too small to stand alone). `percentile` is the share of that group it scores
+ * above, 0 to 100; `histogram` counts the group in half-point bins from 5.0 to 10.0.
+ */
+export interface ScoreStanding {
+  group: string
+  groupSize: number
+  percentile: number
+  histogram: number[]
 }
 
 /**

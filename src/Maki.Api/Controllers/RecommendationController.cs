@@ -32,7 +32,8 @@ public class RecommendationController(
     HiddenContentService hidden,
     CustomRailService customRails,
     SeriesReviewService seriesReviews,
-    AnimeResumeService animeResume) : ControllerBase
+    AnimeResumeService animeResume,
+    ScoreStandings scoreStandings) : ControllerBase
 {
     [HttpPost]
     public async Task<IActionResult> Get([FromBody] RecommendationRequest? request, CancellationToken ct)
@@ -597,6 +598,7 @@ public class RecommendationController(
             ReaderHint = await readerCohorts.GetHintAsync(currentUser, id, ct),
             AnimeResume = await animeResume.ForCatalogueAsync(
                 id, detail.AnimeStart, detail.AnimeEnd, detail.TotalChapters, ct),
+            ScoreStanding = await scoreStandings.GetAsync(detail.Type, detail.Rating, ct),
         });
     }
 

@@ -223,6 +223,7 @@ try
     builder.Services.AddSingleton<MangaBakaDumpService>();
     builder.Services.AddSingleton<Maki.Api.Jobs.MangaBakaDumpRetry>();
     builder.Services.AddSingleton<MangaBakaLocalStore>();
+    builder.Services.AddSingleton(sp => new ScoreStandings(sp.GetRequiredService<MangaBakaDumpOptions>()));
     // Credits and the title-index term dictionary, both RAM-resident and both built lazily from the
     // dump. They are what answer "junji ito" and what let a misspelled title still find its series;
     // DiscoverCacheWarmJob builds them after a dump install so the cost never lands on a keystroke.
