@@ -241,7 +241,7 @@ public class RefreshSmartGateTests : IDisposable
                 db.TorrentProposals.Add(new TorrentProposal
                 {
                     SeriesId = id, ReleaseGuid = "g", Title = "Test Series v01 (Digital)",
-                    Status = TorrentProposalStatus.Pending, CreatedAtUtc = DateTime.UtcNow
+                    Status = TorrentProposalStatus.Pending, CreatedAtUtc = DateTime.UtcNow, VolumeFirst = true
                 });
                 db.SaveChanges();
             });
@@ -260,7 +260,7 @@ public class RefreshSmartGateTests : IDisposable
         db.TorrentProposals.Add(new TorrentProposal
         {
             SeriesId = seriesId, ReleaseGuid = "g", Title = "Test Series v01 (Digital)",
-            Status = TorrentProposalStatus.Pending, CreatedAtUtc = DateTime.UtcNow
+            Status = TorrentProposalStatus.Pending, CreatedAtUtc = DateTime.UtcNow, VolumeFirst = true
         });
         db.SaveChanges();
     }

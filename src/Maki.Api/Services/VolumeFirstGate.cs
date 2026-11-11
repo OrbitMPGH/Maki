@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Quality;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -116,17 +117,23 @@ public sealed class VolumeFirstDeferrals
 }
 
 /// <summary>
-/// With "volume first" on, automatic source downloads (monitor refresh and Smart Download) wait while a
-/// volume release may still bring the same chapters: while the series' volume search runs, while a
-/// proposal waits for an answer (<see cref="ProposalHold"/>) and while a release downloads
-/// (<see cref="DownloadHold"/>). Only chapters the release covers wait; anything past its last volume
-/// goes on as usual. Downloads started by hand, request approvals and health repairs are never held.
+/// With "volume first" on, automatic source downloads (monitor refresh and Smart Download) of a new
+/// series wait while a volume release may still bring the same chapters: while its volume-first search
+/// runs or, for a bulk add, waits for the job (<see cref="SearchDueHold"/>), while a proposal that
+/// search left waits for an answer (<see cref="ProposalHold"/>) and while a
+/// release it grabbed, or a proposal of it someone grabbed, downloads (<see cref="DownloadHold"/>).
+/// Proposals and downloads of the ordinary upgrade search never hold anything. Only chapters the release
+/// covers wait; anything past its last volume goes on as usual. Downloads started by hand, request
+/// approvals and health repairs are never held.
 /// </summary>
 public class VolumeFirstGate(
     MakiDbContext db, IAppSettings settings, VolumeFirstSearches searches, TorrentUpgradeService torrents,
     TimeProvider time)
 {
     public static readonly TimeSpan ProposalHold = TimeSpan.FromHours(48);
+
+    /// <summary>How long a bulk-added series waits for the volume search job to reach it.</summary>
+    public static readonly TimeSpan SearchDueHold = TimeSpan.FromHours(24);
     public static readonly TimeSpan DownloadHold = TimeSpan.FromHours(72);
 
     public async Task<VolumeHold> CheckAsync(int seriesId, CancellationToken ct)
@@ -142,8 +149,16 @@ public class VolumeFirstGate(
         }
 
         var now = time.GetUtcNow().UtcDateTime;
+        var due = await db.Series.AsNoTracking().Where(s => s.Id == seriesId)
+            .Select(s => s.VolumeFirstPendingAt).FirstOrDefaultAsync(ct);
+        if (due is { } marked && marked > now - SearchDueHold)
+        {
+            return new VolumeHold(VolumeHoldReason.Searching, Until: marked + SearchDueHold);
+        }
+
         var proposal = await db.TorrentProposals.AsNoTracking()
-            .Where(p => p.SeriesId == seriesId && p.Status == TorrentProposalStatus.Pending && p.CreatedAtUtc > now - ProposalHold)
+            .Where(p => p.SeriesId == seriesId && p.VolumeFirst && p.Status == TorrentProposalStatus.Pending &&
+                        p.CreatedAtUtc > now - ProposalHold)
             .OrderByDescending(p => p.CreatedAtUtc)
             .Select(p => new { p.Id, p.Title, p.CreatedAtUtc })
             .FirstOrDefaultAsync(ct);
@@ -154,13 +169,15 @@ public class VolumeFirstGate(
                 proposal.CreatedAtUtc + ProposalHold);
         }
 
-        var download = await db.DownloadQueue.AsNoTracking()
-            .Where(q => q.SeriesId == seriesId && q.Protocol == AcquisitionProtocol.Torrent &&
-                        q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed &&
-                        q.Status != QueueStatus.Cancelled && q.QueuedAt > now - DownloadHold)
-            .OrderByDescending(q => q.QueuedAt)
-            .Select(q => new { q.Title, q.QueuedAt })
-            .FirstOrDefaultAsync(ct);
+        // The flag lives in the row's JSON; a series has a handful of torrent rows at most.
+        var download = (await db.DownloadQueue.AsNoTracking()
+                .Where(q => q.SeriesId == seriesId && q.Protocol == AcquisitionProtocol.Torrent &&
+                            q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed &&
+                            q.Status != QueueStatus.Cancelled && q.QueuedAt > now - DownloadHold)
+                .Select(q => new { q.Title, q.QueuedAt, q.UpgradeInfoJson })
+                .ToListAsync(ct))
+            .Where(q => TorrentUpgradeInfo.Parse(q.UpgradeInfoJson) is { VolumeFirst: true })
+            .MaxBy(q => q.QueuedAt);
         return download is null
             ? VolumeHold.None
             : new VolumeHold(VolumeHoldReason.Downloading,

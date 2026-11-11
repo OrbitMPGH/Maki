@@ -100,6 +100,13 @@ public class Series
     /// </summary>
     public DateTime? RestoredAt { get; set; }
 
+    /// <summary>
+    /// A series an import list or another bulk add brought in with nothing on disk, waiting for the
+    /// volume search job to look for a volume release first. Source downloads wait for it for at most
+    /// <c>VolumeFirstGate.SearchDueHold</c>; the job clears it once it has searched.
+    /// </summary>
+    public DateTime? VolumeFirstPendingAt { get; set; }
+
     public int RootFolderId { get; set; }
     public RootFolder? RootFolder { get; set; }
     public string FolderName { get; set; } = string.Empty;

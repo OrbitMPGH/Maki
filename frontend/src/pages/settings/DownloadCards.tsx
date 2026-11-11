@@ -203,7 +203,7 @@ export function SourcePrioritySection() {
       />
       <Switch
         label={t`Look for volume releases first`}
-        description={t`A new series asks your indexers for a volume release once its sources are matched, before anything is downloaded from them. While a release waits for approval (up to 48 hours) or downloads (up to 72 hours), automatic downloads from sources skip the chapters it covers, so they are not fetched twice. Needs Prowlarr or Jackett. Downloads you start yourself are never held.`}
+        description={t`A new series with nothing on disk asks your indexers for a volume release once its sources are matched, before anything is downloaded from them. Series from an import list wait up to a day for their turn. While a release waits for approval (up to 48 hours) or downloads (up to 72 hours), automatic downloads from sources skip the chapters it covers, so they are not fetched twice. Needs Prowlarr or Jackett, and a quality profile that upgrades the series to volumes. Downloads you start yourself are never held.`}
         checked={volumeFirst}
         onChange={(e) => setVolumeFirst(e.currentTarget.checked)}
         mb="lg"
@@ -852,7 +852,7 @@ export function VolumeReleasesSection() {
       </Group>
       <Switch
         label={t`Approve volume releases automatically`}
-        description={t`Grabs a proposed release without waiting for you when it is a digital release within the size ceiling and its only reasons for waiting are that it names no volume range, adds chapters you don't have, or is over the auto-grab size. Anything Maki is unsure about, such as chapters it cannot place, still waits for you. Replaced files go to the trash as usual. Pending proposals are checked on the next daily run, or when you press Search now.`}
+        description={t`Grabs a proposed release without waiting for you when it is a digital release within the size ceiling and its only reasons for waiting are that it names no volume range, adds chapters you don't have, or is over the auto-grab size. Anything Maki is unsure about, such as chapters it cannot place, still waits for you. It only replaces files the release is at least as good as, and replaced files go to the trash as usual. Pending proposals are checked on the next daily run, or when you press Search now.`}
         checked={autoApprove}
         onChange={(e) => setAutoApprove(e.currentTarget.checked)}
         disabled={!volumeSearch}

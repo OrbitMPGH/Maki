@@ -136,6 +136,13 @@ public record TorrentImportPlan(
     /// <summary>For an upgrade, the files whose chapters are all already at cutoff or protected.</summary>
     public IReadOnlyList<string> SuggestedSkips { get; init; } = [];
 
+    /// <summary>
+    /// The existing files this import may take chapters off, or null when any file may lose one but an
+    /// older volume. For a proposal Maki approved itself, the files the download is at least as good as.
+    /// </summary>
+    [JsonIgnore]
+    public IReadOnlySet<int>? DisplaceableFileIds { get; init; }
+
     /// <summary>Every chapter of the series in reading order, for the review's chapter map.</summary>
     public IReadOnlyList<ImportPlanChapter> Chapters { get; init; } = [];
 
@@ -298,10 +305,17 @@ public class TorrentImportService(
         var titleGroup = ReleaseTitleParser.Parse(releaseName).Group;
         var suggestedSkips = new List<string>();
 
-        // An upgrade's verdict may name volume files, and the linker takes chapters off exactly those.
-        var displaceable = upgradeInfo?.ReplacedFileIds ?? [];
+        QualityScore CandidateFor(ParsedReleaseFile parsed) => evaluator!.Score(TorrentUpgradeRules.Candidate(
+            releaseName, releaseInfo?.Indexer ?? "", titleGroup, parsed.IsVolume));
+
+        // An upgrade's verdict may name volume files, and the linker takes chapters off exactly those. A
+        // proposal Maki approved itself names them here, from the files that arrived: every file this
+        // download is at least as good as. Null lets the linker take any chapter but an older volume's.
+        IReadOnlySet<int>? displaceable = upgradeInfo is { AutoApproved: true }
+            ? AtLeastAsGoodFiles()
+            : upgradeInfo is { ReplacedFileIds.Count: > 0 } ? upgradeInfo.ReplacedFileIds.ToHashSet() : null;
         var volumeFileIds = existingFiles
-            .Where(f => !displaceable.Contains(f.Id) && ReleaseNameParser.ParseFileName(f.RelativePath).IsVolume)
+            .Where(f => displaceable?.Contains(f.Id) != true && ReleaseNameParser.ParseFileName(f.RelativePath).IsVolume)
             .Select(f => f.Id)
             .ToHashSet();
 
@@ -315,23 +329,31 @@ public class TorrentImportService(
             var alreadyMetCount = 0;
             if (evaluator is not null)
             {
-                var candidate = evaluator.Score(TorrentUpgradeRules.Candidate(
-                    releaseName, releaseInfo?.Indexer ?? "", titleGroup, parsed.IsVolume));
+                var candidate = CandidateFor(parsed);
                 var states = covered
                     .Select(c => TorrentUpgradeRules.StateOf(evaluator, c,
                         existingFiles.FirstOrDefault(f => f.Id == c.ChapterFileId), candidate))
                     .ToList();
                 upgradeCount = states.Count(s => s == ChapterSpanState.Upgrade);
                 alreadyMetCount = states.Count(s => s == ChapterSpanState.AlreadyMet);
-                if (states.Count > 0 && states.All(s => s == ChapterSpanState.AlreadyMet))
+                if (upgradeInfo is not { AutoApproved: true } &&
+                    states.Count > 0 && states.All(s => s == ChapterSpanState.AlreadyMet))
                 {
                     suggestedSkips.Add(source.Name);
                 }
             }
 
+            // Maki's own approval leaves out only a file that brings nothing: every chapter it covers
+            // keeps a file this download is no match for.
+            if (upgradeInfo is { AutoApproved: true } && covered.Count > 0 &&
+                covered.All(c => c.ChapterFileId is { } fileId && displaceable?.Contains(fileId) != true))
+            {
+                suggestedSkips.Add(source.Name);
+            }
+
             // With a displaceable set the linker leaves every other file its chapters, so only those count.
             var replaces = covered
-                .Where(c => c.ChapterFileId is { } fileId && (displaceable.Count == 0 || displaceable.Contains(fileId)))
+                .Where(c => c.ChapterFileId is { } fileId && (displaceable is null || displaceable.Contains(fileId)))
                 .GroupBy(c => c.ChapterFileId!.Value)
                 .Select(g =>
                 {
@@ -361,6 +383,7 @@ public class TorrentImportService(
         {
             IsUpgrade = isUpgrade,
             SuggestedSkips = suggestedSkips,
+            DisplaceableFileIds = displaceable,
             Chapters = chapters
                 .GroupBy(Label)
                 .Select(g => new ImportPlanChapter(g.Key, g.First().Number, g.All(c => c.ChapterFileId != null)))
@@ -371,6 +394,34 @@ public class TorrentImportService(
 
         TorrentImportPlan Empty(string errorKey, object? args = null) =>
             new(item.Id, series.Id, series.Title, releaseName, [], errorKey, args);
+
+        // Per existing file: this download is at least as good for every chapter of it that it covers.
+        // Without a profile nothing can be compared, so every file keeps its chapters.
+        HashSet<int> AtLeastAsGoodFiles()
+        {
+            if (evaluator is null)
+            {
+                return [];
+            }
+
+            var byId = existingFiles.ToDictionary(f => f.Id);
+            var verdicts = new Dictionary<int, bool>();
+            foreach (var source in sources)
+            {
+                var parsed = ReleaseNameParser.ParseFileName(source.Name);
+                var candidate = CandidateFor(parsed);
+                foreach (var chapter in ChaptersCoveredBy(chapters, parsed, source.Pages, fileName: source.Name))
+                {
+                    if (chapter.ChapterFileId is { } fileId && byId.TryGetValue(fileId, out var file))
+                    {
+                        verdicts[fileId] = verdicts.GetValueOrDefault(fileId, true) &&
+                                           TorrentUpgradeRules.AtLeastAsGood(evaluator, chapter, file, candidate);
+                    }
+                }
+            }
+
+            return [.. verdicts.Where(v => v.Value).Select(v => v.Key)];
+        }
     }
 
     /// <summary>
@@ -527,7 +578,8 @@ public class TorrentImportService(
             replaceExisting: mode == TorrentImportMode.Replace, ct: ct, queueConversion: true,
             // An upgrade may only take chapters off the files its verdict marked; a protected or
             // already good file inside the volume's span keeps its chapter.
-            displaceableFileIds: mode == TorrentImportMode.Replace && upgrade is { ReplacedFileIds.Count: > 0 }
+            displaceableFileIds: mode == TorrentImportMode.Replace &&
+                                 upgrade is { ReplacedFileIds.Count: > 0 } or { AutoApproved: true }
                 ? upgrade.ReplacedFileIds.ToHashSet()
                 : null,
             language: upgrade?.Language);
@@ -902,9 +954,10 @@ public class TorrentImportService(
 
     /// <summary>
     /// What the unattended job does with a finished download. An auto-grabbed upgrade whose verdict named
-    /// files to replace imports on its own once the guard passes, skipping the suggested files, and so does
-    /// a proposal Maki approved itself; anything else, a grabbed proposal or an upgrade that names no
-    /// file included, parks when it would displace one.
+    /// files to replace imports on its own once the guard passes, skipping the suggested files. So does a
+    /// proposal Maki approved itself, replacing only the files the download is at least as good as; the
+    /// rest keep their chapters. Anything else, a grabbed proposal or an upgrade that names no file
+    /// included, parks when it would displace one.
     /// </summary>
     public async Task<UnattendedDecision> DecideUnattendedAsync(
         DownloadQueueItem item, Series series, string contentPath, TorrentImportPlan plan, CancellationToken ct)
@@ -915,6 +968,13 @@ public class TorrentImportService(
         }
 
         upgrade.SkipFileNames = [.. plan.SuggestedSkips];
+        if (upgrade.AutoApproved)
+        {
+            // Decided on the files that arrived rather than the listing: the guard measures these and
+            // the import takes chapters off nothing else.
+            upgrade.ReplacedFileIds = [.. plan.DisplaceableFileIds ?? new HashSet<int>()];
+        }
+
         item.UpgradeInfoJson = upgrade.Serialize();
 
         // A proposal the user grabbed waits for them with the plan filled in; only the search's own

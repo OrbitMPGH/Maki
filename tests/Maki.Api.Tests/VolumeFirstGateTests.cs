@@ -1,6 +1,7 @@
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Quality;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -46,24 +47,26 @@ public sealed class VolumeFirstGateTests : IDisposable
     }
 
     private void Proposal(int seriesId, TimeSpan age, string title = "S v01-02 (Digital)",
-        TorrentProposalStatus status = TorrentProposalStatus.Pending)
+        TorrentProposalStatus status = TorrentProposalStatus.Pending, bool volumeFirst = true)
     {
         using var db = _db.NewContext();
         db.TorrentProposals.Add(new TorrentProposal
         {
             SeriesId = seriesId, ReleaseGuid = Guid.NewGuid().ToString(), Title = title, Status = status,
-            CreatedAtUtc = Now - age
+            CreatedAtUtc = Now - age, VolumeFirst = volumeFirst
         });
         db.SaveChanges();
     }
 
-    private void TorrentItem(int seriesId, QueueStatus status, TimeSpan age, string title = "S v01-02 (Digital)")
+    private void TorrentItem(int seriesId, QueueStatus status, TimeSpan age, string title = "S v01-02 (Digital)",
+        bool volumeFirst = true)
     {
         using var db = _db.NewContext();
         db.DownloadQueue.Add(new DownloadQueueItem
         {
             SeriesId = seriesId, Protocol = AcquisitionProtocol.Torrent, Status = status, Title = title,
-            QueuedAt = Now - age
+            QueuedAt = Now - age,
+            UpgradeInfoJson = new TorrentUpgradeInfo { VolumeFirst = volumeFirst }.Serialize()
         });
         db.SaveChanges();
     }
@@ -198,6 +201,44 @@ public sealed class VolumeFirstGateTests : IDisposable
             Assert.Equal(VolumeHoldReason.Downloading, hold.Reason);
             Assert.Equal(8m, hold.Through);
         }
+    }
+
+    [Fact]
+    public async Task A_bulk_add_waiting_for_the_job_holds_every_chapter_for_a_day()
+    {
+        var id = Series();
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == id).VolumeFirstPendingAt = Now - TimeSpan.FromHours(23);
+            db.SaveChanges();
+        }
+
+        var hold = await CheckAsync(id);
+        Assert.Equal(VolumeHoldReason.Searching, hold.Reason);
+        Assert.Equal(Now + TimeSpan.FromHours(1), hold.Until);
+        Assert.True(hold.Holds(Numbered(500)));
+
+        _clock.Now += TimeSpan.FromHours(2);
+        Assert.False((await CheckAsync(id)).Active);
+        _clock.Now = Now;
+    }
+
+    [Fact]
+    public async Task An_ordinary_upgrade_proposal_holds_nothing()
+    {
+        var id = Series();
+        Proposal(id, TimeSpan.FromHours(1), volumeFirst: false);
+
+        Assert.False((await CheckAsync(id)).Active);
+    }
+
+    [Fact]
+    public async Task An_ordinary_upgrade_download_holds_nothing()
+    {
+        var id = Series();
+        TorrentItem(id, QueueStatus.Downloading, TimeSpan.FromHours(1), volumeFirst: false);
+
+        Assert.False((await CheckAsync(id)).Active);
     }
 
     [Fact]

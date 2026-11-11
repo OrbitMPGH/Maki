@@ -13,8 +13,15 @@ public sealed class TorrentUpgradeInfo
     public string Kind { get; set; } = KindName;
     public int? ProposalId { get; set; }
 
-    /// <summary>The proposal was approved by Maki under the automatic approval rule, so the import needs no review either.</summary>
+    /// <summary>
+    /// The proposal was approved by Maki under the automatic approval rule, so the import needs no review
+    /// either. It replaces only the files the download is at least as good as, worked out at import.
+    /// </summary>
     public bool AutoApproved { get; set; }
+
+    /// <summary>Grabbed by a new series' volume-first search, so source downloads wait for it (<c>VolumeFirstGate</c>).</summary>
+    public bool VolumeFirst { get; set; }
+
     public int ProfileId { get; set; }
     public int ProfileVersion { get; set; }
     public List<int> ReplacedFileIds { get; set; } = [];
