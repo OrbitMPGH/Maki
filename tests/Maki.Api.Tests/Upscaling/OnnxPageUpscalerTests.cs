@@ -86,6 +86,52 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
+    public void A_model_that_returns_only_the_interior_is_stitched_without_a_shift()
+    {
+        using var upscaler = NewUpscaler("identity-2x-crop12.onnx", UpscaleModelId.Maki2x);
+        var info = _catalog.Get(UpscaleModelId.Maki2x);
+        // 10 columns of 90 or 91 px and 14 rows of 93 or 94 px: contexts of 115 and 118 round up to 116 and 120.
+        var source = Pattern(901, 1307);
+
+        var grey = Pattern(901, 1307, grey: true);
+
+        var page = upscaler.Run(source, info, threads: 2, luma: false, CancellationToken.None);
+        var luma = upscaler.Run(grey, info, threads: 2, luma: true, CancellationToken.None);
+
+        AssertNearest2x(source, page);
+        Assert.Equal((1, 1802, 2614), (luma.Bands, luma.Width, luma.Height));
+        for (var y = 0; y < luma.Height; y++)
+        for (var x = 0; x < luma.Width; x++)
+        {
+            if (luma.Pixels[y * luma.Width + x] != grey[x / 2, y / 2].R)
+            {
+                Assert.Fail($"Luma pixel ({x}, {y}) is {luma.Pixels[y * luma.Width + x]}, expected {grey[x / 2, y / 2].R}.");
+            }
+        }
+    }
+
+    [Fact]
+    public async Task A_model_cropped_past_the_tile_pad_fails_to_load()
+    {
+        using var upscaler = NewUpscaler("identity-2x-crop16.onnx", UpscaleModelId.Maki2x);
+
+        var result = await upscaler.UpscaleAsync(Pattern(200, 200).EncodePng(), "maki-2x", CancellationToken.None);
+
+        Assert.Equal((UpscaleOutcome.Failed, UpscaleReasons.ModelUnavailable), (result.Outcome, result.Reason));
+        Assert.False(upscaler.IsLoaded(UpscaleModelId.Maki2x));
+    }
+
+    [Fact]
+    public void The_bundled_maki_2x_is_cropped_for_the_tile_pad()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, UpscaleModelStore.BundledFolder, "maki-2x.onnx");
+        using var session = new Microsoft.ML.OnnxRuntime.InferenceSession(path);
+
+        Assert.Equal(UpscaleTiling.ContextPad.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            session.ModelMetadata.CustomMetadataMap[OnnxPageUpscaler.ContextCropKey]);
+    }
+
+    [Fact]
     public void Workers_are_capped_by_the_memory_budget()
     {
         var tile = UpscaleTiling.Plan(96, 96, multiple: 4).Single();

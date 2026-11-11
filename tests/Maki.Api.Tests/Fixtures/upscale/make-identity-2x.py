@@ -2,7 +2,8 @@
 Writes identity-2x.onnx: a nearest-neighbour 2x upsample that stands in for a real upscale model in
 tests. Input "input" float32 [1,3,H,W] with dynamic H and W, output "output" [1,3,2H,2W].
 
-Also writes identity-2x-fp16.onnx (float16 tensors) and identity-4x.onnx (nearest 4x).
+Also writes identity-2x-fp16.onnx (float16 tensors), identity-4x.onnx (nearest 4x), and
+identity-2x-crop12.onnx and identity-2x-crop16.onnx (output already cropped, as the bundled Maki 2x is).
 
 Needs the onnx package: python make-identity-2x.py
 """
@@ -80,3 +81,35 @@ model4 = helper.make_model(graph4, opset_imports=[helper.make_opsetid("", 13)], 
 onnx.checker.check_model(model4)
 onnx.save(model4, str(here / "identity-4x.onnx"))
 print("wrote", here / "identity-4x.onnx")
+
+# The 2x upsample with its output cropped by `crop` source px per side, recorded the way the bundled
+# Maki 2x records it. 16 is more than the 12 px tile pad and must fail at load.
+for crop in (12, 16):
+    cut = 2 * crop
+    graph_crop = helper.make_graph(
+        [
+            helper.make_node(
+                "Resize",
+                inputs=["input", "", "scales"],
+                outputs=["full"],
+                mode="nearest",
+                coordinate_transformation_mode="asymmetric",
+                nearest_mode="floor",
+            ),
+            helper.make_node("Slice", ["full", "starts", "ends", "axes"], ["output"]),
+        ],
+        f"identity_2x_crop{crop}",
+        [helper.make_tensor_value_info("input", TensorProto.FLOAT, [1, 3, "height", "width"])],
+        [helper.make_tensor_value_info("output", TensorProto.FLOAT, [1, 3, "out_height", "out_width"])],
+        initializer=[
+            scales,
+            numpy_helper.from_array(np.array([cut, cut], dtype=np.int64), name="starts"),
+            numpy_helper.from_array(np.array([-cut, -cut], dtype=np.int64), name="ends"),
+            numpy_helper.from_array(np.array([2, 3], dtype=np.int64), name="axes"),
+        ],
+    )
+    model_crop = helper.make_model(graph_crop, opset_imports=[helper.make_opsetid("", 13)], ir_version=8)
+    helper.set_model_props(model_crop, {"maki.context_crop": str(crop)})
+    onnx.checker.check_model(model_crop)
+    onnx.save(model_crop, str(here / f"identity-2x-crop{crop}.onnx"))
+    print("wrote", here / f"identity-2x-crop{crop}.onnx")

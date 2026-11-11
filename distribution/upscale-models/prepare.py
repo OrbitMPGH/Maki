@@ -13,7 +13,8 @@ What it does:
      realesrgan-av3-4x.onnx (opset 17, fp32, dynamic H and W) and compares ONNX Runtime with
      PyTorch on a 128x128 random tile (max abs difference must stay under 1e-3).
   4. With --maki, copies Maki's own model (exported by distill/export_onnx.py) in as maki-2x.onnx
-     and checks it runs as a 2x float32 model with an input named "input".
+     and checks it runs as a 2x float32 model with an input named "input". This is the uncropped
+     file older versions download; the bundled one is built from it by crop_maki_2x.py.
   5. Writes manifest.json (sha256 and size of each file) and LICENSES.txt into --out.
 
 Upload the result with distribution/publish-upscale-models.ps1.
@@ -172,6 +173,8 @@ def export_realesrgan(pth: Path, target: Path) -> float:
 def copy_maki(source: Path, target: Path) -> None:
     shutil.copyfile(source, target)
     session = ort.InferenceSession(str(target), ort.SessionOptions(), providers=["CPUExecutionProvider"])
+    if "maki.context_crop" in session.get_modelmeta().custom_metadata_map:
+        fail(f"{source.name} is the cropped bundled model; the release serves versions that need the uncropped one")
     first = session.get_inputs()[0]
     if first.name != "input" or first.type != "tensor(float)":
         fail(f"{source.name}: input is {first.name} {first.type}, expected input tensor(float)")
