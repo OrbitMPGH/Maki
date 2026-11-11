@@ -404,12 +404,22 @@ public static class ImageCodec
     public const int MaxWebpEdge = 16383;
 
     /// <summary>
-    /// Encodes an upscaled page from interleaved 8-bit RGB: WebP q85, or JPEG q90 when either edge is
-    /// over <see cref="MaxWebpEdge"/>. A <paramref name="grey"/> page is saved with one band. The caller
+    /// Effort 2 encodes 2.3 to 2.9x faster than 4. Colour pages take q88 there, which beats effort 4's
+    /// q85 on PSNR and dark-area error for files 12 to 26% larger. Grey pages stay at q85: q88 is the
+    /// usual step, about 1.3 dB for 10% more bytes, on most of a library.
+    /// </summary>
+    internal const int UpscaledWebpEffort = 2;
+
+    internal const int UpscaledColourQuality = 88;
+
+    internal const int UpscaledGreyQuality = 85;
+
+    /// <summary>
+    /// Encodes an upscaled page from interleaved 8-bit RGB: WebP, or JPEG q90 when either edge is over
+    /// <see cref="MaxWebpEdge"/>. A <paramref name="grey"/> page is saved with one band. The caller
     /// decides that from the source page: models tint flat screentone, so the output can fail the test.
     /// Sharp YUV stays off: the chroma comes from a Lanczos-resized source, and it doubled the encode
-    /// time and native peak for no smaller file. Grey pages use effort 2, under half the time of 4
-    /// for a file about 5 to 25% larger.
+    /// time and native peak for no smaller file.
     /// </summary>
     public static UpscaledImage EncodeUpscaled(byte[] rgb, int width, int height, bool grey) =>
         grey ? EncodeUpscaledGrey(UpscalePixels.ToSingleBand(rgb), width, height) : EncodeBands(rgb, width, height, 3);
@@ -426,8 +436,8 @@ public static class ImageCodec
         return Math.Max(width, height) > MaxWebpEdge
             ? new UpscaledImage(image.JpegsaveBuffer(q: 90, subsampleMode: Enums.ForeignSubsample.On,
                 keep: Enums.ForeignKeep.None), "jpg", width, height, bands)
-            : new UpscaledImage(image.WebpsaveBuffer(q: 85, effort: grey ? 2 : 4, smartSubsample: false,
-                keep: Enums.ForeignKeep.None), "webp", width, height, bands);
+            : new UpscaledImage(image.WebpsaveBuffer(q: grey ? UpscaledGreyQuality : UpscaledColourQuality,
+                effort: UpscaledWebpEffort, smartSubsample: false, keep: Enums.ForeignKeep.None), "webp", width, height, bands);
     }
 
     internal static VipsImage Open(byte[] bytes) => VipsImage.NewFromBuffer(bytes, access: Enums.Access.Sequential);
