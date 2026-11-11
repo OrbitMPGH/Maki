@@ -418,7 +418,7 @@ public static class ImageCodec
     /// Encodes an upscaled page from interleaved 8-bit RGB: WebP, or JPEG q90 when either edge is over
     /// <see cref="MaxWebpEdge"/>. A <paramref name="grey"/> page is saved with one band. The caller
     /// decides that from the source page: models tint flat screentone, so the output can fail the test.
-    /// Sharp YUV stays off: the chroma comes from a Lanczos-resized source, and it doubled the encode
+    /// Sharp YUV stays off: the chroma comes from the smoothed, upsampled source, and it doubled the encode
     /// time and native peak for no smaller file.
     /// </summary>
     public static UpscaledImage EncodeUpscaled(byte[] rgb, int width, int height, bool grey) =>
