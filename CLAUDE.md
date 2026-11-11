@@ -16,6 +16,12 @@ No em dashes, anywhere. Avoid "AI writing" tells: no "it's not just X, it's Y", 
 
 **A commit that changes something a user of the last release would notice adds or edits a file in `changes/`.** See [changes/README.md](changes/README.md) for the format. Fixes and tweaks to unreleased work add nothing (edit that feature's entry if its final form changed); reworking or removing an unreleased feature means rewriting or deleting its entry. Contributor PRs merged without one: add it at merge.
 
+## Worktrees
+
+**When a feature or change that used a worktree is done (merged or dropped), ask the owner whether to remove the worktree and its branch. Never remove either without asking.** Worktrees often hold scratch scripts, test configs or notes the owner still wants after the merge. Before asking, run `git status` in the worktree and mention anything uncommitted or untracked. Once the owner confirms, remove them yourself.
+
+On Windows, `git worktree remove` fails with "Filename too long" on deep `node_modules` paths unless `git config --global core.longpaths true` is set. Delete a half-removed folder with `rd /s /q "\\?\<full path>"`, then `git worktree prune`.
+
 ## Directory ownership
 
 - `Maki.Core`: domain, no infra deps. Entities, `ISource`/`IMetadataProvider`, parsing, CBZ pipeline. Also `Security/`, `MakiPermission` flags enum, `ICurrentUser`, so domain code can check permissions without an ASP.NET Identity reference.
