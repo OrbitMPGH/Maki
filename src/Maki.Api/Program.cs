@@ -1106,6 +1106,8 @@ try
     builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleQueue>();
     builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleWorker>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<Maki.Api.Services.Upscaling.UpscaleWorker>());
+    builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscalePrepareService>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<Maki.Api.Services.Upscaling.UpscalePrepareService>());
     builder.Services.AddScoped<ReadingTimeEstimateService>();
     builder.Services.AddScoped<SeriesReadingStatsService>();
     builder.Services.AddScoped<OpdsCatalogService>();

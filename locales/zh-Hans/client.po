@@ -1031,12 +1031,20 @@ msgstr ""
 msgid "{chapters, plural, one {{cellDate}: # chapter} other {{cellDate}: # chapters}}"
 msgstr "{chapters, plural, other {{cellDate}：# 个章节}}"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{chapters, plural, one {# chapter held, {used} of {limit}} other {# chapters held, {used} of {limit}}}"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{chapters, plural, one {Prepare ahead: # chapter} other {Prepare ahead: # chapters}}"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -1449,6 +1457,10 @@ msgstr "{daysLeft, plural, other {将在 # 天后移除}}"
 #, fuzzy
 msgid "{decade}s"
 msgstr "{decade}年代"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "{defaultChapters} for each reader who read it in the last {days} days."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2135,6 +2147,10 @@ msgstr ""
 #, fuzzy
 msgid "{moreCount, plural, one {+# more} other {+# more}}"
 msgstr "{moreCount, plural, other {还有 +# 个}}"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "{n, plural, one {# chapter} other {# chapters}}"
+msgstr ""
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -3369,6 +3385,10 @@ msgstr "{volumesText} + {chaptersText}"
 #, fuzzy
 msgid "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
 msgstr "{waited, plural, other {# 个标题已等待超过六个月。}}"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{waiting, plural, one {# page still to make} other {# pages still to make}}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -6581,6 +6601,10 @@ msgstr "页面很高的章节以连续模式打开"
 #, fuzzy
 msgid "Chapters per page"
 msgstr "每页章节数"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Chapters per series"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10652,6 +10676,10 @@ msgstr "关注"
 msgid "Follow one from a creator page."
 msgstr ""
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Follow Settings"
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Follow someone from their creator page."
@@ -10806,6 +10834,10 @@ msgstr "根据元数据"
 #, fuzzy
 msgid "From outside your network, replace the host with the address you use there."
 msgstr "在局域网之外访问时，请将主机名替换为你在那里使用的地址。"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "From the chapter you would open next."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -14805,6 +14837,10 @@ msgstr ""
 msgid "Never delivered."
 msgstr "从未送达。"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Never prepared ahead."
+msgstr ""
+
 #: src/components/ImportListsSection.tsx
 #, fuzzy
 msgid "Never run."
@@ -18196,6 +18232,26 @@ msgstr "偏好设置"
 msgid "Preload"
 msgstr "预加载"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Prepare ahead"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Prepare ahead follows Settings"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Prepare ahead is off for this series"
+msgstr ""
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Prepare chapters ahead"
+msgstr ""
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Prepared pages are kept until read, apart from the cache size."
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Preparing model…"
@@ -18961,6 +19017,10 @@ msgstr "阅读终点"
 #, fuzzy
 msgid "Read today to keep it going"
 msgstr "今天读一章，让记录继续下去"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Read within (days)"
+msgstr ""
 
 #: src/lib/documentTitle.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
@@ -22072,10 +22132,18 @@ msgstr "未找到系列"
 msgid "Series page"
 msgstr "系列页面"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Series per reader"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Series progress"
 msgstr "系列进度"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Series read longer ago are left alone."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -23169,6 +23237,10 @@ msgstr "空格"
 #, fuzzy
 msgid "Space ( )"
 msgstr "空格（ ）"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Space (MB)"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -24300,6 +24372,10 @@ msgstr "一次最多排队的新章节数。更大的批次会保持为想要，
 #, fuzzy
 msgid "The most popular titles in the MangaBaka catalogue."
 msgstr "MangaBaka 目录中最受欢迎的作品。"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "The most recently read ones go first."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -26308,10 +26384,18 @@ msgstr "放大, 放大处理, 增强, 锐化, 模型, onnx, real-esrgan, span, C
 msgid "Upscaled"
 msgstr "已放大"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Upscaled on the server while nobody is reading, for each reader who has this series set to Reading with Enhance on Always and a server method. A number keeps that many ready however long ago they read it."
+msgstr ""
+
 #: src/pages/reader/ServerEnhanceStatus.tsx
 #, fuzzy
 msgid "Upscaled page shown"
 msgstr "已显示放大后的页面"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Upscales the next chapters of series set to Reading while nobody is reading, so they open sharp. Only series whose reader settings have Enhance on Always and a server model count; Auto depends on the screen, so it is left out."
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

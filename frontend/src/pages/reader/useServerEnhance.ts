@@ -87,7 +87,8 @@ function chapterRest(from: number, pageCount: number, window: number[], plain: n
  * `model` is. Once the window runs past the last page, `next` names the next chapter's first pages,
  * queued behind the window so that chapter opens already upscaled; on `auto` they go along while
  * any page of the window is stretched. `whole` (the "Whole chapter" setting) queues the rest of the
- * chapter behind the window the same way, pages ahead first; undefined means not known yet (the
+ * chapter behind the window the same way, pages ahead first, and the server then queues every page of
+ * `next` after it, so the next chapter is ready before it opens; undefined means not known yet (the
  * manifest is loading). The server's leftovers are cancelled when it turns off, when the reader
  * unmounts and when the tab is closed.
  */
@@ -155,6 +156,8 @@ export function useServerEnhance(
   // Not tied to the window: on Auto a window with nothing wanted would drop the server's cap to 32
   // and cut the chapter it already queued.
   const wholeOn = wholePages > 0
+  // On Auto the next chapter only goes along while something on screen is wanted.
+  const autoOn = auto !== null
   const room = (wholeOn ? MAX_CHAPTER_PAGES : MAX_PAGES) - windowCount - (restKey ? restKey.split(',').length : 0)
   const nextChapterId = next && next.chapterId !== chapterId && room > 0 ? next.chapterId : null
   const nextKey = nextChapterId === null ? '' : next!.pages.slice(0, room).join(',')
@@ -172,7 +175,10 @@ export function useServerEnhance(
     const timer = setTimeout(() => {
       const asked = [windowKey, restKey].filter(Boolean).join(',')
       const wanted = asked ? asked.split(',').map(Number).filter((page) => !SETTLED.has(statesRef.current.get(page))) : []
-      const ahead = nextChapterId !== null && nextKey ? { chapterId: nextChapterId, pages: nextKey.split(',').map(Number) } : null
+      const ahead =
+        nextChapterId !== null && (nextKey || (wholeOn && (!autoOn || windowKey)))
+          ? { chapterId: nextChapterId, pages: nextKey ? nextKey.split(',').map(Number) : [] }
+          : null
       const said = `${scope}|${plainKey}`
       if (wanted.length === 0 && !ahead && told.current === said) return
       told.current = said
@@ -186,7 +192,7 @@ export function useServerEnhance(
       )
     }, DEBOUNCE_MS)
     return () => clearTimeout(timer)
-  }, [active, scope, chapterId, model, windowKey, restKey, plainKey, wholeOn, nextChapterId, nextKey, connected, revived, merge, refuse])
+  }, [active, scope, chapterId, model, windowKey, restKey, plainKey, wholeOn, autoOn, nextChapterId, nextKey, connected, revived, merge, refuse])
 
   // Unknown (a chapter's manifest loading) keeps the last answer, so turning to the next chapter
   // does not cancel the pages already queued for it.

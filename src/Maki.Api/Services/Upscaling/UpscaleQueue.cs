@@ -22,7 +22,8 @@ public enum UpscaleJobState
     Working
 }
 
-public sealed record UpscaleQueueSnapshot(int Pending, int Working, IReadOnlyDictionary<UpscaleWorkKey, UpscaleJobState> States);
+public sealed record UpscaleQueueSnapshot(
+    int Pending, int Working, IReadOnlyDictionary<UpscaleWorkKey, UpscaleJobState> States, int Background = 0);
 
 public sealed class UpscaleJob(UpscaleWorkKey key, ReaderService.PageSlice slice)
 {
@@ -35,6 +36,9 @@ public sealed class UpscaleJob(UpscaleWorkKey key, ReaderService.PageSlice slice
     internal Dictionary<UpscaleReader, UpscaleTarget> Waiters { get; } = [];
 
     internal bool Working { get; set; }
+
+    /// <summary>Taken from the prepare-ahead list: it runs with nobody waiting and is never abandoned for that.</summary>
+    internal bool Background { get; set; }
 
     /// <summary>Cancelled when every reader left this job while it ran.</summary>
     public CancellationToken Abandoned => _abandon.Token;
@@ -53,6 +57,11 @@ public sealed class UpscaleJob(UpscaleWorkKey key, ReaderService.PageSlice slice
 /// before it starts. One already running finishes and lands in the cache, unless its last reader
 /// paged past it or moved to another chapter or model: then it is abandoned, so the page they
 /// turned to does not wait out one nobody will look at.
+/// <para>
+/// Below every reader sits the prepare-ahead list (<see cref="SetBackground"/>), pages of chapters
+/// nobody has open yet. It runs only when no reader has anything pending, and a running page from it
+/// is abandoned the moment a reader queues work, then put back at the front of the list.
+/// </para>
 /// </summary>
 public sealed class UpscaleQueue(TimeProvider? time = null)
 {
@@ -119,6 +128,7 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
     private readonly Queue<(UpscaleWorkKey Key, long Seq)> _memoOrder = new();
     private long _memoSeq;
     private readonly SemaphoreSlim _signal = new(0);
+    private List<(UpscaleWorkKey Key, ReaderService.PageSlice Slice)> _background = [];
 
     /// <summary>
     /// Makes <paramref name="items"/> this reader's pending work, current page first. Their pending
@@ -235,10 +245,18 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
                     && (target.ChapterId != chapterId || job.Key.Model != model || target.Page < floor || notWanted.Contains(job.Key)))
                 {
                     job.Waiters.Remove(reader);
-                    if (job.Waiters.Count == 0)
+                    if (job.Waiters.Count == 0 && !job.Background)
                     {
                         job.Abandon();
                     }
+                }
+            }
+
+            if (next.Count > 0)
+            {
+                foreach (var job in _jobs.Values.Where(j => j is { Working: true, Background: true, Waiters.Count: 0 }))
+                {
+                    job.Abandon();
                 }
             }
 
@@ -305,7 +323,7 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
             foreach (var job in _jobs.Values.Where(j => j.Working && j.Waiters.ContainsKey(reader)).ToList())
             {
                 job.Waiters.Remove(reader);
-                if (job.Waiters.Count == 0)
+                if (job.Waiters.Count == 0 && !job.Background)
                 {
                     job.Abandon();
                 }
@@ -341,8 +359,27 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
     }
 
     /// <summary>
+    /// Replaces the prepare-ahead list, in the order the pages should run. Pages already cached or
+    /// already queued by a reader are cheap: the worker answers a cached page without running it.
+    /// </summary>
+    public void SetBackground(IReadOnlyList<(UpscaleWorkKey Key, ReaderService.PageSlice Slice)> items)
+    {
+        var seen = new HashSet<UpscaleWorkKey>();
+        var list = items.Where(i => seen.Add(i.Key)).ToList();
+        lock (_gate)
+        {
+            _background = list;
+        }
+
+        if (list.Count > 0)
+        {
+            Wake();
+        }
+    }
+
+    /// <summary>
     /// The next job: one page from the next user in turn, from the lane <see cref="NextReader"/> picks
-    /// among theirs. Null when nothing is waiting.
+    /// among theirs, else the next page of the prepare-ahead list. Null when nothing is waiting.
     /// </summary>
     public UpscaleJob? TryDequeue()
     {
@@ -371,7 +408,11 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
 
                     if (job.Waiters.Count == 0)
                     {
-                        _jobs.Remove(key);
+                        if (!job.Background)
+                        {
+                            _jobs.Remove(key);
+                        }
+
                         continue;
                     }
 
@@ -405,8 +446,54 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
                 return picked;
             }
 
-            return null;
+            return NextBackground();
         }
+    }
+
+    /// <summary>The next prepare-ahead page that is not running or recently failed. Called under the lock.</summary>
+    private UpscaleJob? NextBackground()
+    {
+        var now = DateTime.UtcNow;
+        while (_background.Count > 0)
+        {
+            var (key, slice) = _background[0];
+            _background.RemoveAt(0);
+            if (_memo.TryGetValue(key, out var memo) && now - memo.At <= MemoLifetime)
+            {
+                continue;
+            }
+
+            if (_jobs.TryGetValue(key, out var job))
+            {
+                if (job.Working || job.Abandoned.IsCancellationRequested)
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                job = new UpscaleJob(key, slice);
+                _jobs[key] = job;
+            }
+
+            job.Background = true;
+            job.Working = true;
+            foreach (var other in job.Waiters.Keys)
+            {
+                if (_lanes.TryGetValue(other, out var otherLane))
+                {
+                    otherLane.Remove(key);
+                    if (otherLane.Keys.Count == 0)
+                    {
+                        _lanes.Remove(other);
+                    }
+                }
+            }
+
+            return job;
+        }
+
+        return null;
     }
 
     /// <summary>
@@ -476,6 +563,11 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
             }
 
             job.Working = false;
+            if (job.Background && reason == UpscaleReasons.Abandoned && !_background.Any(b => b.Key == job.Key))
+            {
+                _background.Insert(0, (job.Key, job.Slice));
+            }
+
             if (outcome == UpscaleOutcome.Ready
                 || reason is UpscaleReasons.ModelUnavailable or UpscaleReasons.UnknownModel or UpscaleReasons.CacheWriteFailed
                     or UpscaleReasons.Abandoned)
@@ -538,6 +630,7 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
             }
 
             _lanes.Clear();
+            _background = [];
             _touched.Clear();
             _lastServed.Clear();
             _sharedBy.Clear();
@@ -552,7 +645,7 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
         {
             var states = _jobs.ToDictionary(j => j.Key, j => j.Value.Working ? UpscaleJobState.Working : UpscaleJobState.Queued);
             var working = states.Values.Count(s => s == UpscaleJobState.Working);
-            return new UpscaleQueueSnapshot(states.Count - working, working, states);
+            return new UpscaleQueueSnapshot(states.Count - working, working, states, _background.Count);
         }
     }
 
@@ -567,7 +660,7 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
     private void Leave(UpscaleJob job, UpscaleReader reader)
     {
         job.Waiters.Remove(reader);
-        if (job.Waiters.Count == 0 && !job.Working)
+        if (job.Waiters.Count == 0 && !job.Working && !job.Background)
         {
             _jobs.Remove(job.Key);
         }

@@ -59,7 +59,8 @@ public record SetChaptersStateRequest(int[] ChapterIds, string State);
 /// <summary>
 /// Pages of a chapter to upscale on the server, current page first, plus the first pages of the
 /// next chapter once the window runs past the last page. <c>WholeChapter</c> lifts the cap to
-/// <see cref="UpscaleQueue.MaxChapterPages"/> so the rest of the chapter can queue behind the window.
+/// <see cref="UpscaleQueue.MaxChapterPages"/> so the rest of the chapter can queue behind the window,
+/// and queues every page of <c>NextChapterId</c> after it.
 /// <c>NotWanted</c> names pages of this chapter the reader shows plain (Enhance on Auto), dropped from
 /// whatever an earlier request queued. <c>Session</c> names the reader tab, so two tabs on one account
 /// keep separate queues. <c>Window</c> is how many leading <c>Pages</c> are the reading window (the rest
@@ -414,8 +415,9 @@ public class ReaderController(
     /// reader's pending work, replacing what they had pending for another chapter or model. Each one
     /// is pushed as <c>pageEnhanced</c> when the worker starts it (<c>working</c>) and when it finishes.
     /// Pages of the next chapter queue after them in whatever room is left under the cap, so the next
-    /// chapter opens on pages already upscaled. They are not answered here; that chapter's own request
-    /// picks them up.
+    /// chapter opens on pages already upscaled: the ones named, or with <c>WholeChapter</c> all of them.
+    /// None are queued when the next chapter's file tier is one the series' settings skip. They are not
+    /// answered here; that chapter's own request picks them up.
     /// </summary>
     [HttpPost("chapter/{id:int}/enhance")]
     public async Task<IActionResult> Enhance(
@@ -473,12 +475,15 @@ public class ReaderController(
 
         var items = wanted.Select(w => w.Item).ToList();
         var room = cap - items.Count;
-        if (request.NextChapterId is { } nextId && nextId != id && request.NextPages is { Length: > 0 } nextPages && room > 0
-            && await reader.PageSliceAsync(nextId, ct) is { } next)
+        if (request.NextChapterId is { } nextId && nextId != id && room > 0
+            && (request.NextPages is { Length: > 0 } || request.WholeChapter)
+            && await reader.PageSliceAsync(nextId, ct) is { } next
+            && !await SkipsEnhanceAsync(nextId, ct))
         {
             // Two chapters served from one whole archive share keys; the page asked for as this chapter's keeps its waiter.
             var asked = items.Select(item => item.Key).ToHashSet();
-            items.AddRange(nextPages
+            items.AddRange((request.NextPages ?? [])
+                .Concat(request.WholeChapter ? Enumerable.Range(0, next.PageCount) : [])
                 .Distinct()
                 .Where(page => page >= 0 && page < next.PageCount)
                 .Select(page => new UpscaleRequestItem(
@@ -512,6 +517,22 @@ public class ReaderController(
     }
 
     private static string? EnhanceSession(string? session) => session is { Length: > 0 and <= 64 } ? session : null;
+
+    /// <summary>Whether the reader's settings for the chapter's series turn Enhance off for its file tier.</summary>
+    private async Task<bool> SkipsEnhanceAsync(int chapterId, CancellationToken ct)
+    {
+        var row = await db.Chapters.AsNoTracking()
+            .Where(c => c.Id == chapterId)
+            .Select(c => new { c.SeriesId, Tier = c.ChapterFile == null ? QualityTier.Unknown : c.ChapterFile.Tier })
+            .FirstOrDefaultAsync(ct);
+        if (row is null)
+        {
+            return true;
+        }
+
+        var prefs = (await profiles.ResolveAsync(row.SeriesId, ct)).Prefs;
+        return (prefs.EnhanceSkipTiers ?? ReaderPrefsSpec.DefaultEnhanceSkipTiers).Contains(QualitySnapshot.TierName(row.Tier));
+    }
 
     /// <summary>
     /// A server upscale from the cache. 404 until it is there; this never queues one. A page cached as

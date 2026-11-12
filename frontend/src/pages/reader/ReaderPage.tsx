@@ -335,12 +335,14 @@ export default function ReaderPage() {
         : prefs.preload > 0
           ? Math.max(0, spreadIndex + 1 + prefs.preload - spreads.length) * (mode === 'double' ? 2 : 1)
           : 0
+  // With Whole chapter on, the server queues every page of the next chapter behind this one.
+  const wholeNext = prefs.enhanceWholeChapter && serverModel !== null && resumedFor === chapterId
   const enhanceNext = useMemo(
     () =>
-      nextChapterId != null && beyondEnd > 0
+      nextChapterId != null && (beyondEnd > 0 || wholeNext)
         ? { chapterId: nextChapterId, pages: Array.from({ length: beyondEnd }, (_, index) => index) }
         : null,
-    [nextChapterId, beyondEnd],
+    [nextChapterId, beyondEnd, wholeNext],
   )
   // On `auto` the server is asked only for pages a view has measured as wanted.
   const [autoPages, setAutoPages] = useState<AutoPages>(NO_AUTO_PAGES)

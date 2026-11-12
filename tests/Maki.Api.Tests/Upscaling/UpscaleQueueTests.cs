@@ -39,6 +39,66 @@ public class UpscaleQueueTests
         Assert.Equal([0, 100, 1, 101, 2], DrainPages());
     }
 
+    private static (UpscaleWorkKey Key, Maki.Api.Services.ReaderService.PageSlice Slice) Ahead(int page, int fileId = 9) =>
+        (new UpscaleWorkKey(fileId, "1000-5", page, "span-s"), Slice(fileId, fileId));
+
+    [Fact]
+    public void Prepared_pages_run_only_once_readers_have_nothing_pending()
+    {
+        _queue.SetBackground([Ahead(50), Ahead(51)]);
+        _queue.Replace(1, 1, "span-s", [Item(0), Item(1)]);
+
+        Assert.Equal([0, 1, 50, 51], DrainPages());
+        Assert.Equal(0, _queue.Snapshot().Background);
+    }
+
+    [Fact]
+    public void A_prepared_page_runs_with_nobody_told()
+    {
+        _queue.SetBackground([Ahead(50)]);
+
+        var job = _queue.TryDequeue();
+
+        Assert.NotNull(job);
+        Assert.Empty(_queue.Complete(job, UpscaleOutcome.Ready, null));
+        Assert.Null(_queue.TryDequeue());
+    }
+
+    [Fact]
+    public void A_reader_queueing_work_abandons_a_running_prepared_page_and_it_goes_back_first()
+    {
+        _queue.SetBackground([Ahead(50), Ahead(51)]);
+        var running = _queue.TryDequeue()!;
+
+        _queue.Replace(1, 1, "span-s", [Item(0)]);
+
+        Assert.True(running.Abandoned.IsCancellationRequested);
+        _queue.Complete(running, UpscaleOutcome.Failed, UpscaleReasons.Abandoned);
+        Assert.Equal([0, 50, 51], DrainPages());
+    }
+
+    [Fact]
+    public void A_reader_leaving_a_page_that_is_also_prepared_does_not_abandon_it()
+    {
+        _queue.SetBackground([Ahead(50)]);
+        var running = _queue.TryDequeue()!;
+        _queue.Replace(1, 9, "span-s", [new UpscaleRequestItem(running.Key, new UpscaleTarget(9, 50), running.Slice)], session: "a");
+
+        _queue.Cancel(1, "a");
+
+        Assert.False(running.Abandoned.IsCancellationRequested);
+    }
+
+    [Fact]
+    public void A_prepared_page_that_recently_failed_is_skipped()
+    {
+        var failed = new UpscaleJob(Ahead(50).Key, Ahead(50).Slice);
+        _queue.Complete(failed, UpscaleOutcome.Skipped, UpscaleReasons.TooLarge);
+        _queue.SetBackground([Ahead(50), Ahead(51)]);
+
+        Assert.Equal([51], DrainPages());
+    }
+
     [Fact]
     public void A_page_two_readers_want_runs_once_and_answers_both()
     {

@@ -1,6 +1,7 @@
 import { ActionIcon, Group, Menu, Text, UnstyledButton, VisuallyHidden } from '@mantine/core'
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import {
+  IconAperture,
   IconArchive,
   IconArchiveOff,
   IconArrowLeft,
@@ -30,7 +31,7 @@ import {
 } from '../../lib/icons'
 import { useIncognitoOptions } from '../ui/incognito'
 import { useSeriesNotificationHelp, type SeriesNotificationMode } from '../ui/seriesNotifications'
-import { msg } from '@lingui/core/macro'
+import { msg, plural } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLabel } from '../../i18n-context'
@@ -39,9 +40,13 @@ import { PAGE_CONVERSION_STOPS, type PageConversionStop } from '../../api/pageCo
 import { STOP_HINTS, STOP_LABELS } from '../pageconversion/labels'
 import { DrillPanes } from '../ui/DrillPanes'
 import { StatusDot } from '../ui/StatusDot'
+import type { SeriesPrepareAhead } from '../../api/types'
 
 /** Sentinel for "Instance default" in the profile RadioGroup, which only carries strings. */
 const INSTANCE_DEFAULT = ''
+
+/** The chapter counts offered per series, besides following Settings and Off. */
+const PREPARE_COUNTS = [1, 2, 3, 5, 10, 20]
 
 /** The series endpoint names a fixed quality the way the enum does: "Balanced". */
 const stopMode = (stop: PageConversionStop) => stop.charAt(0).toUpperCase() + stop.slice(1)
@@ -91,6 +96,7 @@ type Page =
     | 'profile'
     | 'cleanup'
     | 'conversion'
+    | 'prepare'
 
 const PARENT: Record<Page, Page> = {
     root: 'root',
@@ -101,6 +107,7 @@ const PARENT: Record<Page, Page> = {
     profile: 'upgrades',
     cleanup: 'files',
     conversion: 'files',
+    prepare: 'automation',
 }
 
 /**
@@ -152,6 +159,8 @@ export function SeriesActionsMenu({
                                       offlineSaved,
                                       onSaveUnreadOffline,
                                       onRemoveOffline,
+                                      prepareAhead,
+                                      onSetPrepareAhead,
                                   }: {
     monitorMode: string
     incognito: string
@@ -208,6 +217,10 @@ export function SeriesActionsMenu({
     offlineSaved?: number
     onSaveUnreadOffline?: () => void
     onRemoveOffline?: () => void
+    /** The series' "Prepare chapters ahead" setting; null or absent hides the row (the instance has it off). Needs `canEdit`. */
+    prepareAhead?: SeriesPrepareAhead | null
+    /** Null follows Settings, 0 never prepares the series. */
+    onSetPrepareAhead?: (chapters: number | null) => void
 }) {
     const [opened, setOpened] = useState(false)
     const [page, setPage] = useState<Page>('root')
@@ -428,6 +441,17 @@ export function SeriesActionsMenu({
         stops[next].focus()
     }
 
+    const chaptersLabel = (n: number) => plural(n, { one: '# chapter', other: '# chapters' })
+    const prepareValue =
+        prepareAhead == null
+            ? undefined
+            : prepareAhead.chapters === null
+              ? t`Default`
+              : prepareAhead.chapters === 0
+                ? t`Off`
+                : chaptersLabel(prepareAhead.chapters)
+
+    const hasPrepare = canEdit && prepareAhead != null && onSetPrepareAhead !== undefined
     const hasFiles = canEdit || canCleanUpReadFiles || canSetPageConversion
     const hasUpgrades = canEdit || canScanUpgrades
     const notifyField = field({
@@ -566,6 +590,7 @@ export function SeriesActionsMenu({
                             onPick: onSetIncognito,
                             help: INCOGNITO_HELP[incognito] && renderLabel(INCOGNITO_HELP[incognito]),
                         })}
+                        {hasPrepare && drill('prepare', <IconAperture size={16} />, <Trans>Prepare ahead</Trans>, prepareValue)}
                     </>
                 )
             case 'upgrades':
@@ -616,6 +641,37 @@ export function SeriesActionsMenu({
                         </Menu.Item>
                     </>
                 )
+            case 'prepare': {
+                if (!prepareAhead || !onSetPrepareAhead) return null
+                const own = prepareAhead.chapters
+                const counts =
+                    own !== null && own > 0 && !PREPARE_COUNTS.includes(own)
+                        ? [...PREPARE_COUNTS, own].sort((a, b) => a - b)
+                        : PREPARE_COUNTS
+                const defaultChapters = chaptersLabel(prepareAhead.defaultChapters)
+                const days = prepareAhead.days
+                return choice({
+                    title: <Trans>Prepare ahead</Trans>,
+                    current: own === null ? 'default' : String(own),
+                    options: [
+                        {
+                            value: 'default',
+                            label: <Trans>Follow Settings</Trans>,
+                            hint: <Trans>{defaultChapters} for each reader who read it in the last {days} days.</Trans>,
+                        },
+                        { value: '0', label: <Trans>Off</Trans>, hint: <Trans>Never prepared ahead.</Trans> },
+                        ...counts.map((n) => ({ value: String(n), label: chaptersLabel(n) })),
+                    ],
+                    onPick: (v) => onSetPrepareAhead(v === 'default' ? null : Number(v)),
+                    note: (
+                        <Trans>
+                            Upscaled on the server while nobody is reading, for each reader who has this series set to Reading
+                            with Enhance on Always and a server method. A number keeps that many ready however long ago they
+                            read it.
+                        </Trans>
+                    ),
+                })
+            }
             case 'profile':
                 return choice({
                     title: <Trans>Quality profile</Trans>,

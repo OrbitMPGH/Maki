@@ -1031,12 +1031,20 @@ msgstr ""
 msgid "{chapters, plural, one {{cellDate}: # chapter} other {{cellDate}: # chapters}}"
 msgstr "{chapters, plural, other {{cellDate}: 챕터 #개}}"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{chapters, plural, one {# chapter held, {used} of {limit}} other {# chapters held, {used} of {limit}}}"
+msgstr ""
+
 #: src/components/discover/DiscoverDetailModal.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "{chapters, plural, one {Prepare ahead: # chapter} other {Prepare ahead: # chapters}}"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -1449,6 +1457,10 @@ msgstr "{daysLeft, plural, other {#일 후 삭제됨}}"
 #, fuzzy
 msgid "{decade}s"
 msgstr "{decade}년대"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "{defaultChapters} for each reader who read it in the last {days} days."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2135,6 +2147,10 @@ msgstr ""
 #, fuzzy
 msgid "{moreCount, plural, one {+# more} other {+# more}}"
 msgstr "{moreCount, plural, other {+#개 더}}"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "{n, plural, one {# chapter} other {# chapters}}"
+msgstr ""
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -3369,6 +3385,10 @@ msgstr "{volumesText} + {chaptersText}"
 #, fuzzy
 msgid "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
 msgstr "{waited, plural, other {6개월 넘게 기다린 작품이 #개 있습니다.}}"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{waiting, plural, one {# page still to make} other {# pages still to make}}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -6581,6 +6601,10 @@ msgstr "매우 긴 페이지의 챕터는 연속 모드로 엽니다."
 #, fuzzy
 msgid "Chapters per page"
 msgstr "페이지당 챕터 수"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Chapters per series"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10652,6 +10676,10 @@ msgstr "팔로우"
 msgid "Follow one from a creator page."
 msgstr ""
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Follow Settings"
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Follow someone from their creator page."
@@ -10806,6 +10834,10 @@ msgstr "메타데이터에서"
 #, fuzzy
 msgid "From outside your network, replace the host with the address you use there."
 msgstr "네트워크 밖에서는 호스트를 사용하는 주소로 바꾸세요."
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "From the chapter you would open next."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -14805,6 +14837,10 @@ msgstr ""
 msgid "Never delivered."
 msgstr "전송된 적 없음."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Never prepared ahead."
+msgstr ""
+
 #: src/components/ImportListsSection.tsx
 #, fuzzy
 msgid "Never run."
@@ -18196,6 +18232,26 @@ msgstr "환경설정"
 msgid "Preload"
 msgstr "미리 로드"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Prepare ahead"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Prepare ahead follows Settings"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Prepare ahead is off for this series"
+msgstr ""
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Prepare chapters ahead"
+msgstr ""
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Prepared pages are kept until read, apart from the cache size."
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Preparing model…"
@@ -18961,6 +19017,10 @@ msgstr "읽기 끝"
 #, fuzzy
 msgid "Read today to keep it going"
 msgstr "오늘 읽어서 기록을 이어 가세요"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Read within (days)"
+msgstr ""
 
 #: src/lib/documentTitle.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
@@ -22072,10 +22132,18 @@ msgstr "시리즈를 찾을 수 없습니다."
 msgid "Series page"
 msgstr "시리즈 페이지"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Series per reader"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Series progress"
 msgstr "시리즈 진행률"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Series read longer ago are left alone."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -23169,6 +23237,10 @@ msgstr "스페이스"
 #, fuzzy
 msgid "Space ( )"
 msgstr "공백 ( )"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Space (MB)"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -24300,6 +24372,10 @@ msgstr "한 번에 대기열에 넣을 새 챕터의 최대 수입니다. 더 �
 #, fuzzy
 msgid "The most popular titles in the MangaBaka catalogue."
 msgstr "MangaBaka 카탈로그에서 가장 인기 있는 작품입니다."
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "The most recently read ones go first."
+msgstr ""
 
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
@@ -26308,10 +26384,18 @@ msgstr "업스케일, 업스케일링, 향상, 선명, 모델, onnx, real-esrgan
 msgid "Upscaled"
 msgstr "업스케일링됨"
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Upscaled on the server while nobody is reading, for each reader who has this series set to Reading with Enhance on Always and a server method. A number keeps that many ready however long ago they read it."
+msgstr ""
+
 #: src/pages/reader/ServerEnhanceStatus.tsx
 #, fuzzy
 msgid "Upscaled page shown"
 msgstr "업스케일한 페이지 표시됨"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Upscales the next chapters of series set to Reading while nobody is reading, so they open sharp. Only series whose reader settings have Enhance on Always and a server model count; Auto depends on the screen, so it is left out."
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

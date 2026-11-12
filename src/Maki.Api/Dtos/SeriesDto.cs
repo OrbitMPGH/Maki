@@ -19,6 +19,13 @@ public record LocalizedTitleDto(string Title, string? Language);
 /// <summary>One row of <c>GET series/lookup</c>.</summary>
 public record SeriesLookupDto(int Id, int? MangaBakaId, string? CoverUrl, bool Archived);
 
+/// <summary>
+/// A series' "Prepare chapters ahead" setting. <paramref name="Chapters"/> null follows the instance
+/// setting (<paramref name="DefaultChapters"/> chapters for readers who read it within
+/// <paramref name="Days"/> days), 0 never prepares the series, a number keeps that many ready.
+/// </summary>
+public record SeriesPrepareAheadDto(int? Chapters, int DefaultChapters, int Days);
+
 public record SeriesDto(
     int Id,
     /// <summary>
@@ -265,6 +272,9 @@ public record SeriesDto(
 
     /// <summary><see cref="ReadingStatus"/> was set by an auto rule rather than by the caller.</summary>
     public bool ReadingStatusAuto { get; init; }
+
+    /// <summary>The series' prepare-ahead setting; null while the instance has it off. Detail endpoint only.</summary>
+    public SeriesPrepareAheadDto? PrepareAhead { get; init; }
 
     /// <summary>
     /// The "how is it so far?" prompt waiting for this caller: "hooked", "caughtUp", or null. Detail

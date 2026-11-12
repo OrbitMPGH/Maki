@@ -3198,6 +3198,16 @@ msgstr "Модель не удалось загрузить. Проверьте,
 msgid "error.upscaling.invalidCache"
 msgstr "Размер кэша должен быть от {min} до {max} МБ."
 
+#. English: One of the Prepare chapters ahead values is out of range.
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.invalidPrepare"
+msgstr ""
+
+#. English: Prepare ahead takes between 0 and {max} chapters.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.invalidPrepareChapters"
+msgstr ""
+
 #. English: Threads must be between {min} and {max}.
 #: src/Maki.Api/Controllers/UpscalingController.cs
 #, fuzzy

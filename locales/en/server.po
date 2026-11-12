@@ -2234,6 +2234,14 @@ msgid "error.upscaling.invalidCache"
 msgstr "The cache size must be between {min} and {max} MB."
 
 #: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.invalidPrepare"
+msgstr "One of the Prepare chapters ahead values is out of range."
+
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.invalidPrepareChapters"
+msgstr "Prepare ahead takes between 0 and {max} chapters."
+
+#: src/Maki.Api/Controllers/UpscalingController.cs
 msgid "error.upscaling.invalidThreads"
 msgstr "Threads must be between {min} and {max}."
 

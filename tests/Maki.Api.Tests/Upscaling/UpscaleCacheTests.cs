@@ -56,6 +56,43 @@ public sealed class UpscaleCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task Held_pages_are_never_evicted_and_do_not_count_against_the_cap()
+    {
+        var cache = NewCache(capBytes: 200);
+        cache.Hold([Key(0), Key(1)]);
+        await cache.WriteAsync(Key(0), new byte[100], "webp", default);
+        await cache.WriteAsync(Key(1), new byte[100], "jxl", default);
+        await cache.WriteAsync(Key(2), new byte[100], "webp", default);
+        await cache.WriteAsync(Key(3), new byte[100], "webp", default);
+        await cache.WriteAsync(Key(4), new byte[100], "webp", default);
+
+        Assert.NotNull(cache.TryGet(Key(0)));
+        Assert.NotNull(cache.TryGet(Key(1)));
+        Assert.Null(cache.TryGet(Key(2)));
+        Assert.NotNull(cache.TryGet(Key(3)));
+        Assert.NotNull(cache.TryGet(Key(4)));
+        Assert.Equal((200L, 2, 100L), cache.HeldStats());
+        Assert.Equal(100L, cache.SizeOf(Key(1)));
+        Assert.Null(cache.SizeOf(Key(2)));
+    }
+
+    [Fact]
+    public async Task A_released_hold_counts_against_the_cap_again()
+    {
+        var cache = NewCache(capBytes: 200);
+        cache.Hold([Key(0), Key(1)]);
+        await cache.WriteAsync(Key(0), new byte[100], "webp", default);
+        await cache.WriteAsync(Key(1), new byte[100], "webp", default);
+        await cache.WriteAsync(Key(2), new byte[100], "webp", default);
+
+        cache.Hold([]);
+        await cache.EnforceCapAsync(default);
+
+        Assert.Equal((200L, 2), cache.Stats());
+        Assert.Equal((0L, 0, 100L), cache.HeldStats());
+    }
+
+    [Fact]
     public async Task The_cap_holds_after_concurrent_writes()
     {
         var cache = NewCache(capBytes: 1000);

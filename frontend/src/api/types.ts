@@ -150,6 +150,8 @@ export interface SeriesDto {
   readingStatus: 'PlanToRead' | 'Reading' | 'OnHold' | 'Dropped'
   /** True when `readingStatus` was set by one of the auto rules rather than by the user. */
   readingStatusAuto: boolean
+  /** Your "Prepare chapters ahead" choice for this series; null while the instance has it off. Detail endpoint only. */
+  prepareAhead?: SeriesPrepareAhead | null
   /** When the series was archived out of the active library, or null while it is active. */
   archivedAt: string | null
   archivedByUserId: number | null
@@ -975,3 +977,13 @@ export interface ImportListsStatusDto {
  * `started: true`; the outcome arrives later via the inbox and `ImportListTrackerDto.lastRun`.
  */
 export type ImportListRunResponse = { started: true }
+
+/**
+ * How many chapters of a series the server keeps upscaled ahead for you. `chapters` null follows the
+ * instance setting (`defaultChapters` while read within `days` days), 0 never, a number keeps that many.
+ */
+export interface SeriesPrepareAhead {
+  chapters: number | null
+  defaultChapters: number
+  days: number
+}

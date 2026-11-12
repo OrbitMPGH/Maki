@@ -94,6 +94,7 @@ import {
   useClearDelisted,
   useSetIncognito,
   useSetSeriesNotificationMode,
+  useSetSeriesPrepareAhead,
   useSetMonitorMode,
   useSetUpgradeProfile,
   useSetReadFileCleanup,
@@ -698,6 +699,7 @@ function SeriesDetailBody() {
   const [upgradeNowModalOpen, setUpgradeNowModalOpen] = useState(false)
   const setIncognito = useSetIncognito()
   const setNotificationMode = useSetSeriesNotificationMode()
+  const setPrepareAhead = useSetSeriesPrepareAhead()
   const changeReadingStatus = useChangeReadingStatus()
   const rateSeries = useRateSeries()
   const finalizeRating = useFinalizeRating()
@@ -2386,6 +2388,25 @@ function SeriesDetailBody() {
                     monitorMode={series.monitorNewItems}
                     incognito={series.incognito}
                     notificationMode={series.notificationMode}
+                    prepareAhead={series.prepareAhead}
+                    onSetPrepareAhead={(chapters) =>
+                        setPrepareAhead.mutate(
+                            { seriesId, chapters },
+                            {
+                              onSuccess: () =>
+                                notify.ok(
+                                  chapters === null
+                                    ? staticT`Prepare ahead follows Settings`
+                                    : chapters === 0
+                                      ? staticT`Prepare ahead is off for this series`
+                                      : plural(chapters, {
+                                          one: 'Prepare ahead: # chapter',
+                                          other: 'Prepare ahead: # chapters',
+                                        }),
+                                ),
+                            },
+                        )
+                    }
                     upgradeProfileId={series.upgradeProfileId}
                     upgradeProfiles={upgradeProfiles ?? []}
                     readFileCleanup={series.readFileCleanup}
