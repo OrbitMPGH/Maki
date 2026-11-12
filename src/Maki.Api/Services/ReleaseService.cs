@@ -52,7 +52,10 @@ public record ReleaseResultDto(
 }
 
 /// <summary><see cref="Tried"/> lists every query sent, in order, so the dialog can say what an empty search covered.</summary>
-public record ReleaseSearchResponse(string Query, IReadOnlyList<string> Tried, IReadOnlyList<ReleaseResultDto> Releases);
+/// <param name="MinSeeders">The fewest seeders Maki takes a release with on its own, so the dialog can mark the ones below it.</param>
+public record ReleaseSearchResponse(
+    string Query, IReadOnlyList<string> Tried, IReadOnlyList<ReleaseResultDto> Releases,
+    int MinSeeders = UpgradeOptions.DefaultMinSeeders);
 
 /// <summary>
 /// Payload persisted on torrent queue items (DownloadQueueItem.ReleaseInfoJson). <see cref="ContentPath"/>

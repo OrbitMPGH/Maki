@@ -176,6 +176,8 @@ public class SettingsController(
     /// <param name="DefaultProfileId">The upgrade profile a series without its own pin uses, or null for none.</param>
     /// <param name="MaxPerDay">0 means no cap.</param>
     /// <param name="TrashRetentionDays">0 purges replaced files on the next housekeeping run.</param>
+    /// <param name="MissingSearch">See <see cref="SettingKeys.UpgradesMissingSearch"/>.</param>
+    /// <param name="TorrentMinSeeders">See <see cref="SettingKeys.UpgradesTorrentMinSeeders"/>.</param>
     public record UpgradeSettings(
         bool Enabled,
         int? DefaultProfileId,
@@ -191,7 +193,9 @@ public class SettingsController(
         int VolumeSearchesPerRun = 10,
         int ProposalExpiryDays = 30,
         bool AutoApprove = false,
-        long AutoApproveMaxBytes = Maki.Core.Quality.ProposalAutoApproval.DefaultMaxBytes);
+        long AutoApproveMaxBytes = Maki.Core.Quality.ProposalAutoApproval.DefaultMaxBytes,
+        bool MissingSearch = true,
+        int TorrentMinSeeders = UpgradeOptions.DefaultMinSeeders);
     public record ReadFileCleanupSettings(bool Enabled, int Days, bool KeepLast);
     public record SignInPageSettings(bool CoverMosaic);
 
@@ -1287,7 +1291,8 @@ public class SettingsController(
         return Ok(new UpgradeSettings(options.Enabled, defaultId, options.ScanHour, options.MaxPerDay,
             options.MaxProbesPerRun, options.QuietPeriodDays, options.TrashRetentionDays, options.ScanIncognito,
             options.VolumeSearch, options.TorrentAutoGrabMaxBytes, options.VolumeMissingTolerance,
-            options.VolumeSearchesPerRun, options.ProposalExpiryDays, options.AutoApprove, options.AutoApproveMaxBytes));
+            options.VolumeSearchesPerRun, options.ProposalExpiryDays, options.AutoApprove, options.AutoApproveMaxBytes,
+            options.MissingSearch, options.TorrentMinSeeders));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -1344,6 +1349,12 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.upgradesProposalExpiryDaysRange", new { min = 1, max = 365 });
         }
 
+        if (request.TorrentMinSeeders is < 1 or > UpgradeOptions.MaxMinSeeders)
+        {
+            return this.Fail(localizer, "error.settings.upgradesTorrentMinSeedersRange",
+                new { min = 1, max = UpgradeOptions.MaxMinSeeders });
+        }
+
         await settings.SetAsync(SettingKeys.UpgradesEnabled, request.Enabled ? "true" : "false", ct);
         await settings.SetAsync(SettingKeys.UpgradesDefaultProfileId,
             request.DefaultProfileId?.ToString(CultureInfo.InvariantCulture), ct);
@@ -1369,6 +1380,9 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.UpgradesAutoApprove, request.AutoApprove ? "true" : "false", ct);
         await settings.SetAsync(SettingKeys.UpgradesAutoApproveMaxBytes,
             approveBytes.ToString(CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.UpgradesMissingSearch, request.MissingSearch ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.UpgradesTorrentMinSeeders,
+            request.TorrentMinSeeders.ToString(CultureInfo.InvariantCulture), ct);
         return Ok(request with { AutoApproveMaxBytes = approveBytes });
     }
 

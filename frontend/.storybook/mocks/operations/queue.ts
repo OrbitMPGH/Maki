@@ -452,6 +452,8 @@ export const upgradeSettings: UpgradeSettings = {
   proposalExpiryDays: 14,
   autoApprove: false,
   autoApproveMaxBytes: 12884901888,
+  missingSearch: true,
+  torrentMinSeeders: 1,
 }
 
 export const upgradesSummary: UpgradesSummaryDto = {

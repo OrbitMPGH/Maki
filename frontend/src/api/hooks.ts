@@ -3986,6 +3986,8 @@ export interface ReleaseSearchResult {
   /** Every query the search sent, in order. */
   tried?: string[]
   releases: ReleaseRowDto[]
+  /** Fewest seeders Maki takes a release with on its own; a manual grab ignores it. */
+  minSeeders?: number
 }
 
 export function useReleaseSearch(seriesId: number, enabled: boolean, query?: string) {

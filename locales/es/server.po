@@ -3420,6 +3420,11 @@ msgstr "Las búsquedas de volúmenes por ejecución deben estar entre {min} y {m
 msgid "error.settings.upgradesProposalExpiryDaysRange"
 msgstr "La caducidad de las propuestas debe estar entre {min} y {max} días"
 
+#. English: Minimum seeders must be between {min} and {max}
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.upgradesTorrentMinSeedersRange"
+msgstr ""
+
 #. English: Backups to keep must be between {min} and {max}
 #: src/Maki.Api/Controllers/SettingsController.cs
 #, fuzzy

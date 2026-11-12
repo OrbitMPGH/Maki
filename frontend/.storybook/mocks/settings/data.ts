@@ -510,6 +510,8 @@ export const upgradeSettings: UpgradeSettings = {
   proposalExpiryDays: 30,
   autoApprove: false,
   autoApproveMaxBytes: 12884901888,
+  missingSearch: true,
+  torrentMinSeeders: 1,
 }
 
 export const qualityFormats: QualityFormatDto[] = [

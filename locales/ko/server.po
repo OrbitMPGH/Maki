@@ -3420,6 +3420,11 @@ msgstr "실행당 권 검색 횟수는 {min}~{max} 사이여야 합니다"
 msgid "error.settings.upgradesProposalExpiryDaysRange"
 msgstr "제안 만료는 {min}~{max}일 사이여야 합니다"
 
+#. English: Minimum seeders must be between {min} and {max}
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.upgradesTorrentMinSeedersRange"
+msgstr ""
+
 #. English: Backups to keep must be between {min} and {max}
 #: src/Maki.Api/Controllers/SettingsController.cs
 #, fuzzy

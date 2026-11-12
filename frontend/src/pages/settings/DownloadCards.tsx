@@ -743,10 +743,14 @@ export function VolumeReleasesSection() {
   const [proposalExpiryDays, setProposalExpiryDays] = useState<number>(30)
   const [autoApprove, setAutoApprove] = useState(false)
   const [autoApproveMb, setAutoApproveMb] = useState<number>(12288)
+  const [missingSearch, setMissingSearch] = useState(true)
+  const [minSeeders, setMinSeeders] = useState<number>(1)
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useSliceSync(
     settings && {
+      missingSearch: settings.missingSearch,
+      torrentMinSeeders: settings.torrentMinSeeders,
       autoApprove: settings.autoApprove,
       autoApproveMaxBytes: settings.autoApproveMaxBytes,
       volumeSearch: settings.volumeSearch,
@@ -763,6 +767,8 @@ export function VolumeReleasesSection() {
       setProposalExpiryDays(slice.proposalExpiryDays)
       setAutoApprove(slice.autoApprove)
       setAutoApproveMb(slice.autoApproveMaxBytes / BYTES_PER_MB)
+      setMissingSearch(slice.missingSearch)
+      setMinSeeders(slice.torrentMinSeeders)
     },
     discarded,
   )
@@ -778,7 +784,9 @@ export function VolumeReleasesSection() {
       Number(volumeSearchesPerRun) !== settings.volumeSearchesPerRun ||
       Number(proposalExpiryDays) !== settings.proposalExpiryDays ||
       autoApprove !== settings.autoApprove ||
-      autoApproveBytes !== settings.autoApproveMaxBytes)
+      autoApproveBytes !== settings.autoApproveMaxBytes ||
+      missingSearch !== settings.missingSearch ||
+      Number(minSeeders) !== settings.torrentMinSeeders)
 
   return (
     <SettingsSection
@@ -798,6 +806,8 @@ export function VolumeReleasesSection() {
             proposalExpiryDays: Number(proposalExpiryDays),
             autoApprove,
             autoApproveMaxBytes: autoApproveBytes,
+            missingSearch,
+            torrentMinSeeders: Number(minSeeders),
           },
           { onSuccess: savedToast },
         )
@@ -808,6 +818,23 @@ export function VolumeReleasesSection() {
         description={t`Also needs the daily scan on.`}
         checked={volumeSearch}
         onChange={(e) => setVolumeSearch(e.currentTarget.checked)}
+        mb="md"
+      />
+      <Switch
+        label={t`Search torrents for chapters no source has`}
+        description={t`For monitored series with wanted chapters that none of their sources list, such as licensed titles a site took down, or series with no source at all. Each series is searched at most once a week, a few series at a time. Works with the daily scan off. Chapters a source lists keep downloading from it.`}
+        checked={missingSearch}
+        onChange={(e) => setMissingSearch(e.currentTarget.checked)}
+        mb="md"
+      />
+      <SettingsNumberInput
+        label={t`Minimum seeders`}
+        description={t`Releases with fewer seeders are never grabbed or approved on their own. You can still grab them from the release search.`}
+        min={1}
+        max={10000}
+        decimalScale={0}
+        value={minSeeders}
+        onChange={setMinSeeders}
         mb="md"
       />
       <Group grow mb="md" align="flex-start">

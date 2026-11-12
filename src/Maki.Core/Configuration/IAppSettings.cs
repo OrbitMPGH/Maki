@@ -605,6 +605,18 @@ public static class SettingKeys
     public const string UpgradesLastVolumeSearchDate = "upgrades.lastVolumeSearchDate";
 
     /// <summary>
+    /// "false" turns off the torrent search for wanted chapters no source lists (licensed titles a
+    /// scraper delisted, series with no source at all). Default on; independent of the upgrade switches.
+    /// </summary>
+    public const string UpgradesMissingSearch = "upgrades.missingSearch";
+
+    /// <summary>
+    /// Fewest seeders a release needs before Maki grabs or approves it on its own (1..10000, default 1).
+    /// A release whose indexer reports no count passes. Grabs from the release search are never held back.
+    /// </summary>
+    public const string UpgradesTorrentMinSeeders = "upgrades.torrentMinSeeders";
+
+    /// <summary>
     /// Id of the <see cref="Entities.UpgradeProfile"/> a series without its own pin resolves to.
     /// Absent means no default, and such a series has no profile at all.
     /// </summary>
