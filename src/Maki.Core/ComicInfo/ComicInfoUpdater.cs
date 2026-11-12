@@ -12,7 +12,8 @@ namespace Maki.Core.ComicInfo;
 /// series-level fields are standardized to Maki's metadata (English title, summary,
 /// authors, genres), file-level fields (chapter/volume number, title, dates) are kept
 /// or filled from the linked chapter / parsed file name. Fields Maki has no opinion
-/// on (publisher, translator, ...) are preserved as-is.
+/// on (imprint, characters, ...) are preserved as-is. A Pages block the file already has is kept as
+/// written: whoever wrote it may have listed only some pages, or bookmarks Maki has no way to rebuild.
 /// </summary>
 public static class ComicInfoUpdater
 {
@@ -25,9 +26,14 @@ public static class ComicInfoUpdater
     /// Standardizes the ComicInfo.xml of <paramref name="cbzPath"/> in place (atomic rewrite).
     /// Returns true when the file was rewritten, false when it was already up to date.
     /// </summary>
+    /// <param name="provenance">
+    /// Source, URL and tier for Notes. Notes from a source replace whatever the file said; without a
+    /// source they are only written into a file that has none, since an imported file's own notes
+    /// are its uploader's.
+    /// </param>
     public static bool UpdateFile(
         string cbzPath, Series series, ParsedReleaseFile parsed, Chapter? chapter, string? group = null,
-        IEnumerable<string>? userTags = null)
+        IEnumerable<string>? userTags = null, ComicInfoProvenance? provenance = null)
     {
         // A PDF read in place is left exactly as it was found; there is no ComicInfo.xml to write.
         if (Reading.ComicFile.IsPdf(cbzPath)) return false;
@@ -46,8 +52,13 @@ public static class ComicInfoUpdater
             }
 
             info ??= new ComicInfo();
-            var pageCount = source.Entries.Count(e => Reading.CbzReader.IsImage(e.FullName));
-            Standardize(info, series, parsed, chapter, pageCount, group, userTags);
+            var pageNames = Reading.CbzReader.PageNames(source);
+            var pageCount = pageNames.Count;
+            Standardize(info, series, parsed, chapter, pageCount, group, userTags, provenance);
+            if (info.Pages is not { Count: > 0 })
+            {
+                info.Pages = ComicInfoPages.Build(pageCount, ComicInfoPages.WideFromArchive(source, pageNames));
+            }
 
             newXml = ComicInfoBuilder.Serialize(info);
             if (existingXml != null && XmlEquals(existingXml, newXml))
@@ -62,7 +73,7 @@ public static class ComicInfoUpdater
 
     private static void Standardize(
         ComicInfo info, Series series, ParsedReleaseFile parsed, Chapter? chapter, int pageCount, string? group,
-        IEnumerable<string>? userTags)
+        IEnumerable<string>? userTags, ComicInfoProvenance? provenance)
     {
         // Series-level fields: always Maki's view, so imports and downloads agree.
         info.Series = series.Title;
@@ -123,6 +134,13 @@ public static class ComicInfoUpdater
         }
 
         info.ScanInformation = ComicInfoBuilder.ScanInformationFor(group) ?? info.ScanInformation;
+        info.Translator = ComicInfoBuilder.ScanInformationFor(group) ?? info.Translator;
+        if (ComicInfoPages.NotesFor(provenance) is { } notes &&
+            (!string.IsNullOrWhiteSpace(provenance?.Source) || string.IsNullOrWhiteSpace(info.Notes)))
+        {
+            info.Notes = notes;
+        }
+
         info.LanguageISO = chapter?.Language ?? info.LanguageISO;
         info.PageCount = pageCount > 0 ? pageCount.ToString(CultureInfo.InvariantCulture) : info.PageCount;
     }

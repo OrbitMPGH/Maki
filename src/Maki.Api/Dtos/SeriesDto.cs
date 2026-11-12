@@ -496,9 +496,10 @@ public record LastUpgradeScanDto(DateTime At, int Probed, int Queued, int? Check
 /// (<see cref="IncognitoRatingRules"/>) pick. Null is what an older client sends, so the rules have
 /// to be the fallback rather than a hardcoded Off.
 /// </param>
+/// <param name="RootFolderId">Null lets the root folder rules pick.</param>
 public record AddSeriesRequest(
     string MetadataProviderId,
-    int RootFolderId,
+    int? RootFolderId,
     bool Monitored = true,
     // Null follows the "Default monitoring for new series" setting.
     string? MonitorNewItems = null,

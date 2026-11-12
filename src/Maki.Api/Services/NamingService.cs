@@ -1,6 +1,7 @@
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Naming;
+using Maki.Core.Quality;
 
 namespace Maki.Api.Services;
 
@@ -44,10 +45,11 @@ public class NamingService(IAppSettings settings)
     /// </summary>
     public async Task<string> BuildChapterFileNameAsync(
         Series series, Chapter chapter, Chapter? through, bool wholeVolumes,
-        CancellationToken ct = default, string? group = null) =>
+        CancellationToken ct = default, string? group = null, string? source = null,
+        QualityTier tier = QualityTier.Unknown) =>
         FileNameBuilder.BuildChapterFileName(
             series, chapter, through, wholeVolumes, await ChapterFormatAsync(ct),
-            NamingDefaults.ChapterExtension, group);
+            NamingDefaults.ChapterExtension, group, source, tier);
 
     /// <summary>
     /// Same as above, but keeping <paramref name="extension"/> instead of <c>.cbz</c>, for renaming
@@ -55,17 +57,19 @@ public class NamingService(IAppSettings settings)
     /// </summary>
     public async Task<string> BuildChapterFileNameAsync(
         Series series, Chapter chapter, Chapter? through, bool wholeVolumes, string extension,
-        CancellationToken ct = default, string? group = null) =>
+        CancellationToken ct = default, string? group = null, string? source = null,
+        QualityTier tier = QualityTier.Unknown) =>
         FileNameBuilder.BuildChapterFileName(
-            series, chapter, through, wholeVolumes, await ChapterFormatAsync(ct), extension, group);
+            series, chapter, through, wholeVolumes, await ChapterFormatAsync(ct), extension, group, source, tier);
 
     /// <summary>
     /// The chapter file's path relative to the root folder. Uses the series' existing
     /// <see cref="Series.FolderName"/>, never the folder format — see <see cref="FileNameBuilder"/>.
     /// </summary>
     public async Task<string> BuildChapterRelativePathAsync(
-        Series series, Chapter chapter, CancellationToken ct = default, string? group = null) =>
-        FileNameBuilder.BuildRelativePath(series, chapter, await ChapterFormatAsync(ct), group);
+        Series series, Chapter chapter, CancellationToken ct = default, string? group = null,
+        string? source = null, QualityTier tier = QualityTier.Unknown) =>
+        FileNameBuilder.BuildRelativePath(series, chapter, await ChapterFormatAsync(ct), group, source, tier);
 
     /// <summary>
     /// A stored format that no longer validates (a token removed by an upgrade, a hand-edited

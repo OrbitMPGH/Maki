@@ -1052,8 +1052,8 @@ public class SeriesController(
             return this.Fail(localizer, "error.upgrades.profileNotFound");
         // Same answer as a folder that does not exist: a non-admin must not be able to tell a folder
         // they were not granted apart from one that is not there.
-        if (!currentUser.AllRootFolders && !currentUser.Has(MakiPermission.Admin)
-            && !currentUser.RootFolderIds.Contains(request.RootFolderId))
+        var everyFolder = currentUser.AllRootFolders || currentUser.Has(MakiPermission.Admin);
+        if (!everyFolder && request.RootFolderId is int chosen && !currentUser.RootFolderIds.Contains(chosen))
             return this.Fail(localizer, "error.series.rootFolderNotFound");
         // deferSourceMatching: the button is the whole point here. Matching every source and pulling
         // the first chapter list is tens of seconds of network; the caller gets the series row and
@@ -1062,7 +1062,8 @@ public class SeriesController(
             request.MetadataProviderId, request.RootFolderId, request.Monitored, request.MonitorNewItems, ct,
             deferSourceMatching: true, incognito: request.Incognito,
             attributedUserId: currentUser.UserId, addedFrom: request.AddedFrom,
-            clientMutationId: clientMutationId, upgradeProfileId: request.UpgradeProfileId);
+            clientMutationId: clientMutationId, upgradeProfileId: request.UpgradeProfileId,
+            usableRootFolderIds: everyFolder ? null : currentUser.RootFolderIds.ToList());
 
         if (result.Series is null)
         {

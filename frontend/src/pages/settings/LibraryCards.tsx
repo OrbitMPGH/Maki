@@ -19,7 +19,7 @@ import {
   TextInput,
   VisuallyHidden,
 } from '@mantine/core'
-import { IconPencil, IconTrash, IconWand } from '../../lib/icons'
+import { IconPencil, IconRoute, IconTrash, IconWand } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { activeSeries } from '../../lib/series'
@@ -65,6 +65,8 @@ import { useRecycleBin, useSetRecycleBinRetention } from '../../api/recycleBin'
 import { RecycleBinModal } from '../../components/settings/RecycleBinModal'
 import { AutoTagRulesModal } from '../../components/settings/AutoTagRulesModal'
 import { useAutoTagRules } from '../../api/autoTagRules'
+import { RootFolderRulesModal } from '../../components/settings/RootFolderRulesModal'
+import { useRootFolderRules } from '../../api/rootFolderRules'
 
 export function RootFoldersSection() {
   const { t } = useLingui()
@@ -718,6 +720,36 @@ export function AutoTagRulesSection() {
         </Button>
       </Group>
       <AutoTagRulesModal opened={open} onClose={() => setOpen(false)} />
+    </SettingsSection>
+  )
+}
+
+/** Root folder rules live in a modal of their own, beside the folder table rather than inside it. */
+export function RootFolderRulesSection() {
+  const { data: rules } = useRootFolderRules()
+  const [open, setOpen] = useState(false)
+  const count = rules?.length ?? 0
+  const active = rules?.filter((r) => r.enabled).length ?? 0
+
+  return (
+    <SettingsSection
+      id="root-folder-rules"
+      title={<Trans>Root folder rules</Trans>}
+      description={<Trans>Pick the root folder for a new series by its type, genre, rating or how it came in.</Trans>}
+    >
+      <Group justify="space-between" wrap="wrap" gap="sm">
+        <Text size="sm" c={count === 0 ? 'var(--ink-3)' : undefined}>
+          {count === 0 ? (
+            <Trans>No rules yet. New series go to the first root folder.</Trans>
+          ) : (
+            <Plural value={count} one={`# rule, ${active} on`} other={`# rules, ${active} on`} />
+          )}
+        </Text>
+        <Button variant="default" size="xs" leftSection={<IconRoute size={16} />} onClick={() => setOpen(true)}>
+          <Trans>Manage rules</Trans>
+        </Button>
+      </Group>
+      <RootFolderRulesModal opened={open} onClose={() => setOpen(false)} />
     </SettingsSection>
   )
 }

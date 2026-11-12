@@ -327,5 +327,7 @@ export const sharedHandlers = [
   http.get(api('/queue/summary'), () => HttpResponse.json(queueSummary)),
   http.get(api('/inbox/unread-count'), () => HttpResponse.json({ count: 3 })),
   http.get(api('/requests/pendingcount'), () => HttpResponse.json({ count: 2 })),
+  // No root folder rule matches by default, so the add form keeps its first folder.
+  http.get(api('/rootfolder/route'), () => HttpResponse.json({ rootFolderId: null, ruleId: null })),
   ...imageHandlers(titleFor),
 ]

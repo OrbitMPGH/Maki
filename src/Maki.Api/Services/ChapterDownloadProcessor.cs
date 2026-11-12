@@ -283,13 +283,18 @@ public class ChapterDownloadProcessor(
                 return DownloadOutcome.Settled;
             }
 
-            var group = await db.ChapterSourceLinks
+            var link = await db.ChapterSourceLinks
                 .Where(l => l.ChapterId == chapter.Id && l.SourceMappingId == mapping.Id)
-                .Select(l => l.Group)
-                .FirstOrDefaultAsync(ct) ?? ChapterFileQualityService.SiteGroup(source);
+                .Select(l => new { l.Group, l.Url })
+                .FirstOrDefaultAsync(ct);
+            var group = link?.Group ?? ChapterFileQualityService.SiteGroup(source);
             var userTags = await TagService.LabelsForSeriesAsync(db, series.Id, ct);
+            var provenance = new ComicInfoProvenance(
+                source.DisplayName, link?.Url ?? NullIfBlank(mapping.Url),
+                QualityTierResolver.Resolve(source.Kind, null, "", false));
             var comicInfo = ComicInfoBuilder.Serialize(
-                ComicInfoBuilder.Build(series, chapter, pageFiles.Count, group, userTags));
+                ComicInfoBuilder.Build(series, chapter, pageFiles.Count, group, userTags, provenance,
+                    ComicInfoPages.WideFromFiles(pageFiles)));
             var tmpDir = Path.Combine(rootFolder.Path, ".maki", "tmp");
             tmpCbz = Path.Combine(tmpDir, $"{item.Id}.cbz");
             CbzPackager.Package(pageFiles, comicInfo, tmpCbz);
@@ -353,7 +358,9 @@ public class ChapterDownloadProcessor(
                 rootFolder = await db.RootFolders.FindAsync([series.RootFolderId], ct) ?? rootFolder;
             }
 
-            var desiredPath = await naming.BuildChapterRelativePathAsync(series, chapter, ct, group);
+            // The tier a scraped file gets is its source's kind, known before the archive is measured.
+            var desiredPath = await naming.BuildChapterRelativePathAsync(series, chapter, ct, group,
+                source.DisplayName, provenance.Tier);
 
             var seriesFiles = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToListAsync(ct);
             var heldByOthers = (await db.Chapters
@@ -1279,4 +1286,6 @@ public class ChapterDownloadProcessor(
             logger.LogDebug(ex, "Could not clean working dir {Dir}", dir);
         }
     }
+
+    private static string? NullIfBlank(string? value) => string.IsNullOrWhiteSpace(value) ? null : value;
 }
