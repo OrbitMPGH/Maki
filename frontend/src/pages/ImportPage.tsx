@@ -49,6 +49,7 @@ import type { MetadataSearchResult } from '../api/types'
 import { IgnoredFoldersModal } from '../components/import/IgnoredFoldersModal'
 import { ImportMatchFinder } from '../components/import/ImportMatchFinder'
 import { ImportPlanModal } from '../components/import/ImportPlanModal'
+import { ManualImport } from '../components/import/ManualImport'
 import { MihonImport } from '../components/import/MihonImport'
 import { RecentImports, UndoBatchButton } from '../components/import/RecentImports'
 import { StepStrip, type Step } from '../components/StepStrip'
@@ -164,6 +165,7 @@ interface ImportProgressEvent {
 }
 
 const MIHON_MODE = 'mihon'
+const MANUAL_MODE = 'manual'
 
 /**
  * The Mihon tab needs the local MangaBaka dump (matching reads it), so it follows the same gate
@@ -175,6 +177,8 @@ export default function ImportPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const mihonAvailable = Boolean(metadata?.dumpPresent)
   const mihonMode = mihonAvailable && searchParams.get('mode') === MIHON_MODE
+  const manualMode = searchParams.get('mode') === MANUAL_MODE
+  const tab = mihonMode ? MIHON_MODE : manualMode ? MANUAL_MODE : 'folders'
 
   return (
     <SurfaceFrame className="import-surface" pageStyle="operational">
@@ -184,32 +188,44 @@ export default function ImportPage() {
         description={
           mihonMode
             ? t`Adds the manga in your Mihon library to Maki.`
-            : t`Add series folders that Maki does not know about yet.`
+            : manualMode
+              ? t`Import comics from any folder on the server into a series you pick.`
+              : t`Add series folders that Maki does not know about yet.`
         }
       />
-      {mihonAvailable && (
-        <Tabs
-          value={mihonMode ? MIHON_MODE : 'folders'}
-          variant="unstyled"
-          classNames={{ list: 'series-tabs page-tabs', tab: 'series-tab' }}
-          onChange={(v) => {
-            const next = new URLSearchParams(searchParams)
-            if (v === MIHON_MODE) next.set('mode', MIHON_MODE)
-            else next.delete('mode')
-            setSearchParams(next, { replace: true })
-          }}
-        >
-          <Tabs.List>
-            <Tabs.Tab value="folders">
-              <Trans>Folders</Trans>
-            </Tabs.Tab>
+      <Tabs
+        value={tab}
+        variant="unstyled"
+        classNames={{ list: 'series-tabs page-tabs', tab: 'series-tab' }}
+        onChange={(v) => {
+          const next = new URLSearchParams(searchParams)
+          if (v === MIHON_MODE || v === MANUAL_MODE) next.set('mode', v)
+          else next.delete('mode')
+          next.delete('path')
+          setSearchParams(next, { replace: true })
+        }}
+      >
+        <Tabs.List>
+          <Tabs.Tab value="folders">
+            <Trans>Folders</Trans>
+          </Tabs.Tab>
+          <Tabs.Tab value={MANUAL_MODE}>
+            <Trans>Manual import</Trans>
+          </Tabs.Tab>
+          {mihonAvailable && (
             <Tabs.Tab value={MIHON_MODE}>
               <Trans>Mihon backup</Trans>
             </Tabs.Tab>
-          </Tabs.List>
-        </Tabs>
+          )}
+        </Tabs.List>
+      </Tabs>
+      {mihonMode ? (
+        <MihonImport />
+      ) : manualMode ? (
+        <ManualImport key={searchParams.get('path') ?? ''} initialPath={searchParams.get('path')} />
+      ) : (
+        <FolderImport />
       )}
-      {mihonMode ? <MihonImport /> : <FolderImport />}
     </SurfaceFrame>
   )
 }

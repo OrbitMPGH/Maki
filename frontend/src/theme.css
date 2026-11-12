@@ -12811,6 +12811,22 @@ tr:hover .mono-value-copy {
   overflow-wrap: anywhere;
   padding-block: 0.2rem;
 }
+.manual-import-entry {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: var(--mantine-radius-sm);
+}
+
+.manual-import-entry:hover,
+.manual-import-entry:focus-visible {
+  background: var(--surface-hover);
+}
+
+.manual-import-entry[data-active] {
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
+}
+
 .import-table .mantine-Table-td {
   vertical-align: middle;
 }
