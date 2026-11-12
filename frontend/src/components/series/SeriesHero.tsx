@@ -253,7 +253,7 @@ export function SeriesHero({
 
                 <Group className={"series-hero-content"}>
 
-                    <Group align="flex-end" gap={32} wrap="nowrap" className="series-hero-row">
+                    <Group align="flex-start" gap={32} wrap="nowrap" className="series-hero-row">
                         {series.coverUrl && (
                             <img
                                 className="series-hero-poster"

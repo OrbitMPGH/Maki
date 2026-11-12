@@ -6378,8 +6378,8 @@ button.site-chip:hover {
 
 /* --- The Continue header ---------------------------------------------------- */
 /* Both heroes in Home's Continue grammar: an accent kicker, the title, one meta line, then the
-   facts as a row of chips and, on the series page, two bars and the actions. Everything sits on
-   the poster's bottom line. */
+   facts as a row of chips and, on the series page, two bars and the actions. The column starts on
+   the poster's top line, the same line the add card and Your reading start on. */
 .hero-continue {
   display: flex;
   flex-direction: column;

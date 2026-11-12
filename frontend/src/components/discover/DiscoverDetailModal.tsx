@@ -362,7 +362,7 @@ export function DiscoverDetailModal({
               {/* Identity against the one thing there is to do with it, the way the series page
                   puts Progress beside its own title block. */}
               <div className="series-hero-content">
-                <Group align="flex-end" gap={26} wrap="nowrap" className="series-hero-row">
+                <Group align="flex-start" gap={26} wrap="nowrap" className="series-hero-row">
                   {cover ? (
                     <img className="series-hero-poster" src={cover} alt="" />
                   ) : (
