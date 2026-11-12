@@ -661,9 +661,12 @@ public class TorrentUpgradeService(
         Language = view.Language
     };
 
-    private async Task<string?> EligibilityAsync(
-        Series series, VolumeSearchSettings run, UpgradeEvaluator? evaluator, bool respectInterval,
-        bool ignoreGlobalSwitch, bool judgeAdditions, CancellationToken ct)
+    /// <summary>
+    /// The part of the eligibility that the instance, the series and its profile decide, before any file
+    /// or chapter is looked at: no indexer, incognito, no profile, upgrades off or a cutoff below Volume.
+    /// </summary>
+    private static string? SettingsRefusal(
+        Series series, VolumeSearchSettings run, UpgradeEvaluator? evaluator, bool ignoreGlobalSwitch)
     {
         var options = run.Options;
         if (!ignoreGlobalSwitch && (!options.Enabled || !options.VolumeSearch))
@@ -699,6 +702,30 @@ public class TorrentUpgradeService(
             QualityScorer.Rank(profile, profile.Cutoff) < QualityScorer.Rank(profile, QualityTier.Volume))
         {
             return VolumeSearchReasons.Cutoff;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Whether a new series could take a volume release at all, so volume first holds back only series
+    /// its search would look at. Asked before the first sync, so it leaves the files and chapters out.
+    /// </summary>
+    public async Task<bool> VolumeFirstCanTakeVolumesAsync(int seriesId, CancellationToken ct)
+    {
+        var series = await db.Series.AsNoTracking().FirstOrDefaultAsync(s => s.Id == seriesId, ct);
+        return series is not null &&
+               SettingsRefusal(series, await LoadSettingsAsync(ct), await evaluation.ForSeriesAsync(seriesId, ct),
+                   ignoreGlobalSwitch: true) is null;
+    }
+
+    private async Task<string?> EligibilityAsync(
+        Series series, VolumeSearchSettings run, UpgradeEvaluator? evaluator, bool respectInterval,
+        bool ignoreGlobalSwitch, bool judgeAdditions, CancellationToken ct)
+    {
+        if (SettingsRefusal(series, run, evaluator, ignoreGlobalSwitch) is { } refused)
+        {
+            return refused;
         }
 
         if (await db.TorrentProposals.AnyAsync(p => p.SeriesId == series.Id && p.Status == TorrentProposalStatus.Pending, ct))

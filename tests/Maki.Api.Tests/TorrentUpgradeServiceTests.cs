@@ -294,6 +294,53 @@ public class TorrentUpgradeServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task Only_a_series_that_can_take_a_volume_is_marked_for_volume_first()
+    {
+        NothingOnDisk();
+        Assert.True(await CanTakeVolumesAsync());
+
+        _world.Settings.Set(SettingKeys.ProwlarrApiKey, "");
+        Assert.False(await CanTakeVolumesAsync());
+        _world.Settings.Set(SettingKeys.ProwlarrApiKey, "key");
+
+        _world.Settings.Set(SettingKeys.UpgradesEnabled, "false");
+        Assert.True(await CanTakeVolumesAsync());
+        _world.Settings.Set(SettingKeys.UpgradesEnabled, "true");
+
+        using (var db = _world.Db.NewContext())
+        {
+            db.UpgradeProfiles.Single().UpgradesEnabled = false;
+            db.SaveChanges();
+        }
+
+        Assert.False(await CanTakeVolumesAsync());
+
+        using (var db = _world.Db.NewContext())
+        {
+            var profile = db.UpgradeProfiles.Single();
+            profile.UpgradesEnabled = true;
+            profile.Cutoff = QualityTier.Official;
+            db.SaveChanges();
+        }
+
+        Assert.False(await CanTakeVolumesAsync());
+
+        using (var db = _world.Db.NewContext())
+        {
+            db.Series.Single().UpgradeProfileId = null;
+            db.SaveChanges();
+        }
+
+        Assert.False(await CanTakeVolumesAsync());
+    }
+
+    private async Task<bool> CanTakeVolumesAsync()
+    {
+        using var db = _world.Db.NewContext();
+        return await Service(db).VolumeFirstCanTakeVolumesAsync(_world.SeriesId, CancellationToken.None);
+    }
+
+    [Fact]
     public async Task A_volume_release_for_a_series_with_nothing_yet_is_only_considered_when_additions_are_judged()
     {
         Chapter(1, 1, withFile: false);

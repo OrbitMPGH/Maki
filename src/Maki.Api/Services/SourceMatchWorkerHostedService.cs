@@ -255,9 +255,13 @@ public class SourceMatchWorkerHostedService(
                 // before the sync so a Smart tick in between cannot start on the sources. A bulk add
                 // (import list, bulk re-match) is marked for the volume search job instead, so a long
                 // list does not hit the indexer all at once; the mark holds it from the save below.
+                // A series that cannot take a volume at all (no indexer or profile, upgrades off, a
+                // cutoff below Volume) is neither searched nor held, so it never waits for nothing.
                 if (await scope.ServiceProvider.GetRequiredService<IAppSettings>()
                         .GetAsync(SettingKeys.DownloadsVolumeFirst, ct) == "true" &&
-                    !await db.ChapterFiles.AnyAsync(f => f.SeriesId == series.Id, ct))
+                    !await db.ChapterFiles.AnyAsync(f => f.SeriesId == series.Id, ct) &&
+                    await scope.ServiceProvider.GetRequiredService<TorrentUpgradeService>()
+                        .VolumeFirstCanTakeVolumesAsync(series.Id, ct))
                 {
                     if (paced)
                     {
