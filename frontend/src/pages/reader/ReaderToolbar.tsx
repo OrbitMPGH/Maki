@@ -32,7 +32,8 @@ import { useEnhanceEngine } from './enhanceRuntime'
 import PageScrubber from './PageScrubber'
 import ReaderSettings, { OVERLAY_Z } from './ReaderSettings'
 import { isPendingPhase, useEnhancePhaseLabel, type EnhancePhase } from './ServerEnhanceStatus'
-import { serverChapterLabel } from '../../format'
+import { formatReadingTime, serverChapterLabel } from '../../format'
+import { timeLeft } from './endScreen'
 import { AUTO_SCROLL_MAX, AUTO_SCROLL_MIN } from './useAutoScroll'
 
 export interface AutoScrollControls {
@@ -189,6 +190,10 @@ export default function ReaderToolbar({
       if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setFocused(false)
     },
   }
+
+  const left = timeLeft(manifest, page)
+  const chapterLeft = left ? formatReadingTime(left.chapter) : ''
+  const seriesLeft = left?.series != null ? formatReadingTime(left.series) : null
 
   // How much of the series is left, on the same footing as the series page: downloaded chapters as
   // the denominator, completed ones as the numerator.
@@ -418,14 +423,28 @@ export default function ReaderToolbar({
 
           {/* Dropped on a phone only when the zoom pair is up: seven controls plus this counter
               leave the slider almost no track. */}
-          <Text
-            visibleFrom={prefs.mode !== 'vertical' ? 'xs' : undefined}
-            fz="xs"
-            c="var(--ink-3)"
-            style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
+          <Tooltip
+            label={
+              left && (
+                <>
+                  <div>{t`About ${chapterLeft} left in this chapter`}</div>
+                  {seriesLeft != null && <div>{t`About ${seriesLeft} left in the series`}</div>}
+                </>
+              )
+            }
+            disabled={!left}
+            withArrow
+            zIndex={OVERLAY_Z}
           >
-            {pageLabel} / {manifest.pageCount}
-          </Text>
+            <Text
+              visibleFrom={prefs.mode !== 'vertical' ? 'xs' : undefined}
+              fz="xs"
+              c="var(--ink-3)"
+              style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
+            >
+              {pageLabel} / {manifest.pageCount}
+            </Text>
+          </Tooltip>
 
           <Tooltip label={forwardChapterLabel} withArrow zIndex={OVERLAY_Z}>
             <ActionIcon

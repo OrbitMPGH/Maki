@@ -250,6 +250,7 @@ export function useLiveEvents() {
       for (const id of ids) {
         void queryClient.invalidateQueries({ queryKey: ['chapters', id] })
         void queryClient.invalidateQueries({ queryKey: ['reader-continue', id] })
+        void queryClient.invalidateQueries({ queryKey: ['reader-ending', id] })
       }
       if (ids.length > 0) {
         void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })

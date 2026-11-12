@@ -13,6 +13,7 @@ import {
   manifestServedOffline,
   readerRecapQuery,
   useBookmarks,
+  useReaderEnding,
   useReaderManifest,
   useToggleBookmark,
   type ReaderManifest,
@@ -659,6 +660,10 @@ export default function ReaderPage() {
   const zoomOut = useCallback(() => setZoom((z) => Math.max(1, z - ZOOM_STEP)), [])
   const zoomReset = useCallback(() => setZoom(1), [])
 
+  // The end screen's own read of what comes next, so the forward key follows a chapter that landed after open.
+  const { data: ending } = useReaderEnding(manifest?.seriesId, chapterId, atEnd)
+  const endNextId = ending ? ending.nextChapterId : (manifest?.nextChapterId ?? null)
+
   const reachEnd = useCallback(() => {
     lastTransitionRef.current = Date.now()
     setAtEnd(true)
@@ -671,7 +676,7 @@ export default function ReaderPage() {
     // On the end screen the forward key is the "second press" it asks for.
     if (atEnd) {
       if (settling()) return
-      if (manifest?.nextChapterId != null) void goToChapter(manifest.nextChapterId, true)
+      if (endNextId != null) void goToChapter(endNextId, true)
       return
     }
     if (splitting && half === 0 && wide[page]) {
@@ -695,6 +700,7 @@ export default function ReaderPage() {
     else reachEnd()
   }, [
     atEnd,
+    endNextId,
     spreads,
     spreadIndex,
     manifest,
@@ -1145,7 +1151,7 @@ export default function ReaderPage() {
           manifest={manifest}
           readingCounted={readingCounted}
           rtl={prefs.direction === 'rtl'}
-          onNext={() => void goToChapter(manifest.nextChapterId, true)}
+          onNext={(nextId) => void goToChapter(nextId, true)}
           onStay={() => setAtEnd(false)}
           onOpenNotes={() => setNotesOpen(true)}
           ratingPrompt={
