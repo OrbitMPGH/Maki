@@ -131,6 +131,8 @@ public static class JpegXl
                         format = new PixelFormat((uint)bands, TypeUint8, 0, 0);
                         break;
                     case DecNeedImageOutBuffer:
+                        // A second frame would ask again; Maki only decodes the single frames it wrote.
+                        if (output.IsAllocated) throw new JpegXlException("more than one frame");
                         CheckDec(JxlDecoderImageOutBufferSize(decoder, ref format, out var size), "JxlDecoderImageOutBufferSize");
                         if ((long)size != (long)width * height * bands) throw new JpegXlException("unexpected output size");
                         pixels = new byte[(int)size];
@@ -149,6 +151,31 @@ public static class JpegXl
         finally
         {
             if (output.IsAllocated) output.Free();
+            input.Free();
+            JxlDecoderDestroy(decoder);
+        }
+    }
+
+    /// <summary>Width and height from the header, without decoding pixels.</summary>
+    public static (int Width, int Height) ReadSize(byte[] data)
+    {
+        EnsureAvailable();
+        var decoder = JxlDecoderCreate(IntPtr.Zero);
+        if (decoder == IntPtr.Zero) throw new JpegXlException("JxlDecoderCreate");
+        var input = GCHandle.Alloc(data, GCHandleType.Pinned);
+        try
+        {
+            CheckDec(JxlDecoderSubscribeEvents(decoder, DecBasicInfo), "JxlDecoderSubscribeEvents");
+            CheckDec(JxlDecoderSetInput(decoder, input.AddrOfPinnedObject(), (nuint)data.Length), "JxlDecoderSetInput");
+            JxlDecoderCloseInput(decoder);
+            var status = JxlDecoderProcessInput(decoder);
+            if (status != DecBasicInfo) throw new JpegXlException($"JxlDecoderProcessInput returned {status}");
+            var info = new int[BasicInfoInts];
+            CheckDec(JxlDecoderGetBasicInfo(decoder, info), "JxlDecoderGetBasicInfo");
+            return (info[InfoXSize], info[InfoYSize]);
+        }
+        finally
+        {
             input.Free();
             JxlDecoderDestroy(decoder);
         }
@@ -214,16 +241,19 @@ public static class JpegXl
     /// <summary>The file names libjxl's builds give the library, looked for beside the app only.</summary>
     private static readonly string[] FileNames = ["jxl.dll", "libjxl.so.0.12", "libjxl.so.0.11", "libjxl.0.12.dylib", "libjxl.0.11.dylib"];
 
+    /// <summary>The libjxl file beside the app, whether or not it loads; null when none is there.</summary>
+    public static string? LibraryFile =>
+        FileNames.Select(file => Path.Combine(AppContext.BaseDirectory, file)).FirstOrDefault(File.Exists);
+
+    /// <summary>
+    /// Throws rather than returning zero, which would let the runtime probe the system's library
+    /// paths and pick up a distro libjxl Maki was never tested with.
+    /// </summary>
     private static IntPtr Resolve(string name, Assembly assembly, DllImportSearchPath? searchPath)
     {
         if (name != Library) return IntPtr.Zero;
-        foreach (var file in FileNames)
-        {
-            var path = Path.Combine(AppContext.BaseDirectory, file);
-            if (File.Exists(path) && NativeLibrary.TryLoad(path, out var handle)) return handle;
-        }
-
-        return IntPtr.Zero;
+        if (LibraryFile is { } path && NativeLibrary.TryLoad(path, out var handle)) return handle;
+        throw new DllNotFoundException($"libjxl is not beside Maki in {AppContext.BaseDirectory}");
     }
 
     [StructLayout(LayoutKind.Sequential)]

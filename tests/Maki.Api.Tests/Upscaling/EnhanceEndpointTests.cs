@@ -277,6 +277,46 @@ public sealed class EnhanceEndpointTests : IDisposable
         Assert.Equal("image/webp", converted.ContentType);
         Assert.Equal($"{tag}-webp\"", converted.EntityTag!.Tag.ToString());
         Assert.Equal(Maki.Core.Images.ImageFormat.Webp, Maki.Core.Images.ImageCodec.DetectFormat(converted.FileContents));
+
+        var head = Reader(db, 1);
+        head.Request.Method = "HEAD";
+        Assert.IsType<OkResult>(
+            await head.EnhancedPage(_chapterId, 1, "span-s", null, _store, _cache, NullLogger<ReaderController>.Instance, default));
+        Assert.Equal("image/webp", head.Response.ContentType);
+        Assert.Equal($"{tag}-webp\"", head.Response.Headers.ETag.ToString());
+    }
+
+    [Fact]
+    public async Task An_unreadable_jpeg_xl_page_is_dropped_so_asking_again_queues_it_instead_of_looping()
+    {
+        if (!Maki.Core.Images.JpegXl.IsAvailable && Environment.GetEnvironmentVariable("MAKI_REQUIRE_LIBJXL") != "1")
+        {
+            return;
+        }
+
+        using var db = _db.NewContext(1);
+        var slice = (await new ReaderService(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), null!, null!,
+            new ReadingSessionService(db), NullLogger<ReaderService>.Instance).PageSliceAsync(_chapterId, default))!;
+        var key = new UpscaleWorkKey(slice.ChapterFileId, slice.ArchiveVersion, slice.StartPage + 1, "span-s");
+        var path = await _cache.WriteAsync(key, [0xFF, 0x0A, 1, 2, 3, 4], "jxl", default);
+
+        Assert.IsType<NotFoundResult>(
+            await Reader(db, 1).EnhancedPage(_chapterId, 1, "span-s", null, _store, _cache, NullLogger<ReaderController>.Instance, default));
+
+        Assert.False(File.Exists(path));
+        Assert.Null(_cache.TryGet(key));
+        Assert.Equal("""[{"page":1,"state":"queued"}]""", Json(await Post(db, 1, "span-s", 1)).GetProperty("pages").GetRawText());
+    }
+
+    [Fact]
+    public async Task Without_libjxl_a_cached_jpeg_xl_page_counts_as_missing()
+    {
+        var key = new UpscaleWorkKey(1, "1-1", 0, "span-s");
+        await _cache.WriteAsync(key, [0xFF, 0x0A], "jxl", default);
+        Assert.NotNull(_cache.TryGet(key));
+
+        _cache.JpegXlReadable = () => false;
+        Assert.Null(_cache.TryGet(key));
     }
 
     [Fact]

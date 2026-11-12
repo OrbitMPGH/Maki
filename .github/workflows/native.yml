@@ -175,11 +175,20 @@ jobs:
           name: frontend-dist
           path: frontend-dist
 
-      # build-linux.sh compiles libjxl (distribution/libjxl/build.sh).
+      # build-linux.sh compiles libjxl (distribution/libjxl/build.sh) unless LIBJXL_DIR already holds it.
+      - name: Cache libjxl
+        id: libjxl
+        uses: actions/cache@v4
+        with:
+          path: .artifacts/libjxl
+          key: libjxl-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('distribution/libjxl/build.sh') }}
       - name: Install the libjxl toolchain
+        if: steps.libjxl.outputs.cache-hit != 'true'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake ninja-build g++
 
       - name: Build and self-test
+        env:
+          LIBJXL_DIR: ${{ github.workspace }}/.artifacts/libjxl
         run: bash distribution/native/build-linux.sh '${{ needs.frontend.outputs.version }}' frontend-dist
 
       - uses: actions/upload-artifact@v4

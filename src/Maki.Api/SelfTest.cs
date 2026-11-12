@@ -57,8 +57,11 @@ public static class SelfTest
             }
         });
 
+        // Optional: without it upscaled colour pages are WebP. A copy that is there but does not load is a
+        // broken package, which is what this is for.
         Check("libjxl", () =>
         {
+            if (JpegXl.LibraryFile is null) return "not installed, upscaled colour pages will be WebP";
             var pixels = new byte[16 * 16 * 3];
             var (_, width, _, _) = JpegXl.Decode(JpegXl.Encode(pixels, 16, 16, 3, 1.5f, 3), 256);
             return width == 16 ? $"version {JpegXl.Version}" : throw new InvalidOperationException("the round trip changed the size");

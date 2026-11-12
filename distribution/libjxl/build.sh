@@ -60,5 +60,5 @@ cmake --build "$work/build" --target jxl jxl_cms --parallel "$jobs"
 for lib in $(find "$work/build" -name 'lib*.so.*' -type f); do
   soname="$(readelf -d "$lib" | sed -n 's/.*(SONAME).*\[\(.*\)\]/\1/p')"
   cp "$lib" "$out/${soname:-$(basename "$lib")}"
+  ls -l "$out/${soname:-$(basename "$lib")}"
 done
-ls -l "$out"

@@ -63,11 +63,23 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
         }
     }
 
-    /// <summary>The cached file for <paramref name="key"/>, recording the access, or null.</summary>
+    /// <summary>Whether libjxl loaded. Tests replace it; a cached JPEG XL page is unusable without it.</summary>
+    internal Func<bool> JpegXlReadable { get; set; } = () => Maki.Core.Images.JpegXl.IsAvailable;
+
+    /// <summary>
+    /// The cached file for <paramref name="key"/>, recording the access, or null. A JPEG XL page counts
+    /// as missing while libjxl is not loaded (a cache carried over from a build that had it): it could
+    /// not be converted for a browser without JPEG XL, so the page is made again as WebP instead.
+    /// </summary>
     public string? TryGet(UpscaleWorkKey key)
     {
         foreach (var extension in (string[])["webp", "jxl", "jpg"])
         {
+            if (extension == "jxl" && !JpegXlReadable())
+            {
+                continue;
+            }
+
             var path = PathFor(key, extension);
             if (File.Exists(path))
             {
@@ -80,6 +92,9 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
 
         return null;
     }
+
+    /// <summary>Deletes a cached page that turned out to be unreadable, so the next request makes it again.</summary>
+    public void Discard(string path) => DeleteAndForget(path);
 
     /// <summary>Writes the page aside and moves it into place, then evicts down to the cap.</summary>
     public async Task<string> WriteAsync(UpscaleWorkKey key, byte[] bytes, string extension, CancellationToken ct)

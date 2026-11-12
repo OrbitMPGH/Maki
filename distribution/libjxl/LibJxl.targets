@@ -4,7 +4,8 @@
     beside Maki.Api, where Maki.Core.Images.JpegXl looks for them. Linux builds get libjxl from
     distribution/libjxl/build.sh instead (the Dockerfile and build-linux.sh call it), because libjxl
     publishes no arm64 Linux libraries. They link the Visual C++ runtime, which ONNX Runtime needs
-    already. Offline, the build goes on without them and upscaled pages stay WebP.
+    already. Offline, the build goes on without them and upscaled pages stay WebP (the self-test
+    reports libjxl as not installed). A download that does not match the pinned hash fails the build.
     -p:SkipLibJxl=true skips it.
   -->
   <PropertyGroup>

@@ -9,7 +9,7 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     # A stalled step (registry outage, hung native install) would otherwise ride to GitHub's
-    # 6-hour job cap before it gets cancelled — fail fast instead. 30 rather than 20 for the run that
+    # 6-hour job cap before it gets cancelled, so fail fast instead. 30 rather than 20 for the run that
     # builds libjxl after build.sh changes; later runs take it from the cache.
     timeout-minutes: 30
     steps:
@@ -27,7 +27,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .artifacts/libjxl
-          key: libjxl-${{ runner.os }}-${{ hashFiles('distribution/libjxl/build.sh') }}
+          key: libjxl-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('distribution/libjxl/build.sh') }}
       - name: Build libjxl
         if: steps.libjxl.outputs.cache-hit != 'true'
         run: |

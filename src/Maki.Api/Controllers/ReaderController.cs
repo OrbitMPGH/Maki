@@ -433,9 +433,10 @@ public class ReaderController(
     /// A server upscale from the cache. 404 until it is there; this never queues one. A page cached as
     /// JPEG XL is sent as it is only when <paramref name="jxl"/> is "1" (the reader decoded a test
     /// image); otherwise it is converted to WebP on the way out, since Edge and older browsers cannot
-    /// decode it.
+    /// decode it. HEAD answers without converting.
     /// </summary>
     [HttpGet("chapter/{id:int}/page/{page:int}/enhanced")]
+    [HttpHead("chapter/{id:int}/page/{page:int}/enhanced")]
     public async Task<IActionResult> EnhancedPage(
         int id,
         int page,
@@ -482,19 +483,46 @@ public class ReaderController(
 
         if (convert)
         {
+            // The hub-down poller only asks whether the page is there; a conversion would be thrown away.
+            if (HttpMethods.IsHead(Request.Method))
+            {
+                Response.Headers.ETag = etag.ToString();
+                Response.ContentType = "image/webp";
+                return Ok();
+            }
+
+            byte[] bytes;
+            try
+            {
+                bytes = await System.IO.File.ReadAllBytesAsync(cached, ct);
+            }
+            catch (IOException)
+            {
+                // Evicted since TryGet: the reader's next request queues it again.
+                return NotFound();
+            }
+
             UpscaledImage converted;
             try
             {
-                var bytes = await System.IO.File.ReadAllBytesAsync(cached, ct);
-                // libvips cannot read a JPEG XL header, so the page is weighed at the most it can be.
+                // A conversion peaks at about 7 bytes a pixel (49 MB for a 7.5 MP page), twice what the
+                // gate's pixel budget assumes.
+                var (width, height) = JpegXl.ReadSize(bytes);
                 converted = await ImageWorkGate.RunAsync(
-                    () => Task.FromResult(ImageCodec.TranscodeUpscaledJpegXl(bytes)),
-                    ImageWorkGate.Weigh(1, (int)ImageCodec.MaxJpegXlPixels), ct);
+                    () => Task.FromResult(ImageCodec.TranscodeUpscaledJpegXl(bytes)), 2 * ImageWorkGate.Weigh(width, height), ct);
             }
-            catch (Exception ex) when (ex is JpegXlException or IOException)
+            catch (JpegXlException ex)
+            {
+                // Dropped, or the reader would read the 404 as an eviction, ask again, find the same file
+                // cached and loop. Without it the page is made again.
+                logger.LogInformation(ex, "Dropped the unreadable upscaled page {Path}", cached);
+                cache.Discard(cached);
+                return NotFound();
+            }
+            catch (NetVips.VipsException ex)
             {
                 logger.LogInformation(ex, "Converting the upscaled page {Path} to WebP failed", cached);
-                return NotFound();
+                return StatusCode(StatusCodes.Status500InternalServerError);
             }
 
             PageCache.DropAfterScan(cached);

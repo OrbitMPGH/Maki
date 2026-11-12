@@ -39,10 +39,15 @@ fi
 echo "== Publishing Maki.Api ($rid, self-contained) =="
 dotnet publish src/Maki.Api/Maki.Api.csproj -c Release -r "$rid" --self-contained true \
   -p:SkipFrontendBuild=true -p:Version="$version" -p:InformationalVersion="$version+$commit" -o "$app"
-echo "== Building libjxl =="
+echo "== libjxl =="
 # Beside Maki.Api, where the upscaler looks for it. Built on this machine, so it needs a glibc and
-# libstdc++ at least this new; an older system loads none of it and stays on WebP.
-bash distribution/libjxl/build.sh "$app"
+# libstdc++ at least this new (README-linux.txt says which); an older system loads none of it and
+# stays on WebP. LIBJXL_DIR keeps a build between runs (native.yml caches it).
+libjxl="${LIBJXL_DIR:-$out/libjxl}"
+if [ ! -e "$libjxl/libjxl.so.0.12" ]; then
+  bash distribution/libjxl/build.sh "$libjxl"
+fi
+cp "$libjxl"/*.so.* "$app/"
 cp -r "$dist" "$app/wwwroot"
 cp LICENSE THIRD_PARTY_NOTICES.md "$app/"
 cp distribution/native/maki.service "$app/"
