@@ -1006,14 +1006,14 @@ msgstr "{chapters, plural, one {{cellDate}: # capítulo} many {{cellDate}: # cap
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr ""
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{chapters} chapters"
 msgstr "{chapters} capítulos"
-
-#: src/components/discover/DiscoverDetailModal.tsx
-msgid "{chapters}<0>ch</0>"
-msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1092,6 +1092,14 @@ msgstr "{chaptersRead} de {seriesChapterCount} capítulos descargados leídos, {
 #, fuzzy
 msgid "{chaptersRead}/{seriesChapterCount}"
 msgstr "{chaptersRead}/{seriesChapterCount}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{chapterTotal, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "{chapterTotal, plural, one {# chapter} other {# chapters}} in {volumeTotal, plural, one {# volume} other {# volumes}}"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -2029,9 +2037,8 @@ msgid "{missingWanted, plural, one {# wanted chapter is missing} other {# wanted
 msgstr "{missingWanted, plural, one {Falta # capítulo marcado como deseado} many {Faltan # capítulos marcados como deseados} other {Faltan # capítulos marcados como deseados}}"
 
 #: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
-msgstr "{missingWanted, plural, one {# solicitado, sin descargar} many {# solicitados, sin descargar} other {# solicitados, sin descargar}}"
+msgid "{missingWanted, plural, one {# wanted} other {# wanted}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3425,13 +3432,12 @@ msgstr "<0>Pulgar hacia arriba</0> cuenta para tus gustos. Los títulos similare
 msgid "<1m"
 msgstr "<1m"
 
-#. placeholder {0}: Math.round(catchUpMinutes / 60)
 #: src/components/discover/DiscoverDetailModal.tsx
-msgid "~{0}<0>h</0>"
+msgid "~{catchUpHours} h to catch up"
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
-msgid "~{catchUpMinutes}<0>min</0>"
+msgid "~{catchUpMinutes} min to catch up"
 msgstr ""
 
 #: src/pages/stats/charts/LeanBars.tsx
@@ -3767,6 +3773,10 @@ msgstr "queda aproximadamente {hourPhrase} {restPhrase}"
 #, fuzzy
 msgid "About {readingTime}"
 msgstr "Aproximadamente {readingTime}"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "About {toFinish} to finish"
+msgstr ""
 
 #: src/pages/MetadataGatePage.tsx
 #, fuzzy
@@ -5778,6 +5788,7 @@ msgid "Categories"
 msgstr "Categorías"
 
 #: src/components/discover/DiscoverSeedStrip.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Caught up"
 msgstr "Al día"
@@ -6191,12 +6202,10 @@ msgstr "Capítulo mejorado"
 msgid "chapters"
 msgstr "capítulos"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/home/ReadingWeeks.tsx
 #: src/components/RequestForm.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -8697,7 +8706,6 @@ msgstr "Descargando…"
 
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/HealthPage.tsx
@@ -9987,6 +9995,7 @@ msgstr "Tasa de finalización"
 msgid "Finish setup"
 msgstr "Finalizar configuración"
 
+#: src/components/series/SeriesHero.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -10673,8 +10682,7 @@ msgstr "Contiene todas"
 msgid "Has an anime"
 msgstr "Tiene anime"
 
-#: src/components/discover/DiscoverDetailModal.tsx
-#: src/components/series/SeriesHero.tsx
+#: src/components/series/HeroChips.tsx
 msgid "Has an anime adaptation"
 msgstr ""
 
@@ -16117,6 +16125,7 @@ msgstr "Activado"
 msgid "On another file"
 msgstr "En otro archivo"
 
+#: src/components/series/SeriesHero.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "On disk"
@@ -17432,7 +17441,6 @@ msgid "Profile created"
 msgstr "Perfil creado"
 
 #: src/api/inbox.ts
-#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/stats/sectionList.ts
@@ -17878,6 +17886,7 @@ msgstr "Alcanzado para {ratioValue} más de lo que predeciría tenerla, en {seri
 
 #: src/components/discover/PreviewChapterButton.tsx
 #: src/components/series/ChapterTableRows.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -18218,6 +18227,10 @@ msgstr "Progreso de lectura de Kavita…"
 
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "Reading since"
+msgstr ""
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Reading since {since}"
 msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
@@ -18607,9 +18620,7 @@ msgstr "Notas de la versión"
 msgid "Release number may be a sequel, not a chapter"
 msgstr "El número de la publicación puede ser el de una secuela, no el de un capítulo"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Released"
@@ -24217,10 +24228,6 @@ msgstr ""
 msgid "To"
 msgstr "A"
 
-#: src/components/discover/DiscoverDetailModal.tsx
-msgid "To catch up"
-msgstr ""
-
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/NotificationsPage.tsx
@@ -25641,7 +25648,6 @@ msgstr "Volumen mejorado"
 msgid "volume, volume packs, volume search, auto-grab, proposals, torrent"
 msgstr "volumen, packs de volúmenes, búsqueda de volúmenes, captura automática, propuestas, torrent"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/SeriesDetailPage.tsx

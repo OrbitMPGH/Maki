@@ -1006,14 +1006,14 @@ msgstr "{chapters, plural, other {{cellDate}：# 个章节}}"
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr ""
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{chapters} chapters"
 msgstr "{chapters} 个章节"
-
-#: src/components/discover/DiscoverDetailModal.tsx
-msgid "{chapters}<0>ch</0>"
-msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1092,6 +1092,14 @@ msgstr "已阅读下载章节中的 {chaptersRead}/{seriesChapterCount}，系列
 #, fuzzy
 msgid "{chaptersRead}/{seriesChapterCount}"
 msgstr "{chaptersRead}/{seriesChapterCount}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{chapterTotal, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "{chapterTotal, plural, one {# chapter} other {# chapters}} in {volumeTotal, plural, one {# volume} other {# volumes}}"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -2029,9 +2037,8 @@ msgid "{missingWanted, plural, one {# wanted chapter is missing} other {# wanted
 msgstr "{missingWanted, plural, other {# 个想要的章节缺失}}"
 
 #: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
-msgstr "{missingWanted, plural, other {# 个想要，未获取}}"
+msgid "{missingWanted, plural, one {# wanted} other {# wanted}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3425,13 +3432,12 @@ msgstr "<0>点赞</0> 会计入你的品味。相似标题的排名会更高。"
 msgid "<1m"
 msgstr "不足 1 分钟"
 
-#. placeholder {0}: Math.round(catchUpMinutes / 60)
 #: src/components/discover/DiscoverDetailModal.tsx
-msgid "~{0}<0>h</0>"
+msgid "~{catchUpHours} h to catch up"
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
-msgid "~{catchUpMinutes}<0>min</0>"
+msgid "~{catchUpMinutes} min to catch up"
 msgstr ""
 
 #: src/pages/stats/charts/LeanBars.tsx
@@ -3767,6 +3773,10 @@ msgstr "还剩约 {hourPhrase} {restPhrase}"
 #, fuzzy
 msgid "About {readingTime}"
 msgstr "约 {readingTime}"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "About {toFinish} to finish"
+msgstr ""
 
 #: src/pages/MetadataGatePage.tsx
 #, fuzzy
@@ -5778,6 +5788,7 @@ msgid "Categories"
 msgstr "类别"
 
 #: src/components/discover/DiscoverSeedStrip.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Caught up"
 msgstr "已追上进度"
@@ -6191,12 +6202,10 @@ msgstr "章节已升级"
 msgid "chapters"
 msgstr "章节"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/home/ReadingWeeks.tsx
 #: src/components/RequestForm.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -8697,7 +8706,6 @@ msgstr "下载中……"
 
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/HealthPage.tsx
@@ -9987,6 +9995,7 @@ msgstr "完读率"
 msgid "Finish setup"
 msgstr "完成设置"
 
+#: src/components/series/SeriesHero.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -10673,8 +10682,7 @@ msgstr "包含全部"
 msgid "Has an anime"
 msgstr "有动画版"
 
-#: src/components/discover/DiscoverDetailModal.tsx
-#: src/components/series/SeriesHero.tsx
+#: src/components/series/HeroChips.tsx
 msgid "Has an anime adaptation"
 msgstr ""
 
@@ -16117,6 +16125,7 @@ msgstr "开启"
 msgid "On another file"
 msgstr "在另一个文件中"
 
+#: src/components/series/SeriesHero.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "On disk"
@@ -17432,7 +17441,6 @@ msgid "Profile created"
 msgstr "配置文件已创建"
 
 #: src/api/inbox.ts
-#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/stats/sectionList.ts
@@ -17878,6 +17886,7 @@ msgstr "在 {seriesPhrase} 中，被阅读的次数比拥有它所预测的多 {
 
 #: src/components/discover/PreviewChapterButton.tsx
 #: src/components/series/ChapterTableRows.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -18218,6 +18227,10 @@ msgstr "正在读取 Kavita 的阅读进度……"
 
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "Reading since"
+msgstr ""
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Reading since {since}"
 msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
@@ -18607,9 +18620,7 @@ msgstr "发行说明"
 msgid "Release number may be a sequel, not a chapter"
 msgstr "资源编号可能是续作，而不是章节"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Released"
@@ -24217,10 +24228,6 @@ msgstr ""
 msgid "To"
 msgstr "至"
 
-#: src/components/discover/DiscoverDetailModal.tsx
-msgid "To catch up"
-msgstr ""
-
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/NotificationsPage.tsx
@@ -25641,7 +25648,6 @@ msgstr "卷已升级"
 msgid "volume, volume packs, volume search, auto-grab, proposals, torrent"
 msgstr "volume, 卷包, 卷搜索, 自动抓取, 提案, 种子"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/SeriesDetailPage.tsx

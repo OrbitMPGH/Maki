@@ -1006,14 +1006,14 @@ msgstr "{chapters, plural, one {{cellDate}: # глава} few {{cellDate}: # г�
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr ""
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{chapters} chapters"
 msgstr "Главы: {chapters}"
-
-#: src/components/discover/DiscoverDetailModal.tsx
-msgid "{chapters}<0>ch</0>"
-msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1092,6 +1092,14 @@ msgstr "Прочитано {chaptersRead} из {seriesChapterCount} загруж
 #, fuzzy
 msgid "{chaptersRead}/{seriesChapterCount}"
 msgstr "{chaptersRead}/{seriesChapterCount}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{chapterTotal, plural, one {# chapter} other {# chapters}}"
+msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+msgid "{chapterTotal, plural, one {# chapter} other {# chapters}} in {volumeTotal, plural, one {# volume} other {# volumes}}"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -2029,9 +2037,8 @@ msgid "{missingWanted, plural, one {# wanted chapter is missing} other {# wanted
 msgstr "{missingWanted, plural, one {# запрошенная глава отсутствует} few {# запрошенные главы отсутствуют} many {# запрошенных глав отсутствуют} other {# запрошенной главы отсутствует}}"
 
 #: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
-msgstr "{missingWanted, plural, one {# запрошена, не загружена} few {# запрошены, не загружены} many {# запрошено, не загружено} other {# запрошено, не загружено}}"
+msgid "{missingWanted, plural, one {# wanted} other {# wanted}}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -3425,13 +3432,12 @@ msgstr "<0>Лайк</0> учитывается в ваших вкусах. По�
 msgid "<1m"
 msgstr "<1 мин"
 
-#. placeholder {0}: Math.round(catchUpMinutes / 60)
 #: src/components/discover/DiscoverDetailModal.tsx
-msgid "~{0}<0>h</0>"
+msgid "~{catchUpHours} h to catch up"
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
-msgid "~{catchUpMinutes}<0>min</0>"
+msgid "~{catchUpMinutes} min to catch up"
 msgstr ""
 
 #: src/pages/stats/charts/LeanBars.tsx
@@ -3767,6 +3773,10 @@ msgstr "осталось около {hourPhrase} {restPhrase}"
 #, fuzzy
 msgid "About {readingTime}"
 msgstr "Около {readingTime}"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "About {toFinish} to finish"
+msgstr ""
 
 #: src/pages/MetadataGatePage.tsx
 #, fuzzy
@@ -5778,6 +5788,7 @@ msgid "Categories"
 msgstr "Категории"
 
 #: src/components/discover/DiscoverSeedStrip.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Caught up"
 msgstr "Дочитано"
@@ -6191,12 +6202,10 @@ msgstr "Глава улучшена"
 msgid "chapters"
 msgstr "главы"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/home/ReadingWeeks.tsx
 #: src/components/RequestForm.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -8697,7 +8706,6 @@ msgstr "Загрузка…"
 
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/HealthPage.tsx
@@ -9987,6 +9995,7 @@ msgstr "Доля завершённых серий"
 msgid "Finish setup"
 msgstr "Завершить настройку"
 
+#: src/components/series/SeriesHero.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -10673,8 +10682,7 @@ msgstr "Есть все"
 msgid "Has an anime"
 msgstr "Есть аниме"
 
-#: src/components/discover/DiscoverDetailModal.tsx
-#: src/components/series/SeriesHero.tsx
+#: src/components/series/HeroChips.tsx
 msgid "Has an anime adaptation"
 msgstr ""
 
@@ -16117,6 +16125,7 @@ msgstr "Вкл."
 msgid "On another file"
 msgstr "В другом файле"
 
+#: src/components/series/SeriesHero.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "On disk"
@@ -17432,7 +17441,6 @@ msgid "Profile created"
 msgstr "Профиль создан"
 
 #: src/api/inbox.ts
-#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/stats/sectionList.ts
@@ -17878,6 +17886,7 @@ msgstr "Обращались к {ratioValue} чаще, чем это предс�
 
 #: src/components/discover/PreviewChapterButton.tsx
 #: src/components/series/ChapterTableRows.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -18218,6 +18227,10 @@ msgstr "Прогресс чтения из Kavita…"
 
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "Reading since"
+msgstr ""
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Reading since {since}"
 msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
@@ -18607,9 +18620,7 @@ msgstr "Примечания к выпуску"
 msgid "Release number may be a sequel, not a chapter"
 msgstr "Номер релиза может относиться к продолжению, а не к главе"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Released"
@@ -24217,10 +24228,6 @@ msgstr ""
 msgid "To"
 msgstr "До"
 
-#: src/components/discover/DiscoverDetailModal.tsx
-msgid "To catch up"
-msgstr ""
-
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/NotificationsPage.tsx
@@ -25641,7 +25648,6 @@ msgstr "Том улучшен"
 msgid "volume, volume packs, volume search, auto-grab, proposals, torrent"
 msgstr "том, тома, поиск томов, автозахват, предложения, торрент"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/SeriesDetailPage.tsx

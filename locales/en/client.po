@@ -863,13 +863,13 @@ msgstr "{chapters, plural, one {{cellDate}: # chapter} other {{cellDate}: # chap
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapters, plural, one {# chapter} other {# chapters}}"
 
+#: src/components/discover/DiscoverDetailModal.tsx
+msgid "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
+msgstr "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
+
 #: src/pages/LibraryPage.tsx
 msgid "{chapters} chapters"
 msgstr "{chapters} chapters"
-
-#: src/components/discover/DiscoverDetailModal.tsx
-msgid "{chapters}<0>ch</0>"
-msgstr "{chapters}<0>ch</0>"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{chaptersChecked, plural, one {Upgrade scan finished: no better copy for the # chapter checked} other {Upgrade scan finished: no better copies for the # chapters checked}}"
@@ -934,6 +934,14 @@ msgstr "{chaptersRead} of {seriesChapterCount} downloaded chapters read, {series
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "{chaptersRead}/{seriesChapterCount}"
 msgstr "{chaptersRead}/{seriesChapterCount}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{chapterTotal, plural, one {# chapter} other {# chapters}}"
+msgstr "{chapterTotal, plural, one {# chapter} other {# chapters}}"
+
+#: src/components/series/SeriesHero.tsx
+msgid "{chapterTotal, plural, one {# chapter} other {# chapters}} in {volumeTotal, plural, one {# volume} other {# volumes}}"
+msgstr "{chapterTotal, plural, one {# chapter} other {# chapters}} in {volumeTotal, plural, one {# volume} other {# volumes}}"
 
 #: src/pages/ImportPage.tsx
 msgid "{comicCount, plural, one {# comic} other {# comics}}"
@@ -1708,8 +1716,8 @@ msgid "{missingWanted, plural, one {# wanted chapter is missing} other {# wanted
 msgstr "{missingWanted, plural, one {# wanted chapter is missing} other {# wanted chapters are missing}}"
 
 #: src/components/series/SeriesHero.tsx
-msgid "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
-msgstr "{missingWanted, plural, one {# wanted, not fetched} other {# wanted, not fetched}}"
+msgid "{missingWanted, plural, one {# wanted} other {# wanted}}"
+msgstr "{missingWanted, plural, one {# wanted} other {# wanted}}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{missingWanted, plural, one {Download # chapter} other {Download # chapters}}"
@@ -2843,14 +2851,13 @@ msgstr "<0>Thumbs up</0> counts toward your taste. Similar titles rank higher."
 msgid "<1m"
 msgstr "<1m"
 
-#. placeholder {0}: Math.round(catchUpMinutes / 60)
 #: src/components/discover/DiscoverDetailModal.tsx
-msgid "~{0}<0>h</0>"
-msgstr "~{0}<0>h</0>"
+msgid "~{catchUpHours} h to catch up"
+msgstr "~{catchUpHours} h to catch up"
 
 #: src/components/discover/DiscoverDetailModal.tsx
-msgid "~{catchUpMinutes}<0>min</0>"
-msgstr "~{catchUpMinutes}<0>min</0>"
+msgid "~{catchUpMinutes} min to catch up"
+msgstr "~{catchUpMinutes} min to catch up"
 
 #: src/pages/stats/charts/LeanBars.tsx
 msgid "−{abs} pt"
@@ -3121,6 +3128,10 @@ msgstr "about {hourPhrase} {restPhrase} left"
 #: src/pages/SeriesDetailPage.tsx
 msgid "About {readingTime}"
 msgstr "About {readingTime}"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "About {toFinish} to finish"
+msgstr "About {toFinish} to finish"
 
 #: src/pages/MetadataGatePage.tsx
 msgid "About a 350 MB download. Maki opens as soon as it is installed."
@@ -4779,6 +4790,7 @@ msgid "Categories"
 msgstr "Categories"
 
 #: src/components/discover/DiscoverSeedStrip.tsx
+#: src/components/series/SeriesHero.tsx
 msgid "Caught up"
 msgstr "Caught up"
 
@@ -5115,12 +5127,10 @@ msgstr "Chapter upgraded"
 msgid "chapters"
 msgstr "chapters"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/home/ReadingWeeks.tsx
 #: src/components/RequestForm.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -7170,7 +7180,6 @@ msgstr "Downloading…"
 
 #: src/api/inbox.ts
 #: src/components/NotificationsSection.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/HealthPage.tsx
@@ -8230,6 +8239,7 @@ msgstr "Finish rate"
 msgid "Finish setup"
 msgstr "Finish setup"
 
+#: src/components/series/SeriesHero.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -8795,8 +8805,7 @@ msgstr "Has all of"
 msgid "Has an anime"
 msgstr "Has an anime"
 
-#: src/components/discover/DiscoverDetailModal.tsx
-#: src/components/series/SeriesHero.tsx
+#: src/components/series/HeroChips.tsx
 msgid "Has an anime adaptation"
 msgstr "Has an anime adaptation"
 
@@ -13251,6 +13260,7 @@ msgstr "On"
 msgid "On another file"
 msgstr "On another file"
 
+#: src/components/series/SeriesHero.tsx
 #: src/pages/LibraryPage.tsx
 msgid "On disk"
 msgstr "On disk"
@@ -14329,7 +14339,6 @@ msgid "Profile created"
 msgstr "Profile created"
 
 #: src/api/inbox.ts
-#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/stats/sectionList.ts
@@ -14699,6 +14708,7 @@ msgstr "Reached for {ratioValue} more than owning it would predict, across {seri
 
 #: src/components/discover/PreviewChapterButton.tsx
 #: src/components/series/ChapterTableRows.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -14983,6 +14993,10 @@ msgstr "Reading progress from Kavita…"
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "Reading since"
 msgstr "Reading since"
+
+#: src/components/series/SeriesReadingPanel.tsx
+msgid "Reading since {since}"
+msgstr "Reading since {since}"
 
 #: src/components/RelinkFilesModal.tsx
 msgid "Reading the folder and every volume archive…"
@@ -15299,9 +15313,7 @@ msgstr "Release notes"
 msgid "Release number may be a sequel, not a chapter"
 msgstr "Release number may be a sequel, not a chapter"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Released"
 msgstr "Released"
@@ -19891,10 +19903,6 @@ msgstr "to"
 msgid "To"
 msgstr "To"
 
-#: src/components/discover/DiscoverDetailModal.tsx
-msgid "To catch up"
-msgstr "To catch up"
-
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/NotificationsPage.tsx
@@ -21064,7 +21072,6 @@ msgstr "Volume upgraded"
 msgid "volume, volume packs, volume search, auto-grab, proposals, torrent"
 msgstr "volume, volume packs, volume search, auto-grab, proposals, torrent"
 
-#: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/SeriesDetailPage.tsx
