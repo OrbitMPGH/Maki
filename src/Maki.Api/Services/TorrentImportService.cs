@@ -16,6 +16,19 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>What an import is allowed to do to files the library already has.</summary>
+/// <summary>How an import puts a file in the series folder.</summary>
+public enum ImportPlacement
+{
+    /// <summary>Hardlink when <c>download.usehardlinks</c> allows it, else copy. The original stays.</summary>
+    LinkOrCopy,
+
+    /// <summary>
+    /// Rename into the series folder, or copy and then delete across volumes. Only a ready CBZ, zip
+    /// or PDF moves; anything that has to be built is built beside its original, which stays.
+    /// </summary>
+    Move,
+}
+
 public enum TorrentImportMode
 {
     /// <summary>
@@ -384,9 +397,12 @@ public class TorrentImportService(
     /// otherwise pay for that walk twice. Null plans here.
     /// </param>
     /// <param name="skipFiles">Downloaded file names to leave out entirely, whatever the mode.</param>
+    /// <param name="placement">Move only for a manual or drop-folder import; a torrent keeps seeding.</param>
+    /// <param name="sourceName">The imported rows' <c>ChapterFile.SourceName</c>; null names the indexer.</param>
     public async Task<TorrentImportOutcome> ImportAsync(
         DownloadQueueItem item, Series series, string? contentPath, TorrentImportMode mode,
-        CancellationToken ct, TorrentImportPlan? plan = null, IReadOnlySet<string>? skipFiles = null)
+        CancellationToken ct, TorrentImportPlan? plan = null, IReadOnlySet<string>? skipFiles = null,
+        ImportPlacement placement = ImportPlacement.LinkOrCopy, string? sourceName = null)
     {
         plan ??= await PlanAsync(item, series, contentPath, ct);
         if (plan.ErrorKey is not null)
@@ -477,7 +493,12 @@ public class TorrentImportService(
                     // A CBZ or a zip under another name is placed as it is and can still be
                     // hardlinked; a RAR or a folder of loose pages is built into a new archive,
                     // which is a fresh copy however the setting reads.
-                    if (ComicSourceConverter.Materialize(source, target, useHardlinks)
+                    if (placement == ImportPlacement.Move && source is { IsReadyToPlace: true, Entry: null })
+                    {
+                        MoveInto(source.Path, target);
+                        freshCopies++;
+                    }
+                    else if (ComicSourceConverter.Materialize(source, target, useHardlinks)
                         == FilePlacement.Hardlinked)
                     {
                         hardlinked++;
@@ -522,7 +543,7 @@ public class TorrentImportService(
         // imported it already decided about its ComicInfo.
         var writeComicInfo = writeComicInfoSetting && freshCopies == imported.Count;
         var (linked, unrecognized) = await cbzLinkService.LinkFilesAsync(
-            series, seriesDir, imported, $"torrent:{ReleaseInfoOf(item)?.Indexer}",
+            series, seriesDir, imported, sourceName ?? $"torrent:{ReleaseInfoOf(item)?.Indexer}",
             updateComicInfo: writeComicInfo, releaseName: ReleaseInfoOf(item)?.Title ?? item.Title,
             replaceExisting: mode == TorrentImportMode.Replace, ct: ct, queueConversion: true,
             // An upgrade may only take chapters off the files its verdict marked; a protected or
@@ -585,6 +606,28 @@ public class TorrentImportService(
         return new TorrentImportOutcome(
             true, null, imported.Count, linked, unrecognized, deleted, skipped, imported, HistoryGroupId: groupId,
             PlacedFresh: hardlinked + freshCopies == imported.Count);
+    }
+
+    /// <summary>
+    /// A rename when both paths share a volume, else a copy through a partial name and then the
+    /// delete. Never <see cref="File.Move(string, string)"/>, which copies silently across volumes and
+    /// can leave a half-written file under the real name.
+    /// </summary>
+    internal static void MoveInto(string source, string target)
+    {
+        var outcome = SameVolumeMove.Move(source, target);
+        if (outcome.Result == MoveResult.Moved || SameVolumeMove.Landed(source, target))
+        {
+            return;
+        }
+
+        if (outcome.Result != MoveResult.CrossVolume)
+        {
+            throw outcome.Error ?? new IOException($"Could not move {Path.GetFileName(source)}");
+        }
+
+        FileLinker.Place(source, target, preferHardlink: false);
+        File.Delete(source);
     }
 
     /// <summary>

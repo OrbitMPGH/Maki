@@ -205,6 +205,18 @@ public static class SettingKeys
     /// </summary>
     public const string LibraryWriteCoverToFolder = "library.writecovertofolder";
 
+    /// <summary>"true" turns on the drop folder: <see cref="ImportDropFolderPath"/> is polled and comics that match one library series are imported into it.</summary>
+    public const string ImportDropFolderEnabled = "import.dropfolder.enabled";
+
+    /// <summary>The folder polled for comics to import. Admin-set, so it may be anywhere on the host.</summary>
+    public const string ImportDropFolderPath = "import.dropfolder.path";
+
+    /// <summary>Minutes between polls, 1 to 1440; unset is 5. A file is touched only once its size held across two polls.</summary>
+    public const string ImportDropFolderIntervalMinutes = "import.dropfolder.intervalminutes";
+
+    /// <summary>"move" moves matched comics into the series folder; anything else hardlinks or copies them per <see cref="DownloadUseHardlinks"/>.</summary>
+    public const string ImportDropFolderPlacement = "import.dropfolder.placement";
+
     /// <summary>
     /// Comma-separated languages whose volume and chapter words the file name and release parsers
     /// read besides English ("fr,de"), see <see cref="Parsing.NameParsingProfile"/>. Unset reads

@@ -1005,6 +1005,9 @@ try
     builder.Services.AddScoped<ChapterDownloadProcessor>();
     builder.Services.AddScoped<LibraryImportService>();
     builder.Services.AddScoped<LibraryImportResolver>();
+    builder.Services.AddScoped<ManualImportService>();
+    builder.Services.AddScoped<DropFolderImportService>();
+    builder.Services.AddSingleton<DropFolderState>();
     builder.Services.AddScoped<LibraryImportUndoService>();
     builder.Services.AddScoped<CbzLinkService>();
     builder.Services.AddScoped<ChapterFromFilesService>();
@@ -1303,6 +1306,14 @@ try
             .ForJob(Maki.Api.Jobs.ScrobbleJob.Key)
             .WithIdentity("scrobble-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(3))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
+
+        // Every-minute tick; DropFolderImportService decides whether the configured interval has elapsed.
+        q.AddJob<Maki.Api.Jobs.DropFolderImportJob>(j => j.WithIdentity(Maki.Api.Jobs.DropFolderImportJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.DropFolderImportJob.Key)
+            .WithIdentity("drop-folder-import-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         // Every-minute tick; ImportListService decides whether the configured interval has elapsed.

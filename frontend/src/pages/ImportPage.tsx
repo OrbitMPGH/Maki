@@ -49,6 +49,7 @@ import type { MetadataSearchResult } from '../api/types'
 import { IgnoredFoldersModal } from '../components/import/IgnoredFoldersModal'
 import { ImportMatchFinder } from '../components/import/ImportMatchFinder'
 import { ImportPlanModal } from '../components/import/ImportPlanModal'
+import { ManualImport } from '../components/import/ManualImport'
 import { MihonImport } from '../components/import/MihonImport'
 import { RecentImports, UndoBatchButton } from '../components/import/RecentImports'
 import { StepStrip, type Step } from '../components/StepStrip'
@@ -87,6 +88,46 @@ interface ScanCandidate {
   existingSeriesId: number | null
   /** `restore` is an archived series' folder: importing puts the series back in the library. */
   kind: ImportCandidateKind
+  /** What found the first match: `link`, `comicInfo`, `seriesJson`, `folder` or `library`. */
+  matchSource?: string | null
+  /** The ComicInfo or series.json name, or the web link, that found the first match. */
+  matchHint?: string | null
+  /** Comics directly in the root, gathered into `folderName` on import. */
+  looseFiles?: string[] | null
+}
+
+/** How the scan found a folder's first match, under the folder name. */
+function MatchSourceNote({ candidate }: { candidate: ScanCandidate }) {
+  const { cleanedTitle } = candidate
+  const hint = candidate.matchHint ?? ''
+  switch (candidate.matchSource) {
+    case 'link':
+      return (
+        <Tooltip label={hint} disabled={!hint} withArrow>
+          <Text size="xs" c="var(--ok)">
+            <Trans>matched by a link in ComicInfo.xml</Trans>
+          </Text>
+        </Tooltip>
+      )
+    case 'comicInfo':
+      return (
+        <Text size="xs" c="var(--ink-3)">
+          <Trans>searched as “{hint}” from ComicInfo.xml</Trans>
+        </Text>
+      )
+    case 'seriesJson':
+      return (
+        <Text size="xs" c="var(--ink-3)">
+          <Trans>searched as “{hint}” from series.json</Trans>
+        </Text>
+      )
+    default:
+      return (
+        <Text size="xs" c="var(--ink-3)">
+          <Trans>searched as “{cleanedTitle}”</Trans>
+        </Text>
+      )
+  }
 }
 
 interface ImportResultDto {
@@ -124,6 +165,7 @@ interface ImportProgressEvent {
 }
 
 const MIHON_MODE = 'mihon'
+const MANUAL_MODE = 'manual'
 
 /**
  * The Mihon tab needs the local MangaBaka dump (matching reads it), so it follows the same gate
@@ -135,6 +177,8 @@ export default function ImportPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const mihonAvailable = Boolean(metadata?.dumpPresent)
   const mihonMode = mihonAvailable && searchParams.get('mode') === MIHON_MODE
+  const manualMode = searchParams.get('mode') === MANUAL_MODE
+  const tab = mihonMode ? MIHON_MODE : manualMode ? MANUAL_MODE : 'folders'
 
   return (
     <SurfaceFrame className="import-surface" pageStyle="operational">
@@ -144,32 +188,44 @@ export default function ImportPage() {
         description={
           mihonMode
             ? t`Adds the manga in your Mihon library to Maki.`
-            : t`Add series folders that Maki does not know about yet.`
+            : manualMode
+              ? t`Import comics from any folder on the server into a series you pick.`
+              : t`Add series folders that Maki does not know about yet.`
         }
       />
-      {mihonAvailable && (
-        <Tabs
-          value={mihonMode ? MIHON_MODE : 'folders'}
-          variant="unstyled"
-          classNames={{ list: 'series-tabs page-tabs', tab: 'series-tab' }}
-          onChange={(v) => {
-            const next = new URLSearchParams(searchParams)
-            if (v === MIHON_MODE) next.set('mode', MIHON_MODE)
-            else next.delete('mode')
-            setSearchParams(next, { replace: true })
-          }}
-        >
-          <Tabs.List>
-            <Tabs.Tab value="folders">
-              <Trans>Folders</Trans>
-            </Tabs.Tab>
+      <Tabs
+        value={tab}
+        variant="unstyled"
+        classNames={{ list: 'series-tabs page-tabs', tab: 'series-tab' }}
+        onChange={(v) => {
+          const next = new URLSearchParams(searchParams)
+          if (v === MIHON_MODE || v === MANUAL_MODE) next.set('mode', v)
+          else next.delete('mode')
+          next.delete('path')
+          setSearchParams(next, { replace: true })
+        }}
+      >
+        <Tabs.List>
+          <Tabs.Tab value="folders">
+            <Trans>Folders</Trans>
+          </Tabs.Tab>
+          <Tabs.Tab value={MANUAL_MODE}>
+            <Trans>Manual import</Trans>
+          </Tabs.Tab>
+          {mihonAvailable && (
             <Tabs.Tab value={MIHON_MODE}>
               <Trans>Mihon backup</Trans>
             </Tabs.Tab>
-          </Tabs.List>
-        </Tabs>
+          )}
+        </Tabs.List>
+      </Tabs>
+      {mihonMode ? (
+        <MihonImport />
+      ) : manualMode ? (
+        <ManualImport key={searchParams.get('path') ?? ''} initialPath={searchParams.get('path')} />
+      ) : (
+        <FolderImport />
       )}
-      {mihonMode ? <MihonImport /> : <FolderImport />}
     </SurfaceFrame>
   )
 }
@@ -277,7 +333,7 @@ function FolderImport() {
   const doImport = useMutation({
     mutationFn: async (payload: {
       rootFolderId: number
-      items: { folderName: string; metadataProviderId: string }[]
+      items: ImportRequestItem[]
       updateComicInfo: boolean
       operationId: string
     }) => {
@@ -356,9 +412,15 @@ function FolderImport() {
   const visibleCandidates = candidates?.filter((c) => showInLibrary || !inLibrary(c)) ?? null
   const visibleFolders = new Set(visibleCandidates?.map((c) => c.folderName))
   // A hidden row never imports, even if it was ticked while the toggle was on.
-  const selectedItems = Object.entries(selection)
+  const looseFilesOf = (folderName: string) =>
+    candidates?.find((c) => c.folderName === folderName)?.looseFiles ?? null
+  const selectedItems: ImportRequestItem[] = Object.entries(selection)
     .filter(([folderName, providerId]) => providerId !== '' && visibleFolders.has(folderName))
-    .map(([folderName, metadataProviderId]) => ({ folderName, metadataProviderId }))
+    .map(([folderName, metadataProviderId]) => ({
+      folderName,
+      metadataProviderId,
+      looseFiles: looseFilesOf(folderName),
+    }))
   const selectedCount = selectedItems.length
   const restoresOnly =
     selectedCount > 0 &&
@@ -749,7 +811,13 @@ function FolderImport() {
                                   color="var(--ink-3)"
                                   aria-label={t`Preview the import of ${folderName}`}
                                   onClick={() =>
-                                    setPreviewItems([{ folderName: c.folderName, metadataProviderId: selected }])
+                                    setPreviewItems([
+                                      {
+                                        folderName: c.folderName,
+                                        metadataProviderId: selected,
+                                        looseFiles: c.looseFiles ?? null,
+                                      },
+                                    ])
                                   }
                                   disabled={doImport.isPending}
                                 >
@@ -757,7 +825,7 @@ function FolderImport() {
                                 </ActionIcon>
                               </Tooltip>
                             )}
-                            {c.existingSeriesId === null && (
+                            {c.existingSeriesId === null && !c.looseFiles && (
                               <Tooltip label={t`Ignore this folder`}>
                                 <ActionIcon
                                   variant="subtle"
@@ -773,6 +841,17 @@ function FolderImport() {
                             )}
                           </Group>
                         </Group>
+                        {c.looseFiles && (
+                          <Tooltip label={c.looseFiles.join(', ')} multiline w={320} withArrow>
+                            <Text size="xs" c="var(--ink-2)">
+                              <Plural
+                                value={c.looseFiles.length}
+                                one="# loose file in the root, moved into this folder on import"
+                                other="# loose files in the root, moved into this folder on import"
+                              />
+                            </Text>
+                          </Tooltip>
+                        )}
                         {restoreLabel ? (
                           <Badge size="xs" variant="light">
                             {restoreLabel}
@@ -782,9 +861,7 @@ function FolderImport() {
                             <Trans>In library</Trans>
                           </Badge>
                         ) : (
-                          <Text size="xs" c="var(--ink-3)">
-                            <Trans>searched as “{cleanedTitle}”</Trans>
-                          </Text>
+                          <MatchSourceNote candidate={c} />
                         )}
                       </Table.Td>
                       <Table.Td>
