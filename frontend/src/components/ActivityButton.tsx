@@ -6,7 +6,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { useQueue, useQueuePause, useQueueSummary } from '../api/hooks'
-import { isHeldByPause, queueItemLabel } from '../api/queue'
+import { queueHold, queueItemLabel } from '../api/queue'
 import type { QueueItemDto } from '../api/types'
 import { useLabel } from '../i18n-context'
 import { useSourceLabel } from '../sourceLabels'
@@ -145,7 +145,7 @@ function ActivityDropdown({ active, onClose }: { active: number; onClose: () => 
               <ActivityRow
                 key={item.id}
                 item={item}
-                held={isHeldByPause(pause, item.sourceName)}
+                held={queueHold(pause, item)}
                 onOpen={() => go(`/series/${item.seriesId}`)}
               />
             ))}
@@ -173,7 +173,7 @@ function ActivityRow({
   onOpen,
 }: {
   item: QueueItemDto
-  held: boolean
+  held: 'paused' | 'disk' | null
   onOpen: () => void
 }) {
   const { t } = useLingui()
@@ -181,7 +181,12 @@ function ActivityRow({
   const sourceLabel = useSourceLabel()
   const working = WORKING.has(item.status)
   const waiting = item.status === 'Queued' || item.status === 'RateLimited'
-  const status = waiting && held ? t`Paused` : renderLabel(queueStatusVisual(item.status).label)
+  const status =
+    waiting && held === 'paused'
+      ? t`Paused`
+      : waiting && held === 'disk'
+        ? t`Waiting for disk space`
+        : renderLabel(queueStatusVisual(item.status).label)
   const source = item.status === 'Resolving' ? null : sourceLabel(item.sourceName)
 
   return (

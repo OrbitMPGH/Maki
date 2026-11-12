@@ -200,6 +200,7 @@ import { UndoConversionModal } from '../components/series/UndoConversionModal'
 import { useSeriesConversion } from '../api/pageConversion'
 import { RestoreSeriesDialog } from '../components/series/RestoreSeriesDialog'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
+import { SeriesPausedButton, SeriesPauseMenuItem } from '../components/series/SeriesQueuePause'
 import { EditMetadataModal, MetadataLock } from '../components/series/EditMetadataModal'
 import { MetadataHistoryModal } from '../components/series/MetadataHistoryModal'
 import { UpgradeNowResultModal } from '../components/series/UpgradeNowResultModal'
@@ -2272,6 +2273,7 @@ function SeriesDetailBody() {
                       )}
                     </Button>
                 )}
+                <SeriesPausedButton seriesId={seriesId} />
                 {canDownload ? (
                     <>
                       {/* Unticking chapters used to be the only way to download a series a bit at a time,
@@ -2340,6 +2342,7 @@ function SeriesDetailBody() {
                                 </Menu.Item>
                             ))}
                             <Menu.Item onClick={() => setNextCountOpen(true)}><Trans>Next...</Trans></Menu.Item>
+                            <SeriesPauseMenuItem seriesId={seriesId} />
                           </Menu.Dropdown>
                         </Menu>
                         )}
