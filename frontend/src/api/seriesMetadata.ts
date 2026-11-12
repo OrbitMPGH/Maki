@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, apiUpload } from './client'
-import type { MetadataField } from './types'
+import type { LocalizedTitle, MetadataField } from './types'
 
 export interface MetadataState {
   lockedFields: MetadataField[]
@@ -19,6 +19,17 @@ export interface EditMetadataRequest {
   totalChapters?: number | null
   totalVolumes?: number | null
   genres?: string[]
+  year?: number | null
+  authorStory?: string | null
+  authorArt?: string | null
+  publisher?: string | null
+  altTitles?: LocalizedTitle[]
+  /** Stored lowercased, as every sort over it is ordinal. */
+  sortTitle?: string
+  /** One of `SERIES_TYPES`, or null to clear. */
+  type?: string | null
+  /** At or below the editor's own ceiling, or null to clear (only an unrestricted editor may). */
+  contentRating?: string | null
 }
 
 /** One row of a series' metadata history. Values are invariant text: a status by its server name, counts as digits. */

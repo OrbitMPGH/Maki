@@ -20,7 +20,7 @@ const dialogOf = (canvasElement: HTMLElement) => within(canvasElement.ownerDocum
 export const Default: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await dialogOf(canvasElement)
-    await waitFor(() => expect(within(dialog).getByRole('textbox', { name: /title/i })).toHaveValue('Lanterns Over Kasumi'))
+    await waitFor(() => expect(within(dialog).getByRole('textbox', { name: /^title/i })).toHaveValue('Lanterns Over Kasumi'))
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Save' })).toBeDisabled())
   },
 }
@@ -28,7 +28,7 @@ export const Default: Story = {
 export const EditingTitleEnablesSave: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await dialogOf(canvasElement)
-    const title = await within(dialog).findByRole('textbox', { name: /title/i })
+    const title = await within(dialog).findByRole('textbox', { name: /^title/i })
     await userEvent.clear(title)
     await userEvent.type(title, 'Lanterns over Kasumi Valley')
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Save' })).toBeEnabled())
@@ -44,7 +44,7 @@ export const SaveWritesAndCloses: Story = {
   },
   play: async ({ args, canvasElement, userEvent }) => {
     const dialog = await dialogOf(canvasElement)
-    const title = await within(dialog).findByRole('textbox', { name: /title/i })
+    const title = await within(dialog).findByRole('textbox', { name: /^title/i })
     await userEvent.type(title, ' II')
     await userEvent.click(await within(dialog).findByRole('button', { name: 'Save' }))
     await waitFor(() => expect(args.onClose).toHaveBeenCalled())
@@ -55,7 +55,7 @@ export const SaveFails: Story = {
   parameters: { msw: seriesMsw(http.put(api('/series/:id/metadata'), () => failWith(400, 'Total chapters cannot be negative'))) },
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await dialogOf(canvasElement)
-    await userEvent.type(await within(dialog).findByRole('textbox', { name: /title/i }), '!')
+    await userEvent.type(await within(dialog).findByRole('textbox', { name: /^title/i }), '!')
     await userEvent.click(await within(dialog).findByRole('button', { name: 'Save' }))
   },
 }
@@ -78,6 +78,37 @@ export const ResetToProvider: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await dialogOf(canvasElement)
     await userEvent.click((await within(dialog).findAllByRole('button', { name: /reset to provider/i }))[0])
+  },
+}
+
+export const EditingDetails: Story = {
+  args: {
+    series: seriesDto(1, {
+      year: 2014,
+      type: 'manga',
+      contentRating: 'safe',
+      authorStory: 'Aoi Haruno',
+      altTitles: [{ title: 'カスミの灯', language: 'ja' }],
+      lockedFields: ['year', 'authorStory'],
+    }),
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = await dialogOf(canvasElement)
+    const year = await within(dialog).findByRole('textbox', { name: /year/i })
+    await userEvent.clear(year)
+    await userEvent.type(year, '2015')
+    await userEvent.click(within(dialog).getByRole('button', { name: /add title/i }))
+    await waitFor(() => expect(within(dialog).getAllByRole('textbox', { name: /alternative title/i })).toHaveLength(2))
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Save' })).toBeEnabled())
+  },
+}
+
+export const RatingAboveTheEditorsLimit: Story = {
+  args: { series: seriesDto(1, { contentRating: 'erotica' }) },
+  parameters: { auth: 'reader' },
+  play: async ({ canvasElement }) => {
+    const dialog = await dialogOf(canvasElement)
+    await waitFor(() => expect(within(dialog).getByText(/can't change its rating/i)).toBeVisible())
   },
 }
 

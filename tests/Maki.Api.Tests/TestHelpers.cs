@@ -122,7 +122,8 @@ internal sealed class TestCurrentUser(
     MakiPermission permissions = MakiPermission.Admin,
     bool authenticated = true,
     bool allRootFolders = true,
-    IReadOnlySet<int>? rootFolderIds = null) : ICurrentUser
+    IReadOnlySet<int>? rootFolderIds = null,
+    string maxContentRating = "erotica") : ICurrentUser
 {
     // Defaults to true because almost every test wants a signed-in caller. Settable for the few
     // that care what happens to an anonymous request.
@@ -132,7 +133,7 @@ internal sealed class TestCurrentUser(
     public MakiPermission Permissions { get; } = permissions;
     public bool AllRootFolders { get; } = allRootFolders;
     public IReadOnlySet<int> RootFolderIds { get; } = rootFolderIds ?? new HashSet<int>();
-    public string MaxContentRating => "erotica";
+    public string MaxContentRating { get; } = maxContentRating;
 }
 
 /// <summary>A hand-wound clock for services that take a <see cref="TimeProvider"/>.</summary>
