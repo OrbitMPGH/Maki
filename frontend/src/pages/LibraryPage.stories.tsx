@@ -357,6 +357,22 @@ export const SelectMode: Story = {
   },
 }
 
+export const SelectRangeWithShift: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await enterSelectMode(canvas, userEvent)
+    await waitFor(() => expect(canvasElement.querySelectorAll('.cover-card').length).toBeGreaterThan(5))
+    const cards = () => [...canvasElement.querySelectorAll<HTMLElement>('.cover-card')]
+    await userEvent.click(cards()[1])
+    await expect(await canvas.findByText('1 selected')).toBeVisible()
+    await userEvent.keyboard('{Shift>}')
+    await userEvent.click(cards()[4])
+    await userEvent.keyboard('{/Shift}')
+    await expect(await canvas.findByText('4 selected')).toBeVisible()
+    await waitFor(() => expect(cards().slice(1, 5).every((c) => c.getAttribute('aria-checked') === 'true')).toBe(true))
+    await waitFor(() => expect(cards()[0]).toHaveAttribute('aria-checked', 'false'))
+  },
+}
+
 export const SelectModeList: Story = {
   beforeEach: () => seedLibraryPrefs({ view: 'list' }),
   play: async ({ canvas, userEvent }) => {

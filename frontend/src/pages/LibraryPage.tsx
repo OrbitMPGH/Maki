@@ -1143,18 +1143,38 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
 
   // Stable across renders so the memoized CoverCards aren't invalidated by a fresh closure,
   // which is why the card takes the id as an argument rather than closing over it.
-  const toggle = useCallback(
-    (id: number) =>
-      setSelected((s) => {
-        const next = new Set(s)
-        if (next.has(id)) next.delete(id)
-        else next.add(id)
-        return next
-      }),
-    [],
-  )
+  const visibleRef = useRef(visible)
+  useEffect(() => {
+    visibleRef.current = visible
+  }, [visible])
+  /** Where the last plain click landed, the fixed end of a shift-range. */
+  const selectAnchor = useRef<number | null>(null)
+
+  const toggle = useCallback((id: number, shiftKey = false) => {
+    const ids = visibleRef.current.map((s) => s.id)
+    const anchor = selectAnchor.current
+    const from = anchor === null ? -1 : ids.indexOf(anchor)
+    const to = ids.indexOf(id)
+    if (shiftKey && from !== -1 && to !== -1) {
+      // Shift-clicking drags a text selection across the cards it spans.
+      window.getSelection()?.removeAllRanges()
+      const [lo, hi] = from <= to ? [from, to] : [to, from]
+      const range = ids.slice(lo, hi + 1)
+      // The anchor stays put, so moving the far end re-draws the range from the same start.
+      setSelected((s) => new Set([...s, ...range]))
+      return
+    }
+    selectAnchor.current = id
+    setSelected((s) => {
+      const next = new Set(s)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
 
   const exitSelectMode = () => {
+    selectAnchor.current = null
     setSelectMode(false)
     setSelected(new Set())
   }
@@ -1940,9 +1960,10 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                 <Button
                   size="xs"
                   variant="subtle"
-                  onClick={() =>
+                  onClick={() => {
+                    selectAnchor.current = null
                     setSelected(allSelected ? new Set() : new Set(visible.map((s) => s.id)))
-                  }
+                  }}
                 >
                   {allSelected ? (
                     <Trans>Clear all</Trans>

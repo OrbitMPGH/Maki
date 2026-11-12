@@ -107,7 +107,7 @@ export const SelectMode: Story = {
     const card = await canvas.findByRole('checkbox')
     await expect(card).toHaveAttribute('aria-checked', 'false')
     await userEvent.click(card)
-    await waitFor(() => expect(args.onToggle).toHaveBeenCalledWith(1))
+    await waitFor(() => expect(args.onToggle).toHaveBeenCalledWith(1, false))
     ;(args.onToggle as ReturnType<typeof fn>).mockClear()
     card.focus()
     await userEvent.keyboard(' ')

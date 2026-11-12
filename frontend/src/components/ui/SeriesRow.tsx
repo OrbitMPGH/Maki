@@ -41,7 +41,7 @@ export const SeriesRow = memo(function SeriesRow({
   /** Same meaning as on `CoverCard`: read progress is only shown when something tracks it. */
   readTracking: boolean
   density: 'compact' | 'default' | 'comfortable'
-  onToggle: (id: number) => void
+  onToggle: (id: number, shiftKey?: boolean) => void
   /** Same meaning as on `CoverCard`. */
   offline?: OfflineAvailability
 }) {
@@ -72,7 +72,7 @@ export const SeriesRow = memo(function SeriesRow({
       onClick={(e) => {
         if (selectMode) {
           e.preventDefault()
-          onToggle(series.id)
+          onToggle(series.id, e.shiftKey)
         }
       }}
     >
