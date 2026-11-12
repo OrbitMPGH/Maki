@@ -67,11 +67,24 @@ export interface ReaderPrefs {
   autoSkipRecap: boolean
 }
 
-/** The two page backgrounds. OLED is true black so the panel edge disappears on an OLED panel. */
+/**
+ * The page backgrounds. OLED is true black so the panel edge disappears on an OLED panel. Auto is
+ * not a colour: the reader paints the edge colour of the page on screen (`useReaderGround`).
+ */
 export const BACKGROUNDS = {
   dark: '#0a0a0b',
   oled: '#000000',
+  white: '#ffffff',
+  grey: '#8c8c90',
+  auto: 'auto',
 } as const
+
+export type BackgroundChoice = keyof typeof BACKGROUNDS
+
+/** Which background a stored value is; anything unknown reads as the default dark. */
+export function backgroundChoice(value: string): BackgroundChoice {
+  return (Object.keys(BACKGROUNDS) as BackgroundChoice[]).find((key) => BACKGROUNDS[key] === value) ?? 'dark'
+}
 
 /**
  * The fallback under everything, used only for the moment before the manifest arrives and as the

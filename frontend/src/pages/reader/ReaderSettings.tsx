@@ -51,7 +51,7 @@ import {
   serverModelId,
   shownEnhanceMethod,
 } from './enhanceMethods'
-import { BACKGROUNDS, enhanceFor, toneFilter, type PrefsSelection, type ReaderPrefs } from './prefs'
+import { BACKGROUNDS, backgroundChoice, enhanceFor, toneFilter, type BackgroundChoice, type PrefsSelection, type ReaderPrefs } from './prefs'
 import { useEnhanceEngine } from './enhanceRuntime'
 
 /**
@@ -297,7 +297,13 @@ export default function ReaderSettings({
   ]
 
   const wideLabel = { off: t`Whole`, split: t`Split`, rotate: t`Rotate` }[prefs.splitWide]
-  const backgroundName = prefs.background === BACKGROUNDS.oled ? t`OLED black` : t`Dark`
+  const backgroundName = {
+    dark: t`Dark`,
+    oled: t`OLED black`,
+    white: t`White`,
+    grey: t`Grey`,
+    auto: t`Auto`,
+  }[backgroundChoice(prefs.background)]
   const lookSummary = prefs.cropBorders ? t`${backgroundName}, cropped` : backgroundName
   const levelName = renderLabel(ENHANCE_LEVELS.find((level) => level.value === prefs.enhance)?.label ?? '')
   const methodInfo = enhanceMethodInfo(method)
@@ -600,15 +606,21 @@ export default function ReaderSettings({
                       aria-label={t`Background`}
                       fullWidth
                       size="xs"
-                      value={prefs.background === BACKGROUNDS.oled ? 'oled' : 'dark'}
-                      onChange={(value) =>
-                        onPrefs({ background: value === 'oled' ? BACKGROUNDS.oled : BACKGROUNDS.dark })
-                      }
+                      value={backgroundChoice(prefs.background)}
+                      onChange={(value) => onPrefs({ background: BACKGROUNDS[value as BackgroundChoice] })}
                       data={[
                         { label: t`Dark`, value: 'dark' },
                         { label: t`OLED black`, value: 'oled' },
+                        { label: t`White`, value: 'white' },
+                        { label: t`Grey`, value: 'grey' },
+                        { label: t`Auto`, value: 'auto' },
                       ]}
                     />
+                    {prefs.background === BACKGROUNDS.auto && (
+                      <Text className="reader-settings-hint" mt={6}>
+                        <Trans>Takes the colour of the page's edge.</Trans>
+                      </Text>
+                    )}
                   </div>
                   <Switch
                     size="xs"

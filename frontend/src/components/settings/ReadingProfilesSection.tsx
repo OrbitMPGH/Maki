@@ -12,7 +12,7 @@ import {
   type ReadingProfile,
   type ReadingProfileInput,
 } from '../../api/readingProfiles'
-import { BACKGROUNDS, DEFAULT_PREFS, type ReaderPrefs } from '../../pages/reader/prefs'
+import { BACKGROUNDS, DEFAULT_PREFS, backgroundChoice, type BackgroundChoice, type ReaderPrefs } from '../../pages/reader/prefs'
 import { useReaderSettings, useSaveReaderSettings } from '../../api/reader'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { TagChip } from '../ui/TagChip'
@@ -357,13 +357,14 @@ function ProfileEditor({
         <Select
           label={t`Background`}
           allowDeselect={false}
-          value={prefs.background === BACKGROUNDS.oled ? 'oled' : 'dark'}
-          onChange={(value) =>
-            set({ background: value === 'oled' ? BACKGROUNDS.oled : BACKGROUNDS.dark })
-          }
+          value={backgroundChoice(prefs.background)}
+          onChange={(value) => set({ background: BACKGROUNDS[(value as BackgroundChoice | null) ?? 'dark'] })}
           data={[
             { value: 'dark', label: t`Dark` },
             { value: 'oled', label: t`OLED black` },
+            { value: 'white', label: t`White` },
+            { value: 'grey', label: t`Grey` },
+            { value: 'auto', label: t`Auto` },
           ]}
         />
         <SettingsNumberInput

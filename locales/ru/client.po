@@ -4991,7 +4991,9 @@ msgid "Attribute Kavita's reading to"
 msgstr "Учитывать чтение Kavita для"
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/enhanceMethods.ts
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Auto"
 msgstr "Авто"
@@ -5142,6 +5144,11 @@ msgstr "Снова в рекомендациях с {until}"
 msgid "back in the running"
 msgstr "снова в игре"
 
+#. placeholder {0}: label(target.label)
+#: src/pages/reader/useReaderBack.ts
+msgid "Back to {0}"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Back to Discover"
@@ -5154,8 +5161,7 @@ msgid "Back to library"
 msgstr "Назад к библиотеке"
 
 #: src/pages/reader/ChapterEnd.tsx
-#: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/pages/reader/useReaderBack.ts
 #, fuzzy
 msgid "Back to series"
 msgstr "Назад к серии"
@@ -5174,6 +5180,10 @@ msgstr "Назад в библиотеку"
 #, fuzzy
 msgid "Back to the series"
 msgstr "Назад к серии"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Back to where you came from"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -10588,6 +10598,11 @@ msgctxt "score"
 msgid "Great"
 msgstr ""
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Grey"
+msgstr ""
+
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "Greyscale page"
@@ -12434,6 +12449,7 @@ msgstr "Новый уровень"
 #: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/useReaderBack.ts
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/sectionList.ts
@@ -17400,6 +17416,10 @@ msgstr "Предпросмотр импорта"
 #, fuzzy
 msgid "Preview the import of {folderName}"
 msgstr "Предпросмотр импорта {folderName}"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Previous and next bookmark"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -22744,6 +22764,10 @@ msgid "Tags to include"
 msgstr "Теги для включения"
 
 #: src/pages/reader/ReaderSettings.tsx
+msgid "Takes the colour of the page's edge."
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen"
 msgstr "Нажимайте на края страницы, чтобы листать. В режиме «Непрерывная» нажимайте на верх или низ, чтобы перейти на экран"
@@ -26032,6 +26056,11 @@ msgstr "Пока панели скрыты. Панель инструменто�
 #, fuzzy
 msgid "While the server works"
 msgstr "Пока работает сервер"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "White"
+msgstr ""
 
 #: src/components/notes/NoteComposer.tsx
 #, fuzzy

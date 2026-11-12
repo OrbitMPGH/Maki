@@ -4130,7 +4130,9 @@ msgid "Attribute Kavita's reading to"
 msgstr "Attribute Kavita's reading to"
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/enhanceMethods.ts
+#: src/pages/reader/ReaderSettings.tsx
 msgid "Auto"
 msgstr "Auto"
 
@@ -4253,6 +4255,11 @@ msgstr "Back in recommendations since {until}"
 msgid "back in the running"
 msgstr "back in the running"
 
+#. placeholder {0}: label(target.label)
+#: src/pages/reader/useReaderBack.ts
+msgid "Back to {0}"
+msgstr "Back to {0}"
+
 #: src/pages/CreatorPage.tsx
 msgid "Back to Discover"
 msgstr "Back to Discover"
@@ -4263,8 +4270,7 @@ msgid "Back to library"
 msgstr "Back to library"
 
 #: src/pages/reader/ChapterEnd.tsx
-#: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/pages/reader/useReaderBack.ts
 msgid "Back to series"
 msgstr "Back to series"
 
@@ -4279,6 +4285,10 @@ msgstr "Back to the library"
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Back to the series"
 msgstr "Back to the series"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Back to where you came from"
+msgstr "Back to where you came from"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Back up now"
@@ -8728,6 +8738,11 @@ msgctxt "score"
 msgid "Great"
 msgstr "Great"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Grey"
+msgstr "Grey"
+
 #: src/components/pageconversion/labels.ts
 msgid "Greyscale page"
 msgstr "Greyscale page"
@@ -10238,6 +10253,7 @@ msgstr "Level up"
 #: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/useReaderBack.ts
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/sectionList.ts
@@ -14309,6 +14325,10 @@ msgstr "Preview the import"
 #: src/pages/ImportPage.tsx
 msgid "Preview the import of {folderName}"
 msgstr "Preview the import of {folderName}"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Previous and next bookmark"
+msgstr "Previous and next bookmark"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Previous chapter"
@@ -18701,6 +18721,10 @@ msgid "Tags to include"
 msgstr "Tags to include"
 
 #: src/pages/reader/ReaderSettings.tsx
+msgid "Takes the colour of the page's edge."
+msgstr "Takes the colour of the page's edge."
+
+#: src/pages/reader/ReaderSettings.tsx
 msgid "Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen"
 msgstr "Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen"
 
@@ -21394,6 +21418,11 @@ msgstr "While the bars are hidden. The toolbar always shows it."
 #: src/pages/reader/ReaderSettings.tsx
 msgid "While the server works"
 msgstr "While the server works"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "White"
+msgstr "White"
 
 #: src/components/notes/NoteComposer.tsx
 msgid "Who can see this note"

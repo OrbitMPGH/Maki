@@ -38,9 +38,13 @@ import PageStrip from './PageStrip'
 import ReaderToolbar from './ReaderToolbar'
 import { OVERLAY_Z } from './ReaderSettings'
 import { probeWebtoon } from './pageShape'
-import { enhanceFor, toneFilter, useReaderPrefs, type ReaderPrefs } from './prefs'
+import { BACKGROUNDS, enhanceFor, toneFilter, useReaderPrefs, type ReaderPrefs } from './prefs'
 import { usePageUrls, usePreload, useWarmChapter } from './usePageUrls'
 import { useReaderProgress } from './useReaderProgress'
+import { adjacentBookmark } from './bookmarkSteps'
+import { useReaderBack } from './useReaderBack'
+import { useReaderGround } from './useEdgeBackground'
+import { useIdleCursor } from './useIdleCursor'
 import { useReadingClock } from './useReadingClock'
 import { useWakeLock } from './useWakeLock'
 import { spreadIndexOf, usePageAspects, useSpreads } from './useSpreads'
@@ -111,6 +115,7 @@ export default function ReaderPage() {
     isFetching,
     refetch,
   } = useReaderManifest(chapterId)
+  const back = useReaderBack(manifest?.seriesId)
   useDocumentTitle(manifest ? `${manifest.seriesTitle} - ${serverChapterLabel(manifest.label)}` : null)
   const { prefs, update, keepForSeries, selection, setSelection, source, autoProfileId, profiles } =
     useReaderPrefs(manifest, !isFetching && !isError)
@@ -238,6 +243,8 @@ export default function ReaderPage() {
   // half is up, so until then the position on record stops a page short.
   const heldBack = splitting && half === 0 && wide[shownTo] && shownTo >= pageCount - 1
   const recordedTo = heldBack ? Math.max(0, shownTo - 1) : shownTo
+  const ground = useReaderGround(prefs.background, urls, page, shownTo, mode === 'vertical')
+  const cursorIdle = useIdleCursor(chromeHeld || shortcutsOpen || notesOpen)
   // A one-page chapter has no page before it, so the hold has to be sent as `completed: false`.
   const holdCompletion = heldBack && recordedTo >= pageCount - 1
 
@@ -865,6 +872,18 @@ export default function ReaderPage() {
       case 't':
         setStripOpen((open) => !open)
         break
+      case ',':
+      case '<':
+      case '.':
+      case '>': {
+        const toward = key === ',' || key === '<' ? -1 : 1
+        const target = adjacentBookmark(bookmarkedPages, page, shownTo, toward)
+        if (target !== null) {
+          setAtEnd(false)
+          seekToPage(target)
+        }
+        break
+      }
       case '1':
         edit({ mode: 'paged' })
         break
@@ -894,7 +913,7 @@ export default function ReaderPage() {
         setShortcutsOpen(true)
         break
       case 'Escape':
-        if (!document.fullscreenElement && manifest) navigate(`/series/${manifest.seriesId}`)
+        if (!document.fullscreenElement && manifest) back.go()
         break
     }
   }
@@ -1082,7 +1101,13 @@ export default function ReaderPage() {
     !incognito && !manifest.completed && (finished || (recordedTo >= manifest.pageCount - 1 && !holdCompletion))
 
   return (
-    <div className="reader-root" style={{ background: prefs.background }}>
+    <div
+      className="reader-root"
+      data-ground={ground.light ? 'light' : undefined}
+      data-auto-ground={prefs.background === BACKGROUNDS.auto || undefined}
+      data-cursor-idle={cursorIdle || undefined}
+      style={{ background: ground.background }}
+    >
       <ReaderToolbar
         manifest={manifest}
         page={page}
@@ -1112,6 +1137,7 @@ export default function ReaderPage() {
         onIncognito={setIncognito}
         readingCounted={readingCounted}
         bookmarked={bookmarked}
+        bookmarkedPages={bookmarkedPages}
         bookmarkDisabled={bookmarkOffline}
         onToggleBookmark={() => toggleBookmark.mutate(page)}
         noteCount={manifest.noteCount ?? 0}
@@ -1214,7 +1240,10 @@ export default function ReaderPage() {
               scale={prefs.scale}
               tone={tone}
               label={serverChapterLabel(manifest.label)}
-              onMeasure={measure}
+              onMeasure={(index, image) => {
+                measure(index, image)
+                ground.note(index, image)
+              }}
               cropBorders={prefs.cropBorders}
               splitWide={mode === 'paged' ? prefs.splitWide : 'off'}
               half={half}

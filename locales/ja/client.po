@@ -4991,7 +4991,9 @@ msgid "Attribute Kavita's reading to"
 msgstr "Kavitaの読書を帰属させる先"
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/enhanceMethods.ts
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Auto"
 msgstr "自動"
@@ -5142,6 +5144,11 @@ msgstr "{until}からおすすめに戻っています"
 msgid "back in the running"
 msgstr "候補に復帰"
 
+#. placeholder {0}: label(target.label)
+#: src/pages/reader/useReaderBack.ts
+msgid "Back to {0}"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Back to Discover"
@@ -5154,8 +5161,7 @@ msgid "Back to library"
 msgstr "ライブラリに戻る"
 
 #: src/pages/reader/ChapterEnd.tsx
-#: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/pages/reader/useReaderBack.ts
 #, fuzzy
 msgid "Back to series"
 msgstr "シリーズに戻る"
@@ -5174,6 +5180,10 @@ msgstr "ライブラリに戻る"
 #, fuzzy
 msgid "Back to the series"
 msgstr "シリーズに戻る"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Back to where you came from"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -10588,6 +10598,11 @@ msgctxt "score"
 msgid "Great"
 msgstr ""
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Grey"
+msgstr ""
+
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "Greyscale page"
@@ -12434,6 +12449,7 @@ msgstr "レベルアップ"
 #: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/useReaderBack.ts
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/sectionList.ts
@@ -17400,6 +17416,10 @@ msgstr "インポートをプレビュー"
 #, fuzzy
 msgid "Preview the import of {folderName}"
 msgstr "{folderName}のインポートをプレビュー"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Previous and next bookmark"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -22744,6 +22764,10 @@ msgid "Tags to include"
 msgstr "含めるタグ"
 
 #: src/pages/reader/ReaderSettings.tsx
+msgid "Takes the colour of the page's edge."
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen"
 msgstr "ページの端をタップしてページをめくります。連続表示では、上または下をタップして1画面移動します"
@@ -26032,6 +26056,11 @@ msgstr "バーが隠れている間。ツールバーには常に表示されま
 #, fuzzy
 msgid "While the server works"
 msgstr "サーバーが処理している間"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "White"
+msgstr ""
 
 #: src/components/notes/NoteComposer.tsx
 #, fuzzy

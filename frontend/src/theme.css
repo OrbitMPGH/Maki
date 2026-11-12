@@ -9869,6 +9869,34 @@ body.reader-open {
   color: #fff;
   background: #0a0a0b;
 }
+/* Auto follows each page's edge colour, so a turn eases between them rather than cutting. */
+.reader-root[data-auto-ground] {
+  transition: background-color var(--dur-slow) var(--ease);
+}
+/* The mouse is hidden once it has rested on the page; the reader drops the attribute while the
+   pointer is on a bar or a menu is open, and any movement. */
+.reader-root[data-cursor-idle],
+.reader-root[data-cursor-idle] * {
+  cursor: none;
+}
+/* Bars, cards, the badge and the status pill carry their own dark surfaces. What sits straight on
+   the ground is the loading outline and the failed-page message, so those switch to dark ink on a
+   light ground. The end screen keeps the dark it was drawn for. */
+.reader-root[data-ground='light'] .reader-page-skeleton {
+  background: rgba(0, 0, 0, 0.07);
+  animation-name: reader-page-pulse-light;
+}
+@keyframes reader-page-pulse-light {
+  50% {
+    background: rgba(0, 0, 0, 0.13);
+  }
+}
+.reader-root[data-ground='light'] .reader-paged .mantine-Text-root {
+  color: #2b2b30;
+}
+.reader-root[data-ground='light'] .reader-end {
+  background: #0a0a0b;
+}
 /* The Discover preview opens over the detail modal (z-index 1000), and keeps its top bar up, so
    the pages sit below it rather than under it. */
 .reader-root[data-preview] {
@@ -10140,6 +10168,26 @@ body.reader-open {
   background: var(--brand);
   transform: translateX(-50%);
   pointer-events: none;
+}
+/* A bookmark is a small ribbon in the same strip as the note dot, so the two read apart. A page
+   with both shows the dot above the ribbon. */
+.reader-scrub-segment[data-bookmarked] {
+  position: relative;
+}
+.reader-scrub-segment[data-bookmarked]::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  width: 7px;
+  height: 10px;
+  background: var(--brand);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.reader-scrub-segment[data-bookmarked][data-noted]::after {
+  bottom: calc(100% + 17px);
 }
 /* Page thumbnail above the segment under the pointer. */
 .reader-scrub-preview {
@@ -17832,6 +17880,29 @@ button.shortlist-title:hover {
 }
 .notes-margin-section:hover {
   color: #fff;
+}
+/* On a white or grey reader ground the margin's loose text takes dark ink; the cards keep their
+   own surfaces. */
+.reader-root[data-ground='light'] .notes-margin-head {
+  color: rgba(0, 0, 0, 0.6);
+}
+.reader-root[data-ground='light'] .notes-margin-add {
+  border-color: rgba(0, 0, 0, 0.3);
+  color: rgba(0, 0, 0, 0.72);
+}
+.reader-root[data-ground='light'] .notes-margin-add:hover {
+  border-color: rgba(0, 0, 0, 0.55);
+  color: #000;
+}
+.reader-root[data-ground='light'] .notes-margin-less,
+.reader-root[data-ground='light'] .notes-margin-section {
+  color: rgba(0, 0, 0, 0.7);
+}
+.reader-root[data-ground='light'] .notes-margin-section {
+  border-top-color: rgba(0, 0, 0, 0.16);
+}
+.reader-root[data-ground='light'] .notes-margin-section:hover {
+  color: #000;
 }
 .notes-margin-add:focus-visible,
 .notes-margin-card-head:focus-visible,

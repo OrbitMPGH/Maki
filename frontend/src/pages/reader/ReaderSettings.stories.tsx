@@ -162,6 +162,20 @@ export const PageLook: Story = {
   },
 }
 
+export const PageLookAuto: Story = {
+  play: async ({ args, canvasElement, userEvent }) => {
+    const b = body(canvasElement)
+    await userEvent.click(await b.findByRole('button', { name: /^Page look\s*Dark$/ }))
+    const group = await b.findByRole('radiogroup', { name: 'Background' })
+    await userEvent.click(within(group).getByText('White'))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ background: '#ffffff' }))
+    await userEvent.click(within(group).getByText('Grey'))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ background: '#8c8c90' }))
+    await userEvent.click(within(group).getByText('Auto'))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ background: 'auto' }))
+  },
+}
+
 export const WidePages: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const b = body(canvasElement)

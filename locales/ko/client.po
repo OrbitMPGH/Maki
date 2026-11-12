@@ -4991,7 +4991,9 @@ msgid "Attribute Kavita's reading to"
 msgstr "Kavita 읽기 기록의 사용자"
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/enhanceMethods.ts
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Auto"
 msgstr "자동"
@@ -5142,6 +5144,11 @@ msgstr "{until}부터 추천에 다시 표시됨"
 msgid "back in the running"
 msgstr "다시 후보에 포함됨"
 
+#. placeholder {0}: label(target.label)
+#: src/pages/reader/useReaderBack.ts
+msgid "Back to {0}"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Back to Discover"
@@ -5154,8 +5161,7 @@ msgid "Back to library"
 msgstr "라이브러리로 돌아가기"
 
 #: src/pages/reader/ChapterEnd.tsx
-#: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/pages/reader/useReaderBack.ts
 #, fuzzy
 msgid "Back to series"
 msgstr "시리즈로 돌아가기"
@@ -5174,6 +5180,10 @@ msgstr "라이브러리로 돌아가기"
 #, fuzzy
 msgid "Back to the series"
 msgstr "시리즈로 돌아가기"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Back to where you came from"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -10588,6 +10598,11 @@ msgctxt "score"
 msgid "Great"
 msgstr ""
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Grey"
+msgstr ""
+
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "Greyscale page"
@@ -12434,6 +12449,7 @@ msgstr "레벨 상승"
 #: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/useReaderBack.ts
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/sectionList.ts
@@ -17400,6 +17416,10 @@ msgstr "가져오기 미리 보기"
 #, fuzzy
 msgid "Preview the import of {folderName}"
 msgstr "{folderName}의 가져오기 미리 보기"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Previous and next bookmark"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
@@ -22744,6 +22764,10 @@ msgid "Tags to include"
 msgstr "포함할 태그"
 
 #: src/pages/reader/ReaderSettings.tsx
+msgid "Takes the colour of the page's edge."
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen"
 msgstr "페이지 가장자리를 탭하면 페이지가 넘어갑니다. 연속 모드에서는 위나 아래를 탭하면 한 화면씩 이동합니다."
@@ -26032,6 +26056,11 @@ msgstr "막대가 숨겨져 있는 동안. 툴바에는 항상 표시됩니다."
 #, fuzzy
 msgid "While the server works"
 msgstr "서버가 작업하는 동안"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "White"
+msgstr ""
 
 #: src/components/notes/NoteComposer.tsx
 #, fuzzy
