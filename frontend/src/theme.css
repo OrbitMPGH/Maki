@@ -8332,6 +8332,19 @@ body.column-resizing * {
   background: color-mix(in srgb, var(--anime) 5%, transparent);
 }
 
+/* The header over a volume's chapters. Tinted with the volume pill's colour so it reads as the
+   group's label, and its toggle looks like the row it is. */
+.chapter-volume-row {
+  background: color-mix(in srgb, var(--volume) 10%, transparent);
+}
+[data-theme='light'] .chapter-volume-row {
+  background: color-mix(in srgb, var(--volume) 8%, transparent);
+}
+.chapter-volume-toggle {
+  cursor: pointer;
+  width: fit-content;
+}
+
 /* A folded span's Wanted switch when the chapters under it disagree. There is no
    ARIA mixed state for role="switch", so the difference has to be carried visually
    (half-filled track, dash in the thumb) and in the switch's own label text. */
@@ -8475,11 +8488,11 @@ body.column-resizing * {
 }
 /* A folded span's summary and progress bar need the full second line, and its two empty
    cells would otherwise add gaps to it. */
-.chapter-rows-list .chapter-table tbody tr.chapter-span-row td:empty {
+.chapter-rows-list .chapter-table tbody tr:is(.chapter-span-row, .chapter-volume-row) td:empty {
   display: none;
 }
-.chapter-rows-list .chapter-table tbody tr.chapter-span-row td:nth-child(3),
-.chapter-rows-list .chapter-table tbody tr.chapter-span-row td:nth-child(6) {
+.chapter-rows-list .chapter-table tbody tr:is(.chapter-span-row, .chapter-volume-row) td:nth-child(3),
+.chapter-rows-list .chapter-table tbody tr:is(.chapter-span-row, .chapter-volume-row) td:nth-child(6) {
   order: 3;
   flex: 1 1 100%;
 }

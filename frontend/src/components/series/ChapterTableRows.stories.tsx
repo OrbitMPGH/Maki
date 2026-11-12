@@ -7,7 +7,15 @@ import { hoursAgo } from '../../../.storybook/mocks/api'
 import { seriesMsw } from '../../../.storybook/mocks/series'
 import type { ChapterDto, QueueItemDto } from '../../api/types'
 import type { AnimeSpan } from '../../lib/animeCoverage'
-import { ChapterRow, ChapterRowSkeletons, ChapterSpanRow, ChunkedRows, type ChapterRowActions } from './ChapterTableRows'
+import {
+  ChapterRow,
+  ChapterRowSkeletons,
+  ChapterSpanRow,
+  ChapterVolumeRow,
+  ChunkedRows,
+  type ChapterRowActions,
+  type ChapterVolumeRowActions,
+} from './ChapterTableRows'
 
 const chapters = chaptersFor(1, { missing: [4], specials: [3.5], upgradeable: 3, limit: 30 })
 const progress = new Map(progressFor(1, chapters, 2).map((p) => [p.chapterId, p]))
@@ -333,6 +341,66 @@ export const FoldedSeasonMixedWanted: StoryObj<typeof ChapterSpanRow> = {
       </Table.Tbody>
     </Table>
   ),
+}
+
+const volumeActions = (): ChapterVolumeRowActions => ({
+  applyWanted: fn(),
+  applyReadState: fn(),
+  download: fn(),
+  selectChapters: fn(),
+  toggleVolume: fn(),
+})
+
+const volumeStory = (
+  group: { volume: number | null; chapters: ChapterDto[] },
+  extra: Partial<ComponentProps<typeof ChapterVolumeRow>> = {},
+): StoryObj<typeof ChapterVolumeRow> => ({
+  render: () => (
+    <Table>
+      <Table.Tbody>
+        <ChapterVolumeRow
+          group={{ key: group.volume === null ? 'none' : `v${group.volume}`, ...group }}
+          collapsed={false}
+          readProgress={progress}
+          readTracking
+          canEditMetadata
+          canDownload
+          downloadDisabled={false}
+          wantedPending={false}
+          downloadPending={false}
+          actions={volumeActions()}
+          {...extra}
+        />
+      </Table.Tbody>
+    </Table>
+  ),
+})
+
+export const VolumeHeader = volumeStory({ volume: 1, chapters: chapters.slice(0, 9) })
+
+export const VolumeHeaderCollapsed = volumeStory({ volume: 1, chapters: chapters.slice(0, 9) }, { collapsed: true })
+
+export const VolumeHeaderMixedWantedAndMissing = volumeStory({
+  volume: 2,
+  chapters: chapters.slice(9, 18).map((c, i) => (i % 3 === 0 ? { ...c, wanted: false, hasFile: false } : c)),
+})
+
+export const VolumeHeaderNoVolume = volumeStory({ volume: null, chapters: chapters.slice(24) })
+
+export const VolumeHeaderReadOnly = volumeStory(
+  { volume: 1, chapters: chapters.slice(0, 9) },
+  { readTracking: false, canEditMetadata: false, canDownload: false },
+)
+
+export const VolumeHeaderPlay: StoryObj<typeof ChapterVolumeRow> = {
+  ...volumeStory({ volume: 1, chapters: chapters.slice(0, 9) }),
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('Vol. 1')).toBeVisible()
+    await waitFor(() => expect(canvas.getByText('2 read')).toBeVisible())
+    await userEvent.click(canvas.getByRole('button', { name: 'Collapse Vol. 1' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Actions for Vol. 1' }))
+    await expect(await within(canvas.getByRole('table').ownerDocument.body).findByRole('menuitem', { name: 'Mark read' })).toBeVisible()
+  },
 }
 
 export const Skeletons: StoryObj<typeof ChapterRowSkeletons> = {

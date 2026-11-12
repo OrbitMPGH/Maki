@@ -160,25 +160,31 @@ import {
   ChapterRow,
   ChapterRowSkeletons,
   ChapterSpanRow,
+  ChapterVolumeRow,
   ChunkedRows,
   type ChapterRowActions,
   type ChapterSpanRowActions,
+  type ChapterVolumeRowActions,
 } from '../components/series/ChapterTableRows'
 import {
   CHAPTER_SORTS,
   chapterLabel,
   finishedHighWater,
+  groupByVolume,
   isDescendingSort,
   isReleaseSort,
   isSkipped,
+  mostHaveVolumes,
   parseHiddenColumns,
   readLanguagesOf,
   readStateOf,
   serializeHiddenColumns,
   sortChapters,
+  volumeOf,
   type ChapterSort,
   type FileOrigin,
   type HidableChapterColumn,
+  type VolumeGroup,
 } from '../components/series/chapterTable'
 import { ArchivedBanner } from '../components/series/ArchivedBanner'
 import { SeriesTorrentDownloads } from '../components/series/SeriesTorrentDownloads'
@@ -272,6 +278,8 @@ type ChapterFilter = (typeof CHAPTER_FILTERS)[number]
 
 const CHAPTER_SORT_STORAGE_KEY = 'series-chapter-sort'
 const CHAPTER_HIDDEN_COLUMNS_STORAGE_KEY = 'series-chapter-hidden-columns'
+const CHAPTER_GROUPING_STORAGE_KEY = 'series-chapter-grouping'
+const CHAPTER_GROUPINGS = ['auto', 'on', 'off'] as const
 
 const CHAPTER_COLUMNS_STORAGE_KEY = 'series-chapter-columns'
 const CHAPTER_COLUMNS = {
@@ -389,8 +397,10 @@ const LARGE_WANTED_DOWNLOAD_THRESHOLD = 50
 type RenderedRow =
     | { kind: 'chapter'; chapter: ChapterDto }
     | { kind: 'span'; span: AnimeSpan; rows: ChapterDto[] }
+    | { kind: 'volume'; group: VolumeGroup; collapsed: boolean }
 
 const NO_ROWS: RenderedRow[] = []
+const NO_VOLUME_KEYS: string[] = []
 
 type ReadTimeEstimate = {
   seconds: number
@@ -762,6 +772,17 @@ function SeriesDetailBody() {
     setHiddenChapterColumns(next)
     writeStored(CHAPTER_HIDDEN_COLUMNS_STORAGE_KEY, serializeHiddenColumns(next))
   }
+  const [chapterGroupingPref, setChapterGroupingPref] = useState(() =>
+      readStored(CHAPTER_GROUPING_STORAGE_KEY, CHAPTER_GROUPINGS, 'auto'),
+  )
+  const [collapsedVolumes, setCollapsedVolumes] = useState<ReadonlySet<string>>(new Set())
+  const toggleVolume = useCallback((key: string) => {
+    setCollapsedVolumes((current) => {
+      const next = new Set(current)
+      if (!next.delete(key)) next.add(key)
+      return next
+    })
+  }, [])
   const chapterColumnRoom = useRef<ChapterColumnRoom>({
     panel: 0,
     layout: 'full',
@@ -1139,6 +1160,19 @@ function SeriesDetailBody() {
   const [markerSlot, setMarkerSlot] = useState(0)
   const hasAnimeMarkers = animeMarkers.size > 0
 
+  const hasVolumes = useMemo(() => (chapters ?? []).some((c) => volumeOf(c) !== null), [chapters])
+  const groupingDefault = useMemo(() => mostHaveVolumes(chapters ?? []), [chapters])
+  const groupingChosen = chapterGroupingPref === 'auto' ? groupingDefault : chapterGroupingPref === 'on'
+  // Volumes follow chapter order, and an anime season is a run of chapter numbers, so either one
+  // being in play means the table stays flat.
+  const groupingBlockedBy = chapterSortedByRelease ? 'release' : animeSpans.length > 0 ? 'seasons' : null
+  const groupingActive = groupingChosen && hasVolumes && groupingBlockedBy === null
+  const setChapterGrouping = (on: boolean) => {
+    const next = on ? 'on' : 'off'
+    setChapterGroupingPref(next)
+    writeStored(CHAPTER_GROUPING_STORAGE_KEY, next)
+  }
+
   /**
    * The table's rows, with folded spans collapsed to one summary row each.
    *
@@ -1179,8 +1213,20 @@ function SeriesDetailBody() {
       out.push({ kind: 'chapter', chapter: c })
     }
 
-    return { rows: out, visibleSpans }
-  }, [visibleChapters, animeSpans, foldedSpans])
+    if (groupingActive) {
+      const rows: RenderedRow[] = []
+      const volumeKeys: string[] = []
+      for (const group of groupByVolume(visibleChapters, chapterSortDescending)) {
+        const collapsed = collapsedVolumes.has(group.key)
+        volumeKeys.push(group.key)
+        rows.push({ kind: 'volume', group, collapsed })
+        if (!collapsed) for (const chapter of group.chapters) rows.push({ kind: 'chapter', chapter })
+      }
+      return { rows, visibleSpans, volumeKeys }
+    }
+
+    return { rows: out, visibleSpans, volumeKeys: NO_VOLUME_KEYS }
+  }, [visibleChapters, animeSpans, foldedSpans, groupingActive, collapsedVolumes, chapterSortDescending])
 
   /**
    * Highest chapter number the reader has finished, for the marker on the coverage bar. The DTO's
@@ -1200,39 +1246,57 @@ function SeriesDetailBody() {
       chapterPageSizePreference === 'all'
           ? Math.max(1, renderedRows.rows.length)
           : Number(chapterPageSizePreference)
-  const chapterPageCount = Math.max(1, Math.ceil(renderedRows.rows.length / chapterPageSize))
-  const chapterPageLabels = useMemo(
-      () =>
-          Array.from({ length: chapterPageCount }, (_, index) => {
-            const rows = renderedRows.rows.slice(index * chapterPageSize, (index + 1) * chapterPageSize)
-            const numbers = rows.flatMap((row) =>
-                row.kind === 'chapter'
-                    ? row.chapter.number === null
-                        ? []
-                        : [row.chapter.number]
-                    : row.rows.flatMap((chapter) => (chapter.number === null ? [] : [chapter.number])),
-            )
+  /**
+   * The rows split into pages. A grouped table never ends a page on a volume header whose chapters
+   * start the next one, and a page that opens inside a volume repeats that volume's header, so every
+   * page reads on its own.
+   */
+  const chapterPages = useMemo(() => {
+    const rows = renderedRows.rows
+    const pages: RenderedRow[][] = []
+    if (!groupingActive) {
+      for (let i = 0; i < rows.length; i += chapterPageSize) pages.push(rows.slice(i, i + chapterPageSize))
+      return pages
+    }
+    let current: RenderedRow[] = []
+    let header: RenderedRow | null = null
+    for (const row of rows) {
+      if (current.length >= chapterPageSize) {
+        const last = current[current.length - 1]
+        const carried = current.length > 1 && last.kind === 'volume' && !last.collapsed ? [current.pop()!] : []
+        pages.push(current)
+        current = header !== null && carried.length === 0 && row.kind === 'chapter' ? [header] : carried
+      }
+      if (row.kind === 'volume') header = row
+      current.push(row)
+    }
+    if (current.length > 0) pages.push(current)
+    return pages
+  }, [renderedRows.rows, chapterPageSize, groupingActive])
+  const chapterPageCount = Math.max(1, chapterPages.length)
+  const chapterPageLabels = useMemo(() => {
+    let offset = 0
+    return Array.from({ length: chapterPageCount }, (_, index) => {
+      const rows = chapterPages[index] ?? NO_ROWS
+      const start = offset + 1
+      offset += rows.length
+      const numbers = rows.flatMap((row) => {
+        const chapters =
+            row.kind === 'chapter' ? [row.chapter] : row.kind === 'span' ? row.rows : row.collapsed ? row.group.chapters : []
+        return chapters.flatMap((chapter) => (chapter.number === null ? [] : [chapter.number]))
+      })
 
-            if (numbers.length === 0) {
-              const start = index * chapterPageSize + 1
-              const end = index * chapterPageSize + rows.length
-              return t`Items ${start}–${end}`
-            }
-            const first = Math.min(...numbers)
-            const last = Math.max(...numbers)
-            return first === last ? String(first) : `${first}–${last}`
-          }),
-      [renderedRows.rows, chapterPageCount, chapterPageSize, t, i18n.locale],
-  )
+      if (numbers.length === 0) {
+        const end = offset
+        return t`Items ${start}–${end}`
+      }
+      const first = Math.min(...numbers)
+      const last = Math.max(...numbers)
+      return first === last ? String(first) : `${first}–${last}`
+    })
+  }, [chapterPages, chapterPageCount, t, i18n.locale])
   const currentChapterPage = Math.min(chapterPage, chapterPageCount)
-  const pagedRows = useMemo(
-      () =>
-          renderedRows.rows.slice(
-              (currentChapterPage - 1) * chapterPageSize,
-              currentChapterPage * chapterPageSize,
-          ),
-      [renderedRows.rows, currentChapterPage, chapterPageSize],
-  )
+  const pagedRows = chapterPages[currentChapterPage - 1] ?? NO_ROWS
   /**
    * What the table body actually renders. Deferred, and empty while another tab is open, so that
    * opening Chapters commits the tab with a skeleton at once and builds the rows in a background
@@ -1245,7 +1309,7 @@ function SeriesDetailBody() {
   useEffect(() => {
     setChapterPage(1)
     selectAnchor.current = null
-  }, [chapterFilter, chapterSort, chapterSearch, chapterPageSizePreference])
+  }, [chapterFilter, chapterSort, chapterSearch, chapterPageSizePreference, groupingActive])
 
   useEffect(() => {
     if (chapterPage > chapterPageCount) setChapterPage(chapterPageCount)
@@ -1255,7 +1319,13 @@ function SeriesDetailBody() {
   const rangeUnits = useMemo(
       () =>
           shownRows.map((r) =>
-              r.kind === 'chapter' ? { ids: [r.chapter.id] } : { ids: r.rows.map((c) => c.id) },
+              r.kind === 'chapter'
+                  ? { ids: [r.chapter.id] }
+                  : r.kind === 'span'
+                      ? { ids: r.rows.map((c) => c.id) }
+                      // An open header is just a divider in a range. A folded one stands in for
+                      // the chapters it hides, like a folded season.
+                      : { ids: r.collapsed ? r.group.chapters.map((c) => c.id) : [] },
           ),
       [shownRows],
   )
@@ -1497,6 +1567,26 @@ function SeriesDetailBody() {
       setSelected(new Set(ids))
     },
     toggleSpanFold,
+  })
+
+  const volumeRowActions = useStableActions<ChapterVolumeRowActions>({
+    applyWanted,
+    applyReadState,
+    download: (chapterIds) => {
+      if (archived || chapterIds.length === 0) return
+      downloadChapters.mutate(chapterIds, {
+        onSuccess: (r) =>
+          r.queued > 0
+            ? notify.ok(plural(r.queued, { one: 'Queued # chapter', other: 'Queued # chapters' }))
+            : notify.info(r.error ?? staticT`Nothing to queue, those chapters are already on disk`),
+      })
+    },
+    selectChapters: (ids) => {
+      setSelectMode(true)
+      selectAnchor.current = null
+      setSelected(new Set(ids))
+    },
+    toggleVolume,
   })
 
   const nextChapter = useMemo(
@@ -3112,6 +3202,14 @@ function SeriesDetailBody() {
                           onSortKey={chooseChapterSortKey}
                           hidden={hiddenChapterColumns}
                           onToggleColumn={toggleChapterColumn}
+                          grouping={{
+                            checked: groupingChosen && hasVolumes,
+                            blockedBy: hasVolumes ? groupingBlockedBy : 'none',
+                            onChange: setChapterGrouping,
+                            active: groupingActive,
+                            onCollapseAll: () => setCollapsedVolumes(new Set(renderedRows.volumeKeys)),
+                            onExpandAll: () => setCollapsedVolumes(new Set()),
+                          }}
                       />
                       <Select
                           size="xs"
@@ -3365,6 +3463,23 @@ function SeriesDetailBody() {
                             ) : (
                                 <ChunkedRows rows={shownRows}>
                                   {(rows) => rows.map((row) => {
+                                  if (row.kind === 'volume') {
+                                    return (
+                                        <ChapterVolumeRow
+                                            key={`volume:${row.group.key}`}
+                                            group={row.group}
+                                            collapsed={row.collapsed}
+                                            readProgress={readProgress}
+                                            readTracking={readTracking}
+                                            canEditMetadata={canEditMetadata}
+                                            canDownload={canDownload}
+                                            downloadDisabled={archived}
+                                            wantedPending={setChaptersWanted.isPending}
+                                            downloadPending={downloadChapters.isPending}
+                                            actions={volumeRowActions}
+                                        />
+                                    )
+                                  }
                                   if (row.kind === 'span') {
                                     return (
                                         <ChapterSpanRow

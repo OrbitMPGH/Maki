@@ -177,3 +177,46 @@ export function parseHiddenColumns(raw: string | null): ReadonlySet<HidableChapt
 
 export const serializeHiddenColumns = (hidden: ReadonlySet<HidableChapterColumn>) =>
   HIDABLE_CHAPTER_COLUMNS.filter((key) => hidden.has(key)).join(',')
+
+/**
+ * The volume a chapter belongs to: the metadata volume, else the first number of the volume or
+ * compilation file backing it ("1-2" files under 1). Null when nothing names one.
+ */
+export function volumeOf(c: ChapterDto): number | null {
+  if (c.volume !== null) return c.volume
+  const fromFile = c.fileVolume?.match(/\d+(?:\.\d+)?/)?.[0]
+  return fromFile === undefined ? null : Number(fromFile)
+}
+
+export type VolumeGroup = {
+  key: string
+  /** Null for the trailing "No volume" group. */
+  volume: number | null
+  chapters: ChapterDto[]
+}
+
+/** Grouping starts on by default only when most chapters name a volume. */
+export function mostHaveVolumes(chapters: readonly ChapterDto[]): boolean {
+  if (chapters.length === 0) return false
+  return chapters.filter((c) => volumeOf(c) !== null).length * 2 > chapters.length
+}
+
+/**
+ * Splits an already sorted list into volumes, keeping each chapter's place within its group.
+ * Groups run in volume order (reversed when descending) with chapters that name no volume last.
+ */
+export function groupByVolume(chapters: readonly ChapterDto[], descending: boolean): VolumeGroup[] {
+  const groups = new Map<string, VolumeGroup>()
+  for (const c of chapters) {
+    const volume = volumeOf(c)
+    const key = volume === null ? 'none' : `v${volume}`
+    let group = groups.get(key)
+    if (!group) groups.set(key, (group = { key, volume, chapters: [] }))
+    group.chapters.push(c)
+  }
+  const sign = descending ? -1 : 1
+  return [...groups.values()].sort((a, b) => {
+    if (a.volume === null || b.volume === null) return a.volume === b.volume ? 0 : a.volume === null ? 1 : -1
+    return sign * (a.volume - b.volume)
+  })
+}
