@@ -74,7 +74,6 @@ export default function RequestsPage() {
   const { can } = useAuth()
   const isAdmin = can('Admin')
   const { t } = useLingui()
-  const label = useLabel()
   const renderLabel = useLabel()
 
   const [filter, setFilter] = useState<RequestFilter>('pending')
@@ -427,7 +426,7 @@ export default function RequestsPage() {
           {needsRootFolder && (
             <Select
               label={t`New chapters`}
-              data={MONITOR_OPTIONS.map((o) => ({ value: o.value, label: label(o.label) }))}
+              data={MONITOR_OPTIONS.map((o) => ({ value: o.value, label: renderLabel(o.label) }))}
               value={monitorNewItems ?? librarySettings?.newSeriesMonitorMode ?? 'All'}
               onChange={(v) => v && setMonitorNewItems(v)}
               allowDeselect={false}
