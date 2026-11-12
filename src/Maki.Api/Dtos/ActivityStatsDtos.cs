@@ -55,8 +55,9 @@ public record ActivityWeightedNameDto(string Name, int Weight);
 public record ActivitySeriesEventDto(
     int? SeriesId, string Title, DateTime At, string? CoverUrl, string? ProviderId);
 
+/// <summary>A series the reader set to Dropped in the window. <c>LastProgressAt</c> is the last read.</summary>
 public record ActivityDroppedSeriesDto(
-    int? SeriesId, string Title, DateTime LastProgressAt, double MaxChapter, string? CoverUrl);
+    int? SeriesId, string Title, DateTime LastProgressAt, double MaxChapter, string? CoverUrl, DateTime DroppedAt);
 
 public record ActivityStatsDto(
     DateOnly From,

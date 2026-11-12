@@ -467,7 +467,7 @@ public class TrackerListTests
     }
 
     [Fact]
-    public async Task MangaUpdates_other_reads_the_unfinished_and_on_hold_lists()
+    public async Task MangaUpdates_reads_the_unfinished_list_as_dropped_and_on_hold_as_paused()
     {
         var handler = new Handler()
             .On((url, _) => url.EndsWith("/lists/3/search"),
@@ -475,9 +475,9 @@ public class TrackerListTests
             .On((url, _) => url.EndsWith("/lists/4/search"),
                 $$"""{"total_hits":1,"results":[{{MuRow(1295, "Paused")}}]}""");
 
-        var list = await MangaUpdates(handler).ListAsync(UserId, [ScrobbleStatus.Other]);
+        var list = await MangaUpdates(handler).ListAsync(UserId, [ScrobbleStatus.Dropped, ScrobbleStatus.Paused]);
 
-        Assert.Equal([ScrobbleStatus.Other, ScrobbleStatus.Other], list.Select(e => e.Status));
+        Assert.Equal([ScrobbleStatus.Dropped, ScrobbleStatus.Paused], list.Select(e => e.Status));
         Assert.Equal(["Dropped", "Paused"], list.Select(e => e.Title));
     }
 

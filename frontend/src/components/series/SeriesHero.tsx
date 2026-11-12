@@ -24,6 +24,8 @@ import { useChapters } from '../../api/hooks'
 import { formatDecimal } from '../../format'
 import { isProvisional, shownRating } from '../../lib/rating'
 import { RatingHistoryButton } from './RatingHistoryButton'
+import { ReadingStatusMenu } from './ReadingStatus'
+import type { ReadingStatus } from '../ui/status'
 import { msg } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
@@ -62,6 +64,7 @@ function titleWidth(title: string) {
 export function SeriesHero({
                                series,
                                onRate,
+                               onSetReadingStatus,
                                onFinalize,
                                actions,
                                tabs,
@@ -71,6 +74,8 @@ export function SeriesHero({
                            }: {
     series: SeriesDto
     onRate: (value: number | null) => void
+    /** Sets the user's reading status; omitted, the status chip is not drawn. */
+    onSetReadingStatus?: (status: ReadingStatus) => void
     /** Makes a "so far" score the rating. */
     onFinalize: () => void
     actions: ReactNode
@@ -214,7 +219,11 @@ export function SeriesHero({
         ? null
         : caughtUp
           ? series.status === 'Completed' ? t`Finished` : t`Caught up`
-          : t`Reading`
+          : series.readingStatus === 'OnHold'
+            ? t`On hold`
+            : series.readingStatus === 'Dropped'
+              ? t`Dropped`
+              : t`Reading`
 
     // The canonical title is in this line too when a language preference moved the heading off it —
     // otherwise picking "Japanese" makes the name everything else in Maki uses (the folder on disk,
@@ -333,59 +342,71 @@ export function SeriesHero({
                                 hasAnime={series.hasAnime}
                                 animeName={series.animeName}
                             >
-                                <Group gap={8} wrap="nowrap" className="hero-rating">
-                                    <Rating
-                                        count={5}
-                                        fractions={2}
-                                        value={rating ? rating / 2 : 0}
-                                        color={soFar ? 'var(--ink-3)' : undefined}
-                                        onChange={(v) => onRate(Math.round(v * 2) || null)}
-                                        aria-label={t`Your rating`}
-                                    />
-                                    {rating ? (
-                                        <>
-                                            <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
-                                                {rating}/10
+                                <div className="hero-yours">
+                                    <Group gap={8} wrap="nowrap" className="hero-rating">
+                                        <Rating
+                                            count={5}
+                                            fractions={2}
+                                            value={rating ? rating / 2 : 0}
+                                            color={soFar ? 'var(--ink-3)' : undefined}
+                                            onChange={(v) => onRate(Math.round(v * 2) || null)}
+                                            aria-label={t`Your rating`}
+                                        />
+                                        {rating ? (
+                                            <>
+                                                <Text size="sm" fw={600} c="var(--ink-2)" className="tnum">
+                                                    {rating}/10
+                                                </Text>
+                                                {soFar && (
+                                                    <>
+                                                        <Text size="sm" c="var(--ink-4)">
+                                                            {soFarChapter != null
+                                                                ? <Trans>so far, at ch. {soFarChapter}</Trans>
+                                                                : <Trans>so far</Trans>}
+                                                        </Text>
+                                                        <Tooltip label={t`Make this my rating`} withArrow>
+                                                            <ActionIcon
+                                                                size="sm"
+                                                                variant="subtle"
+                                                                color="var(--neutral)"
+                                                                onClick={onFinalize}
+                                                                aria-label={t`Make this my rating`}
+                                                            >
+                                                                <IconCheck size={16} />
+                                                            </ActionIcon>
+                                                        </Tooltip>
+                                                    </>
+                                                )}
+                                                <Tooltip label={t`Clear rating`} withArrow>
+                                                    <ActionIcon
+                                                        size="sm"
+                                                        variant="subtle"
+                                                        color="var(--neutral)"
+                                                        onClick={() => onRate(null)}
+                                                        aria-label={t`Clear rating`}
+                                                    >
+                                                        <IconX size={16} />
+                                                    </ActionIcon>
+                                                </Tooltip>
+                                                <RatingHistoryButton seriesId={series.id} />
+                                            </>
+                                        ) : (
+                                            <Text size="sm" c="var(--ink-4)">
+                                                <Trans>Not rated</Trans>
                                             </Text>
-                                            {soFar && (
-                                                <>
-                                                    <Text size="sm" c="var(--ink-4)">
-                                                        {soFarChapter != null
-                                                            ? <Trans>so far, at ch. {soFarChapter}</Trans>
-                                                            : <Trans>so far</Trans>}
-                                                    </Text>
-                                                    <Tooltip label={t`Make this my rating`} withArrow>
-                                                        <ActionIcon
-                                                            size="sm"
-                                                            variant="subtle"
-                                                            color="var(--neutral)"
-                                                            onClick={onFinalize}
-                                                            aria-label={t`Make this my rating`}
-                                                        >
-                                                            <IconCheck size={16} />
-                                                        </ActionIcon>
-                                                    </Tooltip>
-                                                </>
-                                            )}
-                                            <Tooltip label={t`Clear rating`} withArrow>
-                                                <ActionIcon
-                                                    size="sm"
-                                                    variant="subtle"
-                                                    color="var(--neutral)"
-                                                    onClick={() => onRate(null)}
-                                                    aria-label={t`Clear rating`}
-                                                >
-                                                    <IconX size={16} />
-                                                </ActionIcon>
-                                            </Tooltip>
-                                            <RatingHistoryButton seriesId={series.id} />
+                                        )}
+                                    </Group>
+                                    {onSetReadingStatus && (
+                                        <>
+                                            <span className="hero-yours-divider" aria-hidden />
+                                            <ReadingStatusMenu
+                                                status={series.readingStatus}
+                                                auto={series.readingStatusAuto}
+                                                onChange={onSetReadingStatus}
+                                            />
                                         </>
-                                    ) : (
-                                        <Text size="sm" c="var(--ink-4)">
-                                            <Trans>Not rated</Trans>
-                                        </Text>
                                     )}
-                                </Group>
+                                </div>
                             </HeroChips>
 
                             {/* Where you are and what is here, as two bars the way Home shows a chapter:

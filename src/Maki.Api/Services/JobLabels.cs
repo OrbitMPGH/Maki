@@ -36,6 +36,7 @@ public static class JobLabels
         [nameof(PrebuiltIndexJob)] = "health.job.prebuiltIndex",
         [nameof(ReadFileCleanupJob)] = "health.job.readFileCleanup",
         [nameof(ReaderCohortJob)] = "health.job.readerCohorts",
+        [nameof(ReadingStatusAutoJob)] = "health.job.readingStatusRules",
         [nameof(RecoGraphJob)] = "health.job.recoGraph",
         [nameof(RefreshMonitoredSeriesJob)] = "health.job.refreshMonitored",
         [nameof(RetryFailedDownloadsJob)] = "health.job.retryFailedDownloads",

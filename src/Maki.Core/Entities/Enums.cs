@@ -241,3 +241,26 @@ public enum RatingSnapshotOrigin
     /// <summary>The tracker rating import.</summary>
     Import = 3,
 }
+
+/// <summary>
+/// One reader's own status for one series, stored in <c>UserSeriesState.Status</c>. Persisted as an
+/// int: append only, never renumber.
+/// <para>
+/// Finished is not a status here. It stays <c>ReadingState.Finished</c>, which the trackers already
+/// turn into Completed, so a Reading series that is finished reads as Completed there.
+/// </para>
+/// </summary>
+public enum ReadingStatus
+{
+    /// <summary>Not started. Every row that predates the column, and every new series, reads as this.</summary>
+    PlanToRead = 0,
+
+    /// <summary>Set by any read Maki sees, through <c>MakiDbContext</c>'s save hook.</summary>
+    Reading = 1,
+
+    /// <summary>Off Home's reading rail until the next read. Pushed to trackers as paused.</summary>
+    OnHold = 2,
+
+    /// <summary>Off Home's reading rail until the next read. Pushed to trackers as dropped.</summary>
+    Dropped = 3,
+}

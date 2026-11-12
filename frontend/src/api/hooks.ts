@@ -16,6 +16,7 @@ import type { AnimeResume } from './animeResume'
 import { affectedKeys } from './recommendationFeedback'
 import type { RequestSummaryDto, SourceReliabilityDto } from './stats'
 import type { IncognitoMode } from '../components/ui/incognito'
+import type { ReadingStatus } from '../components/ui/status'
 import type { ReleaseParsedDto } from './upgrades'
 import { obtainedCount } from '../lib/chapterCounts'
 import { optimisticMerge, optimisticSeries } from './optimistic'
@@ -2757,6 +2758,65 @@ export function useSetSeriesNotificationMode() {
   })
 }
 
+export interface SetReadingStatusResult {
+  readingStatus: string
+}
+
+/**
+ * Sets the user's own reading status on a series; trackers are updated in the background. A manual choice clears the "set automatically"
+ * flag. On hold and Dropped also leave Home's continue-reading rail, which is dropped from the cache
+ * here so the card goes at once.
+ */
+export function useSetReadingStatus() {
+  const queryClient = useQueryClient()
+  const series = optimisticSeries<{ seriesId: number; status: ReadingStatus }, SeriesDto>(queryClient, ({ status }) => ({
+    readingStatus: status,
+    readingStatusAuto: false,
+  }))
+  return useMutation({
+    mutationFn: ({ seriesId, status }: { seriesId: number; status: ReadingStatus }) =>
+      api<SetReadingStatusResult>(`/series/${seriesId}/reading-status`, {
+        method: 'PUT',
+        body: JSON.stringify({ status }),
+      }),
+    onMutate: async (vars) => {
+      if (vars.status === 'OnHold' || vars.status === 'Dropped') {
+        await queryClient.cancelQueries({ queryKey: ['home', 'reading'] })
+        queryClient.setQueriesData<HomeReadingResponse>({ queryKey: ['home', 'reading'] }, (data) =>
+          data && { continueReading: data.continueReading.filter((i) => i.seriesId !== vars.seriesId) },
+        )
+      }
+      return series.onMutate(vars)
+    },
+    onError: series.onError,
+    onSettled: (data, err, vars) => {
+      series.onSettled(data, err, vars)
+      void queryClient.invalidateQueries({ queryKey: ['home', 'reading'] })
+    },
+    onSuccess: (_data, { seriesId }) => {
+      void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
+/** Applies one reading status across many series in one request (Library bulk bar). */
+export function useBulkSetReadingStatus() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesIds, status }: { seriesIds: number[]; status: ReadingStatus }) =>
+      api<{ updated: number }>('/series/reading-status/bulk', {
+        method: 'POST',
+        body: JSON.stringify({ seriesIds, status }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['home', 'reading'] })
+    },
+    meta: { silent: true },
+  })
+}
+
 /** Pins every given series to a quality profile, or clears the pin with null. */
 export function useBulkSetUpgradeProfile() {
   const queryClient = useQueryClient()
@@ -2916,6 +2976,30 @@ export function useSaveRatingPromptsSettings() {
       api<RatingPromptsSettings>('/settings/rating-prompts', { method: 'PUT', body: JSON.stringify(settings) }),
     ...optimisticMerge(queryClient, ['settings', 'rating-prompts'], (settings: RatingPromptsSettings) => settings, { seededBySave: true }),
     onSuccess: (saved) => queryClient.setQueryData(['settings', 'rating-prompts'], saved),
+  })
+}
+
+export interface ReadingStatusSettings {
+  /** Days without reading before a series is put on hold; null when the rule is off. */
+  autoHoldDays: number | null
+  /** Days without reading before a series is dropped; null when the rule is off. */
+  autoDropDays: number | null
+}
+
+export function useReadingStatusSettings() {
+  return useQuery({
+    queryKey: ['settings', 'reading-status'],
+    queryFn: () => api<ReadingStatusSettings>('/settings/reading-status'),
+  })
+}
+
+export function useSaveReadingStatusSettings() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (settings: ReadingStatusSettings) =>
+      api<ReadingStatusSettings>('/settings/reading-status', { method: 'PUT', body: JSON.stringify(settings) }),
+    ...optimisticMerge(queryClient, ['settings', 'reading-status'], (settings: ReadingStatusSettings) => settings, { seededBySave: true }),
+    onSuccess: (saved) => queryClient.setQueryData(['settings', 'reading-status'], saved),
   })
 }
 
@@ -4984,6 +5068,8 @@ export interface ActivitySeriesEvent {
 export interface ActivityDroppedSeries {
   seriesId: number | null
   title: string
+  /** When the series was set to Dropped, by hand or by the auto rule. */
+  droppedAt: string
   lastProgressAt: string
   maxChapter: number
   coverUrl: string | null

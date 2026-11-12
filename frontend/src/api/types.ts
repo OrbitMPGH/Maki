@@ -146,6 +146,10 @@ export interface SeriesDto {
    * defers to the `seriesDefault` on your inbox prefs.
    */
   notificationMode: string
+  /** The signed-in user's own status on this series. */
+  readingStatus: 'PlanToRead' | 'Reading' | 'OnHold' | 'Dropped'
+  /** True when `readingStatus` was set by one of the auto rules rather than by the user. */
+  readingStatusAuto: boolean
   /** When the series was archived out of the active library, or null while it is active. */
   archivedAt: string | null
   archivedByUserId: number | null
@@ -279,6 +283,8 @@ export interface LibraryFilterSpec {
   /** 0–10 window on the MangaBaka score. Full range means "don't filter"; narrower drops unscored series. */
   communityRatingMin?: number
   communityRatingMax?: number
+  /** `SeriesDto.readingStatus` values to include. Empty means any. */
+  readingStatuses: string[]
 }
 
 export interface SavedFilterDto {

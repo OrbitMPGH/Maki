@@ -256,4 +256,65 @@ public class ScrobblePlannerTests
         Assert.Equal(ScrobbleStatus.Reading, plan.PushStatus);
         Assert.Equal(7, plan.Chapter);
     }
+
+    [Fact]
+    public void AHeldStatusMovesAListedEntryWithoutTouchingItsProgress()
+    {
+        var entry = new RemoteEntry(ProgressChapter: 7, Status: ScrobbleStatus.Reading);
+        var plan = ScrobblePlanner.Decide(entry, chapter: 0, volume: 0, held: ScrobbleStatus.Dropped);
+
+        Assert.True(plan.Write);
+        Assert.Equal(7, plan.Chapter);
+        Assert.Equal(ScrobbleStatus.Dropped, plan.PushStatus);
+    }
+
+    [Fact]
+    public void AHeldStatusNeverAddsAnUnlistedSeriesWithNothingRead()
+    {
+        var plan = ScrobblePlanner.Decide(new RemoteEntry(), chapter: 0, volume: 0, held: ScrobbleStatus.Paused);
+
+        Assert.False(plan.Write);
+    }
+
+    [Fact]
+    public void AHeldStatusReplacesReadingWhenProgressIsPushed()
+    {
+        var entry = new RemoteEntry(ProgressChapter: 5, Status: ScrobbleStatus.Reading);
+        var plan = ScrobblePlanner.Decide(entry, chapter: 9, volume: 0, held: ScrobbleStatus.Paused);
+
+        Assert.True(plan.Write);
+        Assert.Equal(9, plan.Chapter);
+        Assert.Equal(ScrobbleStatus.Paused, plan.PushStatus);
+    }
+
+    [Fact]
+    public void AnEntryAlreadyAtTheHeldStatusIsLeftAlone()
+    {
+        var entry = new RemoteEntry(ProgressChapter: 9, Status: ScrobbleStatus.Dropped);
+        var plan = ScrobblePlanner.Decide(entry, chapter: 9, volume: 0, held: ScrobbleStatus.Dropped);
+
+        Assert.False(plan.Write);
+        Assert.Equal(ScrobbleStatus.Dropped, plan.RecordStatus);
+    }
+
+    [Fact]
+    public void AHeldStatusNeverDemotesACompletedEntry()
+    {
+        var entry = new RemoteEntry(ProgressChapter: 20, Status: ScrobbleStatus.Completed, TotalChapters: 20);
+
+        Assert.False(ScrobblePlanner.Decide(entry, chapter: 0, volume: 0, held: ScrobbleStatus.Dropped).Write);
+        Assert.Equal(ScrobbleStatus.Completed,
+            ScrobblePlanner.Decide(entry, chapter: 20, volume: 0, held: ScrobbleStatus.Dropped).RecordStatus);
+    }
+
+    [Fact]
+    public void APausedEntryOnTheTrackerMovesBackToReadingOnlyWhenTheReaderReadsFurther()
+    {
+        var entry = new RemoteEntry(ProgressChapter: 5, Status: ScrobbleStatus.Paused);
+
+        Assert.False(ScrobblePlanner.Decide(entry, chapter: 5, volume: 0).Write);
+        var plan = ScrobblePlanner.Decide(entry, chapter: 6, volume: 0);
+        Assert.True(plan.Write);
+        Assert.Equal(ScrobbleStatus.Reading, plan.PushStatus);
+    }
 }

@@ -6423,6 +6423,22 @@ button.site-chip:hover {
 .hero-rating {
   margin-inline-start: 6px;
 }
+/* Your own things about the series, rating and status, on a line of their own under the facts. */
+.hero-yours {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  flex-basis: 100%;
+  gap: 4px 12px;
+}
+.hero-yours-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--hairline);
+}
+.hero-reading-status {
+  color: var(--ink-2);
+}
 .hero-bars {
   display: grid;
   gap: 9px;

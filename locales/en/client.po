@@ -1244,8 +1244,8 @@ msgid "{downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsCl
 msgstr "{downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsClearedCount} cached images cleared"
 
 #: src/pages/rewind/slides.tsx
-msgid "{droppedCount, plural, one {# series is waiting} other {# series are waiting}}"
-msgstr "{droppedCount, plural, one {# series is waiting} other {# series are waiting}}"
+msgid "{droppedCount, plural, one {# series dropped} other {# series dropped}}"
+msgstr "{droppedCount, plural, one {# series dropped} other {# series dropped}}"
 
 #: src/pages/RequestsPage.tsx
 msgid "{editingTitle}, asked for {editingAskedFor}"
@@ -2198,6 +2198,10 @@ msgid "{selectedCount, plural, one {Set quality profile for # series} other {Set
 msgstr "{selectedCount, plural, one {Set quality profile for # series} other {Set quality profile for # series}}"
 
 #: src/pages/LibraryPage.tsx
+msgid "{selectedCount, plural, one {Set reading status for # series} other {Set reading status for # series}}"
+msgstr "{selectedCount, plural, one {Set reading status for # series} other {Set reading status for # series}}"
+
+#: src/pages/LibraryPage.tsx
 msgid "{selectedCount, plural, one {Tag # series} other {Tag # series}}"
 msgstr "{selectedCount, plural, one {Tag # series} other {Tag # series}}"
 
@@ -2653,6 +2657,10 @@ msgstr "{updated, plural, one {Notifications updated for # series} other {Notifi
 #: src/pages/LibraryPage.tsx
 msgid "{updated, plural, one {Quality profile set for # series} other {Quality profile set for # series}}"
 msgstr "{updated, plural, one {Quality profile set for # series} other {Quality profile set for # series}}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{updated, plural, one {Reading status updated for # series} other {Reading status updated for # series}}"
+msgstr "{updated, plural, one {Reading status updated for # series} other {Reading status updated for # series}}"
 
 #: src/pages/LibraryPage.tsx
 msgid "{updated, plural, one {Tagged # series} other {Tagged # series}}"
@@ -3925,6 +3933,10 @@ msgstr "Applies automatically to"
 #: src/pages/LibraryPage.tsx
 msgid "Applies to chapters released later."
 msgstr "Applies to chapters released later."
+
+#: src/components/settings/ReadingStatusSection.tsx
+msgid "Applies to series you are reading and ones the on-hold rule paused. A series you put on hold yourself is never dropped."
+msgstr "Applies to series you are reading and ones the on-hold rule paused. A series you put on hold yourself is never dropped."
 
 #: src/pages/settings/PageConversionSection.tsx
 msgid "Applies to the library pass and to new downloads. Higher finishes sooner but uses more of the server's CPU while it runs."
@@ -6467,6 +6479,10 @@ msgstr "Date"
 msgid "Day by day"
 msgstr "Day by day"
 
+#: src/components/settings/ReadingStatusSection.tsx
+msgid "days"
+msgstr "days"
+
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "Days active"
 msgstr "Days active"
@@ -6490,6 +6506,14 @@ msgstr "Days to keep replaced files. 0 deletes them at the next cleanup."
 #: src/pages/settings/DownloadCards.tsx
 msgid "Days to skip a chapter after it was added or last upgraded."
 msgstr "Days to skip a chapter after it was added or last upgraded."
+
+#: src/components/settings/ReadingStatusSection.tsx
+msgid "Days without reading before a series is dropped"
+msgstr "Days without reading before a series is dropped"
+
+#: src/components/settings/ReadingStatusSection.tsx
+msgid "Days without reading before a series is put on hold"
+msgstr "Days without reading before a series is put on hold"
 
 #: src/components/ImportReviewModal.tsx
 msgid "Decide later"
@@ -7231,9 +7255,24 @@ msgstr "Drag your favourite first and save to set this series' download order."
 msgid "Drama"
 msgstr "Drama"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Drop"
+msgstr "Drop"
+
+#: src/components/settings/ReadingStatusSection.tsx
+msgid "Drop a series when I stop reading it"
+msgstr "Drop a series when I stop reading it"
+
+#: src/components/series/SeriesHero.tsx
+#: src/components/ui/status.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/stats/ActivityFeed.tsx
 msgid "Dropped"
 msgstr "Dropped"
+
+#: src/pages/rewind/slides.tsx
+msgid "dropped at ch. {maxChapter}"
+msgstr "dropped at ch. {maxChapter}"
 
 #: src/components/rails/CustomRailSection.tsx
 #: src/pages/HealthPage.tsx
@@ -7884,6 +7923,10 @@ msgstr "Failed to tag: {detail}"
 #: src/pages/LibraryPage.tsx
 msgid "Failed to update notifications: {detail}"
 msgstr "Failed to update notifications: {detail}"
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to update reading status: {detail}"
+msgstr "Failed to update reading status: {detail}"
 
 #: src/components/SeriesTagsEditor.tsx
 msgid "Failed to update tags: {detail}"
@@ -13291,6 +13334,8 @@ msgstr "On for this series"
 msgid "On hiatus since you saved it"
 msgstr "On hiatus since you saved it"
 
+#: src/components/series/SeriesHero.tsx
+#: src/components/ui/status.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "On hold"
 msgstr "On hold"
@@ -13362,6 +13407,10 @@ msgstr "Only add what is missing"
 #: src/pages/settings/ReadingCards.tsx
 msgid "Only for series matched to a Kavita series."
 msgstr "Only for series matched to a Kavita series."
+
+#: src/components/settings/ReadingStatusSection.tsx
+msgid "Only for series with unread chapters downloaded. A series you are caught up on is left alone."
+msgstr "Only for series with unread chapters downloaded. A series you are caught up on is left alone."
 
 #: src/components/NotificationsSection.tsx
 msgid "Only for tagged series"
@@ -13647,6 +13696,10 @@ msgstr "Other"
 #: src/pages/HealthPage.tsx
 msgid "Other actions"
 msgstr "Other actions"
+
+#: src/components/ui/status.tsx
+msgid "Other list"
+msgstr "Other list"
 
 #: src/components/discover/DiscoverHero.tsx
 msgid "Other picks for you"
@@ -13991,10 +14044,6 @@ msgstr "Paused because page conversion was switched off."
 #: src/pages/settings/PageConversionSection.tsx
 msgid "Paused because the settings changed. Restart the pass to use them."
 msgstr "Paused because the settings changed. Restart the pass to use them."
-
-#: src/components/ui/status.tsx
-msgid "Paused or dropped"
-msgstr "Paused or dropped"
 
 #: src/pages/settings/PageConversionSection.tsx
 msgid "Paused: converting the next file would leave less than 1 GB free on the library drive."
@@ -14470,6 +14519,10 @@ msgstr "pushes down titles close to it"
 msgid "Pushes down titles close to this one"
 msgstr "Pushes down titles close to this one"
 
+#: src/components/settings/ReadingStatusSection.tsx
+msgid "Put a series on hold when I stop reading it"
+msgstr "Put a series on hold when I stop reading it"
+
 #: src/components/series/UndoConversionModal.tsx
 msgid "Put back the files as they were downloaded."
 msgstr "Put back the files as they were downloaded."
@@ -14477,6 +14530,10 @@ msgstr "Put back the files as they were downloaded."
 #: src/pages/SetupAccountPage.tsx
 msgid "Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS."
 msgstr "Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS."
+
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Put on hold"
+msgstr "Put on hold"
 
 #: src/components/SourceCompareModal.tsx
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
@@ -15015,6 +15072,21 @@ msgstr "Reading since"
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "Reading since {since}"
 msgstr "Reading since {since}"
+
+#: src/components/settings/ReadingStatusSection.tsx
+#: src/pages/LibraryPage.tsx
+#: src/pages/settings/registry.ts
+msgid "Reading status"
+msgstr "Reading status"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "reading status, plan to read, on hold, paused, dropped, drop, abandon, stop reading, inactive, days, automatic"
+msgstr "reading status, plan to read, on hold, paused, dropped, drop, abandon, stop reading, inactive, days, automatic"
+
+#: src/components/series/ReadingStatus.tsx
+msgid "Reading status: {currentLabel}"
+msgstr "Reading status: {currentLabel}"
 
 #: src/components/RelinkFilesModal.tsx
 msgid "Reading the folder and every volume archive…"
@@ -16581,6 +16653,7 @@ msgstr "Save your recovery codes"
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/settings/RatingPromptsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/ReadingStatusSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/useIndexerForm.ts
 #: src/components/SetupWizard.tsx
@@ -18311,14 +18384,6 @@ msgstr "Squeeze volumes harder"
 #: src/pages/HealthPage.tsx
 msgid "Stacked height"
 msgstr "Stacked height"
-
-#: src/pages/stats/ActivityFeed.tsx
-msgid "Stalled"
-msgstr "Stalled"
-
-#: src/pages/rewind/slides.tsx
-msgid "stalled at ch. {maxChapter}"
-msgstr "stalled at ch. {maxChapter}"
 
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Stalled without finishing"
@@ -21793,6 +21858,14 @@ msgstr "Your reading"
 msgid "Your reading history is not affected. You can set a new goal at any time."
 msgstr "Your reading history is not affected. You can set a new goal at any time."
 
+#: src/components/series/ReadingStatus.tsx
+msgid "Your reading status"
+msgstr "Your reading status"
+
+#: src/components/series/ReadingStatus.tsx
+msgid "Your reading status, set automatically after a while without reading"
+msgstr "Your reading status, set automatically after a while without reading"
+
 #: src/api/inbox.ts
 msgid "Your request was adjusted"
 msgstr "Your request was adjusted"
@@ -21853,6 +21926,10 @@ msgstr "Your user or group key."
 #: src/pages/LibraryPage.tsx
 msgid "Yours alone. This changes what lands in your bell, not anybody else's."
 msgstr "Yours alone. This changes what lands in your bell, not anybody else's."
+
+#: src/pages/LibraryPage.tsx
+msgid "Yours alone. Trackers you have connected are updated too."
+msgstr "Yours alone. Trackers you have connected are updated too."
 
 #: src/components/settings/downloadClientFields.ts
 msgid "Z:\\downloads (optional)"

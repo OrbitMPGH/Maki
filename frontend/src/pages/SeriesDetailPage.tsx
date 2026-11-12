@@ -187,6 +187,7 @@ import { MetadataHistoryModal } from '../components/series/MetadataHistoryModal'
 import { UpgradeNowResultModal } from '../components/series/UpgradeNowResultModal'
 import { SeriesHero, SeriesHeroSkeleton } from '../components/series/SeriesHero'
 import { SeriesReviews } from '../components/series/SeriesReviews'
+import { useChangeReadingStatus } from '../components/series/ReadingStatus'
 import { SeriesReadingPanel } from '../components/series/SeriesReadingPanel'
 import { useSeriesReadingStats } from '../api/seriesReadingStats'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
@@ -652,6 +653,7 @@ function SeriesDetailBody() {
   const [upgradeNowModalOpen, setUpgradeNowModalOpen] = useState(false)
   const setIncognito = useSetIncognito()
   const setNotificationMode = useSetSeriesNotificationMode()
+  const changeReadingStatus = useChangeReadingStatus()
   const rateSeries = useRateSeries()
   const finalizeRating = useFinalizeRating()
   const saveLeavingRating = useSetRating({ silent: true })
@@ -2084,6 +2086,7 @@ function SeriesDetailBody() {
         <SeriesHero
             series={series}
             onRate={submitRating}
+            onSetReadingStatus={(status) => changeReadingStatus(seriesId, status)}
             onFinalize={keepRating}
             readUpTo={highestReadChapter}
             nextChapter={nextChapter}

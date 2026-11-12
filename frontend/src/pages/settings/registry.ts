@@ -219,6 +219,15 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'reading-status',
+    tab: 'reading',
+    title: msg`Reading status`,
+    keywords: msg({
+      message: `reading status, plan to read, on hold, paused, dropped, drop, abandon, stop reading, inactive, days, automatic`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'opds',
     tab: 'reading',
     title: msg`OPDS catalogue`,

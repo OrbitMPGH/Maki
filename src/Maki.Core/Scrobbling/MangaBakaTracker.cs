@@ -31,6 +31,8 @@ public class MangaBakaTracker(
         ["rereading"] = ScrobbleStatus.Reading,
         ["completed"] = ScrobbleStatus.Completed,
         ["plan_to_read"] = ScrobbleStatus.PlanToRead,
+        ["paused"] = ScrobbleStatus.Paused,
+        ["dropped"] = ScrobbleStatus.Dropped,
     };
 
     private static readonly Dictionary<ScrobbleStatus, string> InternalToState = new()
@@ -38,6 +40,8 @@ public class MangaBakaTracker(
         [ScrobbleStatus.Reading] = "reading",
         [ScrobbleStatus.Completed] = "completed",
         [ScrobbleStatus.PlanToRead] = "plan_to_read",
+        [ScrobbleStatus.Paused] = "paused",
+        [ScrobbleStatus.Dropped] = "dropped",
     };
 
     /// <summary>
@@ -259,7 +263,9 @@ public class MangaBakaTracker(
         ScrobbleStatus.Reading => ["reading", "rereading"],
         ScrobbleStatus.Completed => ["completed"],
         ScrobbleStatus.PlanToRead => ["plan_to_read"],
-        _ => ["paused", "dropped", "considering"],
+        ScrobbleStatus.Paused => ["paused"],
+        ScrobbleStatus.Dropped => ["dropped"],
+        _ => ["considering"],
     };
 
     /// <summary>

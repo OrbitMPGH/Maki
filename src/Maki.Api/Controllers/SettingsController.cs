@@ -729,6 +729,37 @@ public class SettingsController(
         return Ok(request);
     }
 
+    /// <summary>Days without reading before each auto rule moves a series; null = that rule is off.</summary>
+    public record ReadingStatusSettings(int? AutoHoldDays, int? AutoDropDays);
+
+    /// <summary>The caller's reading status auto rules. Theirs alone; unset = both off.</summary>
+    [HttpGet("reading-status")]
+    public async Task<IActionResult> GetReadingStatus(CancellationToken ct)
+    {
+        var rows = await userSettings.GetManyAsync(
+            [SettingKeys.ReadingAutoHoldDays, SettingKeys.ReadingAutoDropDays], ct);
+        return Ok(new ReadingStatusSettings(
+            ReadingStatusAutoService.ParseDays(rows.GetValueOrDefault(SettingKeys.ReadingAutoHoldDays)),
+            ReadingStatusAutoService.ParseDays(rows.GetValueOrDefault(SettingKeys.ReadingAutoDropDays))));
+    }
+
+    [HttpPut("reading-status")]
+    public async Task<IActionResult> SetReadingStatus([FromBody] ReadingStatusSettings request, CancellationToken ct)
+    {
+        if (request.AutoHoldDays is < 1 or > ReadingStatusAutoService.MaxDays ||
+            request.AutoDropDays is < 1 or > ReadingStatusAutoService.MaxDays)
+        {
+            return this.Fail(localizer, "error.settings.readingStatusDays",
+                new { max = ReadingStatusAutoService.MaxDays });
+        }
+
+        await userSettings.SetAsync(SettingKeys.ReadingAutoHoldDays,
+            request.AutoHoldDays?.ToString(CultureInfo.InvariantCulture) ?? "", ct);
+        await userSettings.SetAsync(SettingKeys.ReadingAutoDropDays,
+            request.AutoDropDays?.ToString(CultureInfo.InvariantCulture) ?? "", ct);
+        return Ok(request);
+    }
+
     /// <summary>Marks the appearance notice as shown. Idempotent, and only ever for the caller.</summary>
     [HttpPost("announcements/appearance/seen")]
     public async Task<IActionResult> SeenAppearanceAnnouncement(CancellationToken ct)

@@ -1705,6 +1705,16 @@ msgstr "Unknown mode: {mode}"
 msgid "error.series.unknownNotificationMode"
 msgstr "Unknown mode: {mode}"
 
+#. Shown when a client sends a reading status that is not Reading, PlanToRead, OnHold or Dropped.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.unknownReadingStatus"
+msgstr "Unknown reading status: {status}"
+
+#. {max} is the largest number of days either reading status rule accepts.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.readingStatusDays"
+msgstr "Days must be between 1 and {max}."
+
 #. The add names where it was started from, and the only two answers are the library and a recommendation.
 #: src/Maki.Api/Controllers/SeriesController.cs
 msgid "error.series.unsupportedAddOrigin"
@@ -3897,6 +3907,16 @@ msgstr "Rated {score}/10"
 msgid "scrobble.log.ratingPushFailed"
 msgstr "Could not send the rating: {detail}"
 
+#. {status} is one of the scrobble.status.* words, already rendered. Sent when the reader changed the series' status in Maki.
+#: src/Maki.Api/Services/ScrobbleService.cs
+msgid "scrobble.log.statusPushed"
+msgstr "Moved to {status}"
+
+#. {detail} is the tracker's own error text and is not translated.
+#: src/Maki.Api/Services/ScrobbleService.cs
+msgid "scrobble.log.statusPushFailed"
+msgstr "Could not send the reading status: {detail}"
+
 #. The reading status on a tracker's list. These are the words AniList and MyAnimeList use for their
 #. own shelves, so translate them the way those sites do in this language.
 #: src/Maki.Api/Services/ScrobbleService.cs
@@ -3914,6 +3934,14 @@ msgstr "plan to read"
 #: src/Maki.Api/Services/ScrobbleService.cs
 msgid "scrobble.status.other"
 msgstr "other"
+
+#: src/Maki.Api/Services/ScrobbleService.cs
+msgid "scrobble.status.paused"
+msgstr "on hold"
+
+#: src/Maki.Api/Services/ScrobbleService.cs
+msgid "scrobble.status.dropped"
+msgstr "dropped"
 
 #. Confirmations shown after a tracker action on the series page.
 msgid "scrobble.action.syncRunning"
@@ -4328,6 +4356,10 @@ msgstr "Build the search index"
 #: src/Maki.Api/Services/JobLabels.cs
 msgid "health.job.followedCreatorReleases"
 msgstr "Check followed creators for new series"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.readingStatusRules"
+msgstr "Put idle series on hold or drop them"
 
 #: src/Maki.Api/Services/JobLabels.cs
 msgid "health.job.healthCheck"

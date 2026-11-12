@@ -56,6 +56,10 @@ export const libraryHandlers: HttpHandler[] = [
     const body = (await request.json()) as { seriesIds: number[] }
     return HttpResponse.json({ updated: body.seriesIds.length })
   }),
+  http.post(api('/series/reading-status/bulk'), async ({ request }) => {
+    const body = (await request.json()) as { seriesIds: number[] }
+    return HttpResponse.json({ updated: body.seriesIds.length })
+  }),
   http.post(api('/series/upgradeprofile/bulk'), async ({ request }) => {
     const body = (await request.json()) as { seriesIds: number[] }
     return HttpResponse.json({ updated: body.seriesIds.length })

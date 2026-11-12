@@ -2,6 +2,8 @@ import type { CSSProperties } from 'react'
 import {
   IconAlertTriangle,
   IconBan,
+  IconBook,
+  IconBookmark,
   IconCheck,
   IconCircleCheck,
   IconClock,
@@ -245,6 +247,25 @@ export function isQueueActive(status: string): boolean {
   )
 }
 
+export const READING_STATUSES = ['PlanToRead', 'Reading', 'OnHold', 'Dropped'] as const
+export type ReadingStatus = (typeof READING_STATUSES)[number]
+
+/** The signed-in user's own reading status on a series. */
+export function readingStatusVisual(status: string): StatusVisual {
+  switch (status) {
+    case 'PlanToRead':
+      return { color: tone('neutral'), label: msg`Plan to read`, Icon: IconBookmark }
+    case 'Reading':
+      return { color: tone('info'), label: msg`Reading`, Icon: IconBook }
+    case 'OnHold':
+      return { color: tone('warn'), label: msg`On hold`, Icon: IconPlayerPause }
+    case 'Dropped':
+      return { color: tone('neutral'), label: msg`Dropped`, Icon: IconBan }
+    default:
+      return { color: tone('neutral'), label: status, Icon: IconHourglass }
+  }
+}
+
 /** A tracker's reading status for one series, as returned by scrobble sync. */
 export function trackerStatusVisual(status: string): StatusVisual {
   switch (status) {
@@ -254,10 +275,12 @@ export function trackerStatusVisual(status: string): StatusVisual {
       return { color: tone('info'), label: msg`Reading`, Icon: IconPlayerPlay }
     case 'plan_to_read':
       return { color: tone('neutral'), label: msg`Plan to read`, Icon: IconClock }
-    // A status the user set on the tracker that a sync never overrides. The wire value does not
-    // tell paused from dropped, so it takes paused's amber rather than claim a drop.
+    case 'paused':
+      return { color: tone('warn'), label: msg`On hold`, Icon: IconPlayerPause }
+    case 'dropped':
+      return { color: tone('neutral'), label: msg`Dropped`, Icon: IconBan }
     case 'other':
-      return { color: tone('warn'), label: msg`Paused or dropped`, Icon: IconHourglass }
+      return { color: tone('neutral'), label: msg`Other list`, Icon: IconHourglass }
     default:
       return { color: tone('neutral'), label: status || msg`Listed`, Icon: IconHourglass }
   }

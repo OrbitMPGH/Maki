@@ -413,7 +413,7 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
           </Reveal>
           <Reveal delay={0.2}>
             <Text className="rewind-title">
-              <Plural value={droppedCount} one="# series is waiting" other="# series are waiting" />
+              <Plural value={droppedCount} one="# series dropped" other="# series dropped" />
             </Text>
             <Text className="rewind-caption">
               <Trans>Maybe next year.</Trans>
@@ -426,9 +426,11 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
                 return (
                   <Text key={s.seriesId ?? title} className="rewind-list-line">
                     {title}
-                    <span className="rewind-dim">
-                      , <Trans>stalled at ch. {maxChapter}</Trans>
-                    </span>
+                    {maxChapter > 0 && (
+                      <span className="rewind-dim">
+                        , <Trans>dropped at ch. {maxChapter}</Trans>
+                      </span>
+                    )}
                   </Text>
                 )
               })}
