@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Net;
 using Maki.Core.Configuration;
@@ -150,7 +151,7 @@ public class AuthRuntimeOptions
 
     // IPAddress.TryParse takes legacy IPv4 shorthand ("10" is 0.0.0.10, "172.16" is 172.0.0.16), so
     // an IPv4 entry must read back exactly as written or "172.16/12" would quietly mean 172.0.0.0/12.
-    private static bool TryParseAddress(string text, out IPAddress? address) =>
+    private static bool TryParseAddress(string text, [NotNullWhen(true)] out IPAddress? address) =>
         IPAddress.TryParse(text, out address) &&
         (address.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork || address.ToString() == text);
 

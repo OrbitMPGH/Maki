@@ -41,7 +41,7 @@ public class IdleUnloadJobTests
 
     [Theory]
     [MemberData(nameof(Resolvers))]
-    public void A_valid_value_is_used_as_given(string job, Func<string?, int> resolve)
+    public void A_valid_value_is_used_as_given(string _, Func<string?, int> resolve)
     {
         Assert.Equal(1, resolve("1"));
         Assert.Equal(45, resolve("45"));

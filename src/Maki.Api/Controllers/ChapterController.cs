@@ -34,7 +34,6 @@ public class ChapterController(
     ILocalizer localizer,
     MakiDbContext db,
     DownloadQueueService queue,
-    StatsEventService stats,
     ReaderArchiveCache archives,
     SourceRegistry sourceRegistry,
     SourceAvailability sourceAvailability,

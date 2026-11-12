@@ -88,7 +88,7 @@ public class EmbeddingStoreTests : IDisposable
     {
         _store.UpsertBatch([(7L, "h7", [1f, 0f])]);
         _store.UpsertBatch([(7L, "h7b", [0f, 1f])]);
-        Assert.Equal([0f, 1f], _store.GetVector(7));
+        Assert.Equal([0f, 1f], _store.GetVector(7)!);
         Assert.Equal(1, _store.Count());
         Assert.Equal("h7b", _store.GetHashes()[7]);
     }

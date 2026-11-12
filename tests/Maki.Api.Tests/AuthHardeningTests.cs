@@ -126,7 +126,7 @@ public sealed class AuthHardeningTests : IDisposable
         // thief's own provider account as a second way in.
         Assert.IsType<ConflictObjectResult>(result);
         Assert.Equal("error.auth.ssoAlreadyLinked", CodeOf(result));
-        Assert.False(controller.Response.Headers.SetCookie.ToString().Contains(OidcLinkIntent.CookieName));
+        Assert.DoesNotContain(OidcLinkIntent.CookieName, controller.Response.Headers.SetCookie.ToString());
     }
 
     [Fact]

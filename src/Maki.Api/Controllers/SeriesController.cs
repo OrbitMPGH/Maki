@@ -583,7 +583,7 @@ public class SeriesController(
                 g.Count(c => c.Number != null && c.Number != (decimal)(long)c.Number),
                 g.Count(c => c.Number != null && c.Number != (decimal)(long)c.Number &&
                              (c.ChapterFileId != null || c.FileRemovedAt != null)),
-                g.Where(c => c.Number != null && c.Number == (decimal)(long)c.Number).Max(c => (double?)(long)c.Number)))
+                g.Where(c => c.Number != null && c.Number == (decimal)(long)c.Number).Max(c => (double?)(long)c.Number!.Value)))
             .ToDictionaryAsync(x => x.SeriesId, ct);
 
     /// <summary>

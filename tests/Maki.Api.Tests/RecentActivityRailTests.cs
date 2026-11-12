@@ -241,6 +241,7 @@ public class RecentActivityRailTests : IDisposable
             Enumerable.Range(100, RecentActivityRailService.SeedCount).Select(id => (long)id),
             recommender.Seen.Single().Order());
         Assert.Equal("discover.rail.becauseYouRead", result!.Subtitle);
+        Assert.NotNull(result.SubtitleTitles);
         Assert.NotEmpty(result.SubtitleTitles);
         Assert.Equal(
             Enumerable.Range(100, result.SubtitleTitles.Count).Select(id => $"Series {id}"),

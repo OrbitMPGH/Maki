@@ -398,7 +398,7 @@ public class SeriesRenameServiceTests : IDisposable
                 File.Move(s, d);
             }));
 
-        Assert.Equal(["Berserk.cbz"], Directory.GetFiles(_root).Select(Path.GetFileName).ToArray());
+        Assert.Equal(["Berserk.cbz"], Directory.GetFiles(_root).Select(f => Path.GetFileName(f)).ToArray());
     }
 
     [Fact]

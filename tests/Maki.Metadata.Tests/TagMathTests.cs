@@ -440,7 +440,7 @@ public class TagMathTests
         var tree = TagMath.TagTree.Build(vocab, decay: 0.5, includeSelf: false, activeCount: 10_000);
 
         // Decay 0.5 at one level up identifies the immediate parent, "Activities > Physical".
-        var parent = Assert.Single(tree.AncestorsOf(1).Where(a => a.Decay == 0.5));
+        var parent = Assert.Single(tree.AncestorsOf(1), a => a.Decay == 0.5);
         Assert.True(parent.Id < 0, "ancestor ids are negative so they cannot collide with tag ids");
 
         // "Activities > Physical" is a real tag carrying 9,000 of 10,000 series, so its IDF is tiny.

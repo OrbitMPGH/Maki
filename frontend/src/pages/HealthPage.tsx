@@ -1712,7 +1712,7 @@ function CheckGroup({
         <MetaList
           items={[
             formatDateTime(latest),
-            acknowledged > 0 && <Plural value={acknowledged} one="# acknowledged" other="# acknowledged" />,
+            acknowledged > 0 && <Plural key="acknowledged" value={acknowledged} one="# acknowledged" other="# acknowledged" />,
           ]}
         />
       </Text>
@@ -1821,7 +1821,7 @@ function CheckRow({
           items={[
             card && category,
             formatDateTime(check.checkedAt),
-            check.acknowledged && <Trans>Acknowledged, hidden from the header badge</Trans>,
+            check.acknowledged && <Trans key="acknowledged">Acknowledged, hidden from the header badge</Trans>,
           ]}
         />
       </Text>

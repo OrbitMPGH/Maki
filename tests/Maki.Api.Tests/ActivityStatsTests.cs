@@ -343,7 +343,7 @@ public sealed class ActivityStatsTests : IDisposable
 
     // ---- aggregation ----
 
-    private ActivityStatsService Activity(DateTimeOffset? now = null, bool kavita = false,
+    private ActivityStatsService Activity(bool kavita = false,
         int caller = TestUser, bool allRootFolders = true)
     {
         var settings = new FakeAppSettings();
@@ -356,7 +356,6 @@ public sealed class ActivityStatsTests : IDisposable
             ? new HashSet<int>()
             : _db.NewContext().UserRootFolders.Where(g => g.UserId == caller).Select(g => g.RootFolderId).ToHashSet();
         return new ActivityStatsService(_db.NewContext(caller, allRootFolders), settings, _timeZones,
-            new StoppedClock(now ?? new DateTimeOffset(2026, 12, 31, 0, 0, 0, TimeSpan.Zero)),
             new TestCurrentUser(caller, allRootFolders: allRootFolders, rootFolderIds: rootFolderIds));
     }
 

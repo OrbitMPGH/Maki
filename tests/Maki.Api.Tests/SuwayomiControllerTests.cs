@@ -32,7 +32,7 @@ public sealed class SuwayomiControllerTests : IDisposable
     public SuwayomiControllerTests()
     {
         _suwayomiSettings = new SuwayomiSettings(_settings);
-        var factory = new SuwayomiChainFactory(_suwayomiSettings, () => _tokens, _server);
+        var factory = new SuwayomiChainFactory(_suwayomiSettings, () => _tokens!, _server);
         _tokens = new SuwayomiTokenStore(_suwayomiSettings, factory);
         _client = new SuwayomiClient(factory, _suwayomiSettings, TimeProvider.System);
         var provider = new SuwayomiSourceProvider(_suwayomiSettings, _client, _cache, NullLogger<SuwayomiSourceProvider>.Instance);

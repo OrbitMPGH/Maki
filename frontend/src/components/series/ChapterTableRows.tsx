@@ -773,9 +773,9 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
               items={[
                 plural(total, { one: '# chapter', other: '# chapters' }),
                 t`${downloadedCount} downloaded`,
-                watchedCount > 0 && <Trans>{watchedCount} watched</Trans>,
-                readCount > 0 && <Trans>{readCount} read</Trans>,
-                mixed && <Trans>{wantedCount} wanted</Trans>,
+                watchedCount > 0 && <Trans key="watched">{watchedCount} watched</Trans>,
+                readCount > 0 && <Trans key="read">{readCount} read</Trans>,
+                mixed && <Trans key="wanted">{wantedCount} wanted</Trans>,
               ]}
           />
         </Table.Td>

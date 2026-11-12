@@ -548,7 +548,6 @@ public sealed class UpgradeProfilesApiTests : IDisposable
         new TestLocalizer(),
         db,
         new DownloadQueueService(_db.ScopeFactory(), TimeProvider.System, null!, NullLogger<DownloadQueueService>.Instance),
-        new StatsEventService(db),
         new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
         new SourceRegistry([]),
         new SourceAvailability(new FakeAppSettings(), new SourceRegistry([])),

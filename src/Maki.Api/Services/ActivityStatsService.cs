@@ -18,7 +18,7 @@ namespace Maki.Api.Services;
 /// </para>
 /// </summary>
 public class ActivityStatsService(
-    MakiDbContext db, IAppSettings appSettings, IUserSettingsStore userSettings, TimeProvider clock,
+    MakiDbContext db, IAppSettings appSettings, IUserSettingsStore userSettings,
     ICurrentUser currentUser)
 {
     internal const int TimelineDayBucketMaxDays = 62;

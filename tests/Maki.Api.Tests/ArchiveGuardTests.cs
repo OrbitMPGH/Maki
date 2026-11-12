@@ -778,7 +778,7 @@ public sealed class ArchiveGuardTests : IDisposable
     {
         var registry = new SourceRegistry(sources);
         return new ChapterController(
-            new TestLocalizer(), db, Queue(), new StatsEventService(db),
+            new TestLocalizer(), db, Queue(),
             new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), registry,
             new SourceAvailability(new FakeAppSettings(), registry),
             new SourceChapterListCache(TimeProvider.System, NullLogger<SourceChapterListCache>.Instance),

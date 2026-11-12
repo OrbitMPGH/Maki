@@ -184,7 +184,7 @@ public class ComicInfoUpdaterTests : IDisposable
         using var archive = ZipFile.OpenRead(path);
         using var reader = new StreamReader(archive.Entries.Single(e => e.Name == "ComicInfo.xml").Open());
         var root = System.Xml.Linq.XDocument.Parse(reader.ReadToEnd()).Root!;
-        Assert.Equal("Dark fantasy.", Assert.Single(root.Elements().Where(e => string.Equals(e.Name.LocalName, "summary", StringComparison.OrdinalIgnoreCase))).Value);
+        Assert.Equal("Dark fantasy.", Assert.Single(root.Elements(), e => string.Equals(e.Name.LocalName, "summary", StringComparison.OrdinalIgnoreCase)).Value);
         Assert.Equal("Guts", root.Element("Characters")!.Value);
     }
 
@@ -201,7 +201,7 @@ public class ComicInfoUpdaterTests : IDisposable
         using var archive = ZipFile.OpenRead(path);
         using var reader = new StreamReader(archive.Entries.Single(e => e.Name == "ComicInfo.xml").Open());
         var root = System.Xml.Linq.XDocument.Parse(reader.ReadToEnd()).Root!;
-        Assert.Single(root.Elements().Where(e => e.Name.LocalName.Equals("publisher", StringComparison.OrdinalIgnoreCase)));
+        Assert.Single(root.Elements(), e => e.Name.LocalName.Equals("publisher", StringComparison.OrdinalIgnoreCase));
     }
 
     [Fact]
