@@ -128,8 +128,12 @@ public sealed class UpscalePrepareServiceTests : IDisposable
 
             state.Status = status;
             state.ReaderPrefsJson = prefs;
-            state.PrepareChapters = prepare;
             db.SaveChanges();
+        }
+
+        using (var db = _db.NewContext())
+        {
+            db.Series.Where(s => s.Id == seriesId).ExecuteUpdate(s => s.SetProperty(x => x.PrepareChapters, prepare));
         }
 
         using (var db = _db.NewContext(_user))

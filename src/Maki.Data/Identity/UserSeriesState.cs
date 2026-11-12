@@ -126,12 +126,5 @@ public class UserSeriesState : IUserOwned
     /// </summary>
     public bool StatusAuto { get; set; }
 
-    /// <summary>
-    /// How many chapters "Prepare chapters ahead" keeps upscaled for this reader in this series. Null
-    /// follows the instance setting, 0 never prepares it, and a number keeps that many ready whenever
-    /// the series is set to Reading, however long ago it was read.
-    /// </summary>
-    public int? PrepareChapters { get; set; }
-
     public DateTime UpdatedAt { get; set; }
 }

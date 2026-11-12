@@ -81,10 +81,11 @@ export const Admin: Story = {
 export const PrepareAhead: Story = {
   args: { prepareAhead: { chapters: null, defaultChapters: 1, days: 14 }, onSetPrepareAhead: fn() },
   play: async (ctx) => {
-    const page = await openAt(ctx)
+    const page = await openAt(ctx, 'Automation')
+    await expect(await page.findByRole('group', { name: 'Monitor' })).toBeVisible()
     await expect(await page.findByRole('menuitem', { name: /Prepare ahead/ })).toHaveTextContent('Default')
     await ctx.userEvent.click(await page.findByRole('menuitem', { name: /Prepare ahead/ }))
-    await expect(await page.findByText('1 chapter while you have read it in the last 14 days.')).toBeVisible()
+    await expect(await page.findByText('1 chapter for each reader who read it in the last 14 days.')).toBeVisible()
     await ctx.userEvent.click(await page.findByRole('menuitemradio', { name: '10 chapters' }))
     await waitFor(() => expect(ctx.args.onSetPrepareAhead).toHaveBeenCalledWith(10))
   },
@@ -92,8 +93,28 @@ export const PrepareAhead: Story = {
 
 export const PrepareAheadHiddenWhileOff: Story = {
   play: async (ctx) => {
+    const page = await openAt(ctx, 'Automation')
+    await expect(await page.findByRole('group', { name: 'Incognito' })).toBeVisible()
+    await expect(page.queryByRole('menuitem', { name: /Prepare ahead/ })).toBeNull()
+  },
+}
+
+/** Prepare ahead is a series setting: a reader without edit rights never sees it. */
+export const ReaderCannotSetPrepareAhead: Story = {
+  args: {
+    canEdit: false,
+    canCleanUpReadFiles: false,
+    canSetPageConversion: false,
+    canScanUpgrades: false,
+    canArchive: false,
+    canRemove: false,
+    prepareAhead: { chapters: 5, defaultChapters: 1, days: 14 },
+    onSetPrepareAhead: fn(),
+  },
+  play: async (ctx) => {
     const page = await openAt(ctx)
-    await expect(await page.findByRole('menuitem', { name: 'Upgrades' })).toBeVisible()
+    await expect(await page.findByRole('group', { name: 'Notify' })).toBeVisible()
+    await expect(page.queryByRole('menuitem', { name: 'Automation' })).toBeNull()
     await expect(page.queryByRole('menuitem', { name: /Prepare ahead/ })).toBeNull()
   },
 }

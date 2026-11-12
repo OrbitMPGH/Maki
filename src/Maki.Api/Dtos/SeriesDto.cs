@@ -20,8 +20,8 @@ public record LocalizedTitleDto(string Title, string? Language);
 public record SeriesLookupDto(int Id, int? MangaBakaId, string? CoverUrl, bool Archived);
 
 /// <summary>
-/// The caller's "Prepare chapters ahead" choice for one series. <paramref name="Chapters"/> null follows
-/// the instance setting (<paramref name="DefaultChapters"/> chapters while read within
+/// A series' "Prepare chapters ahead" setting. <paramref name="Chapters"/> null follows the instance
+/// setting (<paramref name="DefaultChapters"/> chapters for readers who read it within
 /// <paramref name="Days"/> days), 0 never prepares the series, a number keeps that many ready.
 /// </summary>
 public record SeriesPrepareAheadDto(int? Chapters, int DefaultChapters, int Days);
@@ -273,7 +273,7 @@ public record SeriesDto(
     /// <summary><see cref="ReadingStatus"/> was set by an auto rule rather than by the caller.</summary>
     public bool ReadingStatusAuto { get; init; }
 
-    /// <summary>The caller's prepare-ahead choice; null while the instance has it off. Detail endpoint only.</summary>
+    /// <summary>The series' prepare-ahead setting; null while the instance has it off. Detail endpoint only.</summary>
     public SeriesPrepareAheadDto? PrepareAhead { get; init; }
 
     /// <summary>

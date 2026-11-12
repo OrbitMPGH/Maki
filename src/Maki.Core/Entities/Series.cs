@@ -65,6 +65,13 @@ public class Series
 
     /// <summary>Overrides the page conversion rules for this series' files; see <c>PageConversionPlan</c>.</summary>
     public PageConversionOverride PageConversion { get; set; }
+
+    /// <summary>
+    /// How many chapters "Prepare chapters ahead" keeps upscaled in this series for each reader who has
+    /// it set to Reading. Null follows the instance setting, 0 never prepares it, and a number keeps that
+    /// many ready however long ago it was read. Set by an editor, not per reader.
+    /// </summary>
+    public int? PrepareChapters { get; set; }
     public UpgradeProfile? UpgradeProfile { get; set; }
 
     /// <summary>Which source a download tries first. Null means the instance default from <c>SettingKeys.DownloadSourceOrder</c>.</summary>

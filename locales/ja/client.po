@@ -1459,7 +1459,7 @@ msgid "{decade}s"
 msgstr "{decade}年代"
 
 #: src/components/series/SeriesActionsMenu.tsx
-msgid "{defaultChapters} while you have read it in the last {days} days."
+msgid "{defaultChapters} for each reader who read it in the last {days} days."
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -26385,7 +26385,7 @@ msgid "Upscaled"
 msgstr "アップスケール済み"
 
 #: src/components/series/SeriesActionsMenu.tsx
-msgid "Upscaled on the server while nobody is reading. A number keeps that many ready however long ago you read it. Needs Enhance on Always with a server method for this series."
+msgid "Upscaled on the server while nobody is reading, for each reader who has this series set to Reading with Enhance on Always and a server method. A number keeps that many ready however long ago they read it."
 msgstr ""
 
 #: src/pages/reader/ServerEnhanceStatus.tsx

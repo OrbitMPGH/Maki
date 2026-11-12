@@ -107,7 +107,7 @@ const PARENT: Record<Page, Page> = {
     profile: 'upgrades',
     cleanup: 'files',
     conversion: 'files',
-    prepare: 'root',
+    prepare: 'automation',
 }
 
 /**
@@ -217,7 +217,7 @@ export function SeriesActionsMenu({
     offlineSaved?: number
     onSaveUnreadOffline?: () => void
     onRemoveOffline?: () => void
-    /** Your "Prepare chapters ahead" choice; null or absent hides the row (the instance has it off). */
+    /** The series' "Prepare chapters ahead" setting; null or absent hides the row (the instance has it off). Needs `canEdit`. */
     prepareAhead?: SeriesPrepareAhead | null
     /** Null follows Settings, 0 never prepares the series. */
     onSetPrepareAhead?: (chapters: number | null) => void
@@ -451,6 +451,7 @@ export function SeriesActionsMenu({
                 ? t`Off`
                 : chaptersLabel(prepareAhead.chapters)
 
+    const hasPrepare = canEdit && prepareAhead != null && onSetPrepareAhead !== undefined
     const hasFiles = canEdit || canCleanUpReadFiles || canSetPageConversion
     const hasUpgrades = canEdit || canScanUpgrades
     const notifyField = field({
@@ -498,9 +499,6 @@ export function SeriesActionsMenu({
                         {hasFiles && drill('files', <IconFolder size={16} />, <Trans>Files</Trans>, undefined, rescanning)}
                         {/* A reader's Automation page would hold Notify alone, so for them it sits here. */}
                         {canEdit ? drill('automation', <IconEye size={16} />, <Trans>Automation</Trans>) : notifyField}
-                        {prepareAhead &&
-                            onSetPrepareAhead &&
-                            drill('prepare', <IconAperture size={16} />, <Trans>Prepare ahead</Trans>, prepareValue)}
                         {hasUpgrades && drill('upgrades', <IconCircleArrowUp size={16} />, <Trans>Upgrades</Trans>, undefined, scanningUpgrades || searchingVolumes)}
                         {offlineSaved !== undefined &&
                             drill('device', <IconDeviceMobile size={16} />, <Trans>This device</Trans>)}
@@ -592,6 +590,7 @@ export function SeriesActionsMenu({
                             onPick: onSetIncognito,
                             help: INCOGNITO_HELP[incognito] && renderLabel(INCOGNITO_HELP[incognito]),
                         })}
+                        {hasPrepare && drill('prepare', <IconAperture size={16} />, <Trans>Prepare ahead</Trans>, prepareValue)}
                     </>
                 )
             case 'upgrades':
@@ -658,7 +657,7 @@ export function SeriesActionsMenu({
                         {
                             value: 'default',
                             label: <Trans>Follow Settings</Trans>,
-                            hint: <Trans>{defaultChapters} while you have read it in the last {days} days.</Trans>,
+                            hint: <Trans>{defaultChapters} for each reader who read it in the last {days} days.</Trans>,
                         },
                         { value: '0', label: <Trans>Off</Trans>, hint: <Trans>Never prepared ahead.</Trans> },
                         ...counts.map((n) => ({ value: String(n), label: chaptersLabel(n) })),
@@ -666,8 +665,9 @@ export function SeriesActionsMenu({
                     onPick: (v) => onSetPrepareAhead(v === 'default' ? null : Number(v)),
                     note: (
                         <Trans>
-                            Upscaled on the server while nobody is reading. A number keeps that many ready however long ago
-                            you read it. Needs Enhance on Always with a server method for this series.
+                            Upscaled on the server while nobody is reading, for each reader who has this series set to Reading
+                            with Enhance on Always and a server method. A number keeps that many ready however long ago they
+                            read it.
                         </Trans>
                     ),
                 })

@@ -12,7 +12,7 @@ namespace Maki.Data.Migrations
         {
             migrationBuilder.AddColumn<int>(
                 name: "PrepareChapters",
-                table: "UserSeriesStates",
+                table: "Series",
                 type: "INTEGER",
                 nullable: true);
         }
@@ -22,7 +22,7 @@ namespace Maki.Data.Migrations
         {
             migrationBuilder.DropColumn(
                 name: "PrepareChapters",
-                table: "UserSeriesStates");
+                table: "Series");
         }
     }
 }

@@ -976,7 +976,7 @@ public class SeriesController(
             .Select(x => new
             {
                 x.Rating, x.ProvisionalRating, x.ProvisionalAtChapter, x.NotificationMode, x.ReaderPrefsJson,
-                x.ReadingProfileId, x.PendingRatingCheckpoint, x.Status, x.StatusAuto, x.PrepareChapters,
+                x.ReadingProfileId, x.PendingRatingCheckpoint, x.Status, x.StatusAuto,
             })
             .FirstOrDefaultAsync(ct);
         var finished = await db.ReadingStates.AnyAsync(r => r.SeriesId == id && r.Finished, ct);
@@ -1013,7 +1013,7 @@ public class SeriesController(
             ReadingStatus = (userState?.Status ?? ReadingStatus.PlanToRead).ToString(),
             ReadingStatusAuto = userState?.StatusAuto ?? false,
             PrepareAhead = upscaling is { Enabled: true, PrepareAhead.Enabled: true }
-                ? new SeriesPrepareAheadDto(userState?.PrepareChapters, upscaling.PrepareAhead.Chapters, upscaling.PrepareAhead.Days)
+                ? new SeriesPrepareAheadDto(series.PrepareChapters, upscaling.PrepareAhead.Chapters, upscaling.PrepareAhead.Days)
                 : null,
             RatingCheckpoint = userState?.Rating is null && !finished
                 ? RatingCheckpointService.WireName(userState?.PendingRatingCheckpoint ?? default)
@@ -2175,9 +2175,10 @@ public class SeriesController(
     public record SetPrepareAheadRequest(int? Chapters);
 
     /// <summary>
-    /// Sets how many chapters "Prepare chapters ahead" keeps upscaled for this user in this series.
-    /// Like notifications it lives in the caller's own state row, so being signed in is enough.
+    /// Sets how many chapters "Prepare chapters ahead" keeps upscaled in this series, for every reader
+    /// who has it set to Reading. A series setting like Monitor: it spends server CPU and disk.
     /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
     [HttpPost("{id:int}/prepare-ahead")]
     public async Task<IActionResult> SetPrepareAhead(
         int id, [FromBody] SetPrepareAheadRequest request, [FromServices] UpscalePrepareService prepare, CancellationToken ct)
@@ -2187,12 +2188,14 @@ public class SeriesController(
             return this.Fail(localizer, "error.series.invalidPrepareChapters", new { max = PrepareOptions.MaxSeriesChapters });
         }
 
-        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        var series = await db.Series.FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
         {
             return NotFound();
         }
 
-        await UpsertUserStateAsync(id, s => s.PrepareChapters = request.Chapters, ct);
+        series.PrepareChapters = request.Chapters;
+        await db.SaveChangesAsync(ct);
         prepare.Nudge();
         return Ok(new { prepareChapters = request.Chapters });
     }

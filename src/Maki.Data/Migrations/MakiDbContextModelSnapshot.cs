@@ -2184,6 +2184,9 @@ namespace Maki.Data.Migrations
                     b.Property<int>("PendingImportLink")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("PrepareChapters")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Publisher")
                         .HasColumnType("TEXT");
 
@@ -3278,9 +3281,6 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("PendingRatingCheckpoint")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("PrepareChapters")
                         .HasColumnType("INTEGER");
 
                     b.Property<double?>("ProvisionalAtChapter")

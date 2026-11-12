@@ -1,12 +1,11 @@
 using Maki.Api.Controllers;
 using Maki.Api.Services.Upscaling;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
-/// <summary>The per-series "Prepare ahead" choice, stored in the caller's own state row.</summary>
+/// <summary>The series' "Prepare ahead" setting, set by an editor for every reader of the series.</summary>
 public sealed class SeriesPrepareAheadControllerTests : IDisposable
 {
     private readonly TestDb _db = new();
@@ -20,32 +19,31 @@ public sealed class SeriesPrepareAheadControllerTests : IDisposable
     private static UpscalePrepareService Planner() =>
         new(null!, null!, null!, null!, null!, TimeProvider.System, NullLogger<UpscalePrepareService>.Instance);
 
-    [Fact]
-    public async Task Sets_and_clears_the_count_in_the_callers_row_and_keeps_the_rest()
+    private int? Stored(int seriesId)
     {
-        var alice = _db.SeedUser("alice");
+        using var db = _db.NewContext();
+        return db.Series.Where(s => s.Id == seriesId).Select(s => s.PrepareChapters).Single();
+    }
+
+    [Fact]
+    public async Task Sets_and_clears_the_count_on_the_series()
+    {
+        var editor = _db.SeedUser("editor");
         var seriesId = _db.SeedSeries();
-        using (var db = _db.NewContext(alice))
+        using (var db = _db.NewContext(editor))
         {
-            await Controller(db).SetNotificationMode(seriesId, new SeriesController.SetSeriesNotificationsRequest("Muted"), default);
             Assert.IsType<OkObjectResult>(await Controller(db).SetPrepareAhead(
                 seriesId, new SeriesController.SetPrepareAheadRequest(12), Planner(), default));
         }
 
-        using (var check = _db.NewContext())
-        {
-            var state = Assert.Single(check.UserSeriesStates.IgnoreQueryFilters().ToList());
-            Assert.Equal((alice, 12), (state.UserId, state.PrepareChapters));
-            Assert.Equal(Maki.Core.Entities.SeriesNotificationMode.Muted, state.NotificationMode);
-        }
+        Assert.Equal(12, Stored(seriesId));
 
-        using (var db = _db.NewContext(alice))
+        using (var db = _db.NewContext(editor))
         {
             await Controller(db).SetPrepareAhead(seriesId, new SeriesController.SetPrepareAheadRequest(null), Planner(), default);
         }
 
-        using var after = _db.NewContext();
-        Assert.Null(Assert.Single(after.UserSeriesStates.IgnoreQueryFilters().ToList()).PrepareChapters);
+        Assert.Null(Stored(seriesId));
     }
 
     [Theory]
@@ -53,13 +51,13 @@ public sealed class SeriesPrepareAheadControllerTests : IDisposable
     [InlineData(PrepareOptions.MaxSeriesChapters + 1)]
     public async Task An_out_of_range_count_is_refused(int chapters)
     {
-        var alice = _db.SeedUser("alice");
+        var editor = _db.SeedUser("editor");
         var seriesId = _db.SeedSeries();
-        using var db = _db.NewContext(alice);
+        using var db = _db.NewContext(editor);
 
         var result = await Controller(db).SetPrepareAhead(seriesId, new SeriesController.SetPrepareAheadRequest(chapters), Planner(), default);
 
         Assert.IsNotType<OkObjectResult>(result);
-        Assert.Empty(db.UserSeriesStates.IgnoreQueryFilters().ToList());
+        Assert.Null(Stored(seriesId));
     }
 }

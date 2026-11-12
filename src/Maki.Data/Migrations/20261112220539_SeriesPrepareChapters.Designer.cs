@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    [Migration("20261112213926_SeriesPrepareChapters")]
+    [Migration("20261112220539_SeriesPrepareChapters")]
     partial class SeriesPrepareChapters
     {
         /// <inheritdoc />
@@ -2187,6 +2187,9 @@ namespace Maki.Data.Migrations
                     b.Property<int>("PendingImportLink")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("PrepareChapters")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Publisher")
                         .HasColumnType("TEXT");
 
@@ -3281,9 +3284,6 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("PendingRatingCheckpoint")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int?>("PrepareChapters")
                         .HasColumnType("INTEGER");
 
                     b.Property<double?>("ProvisionalAtChapter")

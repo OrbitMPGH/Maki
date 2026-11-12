@@ -1249,8 +1249,8 @@ msgid "{decade}s"
 msgstr "{decade}s"
 
 #: src/components/series/SeriesActionsMenu.tsx
-msgid "{defaultChapters} while you have read it in the last {days} days."
-msgstr "{defaultChapters} while you have read it in the last {days} days."
+msgid "{defaultChapters} for each reader who read it in the last {days} days."
+msgstr "{defaultChapters} for each reader who read it in the last {days} days."
 
 #: src/pages/HealthPage.tsx
 msgid "{deletableCount, plural, one {Delete # spare copy} other {Delete # spare copies}}"
@@ -21908,8 +21908,8 @@ msgid "Upscaled"
 msgstr "Upscaled"
 
 #: src/components/series/SeriesActionsMenu.tsx
-msgid "Upscaled on the server while nobody is reading. A number keeps that many ready however long ago you read it. Needs Enhance on Always with a server method for this series."
-msgstr "Upscaled on the server while nobody is reading. A number keeps that many ready however long ago you read it. Needs Enhance on Always with a server method for this series."
+msgid "Upscaled on the server while nobody is reading, for each reader who has this series set to Reading with Enhance on Always and a server method. A number keeps that many ready however long ago they read it."
+msgstr "Upscaled on the server while nobody is reading, for each reader who has this series set to Reading with Enhance on Always and a server method. A number keeps that many ready however long ago they read it."
 
 #: src/pages/reader/ServerEnhanceStatus.tsx
 msgid "Upscaled page shown"

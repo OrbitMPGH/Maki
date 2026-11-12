@@ -141,11 +141,11 @@ screen. It is off until a reader turns it on. Library files are never modified.
   stopped at and takes the most recently read series first (14 days, 8 series per reader and 1
   chapter each by default). Prepared pages have their own space (4 GB by default) on top of the
   cache size and stay until the chapter is read. Readers always come first: a prepared page being
-  made stops as soon as someone opens a page, and goes back to the front of the list. Each reader
-  can override it per series under **Prepare ahead** in the series page's menu: **Follow Settings**,
-  **Off**, or a number of chapters to keep ready (1 to 20). A series with its own number is prepared
-  however long ago it was read, is planned before the others, and does not use up one of the
-  series slots.
+  made stops as soon as someone opens a page, and goes back to the front of the list. Anyone who
+  can edit a series can override it under Automation, **Prepare ahead**, in the series page's menu:
+  **Follow Settings**, **Off**, or a number of chapters to keep ready (1 to 20). It applies to every
+  reader of that series. A series with its own number is prepared however long ago it was read, is
+  planned before the others, and does not use up one of the series slots.
 - **Privacy.** Nothing leaves your server or your device. Upscaled pages are a disposable cache
   under the config folder, oldest-used dropped first, and they can be cleared at any time.
 

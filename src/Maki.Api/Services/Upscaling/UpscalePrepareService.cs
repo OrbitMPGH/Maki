@@ -21,7 +21,7 @@ public sealed record PrepareSnapshot(int Chapters, int Pages, int Waiting)
 /// <para>
 /// A series counts when the reader set it to Reading, read it within the configured days and reads it
 /// with Enhance on Always and a server model that is enabled and downloaded. Auto is left out: what it
-/// upscales depends on the screen. A reader's own number for a series (<c>UserSeriesState.PrepareChapters</c>)
+/// upscales depends on the screen. A series' own number (<c>Series.PrepareChapters</c>, set by an editor)
 /// takes that many chapters, ignores the days and does not use up one of the series slots; 0 leaves
 /// the series out. Those series are planned first. The next chapter <see cref="ContinueReadingService"/> names is
 /// taken from the page the reader stopped at, and the chapters after it whole, skipping any whose
@@ -235,9 +235,8 @@ public sealed class UpscalePrepareService(
 
         var states = await db.UserSeriesStates.AsNoTracking()
             .Where(s => s.Status == ReadingStatus.Reading)
-            .Where(s => s.PrepareChapters == null || s.PrepareChapters > 0)
-            .Join(db.Series, s => s.SeriesId, x => x.Id,
-                (s, x) => new { s.SeriesId, x.Type, s.ReaderPrefsJson, s.ReadingProfileId, s.PrepareChapters })
+            .Join(db.Series.Where(x => x.PrepareChapters == null || x.PrepareChapters > 0), s => s.SeriesId, x => x.Id,
+                (s, x) => new { s.SeriesId, x.Type, s.ReaderPrefsJson, s.ReadingProfileId, x.PrepareChapters })
             .ToListAsync(ct);
         if (states.Count == 0)
         {
