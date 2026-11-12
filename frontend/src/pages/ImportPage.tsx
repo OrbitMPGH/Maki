@@ -87,6 +87,44 @@ interface ScanCandidate {
   existingSeriesId: number | null
   /** `restore` is an archived series' folder: importing puts the series back in the library. */
   kind: ImportCandidateKind
+  /** What found the first match: `link`, `comicInfo`, `seriesJson`, `folder` or `library`. */
+  matchSource?: string | null
+  /** The ComicInfo or series.json name, or the web link, that found the first match. */
+  matchHint?: string | null
+}
+
+/** How the scan found a folder's first match, under the folder name. */
+function MatchSourceNote({ candidate }: { candidate: ScanCandidate }) {
+  const { cleanedTitle } = candidate
+  const hint = candidate.matchHint ?? ''
+  switch (candidate.matchSource) {
+    case 'link':
+      return (
+        <Tooltip label={hint} disabled={!hint} withArrow>
+          <Text size="xs" c="var(--ok)">
+            <Trans>matched by a link in ComicInfo.xml</Trans>
+          </Text>
+        </Tooltip>
+      )
+    case 'comicInfo':
+      return (
+        <Text size="xs" c="var(--ink-3)">
+          <Trans>searched as “{hint}” from ComicInfo.xml</Trans>
+        </Text>
+      )
+    case 'seriesJson':
+      return (
+        <Text size="xs" c="var(--ink-3)">
+          <Trans>searched as “{hint}” from series.json</Trans>
+        </Text>
+      )
+    default:
+      return (
+        <Text size="xs" c="var(--ink-3)">
+          <Trans>searched as “{cleanedTitle}”</Trans>
+        </Text>
+      )
+  }
 }
 
 interface ImportResultDto {
@@ -782,9 +820,7 @@ function FolderImport() {
                             <Trans>In library</Trans>
                           </Badge>
                         ) : (
-                          <Text size="xs" c="var(--ink-3)">
-                            <Trans>searched as “{cleanedTitle}”</Trans>
-                          </Text>
+                          <MatchSourceNote candidate={c} />
                         )}
                       </Table.Td>
                       <Table.Td>

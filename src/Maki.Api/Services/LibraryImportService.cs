@@ -47,6 +47,10 @@ public static class ImportStage
 /// One of <see cref="ImportCandidateKind"/>. An archived series' folder is a restore: importing
 /// brings the series back into the library before linking.
 /// </param>
+/// <param name="MatchSource">
+/// One of <see cref="ImportMatchSource"/>: what found the first match. Null when there is none.
+/// </param>
+/// <param name="MatchHint">The series name or web link the files carried, when that found the first match.</param>
 public record ImportScanCandidate(
     string FolderName,
     string CleanedTitle,
@@ -54,7 +58,24 @@ public record ImportScanCandidate(
     int RecognizedCount,
     IReadOnlyList<MetadataSearchResult> Matches,
     int? ExistingSeriesId = null,
-    string Kind = ImportCandidateKind.New);
+    string Kind = ImportCandidateKind.New,
+    string? MatchSource = null,
+    string? MatchHint = null);
+
+public static class ImportMatchSource
+{
+    /// <summary>A MangaBaka, AniList, MyAnimeList or MangaUpdates link in the files' ComicInfo.</summary>
+    public const string Link = "link";
+
+    public const string ComicInfo = FolderHintOrigin.ComicInfo;
+    public const string SeriesJson = FolderHintOrigin.SeriesJson;
+
+    /// <summary>The cleaned folder name.</summary>
+    public const string Folder = "folder";
+
+    /// <summary>The series already in the library that owns the folder.</summary>
+    public const string Library = "library";
+}
 
 public record ImportRequestItem(string FolderName, string MetadataProviderId);
 
@@ -117,7 +138,8 @@ public class LibraryImportService(
     ILocalizer localizer,
     ICurrentUser currentUser,
     SeriesArchiveService archive,
-    ILogger<LibraryImportService> logger)
+    ILogger<LibraryImportService> logger,
+    LibraryImportResolver? resolver = null)
 {
 
     /// <summary>
@@ -394,18 +416,75 @@ public class LibraryImportService(
         var recognized = comics.Count(c => ReleaseNameParser.ParseFileName(c.Name).IsRecognized);
         var cleanedTitle = ReleaseNameParser.CleanFolderTitle(folderName);
 
-        IReadOnlyList<MetadataSearchResult> matches = [];
         if (existing?.MangaBakaId is { } mangaBakaId)
         {
             // Importing matches the series by provider id, so offering anything else would
             // add a second copy instead of filling this one.
-            matches =
+            IReadOnlyList<MetadataSearchResult> own =
             [
                 new MetadataSearchResult(mangaBakaId.ToString(CultureInfo.InvariantCulture), existing.Title,
                     null, existing.Year, existing.Status, null, null)
             ];
+            return new ImportScanCandidate(
+                folderName, cleanedTitle, comics.Count, recognized, own, existing.Id, KindOf(existing),
+                ImportMatchSource.Library);
         }
-        else
+
+        var (matches, source, hint) = await FindMatchesAsync(dir, comics, cleanedTitle, provider, ct);
+        return new ImportScanCandidate(
+            folderName, cleanedTitle, comics.Count, recognized, matches, existing?.Id, KindOf(existing), source, hint);
+    }
+
+    private const int MaxMatches = 5;
+
+    /// <summary>
+    /// Candidates for one folder, best first: the series a web link in the files names (an exact id
+    /// beats any title), then a search on the series name the files carry, then one on the folder name.
+    /// </summary>
+    private async Task<(IReadOnlyList<MetadataSearchResult> Matches, string? Source, string? Hint)> FindMatchesAsync(
+        string dir, IReadOnlyList<ComicSource> comics, string cleanedTitle, IMetadataProvider provider,
+        CancellationToken ct)
+    {
+        var hints = FolderMetadataHints.Read(dir, comics);
+        var found = new List<(MetadataSearchResult Match, string Source, string? Hint)>();
+
+        if (resolver is not null && hints.WebLinks.Count > 0)
+        {
+            try
+            {
+                if (await resolver.ResolveLinksAsync(hints.WebLinks, ct) is var (linked, link))
+                {
+                    found.Add((linked, ImportMatchSource.Link, link));
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "Could not resolve the web links in {Folder}", dir);
+            }
+        }
+
+        var hintName = hints.SeriesName is { } name &&
+                       !string.Equals(ReleaseNameParser.CleanFolderTitle(name), cleanedTitle,
+                           StringComparison.OrdinalIgnoreCase)
+            ? name
+            : null;
+        if (hintName is not null)
+        {
+            found.AddRange((await SearchAsync(hintName)).Select(m => (m, hints.NameOrigin!, (string?)hintName)));
+        }
+
+        found.AddRange((await SearchAsync(cleanedTitle)).Select(m => (m, ImportMatchSource.Folder, (string?)null)));
+
+        var distinct = found
+            .GroupBy(f => f.Match.ProviderId, StringComparer.Ordinal)
+            .Select(g => g.First())
+            .Take(MaxMatches)
+            .ToList();
+        return distinct.Count == 0
+            ? ([], null, null)
+            : (distinct.Select(d => d.Match).ToList(), distinct[0].Source, distinct[0].Hint);
+
+        async Task<IReadOnlyList<MetadataSearchResult>> SearchAsync(string query)
         {
             try
             {
@@ -413,18 +492,14 @@ public class LibraryImportService(
                 // caller's own root folder, so a ceiling here hides nothing they cannot already see
                 // and would instead leave those folders permanently unmatchable, with nothing on
                 // screen to say why. The ceiling governs discovering new series, not adopting files.
-                matches = (await provider.SearchAsync(cleanedTitle, ContentRating.Pornographic, ct))
-                    .Take(5)
-                    .ToList();
+                return (await provider.SearchAsync(query, ContentRating.Pornographic, ct)).Take(MaxMatches).ToList();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                logger.LogWarning(ex, "Metadata search failed for {Title}", cleanedTitle);
+                logger.LogWarning(ex, "Metadata search failed for {Title}", query);
+                return [];
             }
         }
-
-        return new ImportScanCandidate(
-            folderName, cleanedTitle, comics.Count, recognized, matches, existing?.Id, KindOf(existing));
     }
 
     private static string KindOf(Series? existing) => existing switch
