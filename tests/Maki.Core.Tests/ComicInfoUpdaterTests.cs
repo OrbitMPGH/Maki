@@ -2,7 +2,9 @@ using System.IO.Compression;
 using System.Text;
 using Maki.Core.ComicInfo;
 using Maki.Core.Entities;
+using Maki.Core.Images;
 using Maki.Core.Parsing;
+using Maki.Core.Quality;
 
 namespace Maki.Core.Tests;
 
@@ -355,5 +357,64 @@ public class ComicInfoUpdaterTests : IDisposable
         }
 
         Assert.False(ComicInfoUpdater.UpdateFile(path, TestSeries(), ReleaseNameParser.ParseFileName(path), null));
+    }
+
+    private string CreateImageCbz(string name, params (int Width, int Height)[] pages)
+    {
+        var path = Path.Combine(_dir, name);
+        using var archive = ZipFile.Open(path, ZipArchiveMode.Create);
+        for (var i = 0; i < pages.Length; i++)
+        {
+            var entry = archive.CreateEntry($"{i + 1:000}.png", CompressionLevel.NoCompression);
+            using var stream = entry.Open();
+            stream.Write(new Raster(pages[i].Width, pages[i].Height).EncodePng());
+        }
+
+        return path;
+    }
+
+    [Fact]
+    public void A_file_without_pages_gets_the_cover_and_its_spreads_marked()
+    {
+        var path = CreateImageCbz("Berserk Ch.1.cbz", (40, 60), (120, 60), (40, 60));
+
+        Assert.True(ComicInfoUpdater.UpdateFile(path, TestSeries(), ReleaseNameParser.ParseFileName(path), null));
+
+        var pages = ReadComicInfo(path).Pages!;
+        Assert.Equal(["FrontCover", null, null], pages.Select(p => p.Type));
+        Assert.Equal([null, "true", null], pages.Select(p => p.DoublePage));
+        Assert.False(ComicInfoUpdater.UpdateFile(path, TestSeries(), ReleaseNameParser.ParseFileName(path), null));
+    }
+
+    [Fact]
+    public void Provenance_with_a_source_replaces_notes_and_the_group_fills_the_translator()
+    {
+        var path = CreateCbz("Berserk Ch.2.cbz", """
+            <?xml version="1.0"?>
+            <ComicInfo><Notes>Scanned by someone</Notes><Translator>Old</Translator></ComicInfo>
+            """);
+
+        ComicInfoUpdater.UpdateFile(path, TestSeries(), ReleaseNameParser.ParseFileName(path), null, group: "Hawk Scans",
+            provenance: new ComicInfoProvenance("MangaDex", "https://mangadex.org/chapter/x", QualityTier.Scanlator));
+
+        var info = ReadComicInfo(path);
+        Assert.Equal("Source: MangaDex; URL: https://mangadex.org/chapter/x; Quality: Scanlator", info.Notes);
+        Assert.Equal("Hawk Scans", info.Translator);
+    }
+
+    [Fact]
+    public void An_imported_files_own_notes_survive_when_maki_knows_only_the_tier()
+    {
+        var path = CreateCbz("Berserk v03.cbz", """
+            <?xml version="1.0"?>
+            <ComicInfo><Notes>Scanned by someone</Notes><Translator>Old</Translator></ComicInfo>
+            """);
+
+        ComicInfoUpdater.UpdateFile(path, TestSeries(), ReleaseNameParser.ParseFileName(path), null,
+            provenance: new ComicInfoProvenance(null, null, QualityTier.Volume));
+
+        var info = ReadComicInfo(path);
+        Assert.Equal("Scanned by someone", info.Notes);
+        Assert.Equal("Old", info.Translator);
     }
 }

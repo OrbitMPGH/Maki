@@ -508,6 +508,7 @@ public class ChapterSyncService(
             link.Title = sourceChapter.Title;
             link.ReleaseDate = sourceChapter.ReleaseDate;
             link.Group = sourceChapter.Group ?? groupFallback;
+            link.Url = sourceChapter.Url;
             if (chapter.ChapterFileId is { } fileId && link.Group is { } group)
             {
                 fileGroups.TryAdd(fileId, group);
@@ -658,6 +659,7 @@ public class ChapterSyncService(
                             Title = link.Title,
                             ReleaseDate = link.ReleaseDate,
                             Group = link.Group,
+                            Url = link.Url,
                             FirstSeenAt = link.FirstSeenAt
                         };
                         db.ChapterSourceLinks.Add(replacement);
