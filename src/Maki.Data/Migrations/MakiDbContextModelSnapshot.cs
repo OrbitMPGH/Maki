@@ -516,6 +516,12 @@ namespace Maki.Data.Migrations
                     b.Property<int?>("HealthOperationId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("LastPeerSeenAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastProgressAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("NextAttempt")
                         .HasColumnType("TEXT");
 

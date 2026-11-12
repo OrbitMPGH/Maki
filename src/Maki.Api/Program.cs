@@ -1052,6 +1052,7 @@ try
     builder.Services.AddSingleton<ImageCacheRebuildStatus>();
     builder.Services.AddScoped<ReleaseService>();
     builder.Services.AddSingleton<TorrentPollState>();
+    builder.Services.AddSingleton<IStalledDownloadResearch, StalledDownloadResearch>();
     builder.Services.AddSingleton<ReleaseSearchCache>();
     builder.Services.AddScoped<StatsEventService>();
     builder.Services.AddScoped<StatsBackfillService>();
