@@ -19,7 +19,7 @@ import {
   TextInput,
   VisuallyHidden,
 } from '@mantine/core'
-import { IconTrash } from '../../lib/icons'
+import { IconTrash, IconWand } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { activeSeries } from '../../lib/series'
@@ -61,6 +61,8 @@ import { useAuth } from '../../auth/AuthProvider'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 import { useRecycleBin, useSetRecycleBinRetention } from '../../api/recycleBin'
 import { RecycleBinModal } from '../../components/settings/RecycleBinModal'
+import { AutoTagRulesModal } from '../../components/settings/AutoTagRulesModal'
+import { useAutoTagRules } from '../../api/autoTagRules'
 
 export function RootFoldersSection() {
   const { t } = useLingui()
@@ -672,6 +674,36 @@ export function RecycleBinSection() {
         )}
       </Stack>
       <RecycleBinModal opened={browsing} onClose={() => setBrowsing(false)} />
+    </SettingsSection>
+  )
+}
+
+/** Auto-tag rules live in a modal: a list of rules is too long for a card, and editing one drills down. */
+export function AutoTagRulesSection() {
+  const { data: rules } = useAutoTagRules()
+  const [open, setOpen] = useState(false)
+  const count = rules?.length ?? 0
+  const active = rules?.filter((r) => r.enabled).length ?? 0
+
+  return (
+    <SettingsSection
+      id="auto-tag-rules"
+      title={<Trans>Auto-tag rules</Trans>}
+      description={<Trans>Tag series as they are added, by genre, type, rating, folder or how they came in.</Trans>}
+    >
+      <Group justify="space-between" wrap="wrap" gap="sm">
+        <Text size="sm" c={count === 0 ? 'var(--ink-3)' : undefined}>
+          {count === 0 ? (
+            <Trans>No rules yet.</Trans>
+          ) : (
+            <Plural value={count} one={`# rule, ${active} on`} other={`# rules, ${active} on`} />
+          )}
+        </Text>
+        <Button variant="default" size="xs" leftSection={<IconWand size={16} />} onClick={() => setOpen(true)}>
+          <Trans>Manage rules</Trans>
+        </Button>
+      </Group>
+      <AutoTagRulesModal opened={open} onClose={() => setOpen(false)} />
     </SettingsSection>
   )
 }

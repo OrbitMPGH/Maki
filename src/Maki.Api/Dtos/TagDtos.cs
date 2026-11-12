@@ -106,3 +106,9 @@ public record LibraryFilterSpec(
 public record SavedFilterDto(int Id, string Name, LibraryFilterSpec Spec, int SortOrder);
 
 public record SaveFilterRequest(string Name, LibraryFilterSpec Spec);
+
+public record AutoTagConditionDto(string Field, string Value);
+
+public record AutoTagRuleDto(int Id, int TagId, bool Enabled, IReadOnlyList<AutoTagConditionDto> Conditions);
+
+public record SaveAutoTagRuleRequest(int TagId, bool Enabled, List<AutoTagConditionDto>? Conditions);

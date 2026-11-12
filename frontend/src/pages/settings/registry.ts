@@ -337,6 +337,16 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'auto-tag-rules',
+    tab: 'library',
+    title: msg`Auto-tag rules`,
+    permission: 'ManageTags',
+    keywords: msg({
+      message: `auto tag, automatic tags, tag rules, rules, tag new series, collections, labels`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'monitoring',
     tab: 'library',
     title: msg`New series defaults`,

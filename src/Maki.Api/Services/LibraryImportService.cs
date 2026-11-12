@@ -11,6 +11,7 @@ using Maki.Core.Parsing;
 using Maki.Core.Paths;
 using Maki.Core.Reading;
 using Maki.Core.Security;
+using Maki.Core.Tags;
 using Maki.Data;
 using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
@@ -117,7 +118,8 @@ public class LibraryImportService(
     ILocalizer localizer,
     ICurrentUser currentUser,
     SeriesArchiveService archive,
-    ILogger<LibraryImportService> logger)
+    ILogger<LibraryImportService> logger,
+    AutoTagRuleService? autoTags = null)
 {
 
     /// <summary>
@@ -750,6 +752,12 @@ public class LibraryImportService(
             // "added" behind it. Still after the orphan adoption, so a series removed and put back
             // reads as one continuous history.
             await stats.RecordAsync(StatsEventType.SeriesAdded, series.Id, series.Title, ct: ct);
+            if (autoTags is not null)
+            {
+                await autoTags.ApplyOnAddAsync(series, AutoTagAddedVia.LibraryImport,
+                    currentUser.IsAuthenticated ? currentUser.UserId : null, ct);
+            }
+
             return new ImportResult(item.FolderName, true, null, series.Id, seriesFolderName,
                 Skipped: skipped.Count > 0 ? skipped : null, FilesAdded: added, LinkPending: true);
         }
