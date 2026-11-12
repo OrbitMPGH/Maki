@@ -19,9 +19,16 @@ public sealed record UpgradeOptions(
     int VolumeSearchesPerRun = 10,
     int ProposalExpiryDays = 30,
     bool AutoApprove = false,
-    long AutoApproveMaxBytes = Maki.Core.Quality.ProposalAutoApproval.DefaultMaxBytes)
+    long AutoApproveMaxBytes = Maki.Core.Quality.ProposalAutoApproval.DefaultMaxBytes,
+    bool MissingSearch = true,
+    int TorrentMinSeeders = UpgradeOptions.DefaultMinSeeders)
 {
     public const long DefaultAutoGrabMaxBytes = 524288000;
+
+    /// <summary>What the volume search always asked for: anything but a release nobody seeds.</summary>
+    public const int DefaultMinSeeders = 1;
+
+    public const int MaxMinSeeders = 10000;
 
     public static readonly UpgradeOptions Defaults = new(false, null, 4, 25, 50, 7, 14, true);
 
@@ -62,6 +69,8 @@ public sealed record UpgradeOptions(
             long.TryParse(await settings.GetAsync(SettingKeys.UpgradesAutoApproveMaxBytes, ct), NumberStyles.Integer,
                 CultureInfo.InvariantCulture, out var approveBytes)
                 ? Maki.Core.Quality.ProposalAutoApproval.ClampMaxBytes(approveBytes)
-                : Maki.Core.Quality.ProposalAutoApproval.DefaultMaxBytes);
+                : Maki.Core.Quality.ProposalAutoApproval.DefaultMaxBytes,
+            await settings.GetAsync(SettingKeys.UpgradesMissingSearch, ct) != "false",
+            await Int(SettingKeys.UpgradesTorrentMinSeeders, DefaultMinSeeders, 1, MaxMinSeeders));
     }
 }

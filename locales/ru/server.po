@@ -3398,6 +3398,11 @@ msgstr "Поисков томов за запуск должно быть от {
 msgid "error.settings.upgradesProposalExpiryDaysRange"
 msgstr "Срок действия предложения должен быть от {min} до {max} дней"
 
+#. English: Minimum seeders must be between {min} and {max}
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.upgradesTorrentMinSeedersRange"
+msgstr ""
+
 #. English: Backups to keep must be between {min} and {max}
 #: src/Maki.Api/Controllers/SettingsController.cs
 #, fuzzy

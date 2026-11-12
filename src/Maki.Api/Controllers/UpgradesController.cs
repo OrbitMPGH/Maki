@@ -173,7 +173,7 @@ public class UpgradesController(
             return this.Conflict(localizer, "error.upgrades.scanRunning");
         }
 
-        var result = await torrents.SearchSeriesAsync(seriesId, ct, ignoreGlobalSwitch: true);
+        var result = await torrents.SearchSeriesAsync(seriesId, ct, ignoreGlobalSwitch: true, missing: true);
         return Ok(new SeriesVolumeSearchResultDto(result.Searched, result.ResultCount, result.Grabbed, result.ProposalId,
             result.Reason));
     }

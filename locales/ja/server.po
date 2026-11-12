@@ -3398,6 +3398,11 @@ msgstr "1回の実行あたりの巻検索数は{min}から{max}の間で指定�
 msgid "error.settings.upgradesProposalExpiryDaysRange"
 msgstr "提案の有効期限は{min}日から{max}日の間で指定してください"
 
+#. English: Minimum seeders must be between {min} and {max}
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.upgradesTorrentMinSeedersRange"
+msgstr ""
+
 #. English: Backups to keep must be between {min} and {max}
 #: src/Maki.Api/Controllers/SettingsController.cs
 #, fuzzy

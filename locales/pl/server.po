@@ -3399,6 +3399,11 @@ msgstr "Liczba wyszukiwań tomów na przebieg musi wynosić od {min} do {max}"
 msgid "error.settings.upgradesProposalExpiryDaysRange"
 msgstr "Wygaśnięcie propozycji musi wynosić od {min} do {max} dni"
 
+#. English: Minimum seeders must be between {min} and {max}
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.upgradesTorrentMinSeedersRange"
+msgstr ""
+
 #. English: Backups to keep must be between {min} and {max}
 #: src/Maki.Api/Controllers/SettingsController.cs
 #, fuzzy

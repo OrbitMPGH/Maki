@@ -2375,6 +2375,10 @@ msgid "error.settings.upgradesProposalExpiryDaysRange"
 msgstr "Proposal expiry must be between {min} and {max} days"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.upgradesTorrentMinSeedersRange"
+msgstr "Minimum seeders must be between {min} and {max}"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.backupsToKeepRange"
 msgstr "Backups to keep must be between {min} and {max}"
 
