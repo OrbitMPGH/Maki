@@ -181,6 +181,10 @@ public sealed class SeriesBulkOperations
         return true;
     }
 
+    /// <summary>Whether a bulk move or rename is queued or running, for anything that must not change paths under it.</summary>
+    public bool HasActiveFileOperation() =>
+        _operations.Values.Any(o => IsFileOperation(o.Action) && !o.IsFinished);
+
     public ValueTask<SeriesBulkOperation> ReadAsync(bool files, CancellationToken ct) =>
         (files ? _files : _work).Reader.ReadAsync(ct);
 

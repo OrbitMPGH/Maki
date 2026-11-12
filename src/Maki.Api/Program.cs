@@ -1029,6 +1029,7 @@ try
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
     builder.Services.AddSingleton<SeriesBulkOperations>();
+    builder.Services.AddScoped<RootFolderPathService>();
     builder.Services.AddHostedService<SeriesBulkWorker>();
     builder.Services.AddScoped(sp => new SeriesMoveService(sp.GetRequiredService<MakiDbContext>(),
         sp.GetRequiredService<Maki.Core.Security.ICurrentUser>(), sp.GetRequiredService<KavitaScanService>(),
