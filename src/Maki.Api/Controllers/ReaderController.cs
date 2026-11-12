@@ -31,9 +31,14 @@ namespace Maki.Api.Controllers;
 /// offline queue. <paramref name="OpId"/> identifies the write so a replay of one that already landed
 /// changes nothing. Both are optional; see <see cref="ReaderService.SaveProgressAsync"/>.
 /// </para>
+/// <para>
+/// <paramref name="PageOffset"/> is how far down the page the continuous strip is (0 to 1), so a tall
+/// slice resumes mid-page. Absent means the top of the page.
+/// </para>
 /// </summary>
 public record SaveProgressRequest(
-    int PageIndex, bool? Completed, int? Seconds, bool? Final, DateTime? ClientTime = null, string? OpId = null);
+    int PageIndex, bool? Completed, int? Seconds, bool? Final, DateTime? ClientTime = null, string? OpId = null,
+    double? PageOffset = null);
 
 /// <summary>A null spec clears the series override, falling back to whatever the series resolves to.</summary>
 public record SeriesReaderPrefsRequest(ReaderPrefsSpec? Prefs);
@@ -257,6 +262,7 @@ public class ReaderController(
                 ? null
                 : new { chapterSeconds = (int)Math.Round(pace.MedianSeconds), style = pace.Style, totalChapters = paceTotal },
             resumePage = ReaderService.ResumePageFor(saved, slice.PageCount),
+            resumeOffset = ReaderService.ResumeOffsetFor(saved, slice.PageCount),
             completed = saved?.Completed ?? false,
             previousChapterId = previous,
             nextChapterId = next,
@@ -680,7 +686,7 @@ public class ReaderController(
         var finished = await reader.SaveProgressAsync(
             slice, request.PageIndex, request.Completed,
             new ReaderService.TimeReport(request.Seconds ?? 0, request.Final ?? false), ct,
-            request.ClientTime, request.OpId);
+            request.ClientTime, request.OpId, request.PageOffset);
 
         // After the save, so the evaluation sees the finished chapter. Whatever it unlocks reaches
         // the reader through the inbox push rather than this response.

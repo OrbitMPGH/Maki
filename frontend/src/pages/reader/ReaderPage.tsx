@@ -52,6 +52,8 @@ import { spreadIndexOf, usePageAspects, useSpreads } from './useSpreads'
 import { serverChapterLabel } from '../../format'
 import { scrollBehavior } from '../../lib/scrollBehavior'
 import { useAutoScroll, useAutoScrollLevel } from './useAutoScroll'
+import ProgressRail from './ProgressRail'
+import { createStripTracker, resumeOffsetOf, useStripOffset, type StripResume } from './stripPosition'
 
 const ZOOM_STEP = 0.25
 const ZOOM_MAX = 4
@@ -150,7 +152,9 @@ export default function ReaderPage() {
    * Where to resume once this device's queued progress for the chapter is accounted for. Offline, a
    * queued row is newer than anything the manifest says, so it wins.
    */
-  const [queued, setQueued] = useState<{ chapterId: number; resumePage: number; finished: boolean } | null>(null)
+  const [queued, setQueued] = useState<{ chapterId: number; resumePage: number; resumeOffset: number; finished: boolean } | null>(null)
+  const [stripTracker] = useState(createStripTracker)
+  const [resumedAt, setResumedAt] = useState<StripResume | null>(null)
   // Set just before navigating to a *previous* chapter: stepping backward off page 1 should land
   // on that chapter's last page, not wherever it was last resumed (page 1 for a completed one).
   const enterAtEndRef = useRef(false)
@@ -171,7 +175,8 @@ export default function ReaderPage() {
   // (the cursor arriving on the thumbnail strip).
   const [toolbarHeld, setToolbarHeld] = useState(false)
   const [stripHeld, setStripHeld] = useState(false)
-  const chromeHeld = toolbarHeld || stripHeld
+  const [railHeld, setRailHeld] = useState(false)
+  const chromeHeld = toolbarHeld || stripHeld || railHeld
   const [fullscreen, setFullscreen] = useState(false)
   const [stripOpen, setStripOpen] = useState(false)
   const [zoom, setZoom] = useState(1)
@@ -466,6 +471,7 @@ export default function ReaderPage() {
   // seconds to the same flush that writes the position out.
   // On a phone the notes sheet covers the page, so nothing is being read while it is up.
   const clock = useReadingClock(tracking, notesOpen && phoneSheet)
+  const stripOffset = useStripOffset(stripTracker, mode === 'vertical' && tracking && !finished, chapterId, recordedTo, resumedAt)
   const { settle: settleProgress } = useReaderProgress(
     manifest?.chapterId,
     manifest?.seriesId,
@@ -475,6 +481,7 @@ export default function ReaderPage() {
     tracking,
     clock,
     onFlushed,
+    stripOffset,
   )
 
   /**
@@ -500,9 +507,11 @@ export default function ReaderPage() {
       }
       if (cancelled) return
       const waiting = getConnectivity() === 'offline' ? rows : []
+      const resumePage = waiting.reduce((furthest, row) => Math.max(furthest, row.pageIndex), base.resumePage)
       setQueued({
         chapterId: opened.chapterId,
-        resumePage: waiting.reduce((furthest, row) => Math.max(furthest, row.pageIndex), base.resumePage),
+        resumePage,
+        resumeOffset: resumeOffsetOf(waiting, resumePage, base),
         finished: waiting.some((row) => row.completed),
       })
     })()
@@ -527,8 +536,10 @@ export default function ReaderPage() {
     enterAtEndRef.current = false
     const lastPage = Math.max(0, manifest.pageCount - 1)
     const saved = queued.resumePage <= lastPage ? Math.max(0, queued.resumePage) : 0
-    seekToPage(toEnd ? lastPage : saved)
-    setStartedFor(!toEnd && saved === 0 ? manifest.chapterId : null)
+    const offset = !toEnd && saved === queued.resumePage ? queued.resumeOffset : 0
+    seekToPage(toEnd ? lastPage : saved, 0, offset > 0 ? { offset, smooth: false } : PLAIN_SEEK)
+    setResumedAt({ chapterId: manifest.chapterId, page: saved, offset })
+    setStartedFor(!toEnd && saved === 0 && offset === 0 ? manifest.chapterId : null)
     setZoom(1)
     setAtEnd(false)
     // A completion still in the queue rides along on this visit's own writes, as if finished here.
@@ -1234,6 +1245,7 @@ export default function ReaderPage() {
               server={server}
               onStretched={onStretched}
               onEnhanceRange={onEnhanceRange}
+              tracker={stripTracker}
             />
           ) : (
             <PagedView
@@ -1365,6 +1377,16 @@ export default function ReaderPage() {
             />
           }
           {...notesBody}
+        />
+      )}
+
+      {mode === 'vertical' && prefs.progressRail && !atEnd && (
+        <ProgressRail
+          tracker={stripTracker}
+          count={manifest.pageCount}
+          active={chrome}
+          strip={chrome && stripOpen}
+          onHold={setRailHeld}
         />
       )}
 

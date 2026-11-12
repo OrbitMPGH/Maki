@@ -427,6 +427,82 @@ public sealed class ReaderServiceTests : IDisposable
         Assert.Single(Events());
     }
 
+    // ---- offset within a page ----
+
+    private ChapterProgress Progress()
+    {
+        using var db = _db.NewContext();
+        return db.ChapterProgress.AsNoTracking().Single();
+    }
+
+    [Fact]
+    public async Task AnOffsetWithinThePageIsStoredClampedAndResumed()
+    {
+        var (_, chapters) = SeedFromCbz("offset.cbz", ["001.jpg", "002.jpg", "003.jpg"], [(1m, null)]);
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+
+        await reader.SaveProgressAsync(slice!, 1, null, ReaderService.TimeReport.None, CancellationToken.None, pageOffset: 0.625);
+        Assert.Equal(0.625, Progress().PageOffset);
+        Assert.Equal(0.625, ReaderService.ResumeOffsetFor(Progress(), slice!.PageCount));
+
+        await reader.SaveProgressAsync(slice, 1, null, ReaderService.TimeReport.None, CancellationToken.None, pageOffset: 3);
+        Assert.Equal(1, Progress().PageOffset);
+
+        await reader.SaveProgressAsync(slice, 1, null, ReaderService.TimeReport.None, CancellationToken.None, pageOffset: double.NaN);
+        Assert.Equal(0, Progress().PageOffset);
+    }
+
+    [Fact]
+    public async Task AWriteWithoutAnOffsetPutsThePositionAtThePagesTop()
+    {
+        // OPDS, Komga and KOReader report pages only, through this same call with no offset.
+        var (_, chapters) = SeedFromCbz("external.cbz", ["001.jpg", "002.jpg", "003.jpg"], [(1m, null)]);
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 1, null, ReaderService.TimeReport.None, CancellationToken.None, pageOffset: 0.5);
+
+        await reader.SaveProgressAsync(slice!, 1, null, ReaderService.TimeReport.None, CancellationToken.None);
+
+        var row = Progress();
+        Assert.Equal(1, row.PageIndex);
+        Assert.Equal(0, row.PageOffset);
+    }
+
+    [Fact]
+    public async Task AStaleReplayKeepsTheStoredOffsetWithTheStoredPage()
+    {
+        var (_, chapters) = SeedFromCbz("stale.cbz", ["001.jpg", "002.jpg", "003.jpg"], [(1m, null)]);
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 1, null, ReaderService.TimeReport.None, CancellationToken.None, pageOffset: 0.4);
+
+        await reader.SaveProgressAsync(slice!, 0, null, ReaderService.TimeReport.None, CancellationToken.None,
+            clientTime: DateTime.UtcNow.AddHours(-1), opId: "old", pageOffset: 0.9);
+
+        var row = Progress();
+        Assert.Equal(1, row.PageIndex);
+        Assert.Equal(0.4, row.PageOffset);
+    }
+
+    [Fact]
+    public async Task NoOffsetResumesAFinishedChapterOrOneMarkedUnread()
+    {
+        var (_, chapters) = SeedFromCbz("done.cbz", ["001.jpg", "002.jpg", "003.jpg"], [(1m, null)]);
+        var reader = Reader();
+        var slice = await reader.SliceAsync(chapters[1m], CancellationToken.None);
+        await reader.SaveProgressAsync(slice!, 1, true, ReaderService.TimeReport.None, CancellationToken.None, pageOffset: 0.5);
+        Assert.Equal(0, ReaderService.ResumeOffsetFor(Progress(), slice!.PageCount));
+
+        await reader.ClearProgressAsync(chapters[1m], CancellationToken.None);
+        Assert.Equal(0, Progress().PageOffset);
+
+        await reader.SaveProgressAsync(slice, 2, null, ReaderService.TimeReport.None, CancellationToken.None, pageOffset: 0.5);
+        // A position past the end belongs to a longer file since replaced; the page resets, so the offset does too.
+        Assert.Equal(0, ReaderService.ResumeOffsetFor(Progress(), pageCount: 2));
+        Assert.Equal(0, ReaderService.ResumeOffsetFor(null, slice.PageCount));
+    }
+
     [Fact]
     public async Task MarkingUnreadLeavesATombstoneAndNeverLowersTheSharedMark()
     {

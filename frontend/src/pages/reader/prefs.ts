@@ -65,6 +65,8 @@ export interface ReaderPrefs {
   enhanceWholeChapter: boolean
   /** Jump past the recap of the previous chapter at a chapter's start instead of offering a button. */
   autoSkipRecap: boolean
+  /** In Continuous, show the chapter's progress as a rail down the screen's edge that can be dragged to seek. */
+  progressRail: boolean
 }
 
 /**
@@ -120,6 +122,7 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   notesBeside: true,
   enhanceWholeChapter: false,
   autoSkipRecap: false,
+  progressRail: false,
 }
 
 /** The enhance level a chapter actually gets: off when its file's tier is one the prefs skip. */

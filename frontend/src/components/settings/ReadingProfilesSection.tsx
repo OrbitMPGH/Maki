@@ -517,6 +517,13 @@ function ProfileEditor({
       />
       <Switch
         size="sm"
+        label={t`Progress rail`}
+        description={t`Continuous layout only. A bar down the right edge you can drag to move through the chapter.`}
+        checked={prefs.progressRail}
+        onChange={(e) => set({ progressRail: e.currentTarget.checked })}
+      />
+      <Switch
+        size="sm"
         label={t`Tap zones`}
         description={t`Paged layouts turn the page from the left and right edges. Continuous scrolls from the top and bottom.`}
         checked={prefs.tapZones}

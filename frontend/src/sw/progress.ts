@@ -9,6 +9,7 @@ const PROGRESS = /^reader\/chapter\/(\d+)\/progress$/
 
 interface ProgressBody {
   pageIndex?: unknown
+  pageOffset?: unknown
   completed?: unknown
   seconds?: unknown
   opId?: unknown
@@ -75,6 +76,7 @@ export async function captureProgress(event: FetchEvent, url: URL, chapterId: nu
       chapterId,
       seriesId,
       pageIndex: body.pageIndex,
+      pageOffset: typeof body.pageOffset === 'number' ? body.pageOffset : undefined,
       completed: body.completed === true,
       held: body.completed === false,
       seconds: typeof body.seconds === 'number' && body.seconds > 0 ? body.seconds : 0,
