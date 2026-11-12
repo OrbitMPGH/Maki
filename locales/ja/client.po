@@ -23559,6 +23559,10 @@ msgstr "開始"
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr "「{seriesTitle}」の{chapterLabel}を読む"
 
+#: src/pages/HealthPage.tsx
+msgid "Start building"
+msgstr ""
+
 #: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Start chapter"
@@ -24954,6 +24958,10 @@ msgstr "アップデートをダウンロードしました。インストール
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "アップグレードスキャンを実行できませんでした。詳細はサーバーログを確認してください。"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "The upgrade scan was stopped."
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."
@@ -25098,6 +25106,10 @@ msgstr "このバックアップにはカテゴリーがありません。"
 #, fuzzy
 msgid "This browser does not support push notifications."
 msgstr "このブラウザーはプッシュ通知に対応していません。"
+
+#: src/pages/HealthPage.tsx
+msgid "This builds the search index on this server and can keep the processor busy for an hour or more."
+msgstr ""
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy

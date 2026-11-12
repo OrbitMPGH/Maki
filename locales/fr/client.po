@@ -23559,6 +23559,10 @@ msgstr "Commencer"
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr "Commencer {seriesTitle}, {chapterLabel}"
 
+#: src/pages/HealthPage.tsx
+msgid "Start building"
+msgstr ""
+
 #: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Start chapter"
@@ -24954,6 +24958,10 @@ msgstr "La mise à jour est téléchargée. Maki est hors ligne pendant environ 
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "L'analyse des mises à niveau n'a pas pu s'exécuter. Le journal du serveur donne les détails."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "The upgrade scan was stopped."
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."
@@ -25098,6 +25106,10 @@ msgstr "Cette sauvegarde ne contient aucune catégorie."
 #, fuzzy
 msgid "This browser does not support push notifications."
 msgstr "Ce navigateur ne prend pas en charge les notifications push."
+
+#: src/pages/HealthPage.tsx
+msgid "This builds the search index on this server and can keep the processor busy for an hour or more."
+msgstr ""
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy

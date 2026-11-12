@@ -23559,6 +23559,10 @@ msgstr "开始"
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr "开始阅读 {seriesTitle}，{chapterLabel}"
 
+#: src/pages/HealthPage.tsx
+msgid "Start building"
+msgstr ""
+
 #: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Start chapter"
@@ -24954,6 +24958,10 @@ msgstr "更新已下载。安装期间 Maki 将离线约一分钟。"
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "升级扫描无法运行。详情请查看服务器日志。"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "The upgrade scan was stopped."
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."
@@ -25098,6 +25106,10 @@ msgstr "这份备份没有分类。"
 #, fuzzy
 msgid "This browser does not support push notifications."
 msgstr "此浏览器不支持推送通知。"
+
+#: src/pages/HealthPage.tsx
+msgid "This builds the search index on this server and can keep the processor busy for an hour or more."
+msgstr ""
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy

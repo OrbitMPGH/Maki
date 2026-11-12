@@ -1083,7 +1083,14 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         CancellationToken ct)
     {
         var scheduler = await schedulers.GetScheduler(ct);
-        return await scheduler.Interrupt(fireInstanceId, ct) ? NoContent() : NotFound();
+        JobOutcome.MarkStopped(fireInstanceId);
+        if (await scheduler.Interrupt(fireInstanceId, ct))
+        {
+            return NoContent();
+        }
+
+        JobOutcome.Unmark(fireInstanceId);
+        return NotFound();
     }
 
     /// <summary>Every scheduled job with its last and next run.</summary>

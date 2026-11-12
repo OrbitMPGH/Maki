@@ -687,6 +687,8 @@ function SeriesDetailBody() {
         color: 'var(--warn)',
         message: staticT`Another upgrade scan was already running, so this one did not run. Try again once it finishes.`,
       })
+    } else if (scanStatus.state === 'cancelled') {
+      notifications.show({ color: 'var(--info)', message: staticT`The upgrade scan was stopped.` })
     } else {
       notifications.show({
         color: 'var(--danger)',

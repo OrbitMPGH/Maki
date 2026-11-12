@@ -151,6 +151,8 @@ export interface ScheduledJob {
   paused: boolean
   /** The job's health row says its last run failed. */
   lastFailed: boolean
+  /** Asks before starting by hand: it keeps the processor busy for an hour or more. */
+  heavy: boolean
 }
 
 export interface RunningWork {

@@ -88,6 +88,18 @@ export const ScheduledJobs: Story = {
   },
 }
 
+export const RunHeavyJobAsksFirst: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Show all 9 jobs' }))
+    const row = (await canvas.findByText('Build the search index')).closest('tr') as HTMLElement
+    await userEvent.click(within(row).getByRole('button', { name: 'Run now' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByText(/keep the processor busy for an hour or more/)).toBeVisible()
+    await userEvent.click(body.getByRole('button', { name: 'Start building' }))
+    await expect(await body.findByText('Started Build the search index')).toBeVisible()
+  },
+}
+
 export const ShowPassingChecks: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('switch', { name: 'Show passing' }))

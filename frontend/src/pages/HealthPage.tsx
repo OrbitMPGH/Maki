@@ -10,6 +10,7 @@ import {
   Menu,
   Modal,
   Pagination,
+  Popover,
   Select,
   SimpleGrid,
   Skeleton,
@@ -3746,7 +3747,18 @@ function RunningControl({ item }: { item: RunningItem }) {
         leftSection={<IconPlayerStop size={16} />}
         loading={stop.isPending}
         disabled={stopping}
-        onClick={() => stop.mutate({ path }, { ...settled, onSuccess: () => setStopping(true) })}
+        onClick={() =>
+          stop.mutate(
+            { path },
+            {
+              ...settled,
+              onSuccess: () => {
+                setStopping(true)
+                settled.onSuccess()
+              },
+            },
+          )
+        }
       >
         {stopping ? <Trans>Stopping</Trans> : <Trans>Stop</Trans>}
       </Button>
@@ -3850,7 +3862,7 @@ function RunningPanel() {
         ) : (
           <div className="health-running-list">
             {items.map((item, i) => (
-              <RunningRow key={`${item.kind}-${item.label ?? item.detail ?? ''}-${i}`} item={item} />
+              <RunningRow key={item.stopId ?? `${item.kind}-${item.label ?? item.detail ?? ''}-${i}`} item={item} />
             ))}
           </div>
         )}
@@ -3887,6 +3899,58 @@ function NextRun({ at }: { at: string }) {
     <Tooltip label={formatDateTime(at)} withArrow>
       <span>{soon ? t`in under a minute` : relativeTime(at)}</span>
     </Tooltip>
+  )
+}
+
+/** Run now, behind a short confirmation for a job that keeps the processor busy for an hour or more. */
+function RunNowButton({
+  heavy,
+  loading,
+  disabled,
+  onRun,
+}: {
+  heavy: boolean
+  loading: boolean
+  disabled: boolean
+  onRun: () => void
+}) {
+  const [asking, setAsking] = useState(false)
+  const button = (
+    <Button
+      size="compact-xs"
+      variant="default"
+      leftSection={<IconPlayerPlay size={16} />}
+      loading={loading}
+      disabled={disabled}
+      onClick={heavy ? () => setAsking((v) => !v) : onRun}
+    >
+      <Trans>Run now</Trans>
+    </Button>
+  )
+  if (!heavy) return button
+  return (
+    <Popover opened={asking} onChange={setAsking} position="bottom-end" withArrow width={280} shadow="md">
+      <Popover.Target>{button}</Popover.Target>
+      <Popover.Dropdown>
+        <Text size="sm">
+          <Trans>This builds the search index on this server and can keep the processor busy for an hour or more.</Trans>
+        </Text>
+        <Group justify="flex-end" gap="xs" mt="sm">
+          <Button size="xs" variant="default" onClick={() => setAsking(false)}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button
+            size="xs"
+            onClick={() => {
+              setAsking(false)
+              onRun()
+            }}
+          >
+            <Trans>Start building</Trans>
+          </Button>
+        </Group>
+      </Popover.Dropdown>
+    </Popover>
   )
 }
 
@@ -4020,16 +4084,12 @@ function ScheduledPanel() {
                       </Table.Td>
                       <Table.Td ta="right">
                         {!job.running && (
-                          <Button
-                            size="compact-xs"
-                            variant="default"
-                            leftSection={<IconPlayerPlay size={16} />}
+                          <RunNowButton
+                            heavy={job.heavy}
                             loading={pendingKey === path}
                             disabled={run.isPending && pendingKey !== path}
-                            onClick={() => start(job)}
-                          >
-                            <Trans>Run now</Trans>
-                          </Button>
+                            onRun={() => start(job)}
+                          />
                         )}
                       </Table.Td>
                     </Table.Tr>

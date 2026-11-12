@@ -682,6 +682,7 @@ const job = (name: string, label: string, intervalSeconds: number | null, over: 
   running: false,
   paused: false,
   lastFailed: false,
+  heavy: false,
   ...over,
 })
 
@@ -694,7 +695,7 @@ export const scheduledJobs: ScheduledJob[] = [
   job('mangabaka-dump', 'Update the MangaBaka database', 21_600),
   job('completed-downloads', 'Import completed downloads', 15),
   job('scrobble', 'Scrobble sync', 60),
-  job('embedding-index', 'Build the search index', null),
+  job('embedding-index', 'Build the search index', null, { heavy: true }),
 ]
 
 /** Page images are served per archive; the shared generated page stands in for them. */

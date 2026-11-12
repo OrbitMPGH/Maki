@@ -23559,6 +23559,10 @@ msgstr "Başlat"
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr "Başlat: {seriesTitle}, {chapterLabel}"
 
+#: src/pages/HealthPage.tsx
+msgid "Start building"
+msgstr ""
+
 #: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Start chapter"
@@ -24954,6 +24958,10 @@ msgstr "Güncelleme indirildi. Kurulum sırasında Maki yaklaşık bir dakika ç
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "Yükseltme taraması çalıştırılamadı. Ayrıntılar sunucu günlüğünde."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "The upgrade scan was stopped."
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."
@@ -25098,6 +25106,10 @@ msgstr "Bu yedekte kategori yok."
 #, fuzzy
 msgid "This browser does not support push notifications."
 msgstr "Bu tarayıcı push bildirimlerini desteklemiyor."
+
+#: src/pages/HealthPage.tsx
+msgid "This builds the search index on this server and can keep the processor busy for an hour or more."
+msgstr ""
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy

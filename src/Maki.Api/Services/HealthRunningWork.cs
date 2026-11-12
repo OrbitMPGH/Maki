@@ -36,6 +36,7 @@ public sealed record RunningWork(RunningProcess Process, IReadOnlyList<RunningIt
 /// One registered Quartz job. <c>IntervalSeconds</c> is the repeat of its trigger, null for a job that
 /// only runs when something starts it. <c>LastRunUtc</c> falls back to the job's health row, which
 /// survives a restart but is restamped at most every five minutes. <c>LastFailed</c> is that row's verdict.
+/// <c>Heavy</c> marks a job the page confirms before starting by hand.
 /// </summary>
 public sealed record ScheduledJob(
     string Group,
@@ -46,7 +47,8 @@ public sealed record ScheduledJob(
     long? IntervalSeconds,
     bool Running,
     bool Paused,
-    bool LastFailed);
+    bool LastFailed,
+    bool Heavy);
 
 /// <summary>What starting a job by hand found.</summary>
 public enum ManualRunResult
@@ -161,6 +163,9 @@ public sealed class HealthRunningWork(
         [typeof(EmbeddingIndexJob)] = () => new JobDataMap { { EmbeddingIndexJob.ManualTriggerKey, true } },
     };
 
+    /// <summary>Jobs that keep the processor busy for an hour or more when started by hand.</summary>
+    private static readonly HashSet<Type> Heavy = [typeof(EmbeddingIndexJob)];
+
     public async Task<IReadOnlyList<ScheduledJob>> ScheduledAsync(CancellationToken ct)
     {
         var scheduler = await schedulers.GetScheduler(ct);
@@ -194,7 +199,8 @@ public sealed class HealthRunningWork(
                     .Select(t => (long?)(long)t.RepeatInterval.TotalSeconds).Min(),
                 running.Contains(key),
                 paused,
-                row?.Status == "error"));
+                row?.Status == "error",
+                Heavy.Contains(detail.JobType)));
         }
 
         return jobs;
@@ -227,6 +233,10 @@ public sealed class HealthRunningWork(
 
         return ManualRunResult.Started;
     }
+
+    private static readonly TimeSpan CountsFor = TimeSpan.FromSeconds(20);
+    private static readonly Lock CountsGate = new();
+    private static (DateTime At, bool Pass, int Waiting)? _conversionCounts;
 
     public async Task<RunningWork> ReadAsync(CancellationToken ct)
     {
@@ -288,25 +298,50 @@ public sealed class HealthRunningWork(
 
     private async Task AddConversionAsync(List<RunningItem> items, CancellationToken ct)
     {
-        if (conversion.Working is not { } working)
+        // A running pass shows between files too (the pause, the build gate), or the row would blink.
+        var working = conversion.Working;
+        var passRunning = await conversion.StateAsync(ct) == PageConversionPassState.Running;
+        if (working is null && !passRunning)
         {
             return;
         }
 
-        var pass = conversion.CurrentPass;
+        var pass = passRunning ? conversion.CurrentPass : null;
+        items.Add(new RunningItem("pageConversion",
+            StartedAtUtc: pass?.StartedAtUtc ?? working?.StartedAtUtc,
+            Done: pass is null ? null : pass.Converted + pass.Unchanged + pass.Hardlinked + pass.Failed,
+            Waiting: await ConversionWaitingAsync(passRunning, ct),
+            Detail: working?.Path,
+            Control: passRunning ? "pause" : null));
+    }
+
+    /// <summary>
+    /// Files left to convert, counted at most every 20 seconds: both queries scan <c>ChapterFiles</c>, and
+    /// the page polls every few seconds while conversion runs.
+    /// </summary>
+    private async Task<int> ConversionWaitingAsync(bool pass, CancellationToken ct)
+    {
+        var now = DateTime.UtcNow;
+        lock (CountsGate)
+        {
+            if (_conversionCounts is { } cached && cached.Pass == pass && now - cached.At < CountsFor)
+            {
+                return cached.Waiting;
+            }
+        }
+
         var waiting = await PageConversionWorker.QueuedQuery(db).CountAsync(ct);
-        if (pass is not null)
+        if (pass)
         {
             waiting += await PageConversionWorker.PendingQuery(db).CountAsync(ct);
         }
 
-        var passRunning = await conversion.StateAsync(ct) == PageConversionPassState.Running;
-        items.Add(new RunningItem("pageConversion",
-            StartedAtUtc: pass?.StartedAtUtc ?? working.StartedAtUtc,
-            Done: pass is null ? null : pass.Converted + pass.Unchanged + pass.Hardlinked + pass.Failed,
-            Waiting: waiting,
-            Detail: working.Path,
-            Control: passRunning ? "pause" : null));
+        lock (CountsGate)
+        {
+            _conversionCounts = (now, pass, waiting);
+        }
+
+        return waiting;
     }
 
     private async Task AddDownloadsAsync(List<RunningItem> items, CancellationToken ct)
@@ -318,11 +353,19 @@ public sealed class HealthRunningWork(
             .Select(g => new { Queued = g.Key, Count = g.Count() })
             .ToListAsync(ct);
         var active = counts.FirstOrDefault(c => !c.Queued)?.Count ?? 0;
-        if (active > 0)
+        var queued = counts.FirstOrDefault(c => c.Queued)?.Count ?? 0;
+        if (active == 0 && queued == 0)
         {
-            var paused = (await pauses.ActiveAsync(ct)).All is not null;
-            items.Add(new RunningItem("downloads", Active: active,
-                Waiting: counts.FirstOrDefault(c => c.Queued)?.Count ?? 0, Control: paused ? "resume" : "pause"));
+            return;
+        }
+
+        // A paused queue with work waiting keeps its row, so Resume stays on the page after the
+        // downloads in flight have finished.
+        var paused = (await pauses.ActiveAsync(ct)).All is not null;
+        if (active > 0 || paused)
+        {
+            items.Add(new RunningItem("downloads", Active: active, Waiting: queued,
+                Control: paused ? "resume" : "pause"));
         }
     }
 
