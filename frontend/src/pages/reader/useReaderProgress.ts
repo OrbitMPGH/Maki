@@ -32,6 +32,7 @@ const OFFSET_EPSILON = 0.005
  *
  * `offset` is how far down `page` the continuous strip is (0 to 1), sent with the position. Leave it
  * undefined where it has no meaning (the paged layouts), which the server stores as the page's top.
+ * `liveOffset` gives the unsettled one for the final flush, which cannot wait for scrolling to stop.
  */
 export function useReaderProgress(
   chapterId: number | undefined,
@@ -43,6 +44,7 @@ export function useReaderProgress(
   clock: ReadingClock,
   onFlushed?: () => void,
   offset?: number,
+  liveOffset?: () => number | undefined,
 ) {
   const latest = useRef({ chapterId, seriesId, page, pageCount, complete, offset })
   const pending = useRef(false)
@@ -56,6 +58,9 @@ export function useReaderProgress(
   // heartbeat on every render, which would mean the timers never actually fire.
   const flushedHandler = useRef(onFlushed)
   flushedHandler.current = onFlushed
+  // The flush on hide or unmount reads the strip as it is now; `offset` only moves once scrolling settles.
+  const liveOffsetRef = useRef(liveOffset)
+  liveOffsetRef.current = liveOffset
 
   latest.current = { chapterId, seriesId, page, pageCount, complete, offset }
 
@@ -119,7 +124,8 @@ export function useReaderProgress(
     if (!enabled) return
 
     const flush = (direct: boolean) => {
-      const { chapterId: id, seriesId: series, page: at, pageCount: count, complete: done, offset: within } = latest.current
+      const { chapterId: id, seriesId: series, page: at, pageCount: count, complete: done, offset: settled } = latest.current
+      const within = liveOffsetRef.current?.() ?? settled
       // Banked seconds are worth a write on their own: this is the last chance to report the
       // stretch since the previous one, and a hidden tab may never come back.
       if (!id || series === undefined || (!pending.current && clock.pending() === 0)) return

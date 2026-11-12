@@ -87,6 +87,18 @@ function useSettledOffset(tracker: StripTracker, enabled: boolean, key: number):
   return enabled && settled?.key === key ? settled : null
 }
 
+/**
+ * The offset where the strip is right now, for writes that cannot wait for scrolling to settle
+ * (leaving the chapter, hiding the tab). Falls back to `settled` when the strip is on another page
+ * or there is no offset to send.
+ */
+export function liveStripOffset(tracker: StripTracker, page: number, settled: number | undefined): number | undefined {
+  if (settled === undefined) return undefined
+  const place = tracker.get()
+  if (!place || place.page !== page) return settled
+  return place.tall ? Math.round(place.offset * 10_000) / 10_000 : 0
+}
+
 /** Where the reader resumed a chapter, the offset it reports until the strip has settled somewhere. */
 export interface StripResume {
   chapterId: number

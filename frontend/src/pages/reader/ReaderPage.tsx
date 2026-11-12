@@ -53,7 +53,7 @@ import { serverChapterLabel } from '../../format'
 import { scrollBehavior } from '../../lib/scrollBehavior'
 import { useAutoScroll, useAutoScrollLevel } from './useAutoScroll'
 import ProgressRail from './ProgressRail'
-import { createStripTracker, resumeOffsetOf, useStripOffset, type StripResume } from './stripPosition'
+import { createStripTracker, liveStripOffset, resumeOffsetOf, useStripOffset, type StripResume } from './stripPosition'
 import { usePagedGestures } from './usePagedGestures'
 import { stripTapActionAt, tapActionAt } from './tapZones'
 import TapZoneOverlay from './TapZoneOverlay'
@@ -486,6 +486,7 @@ export default function ReaderPage() {
     clock,
     onFlushed,
     stripOffset,
+    () => liveStripOffset(stripTracker, finished ? pageCount - 1 : recordedTo, stripOffset),
   )
 
   /**
@@ -643,13 +644,15 @@ export default function ReaderPage() {
         const seconds = clock.take()
         const { chapterId: leftId, seriesId } = manifest
         const at = done ? pageCount - 1 : recordedTo
+        // Where in a tall slice the reader left it, or going back a chapter would reopen it at the slice's top.
+        const offset = done ? undefined : liveStripOffset(stripTracker, recordedTo, stripOffset)
         // Navigation waits for the write only up to a short grace period: a hung save must not
         // freeze the page turn. The chain keeps running after navigating, so the position still
         // lands, and settle-then-flush stays in order.
         const flushed = (async () => {
           await settleProgress()
           const completed = done || (holdCompletion ? false : undefined)
-          await flushProgress(leftId, seriesId, at, completed, seconds, pageCount).catch(() => {})
+          await flushProgress(leftId, seriesId, at, completed, seconds, pageCount, offset).catch(() => {})
           invalidateProgress(seriesId)
         })()
         await Promise.race([flushed, new Promise((resolve) => setTimeout(resolve, FLUSH_WAIT_MS))])
@@ -675,6 +678,8 @@ export default function ReaderPage() {
       clock,
       finished,
       settleProgress,
+      stripTracker,
+      stripOffset,
     ],
   )
 
