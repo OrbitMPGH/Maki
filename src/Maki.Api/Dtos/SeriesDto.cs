@@ -217,7 +217,7 @@ public record SeriesDto(
     /// <summary>
     /// When the monitored refresh next syncs this series, or null when it never will (archived, no
     /// enabled source, finished, or still waiting on an import link). A series that is due carries
-    /// the time the list was built. Library list only.
+    /// a time already past: its last check, else when it was added. Library list only.
     /// </summary>
     public DateTime? NextCheckAt { get; init; }
 

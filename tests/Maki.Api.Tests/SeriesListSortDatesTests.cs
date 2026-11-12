@@ -170,11 +170,10 @@ public sealed class SeriesListSortDatesTests : IDisposable
         }
 
         using var db = _db.NewContext(alice);
-        var before = DateTime.UtcNow;
         var list = Listed(await Controller(db).List(default));
 
         Assert.Equal(Newer, list.Single(s => s.Id == planned).NextCheckAt);
-        Assert.True(list.Single(s => s.Id == due).NextCheckAt >= before);
+        Assert.Equal(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), list.Single(s => s.Id == due).NextCheckAt);
         Assert.Null(list.Single(s => s.Id == unlinked).NextCheckAt);
     }
 

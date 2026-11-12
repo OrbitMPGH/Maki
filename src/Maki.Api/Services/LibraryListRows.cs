@@ -119,7 +119,6 @@ internal static class LibraryListRows
         var refreshable = (await ForSeries(RefreshMonitoredSeriesJob.Refreshable(db, disabledSources), ids, s => s.Id)
             .Select(s => s.Id)
             .ToListAsync(ct)).ToHashSet();
-        var builtAt = DateTime.UtcNow;
 
         var communityRatings = await CommunityRatingsAsync(mangaBakaStore, logger, series, ct);
 
@@ -175,7 +174,9 @@ internal static class LibraryListRows
                     ? Math.Round(score / 10.0, 1)
                     : null,
                 SizeOnDisk = sizeBySeries.TryGetValue(s.Id, out var bytes) ? bytes : null,
-                NextCheckAt = refreshable.Contains(s.Id) ? s.NextCheckAt ?? builtAt : null,
+                // A series that is due (no plan yet) carries a time already past, so the client reads
+                // it as due and two builds of the same row stay equal.
+                NextCheckAt = refreshable.Contains(s.Id) ? s.NextCheckAt ?? s.LastCheckAt ?? s.Added : null,
             };
         })];
     }
