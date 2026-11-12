@@ -274,4 +274,16 @@ public sealed class ReaderEndingTests : IDisposable
         Assert.Equal(9, answered.GetProperty("rating").GetInt32());
         Assert.True(answered.GetProperty("rateHintDismissed").GetBoolean());
     }
+
+    [Fact]
+    public async Task The_ending_hides_a_chapter_in_a_folder_the_reader_has_no_grant_for()
+    {
+        var series = SeedSeries(SeriesStatus.Ongoing);
+        var chapter = AddChapter(series, 1);
+
+        using var db = _db.NewContext(UserId, allRootFolders: false);
+        var result = await Controller(db).Ending(chapter, default);
+
+        Assert.IsNotType<OkObjectResult>(result);
+    }
 }
