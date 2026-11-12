@@ -1,0 +1,24 @@
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions: {}
+
+jobs:
+  conventional:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      # The title goes through env, never ${{ }} inside the script, so a crafted title can't inject shell.
+      - name: Title follows Conventional Commits
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          types='feat|fix|perf|refactor|docs|test|build|ci|chore|style|revert'
+          if printf '%s' "$TITLE" | grep -qE "^(${types})(\([a-z0-9][a-z0-9./-]*\))?!?: [^ ].*[^.]$"; then exit 0; fi
+          if printf '%s' "$TITLE" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then exit 0; fi
+          if printf '%s' "$TITLE" | grep -qE '^Revert "'; then exit 0; fi
+          echo "::error title=PR title::The title is not <type>(<scope>): <summary>. Types: ${types//|/, }. No trailing period. See CONTRIBUTING.md."
+          exit 1

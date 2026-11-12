@@ -16,6 +16,10 @@ No em dashes, anywhere. Avoid "AI writing" tells: no "it's not just X, it's Y", 
 
 **A commit that changes something a user of the last release would notice adds or edits a file in `changes/`.** See [changes/README.md](changes/README.md) for the format. Fixes and tweaks to unreleased work add nothing (edit that feature's entry if its final form changed); reworking or removing an unreleased feature means rewriting or deleting its entry. Contributor PRs merged without one: add it at merge.
 
+## Pull requests
+
+**PR titles are Conventional Commits (`feat(activity): group the history by series`), never a plain sentence.** The `PR title` check fails otherwise; types and scopes are in [CONTRIBUTING.md](CONTRIBUTING.md#pull-request-titles). **The body fills in [.github/pull_request_template.md](.github/pull_request_template.md) section by section**, written to a file and passed with `gh pr create --body-file`, since `--body` and `--fill` skip the template. Every reviewer is an agent: name exact files and types, list the rule files that apply, answer each Touches line, and say plainly what was not checked. Drop the template's HTML comments from the filled body.
+
 ## Worktrees
 
 **When a feature or change that used a worktree is done (merged or dropped), ask the owner whether to remove the worktree and its branch. Never remove either without asking.** Worktrees often hold scratch scripts, test configs or notes the owner still wants after the merge. Before asking, run `git status` in the worktree and mention anything uncommitted or untracked. Once the owner confirms, remove them yourself.
