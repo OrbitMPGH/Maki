@@ -355,6 +355,12 @@ export function useLiveEvents() {
         queryClient.setQueryData<QueuePauseDto>(['queue-pause'], pause)
       })
 
+      // Rows moved to the front for a reader nearing the end of a series. No row changed state, so
+      // queueUpdated never fires and the lists would keep the old order.
+      listen(conn, 'queueReordered', () => {
+        void queryClient.invalidateQueries({ queryKey: ['queue'] })
+      })
+
       // The flush also refreshes Home's recently-added rail (keyed on ChapterFile.DateAdded, which
       // an import just wrote) and the detail page's Read button gate (`reader-continue`).
       listen(conn, 'chapterImported', ({ seriesId }: { seriesId: number }) => {

@@ -101,6 +101,13 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
         hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("queueUpdated", queueItem);
 
     /// <summary>
+    /// The dispatch order of a series' queued rows changed without a row's own state changing. Carries
+    /// only the series id: clients refetch the queue, which is already filtered per viewer.
+    /// </summary>
+    public virtual Task QueueReordered(int seriesId) =>
+        hubContext.Clients.Group(EventsHub.AdminGroup).SendAsync("queueReordered", new { seriesId });
+
+    /// <summary>
     /// The download pause changed, by a person or because a resume time passed. Goes to everyone
     /// who may pause and resume (<see cref="MakiPermission.ManageDownloadQueue"/>), not just admins,
     /// so their pause controls do not wait for the poll. Rare enough to resolve the audience each time.

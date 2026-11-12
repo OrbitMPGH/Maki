@@ -17,7 +17,8 @@ public class ReaderService(
     ReadingProgressService progress,
     KavitaProgressPusher kavitaPush,
     ReadingSessionService sessions,
-    ILogger<ReaderService> logger)
+    ILogger<ReaderService> logger,
+    ReadingAwareQueueBump? queueBump = null)
 {
     /// <summary>Where a chapter lives inside its backing archive.</summary>
     public record ChapterSlice(
@@ -571,6 +572,11 @@ public class ReaderService(
 
         var sessionStaged = await StageSessionAsync(slice.Series, reportedSeconds, justCompleted, at, ct);
         await SaveWithSessionAsync(sessionStaged, ct);
+
+        if (!stale)
+        {
+            queueBump?.Notify(chapter.SeriesId, chapter.Id);
+        }
 
         if (justCompleted)
         {
