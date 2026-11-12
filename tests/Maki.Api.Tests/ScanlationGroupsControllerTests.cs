@@ -15,7 +15,7 @@ public class ScanlationGroupsControllerTests : IDisposable
     public void Dispose() => _db.Dispose();
 
     private ScanlationGroupsController Controller(ISource source) => new(
-        _db.NewContext(), _settings, new SourceRegistry([source]), Sources.AllEnabled,
+        _db.NewContext(), _settings, new SourceRegistry([source]), Sources.AllEnabled, new TestLocalizer(),
         NullLogger<ScanlationGroupsController>.Instance);
 
     private int Seed() => _db.SeedSeries(mappings: new SourceMapping

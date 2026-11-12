@@ -2529,7 +2529,7 @@ function SeriesDetailBody() {
                       setDeleteSeriesFiles(false)
                       setDeleteSeriesModalOpen(true)
                     }}
-                    onScanlationGroups={hasGroupSource ? () => setGroupsOpen(true) : undefined}
+                    onScanlationGroups={hasGroupSource && !archived ? () => setGroupsOpen(true) : undefined}
                     offlineSaved={canSaveOffline ? offlineSaved : undefined}
                     onSaveUnreadOffline={() =>
                         void saveUnreadOffline(seriesId).then(

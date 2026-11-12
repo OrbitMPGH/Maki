@@ -1,4 +1,5 @@
 using Maki.Api.Auth;
+using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Sources;
@@ -20,6 +21,7 @@ public class ScanlationGroupsController(
     IAppSettings settings,
     SourceRegistry sourceRegistry,
     SourceAvailability sourceAvailability,
+    ILocalizer localizer,
     ILogger<ScanlationGroupsController> logger) : ControllerBase
 {
     public record GroupLists(IReadOnlyList<string> Preferred, IReadOnlyList<string> Blocked);
@@ -84,6 +86,11 @@ public class ScanlationGroupsController(
         if (series is null)
         {
             return NotFound();
+        }
+
+        if (series.ArchivedAt is not null)
+        {
+            return this.Conflict(localizer, "error.series.archived");
         }
 
         var disabled = await sourceAvailability.DisabledAsync(ct);

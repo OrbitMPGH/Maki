@@ -621,6 +621,16 @@ public sealed class ArchiveGuardTests : IDisposable
         logger: logger ?? NullLogger<SeriesController>.Instance);
 
     [Fact]
+    public async Task ScanlationGroupsSeries_refuses_archived_series()
+    {
+        var (_, archived) = Pair();
+        var controller = new ScanlationGroupsController(_db.NewContext(), new FakeAppSettings(), null!, null!,
+            new TestLocalizer(), NullLogger<ScanlationGroupsController>.Instance);
+
+        AssertArchived(await controller.GetSeries(archived, default));
+    }
+
+    [Fact]
     public async Task SeriesRefresh_refuses_archived_series()
     {
         var (_, archived) = Pair();
