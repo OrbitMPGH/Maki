@@ -1,4 +1,7 @@
+using System.Globalization;
 using System.IO.Compression;
+using System.Xml;
+using System.Xml.Linq;
 using Maki.Core.Reading;
 using NetVips;
 
@@ -29,8 +32,11 @@ public sealed record ArchiveConversionResult(
     int PagesKept,
     string SourceFormat,
     string ResultFormat,
-    IReadOnlyDictionary<PageSkip, int> Skipped)
+    IReadOnlyDictionary<PageSkip, int> Skipped,
+    PageSplitMap? Split = null,
+    IReadOnlyList<string>? PagesBefore = null)
 {
+    /// <summary>Can be negative for a file whose tall pages were split: the split is kept even when it grows the file.</summary>
     public long SavedBytes => Outcome == ArchiveConversionOutcome.Converted ? SourceBytes - ResultBytes : 0;
 }
 
@@ -39,8 +45,9 @@ public sealed record ArchiveConversionResult(
 /// entry, ComicInfo.xml included, is copied byte for byte in its original order. A page keeps its
 /// name and changes only its extension, so chapter markers in volume page names survive, and the
 /// result is refused when that would change the page order <see cref="CbzReader.PageNames(ZipArchive)"/>
-/// reads. The source is never touched: the result is written to <c>target.partial</c> and moved onto
-/// the target only when it is worth keeping.
+/// reads. A tall strip the settings split becomes pages named after it with "-01", "-02" and so on,
+/// and then ComicInfo.xml moves to the end with its PageCount updated. The source is never touched:
+/// the result is written to <c>target.partial</c> and moved onto the target only when it is worth keeping.
 /// </summary>
 public static class ArchivePageConverter
 {
@@ -52,7 +59,11 @@ public static class ArchivePageConverter
         var skipped = new Dictionary<PageSkip, int>();
         var sourceFormats = new List<string>();
         var resultFormats = new List<string>();
-        var renamed = new Dictionary<string, string>(StringComparer.Ordinal);
+        var renamed = new Dictionary<string, IReadOnlyList<string>>(StringComparer.Ordinal);
+        var pieces = new Dictionary<int, int>();
+        List<string>? order = null;
+        Dictionary<string, int>? indexOf = null;
+        (ZipArchiveEntry Entry, byte[] Bytes)? comicInfo = null;
         var converted = 0;
         var kept = 0;
         var expanded = 0L;
@@ -61,11 +72,11 @@ public static class ArchivePageConverter
 
         ArchiveConversionResult Result(ArchiveConversionOutcome outcome, long resultBytes = 0) => new(
             outcome, sourceBytes, resultBytes, converted, kept, PageConversion.ResolveFormat(sourceFormats),
-            PageConversion.ResolveFormat(resultFormats), skipped);
+            PageConversion.ResolveFormat(resultFormats), skipped,
+            pieces.Count > 0 ? new PageSplitMap(pieces) : null, pieces.Count > 0 ? order : null);
 
         try
         {
-            List<string> order;
             using (var source = ZipFile.OpenRead(sourcePath))
             {
                 order = CbzReader.PageNames(source);
@@ -75,6 +86,7 @@ public static class ArchivePageConverter
                 }
 
                 var pages = order.ToHashSet(StringComparer.Ordinal);
+                indexOf = order.Select((name, i) => (name, i)).ToDictionary(p => p.name, p => p.i, StringComparer.Ordinal);
                 Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(targetPath))!);
                 await using var output = new FileStream(partial, FileMode.Create, FileAccess.Write, FileShare.None);
                 using var target = new ZipArchive(output, ZipArchiveMode.Create, leaveOpen: true);
@@ -88,17 +100,30 @@ public static class ArchivePageConverter
                         return;
                     }
 
+                    if (settings.SplitHeight is not null && IsComicInfo(entry))
+                    {
+                        comicInfo = (entry, bytes);
+                        return;
+                    }
+
                     var name = entry.FullName;
                     var level = CompressionLevel.Optimal;
                     if (item.Page is { } encoding)
                     {
-                        var page = await encoding;
+                        var result = await encoding;
+                        if (result.Count > 1)
+                        {
+                            await WritePiecesAsync(entry, result);
+                            return;
+                        }
+
+                        var page = result[0];
                         sourceFormats.Add(page.SourceFormat);
                         if (page.Converted)
                         {
                             converted++;
                             name = name[..^Path.GetExtension(name).Length] + page.Extension;
-                            renamed[entry.FullName] = name;
+                            renamed[entry.FullName] = [name];
                             bytes = page.Bytes;
                             resultFormats.Add(page.Extension.TrimStart('.'));
                         }
@@ -118,6 +143,28 @@ public static class ArchivePageConverter
                     await stream.WriteAsync(bytes, ct);
                 }
 
+                async Task WritePiecesAsync(ZipArchiveEntry entry, IReadOnlyList<PageConversion.Page> split)
+                {
+                    var stem = entry.FullName[..^Path.GetExtension(entry.FullName).Length];
+                    var digits = split.Count > 99 ? "D3" : "D2";
+                    var names = new List<string>(split.Count);
+                    converted++;
+                    sourceFormats.Add(split[0].SourceFormat);
+                    pieces[indexOf![entry.FullName]] = split.Count;
+                    for (var i = 0; i < split.Count; i++)
+                    {
+                        var name = $"{stem}-{(i + 1).ToString(digits, CultureInfo.InvariantCulture)}{split[i].Extension}";
+                        names.Add(name);
+                        resultFormats.Add(PageConversion.FormatOf(split[i].Bytes, split[i].Extension));
+                        var written = target.CreateEntry(name, CompressionLevel.NoCompression);
+                        written.LastWriteTime = entry.LastWriteTime;
+                        await using var stream = written.Open();
+                        await stream.WriteAsync(split[i].Bytes, ct);
+                    }
+
+                    renamed[entry.FullName] = names;
+                }
+
                 // Pages encode ahead of the writer, as many at once as the conversion limit allows (half as
                 // many AVIF pages, each on two threads), and are written in the source order. AV1 is the
                 // slow part, and one page at a time left all but one core idle.
@@ -132,12 +179,12 @@ public static class ArchivePageConverter
 
                     expanded += entry.Length;
                     var bytes = ReadAll(entry, expanded);
-                    Task<PageConversion.Page>? page = null;
+                    Task<IReadOnlyList<PageConversion.Page>>? page = null;
                     if (pages.Contains(entry.FullName))
                     {
                         var extension = Path.GetExtension(entry.FullName);
                         page = Task.Run(() => ImageWorkGate.RunConversionAsync(
-                            () => PageConversion.Convert(bytes, extension, settings),
+                            () => PageConversion.ConvertPage(bytes, extension, settings),
                             PageConversion.WeightOf(bytes, extension, settings), encodes.Token), encodes.Token);
                     }
 
@@ -155,11 +202,20 @@ public static class ArchivePageConverter
                     pending.Dequeue();
                 }
 
+                if (comicInfo is var (infoEntry, infoBytes))
+                {
+                    var newCount = order.Count + pieces.Values.Sum(n => n - 1);
+                    var written = target.CreateEntry(infoEntry.FullName);
+                    written.LastWriteTime = infoEntry.LastWriteTime;
+                    await using var stream = written.Open();
+                    await stream.WriteAsync(pieces.Count > 0 ? WithPageCount(infoBytes, newCount) : infoBytes, ct);
+                }
+
                 // On disk before any rename, so a crash never leaves a renamed archive whose data never
                 // landed, and clean, so the caller can drop it from the page cache. A copy that will not
                 // be kept is not worth the flush.
                 target.Dispose();
-                if (converted > 0 && output.Length <= sourceBytes * (1 - PageConversion.MinFileSaving))
+                if (converted > 0 && (pieces.Count > 0 || output.Length <= sourceBytes * (1 - PageConversion.MinFileSaving)))
                 {
                     output.Flush(flushToDisk: true);
                 }
@@ -178,7 +234,7 @@ public static class ArchivePageConverter
             }
 
             var resultBytes = new FileInfo(partial).Length;
-            if (resultBytes > sourceBytes * (1 - PageConversion.MinFileSaving))
+            if (pieces.Count == 0 && resultBytes > sourceBytes * (1 - PageConversion.MinFileSaving))
             {
                 TryDelete(partial);
                 return Result(ArchiveConversionOutcome.NotSmaller, resultBytes);
@@ -206,15 +262,113 @@ public static class ArchivePageConverter
     }
 
     /// <summary>An entry read and waiting to be written; <see cref="Bytes"/> is null for a directory.</summary>
-    private sealed record Pending(ZipArchiveEntry Entry, byte[]? Bytes, Task<PageConversion.Page>? Page);
+    private sealed record Pending(ZipArchiveEntry Entry, byte[]? Bytes, Task<IReadOnlyList<PageConversion.Page>>? Page);
+
+    private static bool IsComicInfo(ZipArchiveEntry entry) =>
+        string.Equals(entry.FullName, "ComicInfo.xml", StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// ComicInfo.xml with its PageCount set to the new count. A <c>Pages</c> block lists pages by their old
+    /// index, so it goes; whatever builds that block can write it again from the split archive. Anything
+    /// that does not parse is left as it was.
+    /// </summary>
+    internal static byte[] WithPageCount(byte[] xml, int pageCount)
+    {
+        try
+        {
+            XDocument document;
+            using (var reader = new MemoryStream(xml))
+            {
+                document = XDocument.Load(reader, LoadOptions.PreserveWhitespace);
+            }
+
+            if (document.Root is not { } root)
+            {
+                return xml;
+            }
+
+            var ns = root.Name.Namespace;
+            root.Element(ns + "Pages")?.Remove();
+            var count = pageCount.ToString(CultureInfo.InvariantCulture);
+            if (root.Element(ns + "PageCount") is { } existing)
+            {
+                existing.Value = count;
+            }
+            else
+            {
+                root.Add(new XElement(ns + "PageCount", count));
+            }
+
+            using var output = new MemoryStream();
+            using (var writer = XmlWriter.Create(output, new XmlWriterSettings
+                   {
+                       Encoding = new System.Text.UTF8Encoding(false),
+                       OmitXmlDeclaration = document.Declaration is null
+                   }))
+            {
+                document.Save(writer);
+            }
+
+            return output.ToArray();
+        }
+        catch (XmlException)
+        {
+            return xml;
+        }
+    }
 
     private const int MaxProbeReads = 12;
+
+    /// <summary>Enough of a page to read its header from; a page whose header is further in is read whole.</summary>
+    private const int HeaderPrefixBytes = 64 * 1024;
+
+    /// <summary>Whether any page is a strip taller than <paramref name="maxHeight"/>, read from page headers only.</summary>
+    public static bool HasTallPage(ZipArchive zip, int maxHeight, CancellationToken ct) =>
+        PageShapes(zip, ct).Any(p => TallPageSplitter.IsTall(p.Width, p.Height, maxHeight));
+
+    /// <summary>
+    /// Each page's index in reading order and its size, read from the first bytes of the page where the
+    /// header is there and from the whole page otherwise. Pages no permitted loader reads are left out.
+    /// </summary>
+    public static IEnumerable<(int Index, int Width, int Height)> PageShapes(ZipArchive zip, CancellationToken ct)
+    {
+        var entries = zip.Entries
+            .GroupBy(e => e.FullName, StringComparer.Ordinal)
+            .ToDictionary(g => g.Key, g => g.First(), StringComparer.Ordinal);
+        var names = CbzReader.PageNames(zip);
+        for (var i = 0; i < names.Count; i++)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (!entries.TryGetValue(names[i], out var entry))
+            {
+                continue;
+            }
+
+            var prefix = new byte[(int)Math.Min(entry.Length, HeaderPrefixBytes)];
+            using (var stream = entry.Open())
+            {
+                stream.ReadAtLeast(prefix, prefix.Length, throwOnEndOfStream: false);
+            }
+
+            var shape = ImageCodec.TryShape(prefix);
+            if (shape is null && entry.Length > prefix.Length)
+            {
+                shape = ImageCodec.TryShape(ReadAll(entry, entry.Length));
+            }
+
+            if (shape is { } s)
+            {
+                yield return (i, s.Width, s.Height);
+            }
+        }
+    }
 
     /// <summary>
     /// Whether a full conversion is worth running: encodes up to two pages over
     /// <see cref="PageConversion.MinPageBytes"/> from the middle third of the archive, one per source
     /// format when it mixes JPEG and PNG, and answers whether any came out smaller by the page floor.
     /// Anything it cannot read, or a file with nothing to probe, answers true so the full pass decides.
+    /// When the settings split, any page that is a strip over the height answers true first.
     /// </summary>
     public static async Task<bool> ProbeAsync(string path, PageConversionSettings settings, CancellationToken ct)
     {
@@ -223,6 +377,16 @@ public static class ArchivePageConverter
             List<(byte[] Bytes, string Extension)> picked;
             using (var zip = ZipFile.OpenRead(path))
             {
+                if (settings.SplitHeight is { } height && HasTallPage(zip, height, ct))
+                {
+                    return true;
+                }
+
+                if (settings.SplitOnly)
+                {
+                    return false;
+                }
+
                 picked = MiddlePages(zip, 2, ct);
             }
 
@@ -339,7 +503,7 @@ public static class ArchivePageConverter
     /// The written archive has to list the same pages in the same order, each under its new name,
     /// and no two entries may share a name.
     /// </summary>
-    private static bool SameOrder(List<string> order, Dictionary<string, string> renamed, string partial)
+    private static bool SameOrder(List<string> order, Dictionary<string, IReadOnlyList<string>> renamed, string partial)
     {
         using var written = ZipFile.OpenRead(partial);
         var names = written.Entries.Select(e => e.FullName).ToList();
@@ -348,7 +512,7 @@ public static class ArchivePageConverter
             return false;
         }
 
-        var expected = order.Select(n => renamed.GetValueOrDefault(n, n));
+        var expected = order.SelectMany(n => renamed.TryGetValue(n, out var names) ? names : [n]);
         return CbzReader.PageNames(written).SequenceEqual(expected, StringComparer.Ordinal);
     }
 

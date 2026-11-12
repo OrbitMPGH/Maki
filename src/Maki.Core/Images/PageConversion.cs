@@ -31,7 +31,10 @@ public enum PageSkip
     NotSmaller,
 
     /// <summary>A JPEG under <see cref="PageConversionStop.Lossless"/>: re-encoding it can only lose detail.</summary>
-    Lossless
+    Lossless,
+
+    /// <summary>The plan only splits tall pages in this file, and this one is not.</summary>
+    SplitOnly
 }
 
 /// <summary>
@@ -48,7 +51,14 @@ public enum PageConversionStop
 }
 
 /// <param name="PngLossless">PNG pages go to lossless WebP whatever the stop.</param>
-public sealed record PageConversionSettings(PageConversionFormat Format, PageConversionStop Stop, bool PngLossless)
+/// <param name="SplitHeight">Strips taller than this are cut into several pages (<see cref="TallPageSplitter"/>); null leaves them whole.</param>
+/// <param name="SplitOnly">
+/// Only split: every page that is not a tall strip is kept as it is. For files already stored as WebP or
+/// AVIF, and files converted before. <paramref name="Format"/> and <paramref name="Stop"/> still set the
+/// quality of a WebP or AVIF piece.
+/// </param>
+public sealed record PageConversionSettings(
+    PageConversionFormat Format, PageConversionStop Stop, bool PngLossless, int? SplitHeight = null, bool SplitOnly = false)
 {
     public static PageConversionStop DefaultStop => PageConversionStop.High;
 
@@ -84,29 +94,60 @@ public sealed record PageConversionSettings(PageConversionFormat Format, PageCon
         return nearest;
     }
 
-    /// <summary>"webp:high", "avif:balanced+png" or "lossless".</summary>
-    public string Name() => Stop == PageConversionStop.Lossless
-        ? StopName(Stop)
-        : $"{FormatName(Format)}:{StopName(Stop)}{(PngLossless ? "+png" : "")}";
+    /// <summary>"webp:high", "avif:balanced+png", "lossless", "webp:high+split5000" or, split only, "split5000".</summary>
+    public string Name()
+    {
+        var split = SplitHeight is { } height ? SplitName(height) : null;
+        if (SplitOnly && split is not null)
+        {
+            return split;
+        }
+
+        var name = Stop == PageConversionStop.Lossless
+            ? StopName(Stop)
+            : $"{FormatName(Format)}:{StopName(Stop)}{(PngLossless ? "+png" : "")}";
+        return split is null ? name : $"{name}+{split}";
+    }
+
+    public static string SplitName(int height) => $"split{height.ToString(CultureInfo.InvariantCulture)}";
 
     public static PageConversionSettings? Parse(string? name)
     {
         var value = name?.Trim().ToLowerInvariant();
-        if (value == StopName(PageConversionStop.Lossless))
-        {
-            return new PageConversionSettings(PageConversionFormat.Webp, PageConversionStop.Lossless, false);
-        }
-
         if (value is null)
         {
             return null;
+        }
+
+        int? split = null;
+        var plus = value.LastIndexOf('+');
+        var last = plus < 0 ? value : value[(plus + 1)..];
+        if (last.StartsWith("split", StringComparison.Ordinal))
+        {
+            if (!int.TryParse(last.AsSpan(5), NumberStyles.None, CultureInfo.InvariantCulture, out var height) || height <= 0)
+            {
+                return null;
+            }
+
+            split = height;
+            if (plus < 0)
+            {
+                return new PageConversionSettings(PageConversionFormat.Webp, DefaultStop, false, split, SplitOnly: true);
+            }
+
+            value = value[..plus];
+        }
+
+        if (value == StopName(PageConversionStop.Lossless))
+        {
+            return new PageConversionSettings(PageConversionFormat.Webp, PageConversionStop.Lossless, false, split);
         }
 
         var png = value.EndsWith("+png", StringComparison.Ordinal);
         var parts = (png ? value[..^4] : value).Split(':');
         return parts.Length == 2 && ParseFormat(parts[0]) is { } format && ParseStop(parts[1]) is { } stop &&
                stop != PageConversionStop.Lossless
-            ? new PageConversionSettings(format, stop, png)
+            ? new PageConversionSettings(format, stop, png, split)
             : null;
     }
 
@@ -185,15 +226,41 @@ public static class PageConversion
         return new Page(encoded, encoding == PageEncoding.Avif ? ".avif" : ".webp", format, null);
     }
 
+    /// <summary>
+    /// The page or pages to store in its place: the pieces of a tall strip when the settings split, else
+    /// what <see cref="Convert"/> answers (or the page as it is, when the settings only split).
+    /// </summary>
+    public static IReadOnlyList<Page> ConvertPage(byte[] bytes, string extension, PageConversionSettings settings)
+    {
+        if (TallPageSplitter.Split(bytes, extension, settings) is { } pieces)
+        {
+            return pieces;
+        }
+
+        return settings.SplitOnly
+            ? [new Page(bytes, extension, FormatOf(bytes, extension), PageSkip.SplitOnly)]
+            : [Convert(bytes, extension, settings)];
+    }
+
     /// <summary>How <see cref="Convert"/> encodes the page, or null when it keeps the page without decoding it.</summary>
     public static PageEncoding? EncodingFor(byte[] bytes, string extension, PageConversionSettings settings) =>
         Decide(bytes, extension, settings, out _, out _);
 
     /// <summary>What encoding the page takes from the conversion gate, read from its header before any decode.</summary>
-    public static ConversionWeight WeightOf(byte[] bytes, string extension, PageConversionSettings settings) =>
-        EncodingFor(bytes, extension, settings) is { } encoding && ImageCodec.TryShape(bytes) is { } shape
+    public static ConversionWeight WeightOf(byte[] bytes, string extension, PageConversionSettings settings)
+    {
+        if (settings.SplitHeight is { } height && ImageCodec.TryShape(bytes) is { } tall &&
+            TallPageSplitter.IsTall(tall.Width, tall.Height, height))
+        {
+            return ImageWorkGate.WeighConversion(tall.Width, tall.Height, tall.Bands,
+                TallPageSplitter.WeightEncoding(bytes, extension, settings));
+        }
+
+        return !settings.SplitOnly && EncodingFor(bytes, extension, settings) is { } encoding &&
+               ImageCodec.TryShape(bytes) is { } shape
             ? ImageWorkGate.WeighConversion(shape.Width, shape.Height, shape.Bands, encoding)
             : ImageWorkGate.LightConversion;
+    }
 
     private static PageEncoding? Decide(byte[] bytes, string extension, PageConversionSettings settings,
         out string format, out PageSkip? kept)

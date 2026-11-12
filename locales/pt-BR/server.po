@@ -1519,6 +1519,10 @@ msgstr "Uma das regras não é válida. Verifique as condições dela e o que el
 msgid "error.pageConversion.stopInvalid"
 msgstr "Escolha Menor, Compacto, Equilibrado, Alta ou Sem perdas"
 
+#. English: Choose a split height from {min} to {max} pixels
+msgid "error.pageConversion.splitHeightInvalid"
+msgstr ""
+
 #. {max} is the server's core count.
 #. English: Pages converted at once must be between 1 and {max}
 #: src/Maki.Api/Controllers/PageConversionController.cs

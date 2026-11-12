@@ -30,7 +30,8 @@ public class PageConversionController(
 
     /// <param name="Format">"webp", "avif", or null while conversion is off.</param>
     /// <param name="Stop">"smallest", "compact", "balanced", "high" or "lossless"; sent while off too.</param>
-    public record SettingsDto(string? Format, string Stop, bool PngLossless);
+    /// <param name="SplitHeight">Strips taller than this many pixels are cut into pages; null leaves them whole.</param>
+    public record SettingsDto(string? Format, string Stop, bool PngLossless, int? SplitHeight = null);
 
     public record SamplesDto(IReadOnlyList<PageConversionSample> Samples);
 
@@ -52,7 +53,7 @@ public class PageConversionController(
     public record PlanDto(SettingsDto? Settings, IReadOnlyList<RuleDto>? Rules);
 
     /// <summary>A plan the wizard has not saved yet, to count against the library.</summary>
-    public record ScopeRequest(string? Format, string Stop, bool PngLossless, IReadOnlyList<RuleDto>? Rules);
+    public record ScopeRequest(string? Format, string Stop, bool PngLossless, IReadOnlyList<RuleDto>? Rules, int? SplitHeight = null);
 
     /// <param name="State">"idle", "running" or "paused".</param>
     /// <param name="Hold">Why a pass paused itself: "lowDisk", "conversionOff" or "settingsChanged"; null otherwise.</param>
@@ -268,8 +269,13 @@ public class PageConversionController(
             }
         }
 
+        if (request.SplitHeight is { } height && !PageConversionOptions.IsSplitHeight(height))
+        {
+            return null;
+        }
+
         return PageConversionSettings.ParseStop(request.Stop) is { } stop
-            ? new PageConversionOptions.Stored(format, stop, request.PngLossless)
+            ? new PageConversionOptions.Stored(format, stop, request.PngLossless, request.SplitHeight)
             : null;
     }
 
@@ -277,13 +283,19 @@ public class PageConversionController(
         request?.Format is not null && !string.Equals(request.Format, "off", StringComparison.OrdinalIgnoreCase) &&
         PageConversionSettings.ParseFormat(request.Format) is null
             ? this.Fail(localizer, "error.pageConversion.formatInvalid")
-            : this.Fail(localizer, "error.pageConversion.stopInvalid");
+            : request?.SplitHeight is { } height && !PageConversionOptions.IsSplitHeight(height)
+                ? SplitHeightInvalid()
+                : this.Fail(localizer, "error.pageConversion.stopInvalid");
+
+    private IActionResult SplitHeightInvalid() => this.Fail(localizer, "error.pageConversion.splitHeightInvalid",
+        new { min = TallPageSplitter.MinHeight, max = TallPageSplitter.MaxHeight });
 
     private static IEnumerable<(string Key, string? Value)> SettingValues(PageConversionOptions.Stored stored) =>
     [
         (SettingKeys.PageConversionFormat, stored.Format is { } f ? PageConversionSettings.FormatName(f) : null),
         (SettingKeys.PageConversionStop, PageConversionSettings.StopName(stored.Stop)),
-        (SettingKeys.PageConversionPngLossless, stored.PngLossless ? "true" : null)
+        (SettingKeys.PageConversionPngLossless, stored.PngLossless ? "true" : null),
+        (SettingKeys.PageConversionSplitHeight, stored.SplitHeight?.ToString(CultureInfo.InvariantCulture))
     ];
 
     private static PageConversionHold HoldFor(PageConversionOptions.Stored stored) =>
@@ -330,7 +342,12 @@ public class PageConversionController(
             return this.Fail(localizer, "error.pageConversion.ruleInvalid");
         }
 
-        return Ok(await plans.ScopeAsync(new PageConversionPlan(format, stop, request.PngLossless, rules), ct));
+        if (request.SplitHeight is { } height && !PageConversionOptions.IsSplitHeight(height))
+        {
+            return SplitHeightInvalid();
+        }
+
+        return Ok(await plans.ScopeAsync(new PageConversionPlan(format, stop, request.PngLossless, rules, request.SplitHeight), ct));
     }
 
     /// <summary>
@@ -351,7 +368,8 @@ public class PageConversionController(
         }
 
         return Ok(estimates.Start(
-            new PageConversionPlan(stored.Format ?? PageConversionFormat.Webp, stored.Stop, stored.PngLossless, parsed)));
+            new PageConversionPlan(stored.Format ?? PageConversionFormat.Webp, stored.Stop, stored.PngLossless, parsed,
+                stored.SplitHeight)));
     }
 
     [HttpGet("estimate")]
@@ -488,6 +506,23 @@ public class PageConversionController(
         return PhysicalFile(preview.Path, preview.ContentType, lastModified: null, entityTag: etag);
     }
 
+    /// <summary>
+    /// Where a split at <paramref name="height"/> would cut a page: the one named by <paramref name="fileId"/>
+    /// and <paramref name="page"/>, or the library's tallest. The page itself comes from <c>preview</c> with
+    /// <c>original</c>. 404 when there is no archive to look at.
+    /// </summary>
+    [HttpGet("split")]
+    public async Task<IActionResult> SplitPreview([FromQuery] int height, [FromQuery] int? fileId, [FromQuery] int? page,
+        CancellationToken ct)
+    {
+        if (!PageConversionOptions.IsSplitHeight(height))
+        {
+            return SplitHeightInvalid();
+        }
+
+        return await previews.SplitPreviewAsync(height, fileId, page, ct) is { } preview ? Ok(preview) : NotFound();
+    }
+
     [HttpPost("start")]
     public async Task<IActionResult> Start(CancellationToken ct)
     {
@@ -509,7 +544,7 @@ public class PageConversionController(
 
     private static SettingsDto ToDto(PageConversionOptions.Stored stored) => new(
         stored.Format is { } f ? PageConversionSettings.FormatName(f) : null, PageConversionSettings.StopName(stored.Stop),
-        stored.PngLossless);
+        stored.PngLossless, stored.SplitHeight);
 
     private static string Name(PageConversionPassState state) => state switch
     {
