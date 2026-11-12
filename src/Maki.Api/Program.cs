@@ -1072,6 +1072,7 @@ try
     builder.Services.AddSingleton<KavitaLiveCoverage>();
     builder.Services.AddSingleton<KavitaLiveReadSync>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<KavitaLiveReadSync>());
+    builder.Services.AddSingleton<ReadingAwareQueueBump>();
     builder.Services.AddScoped<ReaderService>();
     builder.Services.AddScoped<ReaderThumbnailCache>();
     builder.Services.AddSingleton<ReaderRecapCache>();
