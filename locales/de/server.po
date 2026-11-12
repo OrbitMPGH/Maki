@@ -1034,6 +1034,11 @@ msgstr "Die URL-Vorlage für Kapitel baut die Links, die die Kapitelliste zeigt,
 msgid "error.customSource.test.sampleChapterNotListed"
 msgstr "Die URL des Beispielkapitels steht nicht in der Kapitelliste."
 
+#. English: The sample chapter is listed as locked. Pick a free chapter as the sample.
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleChapterLocked"
+msgstr ""
+
 #. English: The first page did not come back as an image.
 #: src/Maki.Api/Services/CustomSourceTester.cs
 #, fuzzy

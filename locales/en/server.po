@@ -736,6 +736,10 @@ msgid "error.customSource.test.sampleChapterNotListed"
 msgstr "The sample chapter URL is not in the chapter list."
 
 #: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleChapterLocked"
+msgstr "The sample chapter is listed as locked. Pick a free chapter as the sample."
+
+#: src/Maki.Api/Services/CustomSourceTester.cs
 msgid "error.customSource.test.notAnImage"
 msgstr "The first page did not come back as an image."
 

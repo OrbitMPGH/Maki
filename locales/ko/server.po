@@ -1034,6 +1034,11 @@ msgstr "챕터 URL 템플릿으로 챕터 목록의 링크를 다시 만들 수 
 msgid "error.customSource.test.sampleChapterNotListed"
 msgstr "샘플 챕터 URL이 챕터 목록에 없습니다."
 
+#. English: The sample chapter is listed as locked. Pick a free chapter as the sample.
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleChapterLocked"
+msgstr ""
+
 #. English: The first page did not come back as an image.
 #: src/Maki.Api/Services/CustomSourceTester.cs
 #, fuzzy
