@@ -51,7 +51,7 @@ public class DropFolderController(
             var roots = await db.RootFolders.AsNoTracking().Select(r => r.Path).ToListAsync(ct);
             if (roots.Any(r => ManualImportService.IsWithin(r, path)))
             {
-                return this.Fail(localizer, "error.libraryImport.folderOwnedByOtherSeries");
+                return this.Fail(localizer, "error.import.holdsRootFolder");
             }
         }
 

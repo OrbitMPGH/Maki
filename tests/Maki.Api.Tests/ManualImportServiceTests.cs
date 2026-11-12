@@ -136,12 +136,12 @@ public class ManualImportServiceTests : IDisposable
 
         Assert.Equal("error.libraryImport.folderOwnedByOtherSeries",
             (await service.SourceProblemAsync(Path.Combine(_root, "Vagabond"), default))?.Key);
-        Assert.Equal("error.libraryImport.folderOwnedByOtherSeries",
+        Assert.Equal("error.import.holdsRootFolder",
             (await service.SourceProblemAsync(_base, default))?.Key);
         Assert.Null(await service.SourceProblemAsync(_outside, default));
 
         var plan = await service.PlanAsync(_root, seriesId, default);
-        Assert.Equal("error.libraryImport.folderOwnedByOtherSeries", plan!.ErrorKey);
+        Assert.Equal("error.import.holdsRootFolder", plan!.ErrorKey);
     }
 
     [Fact]

@@ -172,7 +172,7 @@ public class ManualImportService(
         var roots = await db.RootFolders.AsNoTracking().ToListAsync(ct);
         if (roots.Any(r => IsWithin(r.Path, fullPath)))
         {
-            return Owned;
+            return HoldsRoot;
         }
 
         foreach (var root in roots.Where(r => IsWithin(fullPath, r.Path)))
@@ -201,6 +201,7 @@ public class ManualImportService(
     }
 
     private static readonly (string, object?) Owned = ("error.libraryImport.folderOwnedByOtherSeries", null);
+    private static readonly (string, object?) HoldsRoot = ("error.import.holdsRootFolder", null);
 
     private async Task<Series?> TargetSeriesAsync(int seriesId, CancellationToken ct) =>
         await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);

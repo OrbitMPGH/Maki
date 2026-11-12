@@ -1065,6 +1065,12 @@ msgstr "フォルダーが見つかりません"
 msgid "error.libraryImport.folderOwnedByOtherSeries"
 msgstr "このフォルダーはすでにライブラリ内の別のシリーズのものです"
 
+#. English: This folder is a library root folder or contains one, so Maki won't import from it
+#: src/Maki.Api/Services/ManualImportService.cs
+#: src/Maki.Api/Controllers/DropFolderController.cs
+msgid "error.import.holdsRootFolder"
+msgstr ""
+
 #. English: Ids are looked up in the local MangaBaka database, which is not downloaded yet. Try again once it is installed.
 #: src/Maki.Api/Services/LibraryImportResolver.cs
 #, fuzzy
@@ -6122,6 +6128,11 @@ msgstr ""
 #. English: Prepare Discover
 #: src/Maki.Api/Services/JobLabels.cs
 msgid "health.job.discoverCacheWarm"
+msgstr ""
+
+#. English: Check the drop folder
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.dropFolder"
 msgstr ""
 
 #. English: Unload the idle text model
