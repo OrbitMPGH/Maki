@@ -287,7 +287,9 @@ public class ChapterDownloadProcessor(
                 .Where(l => l.ChapterId == chapter.Id && l.SourceMappingId == mapping.Id)
                 .Select(l => l.Group)
                 .FirstOrDefaultAsync(ct) ?? ChapterFileQualityService.SiteGroup(source);
-            var comicInfo = ComicInfoBuilder.Serialize(ComicInfoBuilder.Build(series, chapter, pageFiles.Count, group));
+            var userTags = await TagService.LabelsForSeriesAsync(db, series.Id, ct);
+            var comicInfo = ComicInfoBuilder.Serialize(
+                ComicInfoBuilder.Build(series, chapter, pageFiles.Count, group, userTags));
             var tmpDir = Path.Combine(rootFolder.Path, ".maki", "tmp");
             tmpCbz = Path.Combine(tmpDir, $"{item.Id}.cbz");
             CbzPackager.Package(pageFiles, comicInfo, tmpCbz);

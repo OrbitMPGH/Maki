@@ -72,6 +72,7 @@ public class CbzLinkService(
         var unlinkedVolumeFiles = new List<(ParsedReleaseFile Parsed, ChapterFile Record, string Path)>();
         var volumeFiles = new List<(int FileId, string AbsolutePath, ParsedReleaseFile Parsed)>();
         var processed = new List<ChapterFromFilesService.FileOnDisk>();
+        var userTags = updateComicInfo ? await TagService.LabelsForSeriesAsync(db, series.Id, ct) : [];
 
         foreach (var file in ordered)
         {
@@ -139,7 +140,7 @@ public class CbzLinkService(
             // seeding torrent, an import's zip) into a second full copy.
             if (updateComicInfo && !HardLinks.IsShared(file))
             {
-                StandardizeComicInfo(file, series, parsed, matched.Count == 1 ? matched[0] : null, chapterFile);
+                StandardizeComicInfo(file, series, parsed, matched.Count == 1 ? matched[0] : null, chapterFile, userTags);
             }
         }
 
@@ -485,6 +486,7 @@ public class CbzLinkService(
         var chapters = await db.Chapters
             .Where(c => c.SeriesId == series.Id && c.ChapterFileId != null)
             .ToListAsync(ct);
+        var userTags = await TagService.LabelsForSeriesAsync(db, series.Id, ct);
 
         var updated = 0;
         foreach (var chapterFile in files)
@@ -501,7 +503,7 @@ public class CbzLinkService(
 
             var parsed = ReleaseNameParser.ParseFileName(chapterFile.RelativePath);
             var linked = chapters.Where(c => c.ChapterFileId == chapterFile.Id).ToList();
-            if (StandardizeComicInfo(path, series, parsed, linked.Count == 1 ? linked[0] : null, chapterFile))
+            if (StandardizeComicInfo(path, series, parsed, linked.Count == 1 ? linked[0] : null, chapterFile, userTags))
             {
                 updated++;
             }
@@ -679,11 +681,12 @@ public class CbzLinkService(
     /// file stays linked either way.
     /// </summary>
     private bool StandardizeComicInfo(
-        string file, Series series, ParsedReleaseFile parsed, Chapter? chapter, ChapterFile chapterFile)
+        string file, Series series, ParsedReleaseFile parsed, Chapter? chapter, ChapterFile chapterFile,
+        IReadOnlyList<string> userTags)
     {
         try
         {
-            if (ComicInfoUpdater.UpdateFile(file, series, parsed, chapter, chapterFile.Group))
+            if (ComicInfoUpdater.UpdateFile(file, series, parsed, chapter, chapterFile.Group, userTags))
             {
                 chapterFile.Size = new FileInfo(file).Length; // rewrite changed the archive size
                 // Belt and braces: the new size already invalidates the cache entry, but a
