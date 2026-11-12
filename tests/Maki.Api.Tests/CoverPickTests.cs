@@ -96,16 +96,16 @@ public class CoverPickTests : IDisposable
         Assert.IsType<OkObjectResult>(result);
     }
 
-    public static TheoryData<string, byte[]> NotUsable => new()
-    {
-        { "html", "<html><script>alert(1)</script></html>"u8.ToArray() },
-        { "too large", new byte[MediaCoverController.CoverUploadLimit + 1] },
-    };
-
+    // The body is built inside the test: xUnit serializes theory data at discovery, and a 10 MB array
+    // there ran the CI runner out of memory.
     [Theory]
-    [MemberData(nameof(NotUsable))]
-    public async Task A_url_answer_that_is_not_a_usable_image_is_refused(string what, byte[] body)
+    [InlineData("html")]
+    [InlineData("too large")]
+    public async Task A_url_answer_that_is_not_a_usable_image_is_refused(string what)
     {
+        var body = what == "html"
+            ? "<html><script>alert(1)</script></html>"u8.ToArray()
+            : new byte[MediaCoverController.CoverUploadLimit + 1];
         var id = _db.SeedSeries("Berserk");
         var web = new Web { ["https://img.example.com/poster.png"] = Ok(body) };
         await using var db = _db.NewContext();
