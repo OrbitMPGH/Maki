@@ -112,6 +112,35 @@ export const RatingAboveTheEditorsLimit: Story = {
   },
 }
 
+export const CoverFromAChapterPage: Story = {
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = await dialogOf(canvasElement)
+    await userEvent.click(await within(dialog).findByLabelText('Chapter'))
+    const options = await within(canvasElement.ownerDocument.body).findAllByRole('option')
+    await userEvent.click(options[0])
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: /use this page/i })).toBeEnabled())
+    await userEvent.click(within(dialog).getByRole('button', { name: /use this page/i }))
+  },
+}
+
+export const CoverFromAUrlIsAdminOnly: Story = {
+  parameters: { auth: 'reader' },
+  play: async ({ canvasElement }) => {
+    const dialog = await dialogOf(canvasElement)
+    await within(dialog).findByText('Source cover')
+    expect(within(dialog).queryByText('Image URL')).toBeNull()
+  },
+}
+
+export const CoverFromAUrl: Story = {
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = await dialogOf(canvasElement)
+    await userEvent.click(await within(dialog).findByText('Image URL'))
+    await userEvent.type(await within(dialog).findByRole('textbox', { name: /image url/i }), 'https://example.com/poster.jpg')
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Fetch' })).toBeEnabled())
+  },
+}
+
 export const Closed: Story = {
   args: { opened: false },
 }

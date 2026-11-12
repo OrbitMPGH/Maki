@@ -80,6 +80,34 @@ export function useResetSeriesMetadata() {
   })
 }
 
+type CoverResult = { coverUrl: string | null; lockedFields: MetadataField[] }
+
+/** Pages in a downloaded chapter of this series, for picking one as the poster. */
+export function useCoverChapterPages(seriesId: number, chapterId: number | null) {
+  return useQuery({
+    queryKey: ['series', seriesId, 'cover-pages', chapterId],
+    queryFn: () => api<{ pageCount: number }>(`/mediacover/${seriesId}/cover/chapter/${chapterId}/pages`),
+    enabled: chapterId != null,
+  })
+}
+
+export type CoverPick =
+  | { from: 'page'; chapterId: number; page: number }
+  | { from: 'source'; mappingId: number }
+  | { from: 'url'; url: string }
+
+/** Sets the poster from a chapter page (0-based), a linked source's cover, or a URL (admins only). Locks it like an upload. */
+export function usePickSeriesCover() {
+  const invalidate = useInvalidateSeries()
+  return useMutation({
+    mutationFn: ({ seriesId, pick }: { seriesId: number; pick: CoverPick }) => {
+      const { from, ...body } = pick
+      return api<CoverResult>(`/mediacover/${seriesId}/cover/from-${from}`, { method: 'POST', body: JSON.stringify(body) })
+    },
+    onSuccess: (_data, { seriesId }) => invalidate(seriesId),
+  })
+}
+
 export function useUploadSeriesCover() {
   const invalidate = useInvalidateSeries()
   return useMutation({

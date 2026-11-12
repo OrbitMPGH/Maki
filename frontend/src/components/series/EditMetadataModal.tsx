@@ -32,6 +32,7 @@ import { seriesStatusVisual } from '../ui/status'
 import { useLabel } from '../../i18n-context'
 import { GENRE_LABELS } from '../CatalogueFilters'
 import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
+import { CoverPicker } from './CoverPicker'
 
 const STATUSES = ['Unknown', 'Ongoing', 'Completed', 'Hiatus', 'Cancelled']
 const GENRE_SUGGESTIONS = Object.keys(GENRE_LABELS)
@@ -280,6 +281,7 @@ export function EditMetadataModal({
             <Text size="xs" c="var(--ink-4)">
               <Trans>JPEG, PNG, GIF or WebP, up to 10 MB.</Trans>
             </Text>
+            <CoverPicker seriesId={series.id} />
           </Stack>
         </Group>
 
