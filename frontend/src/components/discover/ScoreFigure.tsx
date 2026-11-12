@@ -20,10 +20,9 @@ export function scoreWord(score: number): MessageDescriptor | null {
 }
 
 /**
- * MangaBaka's 0-100 aggregate as a score out of ten with its word, where it stands among popular
- * series of its type, and that group's spread from 5 to 10 with this series marked in gold. Scores
- * cluster tightly, so the standing is what tells an 8.0 from a 7.4; the plain ring this replaced
- * looked three-quarters full on nearly every series.
+ * MangaBaka's 0-100 aggregate as one line: the score out of ten and its word in gold, then where it
+ * stands among popular series of its type. Scores cluster tightly, so the standing is what tells an
+ * 8.0 from a 7.4.
  */
 export function ScoreFigure({ score, standing }: { score: number; standing: ScoreStanding | null | undefined }) {
   const { t, i18n } = useLingui()
@@ -47,29 +46,19 @@ export function ScoreFigure({ score, standing }: { score: number; standing: Scor
     : t`MangaBaka score, ${value} out of 10.`
 
   return (
-    <div className="score-figure">
-      <Tooltip label={tooltip} withArrow multiline w={280} zIndex={1001}>
-        <div className="score-figure-text" tabIndex={0}>
-          <span className="score-figure-head">
-            <span className="score-figure-n figure">
-              <IconStarFilled size={16} aria-hidden />
-              <span>
-                {value}
-                <small className="hero-stat-unit" aria-hidden>
-                  /10
-                </small>
-              </span>
-              <VisuallyHidden>
-                <Trans>out of 10</Trans>
-              </VisuallyHidden>
-            </span>
-            {word && <span className="score-figure-word">{renderLabel(word)}</span>}
-          </span>
-          {standing && <span className="hero-stat-l">{t(standingMessage(standing.group, top, pct))}</span>}
-        </div>
-      </Tooltip>
-      {standing && <ScoreDistribution score={score} histogram={standing.histogram} />}
-    </div>
+    <Tooltip label={tooltip} withArrow multiline w={280} zIndex={1001}>
+      <div className="score-figure" tabIndex={0}>
+        <span className="score-figure-n">
+          <IconStarFilled size={18} aria-hidden />
+          {value}
+          <VisuallyHidden>
+            <Trans>out of 10</Trans>
+          </VisuallyHidden>
+        </span>
+        {word && <span className="score-figure-word">{renderLabel(word)}</span>}
+        {standing && <span className="score-figure-standing">{t(standingMessage(standing.group, top, pct))}</span>}
+      </div>
+    </Tooltip>
   )
 }
 
@@ -92,30 +81,4 @@ function standingMessage(group: string, top: boolean, pct: string): MessageDescr
     default:
       return top ? msg`Top ${pct} of popular series` : msg`Bottom ${pct} of popular series`
   }
-}
-
-/**
- * The comparison group's scores in half-point bins from 5 to 10, bar heights true to the counts so
- * the cluster reads as a cluster. The series is a full-height gold line with a caret under the axis,
- * so its place does not rest on colour alone. The text beside it carries everything a screen reader
- * needs, so the chart itself is hidden from one.
- */
-function ScoreDistribution({ score, histogram }: { score: number; histogram: number[] }) {
-  const peak = Math.max(1, ...histogram)
-  const at = Math.min(1, Math.max(0, (score - 50) / 50)) * 100
-  return (
-    <div className="score-dist" aria-hidden>
-      <div className="score-dist-bars">
-        {histogram.map((count, i) => (
-          <span key={i} className="score-dist-bar" style={{ height: `${(count / peak) * 100}%` }} />
-        ))}
-        <span className="score-dist-marker" style={{ left: `${at}%` }} />
-      </div>
-      <div className="score-dist-axis">
-        <span>5</span>
-        <span className="score-dist-caret" style={{ left: `${at}%` }} />
-        <span>10</span>
-      </div>
-    </div>
-  )
 }

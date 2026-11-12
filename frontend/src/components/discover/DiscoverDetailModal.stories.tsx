@@ -176,7 +176,6 @@ export const ScoreWithStanding: Story = {
     const dialog = await dialogOf(canvasElement)
     await expect(await within(dialog).findByText('Top 1% of popular manhwa')).toBeVisible()
     await expect(dialog.querySelector('.score-figure-word')).toHaveTextContent('Exceptional')
-    await expect(dialog.querySelector('.score-dist-marker')).toBeInTheDocument()
   },
 }
 
@@ -190,7 +189,7 @@ export const ScoreBelowTheWords: Story = {
   },
 }
 
-/** No standing (an unrated group, an old server): the score and its word, no line and no chart. */
+/** No standing (an unrated group, an old server): the score and its word, no standing line. */
 export const ScoreWithoutStanding: Story = {
   parameters: { msw: withScore(81, 'manga', null) },
   play: async ({ canvasElement }) => {
@@ -198,7 +197,6 @@ export const ScoreWithoutStanding: Story = {
     await expect(await within(dialog).findByText('Synopsis')).toBeVisible()
     await expect(dialog.querySelector('.score-figure-word')).toHaveTextContent('Great')
     await expect(within(dialog).queryByText(/of popular/)).toBeNull()
-    await expect(dialog.querySelector('.score-dist')).toBeNull()
   },
 }
 
@@ -275,6 +273,15 @@ export const WithRerollDice: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await dialogOf(canvasElement)
     await expect(await within(dialog).findByRole('button', { name: 'Roll again' })).toBeVisible()
+  },
+}
+
+/** Opened from a recommendation: the card's reason carries over as the header's kicker. */
+export const FromARecommendation: Story = {
+  args: { item: { ...catalogueItem(0), becauseOfTitle: 'Iron Petal Academy' } },
+  play: async ({ canvasElement }) => {
+    const dialog = await dialogOf(canvasElement)
+    await expect(await within(dialog).findByText('Feels like Iron Petal Academy')).toBeVisible()
   },
 }
 

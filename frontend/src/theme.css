@@ -688,8 +688,7 @@ body {
       .mantine-Menu-dropdown,
       .mantine-Popover-dropdown,
       .mantine-Modal-content,
-      .mantine-Drawer-content,
-      .series-hero-panel
+      .mantine-Drawer-content
     )
   ) {
   background-color: var(--surface);
@@ -3638,87 +3637,33 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-weight: var(--fw-semibold);
   letter-spacing: 0;
 }
-/* The score, its word and where it stands, beside the spread of the series it is compared with.
-   A score is not a state: the star and the marker carry the gold, the word stays ink. */
+/* The score and its word in gold, then where it stands in quiet ink: one line, read left to right. */
 .score-figure {
-  display: flex;
-  align-items: flex-end;
-  gap: 16px;
-}
-.score-figure-text {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  border-radius: var(--radius-control);
-}
-.score-figure-head {
-  display: flex;
+  display: inline-flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 8px;
-  line-height: 1;
+  gap: 4px 10px;
+  border-radius: var(--radius-control);
 }
 .score-figure-n {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--ink-hi);
-  font-size: var(--type-figure);
-  font-weight: var(--fw-bold);
-}
-.score-figure-n svg {
+  align-self: center;
   color: var(--rating);
-}
-.score-figure-word {
-  color: var(--ink-hi);
-  font-size: var(--type-subhead);
-  font-weight: var(--fw-strong);
-}
-/* A chart reads low to high left to right in every language. */
-.score-dist {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  gap: 3px;
-  width: 108px;
-  direction: ltr;
-}
-.score-dist-bars {
-  position: relative;
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 28px;
-  border-bottom: 1px solid var(--border-strong);
-}
-.score-dist-bar {
-  flex: 1;
-  border-radius: 2px 2px 0 0;
-  background: color-mix(in srgb, var(--ink-4) 62%, transparent);
-}
-.score-dist-marker {
-  position: absolute;
-  top: -3px;
-  bottom: 0;
-  width: 2px;
-  margin-left: -1px;
-  border-radius: 1px;
-  background: var(--rating);
-}
-.score-dist-axis {
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  color: var(--ink-4);
-  font-size: var(--type-micro);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: var(--fw-bold);
   line-height: 1;
 }
-.score-dist-caret {
-  position: absolute;
-  top: 0;
-  margin-left: -4px;
-  border-right: 4px solid transparent;
-  border-left: 4px solid transparent;
-  border-bottom: 5px solid var(--rating);
+.score-figure-word {
+  color: var(--rating);
+  font-size: var(--type-body);
+  font-weight: var(--fw-strong);
+}
+.score-figure-standing {
+  color: var(--ink-3);
+  font-size: var(--type-body);
 }
 /* A site and its score as one control: the logo, then the number, in a quiet chip. A rated site with
    no link (data-static) looks the same but is not a button. */
@@ -4316,8 +4261,7 @@ button.site-chip:hover {
   min-width: 0;
   padding: 13px;
 }
-.discover-hero-strip,
-.series-hero-panel {
+.discover-hero-strip {
   border-radius: var(--radius-hero);
   background: var(--surface-2);
   box-shadow: var(--shadow-object);
@@ -6215,11 +6159,6 @@ button.site-chip:hover {
     grid-column: 1;
     grid-row: 1;
   }
-  .series-hero:not([data-compact]) .series-hero-panel {
-    grid-column: 2;
-    grid-row: 1 / -1;
-    align-self: start;
-  }
   .series-hero:not([data-compact]) .series-hero-tabs {
     grid-column: 1;
     grid-row: 2;
@@ -6437,153 +6376,161 @@ button.site-chip:hover {
   font-weight: var(--fw-semibold);
 }
 
-/* --- The shelf ------------------------------------------------------------- */
-/* Status, figures and the next things to do or check, as one object in the add card's material:
-   the pills as its head, the figures as its body, sites or actions as its footer strip. It sits on
-   the poster's bottom edge, and a title too long for that makes the poster taller
-   (useHeroShelfFit) instead of pushing the shelf past it. */
-.series-hero-row[data-shelf] > .hero-column {
+/* --- The Continue header ---------------------------------------------------- */
+/* Both heroes in Home's Continue grammar: an accent kicker, the title, one meta line, then the
+   facts as a row of chips and, on the series page, two bars and the actions. Everything sits on
+   the poster's bottom line. */
+.hero-continue {
   display: flex;
   flex-direction: column;
 }
-/* A container only beside the poster: a container is its own formatting context, which would stop
-   the phone layout's text flowing under the floated poster. */
-@media (min-width: 48em) {
-  .series-hero-row[data-shelf] > .hero-column {
-    container: hero-column / inline-size;
-  }
+.hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  color: var(--brand-fg-on-art);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
 }
-.hero-shelf {
-  width: fit-content;
-  max-width: 100%;
-  margin-top: auto;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-hero);
-  overflow: hidden;
-  background: var(--surface-2);
-  box-shadow: var(--shadow-object);
+.hero-meta {
+  margin-top: 10px;
+  color: var(--ink-3);
+  font-size: var(--type-body, 0.9375rem);
 }
-.hero-shelf-head {
+.series-hero-alt + .hero-meta {
+  margin-top: 6px;
+}
+.hero-scoreline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+  margin-top: 16px;
+}
+.hero-chips {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding: 9px 12px;
-  border-bottom: 1px solid var(--hairline);
+  margin-top: 16px;
 }
-/* On the shelf's lighter ground the 15% tint leaves the status word under 4.5:1, so the pill takes
-   its tint over the app ground instead. Important: the tone arrives as an inline style. */
-:root:not([data-theme='light']) .hero-shelf-head .series-hero-status:not([data-quiet], [data-content-rating]) {
-  background: color-mix(in srgb, currentColor 12%, var(--app-bg)) !important;
+/* Accent is "you": the catch-up time is the reader's own pace. */
+.series-hero-status[data-you] {
+  color: var(--brand-fg-on-art);
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
 }
-/* The figures flow as one row of cells. `.hero-stats` steps aside so a wrap can move any figure to
-   the front of a line, where its hairline falls outside the shelf's clip. */
-.hero-shelf-main {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
+.hero-rating {
+  margin-inline-start: 6px;
 }
-.hero-shelf-main:empty {
-  display: none;
+.hero-bars {
+  display: grid;
+  gap: 9px;
+  width: min(480px, 100%);
+  margin-top: 18px;
 }
-.hero-shelf-main .hero-stats {
-  display: contents;
-}
-.hero-shelf-main > *,
-.hero-shelf-main .hero-stat {
-  flex: 1 0 auto;
-}
-.hero-shelf-main .hero-stat {
-  align-content: center;
-  padding: 10px 14px;
-  box-shadow: -1px 0 0 var(--hairline);
-}
-.hero-shelf-main .hero-stat-l {
-  white-space: nowrap;
-}
-.hero-shelf-main .score-figure {
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-}
-.hero-shelf-main .score-dist {
-  width: 64px;
-}
-.hero-shelf-foot {
+.hero-bar-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  padding: 5px 8px;
-  border-top: 1px solid var(--hairline);
-  background: color-mix(in srgb, var(--app-bg) 35%, var(--surface-2));
-}
-.hero-shelf-main:empty + .hero-shelf-foot {
-  border-top: 0;
-}
-/* The series page: your rating is the first cell, and the actions are the footer, a step smaller
-   than the page's buttons so the strip stays a strip. */
-.series-hero:not([data-compact]) {
-  --hero-poster-min: 336px;
-}
-.hero-rating-cell .mantine-Group-root {
-  min-height: 29px;
-}
-.hero-shelf-foot.series-hero-actions {
-  gap: 6px;
-  padding: 8px;
-}
-.hero-shelf-foot.series-hero-actions .mantine-Button-root {
-  --button-height: 2.125rem !important;
-  --button-padding-x: 14px !important;
+  gap: 6px 12px;
+  color: var(--ink-3);
   font-size: var(--type-meta);
 }
-.hero-shelf-foot.series-hero-actions .mantine-ActionIcon-root {
-  --ai-size: 2.125rem !important;
+.hero-bar-label {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  width: 80px;
+  color: var(--ink-2);
+  font-weight: var(--fw-semibold);
 }
-.hero-shelf-foot.series-hero-actions:empty {
-  display: none;
+.hero-bar {
+  flex: 1 1 120px;
+  height: 5px;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--ink-3) 30%, transparent);
 }
-/* A column too narrow for one row of figures gives the score a row of its own and shares the next
-   between the rest, rather than wrapping one figure at a time. */
-@container hero-column (max-width: 34rem) {
-  .hero-shelf {
-    width: 100%;
-  }
-  .hero-shelf-main .score-figure,
-  .hero-shelf-main .hero-rating-cell {
-    flex: 1 0 100%;
-    border-bottom: 1px solid var(--hairline);
-  }
-  .hero-shelf-main .hero-stat:not(.hero-rating-cell) {
-    flex: 1 1 0;
+.hero-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--ink-hi) 55%, transparent);
+}
+.hero-bar-fill[data-read] {
+  background: var(--brand);
+}
+.hero-bar-fill[data-complete] {
+  background: var(--ok);
+}
+.hero-bar-value {
+  flex: none;
+  color: var(--ink-hi);
+  font-weight: var(--fw-semibold);
+}
+.hero-bar-value small {
+  color: var(--ink-4);
+  font-size: inherit;
+  font-weight: var(--fw-medium);
+}
+.hero-bar-note {
+  flex: none;
+  color: var(--ink-4);
+}
+.hero-bar-subline {
+  padding-inline-start: 92px;
+  color: var(--ink-4);
+  font-size: var(--type-meta);
+}
+/* Amber is waiting: chapters wanted that have no file yet. */
+.hero-wanted {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-control);
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: var(--type-micro, 0.75rem);
+  font-weight: var(--fw-semibold);
+}
+.hero-bars .series-source-gap {
+  margin-top: 2px;
+}
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+/* Your reading takes the Progress panel's place on the band's right. */
+.series-hero-aside {
+  min-width: 0;
+  margin-top: var(--mantine-spacing-md);
+}
+@media (min-width: 68.8125em) {
+  .series-hero:not([data-compact]) .series-hero-aside {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    align-self: start;
+    margin-top: 0;
   }
 }
-@media (max-width: 47.9375em) {
-  .hero-shelf {
-    width: 100%;
-  }
-  .hero-shelf-main .score-figure,
-  .hero-shelf-main .hero-rating-cell {
-    flex: 1 0 100%;
-    border-bottom: 1px solid var(--hairline);
-  }
-  .hero-shelf-main .hero-stat:not(.hero-rating-cell) {
-    flex: 1 1 0;
-  }
+.series-reading-compact .series-reading-figures {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
-/* The poster follows the column when the column is the taller one, at 2:3, up to a ceiling: past
-   it a narrow modal would hand the title's width to the poster and wrap the title further. */
-@media (min-width: 48em) {
-  .series-hero .series-hero-row[data-shelf] > .series-hero-poster {
-    width: auto;
-    height: clamp(
-      var(--hero-poster-min, 264px),
-      var(--hero-content-h, 0px),
-      calc(var(--hero-poster-min, 264px) * 1.2)
-    );
-    aspect-ratio: 2 / 3;
-  }
+.series-reading-compact-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--hairline);
+  color: var(--ink-3);
+  font-size: var(--type-meta);
 }
 
 /* Mantine's modal content is not a positioned element, so the floating close button needs one:
@@ -7960,34 +7907,34 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-/* The Progress panel gets its own line before it starts squeezing the title and actions: beside
-   them under ~1100px it was a 150px column, and the title broke inside its words. Stacked, the two
-   meters sit side by side so the panel stays one short band rather than a tall card.
+/* Your reading gets its own line before it starts squeezing the title and actions: beside them
+   under ~1100px it was a 150px column, and the title broke inside its words.
    `:not([data-compact])` keeps this off the modal band, which has its own narrower collapse
    breakpoint below. */
 @media (max-width: 68.75em) {
   .series-hero:not([data-compact]) .series-hero-content {
     grid-template-columns: minmax(0, 1fr);
   }
-  .series-hero:not([data-compact]) .series-hero-panel {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
-    column-gap: var(--mantine-spacing-xl);
+  .series-hero:not([data-compact]) .series-hero-aside {
     margin-top: var(--mantine-spacing-lg);
   }
-  .series-hero:not([data-compact]) .series-hero-panel > :not(.series-progress-meter),
-  .series-hero-panel:not(:has(.series-progress-meter + .series-progress-meter)) > .series-progress-meter {
+  /* Stacked under the band, the panel lies on its side: figures, then the weeks beside them. */
+  .series-hero-aside .series-reading-compact {
+    display: grid;
+    grid-template-columns: minmax(14rem, auto) minmax(0, 1fr);
+    column-gap: var(--mantine-spacing-xl);
+  }
+  .series-hero-aside .series-reading-compact > :first-child,
+  .series-hero-aside .series-reading-compact-foot {
     grid-column: 1 / -1;
   }
-  .series-hero:not([data-compact]) .series-progress-meter .mantine-Divider-root {
-    display: none;
+  .series-hero-aside .series-reading-compact .series-reading-figures {
+    align-self: start;
+    border-bottom: 0;
   }
   .series-hero:not([data-compact]) .series-hero-poster {
     width: 176px;
     height: 264px;
-  }
-  .series-hero:not([data-compact]) {
-    --hero-poster-min: 264px;
   }
 }
 
@@ -8023,17 +7970,19 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   .series-hero:not([data-compact]) .series-hero-row {
     display: flow-root;
   }
-  .series-hero:not([data-compact]) .series-hero-row > .mantine-Stack-root {
+  .series-hero:not([data-compact]) .series-hero-row > .hero-column {
     display: block;
+  }
+  .series-hero-aside .series-reading-compact {
+    display: block;
+  }
+  .series-hero:not([data-compact]) .hero-chips {
+    clear: both;
   }
   /* A meta list is a flex box, which steps clear of the float and so loses the negative start
      margin that hides its leading hairline. Its wrapper steps clear instead, and the list keeps it. */
   .series-hero:not([data-compact]) .series-hero-row div:has(> .meta-list):not(.series-hero-alt) {
     display: flow-root;
-  }
-  .series-hero:not([data-compact]) .hero-shelf {
-    clear: both;
-    margin-top: 16px;
   }
   .series-hero:not([data-compact]) .series-hero-poster {
     display: block;

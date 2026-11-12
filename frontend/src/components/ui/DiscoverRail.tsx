@@ -453,6 +453,21 @@ function engineWhy(item: RecommendationItem): EngineWhy {
 }
 
 /**
+ * The card's reason, for the detail modal's kicker. Null where the card would only say "Similar
+ * feel", which is every pick off a catalogue or cohort rail: those carry no recommender fields.
+ */
+export function engineReason(item: RecommendationItem): Pick<EngineWhy, 'Glyph' | 'text'> | null {
+  const known =
+    (item.relationKind && item.relatedToTitle) ||
+    item.becauseOfTitle ||
+    item.authorMatch ||
+    item.coRead ||
+    item.coRecommended ||
+    item.tasteMatch
+  return known ? engineWhy(item) : null
+}
+
+/**
  * The reason every card in a rail shares, or null when any card differs. A rail seeded from one
  * title (or one where the crowd pairs every pick with the same series) would otherwise print the
  * same "Fans of X" under every poster.

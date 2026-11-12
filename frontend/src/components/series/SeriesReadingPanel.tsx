@@ -25,10 +25,14 @@ export interface ReadTimeEstimate {
 export function SeriesReadingPanel({
   stats,
   estimate,
+  compact = false,
 }: {
   stats: SeriesReadingStats
   estimate: ReadTimeEstimate | null
+  /** The series band's version: two figures and the bars, with the rest as one footer line. */
+  compact?: boolean
 }) {
+  if (compact) return <CompactReadingPanel stats={stats} estimate={estimate} />
   const figures: Figure[] = [
     {
       label: t`Time read`,
@@ -71,6 +75,29 @@ export function SeriesReadingPanel({
       </PanelTitle>
       <FigureStrip figures={figures} flush className="series-reading-figures" />
       {stats.timeline.length > 0 && <ReadingTimeline stats={stats} />}
+    </Panel>
+  )
+}
+
+function CompactReadingPanel({ stats, estimate }: { stats: SeriesReadingStats; estimate: ReadTimeEstimate | null }) {
+  const figures: Figure[] = [{ label: t`Time read`, value: formatTimeSpent(stats.seconds) }]
+  if (stats.chapterMedianSeconds != null) {
+    figures.push({ label: t`Per chapter`, value: formatReadingTime(stats.chapterMedianSeconds) })
+  }
+  const since = formatRecentDate(stats.firstReadAt)
+  const toFinish = estimate ? formatReadingTime(estimate.seconds) : null
+
+  return (
+    <Panel className="series-reading-compact">
+      <PanelTitle order={2} icon={IconClock}>
+        {t`Your reading`}
+      </PanelTitle>
+      <FigureStrip figures={figures} flush className="series-reading-figures" />
+      {stats.timeline.length > 0 && <ReadingTimeline stats={stats} />}
+      <div className="series-reading-compact-foot tnum">
+        <span>{t`Reading since ${since}`}</span>
+        {toFinish && <span>{t`About ${toFinish} to finish`}</span>}
+      </div>
     </Panel>
   )
 }

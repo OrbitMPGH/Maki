@@ -2083,6 +2083,11 @@ function SeriesDetailBody() {
             onFinalize={keepRating}
             readUpTo={highestReadChapter}
             nextChapter={nextChapter}
+            aside={
+              readingStats ? (
+                <SeriesReadingPanel compact stats={readingStats} estimate={series.readTimeEstimate ?? null} />
+              ) : null
+            }
             actions={
               <>
                 {continueAt && (
@@ -2702,9 +2707,6 @@ function SeriesDetailBody() {
                     )}
                   </Text>
                 </Panel>
-                {readingStats && (
-                    <SeriesReadingPanel stats={readingStats} estimate={series.readTimeEstimate ?? null} />
-                )}
                 <Panel className="series-detail-metadata-panel series-machine">
                   <Group justify="space-between" align="baseline" mb="sm" wrap="nowrap">
                     <PanelTitle order={2} icon={IconDatabase}>
