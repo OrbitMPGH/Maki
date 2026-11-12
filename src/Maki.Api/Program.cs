@@ -1035,6 +1035,7 @@ try
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<TagService>();
     builder.Services.AddScoped<AutoTagRuleService>();
+    builder.Services.AddScoped<RootFolderRoutingService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
     builder.Services.AddSingleton<SeriesBulkOperations>();

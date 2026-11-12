@@ -1500,6 +1500,14 @@ msgstr "Maki can't read this folder: {path}"
 msgid "error.rootFolder.pathRequired"
 msgstr "Path is required"
 
+#: src/Maki.Api/Controllers/RootFolderRulesController.cs
+msgid "error.rootFolderRules.invalidConditions"
+msgstr "A rule needs at least one condition in every group, at most 10 groups and 20 conditions, each with a known field and a valid value"
+
+#: src/Maki.Api/Controllers/RootFolderRulesController.cs
+msgid "error.rootFolderRules.unknownRootFolder"
+msgstr "That root folder no longer exists"
+
 #: src/Maki.Api/Controllers/ScrobbleController.cs
 msgid "error.scrobble.aniListNotConfigured"
 msgstr "Set the AniList client id/secret in Settings first"

@@ -2142,6 +2142,16 @@ msgstr "Maki ne peut pas lire ce dossier : {path}"
 msgid "error.rootFolder.pathRequired"
 msgstr "Le chemin est requis"
 
+#. English: A rule needs at least one condition in every group, at most 10 groups and 20 conditions, each with a known field and a valid value
+#: src/Maki.Api/Controllers/RootFolderRulesController.cs
+msgid "error.rootFolderRules.invalidConditions"
+msgstr ""
+
+#. English: That root folder no longer exists
+#: src/Maki.Api/Controllers/RootFolderRulesController.cs
+msgid "error.rootFolderRules.unknownRootFolder"
+msgstr ""
+
 #. English: Set the AniList client id/secret in Settings first
 #: src/Maki.Api/Controllers/ScrobbleController.cs
 #, fuzzy
@@ -3655,11 +3665,21 @@ msgstr "Identifiant de série"
 msgid "naming.token.anilistid.description"
 msgstr "Identifiant AniList ; vide si aucune correspondance"
 
+#. English: Release date as 2024-05-17; blank when the source gives none
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.chapterreleasedate.description"
+msgstr ""
+
 #. English: Scanlation group, e.g. Group Name. Blank when the file has none
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
 msgid "naming.token.chaptergroup.description"
 msgstr "Groupe de scanlation, par exemple Group Name. Vide lorsque le fichier n'en a pas"
+
+#. English: The source the file was downloaded from, e.g. MangaDex. Blank for an imported file
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.chaptersource.description"
+msgstr ""
 
 #. English: BCP-47 language tag, e.g. en
 #: src/Maki.Core/Naming/NamingTokens.cs
@@ -3709,6 +3729,11 @@ msgstr "Identifiant Kitsu ; vide si aucune correspondance"
 msgid "naming.token.malid.description"
 msgstr "Identifiant MyAnimeList ; vide si aucune correspondance"
 
+#. English: Official, Scanlator, Aggregator or Volume; blank when unknown
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.qualitytier.description"
+msgstr ""
+
 #. English: MangaBaka id; blank when unmatched
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
@@ -3727,6 +3752,11 @@ msgstr "UUID MangaDex ; vide si aucune correspondance"
 msgid "naming.token.mangaupdatesid.description"
 msgstr "Identifiant MangaUpdates ; vide si aucune correspondance"
 
+#. English: The story author, or the artist when no author is known. Several are joined with a comma
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriesauthor.description"
+msgstr ""
+
 #. English: Title with punctuation removed: letters, digits and spaces only
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
@@ -3739,11 +3769,21 @@ msgstr "Titre sans ponctuation : uniquement des lettres, chiffres et espaces"
 msgid "naming.token.seriesoriginaltitle.description"
 msgstr "Titre dans la langue d'origine ; vide si le fournisseur n'en indique aucun"
 
+#. English: The original publisher, the first one listed; blank when unknown
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriespublisher.description"
+msgstr ""
+
 #. English: The sort title, e.g. leading article moved to the end
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
 msgid "naming.token.seriessorttitle.description"
 msgstr "Titre de tri, par exemple avec l'article initial déplacé à la fin"
+
+#. English: Ongoing, Completed, Hiatus or Cancelled; blank when unknown
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriesstatus.description"
+msgstr ""
 
 #. English: The series title as Maki has it
 #: src/Maki.Core/Naming/NamingTokens.cs

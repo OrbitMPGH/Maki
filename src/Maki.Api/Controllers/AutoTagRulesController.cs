@@ -102,19 +102,21 @@ public class AutoTagRulesController(ILocalizer localizer, MakiDbContext db, Auto
             return this.Fail(localizer, "error.tags.unknownTagIds");
         }
 
-        var conditions = AutoTagRules.Normalize(request.Conditions?.Select(c => new AutoTagCondition(c.Field, c.Value)));
-        if (conditions is null)
+        var groups = ConditionGroups.Normalize(RuleConditionDtos.Groups(request.Groups, request.Conditions), AutoTagFields.All);
+        if (groups is null)
         {
             return this.Fail(localizer, "error.autoTagRules.invalidConditions");
         }
 
         rule.TagId = request.TagId;
         rule.Enabled = request.Enabled;
-        rule.ConditionsJson = AutoTagRules.Serialize(conditions);
+        rule.ConditionsJson = ConditionGroups.Serialize(groups);
         return null;
     }
 
-    private static AutoTagRuleDto ToDto(AutoTagRule rule) => new(
-        rule.Id, rule.TagId, rule.Enabled,
-        AutoTagRules.Parse(rule.ConditionsJson).Select(c => new AutoTagConditionDto(c.Field, c.Value)).ToList());
+    private static AutoTagRuleDto ToDto(AutoTagRule rule)
+    {
+        var groups = RuleConditionDtos.From(ConditionGroups.Parse(rule.ConditionsJson));
+        return new AutoTagRuleDto(rule.Id, rule.TagId, rule.Enabled, groups.FirstOrDefault() ?? [], groups);
+    }
 }

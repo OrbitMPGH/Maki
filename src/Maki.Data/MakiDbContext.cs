@@ -88,6 +88,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<SeriesTag> SeriesTags => Set<SeriesTag>();
     public DbSet<AutoTagRule> AutoTagRules => Set<AutoTagRule>();
+    public DbSet<RootFolderRule> RootFolderRules => Set<RootFolderRule>();
     public DbSet<SavedFilter> SavedFilters => Set<SavedFilter>();
     public DbSet<SeriesRequest> SeriesRequests => Set<SeriesRequest>();
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
@@ -489,6 +490,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         modelBuilder.Entity<AutoTagRule>(e =>
         {
             e.HasOne(r => r.Tag).WithMany().HasForeignKey(r => r.TagId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<RootFolderRule>(e =>
+        {
+            e.HasOne(r => r.RootFolder).WithMany().HasForeignKey(r => r.RootFolderId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Series>(e =>

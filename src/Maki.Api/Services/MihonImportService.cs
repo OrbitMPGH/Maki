@@ -59,9 +59,10 @@ public record MihonImportItem(
     string ProviderId, List<string>? Categories, List<decimal>? ReadNumbers, decimal? TrackerLastRead);
 
 /// <param name="MonitorNewItems">A <c>NewChapterMonitorMode</c> name, or null for the default mode, as on the add form.</param>
+/// <param name="RootFolderId">Null lets the root folder rules pick per series.</param>
 public record MihonImportRequest(
     string RunId,
-    int RootFolderId,
+    int? RootFolderId,
     bool Monitored,
     string? MonitorNewItems,
     bool ApplyTags,
@@ -315,7 +316,8 @@ public class MihonImportService(
                 matchLane: SourceMatchLane.Background,
                 attributedUserId: currentUser.UserId,
                 addedFrom: AddedFrom,
-                clientMutationId: MutationId(currentUser.UserId, request.RunId, item.ProviderId));
+                clientMutationId: MutationId(currentUser.UserId, request.RunId, item.ProviderId),
+                usableRootFolderIds: currentUser.AllRootFolders ? null : currentUser.RootFolderIds);
 
             if (result.Series is { } created)
             {
