@@ -281,8 +281,8 @@ public class MediaCoverController(
             case CoverFetcher.Outcome.TooLarge:
                 return this.Fail(localizer, "error.metadata.coverTooLarge", new { megabytes = CoverUploadLimit / (1024 * 1024) });
             case CoverFetcher.Outcome.Refused or CoverFetcher.Outcome.Failed:
-                return this.Fail(localizer, "error.customRepository.fetchFailed",
-                    new { url = target.GetLeftPart(UriPartial.Path), reason = result.Reason });
+                return this.Fail(localizer, "error.metadata.coverFetchFailed",
+                    new { url = target.GetLeftPart(UriPartial.Path), reason = result.Reason, status = result.Status ?? 0 });
         }
 
         if (!IsAcceptableImage(result.Bytes!))

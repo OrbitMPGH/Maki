@@ -24,8 +24,8 @@ public class CoverFetcher(IHttpClientFactory httpClientFactory, ILogger<CoverFet
         TooLarge,
     }
 
-    /// <param name="Reason">For a failure: what went wrong, in plain English for the log and the error text.</param>
-    public readonly record struct Result(Outcome Outcome, byte[]? Bytes = null, string? Reason = null);
+    /// <param name="Reason">For a failure, a code the error text selects on: refused, timeout, unreachable, status or redirects.</param>
+    public readonly record struct Result(Outcome Outcome, byte[]? Bytes = null, string? Reason = null, int? Status = null);
 
     public static bool IsWebAddress(Uri uri) =>
         uri.IsAbsoluteUri && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
@@ -42,7 +42,7 @@ public class CoverFetcher(IHttpClientFactory httpClientFactory, ILogger<CoverFet
             if (!IsWebAddress(current) || !allowHop(current))
             {
                 logger.LogWarning("Refused a cover fetch from {Host}", current.Host);
-                return new Result(Outcome.Refused, Reason: "not an address Maki may fetch");
+                return new Result(Outcome.Refused, Reason: "refused");
             }
 
             using var request = new HttpRequestMessage(HttpMethod.Get, current);
@@ -61,14 +61,14 @@ public class CoverFetcher(IHttpClientFactory httpClientFactory, ILogger<CoverFet
             catch (Exception ex) when (IsBlocked(ex))
             {
                 logger.LogWarning("Refused a cover fetch from {Host}: not a public address", current.Host);
-                return new Result(Outcome.Refused, Reason: "not a public address");
+                return new Result(Outcome.Refused, Reason: "refused");
             }
             catch (Exception ex) when (ex is HttpRequestException ||
                                        (ex is OperationCanceledException && !ct.IsCancellationRequested))
             {
                 logger.LogInformation(ex, "Cover fetch from {Host} failed", current.Host);
                 return new Result(Outcome.Failed,
-                    Reason: ex is OperationCanceledException ? "timed out" : "the connection failed");
+                    Reason: ex is OperationCanceledException ? "timeout" : "unreachable");
             }
 
             using var _ = response;
@@ -81,7 +81,7 @@ public class CoverFetcher(IHttpClientFactory httpClientFactory, ILogger<CoverFet
 
             if (!response.IsSuccessStatusCode)
             {
-                return new Result(Outcome.Failed, Reason: $"HTTP {(int)response.StatusCode}");
+                return new Result(Outcome.Failed, Reason: "status", Status: (int)response.StatusCode);
             }
 
             try
@@ -94,11 +94,11 @@ public class CoverFetcher(IHttpClientFactory httpClientFactory, ILogger<CoverFet
             {
                 logger.LogInformation(ex, "Reading the cover from {Host} failed", current.Host);
                 return new Result(Outcome.Failed,
-                    Reason: ex is OperationCanceledException ? "timed out" : "the connection failed");
+                    Reason: ex is OperationCanceledException ? "timeout" : "unreachable");
             }
         }
 
-        return new Result(Outcome.Failed, Reason: "too many redirects");
+        return new Result(Outcome.Failed, Reason: "redirects");
     }
 
     private static bool IsBlocked(Exception? ex)

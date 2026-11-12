@@ -149,7 +149,7 @@ public class SeriesMetadataController(
 
         if (Validate(request, fields) is { } error)
         {
-            return this.Fail(localizer, error, new { max = MaxCount, ratings = string.Join(", ", ContentRating.All) });
+            return this.Fail(localizer, error, new { max = MaxCount, minYear = MinYear, maxYear = MaxYear, ratings = string.Join(", ", ContentRating.All) });
         }
 
         if (Has(fields, SeriesMetadataField.ContentRating) && !MayRate(series.ContentRating, request.ContentRating))
@@ -335,7 +335,7 @@ public class SeriesMetadataController(
 
         if (Has(fields, SeriesMetadataField.Year) && request.Year is < MinYear or > MaxYear)
         {
-            return "error.metadata.tooLong";
+            return "error.metadata.invalidYear";
         }
 
         if ((Has(fields, SeriesMetadataField.AuthorStory) && request.AuthorStory?.Trim().Length > MaxTitleLength) ||
@@ -372,7 +372,7 @@ public class SeriesMetadataController(
         if (Has(fields, SeriesMetadataField.Type) && !string.IsNullOrWhiteSpace(request.Type) &&
             SeriesTypes.Normalize(request.Type) is null)
         {
-            return "error.metadata.unknownField";
+            return "error.metadata.unknownType";
         }
 
         if (Has(fields, SeriesMetadataField.ContentRating) && CleanRating(request.ContentRating) is { } rating &&
