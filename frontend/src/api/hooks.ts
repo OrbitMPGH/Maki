@@ -3155,6 +3155,37 @@ export function useSaveFilter() {
   })
 }
 
+export function useSetDefaultSavedFilter() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, isDefault }: { id: number; isDefault: boolean }) =>
+      api<SavedFilterDto>(`/library/filters/${id}/default`, {
+        method: 'PUT',
+        body: JSON.stringify({ isDefault }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['library-filters'] })
+    },
+  })
+}
+
+export function useReorderSavedFilters() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (ids: number[]) =>
+      api<SavedFilterDto[]>('/library/filters/order', { method: 'PUT', body: JSON.stringify({ ids }) }),
+    onMutate: async (ids) => {
+      await queryClient.cancelQueries({ queryKey: ['library-filters'] })
+      queryClient.setQueryData<SavedFilterDto[]>(['library-filters'], (current) =>
+        current ? ids.map((id) => current.find((f) => f.id === id)).filter((f) => f != null) : current,
+      )
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['library-filters'] })
+    },
+  })
+}
+
 export function useDeleteSavedFilter() {
   const queryClient = useQueryClient()
   return useMutation({

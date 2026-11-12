@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent as userEventApi, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
-import { archivedLibraryHandlers, libraryHandlers, seedLibraryPrefs } from '../../.storybook/mocks/library'
+import { archivedLibraryHandlers, libraryHandlers, savedFilters, seedLibraryPrefs } from '../../.storybook/mocks/library'
 import { getConnectivity, onConnectivityChange, setConnectivity } from '../lib/connectivity'
 import LibraryPage from './LibraryPage'
 
@@ -303,6 +303,9 @@ export const SavedFilterChips: Story = {
 }
 
 const onSaveFilter = fn()
+const onDefaultFilter = fn()
+const onReorderFilters = fn()
+const onRenameFilter = fn()
 
 export const SaveFilterDialog: Story = {
   beforeEach: () => seedLibraryPrefs({ page: { status: 'Hiatus' } }),
@@ -311,7 +314,7 @@ export const SaveFilterDialog: Story = {
       http.post(api('/library/filters'), async ({ request }) => {
         const payload = (await request.json()) as { name: string }
         onSaveFilter(payload)
-        return HttpResponse.json({ id: 99, name: payload.name, spec: {}, sortOrder: 3 })
+        return HttpResponse.json({ id: 99, name: payload.name, spec: {}, sortOrder: 3, isDefault: false })
       }),
       ...libraryHandlers,
     ],
@@ -327,10 +330,83 @@ export const SaveFilterDialog: Story = {
 
 export const DeleteSavedFilter: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    const buttons = await canvas.findAllByRole('button', { name: 'Delete saved filter' })
-    await userEvent.click(buttons[0])
+    await userEvent.click(await canvas.findByRole('button', { name: 'Options for Ongoing and behind' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Delete' }))
     await expect(await body(canvasElement).findByText(/Deleted saved filter Ongoing and behind/)).toBeVisible()
     await expect(await body(canvasElement).findByRole('button', { name: 'Undo' })).toBeVisible()
+  },
+}
+
+export const RenameSavedFilter: Story = {
+  parameters: {
+    msw: [
+      http.put(api('/library/filters/:id'), async ({ params, request }) => {
+        const payload = (await request.json()) as { name: string; spec: object }
+        onRenameFilter({ id: Number(params.id), name: payload.name })
+        return HttpResponse.json({ id: Number(params.id), name: payload.name, spec: payload.spec, sortOrder: 0, isDefault: false })
+      }),
+      ...libraryHandlers,
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Options for Favourites' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Rename' }))
+    const dialog = await body(canvasElement).findByRole('dialog', { name: 'Rename saved filter' })
+    const input = await within(dialog).findByLabelText('Name')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'Keepers')
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(onRenameFilter).toHaveBeenCalledWith({ id: 2, name: 'Keepers' }))
+  },
+}
+
+export const SavedFilterAsDefault: Story = {
+  parameters: {
+    msw: [
+      http.put(api('/library/filters/:id/default'), async ({ params, request }) => {
+        const payload = (await request.json()) as { isDefault: boolean }
+        onDefaultFilter({ id: Number(params.id), isDefault: payload.isDefault })
+        return HttpResponse.json({ ...savedFilters[1], isDefault: payload.isDefault })
+      }),
+      ...libraryHandlers,
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Options for Favourites' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Open the Library with this' }))
+    await waitFor(() => expect(onDefaultFilter).toHaveBeenCalledWith({ id: 2, isDefault: true }))
+  },
+}
+
+export const DefaultSavedFilterApplies: Story = {
+  parameters: {
+    msw: [
+      http.get(api('/library/filters'), () =>
+        HttpResponse.json(savedFilters.map((f) => ({ ...f, isDefault: f.id === 1 }))),
+      ),
+      ...libraryHandlers,
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('5 of 14')).toBeVisible()
+  },
+}
+
+export const ReorderSavedFilters: Story = {
+  parameters: {
+    msw: [
+      http.put(api('/library/filters/order'), async ({ request }) => {
+        const payload = (await request.json()) as { ids: number[] }
+        onReorderFilters(payload.ids)
+        return HttpResponse.json(savedFilters)
+      }),
+      ...libraryHandlers,
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Options for Favourites' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Move earlier' }))
+    await waitFor(() => expect(onReorderFilters).toHaveBeenCalledWith([2, 1, 3]))
   },
 }
 

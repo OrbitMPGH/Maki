@@ -88,6 +88,62 @@ public class LibraryFiltersController(
         return Ok(ToDto(filter));
     }
 
+    /// <summary>
+    /// Makes one preset the view the Library opens with, or clears it. Setting one clears the
+    /// caller's previous default, so there is never more than one.
+    /// </summary>
+    [HttpPut("{id:int}/default")]
+    public async Task<IActionResult> SetDefault(int id, [FromBody] SetDefaultFilterRequest request, CancellationToken ct)
+    {
+        var owned = await db.SavedFilters
+            .Where(f => f.Scope == SavedFilter.LibraryScope)
+            .ToListAsync(ct);
+        var filter = owned.FirstOrDefault(f => f.Id == id);
+        if (filter is null)
+        {
+            return NotFound();
+        }
+
+        foreach (var other in owned)
+        {
+            other.IsDefault = request.IsDefault && other.Id == id;
+        }
+
+        await db.SaveChangesAsync(ct);
+        return Ok(ToDto(filter));
+    }
+
+    /// <summary>
+    /// Stores the order the caller arranged their presets in. Ids not in the caller's list are a 404,
+    /// so one user can't touch another's rows; presets left out of the list keep their relative
+    /// order after the listed ones.
+    /// </summary>
+    [HttpPut("order")]
+    public async Task<IActionResult> Reorder([FromBody] ReorderFiltersRequest request, CancellationToken ct)
+    {
+        var owned = await db.SavedFilters
+            .Where(f => f.Scope == SavedFilter.LibraryScope)
+            .OrderBy(f => f.SortOrder)
+            .ThenBy(f => f.Id)
+            .ToListAsync(ct);
+        var ids = (request.Ids ?? []).Distinct().ToList();
+        if (ids.Any(id => owned.All(f => f.Id != id)))
+        {
+            return NotFound();
+        }
+
+        var ordered = ids.Select(id => owned.First(f => f.Id == id))
+            .Concat(owned.Where(f => !ids.Contains(f.Id)))
+            .ToList();
+        for (var i = 0; i < ordered.Count; i++)
+        {
+            ordered[i].SortOrder = i;
+        }
+
+        await db.SaveChangesAsync(ct);
+        return Ok(ordered.Select(ToDto));
+    }
+
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
@@ -116,6 +172,6 @@ public class LibraryFiltersController(
             spec = new LibraryFilterSpec();
         }
 
-        return new SavedFilterDto(f.Id, f.Name, spec, f.SortOrder);
+        return new SavedFilterDto(f.Id, f.Name, spec, f.SortOrder, f.IsDefault);
     }
 }

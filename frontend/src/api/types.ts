@@ -313,6 +313,8 @@ export interface SavedFilterDto {
   name: string
   spec: LibraryFilterSpec
   sortOrder: number
+  /** The preset the Library opens with when nothing is remembered. At most one per user. */
+  isDefault: boolean
 }
 
 export interface MetadataSearchResult {

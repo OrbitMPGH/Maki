@@ -124,6 +124,11 @@ public record LibraryFilterSpec(
     /// <summary>Only series added within this many days; null for "any time".</summary>
     int? AddedWithinDays = null);
 
-public record SavedFilterDto(int Id, string Name, LibraryFilterSpec Spec, int SortOrder);
+public record SavedFilterDto(int Id, string Name, LibraryFilterSpec Spec, int SortOrder, bool IsDefault = false);
+
+public record SetDefaultFilterRequest(bool IsDefault);
+
+/// <summary>The caller's saved filter ids in the order they should be shown.</summary>
+public record ReorderFiltersRequest(List<int> Ids);
 
 public record SaveFilterRequest(string Name, LibraryFilterSpec Spec);

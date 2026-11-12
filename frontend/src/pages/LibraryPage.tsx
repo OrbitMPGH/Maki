@@ -1,6 +1,6 @@
 import { errorText } from '../api/errorText'
 import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { usePageState } from '../lib/pageState'
+import { hasPageState, usePageState } from '../lib/pageState'
 import { onPageScroll } from '../lib/pageScroll'
 import { shownRating } from '../lib/rating'
 import { fuzzyFilter, titleIndex } from '../lib/fuzzySearch'
@@ -58,6 +58,10 @@ import {
   IconSortAscending,
   IconSortDescending,
   IconBell,
+  IconChevronLeft,
+  IconChevronRight,
+  IconDots,
+  IconStar,
   IconTag,
   IconTrash,
   IconTrashX,
@@ -89,6 +93,8 @@ import {
   useBulkSetUpgradeProfile,
   useBulkTag,
   useDeleteSavedFilter,
+  useReorderSavedFilters,
+  useSetDefaultSavedFilter,
   useDeleteSeries,
   useLibraryStats,
   useRemoveArchivedFiles,
@@ -563,6 +569,8 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const sourceLabel = useSourceLabel()
   const saveFilter = useSaveFilter()
   const deleteSavedFilter = useDeleteSavedFilter()
+  const reorderSavedFilters = useReorderSavedFilters()
+  const setDefaultSavedFilter = useSetDefaultSavedFilter()
   const bulkTag = useBulkTag()
   const bulkNotifications = useBulkSetSeriesNotificationMode()
   const bulkReadingStatus = useBulkSetReadingStatus()
@@ -647,6 +655,12 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const [addedWithin, setAddedWithin] = usePageState<number | null>(`${MEM}:added-within`, null)
   const [activeFilterId, setActiveFilterId] = usePageState<number | null>(`${MEM}:saved-filter`, null)
   const [saveFilterOpen, setSaveFilterOpen] = useState(false)
+  const [renameTarget, setRenameTarget] = useState<SavedFilterDto | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  // Read before usePageState's effects store anything: a tab that has never opened this view has
+  // nothing remembered, which is when the default preset applies.
+  const [freshView] = useState(() => scope === 'library' && !hasPageState(`${MEM}:sort`))
+  const defaultApplied = useRef(false)
   const [filterName, setFilterName] = useState('')
   const [filtersOpen, setFiltersOpen] = usePageState(`${MEM}:filters-open`, false)
   const [openGroups, setOpenGroups] = usePageState<FilterGroup[]>(`${MEM}:filter-groups`, ['series'])
@@ -1139,6 +1153,23 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   })
 
   const specActive = query.trim() !== '' || activeFilterCount > 0
+
+  const defaultFilter = (savedFilters ?? []).find((f) => f.isDefault)
+  useEffect(() => {
+    if (!freshView || defaultApplied.current || savedFilters == null) return
+    defaultApplied.current = true
+    // Anything the user already did while the presets loaded wins over the default.
+    if (defaultFilter && !specActive && activeFilterId === null) applySpec(defaultFilter.spec, defaultFilter.id)
+  }, [freshView, savedFilters])
+
+  const moveSavedFilter = (f: SavedFilterDto, by: -1 | 1) => {
+    const ids = (savedFilters ?? []).map((x) => x.id)
+    const from = ids.indexOf(f.id)
+    const to = from + by
+    if (from === -1 || to < 0 || to >= ids.length) return
+    ;[ids[from], ids[to]] = [ids[to], ids[from]]
+    reorderSavedFilters.mutate(ids)
+  }
   const filtersActive = specActive || onDevice
 
   // Stable across renders so the memoized CoverCards aren't invalidated by a fresh closure,
@@ -2259,25 +2290,61 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
               <Trans>Saved filters</Trans>
             </span>
           )}
-          {(savedFilters ?? []).map((f) => (
-            <Group key={f.id} gap={2}>
-              <TagChip
-                active={activeFilterId === f.id}
-                onClick={() => applySpec(f.spec, f.id)}
-              >
-                {f.name}
-              </TagChip>
-              <ActionIcon
-                size={24}
-                variant="subtle"
-                color="var(--ink-4)"
-                aria-label={t`Delete saved filter`}
-                onClick={() => removeSavedFilter(f)}
-              >
-                <IconX size={11} />
-              </ActionIcon>
-            </Group>
-          ))}
+          {(savedFilters ?? []).map((f, index, all) => {
+            const { name } = f
+            return (
+              <Group key={f.id} gap={2}>
+                <TagChip active={activeFilterId === f.id} onClick={() => applySpec(f.spec, f.id)}>
+                  <Group gap={4} wrap="nowrap" component="span">
+                    {f.isDefault && <IconStar size={13} aria-label={t`Opens by default`} />}
+                    {f.name}
+                  </Group>
+                </TagChip>
+                <Menu position="bottom-end" withinPortal>
+                  <Menu.Target>
+                    <ActionIcon size={24} variant="subtle" color="var(--ink-4)" aria-label={t`Options for ${name}`}>
+                      <IconDots size={14} />
+                    </ActionIcon>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    <Menu.Item
+                      leftSection={<IconPencil size={16} />}
+                      onClick={() => {
+                        setRenameValue(f.name)
+                        setRenameTarget(f)
+                      }}
+                    >
+                      <Trans>Rename</Trans>
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconStar size={16} />}
+                      onClick={() => setDefaultSavedFilter.mutate({ id: f.id, isDefault: !f.isDefault })}
+                    >
+                      {f.isDefault ? <Trans>Stop opening the Library with this</Trans> : <Trans>Open the Library with this</Trans>}
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconChevronLeft size={16} />}
+                      disabled={index === 0}
+                      onClick={() => moveSavedFilter(f, -1)}
+                    >
+                      <Trans>Move earlier</Trans>
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconChevronRight size={16} />}
+                      disabled={index === all.length - 1}
+                      onClick={() => moveSavedFilter(f, 1)}
+                    >
+                      <Trans>Move later</Trans>
+                    </Menu.Item>
+                    <Menu.Divider />
+                    <Menu.Item color="var(--danger)" leftSection={<IconTrash size={16} />} onClick={() => removeSavedFilter(f)}>
+                      <Trans>Delete</Trans>
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              </Group>
+            )
+          })}
           {specActive && (
             <Button
               size="compact-xs"
@@ -2821,6 +2888,44 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
               <Trans>Cancel</Trans>
             </Button>
             <Button type="submit" disabled={!filterName.trim()} loading={saveFilter.isPending}>
+              <Trans>Save</Trans>
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal opened={renameTarget != null} onClose={() => setRenameTarget(null)} title={t`Rename saved filter`}>
+        <Stack
+          component="form"
+          gap="md"
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault()
+            const target = renameTarget
+            const name = renameValue.trim()
+            if (!target || !name) return
+            saveFilter.mutate(
+              { id: target.id, name, spec: target.spec },
+              {
+                onSuccess: () => setRenameTarget(null),
+                onError: (err) => {
+                  const detail = err instanceof Error ? err.message : String(err)
+                  notifications.show({ color: 'var(--danger)', message: now`Failed to rename filter: ${detail}` })
+                },
+              },
+            )
+          }}
+        >
+          <TextInput
+            label={t`Name`}
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.currentTarget.value)}
+            data-autofocus
+          />
+          <Group justify="flex-end">
+            <Button variant="default" onClick={() => setRenameTarget(null)}>
+              <Trans>Cancel</Trans>
+            </Button>
+            <Button type="submit" disabled={!renameValue.trim()} loading={saveFilter.isPending}>
               <Trans>Save</Trans>
             </Button>
           </Group>

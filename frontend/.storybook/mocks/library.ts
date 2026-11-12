@@ -25,11 +25,20 @@ export const libraryHandlers: HttpHandler[] = [
 
   http.post(api('/library/filters'), async ({ request }) => {
     const body = (await request.json()) as { name: string; spec: LibraryFilterSpec }
-    return HttpResponse.json({ id: 99, name: body.name, spec: body.spec, sortOrder: 3 } satisfies SavedFilterDto)
+    return HttpResponse.json({ id: 99, name: body.name, spec: body.spec, sortOrder: 3, isDefault: false } satisfies SavedFilterDto)
   }),
   http.put(api('/library/filters/:id'), async ({ params, request }) => {
     const body = (await request.json()) as { name: string; spec: LibraryFilterSpec }
-    return HttpResponse.json({ id: Number(params.id), name: body.name, spec: body.spec, sortOrder: 0 } satisfies SavedFilterDto)
+    return HttpResponse.json({ id: Number(params.id), name: body.name, spec: body.spec, sortOrder: 0, isDefault: false } satisfies SavedFilterDto)
+  }),
+  http.put(api('/library/filters/:id/default'), async ({ params, request }) => {
+    const body = (await request.json()) as { isDefault: boolean }
+    const current = savedFilters.find((f) => f.id === Number(params.id)) ?? savedFilters[0]
+    return HttpResponse.json({ ...current, isDefault: body.isDefault } satisfies SavedFilterDto)
+  }),
+  http.put(api('/library/filters/order'), async ({ request }) => {
+    const body = (await request.json()) as { ids: number[] }
+    return HttpResponse.json(body.ids.map((id, i) => ({ ...(savedFilters.find((f) => f.id === id) ?? savedFilters[0]), sortOrder: i })))
   }),
   http.delete(api('/library/filters/:id'), noContent),
 
