@@ -8366,6 +8366,15 @@ body.column-resizing * {
   display: none;
 }
 
+/* Columns the reader hid from the table's view menu. By position like the shed above, so span and
+   volume rows lose their matching cell, and in every layout including the list rows. */
+.chapter-hide-title .chapter-table :is(th, td):nth-child(3),
+.chapter-hide-released .chapter-table :is(th, td):nth-child(4),
+.chapter-hide-source .chapter-table :is(th, td):nth-child(5),
+.chapter-hide-status .chapter-table :is(th, td):nth-child(6) {
+  display: none !important;
+}
+
 /* When the panel is narrower than the columns need even without Released (a phone, the 800px
    pane, a small laptop with the sidebar open), each chapter becomes a two-line list row instead of a table that scrolls the title
    down to a few characters: switch, number, title and actions on top, then date, source and status

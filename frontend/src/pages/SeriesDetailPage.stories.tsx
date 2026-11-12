@@ -217,6 +217,33 @@ export const ChapterFilterMissing: Story = {
   },
 }
 
+export const ChapterColumnsHidden: Story = {
+  parameters: at(1, '?tab=chapters'),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await expect(await canvas.findByRole('columnheader', { name: /^Source/ })).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Sort and columns' }))
+    const picker = body(canvasElement)
+    await userEvent.click(await picker.findByRole('checkbox', { name: 'Source' }))
+    await userEvent.click(picker.getByRole('checkbox', { name: 'Released' }))
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(canvas.queryByRole('columnheader', { name: /^Source/ })).toBeNull())
+    await expect(canvas.queryByRole('columnheader', { name: /^Released/ })).toBeNull()
+    await expect(canvas.getByRole('columnheader', { name: /^Status/ })).toBeVisible()
+  },
+}
+
+export const ChapterSortedByReleaseDate: Story = {
+  parameters: at(1, '?tab=chapters'),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Sort and columns' }))
+    await userEvent.click(await body(canvasElement).findByRole('radio', { name: 'Release date' }))
+    await userEvent.keyboard('{Escape}')
+    await userEvent.click(await canvas.findByRole('button', { name: 'Sort newest release first' }))
+    const newest = Math.max(...chaptersFor(1, scenarios[1].shape).map((c) => c.number ?? 0))
+    await waitFor(() => expect(canvas.getAllByRole('row')[1]).toHaveTextContent(new RegExp(`Ch\\. ${newest}(?![\\d.])`)))
+  },
+}
+
 const filesGone = seriesMsw(
   http.get(api('/chapter'), () =>
     HttpResponse.json(chaptersFor(1, { ...scenarios[1].shape, fileMissing: Array.from({ length: 40 }, (_, i) => i + 1) })),
