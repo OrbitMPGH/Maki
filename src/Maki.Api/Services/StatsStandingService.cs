@@ -32,6 +32,12 @@ public class StatsStandingService(
 
     private const int BacklogTop = 8;
     private const int MidwayTop = 6;
+
+    /// <summary>
+    /// How recently a part-read series must have been read to count as midway. On hold and Dropped
+    /// series are left out whatever their date.
+    /// </summary>
+    internal static readonly TimeSpan MidwayRecent = TimeSpan.FromDays(60);
     private const int CreatorsTop = 8;
     private const int CreatorMinSeries = 2;
     private const int RatedTop = 12;
@@ -149,9 +155,15 @@ public class StatsStandingService(
                     p.SeriesId, series[p.SeriesId].Title, Cover(series[p.SeriesId]), p.Read, p.Unread))]);
 
         // ---- midway ----
-        var recentAfter = clock.GetUtcNow().UtcDateTime - ActivityStatsService.DroppedAfter;
+        var recentAfter = clock.GetUtcNow().UtcDateTime - MidwayRecent;
+        var shelved = (await db.UserSeriesStates.AsNoTracking().IgnoreQueryFilters()
+                .Where(s => s.UserId == userId &&
+                            (s.Status == ReadingStatus.OnHold || s.Status == ReadingStatus.Dropped))
+                .Select(s => s.SeriesId)
+                .ToListAsync(ct))
+            .ToHashSet();
         var midway = withUnread
-            .Where(p => p.ReadNotWatched > 0 && p.LastReadAt >= recentAfter)
+            .Where(p => p.ReadNotWatched > 0 && p.LastReadAt >= recentAfter && !shelved.Contains(p.SeriesId))
             .OrderByDescending(p => p.LastReadAt)
             .Take(MidwayTop)
             .Select(p => new MidwaySeriesDto(

@@ -45,6 +45,18 @@ export const Ongoing: Story = {
   },
 }
 
+export const ReadingStatus: Story = {
+  args: { series: seriesDto(1, { readingStatus: 'OnHold', readingStatusAuto: true }), onSetReadingStatus: fn() },
+  play: async ({ canvas, canvasElement, args, userEvent }) => {
+    const chip = await canvas.findByRole('button', { name: 'Reading status: On hold' })
+    await expect(chip).toBeVisible()
+    await userEvent.click(chip)
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await body.findByRole('menuitem', { name: 'Dropped' }))
+    await waitFor(() => expect(args.onSetReadingStatus).toHaveBeenCalledWith('Dropped'))
+  },
+}
+
 export const Completed: Story = {
   args: { series: seriesDto(2) },
 }

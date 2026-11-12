@@ -110,5 +110,21 @@ public class UserSeriesState : IUserOwned
     /// <summary>When this reader dismissed the series page's "finished, rate it?" hint.</summary>
     public DateTime? RateHintDismissedAt { get; set; }
 
+    /// <summary>
+    /// This reader's status for the series. No row reads as <see cref="ReadingStatus.PlanToRead"/>.
+    /// A read moves anything else to <see cref="ReadingStatus.Reading"/> in <c>MakiDbContext</c>'s
+    /// save hook, so no read path has to remember it.
+    /// </summary>
+    public ReadingStatus Status { get; set; }
+
+    /// <summary>When <see cref="Status"/> last changed; null on rows that never changed it.</summary>
+    public DateTime? StatusChangedAt { get; set; }
+
+    /// <summary>
+    /// <see cref="Status"/> was set by an auto rule (<c>ReadingStatusAutoService</c>), not by hand.
+    /// The drop rule moves an automatic On hold on but leaves a hand-set one alone.
+    /// </summary>
+    public bool StatusAuto { get; set; }
+
     public DateTime UpdatedAt { get; set; }
 }

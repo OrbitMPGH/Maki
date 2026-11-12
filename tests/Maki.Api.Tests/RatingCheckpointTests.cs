@@ -60,9 +60,14 @@ public sealed class RatingCheckpointTests : IDisposable
     private void SeedState(int userId, int seriesId, Action<UserSeriesState> configure)
     {
         using var db = _db.NewContext();
-        var state = new UserSeriesState { UserId = userId, SeriesId = seriesId };
+        var state = db.UserSeriesStates.FirstOrDefault(s => s.UserId == userId && s.SeriesId == seriesId);
+        if (state is null)
+        {
+            state = new UserSeriesState { UserId = userId, SeriesId = seriesId };
+            db.UserSeriesStates.Add(state);
+        }
+
         configure(state);
-        db.UserSeriesStates.Add(state);
         db.SaveChanges();
     }
 

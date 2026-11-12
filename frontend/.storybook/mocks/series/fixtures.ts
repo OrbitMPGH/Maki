@@ -185,6 +185,8 @@ export function seriesDto(id: number, overrides: Partial<SeriesDto> = {}): Serie
     importLinkPending: false,
     incognito: 'Off',
     notificationMode: 'Default',
+    readingStatus: entry.read > 0 ? 'Reading' : 'PlanToRead',
+    readingStatusAuto: false,
     readTimeEstimate:
       entry.read < entry.chapters
         ? {

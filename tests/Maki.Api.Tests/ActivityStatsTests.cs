@@ -470,24 +470,64 @@ public sealed class ActivityStatsTests : IDisposable
         Assert.Equal("https://covers.test/gone.jpg", removed.CoverUrl);
     }
 
-    [Fact]
-    public async Task DroppedRequiresStaleProgressInsideRange()
+    private void SetStatus(int userId, int seriesId, ReadingStatus status, DateTime changedAt)
     {
+        using var db = _db.NewContext();
+        db.UserSeriesStates.Add(new UserSeriesState
+        {
+            UserId = userId, SeriesId = seriesId, Status = status, StatusChangedAt = changedAt, UpdatedAt = changedAt,
+        });
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task DroppedListsWhatTheReaderDroppedInsideRange()
+    {
+        var inRange = _db.SeedSeries("Dropped this year");
+        var before = _db.SeedSeries("Dropped last year");
+        var held = _db.SeedSeries("On hold");
+        var lastRead = new DateTime(2026, 1, 10, 0, 0, 0, DateTimeKind.Utc);
         using (var db = _db.NewContext())
         {
-            db.ReadingStates.AddRange(
-                new ReadingState { UserId = 1, KavitaSeriesId = 1, Title = "Stale", MaxChapter = 12, LastProgressAt = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc) },
-                new ReadingState { UserId = 1, KavitaSeriesId = 2, Title = "Active", MaxChapter = 30, LastProgressAt = new DateTime(2026, 12, 20, 0, 0, 0, DateTimeKind.Utc) },
-                new ReadingState { UserId = 1, KavitaSeriesId = 3, Title = "Finished", MaxChapter = 40, Finished = true, LastProgressAt = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc) });
+            db.ReadingStates.Add(new ReadingState
+            {
+                UserId = TestUser, SeriesId = inRange, Title = "Dropped this year", MaxChapter = 12, LastProgressAt = lastRead,
+            });
             db.SaveChanges();
         }
+
+        SetStatus(TestUser, inRange, ReadingStatus.Dropped, new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc));
+        SetStatus(TestUser, before, ReadingStatus.Dropped, new DateTime(2025, 12, 1, 0, 0, 0, DateTimeKind.Utc));
+        SetStatus(TestUser, held, ReadingStatus.OnHold, new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc));
 
         var stats = await Activity().StatsAsync(
             TestUser, new DateOnly(2026, 1, 1), new DateOnly(2026, 12, 31), 0, CancellationToken.None);
 
         var dropped = Assert.Single(stats.Dropped);
-        Assert.Equal("Stale", dropped.Title);
+        Assert.Equal("Dropped this year", dropped.Title);
+        Assert.Equal(12, dropped.MaxChapter);
+        Assert.Equal(new DateTime(2026, 2, 1), dropped.DroppedAt.Date);
+        Assert.Equal(new DateTime(2026, 1, 10), dropped.LastProgressAt.Date);
         Assert.Equal(1, stats.Totals.SeriesDropped);
+    }
+
+    [Fact]
+    public async Task AStalledSeriesIsNoLongerGuessedDropped()
+    {
+        var stalled = _db.SeedSeries("Stalled");
+        using (var db = _db.NewContext())
+        {
+            db.ReadingStates.Add(new ReadingState
+            {
+                UserId = TestUser, SeriesId = stalled, Title = "Stalled", MaxChapter = 12,
+                LastProgressAt = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc),
+            });
+            db.SaveChanges();
+        }
+
+        var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
+
+        Assert.Empty(stats.Dropped);
     }
 
     [Fact]
@@ -612,14 +652,11 @@ public sealed class ActivityStatsTests : IDisposable
     public async Task DroppedSeriesAreScopedToTheUser()
     {
         var otherUser = _db.SeedUser("other");
-        using (var db = _db.NewContext())
-        {
-            var stale = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc);
-            db.ReadingStates.AddRange(
-                new ReadingState { UserId = TestUser, KavitaSeriesId = 1, Title = "Mine", MaxChapter = 12, LastProgressAt = stale },
-                new ReadingState { UserId = otherUser, KavitaSeriesId = 2, Title = "Theirs", MaxChapter = 12, LastProgressAt = stale });
-            db.SaveChanges();
-        }
+        var mine = _db.SeedSeries("Mine");
+        var theirs = _db.SeedSeries("Theirs");
+        var at = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc);
+        SetStatus(TestUser, mine, ReadingStatus.Dropped, at);
+        SetStatus(otherUser, theirs, ReadingStatus.Dropped, at);
 
         var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
 
@@ -632,14 +669,9 @@ public sealed class ActivityStatsTests : IDisposable
     {
         var shown = _db.SeedSeries("Shown");
         var secret = _db.SeedSeries("Secret", configure: s => s.Incognito = IncognitoMode.Full);
-        using (var db = _db.NewContext())
-        {
-            var stale = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc);
-            db.ReadingStates.AddRange(
-                new ReadingState { UserId = TestUser, SeriesId = shown, Title = "Shown", MaxChapter = 12, LastProgressAt = stale },
-                new ReadingState { UserId = TestUser, SeriesId = secret, Title = "Secret", MaxChapter = 12, LastProgressAt = stale });
-            db.SaveChanges();
-        }
+        var at = new DateTime(2026, 2, 1, 0, 0, 0, DateTimeKind.Utc);
+        SetStatus(TestUser, shown, ReadingStatus.Dropped, at);
+        SetStatus(TestUser, secret, ReadingStatus.Dropped, at);
 
         var stats = await Activity().StatsAsync(TestUser, Y26Start, Y26End, 0, CancellationToken.None);
 

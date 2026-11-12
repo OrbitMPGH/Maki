@@ -376,6 +376,18 @@ public static class SettingKeys
     public const string RatingPromptsVolumes = "ratings.prompts.volumes";
 
     /// <summary>
+    /// Per user: days without reading before a Reading series with unread chapters downloaded is
+    /// put on hold. Unset = off.
+    /// </summary>
+    public const string ReadingAutoHoldDays = "reading.autohold.days";
+
+    /// <summary>
+    /// Per user: days without reading before a Reading series, or one the hold rule paused, is
+    /// dropped. Unset = off.
+    /// </summary>
+    public const string ReadingAutoDropDays = "reading.autodrop.days";
+
+    /// <summary>
     /// Per user: which in-app notifications they want, as an <see cref="Inbox.InboxPrefsSpec"/> JSON
     /// blob. Unset = every event type on except the ones that default off, toasts on.
     /// <para>

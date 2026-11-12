@@ -532,6 +532,8 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
     public async Task<KomgaPage<KomgaBook>> OnDeckAsync(int page, int? size, CancellationToken ct)
     {
         var recent = await db.ChapterProgress.AsNoTracking().OwnedByScopeUser(db)
+            .Where(p => !db.UserSeriesStates.Any(s => s.SeriesId == p.SeriesId &&
+                (s.Status == ReadingStatus.OnHold || s.Status == ReadingStatus.Dropped)))
             .OrderByDescending(p => p.UpdatedAt)
             .Take(RecentProgressScan)
             .Select(p => new { p.SeriesId, p.UpdatedAt })

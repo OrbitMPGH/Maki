@@ -105,7 +105,7 @@ public sealed class SeriesLookupSummaryTests : IDisposable
         db.Tags.Add(tag);
         db.SaveChanges();
         db.SeriesTags.Add(new SeriesTag { SeriesId = busy, TagId = tag.Id });
-        db.UserSeriesStates.Add(new UserSeriesState { UserId = userId, SeriesId = busy, Rating = 8 });
+        db.UserSeriesStates.Single(s => s.UserId == userId && s.SeriesId == busy).Rating = 8;
         db.SaveChanges();
         return (busy, quiet);
     }

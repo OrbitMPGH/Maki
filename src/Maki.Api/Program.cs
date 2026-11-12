@@ -940,6 +940,7 @@ try
         .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler);
     builder.Services.AddSingleton<AccountSecurityAlerts>();
     builder.Services.AddSingleton<FollowedCreatorReleaseService>();
+    builder.Services.AddSingleton<ReadingStatusAutoService>();
 
     builder.Services.AddHttpClient(UpdateCheckService.HttpClientName, client =>
     {
@@ -1077,6 +1078,7 @@ try
     builder.Services.AddScoped<ReaderThumbnailCache>();
     builder.Services.AddSingleton<ReaderRecapCache>();
     builder.Services.AddScoped<ContinueReadingService>();
+    builder.Services.AddScoped<ReadingStatusService>();
     builder.Services.AddScoped<ReadingProfileService>();
     builder.Services.AddScoped<Maki.Api.Services.Upscaling.EnhanceAvailability>();
     builder.Services.AddSingleton<Maki.Api.Services.Upscaling.UpscaleModelCatalog>();
@@ -1402,6 +1404,15 @@ try
             .WithIdentity("followed-creator-releases-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(20))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
+        // Reading status auto rules (put on hold / drop after N idle days), opt-in per reader.
+        q.AddJob<Maki.Api.Jobs.ReadingStatusAutoJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.ReadingStatusAutoJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.ReadingStatusAutoJob.Key)
+            .WithIdentity("reading-status-rules-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(25))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(6).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Warms Discover's rail caches so the first visit after boot doesn't pay for the scan.
         // Also triggered on demand right after a MangaBaka dump install (see MangaBakaDumpRefreshJob).

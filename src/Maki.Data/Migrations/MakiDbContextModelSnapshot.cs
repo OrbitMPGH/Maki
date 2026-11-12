@@ -3275,6 +3275,15 @@ namespace Maki.Data.Migrations
                     b.Property<int>("SeriesId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("StatusAuto")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("StatusChangedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
 

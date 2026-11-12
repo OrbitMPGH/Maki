@@ -110,14 +110,79 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     {
         StampOwner();
         StampFileAndCompletion();
-        return base.SaveChanges();
+        var reads = ReadsToPromote();
+        var saved = base.SaveChanges();
+        foreach (var (userId, seriesId) in reads)
+        {
+            Database.ExecuteSqlRaw(PromoteToReadingSql, userId, seriesId, DateTime.UtcNow);
+        }
+
+        return saved;
     }
 
-    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken ct = default)
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken ct = default)
     {
         StampOwner();
         StampFileAndCompletion();
-        return base.SaveChangesAsync(acceptAllChangesOnSuccess, ct);
+        var reads = ReadsToPromote();
+        var saved = await base.SaveChangesAsync(acceptAllChangesOnSuccess, ct);
+        foreach (var (userId, seriesId) in reads)
+        {
+            await Database.ExecuteSqlRawAsync(PromoteToReadingSql, [userId, seriesId, DateTime.UtcNow], ct);
+        }
+
+        return saved;
+    }
+
+    /// <summary>
+    /// Moves a series to <see cref="ReadingStatus.Reading"/> for its reader, creating the state row when
+    /// there is none. An upsert after the save rather than a tracked entity before it: two first reads
+    /// racing on a missing row would otherwise fail the unique index and take the progress write down
+    /// with them.
+    /// </summary>
+    private const string PromoteToReadingSql = """
+        INSERT INTO "UserSeriesStates" ("UserId", "SeriesId", "Status", "StatusChangedAt", "StatusAuto", "UpdatedAt",
+            "NotificationMode", "PendingRatingCheckpoint", "RatingCheckpointsSeen", "RatingPromptDismissals")
+        VALUES ({0}, {1}, 1, {2}, 0, {2}, 0, 0, 0, 0)
+        ON CONFLICT ("UserId", "SeriesId") DO UPDATE SET
+            "Status" = 1, "StatusChangedAt" = excluded."StatusChangedAt", "StatusAuto" = 0,
+            "UpdatedAt" = excluded."UpdatedAt"
+        WHERE "Status" <> 1
+        """;
+
+    /// <summary>
+    /// The readers and series a pending <see cref="ChapterProgress"/> write counts as reading for: a new
+    /// row that is completed or past its first page, a completion, a watched tick turned into a real
+    /// read, or a page turn. Watched ticks and mark-unread are not reading. Here rather than at each of
+    /// the read paths (reader, OPDS, Komga, KOReader, Kavita, Mihon), so a new one cannot forget it.
+    /// </summary>
+    private List<(int UserId, int SeriesId)> ReadsToPromote()
+    {
+        var reads = new HashSet<(int, int)>();
+        foreach (var entry in ChangeTracker.Entries<ChapterProgress>())
+        {
+            var row = entry.Entity;
+            if (row.UserId == 0 || row.Watched)
+            {
+                continue;
+            }
+
+            var read = entry.State switch
+            {
+                EntityState.Added => row.Completed || row.PageIndex > 0,
+                EntityState.Modified =>
+                    (row.Completed && (!entry.Property(p => p.Completed).OriginalValue ||
+                                       entry.Property(p => p.Watched).OriginalValue)) ||
+                    (row.UnreadAt == null && row.PageIndex != entry.Property(p => p.PageIndex).OriginalValue),
+                _ => false,
+            };
+            if (read)
+            {
+                reads.Add((row.UserId, row.SeriesId));
+            }
+        }
+
+        return [.. reads];
     }
 
     /// <summary>

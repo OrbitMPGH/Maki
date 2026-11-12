@@ -99,7 +99,9 @@ public record LibraryFilterSpec(
     /// window drops series without a score.
     /// </summary>
     double CommunityRatingMin = 0,
-    double CommunityRatingMax = 10);
+    double CommunityRatingMax = 10,
+    /// <summary>The caller's own <see cref="Maki.Core.Entities.ReadingStatus"/> names to include, empty for "any".</summary>
+    List<string>? ReadingStatuses = null);
 
 public record SavedFilterDto(int Id, string Name, LibraryFilterSpec Spec, int SortOrder);
 

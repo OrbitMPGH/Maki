@@ -84,6 +84,7 @@ import {
   missingCount,
   useAutoMatchSources,
   useBulkArchiveSeries,
+  useBulkSetReadingStatus,
   useBulkSetSeriesNotificationMode,
   useBulkSetUpgradeProfile,
   useBulkTag,
@@ -142,7 +143,13 @@ import {
   ViewModeToggle,
   writeStored,
 } from '../components/ui/viewPrefs'
-import { seriesProgressVisual, seriesStatusVisual } from '../components/ui/status'
+import {
+  READING_STATUSES,
+  readingStatusVisual,
+  seriesProgressVisual,
+  seriesStatusVisual,
+  type ReadingStatus,
+} from '../components/ui/status'
 import { formatNumber } from '../format'
 import { useOfflineAvailableSeriesIds, useOfflineSeriesIds } from '../pwa/offlineChapters'
 import { useConnectivity } from '../lib/connectivity'
@@ -337,6 +344,7 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   ratingMax: 10,
   communityRatingMin: 0,
   communityRatingMax: 10,
+  readingStatuses: [],
 }
 
 /** The filter drawer's groups, in the order they appear. */
@@ -470,6 +478,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const deleteSavedFilter = useDeleteSavedFilter()
   const bulkTag = useBulkTag()
   const bulkNotifications = useBulkSetSeriesNotificationMode()
+  const bulkReadingStatus = useBulkSetReadingStatus()
   const bulkUpgradeProfile = useBulkSetUpgradeProfile()
   const { data: upgradeProfiles } = useUpgradeProfiles()
   const autoMatch = useAutoMatchSources()
@@ -520,6 +529,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const [metaTagFilter, setMetaTagFilter] = usePageState<string[]>(`${MEM}:meta-tags`, [])
   const [metaTagMatch, setMetaTagMatch] = usePageState(`${MEM}:meta-tag-match`, 'any')
   const [contentRatingFilter, setContentRatingFilter] = usePageState<string[]>(`${MEM}:content-ratings`, [])
+  const [readingStatusFilter, setReadingStatusFilter] = usePageState<string[]>(`${MEM}:reading-statuses`, [])
   const [readRange, setReadRange] = usePageState<[number, number]>(`${MEM}:read-range`, [0, 100])
   const [ratingState, setRatingState] = usePageState(`${MEM}:rating-state`, 'all')
   const [ratingRange, setRatingRange] = usePageState<[number, number]>(`${MEM}:rating-range`, [1, 10])
@@ -567,6 +577,8 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const [bulkProfile, setBulkProfile] = useState<string>(DEFAULT_PROFILE_FILTER)
   const [monitorMode, setMonitorMode] = useState('All')
   const [notifyModalOpen, setNotifyModalOpen] = useState(false)
+  const [readingStatusModalOpen, setReadingStatusModalOpen] = useState(false)
+  const [bulkReadingStatusValue, setBulkReadingStatusValue] = useState<ReadingStatus>('Reading')
   const [notifyMode, setNotifyMode] = useState<SeriesNotificationMode>('Default')
   const notificationHelp = useSeriesNotificationHelp(notifyMode)
   const [moveModalOpen, setMoveModalOpen] = useState(false)
@@ -598,6 +610,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     if (onDevice) list = list.filter((s) => offlineSeries.has(s.id))
     if (statusFilter !== 'all') list = list.filter((s) => s.status === statusFilter)
     if (typeFilter.length > 0) list = list.filter((s) => s.type != null && typeFilter.includes(s.type))
+    if (readingStatusFilter.length > 0) list = list.filter((s) => readingStatusFilter.includes(s.readingStatus))
     if (untaggedOnly) {
       list = list.filter((s) => (s.tagIds ?? []).length === 0)
     } else {
@@ -680,7 +693,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   }, [
     series, titlesOf, debouncedQuery, statusFilter, typeFilter, tagFilter, tagMatch, genreFilter, genreMatch,
     excludeTagFilter, excludeGenreFilter, untaggedOnly,
-    metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, readTracking, sort, sortDir, contentRatingFilter,
+    metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, readTracking, sort, sortDir, contentRatingFilter, readingStatusFilter,
     sourceFilter, sourceMatch, sourceState, fileSourceFilter, fileSourceMatch,
     chapterMin, chapterMax, chapterMode, qualityProfileFilter, ratingState, ratingRange, communityRange,
     onDevice, offlineSeries, isOffline, availableOffline,
@@ -744,6 +757,11 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     [me?.maxContentRating, renderLabel, i18n.locale],
   )
 
+  const readingStatusOptions = useMemo(
+    () => READING_STATUSES.map((value) => ({ value, label: renderLabel(readingStatusVisual(value).label) })),
+    [renderLabel, i18n.locale],
+  )
+
   const sortOptions = useMemo(
     () => scopeSorts.map((value) => ({ value, label: _(SORT_LABELS[value]) })),
     [scopeSorts, _, i18n.locale],
@@ -788,6 +806,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     chapterMax,
     chapterMode,
     contentRatings: contentRatingFilter,
+    readingStatuses: readingStatusFilter,
     sources: sourceFilter,
     sourceMatch,
     sourceState,
@@ -824,6 +843,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     // Clamped in case a preset was saved before the user's ceiling was lowered.
     const allowed: string[] = allowedContentRatings(me?.maxContentRating)
     setContentRatingFilter((merged.contentRatings ?? []).filter((r) => allowed.includes(r)))
+    setReadingStatusFilter(merged.readingStatuses ?? [])
     setMonitoredFilter(merged.monitored)
     setCompleteness(merged.completeness)
     setSourceFilter(merged.sources ?? [])
@@ -846,6 +866,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       (statusFilter !== 'all' ? 1 : 0) +
       (typeFilter.length > 0 ? 1 : 0) +
       (contentRatingFilter.length > 0 ? 1 : 0) +
+      (readingStatusFilter.length > 0 ? 1 : 0) +
       (chapterMin != null || chapterMax != null ? 1 : 0),
     tags:
       (!untaggedOnly && tagFilter.length > 0 ? 1 : 0) +
@@ -880,6 +901,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       if (statusFilter !== 'all') parts.push(renderLabel(seriesStatusVisual(statusFilter).label))
       if (typeFilter.length > 0) parts.push(label(typeOptions, typeFilter))
       if (contentRatingFilter.length > 0) parts.push(label(contentRatingOptions, contentRatingFilter))
+      if (readingStatusFilter.length > 0) parts.push(label(readingStatusOptions, readingStatusFilter))
       const chapters = range(chapterMin ?? 0, chapterMax ?? 0)
       if (chapterMin != null && chapterMax != null) parts.push(t`${chapters} chapters`)
       else if (chapterMin != null) parts.push(plural(chapterMin, { one: 'At least # chapter', other: 'At least # chapters' }))
@@ -1481,6 +1503,12 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         setBulkProfile(DEFAULT_PROFILE_FILTER)
         setProfileModalOpen(true)
       },
+    },
+    {
+      key: 'Reading status',
+      label: <Trans>Reading status</Trans>,
+      icon: <IconBookmark size={16} />,
+      run: () => setReadingStatusModalOpen(true),
     },
     {
       key: 'Notifications',
@@ -2124,6 +2152,16 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                 data={contentRatingOptions}
                 value={contentRatingFilter}
                 onChange={setContentRatingFilter}
+                clearable
+                comboboxProps={{ withinPortal: true }}
+              />
+              <MultiSelect
+                label={t`Reading status`}
+                className="field-default-value"
+                placeholder={readingStatusFilter.length ? undefined : t`Any`}
+                data={readingStatusOptions}
+                value={readingStatusFilter}
+                onChange={setReadingStatusFilter}
                 clearable
                 comboboxProps={{ withinPortal: true }}
               />
@@ -2838,6 +2876,59 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                     notifications.show({
                       color: 'var(--danger)',
                       message: now`Failed to set the quality profile: ${detail}`,
+                    })
+                  },
+                },
+              )
+            }
+          >
+            <Trans>Apply</Trans>
+          </Button>
+        </Group>
+      </Modal>
+
+      <Modal
+        opened={readingStatusModalOpen}
+        onClose={() => setReadingStatusModalOpen(false)}
+        title={plural(selectedCount, { one: 'Set reading status for # series', other: 'Set reading status for # series' })}
+      >
+        <Text size="sm" mb="md">
+          <Trans>Yours alone. Trackers you have connected are updated too.</Trans>
+        </Text>
+        <SegmentedControl
+          aria-label={t`Reading status`}
+          fullWidth
+          orientation="vertical"
+          value={bulkReadingStatusValue}
+          onChange={(v) => setBulkReadingStatusValue(v as ReadingStatus)}
+          data={readingStatusOptions}
+          mb="lg"
+        />
+        <Group justify="flex-end">
+          <Button variant="default" onClick={() => setReadingStatusModalOpen(false)}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button
+            loading={bulkReadingStatus.isPending}
+            onClick={() =>
+              bulkReadingStatus.mutate(
+                { seriesIds: [...selected], status: bulkReadingStatusValue },
+                {
+                  onSuccess: ({ updated }) => {
+                    setReadingStatusModalOpen(false)
+                    notifications.show({
+                      color: 'var(--ok)',
+                      message: plural(updated, {
+                        one: 'Reading status updated for # series',
+                        other: 'Reading status updated for # series',
+                      }),
+                    })
+                  },
+                  onError: (err) => {
+                    const detail = err instanceof Error ? err.message : String(err)
+                    notifications.show({
+                      color: 'var(--danger)',
+                      message: now`Failed to update reading status: ${detail}`,
                     })
                   },
                 },

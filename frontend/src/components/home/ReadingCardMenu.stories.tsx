@@ -51,6 +51,42 @@ export const RemoveShowsUndo: Story = {
   },
 }
 
+const statusRequested = fn()
+
+export const PutOnHold: Story = {
+  parameters: {
+    msw: [
+      http.put(api('/series/:seriesId/reading-status'), async ({ params, request }) => {
+        statusRequested(String(params.seriesId), ((await request.json()) as { status: string }).status)
+        return HttpResponse.json({ readingStatus: 'OnHold' })
+      }),
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await canvas.findByRole('button', { name: TRIGGER }))
+    await userEvent.click(await body.findByRole('menuitem', { name: 'Put on hold' }))
+    await waitFor(() => expect(statusRequested).toHaveBeenCalledWith('1', 'OnHold'))
+  },
+}
+
+export const Drop: Story = {
+  parameters: {
+    msw: [
+      http.put(api('/series/:seriesId/reading-status'), async ({ params, request }) => {
+        statusRequested(String(params.seriesId), ((await request.json()) as { status: string }).status)
+        return HttpResponse.json({ readingStatus: 'Dropped' })
+      }),
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await canvas.findByRole('button', { name: TRIGGER }))
+    await userEvent.click(await body.findByRole('menuitem', { name: 'Drop' }))
+    await waitFor(() => expect(statusRequested).toHaveBeenCalledWith('1', 'Dropped'))
+  },
+}
+
 export const RemoveFails: Story = {
   parameters: { msw: [http.post(api('/home/reading/:seriesId/hide'), () => failWith(500, 'Database is locked'))] },
   play: async ({ canvas, canvasElement, userEvent }) => {

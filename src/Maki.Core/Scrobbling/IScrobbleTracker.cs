@@ -8,8 +8,12 @@ public enum ScrobbleStatus
     Reading,
     Completed,
     PlanToRead,
-    /// <summary>A user-set status we never stomp implicitly (paused, dropped, ...).</summary>
+    /// <summary>A list that is none of the others (MangaBaka "considering", a MangaUpdates custom list). Never stomped implicitly.</summary>
     Other,
+    /// <summary>On hold. Pushed only when the reader put the series on hold in Maki.</summary>
+    Paused,
+    /// <summary>Pushed only when the reader dropped the series in Maki.</summary>
+    Dropped,
 }
 
 /// <summary>The user's current list entry (and series totals) on a tracker.</summary>
@@ -92,8 +96,8 @@ public interface IScrobbleTokenStore
 }
 
 /// <summary>
-/// One scrobble target site. Statuses passed to <see cref="UpdateAsync"/> are only
-/// ever Reading, Completed or PlanToRead.
+/// One scrobble target site. Statuses passed to <see cref="UpdateAsync"/> are never
+/// <see cref="ScrobbleStatus.Other"/>.
 /// <para>
 /// Everything that reads or writes a remote list takes a <c>userId</c>, because the token it acts
 /// with is that user's. Only <see cref="ConfiguredAsync"/> and <see cref="EntryUrl"/> don't: an app

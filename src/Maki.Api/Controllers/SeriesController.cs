@@ -121,6 +121,8 @@ public class SeriesController(
             ProvisionalRating = refreshed.ProvisionalRating,
             ProvisionalAtChapter = refreshed.ProvisionalAtChapter,
             Finished = refreshed.Finished,
+            ReadingStatus = refreshed.Status.ToString(),
+            ReadingStatusAuto = refreshed.StatusAuto,
         });
     }
 
@@ -407,7 +409,11 @@ public class SeriesController(
         // mode with no per-series lookup. Unfiltered on Rating now that a row can exist for the
         // mode alone: filtering on it would report every muted-but-unrated series as Default.
         var userStates = await ForSeries(db.UserSeriesStates, ids, x => x.SeriesId)
-            .Select(x => new { x.SeriesId, x.Rating, x.ProvisionalRating, x.ProvisionalAtChapter, x.NotificationMode })
+            .Select(x => new
+            {
+                x.SeriesId, x.Rating, x.ProvisionalRating, x.ProvisionalAtChapter, x.NotificationMode, x.Status,
+                x.StatusAuto,
+            })
             .ToDictionaryAsync(x => x.SeriesId, x => x, ct);
         var finishedIds = (await ForSeries(db.ReadingStates, ids, r => r.SeriesId)
             .Where(r => r.Finished)
@@ -487,6 +493,8 @@ public class SeriesController(
                 ProvisionalRating = userState?.ProvisionalRating,
                 ProvisionalAtChapter = userState?.ProvisionalAtChapter,
                 Finished = finishedIds.Contains(s.Id),
+                ReadingStatus = (userState?.Status ?? ReadingStatus.PlanToRead).ToString(),
+                ReadingStatusAuto = userState?.StatusAuto ?? false,
                 Sources = [.. mappings.Select(m => m.SourceName).Distinct().Order()],
                 EnabledSources =
                 [
@@ -626,16 +634,21 @@ public class SeriesController(
     /// the notification picker in the client's cache.
     /// </summary>
     private async Task<(int? Rating, SeriesNotificationMode NotificationMode, int? ProvisionalRating,
-        double? ProvisionalAtChapter, bool Finished)> UserStateForAsync(int seriesId, CancellationToken ct)
+        double? ProvisionalAtChapter, bool Finished, ReadingStatus Status, bool StatusAuto)> UserStateForAsync(
+        int seriesId, CancellationToken ct)
     {
         var state = await db.UserSeriesStates
             .Where(x => x.SeriesId == seriesId)
-            .Select(x => new { x.Rating, x.NotificationMode, x.ProvisionalRating, x.ProvisionalAtChapter })
+            .Select(x => new
+            {
+                x.Rating, x.NotificationMode, x.ProvisionalRating, x.ProvisionalAtChapter, x.Status, x.StatusAuto,
+            })
             .FirstOrDefaultAsync(ct);
         var finished = await db.ReadingStates.AnyAsync(r => r.SeriesId == seriesId && r.Finished, ct);
 
         return (state?.Rating, state?.NotificationMode ?? SeriesNotificationMode.Default,
-            state?.ProvisionalRating, state?.ProvisionalAtChapter, finished);
+            state?.ProvisionalRating, state?.ProvisionalAtChapter, finished,
+            state?.Status ?? ReadingStatus.PlanToRead, state?.StatusAuto ?? false);
     }
 
     /// <summary>
@@ -1196,7 +1209,7 @@ public class SeriesController(
             .Select(x => new
             {
                 x.Rating, x.ProvisionalRating, x.ProvisionalAtChapter, x.NotificationMode, x.ReaderPrefsJson,
-                x.ReadingProfileId, x.PendingRatingCheckpoint,
+                x.ReadingProfileId, x.PendingRatingCheckpoint, x.Status, x.StatusAuto,
             })
             .FirstOrDefaultAsync(ct);
         var finished = await db.ReadingStates.AnyAsync(r => r.SeriesId == id && r.Finished, ct);
@@ -1229,6 +1242,8 @@ public class SeriesController(
             ProvisionalRating = userState?.ProvisionalRating,
             ProvisionalAtChapter = userState?.ProvisionalAtChapter,
             Finished = finished,
+            ReadingStatus = (userState?.Status ?? ReadingStatus.PlanToRead).ToString(),
+            ReadingStatusAuto = userState?.StatusAuto ?? false,
             RatingCheckpoint = userState?.Rating is null && !finished
                 ? RatingCheckpointService.WireName(userState?.PendingRatingCheckpoint ?? default)
                 : null,
@@ -2014,6 +2029,8 @@ public class SeriesController(
             ProvisionalRating = moved.ProvisionalRating,
             ProvisionalAtChapter = moved.ProvisionalAtChapter,
             Finished = moved.Finished,
+            ReadingStatus = moved.Status.ToString(),
+            ReadingStatusAuto = moved.StatusAuto,
             Warnings = [localizer.Get("error.series.folderMoved",
                 new { from = oldRootFolderPath, to = destination.Path })]
         });
@@ -2697,6 +2714,76 @@ public class SeriesController(
         await db.SaveChangesAsync(ct);
         return Ok(new { updated = visible.Count });
     }
+
+    /// <summary>One of the <see cref="ReadingStatus"/> names.</summary>
+    public record SetReadingStatusRequest(string Status);
+
+    /// <summary>The same status applied to a whole selection, for the Library's bulk action.</summary>
+    public record BulkReadingStatusRequest(List<int>? SeriesIds, string Status);
+
+    /// <summary>
+    /// Sets the caller's own reading status on a series. On hold and Dropped take it off Home's
+    /// reading rail until the next read. The trackers hear about it in the background.
+    /// </summary>
+    // No permission beyond being signed in: the value lives in the caller's own UserSeriesState row.
+    [HttpPut("{id:int}/reading-status")]
+    public async Task<IActionResult> SetReadingStatus(
+        int id, [FromBody] SetReadingStatusRequest request, [FromServices] ReadingStatusService readingStatuses,
+        CancellationToken ct)
+    {
+        if (!TryParseReadingStatus(request.Status, out var status))
+        {
+            return this.Fail(localizer, "error.series.unknownReadingStatus", new { status = request.Status });
+        }
+
+        var series = await db.Series.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        var changed = await readingStatuses.SetAsync(currentUser.UserId, [id], status, auto: false, ct);
+        if (changed.Count > 0)
+        {
+            scrobbler.QueueStatusPush(currentUser.UserId, [series], status);
+        }
+
+        return Ok(new { readingStatus = status.ToString() });
+    }
+
+    /// <summary>Applies one reading status across a selection in a single call.</summary>
+    [HttpPost("reading-status/bulk")]
+    public async Task<IActionResult> SetReadingStatusBulk(
+        [FromBody] BulkReadingStatusRequest request, [FromServices] ReadingStatusService readingStatuses,
+        CancellationToken ct)
+    {
+        if (!TryParseReadingStatus(request.Status, out var status))
+        {
+            return this.Fail(localizer, "error.series.unknownReadingStatus", new { status = request.Status });
+        }
+
+        var wanted = (request.SeriesIds ?? []).Distinct().ToList();
+        if (wanted.Count == 0)
+        {
+            return Ok(new { updated = 0 });
+        }
+
+        // Resolved through db.Series so the root-folder filter drops ids this caller cannot see.
+        var visible = await db.Series.AsNoTracking()
+            .Where(s => wanted.Contains(s.Id))
+            .ToListAsync(ct);
+        var changed = (await readingStatuses.SetAsync(
+            currentUser.UserId, [.. visible.Select(s => s.Id)], status, auto: false, ct)).ToHashSet();
+        if (changed.Count > 0)
+        {
+            scrobbler.QueueStatusPush(currentUser.UserId, [.. visible.Where(s => changed.Contains(s.Id))], status);
+        }
+
+        return Ok(new { updated = visible.Count });
+    }
+
+    private static bool TryParseReadingStatus(string? value, out ReadingStatus status) =>
+        Enum.TryParse(value, true, out status) && Enum.IsDefined(status) && !int.TryParse(value, out _);
 
     /// <summary>
     /// Replaces the series' user tags with exactly the ids given. Tags themselves are created and

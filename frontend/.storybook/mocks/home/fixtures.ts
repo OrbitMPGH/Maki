@@ -77,6 +77,8 @@ function toSeries(entry: CatalogueEntry): SeriesDto {
     importLinkPending: false,
     incognito: 'Off',
     notificationMode: 'Default',
+    readingStatus: 'Reading',
+    readingStatusAuto: false,
     sources: [entry.source],
     enabledSources: [entry.source],
     fileSources: [entry.source],

@@ -21,9 +21,6 @@ public class ActivityStatsService(
     MakiDbContext db, IAppSettings appSettings, IUserSettingsStore userSettings, TimeProvider clock,
     ICurrentUser currentUser)
 {
-    /// <summary>A series counts as dropped when its reading mark stalled this long.</summary>
-    internal static readonly TimeSpan DroppedAfter = TimeSpan.FromDays(60);
-
     internal const int TimelineDayBucketMaxDays = 62;
 
     /// <summary>
@@ -313,49 +310,40 @@ public class ActivityStatsService(
             })
             .ToList();
 
-        // ---- dropped (computed from ReadingState, not an event — self-heals on resume) ----
-        var staleBefore = clock.GetUtcNow().UtcDateTime - DroppedAfter;
-        var droppedRows = await db.ReadingStates.AsNoTracking().IgnoreQueryFilters()
-            .Where(r => r.UserId == userId &&
-                        !r.Finished && r.MaxChapter > 0 &&
-                        r.LastProgressAt < staleBefore &&
-                        r.LastProgressAt >= utcStart && r.LastProgressAt < utcEnd)
+        // ---- dropped (the reader's own status; a read moves the series back to Reading and off this list) ----
+        // The Series join keeps its filters on: a series in a root folder the caller can't see stays out.
+        var droppedStates = await db.UserSeriesStates.AsNoTracking().IgnoreQueryFilters()
+            .Where(s => s.UserId == userId && s.Status == ReadingStatus.Dropped &&
+                        s.StatusChangedAt >= utcStart && s.StatusChangedAt < utcEnd)
+            .Join(db.Series.AsNoTracking().Where(x => x.Incognito != IncognitoMode.Full),
+                s => s.SeriesId, x => x.Id,
+                (s, x) => new
+                {
+                    s.SeriesId, x.Title, DroppedAt = s.StatusChangedAt!.Value, x.CoverPath, x.LastMetadataRefresh,
+                })
             .ToListAsync(ct);
-
-        var droppedSeriesIds = droppedRows.Where(r => r.SeriesId != null).Select(r => r.SeriesId!.Value).Distinct().ToList();
-        if (droppedSeriesIds.Count > 0)
-        {
-            var shown = (await db.Series.AsNoTracking()
-                    .Where(s => droppedSeriesIds.Contains(s.Id) && s.Incognito != IncognitoMode.Full)
-                    .Select(s => s.Id)
-                    .ToListAsync(ct))
-                .ToHashSet();
-            droppedRows = droppedRows.Where(r => r.SeriesId is not int sid || shown.Contains(sid)).ToList();
-        }
-
-        // These come off ReadingState, not the event log, so their series are not necessarily in
-        // seriesMeta — a series can stall in a window where it produced no events at all.
-        var droppedIds = droppedRows
-            .Where(r => r.SeriesId != null && !seriesMeta.ContainsKey(r.SeriesId.Value))
-            .Select(r => r.SeriesId!.Value)
-            .Distinct()
-            .ToList();
-        var droppedCovers = droppedIds.Count == 0
+        var droppedIds = droppedStates.Select(d => d.SeriesId).ToList();
+        var droppedMarks = droppedIds.Count == 0
             ? []
-            : await db.Series.AsNoTracking()
-                .Where(s => droppedIds.Contains(s.Id))
-                .Select(s => new { s.Id, s.CoverPath, s.LastMetadataRefresh })
-                .ToDictionaryAsync(
-                    s => s.Id,
-                    s => SeriesDto.CoverUrlFor(s.Id, s.CoverPath, s.LastMetadataRefresh),
-                    ct);
+            : (await db.ReadingStates.AsNoTracking().IgnoreQueryFilters()
+                .Where(r => r.UserId == userId && r.SeriesId != null && droppedIds.Contains(r.SeriesId.Value))
+                .Select(r => new { SeriesId = r.SeriesId!.Value, r.MaxChapter, r.LastProgressAt })
+                .ToListAsync(ct))
+            .GroupBy(r => r.SeriesId)
+            .ToDictionary(g => g.Key, g => (MaxChapter: g.Max(r => r.MaxChapter), LastProgressAt: g.Max(r => r.LastProgressAt)));
 
-        var dropped = droppedRows
-            .OrderBy(r => r.LastProgressAt)
-            .Select(r => new ActivityDroppedSeriesDto(
-                r.SeriesId, r.Title, Local(r.LastProgressAt), r.MaxChapter,
-                Cover(r.SeriesId) ??
-                (r.SeriesId is int did ? droppedCovers.GetValueOrDefault(did) : null)))
+        var dropped = droppedStates
+            .OrderBy(d => d.DroppedAt)
+            .Select(d =>
+            {
+                var mark = droppedMarks.GetValueOrDefault(d.SeriesId);
+                return new ActivityDroppedSeriesDto(
+                    d.SeriesId, d.Title,
+                    Local(mark.LastProgressAt == default ? d.DroppedAt : mark.LastProgressAt),
+                    mark.MaxChapter,
+                    Cover(d.SeriesId) ?? SeriesDto.CoverUrlFor(d.SeriesId, d.CoverPath, d.LastMetadataRefresh),
+                    Local(d.DroppedAt));
+            })
             .ToList();
 
         // Reading is tracked from Kavita OR from the built-in reader. Gating this on Kavita

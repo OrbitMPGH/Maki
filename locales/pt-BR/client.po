@@ -1473,9 +1473,8 @@ msgid "{downloadedCount} posters downloaded, {failedCount} failed, {thumbnailsCl
 msgstr ""
 
 #: src/pages/rewind/slides.tsx
-#, fuzzy
-msgid "{droppedCount, plural, one {# series is waiting} other {# series are waiting}}"
-msgstr "{droppedCount, plural, one {# série está aguardando} many {# séries estão aguardando}other {# séries estão aguardando}}"
+msgid "{droppedCount, plural, one {# series dropped} other {# series dropped}}"
+msgstr ""
 
 #: src/pages/RequestsPage.tsx
 #, fuzzy
@@ -2643,6 +2642,10 @@ msgid "{selectedCount, plural, one {Set quality profile for # series} other {Set
 msgstr "{selectedCount, plural, one {Definir perfil de qualidade para # série} many {Definir perfil de qualidade para # séries} other {Definir perfil de qualidade para # séries}}"
 
 #: src/pages/LibraryPage.tsx
+msgid "{selectedCount, plural, one {Set reading status for # series} other {Set reading status for # series}}"
+msgstr ""
+
+#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{selectedCount, plural, one {Tag # series} other {Tag # series}}"
 msgstr "{selectedCount, plural, one {Adicionar tag a # série} many {Adicionar tag a # séries} other {Adicionar tag a # séries}}"
@@ -3205,6 +3208,10 @@ msgstr "{updated, plural, one {Notificações atualizadas para # série} many {N
 #, fuzzy
 msgid "{updated, plural, one {Quality profile set for # series} other {Quality profile set for # series}}"
 msgstr "{updated, plural, one {Perfil de qualidade definido para # série} many {Perfil de qualidade definido para # séries} other {Perfil de qualidade definido para # séries}}"
+
+#: src/pages/LibraryPage.tsx
+msgid "{updated, plural, one {Reading status updated for # series} other {Reading status updated for # series}}"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4773,6 +4780,10 @@ msgstr "Aplica-se automaticamente a"
 #, fuzzy
 msgid "Applies to chapters released later."
 msgstr "Aplica-se a capítulos lançados posteriormente."
+
+#: src/components/settings/ReadingStatusSection.tsx
+msgid "Applies to series you are reading and ones the on-hold rule paused. A series you put on hold yourself is never dropped."
+msgstr ""
 
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
@@ -7893,6 +7904,10 @@ msgstr "Data"
 msgid "Day by day"
 msgstr "Dia a dia"
 
+#: src/components/settings/ReadingStatusSection.tsx
+msgid "days"
+msgstr ""
+
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Days active"
@@ -7922,6 +7937,14 @@ msgstr "Dias para manter os arquivos substituídos. 0 exclui na próxima limpeza
 #, fuzzy
 msgid "Days to skip a chapter after it was added or last upgraded."
 msgstr "Dias para ignorar um capítulo depois de ele ser adicionado ou atualizado pela última vez."
+
+#: src/components/settings/ReadingStatusSection.tsx
+msgid "Days without reading before a series is dropped"
+msgstr ""
+
+#: src/components/settings/ReadingStatusSection.tsx
+msgid "Days without reading before a series is put on hold"
+msgstr ""
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -8830,10 +8853,25 @@ msgstr "Arraste o preferido para o topo e salve para definir a ordem de download
 msgid "Drama"
 msgstr "Drama"
 
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Drop"
+msgstr ""
+
+#: src/components/settings/ReadingStatusSection.tsx
+msgid "Drop a series when I stop reading it"
+msgstr ""
+
+#: src/components/series/SeriesHero.tsx
+#: src/components/ui/status.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
+#: src/pages/stats/ActivityFeed.tsx
 #, fuzzy
 msgid "Dropped"
 msgstr "Abandonado"
+
+#: src/pages/rewind/slides.tsx
+msgid "dropped at ch. {maxChapter}"
+msgstr ""
 
 #: src/components/rails/CustomRailSection.tsx
 #: src/pages/HealthPage.tsx
@@ -9629,6 +9667,10 @@ msgstr "Falha ao adicionar a tag: {detail}"
 #, fuzzy
 msgid "Failed to update notifications: {detail}"
 msgstr "Falha ao atualizar as notificações: {detail}"
+
+#: src/pages/LibraryPage.tsx
+msgid "Failed to update reading status: {detail}"
+msgstr ""
 
 #: src/components/SeriesTagsEditor.tsx
 #, fuzzy
@@ -16247,6 +16289,8 @@ msgstr "Ligado para esta série"
 msgid "On hiatus since you saved it"
 msgstr "Em hiato desde que você salvou"
 
+#: src/components/series/SeriesHero.tsx
+#: src/components/ui/status.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "On hold"
@@ -16338,6 +16382,10 @@ msgstr "Adicionar apenas o que falta"
 #, fuzzy
 msgid "Only for series matched to a Kavita series."
 msgstr "Só para séries vinculadas a uma série do Kavita."
+
+#: src/components/settings/ReadingStatusSection.tsx
+msgid "Only for series with unread chapters downloaded. A series you are caught up on is left alone."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -16685,6 +16733,10 @@ msgstr "Outro"
 #, fuzzy
 msgid "Other actions"
 msgstr "Outras ações"
+
+#: src/components/ui/status.tsx
+msgid "Other list"
+msgstr ""
 
 #: src/components/discover/DiscoverHero.tsx
 #, fuzzy
@@ -17106,11 +17158,6 @@ msgstr "Pausado porque a conversão de páginas foi desativada."
 #, fuzzy
 msgid "Paused because the settings changed. Restart the pass to use them."
 msgstr "Pausada porque as configurações mudaram. Reinicie a varredura para usá-las."
-
-#: src/components/ui/status.tsx
-#, fuzzy
-msgid "Paused or dropped"
-msgstr "Pausada ou abandonada"
 
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
@@ -17699,6 +17746,10 @@ msgstr "rebaixa títulos próximos a ele"
 msgid "Pushes down titles close to this one"
 msgstr "Rebaixa títulos próximos a este"
 
+#: src/components/settings/ReadingStatusSection.tsx
+msgid "Put a series on hold when I stop reading it"
+msgstr ""
+
 #: src/components/series/UndoConversionModal.tsx
 msgid "Put back the files as they were downloaded."
 msgstr ""
@@ -17707,6 +17758,10 @@ msgstr ""
 #, fuzzy
 msgid "Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS."
 msgstr "Coloque atrás de HTTPS e depois ative em Configurações → Sistema → Rede → Exigir HTTPS."
+
+#: src/components/home/ReadingCardMenu.tsx
+msgid "Put on hold"
+msgstr ""
 
 #: src/pages/reader/TapZoneSettings.tsx
 msgid "Puts the back zones where the forward ones were, for the other hand."
@@ -18355,6 +18410,21 @@ msgstr ""
 
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "Reading since {since}"
+msgstr ""
+
+#: src/components/settings/ReadingStatusSection.tsx
+#: src/pages/LibraryPage.tsx
+#: src/pages/settings/registry.ts
+msgid "Reading status"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "reading status, plan to read, on hold, paused, dropped, drop, abandon, stop reading, inactive, days, automatic"
+msgstr ""
+
+#: src/components/series/ReadingStatus.tsx
+msgid "Reading status: {currentLabel}"
 msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
@@ -20267,6 +20337,7 @@ msgstr "Salvar seus códigos de recuperação"
 #: src/components/pageconversion/StartStep.tsx
 #: src/components/settings/RatingPromptsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/components/settings/ReadingStatusSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/useIndexerForm.ts
 #: src/components/SetupWizard.tsx
@@ -22381,16 +22452,6 @@ msgstr "Comprimir volumes com mais força"
 #, fuzzy
 msgid "Stacked height"
 msgstr "Altura empilhada"
-
-#: src/pages/stats/ActivityFeed.tsx
-#, fuzzy
-msgid "Stalled"
-msgstr "Parado"
-
-#: src/pages/rewind/slides.tsx
-#, fuzzy
-msgid "stalled at ch. {maxChapter}"
-msgstr "parado em cap. {maxChapter}"
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -26678,6 +26739,14 @@ msgstr ""
 msgid "Your reading history is not affected. You can set a new goal at any time."
 msgstr "Seu histórico de leitura não é afetado. Você pode definir uma nova meta a qualquer momento."
 
+#: src/components/series/ReadingStatus.tsx
+msgid "Your reading status"
+msgstr ""
+
+#: src/components/series/ReadingStatus.tsx
+msgid "Your reading status, set automatically after a while without reading"
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Your request was adjusted"
@@ -26753,6 +26822,10 @@ msgstr "Sua chave de usuário ou grupo."
 #, fuzzy
 msgid "Yours alone. This changes what lands in your bell, not anybody else's."
 msgstr "Só seu. Isto muda o que cai no seu sino, e não o de mais ninguém."
+
+#: src/pages/LibraryPage.tsx
+msgid "Yours alone. Trackers you have connected are updated too."
+msgstr ""
 
 #: src/components/settings/downloadClientFields.ts
 #, fuzzy
