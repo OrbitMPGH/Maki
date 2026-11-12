@@ -12,6 +12,7 @@ import type {
   PageConversionScope,
   PageConversionScopeRequest,
   PageConversionStop,
+  PageSplitPreview,
 } from '../../../src/api/pageConversion'
 import { api } from '../api'
 import { seriesById } from '../shared'
@@ -280,7 +281,67 @@ export const keptPreviewHandler = (reason: string) =>
     return new HttpResponse(pageSvg(0, hue), { headers: sizeHeaders(ORIGINAL_BYTES, original ? undefined : reason) })
   })
 
+export const TALL_FILE_ID = 7300
+const TALL_WIDTH = 720
+const TALL_HEIGHT = 15200
+/** Gutters between panels in the mock strip, as [top, bottom] rows. */
+const TALL_GUTTERS = [1700, 3900, 6300, 8800, 11200, 13600].map((top) => [top, top + 140])
+
+/** A webtoon strip: coloured panels with white gutters at TALL_GUTTERS. */
+function stripSvg(): string {
+  const panels: string[] = []
+  let top = 0
+  TALL_GUTTERS.forEach(([start, end], i) => {
+    panels.push(`<rect x="0" y="${top}" width="${TALL_WIDTH}" height="${start - top}" fill="hsl(${(i * 53) % 360} 45% 62%)"/>`)
+    top = end
+  })
+  panels.push(`<rect x="0" y="${top}" width="${TALL_WIDTH}" height="${TALL_HEIGHT - top}" fill="hsl(300 45% 62%)"/>`)
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${TALL_WIDTH}" height="${TALL_HEIGHT}" viewBox="0 0 ${TALL_WIDTH} ${TALL_HEIGHT}">
+<rect width="${TALL_WIDTH}" height="${TALL_HEIGHT}" fill="#ffffff"/>${panels.join('')}</svg>`
+}
+
+/** The cuts the server would plan: the last gutter that starts within 40% above each height step. */
+export function splitFor(height: number): PageSplitPreview {
+  const cuts: number[] = []
+  let start = 0
+  while (TALL_HEIGHT - start > height) {
+    const target = start + height
+    const gutter = [...TALL_GUTTERS].reverse().find(([top]) => top <= target && top >= target - height * 0.4)
+    const cut = gutter ? Math.min(Math.floor((gutter[0] + gutter[1]) / 2), target) : target
+    if (TALL_HEIGHT - cut < height / 5) break
+    cuts.push(cut)
+    start = cut
+  }
+  return {
+    sample: {
+      fileId: TALL_FILE_ID,
+      chapterId: TALL_FILE_ID,
+      seriesId: 7,
+      seriesTitle: 'Tower of the Long Night',
+      chapterLabel: 'Ch.41',
+      page: 3,
+      pageCount: 9,
+      reason: 'tall',
+      tier: 'aggregator',
+      fileSize: 31_457_280,
+    },
+    width: TALL_WIDTH,
+    height: TALL_HEIGHT,
+    cuts,
+  }
+}
+
+export const splitHandlers: HttpHandler[] = [
+  http.get(api('/pageconversion/split'), ({ request }) =>
+    HttpResponse.json(splitFor(Number(new URL(request.url).searchParams.get('height') ?? 5000))),
+  ),
+  http.get(api(`/pageconversion/preview/${TALL_FILE_ID}/:page`), () =>
+    new HttpResponse(stripSvg(), { headers: sizeHeaders(ORIGINAL_BYTES) }),
+  ),
+]
+
 export const pageConversionHandlers: HttpHandler[] = [
+  ...splitHandlers,
   http.put(api('/pageconversion/plan'), async ({ request }) => {
     const { settings } = (await request.json()) as { settings: PageConversionSettings }
     return HttpResponse.json({ ...pageConversionIdle, settings } satisfies PageConversionStatus)

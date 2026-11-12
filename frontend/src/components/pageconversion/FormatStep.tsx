@@ -1,6 +1,14 @@
-import { Checkbox, Divider, Input, Radio, Stack, Text } from '@mantine/core'
+import { useState } from 'react'
+import { Checkbox, Divider, Input, NumberInput, Radio, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
-import type { PageConversionFormat, PageConversionSettings } from '../../api/pageConversion'
+import {
+  DEFAULT_SPLIT_HEIGHT,
+  MAX_SPLIT_HEIGHT,
+  MIN_SPLIT_HEIGHT,
+  type PageConversionFormat,
+  type PageConversionSettings,
+} from '../../api/pageConversion'
+import { SplitPreview } from './SplitPreview'
 
 type Choice = PageConversionFormat | 'off'
 
@@ -14,6 +22,8 @@ export function FormatStep({
 }) {
   const { t } = useLingui()
   const choice: Choice = value.format ?? 'off'
+  const [lastHeight, setLastHeight] = useState(value.splitHeight ?? DEFAULT_SPLIT_HEIGHT)
+  const splitting = value.splitHeight != null
 
   return (
     <Stack gap="lg">
@@ -53,6 +63,41 @@ export function FormatStep({
               checked={value.pngLossless}
               onChange={(event) => onChange({ pngLossless: event.currentTarget.checked })}
             />
+          </Input.Wrapper>
+          <Divider />
+          <Input.Wrapper label={t`Tall pages`} labelElement="div">
+            <Stack gap="sm" mt="sm">
+              <Checkbox
+                label={t`Split very tall pages`}
+                description={t`Webtoon strips taller than the height below are cut into several pages, in the gaps between panels where there are any. E-readers and KOReader handle these far better. Reading positions, bookmarks and notes move with their page.`}
+                checked={splitting}
+                onChange={(event) => onChange({ splitHeight: event.currentTarget.checked ? lastHeight : null })}
+              />
+              {splitting && (
+                <>
+                  <NumberInput
+                    label={t`Split pages taller than`}
+                    description={t`Only strips at least two and a half times as tall as they are wide are split.`}
+                    suffix=" px"
+                    min={MIN_SPLIT_HEIGHT}
+                    max={MAX_SPLIT_HEIGHT}
+                    step={500}
+                    clampBehavior="blur"
+                    allowDecimal={false}
+                    allowNegative={false}
+                    thousandSeparator={false}
+                    maw={220}
+                    value={value.splitHeight ?? lastHeight}
+                    onChange={(next) => {
+                      if (typeof next !== 'number' || next < MIN_SPLIT_HEIGHT || next > MAX_SPLIT_HEIGHT) return
+                      setLastHeight(next)
+                      onChange({ splitHeight: next })
+                    }}
+                  />
+                  <SplitPreview height={value.splitHeight ?? lastHeight} />
+                </>
+              )}
+            </Stack>
           </Input.Wrapper>
         </>
       )}
