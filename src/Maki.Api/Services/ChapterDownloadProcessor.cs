@@ -353,7 +353,9 @@ public class ChapterDownloadProcessor(
                 rootFolder = await db.RootFolders.FindAsync([series.RootFolderId], ct) ?? rootFolder;
             }
 
-            var desiredPath = await naming.BuildChapterRelativePathAsync(series, chapter, ct, group);
+            // The tier a scraped file gets is its source's kind, known before the archive is measured.
+            var desiredPath = await naming.BuildChapterRelativePathAsync(series, chapter, ct, group,
+                source.DisplayName, QualityTierResolver.Resolve(source.Kind, null, "", false));
 
             var seriesFiles = await db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToListAsync(ct);
             var heldByOthers = (await db.Chapters

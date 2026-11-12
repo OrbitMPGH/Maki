@@ -1,5 +1,6 @@
 using Maki.Core.Entities;
 using Maki.Core.Naming;
+using Maki.Core.Quality;
 
 namespace Maki.Core.Tests;
 
@@ -282,5 +283,73 @@ public class NamingFormatterTests
         var context = new NamingContext(new Series { Title = "Berserk" }, chapter, chapter);
 
         Assert.Equal("Berserk Vol.3 Ch.24", NamingFormatter.Format(NamingDefaults.ChapterFormat, context));
+    }
+
+    [Fact]
+    public void Series_status_author_and_publisher_render_from_the_series()
+    {
+        var series = new Series
+        {
+            Title = "Berserk", Status = SeriesStatus.Hiatus,
+            AuthorStory = "Miura Kentarou ,  Mori Kouji", Publisher = "Hakusensha, Dark Horse, Panini",
+        };
+        var context = Context(series);
+
+        Assert.Equal("Berserk [Hiatus] Miura Kentarou, Mori Kouji (Hakusensha)",
+            NamingFormatter.Format("{Series Title} [{Series Status}] {Series Author} ({Series Publisher})", context));
+    }
+
+    [Fact]
+    public void Series_author_falls_back_to_the_artist_and_unknown_values_render_empty()
+    {
+        var context = Context(new Series { Title = "Berserk", AuthorArt = "Miura Kentarou" });
+
+        Assert.Equal("Berserk Miura Kentarou",
+            NamingFormatter.Format("{Series Title} [{Series Status}] {Series Author} ({Series Publisher})", context));
+    }
+
+    [Fact]
+    public void Chapter_source_release_date_and_tier_render_for_a_chapter()
+    {
+        var chapter = new Chapter { Number = 24m, Volume = 3, ReleaseDate = new DateTime(2023, 1, 9) };
+        var context = Context(chapter: chapter) with { Source = "MangaDex", Tier = QualityTier.Scanlator };
+
+        Assert.Equal("Berserk Vol.3 Ch.24 (2023-01-09) [MangaDex] [Scanlator]",
+            NamingFormatter.Format(
+                "{Series Title} {Chapter VolChap} ({Chapter ReleaseDate}) [{Chapter Source}] [{Quality Tier}]", context));
+    }
+
+    [Fact]
+    public void Chapter_source_release_date_and_tier_leave_no_brackets_when_unknown()
+    {
+        var context = Context() with { Source = " ", Tier = QualityTier.Unknown };
+
+        Assert.Equal("Berserk Vol.3 Ch.24",
+            NamingFormatter.Format(
+                "{Series Title} {Chapter VolChap} ({Chapter ReleaseDate}) [{Chapter Source}] [{Quality Tier}]", context));
+    }
+
+    [Fact]
+    public void File_level_tokens_are_empty_in_a_series_folder()
+    {
+        var context = new NamingContext(new Series { Title = "Berserk" }, Source: "MangaDex", Tier: QualityTier.Official);
+
+        Assert.Equal("Berserk", NamingFormatter.Format("{Series Title} [{Chapter Source}] [{Quality Tier}]", context));
+    }
+
+    [Fact]
+    public void A_release_date_ignores_the_ambient_culture()
+    {
+        var previous = System.Globalization.CultureInfo.CurrentCulture;
+        try
+        {
+            System.Globalization.CultureInfo.CurrentCulture = new System.Globalization.CultureInfo("ar-SA");
+            var context = Context(chapter: new Chapter { Number = 1m, ReleaseDate = new DateTime(2023, 1, 9) });
+            Assert.Equal("2023-01-09", NamingFormatter.Format("{Chapter ReleaseDate}", context));
+        }
+        finally
+        {
+            System.Globalization.CultureInfo.CurrentCulture = previous;
+        }
     }
 }
