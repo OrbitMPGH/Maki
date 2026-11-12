@@ -166,5 +166,6 @@ public sealed class DownloadClientSettingsTests : IDisposable
         public Task AddFileAsync(TorrentClientSettings settings, byte[] torrent, string infoHash, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<ClientTorrent>> ListAsync(TorrentClientSettings settings, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<TorrentRemoval> RemoveAsync(TorrentClientSettings settings, string hash, bool deleteData, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<TorrentSeedLimits> GetSeedLimitsAsync(TorrentClientSettings settings, CancellationToken ct = default) => throw new NotSupportedException();
     }
 }
