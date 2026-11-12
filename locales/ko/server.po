@@ -504,6 +504,72 @@ msgstr "지원하지 않는 피드백 정렬입니다"
 msgid "error.feedback.unsupportedState"
 msgstr "지원하지 않는 피드백 상태입니다"
 
+#. ASP.NET Identity's own errors, joined with "; " when several apply at once.
+#. English: Something went wrong. Try again.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.defaultError"
+msgstr ""
+
+#. English: Someone else changed this account at the same time. Reload and try again.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.concurrencyFailure"
+msgstr ""
+
+#. English: Incorrect password.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.passwordMismatch"
+msgstr ""
+
+#. English: This link or code is no longer valid.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.invalidToken"
+msgstr ""
+
+#. English: That recovery code did not work.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.recoveryCodeRedemptionFailed"
+msgstr ""
+
+#. English: This sign-in is already linked to an account.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.loginAlreadyAssociated"
+msgstr ""
+
+#. English: The username {userName} is not allowed. Use letters, digits and - . _ @ + only.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.invalidUserName"
+msgstr ""
+
+#. English: The email address {email} is not valid.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.invalidEmail"
+msgstr ""
+
+#. English: The username {userName} is already taken.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.duplicateUserName"
+msgstr ""
+
+#. English: The email address {email} is already in use.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.duplicateEmail"
+msgstr ""
+
+#. English: This account already has a password.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.userAlreadyHasPassword"
+msgstr ""
+
+#. English: Lockout is not enabled for this account.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.userLockoutNotEnabled"
+msgstr ""
+
+#. English: Passwords must be at least {length} characters.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.passwordTooShort"
+msgstr ""
+
 #. English: Unknown tracker
 #: src/Maki.Api/Controllers/ImportListsController.cs
 #, fuzzy
@@ -4956,6 +5022,13 @@ msgstr "토렌트는 다운로드 클라이언트에 있지만, {series}의 다�
 msgid "error.download.torrentRemoved"
 msgstr "토렌트가 더 이상 qBittorrent에 없습니다"
 
+#. The download client was downloading this torrent but it made no progress for an hour, usually because
+#. nobody is seeding it. Maki takes a torrent it added out of the client and leaves the release out of later searches.
+#. English: The torrent made no progress for an hour
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "error.download.torrentStalled"
+msgstr ""
+
 #. The download client has held this torrent in an error state for half an hour. The client's own message follows.
 #. English: The download client reports an error on this torrent
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
@@ -5866,6 +5939,11 @@ msgstr "백그라운드 스케줄러 일시 중지됨"
 msgid "health.check.databaseCurrent"
 msgstr "데이터베이스에 연결할 수 있으며 최신 상태입니다"
 
+#. English: This database was written by a newer version of Maki (migration {latest}). Running this older version against it can corrupt data. Upgrade again, or restore the backup taken before the upgrade.
+#: src/Maki.Api/Services/HealthMonitor.cs
+msgid "health.check.databaseNewer"
+msgstr ""
+
 #. English: A previous startup migration failed. Check the startup logs.
 #: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.migrationFailed"
@@ -5948,7 +6026,7 @@ msgstr "알림 연결 {name}이(가) 연속 {count}번 전송에 실패했습니
 msgid "health.check.notificationDelivering"
 msgstr "알림 연결 {name}이(가) 다시 전송하고 있습니다"
 
-#. {job} is the scheduler's own name for the job and is not translated.
+#. {job} is one of the health.job.* names below, already translated.
 #. English: {job}: last run succeeded
 #: src/Maki.Api/Services/HealthJobListener.cs
 #, fuzzy
@@ -5960,6 +6038,182 @@ msgstr "{job}: 마지막 실행 성공"
 #, fuzzy
 msgid "health.check.jobFailed"
 msgstr "{job}: 마지막 실행 실패, 로그 확인"
+
+#. The name of a scheduled background job, shown on the Health page and in job notifications.
+#. English: Anime list sync
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.animeSignals"
+msgstr ""
+
+#. English: Unload idle recommendation data
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.artifactIdleUnload"
+msgstr ""
+
+#. English: Close the idle browser
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.browserIdleShutdown"
+msgstr ""
+
+#. English: Measure chapter files
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.chapterFileMeasure"
+msgstr ""
+
+#. English: Check for updates
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.checkForUpdates"
+msgstr ""
+
+#. English: Install the co-read graph
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.coRead"
+msgstr ""
+
+#. English: Import completed downloads
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.completedDownloads"
+msgstr ""
+
+#. English: Check custom sources
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.customSourceHealth"
+msgstr ""
+
+#. English: Update custom source repositories
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.customSourceRepositories"
+msgstr ""
+
+#. English: Prepare Discover
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.discoverCacheWarm"
+msgstr ""
+
+#. English: Unload the idle text model
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.embedderIdleUnload"
+msgstr ""
+
+#. English: Build the search index
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.embeddingIndex"
+msgstr ""
+
+#. English: Check followed creators for new series
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.followedCreatorReleases"
+msgstr ""
+
+#. English: Health checks
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.healthCheck"
+msgstr ""
+
+#. English: Housekeeping
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.housekeeping"
+msgstr ""
+
+#. English: Rebuild the image cache
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.imageCacheRebuild"
+msgstr ""
+
+#. English: Import lists
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.importLists"
+msgstr ""
+
+#. English: Index files for KOReader sync
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.koreaderDocumentIndex"
+msgstr ""
+
+#. English: Update the MangaBaka database
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.mangaBakaDumpRefresh"
+msgstr ""
+
+#. English: Prepare MangaBaka database tables
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.mangaBakaTableBackfill"
+msgstr ""
+
+#. English: Refresh metadata
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.metadataRefresh"
+msgstr ""
+
+#. English: Install the prebuilt search index
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.prebuiltIndex"
+msgstr ""
+
+#. English: Remove read chapter files
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.readFileCleanup"
+msgstr ""
+
+#. English: Install reader cohorts
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.readerCohorts"
+msgstr ""
+
+#. English: Install the recommendation graph
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.recoGraph"
+msgstr ""
+
+#. English: Check monitored series for new chapters
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.refreshMonitored"
+msgstr ""
+
+#. English: Retry failed downloads
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.retryFailedDownloads"
+msgstr ""
+
+#. English: Scheduled backup
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.scheduledBackup"
+msgstr ""
+
+#. English: Scrobble sync
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.scrobble"
+msgstr ""
+
+#. English: Smart Download
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.smartDownload"
+msgstr ""
+
+#. English: Install taste vectors
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.tasteVectors"
+msgstr ""
+
+#. English: Remove finished torrents
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.torrentRemoval"
+msgstr ""
+
+#. English: Upgrade scan
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.upgradeScan"
+msgstr ""
+
+#. English: Volume upgrade search
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.upgradeVolumeSearch"
+msgstr ""
+
+#. English: Unload the idle upscaler
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.upscalerIdleUnload"
+msgstr ""
 
 #. Problems found in the library itself, shown on the same page as the checks above.
 #. {detail} is the source's own error text and is not translated.
@@ -6325,7 +6579,7 @@ msgstr "상태 복구됨"
 msgid "inbox.health.recovered.body"
 msgstr "해결됨: {detail}"
 
-#. A scheduled background job changed state. {job} is the scheduler's own name for it and is not
+#. A scheduled background job changed state. {job} is one of the health.job.* names, already
 #. translated. The notify.* pair goes outward to Discord or a webhook; the inbox.* pair is the admin
 #. inbox copy, worded per reader.
 #. English: Background job failed
