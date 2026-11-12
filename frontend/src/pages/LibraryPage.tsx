@@ -771,6 +771,8 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     [series],
   )
 
+  // Home rails built from a saved filter run this same chain on the server
+  // (src/Maki.Api/Services/LibraryFilterEvaluator.cs). Change one, change the other.
   const visible = useMemo(() => {
     let list = [...(series ?? [])]
     if (onDevice) list = list.filter((s) => offlineSeries.has(s.id))

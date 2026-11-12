@@ -74,6 +74,21 @@ export const NeedsLocalDatabase: Story = {
   },
 }
 
+export const SavedFilterDeleted: Story = {
+  args: { rail: { ...customRails[0], spec: { source: 'library', libraryFilterId: 99 } } },
+  parameters: {
+    msw: homePage(
+      http.get(api('/rails/:id/items'), () =>
+        HttpResponse.json({ source: 'library', items: [], seriesIds: [], unavailable: 'filterDeleted' }),
+      ),
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/saved Library filter this rail showed was deleted/)).toBeVisible()
+    expect(canvas.queryByRole('button', { name: 'Show more' })).toBeNull()
+  },
+}
+
 export const LoadFailed: Story = {
   parameters: { msw: homePage(http.get(api('/rails/:id/items'), () => failWith(500))) },
   play: async ({ canvas }) => {

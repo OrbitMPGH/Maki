@@ -22,6 +22,11 @@ export interface CustomRailSpec {
   seeds?: RecommendationSeed[] | null
   obscurity?: number
   diversity?: number
+  /**
+   * Library only: one of your saved Library filters, shown in its own sort instead of `filters`.
+   * Referenced by id, so editing the filter changes the rail.
+   */
+  libraryFilterId?: number | null
 }
 
 export interface CustomRail {
@@ -38,7 +43,10 @@ export interface CustomRailItems {
   items: RecommendationItem[]
   /** Library rails: the matching series' ids, in order. */
   seriesIds: number[]
-  /** `catalogue` when the local MangaBaka database cannot answer. */
+  /**
+   * `catalogue` when the local MangaBaka database cannot answer, `filterDeleted` when the saved Library
+   * filter a library rail was built from is gone.
+   */
   unavailable?: string | null
 }
 

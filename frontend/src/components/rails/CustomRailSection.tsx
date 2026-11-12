@@ -171,7 +171,11 @@ export function CustomRailSection({
         chevron
       />
 
-      {data?.unavailable ? (
+      {data?.unavailable === 'filterDeleted' ? (
+        <Text c="var(--ink-3)" size="sm">
+          <Trans>The saved Library filter this rail showed was deleted. Edit the rail to pick another.</Trans>
+        </Text>
+      ) : data?.unavailable ? (
         <Text c="var(--ink-3)" size="sm">
           <Trans>This rail needs the local MangaBaka database, which is switched off or still downloading.</Trans>
         </Text>

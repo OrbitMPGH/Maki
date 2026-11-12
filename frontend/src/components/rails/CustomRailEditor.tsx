@@ -17,7 +17,7 @@ import {
 } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '../../lib/toast'
-import { useMetadataSettings, type RecommendationSeed } from '../../api/hooks'
+import { useMetadataSettings, useSavedFilters, type RecommendationSeed } from '../../api/hooks'
 import {
   RAIL_SORTS,
   RAIL_SORT_LABELS,
@@ -127,6 +127,12 @@ export function CustomRailForm({
   const [seeds, setSeeds] = useState<RecommendationSeed[]>(start.spec.seeds ?? [])
   const [obscurity, setObscurity] = useState(start.spec.obscurity ?? 0)
   const [diversity, setDiversity] = useState(start.spec.diversity ?? 0)
+  const [libraryFilterId, setLibraryFilterId] = useState<number | null>(start.spec.libraryFilterId ?? null)
+  const { data: savedFilters } = useSavedFilters()
+  // A rail whose filter was deleted falls back to the filters below; saving drops the dead reference.
+  const savedFilterGone =
+    source === 'library' && libraryFilterId != null && savedFilters != null && !savedFilters.some((f) => f.id === libraryFilterId)
+  const liveFilterId = savedFilterGone ? null : libraryFilterId
   const [error, setError] = useState<string | null>(null)
   const catalogue = useCatalogueFilters(filtersFromSpec(start.spec.filters ?? {}))
 
@@ -149,7 +155,14 @@ export function CustomRailForm({
     seeds: source === 'recommendations' ? seeds : null,
     obscurity: source === 'recommendations' ? obscurity : 0,
     diversity: source === 'recommendations' ? diversity : 0,
+    libraryFilterId: source === 'library' ? liveFilterId : null,
   }
+  const fromSavedFilter = source === 'library' && liveFilterId != null
+  // Saved filter names are typed by you, so they pass through untranslated.
+  const savedFilterOptions = [
+    { value: '', label: t`None, use the filters below` },
+    ...(savedFilters ?? []).map((f) => ({ value: String(f.id), label: f.name })),
+  ]
   const specJson = JSON.stringify(spec)
   const [debouncedJson] = useDebouncedValue(specJson, 400)
   const countSpec = useMemo(() => JSON.parse(debouncedJson) as CustomRailSpec, [debouncedJson])
@@ -240,8 +253,26 @@ export function CustomRailForm({
           </Stack>
         </SimpleGrid>
 
+        {source === 'library' && (savedFilters ?? []).length > 0 && (
+          <Select
+            label={t`Saved Library filter`}
+            data={savedFilterOptions}
+            value={liveFilterId != null ? String(liveFilterId) : ''}
+            onChange={(v) => setLibraryFilterId(v ? Number(v) : null)}
+            allowDeselect={false}
+            comboboxProps={{ withinPortal: true }}
+          />
+        )}
+        {savedFilterGone && (
+          <Text size="sm" c="var(--warn)">
+            <Trans>The saved Library filter this rail used was deleted. Pick another, or use the filters below.</Trans>
+          </Text>
+        )}
+
         <Text size="xs" c="var(--ink-3)">
-          {source === 'library' ? (
+          {fromSavedFilter ? (
+            <Trans>Series your saved Library filter shows, in its own sort. Editing the filter changes this rail.</Trans>
+          ) : source === 'library' ? (
             <Trans>Series you already have that match these filters.</Trans>
           ) : source === 'recommendations' ? (
             <Trans>Picks for you, ranked the same way as the Recommended tab with these settings.</Trans>
@@ -250,7 +281,7 @@ export function CustomRailForm({
           )}
         </Text>
 
-        <CatalogueFilters controls={catalogue.controls} cols={{ base: 1, sm: 2 }} />
+        {!fromSavedFilter && <CatalogueFilters controls={catalogue.controls} cols={{ base: 1, sm: 2 }} />}
 
         {source === 'recommendations' && (
           <>
@@ -283,7 +314,7 @@ export function CustomRailForm({
           </>
         )}
 
-        {(sortOptions.length > 0 || source === 'catalogue') && (
+        {!fromSavedFilter && (sortOptions.length > 0 || source === 'catalogue') && (
           <Group gap="lg" align="flex-end">
             {sortOptions.length > 0 && (
               <Select
