@@ -147,7 +147,7 @@ public class TallPageSplitterTests(ITestOutputHelper output)
             {
                 using (var writer = new StreamWriter(zip.CreateEntry("ComicInfo.xml").Open()))
                 {
-                    writer.Write("<?xml version=\"1.0\"?><ComicInfo><Series>S</Series><PageCount>3</PageCount><Pages><Page Image=\"0\" /></Pages></ComicInfo>");
+                    writer.Write("<?xml version=\"1.0\"?><ComicInfo><Series>S</Series><PageCount>3</PageCount><Pages><Page Image=\"0\" Type=\"FrontCover\" /><Page Image=\"1\" /><Page Image=\"2\" /></Pages></ComicInfo>");
                 }
 
                 foreach (var (name, bytes) in new[]
@@ -175,7 +175,9 @@ public class TallPageSplitterTests(ITestOutputHelper output)
             using var info = new StreamReader(written.GetEntry("ComicInfo.xml")!.Open());
             var xml = info.ReadToEnd();
             Assert.Contains("<PageCount>6</PageCount>", xml);
-            Assert.DoesNotContain("<Pages>", xml);
+            Assert.Equal(["0", "1", "2", "3", "4", "5"],
+                System.Xml.Linq.XDocument.Parse(xml).Root!.Element("Pages")!.Elements("Page").Select(e => (string)e.Attribute("Image")!));
+            Assert.Contains("Type=\"FrontCover\"", xml);
             Assert.Contains("<Series>S</Series>", xml);
         }
         finally

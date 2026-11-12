@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    [Migration("20261112222736_PageConversionSplitPages")]
-    partial class PageConversionSplitPages
+    [Migration("20261112224921_LibraryOutputLanes")]
+    partial class LibraryOutputLanes
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -463,6 +463,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Title")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Url")
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("Volume")
@@ -1841,6 +1844,35 @@ namespace Maki.Data.Migrations
                     b.ToTable("RootFolders");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.RootFolderRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ConditionsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RootFolderId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RootFolderId");
+
+                    b.ToTable("RootFolderRules");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.SavedFilter", b =>
                 {
                     b.Property<int>("Id")
@@ -2188,6 +2220,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("PendingImportLink")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("PrepareChapters")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Publisher")
@@ -3762,6 +3797,17 @@ namespace Maki.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.RootFolderRule", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.RootFolder", "RootFolder")
+                        .WithMany()
+                        .HasForeignKey("RootFolderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RootFolder");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.SavedFilter", b =>

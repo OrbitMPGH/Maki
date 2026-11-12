@@ -208,7 +208,7 @@ public static class ArchivePageConverter
                     var written = target.CreateEntry(infoEntry.FullName);
                     written.LastWriteTime = infoEntry.LastWriteTime;
                     await using var stream = written.Open();
-                    await stream.WriteAsync(pieces.Count > 0 ? WithPageCount(infoBytes, newCount) : infoBytes, ct);
+                    await stream.WriteAsync(pieces.Count > 0 ? WithPageCount(infoBytes, newCount, pieces) : infoBytes, ct);
                 }
 
                 // On disk before any rename, so a crash never leaves a renamed archive whose data never
@@ -268,11 +268,12 @@ public static class ArchivePageConverter
         string.Equals(entry.FullName, "ComicInfo.xml", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
-    /// ComicInfo.xml with its PageCount set to the new count. A <c>Pages</c> block lists pages by their old
-    /// index, so it goes; whatever builds that block can write it again from the split archive. Anything
-    /// that does not parse is left as it was.
+    /// ComicInfo.xml with its PageCount set to the new count and its <c>Pages</c> block renumbered:
+    /// a split page's first piece keeps its entry (FrontCover and all) minus the size and double-page
+    /// attributes that no longer hold, and each further piece gets a bare entry. A block that cannot be
+    /// renumbered goes. Anything that does not parse is left as it was.
     /// </summary>
-    internal static byte[] WithPageCount(byte[] xml, int pageCount)
+    internal static byte[] WithPageCount(byte[] xml, int pageCount, IReadOnlyDictionary<int, int>? pieces = null)
     {
         try
         {
@@ -288,7 +289,11 @@ public static class ArchivePageConverter
             }
 
             var ns = root.Name.Namespace;
-            root.Element(ns + "Pages")?.Remove();
+            if (root.Element(ns + "Pages") is { } pagesBlock && !RenumberPages(pagesBlock, pieces ?? new Dictionary<int, int>()))
+            {
+                pagesBlock.Remove();
+            }
+
             var count = pageCount.ToString(CultureInfo.InvariantCulture);
             if (root.Element(ns + "PageCount") is { } existing)
             {
@@ -315,6 +320,48 @@ public static class ArchivePageConverter
         {
             return xml;
         }
+    }
+
+    private static bool RenumberPages(XElement block, IReadOnlyDictionary<int, int> pieces)
+    {
+        var ns = block.Name.Namespace;
+        var entries = new List<(int Index, XElement Page)>();
+        foreach (var page in block.Elements(ns + "Page"))
+        {
+            if (!int.TryParse((string?)page.Attribute("Image"), NumberStyles.None, CultureInfo.InvariantCulture, out var index))
+            {
+                return false;
+            }
+
+            entries.Add((index, page));
+        }
+
+        var shift = 0;
+        var renumbered = new List<XElement>();
+        foreach (var (index, page) in entries.OrderBy(e => e.Index))
+        {
+            var count = pieces.TryGetValue(index, out var n) ? n : 1;
+            var first = new XElement(page);
+            first.SetAttributeValue("Image", (index + shift).ToString(CultureInfo.InvariantCulture));
+            if (count > 1)
+            {
+                foreach (var stale in new[] { "DoublePage", "ImageWidth", "ImageHeight", "ImageSize" })
+                {
+                    first.Attribute(stale)?.Remove();
+                }
+            }
+
+            renumbered.Add(first);
+            for (var i = 1; i < count; i++)
+            {
+                renumbered.Add(new XElement(ns + "Page", new XAttribute("Image", (index + shift + i).ToString(CultureInfo.InvariantCulture))));
+            }
+
+            shift += count - 1;
+        }
+
+        block.ReplaceNodes(renumbered);
+        return true;
     }
 
     private const int MaxProbeReads = 12;

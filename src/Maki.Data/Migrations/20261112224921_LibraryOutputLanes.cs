@@ -6,11 +6,17 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Maki.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class RootFolderRulesAndChapterUrl : Migration
+    public partial class LibraryOutputLanes : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<string>(
+                name: "SplitPages",
+                table: "PageConversionHistory",
+                type: "TEXT",
+                nullable: true);
+
             migrationBuilder.AddColumn<string>(
                 name: "Url",
                 table: "ChapterSourceLinks",
@@ -51,6 +57,10 @@ namespace Maki.Data.Migrations
         {
             migrationBuilder.DropTable(
                 name: "RootFolderRules");
+
+            migrationBuilder.DropColumn(
+                name: "SplitPages",
+                table: "PageConversionHistory");
 
             migrationBuilder.DropColumn(
                 name: "Url",
