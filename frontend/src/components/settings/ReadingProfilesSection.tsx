@@ -13,6 +13,7 @@ import {
   type ReadingProfileInput,
 } from '../../api/readingProfiles'
 import { BACKGROUNDS, DEFAULT_PREFS, backgroundChoice, type BackgroundChoice, type ReaderPrefs } from '../../pages/reader/prefs'
+import TapZoneSettings from '../../pages/reader/TapZoneSettings'
 import { useReaderSettings, useSaveReaderSettings } from '../../api/reader'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { TagChip } from '../ui/TagChip'
@@ -529,6 +530,7 @@ function ProfileEditor({
         checked={prefs.tapZones}
         onChange={(e) => set({ tapZones: e.currentTarget.checked })}
       />
+      {prefs.tapZones && <TapZoneSettings prefs={prefs} onPrefs={set} />}
       <Switch
         size="sm"
         label={t`Show page number`}

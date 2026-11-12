@@ -9876,7 +9876,8 @@ body.reader-open {
 /* The mouse is hidden once it has rested on the page; the reader drops the attribute while the
    pointer is on a bar or a menu is open, and any movement. */
 .reader-root[data-cursor-idle],
-.reader-root[data-cursor-idle] * {
+.reader-root[data-cursor-idle] *,
+.reader-root[data-cursor-idle] .reader-surface[data-gestures][data-zoomed] {
   cursor: none;
 }
 /* Bars, cards, the badge and the status pill carry their own dark surfaces. What sits straight on
@@ -9952,6 +9953,17 @@ body.reader-open {
 .reader-surface[data-scroll='vertical'] {
   overflow-x: hidden;
   touch-action: pan-y;
+}
+/* Single and Double pinch, pan and swipe in script (usePagedGestures), so the browser neither
+   scrolls nor zooms under them. Its own pinch zoom would scale the toolbar with the page. */
+.reader-surface[data-gestures] {
+  touch-action: none;
+}
+.reader-surface[data-gestures][data-zoomed] {
+  cursor: grab;
+}
+.reader-surface[data-gestures][data-panning] {
+  cursor: grabbing;
 }
 
 .reader-paged {
@@ -10774,6 +10786,30 @@ body.reader-open {
   fill-opacity: 0.22;
   stroke: currentColor;
   stroke-width: 1.5;
+}
+/* TapZonePreview: forward zones take the accent, back zones a neutral tint, the bars zone stays bare. */
+.reader-tap-preview {
+  flex: none;
+  color: var(--ink-2);
+}
+.reader-tap-preview rect[data-action='next'] {
+  fill: color-mix(in srgb, var(--brand) 45%, transparent);
+}
+.reader-tap-preview rect[data-action='previous'] {
+  fill: color-mix(in srgb, currentColor 22%, transparent);
+}
+.reader-tap-preview rect[data-action='menu'] {
+  fill: transparent;
+}
+.reader-tap-preview text {
+  fill: currentColor;
+  font-size: 11px;
+  font-weight: 600;
+}
+.reader-tap-preview-edge {
+  fill: none;
+  stroke: currentColor;
+  stroke-opacity: 0.5;
 }
 .reader-settings-pair {
   display: grid;

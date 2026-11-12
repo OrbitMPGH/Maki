@@ -89,6 +89,9 @@ export const readerPrefs: ReaderPrefs = {
   enhanceWholeChapter: false,
   autoSkipRecap: false,
   progressRail: false,
+  tapLayout: 'sides',
+  tapWidth: 33,
+  tapInvert: false,
 }
 
 export const readerSettings: ReaderSettings = {

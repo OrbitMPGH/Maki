@@ -53,6 +53,7 @@ import {
 } from './enhanceMethods'
 import { BACKGROUNDS, backgroundChoice, enhanceFor, toneFilter, type BackgroundChoice, type PrefsSelection, type ReaderPrefs } from './prefs'
 import { useEnhanceEngine } from './enhanceRuntime'
+import TapZoneSettings from './TapZoneSettings'
 
 /**
  * The reader renders above Mantine's popover layer, so anything that portals to <body> has to
@@ -766,6 +767,9 @@ export default function ReaderSettings({
                       classNames={{ body: 'reader-settings-switch', description: 'reader-settings-hint' }}
                     />
                   ))}
+                  {prefs.tapZones && (
+                    <TapZoneSettings prefs={prefs} onPrefs={onPrefs} hintClassName="reader-settings-hint" />
+                  )}
                 </Stack>
               </SubPage>
             )}

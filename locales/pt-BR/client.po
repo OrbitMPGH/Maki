@@ -5494,6 +5494,10 @@ msgstr "Token do bot"
 msgid "Both"
 msgstr "Ambos"
 
+#: src/pages/reader/tapZones.ts
+msgid "Both edges go forward and the bottom middle goes back, for reading with one hand."
+msgstr ""
+
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
 msgid "Bottom"
@@ -8903,6 +8907,10 @@ msgstr "Conquistado pela própria biblioteca, então todos nesta instância comp
 msgid "Ecchi"
 msgstr "Ecchi"
 
+#: src/pages/reader/tapZones.ts
+msgid "Edges"
+msgstr ""
+
 #: src/components/notes/NoteThread.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesTagsEditor.tsx
@@ -12051,6 +12059,10 @@ msgstr "Tipo"
 msgid "Kind of release"
 msgstr "Tipo de lançamento"
 
+#: src/pages/reader/tapZones.ts
+msgid "Kindle"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Kinds"
@@ -12083,6 +12095,10 @@ msgstr "koreader, kosync, sincronização de progresso, servidor de sincronizaç
 #, fuzzy
 msgid "Korean"
 msgstr "Coreano"
+
+#: src/pages/reader/tapZones.ts
+msgid "L-shape"
+msgstr ""
 
 #: src/components/settings/downloadClientFields.ts
 #, fuzzy
@@ -13840,6 +13856,10 @@ msgstr "Quase sempre é uma pasta renomeada ou reorganizada fora do Maki. Reasso
 #, fuzzy
 msgid "Most missing"
 msgstr "Mais faltantes"
+
+#: src/pages/reader/tapZones.ts
+msgid "Most of the page goes forward. A strip on one side goes back, the top opens the bars."
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -16275,6 +16295,10 @@ msgstr "Um dia perdido por semana é perdoado, e hoje nunca quebra uma sequênci
 msgid "One refresh required"
 msgstr "Uma atualização necessária"
 
+#: src/pages/reader/tapZones.ts
+msgid "One side goes back, the other goes forward."
+msgstr ""
+
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "One tile per genre, each opening its most popular titles."
@@ -17683,6 +17707,10 @@ msgstr ""
 #, fuzzy
 msgid "Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS."
 msgstr "Coloque atrás de HTTPS e depois ative em Configurações → Sistema → Rede → Exigir HTTPS."
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Puts the back zones where the forward ones were, for the other hand."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -21715,6 +21743,10 @@ msgstr "História paralela de"
 msgid "Side story of {relatedTo}"
 msgstr "História paralela de {relatedTo}"
 
+#: src/pages/reader/tapZones.ts
+msgid "Sides"
+msgstr ""
+
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Sign in"
@@ -22676,6 +22708,10 @@ msgstr "Suwayomi"
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
 msgstr "suwayomi, tachidesk, mihon, tachiyomi, extensões, fontes de extensões, mais fontes, graphql, 4567"
 
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Swap back and forward"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
@@ -22836,6 +22872,10 @@ msgstr "Toque nas bordas da página para virar. No Contínuo, toque no topo ou n
 #, fuzzy
 msgid "Tap to show"
 msgstr "Toque para mostrar"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Tap zone layout"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -23652,6 +23692,10 @@ msgstr "Os títulos que estão ganhando popularidade mais rapidamente agora."
 #, fuzzy
 msgid "The token @BotFather gave you."
 msgstr "O token fornecido pelo @BotFather."
+
+#: src/pages/reader/tapZones.ts
+msgid "The top and one side go back, the bottom and the other side go forward."
+msgstr ""
 
 #. {series} is a series title and is never translated. It may be this row's own series, when an older download of it holds the torrent.
 #: src/api/queue.ts
@@ -26714,6 +26758,14 @@ msgstr "Só seu. Isto muda o que cai no seu sino, e não o de mais ninguém."
 #, fuzzy
 msgid "Z:\\downloads (optional)"
 msgstr "Z:\\downloads (opcional)"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Zone size"
+msgstr ""
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Zone size ({width}%)"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

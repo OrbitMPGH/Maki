@@ -4546,6 +4546,10 @@ msgstr "Bot token"
 msgid "Both"
 msgstr "Both"
 
+#: src/pages/reader/tapZones.ts
+msgid "Both edges go forward and the bottom middle goes back, for reading with one hand."
+msgstr "Both edges go forward and the bottom middle goes back, for reading with one hand."
+
 #: src/components/layout/SectionProperties.tsx
 msgid "Bottom"
 msgstr "Bottom"
@@ -7352,6 +7356,10 @@ msgstr "Earned by the library itself, so everyone on this instance shares them."
 msgid "Ecchi"
 msgstr "Ecchi"
 
+#: src/pages/reader/tapZones.ts
+msgid "Edges"
+msgstr "Edges"
+
 #: src/components/notes/NoteThread.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesTagsEditor.tsx
@@ -9935,6 +9943,10 @@ msgstr "Kind"
 msgid "Kind of release"
 msgstr "Kind of release"
 
+#: src/pages/reader/tapZones.ts
+msgid "Kindle"
+msgstr "Kindle"
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Kinds"
 msgstr "Kinds"
@@ -9961,6 +9973,10 @@ msgstr "koreader, kosync, progress sync, sync server, offline, ereader, kobo, ki
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Korean"
 msgstr "Korean"
+
+#: src/pages/reader/tapZones.ts
+msgid "L-shape"
+msgstr "L-shape"
 
 #: src/components/settings/downloadClientFields.ts
 msgid "Label"
@@ -11404,6 +11420,10 @@ msgstr "Most likely a folder renamed or reorganised outside Maki. Relinking poin
 #: src/pages/LibraryPage.tsx
 msgid "Most missing"
 msgstr "Most missing"
+
+#: src/pages/reader/tapZones.ts
+msgid "Most of the page goes forward. A strip on one side goes back, the top opens the bars."
+msgstr "Most of the page goes forward. A strip on one side goes back, the top opens the bars."
 
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "Most of your reading happens between <0>{start}</0> and <1>{end}</1>, and <2>{weekendShare}</2> of it lands on weekends."
@@ -13398,6 +13418,10 @@ msgstr "One missed day a week is forgiven, and today never breaks a streak."
 msgid "One refresh required"
 msgstr "One refresh required"
 
+#: src/pages/reader/tapZones.ts
+msgid "One side goes back, the other goes forward."
+msgstr "One side goes back, the other goes forward."
+
 #: src/components/discover/discoverSectionDefs.ts
 msgid "One tile per genre, each opening its most popular titles."
 msgstr "One tile per genre, each opening its most popular titles."
@@ -14556,6 +14580,10 @@ msgstr "Put back the files as they were downloaded."
 #: src/pages/SetupAccountPage.tsx
 msgid "Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS."
 msgstr "Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS."
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Puts the back zones where the forward ones were, for the other hand."
+msgstr "Puts the back zones where the forward ones were, for the other hand."
 
 #: src/components/SourceCompareModal.tsx
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
@@ -17870,6 +17898,10 @@ msgstr "Side story of"
 msgid "Side story of {relatedTo}"
 msgstr "Side story of {relatedTo}"
 
+#: src/pages/reader/tapZones.ts
+msgid "Sides"
+msgstr "Sides"
+
 #: src/pages/LoginPage.tsx
 msgid "Sign in"
 msgstr "Sign in"
@@ -18658,6 +18690,10 @@ msgstr "Suwayomi"
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
 msgstr "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
 
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Swap back and forward"
+msgstr "Swap back and forward"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
 msgstr "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
@@ -18791,6 +18827,10 @@ msgstr "Tap the page edges to turn pages. In Continuous, tap the top or bottom t
 #: src/components/notes/NoteThread.tsx
 msgid "Tap to show"
 msgstr "Tap to show"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Tap zone layout"
+msgstr "Tap zone layout"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -19456,6 +19496,10 @@ msgstr "The titles climbing fastest in popularity right now."
 #: src/components/NotificationsSection.tsx
 msgid "The token @BotFather gave you."
 msgstr "The token @BotFather gave you."
+
+#: src/pages/reader/tapZones.ts
+msgid "The top and one side go back, the bottom and the other side go forward."
+msgstr "The top and one side go back, the bottom and the other side go forward."
 
 #. {series} is a series title and is never translated. It may be this row's own series, when an older download of it holds the torrent.
 #: src/api/queue.ts
@@ -21970,6 +22014,14 @@ msgstr "Yours alone. This changes what lands in your bell, not anybody else's."
 #: src/components/settings/downloadClientFields.ts
 msgid "Z:\\downloads (optional)"
 msgstr "Z:\\downloads (optional)"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Zone size"
+msgstr "Zone size"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Zone size ({width}%)"
+msgstr "Zone size ({width}%)"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Zoom in"

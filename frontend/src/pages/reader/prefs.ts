@@ -5,6 +5,7 @@ import { readerSettingsQuery } from '../../api/reader'
 import type { PrefsSource, ReaderManifest, ResolvedReaderPrefs } from '../../api/reader'
 import { useReadingProfiles, type ReadingProfile } from '../../api/readingProfiles'
 import type { QualityTierName } from '../../api/upgrades'
+import type { TapLayout } from './tapZones'
 
 export type ReaderMode = 'paged' | 'double' | 'vertical'
 export type ReaderDirection = 'ltr' | 'rtl'
@@ -67,6 +68,12 @@ export interface ReaderPrefs {
   autoSkipRecap: boolean
   /** In Continuous, show the chapter's progress as a rail down the screen's edge that can be dragged to seek. */
   progressRail: boolean
+  /** How the page divides into tap zones in Single and Double. */
+  tapLayout: TapLayout
+  /** The side zones' share of the page, in percent. */
+  tapWidth: number
+  /** Swap the back and forward zones. */
+  tapInvert: boolean
 }
 
 /**
@@ -123,6 +130,9 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   enhanceWholeChapter: false,
   autoSkipRecap: false,
   progressRail: false,
+  tapLayout: 'sides',
+  tapWidth: 33,
+  tapInvert: false,
 }
 
 /** The enhance level a chapter actually gets: off when its file's tier is one the prefs skip. */
