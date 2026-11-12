@@ -494,7 +494,7 @@ public class ReadingProgressService(
             .OrderByDescending(c => c.Number)
             .Select(c => c.Number)
             .FirstOrDefaultAsync(ct);
-        return highest is { } h && h > 0 && Math.Floor(maxChapter) >= Math.Floor((double)h);
+        return SeriesFinishRule.Closes(status, maxChapter, highest);
     }
 
     /// <summary>

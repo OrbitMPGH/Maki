@@ -3,11 +3,16 @@ import { IconArrowLeft, IconArrowRight, IconNote } from '../../lib/icons'
 import { type ReactNode, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { Plural, Trans } from '@lingui/react/macro'
-import type { ReaderManifest } from '../../api/reader'
+import { useReaderEnding, type ReaderManifest } from '../../api/reader'
+import { useSeriesQueue } from '../../api/hooks'
 import { useChapterNotes } from '../../api/notes'
 import NoteBody from '../../components/notes/NoteBody'
 import { useAuthorLabel } from '../../components/notes/useAuthorLabel'
-import { formatDateTime } from '../../format'
+import { formatDateTime, formatReadingTime } from '../../format'
+import ChapterEndDownloads from './ChapterEndDownloads'
+import ChapterEndOutlook from './ChapterEndOutlook'
+import ChapterEndRating from './ChapterEndRating'
+import { activeDownloads, seriesFinishedHere, seriesSecondsLeft } from './endScreen'
 
 /**
  * Chapter numbers the jump to the next chapter passes over. Only whole chapters count: 19.5 to 20
@@ -91,20 +96,37 @@ export default function ChapterEnd({
   manifest: ReaderManifest
   readingCounted: boolean
   rtl: boolean
-  onNext: () => void
+  /** Takes the chapter to open, which is the live next one when it arrived after the manifest. */
+  onNext: (chapterId: number) => void
   onStay: () => void
   onOpenNotes: () => void
   /** The "how is it so far?" line, when a checkpoint is waiting. */
   ratingPrompt?: ReactNode
 }) {
-  const { label: chapterLabel, seriesChapterCount, nextChapterLabel } = manifest
-  const readCount = Math.min(seriesChapterCount, manifest.seriesReadCount + (readingCounted ? 1 : 0))
+  // Read live, so a chapter that finishes downloading while this is up shows as the next one. The
+  // manifest stays as it was when the chapter opened; this overlays what has moved since.
+  const { data: ending } = useReaderEnding(manifest.seriesId, manifest.chapterId)
+  const live = ending ?? manifest
+  const { seriesChapterCount, nextChapterId, nextChapterLabel, nextChapterNumber } = live
+  const chapterLabel = manifest.label
+  // The ending's read count already includes this chapter once its completing write has landed.
+  const readCount = Math.min(
+    seriesChapterCount,
+    live.seriesReadCount + (readingCounted && !ending?.completed ? 1 : 0),
+  )
   const percent = seriesChapterCount > 0 ? (readCount / seriesChapterCount) * 100 : 0
   const unread = Math.max(0, seriesChapterCount - readCount)
-  const pending = Math.max(0, manifest.seriesWantedCount - seriesChapterCount)
-  const gap = skipped(manifest.number, manifest.nextChapterNumber)
+  const pending = Math.max(0, live.seriesWantedCount - seriesChapterCount)
+  const gap = skipped(manifest.number, nextChapterNumber)
   const [gapFrom, gapTo] = gap ?? [0, 0]
-  const hasNext = manifest.nextChapterId != null
+  const hasNext = nextChapterId != null
+  const finished = seriesFinishedHere(manifest, ending, readingCounted)
+  const askRating = finished && ending != null && ending.rating == null && !ending.rateHintDismissed
+  const timeLeft = finished ? null : seriesSecondsLeft(manifest.readingPace, readCount)
+  const timeLeftText = timeLeft != null ? formatReadingTime(timeLeft) : ''
+  const queue = useSeriesQueue(manifest.seriesId, !hasNext && pending > 0)
+  const downloads = activeDownloads(queue.data?.items ?? [])
+  const downloading = downloads.working.length + downloads.waiting.length > 0
   const forwardKey = rtl ? '←' : '→'
   // Focus lands on the heading, not a button: Space activates a button on key-up, so a button focused
   // by the very page turn that opened this screen would take that key-up as a click.
@@ -130,6 +152,8 @@ export default function ChapterEnd({
             <span className="reader-end-eyebrow">
               {hasNext ? (
                 <Trans>Finished</Trans>
+              ) : finished ? (
+                <Trans>You finished the series</Trans>
               ) : unread === 0 ? (
                 <Trans>You're caught up</Trans>
               ) : (
@@ -152,7 +176,12 @@ export default function ChapterEnd({
                 </span>
               </div>
             )}
-            {ratingPrompt}
+            {timeLeft != null && (
+              <span className="reader-end-timeleft tnum">
+                <Trans>About {timeLeftText} left in the series</Trans>
+              </span>
+            )}
+            {finished ? askRating && <ChapterEndRating seriesId={manifest.seriesId} soFar={ending?.provisionalRating ?? null} /> : ratingPrompt}
           </div>
         </div>
 
@@ -174,7 +203,7 @@ export default function ChapterEnd({
               </span>
             )}
             <Group gap="xs" mt="md">
-              <Button onClick={onNext} rightSection={<IconArrowRight size={16} />}>
+              <Button onClick={() => onNext(nextChapterId)} rightSection={<IconArrowRight size={16} />}>
                 {nextChapterLabel ? <Trans>Read {nextChapterLabel}</Trans> : <Trans>Next chapter</Trans>}
               </Button>
               <Button variant="subtle" color="gray" className="reader-end-quiet" onClick={onStay}>
@@ -187,23 +216,32 @@ export default function ChapterEnd({
           </div>
         ) : (
           <div className="reader-end-next">
-            <span className="reader-end-note">
-              {pending > 0 ? (
-                <Plural
-                  value={pending}
-                  one="# more chapter is wanted. It shows up here once it downloads."
-                  other="# more chapters are wanted. They show up here once they download."
-                />
-              ) : unread > 0 ? (
-                <Plural
-                  value={unread}
-                  one="# earlier chapter is still unread."
-                  other="# earlier chapters are still unread."
-                />
-              ) : (
-                <Trans>That's every chapter on disk.</Trans>
-              )}
-            </span>
+            {downloading ? (
+              <ChapterEndDownloads items={queue.data?.items ?? []} />
+            ) : (
+              <span className="reader-end-note">
+                {finished ? (
+                  <Trans>That's the whole series.</Trans>
+                ) : pending > 0 ? (
+                  <Plural
+                    value={pending}
+                    one="# more chapter is wanted. It shows up here once it downloads."
+                    other="# more chapters are wanted. They show up here once they download."
+                  />
+                ) : unread > 0 ? (
+                  <Plural
+                    value={unread}
+                    one="# earlier chapter is still unread."
+                    other="# earlier chapters are still unread."
+                  />
+                ) : (
+                  <Trans>That's every chapter on disk.</Trans>
+                )}
+              </span>
+            )}
+            {!finished && !downloading && unread === 0 && pending === 0 && (
+              <ChapterEndOutlook seriesId={manifest.seriesId} />
+            )}
             <Group gap="xs" mt="md">
               <Button component={Link} to={`/series/${manifest.seriesId}`} leftSection={<IconArrowLeft size={16} />}>
                 <Trans>Back to series</Trans>

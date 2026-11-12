@@ -1167,6 +1167,10 @@ msgstr ""
 msgid "{count, plural, one {# completed} other {# completed}}"
 msgstr ""
 
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{count, plural, one {# day} other {# days}}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{count, plural, one {# deletion} other {# deletions}}"
@@ -1252,6 +1256,10 @@ msgstr "{count, plural, other {트래커 #개}}"
 #, fuzzy
 msgid "{count, plural, one {# unread} other {# unread}}"
 msgstr "{count, plural, other {읽지 않음 #개}}"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{count, plural, one {# week} other {# weeks}}"
+msgstr ""
 
 #: src/components/home/OfflineHome.tsx
 #, fuzzy
@@ -1650,6 +1658,10 @@ msgstr "{free} 여유 공간"
 #, fuzzy
 msgid "{from} to {to}"
 msgstr "{from}부터 {to}까지"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{from} to {upTo}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2061,6 +2073,14 @@ msgstr "{missingWanted, plural, other {챕터 #개를 다운로드 대기열에 
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "{monitorShort}, {profileName}"
+msgstr ""
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "{more, plural, one {# chapter is queued to download.} other {# chapters are queued to download.}}"
+msgstr ""
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "{more, plural, one {# more is queued.} other {# more are queued.}}"
 msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
@@ -3757,6 +3777,10 @@ msgstr "zip 파일"
 msgid "Abandoned"
 msgstr "중단함"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "About {chapterLeft} left in this chapter"
+msgstr ""
+
 #: src/components/pageconversion/EstimateTable.tsx
 #, fuzzy
 msgid "About {hardlinked} are hardlinked to torrents and stay as they are."
@@ -3772,6 +3796,14 @@ msgstr "약 {hourPhrase} {restPhrase} 남음"
 #, fuzzy
 msgid "About {readingTime}"
 msgstr "읽기 시간 약 {readingTime}"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "About {seriesLeft} left in the series"
+msgstr ""
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "About {timeLeftText} left in the series"
+msgstr ""
 
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "About {toFinish} to finish"
@@ -8687,6 +8719,14 @@ msgstr "사전 제작 인덱스 다운로드됨"
 #, fuzzy
 msgid "Downloading"
 msgstr "다운로드 중"
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "Downloading {label}, {percent}%."
+msgstr ""
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "Downloading {label}."
+msgstr ""
 
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -17827,6 +17867,7 @@ msgid "Rated {rating}"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ChapterEndRating.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rated {rating}/10"
@@ -22902,6 +22943,10 @@ msgstr "디스크에 있는 챕터를 모두 읽었습니다."
 msgid "That's the end of a volume. How is it so far?"
 msgstr "권이 끝났네요. 지금까지 어떤가요?"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "That's the whole series."
+msgstr ""
+
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "The {engineLabel} preset reads this part of the site. Nothing to set up here."
@@ -23262,6 +23307,22 @@ msgstr "새 비밀번호는 10자 이상이어야 합니다"
 #, fuzzy
 msgid "The newest titles from the creators and studios you follow. Empty until you follow someone."
 msgstr "팔로우 중인 창작자와 스튜디오의 최신 작품입니다. 누군가를 팔로우하기 전에는 비어 있습니다."
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter is later than usual"
+msgstr ""
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter is likely any day now"
+msgstr ""
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter usually comes in {range}"
+msgstr ""
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter usually comes within {within}"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #, fuzzy
@@ -26329,6 +26390,10 @@ msgstr "{animeTitle}을(를) 완결했습니다 ({coveredLabel}). 만화는 {cov
 #, fuzzy
 msgid "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
 msgstr "{animeTitle}을(를) 완결했습니다. 애니메이션은 {coveredTo}화까지 다룹니다. {resumeAt}화부터 읽으세요."
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You finished the series"
+msgstr ""
 
 #: src/components/series/RateHint.tsx
 #, fuzzy

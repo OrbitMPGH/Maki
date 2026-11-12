@@ -11236,6 +11236,10 @@ body.reader-open {
   border-radius: inherit;
   background: var(--brand);
 }
+.reader-end-timeleft {
+  font-size: var(--type-micro);
+  color: rgba(255, 255, 255, 0.55);
+}
 .reader-end-next {
   display: grid;
   justify-items: start;

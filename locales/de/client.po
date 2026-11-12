@@ -1167,6 +1167,10 @@ msgstr ""
 msgid "{count, plural, one {# completed} other {# completed}}"
 msgstr ""
 
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{count, plural, one {# day} other {# days}}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{count, plural, one {# deletion} other {# deletions}}"
@@ -1252,6 +1256,10 @@ msgstr "{count, plural, one {# Tracker} other {# Tracker}}"
 #, fuzzy
 msgid "{count, plural, one {# unread} other {# unread}}"
 msgstr "{count, plural, one {# ungelesen} other {# ungelesen}}"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{count, plural, one {# week} other {# weeks}}"
+msgstr ""
 
 #: src/components/home/OfflineHome.tsx
 #, fuzzy
@@ -1650,6 +1658,10 @@ msgstr "{free} frei"
 #, fuzzy
 msgid "{from} to {to}"
 msgstr "{from} bis {to}"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{from} to {upTo}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2061,6 +2073,14 @@ msgstr "{missingWanted, plural, one {Das fügt # Kapitel zur Download-Warteschla
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "{monitorShort}, {profileName}"
+msgstr ""
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "{more, plural, one {# chapter is queued to download.} other {# chapters are queued to download.}}"
+msgstr ""
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "{more, plural, one {# more is queued.} other {# more are queued.}}"
 msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
@@ -3757,6 +3777,10 @@ msgstr "eine ZIP-Datei"
 msgid "Abandoned"
 msgstr "Abgebrochen"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "About {chapterLeft} left in this chapter"
+msgstr ""
+
 #: src/components/pageconversion/EstimateTable.tsx
 #, fuzzy
 msgid "About {hardlinked} are hardlinked to torrents and stay as they are."
@@ -3772,6 +3796,14 @@ msgstr "noch etwa {hourPhrase} {restPhrase} übrig"
 #, fuzzy
 msgid "About {readingTime}"
 msgstr "Über {readingTime}"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "About {seriesLeft} left in the series"
+msgstr ""
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "About {timeLeftText} left in the series"
+msgstr ""
 
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "About {toFinish} to finish"
@@ -8687,6 +8719,14 @@ msgstr "Vorgefertigten Index heruntergeladen"
 #, fuzzy
 msgid "Downloading"
 msgstr "Wird heruntergeladen"
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "Downloading {label}, {percent}%."
+msgstr ""
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "Downloading {label}."
+msgstr ""
 
 #: src/components/ui/status.tsx
 #, fuzzy
@@ -17827,6 +17867,7 @@ msgid "Rated {rating}"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ChapterEndRating.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rated {rating}/10"
@@ -22902,6 +22943,10 @@ msgstr "Das sind alle Kapitel auf der Festplatte."
 msgid "That's the end of a volume. How is it so far?"
 msgstr "Das ist das Ende eines Bandes. Wie ist es bisher?"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "That's the whole series."
+msgstr ""
+
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "The {engineLabel} preset reads this part of the site. Nothing to set up here."
@@ -23262,6 +23307,22 @@ msgstr "Das neue Passwort braucht mindestens 10 Zeichen"
 #, fuzzy
 msgid "The newest titles from the creators and studios you follow. Empty until you follow someone."
 msgstr "Die neuesten Titel der Creators und Studios, denen du folgst. Bleibt leer, bis du jemandem folgst."
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter is later than usual"
+msgstr ""
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter is likely any day now"
+msgstr ""
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter usually comes in {range}"
+msgstr ""
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter usually comes within {within}"
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #, fuzzy
@@ -26329,6 +26390,10 @@ msgstr "Du hast {animeTitle} ({coveredLabel}) zu Ende geschaut. Damit ist vermut
 #, fuzzy
 msgid "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
 msgstr "Du hast {animeTitle} zu Ende geschaut. Der Anime deckt die Kapitel bis Kap. {coveredTo} ab. Beginne bei Kap. {resumeAt} zu lesen."
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You finished the series"
+msgstr ""
 
 #: src/components/series/RateHint.tsx
 #, fuzzy

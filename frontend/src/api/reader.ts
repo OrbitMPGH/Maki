@@ -26,6 +26,12 @@ export interface ReaderManifest {
    * arrives in batches says nothing about how much is still to come.
    */
   seriesWantedCount: number
+  /** Finishing this chapter finishes the series: it is complete and this is its last numbered chapter. Absent on a manifest saved offline before it existed. */
+  finishesSeries?: boolean
+  /** You have already finished the series. Absent on a manifest saved offline before it existed. */
+  seriesFinished?: boolean
+  /** Your median time per chapter, from your own timed reads. Null until three chapters are timed. Absent on a manifest saved offline before it existed. */
+  readingPace?: ReadingPace | null
   resumePage: number
   completed: boolean
   previousChapterId: number | null
@@ -53,6 +59,29 @@ export interface ReaderManifest {
   noteCount?: number
   /** Zero based pages with at least one visible note, sorted. Absent on a manifest saved offline before it existed. */
   notedPages?: number[]
+}
+
+export interface ReadingPace {
+  chapterSeconds: number
+  style: 'scrolling' | 'paged'
+  /** What the series is meant to hold, the same total the series page's time to finish counts against. */
+  totalChapters: number
+}
+
+/** What the end screen reads live, so the reader's manifest never has to be refetched for it. */
+export interface ReaderEnding {
+  nextChapterId: number | null
+  nextChapterLabel: string | null
+  nextChapterNumber: number | null
+  seriesChapterCount: number
+  /** Counts this chapter once its completing write has landed, which `completed` tells. */
+  seriesReadCount: number
+  seriesWantedCount: number
+  completed: boolean
+  finished: boolean
+  rating: number | null
+  provisionalRating: number | null
+  rateHintDismissed: boolean
 }
 
 export interface EnhanceServer {
@@ -204,6 +233,22 @@ export function useReaderManifest(chapterId: number) {
     // and see ReaderPage for why the resume waits for a fetch instead of applying a cached value first.
     staleTime: Infinity,
     refetchOnMount: 'always',
+  })
+}
+
+/**
+ * Kept apart from the manifest on purpose: a manifest refetch flips `isFetching` and replaces the
+ * object every page effect keys on, while this only feeds the end screen. The socket invalidates it
+ * when a chapter of the series lands, which is what swaps "Last chapter on disk" for the next one.
+ */
+export function useReaderEnding(seriesId: number | undefined, chapterId: number, enabled = true) {
+  return useQuery({
+    queryKey: ['reader-ending', seriesId, chapterId],
+    queryFn: () => api<ReaderEnding>(`/reader/chapter/${chapterId}/ending`),
+    enabled: enabled && seriesId != null,
+    staleTime: 0,
+    retry: false,
+    meta: { silent: true },
   })
 }
 

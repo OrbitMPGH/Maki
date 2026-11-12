@@ -999,6 +999,10 @@ msgstr "{count, plural, one {# chapter} other {# chapters}}"
 msgid "{count, plural, one {# completed} other {# completed}}"
 msgstr "{count, plural, one {# completed} other {# completed}}"
 
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{count, plural, one {# day} other {# days}}"
+msgstr "{count, plural, one {# day} other {# days}}"
+
 #: src/pages/HealthPage.tsx
 msgid "{count, plural, one {# deletion} other {# deletions}}"
 msgstr "{count, plural, one {# deletion} other {# deletions}}"
@@ -1070,6 +1074,10 @@ msgstr "{count, plural, one {# tracker} other {# trackers}}"
 #: src/components/NotificationBell.tsx
 msgid "{count, plural, one {# unread} other {# unread}}"
 msgstr "{count, plural, one {# unread} other {# unread}}"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{count, plural, one {# week} other {# weeks}}"
+msgstr "{count, plural, one {# week} other {# weeks}}"
 
 #: src/components/home/OfflineHome.tsx
 msgid "{count, plural, one {A chapter is saved on this device, but this tab can't open it right now. That usually follows a hard reload: reload the page normally and it will be ready to read.} other {# chapters are saved on this device, but this tab can't open them right now. That usually follows a hard reload: reload the page normally and they will be ready to read.}}"
@@ -1395,6 +1403,10 @@ msgstr "{free} free"
 #: src/components/pageconversion/EstimateTable.tsx
 msgid "{from} to {to}"
 msgstr "{from} to {to}"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{from} to {upTo}"
+msgstr "{from} to {upTo}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{gone, plural, one {Deleted # file} other {Deleted # files}}"
@@ -1738,6 +1750,14 @@ msgstr "{missingWanted, plural, one {This will add # chapter to the download que
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "{monitorShort}, {profileName}"
 msgstr "{monitorShort}, {profileName}"
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "{more, plural, one {# chapter is queued to download.} other {# chapters are queued to download.}}"
+msgstr "{more, plural, one {# chapter is queued to download.} other {# chapters are queued to download.}}"
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "{more, plural, one {# more is queued.} other {# more are queued.}}"
+msgstr "{more, plural, one {# more is queued.} other {# more are queued.}}"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "{moreCount, plural, one {+# more} other {+# more}}"
@@ -3116,6 +3136,10 @@ msgstr "a zip"
 msgid "Abandoned"
 msgstr "Abandoned"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "About {chapterLeft} left in this chapter"
+msgstr "About {chapterLeft} left in this chapter"
+
 #: src/components/pageconversion/EstimateTable.tsx
 msgid "About {hardlinked} are hardlinked to torrents and stay as they are."
 msgstr "About {hardlinked} are hardlinked to torrents and stay as they are."
@@ -3128,6 +3152,14 @@ msgstr "about {hourPhrase} {restPhrase} left"
 #: src/pages/SeriesDetailPage.tsx
 msgid "About {readingTime}"
 msgstr "About {readingTime}"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "About {seriesLeft} left in the series"
+msgstr "About {seriesLeft} left in the series"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "About {timeLeftText} left in the series"
+msgstr "About {timeLeftText} left in the series"
 
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "About {toFinish} to finish"
@@ -7167,6 +7199,14 @@ msgstr "Downloaded the prebuilt index"
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Downloading"
 msgstr "Downloading"
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "Downloading {label}, {percent}%."
+msgstr "Downloading {label}, {percent}%."
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "Downloading {label}."
+msgstr "Downloading {label}."
 
 #: src/components/ui/status.tsx
 msgid "Downloading {outstanding}"
@@ -14666,6 +14706,7 @@ msgid "Rated {rating}"
 msgstr "Rated {rating}"
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ChapterEndRating.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Rated {rating}/10"
 msgstr "Rated {rating}/10"
@@ -18833,6 +18874,10 @@ msgstr "That's every chapter on disk."
 msgid "That's the end of a volume. How is it so far?"
 msgstr "That's the end of a volume. How is it so far?"
 
+#: src/pages/reader/ChapterEnd.tsx
+msgid "That's the whole series."
+msgstr "That's the whole series."
+
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "The {engineLabel} preset reads this part of the site. Nothing to set up here."
 msgstr "The {engineLabel} preset reads this part of the site. Nothing to set up here."
@@ -19123,6 +19168,22 @@ msgstr "The new password needs at least 10 characters"
 #: src/components/home/homeSectionDefs.ts
 msgid "The newest titles from the creators and studios you follow. Empty until you follow someone."
 msgstr "The newest titles from the creators and studios you follow. Empty until you follow someone."
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter is later than usual"
+msgstr "The next chapter is later than usual"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter is likely any day now"
+msgstr "The next chapter is likely any day now"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter usually comes in {range}"
+msgstr "The next chapter usually comes in {range}"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter usually comes within {within}"
+msgstr "The next chapter usually comes within {within}"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "The next check is due."
@@ -21641,6 +21702,10 @@ msgstr "You finished {animeTitle} ({coveredLabel}). That likely covers up to ch.
 #: src/components/series/AnimeResumeCallout.tsx
 msgid "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
 msgstr "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You finished the series"
+msgstr "You finished the series"
 
 #: src/components/series/RateHint.tsx
 msgid "You had this at {soFar} so far. Keep it?"
