@@ -92,7 +92,7 @@ export const SwipeTurnsThePage: Story = {
   play: async ({ canvas, canvasElement }) => {
     const { surface, centre } = await readySurface(canvas, canvasElement, 6)
     drag(surface, { x: centre.x - 80, y: centre.y }, { x: centre.x + 80, y: centre.y + 12 })
-    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 7' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('img', { name: 'Chapter 132 - page 7' })).toBeVisible())
     await expect(canvasElement.querySelector('.reader-bar-bottom')).toHaveAttribute('data-visible', 'false')
 
     drag(surface, { x: centre.x, y: centre.y - 120 }, { x: centre.x + 70, y: centre.y + 120 })
@@ -101,7 +101,7 @@ export const SwipeTurnsThePage: Story = {
     await expect(canvasElement.querySelector('.reader-bar-bottom')).toHaveAttribute('data-visible', 'false')
 
     drag(surface, { x: centre.x + 80, y: centre.y }, { x: centre.x - 80, y: centre.y })
-    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible())
   },
 }
 
@@ -116,18 +116,18 @@ export const WheelTurnsOncePerGesture: Story = {
       wheel(surface, Math.max(1, Math.round(30 * Math.pow(0.92, i))))
       await pause(12)
     }
-    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 7' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('img', { name: 'Chapter 132 - page 7' })).toBeVisible())
     await pause(300)
     await expect(canvas.queryByRole('img', { name: 'Chapter 132 - page 8' })).toBeNull()
 
     wheel(surface, 100)
-    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 8' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('img', { name: 'Chapter 132 - page 8' })).toBeVisible())
     await pause(300)
     for (let i = 0; i < 30; i++) {
       wheel(surface, -4)
       await pause(10)
     }
-    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 7' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('img', { name: 'Chapter 132 - page 7' })).toBeVisible())
     await pause(300)
     await expect(canvas.queryByRole('img', { name: 'Chapter 132 - page 6' })).toBeNull()
   },
@@ -144,13 +144,13 @@ export const PinchZoomsAndPans: Story = {
     pinch(surface, centre, 40, 100)
     await waitFor(() => expect(content.style.transform).toBe('scale(2.5)'))
     await waitFor(() => expect(surface).toHaveAttribute('data-zoomed', 'true'))
-    await expect(canvas.getByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible())
 
     const left = surface.scrollLeft
     drag(surface, { x: centre.x + 60, y: centre.y }, { x: centre.x - 60, y: centre.y })
     await waitFor(() => expect(surface.scrollLeft).toBeGreaterThan(left + 60))
     await pause(300)
-    await expect(canvas.getByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible())
 
     for (let tap = 0; tap < 2; tap++) {
       fire(surface, 'pointerdown', 1, centre)
@@ -176,9 +176,9 @@ export const KindleTapZones: Story = {
     const { surface, box } = await readySurface(canvas, canvasElement, 6)
     const at = (x: number, y: number) => ({ clientX: box.left + box.width * x, clientY: box.top + box.height * y })
     await userEvent.pointer({ keys: '[MouseLeft]', target: surface, coords: at(0.6, 0.6) })
-    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 7' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('img', { name: 'Chapter 132 - page 7' })).toBeVisible())
     await userEvent.pointer({ keys: '[MouseLeft]', target: surface, coords: at(0.1, 0.6) })
-    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('img', { name: 'Chapter 132 - page 6' })).toBeVisible())
 
     // A mouse drag that ends in a forward zone is not a click there.
     drag(surface, { x: box.left + box.width * 0.4, y: box.top + box.height * 0.6 }, { x: box.left + box.width * 0.7, y: box.top + box.height * 0.6 }, 'mouse')
@@ -211,7 +211,7 @@ export const FitWidthScrollsFirst: Story = {
     await expect(canvas.queryByRole('img', { name: 'Chapter 132 - page 7' })).toBeNull()
 
     wheel(surface, 100)
-    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 7' })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('img', { name: 'Chapter 132 - page 7' })).toBeVisible())
     await waitFor(() => expect(surface.scrollTop).toBe(0))
   },
 }
