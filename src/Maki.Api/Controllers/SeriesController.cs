@@ -930,7 +930,8 @@ public class SeriesController(
     /// Scrobble status for this series: which trackers it's synced to, the last chapter/volume
     /// pushed, and whether it needs review. The library series is linked to its Kavita
     /// counterpart the same way the sync engine matches (punctuation-normalized title / folder
-    /// name), so this reflects exactly what scrobbling did for it — no extra state to maintain.
+    /// name). The built-in reader's pushes live in <see cref="SeriesScrobbleState"/>, keyed by
+    /// this series, and the newer of the two rows wins per tracker.
     /// </summary>
     [HttpGet("{id:int}/scrobble")]
     public async Task<IActionResult> Scrobble(int id, CancellationToken ct)
@@ -972,12 +973,18 @@ public class SeriesController(
         var allMappings = await db.ScrobbleMappings.AsNoTracking()
             .Where(m => kavitaIdList.Contains(m.KavitaSeriesId)).ToListAsync(ct);
 
+        var nativeStates = await db.SeriesScrobbleStates.AsNoTracking()
+            .Where(s => s.SeriesId == id).ToListAsync(ct);
+
         var kavitaConfigured =
             !string.IsNullOrWhiteSpace(await appSettings.GetAsync(SettingKeys.KavitaUrl, ct)) &&
             !string.IsNullOrWhiteSpace(await appSettings.GetAsync(SettingKeys.KavitaApiKey, ct));
 
+        var hasCrossIds = series.MalId != null || series.AniListId != null || series.MangaBakaId != null ||
+            series.KitsuId != null || !string.IsNullOrEmpty(series.MangaUpdatesId);
+
         // Nothing to show and no cost worth paying: skip the tracker auth probes entirely.
-        if (!kavitaConfigured && kavitaIds.Count == 0)
+        if (!kavitaConfigured && kavitaIds.Count == 0 && nativeStates.Count == 0 && !hasCrossIds)
         {
             return Ok(new SeriesScrobbleDto(false, false, null, []));
         }
@@ -992,17 +999,28 @@ public class SeriesController(
             anyConnected |= connected;
 
             var mapping = mappings.FirstOrDefault(m => m.Service == tracker.Name);
-            var state = states.FirstOrDefault(
+            var kavitaState = states.FirstOrDefault(
                 s => s.Service == tracker.Name && kavitaIds.Contains(s.KavitaSeriesId));
+            var nativeState = nativeStates.FirstOrDefault(s => s.Service == tracker.Name);
             var review = unmatched.FirstOrDefault(
                 u => u.Service == tracker.Name && kavitaIds.Contains(u.KavitaSeriesId));
 
-            if (!connected && mapping is null && state is null && review is null)
+            if (!connected && mapping is null && kavitaState is null && nativeState is null && review is null)
             {
                 continue;
             }
 
-            var remoteId = mapping is { RemoteId.Length: > 0 } ? mapping.RemoteId : null;
+            var useNative = nativeState is not null &&
+                (kavitaState is null || nativeState.SyncedAt > kavitaState.SyncedAt);
+            var chapter = useNative ? nativeState!.Chapter : kavitaState?.Chapter ?? 0;
+            var volume = useNative ? nativeState!.Volume : kavitaState?.Volume ?? 0;
+            var status = useNative ? nativeState!.Status : kavitaState?.Status;
+            var syncedAt = useNative ? nativeState!.SyncedAt : kavitaState?.SyncedAt;
+            var error = useNative ? nativeState!.Error : kavitaState?.Error;
+
+            var nativeId = mapping is null ? NativeRemoteId(series, tracker.Name) : null;
+            var remoteId = mapping is { RemoteId.Length: > 0 } ? mapping.RemoteId : nativeId;
+            var method = mapping?.Method ?? (nativeId is null ? null : "library");
             var candidates = review is null
                 ? []
                 : JsonSerializer.Deserialize<List<ScrobbleService.CandidateDto>>(review.CandidatesJson) ?? [];
@@ -1012,23 +1030,33 @@ public class SeriesController(
                 tracker.Label,
                 connected,
                 remoteId,
-                mapping?.Method,
+                method,
                 remoteId is null ? null : tracker.EntryUrl(remoteId),
-                state?.Chapter ?? 0,
-                state?.Volume ?? 0,
-                state?.Status,
-                state?.SyncedAt,
-                ScrobbleService.RenderError(state?.Error, tracker.Label, localizer),
+                chapter,
+                volume,
+                status,
+                syncedAt,
+                ScrobbleService.RenderError(error, tracker.Label, localizer),
                 review?.Reason,
                 candidates));
         }
 
         return Ok(new SeriesScrobbleDto(
-            kavitaConfigured && anyConnected,
-            kavitaIds.Count > 0,
+            anyConnected,
+            kavitaIds.Count > 0 || nativeStates.Count > 0,
             kavitaIds.Count > 0 ? kavitaIds.Min() : null,
             serviceDtos));
     }
+
+    private static string? NativeRemoteId(Series series, string service) => service switch
+    {
+        "mal" => series.MalId?.ToString(CultureInfo.InvariantCulture),
+        "anilist" => series.AniListId?.ToString(CultureInfo.InvariantCulture),
+        "mangabaka" => series.MangaBakaId?.ToString(CultureInfo.InvariantCulture),
+        "kitsu" => series.KitsuId?.ToString(CultureInfo.InvariantCulture),
+        "mangaupdates" => string.IsNullOrEmpty(series.MangaUpdatesId) ? null : series.MangaUpdatesId,
+        _ => null,
+    };
 
     /// <summary>
     /// MangaBaka-listed relations of this series (sequels/prequels/spin-offs/side stories/main

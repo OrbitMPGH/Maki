@@ -358,6 +358,59 @@ msgstr "Unsupported feedback sort"
 msgid "error.feedback.unsupportedState"
 msgstr "Unsupported feedback state"
 
+#. ASP.NET Identity's own errors, joined with "; " when several apply at once.
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.defaultError"
+msgstr "Something went wrong. Try again."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.concurrencyFailure"
+msgstr "Someone else changed this account at the same time. Reload and try again."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.passwordMismatch"
+msgstr "Incorrect password."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.invalidToken"
+msgstr "This link or code is no longer valid."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.recoveryCodeRedemptionFailed"
+msgstr "That recovery code did not work."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.loginAlreadyAssociated"
+msgstr "This sign-in is already linked to an account."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.invalidUserName"
+msgstr "The username {userName} is not allowed. Use letters, digits and - . _ @ + only."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.invalidEmail"
+msgstr "The email address {email} is not valid."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.duplicateUserName"
+msgstr "The username {userName} is already taken."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.duplicateEmail"
+msgstr "The email address {email} is already in use."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.userAlreadyHasPassword"
+msgstr "This account already has a password."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.userLockoutNotEnabled"
+msgstr "Lockout is not enabled for this account."
+
+#: src/Maki.Api/Auth/LocalizedIdentityErrorDescriber.cs
+msgid "error.identity.passwordTooShort"
+msgstr "Passwords must be at least {length} characters."
+
 #: src/Maki.Api/Controllers/ImportListsController.cs
 msgid "error.importLists.unknownService"
 msgstr "Unknown tracker"
@@ -4154,6 +4207,10 @@ msgid "health.check.databaseCurrent"
 msgstr "Database is reachable and up to date"
 
 #: src/Maki.Api/Services/HealthMonitor.cs
+msgid "health.check.databaseNewer"
+msgstr "This database was written by a newer version of Maki (migration {latest}). Running this older version against it can corrupt data. Upgrade again, or restore the backup taken before the upgrade."
+
+#: src/Maki.Api/Services/HealthMonitor.cs
 msgid "health.check.migrationFailed"
 msgstr "A previous startup migration failed. Check the startup logs."
 
@@ -4210,7 +4267,7 @@ msgstr "Notification connection {name} failed to deliver {count} times in a row"
 msgid "health.check.notificationDelivering"
 msgstr "Notification connection {name} is delivering again"
 
-#. {job} is the scheduler's own name for the job and is not translated.
+#. {job} is one of the health.job.* names below, already translated.
 #: src/Maki.Api/Services/HealthJobListener.cs
 msgid "health.check.jobSucceeded"
 msgstr "{job}: last run succeeded"
@@ -4218,6 +4275,147 @@ msgstr "{job}: last run succeeded"
 #: src/Maki.Api/Services/HealthJobListener.cs
 msgid "health.check.jobFailed"
 msgstr "{job}: last run failed, see the logs"
+
+#. The name of a scheduled background job, shown on the Health page and in job notifications.
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.animeSignals"
+msgstr "Anime list sync"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.artifactIdleUnload"
+msgstr "Unload idle recommendation data"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.browserIdleShutdown"
+msgstr "Close the idle browser"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.chapterFileMeasure"
+msgstr "Measure chapter files"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.checkForUpdates"
+msgstr "Check for updates"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.coRead"
+msgstr "Install the co-read graph"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.completedDownloads"
+msgstr "Import completed downloads"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.customSourceHealth"
+msgstr "Check custom sources"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.customSourceRepositories"
+msgstr "Update custom source repositories"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.discoverCacheWarm"
+msgstr "Prepare Discover"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.embedderIdleUnload"
+msgstr "Unload the idle text model"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.embeddingIndex"
+msgstr "Build the search index"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.followedCreatorReleases"
+msgstr "Check followed creators for new series"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.healthCheck"
+msgstr "Health checks"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.housekeeping"
+msgstr "Housekeeping"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.imageCacheRebuild"
+msgstr "Rebuild the image cache"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.importLists"
+msgstr "Import lists"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.koreaderDocumentIndex"
+msgstr "Index files for KOReader sync"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.mangaBakaDumpRefresh"
+msgstr "Update the MangaBaka database"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.mangaBakaTableBackfill"
+msgstr "Prepare MangaBaka database tables"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.metadataRefresh"
+msgstr "Refresh metadata"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.prebuiltIndex"
+msgstr "Install the prebuilt search index"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.readFileCleanup"
+msgstr "Remove read chapter files"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.readerCohorts"
+msgstr "Install reader cohorts"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.recoGraph"
+msgstr "Install the recommendation graph"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.refreshMonitored"
+msgstr "Check monitored series for new chapters"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.retryFailedDownloads"
+msgstr "Retry failed downloads"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.scheduledBackup"
+msgstr "Scheduled backup"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.scrobble"
+msgstr "Scrobble sync"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.smartDownload"
+msgstr "Smart Download"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.tasteVectors"
+msgstr "Install taste vectors"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.torrentRemoval"
+msgstr "Remove finished torrents"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.upgradeScan"
+msgstr "Upgrade scan"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.upgradeVolumeSearch"
+msgstr "Volume upgrade search"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.upscalerIdleUnload"
+msgstr "Unload the idle upscaler"
 
 #. Problems found in the library itself, shown on the same page as the checks above.
 #. {detail} is the source's own error text and is not translated.
@@ -4473,7 +4671,7 @@ msgstr "Health recovered"
 msgid "inbox.health.recovered.body"
 msgstr "Resolved: {detail}"
 
-#. A scheduled background job changed state. {job} is the scheduler's own name for it and is not
+#. A scheduled background job changed state. {job} is one of the health.job.* names, already
 #. translated. The notify.* pair goes outward to Discord or a webhook; the inbox.* pair is the admin
 #. inbox copy, worded per reader.
 #: src/Maki.Api/Services/HealthJobListener.cs

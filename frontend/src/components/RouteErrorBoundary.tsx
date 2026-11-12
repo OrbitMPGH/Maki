@@ -28,7 +28,7 @@ function RouteErrorFallback() {
       art="missing"
       headingOrder={1}
       title={t`This page hit an error`}
-      description={t`Something went wrong while drawing it. Reloading usually clears it; if it keeps happening, the log has the details.`}
+      description={t`Something went wrong while drawing it. Reloading usually clears it. If it keeps happening, the browser's developer console has the details.`}
       actionLabel={t`Reload`}
       onAction={() => window.location.reload()}
       actionIcon={<IconRefresh size={16} />}

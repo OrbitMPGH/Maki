@@ -85,6 +85,13 @@ public sealed class InboxRenderer(ILocalizer localizer)
             args["detail"] = localizer.GetForOrKey(locale, detailKey, detailArgs);
         }
 
+        // A scheduled job is stored as its label key. A row from before the jobs had names stores the
+        // scheduler's own key, which is not a catalogue key and comes back as itself.
+        if (args.TryGetValue("job", out var job) && job is string { Length: > 0 } jobKey)
+        {
+            args["job"] = localizer.GetForOrKey(locale, jobKey);
+        }
+
         // A size is stored as bytes and worded here, in the reader's number format.
         if (args.TryGetValue("sizeBytes", out var sizeBytes) && sizeBytes is long or double)
         {

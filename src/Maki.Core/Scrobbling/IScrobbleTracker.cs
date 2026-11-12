@@ -28,7 +28,7 @@ public record RemoteEntry(
     /// </summary>
     bool? Releasing = null,
     /// <summary>
-    /// The tracker marks this entry as a re-read (AniList REPEATING), which <see cref="Status"/>
+    /// The tracker marks this entry as a re-read (AniList REPEATING, MangaBaka rereading), which <see cref="Status"/>
     /// reports as <see cref="ScrobbleStatus.Reading"/>.
     /// </summary>
     bool Repeating = false);

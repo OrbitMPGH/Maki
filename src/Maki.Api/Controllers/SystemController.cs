@@ -51,7 +51,7 @@ public class SystemController(
             type = i.Category,
             severity = i.Status,
             message = i.MessageKey is { Length: > 0 } key
-                ? localizer.Get(key, HealthMonitor.HealthParams(i.ParamsJson))
+                ? localizer.Get(key, JobLabels.Worded(HealthMonitor.HealthParams(i.ParamsJson), localizer))
                 : i.Message,
         }));
     }

@@ -30,6 +30,35 @@ public class HealthJobListenerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_job_row_names_the_job_by_its_label_key()
+    {
+        await Listener().JobWasExecuted(new TestJobContext(detail: _detail), new JobExecutionException("boom"));
+
+        using var db = _fixture.NewContext();
+        var row = db.HealthChecks.Single(c => c.Id == $"job:{_detail.Key}");
+        Assert.Equal("health.job.healthCheck", HealthMonitor.HealthParams(row.ParamsJson)["job"]);
+    }
+
+    [Fact]
+    public void Every_scheduled_job_has_a_name()
+    {
+        var jobs = typeof(HousekeepingJob).Assembly.GetTypes()
+            .Where(t => typeof(IJob).IsAssignableFrom(t) && t is { IsClass: true, IsAbstract: false });
+
+        foreach (var job in jobs)
+        {
+            Assert.True(JobLabels.For(job, "raw") != "raw", $"{job.Name} has no entry in JobLabels");
+        }
+    }
+
+    [Fact]
+    public void An_old_rows_scheduler_key_is_not_read_as_a_label()
+    {
+        Assert.True(JobLabels.IsLabel("health.job.housekeeping"));
+        Assert.False(JobLabels.IsLabel("DEFAULT.housekeeping"));
+    }
+
+    [Fact]
     public async Task A_run_cancelled_by_shutdown_leaves_the_recorded_state_alone()
     {
         using var cts = new CancellationTokenSource();

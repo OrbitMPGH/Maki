@@ -2,11 +2,11 @@
 
 ## Building the Docker image
 
-The multi-stage [`Dockerfile`](../Dockerfile) builds the frontend (Node 24) and backend (.NET 10)
+The multi-stage [`Dockerfile`](../distribution/docker/Dockerfile) builds the frontend (Node 24) and backend (.NET 10)
 and packages them into an `aspnet:10.0` runtime image serving the SPA from `wwwroot/`.
 
 ```bash
-docker build -t maki:local .
+docker build -f distribution/docker/Dockerfile -t maki:local .
 
 docker run -d --name maki \
   -p 8990:8990 \
@@ -15,16 +15,15 @@ docker run -d --name maki \
   maki:local
 
 # Multi-arch push with Buildx
-docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/<you>/maki:latest --push .
+docker buildx build -f distribution/docker/Dockerfile --platform linux/amd64,linux/arm64 -t ghcr.io/<you>/maki:latest --push .
 ```
 
 - The build context must be the repo root: both stages copy `locales/` in (the API embeds
   `server.po`, Vite bundles `client.po`), and the build fails if any language is missing from
   either the frontend or the backend stage.
-- `entrypoint.sh` fixes ownership of `/config` and drops to `PUID`/`PGID` via `gosu`.
+- `distribution/docker/entrypoint.sh` fixes ownership of `/config` and drops to `PUID`/`PGID` via `gosu`.
 - State lives in the `/config` volume; the library is a separate mount you can share with Kavita.
-- `distribution/docker/Dockerfile` is an identical copy used by CI and the `distribution/build-*.ps1`
-  scripts. Keep the two in step.
+- CI and the `distribution/build-*.ps1` scripts build this same file.
 
 ## Running from source
 

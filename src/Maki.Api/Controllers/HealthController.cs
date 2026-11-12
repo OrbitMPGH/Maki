@@ -110,7 +110,9 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
             var detail = string.Join("; ", items.Select(p => localizer.Get(p.Key, HealthMonitor.HealthParams(p.ParamsJson))));
             return localizer.Get(key, new { detail });
         }
-        return key is { Length: > 0 } ? localizer.Get(key, HealthMonitor.HealthParams(paramsJson)) : stored;
+        return key is { Length: > 0 }
+            ? localizer.Get(key, JobLabels.Worded(HealthMonitor.HealthParams(paramsJson), localizer))
+            : stored;
     }
 
     /// <summary>

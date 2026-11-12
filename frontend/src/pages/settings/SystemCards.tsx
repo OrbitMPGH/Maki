@@ -250,7 +250,8 @@ export function BackupSection() {
           <Text size="sm">
             <Trans>
               This replaces your current library and settings with <b>{backupName}</b>, then restarts
-              Maki. The current data is not kept, so take a backup first if you want a way back.
+              Maki. The current database is kept for 7 days as maki.db.pre-restore in the config folder,
+              but putting it back is done by hand, so take a backup first if you want an easy way back.
               Docker and systemd bring Maki back up on their own; otherwise start it again yourself.
             </Trans>
           </Text>

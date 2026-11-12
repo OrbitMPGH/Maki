@@ -3,14 +3,14 @@ using Maki.Api.Services;
 namespace Maki.Api.Dtos;
 
 /// <summary>
-/// Scrobble status for one library series, surfaced on its detail page. The series is
-/// linked to its Kavita counterpart the same way the sync engine matches — by
-/// punctuation-normalized title / folder name — so no extra bookkeeping is needed.
+/// Scrobble status for one library series, surfaced on its detail page. Kavita-driven pushes are
+/// linked to the series the same way the sync engine matches (punctuation-normalized title or
+/// folder name); the built-in reader's pushes are keyed by the series itself.
 /// </summary>
 public record SeriesScrobbleDto(
-    /// <summary>Kavita is configured and at least one tracker is connected — scrobbling is set up.</summary>
+    /// <summary>At least one tracker is connected, so scrobbling is set up.</summary>
     bool Configured,
-    /// <summary>A Kavita series was found for this library series (some scrobble data exists).</summary>
+    /// <summary>Some scrobble data exists: a Kavita series matched, or the built-in reader pushed it.</summary>
     bool Matched,
     /// <summary>The matched Kavita series id, used to drive manual match / ignore actions.</summary>
     int? KavitaSeriesId,

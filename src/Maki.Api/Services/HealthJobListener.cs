@@ -42,7 +42,8 @@ public class HealthJobListener(
             }
             var notify = HealthTransitions.Observe(row, status, false, now);
             row.MessageKey = failed ? "health.check.jobFailed" : "health.check.jobSucceeded";
-            row.ParamsJson = JsonSerializer.Serialize(new { job = context.JobDetail.Key.ToString() });
+            var job = JobLabels.For(context.JobDetail.JobType, context.JobDetail.Key.ToString());
+            row.ParamsJson = JsonSerializer.Serialize(new { job });
             row.Message = string.Empty;
             // Some jobs run every 15 seconds; a row per run buried the history in thousands of pages.
             if (previous != status && !(previous == "unchecked" && status == "healthy"))
@@ -56,7 +57,6 @@ public class HealthJobListener(
             _seen[id] = (status, row.CheckedAt);
             if (notify)
             {
-                var job = context.JobDetail.Key.ToString();
                 var recovered = !failed;
                 scope.ServiceProvider.GetRequiredService<InboxService>().Raise(
                     InboxEventType.HealthIssue,
@@ -75,7 +75,7 @@ public class HealthJobListener(
                     new(NotificationEventType.HealthIssue,
                         localizer.GetFor(locale, recovered ? "notify.job.recovered.title" : "notify.job.failed.title"),
                         localizer.GetFor(locale, recovered ? "notify.job.recovered.body" : "notify.job.failed.body",
-                            new { job })));
+                            new { job = localizer.GetForOrKey(locale, job) })));
             }
         }
         catch (Exception ex) { logger.LogWarning(ex, "Could not record job health"); }

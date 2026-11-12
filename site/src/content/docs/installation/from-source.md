@@ -51,7 +51,7 @@ dotnet test
 dotnet publish src/Maki.Api -c Release
 ```
 
-To build the Docker image yourself, run `docker build -t maki:local .` from the repository root.
+To build the Docker image yourself, run `docker build -f distribution/docker/Dockerfile -t maki:local .` from the repository root.
 
 ## Next
 

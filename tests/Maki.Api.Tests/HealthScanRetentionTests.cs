@@ -51,4 +51,47 @@ public class HealthScanRetentionTests
 
         Assert.Equal(0, await HousekeepingJob.PruneHealthScansAsync(db, DateTime.UtcNow.AddDays(-30), default));
     }
+
+    [Fact]
+    public async Task Old_history_goes_but_the_newest_rows_stay_whatever_their_age()
+    {
+        using var fixture = new TestDb();
+        var now = new DateTime(2026, 11, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        using (var db = fixture.NewContext())
+        {
+            for (var i = 0; i < HousekeepingJob.HealthHistoryKeep + 50; i++)
+            {
+                db.HealthHistory.Add(new HealthHistory { Kind = "job", CreatedAt = now.AddDays(-200) });
+            }
+
+            db.HealthHistory.Add(new HealthHistory { Kind = "job", CreatedAt = now.AddDays(-1) });
+            await db.SaveChangesAsync();
+        }
+
+        using var prune = fixture.NewContext();
+        var removed = await HousekeepingJob.PruneHealthHistoryAsync(
+            prune, now - HousekeepingJob.HealthHistoryRetention, default);
+
+        Assert.Equal(51, removed);
+        Assert.Equal(HousekeepingJob.HealthHistoryKeep, await prune.HealthHistory.CountAsync());
+        Assert.True(await prune.HealthHistory.AnyAsync(h => h.CreatedAt == now.AddDays(-1)));
+    }
+
+    [Fact]
+    public async Task Recent_history_is_kept_past_the_row_floor()
+    {
+        using var fixture = new TestDb();
+        var now = new DateTime(2026, 11, 1, 0, 0, 0, DateTimeKind.Utc);
+        using var db = fixture.NewContext();
+        for (var i = 0; i < HousekeepingJob.HealthHistoryKeep + 20; i++)
+        {
+            db.HealthHistory.Add(new HealthHistory { Kind = "job", CreatedAt = now.AddDays(-10) });
+        }
+
+        await db.SaveChangesAsync();
+
+        Assert.Equal(0, await HousekeepingJob.PruneHealthHistoryAsync(
+            db, now - HousekeepingJob.HealthHistoryRetention, default));
+    }
 }

@@ -48,7 +48,7 @@ KOReader identifies a book by a document id. In **Binary** mode it is an MD5 of 
 of the file's bytes, so the copy on the device must be byte-for-byte a file from your library.
 
 - Maki records the id when the OPDS catalogue serves a download, and a background pass records it for
-  every library file every six hours, so files copied over USB or a sync tool match too.
+  every library file once a day, so files copied over USB or a sync tool match too.
 - An unknown id makes that pass run sooner, so a file added a moment ago matches on the next sync.
 - When Maki rewrites a file (a ComicInfo update, a rename that touches the archive), the ids of the
   old bytes keep working for copies already on a device.

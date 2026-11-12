@@ -73,7 +73,8 @@ public static class AuthServiceCollectionExtensions
             })
             .AddEntityFrameworkStores<MakiDbContext>()
             .AddSignInManager()
-            .AddDefaultTokenProviders();
+            .AddDefaultTokenProviders()
+            .AddErrorDescriber<LocalizedIdentityErrorDescriber>();
 
         // Lockout thresholds come from settings, so they are applied in a second pass that can see
         // the startup-loaded values.

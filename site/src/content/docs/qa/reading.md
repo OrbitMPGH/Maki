@@ -22,7 +22,7 @@ KOReader and iOS before 16 cannot open AVIF. Under **Settings → Library → Pa
 
 ### KOReader does not sync my progress or does not recognise a book. Why?
 
-Set **Document matching method** to **Binary**. It needs the device copy to be byte-for-byte a file from your library. Maki records those ids when it serves a download and in a library pass every six hours. Filename matching is unreliable across series. Full setup: [KOReader](/Maki/guides/reading/koreader/).
+Set **Document matching method** to **Binary**. It needs the device copy to be byte-for-byte a file from your library. Maki records those ids when it serves a download and in a library pass once a day. Filename matching is unreliable across series. Full setup: [KOReader](/Maki/guides/reading/koreader/).
 
 ### Does reading in another app count in Maki?
 

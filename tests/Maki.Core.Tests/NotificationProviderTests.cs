@@ -101,6 +101,21 @@ public class NotificationProviderTests
     }
 
     [Fact]
+    public void Every_event_type_has_its_own_discord_icon_and_ntfy_tag()
+    {
+        foreach (var type in Enum.GetValues<NotificationEventType>().Where(t => t != NotificationEventType.Test))
+        {
+            Assert.NotEqual("🔔", DiscordNotificationProvider.IconFor(type));
+            Assert.NotEqual("bell", NtfyNotificationProvider.EventTag(type));
+        }
+
+        Assert.Equal(4, NtfyNotificationProvider.DefaultPriority(
+            new NotificationMessage(NotificationEventType.HealthIssue, "t", "b")));
+        Assert.Equal(3, NtfyNotificationProvider.DefaultPriority(
+            new NotificationMessage(NotificationEventType.SeriesAdded, "t", "b")));
+    }
+
+    [Fact]
     public async Task Discord_colors_by_event_but_a_failure_level_wins()
     {
         var (provider, handler) = Build(f => new DiscordNotificationProvider(f));
