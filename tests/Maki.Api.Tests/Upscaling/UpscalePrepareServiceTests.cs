@@ -105,7 +105,7 @@ public sealed class UpscalePrepareServiceTests : IDisposable
 
     /// <summary>Progress on <paramref name="chapterId"/>, then the series' status and settings set by hand.</summary>
     private void Read(int seriesId, int chapterId, DateTime at, bool completed = true, int page = 3,
-        ReadingStatus status = ReadingStatus.Reading, string? prefs = null)
+        ReadingStatus status = ReadingStatus.Reading, string? prefs = null, int? prepare = null)
     {
         using (var db = _db.NewContext(_user))
         {
@@ -128,6 +128,7 @@ public sealed class UpscalePrepareServiceTests : IDisposable
 
             state.Status = status;
             state.ReaderPrefsJson = prefs;
+            state.PrepareChapters = prepare;
             db.SaveChanges();
         }
 
@@ -222,6 +223,35 @@ public sealed class UpscalePrepareServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_series_with_its_own_count_ignores_the_days_and_takes_no_slot()
+    {
+        _settings.Set(SettingKeys.UpscalingPrepareSeries, "1");
+        var binge = AddSeries("Binge");
+        Read(binge, AddChapter(binge, 1), Now.AddDays(-60), prepare: 3);
+        var bingeChapters = new[] { AddChapter(binge, 2, pages: 1), AddChapter(binge, 3, pages: 1), AddChapter(binge, 4, pages: 1) };
+        AddChapter(binge, 5, pages: 1);
+        var recent = AddSeries("Recent");
+        Read(recent, AddChapter(recent, 1), Now.AddDays(-1));
+        var recentNext = AddChapter(recent, 2, pages: 1);
+
+        await Service().PlanAsync(default);
+
+        Assert.Equal(
+            [(FileOf(bingeChapters[0]), 0), (FileOf(recentNext), 0), (FileOf(bingeChapters[1]), 0), (FileOf(bingeChapters[2]), 0)],
+            Queued());
+    }
+
+    [Fact]
+    public async Task A_series_set_to_zero_is_never_prepared()
+    {
+        var series = AddSeries("Never");
+        Read(series, AddChapter(series, 1), Now.AddDays(-1), prepare: 0);
+        AddChapter(series, 2);
+
+        Assert.Equal(PrepareSnapshot.Empty, await Service().PlanAsync(default));
+    }
+
+    [Fact]
     public async Task Cached_pages_are_held_and_not_queued_again()
     {
         var series = AddSeries("Cached");
@@ -270,7 +300,7 @@ public sealed class UpscalePrepareServiceTests : IDisposable
             [[T(2, 30), T(2, 31)]],
         ];
 
-        var order = UpscalePrepareService.BreadthFirst(perUser, 2).Select(t => t.ChapterId);
+        var order = UpscalePrepareService.BreadthFirst(perUser).Select(t => t.ChapterId);
 
         Assert.Equal([10, 30, 20, 11, 31], order);
     }

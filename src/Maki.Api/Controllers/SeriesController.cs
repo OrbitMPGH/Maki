@@ -8,6 +8,7 @@ using Maki.Api.Dtos;
 using Maki.Api.Jobs;
 using Maki.Api.Localization;
 using Maki.Api.Services;
+using Maki.Api.Services.Upscaling;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Metadata;
@@ -975,7 +976,7 @@ public class SeriesController(
             .Select(x => new
             {
                 x.Rating, x.ProvisionalRating, x.ProvisionalAtChapter, x.NotificationMode, x.ReaderPrefsJson,
-                x.ReadingProfileId, x.PendingRatingCheckpoint, x.Status, x.StatusAuto,
+                x.ReadingProfileId, x.PendingRatingCheckpoint, x.Status, x.StatusAuto, x.PrepareChapters,
             })
             .FirstOrDefaultAsync(ct);
         var finished = await db.ReadingStates.AnyAsync(r => r.SeriesId == id && r.Finished, ct);
@@ -993,6 +994,7 @@ public class SeriesController(
             .OrderByDescending(p => p.CreatedAtUtc)
             .Select(p => (int?)p.Id)
             .FirstOrDefaultAsync(ct);
+        var upscaling = await UpscaleOptions.LoadAsync(appSettings, ct);
         var dto = SeriesDto.FromEntity(
             series, total, withFile, known, queued, active.Count - queued, readCount,
             rating: userState?.Rating, isAdmin: currentUser.Has(MakiPermission.Admin),
@@ -1010,6 +1012,9 @@ public class SeriesController(
             Finished = finished,
             ReadingStatus = (userState?.Status ?? ReadingStatus.PlanToRead).ToString(),
             ReadingStatusAuto = userState?.StatusAuto ?? false,
+            PrepareAhead = upscaling is { Enabled: true, PrepareAhead.Enabled: true }
+                ? new SeriesPrepareAheadDto(userState?.PrepareChapters, upscaling.PrepareAhead.Chapters, upscaling.PrepareAhead.Days)
+                : null,
             RatingCheckpoint = userState?.Rating is null && !finished
                 ? RatingCheckpointService.WireName(userState?.PendingRatingCheckpoint ?? default)
                 : null,
@@ -2164,6 +2169,32 @@ public class SeriesController(
                 db.Entry(state).State = EntityState.Detached;
             }
         }
+    }
+
+    /// <summary>Null follows the instance setting, 0 never prepares the series, 1 to 50 keeps that many chapters ready.</summary>
+    public record SetPrepareAheadRequest(int? Chapters);
+
+    /// <summary>
+    /// Sets how many chapters "Prepare chapters ahead" keeps upscaled for this user in this series.
+    /// Like notifications it lives in the caller's own state row, so being signed in is enough.
+    /// </summary>
+    [HttpPost("{id:int}/prepare-ahead")]
+    public async Task<IActionResult> SetPrepareAhead(
+        int id, [FromBody] SetPrepareAheadRequest request, [FromServices] UpscalePrepareService prepare, CancellationToken ct)
+    {
+        if (request.Chapters is < 0 or > PrepareOptions.MaxSeriesChapters)
+        {
+            return this.Fail(localizer, "error.series.invalidPrepareChapters", new { max = PrepareOptions.MaxSeriesChapters });
+        }
+
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        await UpsertUserStateAsync(id, s => s.PrepareChapters = request.Chapters, ct);
+        prepare.Nudge();
+        return Ok(new { prepareChapters = request.Chapters });
     }
 
     /// <summary>One of the <see cref="SeriesNotificationMode"/> names.</summary>

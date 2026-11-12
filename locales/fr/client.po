@@ -1043,6 +1043,10 @@ msgstr ""
 msgid "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
 msgstr ""
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{chapters, plural, one {Prepare ahead: # chapter} other {Prepare ahead: # chapters}}"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{chapters} chapters"
@@ -1453,6 +1457,10 @@ msgstr "{daysLeft, plural, one {Supprimé dans # jour} many {Supprimé dans # jo
 #, fuzzy
 msgid "{decade}s"
 msgstr "années {decade}"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "{defaultChapters} while you have read it in the last {days} days."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -2139,6 +2147,10 @@ msgstr ""
 #, fuzzy
 msgid "{moreCount, plural, one {+# more} other {+# more}}"
 msgstr "{moreCount, plural, one {+# de plus} many {+# de plus} other {+# de plus}}"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "{n, plural, one {# chapter} other {# chapters}}"
+msgstr ""
 
 #: src/pages/stats/sections/LibrarySection.tsx
 #, fuzzy
@@ -10664,6 +10676,10 @@ msgstr "Suivre"
 msgid "Follow one from a creator page."
 msgstr ""
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Follow Settings"
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Follow someone from their creator page."
@@ -14821,6 +14837,10 @@ msgstr ""
 msgid "Never delivered."
 msgstr "Jamais livré."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Never prepared ahead."
+msgstr ""
+
 #: src/components/ImportListsSection.tsx
 #, fuzzy
 msgid "Never run."
@@ -18211,6 +18231,18 @@ msgstr "Préférences"
 #, fuzzy
 msgid "Preload"
 msgstr "Précharger"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Prepare ahead"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Prepare ahead follows Settings"
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Prepare ahead is off for this series"
+msgstr ""
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Prepare chapters ahead"
@@ -26351,6 +26383,10 @@ msgstr "upscale, upscaling, améliorer, netteté, modèle, onnx, real-esrgan, sp
 #, fuzzy
 msgid "Upscaled"
 msgstr "Agrandie"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Upscaled on the server while nobody is reading. A number keeps that many ready however long ago you read it. Needs Enhance on Always with a server method for this series."
+msgstr ""
 
 #: src/pages/reader/ServerEnhanceStatus.tsx
 #, fuzzy

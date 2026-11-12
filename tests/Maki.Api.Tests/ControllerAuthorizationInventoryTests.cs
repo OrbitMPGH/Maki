@@ -235,6 +235,7 @@ public sealed class ControllerAuthorizationInventoryTests
         "SeriesController.FinalizeRating",
         "SeriesController.SetNotificationMode",
         "SeriesController.SetNotificationModeBulk",
+        "SeriesController.SetPrepareAhead",
         "SeriesController.SetProvisionalRating",
         "SeriesController.SetRating",
         "SeriesController.SetReadingStatus",

@@ -78,6 +78,26 @@ export const Admin: Story = {
   },
 }
 
+export const PrepareAhead: Story = {
+  args: { prepareAhead: { chapters: null, defaultChapters: 1, days: 14 }, onSetPrepareAhead: fn() },
+  play: async (ctx) => {
+    const page = await openAt(ctx)
+    await expect(await page.findByRole('menuitem', { name: /Prepare ahead/ })).toHaveTextContent('Default')
+    await ctx.userEvent.click(await page.findByRole('menuitem', { name: /Prepare ahead/ }))
+    await expect(await page.findByText('1 chapter while you have read it in the last 14 days.')).toBeVisible()
+    await ctx.userEvent.click(await page.findByRole('menuitemradio', { name: '10 chapters' }))
+    await waitFor(() => expect(ctx.args.onSetPrepareAhead).toHaveBeenCalledWith(10))
+  },
+}
+
+export const PrepareAheadHiddenWhileOff: Story = {
+  play: async (ctx) => {
+    const page = await openAt(ctx)
+    await expect(await page.findByRole('menuitem', { name: 'Upgrades' })).toBeVisible()
+    await expect(page.queryByRole('menuitem', { name: /Prepare ahead/ })).toBeNull()
+  },
+}
+
 export const PickMonitorMode: Story = {
   play: async (ctx) => {
     const page = await openAt(ctx, 'Automation')

@@ -19,7 +19,7 @@ import type { IncognitoMode } from '../components/ui/incognito'
 import type { ReadingStatus } from '../components/ui/status'
 import type { ReleaseParsedDto } from './upgrades'
 import { obtainedCount } from '../lib/chapterCounts'
-import { optimisticMerge, optimisticSeries } from './optimistic'
+import { optimistic, optimisticMerge, optimisticSeries } from './optimistic'
 import { refreshMintProofOn } from './auth'
 import { activeSeries } from '../lib/series'
 import { isProvisional, ratesProvisionally } from '../lib/rating'
@@ -2778,6 +2778,25 @@ export function useSetSeriesNotificationMode() {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
     },
+  })
+}
+
+/** Sets how many chapters of a series are prepared ahead for you: null follows Settings, 0 never. */
+export function useSetSeriesPrepareAhead() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, chapters }: { seriesId: number; chapters: number | null }) =>
+      api<{ prepareChapters: number | null }>(`/series/${seriesId}/prepare-ahead`, {
+        method: 'POST',
+        body: JSON.stringify({ chapters }),
+      }),
+    ...optimistic<{ seriesId: number; chapters: number | null }>(queryClient, ({ seriesId, chapters }) => [
+      {
+        key: ['series', seriesId],
+        update: (old: SeriesDto) =>
+          old.prepareAhead ? { ...old, prepareAhead: { ...old.prepareAhead, chapters } } : old,
+      },
+    ]),
   })
 }
 

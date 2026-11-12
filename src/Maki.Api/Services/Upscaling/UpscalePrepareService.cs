@@ -21,7 +21,9 @@ public sealed record PrepareSnapshot(int Chapters, int Pages, int Waiting)
 /// <para>
 /// A series counts when the reader set it to Reading, read it within the configured days and reads it
 /// with Enhance on Always and a server model that is enabled and downloaded. Auto is left out: what it
-/// upscales depends on the screen. The next chapter <see cref="ContinueReadingService"/> names is
+/// upscales depends on the screen. A reader's own number for a series (<c>UserSeriesState.PrepareChapters</c>)
+/// takes that many chapters, ignores the days and does not use up one of the series slots; 0 leaves
+/// the series out. Those series are planned first. The next chapter <see cref="ContinueReadingService"/> names is
 /// taken from the page the reader stopped at, and the chapters after it whole, skipping any whose
 /// file tier the reader's skip list names. Chapters are planned breadth first (every series' first
 /// chapter, then every second one, readers in turn) until the budget runs out, so a short budget drops
@@ -146,7 +148,7 @@ public sealed class UpscalePrepareService(
             }
         }
 
-        var ordered = BreadthFirst(perUser, prepare.Chapters);
+        var ordered = BreadthFirst(perUser);
         var budget = prepare.Mb * 1024L * 1024L;
         var (_, _, average) = cache.HeldStats();
         var guess = average > 0 ? average : FallbackPageBytes;
@@ -201,9 +203,10 @@ public sealed class UpscalePrepareService(
     /// Each series' chapters in turn: the first chapter of every reader's every series, then the second,
     /// readers taking turns within each round.
     /// </summary>
-    internal static List<Target> BreadthFirst(IReadOnlyList<List<List<Target>>> perUser, int depth)
+    internal static List<Target> BreadthFirst(IReadOnlyList<List<List<Target>>> perUser)
     {
         var result = new List<Target>();
+        var depth = perUser.SelectMany(u => u).Select(s => s.Count).DefaultIfEmpty(0).Max();
         for (var round = 0; round < depth; round++)
         {
             var longest = perUser.Select(u => u.Count).DefaultIfEmpty(0).Max();
@@ -232,7 +235,9 @@ public sealed class UpscalePrepareService(
 
         var states = await db.UserSeriesStates.AsNoTracking()
             .Where(s => s.Status == ReadingStatus.Reading)
-            .Join(db.Series, s => s.SeriesId, x => x.Id, (s, x) => new { s.SeriesId, x.Type, s.ReaderPrefsJson, s.ReadingProfileId })
+            .Where(s => s.PrepareChapters == null || s.PrepareChapters > 0)
+            .Join(db.Series, s => s.SeriesId, x => x.Id,
+                (s, x) => new { s.SeriesId, x.Type, s.ReaderPrefsJson, s.ReadingProfileId, s.PrepareChapters })
             .ToListAsync(ct);
         if (states.Count == 0)
         {
@@ -246,20 +251,29 @@ public sealed class UpscalePrepareService(
             .Where(p => ids.Contains(p.SeriesId) && !p.Watched)
             .GroupBy(p => p.SeriesId)
             .Select(g => new { SeriesId = g.Key, At = g.Max(p => p.UpdatedAt) })
-            .Where(g => g.At >= since)
             .ToDictionaryAsync(g => g.SeriesId, g => g.At, ct);
 
         var profiles = new ReadingProfileService(db, new FixedUserSettings(db, userId));
-        var eligible = new List<(int SeriesId, string Model, ReaderPrefsSpec Prefs)>();
-        foreach (var state in states.Where(s => lastRead.ContainsKey(s.SeriesId)).OrderByDescending(s => lastRead[s.SeriesId]))
+        var eligible = new List<(int SeriesId, string Model, ReaderPrefsSpec Prefs, int Chapters)>();
+        var slots = prepare.Series;
+        var candidates = states
+            .Where(s => s.PrepareChapters is not null || lastRead.GetValueOrDefault(s.SeriesId) >= since)
+            .OrderBy(s => s.PrepareChapters is null)
+            .ThenByDescending(s => lastRead.GetValueOrDefault(s.SeriesId));
+        foreach (var state in candidates)
         {
+            if (state.PrepareChapters is null && slots == 0)
+            {
+                break;
+            }
+
             var prefs = (await profiles.ResolveForAsync(state.Type, state.ReaderPrefsJson, state.ReadingProfileId, ct)).Prefs;
             if (ServerModel(prefs) is { } model && models.Contains(model))
             {
-                eligible.Add((state.SeriesId, model, prefs));
-                if (eligible.Count == prepare.Series)
+                eligible.Add((state.SeriesId, model, prefs, state.PrepareChapters ?? prepare.Chapters));
+                if (state.PrepareChapters is null)
                 {
-                    break;
+                    slots--;
                 }
             }
         }
@@ -284,7 +298,7 @@ public sealed class UpscalePrepareService(
             .ToDictionaryAsync(p => p.ChapterId, p => p.PageIndex, ct);
 
         var result = new List<List<Target>>();
-        foreach (var (seriesId, model, prefs) in eligible)
+        foreach (var (seriesId, model, prefs, depth) in eligible)
         {
             if (!next.TryGetValue(seriesId, out var first) || !chapters.TryGetValue(seriesId, out var ordered))
             {
@@ -298,7 +312,7 @@ public sealed class UpscalePrepareService(
             }
 
             var skip = prefs.EnhanceSkipTiers ?? ReaderPrefsSpec.DefaultEnhanceSkipTiers;
-            var targets = ordered.Skip(start).Take(prepare.Chapters)
+            var targets = ordered.Skip(start).Take(depth)
                 .Where(c => !skip.Contains(QualitySnapshot.TierName(c.Tier)))
                 .Select(c => new Target(userId, c.Id, model, resume.GetValueOrDefault(c.Id)))
                 .ToList();

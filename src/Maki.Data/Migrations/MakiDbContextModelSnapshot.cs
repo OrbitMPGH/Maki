@@ -3280,6 +3280,9 @@ namespace Maki.Data.Migrations
                     b.Property<int>("PendingRatingCheckpoint")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("PrepareChapters")
+                        .HasColumnType("INTEGER");
+
                     b.Property<double?>("ProvisionalAtChapter")
                         .HasColumnType("REAL");
 

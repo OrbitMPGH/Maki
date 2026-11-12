@@ -69,6 +69,9 @@ public sealed record PrepareOptions(bool Enabled, int Days, int Series, int Chap
     public const int MaxSeries = 100;
     public const int DefaultChapters = 1;
     public const int MaxChapters = 3;
+
+    /// <summary>The most chapters one series can be set to keep ready from its own menu.</summary>
+    public const int MaxSeriesChapters = 50;
     public const int DefaultMb = 4096;
     public const int MinMb = 256;
     public const int MaxMb = 262144;

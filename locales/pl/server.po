@@ -3204,6 +3204,11 @@ msgstr "Rozmiar pamięci podręcznej musi wynosić od {min} do {max} MB."
 msgid "error.upscaling.invalidPrepare"
 msgstr ""
 
+#. English: Prepare ahead takes between 0 and {max} chapters.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.invalidPrepareChapters"
+msgstr ""
+
 #. English: Threads must be between {min} and {max}.
 #: src/Maki.Api/Controllers/UpscalingController.cs
 #, fuzzy

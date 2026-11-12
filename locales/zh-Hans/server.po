@@ -3203,6 +3203,11 @@ msgstr "缓存大小必须在 {min} 到 {max} MB 之间。"
 msgid "error.upscaling.invalidPrepare"
 msgstr ""
 
+#. English: Prepare ahead takes between 0 and {max} chapters.
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.invalidPrepareChapters"
+msgstr ""
+
 #. English: Threads must be between {min} and {max}.
 #: src/Maki.Api/Controllers/UpscalingController.cs
 #, fuzzy

@@ -900,6 +900,10 @@ msgstr "{chapters, plural, one {# chapter} other {# chapters}}"
 msgid "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
 msgstr "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "{chapters, plural, one {Prepare ahead: # chapter} other {Prepare ahead: # chapters}}"
+msgstr "{chapters, plural, one {Prepare ahead: # chapter} other {Prepare ahead: # chapters}}"
+
 #: src/pages/LibraryPage.tsx
 msgid "{chapters} chapters"
 msgstr "{chapters} chapters"
@@ -1243,6 +1247,10 @@ msgstr "{daysLeft, plural, one {Removed in # day} other {Removed in # days}}"
 #: src/pages/stats/sections/TasteSection.tsx
 msgid "{decade}s"
 msgstr "{decade}s"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "{defaultChapters} while you have read it in the last {days} days."
+msgstr "{defaultChapters} while you have read it in the last {days} days."
 
 #: src/pages/HealthPage.tsx
 msgid "{deletableCount, plural, one {Delete # spare copy} other {Delete # spare copies}}"
@@ -1815,6 +1823,10 @@ msgstr "{more, plural, one {and # more} other {and # more}}"
 #: src/pages/settings/ReadingCards.tsx
 msgid "{moreCount, plural, one {+# more} other {+# more}}"
 msgstr "{moreCount, plural, one {+# more} other {+# more}}"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "{n, plural, one {# chapter} other {# chapters}}"
+msgstr "{n, plural, one {# chapter} other {# chapters}}"
 
 #: src/pages/stats/sections/LibrarySection.tsx
 msgid "{n, plural, one {# file} other {# files}}"
@@ -8879,6 +8891,10 @@ msgstr "Follow"
 msgid "Follow one from a creator page."
 msgstr "Follow one from a creator page."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Follow Settings"
+msgstr "Follow Settings"
+
 #: src/api/inbox.ts
 msgid "Follow someone from their creator page."
 msgstr "Follow someone from their creator page."
@@ -12322,6 +12338,10 @@ msgstr "Never approve a release larger than this on your behalf. The 12288 MB de
 msgid "Never delivered."
 msgstr "Never delivered."
 
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Never prepared ahead."
+msgstr "Never prepared ahead."
+
 #: src/components/ImportListsSection.tsx
 msgid "Never run."
 msgstr "Never run."
@@ -15133,6 +15153,18 @@ msgstr "Preferences"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Preload"
 msgstr "Preload"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Prepare ahead"
+msgstr "Prepare ahead"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Prepare ahead follows Settings"
+msgstr "Prepare ahead follows Settings"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Prepare ahead is off for this series"
+msgstr "Prepare ahead is off for this series"
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Prepare chapters ahead"
@@ -21874,6 +21906,10 @@ msgstr "upscale, upscaling, enhance, sharpen, model, onnx, real-esrgan, span, cp
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Upscaled"
 msgstr "Upscaled"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Upscaled on the server while nobody is reading. A number keeps that many ready however long ago you read it. Needs Enhance on Always with a server method for this series."
+msgstr "Upscaled on the server while nobody is reading. A number keeps that many ready however long ago you read it. Needs Enhance on Always with a server method for this series."
 
 #: src/pages/reader/ServerEnhanceStatus.tsx
 msgid "Upscaled page shown"
