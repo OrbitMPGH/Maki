@@ -343,7 +343,7 @@ public class OpdsController(
 
         if (await thumbnails.GetOrRenderAsync(slice, 0, ct) is not { } cached)
         {
-            return Redirect(Context(token).Cover(seriesId));
+            return LocalRedirect(Context(token).Cover(seriesId));
         }
 
         // Immutable only when the URL carries the current version; an old feed's link revalidates.

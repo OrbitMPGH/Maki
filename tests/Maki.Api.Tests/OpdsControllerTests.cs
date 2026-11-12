@@ -205,7 +205,7 @@ public sealed class OpdsControllerTests : IDisposable
                 seriesId = db.Chapters.IgnoreQueryFilters().Single(c => c.Id == chapterId).SeriesId;
             }
 
-            var redirect = Assert.IsType<RedirectResult>(await Controller(withReader: true).Thumbnail(token, chapterId, default));
+            var redirect = Assert.IsType<LocalRedirectResult>(await Controller(withReader: true).Thumbnail(token, chapterId, default));
             Assert.EndsWith($"/{token}/cover/{seriesId}", redirect.Url);
         }
         finally

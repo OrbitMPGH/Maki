@@ -22,6 +22,10 @@ concurrency:
   group: native-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
+# Read-only by default; a job that needs more says so itself.
+permissions:
+  contents: read
+
 jobs:
   frontend:
     name: Frontend

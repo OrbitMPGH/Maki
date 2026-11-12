@@ -20,6 +20,10 @@ concurrency:
   group: production-container
   cancel-in-progress: false
 
+# Read-only by default; a job that needs more says so itself.
+permissions:
+  contents: read
+
 jobs:
   # ci.yml runs on branch pushes and pull requests, so a tag push reaches the publish job below
   # with nothing having checked the catalogues. The image embeds them — locales/*/server.po as
