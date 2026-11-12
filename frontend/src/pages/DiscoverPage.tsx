@@ -3,7 +3,7 @@ import { errorText } from '../api/errorText'
 import '@mantine/charts/styles.css'
 import { Fragment, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ActionIcon,
   Alert,
@@ -66,6 +66,7 @@ import {
   type RecommendationDefaults,
   type RecommendationFilters,
   type RecommendationItem,
+  recommendationStub,
   type RecommendationRequest,
   type RecommendationApplyState,
 } from '../api/hooks'
@@ -1235,6 +1236,22 @@ function DiscoverBrowseTab({
     setDetailItem(item)
     setDetailSource(source ?? OTHER_SOURCE)
   }, [])
+  // A sequel or spin-off notification links here with the new work's MangaBaka id.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const openId = searchParams.get('open')
+  useEffect(() => {
+    if (!openId || !/^\d+$/.test(openId)) return
+    setDetailItem(recommendationStub(openId))
+    setDetailSource(OTHER_SOURCE)
+  }, [openId])
+  const closeDetail = () => {
+    setDetailItem(null)
+    if (openId) {
+      const next = new URLSearchParams(searchParams)
+      next.delete('open')
+      setSearchParams(next, { replace: true })
+    }
+  }
   const [expandedRail, setExpandedRail] = useState<DiscoverRail | null>(null)
   const seriesIdFor = useSeriesIdLookup()
 
@@ -1589,7 +1606,7 @@ function DiscoverBrowseTab({
         feedbackContext={{ surface: 'browse' }}
         inLibrarySeriesId={detailItem ? seriesIdFor(detailItem) : null}
         rootFolders={rootFolders}
-        onClose={() => setDetailItem(null)}
+        onClose={closeDetail}
         savedFrom={detailSource}
       />
     </div>

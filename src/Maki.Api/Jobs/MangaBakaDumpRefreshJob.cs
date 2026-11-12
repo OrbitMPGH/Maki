@@ -60,6 +60,7 @@ public class MangaBakaDumpRefreshJob(
                 var scheduler = await schedulerFactory.GetScheduler(context.CancellationToken);
                 await scheduler.TriggerJob(DiscoverCacheWarmJob.Key, context.CancellationToken);
                 await scheduler.TriggerJob(FollowedCreatorReleaseJob.Key, context.CancellationToken);
+                await scheduler.TriggerJob(RelatedWorkWatchJob.Key, context.CancellationToken);
 
                 // Its own catch: a database error here is not a failed dump refresh and must not
                 // schedule a dump retry.

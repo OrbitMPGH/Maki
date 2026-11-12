@@ -13,6 +13,7 @@ import {
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import {
+  IconAffiliate,
   IconAlertTriangle,
   IconBell,
   IconBellOff,
@@ -241,6 +242,7 @@ const TYPE_ICONS: Record<InboxEventType, Icon> = {
   customSourceUpdated: IconPuzzle,
   noteReply: IconMessages,
   chapterDelisted: IconLinkOff,
+  newRelatedWork: IconAffiliate,
 }
 
 /** A warning or error shows its severity; anything else shows what kind of event it was. */

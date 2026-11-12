@@ -280,6 +280,28 @@ export interface RecommendationItem {
   franchiseId?: number | null
 }
 
+/** Enough of a card for the detail modal, which loads everything else by id. */
+export function recommendationStub(providerId: string): RecommendationItem {
+  return {
+    providerId,
+    title: '',
+    coverUrl: null,
+    thumbUrl: null,
+    thumbUrlHiDpi: null,
+    year: null,
+    description: null,
+    status: '',
+    rating: null,
+    totalChapters: null,
+    matchedGenres: [],
+    matchedTags: [],
+    authorMatch: false,
+    relationKind: null,
+    relatedToTitle: null,
+    becauseOfTitle: null,
+  }
+}
+
 export interface RecommendationsResult {
   related: RecommendationItem[]
   similar: RecommendationItem[]
