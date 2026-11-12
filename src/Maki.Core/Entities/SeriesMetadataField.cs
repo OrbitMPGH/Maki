@@ -16,4 +16,12 @@ public enum SeriesMetadataField
     TotalVolumes = 16,
     Genres = 32,
     Cover = 64,
+    Year = 128,
+    AuthorStory = 256,
+    AuthorArt = 512,
+    Publisher = 1024,
+    AltTitles = 2048,
+    SortTitle = 4096,
+    Type = 8192,
+    ContentRating = 16384,
 }

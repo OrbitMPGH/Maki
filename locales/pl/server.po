@@ -1065,6 +1065,12 @@ msgstr "Folder już nie istnieje."
 msgid "error.libraryImport.folderOwnedByOtherSeries"
 msgstr "Ten folder należy już do innej serii w bibliotece"
 
+#. English: This folder is a library root folder or contains one, so Maki won't import from it
+#: src/Maki.Api/Services/ManualImportService.cs
+#: src/Maki.Api/Controllers/DropFolderController.cs
+msgid "error.import.holdsRootFolder"
+msgstr ""
+
 #. English: Ids are looked up in the local MangaBaka database, which is not downloaded yet. Try again once it is installed.
 #: src/Maki.Api/Services/LibraryImportResolver.cs
 #, fuzzy
@@ -1280,6 +1286,27 @@ msgstr "Liczba rozdziałów i tomów musi mieścić się w zakresie od 0 do {max
 #, fuzzy
 msgid "error.metadata.invalidStatus"
 msgstr "Nieznany status."
+
+#. English: The year must be between {minYear} and {maxYear}.
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.invalidYear"
+msgstr ""
+
+#. English: The provider rates this series above your content rating limit, so its rating can't be reset.
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.resetAboveRatingLimit"
+msgstr ""
+
+#. English: Unknown series type.
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.unknownType"
+msgstr ""
+
+#. {url} is the address the user entered. {status} is an HTTP status code.
+#. English: {reason, select, refused {Maki only fetches images from public web addresses, so it skipped {url}.} timeout {{url} took too long to answer.} status {{url} answered with HTTP {status}.} redirects {{url} redirected too many times.} other {Maki could not reach {url}.}}
+#: src/Maki.Api/Controllers/MediaCoverController.cs
+msgid "error.metadata.coverFetchFailed"
+msgstr ""
 
 #. English: Choose at least one field.
 #: src/Maki.Api/Controllers/SeriesMetadataController.cs
@@ -2845,6 +2872,11 @@ msgstr "Ten tryb logowania wymaga nazwy użytkownika."
 #, fuzzy
 msgid "error.suwayomi.versionUnsupported"
 msgstr "Wersja {version} Suwayomi jest za stara dla tego trybu logowania. Maki wymaga wersji {minimum} lub nowszej."
+
+#. English: A rule needs between 1 and 20 conditions, each with a known field and a valid value
+#: src/Maki.Api/Controllers/AutoTagRulesController.cs
+msgid "error.autoTagRules.invalidConditions"
+msgstr ""
 
 #. {label} is the tag name the user typed in.
 #. English: A tag called "{label}" already exists
@@ -4582,6 +4614,27 @@ msgstr "Nowości od obserwowanych twórców"
 msgid "inbox.followedReleases.body"
 msgstr "{count, plural, one {# nowy tytuł} few {# nowe tytuły} many {# nowych tytułów} other {# nowego tytułu}} w katalogu."
 
+#. English: {kind, select, sequel {New sequel} prequel {New prequel} spinOff {New spin-off} sideStory {New side story} mainStory {New main story} other {New related work}}
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWork.title"
+msgstr ""
+
+#. {title} is a catalogue title and is not translated.
+#. English: {kind, select, sequel {{title} is a new sequel to a series you read.} prequel {{title} is a new prequel to a series you read.} spinOff {{title} is a new spin-off of a series you read.} sideStory {{title} is a new side story to a series you read.} mainStory {{title} is the main story of a series you read.} other {{title} is related to a series you read.}}
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWork.body"
+msgstr ""
+
+#. English: New sequels and spin-offs
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWorks.title"
+msgstr ""
+
+#. English: {count, plural, one {# new work} other {# new works}} related to series you read.
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWorks.body"
+msgstr ""
+
 #. English: Update available
 #: src/Maki.Api/Services/UpdateCheckService.cs
 #, fuzzy
@@ -6125,6 +6178,11 @@ msgstr ""
 msgid "health.job.discoverCacheWarm"
 msgstr ""
 
+#. English: Check the drop folder
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.dropFolder"
+msgstr ""
+
 #. English: Unload the idle text model
 #: src/Maki.Api/Services/JobLabels.cs
 msgid "health.job.embedderIdleUnload"
@@ -6208,6 +6266,11 @@ msgstr ""
 #. English: Check monitored series for new chapters
 #: src/Maki.Api/Services/JobLabels.cs
 msgid "health.job.refreshMonitored"
+msgstr ""
+
+#. English: Look for new sequels and spin-offs
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.relatedWorkWatch"
 msgstr ""
 
 #. English: Retry failed downloads

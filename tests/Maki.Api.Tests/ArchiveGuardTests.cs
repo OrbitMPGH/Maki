@@ -637,6 +637,23 @@ public sealed class ArchiveGuardTests : IDisposable
         AssertArchived(await SeriesController(_db.NewContext()).SearchMissing(archived, default));
     }
 
+    [Theory]
+    [InlineData(SeriesBulkAction.Refresh)]
+    [InlineData(SeriesBulkAction.SearchMissing)]
+    public async Task SeriesBulk_refuses_archived_series(SeriesBulkAction action)
+    {
+        var (_, archived) = Pair();
+        SeedChapter(archived, 1m);
+        using var services = SeriesBulkTestKit.Services(_db);
+        var operations = new SeriesBulkOperations();
+
+        // Neither the chapter sync nor the queue is registered, so reaching either records a different error.
+        var operation = operations.Enqueue(action, [archived], SeriesBulkTestKit.Caller(1, true));
+        await SeriesBulkTestKit.Worker(services, operations).RunAsync(operation, default);
+
+        Assert.Equal(ArchivedKey, Assert.Single(operation.Snapshot().Failures).Error);
+    }
+
     [Fact]
     public async Task SeriesDownloadNext_refuses_archived_series()
     {

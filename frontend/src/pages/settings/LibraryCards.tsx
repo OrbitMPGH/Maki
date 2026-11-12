@@ -19,7 +19,7 @@ import {
   TextInput,
   VisuallyHidden,
 } from '@mantine/core'
-import { IconTrash } from '../../lib/icons'
+import { IconPencil, IconTrash, IconWand } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { activeSeries } from '../../lib/series'
@@ -53,6 +53,8 @@ import {
 } from '../../api/hooks'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { FolderBrowserModal } from '../../components/settings/FolderBrowserModal'
+import { RootFolderPathModal } from '../../components/settings/RootFolderPathModal'
+import type { RootFolder } from '../../api/types'
 import { SUPPORTED_LOCALES } from '../../i18n'
 import { MONITOR_OPTIONS } from '../../components/series/SeriesActionsMenu'
 import { DumpProgressBar } from '../../components/MetadataDumpProgress'
@@ -61,6 +63,8 @@ import { useAuth } from '../../auth/AuthProvider'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 import { useRecycleBin, useSetRecycleBinRetention } from '../../api/recycleBin'
 import { RecycleBinModal } from '../../components/settings/RecycleBinModal'
+import { AutoTagRulesModal } from '../../components/settings/AutoTagRulesModal'
+import { useAutoTagRules } from '../../api/autoTagRules'
 
 export function RootFoldersSection() {
   const { t } = useLingui()
@@ -70,6 +74,7 @@ export function RootFoldersSection() {
   const addFolder = useAddRootFolder()
   const deleteFolder = useDeleteRootFolder()
   const [deleting, setDeleting] = useState<{ id: number; path: string } | null>(null)
+  const [editing, setEditing] = useState<RootFolder | null>(null)
 
   const add = () => {
     if (!newPath.trim()) return
@@ -107,14 +112,23 @@ export function RootFoldersSection() {
                     </Table.Td>
                     <Table.Td>{formatBytes(f.freeSpace)}</Table.Td>
                     <Table.Td>
-                      <ActionIcon
-                        variant="subtle"
-                        color="var(--danger)"
-                        onClick={() => setDeleting({ id: f.id, path: f.path })}
-                        aria-label={t`Remove root folder`}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
+                      <Group gap={4} wrap="nowrap" justify="flex-end">
+                        <ActionIcon
+                          variant="subtle"
+                          onClick={() => setEditing(f)}
+                          aria-label={t`Change root folder path`}
+                        >
+                          <IconPencil size={16} />
+                        </ActionIcon>
+                        <ActionIcon
+                          variant="subtle"
+                          color="var(--danger)"
+                          onClick={() => setDeleting({ id: f.id, path: f.path })}
+                          aria-label={t`Remove root folder`}
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Group>
                     </Table.Td>
                   </Table.Tr>
                 ))}
@@ -152,6 +166,8 @@ export function RootFoldersSection() {
         onSelect={setNewPath}
         initialPath={newPath}
       />
+
+      <RootFolderPathModal folder={editing} onClose={() => setEditing(null)} />
 
       <ConfirmDialog
         opened={deleting !== null}
@@ -672,6 +688,36 @@ export function RecycleBinSection() {
         )}
       </Stack>
       <RecycleBinModal opened={browsing} onClose={() => setBrowsing(false)} />
+    </SettingsSection>
+  )
+}
+
+/** Auto-tag rules live in a modal: a list of rules is too long for a card, and editing one drills down. */
+export function AutoTagRulesSection() {
+  const { data: rules } = useAutoTagRules()
+  const [open, setOpen] = useState(false)
+  const count = rules?.length ?? 0
+  const active = rules?.filter((r) => r.enabled).length ?? 0
+
+  return (
+    <SettingsSection
+      id="auto-tag-rules"
+      title={<Trans>Auto-tag rules</Trans>}
+      description={<Trans>Tag series as they are added, by genre, type, rating, folder or how they came in.</Trans>}
+    >
+      <Group justify="space-between" wrap="wrap" gap="sm">
+        <Text size="sm" c={count === 0 ? 'var(--ink-3)' : undefined}>
+          {count === 0 ? (
+            <Trans>No rules yet.</Trans>
+          ) : (
+            <Plural value={count} one={`# rule, ${active} on`} other={`# rules, ${active} on`} />
+          )}
+        </Text>
+        <Button variant="default" size="xs" leftSection={<IconWand size={16} />} onClick={() => setOpen(true)}>
+          <Trans>Manage rules</Trans>
+        </Button>
+      </Group>
+      <AutoTagRulesModal opened={open} onClose={() => setOpen(false)} />
     </SettingsSection>
   )
 }

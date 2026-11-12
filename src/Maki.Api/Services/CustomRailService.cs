@@ -1,3 +1,5 @@
+using System.Text.Json;
+using Maki.Api.Dtos;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Core.Security;
@@ -15,7 +17,8 @@ namespace Maki.Api.Services;
 /// </summary>
 /// <param name="Unavailable">
 /// Set instead of rows when the source cannot answer: <c>catalogue</c> when the local MangaBaka
-/// database is off or missing. A code, worded by the client.
+/// database is off or missing, <c>filterDeleted</c> when a library rail's saved Library filter is
+/// gone. A code, worded by the client.
 /// </param>
 public record CustomRailItems(
     string Source,
@@ -37,7 +40,11 @@ public class CustomRailService(
     HiddenContentService hidden,
     MangaBakaLocalStore store,
     VectorIndexCache vectorIndex,
-    IMemoryCache? cache = null)
+    IMemoryCache? cache = null,
+    SourceAvailability? sourceAvailability = null,
+    IAppSettings? appSettings = null,
+    IUserSettings? userSettings = null,
+    ILogger<CustomRailService>? logger = null)
 {
     /// <summary>
     /// How long a user's projected library rows are reused. Home renders each library rail through
@@ -50,11 +57,25 @@ public class CustomRailService(
 
     public const string CatalogueUnavailable = "catalogue";
 
+    public const string FilterDeleted = "filterDeleted";
+
+    /// <summary>Saved Library filters are stored by the Library page; read them the way it writes them.</summary>
+    private static readonly JsonSerializerOptions LibrarySpecJson = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNameCaseInsensitive = true,
+    };
+
     public async Task<CustomRailItems> ItemsAsync(CustomRailSpec spec, int limit, CancellationToken ct = default)
     {
         spec = spec.Normalize();
         switch (spec.Source)
         {
+            case CustomRailSources.Library when spec.LibraryFilterId is int filterId:
+                return await SavedLibraryFilterAsync(filterId, ct) is { } saved
+                    ? new CustomRailItems(spec.Source, [], saved.Take(limit).ToList())
+                    : new CustomRailItems(spec.Source, [], [], FilterDeleted);
+
             case CustomRailSources.Library:
                 return new CustomRailItems(spec.Source, [], (await LibraryAsync(spec, ct)).Take(limit).ToList());
 
@@ -100,7 +121,9 @@ public class CustomRailService(
         spec = spec.Normalize();
         if (spec.Source == CustomRailSources.Library)
         {
-            return (await LibraryAsync(spec, ct)).Count;
+            return spec.LibraryFilterId is int filterId
+                ? (await SavedLibraryFilterAsync(filterId, ct))?.Count
+                : (await LibraryAsync(spec, ct)).Count;
         }
 
         if (spec.Source == CustomRailSources.Recommendations)
@@ -175,6 +198,79 @@ public class CustomRailService(
 
         return LibraryRailFilter.Order(matching, spec.Sort, lastRead, r =>
             RowOf(r) is int row && index!.PopularityAt(row) is var rank && rank != VectorIndex.Unknown ? rank : null);
+    }
+
+    /// <summary>
+    /// The series a saved Library filter shows the caller, in its sort, evaluated over the Library
+    /// list's own rows by <see cref="LibraryFilterEvaluator"/>. Null when the filter is gone, or is
+    /// not the caller's: a rail can only use its owner's filters, whatever the query filter allows.
+    /// </summary>
+    private async Task<IReadOnlyList<int>?> SavedLibraryFilterAsync(int filterId, CancellationToken ct)
+    {
+        var stored = await db.SavedFilters
+            .AsNoTracking()
+            .Where(f => f.Id == filterId && f.UserId == user.UserId && f.Scope == SavedFilter.LibraryScope)
+            .Select(f => f.Spec)
+            .FirstOrDefaultAsync(ct);
+        if (stored is null)
+        {
+            return null;
+        }
+
+        LibraryFilterSpec filter;
+        try
+        {
+            filter = JsonSerializer.Deserialize<LibraryFilterSpec>(stored, LibrarySpecJson) ?? new LibraryFilterSpec();
+        }
+        catch (JsonException)
+        {
+            filter = new LibraryFilterSpec();
+        }
+
+        var (rows, readTracking) = await LibraryListAsync(ct);
+        var context = new LibraryFilterContext(readTracking, user.MaxContentRating, DateTime.UtcNow);
+        return LibraryFilterEvaluator.Apply(rows, filter, context).Select(s => s.Id).ToList();
+    }
+
+    /// <summary>
+    /// The caller's Library list rows, the same ones <c>GET series</c> answers, plus whether anything
+    /// tracks reading. Cached briefly like <see cref="LibraryRowsAsync"/>, since every rail on Home
+    /// built from a saved filter reads the whole list.
+    /// </summary>
+    private static readonly KeyedAsyncLock<string> LibraryListBuilds = new();
+
+    private async Task<(IReadOnlyList<SeriesDto> Rows, bool ReadTracking)> LibraryListAsync(CancellationToken ct)
+    {
+        var key = (Kind: "library-list-rows", user.UserId, user.AllRootFolders,
+            Folders: string.Join(',', user.RootFolderIds.Order()));
+        if (cache is not null && cache.TryGetValue(key, out (IReadOnlyList<SeriesDto>, bool) hit) && hit.Item1 is not null)
+        {
+            return hit;
+        }
+
+        // Several rails on Home load at once, and each would otherwise build the whole list.
+        using var building = await LibraryListBuilds.AcquireAsync(key.ToString(), ct);
+        if (cache is not null && cache.TryGetValue(key, out hit) && hit.Item1 is not null)
+        {
+            return hit;
+        }
+
+        if (sourceAvailability is null || appSettings is null)
+        {
+            throw new InvalidOperationException("Saved Library filter rails need SourceAvailability and IAppSettings.");
+        }
+
+        var titleLanguage = userSettings is null ? null : await userSettings.GetAsync(SettingKeys.UiTitleLanguage, ct);
+        var rows = await LibraryListRows.BuildAsync(
+            db, sourceAvailability, store, appSettings, titleLanguage,
+            (ILogger?)logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance, null, ct);
+        // The client's useReadTracking: the built-in reader has been used, or Kavita is connected.
+        var readTracking = await db.ChapterProgress.AnyAsync(ct) ||
+                           (!string.IsNullOrWhiteSpace(await appSettings.GetAsync(SettingKeys.KavitaUrl, ct)) &&
+                            !string.IsNullOrWhiteSpace(await appSettings.GetAsync(SettingKeys.KavitaApiKey, ct)));
+        (IReadOnlyList<SeriesDto>, bool) result = (rows, readTracking);
+        cache?.Set(key, result, LibraryRowsFor);
+        return result;
     }
 
     private async Task<IReadOnlyList<LibraryRailRow>> LibraryRowsAsync(CancellationToken ct)

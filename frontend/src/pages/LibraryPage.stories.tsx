@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent as userEventApi, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
-import { archivedLibraryHandlers, libraryHandlers, seedLibraryPrefs } from '../../.storybook/mocks/library'
+import { archivedLibraryHandlers, bulkJobHandlers, libraryHandlers, savedFilters, seedLibraryPrefs } from '../../.storybook/mocks/library'
 import { getConnectivity, onConnectivityChange, setConnectivity } from '../lib/connectivity'
 import LibraryPage from './LibraryPage'
 
@@ -120,6 +121,171 @@ export const ListView: Story = {
   beforeEach: () => seedLibraryPrefs({ view: 'list' }),
   play: async ({ canvasElement }) => {
     await waitFor(() => expect(canvasElement.querySelectorAll('.series-row')).toHaveLength(14))
+  },
+}
+
+export const TableView: Story = {
+  beforeEach: () => seedLibraryPrefs({ view: 'table' }),
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByRole('table', { name: 'Library' })
+    await waitFor(() => expect(canvasElement.querySelectorAll('.library-table-body > [role="row"]')).toHaveLength(14))
+    await waitFor(() => expect(canvas.getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
+      'Title', 'Status', 'Chapters', 'Unread', 'Last read', 'Latest release', 'Size on disk', 'Sources',
+    ]))
+  },
+}
+
+/** A header with a Library sort sets it; clicking it again reverses it. Sources has no sort and is not a button. */
+export const TableHeaderSorts: Story = {
+  beforeEach: () => seedLibraryPrefs({ view: 'table' }),
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('table', { name: 'Library' })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Title' }))
+    const title = () => canvas.getAllByRole('columnheader').find((h) => h.textContent === 'Title')
+    await waitFor(() => expect(title()).toHaveAttribute('aria-sort', 'ascending'))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Title' }))
+    await waitFor(() => expect(title()).toHaveAttribute('aria-sort', 'descending'))
+    expect(canvas.queryByRole('button', { name: 'Sources' })).toBeNull()
+  },
+}
+
+export const TableColumnPicker: Story = {
+  beforeEach: () => seedLibraryPrefs({ view: 'table' }),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('table', { name: 'Library' })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Columns' }))
+    const dialog = await body(canvasElement).findByRole('dialog', { name: 'Columns' })
+    await userEvent.click(await within(dialog).findByRole('checkbox', { name: 'Tags' }))
+    await userEvent.click(await within(dialog).findByRole('checkbox', { name: 'Size on disk' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Move Tags up' }))
+    await waitFor(() =>
+      expect(JSON.parse(localStorage.getItem('library-table-columns') ?? '[]')).toEqual([
+        'status', 'chapters', 'unread', 'lastRead', 'released', 'tags', 'sources',
+      ]),
+    )
+    await waitFor(() => expect(canvas.getAllByRole('columnheader').at(-2)?.textContent).toBe('Tags'))
+  },
+}
+
+export const TableColumnResize: Story = {
+  beforeEach: () => seedLibraryPrefs({ view: 'table' }),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('table', { name: 'Library' })
+    const box = (col: string) => canvasElement.querySelector(`.library-table-th[data-col="${col}"]`)!.getBoundingClientRect()
+    const rowBox = (col: string) =>
+      canvasElement.querySelector(`.library-table-body > [role="row"] [data-col="${col}"]`)!.getBoundingClientRect()
+    const stored = () => JSON.parse(localStorage.getItem('library-table-widths') ?? '{}')
+    const titleWidth = box('title').width
+    const statusLeft = box('status').left
+
+    // Shrinking Title pins it and pulls every column after it left, rows included.
+    ;(await canvas.findByRole('separator', { name: 'Resize Title column' })).focus()
+    await userEvent.keyboard('{ArrowLeft}')
+    await waitFor(() => expect(stored().title).toBeLessThan(Math.round(titleWidth)))
+    const shrunk = Math.round(titleWidth) - stored().title
+    await waitFor(() => expect(box('status').left).toBeCloseTo(statusLeft - shrunk, 0))
+    await waitFor(() => expect(rowBox('status').left).toBeCloseTo(statusLeft - shrunk, 0))
+
+    // Widening Status pushes the next column right and leaves Status where it is.
+    const chaptersLeft = box('chapters').left
+    const status = await canvas.findByRole('separator', { name: 'Resize Status column' })
+    status.focus()
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}')
+    await waitFor(() => expect(stored().status).toBe(160))
+    await waitFor(() => expect(box('chapters').left).toBeCloseTo(chaptersLeft + 32, 0))
+    await waitFor(() => expect(box('status').left).toBeCloseTo(statusLeft - shrunk, 0))
+
+    // Double-click resets: Status to its default, Title back to filling the row.
+    await userEvent.dblClick(status)
+    await userEvent.dblClick(await canvas.findByRole('separator', { name: 'Resize Title column' }))
+    await waitFor(() => expect(localStorage.getItem('library-table-widths')).toBeNull())
+    await waitFor(() => expect(box('status').left).toBeCloseTo(statusLeft, 0))
+  },
+}
+
+export const TableSelectRangeWithShift: Story = {
+  beforeEach: () => seedLibraryPrefs({ view: 'table' }),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('table', { name: 'Library' })
+    await userEvent.click(await canvas.findByRole('button', { name: /^select$/i }))
+    const rows = () => [...canvasElement.querySelectorAll<HTMLElement>('.library-table-body > [role="row"]')]
+    await waitFor(() => expect(rows().length).toBe(14))
+    await userEvent.click(rows()[1].querySelector('[data-col="status"]')!)
+    await expect(await canvas.findByText('1 selected')).toBeVisible()
+    await userEvent.keyboard('{Shift>}')
+    await userEvent.click(rows()[4].querySelector('[data-col="status"]')!)
+    await userEvent.keyboard('{/Shift}')
+    await expect(await canvas.findByText('4 selected')).toBeVisible()
+    await waitFor(() => expect(rows()[0]).not.toHaveAttribute('data-selected'))
+  },
+}
+
+export const TableViewFromTheLink: Story = {
+  decorators: [
+    (Story) => (
+      <>
+        <LocationProbe />
+        <Story />
+      </>
+    ),
+  ],
+  parameters: { router: { initialEntries: ['/library?view=table'] } },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('table', { name: 'Library' })
+    // The link does not change what this browser remembers.
+    expect(localStorage.getItem('library-view')).toBeNull()
+    await userEvent.click(await canvas.findByRole('radio', { name: 'List view' }))
+    const probe = () => canvasElement.ownerDocument.querySelector('[data-testid="location"]')
+    await waitFor(() => expect(probe()?.textContent).toBe('?view=list'))
+  },
+}
+
+/** Grouped by status from a link: one header per status, and a fold is remembered by the browser. */
+export const GroupedByStatus: Story = {
+  parameters: { router: { initialEntries: ['/library?groupBy=status'] } },
+  play: async ({ canvasElement, userEvent }) => {
+    await waitFor(() => expect(canvasElement.querySelector('.library-groups')).not.toBeNull())
+    const groups = within(canvasElement.querySelector<HTMLElement>('.library-groups')!)
+    const ongoing = await groups.findByRole('button', { name: /^Ongoing/ })
+    await waitFor(() => expect(ongoing).toHaveAttribute('aria-expanded', 'true'))
+    const cards = () => canvasElement.querySelectorAll('.cover-card').length
+    await waitFor(() => expect(cards()).toBe(14))
+    await userEvent.click(ongoing)
+    await waitFor(() => expect(ongoing).toHaveAttribute('aria-expanded', 'false'))
+    await waitFor(() => expect(cards()).toBeLessThan(14))
+    await waitFor(() => expect(JSON.parse(localStorage.getItem('library-collapsed-groups') ?? '[]')).toEqual(['status:Ongoing']))
+  },
+}
+
+/** By tag, a series with two tags is listed under both, and untagged series close the list. */
+export const GroupedByTagInTable: Story = {
+  beforeEach: () => seedLibraryPrefs({ view: 'table', page: { 'group-by': 'tag' } }),
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByRole('table', { name: 'Library' })
+    const names = () => [...canvasElement.querySelectorAll('.library-group-name')].map((n) => n.textContent)
+    await waitFor(() =>
+      expect(names()).toEqual(['Comfort reads', 'Favourites', 'Shared with Sam', 'To re-read', 'Waiting for volume', 'No tag']),
+    )
+    await waitFor(() => expect(canvas.getAllByRole('link', { name: /Lanterns Over Kasumi/ })).toHaveLength(2))
+  },
+}
+
+export const GroupByWritesTheLink: Story = {
+  decorators: [
+    (Story) => (
+      <>
+        <LocationProbe />
+        <Story />
+      </>
+    ),
+  ],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })
+    await userEvent.click(await canvas.findByRole('combobox', { name: 'Group by' }))
+    await userEvent.click(await body(canvasElement).findByRole('option', { name: 'Type' }))
+    const probe = () => canvasElement.ownerDocument.querySelector('[data-testid="location"]')
+    await waitFor(() => expect(probe()?.textContent).toContain('groupBy=type'))
+    await expect(await canvas.findByRole('button', { name: /^Manga/ })).toBeVisible()
   },
 }
 
@@ -303,6 +469,9 @@ export const SavedFilterChips: Story = {
 }
 
 const onSaveFilter = fn()
+const onDefaultFilter = fn()
+const onReorderFilters = fn()
+const onRenameFilter = fn()
 
 export const SaveFilterDialog: Story = {
   beforeEach: () => seedLibraryPrefs({ page: { status: 'Hiatus' } }),
@@ -311,7 +480,7 @@ export const SaveFilterDialog: Story = {
       http.post(api('/library/filters'), async ({ request }) => {
         const payload = (await request.json()) as { name: string }
         onSaveFilter(payload)
-        return HttpResponse.json({ id: 99, name: payload.name, spec: {}, sortOrder: 3 })
+        return HttpResponse.json({ id: 99, name: payload.name, spec: {}, sortOrder: 3, isDefault: false })
       }),
       ...libraryHandlers,
     ],
@@ -327,10 +496,125 @@ export const SaveFilterDialog: Story = {
 
 export const DeleteSavedFilter: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    const buttons = await canvas.findAllByRole('button', { name: 'Delete saved filter' })
-    await userEvent.click(buttons[0])
+    await userEvent.click(await canvas.findByRole('button', { name: 'Options for Ongoing and behind' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Delete' }))
     await expect(await body(canvasElement).findByText(/Deleted saved filter Ongoing and behind/)).toBeVisible()
     await expect(await body(canvasElement).findByRole('button', { name: 'Undo' })).toBeVisible()
+  },
+}
+
+export const RenameSavedFilter: Story = {
+  parameters: {
+    msw: [
+      http.put(api('/library/filters/:id'), async ({ params, request }) => {
+        const payload = (await request.json()) as { name: string; spec: object }
+        onRenameFilter({ id: Number(params.id), name: payload.name })
+        return HttpResponse.json({ id: Number(params.id), name: payload.name, spec: payload.spec, sortOrder: 0, isDefault: false })
+      }),
+      ...libraryHandlers,
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Options for Favourites' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Rename' }))
+    const dialog = await body(canvasElement).findByRole('dialog', { name: 'Rename saved filter' })
+    const input = await within(dialog).findByLabelText('Name')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'Keepers')
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(onRenameFilter).toHaveBeenCalledWith({ id: 2, name: 'Keepers' }))
+  },
+}
+
+export const SavedFilterAsDefault: Story = {
+  parameters: {
+    msw: [
+      http.put(api('/library/filters/:id/default'), async ({ params, request }) => {
+        const payload = (await request.json()) as { isDefault: boolean }
+        onDefaultFilter({ id: Number(params.id), isDefault: payload.isDefault })
+        return HttpResponse.json({ ...savedFilters[1], isDefault: payload.isDefault })
+      }),
+      ...libraryHandlers,
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Options for Favourites' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Open the Library with this' }))
+    await waitFor(() => expect(onDefaultFilter).toHaveBeenCalledWith({ id: 2, isDefault: true }))
+  },
+}
+
+function LocationProbe() {
+  const { search } = useLocation()
+  return <output data-testid="location" hidden>{search}</output>
+}
+
+export const ViewWritesTheLink: Story = {
+  decorators: [
+    (Story) => (
+      <>
+        <LocationProbe />
+        <Story />
+      </>
+    ),
+  ],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Ongoing and behind' }))
+    const probe = () => canvasElement.ownerDocument.querySelector('[data-testid="location"]')
+    await waitFor(() => expect(probe()?.textContent).toContain('status=Ongoing'))
+    await waitFor(() => expect(probe()?.textContent).toContain('completeness=behind'))
+    await waitFor(() => expect(probe()?.textContent).toContain('sort=incomplete'))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Clear' }))
+    await waitFor(() => expect(probe()?.textContent).toBe(''))
+  },
+}
+
+export const ViewFromTheLink: Story = {
+  beforeEach: () => seedLibraryPrefs({ page: { status: 'Hiatus' } }),
+  parameters: { router: { initialEntries: ['/library?status=Completed&sort=title&sortDir=desc&bogus=1'] } },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(await canvas.findByText('4 of 14')).toBeVisible()
+    await waitFor(() => expect(canvasElement.querySelector('.cover-title')).not.toBeNull())
+  },
+}
+
+export const UnusableLinkParamsAreIgnored: Story = {
+  parameters: { router: { initialEntries: ['/library?sort=bogus&status=&tagIds=x&readMin=80&readMax=20&yearMin=abc'] } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })).toBeVisible()
+    expect(canvas.queryByText(/ of 14$/)).toBeNull()
+  },
+}
+
+export const DefaultSavedFilterApplies: Story = {
+  parameters: {
+    msw: [
+      http.get(api('/library/filters'), () =>
+        HttpResponse.json(savedFilters.map((f) => ({ ...f, isDefault: f.id === 1 }))),
+      ),
+      ...libraryHandlers,
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('5 of 14')).toBeVisible()
+  },
+}
+
+export const ReorderSavedFilters: Story = {
+  parameters: {
+    msw: [
+      http.put(api('/library/filters/order'), async ({ request }) => {
+        const payload = (await request.json()) as { ids: number[] }
+        onReorderFilters(payload.ids)
+        return HttpResponse.json(savedFilters)
+      }),
+      ...libraryHandlers,
+    ],
+  },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Options for Favourites' }))
+    await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Move earlier' }))
+    await waitFor(() => expect(onReorderFilters).toHaveBeenCalledWith([2, 1, 3]))
   },
 }
 
@@ -354,6 +638,22 @@ export const SelectMode: Story = {
     await expect(await canvas.findByText('14 selected')).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Clear all' }))
     await expect(await canvas.findByText('0 selected')).toBeVisible()
+  },
+}
+
+export const SelectRangeWithShift: Story = {
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await enterSelectMode(canvas, userEvent)
+    await waitFor(() => expect(canvasElement.querySelectorAll('.cover-card').length).toBeGreaterThan(5))
+    const cards = () => [...canvasElement.querySelectorAll<HTMLElement>('.cover-card')]
+    await userEvent.click(cards()[1])
+    await expect(await canvas.findByText('1 selected')).toBeVisible()
+    await userEvent.keyboard('{Shift>}')
+    await userEvent.click(cards()[4])
+    await userEvent.keyboard('{/Shift}')
+    await expect(await canvas.findByText('4 selected')).toBeVisible()
+    await waitFor(() => expect(cards().slice(1, 5).every((c) => c.getAttribute('aria-checked') === 'true')).toBe(true))
+    await waitFor(() => expect(cards()[0]).toHaveAttribute('aria-checked', 'false'))
   },
 }
 
@@ -458,9 +758,7 @@ export const BulkSearchMissing: Story = {
 export const BulkSearchMissingPartlyFails: Story = {
   parameters: {
     msw: [
-      http.post(api('/series/:id/searchmissing'), ({ params }) =>
-        params.id === '3' ? failWith(409, 'A download for this series is already running') : HttpResponse.json({ queued: 2 }),
-      ),
+      ...bulkJobHandlers((id) => (id === 3 ? 'A download for this series is already running' : null)),
       ...libraryHandlers,
     ],
   },

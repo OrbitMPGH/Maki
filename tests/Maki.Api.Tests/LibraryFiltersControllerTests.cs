@@ -47,7 +47,10 @@ public class LibraryFiltersControllerTests : IDisposable
             Types: [SeriesTypes.Manhwa, SeriesTypes.Manhua],
             ExcludeTagIds: [4, 5], ExcludeGenres: ["Horror"], UntaggedOnly: true,
             SortDir: "asc",
-            RatingState: "rated", RatingMin: 7, RatingMax: 9, CommunityRatingMin: 7.5, CommunityRatingMax: 9.5);
+            RatingState: "rated", RatingMin: 7, RatingMax: 9, CommunityRatingMin: 7.5, CommunityRatingMax: 9.5,
+            YearMin: 1995, YearMax: 2005, Credits: ["Kentaro Miura"], Publishers: ["Hakusensha"],
+            RootFolderIds: [2, 3], Incognito: "on", Muted: "muted", Anime: "has", NumberingClash: "clash",
+            Overrides: ["readCleanup", "pageConversion"], AddedWithinDays: 30, GroupBy: "tag");
 
         var created = Body<SavedFilterDto>(
             await Controller().Create(new SaveFilterRequest("Ongoing & behind", spec), CancellationToken.None));
@@ -98,6 +101,18 @@ public class LibraryFiltersControllerTests : IDisposable
         Assert.Null(listed.Spec.ExcludeTagIds);
         Assert.Null(listed.Spec.ExcludeGenres);
         Assert.False(listed.Spec.UntaggedOnly);
+        Assert.Null(listed.Spec.YearMin);
+        Assert.Null(listed.Spec.YearMax);
+        Assert.Null(listed.Spec.Credits);
+        Assert.Null(listed.Spec.Publishers);
+        Assert.Null(listed.Spec.RootFolderIds);
+        Assert.Equal("all", listed.Spec.Incognito);
+        Assert.Equal("all", listed.Spec.Muted);
+        Assert.Equal("all", listed.Spec.Anime);
+        Assert.Equal("all", listed.Spec.NumberingClash);
+        Assert.Null(listed.Spec.Overrides);
+        Assert.Null(listed.Spec.AddedWithinDays);
+        Assert.Equal("none", listed.Spec.GroupBy);
     }
 
     [Fact]
@@ -128,6 +143,73 @@ public class LibraryFiltersControllerTests : IDisposable
         Assert.Equal("all", listed.Spec.Status);
     }
 
+    private async Task<SavedFilterDto> Make(LibraryFiltersController controller, string name) =>
+        Body<SavedFilterDto>(await controller.Create(
+            new SaveFilterRequest(name, new LibraryFilterSpec()), CancellationToken.None));
+
+    private async Task<List<SavedFilterDto>> Listed(LibraryFiltersController controller) =>
+        Body<IEnumerable<SavedFilterDto>>(await controller.List(CancellationToken.None)).ToList();
+
+    [Fact]
+    public async Task Setting_a_default_clears_the_previous_one_and_clearing_leaves_none()
+    {
+        var first = await Make(Controller(), "One");
+        var second = await Make(Controller(), "Two");
+
+        await Controller().SetDefault(first.Id, new SetDefaultFilterRequest(true), CancellationToken.None);
+        await Controller().SetDefault(second.Id, new SetDefaultFilterRequest(true), CancellationToken.None);
+        var listed = await Listed(Controller());
+        Assert.Equal(["Two"], listed.Where(f => f.IsDefault).Select(f => f.Name));
+
+        await Controller().SetDefault(second.Id, new SetDefaultFilterRequest(false), CancellationToken.None);
+        Assert.DoesNotContain(await Listed(Controller()), f => f.IsDefault);
+    }
+
+    [Fact]
+    public async Task Reorder_applies_the_given_order_and_keeps_unlisted_presets_after_it()
+    {
+        var a = await Make(Controller(), "A");
+        var b = await Make(Controller(), "B");
+        var c = await Make(Controller(), "C");
+
+        await Controller().Reorder(new ReorderFiltersRequest([c.Id, a.Id]), CancellationToken.None);
+
+        Assert.Equal(["C", "A", "B"], (await Listed(Controller())).Select(f => f.Name));
+        Assert.Equal(b.Id, (await Listed(Controller()))[2].Id);
+    }
+
+    [Fact]
+    public async Task Another_users_presets_cannot_be_reordered_or_made_default()
+    {
+        var alice = _db.SeedUser("alice");
+        var bob = _db.SeedUser("bob");
+        LibraryFiltersController As(int user) =>
+            new(new TestLocalizer(), _db.NewContext(user), NullLogger<LibraryFiltersController>.Instance);
+        var theirs = await Make(As(alice), "Alice's");
+        var mine = await Make(As(bob), "Bob's");
+
+        Assert.IsType<NotFoundResult>(
+            await As(bob).Reorder(new ReorderFiltersRequest([mine.Id, theirs.Id]), CancellationToken.None));
+        Assert.IsType<NotFoundResult>(
+            await As(bob).SetDefault(theirs.Id, new SetDefaultFilterRequest(true), CancellationToken.None));
+        Assert.DoesNotContain(await Listed(As(alice)), f => f.IsDefault);
+    }
+
+    [Fact]
+    public async Task Another_user_cannot_rename_or_delete_a_preset()
+    {
+        var alice = _db.SeedUser("alice");
+        var bob = _db.SeedUser("bob");
+        LibraryFiltersController As(int user) =>
+            new(new TestLocalizer(), _db.NewContext(user), NullLogger<LibraryFiltersController>.Instance);
+        var theirs = await Make(As(alice), "Alice's");
+
+        Assert.IsType<NotFoundResult>(await As(bob).Update(
+            theirs.Id, new SaveFilterRequest("Hijacked", new LibraryFilterSpec()), CancellationToken.None));
+        Assert.IsType<NotFoundResult>(await As(bob).Delete(theirs.Id, CancellationToken.None));
+        Assert.Equal(["Alice's"], (await Listed(As(alice))).Select(f => f.Name));
+    }
+
     [Fact]
     public async Task Delete_removes_the_preset()
     {
@@ -143,5 +225,38 @@ public class LibraryFiltersControllerTests : IDisposable
     public async Task Delete_404s_for_an_unknown_id()
     {
         Assert.IsType<NotFoundResult>(await Controller().Delete(404, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Restore_brings_a_deleted_preset_back_under_its_id_place_and_default()
+    {
+        var spec = new LibraryFilterSpec(Status: "Ongoing");
+        var first = Body<SavedFilterDto>(await Controller().Create(new SaveFilterRequest("First", spec), CancellationToken.None));
+        var second = Body<SavedFilterDto>(await Controller().Create(new SaveFilterRequest("Second", spec), CancellationToken.None));
+        await Controller().Create(new SaveFilterRequest("Third", spec), CancellationToken.None);
+        await Controller().SetDefault(second.Id, new SetDefaultFilterRequest(true), CancellationToken.None);
+        await Controller().Delete(second.Id, CancellationToken.None);
+        await Controller().SetDefault(first.Id, new SetDefaultFilterRequest(true), CancellationToken.None);
+
+        var restored = Body<SavedFilterDto>(await Controller().Restore(
+            new RestoreFilterRequest(second.Id, "Second", spec, 1, IsDefault: true), CancellationToken.None));
+        var listed = Body<IEnumerable<SavedFilterDto>>(await Controller().List(CancellationToken.None)).ToList();
+
+        Assert.Equal(second.Id, restored.Id);
+        Assert.Equal(["First", "Second", "Third"], listed.Select(f => f.Name));
+        Assert.Equal([false, true, false], listed.Select(f => f.IsDefault));
+    }
+
+    [Fact]
+    public async Task Restore_takes_a_new_id_when_the_old_one_is_in_use()
+    {
+        var kept = Body<SavedFilterDto>(await Controller().Create(
+            new SaveFilterRequest("Kept", new LibraryFilterSpec()), CancellationToken.None));
+
+        var restored = Body<SavedFilterDto>(await Controller().Restore(
+            new RestoreFilterRequest(kept.Id, "Back", new LibraryFilterSpec(), 0, IsDefault: false), CancellationToken.None));
+
+        Assert.NotEqual(kept.Id, restored.Id);
+        Assert.Equal(2, Body<IEnumerable<SavedFilterDto>>(await Controller().List(CancellationToken.None)).Count());
     }
 }

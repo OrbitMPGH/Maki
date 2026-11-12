@@ -178,8 +178,17 @@ export interface SeriesDto {
   lastReadAt?: string | null
   /** When the newest chapter file landed, or null with no files. Library list endpoint only. */
   lastDownloadedAt?: string | null
+  /** The newest release date among the series' known chapters, or null with none dated. Library list endpoint only. */
+  latestChapterAt?: string | null
   /** MangaBaka's aggregate score, 0–10, from the local dump. Library list endpoint only. */
   communityRating?: number | null
+  /** Bytes of every chapter file on disk, or null with none. Library list endpoint only. */
+  sizeOnDisk?: number | null
+  /**
+   * When the monitored refresh next syncs this series; a time already past means it is due. Null
+   * when it will not be synced at all. Library list endpoint only.
+   */
+  nextCheckAt?: string | null
   /**
    * Non-fatal problems reported by Add (folder creation, source matching). Absent everywhere else,
    * since the series was still created.
@@ -216,7 +225,22 @@ export interface VolumeHold {
 }
 
 /** The camelCase names of `SeriesMetadataField` on the server. */
-export type MetadataField = 'title' | 'overview' | 'status' | 'totalChapters' | 'totalVolumes' | 'genres' | 'cover'
+export type MetadataField =
+  | 'title'
+  | 'overview'
+  | 'status'
+  | 'totalChapters'
+  | 'totalVolumes'
+  | 'genres'
+  | 'cover'
+  | 'year'
+  | 'authorStory'
+  | 'authorArt'
+  | 'publisher'
+  | 'altTitles'
+  | 'sortTitle'
+  | 'type'
+  | 'contentRating'
 
 /** A user-assigned library label. `color` is a Mantine colour name. */
 export interface TagDto {
@@ -296,6 +320,27 @@ export interface LibraryFilterSpec {
   communityRatingMax?: number
   /** `SeriesDto.readingStatus` values to include. Empty means any. */
   readingStatuses: string[]
+  /** First-year window; null on either end is unbounded. Series with no year drop out once either is set. Absent on older presets. */
+  yearMin?: number | null
+  yearMax?: number | null
+  /** Story or art credits, any one of which the series must carry. */
+  credits?: string[] | null
+  publishers?: string[] | null
+  rootFolderIds?: number[] | null
+  /** "all" | "on" | "off" */
+  incognito?: string
+  /** "all" | "muted" | "unmuted", on your own notification mode. */
+  muted?: string
+  /** "all" | "has" | "none" */
+  anime?: string
+  /** "all" | "clash" | "none" */
+  numberingClash?: string
+  /** "readCleanup" and/or "pageConversion": series with a setting of their own. */
+  overrides?: string[] | null
+  /** Only series added within this many days; null for any time. */
+  addedWithinDays?: number | null
+  /** "none" | "status" | "tag" | "rootFolder" | "type": how the view is grouped. Not a filter. Absent on older presets. */
+  groupBy?: string
 }
 
 export interface SavedFilterDto {
@@ -303,6 +348,8 @@ export interface SavedFilterDto {
   name: string
   spec: LibraryFilterSpec
   sortOrder: number
+  /** The preset the Library opens with when nothing is remembered. At most one per user. */
+  isDefault: boolean
 }
 
 export interface MetadataSearchResult {

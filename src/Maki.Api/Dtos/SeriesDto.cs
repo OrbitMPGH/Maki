@@ -202,11 +202,24 @@ public record SeriesDto(
     /// <summary>When the newest chapter file landed in this series, or null with no files. Library list only.</summary>
     public DateTime? LastDownloadedAt { get; init; }
 
+    /// <summary>The newest release date among this series' known chapters, or null when none has one. Library list only.</summary>
+    public DateTime? LatestChapterAt { get; init; }
+
     /// <summary>
     /// MangaBaka's aggregate score on a 0–10 scale, read from the local dump. Library list only; null
     /// without a MangaBaka link, without the dump, or when MangaBaka has no score for the series.
     /// </summary>
     public double? CommunityRating { get; init; }
+
+    /// <summary>Bytes of every chapter file the series has on disk. Library list only.</summary>
+    public long? SizeOnDisk { get; init; }
+
+    /// <summary>
+    /// When the monitored refresh next syncs this series, or null when it never will (archived, no
+    /// enabled source, finished, or still waiting on an import link). A series that is due carries
+    /// a time already past: its last check, else when it was added. Library list only.
+    /// </summary>
+    public DateTime? NextCheckAt { get; init; }
 
     /// <summary>
     /// Personal time left, based on timed chapters from the built-in reader. Filled only by the

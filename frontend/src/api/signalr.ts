@@ -154,6 +154,16 @@ function subscribe(cb: (conn: HubConnection) => void): () => void {
   }
 }
 
+/** Subscribes to a single hub event outside React, until the returned function is called. */
+export function onHubEvent<T>(event: string, handler: (payload: T) => void): () => void {
+  const listener = (payload: T) => handler(payload)
+  const unsubscribe = subscribe((conn) => conn.on(event, listener))
+  return () => {
+    unsubscribe()
+    connection?.off(event, listener)
+  }
+}
+
 /** Subscribes to a single hub event while the calling component is mounted. */
 export function useHubEvent<T>(event: string, handler: (payload: T) => void) {
   const handlerRef = useRef(handler)

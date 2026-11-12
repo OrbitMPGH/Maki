@@ -7,7 +7,9 @@ using Maki.Core.Download;
 using Maki.Core.Entities;
 using Maki.Core.Images;
 using Maki.Core.Security;
+using Maki.Core.Sources;
 using Maki.Data;
+using Maki.Sources.Suwayomi;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -129,14 +131,182 @@ public class MediaCoverController(
             return this.Fail(localizer, "error.metadata.coverInvalid", new { pixels = MaxCoverDimension });
         }
 
-        buffer.Position = 0;
+        return await StoreAsync(series, buffer.ToArray(), ct);
+    }
+
+    public record PageCoverRequest(int ChapterId, int Page);
+
+    public record SourceCoverRequest(int MappingId);
+
+    public record UrlCoverRequest(string? Url);
+
+    /// <summary>How many pages a downloaded chapter of this series has, for the page picker.</summary>
+    [HttpGet("{seriesId:int}/cover/chapter/{chapterId:int}/pages")]
+    public async Task<IActionResult> ChapterPages(
+        int seriesId, int chapterId, [FromServices] ReaderService reader, CancellationToken ct)
+    {
+        if (!await db.Chapters.AnyAsync(c => c.Id == chapterId && c.SeriesId == seriesId, ct) ||
+            await reader.PageSliceAsync(chapterId, ct) is not { } slice)
+        {
+            return NotFound();
+        }
+
+        return Ok(new { pageCount = slice.PageCount });
+    }
+
+    /// <summary>
+    /// Makes one page of a downloaded chapter the poster, read the way the reader serves it. The page
+    /// is 0-based, as on the reader's page route.
+    /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("{seriesId:int}/cover/from-page")]
+    public async Task<IActionResult> FromPage(
+        int seriesId,
+        [FromBody] PageCoverRequest request,
+        [FromServices] ReaderService reader,
+        [FromServices] ReaderArchiveCache archives,
+        CancellationToken ct)
+    {
+        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
+        if (series is null ||
+            !await db.Chapters.AnyAsync(c => c.Id == request.ChapterId && c.SeriesId == seriesId, ct) ||
+            await reader.PageSliceAsync(request.ChapterId, ct) is not { } slice ||
+            request.Page < 0 || request.Page >= slice.PageCount)
+        {
+            return NotFound();
+        }
+
+        var bytes = await ReaderPageCache.ReadPageBytesAsync(paths, archives, slice, slice.StartPage + request.Page, ct);
+        if (bytes is null)
+        {
+            return NotFound();
+        }
+
+        if (!IsAcceptableImage(bytes, allowAvif: true))
+        {
+            return this.Fail(localizer, "error.metadata.coverInvalid", new { pixels = MaxCoverDimension });
+        }
+
+        return await StoreAsync(series, bytes, ct);
+    }
+
+    /// <summary>
+    /// Makes a linked source's own cover the poster. The source's page is read for its cover address,
+    /// which is then held to the same host rule as the cover proxy at every redirect.
+    /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("{seriesId:int}/cover/from-source")]
+    public async Task<IActionResult> FromSource(
+        int seriesId,
+        [FromBody] SourceCoverRequest request,
+        [FromServices] SourceRegistry sources,
+        [FromServices] SourceAvailability availability,
+        [FromServices] CoverFetcher fetcher,
+        CancellationToken ct)
+    {
+        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
+        var mapping = await db.SourceMappings.AsNoTracking()
+            .FirstOrDefaultAsync(m => m.Id == request.MappingId && m.SeriesId == seriesId, ct);
+        if (series is null || mapping is null || !mapping.Enabled ||
+            !await availability.IsEnabledAsync(mapping.SourceName, ct) || sources.Find(mapping.SourceName) is not { } source)
+        {
+            return NotFound();
+        }
+
+        // A Suwayomi source's own host is the admin's LAN server; its thumbnails have their own relay.
+        if (source is SuwayomiSource)
+        {
+            return this.Fail(localizer, "error.search.hostNotServed");
+        }
+
+        string? coverUrl;
         try
         {
-            series.CoverPath = await covers.StoreUploadedCoverAsync(series.Id, buffer, ct);
+            coverUrl = (await source.GetSeriesAsync(mapping.SourceSeriesId, ct)).CoverUrl;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            logger.LogWarning(ex, "Could not read the series page of {Source} for series {SeriesId}", source.Name, seriesId);
+            return this.BadGateway(localizer, "error.search.coverUnavailable");
+        }
+
+        if (coverUrl is null || !Uri.TryCreate(coverUrl, UriKind.Absolute, out var target))
+        {
+            return this.BadGateway(localizer, "error.search.coverUnavailable");
+        }
+
+        var result = await fetcher.FetchAsync(
+            target, hop => CoverHostPolicy.Allows(source, hop), (int)CoverUploadLimit, new Uri($"{source.BaseUrl}/"), ct);
+        switch (result.Outcome)
+        {
+            case CoverFetcher.Outcome.Refused:
+                return this.Fail(localizer, "error.search.hostNotServed");
+            case CoverFetcher.Outcome.Failed or CoverFetcher.Outcome.TooLarge:
+                return this.BadGateway(localizer, "error.search.coverUnavailable");
+        }
+
+        if (!IsAcceptableImage(result.Bytes!, allowAvif: true))
+        {
+            return this.BadGateway(localizer, "error.search.notAnImage");
+        }
+
+        return await StoreAsync(series, result.Bytes!, ct);
+    }
+
+    /// <summary>
+    /// Fetches an image from an address an admin typed and makes it the poster. A server-side fetch
+    /// of a caller-chosen URL, so: admins only, http or https at every hop, public addresses only
+    /// (the <c>covers</c> client refuses the LAN at connect time), a short timeout and the upload's
+    /// size cap, and the bytes must pass the same check as an upload.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("{seriesId:int}/cover/from-url")]
+    public async Task<IActionResult> FromUrl(
+        int seriesId, [FromBody] UrlCoverRequest request, [FromServices] CoverFetcher fetcher, CancellationToken ct)
+    {
+        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
+        if (series is null)
+        {
+            return NotFound();
+        }
+
+        if (!Uri.TryCreate(request.Url?.Trim(), UriKind.Absolute, out var target) || !CoverFetcher.IsWebAddress(target))
+        {
+            return this.Fail(localizer, "error.search.invalidUrl");
+        }
+
+        var result = await fetcher.FetchAsync(target, CoverFetcher.IsWebAddress, (int)CoverUploadLimit, null, ct);
+        switch (result.Outcome)
+        {
+            case CoverFetcher.Outcome.TooLarge:
+                return this.Fail(localizer, "error.metadata.coverTooLarge", new { megabytes = CoverUploadLimit / (1024 * 1024) });
+            case CoverFetcher.Outcome.Refused or CoverFetcher.Outcome.Failed:
+                return this.Fail(localizer, "error.metadata.coverFetchFailed",
+                    new { url = target.GetLeftPart(UriPartial.Path), reason = result.Reason, status = result.Status ?? 0 });
+        }
+
+        if (!IsAcceptableImage(result.Bytes!))
+        {
+            return this.Fail(localizer, "error.metadata.coverInvalid", new { pixels = MaxCoverDimension });
+        }
+
+        return await StoreAsync(series, result.Bytes!, ct);
+    }
+
+    /// <summary>
+    /// Stores checked image bytes as the poster through the upload's resize and re-encode, then locks
+    /// the cover so neither a refresh nor the image-cache rebuild puts the provider's back.
+    /// </summary>
+    private async Task<IActionResult> StoreAsync(Series series, byte[] bytes, CancellationToken ct)
+    {
+        try
+        {
+            await using var content = new MemoryStream(bytes, writable: false);
+            series.CoverPath = await covers.StoreUploadedCoverAsync(series.Id, content, ct);
         }
         catch (NetVips.VipsException ex)
         {
-            logger.LogInformation(ex, "Rejected an uploaded cover for series {SeriesId}", series.Id);
+            logger.LogInformation(ex, "Rejected a chosen cover for series {SeriesId}", series.Id);
             return this.Fail(localizer, "error.metadata.coverInvalid", new { pixels = MaxCoverDimension });
         }
 
@@ -166,16 +336,21 @@ public class MediaCoverController(
     /// whose dimensions read back within <see cref="MaxCoverDimension"/>. Identify reads only the
     /// header, so an image claiming to be enormous is refused before anything allocates its pixels.
     /// </summary>
-    internal static bool IsAcceptableImage(MemoryStream buffer)
+    internal static bool IsAcceptableImage(MemoryStream buffer) => IsAcceptableImage(buffer.ToArray());
+
+    /// <param name="allowAvif">
+    /// For a chapter page or a source cover, which only ever reach a browser as the re-encoded JPEG
+    /// poster. Converted chapters store AVIF pages.
+    /// </param>
+    internal static bool IsAcceptableImage(byte[] bytes, bool allowAvif = false)
     {
-        var header = buffer.GetBuffer().AsSpan(0, (int)Math.Min(buffer.Length, 32));
-        if (ImageValidator.SniffMediaType(header) is null or "image/avif")
+        var mediaType = ImageValidator.SniffMediaType(bytes.AsSpan(0, Math.Min(bytes.Length, 32)));
+        if (mediaType is null || (mediaType == "image/avif" && !allowAvif))
         {
             return false;
         }
 
-        buffer.Position = 0;
-        return ImageCodec.TryIdentify(buffer.ToArray()) is { } info &&
+        return ImageCodec.TryIdentify(bytes) is { } info &&
                info.Width is > 0 and <= MaxCoverDimension && info.Height is > 0 and <= MaxCoverDimension;
     }
 }

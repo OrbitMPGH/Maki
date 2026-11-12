@@ -26,7 +26,8 @@ public static class ComicInfoUpdater
     /// Returns true when the file was rewritten, false when it was already up to date.
     /// </summary>
     public static bool UpdateFile(
-        string cbzPath, Series series, ParsedReleaseFile parsed, Chapter? chapter, string? group = null)
+        string cbzPath, Series series, ParsedReleaseFile parsed, Chapter? chapter, string? group = null,
+        IEnumerable<string>? userTags = null)
     {
         // A PDF read in place is left exactly as it was found; there is no ComicInfo.xml to write.
         if (Reading.ComicFile.IsPdf(cbzPath)) return false;
@@ -46,7 +47,7 @@ public static class ComicInfoUpdater
 
             info ??= new ComicInfo();
             var pageCount = source.Entries.Count(e => Reading.CbzReader.IsImage(e.FullName));
-            Standardize(info, series, parsed, chapter, pageCount, group);
+            Standardize(info, series, parsed, chapter, pageCount, group, userTags);
 
             newXml = ComicInfoBuilder.Serialize(info);
             if (existingXml != null && XmlEquals(existingXml, newXml))
@@ -60,7 +61,8 @@ public static class ComicInfoUpdater
     }
 
     private static void Standardize(
-        ComicInfo info, Series series, ParsedReleaseFile parsed, Chapter? chapter, int pageCount, string? group)
+        ComicInfo info, Series series, ParsedReleaseFile parsed, Chapter? chapter, int pageCount, string? group,
+        IEnumerable<string>? userTags)
     {
         // Series-level fields: always Maki's view, so imports and downloads agree.
         info.Series = series.Title;
@@ -75,6 +77,7 @@ public static class ComicInfoUpdater
         info.Publisher = ComicInfoBuilder.JoinList(series.Publisher) ?? info.Publisher;
         info.Genre = ComicInfoBuilder.JoinList(series.Genres) ?? info.Genre;
         info.Tags = ComicInfoBuilder.JoinList(series.Tags) ?? info.Tags;
+        info.SeriesGroup = ComicInfoBuilder.SeriesGroupFor(userTags) ?? info.SeriesGroup;
         info.Web = SeriesWebLinks.Joined(series) ?? info.Web;
         info.AgeRating = ComicInfoBuilder.AgeRatingFor(series.ContentRating) ?? info.AgeRating;
         info.Manga = ComicInfoBuilder.MangaFor(series.Type)

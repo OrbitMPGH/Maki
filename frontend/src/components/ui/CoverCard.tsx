@@ -54,7 +54,7 @@ export const CoverCard = memo(function CoverCard({
    * that has since been removed doesn't linger on the card.
    */
   readTracking: boolean
-  onToggle: (id: number) => void
+  onToggle: (id: number, shiftKey?: boolean) => void
   /** The library grid's menu button. Hidden in select mode and offline, where its actions cannot run. */
   menu?: boolean
 }) {
@@ -120,7 +120,7 @@ export const CoverCard = memo(function CoverCard({
       onClick={(e) => {
         if (selectMode) {
           e.preventDefault()
-          onToggle(series.id)
+          onToggle(series.id, e.shiftKey)
         }
       }}
       onKeyDown={(e) => {

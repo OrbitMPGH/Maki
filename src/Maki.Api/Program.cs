@@ -231,6 +231,7 @@ try
     builder.Services.AddSingleton(SearchTuning.Default.Catalogue);
     builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();
     builder.Services.AddSingleton<CoverService>();
+    builder.Services.AddSingleton<CoverFetcher>();
     builder.Services.AddSingleton<SignInMosaicService>();
     builder.Services.AddSingleton<CoverAccentCache>();
     // Seed weights derived from reading behaviour, for the seeds a user never rated. Same shape as
@@ -940,6 +941,7 @@ try
         .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler);
     builder.Services.AddSingleton<AccountSecurityAlerts>();
     builder.Services.AddSingleton<FollowedCreatorReleaseService>();
+    builder.Services.AddSingleton<RelatedWorkWatchService>();
     builder.Services.AddSingleton<ReadingStatusAutoService>();
 
     builder.Services.AddHttpClient(UpdateCheckService.HttpClientName, client =>
@@ -1003,6 +1005,9 @@ try
     builder.Services.AddScoped<ChapterDownloadProcessor>();
     builder.Services.AddScoped<LibraryImportService>();
     builder.Services.AddScoped<LibraryImportResolver>();
+    builder.Services.AddScoped<ManualImportService>();
+    builder.Services.AddScoped<DropFolderImportService>();
+    builder.Services.AddSingleton<DropFolderState>();
     builder.Services.AddScoped<LibraryImportUndoService>();
     builder.Services.AddScoped<CbzLinkService>();
     builder.Services.AddScoped<ChapterFromFilesService>();
@@ -1029,8 +1034,15 @@ try
     builder.Services.AddScoped<VolumeFirstGate>();
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<TagService>();
+    builder.Services.AddScoped<AutoTagRuleService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
+    builder.Services.AddSingleton<SeriesBulkOperations>();
+    builder.Services.AddScoped<RootFolderPathService>();
+    builder.Services.AddHostedService<SeriesBulkWorker>();
+    builder.Services.AddScoped(sp => new SeriesMoveService(sp.GetRequiredService<MakiDbContext>(),
+        sp.GetRequiredService<Maki.Core.Security.ICurrentUser>(), sp.GetRequiredService<KavitaScanService>(),
+        sp.GetRequiredService<ILogger<SeriesMoveService>>()));
     builder.Services.AddScoped<TorrentImportService>();
     builder.Services.AddScoped<SeriesMetadataRefreshService>();
     builder.Services.AddScoped<SeriesMetadataChangeLog>();
@@ -1299,6 +1311,14 @@ try
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(3))
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
+        // Every-minute tick; DropFolderImportService decides whether the configured interval has elapsed.
+        q.AddJob<Maki.Api.Jobs.DropFolderImportJob>(j => j.WithIdentity(Maki.Api.Jobs.DropFolderImportJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.DropFolderImportJob.Key)
+            .WithIdentity("drop-folder-import-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(2))
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
+
         // Every-minute tick; ImportListService decides whether the configured interval has elapsed.
         // Starts well after the scrobble tick so the first passes don't hit the trackers together.
         q.AddJob<Maki.Api.Jobs.ImportListJob>(j => j.WithIdentity(Maki.Api.Jobs.ImportListJob.Key));
@@ -1406,6 +1426,15 @@ try
             .ForJob(Maki.Api.Jobs.FollowedCreatorReleaseJob.Key)
             .WithIdentity("followed-creator-releases-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(20))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
+        // New sequels and spin-offs of library series, same schedule as the follow check.
+        q.AddJob<Maki.Api.Jobs.RelatedWorkWatchJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.RelatedWorkWatchJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.RelatedWorkWatchJob.Key)
+            .WithIdentity("related-work-watch-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(22))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Reading status auto rules (put on hold / drop after N idle days), opt-in per reader.

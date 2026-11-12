@@ -87,7 +87,7 @@ export const SelectMode: Story = {
   args: { selectMode: true },
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('link'))
-    await waitFor(() => expect(args.onToggle).toHaveBeenCalledWith(1))
+    await waitFor(() => expect(args.onToggle).toHaveBeenCalledWith(1, false))
   },
 }
 

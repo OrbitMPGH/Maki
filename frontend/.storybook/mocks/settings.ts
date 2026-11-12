@@ -4,6 +4,7 @@ import * as d from './settings/data'
 import { pageConversionHandlers } from './settings/pageConversion'
 import { browseFoldersHandler } from './settings/folders'
 import { healthOptions } from './operations/health'
+import type { DropFolderSettings, DropFolderStatus } from '../../src/api/dropFolder'
 
 /** A PUT whose reply is the body it was sent, which is how most settings records answer. */
 const putEcho = (path: string) =>
@@ -275,6 +276,20 @@ export const settingsHandlers: HttpHandler[] = [
   http.delete(api('/notifications/:id'), ok),
   http.post(api('/notifications/test'), success),
   http.get(api('/tags'), () => HttpResponse.json(d.tags)),
+  http.get(api('/tags/rules'), () => HttpResponse.json(d.autoTagRules)),
+  http.get(api('/tags/rules/:id/preview'), () => HttpResponse.json({ count: 12 })),
+  http.post(api('/tags/rules/:id/apply'), () => HttpResponse.json({ tagged: 12 })),
+  http.post(api('/tags/rules'), async ({ request }) => HttpResponse.json({ id: 9, ...((await request.json()) as object) })),
+  http.put(api('/tags/rules/:id'), async ({ request, params }) =>
+    HttpResponse.json({ id: Number(params.id), ...((await request.json()) as object) }),
+  ),
+  http.delete(api('/tags/rules/:id'), ok),
+  http.get(api('/dropfolder/settings'), () =>
+    HttpResponse.json({ enabled: false, path: null, intervalMinutes: 5, placement: 'copy' } satisfies DropFolderSettings),
+  ),
+  http.get(api('/dropfolder'), () =>
+    HttpResponse.json({ enabled: false, path: null, lastRunAt: null, lastError: null, pending: [] } satisfies DropFolderStatus),
+  ),
 
   // System
   http.get(api('/system/status'), () => HttpResponse.json({ version: '0.32.0' })),

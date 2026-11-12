@@ -42,7 +42,7 @@ export const ArchivedSeriesCard = memo(function ArchivedSeriesCard({
   selectMode: boolean
   selected: boolean
   readTracking: boolean
-  onToggle: (id: number) => void
+  onToggle: (id: number, shiftKey?: boolean) => void
   offline?: OfflineAvailability
   canRestore: boolean
   canRemoveFiles: boolean

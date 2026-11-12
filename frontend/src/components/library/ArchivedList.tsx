@@ -17,7 +17,7 @@ interface RowProps {
   selectMode: boolean
   selectedIds: ReadonlySet<number>
   readTracking: boolean
-  onToggle: (id: number) => void
+  onToggle: (id: number, shiftKey?: boolean) => void
   canRestore: boolean
   canRemoveFiles: boolean
   canDelete: boolean
@@ -64,12 +64,12 @@ const ArchivedRow = memo(function ArchivedRow({
     <div
       className="archived-row"
       data-selected={selected || undefined}
-      onClick={selectMode ? () => onToggle(series.id) : undefined}
+      onClick={selectMode ? (e) => onToggle(series.id, e.shiftKey) : undefined}
     >
       {selectMode && (
         <Checkbox
           checked={selected}
-          onChange={() => onToggle(series.id)}
+          onChange={(e) => onToggle(series.id, (e.nativeEvent as MouseEvent).shiftKey === true)}
           aria-label={t`Select ${displayTitle}`}
           onClick={(e) => e.stopPropagation()}
         />
