@@ -2845,6 +2845,11 @@ msgstr "Este modo de inicio de sesión necesita un usuario."
 msgid "error.suwayomi.versionUnsupported"
 msgstr "Suwayomi {version} es demasiado antiguo para este modo de inicio de sesión. Maki necesita la versión {minimum} o una posterior."
 
+#. English: A rule needs between 1 and 20 conditions, each with a known field and a valid value
+#: src/Maki.Api/Controllers/AutoTagRulesController.cs
+msgid "error.autoTagRules.invalidConditions"
+msgstr ""
+
 #. {label} is the tag name the user typed in.
 #. English: A tag called "{label}" already exists
 #: src/Maki.Api/Controllers/TagsController.cs
@@ -4581,6 +4586,27 @@ msgstr "Novedades de los creadores que sigues"
 msgid "inbox.followedReleases.body"
 msgstr "{count, plural, one {# título nuevo} many {# títulos nuevos} other {# títulos nuevos}} en el catálogo."
 
+#. English: {kind, select, sequel {New sequel} prequel {New prequel} spinOff {New spin-off} sideStory {New side story} mainStory {New main story} other {New related work}}
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWork.title"
+msgstr ""
+
+#. {title} is a catalogue title and is not translated.
+#. English: {kind, select, sequel {{title} is a new sequel to a series you read.} prequel {{title} is a new prequel to a series you read.} spinOff {{title} is a new spin-off of a series you read.} sideStory {{title} is a new side story to a series you read.} mainStory {{title} is the main story of a series you read.} other {{title} is related to a series you read.}}
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWork.body"
+msgstr ""
+
+#. English: New sequels and spin-offs
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWorks.title"
+msgstr ""
+
+#. English: {count, plural, one {# new work} other {# new works}} related to series you read.
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWorks.body"
+msgstr ""
+
 #. English: Update available
 #: src/Maki.Api/Services/UpdateCheckService.cs
 #, fuzzy
@@ -6207,6 +6233,11 @@ msgstr ""
 #. English: Check monitored series for new chapters
 #: src/Maki.Api/Services/JobLabels.cs
 msgid "health.job.refreshMonitored"
+msgstr ""
+
+#. English: Look for new sequels and spin-offs
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.relatedWorkWatch"
 msgstr ""
 
 #. English: Retry failed downloads
