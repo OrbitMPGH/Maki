@@ -141,6 +141,8 @@ function toSeries(e: CatalogueEntry): SeriesDto {
     lastReadAt: o.lastRead == null ? null : daysAgo(o.lastRead),
     lastDownloadedAt: o.files > 0 ? hoursAgo(e.id * 7) : null,
     communityRating: Math.round(e.rating * 10) / 10,
+    sizeOnDisk: o.files > 0 ? o.files * 31_457_280 : null,
+    nextCheckAt: o.monitored === false || sources.length === 0 ? null : hoursAgo(-e.id),
     upgradeProfileId: o.profile ?? null,
     lastUpgradeScan: null,
     pendingProposalId: null,

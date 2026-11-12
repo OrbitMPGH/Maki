@@ -211,6 +211,16 @@ public record SeriesDto(
     /// </summary>
     public double? CommunityRating { get; init; }
 
+    /// <summary>Bytes of every chapter file the series has on disk. Library list only.</summary>
+    public long? SizeOnDisk { get; init; }
+
+    /// <summary>
+    /// When the monitored refresh next syncs this series, or null when it never will (archived, no
+    /// enabled source, finished, or still waiting on an import link). A series that is due carries
+    /// the time the list was built. Library list only.
+    /// </summary>
+    public DateTime? NextCheckAt { get; init; }
+
     /// <summary>
     /// Personal time left, based on timed chapters from the built-in reader. Filled only by the
     /// detail endpoint; null when fewer than three comparable chapters have timing data.

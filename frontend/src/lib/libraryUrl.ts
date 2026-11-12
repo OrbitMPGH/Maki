@@ -150,3 +150,12 @@ export function paramsToSpec(params: URLSearchParams, sorts: readonly string[]):
   }
   return Object.keys(out).length > 0 ? (out as Partial<LibraryFilterSpec>) : null
 }
+
+/** The query parameter for the grid, list or table view. Not part of a saved filter. */
+export const VIEW_PARAM = 'view'
+
+/** The view a link asks for, or null when it names none this page offers. */
+export function viewFromParams<V extends string>(params: URLSearchParams, views: readonly V[]): V | null {
+  const value = params.get(VIEW_PARAM)?.trim()
+  return value != null && (views as readonly string[]).includes(value) ? (value as V) : null
+}

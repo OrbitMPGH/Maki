@@ -182,6 +182,13 @@ export interface SeriesDto {
   latestChapterAt?: string | null
   /** MangaBaka's aggregate score, 0–10, from the local dump. Library list endpoint only. */
   communityRating?: number | null
+  /** Bytes of every chapter file on disk, or null with none. Library list endpoint only. */
+  sizeOnDisk?: number | null
+  /**
+   * When the monitored refresh next syncs this series; a time already past means it is due. Null
+   * when it will not be synced at all. Library list endpoint only.
+   */
+  nextCheckAt?: string | null
   /**
    * Non-fatal problems reported by Add (folder creation, source matching). Absent everywhere else,
    * since the series was still created.

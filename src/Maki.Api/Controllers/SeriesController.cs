@@ -463,6 +463,18 @@ public class SeriesController(
             .Select(g => new { SeriesId = g.Key, At = g.Max(c => c.ReleaseDate) })
             .ToDictionaryAsync(x => x.SeriesId, x => x.At, ct);
 
+        var sizeBySeries = await ForSeries(db.ChapterFiles, ids, f => f.SeriesId)
+            .GroupBy(f => f.SeriesId)
+            .Select(g => new { SeriesId = g.Key, Bytes = g.Sum(f => f.Size) })
+            .ToDictionaryAsync(x => x.SeriesId, x => x.Bytes, ct);
+
+        // The same set the monitored refresh picks from, so the table's "Next check" never names a
+        // time for a series the job will pass over.
+        var refreshable = (await ForSeries(RefreshMonitoredSeriesJob.Refreshable(db, disabledSources), ids, s => s.Id)
+            .Select(s => s.Id)
+            .ToListAsync(ct)).ToHashSet();
+        var builtAt = DateTime.UtcNow;
+
         var titleLanguage = await TitleLanguageAsync(ct);
         var communityRatings = await CommunityRatingsAsync(series, ct);
 
@@ -517,6 +529,8 @@ public class SeriesController(
                 CommunityRating = s.MangaBakaId is int bakaId && communityRatings.TryGetValue(bakaId, out var score)
                     ? Math.Round(score / 10.0, 1)
                     : null,
+                SizeOnDisk = sizeBySeries.TryGetValue(s.Id, out var bytes) ? bytes : null,
+                NextCheckAt = refreshable.Contains(s.Id) ? s.NextCheckAt ?? builtAt : null,
             };
         })];
     }

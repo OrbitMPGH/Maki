@@ -107,11 +107,12 @@ export const archivedLibraryHandlers: HttpHandler[] = [
  * Clears what the Library page remembers about the previous story (session-stored filters, the
  * localStorage view and density) and seeds the given values. Call it from a story's `beforeEach`.
  */
-export function seedLibraryPrefs(options: { view?: 'grid' | 'list'; density?: 'compact' | 'default' | 'comfortable'; page?: Record<string, unknown> } = {}) {
+export function seedLibraryPrefs(options: { view?: 'grid' | 'list' | 'table'; density?: 'compact' | 'default' | 'comfortable'; page?: Record<string, unknown> } = {}) {
   try {
     for (const key of Object.keys(sessionStorage)) if (key.startsWith('maki-page:')) sessionStorage.removeItem(key)
     localStorage.removeItem('library-view')
     localStorage.removeItem('library-density')
+    localStorage.removeItem('library-table-columns')
     if (options.view) localStorage.setItem('library-view', options.view)
     if (options.density) localStorage.setItem('library-density', options.density)
     for (const [key, value] of Object.entries(options.page ?? {})) {
