@@ -57,6 +57,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<HealthOperation> HealthOperations => Set<HealthOperation>();
     public DbSet<HealthHistory> HealthHistory => Set<HealthHistory>();
     public DbSet<SourceMapping> SourceMappings => Set<SourceMapping>();
+    public DbSet<SourceNearMiss> SourceNearMisses => Set<SourceNearMiss>();
     public DbSet<ChapterSourceLink> ChapterSourceLinks => Set<ChapterSourceLink>();
     public DbSet<DownloadQueueItem> DownloadQueue => Set<DownloadQueueItem>();
     public DbSet<RootFolder> RootFolders => Set<RootFolder>();
@@ -645,6 +646,13 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasQueryFilter(m => _scope.Unrestricted || Series.Any(s => s.Id == m.SeriesId));
 
             e.HasIndex(m => new { m.SeriesId, m.SourceName }).IsUnique();
+        });
+
+        modelBuilder.Entity<SourceNearMiss>(e =>
+        {
+            e.HasQueryFilter(m => _scope.Unrestricted || Series.Any(s => s.Id == m.SeriesId));
+            e.HasOne<Series>().WithMany().HasForeignKey(m => m.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(m => new { m.SeriesId, m.SourceName, m.SourceSeriesId }).IsUnique();
         });
 
         modelBuilder.Entity<ChapterSourceLink>(e =>
