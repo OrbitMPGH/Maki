@@ -180,6 +180,8 @@ public sealed class ControllerAuthorizationInventoryTests
         "InboxController.SavePrefs",
         "LibraryFiltersController.Create",
         "LibraryFiltersController.Delete",
+        "LibraryFiltersController.Reorder",
+        "LibraryFiltersController.SetDefault",
         "LibraryFiltersController.Update",
         // Author only, or an admin deleting a shared note; checked in the action, invisible ids 404.
         "NotesController.Create",
