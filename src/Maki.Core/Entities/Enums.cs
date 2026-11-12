@@ -141,8 +141,7 @@ public enum PendingImportLink
 public enum AcquisitionProtocol
 {
     Scraper = 0,
-    Torrent = 1,
-    Usenet = 2
+    Torrent = 1
 }
 
 /// <summary>
@@ -198,7 +197,14 @@ public enum QueueStatus
     /// the item waits in the activity list until someone picks what happens to the existing files.
     /// Nothing in the pipeline may advance it on its own — see <c>TorrentImportService</c>.
     /// </summary>
-    AwaitingImport = 11
+    AwaitingImport = 11,
+
+    /// <summary>
+    /// A chapter the source still holds behind early access. Parked until <c>NextAttempt</c>, when it is
+    /// claimable again like a Queued row. Not a failure: it spends no attempt, raises no notification,
+    /// and bulk retry and "remove failed" leave it alone.
+    /// </summary>
+    Waiting = 12
 }
 
 /// <summary>

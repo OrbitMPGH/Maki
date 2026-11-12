@@ -303,6 +303,11 @@ public class DownloadWorkerHostedService(
         // for a missing root folder says nothing about its source and must not cool it down.
         foreach (var item in interrupted)
         {
+            if (item.Status == QueueStatus.Waiting)
+            {
+                continue;
+            }
+
             if (item.Status == QueueStatus.RateLimited)
             {
                 if (item.NextAttempt is { } until && item.SourceMapping is { } mapping &&

@@ -71,7 +71,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         if (await db.HealthOperations.AnyAsync(o => o.FileId == id && o.Id != operationId && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
             throw new HealthRefusedException("error.health.operationActive");
         var seriesIds = chapters.Select(c => c.SeriesId).ToArray();
-        if (await db.DownloadQueue.AnyAsync(q => seriesIds.Contains(q.SeriesId) && q.HealthOperationId != operationId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Failed, ct))
+        if (await db.DownloadQueue.AnyAsync(q => seriesIds.Contains(q.SeriesId) && q.HealthOperationId != operationId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Waiting, ct))
             throw new HealthRefusedException("error.health.downloadsActive");
         return (file, root, chapters);
     }
@@ -191,7 +191,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             var record = await db.ChapterFiles.FindAsync([missing.ChapterFileId], ct) ?? throw new HealthRefusedException("error.health.reviewStale");
             if (await db.HealthOperations.AnyAsync(o => (o.FileId == missingId || o.FileId == targetId) && o.Status != "completed" && o.Status != "failed" && o.Status != "cancelled", ct))
                 throw new HealthRefusedException("error.health.operationActive");
-            if (await db.DownloadQueue.AnyAsync(q => q.SeriesId == record.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Failed, ct))
+            if (await db.DownloadQueue.AnyAsync(q => q.SeriesId == record.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Waiting, ct))
                 throw new HealthRefusedException("error.health.downloadsActive");
 
             using var seriesLock = await SeriesLocks.SeriesAsync(record.SeriesId, ct);

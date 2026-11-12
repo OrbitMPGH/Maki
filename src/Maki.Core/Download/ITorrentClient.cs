@@ -56,6 +56,8 @@ public sealed record TorrentClientSettings(
 /// A torrent as the client reports it, normalised across drivers. <see cref="ContentPath"/> is the
 /// file of a single-file torrent or the root folder of a multi-file one, in the client's own view
 /// of the filesystem (the caller applies the path map). <see cref="Hash"/> is lowercase hex.
+/// <see cref="IsHeld"/> means the client itself is not downloading it right now (queued, paused,
+/// checking, moving), so a lack of progress says nothing about its peers.
 /// </summary>
 public sealed record ClientTorrent(
     string Hash,
@@ -65,7 +67,8 @@ public sealed record ClientTorrent(
     string ContentPath,
     DateTimeOffset AddedAt,
     bool IsErrored,
-    string? Message);
+    string? Message,
+    bool IsHeld = false);
 
 public enum TorrentClientFailure
 {

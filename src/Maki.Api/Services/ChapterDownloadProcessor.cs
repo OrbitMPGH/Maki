@@ -59,7 +59,7 @@ public class ChapterDownloadProcessor(
     /// <summary>A RateLimited row parked for a missing root folder, which no source's cooldown is about.</summary>
     public const string RootFolderUnavailableKey = "error.download.rootFolderUnavailable";
 
-    /// <summary>A chapter still behind early access, parked Failed until it unlocks without spending an attempt.</summary>
+    /// <summary>A chapter still behind early access, parked Waiting until it unlocks.</summary>
     public const string EarlyAccessKey = "error.download.earlyAccess";
 
     public Task<DownloadOutcome> ProcessAsync(int queueItemId, CancellationToken ct) =>
@@ -1133,12 +1133,10 @@ public class ChapterDownloadProcessor(
     private static readonly TimeSpan LockedUnlockBuffer = TimeSpan.FromMinutes(5);
 
     /// <summary>
-    /// Parks a still-early-access-locked chapter in <see cref="QueueStatus.Failed"/> without
-    /// incrementing <see cref="DownloadQueueItem.RetryCount"/> or raising a failure notification —
-    /// this isn't a broken chapter, it's expected to succeed once the unlock window passes.
-    /// Leaving RetryCount untouched keeps it eligible for <see cref="DownloadQueueService.RequeueEligibleFailuresAsync"/>
-    /// forever instead of aging out after <c>DownloadRetryMaxAttempts</c>. When the source told us
-    /// exactly when early access ends, retry a few minutes after that instead of the blind interval.
+    /// Parks a still-early-access-locked chapter in <see cref="QueueStatus.Waiting"/> until it unlocks.
+    /// It is claimed again at <see cref="DownloadQueueItem.NextAttempt"/>, spends no attempt and raises
+    /// no failure notification. When the source told us exactly when early access ends, the next try is
+    /// a few minutes after that instead of the blind interval.
     /// </summary>
     private async Task LockedAsync(
         DownloadQueueItem item, Chapter chapter, Series series, string sourceName, DateTimeOffset? unlockAt, CancellationToken ct)
@@ -1152,7 +1150,7 @@ public class ChapterDownloadProcessor(
             next = now.Add(LockedRecheckInterval);
         }
 
-        item.Status = QueueStatus.Failed;
+        item.Status = QueueStatus.Waiting;
         item.NextAttempt = next;
         item.SetError(EarlyAccessKey, new { source = sourceName });
         await db.SaveChangesAsync(ct);

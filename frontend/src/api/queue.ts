@@ -76,6 +76,7 @@ const ERROR_LABELS: Record<string, MessageDescriptor> = {
   'error.download.pickedSourceUnavailable': msg`The source you picked could not provide this chapter`,
   'error.download.rootFolderUnavailable': msg`The library folder is not available, check that its drive or share is mounted`,
   'error.download.torrentRemoved': msg`The torrent is no longer in the download client`,
+  'error.download.torrentStalled': msg`The torrent made no progress for an hour`,
   'error.download.torrentClientError': msg`The download client reports an error on this torrent`,
   'error.download.noEnabledMapping': msg`This series has no enabled sources`,
   'error.download.healthReviewActive': msg`A health review is active for this series`,
@@ -119,7 +120,6 @@ const ERROR_LABELS: Record<string, MessageDescriptor> = {
  */
 const REASON_GROUP_LABELS: Record<string, MessageDescriptor> = {
   'error.download.rateLimited': msg`Rate limited`,
-  'error.download.earlyAccess': msg`Still early access`,
   'error.torrentImport.copyFailed': msg`Could not import a file`,
   'error.torrentImport.pathNotAccessible': msg`Download path not accessible from Maki`,
   'error.torrentImport.noComicsOfType': msg`No comics found in the completed download`,

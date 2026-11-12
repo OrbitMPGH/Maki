@@ -753,7 +753,9 @@ export default function ActivityPage() {
                             other: `Retried # times. Next attempt at ${nextAttemptTime}.`,
                           })
                         : t`Retried ${retryCount}x`
-                      : null
+                      : q.status === 'Waiting' && nextAttemptTime
+                        ? t`Next check at ${nextAttemptTime}`
+                        : null
                   const failure = queueErrorMessage(q, renderLabel)
                   const tooltipLabel =
                     [failure, retryInfo].filter(Boolean).join(' - ') || renderLabel(visual.label)
@@ -823,7 +825,7 @@ export default function ActivityPage() {
                             {rejectionText ?? (held ? t`Paused` : renderLabel(visual.label))}
                           </StatusDot>
                         </Tooltip>
-                        {q.status === 'Failed' && failure && !rejectionText && (
+                        {(q.status === 'Failed' || q.status === 'Waiting') && failure && !rejectionText && (
                           <Text size="xs" c="var(--ink-3)" lineClamp={2} maw={320}>
                             {failure}
                           </Text>

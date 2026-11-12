@@ -199,7 +199,8 @@ public class QBittorrentClient : ITorrentClient
             t.ContentPath,
             DateTimeOffset.FromUnixTimeSeconds(t.AddedOn),
             errored,
-            null);
+            null,
+            checking || moving || t.State is "queuedDL" or "pausedDL" or "stoppedDL" or "allocating");
     }
 
     /// <summary>A transport failure, or a reply that is not qBittorrent's API, becomes <see cref="TorrentClientFailure.Unreachable"/>.</summary>

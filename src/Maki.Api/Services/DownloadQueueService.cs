@@ -484,7 +484,7 @@ public class DownloadQueueService(
     /// <para>
     /// Also changes the dedupe outcome: a pinned request for a chapter that is already queued but not
     /// yet actively fetching (still <see cref="QueueStatus.Resolving"/>, <see cref="QueueStatus.Queued"/>,
-    /// or <see cref="QueueStatus.RateLimited"/>) overrides that row's preference in place and re-resolves
+    /// <see cref="QueueStatus.RateLimited"/> or <see cref="QueueStatus.Waiting"/>) overrides that row's preference in place and re-resolves
     /// it, rather than being dropped like a second plain enqueue is. An item already past that point
     /// (fetching pages, downloading, etc.) is not cheap to redirect mid-flight, so the existing row is
     /// returned unchanged instead.
@@ -584,7 +584,7 @@ public class DownloadQueueService(
             var repinned = await db.DownloadQueue
                 .Where(q => q.Id == active.Id &&
                             (q.Status == QueueStatus.Resolving || q.Status == QueueStatus.Queued ||
-                             q.Status == QueueStatus.RateLimited))
+                             q.Status == QueueStatus.RateLimited || q.Status == QueueStatus.Waiting))
                 .ExecuteUpdateAsync(s => s
                     .SetProperty(q => q.PreferredMappingId, preferMappingId)
                     .SetProperty(q => q.SourceMappingId, (int?)null)
@@ -984,8 +984,9 @@ public class DownloadQueueService(
     /// <summary>
     /// Claims the highest-priority claimable scraper item (lowest <see cref="DownloadQueueItem.SortOrder"/>,
     /// ties broken by <see cref="DownloadQueueItem.QueuedAt"/>) whose source isn't currently cooling down.
-    /// Claimable status means <c>Queued</c> (never attempted) or <c>RateLimited</c> (a previous attempt was
-    /// throttled — its own tracker's cooldown may have lifted since). Skipping past a cooling-down tracker
+    /// Claimable status means <c>Queued</c> (never attempted), <c>RateLimited</c> (a previous attempt was
+    /// throttled, and its own tracker's cooldown may have lifted since) or <c>Waiting</c> once its early access
+    /// should have ended. Skipping past a cooling-down tracker
     /// to the next-highest-priority item on a different one is the whole point of a per-tracker cooldown:
     /// one rate-limited source shouldn't stall everything else in the queue. A paused source is skipped
     /// the same way, and a global pause claims nothing; items already in flight are never touched. The status flip is a
@@ -1027,7 +1028,8 @@ public class DownloadQueueService(
             cooling.AddRange(pause.Sources.Keys);
             var candidate = await db.DownloadQueue
                 .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
-                            (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited) &&
+                            (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited ||
+                             q.Status == QueueStatus.Waiting) &&
                             (q.NextAttempt == null || q.NextAttempt <= now) &&
                             (q.SourceMapping == null || !cooling.Contains(q.SourceMapping.SourceName)))
                 .OrderBy(q => q.SortOrder)
@@ -1055,7 +1057,8 @@ public class DownloadQueueService(
             {
                 claimed = await db.DownloadQueue
                     .Where(q => q.Id == candidate.Id &&
-                                (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited))
+                                (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited ||
+                                 q.Status == QueueStatus.Waiting))
                     .ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.FetchingPages), ct);
             }
             catch

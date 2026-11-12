@@ -186,6 +186,27 @@ public class QueueBulkFailedTests : IDisposable
     }
 
     [Fact]
+    public async Task A_chapter_waiting_out_early_access_is_not_a_failure()
+    {
+        var waiting = SeedScraper("alpha", ChapterDownloadProcessor.EarlyAccessKey, QueueStatus.Waiting,
+            nextAttempt: DateTime.UtcNow.AddHours(4));
+        var failed = SeedScraper("alpha", DownloadFailureReason.Network);
+
+        var summary = Assert.IsType<QueueSummaryDto>(Assert.IsType<OkObjectResult>(
+            await Controller().Summary(CancellationToken.None)).Value);
+        Assert.Equal(1, summary.Failed);
+        Assert.Equal(0, summary.Active);
+
+        Assert.Equal(1, Affected(await Controller().RetryFailed(null, CancellationToken.None)));
+        Assert.Equal(QueueStatus.Waiting, StatusOf(waiting));
+        Assert.Equal(QueueStatus.Queued, StatusOf(failed));
+
+        SeedScraper("alpha", DownloadFailureReason.Network);
+        Assert.Equal(1, Affected(await Controller().RemoveFailed(null, null, CancellationToken.None)));
+        Assert.Equal(QueueStatus.Waiting, StatusOf(waiting));
+    }
+
+    [Fact]
     public async Task Remove_failed_blocks_the_torrent_releases_it_removes()
     {
         SeedTorrent("g1");

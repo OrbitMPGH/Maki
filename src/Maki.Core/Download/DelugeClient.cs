@@ -230,7 +230,10 @@ public partial class DelugeClient : ITorrentClient
             ContentPath(t, finished),
             addedAt,
             errored,
-            string.IsNullOrWhiteSpace(message) ? null : message);
+            string.IsNullOrWhiteSpace(message) ? null : message,
+            (settling && !errored)
+            || state.Equals("Queued", StringComparison.OrdinalIgnoreCase)
+            || state.Equals("Paused", StringComparison.OrdinalIgnoreCase));
     }
 
     private static string ContentPath(JsonElement t, bool finished)

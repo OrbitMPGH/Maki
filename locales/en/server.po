@@ -3491,6 +3491,12 @@ msgstr "The torrent is in the download client, but another download for {series}
 msgid "error.download.torrentRemoved"
 msgstr "The torrent is no longer in the download client"
 
+#. The download client was downloading this torrent but it made no progress for an hour, usually because
+#. nobody is seeding it. Maki takes a torrent it added out of the client and leaves the release out of later searches.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "error.download.torrentStalled"
+msgstr "The torrent made no progress for an hour"
+
 #. The download client has held this torrent in an error state for half an hour. The client's own message follows.
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
 msgid "error.download.torrentClientError"

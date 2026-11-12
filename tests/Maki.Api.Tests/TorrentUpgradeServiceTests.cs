@@ -439,6 +439,70 @@ public class TorrentUpgradeServiceTests : IDisposable
         Assert.Equal(wanted, WantedFlags());
     }
 
+    [Fact]
+    public async Task An_auto_grab_skips_a_release_nobody_seeds_for_one_that_is_seeded()
+    {
+        Chapter(1, 1);
+        Chapter(2, 1);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)", seeders: 0, guid: "dead"));
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (LuCaZ)", seeders: 3, guid: "alive"));
+
+        await SearchAsync();
+
+        Assert.Equal("alive", Assert.Single(_releases.Grabs).Release.Guid);
+    }
+
+    [Fact]
+    public async Task An_auto_grab_with_no_seeders_at_all_grabs_nothing()
+    {
+        Chapter(1, 1);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (1r0n)", seeders: 0));
+
+        var result = await SearchAsync();
+
+        Assert.Empty(_releases.Grabs);
+        Assert.Null(result.Grabbed);
+    }
+
+    [Theory]
+    [InlineData("Kaguya v01-03 (Digital) (1r0n)", true)]
+    [InlineData("Kaguya v02 (Digital) (1r0n)", false)]
+    public async Task A_release_overlapping_a_torrent_still_downloading_is_not_grabbed(string active, bool overlaps)
+    {
+        Chapter(1, 1);
+        Chapter(2, 1);
+        Chapter(3, 2);
+        _releases.Results.Add(FakeReleases.Release("Kaguya v01 (Digital) (LuCaZ)", guid: "next"));
+        using (var db = _world.Db.NewContext())
+        {
+            db.DownloadQueue.Add(new DownloadQueueItem
+            {
+                SeriesId = _world.SeriesId, Protocol = AcquisitionProtocol.Torrent, Status = QueueStatus.Downloading,
+                QueuedAt = DateTime.UtcNow, Origin = DownloadOrigin.Upgrade, Title = active,
+                ReleaseInfoJson = System.Text.Json.JsonSerializer.Serialize(new ReleaseInfo("active", active, "Nyaa", "abc"))
+            });
+            db.SaveChanges();
+        }
+
+        await SearchAsync();
+
+        Assert.Equal(overlaps ? 0 : 1, _releases.Grabs.Count);
+    }
+
+    [Theory]
+    [InlineData("v01-03", "v03", true)]
+    [InlineData("v01", "v02", false)]
+    [InlineData("c001-010", "c011-020", false)]
+    [InlineData("c001-010", "c010", true)]
+    [InlineData("v01", "c005", true)]
+    [InlineData("", "v02", true)]
+    public void Release_spans_overlap_only_when_they_can_share_a_chapter(string a, string b, bool overlaps)
+    {
+        static ReleaseSpan Span(string s) => ReleaseTitleParser.Parse(("Kaguya " + s + " (Digital)").Trim()).Span;
+        Assert.Equal(overlaps, TorrentUpgradeRules.Overlaps(Span(a), Span(b)));
+        Assert.Equal(overlaps, TorrentUpgradeRules.Overlaps(Span(b), Span(a)));
+    }
+
     private void AddLibrarySeries(string title)
     {
         using var db = _world.Db.NewContext();

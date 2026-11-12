@@ -28,8 +28,8 @@ public class HousekeepingJob(
 
     /// <summary>
     /// Failed rows that are not waiting on a retry. A failure stamps neither <c>CompletedAt</c> nor
-    /// resets <c>QueuedAt</c>, so a chapter that failed once and is parked behind a backoff or an
-    /// early-access date is still live work however old the row is.
+    /// resets <c>QueuedAt</c>, so a chapter that failed once and is parked behind a backoff is still
+    /// live work however old the row is.
     /// </summary>
     internal static IQueryable<DownloadQueueItem> SettledFailures(IQueryable<DownloadQueueItem> queue, DateTime now) =>
         queue.Where(q => q.Status == QueueStatus.Failed && (q.NextAttempt == null || q.NextAttempt <= now));

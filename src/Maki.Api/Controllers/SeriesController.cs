@@ -333,7 +333,7 @@ public class SeriesController(
     private Task<bool> HasActiveDownloadAsync(int seriesId, CancellationToken ct) =>
         db.DownloadQueue.AnyAsync(q => q.SeriesId == seriesId &&
             q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed &&
-            q.Status != QueueStatus.Cancelled, ct);
+            q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Waiting, ct);
 
     public record RelinkPlanRequest(string[]? ExcludedPaths, int[]? PinnedChapterIds)
     {
@@ -381,7 +381,7 @@ public class SeriesController(
         // Active download work per series, so cards can show "queued"/"downloading" at a glance.
         var queueCounts = await ForSeries(db.DownloadQueue, ids, q => q.SeriesId)
             .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed &&
-                        q.Status != QueueStatus.Cancelled)
+                        q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Waiting)
             .GroupBy(q => q.SeriesId)
             .Select(g => new
             {
@@ -1150,7 +1150,8 @@ public class SeriesController(
         var (total, withFile, known) = (counts?.Wanted ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0);
         var active = await db.DownloadQueue
             .Where(q => q.SeriesId == id && q.Status != QueueStatus.Completed &&
-                        q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled)
+                        q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled &&
+                        q.Status != QueueStatus.Waiting)
             .Select(q => q.Status)
             .ToListAsync(ct);
         var queued = active.Count(status => status is QueueStatus.Queued or QueueStatus.RateLimited);

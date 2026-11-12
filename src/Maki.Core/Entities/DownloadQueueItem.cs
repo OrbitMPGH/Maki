@@ -76,7 +76,7 @@ public class DownloadQueueItem
 
     public AcquisitionProtocol Protocol { get; set; } = AcquisitionProtocol.Scraper;
 
-    /// <summary>Serialized ReleaseInfo for torrent/usenet acquisitions.</summary>
+    /// <summary>Serialized ReleaseInfo for torrent acquisitions.</summary>
     public string? ReleaseInfoJson { get; set; }
 
     /// <summary>Release title shown in the queue for series-level grabs.</summary>

@@ -117,7 +117,8 @@ public class TransmissionClient : ITorrentClient
                 JoinPath(ReadString(t, "downloadDir"), name),
                 added > 0 ? DateTimeOffset.FromUnixTimeSeconds(added) : DateTimeOffset.MinValue,
                 error == 3,
-                error != 0 && message.Length > 0 ? message : null));
+                error != 0 && message.Length > 0 ? message : null,
+                status is 0 or 1 or 2 or 3));
         }
 
         return list;

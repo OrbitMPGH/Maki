@@ -151,7 +151,7 @@ public class DownloadPipelineGuardTests : IDisposable
         var seriesId = _db.SeedSeries();
         var locked = SeedChapter(seriesId, 1m);
         SeedChapter(seriesId, 2m);
-        SeedRow(seriesId, locked.Id, QueueStatus.Failed, 0, now.AddHours(4), DownloadOrigin.SmartDownload,
+        SeedRow(seriesId, locked.Id, QueueStatus.Waiting, 0, now.AddHours(4), DownloadOrigin.SmartDownload,
             ChapterDownloadProcessor.EarlyAccessKey);
 
         using var db = _db.NewContext();

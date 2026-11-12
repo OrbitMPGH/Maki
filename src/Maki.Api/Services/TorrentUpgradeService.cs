@@ -112,6 +112,43 @@ public static class TorrentUpgradeRules
                 .FirstOrDefault();
         return (language, [.. chapters.Where(c => ChapterFileLanguage.Of(c) == language)]);
     }
+
+    /// <summary>
+    /// Whether two releases may cover some of the same chapters. Only volumes against volumes and
+    /// chapters against chapters can be told apart; an empty span (a whole-series pack, or a title that
+    /// read nothing) or a volume against a chapter span counts as overlapping.
+    /// </summary>
+    public static bool Overlaps(ReleaseSpan a, ReleaseSpan b)
+    {
+        if (a.IsEmpty || b.IsEmpty)
+        {
+            return true;
+        }
+
+        if (a.Volumes is { } va && b.Volumes is { } vb)
+        {
+            return Intersect(va, vb);
+        }
+
+        if (a.ChapterSegments.Count > 0 && b.ChapterSegments.Count > 0)
+        {
+            return a.ChapterSegments.Any(x => b.ChapterSegments.Any(y => Intersect(x, y)));
+        }
+
+        return true;
+    }
+
+    private static bool Intersect(NumberRange x, NumberRange y) => x.Start <= y.End && y.Start <= x.End;
+
+    /// <summary>
+    /// The release the volume search may take unattended: the first auto-grab in ranking order that has
+    /// seeders (or does not say) and does not overlap a torrent still in flight for the series.
+    /// </summary>
+    public static TorrentCandidateView? AutoGrabPick(
+        IEnumerable<TorrentCandidateView> ranked, IReadOnlyList<ReleaseSpan> inFlight) =>
+        ranked.FirstOrDefault(v => v.Verdict.Outcome == SpanOutcome.AutoGrab &&
+                                   v.Release.Seeders is not 0 &&
+                                   !inFlight.Any(span => Overlaps(span, v.Parsed.Span)));
 }
 
 /// <summary>
@@ -379,7 +416,7 @@ public class TorrentUpgradeService(
                 .ThenByDescending(v => v.Release.Seeders ?? 0)
                 .ToList();
 
-            if (views.FirstOrDefault(v => v.Verdict.Outcome == SpanOutcome.AutoGrab) is { } grab)
+            if (TorrentUpgradeRules.AutoGrabPick(views, await InFlightSpansAsync(seriesId, ct)) is { } grab)
             {
                 try
                 {
@@ -631,6 +668,17 @@ public class TorrentUpgradeService(
         }
 
         return blocked;
+    }
+
+    /// <summary>The spans of the series' torrents still downloading or waiting for an import decision.</summary>
+    private async Task<List<ReleaseSpan>> InFlightSpansAsync(int seriesId, CancellationToken ct)
+    {
+        var rows = await db.DownloadQueue
+            .Where(q => q.SeriesId == seriesId && q.Protocol == AcquisitionProtocol.Torrent && q.ReleaseInfoJson != null &&
+                        q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled)
+            .Select(q => q.ReleaseInfoJson)
+            .ToListAsync(ct);
+        return [.. rows.Select(ParseRelease).OfType<ReleaseInfo>().Select(info => ReleaseTitleParser.Parse(info.Title).Span)];
     }
 
     /// <summary>The error a parked import the user rejected is cancelled with.</summary>

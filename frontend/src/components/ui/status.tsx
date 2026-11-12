@@ -133,6 +133,8 @@ export function queueStatusVisual(status: string): StatusVisual {
       return { color: tone('danger'), label: msg`Failed`, Icon: IconAlertTriangle }
     case 'RateLimited':
       return { color: tone('warn'), label: msg`Rate limited`, Icon: IconClockPause }
+    case 'Waiting':
+      return { color: tone('neutral'), label: msg`Waiting for release`, Icon: IconHourglass }
     case 'Cancelled':
       return { color: tone('neutral'), label: msg`Cancelled`, Icon: IconBan }
     default:
@@ -238,6 +240,7 @@ export function isQueueActive(status: string): boolean {
     status !== 'Completed' &&
     status !== 'Failed' &&
     status !== 'Cancelled' &&
+    status !== 'Waiting' &&
     !needsImportReview(status)
   )
 }

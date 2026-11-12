@@ -211,7 +211,7 @@ public class HealthScanService(MakiDbContext db)
                         if (DateTime.UtcNow - busyReadAt > BusyCacheFor || file.SeriesId != busySeriesOf)
                         {
                             busySeries = (await db.DownloadQueue
-                                .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled)
+                                .Where(q => q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Waiting)
                                 .Select(q => q.SeriesId)
                                 .Distinct()
                                 .ToListAsync(ct)).Select(seriesId => (int?)seriesId).ToHashSet();
@@ -227,7 +227,7 @@ public class HealthScanService(MakiDbContext db)
                         // The sets only say who might be busy; a hit is confirmed against the row before
                         // a file is skipped, so an operation or download that ended inside the window does
                         // not cost the file its analysis.
-                        var busy = busySeries.Contains(file.SeriesId) && await db.DownloadQueue.AnyAsync(q => q.SeriesId == file.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled, ct)
+                        var busy = busySeries.Contains(file.SeriesId) && await db.DownloadQueue.AnyAsync(q => q.SeriesId == file.SeriesId && q.Status != QueueStatus.Completed && q.Status != QueueStatus.Failed && q.Status != QueueStatus.Cancelled && q.Status != QueueStatus.Waiting, ct)
                             || busyFiles.Contains(file.Id) && await db.HealthOperations.AnyAsync(o => o.FileId == file.Id && o.Status != "completed" && o.Status != "cancelled" && o.Status != "failed", ct);
                         if (!busy)
                             await AnalyzeAsync(file, rootPaths[file.RootFolderId], force, ct, workers, verify);

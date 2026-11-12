@@ -199,7 +199,7 @@ public class QueueController(
             .ToDictionaryAsync(x => x.Status, x => x.Count, ct);
 
         return Ok(new QueueSummaryDto(
-            Active: counts.Where(kv => kv.Key is not (QueueStatus.Failed or QueueStatus.AwaitingImport)).Sum(kv => kv.Value),
+            Active: counts.Where(kv => kv.Key is not (QueueStatus.Failed or QueueStatus.AwaitingImport or QueueStatus.Waiting)).Sum(kv => kv.Value),
             AwaitingImport: counts.GetValueOrDefault(QueueStatus.AwaitingImport),
             Failed: counts.GetValueOrDefault(QueueStatus.Failed)));
     }
@@ -722,7 +722,7 @@ public class QueueController(
             queue.CancelWork(id);
 
             var row = db.DownloadQueue.Where(q => q.Id == id && q.Status == status);
-            var affected = status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving
+            var affected = status is QueueStatus.Queued or QueueStatus.Failed or QueueStatus.RateLimited or QueueStatus.Resolving or QueueStatus.Waiting
                 ? await row.ExecuteDeleteAsync(ct)
                 : await row.ExecuteUpdateAsync(s => s.SetProperty(q => q.Status, QueueStatus.Cancelled), ct);
             if (affected > 0)
@@ -750,7 +750,7 @@ public class QueueController(
         // Two statements per chunk instead of three queries per row. Each is conditional on the status,
         // so a worker that completed or claimed a row meanwhile is not overwritten; a row that moved
         // from pending to in-flight between the statements is picked up by the next pass.
-        var pending = new[] { QueueStatus.Queued, QueueStatus.Failed, QueueStatus.RateLimited, QueueStatus.Resolving };
+        var pending = new[] { QueueStatus.Queued, QueueStatus.Failed, QueueStatus.RateLimited, QueueStatus.Resolving, QueueStatus.Waiting };
         var terminal = new[] { QueueStatus.Completed, QueueStatus.Cancelled };
         var ids = items.Select(i => i.Id).ToList();
         for (var pass = 0; pass < 3; pass++)

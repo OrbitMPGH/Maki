@@ -27,6 +27,7 @@ public class CompletedDownloadJobTests : IDisposable
         _db.SetConfig((SettingKeys.DownloadClientUrl, "http://qbt.test"));
         _seriesId = _db.SeedSeries("Berserk");
         CompletedDownloadJob.ErrorLogged.Clear();
+        CompletedDownloadJob.ProgressSince.Clear();
     }
 
     public void Dispose() => _db.Dispose();
@@ -525,5 +526,62 @@ public class CompletedDownloadJobTests : IDisposable
 
         Assert.True(JsonSerializer.Deserialize<ReleaseInfo>(Reload(old).ReleaseInfoJson!)!.AddedBeforeGrab);
         Assert.False(JsonSerializer.Deserialize<ReleaseInfo>(Reload(own).ReleaseInfoJson!)!.AddedBeforeGrab);
+    }
+
+    [Fact]
+    public async Task A_torrent_with_no_progress_for_an_hour_fails_leaves_the_client_and_blocks_its_release()
+    {
+        var queuedAt = DateTime.UtcNow.AddHours(-2);
+        var id = SeedItem(QueueStatus.Downloading, "dead01", queuedAt);
+        var guid = ReleaseGuidOf(id);
+        _client.Torrents.Add(Torrent("dead01", 0.3, queuedAt));
+        CompletedDownloadJob.ProgressSince[id] = (0.3, DateTime.UtcNow - CompletedDownloadJob.StallTimeout - TimeSpan.FromMinutes(1));
+
+        await RunAsync();
+
+        var row = Reload(id);
+        Assert.Equal(QueueStatus.Failed, row.Status);
+        Assert.Equal(CompletedDownloadJob.StalledKey, row.ErrorKey);
+        Assert.Equal([("dead01", false)], _client.Removed);
+        using var db = _db.NewContext();
+        var proposal = Assert.Single(db.TorrentProposals);
+        Assert.Equal(guid, proposal.ReleaseGuid);
+        Assert.Equal(TorrentProposalStatus.Dismissed, proposal.Status);
+    }
+
+    [Fact]
+    public async Task A_stalled_torrent_the_client_already_had_is_failed_but_left_in_the_client()
+    {
+        var queuedAt = DateTime.UtcNow.AddHours(-2);
+        var id = SeedItem(QueueStatus.Downloading, "dead02", queuedAt);
+        _client.Torrents.Add(Torrent("dead02", 0.3, queuedAt.AddDays(-1)));
+        CompletedDownloadJob.ProgressSince[id] = (0.3, DateTime.UtcNow.AddHours(-2));
+
+        await RunAsync();
+
+        Assert.Equal(QueueStatus.Failed, Reload(id).Status);
+        Assert.Empty(_client.Removed);
+    }
+
+    [Fact]
+    public async Task A_torrent_that_moved_or_that_the_client_holds_is_not_stalled()
+    {
+        var queuedAt = DateTime.UtcNow.AddHours(-2);
+        var moving = SeedItem(QueueStatus.Downloading, "move01", queuedAt);
+        var held = SeedItem(QueueStatus.Downloading, "held01", queuedAt);
+        var fresh = SeedItem(QueueStatus.Downloading, "new01", queuedAt);
+        _client.Torrents.Add(Torrent("move01", 0.4, queuedAt));
+        _client.Torrents.Add(Torrent("held01", 0.3, queuedAt) with { IsHeld = true });
+        _client.Torrents.Add(Torrent("new01", 0.0, queuedAt));
+        var longAgo = DateTime.UtcNow.AddHours(-3);
+        CompletedDownloadJob.ProgressSince[moving] = (0.3, longAgo);
+        CompletedDownloadJob.ProgressSince[held] = (0.3, longAgo);
+
+        await RunAsync();
+
+        Assert.All(new[] { moving, held, fresh }, id => Assert.Equal(QueueStatus.Downloading, Reload(id).Status));
+        Assert.Empty(_client.Removed);
+        Assert.True(CompletedDownloadJob.ProgressSince[moving].Since > longAgo);
+        Assert.False(CompletedDownloadJob.ProgressSince.ContainsKey(held));
     }
 }

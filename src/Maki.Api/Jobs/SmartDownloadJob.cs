@@ -184,15 +184,16 @@ public class SmartDownloadJob(
     /// <summary>
     /// Wanted, missing chapters whose latest queue row failed and is not due again: still inside its
     /// retry backoff, out of attempts, or failed for a reason only a manual retry may revisit (a
-    /// paywall). Enqueueing only dedupes against active rows, so without this every tick queued a
+    /// paywall). A chapter waiting out early access is skipped too. Enqueueing only dedupes against active rows, so without this every tick queued a
     /// fresh row for a failing chapter, bypassing both the backoff and the cap, and a chapter no
     /// source carries held its place in the window forever.
     /// </summary>
     internal static async Task<HashSet<int>> BackingOffAsync(
         MakiDbContext db, IEnumerable<Chapter> chapters, int maxAttempts, DateTime now, CancellationToken ct) =>
         (await LatestRowsAsync(db, chapters, ct))
-            .Where(r => r.Status == QueueStatus.Failed &&
-                        (r.RetryCount >= maxAttempts || r.NextAttempt > now || r.WaitsOnManualRetry))
+            .Where(r => r.Status == QueueStatus.Waiting ||
+                        (r.Status == QueueStatus.Failed &&
+                         (r.RetryCount >= maxAttempts || r.NextAttempt > now || r.WaitsOnManualRetry)))
             .Select(r => r.ChapterId)
             .ToHashSet();
 
@@ -273,9 +274,9 @@ public class SmartDownloadJob(
         return rows
             .GroupBy(r => r.ChapterId)
             .Select(g => g.MaxBy(r => r.Id)!)
-            .Any(r => r.Status is not (QueueStatus.Completed or QueueStatus.Failed or QueueStatus.Cancelled) ||
-                      (r.Status == QueueStatus.Failed && r.ErrorKey != ChapterDownloadProcessor.EarlyAccessKey &&
-                       !ManualRetryOnly(r.ErrorKey) && r.RetryCount < maxAttempts && r.NextAttempt > now));
+            .Any(r => r.Status is not (QueueStatus.Completed or QueueStatus.Failed or QueueStatus.Cancelled or QueueStatus.Waiting) ||
+                      (r.Status == QueueStatus.Failed && !ManualRetryOnly(r.ErrorKey) &&
+                       r.RetryCount < maxAttempts && r.NextAttempt > now));
     }
 
     private static bool ManualRetryOnly(string? errorKey) =>
