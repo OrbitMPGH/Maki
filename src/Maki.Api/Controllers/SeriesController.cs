@@ -1821,6 +1821,135 @@ public class SeriesController(
         [FromBody] RenameSeriesRequest request, CancellationToken ct) =>
         Ok(await seriesRename.RenameManyAsync(request.SeriesIds ?? [], ct));
 
+    public record BulkSeriesRequest(List<int>? SeriesIds);
+
+    public record BulkMoveSeriesRequest(List<int>? SeriesIds, int RootFolderId, bool MoveFiles = true);
+
+    public record BulkMonitorModeRequest(List<int>? SeriesIds, string Mode);
+
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("refresh/bulk")]
+    public Task<IActionResult> RefreshBulk([FromBody] BulkSeriesRequest request,
+        [FromServices] SeriesBulkOperations operations, [FromServices] DataScope scope,
+        [FromServices] IRequestLocale locale, CancellationToken ct) =>
+        QueueBulkAsync(SeriesBulkAction.Refresh, request.SeriesIds, operations, scope, locale, ct);
+
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("rescan/bulk")]
+    public Task<IActionResult> RescanBulk([FromBody] BulkSeriesRequest request,
+        [FromServices] SeriesBulkOperations operations, [FromServices] DataScope scope,
+        [FromServices] IRequestLocale locale, CancellationToken ct) =>
+        QueueBulkAsync(SeriesBulkAction.Rescan, request.SeriesIds, operations, scope, locale, ct);
+
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("refreshmetadata/bulk")]
+    public Task<IActionResult> RefreshMetadataBulk([FromBody] BulkSeriesRequest request,
+        [FromServices] SeriesBulkOperations operations, [FromServices] DataScope scope,
+        [FromServices] IRequestLocale locale, CancellationToken ct) =>
+        QueueBulkAsync(SeriesBulkAction.RefreshMetadata, request.SeriesIds, operations, scope, locale, ct);
+
+    [Authorize(Policy = Policies.DownloadChapters)]
+    [HttpPost("searchmissing/bulk")]
+    public Task<IActionResult> SearchMissingBulk([FromBody] BulkSeriesRequest request,
+        [FromServices] SeriesBulkOperations operations, [FromServices] DataScope scope,
+        [FromServices] IRequestLocale locale, CancellationToken ct) =>
+        QueueBulkAsync(SeriesBulkAction.SearchMissing, request.SeriesIds, operations, scope, locale, ct);
+
+    /// <summary>Queued form of <see cref="RenameMany"/>, which renames inline and so cannot report progress.</summary>
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("rename/bulk")]
+    public Task<IActionResult> RenameBulk([FromBody] BulkSeriesRequest request,
+        [FromServices] SeriesBulkOperations operations, [FromServices] DataScope scope,
+        [FromServices] IRequestLocale locale, CancellationToken ct) =>
+        QueueBulkAsync(SeriesBulkAction.Rename, request.SeriesIds, operations, scope, locale, ct);
+
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("move/bulk")]
+    public async Task<IActionResult> MoveBulk([FromBody] BulkMoveSeriesRequest request,
+        [FromServices] SeriesBulkOperations operations, [FromServices] DataScope scope,
+        [FromServices] IRequestLocale locale, CancellationToken ct)
+    {
+        if (!await db.RootFolders.AnyAsync(f => f.Id == request.RootFolderId, ct)
+            || (!currentUser.AllRootFolders && !currentUser.RootFolderIds.Contains(request.RootFolderId)))
+        {
+            return this.Fail(localizer, "error.series.rootFolderNotFound");
+        }
+
+        return await QueueBulkAsync(SeriesBulkAction.Move, request.SeriesIds, operations, scope, locale, ct,
+            request.RootFolderId, request.MoveFiles);
+    }
+
+    /// <summary>Progress of a bulk operation the caller queued. Anyone else's answers 404.</summary>
+    [HttpGet("bulk/{operationId:guid}")]
+    public IActionResult BulkStatus(Guid operationId, [FromServices] SeriesBulkOperations operations) =>
+        operations.Get(operationId, currentUser.UserId) is { } operation ? Ok(operation.Snapshot()) : NotFound();
+
+    /// <summary>Stops a bulk operation the caller queued, after the series it is on.</summary>
+    [HttpPost("bulk/{operationId:guid}/cancel")]
+    public IActionResult CancelBulk(Guid operationId, [FromServices] SeriesBulkOperations operations) =>
+        operations.TryCancel(operationId, currentUser.UserId) ? NoContent() : NotFound();
+
+    /// <summary>
+    /// Sets the monitor mode on many series in one statement. Like <see cref="SetMonitorMode"/>, it
+    /// leaves existing chapters' <see cref="Chapter.Wanted"/> alone.
+    /// </summary>
+    [Authorize(Policy = Policies.EditMetadata)]
+    [HttpPost("monitormode/bulk")]
+    public async Task<IActionResult> SetMonitorModeBulk([FromBody] BulkMonitorModeRequest request, CancellationToken ct)
+    {
+        if (!Enum.TryParse<NewChapterMonitorMode>(request.Mode, true, out var mode) || !Enum.IsDefined(mode))
+        {
+            return this.Fail(localizer, "error.series.unknownMonitorMode", new { mode = request.Mode });
+        }
+
+        var wanted = (request.SeriesIds ?? []).Distinct().ToList();
+        if (wanted.Count > SeriesBulkOperations.MaxSeries)
+        {
+            return BadRequest();
+        }
+
+        var visible = await VisibleSeriesAsync(wanted, ct);
+        var ids = visible.ToList();
+        var updated = ids.Count == 0
+            ? 0
+            : await db.Series.Where(s => ids.Contains(s.Id))
+                .ExecuteUpdateAsync(u => u.SetProperty(s => s.MonitorNewItems, mode), ct);
+        return Ok(new { updated, skipped = wanted.Where(id => !visible.Contains(id)).ToList() });
+    }
+
+    /// <summary>
+    /// Validates the ids and queues one operation for <see cref="SeriesBulkWorker"/>. Ids the caller
+    /// cannot see (outside their root folders, or gone) are dropped by the query filter and come
+    /// back in <c>skipped</c>; the rest run in the order given.
+    /// </summary>
+    private async Task<IActionResult> QueueBulkAsync(SeriesBulkAction action, List<int>? ids,
+        SeriesBulkOperations operations, DataScope scope, IRequestLocale locale, CancellationToken ct,
+        int? rootFolderId = null, bool moveFiles = false)
+    {
+        var wanted = (ids ?? []).Distinct().ToList();
+        if (wanted.Count > SeriesBulkOperations.MaxSeries)
+        {
+            return BadRequest();
+        }
+
+        var visible = await VisibleSeriesAsync(wanted, ct);
+        var queued = wanted.Where(visible.Contains).ToList();
+        var skipped = wanted.Where(id => !visible.Contains(id)).ToList();
+        if (queued.Count == 0)
+        {
+            return Ok(new { operationId = (Guid?)null, total = 0, skipped });
+        }
+
+        var operation = operations.Enqueue(action, queued,
+            SeriesBulkCaller.From(currentUser, scope, locale.Locale), rootFolderId, moveFiles);
+        return Accepted(new { operationId = (Guid?)operation.Id, total = queued.Count, skipped });
+    }
+
+    private async Task<HashSet<int>> VisibleSeriesAsync(List<int> ids, CancellationToken ct) =>
+        ids.Count == 0
+            ? []
+            : (await db.Series.Where(s => ids.Contains(s.Id)).Select(s => s.Id).ToListAsync(ct)).ToHashSet();
+
     public record MonitorModeRequest(string Mode);
 
     /// <summary>Rating on a 1–10 scale, or null to clear it.</summary>

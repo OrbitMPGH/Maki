@@ -78,6 +78,7 @@ import { useDebouncedValue } from '@mantine/hooks'
 import { useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
+import { runSeriesBulk, type SeriesBulkRequest } from '../api/seriesBulk'
 import {
   allowedContentRatings,
   CONTENT_RATING_LABELS,
@@ -1015,8 +1016,11 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     if (activeFilterId === f.id) setActiveFilterId(null)
   }
 
-  /** Runs an action against every selected series sequentially with a live progress notification. */
-  const runBulk = async (action: string, fn: (id: number) => Promise<unknown>) => {
+  /**
+   * Runs an action against every selected series with a live progress notification. A function is
+   * called once per series from here; a `SeriesBulkRequest` is queued on the server as one operation.
+   */
+  const runBulk = async (action: string, fn: ((id: number) => Promise<unknown>) | SeriesBulkRequest) => {
     const ids = [...selected]
     const total = ids.length
     // `action` is the busy-state key and stays English. What the toast shows is its label, or the
@@ -1024,47 +1028,29 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     // to nothing.
     const name = BULK_ACTION_LABELS[action] ? _(BULK_ACTION_LABELS[action]) : action
     setBusy(action)
-    let stopped = false
+    const stop = new AbortController()
     let ok = 0
-    const errors: string[] = []
+    let failed = 0
+    let firstFailure: string | null = null
+    let done = 0
     const progress = () => (
       <Group gap="xs" wrap="nowrap" justify="space-between">
-        <Text size="sm">{`${name}: ${ok + errors.length}/${total}`}</Text>
+        <Text size="sm">{`${name}: ${done}/${total}`}</Text>
         <Button
           size="xs"
           variant="subtle"
           style={{ flexShrink: 0 }}
-          disabled={stopped}
+          disabled={stop.signal.aborted}
           onClick={() => {
-            stopped = true
-            notifications.update({
-              id: 'bulk-action',
-              loading: true,
-              message: progress(),
-              autoClose: false,
-              withCloseButton: false,
-            })
+            stop.abort()
+            update()
           }}
         >
-          {stopped ? <Trans>Stopping</Trans> : <Trans>Stop</Trans>}
+          {stop.signal.aborted ? <Trans>Stopping</Trans> : <Trans>Stop</Trans>}
         </Button>
       </Group>
     )
-    notifications.show({
-      id: 'bulk-action',
-      loading: true,
-      message: progress(),
-      autoClose: false,
-      withCloseButton: false,
-    })
-    for (const id of ids) {
-      if (stopped) break
-      try {
-        await fn(id)
-        ok++
-      } catch (err) {
-        errors.push(errorText(err))
-      }
+    const update = () =>
       notifications.update({
         id: 'bulk-action',
         loading: true,
@@ -1072,15 +1058,53 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         autoClose: false,
         withCloseButton: false,
       })
+    notifications.show({
+      id: 'bulk-action',
+      loading: true,
+      message: progress(),
+      autoClose: false,
+      withCloseButton: false,
+    })
+    if (typeof fn === 'function') {
+      for (const id of ids) {
+        if (stop.signal.aborted) break
+        try {
+          await fn(id)
+          ok++
+        } catch (err) {
+          failed++
+          firstFailure ??= errorText(err)
+        }
+        done = ok + failed
+        update()
+      }
+    } else {
+      try {
+        await runSeriesBulk(
+          fn,
+          ids,
+          (count, result) => {
+            ok = result.succeeded
+            failed = count - result.succeeded
+            firstFailure = result.firstError ?? (result.skipped > 0 ? now`Series not found` : null)
+            done = count
+            update()
+          },
+          stop.signal,
+        )
+      } catch (err) {
+        failed = total - ok
+        firstFailure ??= errorText(err)
+      }
     }
-    const firstError = errors[0]
-    const stoppedEarly = stopped && ok + errors.length < total
+    const stoppedEarly = stop.signal.aborted && ok + failed < total
+    const firstError = firstFailure ?? ''
     notifications.update({
       id: 'bulk-action',
       loading: false,
-      color: errors.length ? 'var(--warn)' : 'var(--ok)',
+      color: failed ? 'var(--warn)' : 'var(--ok)',
       // The fixed wording is translated; `firstError` carries a raw exception message untouched.
-      message: errors.length
+      message: failed
         ? stoppedEarly
           ? now`${name}: stopped, ${ok}/${total} succeeded, first error: ${firstError}`
           : now`${name}: ${ok}/${total} succeeded, first error: ${firstError}`
@@ -1453,7 +1477,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       key: 'Search missing',
       label: <Trans>Search missing</Trans>,
       icon: <IconSearch size={16} />,
-      run: () => runBulk('Search missing', (id) => api(`/series/${id}/searchmissing`, { method: 'POST' })),
+      run: () => runBulk('Search missing', { path: '/series/searchmissing/bulk' }),
     },
     can('EditMetadata') && {
       key: 'Monitoring',
@@ -1475,19 +1499,19 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       key: 'Refresh',
       label: <Trans>Refresh</Trans>,
       icon: <IconRefresh size={16} />,
-      run: () => runBulk('Refresh', (id) => api(`/series/${id}/refresh`, { method: 'POST' })),
+      run: () => runBulk('Refresh', { path: '/series/refresh/bulk' }),
     },
     can('EditMetadata') && {
       key: 'Metadata',
       label: <Trans>Metadata</Trans>,
       icon: <IconPhoto size={16} />,
-      run: () => runBulk('Metadata', (id) => api(`/series/${id}/refreshmetadata`, { method: 'POST' })),
+      run: () => runBulk('Metadata', { path: '/series/refreshmetadata/bulk' }),
     },
     can('EditMetadata') && {
       key: 'Rescan',
       label: <Trans>Rescan files</Trans>,
       icon: <IconScan size={16} />,
-      run: () => runBulk('Rescan', (id) => api(`/series/${id}/rescan`, { method: 'POST' })),
+      run: () => runBulk('Rescan', { path: '/series/rescan/bulk' }),
     },
     can('ManageSources') && {
       key: 'Auto-match',
@@ -2615,7 +2639,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             leftSection={<IconPencil size={16} />}
             onClick={() => {
               setRenameModalOpen(false)
-              void runBulk('Rename', (id) => api(`/series/${id}/rename`, { method: 'POST' }))
+              void runBulk('Rename', { path: '/series/rename/bulk' })
             }}
           >
             <Trans>Rename</Trans>
@@ -2808,12 +2832,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           <Button
             onClick={() => {
               setMonitorModalOpen(false)
-              void runBulk('Set monitoring', (id) =>
-                api(`/series/${id}/monitormode`, {
-                  method: 'POST',
-                  body: JSON.stringify({ mode: monitorMode }),
-                }),
-              )
+              void runBulk('Set monitoring', { path: '/series/monitormode/bulk', body: { mode: monitorMode } })
             }}
           >
             <Trans>Apply</Trans>
@@ -3036,12 +3055,10 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
               onClick={() => {
                 if (!moveTarget) return
                 setMoveModalOpen(false)
-                void runBulk('Move', (id) =>
-                  api(`/series/${id}/move`, {
-                    method: 'POST',
-                    body: JSON.stringify({ rootFolderId: Number(moveTarget), moveFiles }),
-                  }),
-                )
+                void runBulk('Move', {
+                  path: '/series/move/bulk',
+                  body: { rootFolderId: Number(moveTarget), moveFiles },
+                })
               }}
             >
               <Trans>Move</Trans>
