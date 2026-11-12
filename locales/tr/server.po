@@ -1517,6 +1517,10 @@ msgstr "Kurallardan biri geçerli değil. Koşullarını ve ne yaptığını kon
 msgid "error.pageConversion.stopInvalid"
 msgstr "En küçük, Kompakt, Dengeli, Yüksek ya da Kayıpsız seçin"
 
+#. English: Choose a split height from {min} to {max} pixels
+msgid "error.pageConversion.splitHeightInvalid"
+msgstr ""
+
 #. {max} is the server's core count.
 #. English: Pages converted at once must be between 1 and {max}
 #: src/Maki.Api/Controllers/PageConversionController.cs

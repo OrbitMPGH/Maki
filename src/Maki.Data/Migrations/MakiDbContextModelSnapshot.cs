@@ -1247,6 +1247,9 @@ namespace Maki.Data.Migrations
                     b.Property<string>("SourceFormat")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("SplitPages")
+                        .HasColumnType("TEXT");
+
                     b.Property<long?>("TrashBytes")
                         .HasColumnType("INTEGER");
 

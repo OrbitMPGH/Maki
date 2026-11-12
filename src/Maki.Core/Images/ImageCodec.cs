@@ -487,6 +487,79 @@ public static class ImageCodec
                 effort: UpscaledWebpEffort, smartSubsample: false, keep: Enums.ForeignKeep.None), "webp", width, height, bands);
     }
 
+    /// <summary>
+    /// A page decoded whole into memory for <see cref="TallPageSplitter"/>, orientation applied and CMYK
+    /// in sRGB, or null when it is kept whole: more than 8 bits a band, over the health scan's pixel
+    /// limit, or animated. Throws <see cref="VipsException"/> when it does not decode cleanly.
+    /// </summary>
+    internal static VipsImage? LoadForSplit(byte[] source)
+    {
+        using var loaded = VipsImage.NewFromBuffer(source, failOn: Enums.FailOn.Error);
+        if (loaded.Format != Enums.BandFormat.Uchar ||
+            (long)loaded.Width * loaded.Height > Reading.ArchiveHealthAnalyzer.MaxPixels ||
+            (loaded.Contains("n-pages") && loaded.Get("n-pages") is int frames && frames > 1))
+        {
+            return null;
+        }
+
+        using var rotated = loaded.Autorot();
+        using var image = rotated.Interpretation == Enums.Interpretation.Cmyk
+            ? rotated.Colourspace(Enums.Interpretation.Srgb)
+            : rotated.Copy();
+        return image.CopyMemory();
+    }
+
+    /// <summary>The standard deviation of each row's luma, alpha laid on white.</summary>
+    internal static double[] RowDeviation(VipsImage image)
+    {
+        using var flat = image.HasAlpha()
+            ? image.Flatten(background: Enumerable.Repeat(255.0, image.Bands - 1).ToArray())
+            : image.Copy();
+        using var grey = flat.Bands >= 3 ? flat.Colourspace(Enums.Interpretation.Bw) : flat.ExtractBand(0);
+        var pixels = grey.WriteToMemory<byte>();
+        var width = grey.Width;
+        var rows = new double[grey.Height];
+        for (var y = 0; y < rows.Length; y++)
+        {
+            var row = pixels.AsSpan(y * width, width);
+            long sum = 0, squares = 0;
+            foreach (var value in row)
+            {
+                sum += value;
+                squares += value * value;
+            }
+
+            var mean = (double)sum / width;
+            rows[y] = Math.Sqrt(Math.Max(0, (double)squares / width - mean * mean));
+        }
+
+        return rows;
+    }
+
+    /// <summary>One piece of a split page. ICC is kept, everything else in the metadata dropped.</summary>
+    internal static byte[] EncodePiece(VipsImage piece, SplitEncoding encoding, int quality, bool sharpYuv)
+    {
+        switch (encoding)
+        {
+            case SplitEncoding.Jpeg:
+                using (var flat = piece.HasAlpha() ? piece.Flatten(background: [255, 255, 255]) : piece.Copy())
+                {
+                    return flat.JpegsaveBuffer(q: quality, subsampleMode: Enums.ForeignSubsample.On, keep: Enums.ForeignKeep.Icc);
+                }
+            case SplitEncoding.Png:
+                return piece.PngsaveBuffer(keep: Enums.ForeignKeep.Icc);
+            case SplitEncoding.LosslessWebp:
+                return piece.WebpsaveBuffer(lossless: true, effort: 4, keep: Enums.ForeignKeep.Icc);
+            case SplitEncoding.Webp:
+                return piece.WebpsaveBuffer(q: quality, effort: 4, smartSubsample: sharpYuv, keep: Enums.ForeignKeep.Icc);
+            case SplitEncoding.Avif:
+                return piece.HeifsaveBuffer(q: quality, bitdepth: 8, compression: Enums.ForeignHeifCompression.Av1,
+                    effort: AvifEffort, keep: Enums.ForeignKeep.Icc);
+            default:
+                throw new ArgumentOutOfRangeException(nameof(encoding), encoding, null);
+        }
+    }
+
     internal static VipsImage Open(byte[] bytes) => VipsImage.NewFromBuffer(bytes, access: Enums.Access.Sequential);
 
     internal static VipsImage ThumbnailFile(string path, int width, int height) =>

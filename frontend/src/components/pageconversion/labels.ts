@@ -45,6 +45,7 @@ export const SAMPLE_REASONS: Record<PageConversionSample['reason'], MessageDescr
   colour: msg`Colour page`,
   heaviest: msg`Heaviest kind of file`,
   custom: msg`Your pick`,
+  tall: msg`Tallest page`,
 }
 
 export const KEPT_REASONS: Record<string, MessageDescriptor> = {

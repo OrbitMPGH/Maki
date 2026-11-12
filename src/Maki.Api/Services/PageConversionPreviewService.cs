@@ -14,11 +14,14 @@ using NetVips;
 namespace Maki.Api.Services;
 
 /// <param name="Page">0-based, in reading order.</param>
-/// <param name="Reason">"greyscale", "colour", "heaviest" or "custom".</param>
+/// <param name="Reason">"greyscale", "colour", "heaviest", "custom", or "tall" for a split preview.</param>
 /// <param name="Tier">The file's <see cref="QualityTier"/>, lowercase.</param>
 public sealed record PageConversionSample(
     int FileId, int ChapterId, int SeriesId, string SeriesTitle, string ChapterLabel,
     int Page, int PageCount, string Reason, string Tier, long FileSize);
+
+/// <param name="Cuts">The rows the page would be cut at, top to bottom; empty when it stays whole.</param>
+public sealed record PageSplitPreview(PageConversionSample Sample, int Width, int Height, IReadOnlyList<int> Cuts);
 
 /// <summary>
 /// A preview page on disk. When <see cref="Kept"/>, <see cref="Path"/> is the stored page as it is
@@ -192,6 +195,91 @@ public class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILog
         }
 
         return Find(prefix, key, settings is null);
+    }
+
+    /// <summary>Files read when looking for the library's tallest strip, tallest median page first.</summary>
+    private const int SplitCandidates = 6;
+
+    /// <summary>
+    /// Where a split at <paramref name="maxHeight"/> would cut one page: the page the admin picked, or
+    /// the tallest page among the files with the tallest median pages. The page comes back with empty
+    /// cuts when it stays whole. Null when there is no readable archive to look at.
+    /// </summary>
+    public async Task<PageSplitPreview?> SplitPreviewAsync(int maxHeight, int? fileId, int? page, CancellationToken ct)
+    {
+        var files = db.ChapterFiles.IgnoreQueryFilters()
+            .Where(f => (f.RelativePath.ToLower().EndsWith(".cbz") || f.RelativePath.ToLower().EndsWith(".zip")) &&
+                        db.Chapters.IgnoreQueryFilters().Any(c => c.ChapterFileId == f.Id));
+        var candidates = await Project(fileId is { } only
+                ? files.Where(f => f.Id == only)
+                : files.Where(f => f.MedianHeight != null).OrderByDescending(f => f.MedianHeight).ThenBy(f => f.Id).Take(SplitCandidates))
+            .ToListAsync(ct);
+
+        (Candidate Candidate, string Path, int Page, int PageCount, int Height)? best = null;
+        foreach (var candidate in candidates)
+        {
+            if (LibraryPaths.Resolve(candidate.Root, candidate.RelativePath) is not { } path || !File.Exists(path))
+            {
+                continue;
+            }
+
+            try
+            {
+                using var zip = ZipFile.OpenRead(path);
+                var count = CbzReader.PageNames(zip).Count;
+                var shapes = ArchivePageConverter.PageShapes(zip, ct)
+                    .Where(s => page is null || s.Index == page)
+                    .ToList();
+                if (shapes.Count == 0)
+                {
+                    continue;
+                }
+
+                var tallest = shapes.MaxBy(s => s.Height);
+                if (best is null || tallest.Height > best.Value.Height)
+                {
+                    best = (candidate, path, tallest.Index, count, tallest.Height);
+                }
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+            {
+                logger.LogDebug(ex, "Could not read {Path} for a split preview", path);
+            }
+        }
+
+        if (best is not { } found)
+        {
+            return null;
+        }
+
+        byte[]? bytes;
+        try
+        {
+            using var zip = ZipFile.OpenRead(found.Path);
+            bytes = ReadPage(zip, CbzReader.PageNames(zip)[found.Page]);
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            logger.LogDebug(ex, "Could not read {Path} for a split preview", found.Path);
+            return null;
+        }
+
+        if (bytes is null)
+        {
+            return null;
+        }
+
+        var settings = new PageConversionSettings(PageConversionFormat.Webp, PageConversionStop.High, false, maxHeight);
+        var shape = await ImageWorkGate.RunConversionAsync(
+            () => TallPageSplitter.Preview(bytes, maxHeight),
+            PageConversion.WeightOf(bytes, ".page", settings), ct);
+        if (shape is not { } cut)
+        {
+            return null;
+        }
+
+        var sample = await SampleAsync(found.Candidate, new Probe(found.Page, found.PageCount), "tall", ct);
+        return new PageSplitPreview(sample, cut.Width, cut.Height, cut.Cuts);
     }
 
     private IQueryable<ChapterFile> Candidates() =>

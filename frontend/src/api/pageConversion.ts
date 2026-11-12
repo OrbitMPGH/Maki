@@ -12,12 +12,19 @@ export const PAGE_CONVERSION_STOPS: readonly PageConversionStop[] = ['smallest',
 
 export const DEFAULT_PAGE_CONVERSION_STOP: PageConversionStop = 'high'
 
+/** Pixels. The server refuses a split height outside MIN to MAX. */
+export const DEFAULT_SPLIT_HEIGHT = 5000
+export const MIN_SPLIT_HEIGHT = 1000
+export const MAX_SPLIT_HEIGHT = 13000
+
 export interface PageConversionSettings {
   /** Null while conversion is off. */
   format: PageConversionFormat | null
   stop: PageConversionStop
   /** PNG pages go to lossless WebP at every stop, as they did before stops existed. */
   pngLossless: boolean
+  /** Strips taller than this many pixels are cut into several pages. Null or absent leaves them whole. */
+  splitHeight?: number | null
 }
 
 export interface PageConversionSample {
@@ -29,7 +36,7 @@ export interface PageConversionSample {
   /** Zero-based. */
   page: number
   pageCount: number
-  reason: 'greyscale' | 'colour' | 'heaviest' | 'custom'
+  reason: 'greyscale' | 'colour' | 'heaviest' | 'custom' | 'tall'
   tier: string
   fileSize: number
 }
@@ -150,6 +157,7 @@ export interface PageConversionScopeRequest {
   stop: PageConversionStop
   pngLossless: boolean
   rules: PageConversionRule[]
+  splitHeight?: number | null
 }
 
 export interface ScopeBucket {
@@ -234,6 +242,28 @@ export function usePageConversionSample(fileId: number | null) {
     queryKey: [...key, 'samples', fileId],
     queryFn: () => api<PageConversionSample>(`/pageconversion/samples/${fileId}`),
     enabled: fileId !== null,
+    retry: false,
+    meta: { silent: true },
+  })
+}
+
+/** Where a split would cut one page: the library's tallest, or the one asked for. */
+export interface PageSplitPreview {
+  sample: PageConversionSample
+  width: number
+  height: number
+  /** Rows the page is cut at, top to bottom. Empty when it stays whole. */
+  cuts: number[]
+}
+
+/** The tallest page the server finds and where a split at `height` would cut it. A 404 means there is no archive to look at. */
+export function usePageSplitPreview(height: number | null) {
+  return useQuery({
+    queryKey: [...key, 'split', height],
+    queryFn: () => api<PageSplitPreview>(`/pageconversion/split?height=${height}`),
+    enabled: height !== null,
+    placeholderData: keepPreviousData,
+    staleTime: 5 * 60_000,
     retry: false,
     meta: { silent: true },
   })
