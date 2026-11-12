@@ -1,100 +1,27 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useState, type CSSProperties } from 'react'
 import { ActionIcon, Button, Group, Modal, Stack, Switch, Text, Tooltip } from '@mantine/core'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
-import {
-  IconBooks,
-  IconFolder,
-  IconPencil,
-  IconPlus,
-  IconShield,
-  IconTag,
-  IconTags,
-  IconTrash,
-  IconUser,
-  IconWand,
-} from '../../lib/icons'
+import { IconPencil, IconPlus, IconTag, IconTrash, IconWand } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import {
-  AUTO_TAG_ADDED_VIA,
-  AUTO_TAG_ADDED_VIA_LABELS,
-  AUTO_TAG_FIELD_LABELS,
   AUTO_TAG_FIELDS,
   useApplyAutoTagRule,
   useAutoTagRulePreview,
   useAutoTagRules,
   useDeleteAutoTagRule,
   useSaveAutoTagRule,
-  type AutoTagCondition,
-  type AutoTagField,
   type AutoTagRule,
   type SaveAutoTagRule,
 } from '../../api/autoTagRules'
-import { CONTENT_RATING_LABELS, useRootFolders, useSeries, useTags } from '../../api/hooks'
-import { SERIES_TYPE_LABELS } from '../../api/readingProfiles'
-import { useUsers } from '../../api/auth'
-import { useAuth } from '../../auth/AuthProvider'
-import { useLabel } from '../../i18n-context'
-import { CONTENT_RATINGS } from '../ContentRatingCards'
+import { useTags } from '../../api/hooks'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { DrillPanes } from '../ui/DrillPanes'
-import { DrillBack, DrillChoices, DrillRow, useDrillPages, type DrillChoice } from '../ui/DrillPanel'
+import { DrillBack, DrillChoices, DrillRow, useDrillPages } from '../ui/DrillPanel'
 import { EmptyState } from '../ui/EmptyState'
 import { ModalFooter, ModalHeading } from '../ui/ModalShell'
-
-const FIELD_ICONS: Record<AutoTagField, typeof IconTag> = {
-  genre: IconTags,
-  type: IconBooks,
-  contentRating: IconShield,
-  addedVia: IconPlus,
-  addedBy: IconUser,
-  rootFolder: IconFolder,
-}
-
-type EditorPage = 'main' | 'tag' | AutoTagField
-
-const EDITOR_PARENTS: Record<EditorPage, EditorPage> = {
-  main: 'main',
-  tag: 'main',
-  genre: 'main',
-  type: 'main',
-  contentRating: 'main',
-  addedVia: 'main',
-  addedBy: 'main',
-  rootFolder: 'main',
-}
-
-/** The choices for each condition field, plus a lookup from a stored value to its label. */
-function useFieldChoices() {
-  const { t, i18n } = useLingui()
-  const label = useLabel()
-  const { me } = useAuth()
-  const isAdmin = me?.isAdmin ?? false
-  const { data: users } = useUsers(isAdmin)
-  const { data: folders } = useRootFolders()
-  const { data: library } = useSeries()
-
-  return useMemo(() => {
-    const genres = [...new Set((library ?? []).flatMap((s) => s.genres ?? []))].sort((a, b) => a.localeCompare(b))
-    const people = isAdmin ? (users ?? []) : me ? [me] : []
-    const choices: Record<AutoTagField, DrillChoice[]> = {
-      genre: genres.map((g) => ({ value: g, label: g })),
-      type: Object.keys(SERIES_TYPE_LABELS).map((v) => ({ value: v, label: label(SERIES_TYPE_LABELS[v]) })),
-      contentRating: CONTENT_RATINGS.map((v) => ({ value: v, label: label(CONTENT_RATING_LABELS[v]) })),
-      addedVia: AUTO_TAG_ADDED_VIA.map((v) => ({ value: v, label: label(AUTO_TAG_ADDED_VIA_LABELS[v]) })),
-      addedBy: people.map((u) => ({ value: String(u.id), label: u.displayName ?? u.userName })),
-      rootFolder: (folders ?? []).map((f) => ({ value: String(f.id), label: f.path })),
-    }
-    const valueLabel = (field: AutoTagField, value: string): string => {
-      const found = choices[field].find((c) => c.value === value)?.label
-      if (typeof found === 'string') return found
-      if (field === 'addedBy') return t`Unknown user`
-      if (field === 'rootFolder') return t`Unknown folder`
-      return value
-    }
-    return { choices, valueLabel }
-  }, [library, users, folders, me, isAdmin, label, t, i18n.locale])
-}
+import { ConditionFieldPage, ConditionGroupRows } from './RuleConditions'
+import { conditionParents, groupsOf, savedGroups, useGroupsSummary } from './conditionGroups'
 
 /** Library-wide auto-tag rules: a list, and an editor for one rule in the drill panel grammar. */
 export function AutoTagRulesModal({ opened, onClose }: { opened: boolean; onClose: () => void }) {
@@ -118,7 +45,7 @@ export function AutoTagRulesModal({ opened, onClose }: { opened: boolean; onClos
           }
           description={
             editing == null ? (
-              <Trans>Tag a series when it is added and matches every condition of a rule.</Trans>
+              <Trans>Tag a series when it is added and matches every condition of a rule, or of one of its alternatives.</Trans>
             ) : undefined
           }
         />
@@ -126,9 +53,9 @@ export function AutoTagRulesModal({ opened, onClose }: { opened: boolean; onClos
     >
       {editing == null ? (
         <RuleList
-          onAdd={() => setEditing({ id: null, draft: { tagId: 0, enabled: true, conditions: [] } })}
+          onAdd={() => setEditing({ id: null, draft: { tagId: 0, enabled: true, groups: [[]] } })}
           onEdit={(rule) =>
-            setEditing({ id: rule.id, draft: { tagId: rule.tagId, enabled: rule.enabled, conditions: rule.conditions } })
+            setEditing({ id: rule.id, draft: { tagId: rule.tagId, enabled: rule.enabled, groups: groupsOf(rule) } })
           }
         />
       ) : (
@@ -145,10 +72,9 @@ export function AutoTagRulesModal({ opened, onClose }: { opened: boolean; onClos
 
 function RuleList({ onAdd, onEdit }: { onAdd: () => void; onEdit: (rule: AutoTagRule) => void }) {
   const { t } = useLingui()
-  const label = useLabel()
   const { data: rules, isLoading } = useAutoTagRules()
   const { data: tags } = useTags()
-  const { valueLabel } = useFieldChoices()
+  const summary = useGroupsSummary()
   const save = useSaveAutoTagRule()
   const remove = useDeleteAutoTagRule()
   const apply = useApplyAutoTagRule()
@@ -159,9 +85,6 @@ function RuleList({ onAdd, onEdit }: { onAdd: () => void; onEdit: (rule: AutoTag
 
   const tagOf = (rule: AutoTagRule) => tags?.find((x) => x.id === rule.tagId)
   const applyingTag = applying ? (tagOf(applying)?.label ?? '') : ''
-
-  const summary = (conditions: AutoTagCondition[]) =>
-    conditions.map((c) => `${label(AUTO_TAG_FIELD_LABELS[c.field])}: ${valueLabel(c.field, c.value)}`).join(' · ')
 
   return (
     <Stack gap="sm">
@@ -183,7 +106,7 @@ function RuleList({ onAdd, onEdit }: { onAdd: () => void; onEdit: (rule: AutoTag
                 onChange={(e) =>
                   save.mutate({
                     id: rule.id,
-                    rule: { tagId: rule.tagId, enabled: e.currentTarget.checked, conditions: rule.conditions },
+                    rule: { tagId: rule.tagId, enabled: e.currentTarget.checked, groups: groupsOf(rule) },
                   })
                 }
               />
@@ -200,7 +123,7 @@ function RuleList({ onAdd, onEdit }: { onAdd: () => void; onEdit: (rule: AutoTag
                   </Text>
                 </Group>
                 <Text size="xs" c="var(--ink-3)">
-                  {summary(rule.conditions)}
+                  {summary(groupsOf(rule))}
                 </Text>
               </Stack>
               <Group gap={4} wrap="nowrap">
@@ -287,37 +210,23 @@ function RuleList({ onAdd, onEdit }: { onAdd: () => void; onEdit: (rule: AutoTag
 
 function RuleEditor({ id, initial, onDone }: { id: number | null; initial: SaveAutoTagRule; onDone: () => void }) {
   const { t } = useLingui()
-  const label = useLabel()
   const { data: tags } = useTags()
-  const { choices, valueLabel } = useFieldChoices()
   const save = useSaveAutoTagRule()
-  const pages = useDrillPages<EditorPage>('main', EDITOR_PARENTS)
   const [draft, setDraft] = useState(initial)
-
-  const valueOf = (field: AutoTagField) => draft.conditions.find((c) => c.field === field)?.value ?? ''
-  const setField = (field: AutoTagField, value: string) =>
-    setDraft((d) => ({
-      ...d,
-      conditions: [...d.conditions.filter((c) => c.field !== field), ...(value ? [{ field, value }] : [])],
-    }))
+  const pages = useDrillPages<string>('main', {
+    main: 'main',
+    tag: 'main',
+    ...conditionParents('main', Math.max(draft.groups.length, 1), AUTO_TAG_FIELDS),
+  })
 
   const tag = tags?.find((x) => x.id === draft.tagId)
-  const ready = draft.tagId > 0 && draft.conditions.length > 0
-
-  const fieldOptions = (field: AutoTagField): DrillChoice[] => {
-    const current = valueOf(field)
-    const options = choices[field]
-    const known = current === '' || options.some((o) => o.value === current)
-    return [
-      { value: '', label: t`Any` },
-      ...options,
-      ...(known ? [] : [{ value: current, label: valueLabel(field, current) }]),
-    ]
-  }
+  const groups = savedGroups(draft.groups)
+  const ready = draft.tagId > 0 && groups.length > 0
+  const setGroups = (next: SaveAutoTagRule['groups']) => setDraft((d) => ({ ...d, groups: next }))
 
   const submit = () =>
     save.mutate(
-      { id, rule: draft },
+      { id, rule: { ...draft, groups } },
       {
         onSuccess: onDone,
         onError: () => notifications.show({ message: now`Couldn't save the rule`, color: 'var(--danger)' }),
@@ -337,22 +246,13 @@ function RuleEditor({ id, initial, onDone }: { id: number | null; initial: SaveA
                 value={tag?.label ?? t`Choose`}
                 onClick={() => pages.open('tag')}
               />
-              <Text size="xs" c="var(--ink-3)" px={10} pt={10} pb={4}>
-                <Trans>When a series is added and matches all of these</Trans>
-              </Text>
-              {AUTO_TAG_FIELDS.map((field) => {
-                const value = valueOf(field)
-                return (
-                  <DrillRow
-                    key={field}
-                    ref={pages.rowRef(field)}
-                    icon={FIELD_ICONS[field]}
-                    label={label(AUTO_TAG_FIELD_LABELS[field])}
-                    value={value ? valueLabel(field, value) : t`Any`}
-                    onClick={() => pages.open(field)}
-                  />
-                )
-              })}
+              <ConditionGroupRows
+                groups={draft.groups}
+                fields={AUTO_TAG_FIELDS}
+                heading={<Trans>When a series is added and matches all of these</Trans>}
+                pages={pages}
+                onChange={setGroups}
+              />
             </>
           )}
           {pages.page === 'tag' && (
@@ -377,24 +277,14 @@ function RuleEditor({ id, initial, onDone }: { id: number | null; initial: SaveA
               </div>
             </>
           )}
-          {AUTO_TAG_FIELDS.map(
-            (field) =>
-              pages.page === field && (
-                <div key={field}>
-                  <DrillBack ref={pages.backRef} title={label(AUTO_TAG_FIELD_LABELS[field])} onBack={pages.back} />
-                  <div className="drill-scroll">
-                    <DrillChoices
-                      label={label(AUTO_TAG_FIELD_LABELS[field])}
-                      value={valueOf(field)}
-                      options={fieldOptions(field)}
-                      onPick={(value) => {
-                        setField(field, value)
-                        pages.back()
-                      }}
-                    />
-                  </div>
-                </div>
-              ),
+          {pages.page.includes(':') && (
+            <ConditionFieldPage
+              page={pages.page}
+              groups={draft.groups}
+              fields={AUTO_TAG_FIELDS}
+              pages={pages}
+              onChange={setGroups}
+            />
           )}
         </DrillPanes>
       </div>

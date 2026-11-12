@@ -49,6 +49,19 @@ export const AdminAdd: Story = {
   },
 }
 
+/** A root folder rule sends this series to the manhwa folder, so the form opens on it. */
+export const RoutedByRule: Story = {
+  parameters: {
+    msw: discoverPage(http.get(api('/rootfolder/route'), () => HttpResponse.json({ rootFolderId: 2, ruleId: 1 }))),
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement)
+    await waitFor(async () =>
+      expect(await canvas.findByRole('button', { name: /^Folder/ })).toHaveTextContent('/library/manhwa'),
+    )
+  },
+}
+
 /** The settings are a drill panel: a row opens its page, a pick returns to the first page with it shown. */
 export const ChangeSettingsBeforeAdding: Story = {
   play: async ({ canvas, userEvent }) => {

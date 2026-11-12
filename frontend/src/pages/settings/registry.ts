@@ -277,6 +277,16 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'root-folder-rules',
+    tab: 'library',
+    title: msg`Root folder rules`,
+    admin: true,
+    keywords: msg({
+      message: `root folder rules, routing, default folder, webtoon folder, adult folder, manhwa, manhua, content rating, where new series go`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'naming',
     tab: 'library',
     title: msg`Folder & file naming`,

@@ -140,7 +140,7 @@ function TrackerRow({
             {rootFolders && rootFolders.length > 0 && (
               <Select
                 label={t`Root folder`}
-                placeholder={t`First folder you can see`}
+                placeholder={t`Picked by the root folder rules`}
                 data={rootFolders.map((f) => ({ value: String(f.id), label: f.path }))}
                 value={prefs.rootFolderId != null ? String(prefs.rootFolderId) : null}
                 onChange={(value) => save({ rootFolderId: value ? Number(value) : null })}
