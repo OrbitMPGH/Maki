@@ -14,6 +14,8 @@ import {
 } from '@mantine/core'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useSeries } from '../../api/hooks'
+import { useAuth } from '../../auth/AuthProvider'
+import { useDropFolderStatus, type DropFolderPending, type DropFolderPendingReason } from '../../api/dropFolder'
 import {
   useManualImport,
   useManualImportBrowse,
@@ -22,7 +24,7 @@ import {
 } from '../../api/manualImport'
 import { errorText } from '../../api/errorText'
 import { formatBytes } from '../../format'
-import { IconArrowUp, IconFileImport, IconFileZip, IconFolder } from '../../lib/icons'
+import { IconArrowUp, IconFileImport, IconFileZip, IconFolder, IconInbox } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { EmptyState } from '../ui/EmptyState'
 import { Panel } from '../ui/Panel'
@@ -30,6 +32,51 @@ import { SectionHeader } from '../ui/SectionHeader'
 import { okButtonVars } from '../ui/status'
 
 type Mode = 'SkipExisting' | 'Replace'
+
+function PendingReason({ reason }: { reason: DropFolderPendingReason }) {
+  switch (reason) {
+    case 'ambiguous':
+      return <Trans>names more than one series</Trans>
+    case 'failed':
+      return <Trans>could not be imported</Trans>
+    case 'nothingNew':
+      return <Trans>brings nothing new</Trans>
+    default:
+      return <Trans>no matching series</Trans>
+  }
+}
+
+/** What the drop folder left for a person: each opens in the picker above. */
+function DropFolderWaiting({ onOpen }: { onOpen: (entry: DropFolderPending) => void }) {
+  const { t } = useLingui()
+  const { me } = useAuth()
+  const { data: status } = useDropFolderStatus(me?.isAdmin ?? false)
+  if (!status?.enabled || status.pending.length === 0) return null
+  return (
+    <Panel p="md">
+      <Stack gap="xs">
+        <SectionHeader icon={IconInbox} title={t`Waiting in the drop folder`} count={status.pending.length} />
+        {status.pending.map((p) => (
+          <Group key={p.path} justify="space-between" wrap="nowrap" gap="sm">
+            <Stack gap={0} style={{ minWidth: 0 }}>
+              <Text size="sm" style={{ overflowWrap: 'anywhere' }}>
+                {p.name}
+              </Text>
+              <Text size="xs" c={p.reason === 'failed' ? 'var(--danger)' : 'var(--ink-3)'}>
+                <PendingReason reason={p.reason} />
+                {p.seriesTitles.length > 0 && `: ${p.seriesTitles.join(', ')}`}
+                {p.detail && ` (${p.detail})`}
+              </Text>
+            </Stack>
+            <Button size="xs" variant="light" onClick={() => onOpen(p)}>
+              <Trans>Review</Trans>
+            </Button>
+          </Group>
+        ))}
+      </Stack>
+    </Panel>
+  )
+}
 
 function fileLabel(f: ManualImportFile) {
   const volume =
@@ -101,6 +148,16 @@ export function ManualImport({ initialPath = null }: { initialPath?: string | nu
 
   return (
     <Stack gap="xl">
+      <DropFolderWaiting
+        onOpen={(entry) => {
+          if (entry.isFolder) {
+            open(entry.path)
+          } else {
+            setPath(entry.folder)
+            setPicked(entry.path)
+          }
+        }}
+      />
       <Panel p="md">
         <Stack gap="sm">
           <SectionHeader icon={IconFolder} title={t`Pick a folder or file`} />

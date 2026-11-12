@@ -29,6 +29,7 @@ public static class JobLabels
         [nameof(HousekeepingJob)] = "health.job.housekeeping",
         [nameof(ImageCacheRebuildJob)] = "health.job.imageCacheRebuild",
         [nameof(ImportListJob)] = "health.job.importLists",
+        [nameof(DropFolderImportJob)] = "health.job.dropFolder",
         [nameof(KoreaderDocumentIndexJob)] = "health.job.koreaderDocumentIndex",
         [nameof(MangaBakaDumpRefreshJob)] = "health.job.mangaBakaDumpRefresh",
         [nameof(MangaBakaTableBackfillJob)] = "health.job.mangaBakaTableBackfill",
