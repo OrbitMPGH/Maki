@@ -311,3 +311,20 @@ export const GroupBusy: Story = {
     await waitFor(() => expect(document.querySelectorAll('.status-dot[data-live]').length).toBeGreaterThan(0))
   },
 }
+
+export const ScanlationGroups: Story = {
+  args: { onScanlationGroups: fn() },
+  play: async (ctx) => {
+    const page = await openAt(ctx, 'Automation')
+    await ctx.userEvent.click(await page.findByRole('menuitem', { name: 'Scanlation groups...' }))
+    await waitFor(() => expect(ctx.args.onScanlationGroups).toHaveBeenCalledOnce())
+  },
+}
+
+export const ScanlationGroupsHiddenWithoutAChoice: Story = {
+  play: async (ctx) => {
+    const page = await openAt(ctx, 'Automation')
+    await expect((await page.findAllByRole('menuitemradio', { name: /^All/ })).length).toBeGreaterThan(0)
+    await expect(page.queryByRole('menuitem', { name: 'Scanlation groups...' })).toBeNull()
+  },
+}

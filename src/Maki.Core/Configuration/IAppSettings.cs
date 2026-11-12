@@ -916,6 +916,13 @@ public static class SettingKeys
     /// </summary>
     public const string SourceLanguagesDisabled = "sources.languagesdisabled";
 
+    /// <summary>
+    /// JSON <c>{"preferred": [...], "blocked": [...]}</c>: the scanlation groups every series prefers, in
+    /// order, and never takes, on a source that lists several uploads of a chapter (MangaDex). A series'
+    /// own lists combine with these (<c>ScanlationGroupPreference.Combine</c>). Unset means none.
+    /// </summary>
+    public const string ScanlationGroups = "sources.scanlationgroups";
+
     /// <summary>"false" → the automatic sweep that re-queues Failed scraper downloads is disabled. Default on.</summary>
     public const string DownloadRetryEnabled = "download.retryenabled";
 

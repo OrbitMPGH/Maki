@@ -1,3 +1,4 @@
+import type { GlobalScanlationGroups } from '../../../src/api/scanlationGroups'
 import type {
   BackupInfo,
   BackupRetentionSettings,
@@ -159,6 +160,7 @@ export const sources: SourceInfo[] = [
     displayName: 'MangaDex',
     baseUrl: 'https://mangadex.example',
     supportsLanguageFilter: true,
+    scanlationGroups: true,
     supportedLanguages: ['en', 'es', 'pt-br', 'fr', 'ja'],
     kind: 'aggregator',
     content: ['manga', 'manhwa', 'manhua'],
@@ -1218,3 +1220,12 @@ export const recycleBin: RecycleBin = {
 export const pushPrefs = {
   types: ['newChapterAvailable', 'downloadFailed', 'requestApproved'],
 }
+
+export const scanlationGroups = {
+  preferred: ['Tidewater Scans'],
+  blocked: [],
+  seen: [
+    { name: 'Tidewater Scans', chapters: 412 },
+    { name: 'Night Owl TL', chapters: 188 },
+  ],
+} satisfies GlobalScanlationGroups

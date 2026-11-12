@@ -27,6 +27,7 @@ import {
   IconTrashX,
   IconArrowBackUp,
   IconRanking,
+  IconUsers,
 } from '../../lib/icons'
 import { useIncognitoOptions } from '../ui/incognito'
 import { useSeriesNotificationHelp, type SeriesNotificationMode } from '../ui/seriesNotifications'
@@ -152,6 +153,7 @@ export function SeriesActionsMenu({
                                       offlineSaved,
                                       onSaveUnreadOffline,
                                       onRemoveOffline,
+                                      onScanlationGroups,
                                   }: {
     monitorMode: string
     incognito: string
@@ -208,6 +210,8 @@ export function SeriesActionsMenu({
     offlineSaved?: number
     onSaveUnreadOffline?: () => void
     onRemoveOffline?: () => void
+    /** Set when a source of this series lists several groups' uploads and the user may manage sources. */
+    onScanlationGroups?: () => void
 }) {
     const [opened, setOpened] = useState(false)
     const [page, setPage] = useState<Page>('root')
@@ -428,6 +432,19 @@ export function SeriesActionsMenu({
         stops[next].focus()
     }
 
+    const groupsItem = onScanlationGroups && (
+        <Menu.Item
+            leftSection={<IconUsers size={16} />}
+            closeMenuOnClick={false}
+            onClick={() => {
+                setOpened(false)
+                onScanlationGroups()
+            }}
+        >
+            <Trans>Scanlation groups...</Trans>
+        </Menu.Item>
+    )
+
     const hasFiles = canEdit || canCleanUpReadFiles || canSetPageConversion
     const hasUpgrades = canEdit || canScanUpgrades
     const notifyField = field({
@@ -475,6 +492,7 @@ export function SeriesActionsMenu({
                         {hasFiles && drill('files', <IconFolder size={16} />, <Trans>Files</Trans>, undefined, rescanning)}
                         {/* A reader's Automation page would hold Notify alone, so for them it sits here. */}
                         {canEdit ? drill('automation', <IconEye size={16} />, <Trans>Automation</Trans>) : notifyField}
+                        {!canEdit && groupsItem}
                         {hasUpgrades && drill('upgrades', <IconCircleArrowUp size={16} />, <Trans>Upgrades</Trans>, undefined, scanningUpgrades || searchingVolumes)}
                         {offlineSaved !== undefined &&
                             drill('device', <IconDeviceMobile size={16} />, <Trans>This device</Trans>)}
@@ -566,6 +584,8 @@ export function SeriesActionsMenu({
                             onPick: onSetIncognito,
                             help: INCOGNITO_HELP[incognito] && renderLabel(INCOGNITO_HELP[incognito]),
                         })}
+                        {groupsItem && <Menu.Divider />}
+                        {groupsItem}
                     </>
                 )
             case 'upgrades':
