@@ -157,6 +157,7 @@ export default function ReaderSettings({
   incognito,
   onIncognito,
   previewSrc,
+  onTapZonesShown,
 }: {
   opened: boolean
   onOpenedChange: (opened: boolean) => void
@@ -173,6 +174,8 @@ export default function ReaderSettings({
   onIncognito: (value: boolean) => void
   /** The page on screen, shown through each colour filter. */
   previewSrc?: string
+  /** Whether the tap zone controls are on screen, so the reader can draw the zones on the page. */
+  onTapZonesShown?: (shown: boolean) => void
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -187,6 +190,12 @@ export default function ReaderSettings({
     if (opened) pages.reset()
     else setProfileMenu(false)
   }
+
+  const tapZonesShown = opened && view === 'reading' && prefs.tapZones
+  useEffect(() => {
+    onTapZonesShown?.(tapZonesShown)
+  }, [tapZonesShown, onTapZonesShown])
+  useEffect(() => () => onTapZonesShown?.(false), [onTapZonesShown])
 
   // Mantine only closes on Escape when focus is inside the dropdown, and focus is usually still on
   // the gear, so the reader's own Escape (leave the reader) would win. Captured on the window so it
@@ -768,7 +777,12 @@ export default function ReaderSettings({
                     />
                   ))}
                   {prefs.tapZones && (
-                    <TapZoneSettings prefs={prefs} onPrefs={onPrefs} hintClassName="reader-settings-hint" />
+                    <TapZoneSettings
+                      prefs={prefs}
+                      onPrefs={onPrefs}
+                      vertical={prefs.mode === 'vertical'}
+                      hintClassName="reader-settings-hint"
+                    />
                   )}
                 </Stack>
               </SubPage>

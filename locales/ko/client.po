@@ -5172,6 +5172,7 @@ msgstr "회피됨"
 #: src/components/ui/DrillPanel.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
+#: src/pages/reader/TapZoneOverlay.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Back"
@@ -10365,6 +10366,10 @@ msgstr "형식: {formatLabel}"
 msgid "Formats"
 msgstr "형식"
 
+#: src/pages/reader/TapZoneOverlay.tsx
+msgid "Forward"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -11528,6 +11533,10 @@ msgstr "가져오는 중…"
 #, fuzzy
 msgid "Imports can be undone for 30 days."
 msgstr "가져오기는 30일 동안 되돌릴 수 있습니다."
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "In Continuous a band at the top goes back and one at the bottom goes forward. The layouts apply to Single and Double."
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "In Continuous, a bar down the right edge you can drag to move through the chapter"
@@ -21728,6 +21737,10 @@ msgstr "교체된 파일 표시"
 #, fuzzy
 msgid "Show source text"
 msgstr "소스 텍스트 표시"
+
+#: src/pages/reader/TapZoneOverlay.tsx
+msgid "Show the bars"
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy

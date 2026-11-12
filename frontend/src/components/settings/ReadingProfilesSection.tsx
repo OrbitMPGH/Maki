@@ -530,7 +530,7 @@ function ProfileEditor({
         checked={prefs.tapZones}
         onChange={(e) => set({ tapZones: e.currentTarget.checked })}
       />
-      {prefs.tapZones && <TapZoneSettings prefs={prefs} onPrefs={set} />}
+      {prefs.tapZones && <TapZoneSettings prefs={prefs} onPrefs={set} vertical={prefs.mode === 'vertical'} preview />}
       <Switch
         size="sm"
         label={t`Show page number`}

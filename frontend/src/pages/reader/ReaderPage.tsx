@@ -55,7 +55,8 @@ import { useAutoScroll, useAutoScrollLevel } from './useAutoScroll'
 import ProgressRail from './ProgressRail'
 import { createStripTracker, resumeOffsetOf, useStripOffset, type StripResume } from './stripPosition'
 import { usePagedGestures } from './usePagedGestures'
-import { tapActionAt } from './tapZones'
+import { stripTapActionAt, tapActionAt } from './tapZones'
+import TapZoneOverlay from './TapZoneOverlay'
 
 const ZOOM_STEP = 0.25
 const ZOOM_MAX = 4
@@ -189,6 +190,7 @@ export default function ReaderPage() {
   // the completion back out of a write that has not gone out yet.
   const [finishedFor, setFinishedFor] = useState<number | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [tapZonesShown, setTapZonesShown] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
   const [surface, setSurface] = useState<HTMLDivElement | null>(null)
   const [autoScroll, setAutoScroll] = useState(false)
@@ -964,11 +966,9 @@ export default function ReaderPage() {
   /** Tap zones: the paged layouts follow the chosen zone layout. Continuous mode splits top to bottom in thirds. */
   const handleTap = (clientX: number, clientY: number, bounds: DOMRect) => {
     if (prefs.tapZones && mode === 'vertical') {
-      const ratio = (clientY - bounds.top) / bounds.height
-      if (ratio < 0.33) {
-        if (!surface || surface.scrollTop > 0) stepStrip(-1)
-        else setChrome((visible) => !visible)
-      } else if (ratio > 0.67) stepStrip(1)
+      const action = stripTapActionAt(prefs.tapWidth, prefs.tapInvert, (clientY - bounds.top) / bounds.height)
+      if (action === 'previous' && surface && surface.scrollTop > 0) stepStrip(-1)
+      else if (action === 'next') stepStrip(1)
       else setChrome((visible) => !visible)
       return
     }
@@ -1136,6 +1136,7 @@ export default function ReaderPage() {
       data-cursor-idle={cursorIdle || undefined}
       style={{ background: ground.background }}
     >
+      {tapZonesShown && <TapZoneOverlay prefs={prefs} vertical={mode === 'vertical'} />}
       <ReaderToolbar
         manifest={manifest}
         page={page}
@@ -1178,6 +1179,7 @@ export default function ReaderPage() {
         onToggleStrip={() => setStripOpen((open) => !open)}
         visible={chrome}
         onHold={setToolbarHeld}
+        onTapZonesShown={setTapZonesShown}
         onReveal={() => setChrome(true)}
         onShortcuts={() => setShortcutsOpen(true)}
         serverEnhancing={server !== null}

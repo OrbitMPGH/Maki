@@ -2,34 +2,19 @@ import { Group, SegmentedControl, Slider, Stack, Switch, Text } from '@mantine/c
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
 import type { ReaderPrefs } from './prefs'
-import { TAP_LAYOUTS, TAP_WIDTH_MAX, TAP_WIDTH_MIN, tapActionAt, type TapLayout } from './tapZones'
+import { TAP_LAYOUTS, TAP_WIDTH_MAX, TAP_WIDTH_MIN, tapZoneCells, type TapLayout } from './tapZones'
 
 type TapPrefs = Pick<ReaderPrefs, 'tapLayout' | 'tapWidth' | 'tapInvert' | 'direction'>
 
 const PREVIEW_W = 60
 const PREVIEW_H = 84
 
-/**
- * The zones drawn on a page. Every boundary sits at the side width or its mirror, so the 3 x 3 grid
- * those lines make is exact: each cell is one zone.
- */
-export function TapZonePreview({ prefs }: { prefs: TapPrefs }) {
-  const w = Math.min(TAP_WIDTH_MAX, Math.max(TAP_WIDTH_MIN, prefs.tapWidth)) / 100
+/** A thumbnail of the zones, for the profile editor, where no page is open to draw them on. */
+export function TapZonePreview({ prefs, vertical }: { prefs: TapPrefs; vertical: boolean }) {
+  const cells = tapZoneCells(prefs, vertical)
   const rtl = prefs.direction === 'rtl'
-  const stops = [0, w, 1 - w, 1]
-  const cells = []
-  for (let row = 0; row < 3; row++) {
-    for (let col = 0; col < 3; col++) {
-      const x = stops[col]
-      const y = stops[row]
-      const width = stops[col + 1] - x
-      const height = stops[row + 1] - y
-      const action = tapActionAt(prefs.tapLayout, prefs.tapWidth, prefs.tapInvert, rtl, x + width / 2, y + height / 2)
-      cells.push({ key: `${row}-${col}`, x, y, width, height, action })
-    }
-  }
-  const forward = rtl ? '←' : '→'
-  const back = rtl ? '→' : '←'
+  const forward = vertical ? '↓' : rtl ? '←' : '→'
+  const back = vertical ? '↑' : rtl ? '→' : '←'
   return (
     <svg
       className="reader-tap-preview"
@@ -66,20 +51,31 @@ export function TapZonePreview({ prefs }: { prefs: TapPrefs }) {
   )
 }
 
-/** Tap zone layout, side width and swap, with a preview of the zones. Single and Double only. */
+/**
+ * Tap zone layout, zone size and swap. In the reader the zones are drawn on the page while this is
+ * open (TapZoneOverlay), so only the profile editor asks for the thumbnail. Continuous has no
+ * layouts: its bands are top and bottom, and the zone size sets their height.
+ */
 export default function TapZoneSettings({
   prefs,
   onPrefs,
+  vertical,
+  preview = false,
   hintClassName,
 }: {
   prefs: TapPrefs
   onPrefs: (patch: Partial<ReaderPrefs>) => void
+  vertical: boolean
+  preview?: boolean
   hintClassName?: string
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
   const layout = TAP_LAYOUTS.find((entry) => entry.value === prefs.tapLayout) ?? TAP_LAYOUTS[0]
   const width = prefs.tapWidth
+  const hint = vertical
+    ? t`In Continuous a band at the top goes back and one at the bottom goes forward. The layouts apply to Single and Double.`
+    : renderLabel(layout.hint)
   return (
     <Stack gap={10}>
       <div>
@@ -90,16 +86,17 @@ export default function TapZoneSettings({
           aria-label={t`Tap zone layout`}
           fullWidth
           size="xs"
+          disabled={vertical}
           value={prefs.tapLayout}
           onChange={(value) => onPrefs({ tapLayout: value as TapLayout })}
           data={TAP_LAYOUTS.map((entry) => ({ value: entry.value, label: renderLabel(entry.label) }))}
         />
       </div>
       <Group gap="md" wrap="nowrap" align="flex-start">
-        <TapZonePreview prefs={prefs} />
+        {preview && <TapZonePreview prefs={prefs} vertical={vertical} />}
         <Stack gap={8} style={{ flex: 1, minWidth: 0 }}>
           <Text fz="xs" c="var(--ink-3)" className={hintClassName}>
-            {renderLabel(layout.hint)}
+            {hint}
           </Text>
           <div>
             <Text fz="xs" fw={600} c="var(--ink-3)" mb={4}>

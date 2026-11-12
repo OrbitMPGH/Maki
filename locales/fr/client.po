@@ -5172,6 +5172,7 @@ msgstr "Évité"
 #: src/components/ui/DrillPanel.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
+#: src/pages/reader/TapZoneOverlay.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Back"
@@ -10365,6 +10366,10 @@ msgstr "Format : {formatLabel}"
 msgid "Formats"
 msgstr "Formats"
 
+#: src/pages/reader/TapZoneOverlay.tsx
+msgid "Forward"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -11528,6 +11533,10 @@ msgstr "Import en cours…"
 #, fuzzy
 msgid "Imports can be undone for 30 days."
 msgstr "Les imports peuvent être annulés pendant 30 jours."
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "In Continuous a band at the top goes back and one at the bottom goes forward. The layouts apply to Single and Double."
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "In Continuous, a bar down the right edge you can drag to move through the chapter"
@@ -21728,6 +21737,10 @@ msgstr "Afficher les fichiers remplacés"
 #, fuzzy
 msgid "Show source text"
 msgstr "Afficher le texte de la source"
+
+#: src/pages/reader/TapZoneOverlay.tsx
+msgid "Show the bars"
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy

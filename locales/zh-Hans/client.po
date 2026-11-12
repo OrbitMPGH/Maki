@@ -5172,6 +5172,7 @@ msgstr "已避开"
 #: src/components/ui/DrillPanel.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
+#: src/pages/reader/TapZoneOverlay.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Back"
@@ -10365,6 +10366,10 @@ msgstr "格式：{formatLabel}"
 msgid "Formats"
 msgstr "格式"
 
+#: src/pages/reader/TapZoneOverlay.tsx
+msgid "Forward"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -11528,6 +11533,10 @@ msgstr "正在导入…"
 #, fuzzy
 msgid "Imports can be undone for 30 days."
 msgstr "导入可在 30 天内撤销。"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "In Continuous a band at the top goes back and one at the bottom goes forward. The layouts apply to Single and Double."
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "In Continuous, a bar down the right edge you can drag to move through the chapter"
@@ -21728,6 +21737,10 @@ msgstr "显示被替换的文件"
 #, fuzzy
 msgid "Show source text"
 msgstr "显示来源文本"
+
+#: src/pages/reader/TapZoneOverlay.tsx
+msgid "Show the bars"
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy

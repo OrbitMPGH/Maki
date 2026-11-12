@@ -28,7 +28,7 @@ export function tapActionAt(
   x: number,
   y: number,
 ): TapAction {
-  const w = Math.min(TAP_WIDTH_MAX, Math.max(TAP_WIDTH_MIN, width)) / 100
+  const w = clampWidth(width) / 100
   const left = rtl ? x > 1 - w : x < w
   const right = rtl ? x < w : x > 1 - w
   const top = y < w
@@ -47,6 +47,64 @@ export function tapActionAt(
     default:
       action = left ? 'previous' : right ? 'next' : 'menu'
   }
+  return swapped(action, invert)
+}
+
+/** Continuous has no layouts: a band at the top goes back, one at the bottom goes forward. `width` is each band's height. */
+export function stripTapActionAt(width: number, invert: boolean, y: number): TapAction {
+  const w = clampWidth(width) / 100
+  return swapped(y < w ? 'previous' : y > 1 - w ? 'next' : 'menu', invert)
+}
+
+export interface TapZoneCell {
+  key: string
+  x: number
+  y: number
+  width: number
+  height: number
+  action: TapAction
+}
+
+/**
+ * The zones as cells over the page area, in fractions. Every paged boundary sits at the side width
+ * or its mirror, so the 3 x 3 grid those lines make is exact; Continuous is three full-width rows.
+ */
+export function tapZoneCells(
+  prefs: { tapLayout: TapLayout; tapWidth: number; tapInvert: boolean; direction: string },
+  vertical: boolean,
+): TapZoneCell[] {
+  const w = clampWidth(prefs.tapWidth) / 100
+  const stops = [0, w, 1 - w, 1]
+  const cells: TapZoneCell[] = []
+  for (let row = 0; row < 3; row++) {
+    const y = stops[row]
+    const height = stops[row + 1] - y
+    if (vertical) {
+      cells.push({ key: `${row}`, x: 0, y, width: 1, height, action: stripTapActionAt(prefs.tapWidth, prefs.tapInvert, y + height / 2) })
+      continue
+    }
+    for (let col = 0; col < 3; col++) {
+      const x = stops[col]
+      const width = stops[col + 1] - x
+      const action = tapActionAt(
+        prefs.tapLayout,
+        prefs.tapWidth,
+        prefs.tapInvert,
+        prefs.direction === 'rtl',
+        x + width / 2,
+        y + height / 2,
+      )
+      cells.push({ key: `${row}-${col}`, x, y, width, height, action })
+    }
+  }
+  return cells
+}
+
+function clampWidth(width: number): number {
+  return Math.min(TAP_WIDTH_MAX, Math.max(TAP_WIDTH_MIN, width))
+}
+
+function swapped(action: TapAction, invert: boolean): TapAction {
   if (!invert || action === 'menu') return action
   return action === 'next' ? 'previous' : 'next'
 }

@@ -10827,6 +10827,62 @@ body.reader-open {
   stroke: currentColor;
   stroke-opacity: 0.5;
 }
+/* TapZoneOverlay: the same colours drawn over the page while the tap zone settings are open. Under
+   the bars and the settings, and never in the way of a tap. */
+.reader-tap-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  animation: reader-tap-overlay-in var(--dur-fast) var(--ease);
+}
+.reader-tap-zone {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #fff;
+  transition:
+    left var(--dur-fast) var(--ease),
+    top var(--dur-fast) var(--ease),
+    width var(--dur-fast) var(--ease),
+    height var(--dur-fast) var(--ease);
+}
+.reader-tap-zone[data-action='next'] {
+  background: color-mix(in srgb, var(--brand) 38%, transparent);
+}
+.reader-tap-zone[data-action='previous'] {
+  background: rgba(255, 255, 255, 0.2);
+}
+.reader-tap-zone[data-action='menu'] {
+  background: rgba(0, 0, 0, 0.18);
+}
+.reader-tap-zone svg {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+.reader-tap-zone-name {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+@keyframes reader-tap-overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reader-tap-overlay {
+    animation: none;
+  }
+  .reader-tap-zone {
+    transition: none;
+  }
+}
 .reader-settings-pair {
   display: grid;
   grid-template-columns: auto 1fr;

@@ -4287,6 +4287,7 @@ msgstr "Avoided"
 #: src/components/ui/DrillPanel.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
+#: src/pages/reader/TapZoneOverlay.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Back"
 msgstr "Back"
@@ -8565,6 +8566,10 @@ msgstr "Format: {formatLabel}"
 msgid "Formats"
 msgstr "Formats"
 
+#: src/pages/reader/TapZoneOverlay.tsx
+msgid "Forward"
+msgstr "Forward"
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
 msgid "Found"
@@ -9517,6 +9522,10 @@ msgstr "Importing…"
 #: src/components/import/RecentImports.tsx
 msgid "Imports can be undone for 30 days."
 msgstr "Imports can be undone for 30 days."
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "In Continuous a band at the top goes back and one at the bottom goes forward. The layouts apply to Single and Double."
+msgstr "In Continuous a band at the top goes back and one at the bottom goes forward. The layouts apply to Single and Double."
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "In Continuous, a bar down the right edge you can drag to move through the chapter"
@@ -17902,6 +17911,10 @@ msgstr "Show replaced files"
 #: src/components/AnimeCoverageBar.tsx
 msgid "Show source text"
 msgstr "Show source text"
+
+#: src/pages/reader/TapZoneOverlay.tsx
+msgid "Show the bars"
+msgstr "Show the bars"
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Show the chapter name"

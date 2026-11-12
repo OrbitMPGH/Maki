@@ -80,6 +80,7 @@ export default function ReaderToolbar({
   onToggleStrip,
   visible,
   onHold,
+  onTapZonesShown,
   onReveal,
   onShortcuts,
   serverEnhancing = false,
@@ -132,6 +133,8 @@ export default function ReaderToolbar({
   visible: boolean
   /** Keeps the auto-hide from pulling the chrome out from under an open menu or the cursor. */
   onHold: (held: boolean) => void
+  /** The tap zone settings opened or closed, so the reader draws the zones on the page. */
+  onTapZonesShown?: (shown: boolean) => void
   /** Brings the chrome up; called when a keyboard user tabs onto a control while it is hidden. */
   onReveal: () => void
   onShortcuts: () => void
@@ -491,6 +494,7 @@ export default function ReaderToolbar({
             incognito={incognito}
             onIncognito={onIncognito}
             previewSrc={thumbs[page]}
+            onTapZonesShown={onTapZonesShown}
           />
 
           {/* No keyboard on a touch screen, so nothing for this to list there. */}
