@@ -279,6 +279,9 @@ namespace Maki.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int?>("SplitPageCount")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Tier")
                         .HasColumnType("INTEGER");
 

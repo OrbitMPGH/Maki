@@ -102,7 +102,16 @@ public class AutoTagRulesController(ILocalizer localizer, MakiDbContext db, Auto
             return this.Fail(localizer, "error.tags.unknownTagIds");
         }
 
-        var groups = ConditionGroups.Normalize(RuleConditionDtos.Groups(request.Groups, request.Conditions), AutoTagFields.All);
+        var submitted = RuleConditionDtos.Groups(request.Groups, request.Conditions);
+        // A client from before groups sends only the first one; it may change that group, but the
+        // alternatives it cannot see stay.
+        if (request.Groups is null && request.Conditions is not null &&
+            ConditionGroups.Parse(rule.ConditionsJson) is { Count: > 1 } stored)
+        {
+            submitted = submitted!.Concat(stored.Skip(1));
+        }
+
+        var groups = ConditionGroups.Normalize(submitted, AutoTagFields.All);
         if (groups is null)
         {
             return this.Fail(localizer, "error.autoTagRules.invalidConditions");

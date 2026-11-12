@@ -88,6 +88,7 @@ public sealed class UpgradeEvaluator
         StoredImageFormat = file.OriginalImageFormat is null ? null : file.ImageFormat,
         ConversionSavedBytes = file.OriginalImageFormat is null ? null : file.ConversionSavedBytes,
         CheckedWith = file.ConversionCheckedAtUtc is null ? null : file.CheckedWith,
+        SplitPageCount = file.SplitPageCount,
         Score = score,
         ReleaseName = file.ReleaseName,
         ReleaseHash = file.ReleaseHash
@@ -305,6 +306,7 @@ public class UpgradeEvaluationService(
                     ConversionSavedBytes = c.ChapterFile.ConversionSavedBytes,
                     ConversionCheckedAtUtc = c.ChapterFile.ConversionCheckedAtUtc,
                     CheckedWith = c.ChapterFile.CheckedWith,
+                    SplitPageCount = c.ChapterFile.SplitPageCount,
                     MeasuredAtUtc = c.ChapterFile.MeasuredAtUtc,
                     Trusted = c.ChapterFile.Trusted
                 }

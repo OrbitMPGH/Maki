@@ -268,13 +268,17 @@ public class PageConversionService(
 
             var acquired = current.MeasuredAtUtc is null ? null : current.ImageFormat;
             var now = DateTime.UtcNow;
-            var (formatBefore, savedBefore) = (current.OriginalImageFormat, current.ConversionSavedBytes);
+            var (formatBefore, savedBefore, splitBefore) =
+                (current.OriginalImageFormat, current.ConversionSavedBytes, current.SplitPageCount);
             var history = converted && result.Split is not null
                 ? await PageConversionUndoService.Restorable(db, current.SeriesId)
                     .Where(h => h.ChapterFileId == current.Id)
                     .FirstOrDefaultAsync(CancellationToken.None)
                 : null;
             PageConversionOptions.Apply(current, result, acquired, action.Name, now);
+            current.SplitPageCount = result.Split is { IsEmpty: false } cut && result.PagesBefore is { } namesBefore
+                ? cut.NewStart(namesBefore.Count)
+                : splitBefore;
             if (converted)
             {
                 current.OriginalImageFormat = formatBefore;

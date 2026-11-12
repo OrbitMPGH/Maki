@@ -23,6 +23,12 @@ namespace Maki.Data.Migrations
                 type: "TEXT",
                 nullable: true);
 
+            migrationBuilder.AddColumn<int>(
+                name: "SplitPageCount",
+                table: "ChapterFiles",
+                type: "INTEGER",
+                nullable: true);
+
             migrationBuilder.CreateTable(
                 name: "RootFolderRules",
                 columns: table => new
@@ -65,6 +71,10 @@ namespace Maki.Data.Migrations
             migrationBuilder.DropColumn(
                 name: "Url",
                 table: "ChapterSourceLinks");
+
+            migrationBuilder.DropColumn(
+                name: "SplitPageCount",
+                table: "ChapterFiles");
         }
     }
 }

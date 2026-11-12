@@ -118,6 +118,8 @@ public sealed partial class PageConversionTests
         var row = Row(fileId);
         Assert.Equal(("jpg", "webp:balanced+split5000"), (row.OriginalImageFormat, row.CheckedWith));
         Assert.Equal("1:3", History(fileId).SplitPages);
+        // Readers count the split archive; upgrade scoring keeps the acquired count.
+        Assert.Equal((5, 3), (row.SplitPageCount, row.PageCount));
 
         using (var db = _world.Db.NewContext())
         {
@@ -127,6 +129,7 @@ public sealed partial class PageConversionTests
         }
 
         Assert.Equal(original, File.ReadAllBytes(path));
+        Assert.Null(Row(fileId).SplitPageCount);
         (a, b, bookmark, note, whole) = Read(marks);
         Assert.Equal((1, 3, 2, 3), (a.PageIndex, a.PageCount, b.PageIndex, b.PageCount));
         Assert.Equal(0.5, a.PageOffset, 6);

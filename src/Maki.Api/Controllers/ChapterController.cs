@@ -89,6 +89,7 @@ public class ChapterController(
                     ConversionSavedBytes = c.ChapterFile.ConversionSavedBytes,
                     ConversionCheckedAtUtc = c.ChapterFile.ConversionCheckedAtUtc,
                     CheckedWith = c.ChapterFile.CheckedWith,
+                    SplitPageCount = c.ChapterFile.SplitPageCount,
                     MeasuredAtUtc = c.ChapterFile.MeasuredAtUtc,
                     Trusted = c.ChapterFile.Trusted
                 }

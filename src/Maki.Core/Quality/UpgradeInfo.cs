@@ -76,6 +76,9 @@ public sealed class QualitySnapshot
     /// <summary>What the conversion plan answered for the file, when it had been checked (<c>ChapterFile.CheckedWith</c>).</summary>
     public string? CheckedWith { get; set; }
 
+    /// <summary>The archive's page count after a tall-strip split (<c>ChapterFile.SplitPageCount</c>).</summary>
+    public int? SplitPageCount { get; set; }
+
     /// <summary>Puts the snapshot's format and conversion record back on a file whose bytes it describes again.</summary>
     public void RestoreFormatOnto(Entities.ChapterFile file, DateTime now)
     {
@@ -94,6 +97,8 @@ public sealed class QualitySnapshot
             file.CheckedWith = CheckedWith;
             file.ConversionCheckedAtUtc = now;
         }
+
+        file.SplitPageCount = SplitPageCount;
     }
 
     /// <summary>The torrent release a file came from, kept so a revert can give it back.</summary>

@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    [Migration("20261112224921_LibraryOutputLanes")]
+    [Migration("20261112233439_LibraryOutputLanes")]
     partial class LibraryOutputLanes
     {
         /// <inheritdoc />
@@ -281,6 +281,9 @@ namespace Maki.Data.Migrations
                     b.Property<string>("SourceName")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("SplitPageCount")
+                        .HasColumnType("INTEGER");
 
                     b.Property<int>("Tier")
                         .HasColumnType("INTEGER");

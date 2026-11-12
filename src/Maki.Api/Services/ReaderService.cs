@@ -824,7 +824,7 @@ public class ReaderService(
                 c.Id,
                 c.SeriesId,
                 c.Number,
-                MeasuredPages = c.ChapterFile!.PageCount,
+                MeasuredPages = c.ChapterFile!.SplitPageCount ?? c.ChapterFile.PageCount,
                 SharesFile = db.Chapters.Any(o => o.ChapterFileId == c.ChapterFileId && o.Id != c.Id),
             })
             .ToListAsync(ct);
