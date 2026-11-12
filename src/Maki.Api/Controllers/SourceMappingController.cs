@@ -141,7 +141,7 @@ public class SourceMappingController(
         };
         db.SourceMappings.Add(mapping);
         db.SourceNearMisses.RemoveRange(
-            await db.SourceNearMisses.Where(n => n.SeriesId == request.SeriesId && n.SourceName == sourceName).ToListAsync(ct));
+            await db.SourceNearMisses.Where(n => n.SeriesId == request.SeriesId && n.SourceName == sourceName && n.DismissedAt == null).ToListAsync(ct));
         await db.SaveChangesAsync(ct);
 
         // Only the new mapping: the others keep their own schedule. An archived series does not

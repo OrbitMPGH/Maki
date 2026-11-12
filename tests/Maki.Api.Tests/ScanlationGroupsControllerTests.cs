@@ -59,6 +59,41 @@ public class ScanlationGroupsControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task Saving_lists_makes_queued_rows_pick_their_upload_again()
+    {
+        var seriesId = Seed();
+        int queued, upgrade;
+        using (var db = _db.NewContext())
+        {
+            var mapping = db.SourceMappings.Single(m => m.SeriesId == seriesId);
+            var one = new Chapter { SeriesId = seriesId, Number = 1m, Language = "en" };
+            var two = new Chapter { SeriesId = seriesId, Number = 2m, Language = "en" };
+            db.Chapters.AddRange(one, two);
+            db.SaveChanges();
+            var q1 = new DownloadQueueItem
+            {
+                SeriesId = seriesId, ChapterId = one.Id, SourceMappingId = mapping.Id, SourceChapterId = "1-a",
+                Status = QueueStatus.Queued, QueuedAt = DateTime.UtcNow
+            };
+            var q2 = new DownloadQueueItem
+            {
+                SeriesId = seriesId, ChapterId = two.Id, SourceMappingId = mapping.Id, SourceChapterId = "2-a",
+                Status = QueueStatus.Queued, QueuedAt = DateTime.UtcNow, UpgradeInfoJson = "{}"
+            };
+            db.DownloadQueue.AddRange(q1, q2);
+            db.SaveChanges();
+            (queued, upgrade) = (q1.Id, q2.Id);
+        }
+
+        await Controller(new FakeGroupSource()).SetSeries(seriesId,
+            new ScanlationGroupsController.GroupLists([], ["Early Birds"]), CancellationToken.None);
+
+        using var check = _db.NewContext();
+        Assert.Null(check.DownloadQueue.Single(q => q.Id == queued).SourceChapterId);
+        Assert.Equal("2-a", check.DownloadQueue.Single(q => q.Id == upgrade).SourceChapterId);
+    }
+
+    [Fact]
     public async Task Saving_empty_global_lists_clears_the_setting()
     {
         var controller = Controller(new FakeGroupSource());

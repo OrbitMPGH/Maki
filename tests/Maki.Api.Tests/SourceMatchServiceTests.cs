@@ -1487,6 +1487,25 @@ public class SourceMatchServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_dismissal_outlives_the_source_being_matched()
+    {
+        var seriesId = _db.SeedSeries(NearTitle);
+        Func<string, IReadOnlyList<SourceSeriesResult>> search = _ => [Hit("near", NearHit)];
+        var source = new FakeSource { Name = "fake", OnSearch = q => search(q) };
+        await RunAutoMatch(seriesId, source);
+        using (var context = _db.NewContext())
+        {
+            (await context.SourceNearMisses.SingleAsync()).DismissedAt = DateTime.UtcNow;
+            await context.SaveChangesAsync();
+        }
+
+        search = _ => [Hit("hit", NearTitle)];
+        Assert.Equal(["fake"], await RunAutoMatch(seriesId, source));
+
+        Assert.NotNull(Assert.Single(NearMissesOf(seriesId)).DismissedAt);
+    }
+
+    [Fact]
     public async Task A_failed_search_keeps_the_suggestion_it_already_had()
     {
         var seriesId = _db.SeedSeries(NearTitle);

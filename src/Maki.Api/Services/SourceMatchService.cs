@@ -844,7 +844,7 @@ public partial class SourceMatchService(
         }
 
         db.SourceNearMisses.RemoveRange(existing.Where(n =>
-            mapped.Contains(n.SourceName, StringComparer.OrdinalIgnoreCase)));
+            n.DismissedAt is null && mapped.Contains(n.SourceName, StringComparer.OrdinalIgnoreCase)));
     }
 
     /// <param name="progress">
@@ -947,11 +947,9 @@ public partial class SourceMatchService(
         mapped.AddRange(await SeedFromCrossRefsAsync(
             series, orderedSources, disabledSources, mapped, crossRefs, languages, ct));
 
-        await RecordNearMissesAsync(series, outcomes, mapped, dismissed, ct);
-
         if (mapped.Count == 0)
         {
-            await db.SaveChangesAsync(ct);
+            await SaveNearMissesAsync(series, outcomes, mapped, dismissed, ct);
             return mapped;
         }
 
@@ -974,7 +972,32 @@ public partial class SourceMatchService(
         }
 
         await db.SaveChangesAsync(ct);
+        await SaveNearMissesAsync(series, outcomes, mapped, dismissed, ct);
 
         return mapped;
+    }
+
+    /// <summary>
+    /// Suggestions are saved on their own, after the mappings, so a series deleted mid-match or a
+    /// second match of the same series writing the same suggestion costs only the suggestion.
+    /// </summary>
+    private async Task SaveNearMissesAsync(
+        Series series, SourceOutcome[] outcomes, List<string> mapped,
+        IReadOnlyDictionary<string, IReadOnlySet<string>> dismissed, CancellationToken ct)
+    {
+        await RecordNearMissesAsync(series, outcomes, mapped, dismissed, ct);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException ex)
+        {
+            foreach (var entry in db.ChangeTracker.Entries<SourceNearMiss>().ToList())
+            {
+                entry.State = EntityState.Detached;
+            }
+
+            logger.LogInformation(ex, "Could not save near-miss suggestions for series {Id}", series.Id);
+        }
     }
 }

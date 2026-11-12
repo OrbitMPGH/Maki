@@ -98,6 +98,23 @@ public class ChapterDownloadProcessorEarlyAccessFailoverTests : IDisposable
     }
 
     [Fact]
+    public async Task A_server_error_on_the_other_source_parks_the_row_on_the_locked_source()
+    {
+        _world.AggPages = _ => throw new HttpRequestException("boom", null, HttpStatusCode.InternalServerError);
+        var id = Enqueue(_world.OfficialMappingId, "o1");
+
+        await _world.ProcessAsync(id);
+
+        using var check = _world.Db.NewContext();
+        var row = check.DownloadQueue.Single(q => q.Id == id);
+        Assert.Equal(QueueStatus.Waiting, row.Status);
+        Assert.Equal(ChapterDownloadProcessor.EarlyAccessKey, row.ErrorKey);
+        Assert.Equal(_world.OfficialMappingId, row.SourceMappingId);
+        Assert.Equal("o1", row.SourceChapterId);
+        Assert.True(row.NextAttempt > _unlockAt.UtcDateTime);
+    }
+
+    [Fact]
     public async Task A_row_pinned_to_the_locked_source_stays_on_it()
     {
         var id = Enqueue(_world.OfficialMappingId, "o1", pinned: true);

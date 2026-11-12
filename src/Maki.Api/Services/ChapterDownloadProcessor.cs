@@ -564,6 +564,14 @@ public class ChapterDownloadProcessor(
                 return await ProcessAsync(item.Id, triedMappingIds, ct, hold);
             }
 
+            // The row only came here because its own source said early access, so it goes back to wait
+            // for that unlock rather than failing on the fallback's trouble.
+            if (hold is not null)
+            {
+                await LockedAsync(item, chapter, series, hold, ct);
+                return DownloadOutcome.Settled;
+            }
+
             await FailAsync(item, key, ct, detail: detail);
             return DownloadOutcome.Settled;
         }

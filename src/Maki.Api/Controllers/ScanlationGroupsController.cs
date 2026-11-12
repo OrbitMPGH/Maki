@@ -2,6 +2,7 @@ using Maki.Api.Auth;
 using Maki.Api.Localization;
 using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Entities;
 using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.AspNetCore.Authorization;
@@ -69,6 +70,7 @@ public class ScanlationGroupsController(
     {
         var groups = ScanlationGroupPreference.Of(request.Preferred, request.Blocked);
         await ScanlationGroupSettings.SaveGlobalAsync(settings, groups, ct);
+        await ReleaseQueuedUploadsAsync(null, ct);
         return Ok(new GroupLists(groups.Preferred, groups.Blocked));
     }
 
@@ -138,7 +140,24 @@ public class ScanlationGroupsController(
         series.PreferredGroups = [.. groups.Preferred];
         series.BlockedGroups = [.. groups.Blocked];
         await db.SaveChangesAsync(ct);
+        await ReleaseQueuedUploadsAsync(id, ct);
         return Ok(new GroupLists(groups.Preferred, groups.Blocked));
+    }
+
+    /// <summary>
+    /// Queued rows on a multi-group source carry the upload picked when they were queued, so a newly
+    /// blocked group would still be downloaded. Dropping the id makes the processor resolve again
+    /// under the new lists. Repairs, upgrades and pinned rows name their upload on purpose and keep it.
+    /// </summary>
+    private async Task ReleaseQueuedUploadsAsync(int? seriesId, CancellationToken ct)
+    {
+        var sourceNames = GroupSources().Select(s => s.Name).ToList();
+        await db.DownloadQueue
+            .Where(q => seriesId == null || q.SeriesId == seriesId)
+            .Where(q => q.Status == QueueStatus.Queued || q.Status == QueueStatus.Waiting || q.Status == QueueStatus.RateLimited)
+            .Where(q => q.HealthOperationId == null && q.UpgradeInfoJson == null && q.PreferredMappingId == null)
+            .Where(q => q.SourceChapterId != null && q.SourceMapping != null && sourceNames.Contains(q.SourceMapping.SourceName))
+            .ExecuteUpdateAsync(u => u.SetProperty(q => q.SourceChapterId, (string?)null), ct);
     }
 
     private IEnumerable<ISource> GroupSources() => sourceRegistry.All.Where(s => s is IScanlationGroupSource);
