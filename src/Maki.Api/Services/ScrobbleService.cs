@@ -467,6 +467,7 @@ public class ScrobbleService(
             .ToHashSet();
         var boundarySource = await volumeBoundaries.LoadAsync(userId, allRootFolders, matchedIds, ct);
         var coverage = liveCoverage?.Begin();
+        var heldStatuses = await HeldStatusesAsync(userId, ct);
 
         int updates = 0, errors = 0, skipped = 0, noProgress = 0;
         var batcher = new WriteBatcher(userId, MaxBatchWait, logger, ct);
@@ -624,6 +625,7 @@ public class ScrobbleService(
 
             // figure out which trackers actually need an update before doing any
             // remote matching/lookups
+            var held = localSeries is null ? null : heldStatuses.GetValueOrDefault(localSeries.Id);
             var pending = new List<IScrobbleTracker>();
             foreach (var tracker in trackers)
             {
@@ -636,7 +638,8 @@ public class ScrobbleService(
 
                 var state = await GetSyncStateAsync(userId, series.Id, tracker.Name, ct);
                 if (state is not null && string.IsNullOrEmpty(state.Error) &&
-                    state.Chapter >= (finished ? Math.Max(chapter, 1) : chapter) && state.Volume >= volume)
+                    state.Chapter >= (finished ? Math.Max(chapter, 1) : chapter) && state.Volume >= volume &&
+                    HeldSettled(state.Status, held))
                 {
                     skipped++;
                     continue;
@@ -718,7 +721,8 @@ public class ScrobbleService(
                             {
                                 await FailedAsync(error);
                             }
-                        });
+                        },
+                        held);
                     if (changed)
                     {
                         updates++;
@@ -816,6 +820,7 @@ public class ScrobbleService(
         }
 
         oneShots ??= await FinishedOneShotsAsync(userId, await AllRootFoldersAsync(userId, ct), ct);
+        var held = await HeldStatusesAsync(userId, ct);
 
         int updates = 0, errors = 0, skipped = 0;
         var batcher = new WriteBatcher(userId, MaxBatchWait, logger, ct);
@@ -828,7 +833,7 @@ public class ScrobbleService(
             var volume = (int)Math.Floor(row.MaxVolume);
             var finished = oneShots.TryGetValue(row.SeriesId, out var completedLocally);
             await PushNativeRowAsync(userId, row, chapter, volume, null, trackers, ct, Counters,
-                finished, completedLocally, batcher);
+                finished, completedLocally, batcher, held.GetValueOrDefault(row.SeriesId));
         }
 
         // A one-shot never raises MaxChapter, so a finished one sits here with the unstarted series.
@@ -866,7 +871,7 @@ public class ScrobbleService(
     private async Task PushNativeRowAsync(
         int userId, NativeProgress row, int chapter, int volume, ScrobbleStatus? fallbackStatus,
         List<IScrobbleTracker> trackers, CancellationToken ct, Action<bool, bool, bool> report,
-        bool finished = false, bool completedLocally = false, WriteBatcher? batcher = null)
+        bool finished = false, bool completedLocally = false, WriteBatcher? batcher = null, ScrobbleStatus? held = null)
     {
         foreach (var tracker in trackers)
         {
@@ -891,7 +896,8 @@ public class ScrobbleService(
 
             var state = await GetSeriesScrobbleStateAsync(userId, row.SeriesId, tracker.Name, ct);
             if (state is not null && string.IsNullOrEmpty(state.Error) &&
-                state.Chapter >= (finished ? Math.Max(chapter, 1) : chapter) && state.Volume >= volume)
+                state.Chapter >= (finished ? Math.Max(chapter, 1) : chapter) && state.Volume >= volume &&
+                HeldSettled(state.Status, held))
             {
                 report(false, true, false);
                 continue;
@@ -921,7 +927,8 @@ public class ScrobbleService(
                             {
                                 await FailedAsync(error);
                             }
-                        }))
+                        },
+                        held))
                 {
                     report(true, false, false);
                 }
@@ -934,6 +941,35 @@ public class ScrobbleService(
             await Task.Delay(PaceFor(tracker), ct);
         }
     }
+
+    /// <summary>
+    /// The series this reader holds at On hold or Dropped in Maki, as the tracker status each one is
+    /// pushed as. Everything else is pushed from reading progress alone.
+    /// </summary>
+    private async Task<Dictionary<int, ScrobbleStatus?>> HeldStatusesAsync(int userId, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        return await db.UserSeriesStates.IgnoreQueryFilters()
+            .Where(s => s.UserId == userId &&
+                        (s.Status == ReadingStatus.OnHold || s.Status == ReadingStatus.Dropped))
+            .ToDictionaryAsync(s => s.SeriesId, s => HeldAs(s.Status), ct);
+    }
+
+    /// <summary>The tracker status a Maki reading status holds a series at, or null for none.</summary>
+    public static ScrobbleStatus? HeldAs(ReadingStatus status) => status switch
+    {
+        ReadingStatus.OnHold => ScrobbleStatus.Paused,
+        ReadingStatus.Dropped => ScrobbleStatus.Dropped,
+        _ => null,
+    };
+
+    /// <summary>
+    /// Whether the last recorded push already carries the held status, so a series whose progress
+    /// was pushed before it was put on hold is visited again to move it.
+    /// </summary>
+    private static bool HeldSettled(string? recorded, ScrobbleStatus? held) =>
+        held is not { } status || recorded == StatusName(status) || recorded == StatusName(ScrobbleStatus.Completed);
 
     private sealed record NativeProgress(
         int SeriesId, string Title, double MaxChapter, double MaxVolume,
@@ -951,11 +987,12 @@ public class ScrobbleService(
     private async Task<bool> PushAsync(
         int userId, IScrobbleTracker tracker, string remoteId, PushTarget target,
         int chapter, int volume, ScrobbleStatus? fallbackStatus, CancellationToken ct, bool finished = false,
-        bool completedLocally = false, WriteBatcher? batcher = null, Func<Exception?, Task>? onQueued = null)
+        bool completedLocally = false, WriteBatcher? batcher = null, Func<Exception?, Task>? onQueued = null,
+        ScrobbleStatus? held = null)
     {
         var title = target.Title;
         var entry = await tracker.GetEntryAsync(userId, remoteId, ct);
-        var plan = ScrobblePlanner.Decide(entry, chapter, volume, fallbackStatus, finished, completedLocally);
+        var plan = ScrobblePlanner.Decide(entry, chapter, volume, fallbackStatus, finished, completedLocally, held);
 
         if (!plan.Write)
         {
@@ -1199,6 +1236,146 @@ public class ScrobbleService(
         }
 
         return synced;
+    }
+
+    /// <summary>
+    /// <see cref="PushStatusAsync"/> for each series, one after another, detached from the request the
+    /// same way <see cref="QueueRatingPush"/> is. The scrobble log records what synced.
+    /// </summary>
+    public void QueueStatusPush(int userId, IReadOnlyList<Series> series, ReadingStatus status)
+    {
+        var snapshots = series
+            .Where(s => s.Incognito == IncognitoMode.Off &&
+                        (s.MalId != null || s.AniListId != null || s.MangaBakaId != null || s.KitsuId != null ||
+                         s.MangaUpdatesId != null))
+            .Select(s => new Series
+            {
+                Id = s.Id,
+                Title = s.Title,
+                MalId = s.MalId,
+                AniListId = s.AniListId,
+                MangaBakaId = s.MangaBakaId,
+                KitsuId = s.KitsuId,
+                MangaUpdatesId = s.MangaUpdatesId,
+            })
+            .ToList();
+        if (snapshots.Count == 0)
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            foreach (var snapshot in snapshots)
+            {
+                try
+                {
+                    await PushStatusAsync(userId, snapshot, status, CancellationToken.None);
+                }
+                catch (Exception e)
+                {
+                    logger.LogWarning("Background status push crashed for '{Title}': {Error}", snapshot.Title, e.Message);
+                }
+            }
+        });
+    }
+
+    /// <summary>
+    /// Best-effort push of a reading status the reader set in Maki to every connected tracker that
+    /// already lists the series. On hold and Dropped move the entry to paused and dropped; Reading
+    /// moves a paused or dropped entry back. Progress is left as the tracker has it (the scrobble
+    /// tick pushes reading on its own), Completed entries are never touched, and a series not on
+    /// the list is not added. Returns the labels of the trackers that accepted the write.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> PushStatusAsync(
+        int userId, Series series, ReadingStatus status, CancellationToken ct = default)
+    {
+        var synced = new List<string>();
+        if (series.Incognito != IncognitoMode.Off)
+        {
+            return synced;
+        }
+
+        foreach (var tracker in await ActiveTrackersAsync(userId, ct))
+        {
+            if (!await SyncReadingEnabledAsync(userId, tracker.Name, ct))
+            {
+                continue;
+            }
+
+            var remoteId = tracker.Name switch
+            {
+                "mal" => series.MalId?.ToString(),
+                "anilist" => series.AniListId?.ToString(),
+                "mangabaka" => series.MangaBakaId?.ToString(),
+                "kitsu" => series.KitsuId?.ToString(),
+                "mangaupdates" => series.MangaUpdatesId,
+                _ => null,
+            };
+            if (string.IsNullOrEmpty(remoteId))
+            {
+                continue;
+            }
+
+            try
+            {
+                var entry = await tracker.GetEntryAsync(userId, remoteId, ct);
+                var push = HeldAs(status) ??
+                           (status == ReadingStatus.Reading &&
+                            entry.Status is ScrobbleStatus.Paused or ScrobbleStatus.Dropped
+                               ? ScrobbleStatus.Reading
+                               : null);
+                if (push is not { } next || entry.Status is null or ScrobbleStatus.Completed || entry.Status == next)
+                {
+                    continue;
+                }
+
+                if (tracker is AniListTracker)
+                {
+                    await Task.Delay(AniListPace, ct);
+                }
+
+                await tracker.UpdateAsync(userId, remoteId, entry.ProgressChapter, entry.ProgressVolume, next, ct);
+                await RecordStatusAsync(userId, series.Id, tracker.Name, StatusName(next), ct);
+                synced.Add(tracker.Label);
+                await AddKeyedLogAsync(userId, "info", tracker.Name, series.Title,
+                    "scrobble.log.statusPushed", new { status = StatusName(next) }, ct);
+            }
+            catch (Exception e)
+            {
+                logger.LogWarning("Status push failed for '{Title}' on {Service}: {Error}",
+                    series.Title, tracker.Name, e.Message);
+                await AddKeyedLogAsync(userId, "error", tracker.Name, series.Title,
+                    "scrobble.log.statusPushFailed", new { detail = e.Message }, ct);
+            }
+
+            await Task.Delay(PaceFor(tracker), ct);
+        }
+
+        return synced;
+    }
+
+    /// <summary>
+    /// Writes a pushed status onto the series' recorded sync state, both the reader-driven row and
+    /// any Kavita-keyed one, so the scrobble page and the tick's held check see it at once.
+    /// </summary>
+    private async Task RecordStatusAsync(int userId, int seriesId, string service, string status, CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        await db.SeriesScrobbleStates.IgnoreQueryFilters()
+            .Where(s => s.UserId == userId && s.SeriesId == seriesId && s.Service == service)
+            .ExecuteUpdateAsync(set => set.SetProperty(s => s.Status, status), ct);
+        var kavitaIds = await db.ReadingStates.IgnoreQueryFilters()
+            .Where(r => r.UserId == userId && r.SeriesId == seriesId && r.KavitaSeriesId != null)
+            .Select(r => r.KavitaSeriesId!.Value)
+            .ToListAsync(ct);
+        if (kavitaIds.Count > 0)
+        {
+            await db.ScrobbleSyncStates.IgnoreQueryFilters()
+                .Where(s => s.UserId == userId && kavitaIds.Contains(s.KavitaSeriesId) && s.Service == service)
+                .ExecuteUpdateAsync(set => set.SetProperty(s => s.Status, status), ct);
+        }
     }
 
     // ---- rating import (preview → apply) ----
@@ -2008,6 +2185,8 @@ public class ScrobbleService(
             ["completed"] = "scrobble.status.completed",
             ["plan_to_read"] = "scrobble.status.plan_to_read",
             ["other"] = "scrobble.status.other",
+            ["paused"] = "scrobble.status.paused",
+            ["dropped"] = "scrobble.status.dropped",
         };
 
     public static string StatusName(ScrobbleStatus status) => status switch
@@ -2015,6 +2194,8 @@ public class ScrobbleService(
         ScrobbleStatus.Reading => "reading",
         ScrobbleStatus.Completed => "completed",
         ScrobbleStatus.PlanToRead => "plan_to_read",
+        ScrobbleStatus.Paused => "paused",
+        ScrobbleStatus.Dropped => "dropped",
         _ => "other",
     };
 

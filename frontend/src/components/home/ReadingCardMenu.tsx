@@ -2,9 +2,10 @@ import { errorText } from '../../api/errorText'
 import { useNavigate } from 'react-router-dom'
 import { ActionIcon, Button, Group, Menu, Text } from '@mantine/core'
 import { notifications } from '../../lib/toast'
-import { IconArrowRight, IconDots, IconEyeOff } from '../../lib/icons'
+import { IconArrowRight, IconBan, IconDots, IconEyeOff, IconPlayerPause } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useHideHomeReading, type HomeReadingItem } from '../../api/hooks'
+import { useChangeReadingStatus } from '../series/ReadingStatus'
 
 /**
  * The small menu on a reading-rail card or tile. A sibling of the card's link, never inside it:
@@ -26,6 +27,7 @@ export function ReadingCardMenu({
   const { t } = useLingui()
   const navigate = useNavigate()
   const hide = useHideHomeReading()
+  const changeStatus = useChangeReadingStatus()
   const { seriesId, seriesTitle } = item
 
   // mutateAsync, not mutate with callbacks: the optimistic update unmounts this card at once, and
@@ -80,6 +82,13 @@ export function ReadingCardMenu({
       <Menu.Dropdown>
         <Menu.Item leftSection={<IconArrowRight size={16} />} onClick={() => navigate(`/series/${seriesId}`)}>
           <Trans>Open series</Trans>
+        </Menu.Item>
+        <Menu.Divider />
+        <Menu.Item leftSection={<IconPlayerPause size={16} />} onClick={() => changeStatus(seriesId, 'OnHold')}>
+          <Trans>Put on hold</Trans>
+        </Menu.Item>
+        <Menu.Item leftSection={<IconBan size={16} />} onClick={() => changeStatus(seriesId, 'Dropped')}>
+          <Trans>Drop</Trans>
         </Menu.Item>
         <Menu.Divider />
         <Menu.Item leftSection={<IconEyeOff size={16} />} onClick={() => void remove()}>

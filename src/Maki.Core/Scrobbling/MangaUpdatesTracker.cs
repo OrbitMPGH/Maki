@@ -30,11 +30,12 @@ public class MangaUpdatesTracker(
     public string Label => "MangaUpdates";
     public bool UsesOAuth => false;
 
-    // The three fixed lists every account has. 3 (unfinished) and 4 (on hold) are fixed too, and
-    // custom lists get higher ids; all of those read as Other.
+    // The five fixed lists every account has. Custom lists get higher ids and read as Other.
     private const int ReadingList = 0;
     private const int WishList = 1;
     private const int CompleteList = 2;
+    private const int UnfinishedList = 3;
+    private const int OnHoldList = 4;
     private static readonly int[] FixedLists = [0, 1, 2, 3, 4];
 
     private static readonly Dictionary<ScrobbleStatus, int> InternalToList = new()
@@ -42,6 +43,8 @@ public class MangaUpdatesTracker(
         [ScrobbleStatus.Reading] = ReadingList,
         [ScrobbleStatus.PlanToRead] = WishList,
         [ScrobbleStatus.Completed] = CompleteList,
+        [ScrobbleStatus.Paused] = OnHoldList,
+        [ScrobbleStatus.Dropped] = UnfinishedList,
     };
 
     /// <summary>
@@ -553,6 +556,8 @@ public class MangaUpdatesTracker(
         ReadingList => ScrobbleStatus.Reading,
         WishList => ScrobbleStatus.PlanToRead,
         CompleteList => ScrobbleStatus.Completed,
+        OnHoldList => ScrobbleStatus.Paused,
+        UnfinishedList => ScrobbleStatus.Dropped,
         _ => ScrobbleStatus.Other,
     };
 
@@ -874,7 +879,9 @@ public class MangaUpdatesTracker(
         ScrobbleStatus.Reading => [ReadingList],
         ScrobbleStatus.PlanToRead => [WishList],
         ScrobbleStatus.Completed => [CompleteList],
-        _ => [3, 4],
+        ScrobbleStatus.Paused => [OnHoldList],
+        ScrobbleStatus.Dropped => [UnfinishedList],
+        _ => [],
     };
 
     /// <summary>One paged pass per list. Custom lists are not read; their entries are never imported.</summary>

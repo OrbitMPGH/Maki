@@ -346,6 +346,8 @@ public class OpdsCatalogService(
             .AsNoTracking()
             .OwnedByScopeUser(db)
             .Where(p => db.Series.Active().Any(s => s.Id == p.SeriesId))
+            .Where(p => !db.UserSeriesStates.Any(s => s.SeriesId == p.SeriesId &&
+                (s.Status == ReadingStatus.OnHold || s.Status == ReadingStatus.Dropped)))
             .OrderByDescending(p => p.UpdatedAt)
             .Take(RecentProgressScan)
             .Select(p => new { p.SeriesId, p.UpdatedAt })

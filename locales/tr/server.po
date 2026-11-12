@@ -2440,6 +2440,18 @@ msgstr "Bilinmeyen mod: {mode}"
 msgid "error.series.unknownNotificationMode"
 msgstr "Bilinmeyen mod: {mode}"
 
+#. Shown when a client sends a reading status that is not Reading, PlanToRead, OnHold or Dropped.
+#. English: Unknown reading status: {status}
+#: src/Maki.Api/Controllers/SeriesController.cs
+msgid "error.series.unknownReadingStatus"
+msgstr ""
+
+#. {max} is the largest number of days either reading status rule accepts.
+#. English: Days must be between 1 and {max}.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.readingStatusDays"
+msgstr ""
+
 #. The add names where it was started from, and the only two answers are the library and a recommendation.
 #. English: Unsupported add origin
 #: src/Maki.Api/Controllers/SeriesController.cs
@@ -5494,6 +5506,18 @@ msgstr "{score}/10 olarak puanlandı"
 msgid "scrobble.log.ratingPushFailed"
 msgstr "Puan gönderilemedi: {detail}"
 
+#. {status} is one of the scrobble.status.* words, already rendered. Sent when the reader changed the series' status in Maki.
+#. English: Moved to {status}
+#: src/Maki.Api/Services/ScrobbleService.cs
+msgid "scrobble.log.statusPushed"
+msgstr ""
+
+#. {detail} is the tracker's own error text and is not translated.
+#. English: Could not send the reading status: {detail}
+#: src/Maki.Api/Services/ScrobbleService.cs
+msgid "scrobble.log.statusPushFailed"
+msgstr ""
+
 #. The reading status on a tracker's list. These are the words AniList and MyAnimeList use for their
 #. own shelves, so translate them the way those sites do in this language.
 #. English: reading
@@ -5519,6 +5543,16 @@ msgstr "okumayı planlıyor"
 #, fuzzy
 msgid "scrobble.status.other"
 msgstr "diğer"
+
+#. English: on hold
+#: src/Maki.Api/Services/ScrobbleService.cs
+msgid "scrobble.status.paused"
+msgstr ""
+
+#. English: dropped
+#: src/Maki.Api/Services/ScrobbleService.cs
+msgid "scrobble.status.dropped"
+msgstr ""
 
 #. Confirmations shown after a tracker action on the series page.
 #. English: A sync is already running
@@ -6101,6 +6135,11 @@ msgstr ""
 #. English: Check followed creators for new series
 #: src/Maki.Api/Services/JobLabels.cs
 msgid "health.job.followedCreatorReleases"
+msgstr ""
+
+#. English: Put idle series on hold or drop them
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.readingStatusRules"
 msgstr ""
 
 #. English: Health checks

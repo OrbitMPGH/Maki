@@ -133,6 +133,8 @@ function toSeries(e: CatalogueEntry): SeriesDto {
     importLinkPending: false,
     incognito: 'Off',
     notificationMode: o.muted ? 'Muted' : 'Default',
+    readingStatus: e.read > 0 ? 'Reading' : 'PlanToRead',
+    readingStatusAuto: false,
     sources,
     enabledSources: o.enabledSources ?? sources,
     fileSources: sources.slice(0, 1),
@@ -278,6 +280,7 @@ export const upgradeProfiles: UpgradeProfileDto[] = [
 ]
 
 const baseSpec: LibraryFilterSpec = {
+  readingStatuses: [],
   status: 'all',
   tagMatch: 'any',
   monitored: 'all',

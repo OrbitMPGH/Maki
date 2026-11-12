@@ -99,6 +99,9 @@ const seriesMutations: HttpHandler[] = [
   http.post(api('/series/:id/notifications'), async ({ request }) =>
     HttpResponse.json({ notificationMode: (await bodyOf(request)).mode }),
   ),
+  http.put(api('/series/:id/reading-status'), async ({ request }) =>
+    HttpResponse.json({ readingStatus: (await bodyOf(request)).status }),
+  ),
   http.put(api('/series/:id/rating'), async ({ request }) => HttpResponse.json({ rating: (await bodyOf(request)).rating ?? null })),
   http.put(api('/series/:id/rating/provisional'), async ({ request }) =>
     HttpResponse.json({ rating: null, provisionalRating: (await bodyOf(request)).rating ?? null })),

@@ -212,7 +212,7 @@ public class RecentActivityRailTests : IDisposable
             { UserId = 1, ProviderId = 202, IgnoreAsSeed = true });
             db.RecommendationFeedback.Add(new RecommendationFeedback
             { UserId = 1, ProviderId = 303, Sentiment = RecommendationSentiment.Disliked, Revision = 1 });
-            db.UserSeriesStates.Add(new UserSeriesState { UserId = 1, SeriesId = lowRated, Rating = 2 });
+            db.UserSeriesStates.Single(s => s.UserId == 1 && s.SeriesId == lowRated).Rating = 2;
             db.SaveChanges();
         }
 

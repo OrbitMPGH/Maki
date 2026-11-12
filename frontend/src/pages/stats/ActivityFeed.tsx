@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Anchor, Group, Stack, Text, ThemeIcon } from '@mantine/core'
 import {
   IconChecks,
-  IconClockPause,
+  IconBan,
   IconPlus,
   IconTrash,
   type Icon,
@@ -57,7 +57,7 @@ const KIND: Record<FeedKind, { label: MessageDescriptor; icon: Icon; color: stri
   finished: { label: msg`Finished`, icon: IconChecks, color: 'var(--ok)' },
   added: { label: msg`Added`, icon: IconPlus, color: 'var(--brand)' },
   removed: { label: msg`Removed`, icon: IconTrash, color: 'var(--danger)' },
-  dropped: { label: msg`Stalled`, icon: IconClockPause, color: 'var(--warn)' },
+  dropped: { label: msg`Dropped`, icon: IconBan, color: 'var(--neutral)' },
 }
 
 /**
@@ -141,8 +141,8 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
           providerId: null,
           title: d.title,
           coverUrl: d.coverUrl,
-          at: d.lastProgressAt,
-          note: now`ch ${maxChapter}`,
+          at: d.droppedAt,
+          note: maxChapter > 0 ? now`ch ${maxChapter}` : undefined,
         }
       }),
     ]

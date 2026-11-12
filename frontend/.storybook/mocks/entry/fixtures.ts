@@ -287,6 +287,8 @@ export function librarySeries(entry: CatalogueEntry): SeriesDto {
     importLinkPending: false,
     incognito: 'Off',
     notificationMode: 'Default',
+    readingStatus: 'Reading',
+    readingStatusAuto: false,
     upgradeProfileId: null,
     lastUpgradeScan: null,
     pendingProposalId: null,

@@ -81,6 +81,8 @@ export const settingsHandlers: HttpHandler[] = [
   putEcho('/settings/reader'),
   http.get(api('/settings/rating-prompts'), () => HttpResponse.json({ enabled: true, volumes: false })),
   putEcho('/settings/rating-prompts'),
+  http.get(api('/settings/reading-status'), () => HttpResponse.json({ autoHoldDays: null, autoDropDays: null })),
+  putEcho('/settings/reading-status'),
   http.get(api('/readingprofiles'), () => HttpResponse.json(d.readingProfiles)),
   http.post(api('/readingprofiles'), async ({ request }) => HttpResponse.json({ id: 10, ...((await request.json()) as object) })),
   http.put(api('/readingprofiles/:id'), async ({ request, params }) =>

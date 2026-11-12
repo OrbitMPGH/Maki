@@ -122,6 +122,18 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
             .Select(p => new { p.SeriesId, p.ChapterId, p.Completed, p.UnreadAt, p.PageIndex, p.PageCount, p.UpdatedAt })
             .ToListAsync(ct);
 
+        // On hold and Dropped stay off until a read moves the series back to Reading.
+        var shelved = (await db.UserSeriesStates
+                .AsNoTracking()
+                .Where(s => s.Status == ReadingStatus.OnHold || s.Status == ReadingStatus.Dropped)
+                .Select(s => s.SeriesId)
+                .ToListAsync(ct))
+            .ToHashSet();
+        if (shelved.Count > 0)
+        {
+            recent = recent.Where(p => !shelved.Contains(p.SeriesId)).ToList();
+        }
+
         // A removed series stays off the list until any of its progress rows moves past the
         // removal. The scan is newest-first, so its first row per series is that series' latest.
         var hiddenAt = await db.UserSeriesStates
