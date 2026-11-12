@@ -1138,6 +1138,14 @@ msgstr ""
 msgid "{chapterTotal, plural, one {# chapter} other {# chapters}} in {volumeTotal, plural, one {# volume} other {# volumes}}"
 msgstr ""
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "{clientName} has no seed limits set, so there are no targets"
+msgstr ""
+
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "{clientName} has no seeding time limit to read."
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{comicCount, plural, one {# comic} other {# comics}}"
@@ -2316,6 +2324,10 @@ msgstr "{pages, plural, one {# страница} few {# страницы} many {
 #, fuzzy
 msgid "{panelsOn} of {panelsTotal} panels"
 msgstr "Панелей: {panelsOn} из {panelsTotal}"
+
+#: src/pages/ActivityPage.tsx
+msgid "{path} has {free} free, less than it keeps for downloads"
+msgstr ""
 
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
@@ -3821,6 +3833,10 @@ msgstr "Обновление уже выполняется"
 msgid "A repository is a list of custom source definitions someone publishes. Maki installs from it, and can keep what it installed up to date. Only add repositories you trust: a definition decides which site Maki reads."
 msgstr "Репозиторий это список определений собственных источников, которые кто-то публикует. Maki устанавливает из него и может обновлять установленное. Добавляйте только те репозитории, которым доверяете: определение решает, какой сайт читает Maki."
 
+#: src/pages/ActivityPage.tsx
+msgid "A rough guess from how fast each source has been downloading lately. Paused and held downloads are left out."
+msgstr ""
+
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "A row for each smaller theme on your shelf."
@@ -3890,6 +3906,10 @@ msgstr "Дизлайк скрывает это название и понижа�
 msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
 msgstr "Токен без значения для серии отображается как пустой, а окружающие пробелы и пустые скобки очищаются. Поэтому {yearExampleToken} для серии без года содержит только её название."
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "A torrent that makes no progress, or has no seeds or peers connected, for this long is failed, taken out of the client and declined, and the automatic search looks for another release. 0 turns this off."
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "A typical sitting runs <0>{sittingDuration}</0>."
@@ -3944,6 +3964,10 @@ msgstr "Около {readingTime}"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "About {seriesLeft} left in the series"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "About {span} left"
 msgstr ""
 
 #: src/pages/reader/ChapterEnd.tsx
@@ -4055,6 +4079,7 @@ msgstr "Действие для правила {number}"
 #: src/components/NotificationsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
+#: src/components/settings/DeclinedReleasesModal.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -4381,6 +4406,10 @@ msgstr "Приключения"
 msgid "Affected chapters:"
 msgstr "Затронутые главы:"
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "After seeding"
+msgstr ""
+
 #: src/api/upgrades.ts
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -4539,6 +4568,15 @@ msgstr "За всё время"
 msgid "All: every chapter. Smart: only the next few ahead of your reading. Main only: skips specials."
 msgstr "Все: каждая глава. Smart: только несколько следующих глав впереди вашего чтения. Main only: пропускает спецвыпуски."
 
+#. placeholder {0}: row.title
+#: src/components/settings/DeclinedReleasesModal.tsx
+msgid "Allow {0} again"
+msgstr ""
+
+#: src/components/settings/DeclinedReleasesModal.tsx
+msgid "Allow again"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Allow other devices on your network"
@@ -4625,7 +4663,7 @@ msgstr "Также удалить отсоединённые файлы с ди�
 msgid "Also delete files on disk"
 msgstr "Также удалить файлы с диска"
 
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
 msgid "Also delete the downloaded files"
 msgstr "Также удалить загруженные файлы"
@@ -7044,6 +7082,7 @@ msgstr "Секрет клиента"
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/series/SeriesReviews.tsx
 #: src/components/series/UpgradeNowResultModal.tsx
+#: src/components/settings/DeclinedReleasesModal.tsx
 #: src/components/SourceCompareModal.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -7882,6 +7921,8 @@ msgid "Couldn't load your reading progress"
 msgstr "Не удалось загрузить прогресс чтения"
 
 #: src/components/QueuePause.tsx
+#: src/components/series/SeriesQueuePause.tsx
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Couldn't pause the downloads"
 msgstr "Не удалось приостановить загрузки"
@@ -7897,6 +7938,8 @@ msgid "Couldn't remove the failed downloads"
 msgstr "Не удалось удалить неудачные загрузки"
 
 #: src/components/QueuePause.tsx
+#: src/components/series/SeriesQueuePause.tsx
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Couldn't resume the downloads"
 msgstr "Не удалось возобновить загрузки"
@@ -7915,6 +7958,10 @@ msgstr "Не удалось выполнить сканирование"
 #, fuzzy
 msgid "Couldn't sample"
 msgstr "Не удалось взять образцы"
+
+#: src/components/settings/RootFolderMinFreeInput.tsx
+msgid "Couldn't save the free space to keep"
+msgstr ""
 
 #: src/components/settings/AutoTagRulesModal.tsx
 msgid "Couldn't save the rule"
@@ -8292,6 +8339,15 @@ msgstr "Определяет, когда заканчивается ваш де�
 #, fuzzy
 msgid "Decimal chapters like 10.5 stay listed but are never downloaded."
 msgstr "Дробные главы вроде 10.5 остаются в списке, но никогда не загружаются."
+
+#: src/components/settings/DeclinedReleasesModal.tsx
+msgid "Declined"
+msgstr ""
+
+#: src/components/settings/DeclinedReleasesModal.tsx
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Declined releases"
+msgstr ""
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -8978,9 +9034,8 @@ msgstr "Клиент загрузки"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping"
-msgstr "клиент загрузки, торрент-клиент, qBittorrent, Transmission, Deluge, метка, категория, сопоставление путей"
+msgid "download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping, seeding, seed ratio, stalled, declined releases"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -9160,6 +9215,26 @@ msgstr "Загрузки и импорт торрентов преобразую
 #, fuzzy
 msgid "Downloads counts the {wanted, plural, one {# chapter} other {# chapters}} you want or already have. {notWanted, plural, one {# more is listed but not wanted.} other {# more are listed but not wanted.}}"
 msgstr "«Загрузки» учитывают {wanted, plural, one {# главу} few {# главы} many {# глав} other {# главы}}, которые вам нужны или уже есть. {notWanted, plural, one {Ещё # указана, но не запрошена.} few {Ещё # указаны, но не запрошены.} many {Ещё # указано, но не запрошено.} other {Ещё # указаны, но не запрошены.}}"
+
+#: src/components/QueuePause.tsx
+msgid "Downloads for {title} paused"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Downloads for {title} paused until {time}"
+msgstr ""
+
+#: src/components/series/SeriesQueuePause.tsx
+msgid "Downloads for this series are paused. Queued chapters wait until you resume; other series keep downloading."
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Downloads into {path} wait for disk space: {free} free, {needed} wanted"
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Downloads into the folder wait while its drive has less free space than this, and carry on by themselves once there is room. 0 never waits."
+msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -10190,6 +10265,10 @@ msgstr "Получение метаданных"
 msgid "Fetching pages…"
 msgstr "Получение страниц…"
 
+#: src/components/ReleaseSearchModal.tsx
+msgid "Fewer than {minSeeders} seeders, so Maki won't grab it on its own. You can still grab it here."
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
@@ -10510,7 +10589,7 @@ msgstr "Завершено"
 msgid "Finished in a rush"
 msgstr "Прочитано в спешке"
 
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
 msgid "Finished torrents"
 msgstr "Завершённые торренты"
@@ -10735,6 +10814,10 @@ msgstr ""
 msgid "For apps that only connect to Komga, like Tachimanga."
 msgstr "Для приложений, которые подключаются только к Komga, например Tachimanga."
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "For monitored series with wanted chapters that none of their sources list, such as licensed titles a site took down, or series with no source at all. Each series is searched at most once a week, a few series at a time. Works with the daily scan off. Chapters a source lists keep downloading from it."
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "For reading apps like Panels, KOReader and Mihon."
@@ -10782,6 +10865,10 @@ msgstr "Найдено"
 #, fuzzy
 msgid "Free space"
 msgstr "Свободное место"
+
+#: src/components/settings/RootFolderMinFreeInput.tsx
+msgid "Free space to keep on {path}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -10979,6 +11066,10 @@ msgstr "Придумайте название"
 #, fuzzy
 msgid "Give others their own account, library access and reading history."
 msgstr "Создайте другим пользователям отдельные учётные записи, доступ к библиотеке и историю чтения."
+
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Give up after (hours)"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -11201,7 +11292,7 @@ msgstr "Привычки в цифрах"
 msgid "Half of what rating the manga would carry. A show you loved lends its genres and tags to your profile without out-voting a book you actually read."
 msgstr "Половина веса, который дала бы оценка манги. Любимое шоу добавляет свои жанры и теги в профиль, не перевешивая книгу, которую вы действительно читали."
 
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
 msgid "Hardlink imported torrents when possible"
 msgstr "Создавать жёсткие ссылки для импортированных торрентов, если возможно"
@@ -11297,6 +11388,10 @@ msgstr "Задержано для проверки"
 #, fuzzy
 msgid "Held back for review, {file}: {reason}"
 msgstr "Задержано для проверки, {file}: {reason}"
+
+#: src/components/QueuePause.tsx
+msgid "Held folders resume by themselves once there is room again. The threshold is set per root folder in Settings, Library."
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -12429,6 +12524,10 @@ msgstr "Сохранять последнюю прочитанную главу 
 msgid "Keep editing"
 msgstr "Продолжить редактирование"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Keep free"
+msgstr ""
+
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Keep manual priority, but renumber it to follow the measured order."
@@ -13003,6 +13102,10 @@ msgstr "Объём, год и рейтинг"
 #, fuzzy
 msgid "Less"
 msgstr "Меньше"
+
+#: src/api/queue.ts
+msgid "Less than a minute left"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -13672,6 +13775,10 @@ msgstr "Maki использует здесь {used} из {quota}. Удалите
 msgid "Maki loaded the first page ({0})."
 msgstr "Maki загрузил первую страницу ({0})."
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Maki removes a torrent once it reaches either target, whichever comes first. Leave a field empty for no target."
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 msgid "Maki searches releases through Prowlarr or Jackett."
 msgstr ""
@@ -14232,6 +14339,10 @@ msgstr "Минимальный рейтинг: {ratingLabel}"
 msgid "Minimum score gain"
 msgstr "Минимальный прирост оценки"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Minimum seeders"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Minimum width (px)"
@@ -14775,7 +14886,7 @@ msgstr "Требует проверки"
 msgid "Needs semantic search."
 msgstr "Нужен семантический поиск."
 
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
 msgid "Needs the download folder and library on one filesystem, otherwise Maki copies."
 msgstr "Папка загрузок и библиотека должны быть на одной файловой системе, иначе Maki копирует файлы."
@@ -15278,6 +15389,10 @@ msgstr "Пока нет создателя, который встречаетс�
 msgid "No creators followed"
 msgstr ""
 
+#: src/components/settings/DeclinedReleasesModal.tsx
+msgid "No declined releases"
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "No demographic data yet"
@@ -15656,6 +15771,10 @@ msgstr "Без поиска"
 msgid "No search found"
 msgstr "Поиск не найден"
 
+#: src/api/queue.ts
+msgid "No seeds or peers connected to the torrent within the stall limit"
+msgstr ""
+
 #: src/components/import/ManualImport.tsx
 msgid "No series found"
 msgstr ""
@@ -15781,6 +15900,10 @@ msgstr ""
 #, fuzzy
 msgid "No tags yet."
 msgstr "Тегов пока нет."
+
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "No target"
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -17845,6 +17968,11 @@ msgstr "Пауза"
 msgid "Pause downloads"
 msgstr "Приостановить загрузки"
 
+#: src/components/series/SeriesQueuePause.tsx
+#: src/pages/ActivityPage.tsx
+msgid "Pause downloads for this series"
+msgstr ""
+
 #: src/pages/rewind/RewindIntro.tsx
 #, fuzzy
 msgid "Pause Rewind"
@@ -17864,6 +17992,10 @@ msgstr "Приостановить текущий проход и перезап
 #, fuzzy
 msgid "Pause the running pass?"
 msgstr "Приостановить текущий проход?"
+
+#: src/pages/ActivityPage.tsx
+msgid "Pause this series"
+msgstr ""
 
 #: src/components/ActivityButton.tsx
 #: src/components/discover/DiscoverHero.tsx
@@ -18935,6 +19067,10 @@ msgstr "Читать первую главу"
 msgid "Read from"
 msgstr "Прочитано от"
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Read from {clientName}"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Read in Kavita"
@@ -18997,6 +19133,10 @@ msgstr "Прочитано или просмотрено"
 #, fuzzy
 msgid "Read slowly over a long span"
 msgstr "Читал медленно в течение долгого времени"
+
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Read the seed limits from {clientName}"
+msgstr ""
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -19557,6 +19697,10 @@ msgstr "Связано с вашей библиотекой"
 msgid "Related to your seeds"
 msgstr "Связано с вашими начальными элементами"
 
+#: src/components/settings/DeclinedReleasesModal.tsx
+msgid "Release"
+msgstr ""
+
 #: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgctxt "next chapter gesture"
@@ -19603,6 +19747,14 @@ msgstr "Выпущено"
 #, fuzzy
 msgid "Releases too irregularly to estimate."
 msgstr "Выпуски слишком нерегулярны для оценки."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Releases with fewer seeders are never grabbed or approved on their own. You can still grab them from the release search."
+msgstr ""
+
+#: src/components/settings/DeclinedReleasesModal.tsx
+msgid "Releases you dismiss, and torrents that stall or disappear, are listed here."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -19906,7 +20058,7 @@ msgstr "Удалить этот торрент?"
 msgid "Remove title"
 msgstr ""
 
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
 msgid "Remove torrents from the download client after import"
 msgstr "Удалять торренты из клиента загрузок после импорта"
@@ -20567,6 +20719,15 @@ msgstr "Продолжить чтение: {seriesTitle}, {chapterLabel}"
 msgid "Resume at"
 msgstr "Продолжить в"
 
+#: src/components/series/SeriesQueuePause.tsx
+msgid "Resume downloads"
+msgstr ""
+
+#: src/components/series/SeriesQueuePause.tsx
+#: src/pages/ActivityPage.tsx
+msgid "Resume downloads for this series"
+msgstr ""
+
 #: src/pages/rewind/RewindIntro.tsx
 #, fuzzy
 msgid "Resume Rewind"
@@ -20576,6 +20737,10 @@ msgstr "Возобновить Rewind"
 #, fuzzy
 msgid "Resume rotating picks"
 msgstr "Возобновить смену подборок"
+
+#: src/pages/ActivityPage.tsx
+msgid "Resume this series"
+msgstr ""
 
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
@@ -20779,6 +20944,10 @@ msgstr ""
 #, fuzzy
 msgid "Rhythm"
 msgstr "Ритм"
+
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Right after import"
+msgstr ""
 
 #: src/components/SoFarSyncAskDialog.tsx
 #, fuzzy
@@ -21729,6 +21898,10 @@ msgid "Search titles"
 msgstr "Поиск названий"
 
 #: src/pages/settings/DownloadCards.tsx
+msgid "Search torrents for chapters no source has"
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Search torrents for volume releases"
 msgstr "Искать торренты с релизами томов"
@@ -21823,10 +21996,18 @@ msgstr "Показать прогресс"
 msgid "Seed from"
 msgstr "Начальный элемент из"
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Seed ratio"
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
 msgid "Seeded from"
 msgstr "Исходная серия"
+
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Seeding time (minutes)"
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -22033,6 +22214,7 @@ msgstr "Продолжение {relatedTo}"
 #: src/components/CatalogueFilters.tsx
 #: src/components/import/ManualImport.tsx
 #: src/components/RatingImportModal.tsx
+#: src/components/settings/DeclinedReleasesModal.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -23362,6 +23544,10 @@ msgstr "Сильнее сжимать тома"
 msgid "Stacked height"
 msgstr "Высота стопкой"
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Stalled torrents"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Stalled without finishing"
@@ -24047,6 +24233,10 @@ msgstr "В одобренном источнике больше нет этих 
 #, fuzzy
 msgid "The archive was deleted."
 msgstr "Архив удалён."
+
+#: src/components/settings/DeclinedReleasesModal.tsx
+msgid "The automatic search skips these. Allow one again to let the next search take it."
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 #, fuzzy
@@ -24742,7 +24932,7 @@ msgid "The torrent is no longer in the download client"
 msgstr "Торрента больше нет в клиенте загрузки"
 
 #: src/api/queue.ts
-msgid "The torrent made no progress for an hour"
+msgid "The torrent made no progress within the stall limit"
 msgstr ""
 
 #: src/api/queue.ts
@@ -25299,6 +25489,10 @@ msgstr "Время"
 msgid "Time between requests (ms)"
 msgstr "Время между запросами (мс)"
 
+#: src/pages/ActivityPage.tsx
+msgid "Time left"
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Time limit per chapter"
@@ -25847,6 +26041,10 @@ msgstr "без изменений"
 #, fuzzy
 msgid "Under"
 msgstr "Меньше"
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "Under minimum"
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -26884,9 +27082,8 @@ msgstr "Том улучшен"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "volume, volume packs, volume search, auto-grab, proposals, torrent"
-msgstr "том, тома, поиск томов, автозахват, предложения, торрент"
+msgid "volume, volume packs, volume search, auto-grab, proposals, torrent, missing chapters, licensed, seeders, minimum seeders"
+msgstr ""
 
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/discover/DiscoverHero.tsx
@@ -26936,6 +27133,11 @@ msgstr "в сравнении с {fromLabel} по {toLabel}"
 #, fuzzy
 msgid "Waiting"
 msgstr "Ожидание"
+
+#: src/components/ActivityButton.tsx
+#: src/pages/ActivityPage.tsx
+msgid "Waiting for disk space"
+msgstr ""
 
 #: src/components/ui/status.tsx
 msgid "Waiting for release"
@@ -27187,6 +27389,10 @@ msgstr ""
 msgid "When the screen has room for them"
 msgstr "Когда на экране есть место для них"
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "When to remove"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Where the files on disk came from, which can outlive the link"
@@ -27350,6 +27556,10 @@ msgstr "При установленной любой заявке поставщ
 #, fuzzy
 msgid "With every panel off, this section stays empty."
 msgstr "Если отключить все панели, раздел останется пустым."
+
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "With no target, torrents stay in the client after import."
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
