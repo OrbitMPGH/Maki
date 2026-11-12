@@ -881,6 +881,18 @@ export function useDiscoverSearch(
         signal,
       }),
     enabled,
+    // Paging raises `limit`; keep the shorter page on screen while the wider one loads, but never
+    // carry results over to a different query.
+    placeholderData: (previous, previousQuery) => {
+      const before = previousQuery?.queryKey[1] as DiscoverSearchRequest | null | undefined
+      return before &&
+        request &&
+        before.query === request.query &&
+        before.engine === request.engine &&
+        JSON.stringify(before.filters) === JSON.stringify(request.filters)
+        ? previous
+        : undefined
+    },
     // A title answer standing in for a meaning search is provisional, so it is never served from cache.
     staleTime: (q) => (q.state.data?.fallback ? 0 : 5 * 60 * 1000),
     refetchInterval: (q) => fallbackPoll(q.state.data?.fallback, q.state.dataUpdateCount),

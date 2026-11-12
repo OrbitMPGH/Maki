@@ -142,7 +142,7 @@ import {
   ViewModeToggle,
   writeStored,
 } from '../components/ui/viewPrefs'
-import { seriesStatusVisual } from '../components/ui/status'
+import { seriesProgressVisual, seriesStatusVisual } from '../components/ui/status'
 import { formatNumber } from '../format'
 import { useOfflineAvailableSeriesIds, useOfflineSeriesIds } from '../pwa/offlineChapters'
 import { useConnectivity } from '../lib/connectivity'
@@ -189,6 +189,13 @@ function toTime(iso: string | null | undefined): number | null {
   return Number.isNaN(t) ? null : t
 }
 
+/** Lifecycle order: still running first, then paused, then ended. */
+const STATUS_ORDER = ['Ongoing', 'Hiatus', 'Completed', 'Cancelled', 'Unknown']
+function statusRank(status: string): number {
+  const i = STATUS_ORDER.indexOf(status)
+  return i === -1 ? STATUS_ORDER.length : i
+}
+
 /**
  * Orders two series by `sort` in `dir`. A series with no value for a nullable key (never read,
  * unrated, no files) sorts after every series that has one, whichever way the list is facing.
@@ -207,7 +214,7 @@ function compareSeries(sort: string, dir: SortDir): (a: SeriesDto, b: SeriesDto)
     case 'incomplete':
       return (a, b) => (missingCount(a) - missingCount(b)) * sign
     case 'status':
-      return (a, b) => a.status.localeCompare(b.status) * sign
+      return (a, b) => (statusRank(a.status) - statusRank(b.status)) * sign
     case 'read':
       return nullable((s) => toTime(s.lastReadAt))
     case 'rating':
@@ -246,13 +253,12 @@ function titleSortKey(s: SeriesDto): string {
 }
 
 /**
- * How much of the series has been read, 0–100. A series with no read count
- * (`readChapterCount === null`) counts as 0% rather than being dropped: the whole library would otherwise vanish the moment the slider left 0.
+ * The percentage the cover's read ring shows, so the filter agrees with it. A series with no read
+ * progress counts as 0% rather than being dropped: the whole library would otherwise vanish the
+ * moment the slider left 0.
  */
-function readPercent(s: SeriesDto): number {
-  const total = s.wantedChapterCount || s.knownChapterCount || 0
-  if (total <= 0) return 0
-  return Math.min(100, Math.round(((s.readChapterCount ?? 0) / total) * 100))
+function readPercent(s: SeriesDto, readTracking: boolean): number {
+  return Math.round(seriesProgressVisual(s, readTracking).readPct ?? 0)
 }
 
 /**
@@ -659,7 +665,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     }
     if (readRange[0] > 0 || readRange[1] < 100) {
       list = list.filter((s) => {
-        const pct = readPercent(s)
+        const pct = readPercent(s, readTracking)
         return pct >= readRange[0] && pct <= readRange[1]
       })
     }
@@ -674,7 +680,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   }, [
     series, titlesOf, debouncedQuery, statusFilter, typeFilter, tagFilter, tagMatch, genreFilter, genreMatch,
     excludeTagFilter, excludeGenreFilter, untaggedOnly,
-    metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, sort, sortDir, contentRatingFilter,
+    metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, readTracking, sort, sortDir, contentRatingFilter,
     sourceFilter, sourceMatch, sourceState, fileSourceFilter, fileSourceMatch,
     chapterMin, chapterMax, chapterMode, qualityProfileFilter, ratingState, ratingRange, communityRange,
     onDevice, offlineSeries, isOffline, availableOffline,

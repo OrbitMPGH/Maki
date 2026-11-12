@@ -140,7 +140,7 @@ screen. It is off until a reader turns it on. Library files are never modified.
 - **Browse.** The Browse tab has catalog and genre rails, recent-reading picks, side interests,
   blind spots, and **Readers like you**. **Your Taste** shows reading behavior, grouped interests,
   and how your taste has moved. Every rail has a fullscreen **Show more** view. Detail cards show
-  categorized tags, alternate titles, creators, per-source ratings, and MyAnimeList reviews.
+  categorized tags, alternate titles, creators, per-source ratings, and reviews from MyAnimeList and AniList, plus Kitsu reactions.
 - **Metadata.** One MangaBaka search identifies a series and brings along its MyAnimeList,
   AniList, MangaUpdates, and Kitsu IDs. The local
   [MangaBaka dump](https://mangabaka.org/data/database) (nightly snapshot, about a 350 MB

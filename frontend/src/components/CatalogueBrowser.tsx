@@ -88,6 +88,8 @@ const PAGE_SIZE = 60
 
 /** Ceiling on how far Load more will page, matching the server's own clamp. */
 const MAX_BROWSE = 600
+/** The most the search endpoint returns for one query. */
+const MAX_SEARCH = 200
 
 /** A browse to open on instead of whatever was there last, e.g. a Discover feed's Show more. */
 export interface CatalogueSeed {
@@ -225,11 +227,11 @@ export function CatalogueBrowser({
   // A new query or a new filter set starts the browse list over. Not on mount, though: restored
   // filters arrive looking like a change, and resetting there would drop the pages someone had
   // already loaded before opening one of the results.
-  const filtersAsMounted = useUnchangedSinceMount([applied, sort])
+  const filtersAsMounted = useUnchangedSinceMount([applied, sort, trimmed])
   useEffect(() => {
     if (filtersAsMounted) return
     setPages(1)
-  }, [filtersAsMounted, applied, sort, setPages])
+  }, [filtersAsMounted, applied, sort, trimmed, setPages])
 
   const searchRequest = useMemo(
     () =>
@@ -237,11 +239,11 @@ export function CatalogueBrowser({
         ? {
             query: trimmed,
             filters,
-            limit: PAGE_SIZE,
+            limit: Math.min(MAX_SEARCH, PAGE_SIZE * pages),
             engine: mode === 'title' ? ('title' as const) : ('auto' as const),
           }
         : null,
-    [searching, trimmed, filters, mode],
+    [searching, trimmed, filters, mode, pages],
   )
 
   const browseRequest = useMemo(
@@ -268,13 +270,13 @@ export function CatalogueBrowser({
   const [detailItem, setDetailItem] = useState<RecommendationItem | null>(null)
   const savedFrom = searching ? SEARCH_SOURCE : CATALOGUE_SOURCE
 
-  const searchCap = PAGE_SIZE
   const items = searching ? (search.data?.items ?? []) : (browse.data ?? [])
   // An empty title answer while the index warms up is not "no matches": the meaning search is seconds away.
   const warmingEmpty = stillWarming && items.length === 0
   const loading =
     !hydrated ||
     (searching ? (search.isFetching && !search.data) || warmingEmpty : browse.isFetching && !browse.data)
+  const matchCount = items.length
   const error = searching ? search.error : browse.error
   const credits = search.data?.credits ?? []
   const corrected = search.data?.correctedQuery ?? null
@@ -300,12 +302,13 @@ export function CatalogueBrowser({
   // `pages` has already advanced by the time the wider request is in flight, so the count check
   // fails for as long as the previous page is what's on screen. Keep the button there while it
   // fetches rather than letting it vanish and come back under the reader's cursor.
+  const feedLimit = searching ? MAX_SEARCH : MAX_BROWSE
+  const fetching = searching ? search.isFetching : browse.isFetching
   const canLoadMore =
-    !searching &&
-    browseRequest != null &&
+    (searching ? searchRequest != null : browseRequest != null) &&
     items.length > 0 &&
-    items.length < MAX_BROWSE &&
-    (browse.isFetching || items.length >= PAGE_SIZE * pages)
+    items.length < feedLimit &&
+    (fetching || items.length >= PAGE_SIZE * pages)
 
   return (
     <>
@@ -431,7 +434,7 @@ export function CatalogueBrowser({
               {searching ? (
                 !loading && <Text c="var(--ink-3)" size="sm">
                   {items.length >= PAGE_SIZE ? (
-                    <Trans>{searchCap}+ matches</Trans>
+                    <Trans>{matchCount}+ matches</Trans>
                   ) : (
                     <Plural value={items.length} one="# match" other="# matches" />
                   )}
@@ -505,7 +508,7 @@ export function CatalogueBrowser({
             <Group justify="center" mt="lg">
               <Button
                 variant="default"
-                loading={browse.isFetching}
+                loading={fetching}
                 onClick={() => setPages((p) => p + 1)}
               >
                 <Trans>Load more</Trans>

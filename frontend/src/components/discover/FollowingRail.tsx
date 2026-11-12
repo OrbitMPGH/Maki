@@ -137,7 +137,7 @@ function FollowingManager({
             compact
             mood="asleep"
             title={t`No creators followed`}
-            description={<Trans>Follow one from a series page.</Trans>}
+            description={<Trans>Follow one from a creator page.</Trans>}
           />
         ) : (
           <div className="modal-list">

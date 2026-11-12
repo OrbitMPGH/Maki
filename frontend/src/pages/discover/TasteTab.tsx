@@ -142,6 +142,7 @@ function GroupRow({
   onToggle,
   onOpen,
   seriesIdFor,
+  onRecommend,
 }: {
   group: TasteGroup
   maxShare: number
@@ -149,6 +150,7 @@ function GroupRow({
   onToggle: () => void
   onOpen: OpenItem
   seriesIdFor: (item: RecommendationItem) => number | null
+  onRecommend: (group: TasteGroup) => void
 }) {
   const { t } = useLingui()
   const bodyId = useId()
@@ -206,6 +208,17 @@ function GroupRow({
               </Group>
             ))}
           </Group>
+          {group.seedIds.length > 0 && (
+            <Button
+              size="compact-sm"
+              variant="subtle"
+              leftSection={<IconCompass size={14} />}
+              mb={group.picks.length > 0 ? 'sm' : 0}
+              onClick={() => onRecommend(group)}
+            >
+              <Trans>More like this</Trans>
+            </Button>
+          )}
           {group.picks.length > 0 && (
             <>
               <Text size="xs" fw={600} mb={4}>
@@ -229,10 +242,12 @@ function ThemesPanel({
   groups,
   onOpen,
   seriesIdFor,
+  onRecommend,
 }: {
   groups: TasteGroup[]
   onOpen: OpenItem
   seriesIdFor: (item: RecommendationItem) => number | null
+  onRecommend: (group: TasteGroup) => void
 }) {
   const [openLabel, setOpenLabel] = useState<string | null>(groups[0]?.label ?? null)
   const maxShare = Math.max(0, ...groups.map((g) => g.share))
@@ -247,6 +262,7 @@ function ThemesPanel({
           onToggle={() => setOpenLabel(openLabel === group.label ? null : group.label)}
           onOpen={onOpen}
           seriesIdFor={seriesIdFor}
+          onRecommend={onRecommend}
         />
       ))}
     </Panel>
@@ -633,6 +649,15 @@ export function TasteTab() {
       state: { recommendationFilters: payload, seeds, source: 'taste-profile' },
     })
 
+  const recommendGroup = (group: TasteGroup) =>
+    apply(
+      {},
+      group.seedIds.map((id) => ({
+        id,
+        title: group.examples.find((m) => m.seriesId === id)?.title ?? null,
+      })),
+    )
+
   if (insightsLoading && behaviourLoading && profileLoading) {
     return <TasteSkeleton />
   }
@@ -720,7 +745,12 @@ export function TasteTab() {
             <Trans>Groups overlap on purpose, so one series can belong to several of them.</Trans>
           </Text>
           {insights && insights.groups.length > 0 && (
-            <ThemesPanel groups={insights.groups} onOpen={setDetailItem} seriesIdFor={seriesIdFor} />
+            <ThemesPanel
+              groups={insights.groups}
+              onOpen={setDetailItem}
+              seriesIdFor={seriesIdFor}
+              onRecommend={recommendGroup}
+            />
           )}
           {insights?.oddOneOut && (
             <Panel p="md">

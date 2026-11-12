@@ -31,7 +31,8 @@ import {
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now, plural, msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { useRootFolders } from '../api/hooks'
+import { useLibrarySettings, useRootFolders } from '../api/hooks'
+import { MONITOR_OPTIONS } from '../components/series/SeriesActionsMenu'
 import {
   chapterRangeInline,
   chapterRangeLabel,
@@ -73,11 +74,13 @@ export default function RequestsPage() {
   const { can } = useAuth()
   const isAdmin = can('Admin')
   const { t } = useLingui()
+  const label = useLabel()
   const renderLabel = useLabel()
 
   const [filter, setFilter] = useState<RequestFilter>('pending')
   const { data: requests, isPending, error, refetch, isRefetching } = useSeriesRequests(filter)
   const { data: rootFolders } = useRootFolders()
+  const { data: librarySettings } = useLibrarySettings()
 
   const approve = useApproveSeriesRequest()
   const reject = useRejectSeriesRequest()
@@ -88,6 +91,7 @@ export default function RequestsPage() {
   const [approving, setApproving] = useState<SeriesRequest | null>(null)
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
   const [approveNote, setApproveNote] = useState('')
+  const [monitorNewItems, setMonitorNewItems] = useState<string | null>(null)
 
   const [rejecting, setRejecting] = useState<SeriesRequest | null>(null)
   const [removing, setRemoving] = useState<SeriesRequest | null>(null)
@@ -129,6 +133,7 @@ export default function RequestsPage() {
     approve.reset()
     setApproving(request)
     setApproveNote('')
+    setMonitorNewItems(null)
     setRootFolderId(rootFolders && rootFolders.length > 0 ? String(rootFolders[0].id) : null)
   }
 
@@ -145,6 +150,7 @@ export default function RequestsPage() {
       {
         id: approving.id,
         rootFolderId: needsRootFolder && rootFolderId ? Number(rootFolderId) : null,
+        monitorNewItems: needsRootFolder ? (monitorNewItems ?? librarySettings?.newSeriesMonitorMode ?? undefined) : undefined,
         note: approveNote.trim() || null,
       },
       {
@@ -415,6 +421,16 @@ export default function RequestsPage() {
               data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
               value={rootFolderId}
               onChange={setRootFolderId}
+            />
+          )}
+
+          {needsRootFolder && (
+            <Select
+              label={t`New chapters`}
+              data={MONITOR_OPTIONS.map((o) => ({ value: o.value, label: label(o.label) }))}
+              value={monitorNewItems ?? librarySettings?.newSeriesMonitorMode ?? 'All'}
+              onChange={(v) => v && setMonitorNewItems(v)}
+              allowDeselect={false}
             />
           )}
 
