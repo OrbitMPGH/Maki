@@ -113,6 +113,7 @@ export function seedLibraryPrefs(options: { view?: 'grid' | 'list' | 'table'; de
     localStorage.removeItem('library-view')
     localStorage.removeItem('library-density')
     localStorage.removeItem('library-table-columns')
+    localStorage.removeItem('library-collapsed-groups')
     if (options.view) localStorage.setItem('library-view', options.view)
     if (options.density) localStorage.setItem('library-density', options.density)
     for (const [key, value] of Object.entries(options.page ?? {})) {

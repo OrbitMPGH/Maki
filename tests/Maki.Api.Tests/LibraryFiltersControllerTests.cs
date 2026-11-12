@@ -50,7 +50,7 @@ public class LibraryFiltersControllerTests : IDisposable
             RatingState: "rated", RatingMin: 7, RatingMax: 9, CommunityRatingMin: 7.5, CommunityRatingMax: 9.5,
             YearMin: 1995, YearMax: 2005, Credits: ["Kentaro Miura"], Publishers: ["Hakusensha"],
             RootFolderIds: [2, 3], Incognito: "on", Muted: "muted", Anime: "has", NumberingClash: "clash",
-            Overrides: ["readCleanup", "pageConversion"], AddedWithinDays: 30);
+            Overrides: ["readCleanup", "pageConversion"], AddedWithinDays: 30, GroupBy: "tag");
 
         var created = Body<SavedFilterDto>(
             await Controller().Create(new SaveFilterRequest("Ongoing & behind", spec), CancellationToken.None));
@@ -112,6 +112,7 @@ public class LibraryFiltersControllerTests : IDisposable
         Assert.Equal("all", listed.Spec.NumberingClash);
         Assert.Null(listed.Spec.Overrides);
         Assert.Null(listed.Spec.AddedWithinDays);
+        Assert.Equal("none", listed.Spec.GroupBy);
     }
 
     [Fact]

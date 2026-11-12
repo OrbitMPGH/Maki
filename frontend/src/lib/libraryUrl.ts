@@ -59,6 +59,7 @@ const FIELDS: Field[] = [
   { key: 'numberingClash', kind: 'enum', values: ['all', 'clash', 'none'] },
   { key: 'overrides', kind: 'list', values: ['readCleanup', 'pageConversion'] },
   { key: 'addedWithinDays', kind: 'int', min: 1, max: 100000 },
+  { key: 'groupBy', kind: 'enum', values: ['none', 'status', 'tag', 'rootFolder', 'type'] },
 ]
 
 /** Pairs where an inverted window means the link was edited by hand; both ends are dropped. */

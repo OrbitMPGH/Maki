@@ -313,6 +313,8 @@ export interface LibraryFilterSpec {
   overrides?: string[] | null
   /** Only series added within this many days; null for any time. */
   addedWithinDays?: number | null
+  /** "none" | "status" | "tag" | "rootFolder" | "type": how the view is grouped. Not a filter. Absent on older presets. */
+  groupBy?: string
 }
 
 export interface SavedFilterDto {

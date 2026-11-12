@@ -11976,6 +11976,82 @@ body.reader-open {
   flex: 0 0 48px;
 }
 
+/* --- Library groups ------------------------------------------------------- */
+/* Group by status, tag, folder or type: a full-width header per group with its mark, name and
+   count, the whole row being the fold button. In the table it is a row of its own. */
+.library-groups:not([data-view='table']) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+}
+.library-groups:not([data-view='table']) > .library-group:not(:first-child) {
+  margin-top: var(--mantine-spacing-md);
+}
+.library-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  width: 100%;
+  padding: 8px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  font: inherit;
+  color: var(--ink-hi);
+  text-align: start;
+  cursor: pointer;
+}
+.library-group-header:hover {
+  background: var(--surface-hover);
+}
+.library-group-header:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+  border-radius: var(--radius-2xs);
+}
+.library-group-chevron {
+  flex-shrink: 0;
+  color: var(--ink-3);
+  transition: transform var(--dur-fast) var(--ease);
+}
+.library-group-chevron[data-collapsed] {
+  transform: rotate(-90deg);
+}
+.library-group-dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--group-color);
+}
+.library-group-icon {
+  flex-shrink: 0;
+  color: var(--group-color);
+}
+.library-group-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--type-body);
+}
+.library-group-count {
+  flex-shrink: 0;
+  font-size: var(--type-micro);
+  color: var(--ink-4);
+}
+.library-group-row {
+  min-width: var(--library-table-min);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--hairline);
+}
+.library-group-row .library-group-header {
+  padding-inline: var(--mantine-spacing-sm);
+  border-bottom: 0;
+}
+
 /* Density overrides */
 .series-row.compact {
   padding: 8px var(--mantine-spacing-sm);

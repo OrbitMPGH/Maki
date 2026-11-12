@@ -1,5 +1,5 @@
 import { errorText } from '../api/errorText'
-import { type FormEvent, type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { type FormEvent, Fragment, type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { hasPageState, usePageState } from '../lib/pageState'
 import { paramsToSpec, specToParams, VIEW_PARAM, viewFromParams } from '../lib/libraryUrl'
 import { onPageScroll } from '../lib/pageScroll'
@@ -60,6 +60,7 @@ import {
   IconSortAscending,
   IconSortDescending,
   IconTable,
+  IconListTree,
   IconBell,
   IconChevronLeft,
   IconChevronRight,
@@ -138,7 +139,7 @@ import { TagChip } from '../components/ui/TagChip'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { LuckyButton } from '../components/LuckyButton'
 import { isUnfinished } from '../lib/lucky'
-import { useWindowedRows, WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
+import { WINDOW_MIN_ITEMS } from '../components/ui/useWindowedRows'
 import { TagManagerModal } from '../components/TagManagerModal'
 import { RemoveSeriesDialog } from '../components/series/RemoveSeriesDialog'
 import { ArchiveSeriesDialog } from '../components/series/ArchiveSeriesDialog'
@@ -152,6 +153,15 @@ import {
   LibraryTableHeader,
   LibraryTableRow,
 } from '../components/library/LibraryTable'
+import {
+  GROUP_BY_LABELS,
+  GROUP_BY_VALUES,
+  groupSeries,
+  STATUS_ORDER,
+  useCollapsedGroups,
+  type GroupBy,
+} from '../components/library/libraryGroups'
+import { LibraryGroupHeader, WindowedItems } from '../components/library/LibraryGroupHeader'
 import {
   DEFAULT_LIBRARY_COLUMNS,
   LIBRARY_COLUMN_LABELS,
@@ -249,8 +259,6 @@ function toTime(iso: string | null | undefined): number | null {
   return Number.isNaN(t) ? null : t
 }
 
-/** Lifecycle order: still running first, then paused, then ended. */
-const STATUS_ORDER = ['Ongoing', 'Hiatus', 'Completed', 'Cancelled', 'Unknown']
 function statusRank(status: string): number {
   const i = STATUS_ORDER.indexOf(status)
   return i === -1 ? STATUS_ORDER.length : i
@@ -459,6 +467,7 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   numberingClash: 'all',
   overrides: [],
   addedWithinDays: null,
+  groupBy: 'none',
 }
 
 /** The filter drawer's groups, in the order they appear. */
@@ -690,6 +699,11 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const [clashFilter, setClashFilter] = usePageState(`${MEM}:numbering-clash`, 'all')
   const [overrideFilter, setOverrideFilter] = usePageState<string[]>(`${MEM}:overrides`, [])
   const [addedWithin, setAddedWithin] = usePageState<number | null>(`${MEM}:added-within`, null)
+  const [storedGroupBy, setGroupBy] = usePageState<string>(`${MEM}:group-by`, 'none')
+  const groupBy: GroupBy = (GROUP_BY_VALUES as readonly string[]).includes(storedGroupBy)
+    ? (storedGroupBy as GroupBy)
+    : 'none'
+  const collapsedGroups = useCollapsedGroups(groupBy)
   const [activeFilterId, setActiveFilterId] = usePageState<number | null>(`${MEM}:saved-filter`, null)
   const [saveFilterOpen, setSaveFilterOpen] = useState(false)
   const [renameTarget, setRenameTarget] = useState<SavedFilterDto | null>(null)
@@ -878,6 +892,12 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     onDevice, offlineSeries, isOffline, availableOffline,
   ])
 
+  // Sort runs first, so each group keeps it.
+  const groups = useMemo(
+    () => groupSeries(visible, groupBy, { tags: tags ?? [], rootFolders: rootFolders ?? [] }),
+    [visible, groupBy, tags, rootFolders],
+  )
+
   // Hidden when nothing carries a score (no dump, or no MangaBaka links), unless a saved filter
   // narrowed it anyway: a counted filter the user can't see or reset on its own would be a trap.
   const hasCommunityRatings =
@@ -956,6 +976,13 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     [renderLabel, i18n.locale],
   )
 
+  const groupByOptions = useMemo(
+    () =>
+      GROUP_BY_VALUES.filter((v) => v !== 'rootFolder' || (rootFolders ?? []).length > 1 || groupBy === 'rootFolder').map(
+        (value) => ({ value, label: _(GROUP_BY_LABELS[value]) }),
+      ),
+    [rootFolders, groupBy, _, i18n.locale],
+  )
   const sortOptions = useMemo(
     () => scopeSorts.map((value) => ({ value, label: _(SORT_LABELS[value]) })),
     [scopeSorts, _, i18n.locale],
@@ -1023,6 +1050,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     numberingClash: clashFilter,
     overrides: overrideFilter,
     addedWithinDays: addedWithin,
+    groupBy,
   })
 
   const applySpec = (spec: LibraryFilterSpec, id: number | null) => {
@@ -1071,6 +1099,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     setClashFilter(merged.numberingClash ?? 'all')
     setOverrideFilter(merged.overrides ?? [])
     setAddedWithin(merged.addedWithinDays ?? null)
+    setGroupBy(merged.groupBy ?? 'none')
     setSort(merged.sort)
     setSortDirOverride(merged.sortDir === 'asc' || merged.sortDir === 'desc' ? merged.sortDir : '')
     setActiveFilterId(id)
@@ -1234,9 +1263,13 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   // Stable across renders so the memoized CoverCards aren't invalidated by a fresh closure,
   // which is why the card takes the id as an argument rather than closing over it.
   const visibleRef = useRef(visible)
+  const displayOrder = useMemo(
+    () => (groups ?? []).filter((g) => !collapsedGroups.isCollapsed(g.key)).flatMap((g) => g.items),
+    [groups, collapsedGroups.isCollapsed],
+  )
   useEffect(() => {
-    visibleRef.current = visible
-  }, [visible])
+    visibleRef.current = groups == null ? visible : displayOrder
+  }, [visible, groups, displayOrder])
   /** Where the last plain click landed, the fixed end of a shift-range. */
   const selectAnchor = useRef<number | null>(null)
 
@@ -1891,9 +1924,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const allSelected = visible.length > 0 && visible.every((s) => selected.has(s.id))
   const selectedCount = selected.size
 
-  // One hook serves both views: only one of the two wrappers is mounted at a time, and the ref
-  // re-subscribes when the other takes over.
-  const windowed = useWindowedRows(visible.length, visible.length >= WINDOW_MIN_ITEMS)
+  const windowOn = visible.length >= WINDOW_MIN_ITEMS
 
   // Hoisted so the "X of Y series" messages below get named placeholders instead of `{0}`/`{1}`.
   const visibleCount = formatNumber(visible.length)
@@ -1988,6 +2019,134 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       ]}
     />
   )
+
+  const renderItems = (items: SeriesDto[], innerRef: (el: HTMLDivElement | null) => void, last: boolean) => {
+    if (shownView === 'table') {
+      return (
+        <LibraryTableBody innerRef={innerRef}>
+          {items.map((s) => (
+            <LibraryTableRow
+              key={s.id}
+              series={s}
+              columns={tableColumns}
+              selectMode={selectMode}
+              selected={selected.has(s.id)}
+              readTracking={readTracking}
+              onToggle={toggle}
+              offline={offlineOf(s.id)}
+              tagsById={tagsById}
+              profileNames={profileNames}
+              sourceLabel={sourceLabel}
+            />
+          ))}
+        </LibraryTableBody>
+      )
+    }
+    if (shownView === 'list') {
+      return archivedScope ? (
+        <ArchivedList
+          ref={innerRef}
+          series={items}
+          selectMode={selectMode}
+          selectedIds={selected}
+          readTracking={readTracking}
+          onToggle={toggle}
+          canRestore={canArchive}
+          canRemoveFiles={canDelete}
+          canDelete={canDelete}
+          onRate={onRate}
+          onAction={onCardAction}
+        />
+      ) : (
+        <Stack ref={innerRef} gap="xs">
+          {items.map((s) => (
+            <SeriesRow
+              key={s.id}
+              series={s}
+              selectMode={selectMode}
+              selected={selected.has(s.id)}
+              readTracking={readTracking}
+              density={density}
+              onToggle={toggle}
+              offline={offlineOf(s.id)}
+            />
+          ))}
+        </Stack>
+      )
+    }
+    return (
+      <SimpleGrid ref={innerRef} cols={LIBRARY_POSTER_COLS_BY_DENSITY[density]} spacing="md">
+        {items.map((s) =>
+          archivedScope ? (
+            <ArchivedSeriesCard
+              key={s.id}
+              series={s}
+              variant="grid"
+              density={density}
+              selectMode={selectMode}
+              selected={selected.has(s.id)}
+              readTracking={readTracking}
+              onToggle={toggle}
+              offline={offlineOf(s.id)}
+              canRestore={canArchive}
+              canRemoveFiles={canDelete}
+              canDelete={canDelete}
+              onRate={onRate}
+              onAction={onCardAction}
+            />
+          ) : (
+            <CoverCard
+              key={s.id}
+              series={s}
+              selectMode={selectMode}
+              selected={selected.has(s.id)}
+              readTracking={readTracking}
+              onToggle={toggle}
+              offline={offlineOf(s.id)}
+              menu
+            />
+          ),
+        )}
+        {last && !archivedScope && !selectMode && (series?.length ?? 0) < 12 && (
+          <Link
+            to="/add"
+            className="library-add-cell"
+            aria-label={can('AddSeries') ? t`Add a series` : t`Request series`}
+          >
+            <IconPlus size={24} aria-hidden />
+          </Link>
+        )}
+      </SimpleGrid>
+    )
+  }
+
+  const itemsBody =
+    groups == null ? (
+      <WindowedItems items={visible} enabled={windowOn}>
+        {(slice, innerRef) => renderItems(slice, innerRef, true)}
+      </WindowedItems>
+    ) : (
+      <div className="library-groups" data-view={shownView}>
+        {groups.map((group, i) => {
+          const folded = collapsedGroups.isCollapsed(group.key)
+          return (
+            <Fragment key={group.key}>
+              <LibraryGroupHeader
+                group={group}
+                collapsed={folded}
+                onToggle={() => collapsedGroups.toggle(group.key)}
+                asRow={shownView === 'table'}
+              />
+              {!folded && (
+                <WindowedItems items={group.items} enabled={windowOn}>
+                  {(slice, innerRef) => renderItems(slice, innerRef, i === groups.length - 1)}
+                </WindowedItems>
+              )}
+            </Fragment>
+          )
+        })}
+      </div>
+    )
 
   return (
     <SurfaceFrame width="full" pageStyle="editorial">
@@ -2252,6 +2411,16 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                     </ActionIcon>
                   </Tooltip>
                 </div>
+                <Select
+                  aria-label={t`Group by`}
+                  className="library-group-by"
+                  visibleFrom="sm"
+                  leftSection={<IconListTree size={16} />}
+                  data={groupByOptions}
+                  value={groupBy}
+                  onChange={(v) => setGroupBy(v ?? 'none')}
+                  comboboxProps={{ withinPortal: true }}
+                />
                 {filtersActive && !isLoading && (
                   <Text size="sm" c="var(--ink-3)" className="tnum library-toolbar-count">
                     {t`${visibleCount} of ${totalCount}`}
@@ -2330,6 +2499,17 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                         >
                           {t`Reverse sort order`}
                         </Menu.Item>
+                        <Menu.Divider />
+                        <Menu.Label>{t`Group by`}</Menu.Label>
+                        {groupByOptions.map((o) => (
+                          <Menu.Item
+                            key={o.value}
+                            onClick={() => setGroupBy(o.value)}
+                            rightSection={groupBy === o.value ? <IconCheck size={16} /> : undefined}
+                          >
+                            {o.label}
+                          </Menu.Item>
+                        ))}
                       </Box>
                       <Menu.Divider />
                       <DensityMenuItems
@@ -3627,89 +3807,10 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           }}
         />
       )}
-      {/* Both views render a slice, not the whole filtered set, once the library is big enough to
-          be worth it (see useWindowedRows for the threshold and what it costs). Bulk selection is
-          unaffected: "select filtered" works off `visible`, never off what is mounted. */}
-      {visible.length > 0 && shownView === 'grid' && (
-        <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
-          <SimpleGrid ref={windowed.innerRef} cols={LIBRARY_POSTER_COLS_BY_DENSITY[density]} spacing="md">
-            {visible.slice(windowed.start, windowed.end).map((s) =>
-              archivedScope ? (
-                <ArchivedSeriesCard
-                  key={s.id}
-                  series={s}
-                  variant="grid"
-                  density={density}
-                  selectMode={selectMode}
-                  selected={selected.has(s.id)}
-                  readTracking={readTracking}
-                  onToggle={toggle}
-                  offline={offlineOf(s.id)}
-                  canRestore={canArchive}
-                  canRemoveFiles={canDelete}
-                  canDelete={canDelete}
-                  onRate={onRate}
-                  onAction={onCardAction}
-                />
-              ) : (
-                <CoverCard
-                  key={s.id}
-                  series={s}
-                  selectMode={selectMode}
-                  selected={selected.has(s.id)}
-                  readTracking={readTracking}
-                  onToggle={toggle}
-                  offline={offlineOf(s.id)}
-                  menu
-                />
-              ),
-            )}
-            {!archivedScope && !selectMode && (series?.length ?? 0) < 12 && (
-              <Link
-                to="/add"
-                className="library-add-cell"
-                aria-label={can('AddSeries') ? t`Add a series` : t`Request series`}
-              >
-                <IconPlus size={24} aria-hidden />
-              </Link>
-            )}
-          </SimpleGrid>
-        </div>
-      )}
-      {visible.length > 0 && shownView === 'list' && (
-        <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
-          {archivedScope ? (
-            <ArchivedList
-              ref={windowed.innerRef}
-              series={visible.slice(windowed.start, windowed.end)}
-              selectMode={selectMode}
-              selectedIds={selected}
-              readTracking={readTracking}
-              onToggle={toggle}
-              canRestore={canArchive}
-              canRemoveFiles={canDelete}
-              canDelete={canDelete}
-              onRate={onRate}
-              onAction={onCardAction}
-            />
-          ) : (
-            <Stack ref={windowed.innerRef} gap="xs">
-              {visible.slice(windowed.start, windowed.end).map((s) => (
-                <SeriesRow
-                  key={s.id}
-                  series={s}
-                  selectMode={selectMode}
-                  selected={selected.has(s.id)}
-                  readTracking={readTracking}
-                  density={density}
-                  onToggle={toggle}
-                  offline={offlineOf(s.id)}
-                />
-              ))}
-            </Stack>
-          )}
-        </div>
-      )}
+      {/* Every view renders a slice, not the whole filtered set, once the library is big enough to
+          be worth it (see useWindowedRows for the threshold and what it costs), each group through
+          its own window. Bulk selection is unaffected: "select filtered" works off `visible`,
+          never off what is mounted. */}
       {visible.length > 0 && shownView === 'table' && (
         <LibraryTableFrame columns={tableColumns} selectMode={selectMode}>
           <LibraryTableHeader
@@ -3720,27 +3821,10 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             sorts={scopeSorts}
             onSort={sortByColumn}
           />
-          <div ref={windowed.outerRef} style={{ paddingTop: windowed.padTop, paddingBottom: windowed.padBottom }}>
-            <LibraryTableBody innerRef={windowed.innerRef}>
-              {visible.slice(windowed.start, windowed.end).map((s) => (
-                <LibraryTableRow
-                  key={s.id}
-                  series={s}
-                  columns={tableColumns}
-                  selectMode={selectMode}
-                  selected={selected.has(s.id)}
-                  readTracking={readTracking}
-                  onToggle={toggle}
-                  offline={offlineOf(s.id)}
-                  tagsById={tagsById}
-                  profileNames={profileNames}
-                  sourceLabel={sourceLabel}
-                />
-              ))}
-            </LibraryTableBody>
-          </div>
+          {itemsBody}
         </LibraryTableFrame>
       )}
+      {visible.length > 0 && shownView !== 'table' && itemsBody}
       <LibraryColumnsModal
         opened={columnsOpen}
         onClose={() => setColumnsOpen(false)}
