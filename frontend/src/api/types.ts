@@ -178,6 +178,8 @@ export interface SeriesDto {
   lastReadAt?: string | null
   /** When the newest chapter file landed, or null with no files. Library list endpoint only. */
   lastDownloadedAt?: string | null
+  /** The newest release date among the series' known chapters, or null with none dated. Library list endpoint only. */
+  latestChapterAt?: string | null
   /** MangaBaka's aggregate score, 0–10, from the local dump. Library list endpoint only. */
   communityRating?: number | null
   /**

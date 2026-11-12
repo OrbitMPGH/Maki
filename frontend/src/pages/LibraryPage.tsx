@@ -155,14 +155,29 @@ import { useOfflineAvailableSeriesIds, useOfflineSeriesIds } from '../pwa/offlin
 import { useConnectivity } from '../lib/connectivity'
 import { MetaList } from '../components/ui/MetaList'
 
-const SORT_VALUES = ['added', 'title', 'incomplete', 'status', 'read', 'rating', 'downloaded', 'archived'] as const
+const SORT_VALUES = [
+  'added',
+  'title',
+  'incomplete',
+  'status',
+  'read',
+  'rating',
+  'downloaded',
+  'year',
+  'score',
+  'unread',
+  'released',
+  'chapters',
+  'author',
+  'archived',
+] as const
 
 type LibraryScope = 'library' | 'archived'
 
 /** Which sorts each scope offers. The first is the scope's default. */
 const SCOPE_SORTS: Record<LibraryScope, readonly string[]> = {
   library: SORT_VALUES.filter((v) => v !== 'archived'),
-  archived: ['archived', 'title', 'rating', 'read'],
+  archived: ['archived', 'title', 'rating', 'read', 'year', 'score', 'chapters', 'author'],
 }
 
 const SORT_LABELS: Record<string, MessageDescriptor> = {
@@ -173,6 +188,12 @@ const SORT_LABELS: Record<string, MessageDescriptor> = {
   read: msg`Recently read`,
   rating: msg`My rating`,
   downloaded: msg`Last downloaded`,
+  year: msg`Year`,
+  score: msg`Community score`,
+  unread: msg`Most unread`,
+  released: msg`Latest chapter released`,
+  chapters: msg`Chapter count`,
+  author: msg`Author`,
   archived: msg({ message: 'Recently archived', context: 'series' }),
 }
 
@@ -187,6 +208,12 @@ const SORT_DEFAULT_DIR: Record<string, SortDir> = {
   read: 'desc',
   rating: 'desc',
   downloaded: 'desc',
+  year: 'desc',
+  score: 'desc',
+  unread: 'desc',
+  released: 'desc',
+  chapters: 'desc',
+  author: 'asc',
   archived: 'desc',
 }
 
@@ -215,6 +242,12 @@ function compareSeries(sort: string, dir: SortDir): (a: SeriesDto, b: SeriesDto)
     if (x == null || y == null) return x == null ? (y == null ? 0 : 1) : -1
     return (x - y) * sign
   }
+  const nullableText = (pick: (s: SeriesDto) => string | null) => (a: SeriesDto, b: SeriesDto) => {
+    const x = pick(a)
+    const y = pick(b)
+    if (x == null || y == null) return x == null ? (y == null ? 0 : 1) : -1
+    return x.localeCompare(y) * sign
+  }
   switch (sort) {
     case 'title':
       return (a, b) => titleSortKey(a).localeCompare(titleSortKey(b)) * sign
@@ -228,11 +261,33 @@ function compareSeries(sort: string, dir: SortDir): (a: SeriesDto, b: SeriesDto)
       return nullable(shownRating)
     case 'downloaded':
       return nullable((s) => toTime(s.lastDownloadedAt))
+    case 'year':
+      return nullable((s) => s.year)
+    case 'score':
+      return nullable((s) => s.communityRating ?? null)
+    case 'unread':
+      return (a, b) => (unreadCount(a) - unreadCount(b)) * sign
+    case 'released':
+      return nullable((s) => toTime(s.latestChapterAt))
+    case 'chapters':
+      return (a, b) => (chapterCount(a, 'total') - chapterCount(b, 'total')) * sign
+    case 'author':
+      return nullableText(authorOf)
     case 'archived':
       return nullable((s) => toTime(s.archivedAt))
     default:
       return (a, b) => (new Date(a.added).getTime() - new Date(b.added).getTime()) * sign
   }
+}
+
+/** Downloaded chapters the caller has not finished yet. */
+function unreadCount(s: SeriesDto): number {
+  return Math.max(0, s.chapterFileCount - (s.readChapterCount ?? 0))
+}
+
+function authorOf(s: SeriesDto): string | null {
+  const name = (s.authorStory || s.authorArt || '').trim()
+  return name === '' ? null : name.toLowerCase()
 }
 
 /** A series with every file gone that had some: restoring it is a choice about downloading them again. */

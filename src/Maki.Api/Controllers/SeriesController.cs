@@ -457,6 +457,12 @@ public class SeriesController(
             .Select(g => new { SeriesId = g.Key, At = g.Max(f => f.DateAdded) })
             .ToDictionaryAsync(x => x.SeriesId, x => x.At, ct);
 
+        var latestReleaseBySeries = await ForSeries(db.Chapters, ids, c => c.SeriesId)
+            .Where(c => c.ReleaseDate != null)
+            .GroupBy(c => c.SeriesId)
+            .Select(g => new { SeriesId = g.Key, At = g.Max(c => c.ReleaseDate) })
+            .ToDictionaryAsync(x => x.SeriesId, x => x.At, ct);
+
         var titleLanguage = await TitleLanguageAsync(ct);
         var communityRatings = await CommunityRatingsAsync(series, ct);
 
@@ -507,6 +513,7 @@ public class SeriesController(
                 FileSources = fileSourcesBySeries.GetValueOrDefault(s.Id) ?? [],
                 LastReadAt = lastReadBySeries.TryGetValue(s.Id, out var lastRead) ? lastRead : null,
                 LastDownloadedAt = lastDownloadBySeries.TryGetValue(s.Id, out var lastDownload) ? lastDownload : null,
+                LatestChapterAt = latestReleaseBySeries.GetValueOrDefault(s.Id),
                 CommunityRating = s.MangaBakaId is int bakaId && communityRatings.TryGetValue(bakaId, out var score)
                     ? Math.Round(score / 10.0, 1)
                     : null,

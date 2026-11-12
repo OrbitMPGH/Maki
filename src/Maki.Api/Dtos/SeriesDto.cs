@@ -202,6 +202,9 @@ public record SeriesDto(
     /// <summary>When the newest chapter file landed in this series, or null with no files. Library list only.</summary>
     public DateTime? LastDownloadedAt { get; init; }
 
+    /// <summary>The newest release date among this series' known chapters, or null when none has one. Library list only.</summary>
+    public DateTime? LatestChapterAt { get; init; }
+
     /// <summary>
     /// MangaBaka's aggregate score on a 0–10 scale, read from the local dump. Library list only; null
     /// without a MangaBaka link, without the dump, or when MangaBaka has no score for the series.
