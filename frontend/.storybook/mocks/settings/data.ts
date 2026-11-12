@@ -88,6 +88,7 @@ export const readerPrefs: ReaderPrefs = {
   notesBeside: true,
   enhanceWholeChapter: false,
   autoSkipRecap: false,
+  progressRail: false,
 }
 
 export const readerSettings: ReaderSettings = {

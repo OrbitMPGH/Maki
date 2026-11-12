@@ -5111,6 +5111,10 @@ msgstr "Chapter page"
 msgid "Chapter pages"
 msgstr "Chapter pages"
 
+#: src/pages/reader/ProgressRail.tsx
+msgid "Chapter progress"
+msgstr "Chapter progress"
+
 #: src/pages/HealthPage.tsx
 msgid "Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. A file with an identical copy in the same series folder hands its chapters to that copy instead. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
 msgstr "Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. A file with an identical copy in the same series folder hands its chapters to that copy instead. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
@@ -5898,6 +5902,10 @@ msgstr "Continuous"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Continuous layout only."
 msgstr "Continuous layout only."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Continuous layout only. A bar down the right edge you can drag to move through the chapter."
+msgstr "Continuous layout only. A bar down the right edge you can drag to move through the chapter."
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Continuous layout only. Off shows a Skip recap button instead."
@@ -9403,6 +9411,10 @@ msgstr "Importing…"
 #: src/components/import/RecentImports.tsx
 msgid "Imports can be undone for 30 days."
 msgstr "Imports can be undone for 30 days."
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "In Continuous, a bar down the right edge you can drag to move through the chapter"
+msgstr "In Continuous, a bar down the right edge you can drag to move through the chapter"
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "In Continuous, jump past the end of the previous chapter when a chapter repeats it"
@@ -13699,7 +13711,9 @@ msgid "Page"
 msgstr "Page"
 
 #. placeholder {0}: page + 1
+#. placeholder {0}: shownPage + 1
 #: src/pages/reader/PageScrubber.tsx
+#: src/pages/reader/ProgressRail.tsx
 msgid "Page {0} of {count}"
 msgstr "Page {0} of {count}"
 
@@ -14367,6 +14381,11 @@ msgstr "Progress"
 #: src/pages/settings/registry.ts
 msgid "Progress & achievements"
 msgstr "Progress & achievements"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Progress rail"
+msgstr "Progress rail"
 
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "Progress tracking is switched off. Turn it back on under Settings to see levels, achievements and streaks. Nothing was lost while it was off: all of it is worked out from your reading history whenever it is asked for."

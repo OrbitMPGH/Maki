@@ -27,6 +27,8 @@ export interface ReaderManifest {
    */
   seriesWantedCount: number
   resumePage: number
+  /** How far down the resume page (0 to 1) the continuous strip opens. Absent on a manifest saved offline before it existed. */
+  resumeOffset?: number
   completed: boolean
   previousChapterId: number | null
   nextChapterId: number | null
@@ -274,6 +276,7 @@ export function useContinueReading(seriesId: number, enabled = true) {
 /**
  * Fire-and-forget position write. `pageIndex` is absolute so a debounced client may retry or
  * reorder freely, and failures stay silent: losing a page position must never interrupt reading.
+ * `pageOffset` is how far down that page the continuous strip is (0 to 1); absent means its top.
  *
  * `seconds` is the exception: a delta of active reading time since the last write, which the
  * server adds up. Only ever send time the caller has consumed from its clock, or a retry counts
@@ -292,11 +295,12 @@ export async function saveProgress(
   completed?: boolean,
   seconds?: number,
   pageCount = 0,
+  pageOffset?: number,
 ): Promise<void> {
-  if (await queuedOffline(chapterId, seriesId, pageIndex, completed, seconds, pageCount)) return
+  if (await queuedOffline(chapterId, seriesId, pageIndex, completed, seconds, pageCount, pageOffset)) return
   await api(`/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
-    body: JSON.stringify({ pageIndex, completed, seconds, opId: randomUUID(), seriesId }),
+    body: JSON.stringify({ pageIndex, pageOffset, completed, seconds, opId: randomUUID(), seriesId }),
   })
 }
 
@@ -316,15 +320,16 @@ export async function flushProgress(
   completed?: boolean,
   seconds?: number,
   pageCount = 0,
+  pageOffset?: number,
 ): Promise<void> {
-  if (await queuedOffline(chapterId, seriesId, pageIndex, completed, seconds, pageCount)) return
+  if (await queuedOffline(chapterId, seriesId, pageIndex, completed, seconds, pageCount, pageOffset)) return
   const init = await getInitialize()
   const res = await trackedFetch(`${init.apiRoot}/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
     keepalive: true,
     credentials: 'same-origin',
     headers: authHeaders(),
-    body: JSON.stringify({ pageIndex, completed, seconds, final: true, opId: randomUUID(), seriesId }),
+    body: JSON.stringify({ pageIndex, pageOffset, completed, seconds, final: true, opId: randomUUID(), seriesId }),
   })
   if (!res.ok) {
     const status = res.status
@@ -339,9 +344,10 @@ function queuedOffline(
   completed: boolean | undefined,
   seconds: number | undefined,
   pageCount: number,
+  pageOffset: number | undefined,
 ): Promise<boolean> {
   if (getConnectivity() !== 'offline') return Promise.resolve(false)
-  return queueOfflineWrite(chapterId, seriesId, pageIndex, completed, seconds ?? 0, pageCount).catch(
+  return queueOfflineWrite(chapterId, seriesId, pageIndex, completed, seconds ?? 0, pageCount, pageOffset).catch(
     () => false,
   )
 }

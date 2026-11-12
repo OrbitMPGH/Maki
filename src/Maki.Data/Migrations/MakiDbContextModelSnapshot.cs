@@ -363,6 +363,9 @@ namespace Maki.Data.Migrations
                     b.Property<int>("PageIndex")
                         .HasColumnType("INTEGER");
 
+                    b.Property<double>("PageOffset")
+                        .HasColumnType("REAL");
+
                     b.Property<int>("ReadSeconds")
                         .HasColumnType("INTEGER");
 

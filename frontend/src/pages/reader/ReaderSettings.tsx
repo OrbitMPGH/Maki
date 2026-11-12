@@ -85,6 +85,7 @@ type Toggle =
   | 'autoWebtoon'
   | 'keepAwake'
   | 'notesBeside'
+  | 'progressRail'
 
 function LayoutGlyph({ mode }: { mode: ReaderPrefs['mode'] }) {
   const page = { className: 'reader-settings-glyph-page', rx: 2 }
@@ -293,6 +294,7 @@ export default function ReaderSettings({
     { key: 'autoSkipRecap', label: t`Skip recaps`, hint: t`In Continuous, jump past the end of the previous chapter when a chapter repeats it` },
     { key: 'autoWebtoon', label: t`Scroll webtoon chapters`, hint: t`Chapters of very tall pages open in Continuous` },
     { key: 'notesBeside', label: t`Notes beside the page`, hint: t`When the screen has room for them` },
+    { key: 'progressRail', label: t`Progress rail`, hint: t`In Continuous, a bar down the right edge you can drag to move through the chapter` },
     ...(wakeLockSupported() ? [{ key: 'keepAwake' as const, label: t`Keep the screen awake` }] : []),
   ]
 

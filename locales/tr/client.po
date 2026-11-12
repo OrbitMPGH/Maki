@@ -6182,6 +6182,10 @@ msgstr "Bölüm sayfası"
 msgid "Chapter pages"
 msgstr "Bölüm sayfaları"
 
+#: src/pages/reader/ProgressRail.tsx
+msgid "Chapter progress"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 msgid "Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. A file with an identical copy in the same series folder hands its chapters to that copy instead. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
 msgstr ""
@@ -7137,6 +7141,10 @@ msgstr "Sürekli"
 #, fuzzy
 msgid "Continuous layout only."
 msgstr "Yalnızca sürekli düzen için."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Continuous layout only. A bar down the right edge you can drag to move through the chapter."
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Continuous layout only. Off shows a Skip recap button instead."
@@ -11415,6 +11423,10 @@ msgstr "İçe aktarılıyor…"
 #, fuzzy
 msgid "Imports can be undone for 30 days."
 msgstr "İçe aktarmalar 30 gün boyunca geri alınabilir."
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "In Continuous, a bar down the right edge you can drag to move through the chapter"
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "In Continuous, jump past the end of the previous chapter when a chapter repeats it"
@@ -16656,7 +16668,9 @@ msgid "Page"
 msgstr "Sayfa"
 
 #. placeholder {0}: page + 1
+#. placeholder {0}: shownPage + 1
 #: src/pages/reader/PageScrubber.tsx
+#: src/pages/reader/ProgressRail.tsx
 #, fuzzy
 msgid "Page {0} of {count}"
 msgstr "Sayfa {0} / {count}"
@@ -17469,6 +17483,11 @@ msgstr "İlerleme"
 #, fuzzy
 msgid "Progress & achievements"
 msgstr "İlerleme ve başarımlar"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Progress rail"
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy

@@ -38,6 +38,14 @@ public class ChapterProgress : IUserOwned
     /// <summary>Zero-based page within the chapter's own slice, not within the archive.</summary>
     public int PageIndex { get; set; }
 
+    /// <summary>
+    /// How far down <see cref="PageIndex"/> the built-in reader's continuous strip was, as a share of
+    /// that page's height (0 to 1), so a tall webtoon slice resumes mid-page. A share rather than
+    /// pixels because a slice's height depends on the screen it is read on. Reader-internal: OPDS,
+    /// Komga, KOReader and the trackers neither read nor send it, and any write without one resets it to 0.
+    /// </summary>
+    public double PageOffset { get; set; }
+
     /// <summary>Page count of the chapter's slice, snapshotted so "% read" needs no archive open.</summary>
     public int PageCount { get; set; }
 

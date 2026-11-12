@@ -431,7 +431,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                             foreach (var note in await db.ChapterNotes.IgnoreQueryFilters().Where(n => n.ChapterId == chapter.Id && n.PageIndex != null).ToListAsync(ct))
                                 note.PageIndex = null;
                             foreach (var progress in await db.ChapterProgress.IgnoreQueryFilters().Where(p => p.ChapterId == chapter.Id).ToListAsync(ct))
-                            { progress.PageIndex = 0; progress.PageCount = candidate.Analysis.Pages.Count; }
+                            { progress.PageIndex = 0; progress.PageOffset = 0; progress.PageCount = candidate.Analysis.Pages.Count; }
                         }
                     }
                 }

@@ -116,4 +116,42 @@ public sealed class KomgaPipelineTests : IDisposable
         Assert.True(await db.ChapterProgress.IgnoreQueryFilters()
             .AnyAsync(p => p.ChapterId == seeded.ChapterId && p.UserId == seeded.UserId && p.Completed));
     }
+
+    [Fact]
+    public async Task The_built_in_readers_offset_within_a_page_stays_out_of_komga()
+    {
+        using var factory = new WebApplicationFactory<Program>();
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = false });
+        var seeded = await ReadingAppSeed.SeedAsync(factory, Path.Combine(_configDir, "library"),
+            (SettingKeys.KomgaEnabled, "true"));
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+            var chapter = await db.Chapters.SingleAsync(c => c.Id == seeded.ChapterId);
+            db.ChapterProgress.Add(new Maki.Core.Entities.ChapterProgress
+            {
+                UserId = seeded.UserId, SeriesId = chapter.SeriesId, ChapterId = chapter.Id,
+                PageIndex = 0, PageOffset = 0.75, StartedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var book = await client.SendAsync(Get($"/komga/api/v1/books/{seeded.ChapterId}",
+            h => h.Add(KomgaAuthenticator.ApiKeyHeader, seeded.Token)));
+        Assert.Equal(HttpStatusCode.OK, book.StatusCode);
+        Assert.DoesNotContain("offset", await book.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
+
+        var patch = new HttpRequestMessage(HttpMethod.Patch, $"/komga/api/v1/books/{seeded.ChapterId}/read-progress")
+        {
+            Content = JsonContent.Create(new { page = 1 })
+        };
+        patch.Headers.Add(KomgaAuthenticator.ApiKeyHeader, seeded.Token);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.SendAsync(patch)).StatusCode);
+
+        using var after = factory.Services.CreateScope();
+        var row = await after.ServiceProvider.GetRequiredService<MakiDbContext>().ChapterProgress.IgnoreQueryFilters()
+            .SingleAsync(p => p.ChapterId == seeded.ChapterId && p.UserId == seeded.UserId);
+        Assert.Equal(0, row.PageIndex);
+        Assert.Equal(0, row.PageOffset);
+    }
 }

@@ -97,7 +97,9 @@ public record ReaderPrefsSpec(
     /// Jump past the recap of the previous chapter that opens most webtoon chapters, instead of
     /// offering a "Skip recap" button. Only on a chapter opened at its start.
     /// </summary>
-    bool AutoSkipRecap = false)
+    bool AutoSkipRecap = false,
+    /// <summary>In continuous mode, show the chapter's progress as a rail down the screen's edge that can be dragged to seek.</summary>
+    bool ProgressRail = false)
 {
     public const string ModePaged = "paged";
     public const string ModeDouble = "double";
