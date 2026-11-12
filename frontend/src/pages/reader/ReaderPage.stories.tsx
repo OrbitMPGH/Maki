@@ -877,3 +877,17 @@ export const ServerEnhanceAutoStretched: Story = {
     await waitFor(() => expect(stretchedAsked.every((pages) => pages.length <= 12 && pages.every((page) => page >= 5))).toBe(true))
   },
 }
+
+export const BookmarkKeysStepBetweenBookmarks: Story = {
+  parameters: open(1132),
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 6' })
+    // The fixture bookmarks pages 4 and 10; the reader resumes on 6.
+    await userEvent.keyboard('.')
+    await expect(await canvas.findByText('Page 10 of 18')).toBeInTheDocument()
+    await userEvent.keyboard('.')
+    await expect(canvas.getByText('Page 10 of 18')).toBeInTheDocument()
+    await userEvent.keyboard(',')
+    await expect(await canvas.findByText('Page 4 of 18')).toBeInTheDocument()
+  },
+}

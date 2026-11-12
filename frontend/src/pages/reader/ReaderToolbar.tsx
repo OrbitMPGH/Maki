@@ -34,6 +34,7 @@ import ReaderSettings, { OVERLAY_Z } from './ReaderSettings'
 import { isPendingPhase, useEnhancePhaseLabel, type EnhancePhase } from './ServerEnhanceStatus'
 import { serverChapterLabel } from '../../format'
 import { AUTO_SCROLL_MAX, AUTO_SCROLL_MIN } from './useAutoScroll'
+import { useReaderBack } from './useReaderBack'
 
 export interface AutoScrollControls {
   on: boolean
@@ -68,6 +69,7 @@ export default function ReaderToolbar({
   onIncognito,
   readingCounted,
   bookmarked,
+  bookmarkedPages,
   bookmarkDisabled,
   onToggleBookmark,
   noteCount,
@@ -115,6 +117,8 @@ export default function ReaderToolbar({
   /** Whether this chapter is being counted as read on screen; ReaderPage owns the rule. */
   readingCounted: boolean
   bookmarked: boolean
+  /** Every bookmarked page of the chapter, flagged on the slider. */
+  bookmarkedPages?: ReadonlySet<number>
   /** Offline: a toggle cannot be queued and replayed safely. */
   bookmarkDisabled: boolean
   onToggleBookmark: () => void
@@ -205,6 +209,7 @@ export default function ReaderToolbar({
     : t`${chaptersRead} of ${seriesChapterCount} downloaded chapters read`
 
   const notedPages = useMemo(() => new Set(manifest.notedPages ?? []), [manifest.notedPages])
+  const back = useReaderBack(manifest.seriesId)
 
   // Clicks on the bars must not fall through to the page-turn zones behind them.
   const stop = (event: React.MouseEvent) => event.stopPropagation()
@@ -222,10 +227,11 @@ export default function ReaderToolbar({
         <Group gap="sm" wrap="nowrap" px="md" h="100%">
           <ActionIcon
             component={Link}
-            to={`/series/${manifest.seriesId}`}
+            to={back.to}
+            onClick={back.onClick}
             variant="subtle"
             color="gray"
-            aria-label={t`Back to series`}
+            aria-label={back.label}
           >
             <IconArrowLeft size={20} />
           </ActionIcon>
@@ -413,6 +419,7 @@ export default function ReaderToolbar({
             enhanced={enhancedPages}
             upscaling={upscalingPages}
             noted={notedPages}
+            bookmarked={bookmarkedPages}
             thumbs={thumbs}
           />
 
