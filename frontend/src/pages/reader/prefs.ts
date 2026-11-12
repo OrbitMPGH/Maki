@@ -63,6 +63,8 @@ export interface ReaderPrefs {
   notesBeside: boolean
   /** With a server method, keep upscaling the rest of the open chapter behind the window. Leaving cancels what is left. */
   enhanceWholeChapter: boolean
+  /** Jump past the recap of the previous chapter at a chapter's start instead of offering a button. */
+  autoSkipRecap: boolean
 }
 
 /** The two page backgrounds. OLED is true black so the panel edge disappears on an OLED panel. */
@@ -104,6 +106,7 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   enhanceProgress: 'line',
   notesBeside: true,
   enhanceWholeChapter: false,
+  autoSkipRecap: false,
 }
 
 /** The enhance level a chapter actually gets: off when its file's tier is one the prefs skip. */

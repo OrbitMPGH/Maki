@@ -36,6 +36,7 @@ const readerHandlers: HttpHandler[] = [
     return manifest ? HttpResponse.json(manifest) : failWith(404, 'This chapter has no readable file.', 'error.reader.noFile')
   }),
   http.put(api('/reader/chapter/:id/progress'), () => new HttpResponse(null, { status: 204 })),
+  http.get(api('/reader/chapter/:id/recap'), () => HttpResponse.json({ page: null, offset: null })),
   http.get(api('/series/:id/rating-checkpoint'), () => HttpResponse.json({ checkpoint: null, provisionalRating: null })),
   http.post(api('/series/:id/rating-checkpoint/dismiss'), () => new HttpResponse(null, { status: 204 })),
   http.put(api('/series/:id/rating/provisional'), async ({ request }) =>

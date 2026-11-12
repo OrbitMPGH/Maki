@@ -4561,11 +4561,6 @@ msgstr "anime"
 msgid "Anime"
 msgstr "Anime"
 
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "Anime adaptation"
-msgstr "Adaptação de anime"
-
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6201,6 +6196,7 @@ msgstr "capítulos"
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/home/ReadingWeeks.tsx
 #: src/components/RequestForm.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -7133,6 +7129,10 @@ msgstr "Contínuo"
 #, fuzzy
 msgid "Continuous layout only."
 msgstr "Somente layout contínuo."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Continuous layout only. Off shows a Skip recap button instead."
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -10674,6 +10674,7 @@ msgid "Has an anime"
 msgstr "Tem um anime"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/SeriesHero.tsx
 msgid "Has an anime adaptation"
 msgstr ""
 
@@ -11407,6 +11408,10 @@ msgstr "Importando…"
 #, fuzzy
 msgid "Imports can be undone for 30 days."
 msgstr "Importações podem ser desfeitas por 30 dias."
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "In Continuous, jump past the end of the previous chapter when a chapter repeats it"
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #: src/components/import/MihonReview.tsx
@@ -18294,6 +18299,10 @@ msgstr "Recriando cache de imagens"
 msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr "Recriando pôsteres, {processedCount} de {totalCount}"
 
+#: src/pages/reader/RecapSkip.tsx
+msgid "Recap skipped"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Receives a JSON POST for each event."
@@ -18600,6 +18609,7 @@ msgstr "O número do lançamento pode ser de uma continuação, não de um capí
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Released"
@@ -21800,6 +21810,14 @@ msgstr "Ignorar"
 msgid "Skip {latestVersion}"
 msgstr "Ignorar {latestVersion}"
 
+#: src/pages/reader/RecapSkip.tsx
+msgid "Skip recap"
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Skip recaps"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Skip series where it is only a passing element"
@@ -21819,6 +21837,10 @@ msgstr "Pular especiais"
 #, fuzzy
 msgid "Skip specials on new series"
 msgstr "Ignorar especiais em novas séries"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Skip the recap of the previous chapter"
+msgstr ""
 
 #: src/App.tsx
 #, fuzzy
@@ -26438,6 +26460,10 @@ msgstr "Sua escolha"
 #, fuzzy
 msgid "Your priority order"
 msgstr "Sua ordem de prioridade"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Your rating"
+msgstr ""
 
 #: src/components/library/ArchivedList.tsx
 #: src/components/series/ArchivedSeriesCard.tsx

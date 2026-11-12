@@ -1,5 +1,5 @@
 import { Button, Center, Group, Stack, Switch, Text, VisuallyHidden } from '@mantine/core'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { IconCloudOff } from '../../lib/icons'
@@ -11,6 +11,7 @@ import { settleQueuedProgress } from '../../pwa/progressQueue'
 import {
   flushProgress,
   manifestServedOffline,
+  readerRecapQuery,
   useBookmarks,
   useReaderManifest,
   useToggleBookmark,
@@ -30,6 +31,7 @@ import { t as now } from '@lingui/core/macro'
 import ShortcutSheet from './ShortcutSheet'
 import ContinuousView from './ContinuousView'
 import ServerEnhanceStatus, { useEnhancePhase } from './ServerEnhanceStatus'
+import RecapSkip from './RecapSkip'
 import { serverModelFor, useServerEnhance, type AutoPages } from './useServerEnhance'
 import PagedView from './PagedView'
 import PageStrip from './PageStrip'
@@ -55,6 +57,9 @@ const DOUBLE_TAP_MS = 250
 const DOUBLE_TAP_SLOP = 40
 // How many pages from the end of a chapter the next chapter's first pages start loading.
 const WARM_NEXT_WITHIN = 3
+/** How long "Recap skipped" stays up after an automatic skip. */
+const RECAP_SKIPPED_MS = 2400
+const PLAIN_SEEK = { offset: 0, smooth: false }
 const CHROME_HIDE_MS = 4000
 const NO_PAGES: ReadonlySet<number> = new Set()
 const NO_AUTO_PAGES: AutoPages = { wanted: NO_PAGES, plain: NO_PAGES }
@@ -121,13 +126,20 @@ export default function ReaderPage() {
   // ContinuousView knows to scroll. Plain page updates from its own scroll tracking don't touch
   // this: scrolling to match a page the user just scrolled to would fight the scroll itself.
   const [seekVersion, setSeekVersion] = useState(0)
-  const seekToPage = useCallback((index: number, toHalf: 0 | 1 = 0) => {
+  // Where on the target page continuous mode lands, and whether it scrolls there. Only a recap
+  // skip asks for more than the top of the page, at once.
+  const [seekAt, setSeekAt] = useState(PLAIN_SEEK)
+  const seekToPage = useCallback((index: number, toHalf: 0 | 1 = 0, at = PLAIN_SEEK) => {
     setPage(index)
     setHalf(toHalf)
+    setSeekAt(at)
     setSeekVersion((v) => v + 1)
   }, [])
   /** The chapter whose saved position has been applied; gates every progress write. */
   const [resumedFor, setResumedFor] = useState<number | null>(null)
+  /** The chapter opened at its first page this visit, the only time a recap is offered. */
+  const [startedFor, setStartedFor] = useState<number | null>(null)
+  const [recap, setRecap] = useState<{ chapterId: number; phase: 'offer' | 'skipped' | 'done' } | null>(null)
   /**
    * Where to resume once this device's queued progress for the chapter is accounted for. Offline, a
    * queued row is newer than anything the manifest says, so it wins.
@@ -392,6 +404,55 @@ export default function ReaderPage() {
     resumedFor === manifest?.chapterId && nearEnd && prefs.preload > 0,
     Math.max(2, prefs.preload),
   )
+
+  // Recaps are looked for in Continuous only, where webtoons are read, and only for a chapter
+  // opened at its start. The search decodes pages on the server, so the next chapter's is asked
+  // for while this one ends.
+  const recapWanted =
+    mode === 'vertical' &&
+    manifest != null &&
+    startedFor === manifest.chapterId &&
+    manifest.previousChapterId != null
+  const { data: recapFound } = useQuery({ ...readerRecapQuery(chapterId), enabled: recapWanted })
+  const recapEnd = useMemo(
+    () =>
+      recapWanted && recapFound?.page != null && recapFound.page < pageCount
+        ? { page: recapFound.page, offset: recapFound.offset ?? 0 }
+        : null,
+    [recapWanted, recapFound, pageCount],
+  )
+  const recapAhead =
+    mode === 'vertical' && resumedFor === manifest?.chapterId && nearEnd ? (manifest?.nextChapterId ?? null) : null
+  useEffect(() => {
+    if (recapAhead != null) void queryClient.prefetchQuery(readerRecapQuery(recapAhead))
+  }, [recapAhead, queryClient])
+  const recapPhase = recap?.chapterId === chapterId ? recap.phase : null
+  const skipRecap = useCallback(
+    (smooth: boolean) => {
+      if (recapEnd) seekToPage(recapEnd.page, 0, { offset: recapEnd.offset, smooth })
+    },
+    [recapEnd, seekToPage],
+  )
+  useEffect(() => {
+    if (!recapEnd || recapPhase !== null) return
+    if (page >= recapEnd.page) {
+      setRecap({ chapterId, phase: 'done' })
+    } else if (prefs.autoSkipRecap && page === 0) {
+      skipRecap(false)
+      setRecap({ chapterId, phase: 'skipped' })
+    } else {
+      setRecap({ chapterId, phase: 'offer' })
+    }
+  }, [recapEnd, recapPhase, page, prefs.autoSkipRecap, chapterId, skipRecap])
+  // Scrolling past the recap by hand retires the offer.
+  useEffect(() => {
+    if (recapPhase === 'offer' && recapEnd && page >= recapEnd.page) setRecap({ chapterId, phase: 'done' })
+  }, [recapPhase, recapEnd, page, chapterId])
+  useEffect(() => {
+    if (recapPhase !== 'skipped') return
+    const timer = setTimeout(() => setRecap({ chapterId, phase: 'done' }), RECAP_SKIPPED_MS)
+    return () => clearTimeout(timer)
+  }, [recapPhase, chapterId])
   // Lives here rather than inside the progress hook so a chapter change can hand its banked
   // seconds to the same flush that writes the position out.
   // On a phone the notes sheet covers the page, so nothing is being read while it is up.
@@ -458,6 +519,7 @@ export default function ReaderPage() {
     const lastPage = Math.max(0, manifest.pageCount - 1)
     const saved = queued.resumePage <= lastPage ? Math.max(0, queued.resumePage) : 0
     seekToPage(toEnd ? lastPage : saved)
+    setStartedFor(!toEnd && saved === 0 ? manifest.chapterId : null)
     setZoom(1)
     setAtEnd(false)
     // A completion still in the queue rides along on this visit's own writes, as if finished here.
@@ -1122,6 +1184,8 @@ export default function ReaderPage() {
               page={page}
               onPageChange={onStripPage}
               seekVersion={seekVersion}
+              seekOffset={seekAt.offset}
+              seekSmooth={seekAt.smooth}
               onPastEnd={continuousPastEnd}
               hasNext={manifest.nextChapterId != null}
               nextLabel={manifest.nextChapterLabel}
@@ -1167,6 +1231,14 @@ export default function ReaderPage() {
         style={prefs.enhanceProgress}
         chrome={chrome}
         rtl={prefs.direction === 'rtl'}
+      />
+      <RecapSkip
+        key={`recap-${manifest.chapterId}`}
+        phase={!chrome && (recapPhase === 'offer' || recapPhase === 'skipped') ? recapPhase : null}
+        onSkip={() => {
+          skipRecap(true)
+          setRecap({ chapterId, phase: 'done' })
+        }}
       />
 
       {stripOpen && (

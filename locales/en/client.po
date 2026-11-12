@@ -3773,10 +3773,6 @@ msgstr "anime"
 msgid "Anime"
 msgstr "Anime"
 
-#: src/components/series/SeriesHero.tsx
-msgid "Anime adaptation"
-msgstr "Anime adaptation"
-
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Anime coverage"
@@ -5124,6 +5120,7 @@ msgstr "chapters"
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/home/ReadingWeeks.tsx
 #: src/components/RequestForm.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -5891,6 +5888,10 @@ msgstr "Continuous"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Continuous layout only."
 msgstr "Continuous layout only."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Continuous layout only. Off shows a Skip recap button instead."
+msgstr "Continuous layout only. Off shows a Skip recap button instead."
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Continuous vertical (webtoon)"
@@ -8795,6 +8796,7 @@ msgid "Has an anime"
 msgstr "Has an anime"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/SeriesHero.tsx
 msgid "Has an anime adaptation"
 msgstr "Has an anime adaptation"
 
@@ -9392,6 +9394,10 @@ msgstr "Importing…"
 #: src/components/import/RecentImports.tsx
 msgid "Imports can be undone for 30 days."
 msgstr "Imports can be undone for 30 days."
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "In Continuous, jump past the end of the previous chapter when a chapter repeats it"
+msgstr "In Continuous, jump past the end of the previous chapter when a chapter repeats it"
 
 #: src/components/import/ImportPlanModal.tsx
 #: src/components/import/MihonReview.tsx
@@ -15042,6 +15048,10 @@ msgstr "Rebuilding image cache"
 msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr "Rebuilding posters, {processedCount} of {totalCount}"
 
+#: src/pages/reader/RecapSkip.tsx
+msgid "Recap skipped"
+msgstr "Recap skipped"
+
 #: src/components/NotificationsSection.tsx
 msgid "Receives a JSON POST for each event."
 msgstr "Receives a JSON POST for each event."
@@ -15291,6 +15301,7 @@ msgstr "Release number may be a sequel, not a chapter"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Released"
 msgstr "Released"
@@ -17915,6 +17926,14 @@ msgstr "Skip"
 msgid "Skip {latestVersion}"
 msgstr "Skip {latestVersion}"
 
+#: src/pages/reader/RecapSkip.tsx
+msgid "Skip recap"
+msgstr "Skip recap"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Skip recaps"
+msgstr "Skip recaps"
+
 #: src/components/CatalogueRules.tsx
 msgid "Skip series where it is only a passing element"
 msgstr "Skip series where it is only a passing element"
@@ -17930,6 +17949,10 @@ msgstr "Skip specials"
 #: src/components/SetupWizard.tsx
 msgid "Skip specials on new series"
 msgstr "Skip specials on new series"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Skip the recap of the previous chapter"
+msgstr "Skip the recap of the previous chapter"
 
 #: src/App.tsx
 msgid "Skip to content"
@@ -21706,6 +21729,10 @@ msgstr "Your pick"
 #: src/pages/settings/DownloadCards.tsx
 msgid "Your priority order"
 msgstr "Your priority order"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Your rating"
+msgstr "Your rating"
 
 #: src/components/library/ArchivedList.tsx
 #: src/components/series/ArchivedSeriesCard.tsx

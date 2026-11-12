@@ -10355,6 +10355,40 @@ body.reader-open {
   visibility: hidden;
 }
 
+/* "Skip recap" at a chapter's start (RecapSkip), in the same bottom slot. The offer is a button,
+   so unlike the other reader cards it takes the pointer. */
+.reader-recap-skip {
+  position: fixed;
+  bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+  font: inherit;
+  animation: reader-enhance-status-in var(--dur-medium) var(--ease);
+  transition:
+    opacity var(--dur-medium) var(--ease),
+    border-color var(--dur-base) var(--ease);
+}
+.reader-recap-skip[data-state='offer'] {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.reader-recap-skip[data-state='offer']:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+}
+.reader-recap-skip:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.reader-recap-skip .reader-ring {
+  background: var(--brand);
+  color: var(--brand-on);
+}
+.reader-recap-skip[data-leaving] {
+  opacity: 0;
+  pointer-events: none;
+}
+.reader-root:has(.reader-recap-skip) .reader-enhance-status {
+  visibility: hidden;
+}
+
 /* Server enhance progress (ServerEnhanceStatus): a pill with a sweep while the page waits or
    runs and a fill once it is loading. */
 .reader-enhance-status {

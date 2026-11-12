@@ -201,6 +201,22 @@ export function useReaderManifest(chapterId: number) {
   })
 }
 
+/** Where a chapter's recap of the previous chapter ends: the page new content starts on and how far down it (0 to 1). Both null without one. */
+export interface ReaderRecap {
+  page: number | null
+  offset: number | null
+}
+
+/** The server decodes about 35 pages the first time, so the reader also asks ahead for the next chapter. */
+export const readerRecapQuery = (chapterId: number) =>
+  queryOptions({
+    queryKey: ['reader-recap', chapterId],
+    queryFn: () => api<ReaderRecap>(`/reader/chapter/${chapterId}/recap`),
+    staleTime: Infinity,
+    retry: false,
+    meta: { silent: true },
+  })
+
 /**
  * Whether the built-in reader has ever been used, and whether Kavita is connected. Kavita's state
  * comes from here rather than `useConnectionSettings('kavita')`, which is admin-only and 403s for

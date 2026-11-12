@@ -4561,11 +4561,6 @@ msgstr "动画"
 msgid "Anime"
 msgstr "动画"
 
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "Anime adaptation"
-msgstr "动画改编"
-
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6201,6 +6196,7 @@ msgstr "章节"
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/home/ReadingWeeks.tsx
 #: src/components/RequestForm.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -7133,6 +7129,10 @@ msgstr "连续"
 #, fuzzy
 msgid "Continuous layout only."
 msgstr "仅限连续布局。"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Continuous layout only. Off shows a Skip recap button instead."
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -10674,6 +10674,7 @@ msgid "Has an anime"
 msgstr "有动画版"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/SeriesHero.tsx
 msgid "Has an anime adaptation"
 msgstr ""
 
@@ -11407,6 +11408,10 @@ msgstr "正在导入…"
 #, fuzzy
 msgid "Imports can be undone for 30 days."
 msgstr "导入可在 30 天内撤销。"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "In Continuous, jump past the end of the previous chapter when a chapter repeats it"
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #: src/components/import/MihonReview.tsx
@@ -18294,6 +18299,10 @@ msgstr "正在重建图像缓存"
 msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr "正在重建海报，{processedCount} / {totalCount}"
 
+#: src/pages/reader/RecapSkip.tsx
+msgid "Recap skipped"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Receives a JSON POST for each event."
@@ -18600,6 +18609,7 @@ msgstr "资源编号可能是续作，而不是章节"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Released"
@@ -21800,6 +21810,14 @@ msgstr "跳过"
 msgid "Skip {latestVersion}"
 msgstr "跳过 {latestVersion}"
 
+#: src/pages/reader/RecapSkip.tsx
+msgid "Skip recap"
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Skip recaps"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Skip series where it is only a passing element"
@@ -21819,6 +21837,10 @@ msgstr "跳过特别篇"
 #, fuzzy
 msgid "Skip specials on new series"
 msgstr "新作品跳过特别篇"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Skip the recap of the previous chapter"
+msgstr ""
 
 #: src/App.tsx
 #, fuzzy
@@ -26438,6 +26460,10 @@ msgstr "你的选择"
 #, fuzzy
 msgid "Your priority order"
 msgstr "你的优先级顺序"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Your rating"
+msgstr ""
 
 #: src/components/library/ArchivedList.tsx
 #: src/components/series/ArchivedSeriesCard.tsx

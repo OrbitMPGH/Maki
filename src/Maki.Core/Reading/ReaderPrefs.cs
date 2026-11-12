@@ -92,7 +92,12 @@ public record ReaderPrefsSpec(
     /// With a server <see cref="EnhanceMethod"/>, keep upscaling every page of the open chapter
     /// behind the reading window instead of only the window. What is left when the reader leaves is cancelled.
     /// </summary>
-    bool EnhanceWholeChapter = false)
+    bool EnhanceWholeChapter = false,
+    /// <summary>
+    /// Jump past the recap of the previous chapter that opens most webtoon chapters, instead of
+    /// offering a "Skip recap" button. Only on a chapter opened at its start.
+    /// </summary>
+    bool AutoSkipRecap = false)
 {
     public const string ModePaged = "paged";
     public const string ModeDouble = "double";

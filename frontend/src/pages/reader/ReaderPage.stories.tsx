@@ -192,6 +192,36 @@ export const ContinuousTapMovesAScreen: Story = {
   },
 }
 
+const recapEndsAt = http.get(api('/reader/chapter/:id/recap'), () => HttpResponse.json({ page: 4, offset: 0.5 }))
+
+/** A chapter opening with the previous chapter's last pages offers to skip them, and scrolls past them when asked. */
+export const ContinuousSkipRecap: Story = {
+  parameters: { ...open(3040), msw: [recapEndsAt] },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 40 - page 1' })
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    await waitFor(() => expect(surface.scrollHeight).toBeGreaterThan(surface.clientHeight * 2))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Skip recap' }))
+    const target = canvasElement.querySelector<HTMLElement>('[data-page="4"]')!
+    await waitFor(() => expect(Math.abs(target.getBoundingClientRect().top + target.offsetHeight * 0.5 - surface.getBoundingClientRect().top)).toBeLessThan(4))
+    await waitFor(() => expect(canvas.queryByRole('button', { name: 'Skip recap' })).toBeNull())
+  },
+}
+
+/** With the setting on, the reader skips by itself and says so. */
+export const ContinuousRecapSkippedAutomatically: Story = {
+  parameters: {
+    ...open(3040),
+    msw: [recapEndsAt, withManifest({ ...chapters[3040], prefs: { ...chapters[3040].prefs, autoSkipRecap: true } })],
+  },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(await canvas.findByText('Recap skipped')).toBeVisible()
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    await waitFor(() => expect(surface.scrollTop).toBeGreaterThan(surface.clientHeight))
+    await expect(canvas.queryByRole('button', { name: 'Skip recap' })).toBeNull()
+  },
+}
+
 export const ContinuousAutoScroll: Story = {
   parameters: open(3040),
   play: async ({ canvas, canvasElement, userEvent }) => {

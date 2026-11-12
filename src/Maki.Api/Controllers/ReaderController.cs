@@ -500,6 +500,26 @@ public class ReaderController(
         return PhysicalFile(cached, "image/jpeg");
     }
 
+    /// <summary>
+    /// Where the chapter's recap of the previous chapter ends, for the reader's "Skip recap". Both
+    /// fields are null when there is no previous chapter on disk or no recap was found. The search
+    /// decodes about 35 pages the first time, so the reader asks ahead while the previous chapter ends.
+    /// </summary>
+    [HttpGet("chapter/{id:int}/recap")]
+    public async Task<IActionResult> Recap(int id, [FromServices] ReaderRecapCache recaps, CancellationToken ct)
+    {
+        var slice = await reader.SliceAsync(id, ct);
+        if (slice is null)
+        {
+            return this.NotFoundMessage(localizer, "error.reader.chapterNotReadable");
+        }
+
+        var (previousId, _) = await reader.NeighboursAsync(slice.Chapter, ct);
+        var previous = previousId is int before ? await reader.SliceAsync(before, ct) : null;
+        var end = previous is null ? null : await recaps.FindAsync(slice, previous, ct);
+        return Ok(new { page = end?.Page, offset = end?.Offset });
+    }
+
     [HttpPut("chapter/{id:int}/progress")]
     public async Task<IActionResult> SaveProgress(int id, [FromBody] SaveProgressRequest request,
         CancellationToken ct)

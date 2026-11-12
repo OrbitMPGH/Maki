@@ -4561,11 +4561,6 @@ msgstr "애니메이션"
 msgid "Anime"
 msgstr "애니메이션"
 
-#: src/components/series/SeriesHero.tsx
-#, fuzzy
-msgid "Anime adaptation"
-msgstr "애니메이션 적용"
-
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6201,6 +6196,7 @@ msgstr "챕터"
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/home/ReadingWeeks.tsx
 #: src/components/RequestForm.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -7133,6 +7129,10 @@ msgstr "연속"
 #, fuzzy
 msgid "Continuous layout only."
 msgstr "연속 레이아웃에서만 사용합니다."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Continuous layout only. Off shows a Skip recap button instead."
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -10674,6 +10674,7 @@ msgid "Has an anime"
 msgstr "애니메이션 있음"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/series/SeriesHero.tsx
 msgid "Has an anime adaptation"
 msgstr ""
 
@@ -11407,6 +11408,10 @@ msgstr "가져오는 중…"
 #, fuzzy
 msgid "Imports can be undone for 30 days."
 msgstr "가져오기는 30일 동안 되돌릴 수 있습니다."
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "In Continuous, jump past the end of the previous chapter when a chapter repeats it"
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #: src/components/import/MihonReview.tsx
@@ -18294,6 +18299,10 @@ msgstr "이미지 캐시 다시 빌드 중"
 msgid "Rebuilding posters, {processedCount} of {totalCount}"
 msgstr "포스터 다시 빌드 중, {totalCount}개 중 {processedCount}개"
 
+#: src/pages/reader/RecapSkip.tsx
+msgid "Recap skipped"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Receives a JSON POST for each event."
@@ -18600,6 +18609,7 @@ msgstr "릴리스 번호가 챕터가 아니라 속편일 수 있습니다"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Released"
@@ -21800,6 +21810,14 @@ msgstr "건너뛰기"
 msgid "Skip {latestVersion}"
 msgstr "{latestVersion} 건너뛰기"
 
+#: src/pages/reader/RecapSkip.tsx
+msgid "Skip recap"
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Skip recaps"
+msgstr ""
+
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Skip series where it is only a passing element"
@@ -21819,6 +21837,10 @@ msgstr "스페셜 건너뛰기"
 #, fuzzy
 msgid "Skip specials on new series"
 msgstr "새 시리즈의 특별편 건너뛰기"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Skip the recap of the previous chapter"
+msgstr ""
 
 #: src/App.tsx
 #, fuzzy
@@ -26438,6 +26460,10 @@ msgstr "내가 고른 것"
 #, fuzzy
 msgid "Your priority order"
 msgstr "내 우선순위 순서"
+
+#: src/components/series/SeriesHero.tsx
+msgid "Your rating"
+msgstr ""
 
 #: src/components/library/ArchivedList.tsx
 #: src/components/series/ArchivedSeriesCard.tsx

@@ -509,6 +509,13 @@ function ProfileEditor({
       />
       <Switch
         size="sm"
+        label={t`Skip the recap of the previous chapter`}
+        description={t`Continuous layout only. Off shows a Skip recap button instead.`}
+        checked={prefs.autoSkipRecap}
+        onChange={(e) => set({ autoSkipRecap: e.currentTarget.checked })}
+      />
+      <Switch
+        size="sm"
         label={t`Tap zones (click the page edges to turn), paged layouts only`}
         checked={prefs.tapZones}
         onChange={(e) => set({ tapZones: e.currentTarget.checked })}

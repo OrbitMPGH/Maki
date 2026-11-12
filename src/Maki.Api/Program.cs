@@ -1074,6 +1074,7 @@ try
     builder.Services.AddHostedService(sp => sp.GetRequiredService<KavitaLiveReadSync>());
     builder.Services.AddScoped<ReaderService>();
     builder.Services.AddScoped<ReaderThumbnailCache>();
+    builder.Services.AddSingleton<ReaderRecapCache>();
     builder.Services.AddScoped<ContinueReadingService>();
     builder.Services.AddScoped<ReadingProfileService>();
     builder.Services.AddScoped<Maki.Api.Services.Upscaling.EnhanceAvailability>();

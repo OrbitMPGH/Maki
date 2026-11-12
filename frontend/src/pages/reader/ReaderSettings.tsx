@@ -81,6 +81,7 @@ type Toggle =
   | 'showPageNumber'
   | 'chapterBanner'
   | 'autoNextChapter'
+  | 'autoSkipRecap'
   | 'autoWebtoon'
   | 'keepAwake'
   | 'notesBeside'
@@ -289,6 +290,7 @@ export default function ReaderSettings({
     { key: 'showPageNumber', label: t`Show page number` },
     { key: 'chapterBanner', label: t`Show the chapter name`, hint: t`Briefly, when a new chapter opens` },
     { key: 'autoNextChapter', label: t`Auto-advance to next chapter` },
+    { key: 'autoSkipRecap', label: t`Skip recaps`, hint: t`In Continuous, jump past the end of the previous chapter when a chapter repeats it` },
     { key: 'autoWebtoon', label: t`Scroll webtoon chapters`, hint: t`Chapters of very tall pages open in Continuous` },
     { key: 'notesBeside', label: t`Notes beside the page`, hint: t`When the screen has room for them` },
     ...(wakeLockSupported() ? [{ key: 'keepAwake' as const, label: t`Keep the screen awake` }] : []),
