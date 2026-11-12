@@ -315,6 +315,48 @@ export const VolumeReleasesOff: Story = {
   },
 }
 
+export const VolumeReleasesMissingSearchWithVolumeSearchOff: Story = {
+  render: () => <VolumeReleasesSection />,
+  parameters: {
+    msw: settingsMsw(http.get(api('/settings/upgrades'), () => HttpResponse.json({ ...upgradeSettings, volumeSearch: false }))),
+  },
+  play: async ({ canvas }) => {
+    const missing = await canvas.findByRole('switch', { name: /^Search torrents for chapters no source has/ })
+    await waitFor(() => expect(missing).toBeChecked())
+    await expect(missing).toBeEnabled()
+    await expect(canvas.getByRole('textbox', { name: 'Minimum seeders' })).toBeEnabled()
+  },
+}
+
+const onUpgradeSave = fn()
+
+export const VolumeReleasesSaveMinimumSeeders: Story = {
+  render: () => <VolumeReleasesSection />,
+  parameters: {
+    msw: settingsMsw(
+      http.put(api('/settings/upgrades'), async ({ request }) => {
+        const body = await request.json()
+        onUpgradeSave(body)
+        return HttpResponse.json(body)
+      }),
+    ),
+  },
+  beforeEach: () => onUpgradeSave.mockClear(),
+  play: async ({ canvas, userEvent }) => {
+    const field = await canvas.findByRole('textbox', { name: 'Minimum seeders' })
+    await waitFor(() => expect(field).toHaveValue('1'))
+    await userEvent.clear(field)
+    await userEvent.type(field, '5')
+    await userEvent.click(await canvas.findByRole('switch', { name: /^Search torrents for chapters no source has/ }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Save' }))
+    await waitFor(() =>
+      expect(onUpgradeSave).toHaveBeenCalledWith(
+        expect.objectContaining({ torrentMinSeeders: 5, missingSearch: false }),
+      ),
+    )
+  },
+}
+
 export const Indexer: Story = {
   render: () => <IndexerSection />,
   play: async ({ canvas }) => {

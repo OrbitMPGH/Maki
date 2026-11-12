@@ -26,6 +26,24 @@ export const Results: Story = {
   },
 }
 
+export const UnderMinimumSeeders: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/release'), () => HttpResponse.json({ query: 'Lanterns Over Kasumi', releases, minSeeders: 10 })),
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const dialog = await dialogOf(canvasElement)
+    await expect(await within(dialog).findByText('Under minimum')).toBeVisible()
+    // Only the four-seeder release is under ten; an unknown count is not marked.
+    await expect(within(dialog).getAllByText('Under minimum')).toHaveLength(1)
+    await waitFor(() => expect(within(dialog).getAllByRole('button', { name: 'Grab' }).length).toBe(releases.length))
+    for (const grab of within(dialog).getAllByRole('button', { name: 'Grab' })) {
+      await expect(grab).toBeEnabled()
+    }
+  },
+}
+
 export const GrabOne: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await dialogOf(canvasElement)
