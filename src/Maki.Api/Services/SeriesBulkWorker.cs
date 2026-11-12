@@ -114,15 +114,16 @@ public sealed class SeriesBulkWorker(
         var localizer = services.GetRequiredService<ILocalizer>();
         var db = services.GetRequiredService<MakiDbContext>();
 
-        // Through the scoped db.Series, so the root-folder filter applies again at run time.
-        var series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
-        if (series is null)
-        {
-            return (null, localizer.Get("error.seriesRename.notFound"));
-        }
-
+        Series? series = null;
         try
         {
+            // Through the scoped db.Series, so the root-folder filter applies again at run time.
+            series = await db.Series.Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
+            if (series is null)
+            {
+                return (null, localizer.Get("error.seriesRename.notFound"));
+            }
+
             var key = operation.Action switch
             {
                 SeriesBulkAction.Refresh => await RefreshAsync(services, series, ct),
@@ -138,7 +139,7 @@ public sealed class SeriesBulkWorker(
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             logger.LogWarning(ex, "Bulk {Action} failed for series {SeriesId}", operation.Action, seriesId);
-            return (series.Title, localizer.Get("error.server.unexpected"));
+            return (series?.Title, localizer.Get("error.server.unexpected"));
         }
     }
 

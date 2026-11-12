@@ -84,6 +84,9 @@ export const libraryHandlers: HttpHandler[] = [
     const body = (await request.json()) as { ids: number[] }
     return HttpResponse.json(body.ids.map((id, i) => ({ ...(savedFilters.find((f) => f.id === id) ?? savedFilters[0]), sortOrder: i })))
   }),
+  http.post(api('/library/filters/restore'), async ({ request }) =>
+    HttpResponse.json((await request.json()) as SavedFilterDto),
+  ),
   http.delete(api('/library/filters/:id'), noContent),
 
   http.post(api('/tags'), async ({ request }) => {

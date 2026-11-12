@@ -226,4 +226,37 @@ public class LibraryFiltersControllerTests : IDisposable
     {
         Assert.IsType<NotFoundResult>(await Controller().Delete(404, CancellationToken.None));
     }
+
+    [Fact]
+    public async Task Restore_brings_a_deleted_preset_back_under_its_id_place_and_default()
+    {
+        var spec = new LibraryFilterSpec(Status: "Ongoing");
+        var first = Body<SavedFilterDto>(await Controller().Create(new SaveFilterRequest("First", spec), CancellationToken.None));
+        var second = Body<SavedFilterDto>(await Controller().Create(new SaveFilterRequest("Second", spec), CancellationToken.None));
+        await Controller().Create(new SaveFilterRequest("Third", spec), CancellationToken.None);
+        await Controller().SetDefault(second.Id, new SetDefaultFilterRequest(true), CancellationToken.None);
+        await Controller().Delete(second.Id, CancellationToken.None);
+        await Controller().SetDefault(first.Id, new SetDefaultFilterRequest(true), CancellationToken.None);
+
+        var restored = Body<SavedFilterDto>(await Controller().Restore(
+            new RestoreFilterRequest(second.Id, "Second", spec, 1, IsDefault: true), CancellationToken.None));
+        var listed = Body<IEnumerable<SavedFilterDto>>(await Controller().List(CancellationToken.None)).ToList();
+
+        Assert.Equal(second.Id, restored.Id);
+        Assert.Equal(["First", "Second", "Third"], listed.Select(f => f.Name));
+        Assert.Equal([false, true, false], listed.Select(f => f.IsDefault));
+    }
+
+    [Fact]
+    public async Task Restore_takes_a_new_id_when_the_old_one_is_in_use()
+    {
+        var kept = Body<SavedFilterDto>(await Controller().Create(
+            new SaveFilterRequest("Kept", new LibraryFilterSpec()), CancellationToken.None));
+
+        var restored = Body<SavedFilterDto>(await Controller().Restore(
+            new RestoreFilterRequest(kept.Id, "Back", new LibraryFilterSpec(), 0, IsDefault: false), CancellationToken.None));
+
+        Assert.NotEqual(kept.Id, restored.Id);
+        Assert.Equal(2, Body<IEnumerable<SavedFilterDto>>(await Controller().List(CancellationToken.None)).Count());
+    }
 }

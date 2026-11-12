@@ -60,6 +60,18 @@ public class LibraryImportLayoutTests : IDisposable
     }
 
     [Fact]
+    public void A_series_kept_in_edition_folders_is_one_folder()
+    {
+        WriteZip("Vagabond", "VIZBIG Edition", "Vagabond v01.cbz");
+        WriteZip("Monster", "Digital", "v01.cbz");
+        WriteZip("Pluto", "[Group]", "c001.cbz");
+        WriteZip("Slam Dunk", "Shueisha", "Slam Dunk v01.cbz");
+        WriteZip("Dragon Ball", "Dragon Ball Z", "Dragon Ball Z v01.cbz");
+
+        Assert.Equal(["Dragon Ball/Dragon Ball Z", "Monster", "Pluto", "Slam Dunk", "Vagabond"], Folders());
+    }
+
+    [Fact]
     public void An_ignored_nested_folder_is_skipped_and_depth_is_capped()
     {
         WriteZip("A-Z", "Berserk", "Berserk v01.cbz");

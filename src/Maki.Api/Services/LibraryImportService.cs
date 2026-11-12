@@ -323,7 +323,9 @@ public class LibraryImportService(
     /// <summary>
     /// A folder like <c>A-Z</c> or <c>Viz</c> that holds series folders rather than being one: no
     /// comic or image of its own, at least one subfolder, and no subfolder that is a chapter or volume
-    /// of a series (a folder of loose pages, or most of them named like <c>Vol. 01</c>).
+    /// of a series (a folder of loose pages, or most of them named like <c>Vol. 01</c>). A series kept
+    /// in edition folders is not one either: every subfolder named like <c>VIZBIG Edition</c> or
+    /// <c>[Group]</c>, or any subfolder whose comics carry the folder's own name.
     /// </summary>
     internal static bool IsGroupingFolder(string dir)
     {
@@ -345,12 +347,43 @@ public class LibraryImportService(
             }
 
             var numbered = children.Count(d => ReleaseNameParser.ParseFileName(Path.GetFileName(d)).IsRecognized);
-            return numbered * 2 <= children.Count;
+            if (numbered * 2 > children.Count)
+            {
+                return false;
+            }
+
+            var own = Path.GetFileName(dir);
+            return !children.All(d => IsEditionFolder(Path.GetFileName(d))) &&
+                   !children.Any(d => ComicsNameSeries(d, own));
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
             return false;
         }
+    }
+
+    private static readonly HashSet<string> EditionWords = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "edition", "editions", "digital", "omnibus", "deluxe", "colored", "coloured", "fullcolor",
+        "raw", "raws", "scans", "scanlation", "vizbig", "kanzenban", "webrip",
+    };
+
+    /// <summary>A subfolder like <c>VIZBIG Edition</c>, <c>Digital</c> or <c>[Group]</c> that holds one release of its parent series.</summary>
+    private static bool IsEditionFolder(string leaf) =>
+        (leaf.StartsWith('[') && leaf.EndsWith(']')) || (leaf.StartsWith('(') && leaf.EndsWith(')')) ||
+        leaf.Split([' ', '-', '_', '.', '(', ')', '[', ']'], StringSplitOptions.RemoveEmptyEntries).Any(EditionWords.Contains);
+
+    /// <summary>Whether the first few comics in <paramref name="dir"/> are named for the series <paramref name="series"/>.</summary>
+    private static bool ComicsNameSeries(string dir, string series)
+    {
+        var key = SeriesKey(series);
+        return key.Length > 0 && Directory.EnumerateFiles(dir)
+            .Where(f => ComicSourceScanner.IsArchive(f) || ComicFile.IsPdf(f))
+            .Take(3)
+            .Any(f => LooseSeriesName(Path.GetFileName(f)) is { } name && SeriesKey(name) == key);
+
+        static string SeriesKey(string name) =>
+            new(name.Where(char.IsLetterOrDigit).Select(char.ToLowerInvariant).ToArray());
     }
 
     /// <param name="FolderName">The folder they would be gathered into, free in the root.</param>

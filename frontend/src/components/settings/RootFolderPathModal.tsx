@@ -20,7 +20,7 @@ function BusyNote({ code }: { code: RootFolderPathCheck['busy'][number] }) {
     case 'imports':
       return <Trans>An import is still linking files in this folder.</Trans>
     case 'moves':
-      return <Trans>A bulk move or rename is running.</Trans>
+      return <Trans>A bulk move, rename or rescan is running.</Trans>
     case 'scans':
       return <Trans>A health scan or repair is running in this folder.</Trans>
   }

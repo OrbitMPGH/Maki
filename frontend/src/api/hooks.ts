@@ -3208,6 +3208,19 @@ export function useReorderSavedFilters() {
   })
 }
 
+/** Undo for a delete: the preset comes back under its old id, so a Home rail built from it works again. */
+export function useRestoreSavedFilter() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (filter: SavedFilterDto) =>
+      api<SavedFilterDto>('/library/filters/restore', { method: 'POST', body: JSON.stringify(filter) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['library-filters'] })
+      void queryClient.invalidateQueries({ queryKey: ['custom-rail-items'] })
+    },
+  })
+}
+
 export function useDeleteSavedFilter() {
   const queryClient = useQueryClient()
   return useMutation({

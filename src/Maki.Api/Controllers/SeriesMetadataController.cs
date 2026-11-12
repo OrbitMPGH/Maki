@@ -221,6 +221,13 @@ public class SeriesMetadataController(
         var result = new SeriesMetadataRefreshService.RefreshResult(false, false);
         if (await metadataRefresh.LookupAsync(series, ct) is { } metadata)
         {
+            // A reset may not hand an editor a rating they could not have typed in themselves.
+            if (Has(fields, SeriesMetadataField.ContentRating) &&
+                !ContentRating.Permits(metadata.ContentRating, currentUser.MaxContentRating))
+            {
+                return this.Fail(localizer, "error.metadata.resetAboveRatingLimit");
+            }
+
             result = await metadataRefresh.ApplyAsync(series, metadata, includeCover: resetCover, restore: fields, ct,
                 reloadSeries: async () =>
                 {

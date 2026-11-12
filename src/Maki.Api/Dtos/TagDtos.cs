@@ -135,6 +135,9 @@ public record ReorderFiltersRequest(List<int> Ids);
 
 public record SaveFilterRequest(string Name, LibraryFilterSpec Spec);
 
+/// <summary>A preset the caller just deleted, as the list last showed it, for Undo.</summary>
+public record RestoreFilterRequest(int Id, string Name, LibraryFilterSpec Spec, int SortOrder, bool IsDefault);
+
 public record AutoTagConditionDto(string Field, string Value);
 
 public record AutoTagRuleDto(int Id, int TagId, bool Enabled, IReadOnlyList<AutoTagConditionDto> Conditions);

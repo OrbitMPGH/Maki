@@ -174,7 +174,7 @@ export function DropFolderSection() {
           <Group justify="space-between" wrap="wrap" gap="sm">
             <Text size="sm" c={status?.lastError ? 'var(--danger)' : 'var(--ink-2)'}>
               {status?.lastError ? (
-                status.lastError
+                <Trans>Maki couldn't read the drop folder: {status.lastError}</Trans>
               ) : status?.lastRunAt ? (
                 <Trans>Last checked {formatDateTime(status.lastRunAt)}.</Trans>
               ) : (

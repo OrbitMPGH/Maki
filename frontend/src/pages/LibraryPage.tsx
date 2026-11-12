@@ -110,6 +110,7 @@ import {
   useRootFolders,
   useSavedFilters,
   useSaveFilter,
+  useRestoreSavedFilter,
   useSeries,
   useRateSeries,
   useTags,
@@ -616,6 +617,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const sourceLabel = useSourceLabel()
   const saveFilter = useSaveFilter()
   const deleteSavedFilter = useDeleteSavedFilter()
+  const restoreSavedFilter = useRestoreSavedFilter()
   const reorderSavedFilters = useReorderSavedFilters()
   const setDefaultSavedFilter = useSetDefaultSavedFilter()
   const bulkTag = useBulkTag()
@@ -1322,16 +1324,13 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                 style={{ flexShrink: 0 }}
                 onClick={() => {
                   notifications.hide(toastId)
-                  saveFilter.mutate(
-                    { name: f.name, spec: f.spec },
-                    {
-                      onError: (err) =>
-                        notifications.show({
-                          color: 'var(--danger)',
-                          message: now`Failed to restore filter: ${errorText(err)}`,
-                        }),
-                    },
-                  )
+                  restoreSavedFilter.mutate(f, {
+                    onError: (err) =>
+                      notifications.show({
+                        color: 'var(--danger)',
+                        message: now`Failed to restore filter: ${errorText(err)}`,
+                      }),
+                  })
                 }}
               >
                 <Trans>Undo</Trans>
@@ -1946,8 +1945,10 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   }, [visible])
 
   // Against the *filtered* set, not the whole library: "select all" under an active filter that
-  // silently grabbed hidden series would make every bulk action a foot-gun.
-  const allSelected = visible.length > 0 && visible.every((s) => selected.has(s.id))
+  // silently grabbed hidden series would make every bulk action a foot-gun. Series in a collapsed
+  // group are hidden too.
+  const selectable = groups == null ? visible : displayOrder
+  const allSelected = selectable.length > 0 && selectable.every((s) => selected.has(s.id))
   const selectedCount = selected.size
 
   const windowOn = visible.length >= WINDOW_MIN_ITEMS
@@ -2247,7 +2248,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                   variant="subtle"
                   onClick={() => {
                     selectAnchor.current = null
-                    setSelected(allSelected ? new Set() : new Set(visible.map((s) => s.id)))
+                    setSelected(allSelected ? new Set() : new Set(selectable.map((s) => s.id)))
                   }}
                 >
                   {allSelected ? (

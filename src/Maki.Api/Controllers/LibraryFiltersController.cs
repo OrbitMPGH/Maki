@@ -144,6 +144,50 @@ public class LibraryFiltersController(
         return Ok(ordered.Select(ToDto));
     }
 
+    /// <summary>
+    /// Puts a deleted preset back for Undo. It keeps its old id when no row holds it (the ids are
+    /// AUTOINCREMENT, so normally), which is what a Home rail built from it points at, and takes back
+    /// its place in the order and its default flag.
+    /// </summary>
+    [HttpPost("restore")]
+    public async Task<IActionResult> Restore([FromBody] RestoreFilterRequest request, CancellationToken ct)
+    {
+        var name = request.Name?.Trim();
+        if (string.IsNullOrEmpty(name))
+        {
+            return this.Fail(localizer, "error.libraryFilters.nameRequired");
+        }
+
+        var owned = await db.SavedFilters
+            .Where(f => f.Scope == SavedFilter.LibraryScope)
+            .OrderBy(f => f.SortOrder)
+            .ThenBy(f => f.Id)
+            .ToListAsync(ct);
+        var idTaken = request.Id <= 0 || await db.SavedFilters.IgnoreQueryFilters().AnyAsync(f => f.Id == request.Id, ct);
+        var filter = new SavedFilter
+        {
+            Id = idTaken ? 0 : request.Id,
+            Name = name,
+            Spec = JsonSerializer.Serialize(request.Spec, SpecJson),
+            IsDefault = request.IsDefault,
+            Created = DateTime.UtcNow,
+        };
+
+        owned.Insert(Math.Clamp(request.SortOrder, 0, owned.Count), filter);
+        for (var i = 0; i < owned.Count; i++)
+        {
+            owned[i].SortOrder = i;
+            if (request.IsDefault && owned[i] != filter)
+            {
+                owned[i].IsDefault = false;
+            }
+        }
+
+        db.SavedFilters.Add(filter);
+        await db.SaveChangesAsync(ct);
+        return Ok(ToDto(filter));
+    }
+
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {

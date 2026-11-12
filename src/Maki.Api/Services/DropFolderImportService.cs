@@ -162,7 +162,8 @@ public class DropFolderImportService(
             return;
         }
 
-        var library = await LibraryAsync(ct);
+        // Loaded once something has settled, so a quiet poll does not read every series.
+        List<LibrarySeries>? library = null;
         var pending = state.Pending.Where(p => entries.Contains(p.Path, StringComparer.Ordinal))
             .ToDictionary(p => p.Path, StringComparer.Ordinal);
         var imported = 0;
@@ -182,6 +183,7 @@ public class DropFolderImportService(
                 continue;
             }
 
+            library ??= await LibraryAsync(ct);
             var outcome = await SettleAsync(entry, library, ct);
             if (outcome is null)
             {

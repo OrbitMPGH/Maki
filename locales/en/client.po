@@ -3065,8 +3065,8 @@ msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on you
 msgstr "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on your shelf."
 
 #: src/components/settings/RootFolderPathModal.tsx
-msgid "A bulk move or rename is running."
-msgstr "A bulk move or rename is running."
+msgid "A bulk move, rename or rescan is running."
+msgstr "A bulk move, rename or rescan is running."
 
 #: src/components/SetupWizard.tsx
 msgid "A connection has unsaved changes."
@@ -11249,6 +11249,11 @@ msgstr "Maki could not find the page images on the chapter page. Describe them u
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Maki could not list the sample series under both versions to compare them."
 msgstr "Maki could not list the sample series under both versions to compare them."
+
+#. placeholder {0}: status.lastError
+#: src/pages/settings/DropFolderSection.tsx
+msgid "Maki couldn't read the drop folder: {0}"
+msgstr "Maki couldn't read the drop folder: {0}"
 
 #: src/components/SourceCompareModal.tsx
 msgid "Maki downloads from the first column first."

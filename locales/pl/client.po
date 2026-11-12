@@ -3668,7 +3668,7 @@ msgid "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on you
 msgstr "Anime ocenione na 10/10 zaczyna z wagą {topSeed}, a nieoceniona manga na Twojej półce z wagą 1,00."
 
 #: src/components/settings/RootFolderPathModal.tsx
-msgid "A bulk move or rename is running."
+msgid "A bulk move, rename or rescan is running."
 msgstr ""
 
 #: src/components/SetupWizard.tsx
@@ -13542,6 +13542,11 @@ msgstr "Maki nie mógł znaleźć obrazów stron na stronie rozdziału. Opisz je
 #, fuzzy
 msgid "Maki could not list the sample series under both versions to compare them."
 msgstr "Maki nie mógł wylistować serii próbnej w obu wersjach, aby je porównać."
+
+#. placeholder {0}: status.lastError
+#: src/pages/settings/DropFolderSection.tsx
+msgid "Maki couldn't read the drop folder: {0}"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 msgid "Maki downloads from the first column first."

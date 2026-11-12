@@ -237,11 +237,20 @@ public class CustomRailService(
     /// tracks reading. Cached briefly like <see cref="LibraryRowsAsync"/>, since every rail on Home
     /// built from a saved filter reads the whole list.
     /// </summary>
+    private static readonly KeyedAsyncLock<string> LibraryListBuilds = new();
+
     private async Task<(IReadOnlyList<SeriesDto> Rows, bool ReadTracking)> LibraryListAsync(CancellationToken ct)
     {
         var key = (Kind: "library-list-rows", user.UserId, user.AllRootFolders,
             Folders: string.Join(',', user.RootFolderIds.Order()));
         if (cache is not null && cache.TryGetValue(key, out (IReadOnlyList<SeriesDto>, bool) hit) && hit.Item1 is not null)
+        {
+            return hit;
+        }
+
+        // Several rails on Home load at once, and each would otherwise build the whole list.
+        using var building = await LibraryListBuilds.AcquireAsync(key.ToString(), ct);
+        if (cache is not null && cache.TryGetValue(key, out hit) && hit.Item1 is not null)
         {
             return hit;
         }

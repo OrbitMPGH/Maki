@@ -913,6 +913,10 @@ msgid "error.metadata.invalidYear"
 msgstr "The year must be between {minYear} and {maxYear}."
 
 #: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.resetAboveRatingLimit"
+msgstr "The provider rates this series above your content rating limit, so its rating can't be reset."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
 msgid "error.metadata.unknownType"
 msgstr "Unknown series type."
 

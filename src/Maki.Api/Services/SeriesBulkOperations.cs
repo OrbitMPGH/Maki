@@ -181,9 +181,12 @@ public sealed class SeriesBulkOperations
         return true;
     }
 
-    /// <summary>Whether a bulk move or rename is queued or running, for anything that must not change paths under it.</summary>
+    /// <summary>
+    /// Whether a bulk move, rename or rescan is queued or running, for anything that must not change
+    /// paths under it. A rescan reads the root path too, and one that saw the old path would drop rows.
+    /// </summary>
     public bool HasActiveFileOperation() =>
-        _operations.Values.Any(o => IsFileOperation(o.Action) && !o.IsFinished);
+        _operations.Values.Any(o => (IsFileOperation(o.Action) || o.Action == SeriesBulkAction.Rescan) && !o.IsFinished);
 
     public ValueTask<SeriesBulkOperation> ReadAsync(bool files, CancellationToken ct) =>
         (files ? _files : _work).Reader.ReadAsync(ct);

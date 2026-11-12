@@ -1291,6 +1291,11 @@ msgstr "Status desconhecido."
 msgid "error.metadata.invalidYear"
 msgstr ""
 
+#. English: The provider rates this series above your content rating limit, so its rating can't be reset.
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.resetAboveRatingLimit"
+msgstr ""
+
 #. English: Unknown series type.
 #: src/Maki.Api/Controllers/SeriesMetadataController.cs
 msgid "error.metadata.unknownType"
