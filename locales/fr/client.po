@@ -1965,6 +1965,10 @@ msgstr "{markerLabel} L'adaptation animée commence ici. Cliquez pour replier."
 msgid "{markerLabel} Anime adaptation starts here. Click to expand."
 msgstr "{markerLabel} L'adaptation animée commence ici. Cliquez pour déplier."
 
+#: src/components/CatalogueBrowser.tsx
+msgid "{matchCount}+ matches"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
@@ -2544,11 +2548,6 @@ msgstr "{sampleChapters, plural, one {basé sur # lecture similaire} many {basé
 #, fuzzy
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Mesuré sur # chapitre dans {series} séries de votre bibliothèque : {bpp} bits par pixel, équivalent JPG.} many {Mesuré sur # chapitres dans {series} séries de votre bibliothèque : {bpp} bits par pixel, équivalent JPG.} other {Mesuré sur # chapitres dans {series} séries de votre bibliothèque : {bpp} bits par pixel, équivalent JPG.}}"
-
-#: src/components/CatalogueBrowser.tsx
-#, fuzzy
-msgid "{searchCap}+ matches"
-msgstr "{searchCap}+ résultats"
 
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -10171,7 +10170,7 @@ msgid "Follow"
 msgstr "Suivre"
 
 #: src/components/discover/FollowingRail.tsx
-msgid "Follow one from a series page."
+msgid "Follow one from a creator page."
 msgstr ""
 
 #: src/api/inbox.ts
@@ -13706,6 +13705,7 @@ msgstr "Plus pour {label}"
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/SimilarSeriesSection.tsx
+#: src/pages/discover/TasteTab.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "More like this"
@@ -14170,6 +14170,7 @@ msgstr "Nouveau chapitre disponible"
 
 #: src/components/import/MihonReview.tsx
 #: src/components/ImportListsSection.tsx
+#: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "New chapters"
 msgstr "Nouveaux chapitres"
@@ -14324,6 +14325,10 @@ msgstr "Chapitre suivant"
 #, fuzzy
 msgid "Next check {next}."
 msgstr "Prochaine vérification : {next}."
+
+#: src/pages/ActivityPage.tsx
+msgid "Next check at {nextAttemptTime}"
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/theme-context.tsx
@@ -16757,6 +16762,14 @@ msgstr "Page précédente"
 msgid "Paged"
 msgstr "Par page"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Paged layouts only. Pages fetched ahead."
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Paged layouts turn the page from the left and right edges. Continuous scrolls from the top and bottom."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
@@ -16788,11 +16801,6 @@ msgstr "Pages converties en même temps"
 #, fuzzy
 msgid "Pages decoded at once"
 msgstr "Pages décodées en même temps"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Pages fetched ahead."
-msgstr "Pages récupérées à l'avance."
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -21997,9 +22005,8 @@ msgid "Someone replied in a thread you wrote or joined."
 msgstr "Quelqu'un a répondu à une discussion que vous avez écrite ou rejointe."
 
 #: src/components/RouteErrorBoundary.tsx
-#, fuzzy
-msgid "Something went wrong while drawing it. Reloading usually clears it; if it keeps happening, the log has the details."
-msgstr "Une erreur est survenue pendant l'affichage. Recharger règle généralement le problème ; si cela se reproduit, le journal contient les détails."
+msgid "Something went wrong while drawing it. Reloading usually clears it. If it keeps happening, the browser's developer console has the details."
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -22432,11 +22439,6 @@ msgstr ""
 msgid "Still a {soFar}"
 msgstr "Toujours {soFar}"
 
-#: src/api/queue.ts
-#, fuzzy
-msgid "Still early access"
-msgstr "Toujours en accès anticipé"
-
 #. {source} is a site name and is never translated.
 #: src/api/queue.ts
 #, fuzzy
@@ -22739,15 +22741,11 @@ msgstr "Touchez les bords de la page pour tourner les pages. En mode Continu, to
 msgid "Tap to show"
 msgstr "Appuyer pour afficher"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Tap zones"
 msgstr "Zones tactiles"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Tap zones (click the page edges to turn), paged layouts only"
-msgstr "Zones de toucher (cliquer sur les bords de la page pour tourner), mises en page paginées uniquement"
 
 #: src/pages/stats/sectionList.ts
 #, fuzzy
@@ -23551,6 +23549,10 @@ msgid "The torrent is no longer in the download client"
 msgstr "Le torrent n'est plus dans le client de téléchargement"
 
 #: src/api/queue.ts
+msgid "The torrent made no progress for an hour"
+msgstr ""
+
+#: src/api/queue.ts
 #, fuzzy
 msgid "The torrent never appeared in the download client"
 msgstr "Le torrent n'est jamais apparu dans le client de téléchargement"
@@ -23876,9 +23878,8 @@ msgid "This repair needs a source chosen by hand"
 msgstr "Cette réparation nécessite une source choisie manuellement"
 
 #: src/pages/settings/SystemCards.tsx
-#, fuzzy
-msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
-msgstr "Remplace votre bibliothèque et vos réglages actuels par <0>{backupName}</0>, puis redémarre Maki. Les données actuelles ne sont pas conservées ; faites une sauvegarde avant si vous voulez pouvoir revenir en arrière. Docker et systemd redémarrent Maki automatiquement ; sinon, relancez-le vous-même."
+msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current database is kept for 7 days as maki.db.pre-restore in the config folder, but putting it back is done by hand, so take a backup first if you want an easy way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
+msgstr ""
 
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 #, fuzzy
@@ -25288,11 +25289,6 @@ msgstr "Utilisez votre application d'authentification"
 msgid "Used when creating an account."
 msgstr "Utilisé à la création d'un compte."
 
-#: src/pages/stats/labels.ts
-#, fuzzy
-msgid "Usenet"
-msgstr "Usenet"
-
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "User"
@@ -25700,6 +25696,10 @@ msgstr "contre {fromLabel}–{toLabel}"
 #, fuzzy
 msgid "Waiting"
 msgstr "En attente"
+
+#: src/components/ui/status.tsx
+msgid "Waiting for release"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy

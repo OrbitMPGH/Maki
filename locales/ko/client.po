@@ -1965,6 +1965,10 @@ msgstr "{markerLabel} 애니메이션화가 여기서 시작합니다. 클릭하
 msgid "{markerLabel} Anime adaptation starts here. Click to expand."
 msgstr "{markerLabel} 애니메이션화가 여기서 시작합니다. 클릭하면 펼칩니다."
 
+#: src/components/CatalogueBrowser.tsx
+msgid "{matchCount}+ matches"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
@@ -2544,11 +2548,6 @@ msgstr "{sampleChapters, plural, other {비슷하게 읽은 작품 #개를 기�
 #, fuzzy
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, other {라이브러리의 시리즈 {series}개에 걸친 챕터 #개에서 측정: 픽셀당 {bpp}비트, JPG 환산.}}"
-
-#: src/components/CatalogueBrowser.tsx
-#, fuzzy
-msgid "{searchCap}+ matches"
-msgstr "{searchCap}개 이상 일치"
 
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -10171,7 +10170,7 @@ msgid "Follow"
 msgstr "팔로우"
 
 #: src/components/discover/FollowingRail.tsx
-msgid "Follow one from a series page."
+msgid "Follow one from a creator page."
 msgstr ""
 
 #: src/api/inbox.ts
@@ -13706,6 +13705,7 @@ msgstr "{label} 추가 설정"
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/SimilarSeriesSection.tsx
+#: src/pages/discover/TasteTab.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "More like this"
@@ -14170,6 +14170,7 @@ msgstr "새 챕터 사용 가능"
 
 #: src/components/import/MihonReview.tsx
 #: src/components/ImportListsSection.tsx
+#: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "New chapters"
 msgstr "새 챕터"
@@ -14324,6 +14325,10 @@ msgstr "다음 챕터"
 #, fuzzy
 msgid "Next check {next}."
 msgstr "다음 확인 {next}."
+
+#: src/pages/ActivityPage.tsx
+msgid "Next check at {nextAttemptTime}"
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/theme-context.tsx
@@ -16757,6 +16762,14 @@ msgstr "Page Up"
 msgid "Paged"
 msgstr "페이지"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Paged layouts only. Pages fetched ahead."
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Paged layouts turn the page from the left and right edges. Continuous scrolls from the top and bottom."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
@@ -16788,11 +16801,6 @@ msgstr "한 번에 변환하는 페이지 수"
 #, fuzzy
 msgid "Pages decoded at once"
 msgstr "한 번에 디코딩하는 페이지 수"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Pages fetched ahead."
-msgstr "미리 가져오는 페이지 수."
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -21997,9 +22005,8 @@ msgid "Someone replied in a thread you wrote or joined."
 msgstr "내가 쓰거나 참여한 스레드에 누군가 답글을 달았습니다."
 
 #: src/components/RouteErrorBoundary.tsx
-#, fuzzy
-msgid "Something went wrong while drawing it. Reloading usually clears it; if it keeps happening, the log has the details."
-msgstr "그리는 중 문제가 생겼습니다. 보통 새로 고치면 해결되며, 계속되면 로그에 자세한 내용이 있습니다."
+msgid "Something went wrong while drawing it. Reloading usually clears it. If it keeps happening, the browser's developer console has the details."
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -22432,11 +22439,6 @@ msgstr ""
 msgid "Still a {soFar}"
 msgstr "아직 {soFar}"
 
-#: src/api/queue.ts
-#, fuzzy
-msgid "Still early access"
-msgstr "아직 얼리 액세스 중"
-
 #. {source} is a site name and is never translated.
 #: src/api/queue.ts
 #, fuzzy
@@ -22739,15 +22741,11 @@ msgstr "페이지 가장자리를 탭하면 페이지가 넘어갑니다. 연속
 msgid "Tap to show"
 msgstr "탭하여 보기"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Tap zones"
 msgstr "탭 영역"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Tap zones (click the page edges to turn), paged layouts only"
-msgstr "탭 영역(페이지 가장자리를 클릭해 넘김), 페이지 레이아웃에서만"
 
 #: src/pages/stats/sectionList.ts
 #, fuzzy
@@ -23551,6 +23549,10 @@ msgid "The torrent is no longer in the download client"
 msgstr "토렌트가 더 이상 다운로드 클라이언트에 없습니다"
 
 #: src/api/queue.ts
+msgid "The torrent made no progress for an hour"
+msgstr ""
+
+#: src/api/queue.ts
 #, fuzzy
 msgid "The torrent never appeared in the download client"
 msgstr "토렌트가 다운로드 클라이언트에 나타나지 않았습니다"
@@ -23876,9 +23878,8 @@ msgid "This repair needs a source chosen by hand"
 msgstr "이 수리에는 수동으로 선택한 소스가 필요합니다"
 
 #: src/pages/settings/SystemCards.tsx
-#, fuzzy
-msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
-msgstr "현재 라이브러리와 설정을 <0>{backupName}</0>으로 바꾸고 Maki를 다시 시작합니다. 현재 데이터는 보관되지 않으므로 복구하려면 먼저 백업하세요. Docker와 systemd는 Maki를 자동으로 다시 시작합니다. 그 외의 경우 직접 다시 시작하세요."
+msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current database is kept for 7 days as maki.db.pre-restore in the config folder, but putting it back is done by hand, so take a backup first if you want an easy way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
+msgstr ""
 
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 #, fuzzy
@@ -25288,11 +25289,6 @@ msgstr "인증 앱 사용"
 msgid "Used when creating an account."
 msgstr "계정을 만들 때 사용합니다."
 
-#: src/pages/stats/labels.ts
-#, fuzzy
-msgid "Usenet"
-msgstr "유즈넷"
-
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "User"
@@ -25700,6 +25696,10 @@ msgstr "{fromLabel}~{toLabel} 대비"
 #, fuzzy
 msgid "Waiting"
 msgstr "대기 중"
+
+#: src/components/ui/status.tsx
+msgid "Waiting for release"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy

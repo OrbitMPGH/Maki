@@ -1965,6 +1965,10 @@ msgstr "{markerLabel} Anime uyarlaması burada başlıyor. Daraltmak için tıkl
 msgid "{markerLabel} Anime adaptation starts here. Click to expand."
 msgstr "{markerLabel} Anime uyarlaması burada başlıyor. Genişletmek için tıklayın."
 
+#: src/components/CatalogueBrowser.tsx
+msgid "{matchCount}+ matches"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
@@ -2544,11 +2548,6 @@ msgstr "{sampleChapters, plural, one {# benzer okumaya dayanır} other {# benzer
 #, fuzzy
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Kitaplığınızdaki {series} seride # bölüm üzerinden ölçüldü: piksel başına {bpp} bit, JPG eşdeğeri.} other {Kitaplığınızdaki {series} seride # bölüm üzerinden ölçüldü: piksel başına {bpp} bit, JPG eşdeğeri.}}"
-
-#: src/components/CatalogueBrowser.tsx
-#, fuzzy
-msgid "{searchCap}+ matches"
-msgstr "{searchCap}+ eşleşme"
 
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -10171,7 +10170,7 @@ msgid "Follow"
 msgstr "Takip et"
 
 #: src/components/discover/FollowingRail.tsx
-msgid "Follow one from a series page."
+msgid "Follow one from a creator page."
 msgstr ""
 
 #: src/api/inbox.ts
@@ -13706,6 +13705,7 @@ msgstr "{label} için daha fazla"
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/SimilarSeriesSection.tsx
+#: src/pages/discover/TasteTab.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #, fuzzy
 msgid "More like this"
@@ -14170,6 +14170,7 @@ msgstr "Yeni bölüm mevcut"
 
 #: src/components/import/MihonReview.tsx
 #: src/components/ImportListsSection.tsx
+#: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "New chapters"
 msgstr "Yeni bölümler"
@@ -14324,6 +14325,10 @@ msgstr "Sonraki bölüm"
 #, fuzzy
 msgid "Next check {next}."
 msgstr "Sonraki kontrol {next}."
+
+#: src/pages/ActivityPage.tsx
+msgid "Next check at {nextAttemptTime}"
+msgstr ""
 
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/theme-context.tsx
@@ -16757,6 +16762,14 @@ msgstr "Page Up"
 msgid "Paged"
 msgstr "Sayfalı"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Paged layouts only. Pages fetched ahead."
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Paged layouts turn the page from the left and right edges. Continuous scrolls from the top and bottom."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
@@ -16788,11 +16801,6 @@ msgstr "Aynı anda dönüştürülen sayfalar"
 #, fuzzy
 msgid "Pages decoded at once"
 msgstr "Aynı anda çözülen sayfalar"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Pages fetched ahead."
-msgstr "Önceden alınan sayfalar."
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -21997,9 +22005,8 @@ msgid "Someone replied in a thread you wrote or joined."
 msgstr "Yazdığınız ya da katıldığınız bir konuşmaya biri yanıt verdi."
 
 #: src/components/RouteErrorBoundary.tsx
-#, fuzzy
-msgid "Something went wrong while drawing it. Reloading usually clears it; if it keeps happening, the log has the details."
-msgstr "Çizim sırasında bir sorun oluştu. Yeniden yüklemek genelde çözer; tekrar ederse ayrıntılar günlükte."
+msgid "Something went wrong while drawing it. Reloading usually clears it. If it keeps happening, the browser's developer console has the details."
+msgstr ""
 
 #: src/api/queue.ts
 #, fuzzy
@@ -22432,11 +22439,6 @@ msgstr ""
 msgid "Still a {soFar}"
 msgstr "Hâlâ {soFar}"
 
-#: src/api/queue.ts
-#, fuzzy
-msgid "Still early access"
-msgstr "Hâlâ erken erişim"
-
 #. {source} is a site name and is never translated.
 #: src/api/queue.ts
 #, fuzzy
@@ -22739,15 +22741,11 @@ msgstr "Sayfa çevirmek için sayfa kenarlarına dokunun. Sürekli modda, bir ek
 msgid "Tap to show"
 msgstr "Göstermek için dokunun"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Tap zones"
 msgstr "Dokunma bölgeleri"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Tap zones (click the page edges to turn), paged layouts only"
-msgstr "Dokunma bölgeleri (sayfayı çevirmek için kenarlara tıklayın), yalnızca sayfalı düzenler"
 
 #: src/pages/stats/sectionList.ts
 #, fuzzy
@@ -23551,6 +23549,10 @@ msgid "The torrent is no longer in the download client"
 msgstr "Torrent artık indirme istemcisinde değil"
 
 #: src/api/queue.ts
+msgid "The torrent made no progress for an hour"
+msgstr ""
+
+#: src/api/queue.ts
 #, fuzzy
 msgid "The torrent never appeared in the download client"
 msgstr "Torrent indirme istemcisinde hiç görünmedi"
@@ -23876,9 +23878,8 @@ msgid "This repair needs a source chosen by hand"
 msgstr "Bu onarım için elle seçilmiş bir kaynak gerekli"
 
 #: src/pages/settings/SystemCards.tsx
-#, fuzzy
-msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
-msgstr "Geçerli kitaplığınız ve ayarlarınız <0>{backupName}</0> ile değiştirilir, ardından Maki yeniden başlatılır. Geçerli veriler saklanmaz; geri dönebilmek istiyorsanız önce yedek alın. Docker ve systemd Maki'yi kendileri yeniden başlatır; diğer durumlarda Maki'yi yeniden başlatmanız gerekir."
+msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current database is kept for 7 days as maki.db.pre-restore in the config folder, but putting it back is done by hand, so take a backup first if you want an easy way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
+msgstr ""
 
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 #, fuzzy
@@ -25288,11 +25289,6 @@ msgstr "Kimlik doğrulayıcı uygulamanızı kullanın"
 msgid "Used when creating an account."
 msgstr "Hesap oluşturulurken kullanılır."
 
-#: src/pages/stats/labels.ts
-#, fuzzy
-msgid "Usenet"
-msgstr "Usenet"
-
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "User"
@@ -25700,6 +25696,10 @@ msgstr "{fromLabel} ile {toLabel} karşılaştırması"
 #, fuzzy
 msgid "Waiting"
 msgstr "Bekliyor"
+
+#: src/components/ui/status.tsx
+msgid "Waiting for release"
+msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy

@@ -1658,6 +1658,10 @@ msgstr "{markerLabel} Anime adaptation starts here. Click to collapse."
 msgid "{markerLabel} Anime adaptation starts here. Click to expand."
 msgstr "{markerLabel} Anime adaptation starts here. Click to expand."
 
+#: src/components/CatalogueBrowser.tsx
+msgid "{matchCount}+ matches"
+msgstr "{matchCount}+ matches"
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
 msgstr "{matched} of {total} matched, {positive} positive, {avoided} avoided, {superseded} already yours"
@@ -2132,10 +2136,6 @@ msgstr "{sampleChapters, plural, one {based on # similar read} other {based on #
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
-
-#: src/components/CatalogueBrowser.tsx
-msgid "{searchCap}+ matches"
-msgstr "{searchCap}+ matches"
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "{seconds} s per sample page"
@@ -8384,8 +8384,8 @@ msgid "Follow"
 msgstr "Follow"
 
 #: src/components/discover/FollowingRail.tsx
-msgid "Follow one from a series page."
-msgstr "Follow one from a series page."
+msgid "Follow one from a creator page."
+msgstr "Follow one from a creator page."
 
 #: src/api/inbox.ts
 msgid "Follow someone from their creator page."
@@ -11281,6 +11281,7 @@ msgstr "More for {label}"
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #: src/components/SimilarSeriesSection.tsx
+#: src/pages/discover/TasteTab.tsx
 #: src/pages/settings/PreferenceCards.tsx
 msgid "More like this"
 msgstr "More like this"
@@ -11659,6 +11660,7 @@ msgstr "New chapter available"
 
 #: src/components/import/MihonReview.tsx
 #: src/components/ImportListsSection.tsx
+#: src/pages/RequestsPage.tsx
 msgid "New chapters"
 msgstr "New chapters"
 
@@ -11785,6 +11787,10 @@ msgstr "Next chapter"
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Next check {next}."
 msgstr "Next check {next}."
+
+#: src/pages/ActivityPage.tsx
+msgid "Next check at {nextAttemptTime}"
+msgstr "Next check at {nextAttemptTime}"
 
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/theme-context.tsx
@@ -13778,6 +13784,14 @@ msgstr "Page Up"
 msgid "Paged"
 msgstr "Paged"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Paged layouts only. Pages fetched ahead."
+msgstr "Paged layouts only. Pages fetched ahead."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Paged layouts turn the page from the left and right edges. Continuous scrolls from the top and bottom."
+msgstr "Paged layouts turn the page from the left and right edges. Continuous scrolls from the top and bottom."
+
 #: src/pages/HealthPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
@@ -13803,10 +13817,6 @@ msgstr "Pages converted at once"
 #: src/pages/settings/SystemCards.tsx
 msgid "Pages decoded at once"
 msgstr "Pages decoded at once"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-msgid "Pages fetched ahead."
-msgstr "Pages fetched ahead."
 
 #: src/components/SourceCompareModal.tsx
 msgid "Pages matched"
@@ -18083,8 +18093,8 @@ msgid "Someone replied in a thread you wrote or joined."
 msgstr "Someone replied in a thread you wrote or joined."
 
 #: src/components/RouteErrorBoundary.tsx
-msgid "Something went wrong while drawing it. Reloading usually clears it; if it keeps happening, the log has the details."
-msgstr "Something went wrong while drawing it. Reloading usually clears it; if it keeps happening, the log has the details."
+msgid "Something went wrong while drawing it. Reloading usually clears it. If it keeps happening, the browser's developer console has the details."
+msgstr "Something went wrong while drawing it. Reloading usually clears it. If it keeps happening, the browser's developer console has the details."
 
 #: src/api/queue.ts
 msgid "Something went wrong, Maki will try again"
@@ -18439,10 +18449,6 @@ msgstr "Steps"
 msgid "Still a {soFar}"
 msgstr "Still a {soFar}"
 
-#: src/api/queue.ts
-msgid "Still early access"
-msgstr "Still early access"
-
 #. {source} is a site name and is never translated.
 #: src/api/queue.ts
 msgid "Still early access on {source}, Maki will check again later"
@@ -18690,13 +18696,10 @@ msgstr "Tap the page edges to turn pages. In Continuous, tap the top or bottom t
 msgid "Tap to show"
 msgstr "Tap to show"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Tap zones"
 msgstr "Tap zones"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-msgid "Tap zones (click the page edges to turn), paged layouts only"
-msgstr "Tap zones (click the page edges to turn), paged layouts only"
 
 #: src/pages/stats/sectionList.ts
 msgid "Taste"
@@ -19348,6 +19351,10 @@ msgid "The torrent is no longer in the download client"
 msgstr "The torrent is no longer in the download client"
 
 #: src/api/queue.ts
+msgid "The torrent made no progress for an hour"
+msgstr "The torrent made no progress for an hour"
+
+#: src/api/queue.ts
 msgid "The torrent never appeared in the download client"
 msgstr "The torrent never appeared in the download client"
 
@@ -19613,8 +19620,8 @@ msgid "This repair needs a source chosen by hand"
 msgstr "This repair needs a source chosen by hand"
 
 #: src/pages/settings/SystemCards.tsx
-msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
-msgstr "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current data is not kept, so take a backup first if you want a way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
+msgid "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current database is kept for 7 days as maki.db.pre-restore in the config folder, but putting it back is done by hand, so take a backup first if you want an easy way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
+msgstr "This replaces your current library and settings with <0>{backupName}</0>, then restarts Maki. The current database is kept for 7 days as maki.db.pre-restore in the config folder, but putting it back is done by hand, so take a backup first if you want an easy way back. Docker and systemd bring Maki back up on their own; otherwise start it again yourself."
 
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 msgid "This repository lists no definitions."
@@ -20778,10 +20785,6 @@ msgstr "Use your authenticator app"
 msgid "Used when creating an account."
 msgstr "Used when creating an account."
 
-#: src/pages/stats/labels.ts
-msgid "Usenet"
-msgstr "Usenet"
-
 #: src/components/settings/UsersSection.tsx
 msgid "User"
 msgstr "User"
@@ -21116,6 +21119,10 @@ msgstr "vs {fromLabel} to {toLabel}"
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Waiting"
 msgstr "Waiting"
+
+#: src/components/ui/status.tsx
+msgid "Waiting for release"
+msgstr "Waiting for release"
 
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Waiting for the MangaBaka snapshot to download first."
