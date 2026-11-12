@@ -54,6 +54,38 @@ export const NoReleases: Story = {
   },
 }
 
+export const NoReleasesAfterFallbacks: Story = {
+  args: { titles: ['Lanterns Over Kasumi', 'Kasumi no Tomoshibi', '霞の灯'] },
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/release'), () =>
+        HttpResponse.json({
+          query: 'Lanterns Over Kasumi',
+          tried: ['Lanterns Over Kasumi', 'Kasumi no Tomoshibi', '霞の灯'],
+          releases: [],
+        }),
+      ),
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const dialog = await dialogOf(canvasElement)
+    await expect(await within(dialog).findByText(/Searched for Lanterns Over Kasumi, Kasumi no Tomoshibi/)).toBeVisible()
+    await expect(within(dialog).getByRole('textbox', { name: 'Search query' })).toHaveValue('Lanterns Over Kasumi')
+  },
+}
+
+export const TitleButtonFillsTheBox: Story = {
+  args: { titles: ['Lanterns Over Kasumi', 'Kasumi no Tomoshibi'] },
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = await dialogOf(canvasElement)
+    const box = await within(dialog).findByRole('textbox', { name: 'Search query' })
+    await waitFor(() => expect(box).toHaveValue('Lanterns Over Kasumi'))
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Kasumi no Tomoshibi' }))
+    await expect(box).toHaveValue('Kasumi no Tomoshibi')
+    await expect(box).toHaveFocus()
+  },
+}
+
 export const WithoutUpgradeProfile: Story = {
   parameters: {
     msw: seriesMsw(

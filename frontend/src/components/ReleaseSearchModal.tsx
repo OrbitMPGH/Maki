@@ -1,8 +1,9 @@
 import { errorText } from '../api/errorText'
 import { Badge, Button, Group, Modal, Stack, Table, Text, TextInput, Tooltip, VisuallyHidden } from '@mantine/core'
 import { notifications } from '../lib/toast'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { i18n } from '@lingui/core'
 import { t as now } from '@lingui/core/macro'
 import { useGrabRelease, useReleaseSearch } from '../api/hooks'
 import { ApiError } from '../api/client'
@@ -32,25 +33,37 @@ function seedHealth(seeders: number | null): 'ok' | 'warn' | 'danger' {
   return seeders < 5 ? 'warn' : 'ok'
 }
 
+function listText(parts: string[]): string {
+  return typeof Intl.ListFormat === 'function'
+    ? new Intl.ListFormat(i18n.locale || undefined).format(parts)
+    : parts.join(', ')
+}
+
 export function ReleaseSearchModal({
   seriesId,
   opened,
   onClose,
+  titles = [],
 }: {
   seriesId: number
   opened: boolean
   onClose: () => void
+  /** The series title first, then alt titles; each gets a button that puts it in the search box. */
+  titles?: string[]
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
   const [input, setInput] = useState('')
   const [manualQuery, setManualQuery] = useState<string | undefined>(undefined)
+  const inputRef = useRef<HTMLInputElement>(null)
   const { data, isFetching, error } = useReleaseSearch(seriesId, opened, manualQuery)
   const releases = data?.releases
   const grab = useGrabRelease()
   const noIndexer = error instanceof ApiError && error.code === 'error.release.indexerNotConfigured'
   const resultCount = releases?.length ?? 0
   const indexerCount = new Set(releases?.map((r) => r.indexer)).size
+  const tried = data?.tried ?? []
+  const triedList = listText(tried)
 
   // Start each open with an automatic search; mirror whatever query was actually used
   // (the backend may have loosened it) into the input so the user can tweak it.
@@ -101,6 +114,7 @@ export function ReleaseSearchModal({
         <Stack gap="md">
           <Group gap="xs" wrap="nowrap">
             <TextInput
+              ref={inputRef}
               style={{ flex: 1 }}
               aria-label={t`Search query`}
               placeholder={t`Search query`}
@@ -119,6 +133,28 @@ export function ReleaseSearchModal({
             </Button>
           </Group>
 
+          {titles.length > 1 && (
+            <Group gap={6} mt={-6}>
+              <Text size="xs" c="var(--ink-3)">
+                <Trans>Use title:</Trans>
+              </Text>
+              {titles.map((title) => (
+                <Button
+                  key={title}
+                  size="compact-xs"
+                  variant={input.trim() === title ? 'light' : 'default'}
+                  disabled={isFetching}
+                  onClick={() => {
+                    setInput(title)
+                    inputRef.current?.focus()
+                  }}
+                >
+                  {title}
+                </Button>
+              ))}
+            </Group>
+          )}
+
           {isFetching && <TableSkeleton columns={6} rows={5} />}
 
           {error && !isFetching && <ModalNote>{errorText(error)}</ModalNote>}
@@ -128,7 +164,13 @@ export function ReleaseSearchModal({
               compact
               mood="asleep"
               title={t`No releases found`}
-              description={<Trans>Try a shorter or alternative query.</Trans>}
+              description={
+                tried.length > 1 ? (
+                  <Trans>Searched for {triedList}. Try a shorter or alternative query.</Trans>
+                ) : (
+                  <Trans>Try a shorter or alternative query.</Trans>
+                )
+              }
             />
           )}
 

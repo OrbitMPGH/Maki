@@ -17046,6 +17046,10 @@ msgstr "Search, adding series, imports and Discover"
 msgid "searched as “{cleanedTitle}”"
 msgstr "searched as “{cleanedTitle}”"
 
+#: src/components/ReleaseSearchModal.tsx
+msgid "Searched for {triedList}. Try a shorter or alternative query."
+msgstr "Searched for {triedList}. Try a shorter or alternative query."
+
 #: src/pages/LibraryPage.tsx
 msgid "Searches every source that isn't linked yet. Linked sources stay as they are."
 msgstr "Searches every source that isn't linked yet. Linked sources stay as they are."
@@ -20757,6 +20761,10 @@ msgstr "Use this title for taste"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Use this to clean up chapters pulled in by a wrong source match."
 msgstr "Use this to clean up chapters pulled in by a wrong source match."
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "Use title:"
+msgstr "Use title:"
 
 #: src/components/settings/UsersSection.tsx
 msgid "Use trackers"

@@ -205,7 +205,8 @@ public class ReleaseServiceTests : IDisposable
         var result = await Build().SearchAsync(seriesId);
 
         Assert.Empty(result.Releases);
-        Assert.Equal("Original", result.Query);
+        Assert.Equal("Main Title", result.Query);
+        Assert.Equal(["Main Title", "Alt 1", "Alt 2", "Alt 3", "Original"], result.Tried);
     }
 
     /// <summary>Answers an indexer search by what the query contains, and remembers every query.</summary>

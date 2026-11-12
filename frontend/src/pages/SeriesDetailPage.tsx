@@ -120,7 +120,7 @@ import { useSeriesNoteCounts } from '../api/notes'
 import NotesPanel from '../components/notes/NotesPanel'
 import { useApplyAnimeResume, useDismissAnimeResume, useSeriesAnimeResume } from '../api/animeResume'
 import { useCreateSeriesRequest } from '../api/requests'
-import { altTitleLabel, readableTitles } from '../api/titles'
+import { altTitleLabel, otherTitles, readableTitles } from '../api/titles'
 import type { ChapterDto } from '../api/types'
 import {
   isVolumeSearchStarted,
@@ -1524,6 +1524,10 @@ function SeriesDetailBody() {
   const status = seriesStatusVisual(series.status)
   const contentRating = contentRatingVisual(series.contentRating)
   const altTitles = readableTitles(series.altTitles ?? [], i18n.locale)
+  const releaseSearchTitles = [
+    series.title,
+    ...otherTitles(altTitles, series.originalTitle, series.title).map((x) => x.title),
+  ].slice(0, 6)
   const synopsis = splitSynopsis(cleanSynopsis(series.overview))
   const synopsisSource = synopsis.source
   const synopsisExtras = (synopsis.notes.length > 0 || synopsisSource) && (
@@ -2867,6 +2871,7 @@ function SeriesDetailBody() {
 
         <ReleaseSearchModal
             seriesId={seriesId}
+            titles={releaseSearchTitles}
             opened={releaseModalOpen}
             onClose={() => setReleaseModalOpen(false)}
         />

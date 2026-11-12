@@ -51,7 +51,8 @@ public record ReleaseResultDto(
         release.InfoHash, parsed);
 }
 
-public record ReleaseSearchResponse(string Query, IReadOnlyList<ReleaseResultDto> Releases);
+/// <summary><see cref="Tried"/> lists every query sent, in order, so the dialog can say what an empty search covered.</summary>
+public record ReleaseSearchResponse(string Query, IReadOnlyList<string> Tried, IReadOnlyList<ReleaseResultDto> Releases);
 
 /// <summary>
 /// Payload persisted on torrent queue items (DownloadQueueItem.ReleaseInfoJson). <see cref="ContentPath"/>
@@ -70,6 +71,8 @@ public record ReleaseInfo(
 
 public record ReleaseSearchResult(string Query, IReadOnlyList<ReleaseDto> Releases)
 {
+    public IReadOnlyList<string> Tried { get; init; } = [Query];
+
     /// <summary>The backend that answered; release guids and links only mean something to it.</summary>
     [System.Text.Json.Serialization.JsonIgnore]
     public IndexerBackend Backend { get; init; }
@@ -118,12 +121,14 @@ public class ReleaseService(
             ? await WantedLanguageAsync(seriesId, ct)
             : null;
         var attempted = candidates[0];
+        var tried = new List<string>();
         string? firstHit = null;
         var done = false;
         var found = new Dictionary<string, ReleaseDto>(StringComparer.Ordinal);
         foreach (var candidate in candidates)
         {
             attempted = candidate;
+            tried.Add(candidate);
             var releases = await indexer.SearchAsync(indexerSettings, candidate, ct);
             var fresh = releases
                 .Where(r => r.Protocol.Equals("torrent", StringComparison.OrdinalIgnoreCase))
@@ -154,7 +159,13 @@ public class ReleaseService(
         }
 
         var results = found.Values.OrderByDescending(r => r.Seeders ?? 0).ToList();
-        return new ReleaseSearchResult(done ? attempted : firstHit ?? attempted, results) { Backend = indexerSettings.Backend };
+        // Nothing found anywhere: the main title, not the last fallback, so the box doesn't read as if
+        // only an alt title was searched.
+        return new ReleaseSearchResult(done ? attempted : firstHit ?? candidates[0], results)
+        {
+            Backend = indexerSettings.Backend,
+            Tried = tried,
+        };
     }
 
     /// <summary>"ja" when any of the series' chapters is marked Japanese, otherwise null.</summary>

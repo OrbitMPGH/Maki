@@ -20733,6 +20733,10 @@ msgstr ""
 msgid "searched as “{cleanedTitle}”"
 msgstr "“{cleanedTitle}”(으)로 검색함"
 
+#: src/components/ReleaseSearchModal.tsx
+msgid "Searched for {triedList}. Try a shorter or alternative query."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Searches every source that isn't linked yet. Linked sources stay as they are."
@@ -25264,6 +25268,10 @@ msgstr "이 작품을 취향에 반영"
 #, fuzzy
 msgid "Use this to clean up chapters pulled in by a wrong source match."
 msgstr "잘못된 소스 일치로 가져온 챕터를 정리할 때 사용하세요."
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "Use title:"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy

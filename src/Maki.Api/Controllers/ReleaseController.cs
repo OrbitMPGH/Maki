@@ -45,7 +45,7 @@ public class ReleaseController(
                 .Where(v => !v.Verdict.Reasons.Contains(SpanVerdictReasons.NoProfile))
                 .GroupBy(v => v.Release.Guid)
                 .ToDictionary(g => g.Key, g => g.First());
-            return Ok(new ReleaseSearchResponse(result.Query, [.. result.Releases.Select(r =>
+            return Ok(new ReleaseSearchResponse(result.Query, result.Tried, [.. result.Releases.Select(r =>
                 ReleaseResultDto.From(r, byGuid.TryGetValue(r.Guid, out var v) ? Parsed(v) : null))]));
         }
         catch (ReleaseRefusedException ex)

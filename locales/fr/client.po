@@ -20733,6 +20733,10 @@ msgstr ""
 msgid "searched as “{cleanedTitle}”"
 msgstr "recherché comme « {cleanedTitle} »"
 
+#: src/components/ReleaseSearchModal.tsx
+msgid "Searched for {triedList}. Try a shorter or alternative query."
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Searches every source that isn't linked yet. Linked sources stay as they are."
@@ -25264,6 +25268,10 @@ msgstr "Utiliser ce titre pour les goûts"
 #, fuzzy
 msgid "Use this to clean up chapters pulled in by a wrong source match."
 msgstr "Utilisez ceci pour nettoyer les chapitres récupérés par une mauvaise correspondance de source."
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "Use title:"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy

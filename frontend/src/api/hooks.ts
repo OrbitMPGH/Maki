@@ -3761,6 +3761,8 @@ export interface ReleaseRowDto extends ReleaseDto {
 
 export interface ReleaseSearchResult {
   query: string
+  /** Every query the search sent, in order. */
+  tried?: string[]
   releases: ReleaseRowDto[]
 }
 
