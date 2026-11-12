@@ -1006,6 +1006,10 @@ msgstr "{chapter}, {reason}"
 msgid "{chapterCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapterCount, plural, one {# глава} few {# главы} many {# глав} other {# главы}}"
 
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "{chapterLabel}, page {pageNumber}, {pageHeight} px tall"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{chapterMax, plural, one {At most # chapter} other {At most # chapters}}"
@@ -2350,6 +2354,10 @@ msgstr "{pendingFiles, plural, one {Преобразование, осталос
 #, fuzzy
 msgid "{perSitting} ch. per sitting"
 msgstr "{perSitting} гл. за раз"
+
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "{pieces, plural, one {Becomes # page.} other {Becomes # pages. Each dashed line is a cut.}}"
+msgstr ""
 
 #: src/components/settings/AutoTagRulesModal.tsx
 msgid "{previewCount, plural, =0 {No series in the library match this rule without already carrying {applyingTag}.} one {# series matches this rule and will be tagged {applyingTag}.} other {# series match this rule and will be tagged {applyingTag}.}}"
@@ -3847,6 +3855,10 @@ msgstr "поиска"
 msgid "a second copy of another comic in the folder, which is used instead"
 msgstr "вторая копия другого комикса из папки, которая используется вместо него"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "A series added without a chosen folder goes to the first rule it matches. With no match it goes to the first root folder, as before."
+msgstr ""
+
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "a series page"
@@ -4135,6 +4147,10 @@ msgstr "Добавить заметку"
 msgid "Add a rail"
 msgstr "Добавить подборку"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Add a root folder first"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Add a root folder in Settings, then come back to scan it for series to import."
@@ -4190,6 +4206,7 @@ msgstr "Добавить подборку"
 #: src/components/CatalogueRules.tsx
 #: src/components/pageconversion/ScopeStep.tsx
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #, fuzzy
 msgid "Add rule"
 msgstr "Добавить правило"
@@ -4679,6 +4696,10 @@ msgstr "Также синхронизировать оценки «на данн
 msgid "Alt titles"
 msgstr "Альтернативные названия"
 
+#: src/components/settings/RuleConditions.tsx
+msgid "Alternative {number}"
+msgstr ""
+
 #: src/components/series/EditMetadataModal.tsx
 msgid "Alternative title"
 msgstr ""
@@ -4846,7 +4867,7 @@ msgstr "любой"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
-#: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RuleConditions.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -5429,6 +5450,10 @@ msgstr "Назад к Обзору"
 msgid "Back to library"
 msgstr "Назад к библиотеке"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Back to rules"
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/useReaderBack.ts
 #, fuzzy
@@ -5976,6 +6001,7 @@ msgstr "Не удаётся войти с сохранёнными данным�
 #: src/components/settings/FolderBrowserModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/RootFolderPathModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -6714,6 +6740,10 @@ msgstr "ID чата"
 msgid "Check"
 msgstr ""
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Check a series"
+msgstr ""
+
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Check against the site"
@@ -6813,6 +6843,10 @@ msgstr ""
 msgid "Checking for a new metadata snapshot"
 msgstr "Проверка нового снимка метаданных"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Checking the rules…"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Checks on the server and the library, and the repairs they found."
@@ -6825,6 +6859,7 @@ msgid "Chinese"
 msgstr "Китайский"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Choose"
 msgstr ""
 
@@ -7287,6 +7322,7 @@ msgstr "Параллельные загрузки глав"
 msgid "concurrent, workers, retry, max attempts, backoff"
 msgstr "параллельно, потоки, повтор, максимум попыток, задержка"
 
+#: src/components/settings/RuleConditions.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Conditions"
@@ -7917,6 +7953,7 @@ msgid "Couldn't sample"
 msgstr "Не удалось взять образцы"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Couldn't save the rule"
 msgstr ""
 
@@ -8348,6 +8385,7 @@ msgstr "Определение"
 #: src/components/rails/DeleteRailDialog.tsx
 #: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -8471,6 +8509,7 @@ msgid "Delete request"
 msgstr "Удалить запрос"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Delete rule"
 msgstr ""
 
@@ -9403,6 +9442,7 @@ msgid "Edit request for {title}"
 msgstr "Изменить запрос для {title}"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Edit rule"
 msgstr ""
 
@@ -10535,11 +10575,6 @@ msgstr "Первая глава готова"
 msgid "First download in progress"
 msgstr "Выполняется первая загрузка"
 
-#: src/components/ImportListsSection.tsx
-#, fuzzy
-msgid "First folder you can see"
-msgstr "Первая доступная папка"
-
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/theme-context.tsx
 #, fuzzy
@@ -10734,6 +10769,10 @@ msgstr ""
 #, fuzzy
 msgid "For apps that only connect to Komga, like Tachimanga."
 msgstr "Для приложений, которые подключаются только к Komga, например Tachimanga."
+
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "For example, send every manhwa and manhua to a webtoon folder."
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -12551,6 +12590,10 @@ msgstr "Не попадает в ваши трекеры, Rewind, статист
 #, fuzzy
 msgid "kept where it is"
 msgstr "оставлено на месте"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "Kept whole"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
@@ -14519,6 +14562,7 @@ msgstr "Переместить {tierLabel} ниже"
 msgid "Move {tierLabel} up"
 msgstr "Переместить {tierLabel} выше"
 
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move down"
@@ -14577,6 +14621,7 @@ msgstr "Переместить наверх"
 msgid "Move to top of queue"
 msgstr "Переместить наверх очереди"
 
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move up"
@@ -14975,6 +15020,7 @@ msgid "New recovery codes"
 msgstr "Новые резервные коды"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "New rule"
 msgstr ""
 
@@ -15528,6 +15574,10 @@ msgstr "Ни в одном другом источнике его нет"
 msgid "No outside tools connected. That's fine, sources download on their own."
 msgstr "Внешние инструменты не подключены. Ничего страшного, загрузку выполняют сами источники."
 
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "No page to preview yet. The preview uses the tallest page in your library."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "No pages"
@@ -15614,12 +15664,17 @@ msgstr "Результатов нет."
 msgid "No root folders yet"
 msgstr "Корневых папок пока нет"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "No rule matches {title}, so it would go to <0>{fallback}</0>."
+msgstr ""
+
 #: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "No rules"
 msgstr "Нет правил"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "No rules yet"
 msgstr ""
 
@@ -15636,6 +15691,10 @@ msgstr "Пока нет правил. Добавьте правило, чтоб�
 #, fuzzy
 msgid "No rules yet. Every file is converted at {stopLabel}."
 msgstr "Правил пока нет. Каждый файл преобразуется при {stopLabel}."
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "No rules yet. New series go to the first root folder."
+msgstr ""
 
 #: src/components/RatingImportModal.tsx
 msgid "No scores on {label} differ from your local ratings."
@@ -17130,6 +17189,10 @@ msgstr "Только безопасные названия"
 msgid "Only series I'm reading"
 msgstr "Только серии, которые я читаю"
 
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Only strips at least two and a half times as tall as they are wide are split."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Only the built-in reader records it."
@@ -17398,6 +17461,14 @@ msgstr ""
 #, fuzzy
 msgid "or"
 msgstr "или"
+
+#: src/components/settings/RuleConditions.tsx
+msgid "Or all of these"
+msgstr ""
+
+#: src/components/settings/RuleConditions.tsx
+msgid "Or match other conditions"
+msgstr ""
 
 #: src/components/import/ImportMatchFinder.tsx
 #, fuzzy
@@ -17701,6 +17772,10 @@ msgstr "Страницы остаются такими, как загружен�
 msgid "Pages stay as they were downloaded."
 msgstr "Страницы остаются такими, какими были загружены."
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Pages taller than {pixels} px are split."
+msgstr ""
+
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "Pages under 16 KB are always kept as they are."
@@ -17989,6 +18064,10 @@ msgstr "Выберите корневую папку"
 msgid "Pick a root folder and scan it"
 msgstr "Выберите корневую папку и просканируйте её"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Pick a root folder."
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Pick a source by"
@@ -18015,6 +18094,7 @@ msgid "Pick another page"
 msgstr "Выбрать другую страницу"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Pick at least one condition."
 msgstr ""
 
@@ -18053,10 +18133,19 @@ msgstr "Выберите папки, из которых Maki читает фа�
 msgid "Pick the one that looks best and Maki downloads it again from there."
 msgstr "Выберите тот, что выглядит лучше, и Maki загрузит его снова оттуда."
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Pick the root folder for a new series by its type, genre, rating or how it came in."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Pick the source a replacement comes from, or delete the file through a review."
 msgstr "Выберите источник для замены или удалите файл через проверку."
+
+#: src/components/import/MihonReview.tsx
+#: src/components/ImportListsSection.tsx
+msgid "Picked by the root folder rules"
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Picked by your content rating rule in Settings."
@@ -18522,6 +18611,10 @@ msgstr ""
 #, fuzzy
 msgid "Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS."
 msgstr "Поставьте Maki за HTTPS, затем включите Настройки → Система → Сеть → Требовать HTTPS."
+
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Put it in"
+msgstr ""
 
 #: src/components/home/ReadingCardMenu.tsx
 msgid "Put on hold"
@@ -19881,6 +19974,10 @@ msgstr "Удалить файлы {seriesTitle}?"
 msgid "Remove the record"
 msgstr "Удалить запись"
 
+#: src/components/settings/RuleConditions.tsx
+msgid "Remove these conditions"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Remove this reading goal?"
@@ -20831,6 +20928,17 @@ msgstr "Корневая папка"
 msgid "Root folder path saved"
 msgstr ""
 
+#: src/components/settings/RootFolderRulesModal.tsx
+#: src/pages/settings/LibraryCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Root folder rules"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "root folder rules, routing, default folder, webtoon folder, adult folder, manhwa, manhua, content rating, where new series go"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/registry.ts
@@ -20875,9 +20983,14 @@ msgid "Rule {number}"
 msgstr "Правило {number}"
 
 #: src/components/pageconversion/EstimateTable.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #, fuzzy
 msgid "Rule {position}"
 msgstr "Правило {position}"
+
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Rule {position} would put {title} in <0>{path}</0>."
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -20885,6 +20998,7 @@ msgid "Rule editor view"
 msgstr "Вид редактора правил"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Rule is on"
 msgstr ""
 
@@ -21123,6 +21237,7 @@ msgid "Save range"
 msgstr "Сохранить диапазон"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Save rule"
 msgstr ""
 
@@ -21718,6 +21833,10 @@ msgstr "Искать метки и группы, например Черты п�
 msgid "Search the catalogue"
 msgstr "Поиск по каталогу"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Search the library"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Search the remaining sources for this title again. Sources already linked are left alone."
@@ -22033,6 +22152,7 @@ msgstr "Продолжение {relatedTo}"
 #: src/components/CatalogueFilters.tsx
 #: src/components/import/ManualImport.tsx
 #: src/components/RatingImportModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -22103,6 +22223,10 @@ msgstr "Формат папок серий"
 #, fuzzy
 msgid "Series has no root folder"
 msgstr "У серии нет корневой папки"
+
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Series it already placed stay where they are."
+msgstr ""
 
 #: src/components/settings/AutoTagRulesModal.tsx
 msgid "Series it already tagged keep the tag."
@@ -23317,6 +23441,10 @@ msgstr "Спин-офф {relatedTo}"
 msgid "Split"
 msgstr "Разделить"
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Split above {splitHeight} px"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Split from the tier above"
@@ -23326,6 +23454,14 @@ msgstr "Отделить от уровня выше"
 #, fuzzy
 msgid "Split into two pages"
 msgstr "Разделять на две страницы"
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Split pages taller than"
+msgstr ""
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Split very tall pages"
+msgstr ""
 
 #: src/components/notes/NoteBody.tsx
 #, fuzzy
@@ -23506,6 +23642,10 @@ msgstr "останутся на месте"
 #, fuzzy
 msgid "stays in the folder, the series folder already has a file with this name"
 msgstr "остаётся в папке, в папке серии уже есть файл с таким именем"
+
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "Stays one page at this height."
+msgstr ""
 
 #: src/components/QueuePause.tsx
 msgid "Stays paused until you press Resume."
@@ -23809,7 +23949,7 @@ msgid "Tag a series from its page, or add one here."
 msgstr ""
 
 #: src/components/settings/AutoTagRulesModal.tsx
-msgid "Tag a series when it is added and matches every condition of a rule."
+msgid "Tag a series when it is added and matches every condition of a rule, or of one of its alternatives."
 msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
@@ -23862,6 +24002,20 @@ msgstr "Теги для включения"
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Takes the colour of the page's edge."
+msgstr ""
+
+#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/StartStep.tsx
+msgid "Tall pages"
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "Tallest page"
+msgstr ""
+
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "Tallest page with its cuts"
 msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
@@ -25947,7 +26101,8 @@ msgstr "Неизвестно"
 msgid "Unknown date"
 msgstr "Неизвестная дата"
 
-#: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/conditionGroups.ts
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Unknown folder"
 msgstr ""
 
@@ -25956,7 +26111,7 @@ msgstr ""
 msgid "Unknown source"
 msgstr "Неизвестный источник"
 
-#: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/conditionGroups.ts
 msgid "Unknown user"
 msgstr ""
 
@@ -27065,6 +27220,10 @@ msgstr "WebP"
 msgid "Webtoon"
 msgstr "Вебтун"
 
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Webtoon strips taller than the height below are cut into several pages, in the gaps between panels where there are any. E-readers and KOReader handle these far better. Reading positions, bookmarks and notes move with their page."
+msgstr ""
+
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "Week of {label}: {time}"
 msgstr ""
@@ -27170,6 +27329,7 @@ msgid "When"
 msgstr "Когда"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "When a series is added and matches all of these"
 msgstr ""
 

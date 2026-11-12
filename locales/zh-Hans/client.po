@@ -1006,6 +1006,10 @@ msgstr "{chapter}，{reason}"
 msgid "{chapterCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapterCount, plural, other {# 个章节}}"
 
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "{chapterLabel}, page {pageNumber}, {pageHeight} px tall"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{chapterMax, plural, one {At most # chapter} other {At most # chapters}}"
@@ -2350,6 +2354,10 @@ msgstr "{pendingFiles, plural, other {正在转换，还剩 # 个文件未检查
 #, fuzzy
 msgid "{perSitting} ch. per sitting"
 msgstr "每次阅读 {perSitting} 章"
+
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "{pieces, plural, one {Becomes # page.} other {Becomes # pages. Each dashed line is a cut.}}"
+msgstr ""
 
 #: src/components/settings/AutoTagRulesModal.tsx
 msgid "{previewCount, plural, =0 {No series in the library match this rule without already carrying {applyingTag}.} one {# series matches this rule and will be tagged {applyingTag}.} other {# series match this rule and will be tagged {applyingTag}.}}"
@@ -3847,6 +3855,10 @@ msgstr "一次搜索"
 msgid "a second copy of another comic in the folder, which is used instead"
 msgstr "文件夹中另一本漫画的副本，将改用该副本"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "A series added without a chosen folder goes to the first rule it matches. With no match it goes to the first root folder, as before."
+msgstr ""
+
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "a series page"
@@ -4135,6 +4147,10 @@ msgstr "添加笔记"
 msgid "Add a rail"
 msgstr "添加推荐栏"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Add a root folder first"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Add a root folder in Settings, then come back to scan it for series to import."
@@ -4190,6 +4206,7 @@ msgstr "添加推荐栏"
 #: src/components/CatalogueRules.tsx
 #: src/components/pageconversion/ScopeStep.tsx
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #, fuzzy
 msgid "Add rule"
 msgstr "添加规则"
@@ -4679,6 +4696,10 @@ msgstr "同时同步「截至目前」的评分"
 msgid "Alt titles"
 msgstr "别名标题"
 
+#: src/components/settings/RuleConditions.tsx
+msgid "Alternative {number}"
+msgstr ""
+
 #: src/components/series/EditMetadataModal.tsx
 msgid "Alternative title"
 msgstr ""
@@ -4846,7 +4867,7 @@ msgstr "任意"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
-#: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RuleConditions.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -5429,6 +5450,10 @@ msgstr "返回发现"
 msgid "Back to library"
 msgstr "返回资料库"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Back to rules"
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/useReaderBack.ts
 #, fuzzy
@@ -5976,6 +6001,7 @@ msgstr "无法使用已保存的信息登录。"
 #: src/components/settings/FolderBrowserModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/RootFolderPathModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -6714,6 +6740,10 @@ msgstr "聊天 ID"
 msgid "Check"
 msgstr ""
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Check a series"
+msgstr ""
+
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Check against the site"
@@ -6813,6 +6843,10 @@ msgstr ""
 msgid "Checking for a new metadata snapshot"
 msgstr "正在检查新的元数据快照"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Checking the rules…"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Checks on the server and the library, and the repairs they found."
@@ -6825,6 +6859,7 @@ msgid "Chinese"
 msgstr "中文"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Choose"
 msgstr ""
 
@@ -7287,6 +7322,7 @@ msgstr "并行章节下载数"
 msgid "concurrent, workers, retry, max attempts, backoff"
 msgstr "并发、工作线程、重试、最大尝试次数、退避"
 
+#: src/components/settings/RuleConditions.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Conditions"
@@ -7917,6 +7953,7 @@ msgid "Couldn't sample"
 msgstr "无法采样"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Couldn't save the rule"
 msgstr ""
 
@@ -8348,6 +8385,7 @@ msgstr "定义"
 #: src/components/rails/DeleteRailDialog.tsx
 #: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -8471,6 +8509,7 @@ msgid "Delete request"
 msgstr "删除请求"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Delete rule"
 msgstr ""
 
@@ -9403,6 +9442,7 @@ msgid "Edit request for {title}"
 msgstr "编辑 {title} 的请求"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Edit rule"
 msgstr ""
 
@@ -10535,11 +10575,6 @@ msgstr "第一章已就绪"
 msgid "First download in progress"
 msgstr "首次下载进行中"
 
-#: src/components/ImportListsSection.tsx
-#, fuzzy
-msgid "First folder you can see"
-msgstr "你能看到的第一个文件夹"
-
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/theme-context.tsx
 #, fuzzy
@@ -10734,6 +10769,10 @@ msgstr ""
 #, fuzzy
 msgid "For apps that only connect to Komga, like Tachimanga."
 msgstr "适用于只连接 Komga 的应用，例如 Tachimanga。"
+
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "For example, send every manhwa and manhua to a webtoon folder."
+msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
@@ -12551,6 +12590,10 @@ msgstr "不计入你的追踪器、回顾、统计和阅读历史。"
 #, fuzzy
 msgid "kept where it is"
 msgstr "保持原位"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "Kept whole"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
@@ -14519,6 +14562,7 @@ msgstr "将 {tierLabel} 下移"
 msgid "Move {tierLabel} up"
 msgstr "将 {tierLabel} 上移"
 
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move down"
@@ -14577,6 +14621,7 @@ msgstr "移到顶部"
 msgid "Move to top of queue"
 msgstr "移到队列顶部"
 
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move up"
@@ -14975,6 +15020,7 @@ msgid "New recovery codes"
 msgstr "新的恢复码"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "New rule"
 msgstr ""
 
@@ -15528,6 +15574,10 @@ msgstr "没有其他来源收录它"
 msgid "No outside tools connected. That's fine, sources download on their own."
 msgstr "尚未连接外部工具。没关系，Maki 可以直接从来源下载。"
 
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "No page to preview yet. The preview uses the tallest page in your library."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "No pages"
@@ -15614,12 +15664,17 @@ msgstr "没有结果。"
 msgid "No root folders yet"
 msgstr "还没有根文件夹"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "No rule matches {title}, so it would go to <0>{fallback}</0>."
+msgstr ""
+
 #: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "No rules"
 msgstr "没有规则"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "No rules yet"
 msgstr ""
 
@@ -15636,6 +15691,10 @@ msgstr "尚无规则。添加规则以指定需要或排除的类型和标签。
 #, fuzzy
 msgid "No rules yet. Every file is converted at {stopLabel}."
 msgstr "还没有规则。所有文件都将在 {stopLabel} 时转换。"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "No rules yet. New series go to the first root folder."
+msgstr ""
 
 #: src/components/RatingImportModal.tsx
 msgid "No scores on {label} differ from your local ratings."
@@ -17130,6 +17189,10 @@ msgstr "仅安全标题"
 msgid "Only series I'm reading"
 msgstr "仅我正在阅读的系列"
 
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Only strips at least two and a half times as tall as they are wide are split."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Only the built-in reader records it."
@@ -17398,6 +17461,14 @@ msgstr ""
 #, fuzzy
 msgid "or"
 msgstr "或"
+
+#: src/components/settings/RuleConditions.tsx
+msgid "Or all of these"
+msgstr ""
+
+#: src/components/settings/RuleConditions.tsx
+msgid "Or match other conditions"
+msgstr ""
 
 #: src/components/import/ImportMatchFinder.tsx
 #, fuzzy
@@ -17701,6 +17772,10 @@ msgstr "页面保持下载时的样子。已转换的文件保持转换后的状
 msgid "Pages stay as they were downloaded."
 msgstr "页面保持下载时的原样。"
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Pages taller than {pixels} px are split."
+msgstr ""
+
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "Pages under 16 KB are always kept as they are."
@@ -17989,6 +18064,10 @@ msgstr "选择根文件夹"
 msgid "Pick a root folder and scan it"
 msgstr "选择根文件夹并扫描"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Pick a root folder."
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Pick a source by"
@@ -18015,6 +18094,7 @@ msgid "Pick another page"
 msgstr "选择其他页面"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Pick at least one condition."
 msgstr ""
 
@@ -18053,10 +18133,19 @@ msgstr "选择 Maki 读取和下载内容的文件夹，以及如何处理其中
 msgid "Pick the one that looks best and Maki downloads it again from there."
 msgstr "选择看起来最好的那个，Maki 会从那里重新下载。"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Pick the root folder for a new series by its type, genre, rating or how it came in."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Pick the source a replacement comes from, or delete the file through a review."
 msgstr "选择替换版本的来源，或通过审核删除此文件。"
+
+#: src/components/import/MihonReview.tsx
+#: src/components/ImportListsSection.tsx
+msgid "Picked by the root folder rules"
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Picked by your content rating rule in Settings."
@@ -18522,6 +18611,10 @@ msgstr ""
 #, fuzzy
 msgid "Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS."
 msgstr "请将它放在 HTTPS 之后，然后开启 设置 → 系统 → 网络 → 要求 HTTPS。"
+
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Put it in"
+msgstr ""
 
 #: src/components/home/ReadingCardMenu.tsx
 msgid "Put on hold"
@@ -19881,6 +19974,10 @@ msgstr "要移除 {seriesTitle} 的文件吗？"
 msgid "Remove the record"
 msgstr "移除记录"
 
+#: src/components/settings/RuleConditions.tsx
+msgid "Remove these conditions"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Remove this reading goal?"
@@ -20831,6 +20928,17 @@ msgstr "根文件夹"
 msgid "Root folder path saved"
 msgstr ""
 
+#: src/components/settings/RootFolderRulesModal.tsx
+#: src/pages/settings/LibraryCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Root folder rules"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "root folder rules, routing, default folder, webtoon folder, adult folder, manhwa, manhua, content rating, where new series go"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/registry.ts
@@ -20875,9 +20983,14 @@ msgid "Rule {number}"
 msgstr "规则 {number}"
 
 #: src/components/pageconversion/EstimateTable.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #, fuzzy
 msgid "Rule {position}"
 msgstr "规则 {position}"
+
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Rule {position} would put {title} in <0>{path}</0>."
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -20885,6 +20998,7 @@ msgid "Rule editor view"
 msgstr "规则编辑器视图"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Rule is on"
 msgstr ""
 
@@ -21123,6 +21237,7 @@ msgid "Save range"
 msgstr "保存范围"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Save rule"
 msgstr ""
 
@@ -21718,6 +21833,10 @@ msgstr "搜索标签或分组，例如“性格特征”"
 msgid "Search the catalogue"
 msgstr "搜索目录"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Search the library"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Search the remaining sources for this title again. Sources already linked are left alone."
@@ -22033,6 +22152,7 @@ msgstr "{relatedTo} 的续篇"
 #: src/components/CatalogueFilters.tsx
 #: src/components/import/ManualImport.tsx
 #: src/components/RatingImportModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -22103,6 +22223,10 @@ msgstr "系列文件夹格式"
 #, fuzzy
 msgid "Series has no root folder"
 msgstr "系列没有根文件夹"
+
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Series it already placed stay where they are."
+msgstr ""
 
 #: src/components/settings/AutoTagRulesModal.tsx
 msgid "Series it already tagged keep the tag."
@@ -23317,6 +23441,10 @@ msgstr "{relatedTo} 的衍生作品"
 msgid "Split"
 msgstr "拆分"
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Split above {splitHeight} px"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Split from the tier above"
@@ -23326,6 +23454,14 @@ msgstr "与上一层级分开"
 #, fuzzy
 msgid "Split into two pages"
 msgstr "拆分为两页"
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Split pages taller than"
+msgstr ""
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Split very tall pages"
+msgstr ""
 
 #: src/components/notes/NoteBody.tsx
 #, fuzzy
@@ -23506,6 +23642,10 @@ msgstr "保持原位"
 #, fuzzy
 msgid "stays in the folder, the series folder already has a file with this name"
 msgstr "保留在文件夹中，系列文件夹中已有同名文件"
+
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "Stays one page at this height."
+msgstr ""
 
 #: src/components/QueuePause.tsx
 msgid "Stays paused until you press Resume."
@@ -23809,7 +23949,7 @@ msgid "Tag a series from its page, or add one here."
 msgstr ""
 
 #: src/components/settings/AutoTagRulesModal.tsx
-msgid "Tag a series when it is added and matches every condition of a rule."
+msgid "Tag a series when it is added and matches every condition of a rule, or of one of its alternatives."
 msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
@@ -23862,6 +24002,20 @@ msgstr "要包含的标签"
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Takes the colour of the page's edge."
+msgstr ""
+
+#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/StartStep.tsx
+msgid "Tall pages"
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "Tallest page"
+msgstr ""
+
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "Tallest page with its cuts"
 msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
@@ -25947,7 +26101,8 @@ msgstr "未知"
 msgid "Unknown date"
 msgstr "日期未知"
 
-#: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/conditionGroups.ts
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Unknown folder"
 msgstr ""
 
@@ -25956,7 +26111,7 @@ msgstr ""
 msgid "Unknown source"
 msgstr "未知来源"
 
-#: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/conditionGroups.ts
 msgid "Unknown user"
 msgstr ""
 
@@ -27065,6 +27220,10 @@ msgstr "WebP"
 msgid "Webtoon"
 msgstr "Webtoon"
 
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Webtoon strips taller than the height below are cut into several pages, in the gaps between panels where there are any. E-readers and KOReader handle these far better. Reading positions, bookmarks and notes move with their page."
+msgstr ""
+
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "Week of {label}: {time}"
 msgstr ""
@@ -27170,6 +27329,7 @@ msgid "When"
 msgstr "时间"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "When a series is added and matches all of these"
 msgstr ""
 

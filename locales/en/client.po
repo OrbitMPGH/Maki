@@ -867,6 +867,10 @@ msgstr "{chapter}, {reason}"
 msgid "{chapterCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapterCount, plural, one {# chapter} other {# chapters}}"
 
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "{chapterLabel}, page {pageNumber}, {pageHeight} px tall"
+msgstr "{chapterLabel}, page {pageNumber}, {pageHeight} px tall"
+
 #: src/pages/LibraryPage.tsx
 msgid "{chapterMax, plural, one {At most # chapter} other {At most # chapters}}"
 msgstr "{chapterMax, plural, one {At most # chapter} other {At most # chapters}}"
@@ -1992,6 +1996,10 @@ msgstr "{pendingFiles, plural, one {Converting, # file left to check.} other {Co
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "{perSitting} ch. per sitting"
 msgstr "{perSitting} ch. per sitting"
+
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "{pieces, plural, one {Becomes # page.} other {Becomes # pages. Each dashed line is a cut.}}"
+msgstr "{pieces, plural, one {Becomes # page.} other {Becomes # pages. Each dashed line is a cut.}}"
 
 #: src/components/settings/AutoTagRulesModal.tsx
 msgid "{previewCount, plural, =0 {No series in the library match this rule without already carrying {applyingTag}.} one {# series matches this rule and will be tagged {applyingTag}.} other {# series match this rule and will be tagged {applyingTag}.}}"
@@ -3218,6 +3226,10 @@ msgstr "a search"
 msgid "a second copy of another comic in the folder, which is used instead"
 msgstr "a second copy of another comic in the folder, which is used instead"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "A series added without a chosen folder goes to the first rule it matches. With no match it goes to the first root folder, as before."
+msgstr "A series added without a chosen folder goes to the first rule it matches. With no match it goes to the first root folder, as before."
+
 #: src/pages/discover/ShortlistTab.tsx
 msgid "a series page"
 msgstr "a series page"
@@ -3462,6 +3474,10 @@ msgstr "Add a note"
 msgid "Add a rail"
 msgstr "Add a rail"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Add a root folder first"
+msgstr "Add a root folder first"
+
 #: src/pages/ImportPage.tsx
 msgid "Add a root folder in Settings, then come back to scan it for series to import."
 msgstr "Add a root folder in Settings, then come back to scan it for series to import."
@@ -3507,6 +3523,7 @@ msgstr "Add rail"
 #: src/components/CatalogueRules.tsx
 #: src/components/pageconversion/ScopeStep.tsx
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Add rule"
 msgstr "Add rule"
 
@@ -3911,6 +3928,10 @@ msgstr "Also sync \"so far\" ratings"
 msgid "Alt titles"
 msgstr "Alt titles"
 
+#: src/components/settings/RuleConditions.tsx
+msgid "Alternative {number}"
+msgstr "Alternative {number}"
+
 #: src/components/series/EditMetadataModal.tsx
 msgid "Alternative title"
 msgstr "Alternative title"
@@ -4051,7 +4072,7 @@ msgstr "any"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
-#: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RuleConditions.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 msgid "Any"
@@ -4539,6 +4560,10 @@ msgstr "Back to Discover"
 msgid "Back to library"
 msgstr "Back to library"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Back to rules"
+msgstr "Back to rules"
+
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/useReaderBack.ts
 msgid "Back to series"
@@ -4996,6 +5021,7 @@ msgstr "Can't sign in with the saved details."
 #: src/components/settings/FolderBrowserModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/RootFolderPathModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -5606,6 +5632,10 @@ msgstr "Chat ID"
 msgid "Check"
 msgstr "Check"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Check a series"
+msgstr "Check a series"
+
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Check against the site"
 msgstr "Check against the site"
@@ -5689,6 +5719,10 @@ msgstr "Checking again every 30 seconds"
 msgid "Checking for a new metadata snapshot"
 msgstr "Checking for a new metadata snapshot"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Checking the rules…"
+msgstr "Checking the rules…"
+
 #: src/pages/HealthPage.tsx
 msgid "Checks on the server and the library, and the repairs they found."
 msgstr "Checks on the server and the library, and the repairs they found."
@@ -5699,6 +5733,7 @@ msgid "Chinese"
 msgstr "Chinese"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Choose"
 msgstr "Choose"
 
@@ -6086,6 +6121,7 @@ msgstr "Concurrent chapter downloads"
 msgid "concurrent, workers, retry, max attempts, backoff"
 msgstr "concurrent, workers, retry, max attempts, backoff"
 
+#: src/components/settings/RuleConditions.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Conditions"
 msgstr "Conditions"
@@ -6604,6 +6640,7 @@ msgid "Couldn't sample"
 msgstr "Couldn't sample"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Couldn't save the rule"
 msgstr "Couldn't save the rule"
 
@@ -6959,6 +6996,7 @@ msgstr "Definition"
 #: src/components/rails/DeleteRailDialog.tsx
 #: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -7063,6 +7101,7 @@ msgid "Delete request"
 msgstr "Delete request"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Delete rule"
 msgstr "Delete rule"
 
@@ -7838,6 +7877,7 @@ msgid "Edit request for {title}"
 msgstr "Edit request for {title}"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Edit rule"
 msgstr "Edit rule"
 
@@ -8774,10 +8814,6 @@ msgstr "First chapter ready"
 msgid "First download in progress"
 msgstr "First download in progress"
 
-#: src/components/ImportListsSection.tsx
-msgid "First folder you can see"
-msgstr "First folder you can see"
-
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/theme-context.tsx
 msgid "First page"
@@ -8940,6 +8976,10 @@ msgstr "For a re-mounted share or a library moved to new storage. Files are not 
 #: src/pages/settings/ReadingCards.tsx
 msgid "For apps that only connect to Komga, like Tachimanga."
 msgstr "For apps that only connect to Komga, like Tachimanga."
+
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "For example, send every manhwa and manhua to a webtoon folder."
+msgstr "For example, send every manhwa and manhua to a webtoon folder."
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "For reading apps like Panels, KOReader and Mihon."
@@ -10440,6 +10480,10 @@ msgstr "Kept out of your trackers, Rewind, stats and reading history."
 #: src/components/RelinkFilesModal.tsx
 msgid "kept where it is"
 msgstr "kept where it is"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "Kept whole"
+msgstr "Kept whole"
 
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
@@ -12074,6 +12118,7 @@ msgstr "Move {tierLabel} down"
 msgid "Move {tierLabel} up"
 msgstr "Move {tierLabel} up"
 
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Move down"
 msgstr "Move down"
@@ -12123,6 +12168,7 @@ msgstr "Move to top"
 msgid "Move to top of queue"
 msgstr "Move to top of queue"
 
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Move up"
 msgstr "Move up"
@@ -12452,6 +12498,7 @@ msgid "New recovery codes"
 msgstr "New recovery codes"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "New rule"
 msgstr "New rule"
 
@@ -12915,6 +12962,10 @@ msgstr "No other source lists it"
 msgid "No outside tools connected. That's fine, sources download on their own."
 msgstr "No outside tools connected. That's fine, sources download on their own."
 
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "No page to preview yet. The preview uses the tallest page in your library."
+msgstr "No page to preview yet. The preview uses the tallest page in your library."
+
 #: src/pages/HealthPage.tsx
 msgid "No pages"
 msgstr "No pages"
@@ -12984,11 +13035,16 @@ msgstr "No results."
 msgid "No root folders yet"
 msgstr "No root folders yet"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "No rule matches {title}, so it would go to <0>{fallback}</0>."
+msgstr "No rule matches {title}, so it would go to <0>{fallback}</0>."
+
 #: src/pages/PageConversionWizardPage.tsx
 msgid "No rules"
 msgstr "No rules"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "No rules yet"
 msgstr "No rules yet"
 
@@ -13003,6 +13059,10 @@ msgstr "No rules yet. Add one to require or rule out genres and tags. A series h
 #: src/components/pageconversion/ScopeStep.tsx
 msgid "No rules yet. Every file is converted at {stopLabel}."
 msgstr "No rules yet. Every file is converted at {stopLabel}."
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "No rules yet. New series go to the first root folder."
+msgstr "No rules yet. New series go to the first root folder."
 
 #: src/components/RatingImportModal.tsx
 msgid "No scores on {label} differ from your local ratings."
@@ -14240,6 +14300,10 @@ msgstr "Only safe titles"
 msgid "Only series I'm reading"
 msgstr "Only series I'm reading"
 
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Only strips at least two and a half times as tall as they are wide are split."
+msgstr "Only strips at least two and a half times as tall as they are wide are split."
+
 #: src/pages/discover/TasteTab.tsx
 msgid "Only the built-in reader records it."
 msgstr "Only the built-in reader records it."
@@ -14464,6 +14528,14 @@ msgstr "Options for {name}"
 #: src/pages/LoginPage.tsx
 msgid "or"
 msgstr "or"
+
+#: src/components/settings/RuleConditions.tsx
+msgid "Or all of these"
+msgstr "Or all of these"
+
+#: src/components/settings/RuleConditions.tsx
+msgid "Or match other conditions"
+msgstr "Or match other conditions"
 
 #: src/components/import/ImportMatchFinder.tsx
 msgid "or paste an id or link"
@@ -14715,6 +14787,10 @@ msgstr "Pages stay as they are downloaded. Files already converted stay converte
 msgid "Pages stay as they were downloaded."
 msgstr "Pages stay as they were downloaded."
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Pages taller than {pixels} px are split."
+msgstr "Pages taller than {pixels} px are split."
+
 #: src/components/pageconversion/labels.ts
 msgid "Pages under 16 KB are always kept as they are."
 msgstr "Pages under 16 KB are always kept as they are."
@@ -14951,6 +15027,10 @@ msgstr "Pick a root folder"
 msgid "Pick a root folder and scan it"
 msgstr "Pick a root folder and scan it"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Pick a root folder."
+msgstr "Pick a root folder."
+
 #: src/pages/settings/DownloadCards.tsx
 msgid "Pick a source by"
 msgstr "Pick a source by"
@@ -14973,6 +15053,7 @@ msgid "Pick another page"
 msgstr "Pick another page"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Pick at least one condition."
 msgstr "Pick at least one condition."
 
@@ -15008,9 +15089,18 @@ msgstr "Pick the folders Maki reads from and downloads into, and how it treats t
 msgid "Pick the one that looks best and Maki downloads it again from there."
 msgstr "Pick the one that looks best and Maki downloads it again from there."
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Pick the root folder for a new series by its type, genre, rating or how it came in."
+msgstr "Pick the root folder for a new series by its type, genre, rating or how it came in."
+
 #: src/pages/HealthPage.tsx
 msgid "Pick the source a replacement comes from, or delete the file through a review."
 msgstr "Pick the source a replacement comes from, or delete the file through a review."
+
+#: src/components/import/MihonReview.tsx
+#: src/components/ImportListsSection.tsx
+msgid "Picked by the root folder rules"
+msgstr "Picked by the root folder rules"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Picked by your content rating rule in Settings."
@@ -15398,6 +15488,10 @@ msgstr "Put back the files as they were downloaded."
 #: src/pages/SetupAccountPage.tsx
 msgid "Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS."
 msgstr "Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS."
+
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Put it in"
+msgstr "Put it in"
 
 #: src/components/home/ReadingCardMenu.tsx
 msgid "Put on hold"
@@ -16525,6 +16619,10 @@ msgstr "Remove the files of {seriesTitle}?"
 msgid "Remove the record"
 msgstr "Remove the record"
 
+#: src/components/settings/RuleConditions.tsx
+msgid "Remove these conditions"
+msgstr "Remove these conditions"
+
 #: src/components/settings/ProgressSection.tsx
 msgid "Remove this reading goal?"
 msgstr "Remove this reading goal?"
@@ -17313,6 +17411,17 @@ msgstr "Root folder"
 msgid "Root folder path saved"
 msgstr "Root folder path saved"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+#: src/pages/settings/LibraryCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Root folder rules"
+msgstr "Root folder rules"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "root folder rules, routing, default folder, webtoon folder, adult folder, manhwa, manhua, content rating, where new series go"
+msgstr "root folder rules, routing, default folder, webtoon folder, adult folder, manhwa, manhua, content rating, where new series go"
+
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/registry.ts
@@ -17349,14 +17458,20 @@ msgid "Rule {number}"
 msgstr "Rule {number}"
 
 #: src/components/pageconversion/EstimateTable.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Rule {position}"
 msgstr "Rule {position}"
+
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Rule {position} would put {title} in <0>{path}</0>."
+msgstr "Rule {position} would put {title} in <0>{path}</0>."
 
 #: src/components/CatalogueRules.tsx
 msgid "Rule editor view"
 msgstr "Rule editor view"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Rule is on"
 msgstr "Rule is on"
 
@@ -17553,6 +17668,7 @@ msgid "Save range"
 msgstr "Save range"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Save rule"
 msgstr "Save rule"
 
@@ -18043,6 +18159,10 @@ msgstr "Search tags or groups like Character Traits"
 msgid "Search the catalogue"
 msgstr "Search the catalogue"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Search the library"
+msgstr "Search the library"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Search the remaining sources for this title again. Sources already linked are left alone."
 msgstr "Search the remaining sources for this title again. Sources already linked are left alone."
@@ -18306,6 +18426,7 @@ msgstr "Sequel to {relatedTo}"
 #: src/components/CatalogueFilters.tsx
 #: src/components/import/ManualImport.tsx
 #: src/components/RatingImportModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -18363,6 +18484,10 @@ msgstr "Series folder format"
 #: src/api/queue.ts
 msgid "Series has no root folder"
 msgstr "Series has no root folder"
+
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Series it already placed stay where they are."
+msgstr "Series it already placed stay where they are."
 
 #: src/components/settings/AutoTagRulesModal.tsx
 msgid "Series it already tagged keep the tag."
@@ -19371,6 +19496,10 @@ msgstr "Spin-off of {relatedTo}"
 msgid "Split"
 msgstr "Split"
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Split above {splitHeight} px"
+msgstr "Split above {splitHeight} px"
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Split from the tier above"
 msgstr "Split from the tier above"
@@ -19378,6 +19507,14 @@ msgstr "Split from the tier above"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Split into two pages"
 msgstr "Split into two pages"
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Split pages taller than"
+msgstr "Split pages taller than"
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Split very tall pages"
+msgstr "Split very tall pages"
 
 #: src/components/notes/NoteBody.tsx
 msgid "Spoiler, press to reveal"
@@ -19526,6 +19663,10 @@ msgstr "stay where they are"
 #: src/api/libraryImport.ts
 msgid "stays in the folder, the series folder already has a file with this name"
 msgstr "stays in the folder, the series folder already has a file with this name"
+
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "Stays one page at this height."
+msgstr "Stays one page at this height."
 
 #: src/components/QueuePause.tsx
 msgid "Stays paused until you press Resume."
@@ -19778,8 +19919,8 @@ msgid "Tag a series from its page, or add one here."
 msgstr "Tag a series from its page, or add one here."
 
 #: src/components/settings/AutoTagRulesModal.tsx
-msgid "Tag a series when it is added and matches every condition of a rule."
-msgstr "Tag a series when it is added and matches every condition of a rule."
+msgid "Tag a series when it is added and matches every condition of a rule, or of one of its alternatives."
+msgstr "Tag a series when it is added and matches every condition of a rule, or of one of its alternatives."
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "Tag series as they are added, by genre, type, rating, folder or how they came in."
@@ -19826,6 +19967,20 @@ msgstr "Tags to include"
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Takes the colour of the page's edge."
 msgstr "Takes the colour of the page's edge."
+
+#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/StartStep.tsx
+msgid "Tall pages"
+msgstr "Tall pages"
+
+#: src/components/pageconversion/labels.ts
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "Tallest page"
+msgstr "Tallest page"
+
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "Tallest page with its cuts"
+msgstr "Tallest page with its cuts"
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen"
@@ -21548,7 +21703,8 @@ msgstr "Unknown"
 msgid "Unknown date"
 msgstr "Unknown date"
 
-#: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/conditionGroups.ts
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Unknown folder"
 msgstr "Unknown folder"
 
@@ -21556,7 +21712,7 @@ msgstr "Unknown folder"
 msgid "Unknown source"
 msgstr "Unknown source"
 
-#: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/conditionGroups.ts
 msgid "Unknown user"
 msgstr "Unknown user"
 
@@ -22471,6 +22627,10 @@ msgstr "WebP"
 msgid "Webtoon"
 msgstr "Webtoon"
 
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Webtoon strips taller than the height below are cut into several pages, in the gaps between panels where there are any. E-readers and KOReader handle these far better. Reading positions, bookmarks and notes move with their page."
+msgstr "Webtoon strips taller than the height below are cut into several pages, in the gaps between panels where there are any. E-readers and KOReader handle these far better. Reading positions, bookmarks and notes move with their page."
+
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "Week of {label}: {time}"
 msgstr "Week of {label}: {time}"
@@ -22557,6 +22717,7 @@ msgid "When"
 msgstr "When"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "When a series is added and matches all of these"
 msgstr "When a series is added and matches all of these"
 
