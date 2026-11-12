@@ -231,6 +231,7 @@ try
     builder.Services.AddSingleton(SearchTuning.Default.Catalogue);
     builder.Services.AddSingleton<IMetadataProvider, MangaBakaProvider>();
     builder.Services.AddSingleton<CoverService>();
+    builder.Services.AddSingleton<CoverFetcher>();
     builder.Services.AddSingleton<SignInMosaicService>();
     builder.Services.AddSingleton<CoverAccentCache>();
     // Seed weights derived from reading behaviour, for the seeds a user never rated. Same shape as

@@ -182,6 +182,10 @@ const seriesMutations: HttpHandler[] = [
   http.put(api('/series/:id/metadata'), () => HttpResponse.json({ lockedFields: ['title'], refreshed: true, coverRestored: false })),
   http.post(api('/series/:id/metadata/reset'), () => HttpResponse.json({ lockedFields: [], refreshed: true, coverRestored: true })),
   http.post(api('/mediacover/:id/cover'), () => HttpResponse.json({ coverUrl: '/mock/cover/1.svg', lockedFields: ['cover'] })),
+  http.get(api('/mediacover/:id/cover/chapter/:chapterId/pages'), () => HttpResponse.json({ pageCount: 18 })),
+  http.post(api('/mediacover/:id/cover/from-page'), () => HttpResponse.json({ coverUrl: '/mock/cover/1.svg', lockedFields: ['cover'] })),
+  http.post(api('/mediacover/:id/cover/from-source'), () => HttpResponse.json({ coverUrl: '/mock/cover/1.svg', lockedFields: ['cover'] })),
+  http.post(api('/mediacover/:id/cover/from-url'), () => HttpResponse.json({ coverUrl: '/mock/cover/1.svg', lockedFields: ['cover'] })),
   http.post(api('/sourcemapping'), async ({ request }) =>
     HttpResponse.json({ ...mappingsFor(1)[0], ...(await bodyOf(request)), id: 99, enabled: true, origin: 'Manual' }),
   ),

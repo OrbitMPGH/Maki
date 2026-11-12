@@ -207,7 +207,22 @@ export interface SeriesDto {
 }
 
 /** The camelCase names of `SeriesMetadataField` on the server. */
-export type MetadataField = 'title' | 'overview' | 'status' | 'totalChapters' | 'totalVolumes' | 'genres' | 'cover'
+export type MetadataField =
+  | 'title'
+  | 'overview'
+  | 'status'
+  | 'totalChapters'
+  | 'totalVolumes'
+  | 'genres'
+  | 'cover'
+  | 'year'
+  | 'authorStory'
+  | 'authorArt'
+  | 'publisher'
+  | 'altTitles'
+  | 'sortTitle'
+  | 'type'
+  | 'contentRating'
 
 /** A user-assigned library label. `color` is a Mantine colour name. */
 export interface TagDto {

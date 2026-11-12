@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, apiUpload } from './client'
-import type { MetadataField } from './types'
+import type { LocalizedTitle, MetadataField } from './types'
 
 export interface MetadataState {
   lockedFields: MetadataField[]
@@ -19,6 +19,17 @@ export interface EditMetadataRequest {
   totalChapters?: number | null
   totalVolumes?: number | null
   genres?: string[]
+  year?: number | null
+  authorStory?: string | null
+  authorArt?: string | null
+  publisher?: string | null
+  altTitles?: LocalizedTitle[]
+  /** Stored lowercased, as every sort over it is ordinal. */
+  sortTitle?: string
+  /** One of `SERIES_TYPES`, or null to clear. */
+  type?: string | null
+  /** At or below the editor's own ceiling, or null to clear (only an unrestricted editor may). */
+  contentRating?: string | null
 }
 
 /** One row of a series' metadata history. Values are invariant text: a status by its server name, counts as digits. */
@@ -65,6 +76,34 @@ export function useResetSeriesMetadata() {
   return useMutation({
     mutationFn: ({ seriesId, fields }: { seriesId: number; fields: MetadataField[] }) =>
       api<MetadataState>(`/series/${seriesId}/metadata/reset`, { method: 'POST', body: JSON.stringify({ fields }) }),
+    onSuccess: (_data, { seriesId }) => invalidate(seriesId),
+  })
+}
+
+type CoverResult = { coverUrl: string | null; lockedFields: MetadataField[] }
+
+/** Pages in a downloaded chapter of this series, for picking one as the poster. */
+export function useCoverChapterPages(seriesId: number, chapterId: number | null) {
+  return useQuery({
+    queryKey: ['series', seriesId, 'cover-pages', chapterId],
+    queryFn: () => api<{ pageCount: number }>(`/mediacover/${seriesId}/cover/chapter/${chapterId}/pages`),
+    enabled: chapterId != null,
+  })
+}
+
+export type CoverPick =
+  | { from: 'page'; chapterId: number; page: number }
+  | { from: 'source'; mappingId: number }
+  | { from: 'url'; url: string }
+
+/** Sets the poster from a chapter page (0-based), a linked source's cover, or a URL (admins only). Locks it like an upload. */
+export function usePickSeriesCover() {
+  const invalidate = useInvalidateSeries()
+  return useMutation({
+    mutationFn: ({ seriesId, pick }: { seriesId: number; pick: CoverPick }) => {
+      const { from, ...body } = pick
+      return api<CoverResult>(`/mediacover/${seriesId}/cover/from-${from}`, { method: 'POST', body: JSON.stringify(body) })
+    },
     onSuccess: (_data, { seriesId }) => invalidate(seriesId),
   })
 }

@@ -6,6 +6,8 @@ import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { MetadataField } from '../../api/types'
 import { type MetadataChange, useSeriesMetadataHistory } from '../../api/seriesMetadata'
 import { seriesStatusVisual } from '../ui/status'
+import { CONTENT_RATING_LABELS } from '../../api/hooks'
+import { SERIES_TYPE_LABELS } from '../../api/readingProfiles'
 import { useLabel } from '../../i18n-context'
 import { formatDateTime } from '../../format'
 import { IconArrowRight } from '../../lib/icons'
@@ -20,6 +22,14 @@ const FIELD_LABELS: Record<MetadataField, MessageDescriptor> = {
   totalVolumes: msg`Total volumes`,
   genres: msg`Genres`,
   cover: msg`Poster`,
+  year: msg`Year`,
+  authorStory: msg`Story`,
+  authorArt: msg`Art`,
+  publisher: msg`Publisher`,
+  altTitles: msg`Alternative titles`,
+  sortTitle: msg`Sort title`,
+  type: msg`Type`,
+  contentRating: msg`Content rating`,
 }
 
 interface ChangeGroup {
@@ -125,7 +135,11 @@ function ChangeLine({ change }: { change: MetadataChange }) {
       ? t`none`
       : change.field === 'status'
         ? renderLabel(seriesStatusVisual(value).label)
-        : value
+        : change.field === 'type' && SERIES_TYPE_LABELS[value]
+          ? renderLabel(SERIES_TYPE_LABELS[value])
+          : change.field === 'contentRating' && CONTENT_RATING_LABELS[value]
+            ? renderLabel(CONTENT_RATING_LABELS[value])
+            : value
 
   return (
     <div className="metadata-timeline-change">

@@ -904,6 +904,19 @@ msgid "error.metadata.invalidStatus"
 msgstr "Unknown status."
 
 #: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.invalidYear"
+msgstr "The year must be between {minYear} and {maxYear}."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.unknownType"
+msgstr "Unknown series type."
+
+#. {url} is the address the user entered. {status} is an HTTP status code.
+#: src/Maki.Api/Controllers/MediaCoverController.cs
+msgid "error.metadata.coverFetchFailed"
+msgstr "{reason, select, refused {Maki only fetches images from public web addresses, so it skipped {url}.} timeout {{url} took too long to answer.} status {{url} answered with HTTP {status}.} redirects {{url} redirected too many times.} other {Maki could not reach {url}.}}"
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
 msgid "error.metadata.noFields"
 msgstr "Choose at least one field."
 

@@ -128,7 +128,11 @@ public class SeriesMetadataRefreshService(
 
         // Not ??-coalesced: a provider that stops reporting a type should clear it rather than
         // pin a reading profile onto a series it no longer classifies.
-        series.Type = metadata.Type;
+        if (Open(SeriesMetadataField.Type))
+        {
+            series.Type = metadata.Type;
+        }
+
         if (Open(SeriesMetadataField.Overview))
         {
             series.Overview = Restoring(SeriesMetadataField.Overview)
@@ -142,10 +146,23 @@ public class SeriesMetadataRefreshService(
         }
 
         series.Tags = [.. metadata.Tags];
-        series.ContentRating = metadata.ContentRating ?? series.ContentRating;
-        series.AltTitles = [.. metadata.AltTitles];
+        if (Open(SeriesMetadataField.ContentRating))
+        {
+            series.ContentRating = Restoring(SeriesMetadataField.ContentRating)
+                ? metadata.ContentRating
+                : metadata.ContentRating ?? series.ContentRating;
+        }
 
-        series.Year = metadata.Year ?? series.Year;
+        if (Open(SeriesMetadataField.AltTitles))
+        {
+            series.AltTitles = [.. metadata.AltTitles];
+        }
+
+        if (Open(SeriesMetadataField.Year))
+        {
+            series.Year = Restoring(SeriesMetadataField.Year) ? metadata.Year : metadata.Year ?? series.Year;
+        }
+
         if (Open(SeriesMetadataField.TotalChapters))
         {
             series.TotalChapters = Restoring(SeriesMetadataField.TotalChapters)
@@ -160,9 +177,27 @@ public class SeriesMetadataRefreshService(
                 : metadata.TotalVolumes ?? series.TotalVolumes;
         }
 
-        series.AuthorStory = metadata.AuthorStory ?? series.AuthorStory;
-        series.AuthorArt = metadata.AuthorArt ?? series.AuthorArt;
-        series.Publisher = metadata.Publisher ?? series.Publisher;
+        if (Open(SeriesMetadataField.AuthorStory))
+        {
+            series.AuthorStory = Restoring(SeriesMetadataField.AuthorStory)
+                ? metadata.AuthorStory
+                : metadata.AuthorStory ?? series.AuthorStory;
+        }
+
+        if (Open(SeriesMetadataField.AuthorArt))
+        {
+            series.AuthorArt = Restoring(SeriesMetadataField.AuthorArt)
+                ? metadata.AuthorArt
+                : metadata.AuthorArt ?? series.AuthorArt;
+        }
+
+        if (Open(SeriesMetadataField.Publisher))
+        {
+            series.Publisher = Restoring(SeriesMetadataField.Publisher)
+                ? metadata.Publisher
+                : metadata.Publisher ?? series.Publisher;
+        }
+
         series.HasAnime = metadata.HasAnime;
 
         series.AnimeName = metadata.AnimeName ?? series.AnimeName;
@@ -176,7 +211,11 @@ public class SeriesMetadataRefreshService(
         if (Open(SeriesMetadataField.Title))
         {
             series.Title = metadata.Title;
-            series.SortTitle = SeriesMetadataMapper.SortTitleFor(metadata.Title);
+        }
+
+        if (Open(SeriesMetadataField.SortTitle) && (Open(SeriesMetadataField.Title) || Restoring(SeriesMetadataField.SortTitle)))
+        {
+            series.SortTitle = SeriesMetadataMapper.SortTitleFor(series.Title);
         }
 
         series.OriginalTitle = metadata.OriginalTitle ?? series.OriginalTitle;

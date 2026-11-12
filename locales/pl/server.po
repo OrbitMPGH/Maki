@@ -1281,6 +1281,22 @@ msgstr "Liczba rozdziałów i tomów musi mieścić się w zakresie od 0 do {max
 msgid "error.metadata.invalidStatus"
 msgstr "Nieznany status."
 
+#. English: The year must be between {minYear} and {maxYear}.
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.invalidYear"
+msgstr ""
+
+#. English: Unknown series type.
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.unknownType"
+msgstr ""
+
+#. {url} is the address the user entered. {status} is an HTTP status code.
+#. English: {reason, select, refused {Maki only fetches images from public web addresses, so it skipped {url}.} timeout {{url} took too long to answer.} status {{url} answered with HTTP {status}.} redirects {{url} redirected too many times.} other {Maki could not reach {url}.}}
+#: src/Maki.Api/Controllers/MediaCoverController.cs
+msgid "error.metadata.coverFetchFailed"
+msgstr ""
+
 #. English: Choose at least one field.
 #: src/Maki.Api/Controllers/SeriesMetadataController.cs
 #, fuzzy

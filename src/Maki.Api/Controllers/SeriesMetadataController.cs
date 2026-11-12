@@ -7,6 +7,7 @@ using Maki.Core.Entities;
 using Maki.Core.Metadata;
 using Maki.Core.Security;
 using Maki.Data;
+using Maki.Metadata.MangaBaka;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -41,10 +42,17 @@ public class SeriesMetadataController(
     internal const int MaxGenres = 50;
     internal const int MaxGenreLength = 100;
     internal const int MaxCount = 100_000;
+    internal const int MinYear = 1800;
+    internal const int MaxYear = 2100;
+    internal const int MaxAltTitles = 100;
+    internal const int MaxLanguageLength = 20;
 
     private const SeriesMetadataField Editable =
         SeriesMetadataField.Title | SeriesMetadataField.Overview | SeriesMetadataField.Status |
-        SeriesMetadataField.TotalChapters | SeriesMetadataField.TotalVolumes | SeriesMetadataField.Genres;
+        SeriesMetadataField.TotalChapters | SeriesMetadataField.TotalVolumes | SeriesMetadataField.Genres |
+        SeriesMetadataField.Year | SeriesMetadataField.AuthorStory | SeriesMetadataField.AuthorArt |
+        SeriesMetadataField.Publisher | SeriesMetadataField.AltTitles | SeriesMetadataField.SortTitle |
+        SeriesMetadataField.Type | SeriesMetadataField.ContentRating;
 
     /// <param name="Fields">
     /// The fields to set, by their camelCase name. Only these are read from the request, so a null
@@ -57,7 +65,15 @@ public class SeriesMetadataController(
         string? Status = null,
         int? TotalChapters = null,
         int? TotalVolumes = null,
-        IReadOnlyList<string>? Genres = null);
+        IReadOnlyList<string>? Genres = null,
+        int? Year = null,
+        string? AuthorStory = null,
+        string? AuthorArt = null,
+        string? Publisher = null,
+        IReadOnlyList<LocalizedTitleDto>? AltTitles = null,
+        string? SortTitle = null,
+        string? Type = null,
+        string? ContentRating = null);
 
     public record ResetMetadataRequest(IReadOnlyList<string>? Fields);
 
@@ -133,13 +149,19 @@ public class SeriesMetadataController(
 
         if (Validate(request, fields) is { } error)
         {
-            return this.Fail(localizer, error, new { max = MaxCount });
+            return this.Fail(localizer, error, new { max = MaxCount, minYear = MinYear, maxYear = MaxYear, ratings = string.Join(", ", ContentRating.All) });
+        }
+
+        if (Has(fields, SeriesMetadataField.ContentRating) && !MayRate(series.ContentRating, request.ContentRating))
+        {
+            return this.Fail(localizer, "error.preview.contentRating");
         }
 
         var before = SeriesMetadataChangeLog.Snapshot.Of(series);
         var oldKey = SeriesIdentity.For(series);
         var overview = series.Overview;
         var genres = string.Join(", ", series.Genres);
+        var altTitles = series.AltTitles;
         Apply(series, request, fields);
 
         var userId = currentUser.UserId;
@@ -151,9 +173,15 @@ public class SeriesMetadataController(
         changeLog.Record(series, SeriesMetadataField.TotalVolumes,
             SeriesMetadataChangeLog.Text(before.TotalVolumes), SeriesMetadataChangeLog.Text(series.TotalVolumes), user, userId);
         changeLog.Record(series, SeriesMetadataField.Genres, genres, string.Join(", ", series.Genres), user, userId);
+        changeLog.RecordDetails(series, before, user, userId);
         if (!string.Equals(overview, series.Overview, StringComparison.Ordinal))
         {
             changeLog.RecordReplaced(series, SeriesMetadataField.Overview, userId);
+        }
+
+        if (!SeriesMetadataChangeLog.SameTitles(altTitles, series.AltTitles))
+        {
+            changeLog.RecordReplaced(series, SeriesMetadataField.AltTitles, userId);
         }
 
         await SaveAsync(series, oldKey, fields, SeriesMetadataField.None, ct);
@@ -179,6 +207,12 @@ public class SeriesMetadataController(
         if (fields == SeriesMetadataField.None)
         {
             return this.Fail(localizer, "error.metadata.noFields");
+        }
+
+        if (Has(fields, SeriesMetadataField.ContentRating) &&
+            !ContentRating.Permits(series.ContentRating, currentUser.MaxContentRating))
+        {
+            return this.Fail(localizer, "error.preview.contentRating");
         }
 
         var oldKey = SeriesIdentity.For(series);
@@ -299,7 +333,66 @@ public class SeriesMetadataController(
             }
         }
 
+        if (Has(fields, SeriesMetadataField.Year) && request.Year is < MinYear or > MaxYear)
+        {
+            return "error.metadata.invalidYear";
+        }
+
+        if ((Has(fields, SeriesMetadataField.AuthorStory) && request.AuthorStory?.Trim().Length > MaxTitleLength) ||
+            (Has(fields, SeriesMetadataField.AuthorArt) && request.AuthorArt?.Trim().Length > MaxTitleLength) ||
+            (Has(fields, SeriesMetadataField.Publisher) && request.Publisher?.Trim().Length > MaxTitleLength))
+        {
+            return "error.metadata.tooLong";
+        }
+
+        if (Has(fields, SeriesMetadataField.AltTitles))
+        {
+            var titles = CleanAltTitles(request.AltTitles);
+            if (titles.Count > MaxAltTitles ||
+                titles.Any(t => t.Title.Length > MaxTitleLength || t.Language?.Length > MaxLanguageLength))
+            {
+                return "error.metadata.tooLong";
+            }
+        }
+
+        if (Has(fields, SeriesMetadataField.SortTitle))
+        {
+            var sortTitle = request.SortTitle?.Trim();
+            if (string.IsNullOrEmpty(sortTitle))
+            {
+                return "error.metadata.titleRequired";
+            }
+
+            if (sortTitle.Length > MaxTitleLength)
+            {
+                return "error.metadata.tooLong";
+            }
+        }
+
+        if (Has(fields, SeriesMetadataField.Type) && !string.IsNullOrWhiteSpace(request.Type) &&
+            SeriesTypes.Normalize(request.Type) is null)
+        {
+            return "error.metadata.unknownType";
+        }
+
+        if (Has(fields, SeriesMetadataField.ContentRating) && CleanRating(request.ContentRating) is { } rating &&
+            !ContentRating.IsValid(rating))
+        {
+            return "error.users.invalidContentRating";
+        }
+
         return null;
+    }
+
+    /// <summary>
+    /// The editor's own content-rating ceiling bounds both ends of a rating edit: no relabelling a
+    /// series rated above it (that would lower it into other restricted users' rails), and no rating
+    /// above it. An unrated series counts as above a partial ceiling, as the rated lists treat a null.
+    /// </summary>
+    private bool MayRate(string? current, string? requested)
+    {
+        var max = currentUser.MaxContentRating;
+        return ContentRating.Permits(current, max) && ContentRating.Permits(CleanRating(requested), max);
     }
 
     private static void Apply(Series series, EditMetadataRequest request, SeriesMetadataField fields)
@@ -308,7 +401,15 @@ public class SeriesMetadataController(
         {
             var title = request.Title!.Trim();
             series.Title = title;
-            series.SortTitle = SeriesMetadataMapper.SortTitleFor(title);
+            if (!Has(fields, SeriesMetadataField.SortTitle) && !series.IsLocked(SeriesMetadataField.SortTitle))
+            {
+                series.SortTitle = SeriesMetadataMapper.SortTitleFor(title);
+            }
+        }
+
+        if (Has(fields, SeriesMetadataField.SortTitle))
+        {
+            series.SortTitle = SeriesMetadataMapper.SortTitleFromUser(request.SortTitle!);
         }
 
         if (Has(fields, SeriesMetadataField.Overview))
@@ -335,7 +436,54 @@ public class SeriesMetadataController(
         {
             series.Genres = CleanGenres(request.Genres);
         }
+
+        if (Has(fields, SeriesMetadataField.Year))
+        {
+            series.Year = request.Year;
+        }
+
+        if (Has(fields, SeriesMetadataField.AuthorStory))
+        {
+            series.AuthorStory = CleanText(request.AuthorStory);
+        }
+
+        if (Has(fields, SeriesMetadataField.AuthorArt))
+        {
+            series.AuthorArt = CleanText(request.AuthorArt);
+        }
+
+        if (Has(fields, SeriesMetadataField.Publisher))
+        {
+            series.Publisher = CleanText(request.Publisher);
+        }
+
+        if (Has(fields, SeriesMetadataField.AltTitles))
+        {
+            series.AltTitles = CleanAltTitles(request.AltTitles);
+        }
+
+        if (Has(fields, SeriesMetadataField.Type))
+        {
+            series.Type = SeriesTypes.Normalize(request.Type);
+        }
+
+        if (Has(fields, SeriesMetadataField.ContentRating))
+        {
+            series.ContentRating = CleanRating(request.ContentRating);
+        }
     }
+
+    private static string? CleanText(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static string? CleanRating(string? value) => CleanText(value)?.ToLowerInvariant();
+
+    /// <summary>Blank titles dropped, a blank language stored as none, one row per title and language.</summary>
+    private static List<LocalizedTitle> CleanAltTitles(IReadOnlyList<LocalizedTitleDto>? titles) =>
+        (titles ?? [])
+        .Select(t => new LocalizedTitle((t.Title ?? "").Trim(), CleanText(t.Language)?.ToLowerInvariant()))
+        .Where(t => t.Title.Length > 0)
+        .DistinctBy(t => (t.Title.ToLowerInvariant(), t.Language))
+        .ToList();
 
     /// <summary>By name only: <see cref="Enum.TryParse{TEnum}(string?, bool, out TEnum)"/> would also take "7".</summary>
     private static SeriesStatus? ParseStatus(string? value) =>
