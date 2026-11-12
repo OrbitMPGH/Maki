@@ -11,6 +11,8 @@ import { useCompareKey } from './compareHold'
 import { EnhanceScope, presetFor, useEnhanceEngine, type PageEnhance, type StretchedReport } from './enhanceRuntime'
 import { FULL_REGION } from './pageShape'
 import type { ServerEnhance } from './useServerEnhance'
+import { measureStrip, seekStrip } from './stripMeasure'
+import type { StripTracker } from './stripPosition'
 
 const FIT_CLASS: Record<ReaderFit, string> = {
   width: 'reader-fit-width',
@@ -274,6 +276,7 @@ export default function ContinuousView({
   server = null,
   onStretched,
   onEnhanceRange,
+  tracker,
 }: {
   urls: string[]
   page: number
@@ -318,6 +321,8 @@ export default function ContinuousView({
    * asked for: the same pages minus those behind that are off screen.
    */
   onEnhanceRange?: (pages: number[], beyond: number, server: number[]) => void
+  /** Receives where the strip is scrolled to, and lends it a way to scroll there. */
+  tracker?: StripTracker
 }) {
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])
@@ -491,6 +496,12 @@ export default function ContinuousView({
     )
   }, [seekVersion, urls, scrollToSeek])
 
+  // Pages not loaded yet borrow the loaded pages' shape, so a new shape moves every placeholder
+  // above the target at once. Scroll anchoring covers that where the browser has it; Safari does not.
+  useEffect(() => {
+    if (settling.current.size > 0) scrollToSeek(seekAnimated.current)
+  }, [shape, scrollToSeek])
+
   const onPageSettled = useCallback((index: number, element: HTMLImageElement) => {
     element.dataset.loaded = 'true'
     if (element.naturalWidth > 0 && element.naturalHeight > 0) {
@@ -572,6 +583,39 @@ export default function ContinuousView({
       reportEnd.current = () => {}
     }
   }, [urls, onPageChange])
+
+  const remeasure = useRef<() => void>(() => {})
+  useEffect(() => {
+    const scroller = container.current?.parentElement
+    if (!tracker || !scroller || urls.length === 0) return
+    let frame = 0
+    const measure = () => {
+      frame = 0
+      tracker.set(measureStrip(scroller, pages.current, Math.min(pageRef.current, urls.length - 1), urls.length))
+    }
+    const schedule = () => {
+      if (frame === 0) frame = requestAnimationFrame(measure)
+    }
+    tracker.seek = (progress) => {
+      // A drag on the rail is the reader scrolling by hand: the resume landing is history.
+      settling.current.clear()
+      seekStrip(scroller, pages.current, urls.length, progress)
+    }
+    remeasure.current = schedule
+    schedule()
+    scroller.addEventListener('scroll', schedule, { passive: true })
+    window.addEventListener('resize', schedule)
+    return () => {
+      cancelAnimationFrame(frame)
+      scroller.removeEventListener('scroll', schedule)
+      window.removeEventListener('resize', schedule)
+      remeasure.current = () => {}
+      tracker.seek = null
+      tracker.set(null)
+    }
+  }, [tracker, urls])
+  // The band tracker moves the page a moment after the scroll that moved it.
+  useEffect(() => remeasure.current(), [page])
 
   // The bottom-of-strip "scroll for next chapter" meter. `.reader-surface` clamps scrollTop at
   // the true max (there's no native overscroll to detect), so instead this reads wheel deltas and

@@ -26,7 +26,15 @@ export interface ReaderManifest {
    * arrives in batches says nothing about how much is still to come.
    */
   seriesWantedCount: number
+  /** Finishing this chapter finishes the series: it is complete and this is its last numbered chapter. Absent on a manifest saved offline before it existed. */
+  finishesSeries?: boolean
+  /** You have already finished the series. Absent on a manifest saved offline before it existed. */
+  seriesFinished?: boolean
+  /** Your median time per chapter, from your own timed reads. Null until three chapters are timed. Absent on a manifest saved offline before it existed. */
+  readingPace?: ReadingPace | null
   resumePage: number
+  /** How far down the resume page (0 to 1) the continuous strip opens. Absent on a manifest saved offline before it existed. */
+  resumeOffset?: number
   completed: boolean
   previousChapterId: number | null
   nextChapterId: number | null
@@ -53,6 +61,29 @@ export interface ReaderManifest {
   noteCount?: number
   /** Zero based pages with at least one visible note, sorted. Absent on a manifest saved offline before it existed. */
   notedPages?: number[]
+}
+
+export interface ReadingPace {
+  chapterSeconds: number
+  style: 'scrolling' | 'paged'
+  /** What the series is meant to hold, the same total the series page's time to finish counts against. */
+  totalChapters: number
+}
+
+/** What the end screen reads live, so the reader's manifest never has to be refetched for it. */
+export interface ReaderEnding {
+  nextChapterId: number | null
+  nextChapterLabel: string | null
+  nextChapterNumber: number | null
+  seriesChapterCount: number
+  /** Counts this chapter once its completing write has landed, which `completed` tells. */
+  seriesReadCount: number
+  seriesWantedCount: number
+  completed: boolean
+  finished: boolean
+  rating: number | null
+  provisionalRating: number | null
+  rateHintDismissed: boolean
 }
 
 export interface EnhanceServer {
@@ -207,6 +238,22 @@ export function useReaderManifest(chapterId: number) {
   })
 }
 
+/**
+ * Kept apart from the manifest on purpose: a manifest refetch flips `isFetching` and replaces the
+ * object every page effect keys on, while this only feeds the end screen. The socket invalidates it
+ * when a chapter of the series lands, which is what swaps "Last chapter on disk" for the next one.
+ */
+export function useReaderEnding(seriesId: number | undefined, chapterId: number, enabled = true) {
+  return useQuery({
+    queryKey: ['reader-ending', seriesId, chapterId],
+    queryFn: () => api<ReaderEnding>(`/reader/chapter/${chapterId}/ending`),
+    enabled: enabled && seriesId != null,
+    staleTime: 0,
+    retry: false,
+    meta: { silent: true },
+  })
+}
+
 /** Where a chapter's recap of the previous chapter ends: the page new content starts on and how far down it (0 to 1). Both null without one. */
 export interface ReaderRecap {
   page: number | null
@@ -274,6 +321,7 @@ export function useContinueReading(seriesId: number, enabled = true) {
 /**
  * Fire-and-forget position write. `pageIndex` is absolute so a debounced client may retry or
  * reorder freely, and failures stay silent: losing a page position must never interrupt reading.
+ * `pageOffset` is how far down that page the continuous strip is (0 to 1); absent means its top.
  *
  * `seconds` is the exception: a delta of active reading time since the last write, which the
  * server adds up. Only ever send time the caller has consumed from its clock, or a retry counts
@@ -292,11 +340,12 @@ export async function saveProgress(
   completed?: boolean,
   seconds?: number,
   pageCount = 0,
+  pageOffset?: number,
 ): Promise<void> {
-  if (await queuedOffline(chapterId, seriesId, pageIndex, completed, seconds, pageCount)) return
+  if (await queuedOffline(chapterId, seriesId, pageIndex, completed, seconds, pageCount, pageOffset)) return
   await api(`/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
-    body: JSON.stringify({ pageIndex, completed, seconds, opId: randomUUID(), seriesId }),
+    body: JSON.stringify({ pageIndex, pageOffset, completed, seconds, opId: randomUUID(), seriesId }),
   })
 }
 
@@ -316,15 +365,16 @@ export async function flushProgress(
   completed?: boolean,
   seconds?: number,
   pageCount = 0,
+  pageOffset?: number,
 ): Promise<void> {
-  if (await queuedOffline(chapterId, seriesId, pageIndex, completed, seconds, pageCount)) return
+  if (await queuedOffline(chapterId, seriesId, pageIndex, completed, seconds, pageCount, pageOffset)) return
   const init = await getInitialize()
   const res = await trackedFetch(`${init.apiRoot}/reader/chapter/${chapterId}/progress`, {
     method: 'PUT',
     keepalive: true,
     credentials: 'same-origin',
     headers: authHeaders(),
-    body: JSON.stringify({ pageIndex, completed, seconds, final: true, opId: randomUUID(), seriesId }),
+    body: JSON.stringify({ pageIndex, pageOffset, completed, seconds, final: true, opId: randomUUID(), seriesId }),
   })
   if (!res.ok) {
     const status = res.status
@@ -339,9 +389,10 @@ function queuedOffline(
   completed: boolean | undefined,
   seconds: number | undefined,
   pageCount: number,
+  pageOffset: number | undefined,
 ): Promise<boolean> {
   if (getConnectivity() !== 'offline') return Promise.resolve(false)
-  return queueOfflineWrite(chapterId, seriesId, pageIndex, completed, seconds ?? 0, pageCount).catch(
+  return queueOfflineWrite(chapterId, seriesId, pageIndex, completed, seconds ?? 0, pageCount, pageOffset).catch(
     () => false,
   )
 }

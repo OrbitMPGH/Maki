@@ -250,6 +250,7 @@ export function useLiveEvents() {
       for (const id of ids) {
         void queryClient.invalidateQueries({ queryKey: ['chapters', id] })
         void queryClient.invalidateQueries({ queryKey: ['reader-continue', id] })
+        void queryClient.invalidateQueries({ queryKey: ['reader-ending', id] })
       }
       if (ids.length > 0) {
         void queryClient.invalidateQueries({ queryKey: ['home', 'recently-added'] })
@@ -353,6 +354,12 @@ export function useLiveEvents() {
 
       listen(conn, 'queuePauseChanged', (pause: QueuePauseDto) => {
         queryClient.setQueryData<QueuePauseDto>(['queue-pause'], pause)
+      })
+
+      // Rows moved to the front for a reader nearing the end of a series. No row changed state, so
+      // queueUpdated never fires and the lists would keep the old order.
+      listen(conn, 'queueReordered', () => {
+        void queryClient.invalidateQueries({ queryKey: ['queue'] })
       })
 
       // The flush also refreshes Home's recently-added rail (keyed on ChapterFile.DateAdded, which

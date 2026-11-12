@@ -31,9 +31,14 @@ namespace Maki.Api.Controllers;
 /// offline queue. <paramref name="OpId"/> identifies the write so a replay of one that already landed
 /// changes nothing. Both are optional; see <see cref="ReaderService.SaveProgressAsync"/>.
 /// </para>
+/// <para>
+/// <paramref name="PageOffset"/> is how far down the page the continuous strip is (0 to 1), so a tall
+/// slice resumes mid-page. Absent means the top of the page.
+/// </para>
 /// </summary>
 public record SaveProgressRequest(
-    int PageIndex, bool? Completed, int? Seconds, bool? Final, DateTime? ClientTime = null, string? OpId = null);
+    int PageIndex, bool? Completed, int? Seconds, bool? Final, DateTime? ClientTime = null, string? OpId = null,
+    double? PageOffset = null);
 
 /// <summary>A null spec clears the series override, falling back to whatever the series resolves to.</summary>
 public record SeriesReaderPrefsRequest(ReaderPrefsSpec? Prefs);
@@ -184,7 +189,11 @@ public class ReaderController(
     }
 
     [HttpGet("chapter/{id:int}")]
-    public async Task<IActionResult> Manifest(int id, [FromServices] EnhanceAvailability enhanceAvailability, CancellationToken ct)
+    public async Task<IActionResult> Manifest(
+        int id,
+        [FromServices] EnhanceAvailability enhanceAvailability,
+        [FromServices] ReadingTimeEstimateService estimates,
+        CancellationToken ct)
     {
         var slice = await reader.SliceAsync(id, ct);
         if (slice is null)
@@ -202,32 +211,26 @@ public class ReaderController(
         // read next), and ReadCounts for the numerator. Both are counted at manifest time and go
         // stale within the chapter, which is exactly right: they only move when a chapter is
         // finished, and finishing one refetches this.
-        var seriesReadCount = await ReadCounts.Read(db)
-            .CountAsync(p => p.SeriesId == slice.Series.Id, ct);
+        var ending = await EndingAsync(slice.Series.Id, next, ct);
 
-        // seriesWantedCount is how long the series actually is, which the downloaded count can't say.
-        // Same rule the series page's denominator uses. The toolbar shows it as a trailing hint so
-        // someone reading a series that downloads in batches can tell there is more coming.
-        var counts = await db.Chapters
-            .Where(c => c.SeriesId == slice.Series.Id)
-            .GroupBy(_ => 1)
-            .Select(g => new
-            {
-                Downloaded = g.Count(c => c.ChapterFileId != null || c.FileRemovedAt != null),
-                Wanted = g.Count(c => c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null),
-            })
-            .FirstOrDefaultAsync(ct);
-        var seriesChapterCount = counts?.Downloaded ?? 0;
-        var seriesWantedCount = counts?.Wanted ?? 0;
+        // Whether finishing this chapter finishes the series, so the end screen can ask for the final
+        // rating without waiting for the write that sets the flag. Only a completed series can end.
+        // Finished is sticky, so a series whose status left Completed would still say so; only a completed one can end here.
+        var seriesFinished = slice.Series.Status == SeriesStatus.Completed &&
+            await RatingCheckpointService.FinishedAsync(db, currentUser.UserId, slice.Series.Id, ct);
+        var finishesSeries = false;
+        if (slice.Series.Status == SeriesStatus.Completed && slice.Chapter.Number is { } thisNumber)
+        {
+            var highest = await SeriesFinishRule.HighestNumberAsync(db, slice.Series.Id, ct);
+            finishesSeries = SeriesFinishRule.Closes(slice.Series.Status, (double)thisNumber, highest);
+        }
 
-        // Named on the end-of-chapter screen, and its number is how that screen tells a straight
-        // continuation from a jump over chapters that were never downloaded.
-        var nextChapter = next is int nextId
-            ? await db.Chapters.AsNoTracking()
-                .Where(c => c.Id == nextId)
-                .Select(c => new { c.Number, c.Volume, c.Title, c.IsOneShot })
-                .FirstOrDefaultAsync(ct)
-            : null;
+        // The same median the series page's time to finish uses, so the two never disagree about
+        // pace. The total is that page's too: what the series is meant to hold, or what is wanted.
+        var pace = await estimates.PaceAsync(
+            slice.Series.Id, ReadingTimeEstimateService.ModeFor(slice.Series.Type, resolved), ct);
+        var paceTotal = Math.Max(slice.Series.TotalChapters ?? 0,
+            ending.WantedCount > 0 ? ending.WantedCount : ending.ChapterCount);
 
         var enhanceServer = await enhanceAvailability.GetAsync(ct);
         var tier = await db.ChapterFiles.AsNoTracking()
@@ -248,17 +251,21 @@ public class ReaderController(
             label = ChapterLabel.For(slice.Chapter),
             number = slice.Chapter.Number,
             pageCount = slice.PageCount,
-            seriesChapterCount,
-            seriesReadCount,
-            seriesWantedCount,
+            seriesChapterCount = ending.ChapterCount,
+            seriesReadCount = ending.ReadCount,
+            seriesWantedCount = ending.WantedCount,
+            finishesSeries,
+            seriesFinished,
+            readingPace = pace is null
+                ? null
+                : new { chapterSeconds = (int)Math.Round(pace.MedianSeconds), style = pace.Style, totalChapters = paceTotal },
             resumePage = ReaderService.ResumePageFor(saved, slice.PageCount),
+            resumeOffset = ReaderService.ResumeOffsetFor(saved, slice.PageCount),
             completed = saved?.Completed ?? false,
             previousChapterId = previous,
             nextChapterId = next,
-            nextChapterLabel = nextChapter is null
-                ? null
-                : ChapterLabel.For(nextChapter.Number, nextChapter.Volume, nextChapter.Title, nextChapter.IsOneShot),
-            nextChapterNumber = nextChapter?.Number,
+            nextChapterLabel = ending.NextLabel,
+            nextChapterNumber = ending.NextNumber,
             seriesCoverUrl = SeriesDto.CoverUrlFor(slice.Series.Id, slice.Series.CoverPath, slice.Series.LastMetadataRefresh),
             prefs = resolved.Prefs,
             prefsSource = resolved.Source.ToString(),
@@ -271,6 +278,83 @@ public class ReaderController(
             noteCount = notePages.Count,
             notedPages = notePages.OfType<int>().Where(p => p < slice.PageCount).Distinct().Order().ToList()
         });
+    }
+
+    /// <summary>
+    /// What the end screen shows that changes while it is open: the next chapter, the counts, and
+    /// where the final rating stands. The manifest is not refetched for it, because a refetch moves
+    /// the reader's position and remounts pages.
+    /// </summary>
+    [HttpGet("chapter/{id:int}/ending")]
+    public async Task<IActionResult> Ending(int id, CancellationToken ct)
+    {
+        var row = await db.Chapters.AsNoTracking()
+            .Where(c => c.Id == id)
+            .Select(c => new { Chapter = c, Completed = c.Series!.Status == SeriesStatus.Completed })
+            .FirstOrDefaultAsync(ct);
+        var chapter = row?.Chapter;
+        if (chapter is null)
+        {
+            return this.NotFoundMessage(localizer, "error.reader.chapterNotReadable");
+        }
+
+        var (_, next) = await reader.NeighboursAsync(chapter, ct);
+        var ending = await EndingAsync(chapter.SeriesId, next, ct);
+        var state = await db.UserSeriesStates
+            .Where(s => s.SeriesId == chapter.SeriesId)
+            .Select(s => new { s.Rating, s.ProvisionalRating, s.RateHintDismissedAt })
+            .FirstOrDefaultAsync(ct);
+        return Ok(new
+        {
+            nextChapterId = next,
+            nextChapterLabel = ending.NextLabel,
+            nextChapterNumber = ending.NextNumber,
+            seriesChapterCount = ending.ChapterCount,
+            seriesReadCount = ending.ReadCount,
+            seriesWantedCount = ending.WantedCount,
+            completed = (await reader.ProgressAsync(id, ct))?.Completed ?? false,
+            finished = row!.Completed && await RatingCheckpointService.FinishedAsync(db, currentUser.UserId, chapter.SeriesId, ct),
+            rating = state?.Rating,
+            provisionalRating = state?.ProvisionalRating,
+            rateHintDismissed = state?.RateHintDismissedAt != null,
+        });
+    }
+
+    private sealed record EndingState(
+        int ChapterCount, int ReadCount, int WantedCount, string? NextLabel, decimal? NextNumber);
+
+    private async Task<EndingState> EndingAsync(int seriesId, int? next, CancellationToken ct)
+    {
+        var readCount = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == seriesId, ct);
+
+        // WantedCount is how long the series actually is, which the downloaded count can't say.
+        // Same rule the series page's denominator uses.
+        var counts = await db.Chapters
+            .Where(c => c.SeriesId == seriesId)
+            .GroupBy(_ => 1)
+            .Select(g => new
+            {
+                Downloaded = g.Count(c => c.ChapterFileId != null || c.FileRemovedAt != null),
+                Wanted = g.Count(c => c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null),
+            })
+            .FirstOrDefaultAsync(ct);
+
+        // Named on the end-of-chapter screen, and its number is how that screen tells a straight
+        // continuation from a jump over chapters that were never downloaded.
+        var nextChapter = next is int nextId
+            ? await db.Chapters.AsNoTracking()
+                .Where(c => c.Id == nextId)
+                .Select(c => new { c.Number, c.Volume, c.Title, c.IsOneShot })
+                .FirstOrDefaultAsync(ct)
+            : null;
+        return new EndingState(
+            counts?.Downloaded ?? 0,
+            readCount,
+            counts?.Wanted ?? 0,
+            nextChapter is null
+                ? null
+                : ChapterLabel.For(nextChapter.Number, nextChapter.Volume, nextChapter.Title, nextChapter.IsOneShot),
+            nextChapter?.Number);
     }
 
     [HttpGet("chapter/{id:int}/page/{page:int}")]
@@ -604,7 +688,7 @@ public class ReaderController(
         var finished = await reader.SaveProgressAsync(
             slice, request.PageIndex, request.Completed,
             new ReaderService.TimeReport(request.Seconds ?? 0, request.Final ?? false), ct,
-            request.ClientTime, request.OpId);
+            request.ClientTime, request.OpId, request.PageOffset);
 
         // After the save, so the evaluation sees the finished chapter. Whatever it unlocks reaches
         // the reader through the inbox push rather than this response.

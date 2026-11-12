@@ -1,8 +1,33 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, waitFor } from 'storybook/test'
+import { http, HttpResponse } from 'msw'
+import { api } from '../../../.storybook/mocks/api'
 import { chapters, makeManifest } from '../../../.storybook/mocks/entry/fixtures'
+import { downloadingItem, queuedItems, queuePage } from '../../../.storybook/mocks/operations/queue'
+import { lateOutlook } from '../../../.storybook/mocks/operations/upcoming'
+import type { ReaderEnding } from '../../api/reader'
 import ChapterEnd from './ChapterEnd'
 import { RatingCheckpointPrompt } from '../../components/series/RatingCheckpointPrompt'
+
+const ending = (over: Partial<ReaderEnding> = {}): ReaderEnding => ({
+  nextChapterId: null,
+  nextChapterLabel: null,
+  nextChapterNumber: null,
+  seriesChapterCount: 96,
+  seriesReadCount: 95,
+  seriesWantedCount: 96,
+  completed: false,
+  finished: false,
+  rating: null,
+  provisionalRating: null,
+  rateHintDismissed: false,
+  ...over,
+})
+
+const withEnding = (body: ReaderEnding) => http.get(api('/reader/chapter/:id/ending'), () => HttpResponse.json(body))
+
+/** The last chapter of a series the server has marked completed. */
+const finalChapter = makeManifest({ ...chapters[2096], finishesSeries: true })
 
 const meta = {
   component: ChapterEnd,
@@ -149,5 +174,128 @@ export const NoNotesInvitesTheFirst: Story = {
   play: async ({ args, canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Add a note' }))
     await waitFor(() => expect(args.onOpenNotes).toHaveBeenCalledOnce())
+  },
+}
+
+export const FinishedAsksForTheFinalRating: Story = {
+  args: { manifest: finalChapter },
+  parameters: { msw: [withEnding(ending())] },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('You finished the series')).toBeVisible()
+    await expect(await canvas.findByText("You've finished this. How was it?")).toBeVisible()
+    await expect(await canvas.findByText("That's the whole series.")).toBeVisible()
+    await expect(canvas.queryByText(/About .* left in the series/)).toBeNull()
+  },
+}
+
+export const FinishedKeepsTheSoFarScore: Story = {
+  args: { manifest: finalChapter },
+  parameters: {
+    msw: [
+      withEnding(ending({ provisionalRating: 8 })),
+      http.post(api('/series/:id/rating/finalize'), () => HttpResponse.json({ rating: 8, provisionalRating: null })),
+    ],
+  },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('You had this at 8 so far. Keep it?')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Keep 8' }))
+    await expect(await canvas.findByText('Rated 8/10')).toBeVisible()
+  },
+}
+
+export const FinishedAlreadyRated: Story = {
+  args: { manifest: finalChapter },
+  parameters: { msw: [withEnding(ending({ rating: 9 }))] },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('You finished the series')).toBeVisible()
+    await waitFor(() => expect(canvas.queryByText("You've finished this. How was it?")).toBeNull())
+  },
+}
+
+export const FinishedBeforeTheWriteLands: Story = {
+  args: { manifest: finalChapter, readingCounted: true },
+  parameters: { msw: [withEnding(ending({ completed: true, finished: true, seriesReadCount: 96 }))] },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('96 of 96 read')).toBeVisible()
+    await expect(await canvas.findByText("You've finished this. How was it?")).toBeVisible()
+  },
+}
+
+export const FinishedIncognitoAsksNothing: Story = {
+  args: { manifest: finalChapter, readingCounted: false },
+  parameters: { msw: [withEnding(ending({ seriesReadCount: 96 }))] },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("That's every chapter on disk.")).toBeVisible()
+    await expect(canvas.queryByText('You finished the series')).toBeNull()
+  },
+}
+
+export const TimeLeftInTheSeries: Story = {
+  args: { manifest: makeManifest({ ...chapters[1132], readingPace: { chapterSeconds: 480, style: 'paged', totalChapters: 150 } }) },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('About 2h 24m left in the series')).toBeVisible()
+  },
+}
+
+export const CaughtUpWithReleaseOutlook: Story = {
+  args: { manifest: makeManifest({ ...chapters[1142], seriesWantedCount: 142 }) },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("You're caught up")).toBeVisible()
+    await expect(await canvas.findByText(/The next chapter usually comes in 3 to 5 days/)).toBeVisible()
+    await expect(await canvas.findByText(/High confidence/)).toBeVisible()
+  },
+}
+
+export const CaughtUpButLate: Story = {
+  args: { manifest: makeManifest({ ...chapters[1142], seriesWantedCount: 142 }) },
+  parameters: { msw: [http.get(api('/series/:id/outlook'), () => HttpResponse.json(lateOutlook))] },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('The next chapter is later than usual')).toBeVisible()
+  },
+}
+
+export const NextChapterFinishesDownloading: Story = {
+  args: { manifest: chapters[1142] },
+  parameters: {
+    msw: [
+      withEnding(
+        ending({
+          nextChapterId: 1143,
+          nextChapterLabel: 'Chapter 143',
+          nextChapterNumber: 143,
+          seriesChapterCount: 143,
+          seriesReadCount: 141,
+          seriesWantedCount: 150,
+        }),
+      ),
+    ],
+  },
+  play: async ({ args, canvas, userEvent }) => {
+    await expect(await canvas.findByText('Up next')).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: /Read Chapter 143/ }))
+    await expect(args.onNext).toHaveBeenCalledWith(1143)
+  },
+}
+
+export const NextChapterIsDownloading: Story = {
+  args: { manifest: chapters[1142] },
+  parameters: {
+    msw: [http.get(api('/queue'), () => HttpResponse.json(queuePage([downloadingItem, queuedItems[0]])))],
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText("You're caught up")).toBeVisible()
+    await expect(await canvas.findByText(/Downloading Ch. 143, 64%./)).toBeVisible()
+    await expect(await canvas.findByText(/1 more is queued\./)).toBeVisible()
+    await expect(canvas.queryByText(/more chapters are wanted/)).toBeNull()
+  },
+}
+
+export const NextChaptersAreQueued: Story = {
+  args: { manifest: chapters[1142] },
+  parameters: {
+    msw: [http.get(api('/queue'), () => HttpResponse.json(queuePage([queuedItems[0], queuedItems[1]].map((q) => ({ ...q, seriesId: 1 })))))],
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('2 chapters are queued to download.')).toBeVisible()
   },
 }

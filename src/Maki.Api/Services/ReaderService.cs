@@ -17,7 +17,8 @@ public class ReaderService(
     ReadingProgressService progress,
     KavitaProgressPusher kavitaPush,
     ReadingSessionService sessions,
-    ILogger<ReaderService> logger)
+    ILogger<ReaderService> logger,
+    ReadingAwareQueueBump? queueBump = null)
 {
     /// <summary>Where a chapter lives inside its backing archive.</summary>
     public record ChapterSlice(
@@ -359,6 +360,14 @@ public class ReaderService(
             ? 0
             : saved.PageIndex;
 
+    /// <summary>How far down the resume page the strip opens, only where <see cref="ResumePageFor"/> keeps the saved page.</summary>
+    public static double ResumeOffsetFor(ChapterProgress? saved, int pageCount) =>
+        saved is { Completed: false } && IsPageInRange(saved.PageIndex, pageCount) ? ClampOffset(saved.PageOffset) : 0;
+
+    /// <summary>A reported offset within a page, as stored: a share from 0 to 1, and 0 for anything unusable.</summary>
+    public static double ClampOffset(double? offset) =>
+        offset is { } value && double.IsFinite(value) ? Math.Clamp(value, 0, 1) : 0;
+
     public static bool IsPageInRange(int pageIndex, int pageCount) => pageIndex >= 0 && pageIndex < pageCount;
 
     /// <summary>
@@ -417,18 +426,18 @@ public class ReaderService(
     /// </para>
     /// </summary>
     public async Task<bool> SaveProgressAsync(ChapterSlice slice, int pageIndex, bool? completed,
-        TimeReport time, CancellationToken ct, DateTime? clientTime = null, string? opId = null)
+        TimeReport time, CancellationToken ct, DateTime? clientTime = null, string? opId = null, double? pageOffset = null)
     {
         try
         {
-            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, clientTime, opId, ct);
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, clientTime, opId, pageOffset, ct);
         }
         catch (DbUpdateException e) when (DbErrors.IsUniqueViolation(e))
         {
             logger.LogDebug("Progress insert for chapter {ChapterId} lost a race, retrying",
                 slice.Chapter.Id);
             db.ChangeTracker.Clear();
-            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, clientTime, opId, ct);
+            return await SaveProgressCoreAsync(slice, pageIndex, completed, time, clientTime, opId, pageOffset, ct);
         }
     }
 
@@ -476,7 +485,7 @@ public class ReaderService(
         Math.Clamp(pageIndex, 0, Math.Max(0, pageCount - 1));
 
     private async Task<bool> SaveProgressCoreAsync(ChapterSlice slice, int pageIndex, bool? completed,
-        TimeReport time, DateTime? clientTime, string? opId, CancellationToken ct)
+        TimeReport time, DateTime? clientTime, string? opId, double? pageOffset, CancellationToken ct)
     {
         var chapter = slice.Chapter;
         var row = await db.ChapterProgress.FirstOrDefaultAsync(p => p.ChapterId == chapter.Id, ct);
@@ -517,6 +526,7 @@ public class ReaderService(
         {
             // The resume position is free to move backwards; completion is not.
             row.PageIndex = ClampPage(pageIndex, slice.PageCount);
+            row.PageOffset = ClampOffset(pageOffset);
             row.UpdatedAt = at;
         }
 
@@ -571,6 +581,11 @@ public class ReaderService(
 
         var sessionStaged = await StageSessionAsync(slice.Series, reportedSeconds, justCompleted, at, ct);
         await SaveWithSessionAsync(sessionStaged, ct);
+
+        if (!stale)
+        {
+            queueBump?.Notify(chapter.SeriesId, chapter.Id);
+        }
 
         if (justCompleted)
         {
@@ -949,6 +964,7 @@ public class ReaderService(
         row.BulkMarked = false;
         row.Watched = false;
         row.PageIndex = 0;
+        row.PageOffset = 0;
         row.UnreadAt = now;
         row.UpdatedAt = now;
         await db.SaveChangesAsync(ct);
@@ -973,6 +989,7 @@ public class ReaderService(
             row.BulkMarked = false;
             row.Watched = false;
             row.PageIndex = 0;
+            row.PageOffset = 0;
             row.UnreadAt = now;
             row.UpdatedAt = now;
         }

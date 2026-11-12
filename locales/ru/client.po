@@ -1167,6 +1167,10 @@ msgstr ""
 msgid "{count, plural, one {# completed} other {# completed}}"
 msgstr ""
 
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{count, plural, one {# day} other {# days}}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{count, plural, one {# deletion} other {# deletions}}"
@@ -1252,6 +1256,10 @@ msgstr "{count, plural, one {# трекер} few {# трекера} many {# тр
 #, fuzzy
 msgid "{count, plural, one {# unread} other {# unread}}"
 msgstr "{count, plural, one {# непрочитанная} few {# непрочитанных} many {# непрочитанных} other {# непрочитанных}}"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{count, plural, one {# week} other {# weeks}}"
+msgstr ""
 
 #: src/components/home/OfflineHome.tsx
 #, fuzzy
@@ -1649,6 +1657,10 @@ msgstr "{free} свободно"
 #, fuzzy
 msgid "{from} to {to}"
 msgstr "с {from} на {to}"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{from} to {upTo}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2060,6 +2072,14 @@ msgstr "{missingWanted, plural, one {Это добавит # главу в оч�
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "{monitorShort}, {profileName}"
+msgstr ""
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "{more, plural, one {# chapter is queued to download.} other {# chapters are queued to download.}}"
+msgstr ""
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "{more, plural, one {# more is queued.} other {# more are queued.}}"
 msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
@@ -3764,6 +3784,10 @@ msgstr "zip-архив"
 msgid "Abandoned"
 msgstr "Брошено"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "About {chapterLeft} left in this chapter"
+msgstr ""
+
 #: src/components/pageconversion/EstimateTable.tsx
 #, fuzzy
 msgid "About {hardlinked} are hardlinked to torrents and stay as they are."
@@ -3779,6 +3803,14 @@ msgstr "осталось около {hourPhrase} {restPhrase}"
 #, fuzzy
 msgid "About {readingTime}"
 msgstr "Около {readingTime}"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "About {seriesLeft} left in the series"
+msgstr ""
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "About {timeLeftText} left in the series"
+msgstr ""
 
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "About {toFinish} to finish"
@@ -5002,7 +5034,9 @@ msgid "Attribute Kavita's reading to"
 msgstr "Учитывать чтение Kavita для"
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/enhanceMethods.ts
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Auto"
 msgstr "Авто"
@@ -5138,6 +5172,7 @@ msgstr "Исключено"
 #: src/components/ui/DrillPanel.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
+#: src/pages/reader/TapZoneOverlay.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Back"
@@ -5153,6 +5188,11 @@ msgstr "Снова в рекомендациях с {until}"
 msgid "back in the running"
 msgstr "снова в игре"
 
+#. placeholder {0}: label(target.label)
+#: src/pages/reader/useReaderBack.ts
+msgid "Back to {0}"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Back to Discover"
@@ -5165,8 +5205,7 @@ msgid "Back to library"
 msgstr "Назад к библиотеке"
 
 #: src/pages/reader/ChapterEnd.tsx
-#: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/pages/reader/useReaderBack.ts
 #, fuzzy
 msgid "Back to series"
 msgstr "Назад к серии"
@@ -5185,6 +5224,10 @@ msgstr "Назад в библиотеку"
 #, fuzzy
 msgid "Back to the series"
 msgstr "Назад к серии"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Back to where you came from"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -5462,6 +5505,10 @@ msgstr "Токен бота"
 #, fuzzy
 msgid "Both"
 msgstr "Оба"
+
+#: src/pages/reader/tapZones.ts
+msgid "Both edges go forward and the bottom middle goes back, for reading with one hand."
+msgstr ""
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
@@ -6192,6 +6239,10 @@ msgstr "Страница главы"
 #, fuzzy
 msgid "Chapter pages"
 msgstr "Страницы главы"
+
+#: src/pages/reader/ProgressRail.tsx
+msgid "Chapter progress"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. A file with an identical copy in the same series folder hands its chapters to that copy instead. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
@@ -7148,6 +7199,10 @@ msgstr "Непрерывная"
 #, fuzzy
 msgid "Continuous layout only."
 msgstr "Только непрерывная раскладка."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Continuous layout only. A bar down the right edge you can drag to move through the chapter."
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Continuous layout only. Off shows a Skip recap button instead."
@@ -8701,6 +8756,14 @@ msgstr "Предварительно собранный индекс загру�
 msgid "Downloading"
 msgstr "Загружается"
 
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "Downloading {label}, {percent}%."
+msgstr ""
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "Downloading {label}."
+msgstr ""
+
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Downloading {outstanding}"
@@ -8882,6 +8945,10 @@ msgstr "Получено самой библиотекой, поэтому до�
 #, fuzzy
 msgid "Ecchi"
 msgstr "Ecchi"
+
+#: src/pages/reader/tapZones.ts
+msgid "Edges"
+msgstr ""
 
 #: src/components/notes/NoteThread.tsx
 #: src/components/rails/CustomRailSection.tsx
@@ -10299,6 +10366,10 @@ msgstr "Формат: {formatLabel}"
 msgid "Formats"
 msgstr "Форматы"
 
+#: src/pages/reader/TapZoneOverlay.tsx
+msgid "Forward"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10628,6 +10699,11 @@ msgstr "Оттенки серого"
 #: src/components/discover/ScoreFigure.tsx
 msgctxt "score"
 msgid "Great"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Grey"
 msgstr ""
 
 #: src/components/pageconversion/labels.ts
@@ -11458,6 +11534,14 @@ msgstr "Импорт…"
 msgid "Imports can be undone for 30 days."
 msgstr "Импорт можно отменить в течение 30 дней."
 
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "In Continuous a band at the top goes back and one at the bottom goes forward. The layouts apply to Single and Double."
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "In Continuous, a bar down the right edge you can drag to move through the chapter"
+msgstr ""
+
 #: src/pages/reader/ReaderSettings.tsx
 msgid "In Continuous, jump past the end of the previous chapter when a chapter repeats it"
 msgstr ""
@@ -12026,6 +12110,10 @@ msgstr "Тип"
 msgid "Kind of release"
 msgstr "Тип релиза"
 
+#: src/pages/reader/tapZones.ts
+msgid "Kindle"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Kinds"
@@ -12058,6 +12146,10 @@ msgstr "koreader, kosync, синхронизация прогресса, сер�
 #, fuzzy
 msgid "Korean"
 msgstr "Корейский"
+
+#: src/pages/reader/tapZones.ts
+msgid "L-shape"
+msgstr ""
 
 #: src/components/settings/downloadClientFields.ts
 #, fuzzy
@@ -12476,6 +12568,7 @@ msgstr "Новый уровень"
 #: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/useReaderBack.ts
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/sectionList.ts
@@ -13814,6 +13907,10 @@ msgstr "Скорее всего, папку переименовали или п
 #, fuzzy
 msgid "Most missing"
 msgstr "Больше всего отсутствует"
+
+#: src/pages/reader/tapZones.ts
+msgid "Most of the page goes forward. A strip on one side goes back, the top opens the bars."
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -16251,6 +16348,10 @@ msgstr "Один пропущенный день в неделю прощает�
 msgid "One refresh required"
 msgstr "Требуется одно обновление"
 
+#: src/pages/reader/tapZones.ts
+msgid "One side goes back, the other goes forward."
+msgstr ""
+
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "One tile per genre, each opening its most popular titles."
@@ -16708,7 +16809,9 @@ msgid "Page"
 msgstr "Страница"
 
 #. placeholder {0}: page + 1
+#. placeholder {0}: shownPage + 1
 #: src/pages/reader/PageScrubber.tsx
+#: src/pages/reader/ProgressRail.tsx
 #, fuzzy
 msgid "Page {0} of {count}"
 msgstr "Страница {0} из {count}"
@@ -17448,6 +17551,10 @@ msgstr "Предпросмотр импорта"
 msgid "Preview the import of {folderName}"
 msgstr "Предпросмотр импорта {folderName}"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Previous and next bookmark"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Previous chapter"
@@ -17516,6 +17623,11 @@ msgstr "Прогресс"
 #, fuzzy
 msgid "Progress & achievements"
 msgstr "Прогресс и достижения"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Progress rail"
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -17658,6 +17770,10 @@ msgstr "Поставьте Maki за HTTPS, затем включите Наст
 
 #: src/components/home/ReadingCardMenu.tsx
 msgid "Put on hold"
+msgstr ""
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Puts the back zones where the forward ones were, for the other hand."
 msgstr ""
 
 #: src/components/SourceCompareModal.tsx
@@ -17862,6 +17978,7 @@ msgid "Rated {rating}"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ChapterEndRating.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rated {rating}/10"
@@ -21621,6 +21738,10 @@ msgstr "Показать заменённые файлы"
 msgid "Show source text"
 msgstr "Показать исходный текст"
 
+#: src/pages/reader/TapZoneOverlay.tsx
+msgid "Show the bars"
+msgstr ""
+
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Show the chapter name"
@@ -21705,6 +21826,10 @@ msgstr "Побочная история"
 #, fuzzy
 msgid "Side story of {relatedTo}"
 msgstr "Побочная история {relatedTo}"
+
+#: src/pages/reader/tapZones.ts
+msgid "Sides"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -22657,6 +22782,10 @@ msgstr "Suwayomi"
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
 msgstr "suwayomi, tachidesk, mihon, tachiyomi, расширения, источники расширений, больше источников, graphql, 4567"
 
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Swap back and forward"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
@@ -22805,6 +22934,10 @@ msgid "Tags to include"
 msgstr "Теги для включения"
 
 #: src/pages/reader/ReaderSettings.tsx
+msgid "Takes the colour of the page's edge."
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen"
 msgstr "Нажимайте на края страницы, чтобы листать. В режиме «Непрерывная» нажимайте на верх или низ, чтобы перейти на экран"
@@ -22813,6 +22946,10 @@ msgstr "Нажимайте на края страницы, чтобы листа
 #, fuzzy
 msgid "Tap to show"
 msgstr "Нажмите, чтобы показать"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Tap zone layout"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -22938,6 +23075,10 @@ msgstr "Это все главы на диске."
 #, fuzzy
 msgid "That's the end of a volume. How is it so far?"
 msgstr "Это конец тома. Как идёт на данный момент?"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "That's the whole series."
+msgstr ""
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -23300,6 +23441,22 @@ msgstr "Новый пароль должен быть не короче 10 си�
 msgid "The newest titles from the creators and studios you follow. Empty until you follow someone."
 msgstr "Новейшие произведения создателей и студий, на которых вы подписаны. Пусто, пока вы ни на кого не подписались."
 
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter is later than usual"
+msgstr ""
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter is likely any day now"
+msgstr ""
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter usually comes in {range}"
+msgstr ""
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter usually comes within {within}"
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #, fuzzy
 msgid "The next check is due."
@@ -23609,6 +23766,10 @@ msgstr "Серии, популярность которых сейчас рас�
 #, fuzzy
 msgid "The token @BotFather gave you."
 msgstr "Токен, который выдал @BotFather."
+
+#: src/pages/reader/tapZones.ts
+msgid "The top and one side go back, the bottom and the other side go forward."
+msgstr ""
 
 #. {series} is a series title and is never translated. It may be this row's own series, when an older download of it holds the torrent.
 #: src/api/queue.ts
@@ -26094,6 +26255,11 @@ msgstr "Пока панели скрыты. Панель инструменто�
 msgid "While the server works"
 msgstr "Пока работает сервер"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "White"
+msgstr ""
+
 #: src/components/notes/NoteComposer.tsx
 #, fuzzy
 msgid "Who can see this note"
@@ -26361,6 +26527,10 @@ msgstr "Ты досмотрел {animeTitle} ({coveredLabel}). Вероятно,
 #, fuzzy
 msgid "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
 msgstr "Ты досмотрел {animeTitle}. Аниме охватывает главы до {coveredTo}. Начни читать с главы {resumeAt}."
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You finished the series"
+msgstr ""
 
 #: src/components/series/RateHint.tsx
 #, fuzzy
@@ -26674,6 +26844,14 @@ msgstr ""
 #, fuzzy
 msgid "Z:\\downloads (optional)"
 msgstr "Z:\\downloads (необязательно)"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Zone size"
+msgstr ""
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Zone size ({width}%)"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

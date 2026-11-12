@@ -51,8 +51,9 @@ import {
   serverModelId,
   shownEnhanceMethod,
 } from './enhanceMethods'
-import { BACKGROUNDS, enhanceFor, toneFilter, type PrefsSelection, type ReaderPrefs } from './prefs'
+import { BACKGROUNDS, backgroundChoice, enhanceFor, toneFilter, type BackgroundChoice, type PrefsSelection, type ReaderPrefs } from './prefs'
 import { useEnhanceEngine } from './enhanceRuntime'
+import TapZoneSettings from './TapZoneSettings'
 
 /**
  * The reader renders above Mantine's popover layer, so anything that portals to <body> has to
@@ -85,6 +86,7 @@ type Toggle =
   | 'autoWebtoon'
   | 'keepAwake'
   | 'notesBeside'
+  | 'progressRail'
 
 function LayoutGlyph({ mode }: { mode: ReaderPrefs['mode'] }) {
   const page = { className: 'reader-settings-glyph-page', rx: 2 }
@@ -155,6 +157,7 @@ export default function ReaderSettings({
   incognito,
   onIncognito,
   previewSrc,
+  onTapZonesShown,
 }: {
   opened: boolean
   onOpenedChange: (opened: boolean) => void
@@ -171,6 +174,8 @@ export default function ReaderSettings({
   onIncognito: (value: boolean) => void
   /** The page on screen, shown through each colour filter. */
   previewSrc?: string
+  /** Whether the tap zone controls are on screen, so the reader can draw the zones on the page. */
+  onTapZonesShown?: (shown: boolean) => void
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -185,6 +190,12 @@ export default function ReaderSettings({
     if (opened) pages.reset()
     else setProfileMenu(false)
   }
+
+  const tapZonesShown = opened && view === 'reading' && prefs.tapZones
+  useEffect(() => {
+    onTapZonesShown?.(tapZonesShown)
+  }, [tapZonesShown, onTapZonesShown])
+  useEffect(() => () => onTapZonesShown?.(false), [onTapZonesShown])
 
   // Mantine only closes on Escape when focus is inside the dropdown, and focus is usually still on
   // the gear, so the reader's own Escape (leave the reader) would win. Captured on the window so it
@@ -293,11 +304,18 @@ export default function ReaderSettings({
     { key: 'autoSkipRecap', label: t`Skip recaps`, hint: t`In Continuous, jump past the end of the previous chapter when a chapter repeats it` },
     { key: 'autoWebtoon', label: t`Scroll webtoon chapters`, hint: t`Chapters of very tall pages open in Continuous` },
     { key: 'notesBeside', label: t`Notes beside the page`, hint: t`When the screen has room for them` },
+    { key: 'progressRail', label: t`Progress rail`, hint: t`In Continuous, a bar down the right edge you can drag to move through the chapter` },
     ...(wakeLockSupported() ? [{ key: 'keepAwake' as const, label: t`Keep the screen awake` }] : []),
   ]
 
   const wideLabel = { off: t`Whole`, split: t`Split`, rotate: t`Rotate` }[prefs.splitWide]
-  const backgroundName = prefs.background === BACKGROUNDS.oled ? t`OLED black` : t`Dark`
+  const backgroundName = {
+    dark: t`Dark`,
+    oled: t`OLED black`,
+    white: t`White`,
+    grey: t`Grey`,
+    auto: t`Auto`,
+  }[backgroundChoice(prefs.background)]
   const lookSummary = prefs.cropBorders ? t`${backgroundName}, cropped` : backgroundName
   const levelName = renderLabel(ENHANCE_LEVELS.find((level) => level.value === prefs.enhance)?.label ?? '')
   const methodInfo = enhanceMethodInfo(method)
@@ -600,15 +618,21 @@ export default function ReaderSettings({
                       aria-label={t`Background`}
                       fullWidth
                       size="xs"
-                      value={prefs.background === BACKGROUNDS.oled ? 'oled' : 'dark'}
-                      onChange={(value) =>
-                        onPrefs({ background: value === 'oled' ? BACKGROUNDS.oled : BACKGROUNDS.dark })
-                      }
+                      value={backgroundChoice(prefs.background)}
+                      onChange={(value) => onPrefs({ background: BACKGROUNDS[value as BackgroundChoice] })}
                       data={[
                         { label: t`Dark`, value: 'dark' },
                         { label: t`OLED black`, value: 'oled' },
+                        { label: t`White`, value: 'white' },
+                        { label: t`Grey`, value: 'grey' },
+                        { label: t`Auto`, value: 'auto' },
                       ]}
                     />
+                    {prefs.background === BACKGROUNDS.auto && (
+                      <Text className="reader-settings-hint" mt={6}>
+                        <Trans>Takes the colour of the page's edge.</Trans>
+                      </Text>
+                    )}
                   </div>
                   <Switch
                     size="xs"
@@ -752,6 +776,14 @@ export default function ReaderSettings({
                       classNames={{ body: 'reader-settings-switch', description: 'reader-settings-hint' }}
                     />
                   ))}
+                  {prefs.tapZones && (
+                    <TapZoneSettings
+                      prefs={prefs}
+                      onPrefs={onPrefs}
+                      vertical={prefs.mode === 'vertical'}
+                      hintClassName="reader-settings-hint"
+                    />
+                  )}
                 </Stack>
               </SubPage>
             )}

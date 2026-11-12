@@ -176,4 +176,28 @@ public class ReaderPrefsTests
 
         Assert.Equal(["official"], spec.EnhanceSkipTiers);
     }
+
+    [Fact]
+    public void Sanitized_falls_back_on_an_unknown_tap_layout_and_clamps_the_width()
+    {
+        var spec = new ReaderPrefsSpec(TapLayout: "corners", TapWidth: 90).Sanitized();
+
+        Assert.Equal(ReaderPrefsSpec.TapLayoutDefault, spec.TapLayout);
+        Assert.Equal(45, spec.TapWidth);
+        Assert.Equal(15, new ReaderPrefsSpec(TapWidth: 0).Sanitized().TapWidth);
+    }
+
+    [Fact]
+    public void Tap_fields_round_trip_and_default_on_an_older_blob()
+    {
+        var older = ReaderPrefsSpec.Parse("""{"mode":"paged","tapZones":true}""");
+        Assert.Equal(ReaderPrefsSpec.TapLayoutDefault, older.TapLayout);
+        Assert.Equal(ReaderPrefsSpec.TapWidthDefault, older.TapWidth);
+        Assert.False(older.TapInvert);
+
+        var spec = ReaderPrefsSpec.Parse(ReaderPrefsSpec.Serialize(new ReaderPrefsSpec(TapLayout: "kindle", TapWidth: 25, TapInvert: true)));
+        Assert.Equal("kindle", spec.TapLayout);
+        Assert.Equal(25, spec.TapWidth);
+        Assert.True(spec.TapInvert);
+    }
 }

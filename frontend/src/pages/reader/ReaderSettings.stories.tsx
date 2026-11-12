@@ -83,7 +83,7 @@ const body = (canvasElement: HTMLElement) => within(canvasElement.ownerDocument.
 export const Default: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const b = body(canvasElement)
-    await expect(await b.findByRole('button', { name: 'Reading profile: Auto (Manga)' })).toBeVisible()
+    await waitFor(() => expect(b.getByRole('button', { name: 'Reading profile: Auto (Manga)' })).toBeVisible())
     await userEvent.click(b.getByRole('radio', { name: 'Double' }))
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ mode: 'double' }))
     await waitFor(() => expect(b.getByRole('radio', { name: 'Double' })).toBeChecked())
@@ -116,7 +116,7 @@ export const OpensFromTheGear: Story = {
     await expect(b.queryByRole('radiogroup', { name: 'Layout' })).toBeNull()
     await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
     await waitFor(() => expect(args.onOpenedChange).toHaveBeenCalledWith(true))
-    await expect(await b.findByRole('radiogroup', { name: 'Layout' })).toBeVisible()
+    await waitFor(() => expect(b.getByRole('radiogroup', { name: 'Layout' })).toBeVisible())
   },
 }
 
@@ -162,6 +162,20 @@ export const PageLook: Story = {
   },
 }
 
+export const PageLookAuto: Story = {
+  play: async ({ args, canvasElement, userEvent }) => {
+    const b = body(canvasElement)
+    await userEvent.click(await b.findByRole('button', { name: /^Page look\s*Dark$/ }))
+    const group = await b.findByRole('radiogroup', { name: 'Background' })
+    await userEvent.click(within(group).getByText('White'))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ background: '#ffffff' }))
+    await userEvent.click(within(group).getByText('Grey'))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ background: '#8c8c90' }))
+    await userEvent.click(within(group).getByText('Auto'))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ background: 'auto' }))
+  },
+}
+
 export const WidePages: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const b = body(canvasElement)
@@ -178,7 +192,7 @@ export const ProfileDropdown: Story = {
     await waitFor(() => expect(canvasElement.ownerDocument.querySelector('.reader-settings-scope')).toHaveTextContent('Changes apply to the Manga profile and every series using it.'))
     await userEvent.click(await b.findByRole('button', { name: 'Reading profile: Auto (Manga)' }))
     // The list drops from the chip; the panel stays on its first page behind it.
-    await expect(b.getByRole('radiogroup', { name: 'Layout' })).toBeVisible()
+    await waitFor(() => expect(b.getByRole('radiogroup', { name: 'Layout' })).toBeVisible())
     await userEvent.click(await b.findByRole('menuitemradio', { name: 'Night reading' }))
     await waitFor(() => expect(args.onSelection).toHaveBeenCalledWith(3))
     await waitFor(() => expect(b.queryByRole('menuitemradio', { name: 'Night reading' })).toBeNull())
@@ -190,10 +204,10 @@ export const EscapeClosesTheProfileListFirst: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const b = body(canvasElement)
     await userEvent.click(await b.findByRole('button', { name: 'Reading profile: Auto (Manga)' }))
-    await expect(await b.findByRole('menuitemradio', { name: 'Night reading' })).toBeVisible()
+    await waitFor(() => expect(b.getByRole('menuitemradio', { name: 'Night reading' })).toBeVisible())
     await userEvent.keyboard('{Escape}')
     await waitFor(() => expect(b.queryByRole('menuitemradio', { name: 'Night reading' })).toBeNull())
-    await expect(b.getByRole('radiogroup', { name: 'Layout' })).toBeVisible()
+    await waitFor(() => expect(b.getByRole('radiogroup', { name: 'Layout' })).toBeVisible())
     await expect(args.onOpenedChange).not.toHaveBeenCalled()
   },
 }
@@ -201,7 +215,7 @@ export const EscapeClosesTheProfileListFirst: Story = {
 export const SeriesOverride: Story = {
   args: { selection: 'series', source: 'Series' },
   play: async ({ canvasElement }) => {
-    await expect(await body(canvasElement).findByRole('button', { name: 'Reading profile: Just this series' })).toBeVisible()
+    await waitFor(() => expect(body(canvasElement).getByRole('button', { name: 'Reading profile: Just this series' })).toBeVisible())
     await waitFor(() => expect(canvasElement.ownerDocument.querySelector('.reader-settings-scope')).toHaveTextContent('Changes apply to this series only.'))
   },
 }
@@ -209,7 +223,7 @@ export const SeriesOverride: Story = {
 export const GlobalDefaults: Story = {
   args: { selection: 'auto', source: 'Global', autoProfileId: null },
   play: async ({ canvasElement }) => {
-    await expect(await body(canvasElement).findByRole('button', { name: 'Reading profile: Auto (my defaults)' })).toBeVisible()
+    await waitFor(() => expect(body(canvasElement).getByRole('button', { name: 'Reading profile: Auto (my defaults)' })).toBeVisible())
     await waitFor(() => expect(canvasElement.ownerDocument.querySelector('.reader-settings-scope')).toHaveTextContent('Changes apply to your reader defaults.'))
   },
 }
@@ -267,7 +281,7 @@ export const EnhanceOffHidesMethod: Story = {
     await expect(b.queryByRole('button', { name: /^Method/ })).toBeNull()
     await userEvent.click(within(level).getByText('Auto'))
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhance: 'auto' }))
-    await expect(await b.findByRole('button', { name: /^Method/ })).toBeVisible()
+    await waitFor(() => expect(b.getByRole('button', { name: /^Method/ })).toBeVisible())
   },
 }
 
@@ -279,7 +293,7 @@ export const EnhanceSkippedForVolume: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const b = body(canvasElement)
     await userEvent.click(await b.findByRole('button', { name: /^Enhance\s*Off for this chapter$/ }))
-    await expect(await b.findByText('Off for this chapter because of its quality.')).toBeVisible()
+    await waitFor(() => expect(b.getByText('Off for this chapter because of its quality.')).toBeVisible())
     await userEvent.click(await b.findByLabelText("Don't enhance", { selector: 'input' }))
     await userEvent.click(await b.findByRole('option', { name: 'Volume' }))
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceSkipTiers: [] }))
@@ -307,7 +321,7 @@ export const EnhanceSavedServerModelGone: Story = {
 export const OriginalFitShowsScale: Story = {
   args: { prefs: { ...mangaPrefs, fit: 'original', scale: 150 } },
   play: async ({ canvasElement }) => {
-    await expect(await body(canvasElement).findByText('Scale (150%)')).toBeVisible()
+    await waitFor(() => expect(body(canvasElement).getByText('Scale (150%)')).toBeVisible())
   },
 }
 
@@ -315,7 +329,7 @@ export const ContinuousPickedByDetection: Story = {
   args: { prefs: webtoonPrefs, autoLayout: true, manifest: chapters[3040], autoProfileId: 2 },
   play: async ({ canvasElement }) => {
     const b = body(canvasElement)
-    await expect(await b.findByText("Continuous, because this chapter's pages are very tall.")).toBeVisible()
+    await waitFor(() => expect(b.getByText("Continuous, because this chapter's pages are very tall.")).toBeVisible())
     await waitFor(() => expect(b.getByRole('radio', { name: 'Continuous' })).toBeChecked())
   },
 }
@@ -332,4 +346,35 @@ export const DimmedNoPreview: Story = {
 export const Phone: Story = {
   parameters: { viewport: { defaultViewport: 'mobile1' } },
   globals: { viewport: { value: 'mobile1', isRotated: false } },
+}
+
+/** With tap zones on, the While reading page picks the layout, the zone size and the swap, and draws the zones. */
+export const TapZoneLayouts: Story = {
+  args: { onTapZonesShown: fn() },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const b = body(canvasElement)
+    await userEvent.click(await b.findByRole('button', { name: /^While reading/ }))
+    await waitFor(() => expect(args.onTapZonesShown).toHaveBeenLastCalledWith(true))
+    await expect(canvasElement.ownerDocument.querySelector('.reader-tap-preview')).toBeNull()
+    await userEvent.click(within(await b.findByRole('radiogroup', { name: 'Tap zone layout' })).getByText('Kindle'))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ tapLayout: 'kindle' }))
+    await waitFor(() => expect(b.getByText(/Most of the page goes forward/)).toBeVisible())
+    await userEvent.click(b.getByRole('switch', { name: /Swap back and forward/ }))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ tapInvert: true }))
+    await userEvent.click(b.getByRole('switch', { name: /Tap zones/ }))
+    await waitFor(() => expect(b.queryByRole('radiogroup', { name: 'Tap zone layout' })).toBeNull())
+    await waitFor(() => expect(args.onTapZonesShown).toHaveBeenLastCalledWith(false))
+  },
+}
+
+/** In Continuous the layouts don't apply: the picker is off and the zone size sets the top and bottom bands. */
+export const TapZonesContinuous: Story = {
+  args: { prefs: { ...mangaPrefs, mode: 'vertical', tapZones: true } },
+  play: async ({ canvasElement, userEvent }) => {
+    const b = body(canvasElement)
+    await userEvent.click(await b.findByRole('button', { name: /^While reading/ }))
+    await waitFor(() => expect(b.getByText(/a band at the top goes back/)).toBeVisible())
+    await waitFor(() => expect(b.getByRole('radio', { name: 'Kindle' })).toBeDisabled())
+    await waitFor(() => expect(b.getByRole('slider', { name: 'Zone size' })).toBeEnabled())
+  },
 }

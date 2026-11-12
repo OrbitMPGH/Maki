@@ -20,6 +20,8 @@ export interface PageScrubberProps {
   upscaling?: ReadonlySet<number>
   /** Pages carrying at least one note; each gets a dot above its segment. */
   noted?: ReadonlySet<number>
+  /** Bookmarked pages; each gets a flag above its segment. */
+  bookmarked?: ReadonlySet<number>
   /** Thumbnail URL per page, shown above the segment under the pointer. */
   thumbs: string[]
 }
@@ -38,6 +40,7 @@ export default function PageScrubber({
   enhanced,
   upscaling,
   noted,
+  bookmarked,
   thumbs,
 }: PageScrubberProps) {
   const { t } = useLingui()
@@ -123,6 +126,7 @@ export default function PageScrubber({
             data-upscaling={(index > to && upscaling?.has(index)) || undefined}
             data-hover={index === hover || undefined}
             data-noted={noted?.has(index) || undefined}
+            data-bookmarked={bookmarked?.has(index) || undefined}
           />
         ))}
       </div>

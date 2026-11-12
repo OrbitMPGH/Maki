@@ -13,6 +13,7 @@ import {
   manifestServedOffline,
   readerRecapQuery,
   useBookmarks,
+  useReaderEnding,
   useReaderManifest,
   useToggleBookmark,
   type ReaderManifest,
@@ -38,15 +39,24 @@ import PageStrip from './PageStrip'
 import ReaderToolbar from './ReaderToolbar'
 import { OVERLAY_Z } from './ReaderSettings'
 import { probeWebtoon } from './pageShape'
-import { enhanceFor, toneFilter, useReaderPrefs, type ReaderPrefs } from './prefs'
+import { BACKGROUNDS, enhanceFor, toneFilter, useReaderPrefs, type ReaderPrefs } from './prefs'
 import { usePageUrls, usePreload, useWarmChapter } from './usePageUrls'
 import { useReaderProgress } from './useReaderProgress'
+import { adjacentBookmark } from './bookmarkSteps'
+import { useReaderBack } from './useReaderBack'
+import { useReaderGround } from './useEdgeBackground'
+import { useIdleCursor } from './useIdleCursor'
 import { useReadingClock } from './useReadingClock'
 import { useWakeLock } from './useWakeLock'
 import { spreadIndexOf, usePageAspects, useSpreads } from './useSpreads'
 import { serverChapterLabel } from '../../format'
 import { scrollBehavior } from '../../lib/scrollBehavior'
 import { useAutoScroll, useAutoScrollLevel } from './useAutoScroll'
+import ProgressRail from './ProgressRail'
+import { createStripTracker, liveStripOffset, resumeOffsetOf, useStripOffset, type StripResume } from './stripPosition'
+import { usePagedGestures } from './usePagedGestures'
+import { stripTapActionAt, tapActionAt } from './tapZones'
+import TapZoneOverlay from './TapZoneOverlay'
 
 const ZOOM_STEP = 0.25
 const ZOOM_MAX = 4
@@ -111,6 +121,7 @@ export default function ReaderPage() {
     isFetching,
     refetch,
   } = useReaderManifest(chapterId)
+  const back = useReaderBack(manifest?.seriesId)
   useDocumentTitle(manifest ? `${manifest.seriesTitle} - ${serverChapterLabel(manifest.label)}` : null)
   const { prefs, update, keepForSeries, selection, setSelection, source, autoProfileId, profiles } =
     useReaderPrefs(manifest, !isFetching && !isError)
@@ -144,7 +155,9 @@ export default function ReaderPage() {
    * Where to resume once this device's queued progress for the chapter is accounted for. Offline, a
    * queued row is newer than anything the manifest says, so it wins.
    */
-  const [queued, setQueued] = useState<{ chapterId: number; resumePage: number; finished: boolean } | null>(null)
+  const [queued, setQueued] = useState<{ chapterId: number; resumePage: number; resumeOffset: number; finished: boolean } | null>(null)
+  const [stripTracker] = useState(createStripTracker)
+  const [resumedAt, setResumedAt] = useState<StripResume | null>(null)
   // Set just before navigating to a *previous* chapter: stepping backward off page 1 should land
   // on that chapter's last page, not wherever it was last resumed (page 1 for a completed one).
   const enterAtEndRef = useRef(false)
@@ -165,7 +178,8 @@ export default function ReaderPage() {
   // (the cursor arriving on the thumbnail strip).
   const [toolbarHeld, setToolbarHeld] = useState(false)
   const [stripHeld, setStripHeld] = useState(false)
-  const chromeHeld = toolbarHeld || stripHeld
+  const [railHeld, setRailHeld] = useState(false)
+  const chromeHeld = toolbarHeld || stripHeld || railHeld
   const [fullscreen, setFullscreen] = useState(false)
   const [stripOpen, setStripOpen] = useState(false)
   const [zoom, setZoom] = useState(1)
@@ -176,6 +190,7 @@ export default function ReaderPage() {
   // the completion back out of a write that has not gone out yet.
   const [finishedFor, setFinishedFor] = useState<number | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [tapZonesShown, setTapZonesShown] = useState(false)
   const [notesOpen, setNotesOpen] = useState(false)
   const [surface, setSurface] = useState<HTMLDivElement | null>(null)
   const [autoScroll, setAutoScroll] = useState(false)
@@ -238,6 +253,8 @@ export default function ReaderPage() {
   // half is up, so until then the position on record stops a page short.
   const heldBack = splitting && half === 0 && wide[shownTo] && shownTo >= pageCount - 1
   const recordedTo = heldBack ? Math.max(0, shownTo - 1) : shownTo
+  const ground = useReaderGround(prefs.background, urls, page, shownTo, mode === 'vertical')
+  const cursorIdle = useIdleCursor(chromeHeld || shortcutsOpen || notesOpen)
   // A one-page chapter has no page before it, so the hold has to be sent as `completed: false`.
   const holdCompletion = heldBack && recordedTo >= pageCount - 1
 
@@ -458,6 +475,7 @@ export default function ReaderPage() {
   // seconds to the same flush that writes the position out.
   // On a phone the notes sheet covers the page, so nothing is being read while it is up.
   const clock = useReadingClock(tracking, notesOpen && phoneSheet)
+  const stripOffset = useStripOffset(stripTracker, mode === 'vertical' && tracking && !finished, chapterId, recordedTo, resumedAt)
   const { settle: settleProgress } = useReaderProgress(
     manifest?.chapterId,
     manifest?.seriesId,
@@ -467,6 +485,8 @@ export default function ReaderPage() {
     tracking,
     clock,
     onFlushed,
+    stripOffset,
+    () => liveStripOffset(stripTracker, finished ? pageCount - 1 : recordedTo, stripOffset),
   )
 
   /**
@@ -492,9 +512,11 @@ export default function ReaderPage() {
       }
       if (cancelled) return
       const waiting = getConnectivity() === 'offline' ? rows : []
+      const resumePage = waiting.reduce((furthest, row) => Math.max(furthest, row.pageIndex), base.resumePage)
       setQueued({
         chapterId: opened.chapterId,
-        resumePage: waiting.reduce((furthest, row) => Math.max(furthest, row.pageIndex), base.resumePage),
+        resumePage,
+        resumeOffset: resumeOffsetOf(waiting, resumePage, base),
         finished: waiting.some((row) => row.completed),
       })
     })()
@@ -519,8 +541,10 @@ export default function ReaderPage() {
     enterAtEndRef.current = false
     const lastPage = Math.max(0, manifest.pageCount - 1)
     const saved = queued.resumePage <= lastPage ? Math.max(0, queued.resumePage) : 0
-    seekToPage(toEnd ? lastPage : saved)
-    setStartedFor(!toEnd && saved === 0 ? manifest.chapterId : null)
+    const offset = !toEnd && saved === queued.resumePage ? queued.resumeOffset : 0
+    seekToPage(toEnd ? lastPage : saved, 0, offset > 0 ? { offset, smooth: false } : PLAIN_SEEK)
+    setResumedAt({ chapterId: manifest.chapterId, page: saved, offset })
+    setStartedFor(!toEnd && saved === 0 && offset === 0 ? manifest.chapterId : null)
     setZoom(1)
     setAtEnd(false)
     // A completion still in the queue rides along on this visit's own writes, as if finished here.
@@ -620,13 +644,15 @@ export default function ReaderPage() {
         const seconds = clock.take()
         const { chapterId: leftId, seriesId } = manifest
         const at = done ? pageCount - 1 : recordedTo
+        // Where in a tall slice the reader left it, or going back a chapter would reopen it at the slice's top.
+        const offset = done ? undefined : liveStripOffset(stripTracker, recordedTo, stripOffset)
         // Navigation waits for the write only up to a short grace period: a hung save must not
         // freeze the page turn. The chain keeps running after navigating, so the position still
         // lands, and settle-then-flush stays in order.
         const flushed = (async () => {
           await settleProgress()
           const completed = done || (holdCompletion ? false : undefined)
-          await flushProgress(leftId, seriesId, at, completed, seconds, pageCount).catch(() => {})
+          await flushProgress(leftId, seriesId, at, completed, seconds, pageCount, offset).catch(() => {})
           invalidateProgress(seriesId)
         })()
         await Promise.race([flushed, new Promise((resolve) => setTimeout(resolve, FLUSH_WAIT_MS))])
@@ -652,12 +678,18 @@ export default function ReaderPage() {
       clock,
       finished,
       settleProgress,
+      stripTracker,
+      stripOffset,
     ],
   )
 
   const zoomIn = useCallback(() => setZoom((z) => Math.min(ZOOM_MAX, z + ZOOM_STEP)), [])
   const zoomOut = useCallback(() => setZoom((z) => Math.max(1, z - ZOOM_STEP)), [])
   const zoomReset = useCallback(() => setZoom(1), [])
+
+  // The end screen's own read of what comes next, so the forward key follows a chapter that landed after open.
+  const { data: ending } = useReaderEnding(manifest?.seriesId, chapterId, atEnd)
+  const endNextId = ending ? ending.nextChapterId : (manifest?.nextChapterId ?? null)
 
   const reachEnd = useCallback(() => {
     lastTransitionRef.current = Date.now()
@@ -671,7 +703,7 @@ export default function ReaderPage() {
     // On the end screen the forward key is the "second press" it asks for.
     if (atEnd) {
       if (settling()) return
-      if (manifest?.nextChapterId != null) void goToChapter(manifest.nextChapterId, true)
+      if (endNextId != null) void goToChapter(endNextId, true)
       return
     }
     if (splitting && half === 0 && wide[page]) {
@@ -695,6 +727,7 @@ export default function ReaderPage() {
     else reachEnd()
   }, [
     atEnd,
+    endNextId,
     spreads,
     spreadIndex,
     manifest,
@@ -865,6 +898,18 @@ export default function ReaderPage() {
       case 't':
         setStripOpen((open) => !open)
         break
+      case ',':
+      case '<':
+      case '.':
+      case '>': {
+        const toward = key === ',' || key === '<' ? -1 : 1
+        const target = adjacentBookmark(bookmarkedPages, page, shownTo, toward)
+        if (target !== null) {
+          setAtEnd(false)
+          seekToPage(target)
+        }
+        break
+      }
       case '1':
         edit({ mode: 'paged' })
         break
@@ -894,7 +939,7 @@ export default function ReaderPage() {
         setShortcutsOpen(true)
         break
       case 'Escape':
-        if (!document.fullscreenElement && manifest) navigate(`/series/${manifest.seriesId}`)
+        if (!document.fullscreenElement && manifest) back.go()
         break
     }
   }
@@ -905,14 +950,30 @@ export default function ReaderPage() {
     return () => window.removeEventListener('keydown', listener)
   }, [])
 
-  /** Tap zones: outer thirds page, the middle toggles the chrome. Continuous mode splits top to bottom instead. */
+  usePagedGestures(surface, {
+    enabled: mode !== 'vertical',
+    zoom,
+    zoomMax: ZOOM_MAX,
+    rtl: prefs.direction === 'rtl',
+    onZoom: setZoom,
+    onTurn: (forward) => (forward ? next() : previous()),
+  })
+  const tapAction = (clientX: number, clientY: number, bounds: DOMRect) =>
+    tapActionAt(
+      prefs.tapLayout,
+      prefs.tapWidth,
+      prefs.tapInvert,
+      prefs.direction === 'rtl',
+      (clientX - bounds.left) / bounds.width,
+      (clientY - bounds.top) / bounds.height,
+    )
+
+  /** Tap zones: the paged layouts follow the chosen zone layout. Continuous mode splits top to bottom in thirds. */
   const handleTap = (clientX: number, clientY: number, bounds: DOMRect) => {
     if (prefs.tapZones && mode === 'vertical') {
-      const ratio = (clientY - bounds.top) / bounds.height
-      if (ratio < 0.33) {
-        if (!surface || surface.scrollTop > 0) stepStrip(-1)
-        else setChrome((visible) => !visible)
-      } else if (ratio > 0.67) stepStrip(1)
+      const action = stripTapActionAt(prefs.tapWidth, prefs.tapInvert, (clientY - bounds.top) / bounds.height)
+      if (action === 'previous' && surface && surface.scrollTop > 0) stepStrip(-1)
+      else if (action === 'next') stepStrip(1)
       else setChrome((visible) => !visible)
       return
     }
@@ -921,18 +982,10 @@ export default function ReaderPage() {
       return
     }
 
-    const ratio = (clientX - bounds.left) / bounds.width
-    // Right-to-left reading puts "next" on the left edge.
-    const leftAdvances = prefs.direction === 'rtl'
-    if (ratio < 0.33) {
-      if (leftAdvances) next()
-      else previous()
-    } else if (ratio > 0.67) {
-      if (leftAdvances) previous()
-      else next()
-    } else {
-      setChrome((visible) => !visible)
-    }
+    const action = tapAction(clientX, clientY, bounds)
+    if (action === 'next') next()
+    else if (action === 'previous') previous()
+    else setChrome((visible) => !visible)
   }
 
   // Read through a ref so the delayed single tap acts on the state at the time it fires.
@@ -976,8 +1029,7 @@ export default function ReaderPage() {
     }
 
     const { clientX, clientY } = event
-    const ratio = (clientX - bounds.left) / bounds.width
-    if (zoom === 1 && prefs.tapZones && (ratio < 0.33 || ratio > 0.67)) {
+    if (zoom === 1 && prefs.tapZones && tapAction(clientX, clientY, bounds) !== 'menu') {
       handleTap(clientX, clientY, bounds)
       return
     }
@@ -1082,7 +1134,14 @@ export default function ReaderPage() {
     !incognito && !manifest.completed && (finished || (recordedTo >= manifest.pageCount - 1 && !holdCompletion))
 
   return (
-    <div className="reader-root" style={{ background: prefs.background }}>
+    <div
+      className="reader-root"
+      data-ground={ground.light ? 'light' : undefined}
+      data-auto-ground={prefs.background === BACKGROUNDS.auto || undefined}
+      data-cursor-idle={cursorIdle || undefined}
+      style={{ background: ground.background }}
+    >
+      {tapZonesShown && <TapZoneOverlay prefs={prefs} vertical={mode === 'vertical'} />}
       <ReaderToolbar
         manifest={manifest}
         page={page}
@@ -1112,6 +1171,7 @@ export default function ReaderPage() {
         onIncognito={setIncognito}
         readingCounted={readingCounted}
         bookmarked={bookmarked}
+        bookmarkedPages={bookmarkedPages}
         bookmarkDisabled={bookmarkOffline}
         onToggleBookmark={() => toggleBookmark.mutate(page)}
         noteCount={manifest.noteCount ?? 0}
@@ -1124,6 +1184,7 @@ export default function ReaderPage() {
         onToggleStrip={() => setStripOpen((open) => !open)}
         visible={chrome}
         onHold={setToolbarHeld}
+        onTapZonesShown={setTapZonesShown}
         onReveal={() => setChrome(true)}
         onShortcuts={() => setShortcutsOpen(true)}
         serverEnhancing={server !== null}
@@ -1145,7 +1206,7 @@ export default function ReaderPage() {
           manifest={manifest}
           readingCounted={readingCounted}
           rtl={prefs.direction === 'rtl'}
-          onNext={() => void goToChapter(manifest.nextChapterId, true)}
+          onNext={(nextId) => void goToChapter(nextId, true)}
           onStay={() => setAtEnd(false)}
           onOpenNotes={() => setNotesOpen(true)}
           ratingPrompt={
@@ -1202,6 +1263,7 @@ export default function ReaderPage() {
               server={server}
               onStretched={onStretched}
               onEnhanceRange={onEnhanceRange}
+              tracker={stripTracker}
             />
           ) : (
             <PagedView
@@ -1214,7 +1276,10 @@ export default function ReaderPage() {
               scale={prefs.scale}
               tone={tone}
               label={serverChapterLabel(manifest.label)}
-              onMeasure={measure}
+              onMeasure={(index, image) => {
+                measure(index, image)
+                ground.note(index, image)
+              }}
               cropBorders={prefs.cropBorders}
               splitWide={mode === 'paged' ? prefs.splitWide : 'off'}
               half={half}
@@ -1330,6 +1395,16 @@ export default function ReaderPage() {
             />
           }
           {...notesBody}
+        />
+      )}
+
+      {mode === 'vertical' && prefs.progressRail && !atEnd && (
+        <ProgressRail
+          tracker={stripTracker}
+          count={manifest.pageCount}
+          active={chrome}
+          strip={chrome && stripOpen}
+          onHold={setRailHeld}
         />
       )}
 

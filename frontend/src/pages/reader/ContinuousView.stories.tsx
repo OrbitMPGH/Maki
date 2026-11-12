@@ -92,6 +92,27 @@ export const ResumesPartWayDown: Story = {
   },
 }
 
+/** Webtoon slices three screens tall, so a resume can land partway down one. */
+const tallStrip = Array.from({ length: 8 }, (_, index) => `/mock/strip/tall/${index + 1}.svg`)
+
+/**
+ * A resume partway down a tall slice lands there, and stays there while the slices above it load
+ * and change height.
+ */
+export const ResumesPartWayDownATallSlice: Story = {
+  args: { urls: tallStrip, page: 4, seekVersion: 1, seekOffset: 0.5 },
+  play: async ({ canvasElement }) => {
+    const scroller = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    const target = () => canvasElement.querySelectorAll<HTMLImageElement>('img.reader-page')[4]
+    await waitFor(() => expect(target()).toHaveAttribute('data-loaded'))
+    await waitFor(() => {
+      const box = target().getBoundingClientRect()
+      const landed = scroller.getBoundingClientRect().top - box.top
+      expect(Math.abs(landed - box.height * 0.5)).toBeLessThan(4)
+    })
+  },
+}
+
 /**
  * At the bottom, touch is pull and release: about a quarter of the screen fills the meter, and
  * only letting go with it full opens the next chapter. Letting go early just empties it.

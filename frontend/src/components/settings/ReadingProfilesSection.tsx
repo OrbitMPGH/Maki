@@ -12,7 +12,8 @@ import {
   type ReadingProfile,
   type ReadingProfileInput,
 } from '../../api/readingProfiles'
-import { BACKGROUNDS, DEFAULT_PREFS, type ReaderPrefs } from '../../pages/reader/prefs'
+import { BACKGROUNDS, DEFAULT_PREFS, backgroundChoice, type BackgroundChoice, type ReaderPrefs } from '../../pages/reader/prefs'
+import TapZoneSettings from '../../pages/reader/TapZoneSettings'
 import { useReaderSettings, useSaveReaderSettings } from '../../api/reader'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { TagChip } from '../ui/TagChip'
@@ -357,13 +358,14 @@ function ProfileEditor({
         <Select
           label={t`Background`}
           allowDeselect={false}
-          value={prefs.background === BACKGROUNDS.oled ? 'oled' : 'dark'}
-          onChange={(value) =>
-            set({ background: value === 'oled' ? BACKGROUNDS.oled : BACKGROUNDS.dark })
-          }
+          value={backgroundChoice(prefs.background)}
+          onChange={(value) => set({ background: BACKGROUNDS[(value as BackgroundChoice | null) ?? 'dark'] })}
           data={[
             { value: 'dark', label: t`Dark` },
             { value: 'oled', label: t`OLED black` },
+            { value: 'white', label: t`White` },
+            { value: 'grey', label: t`Grey` },
+            { value: 'auto', label: t`Auto` },
           ]}
         />
         <SettingsNumberInput
@@ -516,11 +518,19 @@ function ProfileEditor({
       />
       <Switch
         size="sm"
+        label={t`Progress rail`}
+        description={t`Continuous layout only. A bar down the right edge you can drag to move through the chapter.`}
+        checked={prefs.progressRail}
+        onChange={(e) => set({ progressRail: e.currentTarget.checked })}
+      />
+      <Switch
+        size="sm"
         label={t`Tap zones`}
         description={t`Paged layouts turn the page from the left and right edges. Continuous scrolls from the top and bottom.`}
         checked={prefs.tapZones}
         onChange={(e) => set({ tapZones: e.currentTarget.checked })}
       />
+      {prefs.tapZones && <TapZoneSettings prefs={prefs} onPrefs={set} vertical={prefs.mode === 'vertical'} preview />}
       <Switch
         size="sm"
         label={t`Show page number`}

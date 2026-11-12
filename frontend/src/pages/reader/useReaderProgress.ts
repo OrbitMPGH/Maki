@@ -14,6 +14,9 @@ const FLUSH_CHAIN_WAIT_MS = 2000
  */
 const HEARTBEAT_MS = 60_000
 
+/** Offsets closer than this are the same place: a resumed strip lands within a pixel or two of the saved one. */
+const OFFSET_EPSILON = 0.005
+
 /**
  * Reports the reader's position and its reading time, debounced, and flushes on tab hide /
  * unmount so closing the browser mid-chapter still resumes in the right place. Positions are
@@ -26,6 +29,10 @@ const HEARTBEAT_MS = 60_000
  * undefined to let it. The returned `settle` hands off to a caller about to write
  * the same chapter itself: it drops the pending write and waits out the one in flight, so two
  * completing writes never race each other into a double completion.
+ *
+ * `offset` is how far down `page` the continuous strip is (0 to 1), sent with the position. Leave it
+ * undefined where it has no meaning (the paged layouts), which the server stores as the page's top.
+ * `liveOffset` gives the unsettled one for the final flush, which cannot wait for scrolling to stop.
  */
 export function useReaderProgress(
   chapterId: number | undefined,
@@ -36,26 +43,31 @@ export function useReaderProgress(
   enabled: boolean,
   clock: ReadingClock,
   onFlushed?: () => void,
+  offset?: number,
+  liveOffset?: () => number | undefined,
 ) {
-  const latest = useRef({ chapterId, seriesId, page, pageCount, complete })
+  const latest = useRef({ chapterId, seriesId, page, pageCount, complete, offset })
   const pending = useRef(false)
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const inflight = useRef<Promise<void>>(Promise.resolve())
   // Where the chapter was opened, and whether anything has been written since. Opening is not a
   // reason to write: the position on record already is this one.
-  const opened = useRef<{ chapterId: number; page: number; written: boolean } | undefined>(undefined)
+  const opened = useRef<{ chapterId: number; page: number; offset: number; written: boolean } | undefined>(undefined)
 
   // Held in a ref so a caller passing an inline arrow does not restart the debounce and the
   // heartbeat on every render, which would mean the timers never actually fire.
   const flushedHandler = useRef(onFlushed)
   flushedHandler.current = onFlushed
+  // The flush on hide or unmount reads the strip as it is now; `offset` only moves once scrolling settles.
+  const liveOffsetRef = useRef(liveOffset)
+  liveOffsetRef.current = liveOffset
 
-  latest.current = { chapterId, seriesId, page, pageCount, complete }
+  latest.current = { chapterId, seriesId, page, pageCount, complete, offset }
 
   if (!enabled || !chapterId) {
     opened.current = undefined
   } else if (opened.current?.chapterId !== chapterId) {
-    opened.current = { chapterId, page, written: false }
+    opened.current = { chapterId, page, offset: offset ?? 0, written: false }
   }
 
   // Chained onto the previous send rather than tracked standalone: heartbeat and debounce saves
@@ -63,7 +75,7 @@ export function useReaderProgress(
   // or after the final flush and regress the persisted position. Chaining serializes them, so
   // `settle()` draining `inflight.current` waits for every send still queued, in order.
   const send = useCallback(
-    (id: number, series: number, at: number, done: boolean | undefined) => {
+    (id: number, series: number, at: number, done: boolean | undefined, within: number | undefined) => {
       // Seconds are pulled from the clock now, at the moment this send is decided, not once its
       // turn in the chain comes up: waiting would let time banked while queued behind an earlier
       // request bleed into this send instead of a later one.
@@ -71,7 +83,7 @@ export function useReaderProgress(
       const count = latest.current.pageCount
       if (opened.current?.chapterId === id) opened.current.written = true
       inflight.current = inflight.current
-        .then(() => saveProgress(id, series, at, done, seconds, count))
+        .then(() => saveProgress(id, series, at, done, seconds, count, within))
         .catch(() => {})
     },
     [clock],
@@ -81,7 +93,7 @@ export function useReaderProgress(
     if (!enabled || !chapterId || seriesId === undefined) return
 
     const start = opened.current
-    if (start && !start.written && start.page === page && !complete) {
+    if (start && !start.written && start.page === page && Math.abs(start.offset - (offset ?? 0)) < OFFSET_EPSILON && !complete) {
       pending.current = false
       return
     }
@@ -90,19 +102,19 @@ export function useReaderProgress(
     timer.current = setTimeout(() => {
       if (!pending.current) return
       pending.current = false
-      send(chapterId, seriesId, page, complete)
+      send(chapterId, seriesId, page, complete, latest.current.offset)
     }, DEBOUNCE_MS)
 
     return () => clearTimeout(timer.current)
-  }, [chapterId, seriesId, page, complete, enabled, send])
+  }, [chapterId, seriesId, page, complete, offset, enabled, send])
 
   useEffect(() => {
     if (!enabled) return
 
     const timer = setInterval(() => {
-      const { chapterId: id, seriesId: series, page: at, complete: done } = latest.current
+      const { chapterId: id, seriesId: series, page: at, complete: done, offset: within } = latest.current
       if (!id || series === undefined || clock.pending() === 0) return
-      send(id, series, at, done)
+      send(id, series, at, done, within)
     }, HEARTBEAT_MS)
 
     return () => clearInterval(timer)
@@ -112,7 +124,8 @@ export function useReaderProgress(
     if (!enabled) return
 
     const flush = (direct: boolean) => {
-      const { chapterId: id, seriesId: series, page: at, pageCount: count, complete: done } = latest.current
+      const { chapterId: id, seriesId: series, page: at, pageCount: count, complete: done, offset: settled } = latest.current
+      const within = liveOffsetRef.current?.() ?? settled
       // Banked seconds are worth a write on their own: this is the last chance to report the
       // stretch since the previous one, and a hidden tab may never come back.
       if (!id || series === undefined || (!pending.current && clock.pending() === 0)) return
@@ -122,7 +135,7 @@ export function useReaderProgress(
       const seconds = clock.take()
       if (opened.current?.chapterId === id) opened.current.written = true
       const run = () =>
-        flushProgress(id, series, at, done, seconds, count)
+        flushProgress(id, series, at, done, seconds, count, within)
           .then(() => {
             // Only now has the write committed, so a refetch started any earlier could read the old state.
             flushedHandler.current?.()

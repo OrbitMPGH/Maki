@@ -1215,13 +1215,7 @@ public class SeriesController(
         var finished = await db.ReadingStates.AnyAsync(r => r.SeriesId == id && r.Finished, ct);
         var readerPrefs = await readingProfiles.ResolveForAsync(
             series.Type, userState?.ReaderPrefsJson, userState?.ReadingProfileId, ct);
-        // A profile or series override is an explicit reading-style choice. With only the global
-        // default, use the format's conventional style so an unconfigured manhua/manhwa does not
-        // borrow a manga pace merely because the application default is paged.
-        var estimateMode = readerPrefs.Source == ReaderPrefsSource.Global &&
-                           series.Type is SeriesTypes.Manhua or SeriesTypes.Manhwa
-            ? Maki.Core.Reading.ReaderPrefsSpec.ModeVertical
-            : readerPrefs.Prefs.Mode;
+        var estimateMode = ReadingTimeEstimateService.ModeFor(series.Type, readerPrefs);
         // The wanted total, as the Progress panel and the Unread filter count, so a listed chapter the
         // reader turned down is not "left". With nothing wanted every listed chapter counts.
         var estimateTotal = Math.Max(series.TotalChapters ?? 0, total > 0 ? total : known);

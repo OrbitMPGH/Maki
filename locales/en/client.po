@@ -999,6 +999,10 @@ msgstr "{count, plural, one {# chapter} other {# chapters}}"
 msgid "{count, plural, one {# completed} other {# completed}}"
 msgstr "{count, plural, one {# completed} other {# completed}}"
 
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{count, plural, one {# day} other {# days}}"
+msgstr "{count, plural, one {# day} other {# days}}"
+
 #: src/pages/HealthPage.tsx
 msgid "{count, plural, one {# deletion} other {# deletions}}"
 msgstr "{count, plural, one {# deletion} other {# deletions}}"
@@ -1070,6 +1074,10 @@ msgstr "{count, plural, one {# tracker} other {# trackers}}"
 #: src/components/NotificationBell.tsx
 msgid "{count, plural, one {# unread} other {# unread}}"
 msgstr "{count, plural, one {# unread} other {# unread}}"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{count, plural, one {# week} other {# weeks}}"
+msgstr "{count, plural, one {# week} other {# weeks}}"
 
 #: src/components/home/OfflineHome.tsx
 msgid "{count, plural, one {A chapter is saved on this device, but this tab can't open it right now. That usually follows a hard reload: reload the page normally and it will be ready to read.} other {# chapters are saved on this device, but this tab can't open them right now. That usually follows a hard reload: reload the page normally and they will be ready to read.}}"
@@ -1395,6 +1403,10 @@ msgstr "{free} free"
 #: src/components/pageconversion/EstimateTable.tsx
 msgid "{from} to {to}"
 msgstr "{from} to {to}"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{from} to {upTo}"
+msgstr "{from} to {upTo}"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{gone, plural, one {Deleted # file} other {Deleted # files}}"
@@ -1738,6 +1750,14 @@ msgstr "{missingWanted, plural, one {This will add # chapter to the download que
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "{monitorShort}, {profileName}"
 msgstr "{monitorShort}, {profileName}"
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "{more, plural, one {# chapter is queued to download.} other {# chapters are queued to download.}}"
+msgstr "{more, plural, one {# chapter is queued to download.} other {# chapters are queued to download.}}"
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "{more, plural, one {# more is queued.} other {# more are queued.}}"
+msgstr "{more, plural, one {# more is queued.} other {# more are queued.}}"
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "{moreCount, plural, one {+# more} other {+# more}}"
@@ -3124,6 +3144,10 @@ msgstr "a zip"
 msgid "Abandoned"
 msgstr "Abandoned"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "About {chapterLeft} left in this chapter"
+msgstr "About {chapterLeft} left in this chapter"
+
 #: src/components/pageconversion/EstimateTable.tsx
 msgid "About {hardlinked} are hardlinked to torrents and stay as they are."
 msgstr "About {hardlinked} are hardlinked to torrents and stay as they are."
@@ -3136,6 +3160,14 @@ msgstr "about {hourPhrase} {restPhrase} left"
 #: src/pages/SeriesDetailPage.tsx
 msgid "About {readingTime}"
 msgstr "About {readingTime}"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "About {seriesLeft} left in the series"
+msgstr "About {seriesLeft} left in the series"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "About {timeLeftText} left in the series"
+msgstr "About {timeLeftText} left in the series"
 
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "About {toFinish} to finish"
@@ -4142,7 +4174,9 @@ msgid "Attribute Kavita's reading to"
 msgstr "Attribute Kavita's reading to"
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/enhanceMethods.ts
+#: src/pages/reader/ReaderSettings.tsx
 msgid "Auto"
 msgstr "Auto"
 
@@ -4253,6 +4287,7 @@ msgstr "Avoided"
 #: src/components/ui/DrillPanel.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
+#: src/pages/reader/TapZoneOverlay.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Back"
 msgstr "Back"
@@ -4265,6 +4300,11 @@ msgstr "Back in recommendations since {until}"
 msgid "back in the running"
 msgstr "back in the running"
 
+#. placeholder {0}: label(target.label)
+#: src/pages/reader/useReaderBack.ts
+msgid "Back to {0}"
+msgstr "Back to {0}"
+
 #: src/pages/CreatorPage.tsx
 msgid "Back to Discover"
 msgstr "Back to Discover"
@@ -4275,8 +4315,7 @@ msgid "Back to library"
 msgstr "Back to library"
 
 #: src/pages/reader/ChapterEnd.tsx
-#: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/pages/reader/useReaderBack.ts
 msgid "Back to series"
 msgstr "Back to series"
 
@@ -4291,6 +4330,10 @@ msgstr "Back to the library"
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Back to the series"
 msgstr "Back to the series"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Back to where you came from"
+msgstr "Back to where you came from"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Back up now"
@@ -4515,6 +4558,10 @@ msgstr "Bot token"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Both"
 msgstr "Both"
+
+#: src/pages/reader/tapZones.ts
+msgid "Both edges go forward and the bottom middle goes back, for reading with one hand."
+msgstr "Both edges go forward and the bottom middle goes back, for reading with one hand."
 
 #: src/components/layout/SectionProperties.tsx
 msgid "Bottom"
@@ -5122,6 +5169,10 @@ msgstr "Chapter page"
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Chapter pages"
 msgstr "Chapter pages"
+
+#: src/pages/reader/ProgressRail.tsx
+msgid "Chapter progress"
+msgstr "Chapter progress"
 
 #: src/pages/HealthPage.tsx
 msgid "Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. A file with an identical copy in the same series folder hands its chapters to that copy instead. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
@@ -5910,6 +5961,10 @@ msgstr "Continuous"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Continuous layout only."
 msgstr "Continuous layout only."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Continuous layout only. A bar down the right edge you can drag to move through the chapter."
+msgstr "Continuous layout only. A bar down the right edge you can drag to move through the chapter."
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Continuous layout only. Off shows a Skip recap button instead."
@@ -7182,6 +7237,14 @@ msgstr "Downloaded the prebuilt index"
 msgid "Downloading"
 msgstr "Downloading"
 
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "Downloading {label}, {percent}%."
+msgstr "Downloading {label}, {percent}%."
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "Downloading {label}."
+msgstr "Downloading {label}."
+
 #: src/components/ui/status.tsx
 msgid "Downloading {outstanding}"
 msgstr "Downloading {outstanding}"
@@ -7332,6 +7395,10 @@ msgstr "Earned by the library itself, so everyone on this instance shares them."
 #: src/components/CatalogueFilters.tsx
 msgid "Ecchi"
 msgstr "Ecchi"
+
+#: src/pages/reader/tapZones.ts
+msgid "Edges"
+msgstr "Edges"
 
 #: src/components/notes/NoteThread.tsx
 #: src/components/rails/CustomRailSection.tsx
@@ -8499,6 +8566,10 @@ msgstr "Format: {formatLabel}"
 msgid "Formats"
 msgstr "Formats"
 
+#: src/pages/reader/TapZoneOverlay.tsx
+msgid "Forward"
+msgstr "Forward"
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
 msgid "Found"
@@ -8770,6 +8841,11 @@ msgstr "Grayscale"
 msgctxt "score"
 msgid "Great"
 msgstr "Great"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Grey"
+msgstr "Grey"
 
 #: src/components/pageconversion/labels.ts
 msgid "Greyscale page"
@@ -9447,6 +9523,14 @@ msgstr "Importing…"
 msgid "Imports can be undone for 30 days."
 msgstr "Imports can be undone for 30 days."
 
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "In Continuous a band at the top goes back and one at the bottom goes forward. The layouts apply to Single and Double."
+msgstr "In Continuous a band at the top goes back and one at the bottom goes forward. The layouts apply to Single and Double."
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "In Continuous, a bar down the right edge you can drag to move through the chapter"
+msgstr "In Continuous, a bar down the right edge you can drag to move through the chapter"
+
 #: src/pages/reader/ReaderSettings.tsx
 msgid "In Continuous, jump past the end of the previous chapter when a chapter repeats it"
 msgstr "In Continuous, jump past the end of the previous chapter when a chapter repeats it"
@@ -9911,6 +9995,10 @@ msgstr "Kind"
 msgid "Kind of release"
 msgstr "Kind of release"
 
+#: src/pages/reader/tapZones.ts
+msgid "Kindle"
+msgstr "Kindle"
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Kinds"
 msgstr "Kinds"
@@ -9937,6 +10025,10 @@ msgstr "koreader, kosync, progress sync, sync server, offline, ereader, kobo, ki
 #: src/pages/settings/PreferenceCards.tsx
 msgid "Korean"
 msgstr "Korean"
+
+#: src/pages/reader/tapZones.ts
+msgid "L-shape"
+msgstr "L-shape"
 
 #: src/components/settings/downloadClientFields.ts
 msgid "Label"
@@ -10281,6 +10373,7 @@ msgstr "Level up"
 #: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/useReaderBack.ts
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/sectionList.ts
@@ -11379,6 +11472,10 @@ msgstr "Most likely a folder renamed or reorganised outside Maki. Relinking poin
 #: src/pages/LibraryPage.tsx
 msgid "Most missing"
 msgstr "Most missing"
+
+#: src/pages/reader/tapZones.ts
+msgid "Most of the page goes forward. A strip on one side goes back, the top opens the bars."
+msgstr "Most of the page goes forward. A strip on one side goes back, the top opens the bars."
 
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "Most of your reading happens between <0>{start}</0> and <1>{end}</1>, and <2>{weekendShare}</2> of it lands on weekends."
@@ -13375,6 +13472,10 @@ msgstr "One missed day a week is forgiven, and today never breaks a streak."
 msgid "One refresh required"
 msgstr "One refresh required"
 
+#: src/pages/reader/tapZones.ts
+msgid "One side goes back, the other goes forward."
+msgstr "One side goes back, the other goes forward."
+
 #: src/components/discover/discoverSectionDefs.ts
 msgid "One tile per genre, each opening its most popular titles."
 msgstr "One tile per genre, each opening its most popular titles."
@@ -13752,7 +13853,9 @@ msgid "Page"
 msgstr "Page"
 
 #. placeholder {0}: page + 1
+#. placeholder {0}: shownPage + 1
 #: src/pages/reader/PageScrubber.tsx
+#: src/pages/reader/ProgressRail.tsx
 msgid "Page {0} of {count}"
 msgstr "Page {0} of {count}"
 
@@ -14359,6 +14462,10 @@ msgstr "Preview the import"
 msgid "Preview the import of {folderName}"
 msgstr "Preview the import of {folderName}"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Previous and next bookmark"
+msgstr "Previous and next bookmark"
+
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Previous chapter"
 msgstr "Previous chapter"
@@ -14416,6 +14523,11 @@ msgstr "Progress"
 #: src/pages/settings/registry.ts
 msgid "Progress & achievements"
 msgstr "Progress & achievements"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Progress rail"
+msgstr "Progress rail"
 
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "Progress tracking is switched off. Turn it back on under Settings to see levels, achievements and streaks. Nothing was lost while it was off: all of it is worked out from your reading history whenever it is asked for."
@@ -14534,6 +14646,10 @@ msgstr "Put it behind HTTPS, then turn on Settings → System → Network → Re
 #: src/components/home/ReadingCardMenu.tsx
 msgid "Put on hold"
 msgstr "Put on hold"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Puts the back zones where the forward ones were, for the other hand."
+msgstr "Puts the back zones where the forward ones were, for the other hand."
 
 #: src/components/SourceCompareModal.tsx
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
@@ -14703,6 +14819,7 @@ msgid "Rated {rating}"
 msgstr "Rated {rating}"
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ChapterEndRating.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "Rated {rating}/10"
 msgstr "Rated {rating}/10"
@@ -17795,6 +17912,10 @@ msgstr "Show replaced files"
 msgid "Show source text"
 msgstr "Show source text"
 
+#: src/pages/reader/TapZoneOverlay.tsx
+msgid "Show the bars"
+msgstr "Show the bars"
+
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Show the chapter name"
 msgstr "Show the chapter name"
@@ -17862,6 +17983,10 @@ msgstr "Side story of"
 #: src/components/ui/DiscoverRail.tsx
 msgid "Side story of {relatedTo}"
 msgstr "Side story of {relatedTo}"
+
+#: src/pages/reader/tapZones.ts
+msgid "Sides"
+msgstr "Sides"
 
 #: src/pages/LoginPage.tsx
 msgid "Sign in"
@@ -18643,6 +18768,10 @@ msgstr "Suwayomi"
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
 msgstr "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
 
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Swap back and forward"
+msgstr "Swap back and forward"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
 msgstr "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
@@ -18766,12 +18895,20 @@ msgid "Tags to include"
 msgstr "Tags to include"
 
 #: src/pages/reader/ReaderSettings.tsx
+msgid "Takes the colour of the page's edge."
+msgstr "Takes the colour of the page's edge."
+
+#: src/pages/reader/ReaderSettings.tsx
 msgid "Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen"
 msgstr "Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen"
 
 #: src/components/notes/NoteThread.tsx
 msgid "Tap to show"
 msgstr "Tap to show"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Tap zone layout"
+msgstr "Tap zone layout"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -18873,6 +19010,10 @@ msgstr "That's every chapter on disk."
 #: src/components/series/RatingCheckpointPrompt.tsx
 msgid "That's the end of a volume. How is it so far?"
 msgstr "That's the end of a volume. How is it so far?"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "That's the whole series."
+msgstr "That's the whole series."
 
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "The {engineLabel} preset reads this part of the site. Nothing to set up here."
@@ -19165,6 +19306,22 @@ msgstr "The new password needs at least 10 characters"
 msgid "The newest titles from the creators and studios you follow. Empty until you follow someone."
 msgstr "The newest titles from the creators and studios you follow. Empty until you follow someone."
 
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter is later than usual"
+msgstr "The next chapter is later than usual"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter is likely any day now"
+msgstr "The next chapter is likely any day now"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter usually comes in {range}"
+msgstr "The next chapter usually comes in {range}"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter usually comes within {within}"
+msgstr "The next chapter usually comes within {within}"
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "The next check is due."
 msgstr "The next check is due."
@@ -19417,6 +19574,10 @@ msgstr "The titles climbing fastest in popularity right now."
 #: src/components/NotificationsSection.tsx
 msgid "The token @BotFather gave you."
 msgstr "The token @BotFather gave you."
+
+#: src/pages/reader/tapZones.ts
+msgid "The top and one side go back, the bottom and the other side go forward."
+msgstr "The top and one side go back, the bottom and the other side go forward."
 
 #. {series} is a series title and is never translated. It may be this row's own series, when an older download of it holds the torrent.
 #: src/api/queue.ts
@@ -21460,6 +21621,11 @@ msgstr "While the bars are hidden. The toolbar always shows it."
 msgid "While the server works"
 msgstr "While the server works"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "White"
+msgstr "White"
+
 #: src/components/notes/NoteComposer.tsx
 msgid "Who can see this note"
 msgstr "Who can see this note"
@@ -21677,6 +21843,10 @@ msgstr "You finished {animeTitle} ({coveredLabel}). That likely covers up to ch.
 #: src/components/series/AnimeResumeCallout.tsx
 msgid "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
 msgstr "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You finished the series"
+msgstr "You finished the series"
 
 #: src/components/series/RateHint.tsx
 msgid "You had this at {soFar} so far. Keep it?"
@@ -21934,6 +22104,14 @@ msgstr "Yours alone. Trackers you have connected are updated too."
 #: src/components/settings/downloadClientFields.ts
 msgid "Z:\\downloads (optional)"
 msgstr "Z:\\downloads (optional)"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Zone size"
+msgstr "Zone size"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Zone size ({width}%)"
+msgstr "Zone size ({width}%)"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Zoom in"

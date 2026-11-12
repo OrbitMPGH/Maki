@@ -1167,6 +1167,10 @@ msgstr ""
 msgid "{count, plural, one {# completed} other {# completed}}"
 msgstr ""
 
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{count, plural, one {# day} other {# days}}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{count, plural, one {# deletion} other {# deletions}}"
@@ -1252,6 +1256,10 @@ msgstr "{count, plural, other {트래커 #개}}"
 #, fuzzy
 msgid "{count, plural, one {# unread} other {# unread}}"
 msgstr "{count, plural, other {읽지 않음 #개}}"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{count, plural, one {# week} other {# weeks}}"
+msgstr ""
 
 #: src/components/home/OfflineHome.tsx
 #, fuzzy
@@ -1649,6 +1657,10 @@ msgstr "{free} 여유 공간"
 #, fuzzy
 msgid "{from} to {to}"
 msgstr "{from}부터 {to}까지"
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "{from} to {upTo}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -2060,6 +2072,14 @@ msgstr "{missingWanted, plural, other {챕터 #개를 다운로드 대기열에 
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "{monitorShort}, {profileName}"
+msgstr ""
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "{more, plural, one {# chapter is queued to download.} other {# chapters are queued to download.}}"
+msgstr ""
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "{more, plural, one {# more is queued.} other {# more are queued.}}"
 msgstr ""
 
 #: src/pages/settings/ReadingCards.tsx
@@ -3764,6 +3784,10 @@ msgstr "zip 파일"
 msgid "Abandoned"
 msgstr "중단함"
 
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "About {chapterLeft} left in this chapter"
+msgstr ""
+
 #: src/components/pageconversion/EstimateTable.tsx
 #, fuzzy
 msgid "About {hardlinked} are hardlinked to torrents and stay as they are."
@@ -3779,6 +3803,14 @@ msgstr "약 {hourPhrase} {restPhrase} 남음"
 #, fuzzy
 msgid "About {readingTime}"
 msgstr "읽기 시간 약 {readingTime}"
+
+#: src/pages/reader/ReaderToolbar.tsx
+msgid "About {seriesLeft} left in the series"
+msgstr ""
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "About {timeLeftText} left in the series"
+msgstr ""
 
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "About {toFinish} to finish"
@@ -5002,7 +5034,9 @@ msgid "Attribute Kavita's reading to"
 msgstr "Kavita 읽기 기록의 사용자"
 
 #: src/components/discover/DiscoverHero.tsx
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/enhanceMethods.ts
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Auto"
 msgstr "자동"
@@ -5138,6 +5172,7 @@ msgstr "회피됨"
 #: src/components/ui/DrillPanel.tsx
 #: src/lib/navHistory.tsx
 #: src/pages/PageConversionWizardPage.tsx
+#: src/pages/reader/TapZoneOverlay.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Back"
@@ -5153,6 +5188,11 @@ msgstr "{until}부터 추천에 다시 표시됨"
 msgid "back in the running"
 msgstr "다시 후보에 포함됨"
 
+#. placeholder {0}: label(target.label)
+#: src/pages/reader/useReaderBack.ts
+msgid "Back to {0}"
+msgstr ""
+
 #: src/pages/CreatorPage.tsx
 #, fuzzy
 msgid "Back to Discover"
@@ -5165,8 +5205,7 @@ msgid "Back to library"
 msgstr "라이브러리로 돌아가기"
 
 #: src/pages/reader/ChapterEnd.tsx
-#: src/pages/reader/ReaderToolbar.tsx
-#: src/pages/reader/ShortcutSheet.tsx
+#: src/pages/reader/useReaderBack.ts
 #, fuzzy
 msgid "Back to series"
 msgstr "시리즈로 돌아가기"
@@ -5185,6 +5224,10 @@ msgstr "라이브러리로 돌아가기"
 #, fuzzy
 msgid "Back to the series"
 msgstr "시리즈로 돌아가기"
+
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Back to where you came from"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -5462,6 +5505,10 @@ msgstr "봇 토큰"
 #, fuzzy
 msgid "Both"
 msgstr "둘 다"
+
+#: src/pages/reader/tapZones.ts
+msgid "Both edges go forward and the bottom middle goes back, for reading with one hand."
+msgstr ""
 
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
@@ -6192,6 +6239,10 @@ msgstr "챕터 페이지"
 #, fuzzy
 msgid "Chapter pages"
 msgstr "챕터의 페이지들"
+
+#: src/pages/reader/ProgressRail.tsx
+msgid "Chapter progress"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "Chapter records, Wanted flags and reading history are kept, so anything still wanted can be downloaded again. A file with an identical copy in the same series folder hands its chapters to that copy instead. Archives already missing from disk have nothing to delete: for those this only clears the record that still says their chapters are downloaded."
@@ -7148,6 +7199,10 @@ msgstr "연속"
 #, fuzzy
 msgid "Continuous layout only."
 msgstr "연속 레이아웃에서만 사용합니다."
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Continuous layout only. A bar down the right edge you can drag to move through the chapter."
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Continuous layout only. Off shows a Skip recap button instead."
@@ -8701,6 +8756,14 @@ msgstr "사전 제작 인덱스 다운로드됨"
 msgid "Downloading"
 msgstr "다운로드 중"
 
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "Downloading {label}, {percent}%."
+msgstr ""
+
+#: src/pages/reader/ChapterEndDownloads.tsx
+msgid "Downloading {label}."
+msgstr ""
+
 #: src/components/ui/status.tsx
 #, fuzzy
 msgid "Downloading {outstanding}"
@@ -8882,6 +8945,10 @@ msgstr "라이브러리 자체에서 획득하므로 이 인스턴스의 모든 
 #, fuzzy
 msgid "Ecchi"
 msgstr "에치"
+
+#: src/pages/reader/tapZones.ts
+msgid "Edges"
+msgstr ""
 
 #: src/components/notes/NoteThread.tsx
 #: src/components/rails/CustomRailSection.tsx
@@ -10299,6 +10366,10 @@ msgstr "형식: {formatLabel}"
 msgid "Formats"
 msgstr "형식"
 
+#: src/pages/reader/TapZoneOverlay.tsx
+msgid "Forward"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10628,6 +10699,11 @@ msgstr "흑백"
 #: src/components/discover/ScoreFigure.tsx
 msgctxt "score"
 msgid "Great"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Grey"
 msgstr ""
 
 #: src/components/pageconversion/labels.ts
@@ -11458,6 +11534,14 @@ msgstr "가져오는 중…"
 msgid "Imports can be undone for 30 days."
 msgstr "가져오기는 30일 동안 되돌릴 수 있습니다."
 
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "In Continuous a band at the top goes back and one at the bottom goes forward. The layouts apply to Single and Double."
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "In Continuous, a bar down the right edge you can drag to move through the chapter"
+msgstr ""
+
 #: src/pages/reader/ReaderSettings.tsx
 msgid "In Continuous, jump past the end of the previous chapter when a chapter repeats it"
 msgstr ""
@@ -12026,6 +12110,10 @@ msgstr "종류"
 msgid "Kind of release"
 msgstr "배포본 종류"
 
+#: src/pages/reader/tapZones.ts
+msgid "Kindle"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Kinds"
@@ -12058,6 +12146,10 @@ msgstr "koreader, kosync, 진행 상황 동기화, progress sync, 동기화 서�
 #, fuzzy
 msgid "Korean"
 msgstr "한국어"
+
+#: src/pages/reader/tapZones.ts
+msgid "L-shape"
+msgstr ""
 
 #: src/components/settings/downloadClientFields.ts
 #, fuzzy
@@ -12476,6 +12568,7 @@ msgstr "레벨 상승"
 #: src/pages/discover/ShortlistTab.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/useReaderBack.ts
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/sectionList.ts
@@ -13814,6 +13907,10 @@ msgstr "대개 Maki 밖에서 폴더 이름을 바꾸거나 정리한 경우입�
 #, fuzzy
 msgid "Most missing"
 msgstr "가장 많이 누락됨"
+
+#: src/pages/reader/tapZones.ts
+msgid "Most of the page goes forward. A strip on one side goes back, the top opens the bars."
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -16251,6 +16348,10 @@ msgstr "일주일에 하루 빠진 것은 허용되며, 오늘은 연속 기록�
 msgid "One refresh required"
 msgstr "새로 고침 한 번 필요"
 
+#: src/pages/reader/tapZones.ts
+msgid "One side goes back, the other goes forward."
+msgstr ""
+
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "One tile per genre, each opening its most popular titles."
@@ -16708,7 +16809,9 @@ msgid "Page"
 msgstr "페이지"
 
 #. placeholder {0}: page + 1
+#. placeholder {0}: shownPage + 1
 #: src/pages/reader/PageScrubber.tsx
+#: src/pages/reader/ProgressRail.tsx
 #, fuzzy
 msgid "Page {0} of {count}"
 msgstr "{count}페이지 중 {0}페이지"
@@ -17448,6 +17551,10 @@ msgstr "가져오기 미리 보기"
 msgid "Preview the import of {folderName}"
 msgstr "{folderName}의 가져오기 미리 보기"
 
+#: src/pages/reader/ShortcutSheet.tsx
+msgid "Previous and next bookmark"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy
 msgid "Previous chapter"
@@ -17516,6 +17623,11 @@ msgstr "진행 상황"
 #, fuzzy
 msgid "Progress & achievements"
 msgstr "진행 상황 및 업적"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Progress rail"
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -17658,6 +17770,10 @@ msgstr "HTTPS 뒤에 두고, 설정 → 시스템 → 네트워크 → HTTPS 필
 
 #: src/components/home/ReadingCardMenu.tsx
 msgid "Put on hold"
+msgstr ""
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Puts the back zones where the forward ones were, for the other hand."
 msgstr ""
 
 #: src/components/SourceCompareModal.tsx
@@ -17862,6 +17978,7 @@ msgid "Rated {rating}"
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ChapterEndRating.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Rated {rating}/10"
@@ -21621,6 +21738,10 @@ msgstr "교체된 파일 표시"
 msgid "Show source text"
 msgstr "소스 텍스트 표시"
 
+#: src/pages/reader/TapZoneOverlay.tsx
+msgid "Show the bars"
+msgstr ""
+
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Show the chapter name"
@@ -21705,6 +21826,10 @@ msgstr "외전"
 #, fuzzy
 msgid "Side story of {relatedTo}"
 msgstr "{relatedTo}의 외전"
+
+#: src/pages/reader/tapZones.ts
+msgid "Sides"
+msgstr ""
 
 #: src/pages/LoginPage.tsx
 #, fuzzy
@@ -22657,6 +22782,10 @@ msgstr "Suwayomi"
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
 msgstr "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567, 확장, 확장 소스, 소스 추가"
 
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Swap back and forward"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
@@ -22805,6 +22934,10 @@ msgid "Tags to include"
 msgstr "포함할 태그"
 
 #: src/pages/reader/ReaderSettings.tsx
+msgid "Takes the colour of the page's edge."
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen"
 msgstr "페이지 가장자리를 탭하면 페이지가 넘어갑니다. 연속 모드에서는 위나 아래를 탭하면 한 화면씩 이동합니다."
@@ -22813,6 +22946,10 @@ msgstr "페이지 가장자리를 탭하면 페이지가 넘어갑니다. 연속
 #, fuzzy
 msgid "Tap to show"
 msgstr "탭하여 보기"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Tap zone layout"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -22938,6 +23075,10 @@ msgstr "디스크에 있는 챕터를 모두 읽었습니다."
 #, fuzzy
 msgid "That's the end of a volume. How is it so far?"
 msgstr "권이 끝났네요. 지금까지 어떤가요?"
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "That's the whole series."
+msgstr ""
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -23300,6 +23441,22 @@ msgstr "새 비밀번호는 10자 이상이어야 합니다"
 msgid "The newest titles from the creators and studios you follow. Empty until you follow someone."
 msgstr "팔로우 중인 창작자와 스튜디오의 최신 작품입니다. 누군가를 팔로우하기 전에는 비어 있습니다."
 
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter is later than usual"
+msgstr ""
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter is likely any day now"
+msgstr ""
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter usually comes in {range}"
+msgstr ""
+
+#: src/pages/reader/ChapterEndOutlook.tsx
+msgid "The next chapter usually comes within {within}"
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #, fuzzy
 msgid "The next check is due."
@@ -23609,6 +23766,10 @@ msgstr "지금 가장 빠르게 인기가 오르는 작품입니다."
 #, fuzzy
 msgid "The token @BotFather gave you."
 msgstr "@BotFather가 제공한 토큰입니다."
+
+#: src/pages/reader/tapZones.ts
+msgid "The top and one side go back, the bottom and the other side go forward."
+msgstr ""
 
 #. {series} is a series title and is never translated. It may be this row's own series, when an older download of it holds the torrent.
 #: src/api/queue.ts
@@ -26094,6 +26255,11 @@ msgstr "막대가 숨겨져 있는 동안. 툴바에는 항상 표시됩니다."
 msgid "While the server works"
 msgstr "서버가 작업하는 동안"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "White"
+msgstr ""
+
 #: src/components/notes/NoteComposer.tsx
 #, fuzzy
 msgid "Who can see this note"
@@ -26361,6 +26527,10 @@ msgstr "{animeTitle}을(를) 완결했습니다 ({coveredLabel}). 만화는 {cov
 #, fuzzy
 msgid "You finished {animeTitle}. The anime covers up to ch. {coveredTo}. Start reading at ch. {resumeAt}."
 msgstr "{animeTitle}을(를) 완결했습니다. 애니메이션은 {coveredTo}화까지 다룹니다. {resumeAt}화부터 읽으세요."
+
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You finished the series"
+msgstr ""
 
 #: src/components/series/RateHint.tsx
 #, fuzzy
@@ -26674,6 +26844,14 @@ msgstr ""
 #, fuzzy
 msgid "Z:\\downloads (optional)"
 msgstr "Z:\\downloads (선택 사항)"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Zone size"
+msgstr ""
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Zone size ({width}%)"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

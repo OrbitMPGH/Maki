@@ -9885,6 +9885,35 @@ body.reader-open {
   color: #fff;
   background: #0a0a0b;
 }
+/* Auto follows each page's edge colour, so a turn eases between them rather than cutting. */
+.reader-root[data-auto-ground] {
+  transition: background-color var(--dur-slow) var(--ease);
+}
+/* The mouse is hidden once it has rested on the page; the reader drops the attribute while the
+   pointer is on a bar or a menu is open, and any movement. */
+.reader-root[data-cursor-idle],
+.reader-root[data-cursor-idle] *,
+.reader-root[data-cursor-idle] .reader-surface[data-gestures][data-zoomed] {
+  cursor: none;
+}
+/* Bars, cards, the badge and the status pill carry their own dark surfaces. What sits straight on
+   the ground is the loading outline and the failed-page message, so those switch to dark ink on a
+   light ground. The end screen keeps the dark it was drawn for. */
+.reader-root[data-ground='light'] .reader-page-skeleton {
+  background: rgba(0, 0, 0, 0.07);
+  animation-name: reader-page-pulse-light;
+}
+@keyframes reader-page-pulse-light {
+  50% {
+    background: rgba(0, 0, 0, 0.13);
+  }
+}
+.reader-root[data-ground='light'] .reader-paged .mantine-Text-root {
+  color: #2b2b30;
+}
+.reader-root[data-ground='light'] .reader-end {
+  background: #0a0a0b;
+}
 /* The Discover preview opens over the detail modal (z-index 1000), and keeps its top bar up, so
    the pages sit below it rather than under it. */
 .reader-root[data-preview] {
@@ -9940,6 +9969,17 @@ body.reader-open {
 .reader-surface[data-scroll='vertical'] {
   overflow-x: hidden;
   touch-action: pan-y;
+}
+/* Single and Double pinch, pan and swipe in script (usePagedGestures), so the browser neither
+   scrolls nor zooms under them. Its own pinch zoom would scale the toolbar with the page. */
+.reader-surface[data-gestures] {
+  touch-action: none;
+}
+.reader-surface[data-gestures][data-zoomed] {
+  cursor: grab;
+}
+.reader-surface[data-gestures][data-panning] {
+  cursor: grabbing;
 }
 
 .reader-paged {
@@ -10157,6 +10197,26 @@ body.reader-open {
   transform: translateX(-50%);
   pointer-events: none;
 }
+/* A bookmark is a small ribbon in the same strip as the note dot, so the two read apart. A page
+   with both shows the dot above the ribbon. */
+.reader-scrub-segment[data-bookmarked] {
+  position: relative;
+}
+.reader-scrub-segment[data-bookmarked]::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  width: 7px;
+  height: 10px;
+  background: var(--brand);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.reader-scrub-segment[data-bookmarked][data-noted]::after {
+  bottom: calc(100% + 17px);
+}
 /* Page thumbnail above the segment under the pointer. */
 .reader-scrub-preview {
   position: fixed;
@@ -10182,6 +10242,107 @@ body.reader-open {
   object-fit: contain;
   border-radius: calc(var(--mantine-radius-md) - 2px);
   background: #000;
+}
+
+/* Continuous mode's progress rail (ProgressRail): a hairline down the right edge while reading,
+   a draggable track with a handle once the bars are up. It spans the room between the bars either
+   way, so the line does not jump when they appear. Touch only reaches it with the bars up, and it
+   sits a little in from the edge there, clear of Android's back gesture. */
+.reader-rail {
+  position: absolute;
+  right: calc(env(safe-area-inset-right, 0px) + 2px);
+  top: calc(var(--safe-top, 0px) + 56px + 12px);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 56px + 12px);
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  width: 24px;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+  pointer-events: none;
+  transition: right var(--dur-base) var(--ease), bottom var(--dur-base) var(--ease);
+}
+/* The rail stands in for the strip's scrollbar, which would sit under it. */
+.reader-root:has(> .reader-rail) > .reader-surface {
+  scrollbar-width: none;
+}
+.reader-root:has(> .reader-rail) > .reader-surface::-webkit-scrollbar {
+  display: none;
+}
+.reader-rail[data-strip] {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 56px + 117px + 12px);
+}
+.reader-rail[data-active] {
+  pointer-events: auto;
+}
+@media (hover: hover) and (pointer: fine) {
+  .reader-rail {
+    pointer-events: auto;
+  }
+}
+@media (pointer: coarse) {
+  .reader-rail[data-active] {
+    right: calc(env(safe-area-inset-right, 0px) + 12px);
+    width: 32px;
+  }
+}
+.reader-rail-track {
+  position: relative;
+  width: 2px;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.12);
+  opacity: 0.7;
+  transition: width var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
+}
+/* Grey rather than white, so the track still shows over a white page. */
+.reader-rail:is([data-active], [data-dragging], :hover) .reader-rail-track {
+  width: 6px;
+  opacity: 1;
+  background: rgba(128, 128, 136, 0.55);
+}
+.reader-rail:focus-visible .reader-rail-track {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 4px;
+}
+.reader-rail-fill {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: var(--rail-progress);
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--mantine-primary-color-filled) 70%, transparent);
+}
+.reader-rail-thumb {
+  position: absolute;
+  left: 50%;
+  top: var(--rail-progress);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--brand);
+  box-shadow: 0 0 0 2px #0a0a0b;
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform var(--dur-fast) var(--ease);
+}
+.reader-rail:is([data-active], [data-dragging], :hover) .reader-rail-thumb {
+  transform: translate(-50%, -50%) scale(1);
+}
+.reader-rail-bubble {
+  position: absolute;
+  right: calc(100% + 14px);
+  top: var(--rail-progress);
+  transform: translateY(-50%);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(10, 10, 11, 0.88);
+  color: #fff;
+  font-size: var(--type-meta);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 /* The reader's floating card, shared by the chapter banner and the next-chapter meter. Centred
@@ -10641,6 +10802,86 @@ body.reader-open {
   fill-opacity: 0.22;
   stroke: currentColor;
   stroke-width: 1.5;
+}
+/* TapZonePreview: forward zones take the accent, back zones a neutral tint, the bars zone stays bare. */
+.reader-tap-preview {
+  flex: none;
+  color: var(--ink-2);
+}
+.reader-tap-preview rect[data-action='next'] {
+  fill: color-mix(in srgb, var(--brand) 45%, transparent);
+}
+.reader-tap-preview rect[data-action='previous'] {
+  fill: color-mix(in srgb, currentColor 22%, transparent);
+}
+.reader-tap-preview rect[data-action='menu'] {
+  fill: transparent;
+}
+.reader-tap-preview text {
+  fill: currentColor;
+  font-size: 11px;
+  font-weight: 600;
+}
+.reader-tap-preview-edge {
+  fill: none;
+  stroke: currentColor;
+  stroke-opacity: 0.5;
+}
+/* TapZoneOverlay: the same colours drawn over the page while the tap zone settings are open. Under
+   the bars and the settings, and never in the way of a tap. */
+.reader-tap-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  animation: reader-tap-overlay-in var(--dur-fast) var(--ease);
+}
+.reader-tap-zone {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #fff;
+  transition:
+    left var(--dur-fast) var(--ease),
+    top var(--dur-fast) var(--ease),
+    width var(--dur-fast) var(--ease),
+    height var(--dur-fast) var(--ease);
+}
+.reader-tap-zone[data-action='next'] {
+  background: color-mix(in srgb, var(--brand) 38%, transparent);
+}
+.reader-tap-zone[data-action='previous'] {
+  background: rgba(255, 255, 255, 0.2);
+}
+.reader-tap-zone[data-action='menu'] {
+  background: rgba(0, 0, 0, 0.18);
+}
+.reader-tap-zone svg {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+}
+.reader-tap-zone-name {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-semibold);
+  white-space: nowrap;
+}
+@keyframes reader-tap-overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reader-tap-overlay {
+    animation: none;
+  }
+  .reader-tap-zone {
+    transition: none;
+  }
 }
 .reader-settings-pair {
   display: grid;
@@ -11203,6 +11444,10 @@ body.reader-open {
   height: 100%;
   border-radius: inherit;
   background: var(--brand);
+}
+.reader-end-timeleft {
+  font-size: var(--type-micro);
+  color: rgba(255, 255, 255, 0.55);
 }
 .reader-end-next {
   display: grid;
@@ -17848,6 +18093,29 @@ button.shortlist-title:hover {
 }
 .notes-margin-section:hover {
   color: #fff;
+}
+/* On a white or grey reader ground the margin's loose text takes dark ink; the cards keep their
+   own surfaces. */
+.reader-root[data-ground='light'] .notes-margin-head {
+  color: rgba(0, 0, 0, 0.6);
+}
+.reader-root[data-ground='light'] .notes-margin-add {
+  border-color: rgba(0, 0, 0, 0.3);
+  color: rgba(0, 0, 0, 0.72);
+}
+.reader-root[data-ground='light'] .notes-margin-add:hover {
+  border-color: rgba(0, 0, 0, 0.55);
+  color: #000;
+}
+.reader-root[data-ground='light'] .notes-margin-less,
+.reader-root[data-ground='light'] .notes-margin-section {
+  color: rgba(0, 0, 0, 0.7);
+}
+.reader-root[data-ground='light'] .notes-margin-section {
+  border-top-color: rgba(0, 0, 0, 0.16);
+}
+.reader-root[data-ground='light'] .notes-margin-section:hover {
+  color: #000;
 }
 .notes-margin-add:focus-visible,
 .notes-margin-card-head:focus-visible,
