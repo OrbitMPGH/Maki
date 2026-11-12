@@ -4356,7 +4356,7 @@ export interface DownloadSettings {
   volumeFirst: boolean
 }
 
-export type TorrentRemovalMode = 'never' | 'afterimport'
+export type TorrentRemovalMode = 'never' | 'afterimport' | 'afterseeding'
 
 /** `manual` follows each mapping's priority; `quality` ranks sources by the series' upgrade profile. */
 export type SourceOrderMode = 'manual' | 'quality'

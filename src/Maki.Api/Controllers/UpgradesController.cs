@@ -132,6 +132,31 @@ public class UpgradesController(
         };
 
     /// <summary>
+    /// Takes a declined release off the block list: a dismissed proposal, or a torrent that stalled, vanished
+    /// or was removed. It becomes Expired, which blocks nothing, so the next search may find it again.
+    /// </summary>
+    [Authorize(Policy = Policies.DownloadChapters)]
+    [HttpPost("proposals/{id:int}/unblock")]
+    public async Task<IActionResult> UnblockProposal(int id, CancellationToken ct)
+    {
+        var row = await db.TorrentProposals.FirstOrDefaultAsync(p => p.Id == id, ct);
+        if (row is null)
+        {
+            return this.NotFoundMessage(localizer, "error.upgrades.proposalNotFound");
+        }
+
+        if (row.Status != TorrentProposalStatus.Dismissed)
+        {
+            return this.Conflict(localizer, "error.upgrades.proposalResolved");
+        }
+
+        row.Status = TorrentProposalStatus.Expired;
+        row.ResolvedAtUtc = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    /// <summary>
     /// With a series: searches it now, ignoring the weekly interval and the per-run cap. Without: queues
     /// the volume search job (admin only) and answers 202.
     /// </summary>

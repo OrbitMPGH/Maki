@@ -1,3 +1,5 @@
+import type { TorrentLifecycleSettings } from '../../../src/api/torrentLifecycle'
+import type { TorrentProposalDto } from '../../../src/api/upgrades'
 import type {
   BackupInfo,
   BackupRetentionSettings,
@@ -1218,3 +1220,33 @@ export const recycleBin: RecycleBin = {
 export const pushPrefs = {
   types: ['newChapterAvailable', 'downloadFailed', 'requestApproved'],
 }
+
+export const torrentLifecycle: TorrentLifecycleSettings = { stallHours: 1, seedRatio: 2, seedMinutes: 4320 }
+
+const declinedRelease = (id: number, seriesId: number, seriesTitle: string, title: string, resolvedAtUtc: string): TorrentProposalDto => ({
+  id,
+  seriesId,
+  seriesTitle,
+  title,
+  indexer: 'Nyaa',
+  sizeBytes: 0,
+  span: { volumeStart: null, volumeEnd: null, chapters: [], wholeSeries: false },
+  reasons: [],
+  upgradeCount: 0,
+  alreadyMetCount: 0,
+  skippedCount: 0,
+  missingCount: 0,
+  unknownCount: 0,
+  score: 0,
+  tier: 'volume',
+  status: 'dismissed',
+  createdAtUtc: resolvedAtUtc,
+  resolvedAtUtc,
+  queueItemId: null,
+  seriesCoverUrl: null,
+})
+
+export const declinedReleases: TorrentProposalDto[] = [
+  declinedRelease(41, 1, 'Lanterns Over Kasumi', 'Lanterns Over Kasumi v01-10 (2023) (Digital) (Paperlamp)', '2026-11-10T08:12:00Z'),
+  declinedRelease(42, 2, 'The Ninth Kitchen', 'The Ninth Kitchen v14 (2024) (Digital) (Saltcellar)', '2026-11-08T21:40:00Z'),
+]
