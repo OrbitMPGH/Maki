@@ -269,9 +269,11 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
                     <Table.Th ta="right">
                       <Trans>Chapters</Trans>
                     </Table.Th>
-                    <Table.Th ta="right">
-                      <Trans>Streak</Trans>
-                    </Table.Th>
+                    {summary.showStreaks && (
+                      <Table.Th ta="right">
+                        <Trans>Streak</Trans>
+                      </Table.Th>
+                    )}
                   </Table.Tr>
                 </Table.Thead>
                 <Table.Tbody>
@@ -284,9 +286,11 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
                       <Table.Td ta="right" className="tnum">
                         {formatNumber(row.chaptersRead)}
                       </Table.Td>
-                      <Table.Td ta="right" className="tnum">
-                        {row.currentStreak}
-                      </Table.Td>
+                      {summary.showStreaks && (
+                        <Table.Td ta="right" className="tnum">
+                          {row.currentStreak}
+                        </Table.Td>
+                      )}
                     </Table.Tr>
                   ))}
                 </Table.Tbody>

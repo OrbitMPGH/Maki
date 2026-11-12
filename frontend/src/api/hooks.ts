@@ -5174,7 +5174,8 @@ export interface LeaderboardRow {
   name: string | null
   level: number
   chaptersRead: number
-  currentStreak: number
+  /** Null when that user switched streaks off. */
+  currentStreak: number | null
 }
 
 export interface ProgressSettings {

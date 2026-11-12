@@ -2,8 +2,8 @@
  * The window the Stats page reports on.
  *
  * Kept apart from the components so the comparison arithmetic has one home: every headline tile
- * shows change against the previous window of the same length, and getting that off by a day makes
- * every number on the page subtly wrong.
+ * shows change against a comparable earlier window, and getting that off by a day makes every number
+ * on the page subtly wrong.
  */
 
 import { msg, t as now } from '@lingui/core/macro'
@@ -85,33 +85,44 @@ export function resolveRange(
   }
 }
 
+/** The same calendar date `years` and `months` earlier, clamped to the end of a shorter month. */
+function sameDayEarlier(d: Date, years: number, months: number): Date {
+  const first = new Date(d.getFullYear() - years, d.getMonth() - months, 1)
+  const lastDay = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate()
+  return new Date(first.getFullYear(), first.getMonth(), Math.min(d.getDate(), lastDay))
+}
+
 /**
- * The equally long window immediately before this one, for period-over-period deltas.
+ * The window to compare this one against, for period-over-period deltas.
  *
- * Null for All time — there is nothing before everything — and null for a range ending in the
- * future (a part-way-through calendar year compared against a whole one reads as a collapse).
+ * Null for All time, since there is nothing before everything. Calendar windows (This month, and a
+ * year or month picked under Year) compare against the same stretch one month or one year earlier,
+ * cut off at today when the window is still running: the 1st to the 24th against the 1st to the
+ * 24th, January to today against the same days last year. A short month clamps. Rolling windows
+ * compare against the equally long window just before them.
  */
 export function previousRange(preset: RangePreset, range: DateRange): DateRange | null {
   if (preset === 'all') {
     return null
   }
 
-  // Month to date compares against the same stretch of last month, not the equally long window
-  // before it: the 1st to the 24th against the 1st to the 24th. A short last month clamps.
-  if (preset === 'month') {
-    const to = new Date(`${range.to}T00:00:00`)
-    const lastMonthStart = new Date(to.getFullYear(), to.getMonth() - 1, 1)
-    const lastMonthDays = new Date(to.getFullYear(), to.getMonth(), 0).getDate()
-    const lastMonthTo = new Date(
-      lastMonthStart.getFullYear(),
-      lastMonthStart.getMonth(),
-      Math.min(to.getDate(), lastMonthDays),
-    )
-    return { from: isoDate(lastMonthStart), to: isoDate(lastMonthTo) }
-  }
-
   const from = new Date(`${range.from}T00:00:00`)
   const to = new Date(`${range.to}T00:00:00`)
+
+  if (preset === 'month' || preset === 'year') {
+    const today = new Date(`${isoDate(new Date())}T00:00:00`)
+    const end = to > today ? today : to
+    if (end < from) {
+      return null
+    }
+    const wholeYear = range.from.endsWith('-01-01') && range.to.endsWith('-12-31')
+    const [years, months] = wholeYear ? [1, 0] : [0, 1]
+    return {
+      from: isoDate(sameDayEarlier(from, years, months)),
+      to: isoDate(sameDayEarlier(end, years, months)),
+    }
+  }
+
   const days = Math.round((to.getTime() - from.getTime()) / 86_400_000) + 1
 
   const prevTo = new Date(from)

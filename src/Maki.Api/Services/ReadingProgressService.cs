@@ -364,9 +364,22 @@ public class ReadingProgressService(
 
         state.SeriesId = seriesId ?? state.SeriesId;
 
-        if (!state.Finished && await IsSeriesFinishedAsync(state.SeriesId, state.MaxChapter, ct))
+        var firstFinish = !state.Finished && await IsSeriesFinishedAsync(state.SeriesId, state.MaxChapter, ct);
+        if (firstFinish)
         {
             state.Finished = true;
+        }
+
+        // A reread: Finished is sticky, so a native completion that closes a whole new pass counts
+        // again. The recomputed mark, not the stored one, because the stored mark never comes back
+        // down and would call the first chapter of a reread a finish.
+        var rereadFinish = !firstFinish && state.Finished && nativeCompletions is not null && !fullIncognito &&
+                           state.SeriesId is int rereadId &&
+                           await IsSeriesFinishedAsync(rereadId, maxChapter, ct) &&
+                           await IsNewPassAsync(userId, rereadId, ct);
+
+        if (firstFinish || rereadFinish)
+        {
             if (!fullIncognito)
             {
                 db.StatsEvents.Add(new StatsEvent
@@ -386,6 +399,42 @@ public class ReadingProgressService(
         state.UpdatedAt = now;
         await db.SaveChangesAsync(ct);
         return new Marks(state.MaxChapter, state.MaxVolume);
+    }
+
+    /// <summary>
+    /// Whether every read chapter of the series was completed again since its last finish, so the
+    /// completion just saved closes a new pass. Re-marking only the last chapter leaves the rest
+    /// dated before that finish and does not count. Chapters whose file was removed on purpose stay
+    /// in the set, so cleaning up read files cannot shrink a pass to its last chapter. Duplicate
+    /// chapters sharing a number count once, by their latest completion.
+    /// <para>
+    /// A series finished without an event (an import, a first sighting, incognito) has no date to
+    /// compare against, so the pass has to be a genuine read in Maki throughout instead.
+    /// </para>
+    /// </summary>
+    private async Task<bool> IsNewPassAsync(int userId, int seriesId, CancellationToken ct)
+    {
+        var lastFinish = await db.StatsEvents.IgnoreQueryFilters()
+            .Where(e => e.UserId == userId && e.SeriesId == seriesId && e.Type == StatsEventType.SeriesFinished)
+            .MaxAsync(e => (DateTime?)e.Timestamp, ct);
+
+        var rows = await (
+                from p in db.ChapterProgress.IgnoreQueryFilters()
+                join c in db.Chapters.IgnoreQueryFilters() on p.ChapterId equals c.Id
+                where p.UserId == userId && p.SeriesId == seriesId && p.Completed && c.Number != null &&
+                      (c.ChapterFileId != null || c.FileRemovedAt != null)
+                select new { c.Number, p.CompletedAt, p.Watched, p.External, p.BulkMarked, p.PageCount })
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        if (rows.Count == 0)
+        {
+            return false;
+        }
+
+        return rows.GroupBy(r => r.Number).All(g => lastFinish is DateTime last
+            ? g.Max(r => r.CompletedAt) > last
+            : g.Any(r => !r.Watched && !r.External && !r.BulkMarked && r.PageCount > 0));
     }
 
     private async Task<bool> IsFullIncognitoAsync(int? seriesId, CancellationToken ct) =>

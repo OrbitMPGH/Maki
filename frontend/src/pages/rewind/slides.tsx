@@ -76,7 +76,7 @@ function Poster({ url, delay = 0 }: { url: string | null; delay?: number }) {
 
 /** A handful of covers fanned like a hand of cards, for slides about several series at once. */
 function CoverFan({ urls, muted }: { urls: (string | null)[]; muted?: boolean }) {
-  const shown = urls.filter((u): u is string => !!u).slice(0, 5)
+  const shown = [...new Set(urls.filter((u): u is string => !!u))].slice(0, 5)
   if (shown.length < 2) return null
   const mid = (shown.length - 1) / 2
   // Fewer cards fan wider, or two of them overlap into what reads as one book.
@@ -389,8 +389,8 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
           {stats.finished.length > 1 && (
             <Reveal delay={0.65}>
               <Stack gap={4} align="center">
-                {stats.finished.slice(0, 5).map((s) => (
-                  <Text key={s.seriesId ?? s.title} className="rewind-list-line">
+                {stats.finished.slice(0, 5).map((s, i) => (
+                  <Text key={`${s.seriesId ?? s.title}-${i}`} className="rewind-list-line">
                     {s.title}
                   </Text>
                 ))}

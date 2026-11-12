@@ -464,6 +464,73 @@ public sealed class ReaderServiceTests : IDisposable
         Assert.Null(row.UnreadAt);
     }
 
+    private async Task<(ReaderService Reader, Dictionary<decimal, int> Chapters)> SeedFinishableAsync()
+    {
+        var (seriesId, chapters) = SeedFromCbz("reread.cbz", ["001.jpg"], [(1m, null), (2m, null), (3m, null)]);
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == seriesId).Status = SeriesStatus.Completed;
+            db.SaveChanges();
+        }
+
+        return (Reader(), chapters);
+    }
+
+    private static async Task ReadChaptersAsync(ReaderService reader, params int[] chapterIds)
+    {
+        foreach (var id in chapterIds)
+        {
+            var slice = await reader.SliceAsync(id, CancellationToken.None);
+            await reader.SaveProgressAsync(slice!, 0, true, ReaderService.TimeReport.None, CancellationToken.None);
+        }
+    }
+
+    private int Finishes() => Events().Count(e => e.Type == StatsEventType.SeriesFinished);
+
+    [Fact]
+    public async Task ReadingASeriesAgainFromTheStartCountsASecondFinish()
+    {
+        var (reader, c) = await SeedFinishableAsync();
+        await ReadChaptersAsync(reader, c[1m], c[2m], c[3m]);
+        Assert.Equal(1, Finishes());
+
+        await reader.ClearProgressAsync([c[1m], c[2m], c[3m]], CancellationToken.None);
+        await ReadChaptersAsync(reader, c[1m]);
+        // The stored mark still says chapter 3, which must not make the first chapter of a reread a finish.
+        Assert.Equal(1, Finishes());
+
+        await ReadChaptersAsync(reader, c[2m], c[3m]);
+        Assert.Equal(2, Finishes());
+    }
+
+    [Fact]
+    public async Task ReadingOnlyTheLastChapterAgainIsNotAnotherFinish()
+    {
+        var (reader, c) = await SeedFinishableAsync();
+        await ReadChaptersAsync(reader, c[1m], c[2m], c[3m]);
+
+        await reader.ClearProgressAsync(c[3m], CancellationToken.None);
+        await ReadChaptersAsync(reader, c[3m]);
+        await ReadChaptersAsync(reader, c[3m]);
+
+        Assert.Equal(1, Finishes());
+    }
+
+    [Fact]
+    public async Task ASeriesMarkedReadInBulkNeedsAGenuineReadThroughToCountAsFinished()
+    {
+        var (reader, c) = await SeedFinishableAsync();
+        await reader.MarkReadAsync([c[1m], c[2m], c[3m]], CancellationToken.None);
+
+        await reader.ClearProgressAsync(c[3m], CancellationToken.None);
+        await ReadChaptersAsync(reader, c[3m]);
+        Assert.Equal(0, Finishes());
+
+        await reader.ClearProgressAsync([c[1m], c[2m], c[3m]], CancellationToken.None);
+        await ReadChaptersAsync(reader, c[1m], c[2m], c[3m]);
+        Assert.Equal(1, Finishes());
+    }
+
     [Fact]
     public async Task VolumeMarkOnlyAdvancesWhenEveryChapterInItIsRead()
     {

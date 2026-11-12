@@ -23,6 +23,8 @@ public sealed class AchievementEvaluationQueueTests : IDisposable
     public AchievementEvaluationQueueTests()
     {
         _db.SeedUser();
+        // Evaluated before, so unlocks are announced: a user's first evaluation awards silently.
+        _db.SetUserConfig(UserId, (SettingKeys.ProgressLastNotifiedLevel, "1"));
 
         var services = new ServiceCollection();
         services.AddScoped(_ => _db.NewContext());

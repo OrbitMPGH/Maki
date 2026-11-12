@@ -57,4 +57,5 @@ public record HeatmapDayDto(DateOnly Date, int Chapters, int Seconds);
 /// opting in to being compared is not opting in to publishing a reading list.
 /// </summary>
 /// <param name="Name">Null when the user has no display name and the reader may not see their login name.</param>
-public record LeaderboardRowDto(int UserId, string? Name, int Level, long ChaptersRead, long CurrentStreak);
+/// <param name="CurrentStreak">Null when that user switched streaks off.</param>
+public record LeaderboardRowDto(int UserId, string? Name, int Level, long ChaptersRead, long? CurrentStreak);
