@@ -51,17 +51,21 @@ Full notes: [`.claude/rules/storybook.md`](https://github.com/OrbitMPGH/Maki/blo
 
 ## What CI runs
 
-CI runs on every push to `main` and on every pull request.
+CI runs on every push to `main` and on every pull request. On a pull request, the backend jobs only run when `src/`, `tests/`, `locales/` or the build files changed, and the frontend jobs only when `frontend/` or `locales/` changed. A new push to a pull request cancels the run for the previous one.
 
-**Backend** (Ubuntu, .NET 10.0.x): restore, `dotnet build --no-restore -c Release`, `dotnet test --no-build -c Release`.
+**Backend** (Ubuntu, .NET 10.0.x), split across parallel jobs:
+
+- `backend`: restore and `dotnet build -c Release` of the whole solution, builds or restores libjxl, then runs every test project except `Maki.Api.Tests`.
+- `api-tests (1/4)` to `(4/4)`: each builds `Maki.Api.Tests` and runs a quarter of its test classes through `scripts/ci/test-shard.sh`. To run one shard locally after a Release build: `bash scripts/ci/test-shard.sh tests/Maki.Api.Tests 2 4`.
 
 **Frontend** (Ubuntu, Node 24, in `frontend/`):
 
-1. `npm ci` and `npm run build`
-2. Install Chromium, then `npm run test-storybook`
-3. `npm run check:secure-context`
-4. `npx lingui extract --clean`, `npm run i18n:check`, and `git diff --exit-code ../locales` (a non-empty diff means uncommitted catalogues).
-5. `npm run i18n:validate`
-6. `npm run i18n:bundle`, which fails if a non-English language ends up in the eager bundle
+- `frontend`:
+  1. `npm ci` and `npm run build`
+  2. `npm run check:secure-context`
+  3. `npx lingui extract --clean`, `npm run i18n:check`, and `git diff --exit-code ../locales` (a non-empty diff means uncommitted catalogues).
+  4. `npm run i18n:validate`
+  5. `npm run i18n:bundle`, which fails if a non-English language ends up in the eager bundle
+- `storybook (1/3)` to `(3/3)`: install Chromium, then `npm run test-storybook -- --shard=N/3`.
 
-Each job has a 20 minute timeout. The site under `site/` has its own workflow, covered in [Write docs](/Maki/contribution/writing-docs/).
+The site under `site/` has its own workflow, covered in [Write docs](/Maki/contribution/writing-docs/).

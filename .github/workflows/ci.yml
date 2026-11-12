@@ -5,8 +5,52 @@ on:
     branches: [main]
   pull_request:
 
+# A new push to a PR cancels the run still going for the previous one. Pushes to main each get their
+# own group, so they never cancel each other.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 jobs:
+  # On a PR, only the side that changed runs. Pushes to main run everything. There are no required
+  # checks, so a skipped job never holds up a merge.
+  changes:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'src/**'
+              - 'tests/**'
+              - 'locales/**'
+              - 'Directory.Build.props'
+              - 'Maki.sln'
+              - 'scripts/ci/**'
+              - 'distribution/libjxl/**'
+              - '.github/actions/libjxl/**'
+              - '.github/workflows/ci.yml'
+            frontend:
+              - 'frontend/**'
+              - 'locales/**'
+              - 'scripts/frontend/**'
+              - 'scripts/i18n/**'
+              - '.github/workflows/ci.yml'
+
+  # The whole solution in Release, so a project no test references still has to compile, plus every
+  # test project except Maki.Api.Tests, which the api-tests shards below run.
   backend:
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.backend == 'true') }}
     runs-on: ubuntu-latest
     # A stalled step (registry outage, hung native install) would otherwise ride to GitHub's
     # 6-hour job cap before it gets cancelled, so fail fast instead. 30 rather than 20 for the run that
@@ -20,29 +64,49 @@ jobs:
       - run: dotnet restore
       - run: dotnet build --no-restore -c Release
 
-      # The JPEG XL tests skip without libjxl, so CI builds it (cached on the build script, which pins
+      # The JPEG XL tests skip without libjxl, so CI provides it (cached on the build script, which pins
       # the version) and sets MAKI_REQUIRE_LIBJXL so a missing or broken library fails them instead.
-      - name: Cache libjxl
-        id: libjxl
-        uses: actions/cache@v4
+      # libjxl-cache.yml keeps a copy on dev for new PRs. Only this job saves; a shard builds on a miss.
+      - uses: ./.github/actions/libjxl
         with:
-          path: .artifacts/libjxl
-          key: libjxl-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('distribution/libjxl/build.sh') }}
-      - name: Build libjxl
-        if: steps.libjxl.outputs.cache-hit != 'true'
-        run: |
-          sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake ninja-build g++
-          bash distribution/libjxl/build.sh .artifacts/libjxl
+          save: 'true'
       - name: Put libjxl beside the test assemblies
         run: for dir in tests/*/bin/Release/net10.0; do cp .artifacts/libjxl/* "$dir/"; done
 
-      - run: dotnet test --no-build -c Release
+      - run: dotnet test --no-build -c Release --filter 'FullyQualifiedName!~Maki.Api.Tests.'
+        env:
+          MAKI_REQUIRE_LIBJXL: '1'
+
+  # Maki.Api.Tests is most of the backend's test time, and the classes that boot a host run one at a
+  # time inside a process (ConfigDirCollection). Four processes on four runners split both.
+  api-tests:
+    name: api-tests (${{ matrix.shard }}/4)
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.backend == 'true') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet build tests/Maki.Api.Tests -c Release
+      - uses: ./.github/actions/libjxl
+      - name: Put libjxl beside the test assembly
+        run: cp .artifacts/libjxl/* tests/Maki.Api.Tests/bin/Release/net10.0/
+      - run: bash scripts/ci/test-shard.sh tests/Maki.Api.Tests ${{ matrix.shard }} 4
         env:
           MAKI_REQUIRE_LIBJXL: '1'
 
   frontend:
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.frontend == 'true') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: frontend
@@ -55,28 +119,6 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run build
-
-      # Chromium only; the browser binary is not in the npm cache. No --with-deps: ubuntu-latest already
-      # carries every library Chromium links against, and what that flag adds is 26 MB of optional CJK
-      # and fallback fonts from the runner's apt mirror, which has run slow enough to time the job out.
-      - name: Install Chromium for Storybook
-        timeout-minutes: 4
-        run: npx playwright install chromium
-
-      # Every story renders under the app's real providers against the MSW mocks in .storybook/mocks,
-      # and a story whose component calls an endpoint nothing mocks fails, so a new API call has to
-      # bring its mock along.
-      # Two shards, each in its own browsers: a single run of every story passed about six minutes on
-      # the runner, after which msw's service worker stopped answering in every page at once and the
-      # rest of the run timed out story by story.
-      - name: Storybook stories render and pass their play functions (1/2)
-        # A story that wedges its page never times out inside the browser; fail here, not at the job cap.
-        timeout-minutes: 8
-        run: npm run test-storybook -- --shard=1/2
-      - name: Storybook stories render and pass their play functions (2/2)
-        if: success() || failure()
-        timeout-minutes: 8
-        run: npm run test-storybook -- --shard=2/2
 
       # Self-hosters open the app over plain HTTP on a LAN address, where crypto.randomUUID and
       # navigator.clipboard are undefined. It works on localhost, so it only surfaces after release.
@@ -104,6 +146,46 @@ jobs:
       # index.html, so it needs the build step above.
       - name: Only English is in the eager bundle
         run: npm run i18n:bundle
+
+  # Every story renders under the app's real providers against the MSW mocks in .storybook/mocks,
+  # and a story whose component calls an endpoint nothing mocks fails, so a new API call has to
+  # bring its mock along.
+  # Sharded across runners: a single run of every story passed about six minutes on the runner, after
+  # which msw's service worker stopped answering in every page at once and the rest of the run timed
+  # out story by story.
+  storybook:
+    name: storybook (${{ matrix.shard }}/3)
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.outputs.frontend == 'true') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+
+      # Chromium only; the browser binary is not in the npm cache. No --with-deps: ubuntu-latest already
+      # carries every library Chromium links against, and what that flag adds is 26 MB of optional CJK
+      # and fallback fonts from the runner's apt mirror, which has run slow enough to time the job out.
+      - name: Install Chromium for Storybook
+        timeout-minutes: 4
+        run: npx playwright install chromium
+
+      - name: Storybook stories render and pass their play functions
+        # A story that wedges its page never times out inside the browser; fail here, not at the job cap.
+        timeout-minutes: 8
+        run: npm run test-storybook -- --shard=${{ matrix.shard }}/3
 
   # Release notes are collected in changes/ as work lands (changes/README.md). A PR that touches the
   # app without an entry is usually fine (refactor, fix to unreleased work), so this warns, never fails.

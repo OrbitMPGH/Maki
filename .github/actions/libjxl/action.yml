@@ -1,0 +1,29 @@
+name: libjxl
+description: >
+  Puts libjxl's Linux shared libraries in .artifacts/libjxl, from the cache when distribution/libjxl/build.sh
+  is unchanged, otherwise by building them (about three minutes).
+inputs:
+  save:
+    description: Save the cache after a build. Only one job per run should, or the others warn that the key is taken.
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Restore libjxl
+      id: cache
+      uses: actions/cache/restore@v4
+      with:
+        path: .artifacts/libjxl
+        key: libjxl-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('distribution/libjxl/build.sh') }}
+    - name: Build libjxl
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake ninja-build g++
+        bash distribution/libjxl/build.sh .artifacts/libjxl
+    - name: Save libjxl
+      if: steps.cache.outputs.cache-hit != 'true' && inputs.save == 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: .artifacts/libjxl
+        key: ${{ steps.cache.outputs.cache-primary-key }}
