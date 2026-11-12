@@ -18,6 +18,8 @@ export type ImportCandidateKind = 'new' | 'inLibrary' | 'restore'
 export interface ImportRequestItem {
   folderName: string
   metadataProviderId: string
+  /** Comics directly in the root, moved into `folderName` when the import runs. */
+  looseFiles?: string[] | null
 }
 
 /** One file of an import preview (`LibraryImportPlanFile`). */
@@ -55,6 +57,8 @@ export interface ImportPlan {
   skipped: { name: string; reason: string }[] | null
   writesCover: boolean
   kind: ImportCandidateKind
+  /** Loose files moved from the root into the folder before it is imported. */
+  gatheredFileCount?: number
 }
 
 /** Must not exceed LibraryImportController.MaxItemsPerRequest. */

@@ -311,6 +311,15 @@ function FolderBody({ plan }: { plan: ImportPlan }) {
   return (
     <Stack gap={8}>
       <Text size="xs" c="var(--ink-3)">
+        {(plan.gatheredFileCount ?? 0) > 0 && (
+          <>
+            <Plural
+              value={plan.gatheredFileCount ?? 0}
+              one="# file in the root folder moves into a new folder first."
+              other="# files in the root folder move into a new folder first."
+            />{' '}
+          </>
+        )}
         {plan.folderAction === 'rename' ? (
           <Trans>Imported as {seriesTitle}. The folder is renamed.</Trans>
         ) : plan.folderAction === 'merge' ? (

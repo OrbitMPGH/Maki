@@ -27,7 +27,7 @@ public static class FolderMetadataHints
 {
     private const long MaxEntryBytes = 1024 * 1024;
 
-    public static FolderHints Read(string dir, IReadOnlyList<ComicSource> comics)
+    public static FolderHints Read(string? dir, IReadOnlyList<ComicSource> comics)
     {
         var (comicInfoName, links) = ReadComicInfo(comics);
         if (comicInfoName is not null)
@@ -35,7 +35,7 @@ public static class FolderMetadataHints
             return new FolderHints(comicInfoName, FolderHintOrigin.ComicInfo, links);
         }
 
-        var jsonName = ReadSeriesJson(dir);
+        var jsonName = dir is null ? null : ReadSeriesJson(dir);
         return jsonName is not null
             ? new FolderHints(jsonName, FolderHintOrigin.SeriesJson, links)
             : new FolderHints(null, null, links);

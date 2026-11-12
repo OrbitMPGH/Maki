@@ -91,6 +91,8 @@ interface ScanCandidate {
   matchSource?: string | null
   /** The ComicInfo or series.json name, or the web link, that found the first match. */
   matchHint?: string | null
+  /** Comics directly in the root, gathered into `folderName` on import. */
+  looseFiles?: string[] | null
 }
 
 /** How the scan found a folder's first match, under the folder name. */
@@ -315,7 +317,7 @@ function FolderImport() {
   const doImport = useMutation({
     mutationFn: async (payload: {
       rootFolderId: number
-      items: { folderName: string; metadataProviderId: string }[]
+      items: ImportRequestItem[]
       updateComicInfo: boolean
       operationId: string
     }) => {
@@ -394,9 +396,15 @@ function FolderImport() {
   const visibleCandidates = candidates?.filter((c) => showInLibrary || !inLibrary(c)) ?? null
   const visibleFolders = new Set(visibleCandidates?.map((c) => c.folderName))
   // A hidden row never imports, even if it was ticked while the toggle was on.
-  const selectedItems = Object.entries(selection)
+  const looseFilesOf = (folderName: string) =>
+    candidates?.find((c) => c.folderName === folderName)?.looseFiles ?? null
+  const selectedItems: ImportRequestItem[] = Object.entries(selection)
     .filter(([folderName, providerId]) => providerId !== '' && visibleFolders.has(folderName))
-    .map(([folderName, metadataProviderId]) => ({ folderName, metadataProviderId }))
+    .map(([folderName, metadataProviderId]) => ({
+      folderName,
+      metadataProviderId,
+      looseFiles: looseFilesOf(folderName),
+    }))
   const selectedCount = selectedItems.length
   const restoresOnly =
     selectedCount > 0 &&
@@ -787,7 +795,13 @@ function FolderImport() {
                                   color="var(--ink-3)"
                                   aria-label={t`Preview the import of ${folderName}`}
                                   onClick={() =>
-                                    setPreviewItems([{ folderName: c.folderName, metadataProviderId: selected }])
+                                    setPreviewItems([
+                                      {
+                                        folderName: c.folderName,
+                                        metadataProviderId: selected,
+                                        looseFiles: c.looseFiles ?? null,
+                                      },
+                                    ])
                                   }
                                   disabled={doImport.isPending}
                                 >
@@ -795,7 +809,7 @@ function FolderImport() {
                                 </ActionIcon>
                               </Tooltip>
                             )}
-                            {c.existingSeriesId === null && (
+                            {c.existingSeriesId === null && !c.looseFiles && (
                               <Tooltip label={t`Ignore this folder`}>
                                 <ActionIcon
                                   variant="subtle"
@@ -811,6 +825,17 @@ function FolderImport() {
                             )}
                           </Group>
                         </Group>
+                        {c.looseFiles && (
+                          <Tooltip label={c.looseFiles.join(', ')} multiline w={320} withArrow>
+                            <Text size="xs" c="var(--ink-2)">
+                              <Plural
+                                value={c.looseFiles.length}
+                                one="# loose file in the root, moved into this folder on import"
+                                other="# loose files in the root, moved into this folder on import"
+                              />
+                            </Text>
+                          </Tooltip>
+                        )}
                         {restoreLabel ? (
                           <Badge size="xs" variant="light">
                             {restoreLabel}

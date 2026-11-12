@@ -11,6 +11,7 @@ using Maki.Core.Parsing;
 using Maki.Core.Paths;
 using Maki.Core.Reading;
 using Maki.Core.Security;
+using Maki.Core.Storage;
 using Maki.Data;
 using Maki.Metadata.MangaBaka;
 using Microsoft.EntityFrameworkCore;
@@ -60,7 +61,8 @@ public record ImportScanCandidate(
     int? ExistingSeriesId = null,
     string Kind = ImportCandidateKind.New,
     string? MatchSource = null,
-    string? MatchHint = null);
+    string? MatchHint = null,
+    IReadOnlyList<string>? LooseFiles = null);
 
 public static class ImportMatchSource
 {
@@ -77,7 +79,12 @@ public static class ImportMatchSource
     public const string Library = "library";
 }
 
-public record ImportRequestItem(string FolderName, string MetadataProviderId);
+/// <param name="FolderName">
+/// The folder relative to the root, <c>/</c>-separated: a series folder, one inside grouping folders
+/// (<c>A-Z/Berserk</c>), or for <paramref name="LooseFiles"/> the folder they are gathered into.
+/// </param>
+/// <param name="LooseFiles">Comics directly in the root, moved into <paramref name="FolderName"/> by the import.</param>
+public record ImportRequestItem(string FolderName, string MetadataProviderId, IReadOnlyList<string>? LooseFiles = null);
 
 public record ImportResult(
     string FolderName,
@@ -217,24 +224,18 @@ public class LibraryImportService(
             .ToHashSet(LibraryPaths.FolderComparer);
 
         var provider = metadataProviders.First();
-        var dirs = Directory.GetDirectories(rootFolder.Path)
-            .Order()
-            .Where(dir =>
-            {
-                var folderName = Path.GetFileName(dir);
-                return !folderName.StartsWith('.') && !claimed.Contains(folderName) && !ignored.Contains(folderName) &&
-                       !LibraryPaths.IsLink(dir);
-            })
-            .ToList();
-        var candidates = new ImportScanCandidate?[dirs.Count];
+        var dirs = ImportFolders(rootFolder.Path, claimed, ignored);
+        var loose = LooseFileGroups(rootFolder.Path);
+        var candidates = new ImportScanCandidate?[dirs.Count + loose.Count];
 
         // Listing a folder's archives and searching its title are independent per folder and touch
         // no DbContext, so a large root does not have to pay for them one at a time.
         await Parallel.ForEachAsync(
-            Enumerable.Range(0, dirs.Count),
+            Enumerable.Range(0, candidates.Length),
             new ParallelOptions { MaxDegreeOfParallelism = ScanConcurrency, CancellationToken = ct },
-            async (index, itemCt) =>
-                candidates[index] = await ScanFolderAsync(dirs[index], provider, withoutFiles, itemCt));
+            async (index, itemCt) => candidates[index] = index < dirs.Count
+                ? await ScanFolderAsync(dirs[index].Dir, dirs[index].Name, provider, withoutFiles, itemCt)
+                : await ScanLooseGroupAsync(rootFolder.Path, loose[index - dirs.Count], provider, itemCt));
 
         return await ResolveByTopMatchAsync(candidates.OfType<ImportScanCandidate>().ToList(), ct);
     }
@@ -276,6 +277,179 @@ public class LibraryImportService(
 
     private const int ScanConcurrency = 4;
 
+    /// <summary>Grouping folders descended through below the root (<c>Publisher/A-Z/Series</c> is two).</summary>
+    internal const int MaxGroupingDepth = 2;
+
+    /// <param name="Name">Relative to the root, <c>/</c>-separated.</param>
+    internal sealed record ImportFolder(string Dir, string Name);
+
+    /// <summary>
+    /// Every folder the scan offers: the root's own subfolders, and the subfolders of any grouping
+    /// folder (<see cref="IsGroupingFolder"/>) down to <see cref="MaxGroupingDepth"/> levels.
+    /// </summary>
+    internal static List<ImportFolder> ImportFolders(
+        string rootPath, IReadOnlySet<string> claimed, IReadOnlySet<string> ignored)
+    {
+        var found = new List<ImportFolder>();
+        Walk(rootPath, null, 0);
+        return found;
+
+        void Walk(string dir, string? prefix, int depth)
+        {
+            foreach (var child in Directory.GetDirectories(dir).Order(StringComparer.Ordinal))
+            {
+                var leaf = Path.GetFileName(child);
+                var name = prefix is null ? leaf : $"{prefix}/{leaf}";
+                if (leaf.StartsWith('.') || LibraryPaths.IsLink(child) || ignored.Contains(name) ||
+                    (prefix is null && claimed.Contains(leaf)))
+                {
+                    continue;
+                }
+
+                if (depth < MaxGroupingDepth && IsGroupingFolder(child))
+                {
+                    Walk(child, name, depth + 1);
+                }
+                else
+                {
+                    found.Add(new ImportFolder(child, name));
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// A folder like <c>A-Z</c> or <c>Viz</c> that holds series folders rather than being one: no
+    /// comic or image of its own, at least one subfolder, and no subfolder that is a chapter or volume
+    /// of a series (a folder of loose pages, or most of them named like <c>Vol. 01</c>).
+    /// </summary>
+    internal static bool IsGroupingFolder(string dir)
+    {
+        try
+        {
+            if (Directory.EnumerateFiles(dir).Any(f =>
+                    ComicSourceScanner.IsArchive(f) || ComicFile.IsPdf(f) || CbzReader.IsImage(f)))
+            {
+                return false;
+            }
+
+            var children = Directory.GetDirectories(dir)
+                .Where(d => !Path.GetFileName(d).StartsWith('.') && !LibraryPaths.IsLink(d))
+                .ToList();
+            if (children.Count == 0 ||
+                children.Any(d => Directory.EnumerateFiles(d).Any(CbzReader.IsImage)))
+            {
+                return false;
+            }
+
+            var numbered = children.Count(d => ReleaseNameParser.ParseFileName(Path.GetFileName(d)).IsRecognized);
+            return numbered * 2 <= children.Count;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
+        }
+    }
+
+    /// <param name="FolderName">The folder they would be gathered into, free in the root.</param>
+    /// <param name="Files">File names directly in the root.</param>
+    internal sealed record LooseGroup(string FolderName, string SeriesName, List<string> Files);
+
+    /// <summary>
+    /// Comics sitting directly in the root, grouped by the series their names carry, each group with
+    /// a folder name nothing in the root uses yet. Nothing moves until the group is imported.
+    /// </summary>
+    internal static List<LooseGroup> LooseFileGroups(string rootPath)
+    {
+        List<string> files;
+        HashSet<string> taken;
+        try
+        {
+            files = Directory.EnumerateFiles(rootPath)
+                .Where(f => !Path.GetFileName(f).StartsWith('.') && !LibraryPaths.IsLink(f) &&
+                            (ComicSourceScanner.IsArchive(f) || ComicFile.IsPdf(f)))
+                .Order(StringComparer.Ordinal)
+                .ToList();
+            taken = Directory.GetFileSystemEntries(rootPath)
+                .Select(Path.GetFileName)
+                .OfType<string>()
+                .ToHashSet(LibraryPaths.FolderComparer);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
+
+        var groups = new List<LooseGroup>();
+        foreach (var group in files
+                     .Select(f => (File: Path.GetFileName(f), Series: LooseSeriesName(Path.GetFileName(f))))
+                     .Where(x => x.Series is not null)
+                     .GroupBy(x => x.Series!, StringComparer.OrdinalIgnoreCase))
+        {
+            var name = group.First().Series!;
+            var folder = name;
+            for (var n = 2; taken.Contains(folder); n++)
+            {
+                folder = $"{name} ({n})";
+            }
+
+            taken.Add(folder);
+            groups.Add(new LooseGroup(folder, name, group.Select(x => x.File).ToList()));
+        }
+
+        return groups;
+    }
+
+    private static readonly HashSet<char> UnsafeInFolderNames =
+        [.. Path.GetInvalidFileNameChars(), '/', '\\', ':', '*', '?', '"', '<', '>', '|'];
+
+    /// <summary>The series a loose file's name carries, made safe as a folder name; null when it names none.</summary>
+    internal static string? LooseSeriesName(string fileName)
+    {
+        var bare = ComicSourceScanner.IsArchive(fileName) || ComicFile.IsPdf(fileName)
+            ? Path.GetFileNameWithoutExtension(fileName)
+            : fileName;
+        var parsed = ReleaseTitleParser.Parse(bare);
+        var title = parsed.TitleWithoutTrailingNumber ?? parsed.TitleCandidates.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            return null;
+        }
+
+        var safe = new string(title.Select(c => UnsafeInFolderNames.Contains(c) ? ' ' : c).ToArray());
+        safe = string.Join(' ', safe.Split(' ', StringSplitOptions.RemoveEmptyEntries)).Trim('.', ' ');
+        return safe.Length == 0 ? null : safe;
+    }
+
+    private async Task<ImportScanCandidate?> ScanLooseGroupAsync(
+        string rootPath, LooseGroup group, IMetadataProvider provider, CancellationToken ct)
+    {
+        var comics = new List<ComicSource>();
+        foreach (var file in group.Files)
+        {
+            try
+            {
+                comics.AddRange(ComicSourceScanner.Scan(Path.Combine(rootPath, file)));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                logger.LogWarning(ex, "Skipping unreadable file {File} in the import scan", file);
+            }
+        }
+
+        if (comics.Count == 0)
+        {
+            return null;
+        }
+
+        var recognized = comics.Count(c => ReleaseNameParser.ParseFileName(c.Name).IsRecognized);
+        // No series.json: the root's own would describe every loose file at once.
+        var (matches, source, hint) = await FindMatchesAsync(null, comics, group.SeriesName, provider, ct);
+        return new ImportScanCandidate(
+            group.FolderName, group.SeriesName, comics.Count, recognized, matches, null, ImportCandidateKind.New,
+            source, hint, group.Files);
+    }
+
     public async Task<List<ImportIgnoredFolder>> IgnoredFoldersAsync(int rootFolderId, CancellationToken ct) =>
         CanSeeRoot(rootFolderId)
             ? await db.ImportIgnoredFolders
@@ -296,7 +470,7 @@ public class LibraryImportService(
             return "error.series.rootFolderNotFound";
         }
 
-        if (!IsPlainFolderName(folderName))
+        if (!IsImportFolderPath(folderName))
         {
             return "error.libraryImport.invalidFolderName";
         }
@@ -384,13 +558,28 @@ public class LibraryImportService(
     private static bool IsPlainFolderName(string? folderName) =>
         !string.IsNullOrEmpty(folderName) &&
         Path.GetFileName(folderName) == folderName &&
+        !folderName.Contains('\\') &&
         folderName.Trim('.', ' ').Length > 0;
 
+    /// <summary>
+    /// A plain folder name, or one inside up to <see cref="MaxGroupingDepth"/> grouping folders with
+    /// every segment a plain name, so nothing taken off a request can walk out of the root.
+    /// </summary>
+    internal static bool IsImportFolderPath(string? folderName) =>
+        !string.IsNullOrEmpty(folderName) &&
+        folderName.Split('/') is var segments &&
+        segments.Length <= MaxGroupingDepth + 1 &&
+        segments.All(IsPlainFolderName);
+
+    /// <summary>The last segment of an import folder path: the name it keeps once moved to the root.</summary>
+    internal static string LeafOf(string folderName) => folderName[(folderName.LastIndexOf('/') + 1)..];
+
+    internal static bool IsNested(string folderName) => folderName.Contains('/');
+
     private async Task<ImportScanCandidate?> ScanFolderAsync(
-        string dir, IMetadataProvider provider, IReadOnlyDictionary<string, Series> withoutFiles,
+        string dir, string folderName, IMetadataProvider provider, IReadOnlyDictionary<string, Series> withoutFiles,
         CancellationToken ct)
     {
-        var folderName = Path.GetFileName(dir);
         IReadOnlyList<ComicSource> comics;
         try
         {
@@ -414,7 +603,7 @@ public class LibraryImportService(
         var existing = withoutFiles.GetValueOrDefault(folderName);
 
         var recognized = comics.Count(c => ReleaseNameParser.ParseFileName(c.Name).IsRecognized);
-        var cleanedTitle = ReleaseNameParser.CleanFolderTitle(folderName);
+        var cleanedTitle = ReleaseNameParser.CleanFolderTitle(LeafOf(folderName));
 
         if (existing?.MangaBakaId is { } mangaBakaId)
         {
@@ -442,7 +631,7 @@ public class LibraryImportService(
     /// beats any title), then a search on the series name the files carry, then one on the folder name.
     /// </summary>
     private async Task<(IReadOnlyList<MetadataSearchResult> Matches, string? Source, string? Hint)> FindMatchesAsync(
-        string dir, IReadOnlyList<ComicSource> comics, string cleanedTitle, IMetadataProvider provider,
+        string? dir, IReadOnlyList<ComicSource> comics, string cleanedTitle, IMetadataProvider provider,
         CancellationToken ct)
     {
         var hints = FolderMetadataHints.Read(dir, comics);
@@ -517,7 +706,7 @@ public class LibraryImportService(
     /// </summary>
     public async Task<LibraryImportPlan> PlanAsync(int rootFolderId, ImportRequestItem item, CancellationToken ct = default)
     {
-        var (rootFolder, sourceDir, sourceError) = await ResolveSourceAsync(rootFolderId, item.FolderName, ct);
+        var (rootFolder, sourceDir, sourceError) = await ResolveSourceAsync(rootFolderId, item, ct);
         if (sourceError is not null)
         {
             return new LibraryImportPlan(item.FolderName, localizer.Get(sourceError));
@@ -559,8 +748,10 @@ public class LibraryImportService(
 
         // Loose pages at the folder's root are named after the folder they are built in, which a
         // rename or merge has given the series' name by then.
-        var plan = PlanComics(sourceDir,
-            decision.Action is ImportFolderAction.Rename or ImportFolderAction.Merge ? decision.TargetName : null);
+        var plan = item.LooseFiles is { Count: > 0 } loose
+            ? PlanLooseComics(rootFolder.Path, loose, sourceDir)
+            : PlanComics(sourceDir,
+                decision.Action is ImportFolderAction.Rename or ImportFolderAction.Merge ? decision.TargetName : null);
         var comics = plan.Comics.Select(c => (Comic: c, Name: Path.GetRelativePath(sourceDir, c.Target))).ToList();
         var skipped = plan.Unreadable
             .Select(f => new ImportSkippedFile(Path.GetRelativePath(sourceDir, f), ImportSkipReason.Unreadable))
@@ -641,7 +832,8 @@ public class LibraryImportService(
                           await appSettings.GetAsync(SettingKeys.LibraryWriteCoverToFolder, ct) == "true";
         return new LibraryImportPlan(
             item.FolderName, null, metadata.Title, existingSeries?.Id, decision.Action, decision.TargetName,
-            decision.SeriesFolderName, linkDeferred, files, skipped, writesCover, KindOf(existingSeries));
+            decision.SeriesFolderName, linkDeferred, files, skipped, writesCover, KindOf(existingSeries),
+            item.LooseFiles?.Count ?? 0);
     }
 
     /// <summary>The cover <see cref="CoverService.WriteLibraryCoverAsync(int, string, CancellationToken)"/> writes.</summary>
@@ -654,12 +846,44 @@ public class LibraryImportService(
         int rootFolderId, ImportRequestItem item, bool updateComicInfo = true, string? operationId = null,
         CancellationToken ct = default)
     {
-        var (rootFolder, sourceDir, sourceError) = await ResolveSourceAsync(rootFolderId, item.FolderName, ct);
+        var (rootFolder, sourceDir, sourceError) = await ResolveSourceAsync(rootFolderId, item, ct);
         if (sourceError is not null)
         {
             return new ImportResult(item.FolderName, false, localizer.Get(sourceError));
         }
 
+        if (item.LooseFiles is not { Count: > 0 } loose)
+        {
+            return await ImportFolderAsync(rootFolder, sourceDir, item, updateComicInfo, operationId, [], ct);
+        }
+
+        // Moved into their folder only now the import is confirmed, and moved back when it ends
+        // without keeping anything, so a refused or failed import leaves the root as it was.
+        var gathered = new List<string>();
+        ImportResult result;
+        try
+        {
+            GatherLooseFiles(rootFolder.Path, sourceDir, loose, gathered);
+            result = await ImportFolderAsync(rootFolder, sourceDir, item, updateComicInfo, operationId, gathered, ct);
+        }
+        catch
+        {
+            UngatherLooseFiles(rootFolder.Path, sourceDir, gathered);
+            throw;
+        }
+
+        if (!result.Success && result.SeriesId is null)
+        {
+            UngatherLooseFiles(rootFolder.Path, sourceDir, gathered);
+        }
+
+        return result;
+    }
+
+    private async Task<ImportResult> ImportFolderAsync(
+        RootFolder rootFolder, string sourceDir, ImportRequestItem item, bool updateComicInfo, string? operationId,
+        IReadOnlyList<string> gathered, CancellationToken ct)
+    {
         await events.ImportProgress(item.FolderName, ImportStage.FetchingMetadata, operationId: operationId);
         var provider = metadataProviders.First();
         var metadata = await provider.GetAsync(item.MetadataProviderId, ct);
@@ -727,7 +951,8 @@ public class LibraryImportService(
                 try
                 {
                     reimported = await ReimportIntoExistingAsync(
-                        existingSeries, rootFolder, item, sourceDir, updateComicInfo, operationId, restoring, ct);
+                        existingSeries, rootFolder, item, sourceDir, updateComicInfo, operationId, restoring, gathered,
+                        ct);
                 }
                 catch (Exception ex)
                 {
@@ -819,6 +1044,7 @@ public class LibraryImportService(
                     CoverHashes = wroteCover && coverService.LibraryCoverHash(series.Id) is { } coverHash
                         ? [coverHash]
                         : [],
+                    Gathered = [.. gathered],
                 });
 
             // After registering rather than at the insert, so an import rolled back below leaves no
@@ -1002,12 +1228,13 @@ public class LibraryImportService(
     }
 
     /// <summary>
-    /// The root folder, and the scanned folder inside it, for a folder name off the request. Returns
-    /// the error key instead when the caller may not see the root, the name is not a plain folder
-    /// name, or the folder is gone.
+    /// The root folder, and the scanned folder inside it, for an item off the request. Returns the
+    /// error key instead when the caller may not see the root, the name is not a folder path inside
+    /// it, or the folder is gone. For loose files the folder must still be free and every file must
+    /// still be a comic directly in the root.
     /// </summary>
     private async Task<(RootFolder Root, string SourceDir, string? ErrorKey)> ResolveSourceAsync(
-        int rootFolderId, string folderName, CancellationToken ct)
+        int rootFolderId, ImportRequestItem item, CancellationToken ct)
     {
         var rootFolder = CanSeeRoot(rootFolderId) ? await db.RootFolders.FindAsync([rootFolderId], ct) : null;
         if (rootFolder is null)
@@ -1015,17 +1242,152 @@ public class LibraryImportService(
             return (null!, null!, "error.series.rootFolderNotFound");
         }
 
-        // FolderName comes straight off the request. Anything but a plain name could move or
-        // rewrite files anywhere on disk the process can reach.
-        var sourceDir = IsPlainFolderName(folderName) ? LibraryPaths.ResolveNoLinks(rootFolder.Path, folderName) : null;
+        // FolderName comes straight off the request. Anything but a folder path inside the root could
+        // move or rewrite files anywhere on disk the process can reach.
+        var folderName = item.FolderName;
+        var loose = item.LooseFiles is { Count: > 0 };
+        var valid = loose ? IsPlainFolderName(folderName) : IsImportFolderPath(folderName);
+        var sourceDir = valid ? LibraryPaths.ResolveNoLinks(rootFolder.Path, folderName) : null;
         if (sourceDir is null)
         {
             return (rootFolder, null!, "error.libraryImport.invalidFolderName");
         }
 
-        return Directory.Exists(sourceDir)
-            ? (rootFolder, sourceDir, null)
-            : (rootFolder, sourceDir, "error.libraryImport.folderGone");
+        if (!loose)
+        {
+            return Directory.Exists(sourceDir)
+                ? (rootFolder, sourceDir, null)
+                : (rootFolder, sourceDir, "error.libraryImport.folderGone");
+        }
+
+        if (SameVolumeMove.Occupied(sourceDir))
+        {
+            return (rootFolder, sourceDir, "error.libraryImport.renameTargetExists");
+        }
+
+        foreach (var file in item.LooseFiles!)
+        {
+            var path = IsPlainFolderName(file) ? LibraryPaths.ResolveNoLinks(rootFolder.Path, file) : null;
+            if (path is null || !(ComicSourceScanner.IsArchive(path) || ComicFile.IsPdf(path)))
+            {
+                return (rootFolder, sourceDir, "error.libraryImport.invalidFolderName");
+            }
+
+            if (!File.Exists(path) || LibraryPaths.IsLink(path))
+            {
+                return (rootFolder, sourceDir, "error.libraryImport.folderGone");
+            }
+        }
+
+        return (rootFolder, sourceDir, null);
+    }
+
+    /// <summary>
+    /// Moves loose files from the root into <paramref name="dir"/>, recording each one moved. A
+    /// rename within one folder never copies, so this is <see cref="SameVolumeMove"/> and refuses
+    /// rather than replacing anything.
+    /// </summary>
+    internal static void GatherLooseFiles(string rootPath, string dir, IReadOnlyList<string> files, List<string> gathered)
+    {
+        Directory.CreateDirectory(dir);
+        foreach (var file in files)
+        {
+            var from = Path.Combine(rootPath, file);
+            var to = Path.Combine(dir, file);
+            var outcome = SameVolumeMove.Move(from, to);
+            if (outcome.Result != MoveResult.Moved && !SameVolumeMove.Landed(from, to))
+            {
+                throw new IOException($"Could not move {file} into {Path.GetFileName(dir)}", outcome.Error);
+            }
+
+            gathered.Add(file);
+        }
+    }
+
+    /// <summary>
+    /// Puts gathered files back in the root and removes the folder they were gathered into when that
+    /// leaves it empty. A file whose root name was taken meanwhile stays where it is.
+    /// </summary>
+    internal void UngatherLooseFiles(string rootPath, string dir, List<string> gathered)
+    {
+        foreach (var file in gathered.ToList())
+        {
+            var outcome = SameVolumeMove.Move(Path.Combine(dir, file), Path.Combine(rootPath, file));
+            if (outcome.Result == MoveResult.Moved)
+            {
+                gathered.Remove(file);
+            }
+            else
+            {
+                logger.LogWarning(outcome.Error, "Could not move {File} back out of {Folder}", file, dir);
+            }
+        }
+
+        try
+        {
+            if (Directory.Exists(dir) && !Directory.EnumerateFileSystemEntries(dir).Any())
+            {
+                Directory.Delete(dir, recursive: false);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// <see cref="PlanComics"/> for loose files that are still in the root: planned as if they were
+    /// already in <paramref name="dir"/>, which is where the import gathers them before it runs.
+    /// </summary>
+    internal static ComicPlan PlanLooseComics(string rootPath, IReadOnlyList<string> files, string dir)
+    {
+        var comics = new List<PlannedComic>();
+        var unreadable = new List<string>();
+        var duplicates = new List<string>();
+        var sources = new List<ComicSource>();
+        foreach (var file in files.Order(StringComparer.Ordinal))
+        {
+            var gatheredPath = Path.Combine(dir, file);
+            var found = ComicSourceScanner.Scan(Path.Combine(rootPath, file));
+            if (found.Count == 0)
+            {
+                unreadable.Add(gatheredPath);
+            }
+
+            sources.AddRange(found.Select(source => source with { Path = gatheredPath }));
+        }
+
+        foreach (var group in sources.GroupBy(c => Path.GetFileNameWithoutExtension(c.Name), StringComparer.OrdinalIgnoreCase))
+        {
+            var ordered = group.OrderBy(ComicSourceScanner.Preference).ToList();
+            duplicates.AddRange(ordered.Skip(1).Select(c => c.Path).Where(p => p != ordered[0].Path));
+            var source = ordered[0];
+            if (source.Kind is ComicSourceKind.Cbz or ComicSourceKind.Pdf)
+            {
+                comics.Add(new PlannedComic(source, source.Path, ImportFileAction.Register, null));
+                continue;
+            }
+
+            var target = Path.Combine(dir, source.Name);
+            if (source.Entry is null && string.Equals(target, source.Path, StringComparison.OrdinalIgnoreCase))
+            {
+                if (ComicSourceConverter.AsideFor(source.Path) is { } aside &&
+                    !sources.Any(s => string.Equals(s.Path, aside, StringComparison.OrdinalIgnoreCase)))
+                {
+                    comics.Add(new PlannedComic(source, target, ImportFileAction.RebuildInPlace, aside));
+                }
+                else
+                {
+                    unreadable.Add(source.Path);
+                }
+            }
+            else
+            {
+                comics.Add(new PlannedComic(source, target, ImportFileAction.Build, null));
+            }
+        }
+
+        return new ComicPlan(comics, unreadable, duplicates.Distinct().ToList());
     }
 
     /// <param name="Action">One of <see cref="ImportFolderAction"/>.</param>
@@ -1073,6 +1435,13 @@ public class LibraryImportService(
                     "error.libraryImport.renameTargetExists", new { name = wanted });
         }
 
+        if (IsNested(folderName))
+        {
+            return DecideNestedFolder(
+                namingMode, standardName, mangaBakaId, rootPath, sourceDir, folderName, otherFolders,
+                existingSeriesFolderName);
+        }
+
         // The files stay in this folder, so it must not already be another series' own.
         if (otherFolders.Contains(folderName))
         {
@@ -1096,6 +1465,48 @@ public class LibraryImportService(
         return new FolderDecision(ImportFolderAction.Keep, folderName, seriesFolderName);
     }
 
+    /// <summary>
+    /// A folder inside grouping folders outside the rename mode. <see cref="Series.FolderName"/> is one
+    /// folder directly in the root everywhere it is read (downloads, rescans, renames, the claimed
+    /// check), so the import moves the folder up to the root under its own name rather than storing a
+    /// nested path; under the rename mode <see cref="DecideFolder"/> already moves it there.
+    /// </summary>
+    private static FolderDecision DecideNestedFolder(
+        string namingMode, string standardName, int? mangaBakaId, string rootPath, string sourceDir,
+        string folderName, IReadOnlySet<string> otherFolders, string? existingSeriesFolderName)
+    {
+        var leaf = LeafOf(folderName);
+        if (otherFolders.Contains(leaf))
+        {
+            return new FolderDecision(ImportFolderAction.Keep, folderName, folderName,
+                "error.libraryImport.folderOwnedByOtherSeries");
+        }
+
+        if (!RenameTargetFree(rootPath, sourceDir, leaf))
+        {
+            return existingSeriesFolderName is not null &&
+                   LibraryPaths.FolderComparer.Equals(leaf, existingSeriesFolderName)
+                ? new FolderDecision(ImportFolderAction.Merge, leaf, leaf)
+                : new FolderDecision(ImportFolderAction.Keep, folderName, folderName,
+                    "error.libraryImport.renameTargetExists", new { name = leaf });
+        }
+
+        if (namingMode != FolderNamingMode.KeepOriginalNewStandard)
+        {
+            return new FolderDecision(ImportFolderAction.Rename, leaf, leaf);
+        }
+
+        var seriesFolderName = SeriesCreationService.FreeFolderName(
+            standardName, mangaBakaId,
+            name => !otherFolders.Contains(name) &&
+                    (LibraryPaths.FolderComparer.Equals(name, leaf) ||
+                     (existingSeriesFolderName is not null &&
+                      LibraryPaths.FolderComparer.Equals(name, existingSeriesFolderName)) ||
+                     !SeriesCreationService.HoldsComics(rootPath, name)));
+        return new FolderDecision(ImportFolderAction.Rename, leaf, seriesFolderName);
+    }
+
+
     private static string TargetDirOf(string rootPath, string name) =>
         LibraryPaths.Resolve(rootPath, name) ?? Path.Combine(rootPath, name);
 
@@ -1118,7 +1529,7 @@ public class LibraryImportService(
     /// </summary>
     private async Task<ImportResult> ReimportIntoExistingAsync(
         Series series, RootFolder rootFolder, ImportRequestItem item, string sourceDir,
-        bool updateComicInfo, string? operationId, bool restore, CancellationToken ct)
+        bool updateComicInfo, string? operationId, bool restore, IReadOnlyList<string> gathered, CancellationToken ct)
     {
         var standardName = await naming.BuildSeriesFolderNameAsync(series, ct);
         var namingMode = await GetFolderNamingModeAsync(ct);
@@ -1140,6 +1551,7 @@ public class LibraryImportService(
             FolderAction = decision.Action,
             PreviousSeriesFolderName = series.FolderName,
             PreviousRootFolderId = series.RootFolderId,
+            Gathered = [.. gathered],
         };
         if (decision.Action == ImportFolderAction.Rename)
         {
