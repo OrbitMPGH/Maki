@@ -559,6 +559,21 @@ public static class SettingKeys
     /// <summary>Where to read the model manifest instead of the GitHub release: an http(s) or file URL, or a path.</summary>
     public const string UpscalingManifestUrl = "library.upscaling.manifesturl";
 
+    /// <summary>"true" upscales the next chapters of series being read while nobody is reading. Unset is off.</summary>
+    public const string UpscalingPrepare = "library.upscaling.prepare";
+
+    /// <summary>How recently a series must have been read to be prepared, in days. Unset is 14.</summary>
+    public const string UpscalingPrepareDays = "library.upscaling.preparedays";
+
+    /// <summary>At most this many series per reader are prepared. Unset is 8.</summary>
+    public const string UpscalingPrepareSeries = "library.upscaling.prepareseries";
+
+    /// <summary>Chapters prepared ahead in each series. Unset is 1.</summary>
+    public const string UpscalingPrepareChapters = "library.upscaling.preparechapters";
+
+    /// <summary>Space prepared pages may hold in the upscale cache, in MB, apart from its cap. Unset is 4096.</summary>
+    public const string UpscalingPrepareMb = "library.upscaling.preparemb";
+
     /// <summary>"false" leaves incognito series out of the upgrade scan. Default on.</summary>
     public const string UpgradesScanIncognito = "upgrades.scanIncognito";
 

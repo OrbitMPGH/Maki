@@ -16,6 +16,8 @@ import {
   useSaveUpscaling,
   useUpscaleBenchmark,
   useUpscaling,
+  type PrepareAheadSettings,
+  type PreparedState,
   type UpscaleCatalogEntry,
   type UpscalingSettings,
 } from '../../api/upscaling'
@@ -25,6 +27,18 @@ const NOTICES_URL = 'https://github.com/OrbitMPGH/Maki/blob/main/THIRD_PARTY_NOT
 const MB = 1024 ** 2
 
 const sameModels = (a: string[], b: string[]) => a.length === b.length && a.every((id) => b.includes(id))
+
+const PREPARE_DEFAULTS: PrepareAheadSettings = { enabled: false, days: 14, series: 8, chapters: 1, mb: 4096 }
+
+const samePrepare = (a?: PrepareAheadSettings, b?: PrepareAheadSettings) =>
+  (a === undefined && b === undefined) ||
+  (a !== undefined &&
+    b !== undefined &&
+    a.enabled === b.enabled &&
+    a.days === b.days &&
+    a.series === b.series &&
+    a.chapters === b.chapters &&
+    a.mb === b.mb)
 
 /** Server-side page upscaling: which ONNX models readers may use, and how much CPU and disk they get. */
 export function UpscalingSection() {
@@ -42,6 +56,7 @@ export function UpscalingSection() {
       draft.threads !== saved.threads ||
       draft.cacheMb !== saved.cacheMb ||
       draft.jpegXl !== saved.jpegXl ||
+      !samePrepare(draft.prepare, saved.prepare) ||
       !sameModels(draft.models, saved.models))
   const update = (changes: Partial<UpscalingSettings>) => {
     if (current) setDraft({ ...current, ...changes })
@@ -136,7 +151,19 @@ export function UpscalingSection() {
                 onChange={(e) => update({ jpegXl: e.currentTarget.checked })}
               />
 
-              <CacheUsage bytes={state.cache.bytes} files={state.cache.files} limitMb={saved?.cacheMb ?? current.cacheMb} />
+              <CacheUsage
+                bytes={state.cache.bytes - (state.prepared?.bytes ?? 0)}
+                files={state.cache.files}
+                limitMb={saved?.cacheMb ?? current.cacheMb}
+              />
+
+              {saved?.prepare && (
+                <PrepareAhead
+                  value={current.prepare ?? PREPARE_DEFAULTS}
+                  onChange={(prepare) => update({ prepare })}
+                  prepared={saved.prepare.enabled ? state.prepared : undefined}
+                />
+              )}
             </>
           )}
 
@@ -320,6 +347,86 @@ function Rating({ label, value, word, minWidth }: { label: string; value: ModelR
         {word}
       </Text>
     </Group>
+  )
+}
+
+function PrepareAhead({
+  value,
+  onChange,
+  prepared,
+}: {
+  value: PrepareAheadSettings
+  onChange: (value: PrepareAheadSettings) => void
+  prepared?: PreparedState
+}) {
+  const { t } = useLingui()
+  const set = (changes: Partial<PrepareAheadSettings>) => onChange({ ...value, ...changes })
+  return (
+    <>
+      <Divider />
+      <Switch
+        label={t`Prepare chapters ahead`}
+        description={t`Upscales the next chapters of series set to Reading while nobody is reading, so they open sharp. Only series whose reader settings have Enhance on Always and a server model count; Auto depends on the screen, so it is left out.`}
+        checked={value.enabled}
+        onChange={(e) => set({ enabled: e.currentTarget.checked })}
+      />
+      {value.enabled && (
+        <>
+          <Group gap="md" align="flex-start" wrap="wrap">
+            <SettingsNumberInput
+              label={t`Read within (days)`}
+              description={t`Series read longer ago are left alone.`}
+              min={1}
+              max={365}
+              value={value.days}
+              onChange={(days) => set({ days })}
+            />
+            <SettingsNumberInput
+              label={t`Series per reader`}
+              description={t`The most recently read ones go first.`}
+              min={1}
+              max={100}
+              value={value.series}
+              onChange={(series) => set({ series })}
+            />
+            <SettingsNumberInput
+              label={t`Chapters per series`}
+              description={t`From the chapter you would open next.`}
+              min={1}
+              max={3}
+              value={value.chapters}
+              onChange={(chapters) => set({ chapters })}
+            />
+            <SettingsNumberInput
+              label={t`Space (MB)`}
+              description={t`Prepared pages are kept until read, apart from the cache size.`}
+              min={256}
+              value={value.mb}
+              onChange={(mb) => set({ mb })}
+            />
+          </Group>
+          {prepared && <PreparedUsage prepared={prepared} limitMb={value.mb} />}
+        </>
+      )}
+    </>
+  )
+}
+
+function PreparedUsage({ prepared, limitMb }: { prepared: PreparedState; limitMb: number }) {
+  const used = `${formatNumber(Math.round(prepared.bytes / MB))} MB`
+  const limit = `${formatNumber(limitMb)} MB`
+  const chapters = prepared.chapters
+  const waiting = prepared.waiting
+  return (
+    <Text size="sm">
+      <Plural value={chapters} one={`# chapter held, ${used} of ${limit}`} other={`# chapters held, ${used} of ${limit}`} />
+      {waiting > 0 && (
+        <>
+          {' · '}
+          <Plural value={waiting} one="# page still to make" other="# pages still to make" />
+        </>
+      )}
+    </Text>
   )
 }
 

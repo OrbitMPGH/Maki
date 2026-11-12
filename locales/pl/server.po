@@ -3199,6 +3199,11 @@ msgstr "Nie udało się pobrać modelu. Sprawdź, czy ten serwer ma dostęp do G
 msgid "error.upscaling.invalidCache"
 msgstr "Rozmiar pamięci podręcznej musi wynosić od {min} do {max} MB."
 
+#. English: One of the Prepare chapters ahead values is out of range.
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.invalidPrepare"
+msgstr ""
+
 #. English: Threads must be between {min} and {max}.
 #: src/Maki.Api/Controllers/UpscalingController.cs
 #, fuzzy

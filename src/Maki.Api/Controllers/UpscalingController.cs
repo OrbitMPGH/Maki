@@ -21,12 +21,23 @@ public class UpscalingController(
     OnnxPageUpscaler upscaler,
     UpscaleCache cache,
     UpscaleQueue queue,
-    ILocalizer localizer) : ControllerBase
+    ILocalizer localizer,
+    UpscalePrepareService? prepare = null) : ControllerBase
 {
     /// <param name="MaxThreads">The highest thread count the server accepts (its processor count).</param>
     /// <param name="JpegXlAvailable">Whether libjxl loaded, without which <paramref name="JpegXl"/> changes nothing.</param>
     public record SettingsDto(
-        bool Enabled, IReadOnlyList<string> Models, int Threads, int CacheMb, int MaxThreads, bool JpegXl, bool JpegXlAvailable);
+        bool Enabled, IReadOnlyList<string> Models, int Threads, int CacheMb, int MaxThreads, bool JpegXl, bool JpegXlAvailable,
+        PrepareDto Prepare);
+
+    /// <summary>Prepare chapters ahead. See <see cref="PrepareOptions"/>.</summary>
+    public record PrepareDto(bool Enabled, int Days, int Series, int Chapters, int Mb);
+
+    /// <param name="Chapters">Chapters the last plan held.</param>
+    /// <param name="Pages">Their pages, made or not.</param>
+    /// <param name="Waiting">Pages of them still to make.</param>
+    /// <param name="Bytes">What their made pages take up.</param>
+    public record PreparedDto(int Chapters, int Pages, int Waiting, long Bytes);
 
     /// <param name="Status">"missing", "downloading", "ready" or "failed".</param>
     /// <param name="Error">Why the download failed, in the caller's language. Null unless failed.</param>
@@ -39,10 +50,13 @@ public class UpscalingController(
 
     public record QueueDto(int Pending, int Working);
 
-    public record StatusDto(SettingsDto Settings, IReadOnlyList<CatalogEntryDto> Catalog, CacheDto Cache, QueueDto Queue);
+    public record StatusDto(
+        SettingsDto Settings, IReadOnlyList<CatalogEntryDto> Catalog, CacheDto Cache, QueueDto Queue, PreparedDto Prepared);
 
     /// <param name="JpegXl">Null leaves the stored value alone, for a client that predates the setting.</param>
-    public record SaveSettingsRequest(bool Enabled, IReadOnlyList<string>? Models, int Threads, int CacheMb, bool? JpegXl = null);
+    /// <param name="Prepare">Null leaves the stored values alone, for a client that predates them.</param>
+    public record SaveSettingsRequest(
+        bool Enabled, IReadOnlyList<string>? Models, int Threads, int CacheMb, bool? JpegXl = null, PrepareDto? Prepare = null);
 
     public record BenchmarkRequest(string? Model);
 
@@ -60,6 +74,14 @@ public class UpscalingController(
         if (request.CacheMb is < UpscaleOptions.MinCacheMb or > UpscaleOptions.MaxCacheMb)
         {
             return this.Fail(localizer, "error.upscaling.invalidCache", new { min = UpscaleOptions.MinCacheMb, max = UpscaleOptions.MaxCacheMb });
+        }
+
+        if (request.Prepare is { } ahead && (ahead.Days is < 1 or > PrepareOptions.MaxDays
+                || ahead.Series is < 1 or > PrepareOptions.MaxSeries
+                || ahead.Chapters is < 1 or > PrepareOptions.MaxChapters
+                || ahead.Mb is < PrepareOptions.MinMb or > PrepareOptions.MaxMb))
+        {
+            return this.Fail(localizer, "error.upscaling.invalidPrepare");
         }
 
         var models = new List<UpscaleModelId>();
@@ -87,6 +109,15 @@ public class UpscalingController(
             await settings.SetAsync(SettingKeys.UpscalingJpegXl, jpegXl ? "true" : "false", ct);
         }
 
+        if (request.Prepare is { } p)
+        {
+            await settings.SetAsync(SettingKeys.UpscalingPrepare, p.Enabled ? "true" : "false", ct);
+            await settings.SetAsync(SettingKeys.UpscalingPrepareDays, p.Days.ToString(CultureInfo.InvariantCulture), ct);
+            await settings.SetAsync(SettingKeys.UpscalingPrepareSeries, p.Series.ToString(CultureInfo.InvariantCulture), ct);
+            await settings.SetAsync(SettingKeys.UpscalingPrepareChapters, p.Chapters.ToString(CultureInfo.InvariantCulture), ct);
+            await settings.SetAsync(SettingKeys.UpscalingPrepareMb, p.Mb.ToString(CultureInfo.InvariantCulture), ct);
+        }
+
         foreach (var id in models.Where(m => firstSave || !before.Models.Contains(m)))
         {
             if (store.GetStatus(id).State is UpscaleModelState.Missing or UpscaleModelState.Failed)
@@ -96,6 +127,7 @@ public class UpscalingController(
         }
 
         queue.Wake();
+        prepare?.Nudge();
         if (request.CacheMb < before.CacheMb)
         {
             await cache.EnforceCapAsync(ct);
@@ -204,12 +236,17 @@ public class UpscalingController(
         }).ToList();
 
         var (bytes, files) = cache.Stats();
+        var (heldBytes, _, _) = cache.HeldStats();
         var snapshot = queue.Snapshot();
+        var ahead = options.PrepareAhead;
+        var last = prepare?.Last ?? PrepareSnapshot.Empty;
         return new StatusDto(
             new SettingsDto(options.Enabled, options.Models.Select(m => m.Value).ToList(), options.Threads, options.CacheMb,
-                Math.Max(Environment.ProcessorCount, 1), options.JpegXl, Maki.Core.Images.JpegXl.IsAvailable),
+                Math.Max(Environment.ProcessorCount, 1), options.JpegXl, Maki.Core.Images.JpegXl.IsAvailable,
+                new PrepareDto(ahead.Enabled, ahead.Days, ahead.Series, ahead.Chapters, ahead.Mb)),
             entries,
             new CacheDto(bytes, files),
-            new QueueDto(snapshot.Pending, snapshot.Working));
+            new QueueDto(snapshot.Pending, snapshot.Working),
+            new PreparedDto(last.Chapters, last.Pages, snapshot.Background, heldBytes));
     }
 }

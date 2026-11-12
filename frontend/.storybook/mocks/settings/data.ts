@@ -1160,6 +1160,13 @@ export const upscalingNoJpegXl = {
   settings: { ...upscalingOn.settings, jpegXlAvailable: false },
 } satisfies UpscalingState
 
+export const upscalingPrepare = {
+  ...upscalingOn,
+  settings: { ...upscalingOn.settings, prepare: { enabled: true, days: 14, series: 8, chapters: 1, mb: 4096 } },
+  cache: { bytes: 1124 * MB, files: 912 },
+  prepared: { chapters: 9, pages: 412, waiting: 38, bytes: 812 * MB },
+} satisfies UpscalingState
+
 export const recycleBin: RecycleBin = {
   retentionDays: 14,
   totalBytes: 312 * MB,

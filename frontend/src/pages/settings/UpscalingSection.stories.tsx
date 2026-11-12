@@ -3,7 +3,7 @@ import { expect, waitFor } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../../.storybook/mocks/settings'
 import { api } from '../../../.storybook/mocks/api'
-import { upscalingFailed, upscalingNoJpegXl, upscalingOff } from '../../../.storybook/mocks/settings/data'
+import { upscalingFailed, upscalingNoJpegXl, upscalingOff, upscalingPrepare } from '../../../.storybook/mocks/settings/data'
 import { UpscalingSection } from './UpscalingSection'
 
 const meta = {
@@ -43,6 +43,19 @@ export const ReadyAndDownloading: Story = {
       'href',
       'https://github.com/OrbitMPGH/Maki/blob/main/THIRD_PARTY_NOTICES.md',
     )
+  },
+}
+
+export const PrepareAhead: Story = {
+  parameters: {
+    msw: settingsMsw(http.get(api('/upscaling'), () => HttpResponse.json(upscalingPrepare))),
+  },
+  play: async ({ canvas }) => {
+    await waitFor(() => expect(canvas.getByRole('switch', { name: /Prepare chapters ahead/ })).toBeChecked())
+    await expect(await canvas.findByText('312 MB of 1,024 MB, 912 pages')).toBeVisible()
+    await expect(await canvas.findByText(/9 chapters held, 812 MB of 4,096 MB/)).toBeVisible()
+    await expect(canvas.getByText(/38 pages still to make/)).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Series per reader' })).toHaveValue('8'))
   },
 }
 

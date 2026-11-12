@@ -89,7 +89,7 @@ public sealed class EnhanceEndpointTests : IDisposable
             new TestLocalizer(), db,
             new ReaderService(db, new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), null!, null!,
                 new ReadingSessionService(db), NullLogger<ReaderService>.Instance),
-            null!, null!, null!, null!, null!, _paths,
+            null!, null!, new ReadingProfileService(db, new UserSettingsService(db, new TestCurrentUser(userId))), null!, null!, _paths,
             new TestCurrentUser(userId), null!, _settings)
         {
             ControllerContext = new ControllerContext { HttpContext = context }
@@ -104,6 +104,47 @@ public sealed class EnhanceEndpointTests : IDisposable
 
     private static string Code(IActionResult result) =>
         JsonSerializer.SerializeToElement(Assert.IsAssignableFrom<ObjectResult>(result).Value, Web).GetProperty("code").GetString()!;
+
+    private int AddVolumeChapter(int number)
+    {
+        var id = AddChapter(number);
+        using var db = _db.NewContext();
+        var file = db.Chapters.Where(c => c.Id == id).Select(c => c.ChapterFile!).Single();
+        file.Tier = Maki.Core.Quality.QualityTier.Volume;
+        db.SaveChanges();
+        return id;
+    }
+
+    [Fact]
+    public async Task Whole_chapter_queues_every_page_of_the_next_chapter_behind_this_one()
+    {
+        var next = AddChapter(2);
+        using var db = _db.NewContext(1);
+
+        await Reader(db, 1).Enhance(_chapterId, new EnhancePagesRequest("span-s", [0, 1, 2], next, [], WholeChapter: true),
+            _store, _queue, _cache, default);
+
+        var targets = new List<(int Chapter, int Page)>();
+        while (_queue.TryDequeue() is { } job)
+        {
+            targets.AddRange(_queue.WaitersOf(job).Select(w => (w.Value.ChapterId, w.Value.Page)));
+            _queue.Complete(job, Maki.Core.Images.Upscaling.UpscaleOutcome.Ready, null);
+        }
+
+        Assert.Equal([(_chapterId, 0), (_chapterId, 1), (_chapterId, 2), (next, 0), (next, 1), (next, 2)], targets);
+    }
+
+    [Fact]
+    public async Task A_next_chapter_whose_tier_is_skipped_is_not_queued()
+    {
+        var next = AddVolumeChapter(2);
+        using var db = _db.NewContext(1);
+
+        await Reader(db, 1).Enhance(_chapterId, new EnhancePagesRequest("span-s", [2], next, [0, 1], WholeChapter: true),
+            _store, _queue, _cache, default);
+
+        Assert.Equal(1, _queue.Snapshot().Pending);
+    }
 
     [Fact]
     public async Task Both_endpoints_answer_409_while_the_tier_is_off()
@@ -341,12 +382,15 @@ public sealed class EnhanceEndpointTests : IDisposable
         var status = Json(await Admin().Status(default));
 
         Assert.Equal(saved.GetRawText(), status.GetRawText());
-        Assert.Equal(["settings", "catalog", "cache", "queue"], status.EnumerateObject().Select(p => p.Name));
+        Assert.Equal(["settings", "catalog", "cache", "queue", "prepared"], status.EnumerateObject().Select(p => p.Name));
         var settings = status.GetProperty("settings");
         Assert.True(settings.GetProperty("enabled").GetBoolean());
         Assert.Equal("""["span-s"]""", settings.GetProperty("models").GetRawText());
         Assert.Equal(1, settings.GetProperty("threads").GetInt32());
         Assert.Equal(512, settings.GetProperty("cacheMb").GetInt32());
+        Assert.Equal(
+            """{"enabled":false,"days":14,"series":8,"chapters":1,"mb":4096}""",
+            settings.GetProperty("prepare").GetRawText());
 
         var catalog = status.GetProperty("catalog").EnumerateArray().ToList();
         Assert.Equal(["maki-2x", "span-s", "realesrgan-av3"], catalog.Select(c => c.GetProperty("id").GetString()));
@@ -364,6 +408,21 @@ public sealed class EnhanceEndpointTests : IDisposable
         Assert.Equal(1, status.GetProperty("cache").GetProperty("files").GetInt32());
         Assert.Equal(0, status.GetProperty("queue").GetProperty("pending").GetInt32());
         Assert.Equal(0, status.GetProperty("queue").GetProperty("working").GetInt32());
+        Assert.Equal("""{"chapters":0,"pages":0,"waiting":0,"bytes":0}""", status.GetProperty("prepared").GetRawText());
+    }
+
+    [Fact]
+    public async Task Save_stores_the_prepare_ahead_settings_and_refuses_out_of_range_ones()
+    {
+        var prepare = new UpscalingController.PrepareDto(true, 7, 3, 2, 1024);
+        var saved = Json(await Admin().Save(new UpscalingController.SaveSettingsRequest(true, ["span-s"], 1, 512, Prepare: prepare), default));
+        var refused = await Admin().Save(
+            new UpscalingController.SaveSettingsRequest(true, ["span-s"], 1, 512, Prepare: prepare with { Chapters = 4 }), default);
+
+        Assert.Equal("""{"enabled":true,"days":7,"series":3,"chapters":2,"mb":1024}""",
+            saved.GetProperty("settings").GetProperty("prepare").GetRawText());
+        Assert.Equal("error.upscaling.invalidPrepare", Code(refused));
+        Assert.Equal("2", await _settings.GetAsync(SettingKeys.UpscalingPrepareChapters));
     }
 
     [Fact]

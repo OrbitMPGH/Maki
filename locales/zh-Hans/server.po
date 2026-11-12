@@ -3198,6 +3198,11 @@ msgstr "无法下载模型。请检查此服务器能否访问 GitHub，然后�
 msgid "error.upscaling.invalidCache"
 msgstr "缓存大小必须在 {min} 到 {max} MB 之间。"
 
+#. English: One of the Prepare chapters ahead values is out of range.
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.invalidPrepare"
+msgstr ""
+
 #. English: Threads must be between {min} and {max}.
 #: src/Maki.Api/Controllers/UpscalingController.cs
 #, fuzzy

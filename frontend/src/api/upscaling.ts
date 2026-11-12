@@ -13,6 +13,21 @@ export interface UpscalingSettings {
   jpegXl?: boolean
   /** Whether the server has libjxl; without it `jpegXl` changes nothing. */
   jpegXlAvailable?: boolean
+  /** Prepare chapters ahead. Unset on an older server. */
+  prepare?: PrepareAheadSettings
+}
+
+/** Upscale the next chapters of series being read while nobody is reading. */
+export interface PrepareAheadSettings {
+  enabled: boolean
+  /** Series read within this many days count. */
+  days: number
+  /** At most this many series per reader. */
+  series: number
+  /** Chapters prepared in each series. */
+  chapters: number
+  /** Space prepared pages may take, apart from the cache size. */
+  mb: number
 }
 
 export interface UpscaleCatalogEntry {
@@ -34,6 +49,19 @@ export interface UpscalingState {
   catalog: UpscaleCatalogEntry[]
   cache: { bytes: number; files: number }
   queue: { pending: number; working: number }
+  /** What the last prepare-ahead plan holds. Unset on an older server. */
+  prepared?: PreparedState
+}
+
+export interface PreparedState {
+  /** Chapters the plan holds. */
+  chapters: number
+  /** Their pages, made or not. */
+  pages: number
+  /** Pages still to make. */
+  waiting: number
+  /** What the made pages take up. */
+  bytes: number
 }
 
 const key = ['upscaling']

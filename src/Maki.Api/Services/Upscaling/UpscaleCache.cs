@@ -9,7 +9,9 @@ namespace Maki.Api.Services.Upscaling;
 /// Upscaled pages on disk at <c>{ConfigDir}/cache/upscale/{ChapterFileId}/{ArchiveVersion}-{absIndex}.{model}.{webp|jxl|jpg}</c>,
 /// a root of its own so the reader cache prune never sees them. Eviction is by last access as this
 /// index records it (filesystem atime is not updated on read on NTFS or under relatime), seeded from
-/// each file's write time by a walk off the request path.
+/// each file's write time by a walk off the request path. Pages <see cref="Hold"/> names (chapters being
+/// prepared ahead) are never evicted and do not count against the cap; the planner keeps them under
+/// a budget of their own.
 /// </summary>
 public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, ILogger<UpscaleCache> logger)
 {
@@ -17,6 +19,7 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
 
     private readonly Lock _gate = new();
     private readonly Dictionary<string, Entry> _index = new(StringComparer.Ordinal);
+    private HashSet<string> _held = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _trim = new(1, 1);
     private long _bytes;
     private Task? _seeding;
@@ -44,6 +47,64 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
     public string PathFor(UpscaleWorkKey key, string extension) => Path.Combine(
         Root, key.ChapterFileId.ToString(CultureInfo.InvariantCulture),
         $"{key.ArchiveVersion}-{key.AbsIndex.ToString(CultureInfo.InvariantCulture)}.{key.Model}.{Generation}.{extension}");
+
+    /// <summary>A page's path without its extension, which is what a hold names.</summary>
+    private string Stem(UpscaleWorkKey key) => Path.Combine(
+        Root, key.ChapterFileId.ToString(CultureInfo.InvariantCulture),
+        $"{key.ArchiveVersion}-{key.AbsIndex.ToString(CultureInfo.InvariantCulture)}.{key.Model}.{Generation}");
+
+    private bool IsHeld(string path) => _held.Contains(path[..path.LastIndexOf('.')]);
+
+    /// <summary>
+    /// Replaces the pages kept out of eviction. Pages no longer named count against the cap again, so
+    /// call <see cref="EnforceCapAsync"/> after shrinking the set.
+    /// </summary>
+    public void Hold(IEnumerable<UpscaleWorkKey> keys)
+    {
+        var held = keys.Select(Stem).ToHashSet(StringComparer.Ordinal);
+        lock (_gate)
+        {
+            _held = held;
+        }
+    }
+
+    /// <summary>The size of <paramref name="key"/>'s cached page, or null when it is not cached. Records no access.</summary>
+    public long? SizeOf(UpscaleWorkKey key)
+    {
+        var stem = Stem(key);
+        lock (_gate)
+        {
+            foreach (var extension in (string[])["webp", "jxl", "jpg"])
+            {
+                if (_index.TryGetValue($"{stem}.{extension}", out var entry))
+                {
+                    return entry.Bytes;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>What held pages take up, and the average page across the whole cache (0 when empty).</summary>
+    public (long Bytes, int Files, long AveragePage) HeldStats()
+    {
+        lock (_gate)
+        {
+            long bytes = 0;
+            var files = 0;
+            foreach (var (path, entry) in _index)
+            {
+                if (IsHeld(path))
+                {
+                    bytes += entry.Bytes;
+                    files++;
+                }
+            }
+
+            return (bytes, files, _index.Count == 0 ? 0 : _bytes / _index.Count);
+        }
+    }
 
     public static string ContentType(string path) => Path.GetExtension(path).ToLowerInvariant() switch
     {
@@ -264,21 +325,24 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
         try
         {
             List<string> victims;
+            long held;
             lock (_gate)
             {
-                if (_bytes <= cap)
+                held = _index.Where(e => IsHeld(e.Key)).Sum(e => e.Value.Bytes);
+                if (_bytes - held <= cap)
                 {
                     return;
                 }
 
-                victims = _index.Where(e => e.Key != keep).OrderBy(e => e.Value.LastAccessUtc).Select(e => e.Key).ToList();
+                victims = _index.Where(e => e.Key != keep && !IsHeld(e.Key))
+                    .OrderBy(e => e.Value.LastAccessUtc).Select(e => e.Key).ToList();
             }
 
             foreach (var path in victims)
             {
                 lock (_gate)
                 {
-                    if (_bytes <= cap)
+                    if (_bytes - held <= cap)
                     {
                         return;
                     }

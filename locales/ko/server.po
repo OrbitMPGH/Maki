@@ -3198,6 +3198,11 @@ msgstr "모델을 다운로드하지 못했습니다. 이 서버가 GitHub에 �
 msgid "error.upscaling.invalidCache"
 msgstr "캐시 크기는 {min}에서 {max} MB 사이여야 합니다."
 
+#. English: One of the Prepare chapters ahead values is out of range.
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.invalidPrepare"
+msgstr ""
+
 #. English: Threads must be between {min} and {max}.
 #: src/Maki.Api/Controllers/UpscalingController.cs
 #, fuzzy

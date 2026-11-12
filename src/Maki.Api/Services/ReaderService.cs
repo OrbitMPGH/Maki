@@ -18,7 +18,8 @@ public class ReaderService(
     KavitaProgressPusher kavitaPush,
     ReadingSessionService sessions,
     ILogger<ReaderService> logger,
-    ReadingAwareQueueBump? queueBump = null)
+    ReadingAwareQueueBump? queueBump = null,
+    Upscaling.UpscalePrepareService? prepareAhead = null)
 {
     /// <summary>Where a chapter lives inside its backing archive.</summary>
     public record ChapterSlice(
@@ -591,6 +592,7 @@ public class ReaderService(
         {
             await OnChapterCompletedAsync(slice.Series, chapter, row, at, CancellationToken.None);
             await ArmRatingCheckpointAsync(slice.Series, chapter);
+            prepareAhead?.Nudge();
         }
 
         return justCompleted;

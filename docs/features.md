@@ -113,8 +113,10 @@ screen. It is off until a reader turns it on. Library files are never modified.
   strip and one of a few very tall slices only a page or two ahead, within what the device can hold.
 - **Whole chapter.** With a server method, the **Whole chapter** switch keeps the server going
   through every page of the open chapter, not just the window: pages ahead first, then the ones
-  behind. A run of quick pages then finds the server already past them. Leaving the chapter or
-  closing the reader cancels what is left. On Auto it applies while the pages on screen are wanted.
+  behind. A run of quick pages then finds the server already past them. It then carries on through
+  every page of the next chapter, unless that chapter's quality tier is one your skip list names.
+  Leaving the chapter or closing the reader cancels what is left. On Auto it applies while the pages
+  on screen are wanted.
 - **Fallbacks.** A server method shows a browser method on this device while its page is not ready,
   **Balanced** unless you pick **Light**, **Strong** or **None** (the plain page) under "While the
   server works" in the reader settings, or "Fallback" in a reading profile. It stays on for good
@@ -132,6 +134,14 @@ screen. It is off until a reader turns it on. Library files are never modified.
   Upscaled colour pages are saved as JPEG XL, which keeps dark gradients smooth and files smaller;
   browsers that cannot show it (Edge) get the same page as WebP, and **JPEG XL for colour pages**
   turns it off. Grey pages are always WebP.
+- **Prepare chapters ahead (admins).** Under Server upscaling, **Prepare chapters ahead** has the
+  server upscale the next chapter of each series a reader set to Reading and read recently, while
+  nobody is reading. A series counts only when its reader settings have Enhance on **Always** with
+  a server method; Auto depends on the screen and is left out. It starts at the page the reader
+  stopped at and takes the most recently read series first (14 days, 8 series per reader and 1
+  chapter each by default). Prepared pages have their own space (4 GB by default) on top of the
+  cache size and stay until the chapter is read. Readers always come first: a prepared page being
+  made stops as soon as someone opens a page, and goes back to the front of the list.
 - **Privacy.** Nothing leaves your server or your device. Upscaled pages are a disposable cache
   under the config folder, oldest-used dropped first, and they can be cleared at any time.
 

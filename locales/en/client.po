@@ -888,6 +888,10 @@ msgstr "{chapterPhrase} will read from {pickedName}"
 msgid "{chapters, plural, one {{cellDate}: # chapter} other {{cellDate}: # chapters}}"
 msgstr "{chapters, plural, one {{cellDate}: # chapter} other {{cellDate}: # chapters}}"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{chapters, plural, one {# chapter held, {used} of {limit}} other {# chapters held, {used} of {limit}}}"
+msgstr "{chapters, plural, one {# chapter held, {used} of {limit}} other {# chapters held, {used} of {limit}}}"
+
 #: src/components/discover/DiscoverDetailModal.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapters, plural, one {# chapter} other {# chapters}}"
@@ -2823,6 +2827,10 @@ msgstr "{volumesText} + {chaptersText}"
 #: src/pages/discover/ShortlistTab.tsx
 msgid "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
 msgstr "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "{waiting, plural, one {# page still to make} other {# pages still to make}}"
+msgstr "{waiting, plural, one {# page still to make} other {# pages still to make}}"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "{wantedCount} wanted"
@@ -5493,6 +5501,10 @@ msgstr "Chapters of very tall pages open in Continuous"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Chapters per page"
 msgstr "Chapters per page"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Chapters per series"
+msgstr "Chapters per series"
 
 #: src/pages/HealthPage.tsx
 msgid "Chapters read from it: {reads}"
@@ -8995,6 +9007,10 @@ msgstr "From metadata"
 #: src/pages/settings/ReadingCards.tsx
 msgid "From outside your network, replace the host with the address you use there."
 msgstr "From outside your network, replace the host with the address you use there."
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "From the chapter you would open next."
+msgstr "From the chapter you would open next."
 
 #: src/pages/LibraryPage.tsx
 msgid "From the metadata provider, not your own tags"
@@ -15118,6 +15134,14 @@ msgstr "Preferences"
 msgid "Preload"
 msgstr "Preload"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Prepare chapters ahead"
+msgstr "Prepare chapters ahead"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Prepared pages are kept until read, apart from the cache size."
+msgstr "Prepared pages are kept until read, apart from the cache size."
+
 #: src/components/RecommendationModelSwitch.tsx
 msgid "Preparing model…"
 msgstr "Preparing model…"
@@ -15755,6 +15779,10 @@ msgstr "Read to"
 #: src/components/home/ReadingWeeks.tsx
 msgid "Read today to keep it going"
 msgstr "Read today to keep it going"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Read within (days)"
+msgstr "Read within (days)"
 
 #: src/lib/documentTitle.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
@@ -18328,9 +18356,17 @@ msgstr "Series not found"
 msgid "Series page"
 msgstr "Series page"
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Series per reader"
+msgstr "Series per reader"
+
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Series progress"
 msgstr "Series progress"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Series read longer ago are left alone."
+msgstr "Series read longer ago are left alone."
 
 #: src/components/NotificationsSection.tsx
 #: src/pages/LibraryPage.tsx
@@ -19237,6 +19273,10 @@ msgstr "Space"
 #: src/components/NamingTokenModal.tsx
 msgid "Space ( )"
 msgstr "Space ( )"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Space (MB)"
+msgstr "Space (MB)"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Space-separated. Keep email to match existing accounts."
@@ -20169,6 +20209,10 @@ msgstr "The most new chapters queued at once. Bigger batches stay wanted for you
 #: src/components/home/homeSectionDefs.ts
 msgid "The most popular titles in the MangaBaka catalogue."
 msgstr "The most popular titles in the MangaBaka catalogue."
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "The most recently read ones go first."
+msgstr "The most recently read ones go first."
 
 #: src/components/settings/AccountSection.tsx
 msgid "The new password needs at least 10 characters"
@@ -21834,6 +21878,10 @@ msgstr "Upscaled"
 #: src/pages/reader/ServerEnhanceStatus.tsx
 msgid "Upscaled page shown"
 msgstr "Upscaled page shown"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Upscales the next chapters of series set to Reading while nobody is reading, so they open sharp. Only series whose reader settings have Enhance on Always and a server model count; Auto depends on the screen, so it is left out."
+msgstr "Upscales the next chapters of series set to Reading while nobody is reading, so they open sharp. Only series whose reader settings have Enhance on Always and a server model count; Auto depends on the screen, so it is left out."
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Upscaling"

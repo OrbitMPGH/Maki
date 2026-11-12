@@ -3198,6 +3198,11 @@ msgstr "Não foi possível baixar o modelo. Verifique se este servidor consegue 
 msgid "error.upscaling.invalidCache"
 msgstr "O tamanho do cache precisa estar entre {min} e {max} MB."
 
+#. English: One of the Prepare chapters ahead values is out of range.
+#: src/Maki.Api/Controllers/UpscalingController.cs
+msgid "error.upscaling.invalidPrepare"
+msgstr ""
+
 #. English: Threads must be between {min} and {max}.
 #: src/Maki.Api/Controllers/UpscalingController.cs
 #, fuzzy
