@@ -12,8 +12,8 @@ namespace Maki.Api.Services;
 /// end of what is on disk. Called from the progress write path after the write has committed, so
 /// every reader client benefits; it never delays that write and never throws into it.
 /// <para>
-/// Near the end means the chapter being read has at most <see cref="DownloadsAhead"/> downloaded
-/// chapters after it. Only the next <see cref="BumpCount"/> scraper rows of that series move, in
+/// Near the end means at most <see cref="DownloadsAhead"/> downloaded chapters sit between the one
+/// being read and the series' first queued chapter. Only the next <see cref="BumpCount"/> scraper rows of that series move, in
 /// reading order, ahead of everything claimable and without renumbering anyone else. A series is
 /// looked at once per <see cref="Window"/>, and nothing is written when its rows already lead.
 /// </para>
@@ -96,17 +96,6 @@ public class ReadingAwareQueueBump(
             return 0;
         }
 
-        // Distinct numbers, so a second language's copy of a chapter is not another one to read.
-        var ahead = chapters
-            .Where(c => c.HasFile && c.Number is { } n && n > place)
-            .Select(c => c.Number!.Value)
-            .Distinct()
-            .Count();
-        if (ahead > DownloadsAhead)
-        {
-            return 0;
-        }
-
         var candidates = await db.DownloadQueue
             .Where(q => q.SeriesId == seriesId && q.Protocol == AcquisitionProtocol.Scraper &&
                         q.ChapterId != null &&
@@ -119,16 +108,30 @@ public class ReadingAwareQueueBump(
         }
 
         var byId = chapters.ToDictionary(c => c.Id);
-        var next = ChapterOrder.Sort(
+        var nextRows = ChapterOrder.Sort(
                 candidates.Where(q => byId.TryGetValue(q.ChapterId, out var c) && !c.HasFile && c.Number > place),
                 q => byId[q.ChapterId].Number, q => byId[q.ChapterId].Volume, q => q.Id)
             .Take(BumpCount)
-            .Select(q => q.Id)
             .ToList();
-        if (next.Count == 0)
+        if (nextRows.Count == 0)
         {
             return 0;
         }
+
+        // Only what the reader can get through before the first queued gap counts as ahead, and
+        // distinct numbers, so a second language's copy of a chapter is not another one to read.
+        var gap = byId[nextRows[0].ChapterId].Number!.Value;
+        var ahead = chapters
+            .Where(c => c.HasFile && c.Number is { } n && n > place && n < gap)
+            .Select(c => c.Number!.Value)
+            .Distinct()
+            .Count();
+        if (ahead > DownloadsAhead)
+        {
+            return 0;
+        }
+
+        var next = nextRows.Select(q => q.Id).ToList();
 
         var front = await db.DownloadQueue
             .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&

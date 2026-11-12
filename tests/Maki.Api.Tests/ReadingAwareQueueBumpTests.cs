@@ -124,6 +124,18 @@ public class ReadingAwareQueueBumpTests : IDisposable
     }
 
     [Fact]
+    public async Task A_queued_gap_right_after_the_reader_bumps_despite_later_chapters_on_disk()
+    {
+        var series = SeedSeries();
+        var ch = SeedChapters(series, 12, onDisk: [1, 2, 3, 5, 6, 7, 8, 9, 10]);
+        var foreign = Queue(_db.SeedSeries(), SeedChapters(_db.SeedSeries(), 1)[1], 0);
+        var q4 = Queue(series, ch[4], 9);
+
+        Assert.Equal(1, await Bump().BumpAsync(series, ch[3], default));
+        Assert.Equal([q4, foreign], Dispatch());
+    }
+
+    [Fact]
     public async Task Rows_already_leading_the_queue_are_not_written_again()
     {
         var series = SeedSeries();
