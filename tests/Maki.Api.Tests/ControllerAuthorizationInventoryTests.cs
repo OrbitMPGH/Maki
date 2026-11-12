@@ -227,6 +227,7 @@ public sealed class ControllerAuthorizationInventoryTests
         "RecommendationFeedbackController.MutateFranchise",
         "RecommendationFeedbackController.SetSignalOverride",
         "RecommendationFeedbackController.Undo",
+        "SeriesController.CancelBulk",
         "SeriesController.DismissArchiveHint",
         "SeriesController.DismissRateHint",
         "SeriesController.DismissRatingCheckpoint",

@@ -253,6 +253,11 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
     public Task ReadProgressChanged(int userId, int seriesId) =>
         hubContext.Clients.Group(EventsHub.UserGroup(userId)).SendAsync("readProgressChanged", new { seriesId });
 
+    /// <summary>Progress of a queued Library bulk action, to the user who queued it. Errors are already
+    /// worded in that user's language.</summary>
+    public virtual Task SeriesBulkProgress(int userId, object status) =>
+        hubContext.Clients.Group(EventsHub.UserGroup(userId)).SendAsync("seriesBulkProgress", status);
+
     /// <summary>Per-folder progress while a library import runs. Stage is a machine key (see
     /// <see cref="Maki.Api.Services.ImportStage"/>), not display text; this reaches every admin
     /// connection at once and they don't share a language, so the client words it; current/total

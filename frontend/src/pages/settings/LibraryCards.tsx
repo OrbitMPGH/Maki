@@ -19,7 +19,7 @@ import {
   TextInput,
   VisuallyHidden,
 } from '@mantine/core'
-import { IconTrash, IconWand } from '../../lib/icons'
+import { IconPencil, IconTrash, IconWand } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { activeSeries } from '../../lib/series'
@@ -53,6 +53,8 @@ import {
 } from '../../api/hooks'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { FolderBrowserModal } from '../../components/settings/FolderBrowserModal'
+import { RootFolderPathModal } from '../../components/settings/RootFolderPathModal'
+import type { RootFolder } from '../../api/types'
 import { SUPPORTED_LOCALES } from '../../i18n'
 import { MONITOR_OPTIONS } from '../../components/series/SeriesActionsMenu'
 import { DumpProgressBar } from '../../components/MetadataDumpProgress'
@@ -72,6 +74,7 @@ export function RootFoldersSection() {
   const addFolder = useAddRootFolder()
   const deleteFolder = useDeleteRootFolder()
   const [deleting, setDeleting] = useState<{ id: number; path: string } | null>(null)
+  const [editing, setEditing] = useState<RootFolder | null>(null)
 
   const add = () => {
     if (!newPath.trim()) return
@@ -109,14 +112,23 @@ export function RootFoldersSection() {
                     </Table.Td>
                     <Table.Td>{formatBytes(f.freeSpace)}</Table.Td>
                     <Table.Td>
-                      <ActionIcon
-                        variant="subtle"
-                        color="var(--danger)"
-                        onClick={() => setDeleting({ id: f.id, path: f.path })}
-                        aria-label={t`Remove root folder`}
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
+                      <Group gap={4} wrap="nowrap" justify="flex-end">
+                        <ActionIcon
+                          variant="subtle"
+                          onClick={() => setEditing(f)}
+                          aria-label={t`Change root folder path`}
+                        >
+                          <IconPencil size={16} />
+                        </ActionIcon>
+                        <ActionIcon
+                          variant="subtle"
+                          color="var(--danger)"
+                          onClick={() => setDeleting({ id: f.id, path: f.path })}
+                          aria-label={t`Remove root folder`}
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Group>
                     </Table.Td>
                   </Table.Tr>
                 ))}
@@ -154,6 +166,8 @@ export function RootFoldersSection() {
         onSelect={setNewPath}
         initialPath={newPath}
       />
+
+      <RootFolderPathModal folder={editing} onClose={() => setEditing(null)} />
 
       <ConfirmDialog
         opened={deleting !== null}

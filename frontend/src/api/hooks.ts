@@ -4492,6 +4492,41 @@ export function useBrowseFolders(path: string | null) {
   })
 }
 
+/** What pointing a root folder at `path` would find. `busy` and `warnings` are codes the client words. */
+export interface RootFolderPathCheck {
+  id: number
+  oldPath: string
+  path: string
+  series: number
+  foldersFound: number
+  foldersMissing: number
+  missingFolders: string[]
+  busy: ('downloads' | 'imports' | 'moves' | 'scans')[]
+  warnings: ('kavitaPathMap' | 'downloadPathMap' | 'overlapsRoot')[]
+}
+
+/** The edit modal shows a refusal inline. */
+export function useCheckRootFolderPath() {
+  return useMutation({
+    mutationFn: ({ id, path }: { id: number; path: string }) =>
+      api<RootFolderPathCheck>(`/rootfolder/${id}/path/check`, { method: 'POST', body: JSON.stringify({ path }) }),
+    meta: { silent: true },
+  })
+}
+
+export function useChangeRootFolderPath() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, path }: { id: number; path: string }) =>
+      api<RootFolder>(`/rootfolder/${id}/path`, { method: 'PUT', body: JSON.stringify({ path }) }),
+    meta: { silent: true },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['rootfolders'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
+  })
+}
+
 export function useDeleteRootFolder() {
   const queryClient = useQueryClient()
   return useMutation({
