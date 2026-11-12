@@ -76,5 +76,10 @@
     "workerDirectory": [
       "public"
     ]
+  },
+  "overrides": {
+    "@joshwooding/vite-plugin-react-docgen-typescript": {
+      "glob": "^14.0.6"
+    }
   }
 }
