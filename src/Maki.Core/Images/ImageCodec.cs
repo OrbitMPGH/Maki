@@ -415,16 +415,63 @@ public static class ImageCodec
     internal const int UpscaledGreyQuality = 85;
 
     /// <summary>
-    /// Encodes an upscaled page from interleaved 8-bit RGB: WebP, or JPEG q90 when either edge is over
-    /// <see cref="MaxWebpEdge"/>. A <paramref name="grey"/> page is saved with one band. The caller
-    /// decides that from the source page: models tint flat screentone, so the output can fail the test.
-    /// Sharp YUV stays off: the chroma comes from the smoothed, upsampled source, and it doubled the encode
-    /// time and native peak for no smaller file.
+    /// JPEG XL for upscaled colour pages: at the same SSIMULACRA2 as WebP q88 effort 2 it is 14% smaller
+    /// and 12% faster on Infinite Mage pages, and it keeps dark gradients smooth where WebP turns them
+    /// into 4 to 8 px blocks. Grey pages stay WebP, which was 20% smaller there at the same score.
     /// </summary>
-    public static UpscaledImage EncodeUpscaled(byte[] rgb, int width, int height, bool grey) =>
-        grey ? EncodeUpscaledGrey(UpscalePixels.ToSingleBand(rgb), width, height) : EncodeBands(rgb, width, height, 3);
+    internal const float UpscaledJpegXlDistance = 1.5f;
 
-    /// <summary>Encodes an upscaled grey page from one 8-bit band per pixel, as <see cref="EncodeUpscaled(byte[], int, int, bool)"/>.</summary>
+    internal const int UpscaledJpegXlEffort = 3;
+
+    /// <summary>
+    /// A JPEG XL encode holds 25 to 34 bytes a pixel against WebP's 5 to 7, so bigger outputs (a 16 MP
+    /// source upscales to 64 MP) stay WebP or JPEG. 12 MP covers a 1880 x 4000 colour page and a
+    /// 1440 x 8000 webtoon slice at about 400 MB.
+    /// </summary>
+    public const long MaxJpegXlPixels = 12_000_000;
+
+    /// <summary>
+    /// Encodes an upscaled page from interleaved 8-bit RGB: JPEG XL for a colour page when
+    /// <paramref name="jpegXl"/> is set, libjxl is present and the page is at most
+    /// <see cref="MaxJpegXlPixels"/>; otherwise WebP, or JPEG q90 when either edge is over
+    /// <see cref="MaxWebpEdge"/>. A failed JPEG XL encode falls back to WebP. A <paramref name="grey"/>
+    /// page is saved with one band. The caller decides that from the source page: models tint flat
+    /// screentone, so the output can fail the test. Sharp YUV stays off: the chroma comes from the
+    /// smoothed, upsampled source, and it doubled the encode time and native peak for no smaller file.
+    /// </summary>
+    public static UpscaledImage EncodeUpscaled(byte[] rgb, int width, int height, bool grey, bool jpegXl = false)
+    {
+        if (grey)
+        {
+            return EncodeUpscaledGrey(UpscalePixels.ToSingleBand(rgb), width, height);
+        }
+
+        if (jpegXl && (long)width * height <= MaxJpegXlPixels && JpegXl.IsAvailable)
+        {
+            try
+            {
+                return new UpscaledImage(JpegXl.Encode(rgb, width, height, 3, UpscaledJpegXlDistance, UpscaledJpegXlEffort),
+                    "jxl", width, height, 3);
+            }
+            catch (JpegXlException)
+            {
+            }
+        }
+
+        return EncodeBands(rgb, width, height, 3);
+    }
+
+    /// <summary>
+    /// A cached JPEG XL page as the WebP or JPEG <see cref="EncodeUpscaled"/> would have written, for a
+    /// browser that cannot decode JPEG XL. Throws <see cref="JpegXlException"/> when it does not decode.
+    /// </summary>
+    public static UpscaledImage TranscodeUpscaledJpegXl(byte[] jxl)
+    {
+        var (pixels, width, height, bands) = JpegXl.Decode(jxl, MaxJpegXlPixels);
+        return EncodeBands(pixels, width, height, bands);
+    }
+
+    /// <summary>Encodes an upscaled grey page from one 8-bit band per pixel, as <see cref="EncodeUpscaled(byte[], int, int, bool, bool)"/>.</summary>
     public static UpscaledImage EncodeUpscaledGrey(byte[] band, int width, int height) =>
         EncodeBands(band, width, height, 1);
 

@@ -521,6 +521,9 @@ public static class SettingKeys
     /// <summary>Cap of the upscaled page cache in MB. Unset is 1024.</summary>
     public const string UpscalingCacheMb = "library.upscaling.cachemb";
 
+    /// <summary>"false" keeps upscaled colour pages in WebP. Unset is on, which takes effect only where libjxl is installed.</summary>
+    public const string UpscalingJpegXl = "library.upscaling.jpegxl";
+
     /// <summary>Where to read the model manifest instead of the GitHub release: an http(s) or file URL, or a path.</summary>
     public const string UpscalingManifestUrl = "library.upscaling.manifesturl";
 

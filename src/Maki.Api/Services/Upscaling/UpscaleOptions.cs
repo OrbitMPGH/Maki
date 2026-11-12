@@ -9,7 +9,8 @@ public sealed record UpscaleOptions(
     IReadOnlyList<UpscaleModelId> Models,
     int Threads,
     int CacheMb,
-    string? ManifestUrl)
+    string? ManifestUrl,
+    bool JpegXl = true)
 {
     public const int DefaultCacheMb = 1024;
     public const int MinCacheMb = 128;
@@ -36,7 +37,8 @@ public sealed record UpscaleOptions(
             models,
             Int(await settings.GetAsync(SettingKeys.UpscalingThreads, ct), DefaultThreads, 1, Math.Max(Environment.ProcessorCount, 1)),
             Int(await settings.GetAsync(SettingKeys.UpscalingCacheMb, ct), DefaultCacheMb, MinCacheMb, MaxCacheMb),
-            string.IsNullOrEmpty(manifest) ? null : manifest);
+            string.IsNullOrEmpty(manifest) ? null : manifest,
+            await settings.GetAsync(SettingKeys.UpscalingJpegXl, ct) != "false");
     }
 
     private static int Int(string? raw, int fallback, int min, int max) =>

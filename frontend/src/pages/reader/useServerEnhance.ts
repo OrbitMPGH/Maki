@@ -233,7 +233,10 @@ export function useServerEnhance(
       for (const page of windowKey.split(',').map(Number)) {
         if (SETTLED.has(statesRef.current.get(page))) continue
         void serverEnhancedUrl(chapterId, page, model, pageVersion)
-          .then((url) => trackedFetch(url, { cache: 'no-store', credentials: 'same-origin', signal: controller.signal }))
+          .then((url) =>
+            // HEAD: a page cached as JPEG XL would otherwise be converted to WebP just to be thrown away.
+            trackedFetch(url, { method: 'HEAD', cache: 'no-store', credentials: 'same-origin', signal: controller.signal }),
+          )
           .then((response) => {
             void response.body?.cancel()
             if (response.ok) merge(scope, [{ page, state: 'ready' }])

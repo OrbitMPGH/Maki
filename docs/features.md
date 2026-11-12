@@ -129,6 +129,9 @@ screen. It is off until a reader turns it on. Library files are never modified.
   non-commercial use only; the per-model licences are in
   [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). A page takes seconds of server CPU, a
   few times longer on a NAS, so the queue is capped per reader and shared fairly between readers.
+  Upscaled colour pages are saved as JPEG XL, which keeps dark gradients smooth and files smaller;
+  browsers that cannot show it (Edge) get the same page as WebP, and **JPEG XL for colour pages**
+  turns it off. Grey pages are always WebP.
 - **Privacy.** Nothing leaves your server or your device. Upscaled pages are a disposable cache
   under the config folder, oldest-used dropped first, and they can be cleared at any time.
 
