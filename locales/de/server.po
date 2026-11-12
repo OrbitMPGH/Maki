@@ -5789,6 +5789,11 @@ msgstr "Der Inhalt der Datei hat sich geändert oder sie wurde nicht vollständi
 msgid "error.health.operationActive"
 msgstr "Eine andere Aktion für diese Datei läuft gerade."
 
+#. English: This job is already running.
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.jobRunning"
+msgstr ""
+
 #. English: Downloads or imports for this series are in progress.
 #: src/Maki.Api/Services/HealthOperationService.cs
 #, fuzzy

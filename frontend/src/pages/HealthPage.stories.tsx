@@ -18,6 +18,7 @@ import {
   sizeMismatchDetail,
   spareDuplicateDetail,
   runningScan,
+  runningWork,
   unlinkedNoSeries,
   unreadableDetail,
   unlinkedUnrecognized,
@@ -52,6 +53,38 @@ export const Healthy: Story = {
       'href',
       '/settings?tab=system&s=health',
     )
+  },
+}
+
+export const RunningWork: Story = {
+  parameters: { msw: [http.get(api('/health/running'), () => HttpResponse.json(runningWork))] },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('Refresh metadata', { selector: '.health-running-row *' })).toBeVisible()
+    await expect(await canvas.findByText('Preparing chapters ahead')).toBeVisible()
+    await expect(await canvas.findByText('Lighthouse Keeper/Lighthouse Keeper v03.cbz')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Pause pass' })).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Pause downloads' })).toBeVisible()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Stop' }))
+    await waitFor(() => expect(canvas.getByRole('button', { name: 'Stopping' })).toBeDisabled())
+  },
+}
+
+export const NothingRunning: Story = {
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Nothing is running in the background.')).toBeVisible()
+  },
+}
+
+export const ScheduledJobs: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('Scheduled jobs')).toBeVisible()
+    await expect(await canvas.findByText('Housekeeping')).toBeVisible()
+    await expect(canvas.queryByText('Import completed downloads')).toBeNull()
+    await userEvent.click(await canvas.findByRole('button', { name: 'Show all 9 jobs' }))
+    await expect(await canvas.findByText('Import completed downloads')).toBeVisible()
+    const row = (await canvas.findByText('Housekeeping')).closest('tr') as HTMLElement
+    await userEvent.click(within(row).getByRole('button', { name: 'Run now' }))
+    await expect(await within(canvas.getByText('Housekeeping').ownerDocument.body).findByText('Started Housekeeping')).toBeVisible()
   },
 }
 

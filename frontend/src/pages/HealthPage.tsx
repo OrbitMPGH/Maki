@@ -24,6 +24,7 @@ import {
   VisuallyHidden,
 } from '@mantine/core'
 import {
+  IconActivity,
   IconAlertOctagon,
   IconAlertTriangle,
   IconBooks,
@@ -32,6 +33,7 @@ import {
   IconCloudOff,
   IconInfoCircle,
   IconX,
+  IconClock,
   IconClockPlay,
   IconDatabase,
   IconDownload,
@@ -40,6 +42,9 @@ import {
   IconLink,
   IconPlugConnected,
   IconPhotoScan,
+  IconPlayerPause,
+  IconPlayerPlay,
+  IconPlayerStop,
   IconRefresh,
   IconScan,
   IconServer,
@@ -50,8 +55,10 @@ import {
 } from '../lib/icons'
 import { Fragment, useMemo, useState, type ReactNode } from 'react'
 import { useDebouncedValue } from '@mantine/hooks'
+import { useQueryClient } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useImageCache, useRebuildImageCache } from '../api/hooks'
+import { useImageCache, usePauseQueue, useRebuildImageCache, useResumeQueue } from '../api/hooks'
+import { usePausePageConversion } from '../api/pageConversion'
 import { chapterRangeLabel } from '../api/requests'
 import { notifications } from '../lib/toast'
 import {
@@ -65,6 +72,9 @@ import {
   type HealthFilesPage,
   type HealthOperation,
   type HealthOverview,
+  type RunningItem,
+  type RunningWork,
+  type ScheduledJob,
   type MatchCounterpart,
   type MissingSummary,
   type MoveEvidence,
@@ -88,12 +98,13 @@ import { StatusDot } from '../components/ui/StatusDot'
 import { SignalStatus } from './discover/SignalStatus'
 import { MonoValue } from '../components/ui/MonoValue'
 import { SeriesCell } from '../components/SeriesCell'
-import { formatBytes, formatDateTime, formatNumber, formatTime, formatWeekdayDate } from '../format'
+import { formatBytes, formatDateTime, formatNumber, formatPercent, formatTime, formatWeekdayDate } from '../format'
 import { useLabel } from '../i18n-context'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { relativeTime } from '../components/ui/time'
 
 /** Select value standing for "no pinned source": let the series' priority order decide. */
 const AUTOMATIC = 'automatic'
@@ -582,7 +593,9 @@ export default function HealthPage() {
 
         <Tabs.Panel value="overview">
           <Stack gap="xl">
+            <RunningPanel />
             <ChecksPanel checks={overview.data?.checks ?? []} loading={overview.isPending} run={run} />
+            <ScheduledPanel />
             <CachePanel />
           </Stack>
         </Tabs.Panel>
@@ -3597,6 +3610,436 @@ function OperationOutcome({ detail }: { detail: OperationDetail }) {
           <Trans>Requested {requested}</Trans>
         )}
       </Text>
+    </Stack>
+  )
+}
+
+const BULK_LABEL: Record<string, MessageDescriptor> = {
+  refresh: msg`Refreshing series`,
+  rescan: msg`Rescanning series files`,
+  refreshMetadata: msg`Refreshing series metadata`,
+  searchMissing: msg`Searching for missing chapters`,
+  rename: msg`Renaming series`,
+  move: msg`Moving series`,
+}
+
+/** Where a row's behaviour is set, when there is one place for it. */
+const RUNNING_LINK: Partial<Record<RunningItem['kind'], string>> = {
+  enhance: '/settings?tab=library&s=upscaling',
+  prepareAhead: '/settings?tab=library&s=upscaling',
+  pageConversion: '/settings?tab=library&s=page-conversion',
+  downloads: '/activity',
+}
+
+function RunningRow({ item }: { item: RunningItem }) {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
+  const active = item.active ?? 0
+  const waiting = item.waiting ?? 0
+  const done = item.done ?? 0
+
+  let title: ReactNode
+  const facts: ReactNode[] = []
+  switch (item.kind) {
+    case 'job':
+      title = item.label
+      if (item.total) {
+        const doneText = formatNumber(done)
+        const totalText = formatNumber(item.total)
+        facts.push(<Trans key="progress">{doneText} of {totalText}</Trans>)
+      }
+      break
+    case 'enhance':
+      title = t`Enhancing pages for readers`
+      if (active > 0) facts.push(<Plural key="active" value={active} one="# page in progress" other="# pages in progress" />)
+      if (waiting > 0) facts.push(<Plural key="waiting" value={waiting} one="# page waiting" other="# pages waiting" />)
+      break
+    case 'prepareAhead':
+      title = t`Preparing chapters ahead`
+      if (active > 0) facts.push(<Plural key="active" value={active} one="# page in progress" other="# pages in progress" />)
+      if (waiting > 0) facts.push(<Plural key="waiting" value={waiting} one="# page left" other="# pages left" />)
+      break
+    case 'pageConversion':
+      title = t`Converting pages`
+      if (item.done != null)
+        facts.push(<Plural key="done" value={done} one="# file done this pass" other="# files done this pass" />)
+      if (waiting > 0) facts.push(<Plural key="waiting" value={waiting} one="# file left" other="# files left" />)
+      break
+    case 'downloads':
+      title = t`Downloading chapters`
+      facts.push(<Plural key="active" value={active} one="# in progress" other="# in progress" />)
+      if (waiting > 0) facts.push(<Plural key="waiting" value={waiting} one="# queued" other="# queued" />)
+      break
+    case 'sourceMatch':
+      title = t`Matching series to their sources`
+      facts.push(<Plural key="active" value={active} one="# series" other="# series" />)
+      break
+    case 'bulk': {
+      const label = item.detail ? BULK_LABEL[item.detail] : undefined
+      title = label ? renderLabel(label) : t`Bulk series edit`
+      if (item.total) {
+        const doneText = formatNumber(done)
+        const totalText = formatNumber(item.total)
+        facts.push(<Trans key="progress">{doneText} of {totalText} series</Trans>)
+      }
+      break
+    }
+  }
+  if (item.startedAtUtc) {
+    const time = formatTime(item.startedAtUtc)
+    facts.push(<Trans key="started">Started {time}</Trans>)
+  }
+  const link = RUNNING_LINK[item.kind]
+
+  return (
+    <div className="health-running-row">
+      <StatusDot tone="info" live />
+      <div style={{ minWidth: 0 }}>
+        <Text size="sm" c="var(--ink-hi)" fw={600}>
+          {title}
+        </Text>
+        {item.kind === 'pageConversion' && item.detail && (
+          <Text size="xs" c="var(--ink-3)" mt={2} truncate="start" title={item.detail}>
+            {item.detail}
+          </Text>
+        )}
+        {facts.length > 0 && (
+          <Text component="div" size="xs" c="var(--ink-3)" mt={2} className="tnum">
+            <MetaList items={facts} />
+          </Text>
+        )}
+      </div>
+      <Group gap={4} wrap="nowrap" className="health-running-actions">
+        {link && (
+          <Button component={Link} to={link} size="compact-xs" variant="subtle" color="var(--ink-3)">
+            {item.kind === 'downloads' ? <Trans>Open activity</Trans> : <Trans>Settings</Trans>}
+          </Button>
+        )}
+        {item.control && <RunningControl item={item} />}
+      </Group>
+    </div>
+  )
+}
+
+/**
+ * Stop for a job or a bulk edit, pause for the conversion pass or the download queue. A stopped job
+ * ends at its next check and runs again on its own schedule, so the row stays until the poll drops it.
+ */
+function RunningControl({ item }: { item: RunningItem }) {
+  const qc = useQueryClient()
+  const stop = useHealthAction()
+  const pauseConversion = usePausePageConversion()
+  const pauseQueue = usePauseQueue()
+  const resumeQueue = useResumeQueue()
+  const [stopping, setStopping] = useState(false)
+  const settled = {
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['health-workspace', '/running'] }),
+    onError: (error: Error) => notifications.show({ color: 'var(--danger)', message: error.message }),
+  }
+
+  if (item.control === 'stop' && item.stopId) {
+    const path = item.kind === 'bulk' ? `/running/bulk/${item.stopId}/stop` : `/running/jobs/${encodeURIComponent(item.stopId)}/stop`
+    return (
+      <Button
+        size="compact-xs"
+        variant="default"
+        leftSection={<IconPlayerStop size={16} />}
+        loading={stop.isPending}
+        disabled={stopping}
+        onClick={() => stop.mutate({ path }, { ...settled, onSuccess: () => setStopping(true) })}
+      >
+        {stopping ? <Trans>Stopping</Trans> : <Trans>Stop</Trans>}
+      </Button>
+    )
+  }
+  if (item.control === 'pause' && item.kind === 'pageConversion') {
+    return (
+      <Button
+        size="compact-xs"
+        variant="default"
+        leftSection={<IconPlayerPause size={16} />}
+        loading={pauseConversion.isPending}
+        onClick={() => pauseConversion.mutate(undefined, settled)}
+      >
+        <Trans>Pause pass</Trans>
+      </Button>
+    )
+  }
+  if (item.kind === 'downloads' && item.control === 'pause') {
+    return (
+      <Button
+        size="compact-xs"
+        variant="default"
+        leftSection={<IconPlayerPause size={16} />}
+        loading={pauseQueue.isPending}
+        onClick={() => pauseQueue.mutate({}, settled)}
+      >
+        <Trans>Pause downloads</Trans>
+      </Button>
+    )
+  }
+  if (item.kind === 'downloads' && item.control === 'resume') {
+    return (
+      <Button
+        size="compact-xs"
+        variant="default"
+        leftSection={<IconPlayerPlay size={16} />}
+        loading={resumeQueue.isPending}
+        onClick={() => resumeQueue.mutate(undefined, settled)}
+      >
+        <Trans>Resume downloads</Trans>
+      </Button>
+    )
+  }
+  return null
+}
+
+/**
+ * What Maki is busy with right now, so a busy processor or a large memory figure has a name.
+ * Polls quickly while something runs so the counts move, and slower when idle.
+ */
+function RunningPanel() {
+  const { t } = useLingui()
+  const running = useHealthData<RunningWork>('/running', true, (data) => (data?.items.length ? 3000 : 10_000))
+  const items = running.data?.items ?? []
+  const process = running.data?.process
+  const cores = process?.cores ?? 0
+  const facts: [string, ReactNode, ReactNode][] = [
+    [
+      t`Processor`,
+      process && formatPercent(process.cpuPercent / 100),
+      process && <Plural key="cores" value={cores} one="of # core" other="of # cores" />,
+    ],
+    [t`Memory`, process && formatBytes(process.memoryBytes), null],
+    [t`Tasks`, process && formatNumber(items.length), null],
+  ]
+
+  return (
+    <Stack gap="sm">
+      <SectionHeader icon={IconActivity} title={t`Running now`} count={items.length > 0 ? items.length : undefined} />
+      <Panel p="lg">
+        <div className="health-facts">
+          {facts.map(([label, fact, hint]) => (
+            <div key={label}>
+              <Text size="xs" c="var(--ink-4)">
+                {label}
+              </Text>
+              {fact ? (
+                <Text size="sm" c="var(--ink-2)" fw={600} className="tnum" mt={2}>
+                  {fact}
+                  {hint && (
+                    <Text span size="xs" c="var(--ink-4)" fw={400} ml={6}>
+                      {hint}
+                    </Text>
+                  )}
+                </Text>
+              ) : (
+                <Skeleton h={20} w={64} mt={2} />
+              )}
+            </div>
+          ))}
+        </div>
+        {running.error ? (
+          <Note tone="danger" mt>
+            {running.error.message}
+          </Note>
+        ) : running.data && items.length === 0 ? (
+          <Text size="sm" c="var(--ink-3)" mt="md">
+            <Trans>Nothing is running in the background.</Trans>
+          </Text>
+        ) : (
+          <div className="health-running-list">
+            {items.map((item, i) => (
+              <RunningRow key={`${item.kind}-${item.label ?? item.detail ?? ''}-${i}`} item={item} />
+            ))}
+          </div>
+        )}
+      </Panel>
+    </Stack>
+  )
+}
+
+/** Jobs repeating this often are housekeeping ticks; they stay out of the short list. */
+const FREQUENT_SECONDS = 5 * 60
+/** How many upcoming jobs the short list shows. */
+const SCHEDULED_SHORT = 8
+
+function RepeatLabel({ seconds }: { seconds: number }) {
+  if (seconds % 86_400 === 0) {
+    const days = seconds / 86_400
+    return <Plural value={days} one="Every day" other="Every # days" />
+  }
+  if (seconds % 3600 === 0) {
+    const hours = seconds / 3600
+    return <Plural value={hours} one="Every hour" other="Every # hours" />
+  }
+  if (seconds % 60 === 0) {
+    const minutes = seconds / 60
+    return <Plural value={minutes} one="Every minute" other="Every # minutes" />
+  }
+  return <Plural value={seconds} one="Every second" other="Every # seconds" />
+}
+
+function NextRun({ at }: { at: string }) {
+  const { t } = useLingui()
+  const soon = new Date(at).getTime() - Date.now() < 60_000
+  return (
+    <Tooltip label={formatDateTime(at)} withArrow>
+      <span>{soon ? t`in under a minute` : relativeTime(at)}</span>
+    </Tooltip>
+  )
+}
+
+/**
+ * Every Quartz job with its last and next run, and a way to start one now. A job that checks its own
+ * hour or switch can still find nothing to do when started by hand.
+ */
+function ScheduledPanel() {
+  const { t } = useLingui()
+  const qc = useQueryClient()
+  const scheduled = useHealthData<ScheduledJob[]>('/scheduled', true, 15_000)
+  const run = useHealthAction()
+  const [showAll, setShowAll] = useState(false)
+  const jobs = scheduled.data ?? []
+  const frequent = (job: ScheduledJob) => job.intervalSeconds != null && job.intervalSeconds <= FREQUENT_SECONDS
+  const sorted = [...jobs].sort(
+    (a, b) =>
+      Number(b.running) - Number(a.running) ||
+      (a.nextRunUtc ?? '￿').localeCompare(b.nextRunUtc ?? '￿') ||
+      a.label.localeCompare(b.label),
+  )
+  const short = sorted.filter((job) => job.running || !frequent(job)).slice(0, SCHEDULED_SHORT)
+  const shown = showAll ? sorted : short
+  const total = jobs.length
+  const pendingKey = run.isPending ? run.variables?.path : undefined
+
+  const start = (job: ScheduledJob) => {
+    const label = job.label
+    run.mutate(
+      { path: `/scheduled/${encodeURIComponent(job.group)}/${encodeURIComponent(job.name)}/run` },
+      {
+        onSuccess: () => {
+          notifications.show({ color: 'var(--ok)', message: t`Started ${label}` })
+          void qc.invalidateQueries({ queryKey: ['health-workspace', '/running'] })
+        },
+        onError: (error) => notifications.show({ color: 'var(--danger)', message: error.message }),
+      },
+    )
+  }
+
+  return (
+    <Stack gap="sm">
+      <SectionHeader
+        icon={IconClock}
+        title={t`Scheduled jobs`}
+        count={jobs.length > 0 ? jobs.length : undefined}
+        action={
+          total > short.length && (
+            <Button size="compact-sm" variant="subtle" color="var(--ink-3)" onClick={() => setShowAll((v) => !v)}>
+              {showAll ? <Trans>Show fewer</Trans> : <Plural value={total} one="Show all # job" other="Show all # jobs" />}
+            </Button>
+          )
+        }
+      />
+      {scheduled.error ? (
+        <Note tone="danger">{scheduled.error.message}</Note>
+      ) : scheduled.isPending ? (
+        <TableSkeleton columns={5} rows={6} />
+      ) : (
+        <Panel p={0} className="table-panel">
+          <Table.ScrollContainer minWidth={760}>
+            <Table className="panel-table" layout="fixed">
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>
+                    <Trans>Job</Trans>
+                  </Table.Th>
+                  <Table.Th w={170}>
+                    <Trans>Repeats</Trans>
+                  </Table.Th>
+                  <Table.Th w={140}>
+                    <Trans>Last run</Trans>
+                  </Table.Th>
+                  <Table.Th w={160}>
+                    <Trans>Next run</Trans>
+                  </Table.Th>
+                  <Table.Th w={124}>
+                    <VisuallyHidden>
+                      <Trans>Actions</Trans>
+                    </VisuallyHidden>
+                  </Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {shown.map((job) => {
+                  const path = `/scheduled/${encodeURIComponent(job.group)}/${encodeURIComponent(job.name)}/run`
+                  return (
+                    <Table.Tr key={`${job.group}.${job.name}`}>
+                      <Table.Td>
+                        <Text size="sm" c="var(--ink-hi)" fw={600} truncate>
+                          {job.label}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm" c="var(--ink-3)" truncate>
+                          {job.intervalSeconds ? <RepeatLabel seconds={job.intervalSeconds} /> : <Trans>On demand</Trans>}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm" c={job.lastFailed ? 'var(--danger)' : 'var(--ink-3)'} truncate>
+                          {job.lastRunUtc ? (
+                            <Tooltip
+                              label={
+                                job.lastFailed
+                                  ? t`Failed at ${formatDateTime(job.lastRunUtc)}`
+                                  : formatDateTime(job.lastRunUtc)
+                              }
+                              withArrow
+                            >
+                              <span>{relativeTime(job.lastRunUtc)}</span>
+                            </Tooltip>
+                          ) : (
+                            <Trans>Not yet</Trans>
+                          )}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td>
+                        <Text size="sm" c="var(--ink-3)" truncate>
+                          {job.running ? (
+                            <StatusDot tone="info" live>
+                              <Trans>Running</Trans>
+                            </StatusDot>
+                          ) : job.paused ? (
+                            <Trans>Paused</Trans>
+                          ) : job.nextRunUtc ? (
+                            <NextRun at={job.nextRunUtc} />
+                          ) : (
+                            '-'
+                          )}
+                        </Text>
+                      </Table.Td>
+                      <Table.Td ta="right">
+                        {!job.running && (
+                          <Button
+                            size="compact-xs"
+                            variant="default"
+                            leftSection={<IconPlayerPlay size={16} />}
+                            loading={pendingKey === path}
+                            disabled={run.isPending && pendingKey !== path}
+                            onClick={() => start(job)}
+                          >
+                            <Trans>Run now</Trans>
+                          </Button>
+                        )}
+                      </Table.Td>
+                    </Table.Tr>
+                  )
+                })}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
+        </Panel>
+      )}
     </Stack>
   )
 }

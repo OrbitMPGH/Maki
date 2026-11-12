@@ -124,6 +124,40 @@ export interface HealthScan {
   error?: string
 }
 
+/** One piece of background work in progress (`GET health/running`). `label` is set only for a scheduled job. */
+export interface RunningItem {
+  kind: 'job' | 'enhance' | 'prepareAhead' | 'pageConversion' | 'downloads' | 'bulk' | 'sourceMatch'
+  label?: string | null
+  startedAtUtc?: string | null
+  active?: number | null
+  done?: number | null
+  total?: number | null
+  waiting?: number | null
+  detail?: string | null
+  /** What the page may offer: stop (with `stopId`), pause or resume. Null for work nobody should cut short. */
+  control?: 'stop' | 'pause' | 'resume' | null
+  stopId?: string | null
+}
+
+/** A Quartz job (`GET health/scheduled`). `intervalSeconds` is null for a job that only runs when started. */
+export interface ScheduledJob {
+  group: string
+  name: string
+  label: string
+  nextRunUtc: string | null
+  lastRunUtc: string | null
+  intervalSeconds: number | null
+  running: boolean
+  paused: boolean
+  /** The job's health row says its last run failed. */
+  lastFailed: boolean
+}
+
+export interface RunningWork {
+  process: { cpuPercent: number; memoryBytes: number; cores: number }
+  items: RunningItem[]
+}
+
 export interface HealthOverview {
   checks: HealthCheck[]
   openFindings: number
