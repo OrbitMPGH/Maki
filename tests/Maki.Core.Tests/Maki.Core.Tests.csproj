@@ -23,4 +23,6 @@
     <ProjectReference Include="..\..\src\Maki.Core\Maki.Core.csproj" />
   </ItemGroup>
 
+  <Import Project="..\..\distribution\libjxl\LibJxl.targets" />
+
 </Project>

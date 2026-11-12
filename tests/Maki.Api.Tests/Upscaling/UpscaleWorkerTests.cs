@@ -77,7 +77,7 @@ public sealed class UpscaleWorkerTests : IDisposable
 
         var cached = _cache.TryGet(Item(1).Key);
         Assert.NotNull(cached);
-        Assert.EndsWith(".span-s.g6.webp", cached);
+        Assert.EndsWith(Maki.Core.Images.JpegXl.IsAvailable ? ".span-s.g6.jxl" : ".span-s.g6.webp", cached);
         Assert.Equal(
             [(1, 7, 1, "span-s", "working"), (1, 7, 1, "span-s", "ready"), (2, 7, 1, "span-s", "working"), (2, 7, 1, "span-s", "ready")],
             _broadcaster.Sent.OrderBy(s => s.UserId));

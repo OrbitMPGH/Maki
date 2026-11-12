@@ -9,6 +9,10 @@ export interface UpscalingSettings {
   threads: number
   cacheMb: number
   maxThreads?: number
+  /** Upscaled colour pages are stored as JPEG XL. Unset on an older server. */
+  jpegXl?: boolean
+  /** Whether the server has libjxl; without it `jpegXl` changes nothing. */
+  jpegXlAvailable?: boolean
 }
 
 export interface UpscaleCatalogEntry {

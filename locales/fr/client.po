@@ -11744,6 +11744,10 @@ msgstr "JPEG"
 msgid "JPEG pages are kept as they are at Lossless."
 msgstr "Les pages JPEG restent telles quelles en Sans perte."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "JPEG XL for colour pages"
+msgstr ""
+
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
 msgid "JPEG, PNG, GIF or WebP, up to 10 MB."
@@ -15142,6 +15146,10 @@ msgstr "Non disponible"
 #, fuzzy
 msgid "Not available offline"
 msgstr "Indisponible hors ligne"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Not available: this build of Maki has no JPEG XL library, so colour pages are WebP."
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #, fuzzy
@@ -21911,6 +21919,10 @@ msgstr "Lent"
 #, fuzzy
 msgid "Slower ([)"
 msgstr "Plus lent ([)"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Smaller files and smooth dark gradients where WebP shows blocks. Browsers that can't show JPEG XL, such as Edge, get WebP. Grey pages are always WebP."
+msgstr ""
 
 #: src/components/pageconversion/FormatStep.tsx
 #, fuzzy

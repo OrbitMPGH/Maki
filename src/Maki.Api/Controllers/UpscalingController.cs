@@ -24,7 +24,9 @@ public class UpscalingController(
     ILocalizer localizer) : ControllerBase
 {
     /// <param name="MaxThreads">The highest thread count the server accepts (its processor count).</param>
-    public record SettingsDto(bool Enabled, IReadOnlyList<string> Models, int Threads, int CacheMb, int MaxThreads);
+    /// <param name="JpegXlAvailable">Whether libjxl loaded, without which <paramref name="JpegXl"/> changes nothing.</param>
+    public record SettingsDto(
+        bool Enabled, IReadOnlyList<string> Models, int Threads, int CacheMb, int MaxThreads, bool JpegXl, bool JpegXlAvailable);
 
     /// <param name="Status">"missing", "downloading", "ready" or "failed".</param>
     /// <param name="Error">Why the download failed, in the caller's language. Null unless failed.</param>
@@ -39,7 +41,8 @@ public class UpscalingController(
 
     public record StatusDto(SettingsDto Settings, IReadOnlyList<CatalogEntryDto> Catalog, CacheDto Cache, QueueDto Queue);
 
-    public record SaveSettingsRequest(bool Enabled, IReadOnlyList<string>? Models, int Threads, int CacheMb);
+    /// <param name="JpegXl">Null leaves the stored value alone, for a client that predates the setting.</param>
+    public record SaveSettingsRequest(bool Enabled, IReadOnlyList<string>? Models, int Threads, int CacheMb, bool? JpegXl = null);
 
     public record BenchmarkRequest(string? Model);
 
@@ -79,6 +82,10 @@ public class UpscalingController(
         await settings.SetAsync(SettingKeys.UpscalingModels, string.Join(',', models.Select(m => m.Value)), ct);
         await settings.SetAsync(SettingKeys.UpscalingThreads, request.Threads.ToString(CultureInfo.InvariantCulture), ct);
         await settings.SetAsync(SettingKeys.UpscalingCacheMb, request.CacheMb.ToString(CultureInfo.InvariantCulture), ct);
+        if (request.JpegXl is { } jpegXl)
+        {
+            await settings.SetAsync(SettingKeys.UpscalingJpegXl, jpegXl ? "true" : "false", ct);
+        }
 
         foreach (var id in models.Where(m => firstSave || !before.Models.Contains(m)))
         {
@@ -200,7 +207,7 @@ public class UpscalingController(
         var snapshot = queue.Snapshot();
         return new StatusDto(
             new SettingsDto(options.Enabled, options.Models.Select(m => m.Value).ToList(), options.Threads, options.CacheMb,
-                Math.Max(Environment.ProcessorCount, 1)),
+                Math.Max(Environment.ProcessorCount, 1), options.JpegXl, Maki.Core.Images.JpegXl.IsAvailable),
             entries,
             new CacheDto(bytes, files),
             new QueueDto(snapshot.Pending, snapshot.Working));

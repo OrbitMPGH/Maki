@@ -120,4 +120,6 @@ export const imageHandlers = (titleFor: (seed: string) => string = (seed) => see
   http.get(api('/reader/chapter/:id/thumb/:n'), ({ params }) => pageSvg(String(params.id), String(params.n), titleFor)),
   // A server upscale: the same page, so a swap is visible only through the element that shows it.
   http.get(api('/reader/chapter/:id/page/:n/enhanced'), ({ params }) => pageSvg(String(params.id), String(params.n), titleFor)),
+  // The hub-down poller asks with HEAD whether the upscale is there.
+  http.head(api('/reader/chapter/:id/page/:n/enhanced'), () => new HttpResponse(null, { status: 200 })),
 ]

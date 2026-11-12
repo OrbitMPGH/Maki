@@ -92,7 +92,8 @@ public sealed class OnnxPageUpscaler(
 
         var grey = UpscalePixels.IsGreyscale(source.Pixels);
         var luma = grey && UpscalePixels.IsExactGrey(source.Pixels);
-        var threads = (await UpscaleOptions.LoadAsync(settings, ct)).Threads;
+        var options = await UpscaleOptions.LoadAsync(settings, ct);
+        var threads = options.Threads;
         StitchedPage stitched;
         try
         {
@@ -113,11 +114,12 @@ public sealed class OnnxPageUpscaler(
             return PendingUpscale.Done(UpscaleResult.Failed(UpscaleReasons.InferenceFailed));
         }
 
-        return new PendingUpscale(finish => FinishAsync(source, stitched, grey, luma, threads, model, finish));
+        return new PendingUpscale(finish => FinishAsync(source, stitched, grey, luma, threads, options.JpegXl, model, finish));
     }
 
     private async Task<UpscaleResult> FinishAsync(
-        Raster source, StitchedPage stitched, bool grey, bool luma, int threads, UpscaleModelId model, CancellationToken ct)
+        Raster source, StitchedPage stitched, bool grey, bool luma, int threads, bool jpegXl, UpscaleModelId model,
+        CancellationToken ct)
     {
         try
         {
@@ -132,7 +134,7 @@ public sealed class OnnxPageUpscaler(
             UpscalePixels.TakeColourFrom(stitched.Pixels, stitched.Width, stitched.Height, source.Pixels, source.Width,
                 source.Height, threads);
             var encoded = await ImageWorkGate.RunAsync(
-                () => Task.FromResult(ImageCodec.EncodeUpscaled(stitched.Pixels, stitched.Width, stitched.Height, grey)),
+                () => Task.FromResult(ImageCodec.EncodeUpscaled(stitched.Pixels, stitched.Width, stitched.Height, grey, jpegXl)),
                 outputWeight, ct);
             return UpscaleResult.Ready(encoded);
         }

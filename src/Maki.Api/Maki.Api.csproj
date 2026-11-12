@@ -23,6 +23,8 @@
     <None Update="UpscaleModels\maki-2x.onnx" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <Import Project="..\..\distribution\libjxl\LibJxl.targets" />
+
   <ItemGroup>
     <ProjectReference Include="..\Maki.Core\Maki.Core.csproj" />
     <ProjectReference Include="..\Maki.Data\Maki.Data.csproj" />

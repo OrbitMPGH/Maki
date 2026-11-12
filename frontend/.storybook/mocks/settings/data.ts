@@ -1093,7 +1093,7 @@ const upscaleCatalog = {
 } satisfies Record<string, UpscaleCatalogEntry>
 
 export const upscalingOff = {
-  settings: { enabled: false, models: [], threads: 2, cacheMb: 1024, maxThreads: 8 },
+  settings: { enabled: false, models: [], threads: 2, cacheMb: 1024, maxThreads: 8, jpegXl: true, jpegXlAvailable: true },
   catalog: [upscaleCatalog.maki2x, upscaleCatalog.spanS, { ...upscaleCatalog.realesrganAv3, bytes: null }].map((m) => ({
     ...m,
     status: 'missing',
@@ -1103,7 +1103,15 @@ export const upscalingOff = {
 } satisfies UpscalingState
 
 export const upscalingOn = {
-  settings: { enabled: true, models: ['maki-2x', 'span-s', 'realesrgan-av3'], threads: 2, cacheMb: 1024, maxThreads: 8 },
+  settings: {
+    enabled: true,
+    models: ['maki-2x', 'span-s', 'realesrgan-av3'],
+    threads: 2,
+    cacheMb: 1024,
+    maxThreads: 8,
+    jpegXl: true,
+    jpegXlAvailable: true,
+  },
   catalog: [
     upscaleCatalog.maki2x,
     upscaleCatalog.spanS,
@@ -1124,6 +1132,11 @@ export const upscalingFailed = {
       error: 'The download did not match its checksum and was removed.',
     },
   ],
+} satisfies UpscalingState
+
+export const upscalingNoJpegXl = {
+  ...upscalingOn,
+  settings: { ...upscalingOn.settings, jpegXlAvailable: false },
 } satisfies UpscalingState
 
 export const recycleBin: RecycleBin = {
