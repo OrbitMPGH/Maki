@@ -670,7 +670,7 @@ export const EditMetadataDialog: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'More actions' }))
     await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Edit metadata' }))
-    await waitFor(() => expect(body(canvasElement).getByRole('textbox', { name: /title/i })).toHaveValue('Lanterns Over Kasumi'))
+    await waitFor(() => expect(body(canvasElement).getByRole('textbox', { name: /^title/i })).toHaveValue('Lanterns Over Kasumi'))
   },
 }
 

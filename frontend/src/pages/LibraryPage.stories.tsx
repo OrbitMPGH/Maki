@@ -4,7 +4,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent as userEventApi, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../.storybook/mocks/api'
-import { archivedLibraryHandlers, libraryHandlers, savedFilters, seedLibraryPrefs } from '../../.storybook/mocks/library'
+import { archivedLibraryHandlers, bulkJobHandlers, libraryHandlers, savedFilters, seedLibraryPrefs } from '../../.storybook/mocks/library'
 import { getConnectivity, onConnectivityChange, setConnectivity } from '../lib/connectivity'
 import LibraryPage from './LibraryPage'
 
@@ -722,9 +722,7 @@ export const BulkSearchMissing: Story = {
 export const BulkSearchMissingPartlyFails: Story = {
   parameters: {
     msw: [
-      http.post(api('/series/:id/searchmissing'), ({ params }) =>
-        params.id === '3' ? failWith(409, 'A download for this series is already running') : HttpResponse.json({ queued: 2 }),
-      ),
+      ...bulkJobHandlers((id) => (id === 3 ? 'A download for this series is already running' : null)),
       ...libraryHandlers,
     ],
   },
