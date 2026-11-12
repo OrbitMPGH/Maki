@@ -986,6 +986,10 @@ try
     builder.Services.AddSingleton<UpgradeScanTracker>();
     builder.Services.AddSingleton<ChapterSourceResolver>();
     builder.Services.AddSingleton<DownloadPauseService>();
+    builder.Services.AddSingleton(sp => new DownloadDiskHold(
+        sp.GetRequiredService<IServiceScopeFactory>(), sp.GetRequiredService<TimeProvider>(),
+        sp.GetRequiredService<ILogger<DownloadDiskHold>>()));
+    builder.Services.AddSingleton<DownloadQueueEta>();
     builder.Services.AddSingleton<DownloadQueueService>();
     builder.Services.AddSingleton<IDownloadQueueLiveness, DownloadQueueLiveness>();
     builder.Services.AddSingleton<DownloadBatchNotifier>();

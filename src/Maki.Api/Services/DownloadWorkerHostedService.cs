@@ -23,7 +23,8 @@ public class DownloadWorkerHostedService(
     DownloadBatchNotifier batches,
     IServiceScopeFactory scopeFactory,
     ILogger<DownloadWorkerHostedService> logger,
-    DownloadPauseService? pauses = null) : BackgroundService
+    DownloadPauseService? pauses = null,
+    DownloadDiskHold? diskHold = null) : BackgroundService
 {
     private const int DefaultConcurrentChapters = 2;
     private const int MaxConcurrentChapters = 8;
@@ -123,6 +124,7 @@ public class DownloadWorkerHostedService(
             ct.ThrowIfCancellationRequested();
             await RefreshSettingsAsync(ct);
             await LiftElapsedPausesAsync(ct);
+            await RefreshDiskHoldsAsync(ct);
             await queue.SignalAsync(0, ct);
         }
     }
@@ -157,6 +159,46 @@ public class DownloadWorkerHostedService(
         return delay < CooldownPollInterval ? CooldownPollInterval : delay;
     }
 
+    private int _diskHoldVersion;
+
+    /// <summary>
+    /// Reads free space again once the last reading has aged out, and tells the open Activity pages
+    /// when a root folder became held or was let go. A lift needs no wake of its own: this tick
+    /// signals the workers right after.
+    /// </summary>
+    private async Task RefreshDiskHoldsAsync(CancellationToken ct)
+    {
+        if (diskHold is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await diskHold.RefreshAsync(ct);
+            var version = diskHold.Version;
+            if (version == _diskHoldVersion)
+            {
+                return;
+            }
+
+            _diskHoldVersion = version;
+            using var scope = scopeFactory.CreateScope();
+            if (scope.ServiceProvider.GetService<EventBroadcaster>() is { } events)
+            {
+                var state = pauses is null ? DownloadPauseState.None : await pauses.ActiveAsync(ct);
+                await events.QueuePauseChanged(await QueuePauseDto.CreateAsync(
+                    state, diskHold.Current, scope.ServiceProvider.GetRequiredService<MakiDbContext>(), ct));
+            }
+
+            await queue.WakeWorkersAsync(ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not refresh the low disk space holds");
+        }
+    }
+
     /// <summary>
     /// A pause with a resume time lifts on the next poll tick, which is also the signal that wakes the
     /// workers, so no timer of its own is needed. Claiming already ignores an elapsed pause; this
@@ -182,7 +224,9 @@ public class DownloadWorkerHostedService(
             {
                 try
                 {
-                    await events.QueuePauseChanged(QueuePauseDto.From(await pauses.ActiveAsync(ct)));
+                    await events.QueuePauseChanged(await QueuePauseDto.CreateAsync(
+                        await pauses.ActiveAsync(ct), diskHold?.Current,
+                        scope.ServiceProvider.GetRequiredService<MakiDbContext>(), ct));
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {

@@ -29,11 +29,12 @@ public class QueueController(
     TorrentImportService importer,
     EventBroadcaster events,
     ISchedulerFactory schedulerFactory,
-    ILogger<QueueController> logger)
+    ILogger<QueueController> logger,
+    DownloadDiskHold? diskHold = null)
     : ControllerBase
 {
     /// <summary>
-    /// The active queue, paginated like <see cref="History"/>. <c>Total</c> is the full count, so a
+    /// The active queue in claim order (class, then manual order), paginated like <see cref="History"/>. <c>Total</c> is the full count, so a
     /// caller can tell a full page from a truncated one; the old fixed <c>.Take(200)</c> dropped
     /// the rest silently and a big queue simply looked like exactly 200 items. <c>seriesId</c>
     /// narrows it to one series, which is what a series page needs to see its own queued chapters.
@@ -52,7 +53,8 @@ public class QueueController(
 
         var total = await query.CountAsync(ct);
         var rows = await Rows(query
-                .OrderBy(q => q.SortOrder)
+                .OrderBy(q => q.Priority)
+                .ThenBy(q => q.SortOrder)
                 .ThenBy(q => q.QueuedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize))
@@ -207,7 +209,7 @@ public class QueueController(
     /// <summary>What is paused right now. Torrents already handed to the download client are not part of it.</summary>
     [HttpGet("pause")]
     public async Task<IActionResult> GetPause(CancellationToken ct) =>
-        Ok(QueuePauseDto.From(await pauses.ActiveAsync(ct)));
+        Ok(await QueuePauseDto.CreateAsync(await pauses.ActiveAsync(ct), diskHold?.Current, db, ct));
 
     /// <summary>
     /// Stops workers claiming new scraper downloads, for every source or one, until resumed or until
@@ -249,9 +251,47 @@ public class QueueController(
         return Ok(await ChangePauseAsync(await pauses.ResumeAsync(name, ct), ct));
     }
 
+    /// <summary>
+    /// Holds one series' queued rows without touching any other series or source. Rows stay queued,
+    /// and anything already downloading finishes.
+    /// </summary>
+    [Authorize(Policy = Policies.ManageDownloadQueue)]
+    [HttpPut("pause/series")]
+    public async Task<IActionResult> PauseSeries([FromBody] QueueSeriesPauseRequestDto request, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == request.SeriesId, ct))
+        {
+            return NotFound();
+        }
+
+        DateTime? until = request.ResumeAt is { } at
+            ? at.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(at, DateTimeKind.Utc) : at.ToUniversalTime()
+            : null;
+        if (until <= DateTime.UtcNow)
+        {
+            return this.Fail(localizer, "error.queue.pauseResumeInPast");
+        }
+
+        return Ok(await ChangePauseAsync(await pauses.PauseSeriesAsync(request.SeriesId, until, ct), ct));
+    }
+
+    /// <summary>Lifts one series' pause.</summary>
+    [Authorize(Policy = Policies.ManageDownloadQueue)]
+    [HttpDelete("pause/series/{seriesId:int}")]
+    public async Task<IActionResult> ResumeSeries(int seriesId, CancellationToken ct) =>
+        Ok(await ChangePauseAsync(await pauses.ResumeSeriesAsync(seriesId, ct), ct));
+
+    /// <summary>
+    /// A rough time left per series and for the whole queue, from how fast each source has been
+    /// downloading lately. Null wherever there is too little history to say.
+    /// </summary>
+    [HttpGet("eta")]
+    public async Task<IActionResult> Eta([FromServices] DownloadQueueEta eta, CancellationToken ct) =>
+        Ok(await eta.EstimateAsync(db, ct));
+
     private async Task<QueuePauseDto> ChangePauseAsync(DownloadPauseState state, CancellationToken ct)
     {
-        var dto = QueuePauseDto.From(state);
+        var dto = await QueuePauseDto.CreateAsync(state, diskHold?.Current, db, ct);
         try
         {
             await events.QueuePauseChanged(dto);
@@ -294,6 +334,7 @@ public class QueueController(
                     Title = q.Series.Title,
                     CoverPath = q.Series.CoverPath,
                     LastMetadataRefresh = q.Series.LastMetadataRefresh,
+                    RootFolderId = q.Series.RootFolderId,
                 },
             q.SourceMapping != null
                 ? q.SourceMapping.SourceName
@@ -309,7 +350,7 @@ public class QueueController(
     [HttpPut("reorder")]
     public async Task<IActionResult> Reorder([FromBody] ReorderQueueDto request, CancellationToken ct)
     {
-        await queue.ReorderAsync(request.OrderedIds, ct);
+        await queue.ReorderAsync(request.OrderedIds, ct, request.MovedId);
         return NoContent();
     }
 

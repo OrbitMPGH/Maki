@@ -96,7 +96,8 @@ public class ReleaseService(
     TorrentClientRegistry torrentClients,
     SettingsService settings,
     ILogger<ReleaseService> logger,
-    TorrentPollState? pollState = null)
+    TorrentPollState? pollState = null,
+    DownloadDiskHold? diskHold = null)
 {
     public virtual async Task<ReleaseSearchResult> SearchAsync(int seriesId, string? query = null, CancellationToken ct = default)
     {
@@ -199,6 +200,8 @@ public class ReleaseService(
         {
             throw new ReleaseRefusedException(ReleaseRefusedException.SeriesArchived, "Series is archived");
         }
+
+        if (diskHold is not null) await diskHold.ThrowIfGrabHeldAsync(db, seriesId, ct);
 
         var client = await GetClientSettingsAsync(ct);
         if (release.MagnetUrl is null && release.DownloadUrl is null)

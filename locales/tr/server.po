@@ -1923,6 +1923,12 @@ msgstr "Özgün konum kök klasörün dışında veya bir bağlantının arkası
 msgid "error.release.grabFailed"
 msgstr "Sürüm qBittorrent'e gönderilemedi. Ayrıntılar sunucu günlüğünde."
 
+#. A torrent grab refused because the series' root folder has less free space than its threshold.
+#. English: The library folder for this series is low on free space, so new downloads into it are on hold. Free some space or lower the threshold in Settings → Library.
+#: src/Maki.Api/Services/DownloadDiskHold.cs
+msgid "error.release.diskLow"
+msgstr ""
+
 #. English: This release has no download link
 #: src/Maki.Api/Services/ReleaseService.cs
 #, fuzzy
@@ -2100,6 +2106,12 @@ msgstr "Bilinmeyen kullanıcı"
 #, fuzzy
 msgid "error.requests.unknownKind"
 msgstr "Bilinmeyen istek türü"
+
+#. A root folder's free-space threshold for holding downloads was below zero.
+#. English: The free space to keep must be zero or more
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.minFreeNegative"
+msgstr ""
 
 #. English: Root folder already exists
 #: src/Maki.Api/Controllers/RootFolderController.cs
