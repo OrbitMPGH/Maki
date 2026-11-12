@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    [Migration("20261112061457_AddChapterProgressPageOffset")]
+    [Migration("20261112065237_AddChapterProgressPageOffset")]
     partial class AddChapterProgressPageOffset
     {
         /// <inheritdoc />
@@ -3277,6 +3277,15 @@ namespace Maki.Data.Migrations
 
                     b.Property<int>("SeriesId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("StatusAuto")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("StatusChangedAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("TEXT");
