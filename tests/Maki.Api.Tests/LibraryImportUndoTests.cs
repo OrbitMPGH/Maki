@@ -1025,6 +1025,78 @@ public class LibraryImportUndoTests : IDisposable
             throw new DbUpdateException("the database refused the save");
     }
 
+    [Fact]
+    public async Task A_nested_folder_moves_up_to_the_root_and_undo_puts_it_back()
+    {
+        _settings.Set(SettingKeys.LibraryFolderNamingMode, FolderNamingMode.KeepOriginal);
+        var rootId = SeedRoot();
+        WriteZip(At("A-Z", "chainsaw raws", "Chainsaw Man 001.cbz"));
+
+        var result = await ImportAsync(rootId, "A-Z/chainsaw raws");
+
+        Assert.Equal("chainsaw raws", result.NewFolderName);
+        Assert.True(File.Exists(At("chainsaw raws", "Chainsaw Man 001.cbz")));
+        await using (var db = _db.NewContext())
+        {
+            Assert.Equal("chainsaw raws", (await db.Series.SingleAsync()).FolderName);
+        }
+
+        var outcome = await UndoAsync(await RecordIdAsync());
+
+        Assert.True(outcome.Undone, outcome.Error);
+        Assert.True(File.Exists(At("A-Z", "chainsaw raws", "Chainsaw Man 001.cbz")));
+        Assert.False(Directory.Exists(At("chainsaw raws")));
+    }
+
+    [Fact]
+    public async Task Loose_root_files_are_gathered_on_import_and_undo_puts_them_back_in_the_root()
+    {
+        _settings.Set(SettingKeys.LibraryFolderNamingMode, FolderNamingMode.KeepOriginal);
+        var rootId = SeedRoot();
+        WriteZip(At("Chainsaw Man 001.cbz"));
+        WriteZip(At("Chainsaw Man 002.cbz"));
+
+        await using (var db = _db.NewContext())
+        {
+            var result = await ImportService(db).ImportAsync(rootId,
+                new ImportRequestItem("Chainsaw Man", "42", ["Chainsaw Man 001.cbz", "Chainsaw Man 002.cbz"]),
+                operationId: "batch-1");
+            Assert.True(result.Success, result.Error);
+            Assert.Equal(2, result.FilesAdded);
+        }
+
+        Assert.True(File.Exists(At("Chainsaw Man", "Chainsaw Man 001.cbz")));
+        Assert.False(File.Exists(At("Chainsaw Man 001.cbz")));
+
+        var outcome = await UndoAsync(await RecordIdAsync());
+
+        Assert.True(outcome.Undone, outcome.Error);
+        Assert.True(File.Exists(At("Chainsaw Man 001.cbz")));
+        Assert.True(File.Exists(At("Chainsaw Man 002.cbz")));
+        Assert.False(Directory.Exists(At("Chainsaw Man")));
+    }
+
+    [Fact]
+    public async Task A_loose_import_that_fails_leaves_the_files_in_the_root()
+    {
+        var rootId = SeedRoot();
+        WriteZip(At("Chainsaw Man 001.cbz"));
+        Directory.CreateDirectory(At("Chainsaw Man"));
+        WriteZip(At("Chainsaw Man", "other.cbz"));
+
+        await using var db = _db.NewContext();
+        var refused = await ImportService(db).ImportAsync(rootId,
+            new ImportRequestItem("Chainsaw Man", "42", ["Chainsaw Man 001.cbz"]));
+        var traversal = await ImportService(db).ImportAsync(rootId,
+            new ImportRequestItem("Fresh", "42", ["../outside.cbz"]));
+
+        Assert.False(refused.Success);
+        Assert.False(traversal.Success);
+        Assert.True(File.Exists(At("Chainsaw Man 001.cbz")));
+        Assert.False(Directory.Exists(At("Fresh")));
+        Assert.Empty(db.Series);
+    }
+
     private sealed class FixedProvider : IMetadataProvider
     {
         public string Name => "fake";

@@ -1,6 +1,6 @@
-import { type ComponentPropsWithRef, useMemo, useState } from 'react'
+import { type ComponentPropsWithRef, type ReactNode, useMemo, useState } from 'react'
 import { ActionIcon, Menu, SegmentedControl, Tooltip } from '@mantine/core'
-import { IconCheck, IconDots, IconLayoutGrid, IconLayoutList } from '../../lib/icons'
+import { IconCheck, IconDots, IconLayoutGrid, IconLayoutList, IconTable } from '../../lib/icons'
 import { msg } from '@lingui/core/macro'
 import { useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { useLingui } from '@lingui/react'
@@ -16,6 +16,8 @@ import type { MessageDescriptor } from '@lingui/core'
  */
 
 export type ViewMode = 'grid' | 'list'
+/** The Library's third view, a table with columns of its own. Only surfaces that pass `withTable` offer it. */
+export type TableViewMode = ViewMode | 'table'
 export type Density = 'compact' | 'default' | 'comfortable'
 
 const DENSITIES_WITH_LABELS: { value: Density; label: MessageDescriptor }[] = [
@@ -140,45 +142,42 @@ export function DensityControl({
 
 export type ViewPrefs = ReturnType<typeof useViewPrefs>
 
-/** Grid or list, as one two-segment control. The icons are named by their tooltips and labels. */
+/** Grid or list (and table where offered) as one segmented control. The icons are named by their tooltips and labels. */
 export function ViewModeToggle({
   value,
   onChange,
   size = 'sm',
+  withTable = false,
 }: {
-  value: ViewMode
-  onChange: (mode: ViewMode) => void
+  value: TableViewMode
+  // Method syntax on purpose: a surface without the table hands in a callback that only takes
+  // `ViewMode`, which a method signature accepts.
+  onChange(mode: TableViewMode): void
   size?: string
+  withTable?: boolean
 }) {
   const { t } = useLinguiMacro()
+  const option = (mode: TableViewMode, label: string, icon: ReactNode) => ({
+    value: mode,
+    label: (
+      <Tooltip label={label} withArrow>
+        <span className="view-mode-option" role="img" aria-label={label}>
+          {icon}
+        </span>
+      </Tooltip>
+    ),
+  })
   return (
     <SegmentedControl
       className="view-mode-toggle"
       size={size}
       value={value}
-      onChange={(v) => onChange(v as ViewMode)}
+      onChange={(v) => onChange(v as TableViewMode)}
       aria-label={t`View`}
       data={[
-        {
-          value: 'grid',
-          label: (
-            <Tooltip label={t`Grid view`} withArrow>
-              <span className="view-mode-option" role="img" aria-label={t`Grid view`}>
-                <IconLayoutGrid size={16} />
-              </span>
-            </Tooltip>
-          ),
-        },
-        {
-          value: 'list',
-          label: (
-            <Tooltip label={t`List view`} withArrow>
-              <span className="view-mode-option" role="img" aria-label={t`List view`}>
-                <IconLayoutList size={16} />
-              </span>
-            </Tooltip>
-          ),
-        },
+        option('grid', t`Grid view`, <IconLayoutGrid size={16} />),
+        option('list', t`List view`, <IconLayoutList size={16} />),
+        ...(withTable ? [option('table', t`Table view`, <IconTable size={16} />)] : []),
       ]}
     />
   )

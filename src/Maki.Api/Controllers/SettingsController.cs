@@ -165,11 +165,13 @@ public class SettingsController(
     /// See <see cref="SettingKeys.DownloadClientRemoveCompleted"/>: <c>never</c> or <c>afterimport</c>. Null on a write leaves it alone.
     /// </param>
     /// <param name="RemoveData">See <see cref="SettingKeys.DownloadClientRemoveData"/>. Null on a write leaves it alone.</param>
+    /// <param name="VolumeFirst">See <see cref="SettingKeys.DownloadsVolumeFirst"/>. Null on a write leaves it alone.</param>
     public record DownloadSettings(
         int ConcurrentChapters, bool RetryEnabled, int RetryMaxAttempts,
         int SmartDownloadChaptersLeft, int SmartDownloadChapters, int ItemTimeoutMinutes,
         bool UseHardlinks = true, int? BulkHoldThreshold = null, string? SourceOrder = null, bool? ScoutOnMatch = null,
-        bool? AdaptiveRefresh = null, string? RemoveCompleted = null, bool? RemoveData = null);
+        bool? AdaptiveRefresh = null, string? RemoveCompleted = null, bool? RemoveData = null,
+        bool? VolumeFirst = null);
     /// <param name="Enabled">Turns the daily upgrade scan on.</param>
     /// <param name="DefaultProfileId">The upgrade profile a series without its own pin uses, or null for none.</param>
     /// <param name="MaxPerDay">0 means no cap.</param>
@@ -187,7 +189,9 @@ public class SettingsController(
         long TorrentAutoGrabMaxBytes = UpgradeOptions.DefaultAutoGrabMaxBytes,
         int VolumeMissingTolerance = 3,
         int VolumeSearchesPerRun = 10,
-        int ProposalExpiryDays = 30);
+        int ProposalExpiryDays = 30,
+        bool AutoApprove = false,
+        long AutoApproveMaxBytes = Maki.Core.Quality.ProposalAutoApproval.DefaultMaxBytes);
     public record ReadFileCleanupSettings(bool Enabled, int Days, bool KeepLast);
     public record SignInPageSettings(bool CoverMosaic);
 
@@ -1066,7 +1070,8 @@ public class SettingsController(
         await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true",
         await AdaptiveRefreshAsync(ct),
         await RemoveCompletedAsync(ct),
-        await RemoveDataAsync(ct)));
+        await RemoveDataAsync(ct),
+        await settings.GetAsync(SettingKeys.DownloadsVolumeFirst, ct) == "true"));
 
     private async Task<string> RemoveCompletedAsync(CancellationToken ct) =>
         TorrentRemovalModes.Parse(await settings.GetAsync(SettingKeys.DownloadClientRemoveCompleted, ct)) ?? TorrentRemovalModes.Never;
@@ -1173,6 +1178,11 @@ public class SettingsController(
             await settings.SetAsync(SettingKeys.DownloadClientRemoveData, removeData ? "true" : "false", ct);
         }
 
+        if (request.VolumeFirst is { } volumeFirst)
+        {
+            await settings.SetAsync(SettingKeys.DownloadsVolumeFirst, volumeFirst ? "true" : "false", ct);
+        }
+
         if (request.AdaptiveRefresh is { } adaptive && adaptive != await AdaptiveRefreshAsync(ct))
         {
             await settings.SetAsync(SettingKeys.MonitoringAdaptiveRefresh, adaptive ? "true" : "false", ct);
@@ -1188,7 +1198,8 @@ public class SettingsController(
             ScoutOnMatch = await settings.GetAsync(SettingKeys.SourcesScoutOnMatch, ct) == "true",
             AdaptiveRefresh = await AdaptiveRefreshAsync(ct),
             RemoveCompleted = await RemoveCompletedAsync(ct),
-            RemoveData = await RemoveDataAsync(ct)
+            RemoveData = await RemoveDataAsync(ct),
+            VolumeFirst = await settings.GetAsync(SettingKeys.DownloadsVolumeFirst, ct) == "true"
         });
     }
 
@@ -1276,7 +1287,7 @@ public class SettingsController(
         return Ok(new UpgradeSettings(options.Enabled, defaultId, options.ScanHour, options.MaxPerDay,
             options.MaxProbesPerRun, options.QuietPeriodDays, options.TrashRetentionDays, options.ScanIncognito,
             options.VolumeSearch, options.TorrentAutoGrabMaxBytes, options.VolumeMissingTolerance,
-            options.VolumeSearchesPerRun, options.ProposalExpiryDays));
+            options.VolumeSearchesPerRun, options.ProposalExpiryDays, options.AutoApprove, options.AutoApproveMaxBytes));
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -1354,7 +1365,11 @@ public class SettingsController(
             request.VolumeSearchesPerRun.ToString(CultureInfo.InvariantCulture), ct);
         await settings.SetAsync(SettingKeys.UpgradesProposalExpiryDays,
             request.ProposalExpiryDays.ToString(CultureInfo.InvariantCulture), ct);
-        return Ok(request);
+        var approveBytes = Maki.Core.Quality.ProposalAutoApproval.ClampMaxBytes(request.AutoApproveMaxBytes);
+        await settings.SetAsync(SettingKeys.UpgradesAutoApprove, request.AutoApprove ? "true" : "false", ct);
+        await settings.SetAsync(SettingKeys.UpgradesAutoApproveMaxBytes,
+            approveBytes.ToString(CultureInfo.InvariantCulture), ct);
+        return Ok(request with { AutoApproveMaxBytes = approveBytes });
     }
 
     [Authorize(Policy = Policies.Admin)]

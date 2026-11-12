@@ -10,7 +10,7 @@ import {
   ViewPrefsControls,
   useViewPrefs,
   type Density,
-  type ViewMode,
+  type TableViewMode,
 } from './viewPrefs'
 
 const meta = {
@@ -18,7 +18,7 @@ const meta = {
   tags: ['ai-generated'],
   args: { value: 'grid', onChange: fn() },
   render: function Render(args) {
-    const [value, setValue] = useState<ViewMode>(args.value)
+    const [value, setValue] = useState<TableViewMode>(args.value)
     return (
       <ViewModeToggle
         {...args}
@@ -41,6 +41,15 @@ export const GridToList: Story = {
     await userEvent.click(await canvas.findByRole('radio', { name: 'List view' }))
     await waitFor(() => expect(args.onChange).toHaveBeenCalledWith('list'))
     await waitFor(() => expect(canvas.getByRole('radio', { name: 'List view' })).toBeChecked())
+  },
+}
+
+export const WithTable: Story = {
+  args: { withTable: true },
+  play: async ({ args, canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('radio', { name: 'Table view' }))
+    await waitFor(() => expect(args.onChange).toHaveBeenCalledWith('table'))
+    await waitFor(() => expect(canvas.getByRole('radio', { name: 'Table view' })).toBeChecked())
   },
 }
 

@@ -1,8 +1,14 @@
 name: CodeQL
 
 on:
+  # dev too: most changes are committed straight to it, and PRs into dev need its scan to compare against.
   push:
-    branches: [main]
+    branches: [main, dev]
+    paths-ignore:
+      - '**/*.md'
+      - 'changes/**'
+      - 'locales/**'
+      - 'docs/**'
   pull_request:
     branches: [dev, main]
     paths-ignore:
@@ -15,8 +21,9 @@ on:
     - cron: '23 4 * * 1'
   workflow_dispatch:
 
+# Per PR, or per branch for pushes, so a run of pushes to dev only scans the newest.
 concurrency:
-  group: codeql-${{ github.event.pull_request.number || github.sha }}
+  group: codeql-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:

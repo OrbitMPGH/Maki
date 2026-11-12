@@ -57,6 +57,9 @@ public enum InboxEventType
 
     /// <summary>A refresh found downloaded chapters that no enabled source lists any more.</summary>
     ChapterDelisted = 26,
+
+    /// <summary>MangaBaka lists a new sequel, prequel, spin-off, side story or main story of a library series.</summary>
+    NewRelatedWork = 27,
 }
 
 /// <summary>

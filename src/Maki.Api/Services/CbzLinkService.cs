@@ -72,6 +72,7 @@ public class CbzLinkService(
         var unlinkedVolumeFiles = new List<(ParsedReleaseFile Parsed, ChapterFile Record, string Path)>();
         var volumeFiles = new List<(int FileId, string AbsolutePath, ParsedReleaseFile Parsed)>();
         var processed = new List<ChapterFromFilesService.FileOnDisk>();
+        var userTags = updateComicInfo ? await TagService.LabelsForSeriesAsync(db, series.Id, ct) : [];
 
         foreach (var file in ordered)
         {
@@ -139,7 +140,7 @@ public class CbzLinkService(
             // seeding torrent, an import's zip) into a second full copy.
             if (updateComicInfo && !HardLinks.IsShared(file))
             {
-                StandardizeComicInfo(file, series, parsed, matched.Count == 1 ? matched[0] : null, chapterFile);
+                StandardizeComicInfo(file, series, parsed, matched.Count == 1 ? matched[0] : null, chapterFile, userTags);
             }
         }
 
@@ -266,17 +267,35 @@ public class CbzLinkService(
     /// </summary>
     public async Task<RescanResult> RescanSeriesAsync(Series series, CancellationToken ct = default)
     {
-        var rootFolder = series.RootFolder
-            ?? throw new InvalidOperationException("Series has no root folder loaded");
+        _ = series.RootFolder ?? throw new InvalidOperationException("Series has no root folder loaded");
         using var seriesLock = await SeriesLocks.SeriesAsync(series.Id, ct);
+
+        // The caller read the series before the lock, so a move that held it first has changed the
+        // root or folder since. Listing the old place would read every file as deleted.
+        var placed = await db.Series.AsNoTracking()
+            .Where(s => s.Id == series.Id && s.RootFolder != null)
+            .Select(s => new { s.RootFolderId, s.FolderName, s.RootFolder!.Path })
+            .FirstOrDefaultAsync(ct);
+        if (placed is null)
+        {
+            return new RescanResult(0, 0, 0, 0, RootUnavailable: true);
+        }
+
+        if (series.RootFolderId != placed.RootFolderId || series.FolderName != placed.FolderName)
+        {
+            series.RootFolderId = placed.RootFolderId;
+            series.FolderName = placed.FolderName;
+        }
+
+        var rootPath = placed.Path;
 
         // An unmounted share looks exactly like every file having been deleted, so a missing root
         // changes nothing, and step 1 below keeps the rows of any folder it could not list.
         var folders = await SeriesFolders.ForAsync(db, series, ct);
-        if (!Directory.Exists(rootFolder.Path))
+        if (!Directory.Exists(rootPath))
         {
             logger.LogWarning("Skipping rescan of '{Title}': root folder {Root} is not reachable",
-                series.Title, rootFolder.Path);
+                series.Title, rootPath);
             return new RescanResult(0, 0, 0, 0, RootUnavailable: true);
         }
 
@@ -289,14 +308,14 @@ public class CbzLinkService(
 
         // An empty root is usually an unmounted share's mount point, so a folder missing from it
         // says nothing. Under a root that lists anything, a missing folder was deleted or renamed.
-        var rootListable = Directory.EnumerateFileSystemEntries(rootFolder.Path).Any();
+        var rootListable = Directory.EnumerateFileSystemEntries(rootPath).Any();
         var onDisk = new List<(string SeriesDir, string AbsolutePath, string RelativePath)>();
         var readableFolders = new HashSet<string>(LibraryPaths.FolderComparer);
         foreach (var folder in folders)
         {
             // A symlink or junction anywhere below the root would have adoption read, and the
             // ComicInfo rewrite modify, archives outside the library.
-            if (LibraryPaths.ResolveNoLinks(rootFolder.Path, folder) is not { } seriesDir)
+            if (LibraryPaths.ResolveNoLinks(rootPath, folder) is not { } seriesDir)
             {
                 continue;
             }
@@ -349,7 +368,7 @@ public class CbzLinkService(
 
             // The listing above never returns a linked file, but one that is there was not deleted. A
             // linked folder on the way still counts as gone, as it always has.
-            return LibraryPaths.ResolveForDelete(rootFolder.Path, f.RelativePath) is not { } path ||
+            return LibraryPaths.ResolveForDelete(rootPath, f.RelativePath) is not { } path ||
                    !(File.Exists(path) || LibraryPaths.IsLink(path));
         }
 
@@ -371,7 +390,7 @@ public class CbzLinkService(
             removed++;
         }
 
-        ReleaseUnmarkedChapters(chapters, dbFiles, rootFolder.Path);
+        ReleaseUnmarkedChapters(chapters, dbFiles, rootPath);
 
         // 2. Known files no chapter points at: retry matching with current chapter data. A file only a
         // volume entry holds is retried too, so chapters a source lists since can take it over.
@@ -396,7 +415,7 @@ public class CbzLinkService(
                 continue;
             }
 
-            var absolutePath = LibraryPaths.ResolveNoLinks(rootFolder.Path, LibraryPaths.ComparisonKey(dbFile.RelativePath));
+            var absolutePath = LibraryPaths.ResolveNoLinks(rootPath, LibraryPaths.ComparisonKey(dbFile.RelativePath));
             // A spare single-chapter file only fills a chapter nothing backs. Taking one off another
             // single file would hand it back on the next rescan, the two swapping ownership forever;
             // deliberate replacement is relink and import's job.
@@ -424,7 +443,7 @@ public class CbzLinkService(
         var volumeFilesOnDisk = dbFiles
             .Select(f => (
                 f.Id,
-                AbsolutePath: LibraryPaths.ResolveNoLinks(rootFolder.Path, LibraryPaths.ComparisonKey(f.RelativePath)),
+                AbsolutePath: LibraryPaths.ResolveNoLinks(rootPath, LibraryPaths.ComparisonKey(f.RelativePath)),
                 Parsed: ReleaseNameParser.ParseFileName(f.RelativePath)))
             .Where(f => f.AbsolutePath is not null)
             .Select(f => (f.Id, f.AbsolutePath!, f.Parsed))
@@ -464,7 +483,7 @@ public class CbzLinkService(
         if (newFiles.Count == 0)
         {
             // LinkFilesAsync runs the estimator itself; cover the no-new-files path too.
-            await EstimateCompletedVolumeLinksAsync(series, chapters, rootFolder.Path, ct);
+            await EstimateCompletedVolumeLinksAsync(series, chapters, rootPath, ct);
             await db.SaveChangesAsync(ct);
         }
 
@@ -485,6 +504,7 @@ public class CbzLinkService(
         var chapters = await db.Chapters
             .Where(c => c.SeriesId == series.Id && c.ChapterFileId != null)
             .ToListAsync(ct);
+        var userTags = await TagService.LabelsForSeriesAsync(db, series.Id, ct);
 
         var updated = 0;
         foreach (var chapterFile in files)
@@ -501,7 +521,7 @@ public class CbzLinkService(
 
             var parsed = ReleaseNameParser.ParseFileName(chapterFile.RelativePath);
             var linked = chapters.Where(c => c.ChapterFileId == chapterFile.Id).ToList();
-            if (StandardizeComicInfo(path, series, parsed, linked.Count == 1 ? linked[0] : null, chapterFile))
+            if (StandardizeComicInfo(path, series, parsed, linked.Count == 1 ? linked[0] : null, chapterFile, userTags))
             {
                 updated++;
             }
@@ -679,11 +699,12 @@ public class CbzLinkService(
     /// file stays linked either way.
     /// </summary>
     private bool StandardizeComicInfo(
-        string file, Series series, ParsedReleaseFile parsed, Chapter? chapter, ChapterFile chapterFile)
+        string file, Series series, ParsedReleaseFile parsed, Chapter? chapter, ChapterFile chapterFile,
+        IReadOnlyList<string> userTags)
     {
         try
         {
-            if (ComicInfoUpdater.UpdateFile(file, series, parsed, chapter, chapterFile.Group))
+            if (ComicInfoUpdater.UpdateFile(file, series, parsed, chapter, chapterFile.Group, userTags))
             {
                 chapterFile.Size = new FileInfo(file).Length; // rewrite changed the archive size
                 // Belt and braces: the new size already invalidates the cache entry, but a

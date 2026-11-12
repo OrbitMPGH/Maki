@@ -1,3 +1,4 @@
+using Maki.Core.Storage;
 using Maki.Api.Localization;
 using Maki.Core.Entities;
 using Maki.Core.Import;
@@ -405,6 +406,51 @@ public class LibraryImportUndoService(
         return new ImportUndoOutcome(row.Id, row.OriginalFolderName, true, null, warnings.Count > 0 ? warnings : null);
     }
 
+    /// <summary>
+    /// Loose files the import gathered out of the root go back there, and the folder it made for
+    /// them goes once that empties it. A file whose root name is taken stays and is reported.
+    /// </summary>
+    private bool ReturnGathered(
+        ImportBatchFolder row, ImportOperations operations, string rootPath, string sourceDir, List<string> warnings)
+    {
+        var complete = true;
+        foreach (var file in operations.Gathered.ToList())
+        {
+            var from = LibraryPaths.ResolveNoLinks(rootPath, Path.Combine(row.OriginalFolderName, file));
+            var to = LibraryPaths.ResolveNoLinks(rootPath, file);
+            if (to is not null && File.Exists(to) && (from is null || !File.Exists(from)))
+            {
+                operations.Gathered.Remove(file);
+                continue;
+            }
+
+            if (from is null || to is null || !File.Exists(from) ||
+                SameVolumeMove.Move(from, to).Result != MoveResult.Moved)
+            {
+                warnings.Add(localizer.Get("error.libraryImport.undoFileNotMoved",
+                    new { name = file, folder = row.OriginalFolderName }));
+                complete = false;
+                continue;
+            }
+
+            operations.Gathered.Remove(file);
+        }
+
+        try
+        {
+            if (complete && Directory.Exists(sourceDir) && !Directory.EnumerateFileSystemEntries(sourceDir).Any())
+            {
+                Directory.Delete(sourceDir, recursive: false);
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            logger.LogWarning(ex, "Could not remove {Folder} after putting its loose files back", sourceDir);
+        }
+
+        return complete;
+    }
+
     private async Task SaveDiskOutcomeAsync(
         ImportBatchFolder row, ImportOperations operations, bool complete, List<string> warnings)
     {
@@ -780,6 +826,11 @@ public class LibraryImportUndoService(
             logger.LogWarning(ex, "Could not move '{Folder}' back to '{Original}'", row.FolderName, row.OriginalFolderName);
             warnings.Add(folderNotMoved);
             complete = false;
+        }
+
+        if (complete && operations.Gathered.Count > 0)
+        {
+            complete = ReturnGathered(row, operations, rootPath, sourceDir, warnings);
         }
 
         return complete;

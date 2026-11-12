@@ -43,7 +43,9 @@ import {
   RecommendationIndexSection,
   RecycleBinSection,
   RootFoldersSection,
+  AutoTagRulesSection,
 } from './settings/LibraryCards'
+import { DropFolderSection } from './settings/DropFolderSection'
 import { PageConversionSection } from './settings/PageConversionSection'
 import { UpscalingSection } from './settings/UpscalingSection'
 import {
@@ -99,10 +101,12 @@ function useSectionNodes(): Record<string, ReactNode> {
       'root-folders': <RootFoldersSection />,
       naming: <NamingSection />,
       'name-parsing': <NameParsingSection />,
+      'drop-folder': <DropFolderSection />,
       'library-files': <LibraryFilesSection />,
       'page-conversion': <PageConversionSection />,
       upscaling: <UpscalingSection />,
       'recycle-bin': <RecycleBinSection />,
+      'auto-tag-rules': <AutoTagRulesSection />,
       monitoring: <NewSeriesDefaultsSection />,
       metadata: <MetadataSection />,
       recommendations: <RecommendationIndexSection />,

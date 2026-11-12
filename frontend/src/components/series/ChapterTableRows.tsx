@@ -7,6 +7,7 @@ import { ActionIcon, Badge, Box, Group, Loader, Menu, Popover, Progress, Skeleto
 import {
   IconBook,
   IconChevronDown,
+  IconChevronRight,
   IconCircleCheck,
   IconClock,
   IconDeviceMobileCheck,
@@ -50,7 +51,7 @@ import { queueStatusVisual } from '../ui/status'
 import { FileQualityBadge } from './FileQualityBadge'
 import { HoverTooltip } from './HoverTooltip'
 import { LightActionIcon, LightBadge, LightGroup, LightSwitch, LightText } from './lightMantine'
-import { chapterLabel, readStateOf, type FileOrigin } from './chapterTable'
+import { chapterLabel, readStateOf, type FileOrigin, type VolumeGroup } from './chapterTable'
 import { displayChapterTitle } from '../../lib/chapterTitle'
 
 /** Stable for the page's lifetime (see `useStableActions`), so rows never re-render over a handler. */
@@ -76,6 +77,14 @@ export type ChapterSpanRowActions = {
   applyReadState: (chapterIds: number[], state: ChapterReadState) => void
   selectChapters: (chapterIds: number[]) => void
   toggleSpanFold: (key: string) => void
+}
+
+export type ChapterVolumeRowActions = {
+  applyWanted: (chapterIds: number[], wanted: boolean) => void
+  applyReadState: (chapterIds: number[], state: ChapterReadState) => void
+  download: (chapterIds: number[]) => void
+  selectChapters: (chapterIds: number[]) => void
+  toggleVolume: (key: string) => void
 }
 
 type ChapterRowProps = {
@@ -853,6 +862,181 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
             ) : (
                 <Box w={32} style={{ flex: 'none' }} aria-hidden />
             )}
+          </Group>
+        </Table.Td>
+      </Table.Tr>
+  )
+})
+
+type ChapterVolumeRowProps = {
+  group: VolumeGroup
+  collapsed: boolean
+  readProgress: ReadonlyMap<number, ChapterProgressDto>
+  readTracking: boolean
+  canEditMetadata: boolean
+  canDownload: boolean
+  downloadDisabled: boolean
+  wantedPending: boolean
+  downloadPending: boolean
+  actions: ChapterVolumeRowActions
+}
+
+/**
+ * The header over one volume's chapters: its counts, and the bulk actions for them. Folds the
+ * volume on click. Every action takes the group's chapters, so it reuses the same bulk handlers the
+ * selection bar calls.
+ */
+export const ChapterVolumeRow = memo(function ChapterVolumeRow({
+  group,
+  collapsed,
+  readProgress,
+  readTracking,
+  canEditMetadata,
+  canDownload,
+  downloadDisabled,
+  wantedPending,
+  downloadPending,
+  actions,
+}: ChapterVolumeRowProps) {
+  const { t } = useLingui()
+  const { volume, chapters, key } = group
+  const total = chapters.length
+  const ids = chapters.map((c) => c.id)
+  const downloaded = chapters.filter((c) => c.hasFile && !c.fileMissing)
+  const states = downloaded.map((c) => readStateOf(readProgress.get(c.id)))
+  const readCount = states.filter((st) => st.read).length
+  const unreadCount = downloaded.length - readCount
+  const missingIds = chapters.filter((c) => !c.hasFile && !c.fileRemovedAt).map((c) => c.id)
+  const missingCount = missingIds.length
+  const downloadedCount = downloaded.length
+  const numbers = chapters.flatMap((c) => (c.number === null ? [] : [c.number]))
+  const name = volume === null ? t`No volume` : t`Vol. ${volume}`
+  const wantedCount = chapters.filter((c) => c.wanted).length
+  const allWanted = wantedCount === total
+  const mixed = wantedCount > 0 && !allWanted
+  const toggle = () => actions.toggleVolume(key)
+
+  return (
+      <Table.Tr className="chapter-volume-row">
+        <Table.Td onClick={(e) => e.stopPropagation()}>
+          <Tooltip
+              label={
+                mixed
+                    ? plural(total, {
+                        one: `${wantedCount} of # chapter wanted. Click to want all.`,
+                        other: `${wantedCount} of # chapters wanted. Click to want all.`,
+                      })
+                    : allWanted
+                        ? plural(total, { one: 'All # chapter wanted', other: 'All # chapters wanted' })
+                        : plural(total, { one: 'None of the # chapter wanted', other: 'None of the # chapters wanted' })
+              }
+              withArrow
+          >
+            <Switch
+                size="sm"
+                checked={allWanted}
+                classNames={mixed ? { track: 'chapter-span-wanted-mixed' } : undefined}
+                thumbIcon={mixed ? <IconMinus size={10} /> : undefined}
+                aria-label={plural(total, {
+                  one: `Wanted for ${name}: ${wantedCount} of # chapter`,
+                  other: `Wanted for ${name}: ${wantedCount} of # chapters`,
+                })}
+                disabled={!canEditMetadata || wantedPending}
+                onChange={(e) => actions.applyWanted(ids, e.currentTarget.checked)}
+            />
+          </Tooltip>
+        </Table.Td>
+        <Table.Td>
+          <Group
+              gap={6}
+              wrap="nowrap"
+              className="chapter-volume-toggle"
+              aria-expanded={!collapsed}
+              aria-label={collapsed ? t`Expand ${name}` : t`Collapse ${name}`}
+              {...pressable(toggle)}
+          >
+            {collapsed ? <IconChevronRight size={16} /> : <IconChevronDown size={16} />}
+            {volume === null ? (
+                <Text size="sm" fw={600} className="chapter-label">{name}</Text>
+            ) : (
+                <Badge size="sm" color="var(--volume)" variant="light" className="tnum chapter-label">{name}</Badge>
+            )}
+          </Group>
+        </Table.Td>
+        <Table.Td>
+          <MetaList
+              className="tnum"
+              style={{ color: 'var(--ink-3)', fontSize: 'var(--mantine-font-size-sm)' }}
+              items={[
+                numbers.length > 0 && chapterRangeLabel(Math.min(...numbers), Math.max(...numbers)),
+                plural(total, { one: '# chapter', other: '# chapters' }),
+                t`${downloadedCount} downloaded`,
+                readTracking && readCount > 0 && <Trans key="read">{readCount} read</Trans>,
+                readTracking && unreadCount > 0 && <Trans key="unread">{unreadCount} unread</Trans>,
+              ]}
+          />
+        </Table.Td>
+        <Table.Td />
+        <Table.Td />
+        <Table.Td>
+          {readTracking && downloaded.length > 0 && (
+              <Progress
+                  value={(readCount / downloaded.length) * 100}
+                  color="var(--brand)"
+                  size="sm"
+                  radius="xl"
+                  aria-label={t`Reading progress`}
+              />
+          )}
+        </Table.Td>
+        <Table.Td onClick={(e) => e.stopPropagation()}>
+          <Group gap={2} wrap="nowrap" justify="flex-end">
+            {canDownload ? (
+                <Tooltip label={missingCount > 0 ? t`Download ${missingCount} missing` : t`Nothing to download`} withArrow>
+                  <ActionIcon
+                      variant="subtle"
+                      color="var(--neutral)"
+                      data-row-action=""
+                      aria-label={t`Download missing chapters in ${name}`}
+                      disabled={downloadDisabled || missingCount === 0}
+                      loading={downloadPending}
+                      onClick={() => actions.download(missingIds)}
+                  >
+                    <IconDownload size={19} />
+                  </ActionIcon>
+                </Tooltip>
+            ) : (
+                <Box w={32} style={{ flex: 'none' }} aria-hidden />
+            )}
+            <Menu shadow="md" position="bottom-end" withinPortal>
+              <Menu.Target>
+                <ActionIcon variant="subtle" color="var(--neutral)" data-row-action="" aria-label={t`Actions for ${name}`}>
+                  <IconDotsVertical size={19} />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                {readTracking && (
+                    <>
+                      <Menu.Item
+                          leftSection={<IconEyeCheck size={16} />}
+                          onClick={() => actions.applyReadState(ids, 'read')}
+                      >
+                        <Trans>Mark read</Trans>
+                      </Menu.Item>
+                      <Menu.Item
+                          leftSection={<IconEyeOff size={16} />}
+                          onClick={() => actions.applyReadState(ids, 'unread')}
+                      >
+                        <Trans>Mark unread</Trans>
+                      </Menu.Item>
+                      <Menu.Divider />
+                    </>
+                )}
+                <Menu.Item leftSection={<IconListCheck size={16} />} onClick={() => actions.selectChapters(ids)}>
+                  <Trans>Select these chapters</Trans>
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
           </Group>
         </Table.Td>
       </Table.Tr>

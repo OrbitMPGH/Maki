@@ -11,7 +11,9 @@ namespace Maki.Core.ComicInfo;
 
 public static class ComicInfoBuilder
 {
-    public static ComicInfo Build(Series series, Chapter chapter, int pageCount, string? group = null)
+    /// <param name="userTags">The series' user tag labels, written to SeriesGroup, where Kavita and Komga build collections from.</param>
+    public static ComicInfo Build(
+        Series series, Chapter chapter, int pageCount, string? group = null, IEnumerable<string>? userTags = null)
     {
         return new ComicInfo
         {
@@ -37,6 +39,7 @@ public static class ComicInfoBuilder
             Publisher = JoinList(series.Publisher),
             Genre = JoinList(series.Genres),
             Tags = JoinList(series.Tags),
+            SeriesGroup = SeriesGroupFor(userTags),
             Web = SeriesWebLinks.Joined(series),
             LanguageISO = chapter.Language,
             Manga = MangaFor(series.Type) ?? DefaultManga,
@@ -88,6 +91,10 @@ public static class ComicInfoBuilder
         "pornographic" => "X18+",
         _ => null
     };
+
+    /// <summary>User tag labels as ComicInfo's SeriesGroup, sorted so the same tags always write the same text.</summary>
+    internal static string? SeriesGroupFor(IEnumerable<string>? userTags) =>
+        userTags is null ? null : JoinList(userTags.Select(t => t.Trim()).Order(StringComparer.OrdinalIgnoreCase));
 
     /// <summary>The scanlation group as ComicInfo's ScanInformation, or null when there is none.</summary>
     internal static string? ScanInformationFor(string? group) =>

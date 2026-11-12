@@ -141,6 +141,8 @@ function toSeries(e: CatalogueEntry): SeriesDto {
     lastReadAt: o.lastRead == null ? null : daysAgo(o.lastRead),
     lastDownloadedAt: o.files > 0 ? hoursAgo(e.id * 7) : null,
     communityRating: Math.round(e.rating * 10) / 10,
+    sizeOnDisk: o.files > 0 ? o.files * 31_457_280 : null,
+    nextCheckAt: o.monitored === false || sources.length === 0 ? null : hoursAgo(-e.id),
     upgradeProfileId: o.profile ?? null,
     lastUpgradeScan: null,
     pendingProposalId: null,
@@ -297,9 +299,9 @@ const baseSpec: LibraryFilterSpec = {
 }
 
 export const savedFilters: SavedFilterDto[] = [
-  { id: 1, name: 'Ongoing and behind', sortOrder: 0, spec: { ...baseSpec, status: 'Ongoing', completeness: 'behind', sort: 'incomplete' } },
-  { id: 2, name: 'Favourites', sortOrder: 1, spec: { ...baseSpec, tagIds: [1], sort: 'title' } },
-  { id: 3, name: 'Finished, never rated', sortOrder: 2, spec: { ...baseSpec, status: 'Completed', ratingState: 'unrated' } },
+  { id: 1, name: 'Ongoing and behind', sortOrder: 0, isDefault: false, spec: { ...baseSpec, status: 'Ongoing', completeness: 'behind', sort: 'incomplete' } },
+  { id: 2, name: 'Favourites', sortOrder: 1, isDefault: false, spec: { ...baseSpec, tagIds: [1], sort: 'title' } },
+  { id: 3, name: 'Finished, never rated', sortOrder: 2, isDefault: false, spec: { ...baseSpec, status: 'Completed', ratingState: 'unrated' } },
 ]
 
 /** A slice of the recommendation tag vocabulary: enough to browse into a group, search and tick. */

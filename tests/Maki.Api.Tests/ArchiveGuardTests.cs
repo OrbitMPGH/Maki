@@ -143,6 +143,26 @@ public sealed class ArchiveGuardTests : IDisposable
     }
 
     [Fact]
+    public async Task VolumeFirstDue_skips_archived_series()
+    {
+        var (active, archived) = Pair();
+        using (var db = _db.NewContext())
+        {
+            foreach (var series in db.Series.IgnoreQueryFilters().Where(s => s.Id == active || s.Id == archived))
+            {
+                series.VolumeFirstPendingAt = DateTime.UtcNow;
+            }
+
+            db.SaveChanges();
+        }
+
+        using var context = _db.NewContext();
+        var service = new TorrentUpgradeService(context, null!, null!, null!, null!, TimeProvider.System, null!,
+            NullLogger<TorrentUpgradeService>.Instance);
+        Assert.Equal([active], await service.VolumeFirstDueAsync(5, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task CandidateSeries_skips_archived_series()
     {
         var (active, _) = Pair();
@@ -615,6 +635,23 @@ public sealed class ArchiveGuardTests : IDisposable
         SeedChapter(archived, 1m);
 
         AssertArchived(await SeriesController(_db.NewContext()).SearchMissing(archived, default));
+    }
+
+    [Theory]
+    [InlineData(SeriesBulkAction.Refresh)]
+    [InlineData(SeriesBulkAction.SearchMissing)]
+    public async Task SeriesBulk_refuses_archived_series(SeriesBulkAction action)
+    {
+        var (_, archived) = Pair();
+        SeedChapter(archived, 1m);
+        using var services = SeriesBulkTestKit.Services(_db);
+        var operations = new SeriesBulkOperations();
+
+        // Neither the chapter sync nor the queue is registered, so reaching either records a different error.
+        var operation = operations.Enqueue(action, [archived], SeriesBulkTestKit.Caller(1, true));
+        await SeriesBulkTestKit.Worker(services, operations).RunAsync(operation, default);
+
+        Assert.Equal(ArchivedKey, Assert.Single(operation.Snapshot().Failures).Error);
     }
 
     [Fact]

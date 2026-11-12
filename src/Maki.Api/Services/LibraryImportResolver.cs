@@ -67,6 +67,57 @@ public partial class LibraryImportResolver(
         return null;
     }
 
+    /// <summary>
+    /// The MangaBaka series a set of web links names, trying MangaBaka, AniList, MyAnimeList and
+    /// MangaUpdates in that order, with the link that resolved. Null when none does or the dump is missing.
+    /// </summary>
+    public async Task<(MetadataSearchResult Match, string Link)?> ResolveLinksAsync(
+        IReadOnlyList<string> links, CancellationToken ct)
+    {
+        if (links.Count == 0 || !await store.IsAvailableAsync(ct))
+        {
+            return null;
+        }
+
+        foreach (var link in links)
+        {
+            var found = ScrobbleMatching.ParseWebLinks([link]);
+            long? mangaBakaId = null;
+            if (found.TryGetValue("mangabaka", out var mb) &&
+                long.TryParse(mb, NumberStyles.None, CultureInfo.InvariantCulture, out var mbId) && mbId > 0)
+            {
+                mangaBakaId = mbId;
+            }
+            else if (found.TryGetValue("anilist", out var al) &&
+                     long.TryParse(al, NumberStyles.None, CultureInfo.InvariantCulture, out var alId))
+            {
+                mangaBakaId = await ByExternalAsync(MangaBakaLocalStore.ExternalSource.AniList, alId, ct);
+            }
+            else if (found.TryGetValue("mal", out var mal) &&
+                     long.TryParse(mal, NumberStyles.None, CultureInfo.InvariantCulture, out var malId))
+            {
+                mangaBakaId = await ByExternalAsync(MangaBakaLocalStore.ExternalSource.MyAnimeList, malId, ct);
+            }
+            else if (found.TryGetValue("mangaupdates", out var mu) &&
+                     (await store.GetIdsByMangaUpdatesIdsAsync([mu], ct)).TryGetValue(mu, out var muId))
+            {
+                mangaBakaId = muId;
+            }
+
+            if (mangaBakaId is { } id &&
+                await metadataProviders.First().GetAsync(id.ToString(CultureInfo.InvariantCulture), ct) is { } metadata)
+            {
+                return (new MetadataSearchResult(metadata.ProviderId, metadata.Title, metadata.CoverUrl, metadata.Year,
+                    metadata.Status, metadata.Description, metadata.TotalChapters), link);
+            }
+        }
+
+        return null;
+    }
+
+    private async Task<long?> ByExternalAsync(MangaBakaLocalStore.ExternalSource source, long id, CancellationToken ct) =>
+        (await store.GetIdsByExternalIdsAsync(source, [id], ct)).TryGetValue(id, out var mapped) ? mapped : null;
+
     public async Task<ImportIdResolution> ResolveAsync(string? input, CancellationToken ct)
     {
         if (Parse(input) is not var (service, id))

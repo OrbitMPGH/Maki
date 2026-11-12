@@ -280,6 +280,28 @@ export interface RecommendationItem {
   franchiseId?: number | null
 }
 
+/** Enough of a card for the detail modal, which loads everything else by id. */
+export function recommendationStub(providerId: string): RecommendationItem {
+  return {
+    providerId,
+    title: '',
+    coverUrl: null,
+    thumbUrl: null,
+    thumbUrlHiDpi: null,
+    year: null,
+    description: null,
+    status: '',
+    rating: null,
+    totalChapters: null,
+    matchedGenres: [],
+    matchedTags: [],
+    authorMatch: false,
+    relationKind: null,
+    relatedToTitle: null,
+    becauseOfTitle: null,
+  }
+}
+
 export interface RecommendationsResult {
   related: RecommendationItem[]
   similar: RecommendationItem[]
@@ -3155,6 +3177,50 @@ export function useSaveFilter() {
   })
 }
 
+export function useSetDefaultSavedFilter() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, isDefault }: { id: number; isDefault: boolean }) =>
+      api<SavedFilterDto>(`/library/filters/${id}/default`, {
+        method: 'PUT',
+        body: JSON.stringify({ isDefault }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['library-filters'] })
+    },
+  })
+}
+
+export function useReorderSavedFilters() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (ids: number[]) =>
+      api<SavedFilterDto[]>('/library/filters/order', { method: 'PUT', body: JSON.stringify({ ids }) }),
+    onMutate: async (ids) => {
+      await queryClient.cancelQueries({ queryKey: ['library-filters'] })
+      queryClient.setQueryData<SavedFilterDto[]>(['library-filters'], (current) =>
+        current ? ids.map((id) => current.find((f) => f.id === id)).filter((f) => f != null) : current,
+      )
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['library-filters'] })
+    },
+  })
+}
+
+/** Undo for a delete: the preset comes back under its old id, so a Home rail built from it works again. */
+export function useRestoreSavedFilter() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (filter: SavedFilterDto) =>
+      api<SavedFilterDto>('/library/filters/restore', { method: 'POST', body: JSON.stringify(filter) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['library-filters'] })
+      void queryClient.invalidateQueries({ queryKey: ['custom-rail-items'] })
+    },
+  })
+}
+
 export function useDeleteSavedFilter() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -4286,6 +4352,8 @@ export interface DownloadSettings {
   removeCompleted: TorrentRemovalMode
   /** Delete the downloaded files with the torrent, where the library is known to hold its own copy. */
   removeData: boolean
+  /** Look for a volume release before a new series downloads anything from its sources. */
+  volumeFirst: boolean
 }
 
 export type TorrentRemovalMode = 'never' | 'afterimport'
@@ -4436,6 +4504,41 @@ export function useBrowseFolders(path: string | null) {
     placeholderData: keepPreviousData,
     staleTime: 0,
     meta: { silent: true },
+  })
+}
+
+/** What pointing a root folder at `path` would find. `busy` and `warnings` are codes the client words. */
+export interface RootFolderPathCheck {
+  id: number
+  oldPath: string
+  path: string
+  series: number
+  foldersFound: number
+  foldersMissing: number
+  missingFolders: string[]
+  busy: ('downloads' | 'imports' | 'moves' | 'scans')[]
+  warnings: ('kavitaPathMap' | 'downloadPathMap' | 'overlapsRoot')[]
+}
+
+/** The edit modal shows a refusal inline. */
+export function useCheckRootFolderPath() {
+  return useMutation({
+    mutationFn: ({ id, path }: { id: number; path: string }) =>
+      api<RootFolderPathCheck>(`/rootfolder/${id}/path/check`, { method: 'POST', body: JSON.stringify({ path }) }),
+    meta: { silent: true },
+  })
+}
+
+export function useChangeRootFolderPath() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, path }: { id: number; path: string }) =>
+      api<RootFolder>(`/rootfolder/${id}/path`, { method: 'PUT', body: JSON.stringify({ path }) }),
+    meta: { silent: true },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['rootfolders'] })
+      void queryClient.invalidateQueries({ queryKey: ['series'] })
+    },
   })
 }
 

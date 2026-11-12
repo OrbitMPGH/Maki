@@ -2,6 +2,7 @@ using System.Globalization;
 using Maki.Api.Localization;
 using Maki.Core.Entities;
 using Maki.Core.Inbox;
+using Maki.Core.Metadata;
 using Maki.Core.Notifications;
 using Maki.Data;
 
@@ -31,11 +32,15 @@ public class SeriesMetadataChangeLog(
 
     /// <summary>The values a refresh may change, read before it runs.</summary>
     public readonly record struct Snapshot(
-        string Title, SeriesStatus Status, int? TotalChapters, int? TotalVolumes, string? Overview, string Genres)
+        string Title, SeriesStatus Status, int? TotalChapters, int? TotalVolumes, string? Overview, string Genres,
+        int? Year = null, string? AuthorStory = null, string? AuthorArt = null, string? Publisher = null,
+        string? SortTitle = null, string? Type = null, string? ContentRating = null,
+        IReadOnlyList<LocalizedTitle>? AltTitles = null)
     {
         public static Snapshot Of(Series series) =>
             new(series.Title, series.Status, series.TotalChapters, series.TotalVolumes, series.Overview,
-                string.Join(", ", series.Genres));
+                string.Join(", ", series.Genres), series.Year, series.AuthorStory, series.AuthorArt,
+                series.Publisher, series.SortTitle, series.Type, series.ContentRating, series.AltTitles);
     }
 
     /// <summary>Records each tracked field that differs between <paramref name="before"/> and the series now.</summary>
@@ -46,11 +51,38 @@ public class SeriesMetadataChangeLog(
         Record(series, SeriesMetadataField.TotalChapters, Text(before.TotalChapters), Text(series.TotalChapters), MetadataChangeSource.Refresh);
         Record(series, SeriesMetadataField.TotalVolumes, Text(before.TotalVolumes), Text(series.TotalVolumes), MetadataChangeSource.Refresh);
         Record(series, SeriesMetadataField.Genres, before.Genres, string.Join(", ", series.Genres), MetadataChangeSource.Refresh);
+        RecordDetails(series, before, MetadataChangeSource.Refresh);
         if (!string.Equals(before.Overview, series.Overview, StringComparison.Ordinal))
         {
             RecordReplaced(series, SeriesMetadataField.Overview, null, MetadataChangeSource.Refresh);
         }
+
+        if (!SameTitles(before.AltTitles, series.AltTitles))
+        {
+            RecordReplaced(series, SeriesMetadataField.AltTitles, null, MetadataChangeSource.Refresh);
+        }
     }
+
+    /// <summary>The year, credits, publisher, sort title, type and content rating, each when it changed.</summary>
+    public void RecordDetails(Series series, Snapshot before, MetadataChangeSource source, int? userId = null)
+    {
+        Record(series, SeriesMetadataField.Year, Text(before.Year), Text(series.Year), source, userId);
+        Record(series, SeriesMetadataField.AuthorStory, before.AuthorStory, series.AuthorStory, source, userId);
+        Record(series, SeriesMetadataField.AuthorArt, before.AuthorArt, series.AuthorArt, source, userId);
+        Record(series, SeriesMetadataField.Publisher, before.Publisher, series.Publisher, source, userId);
+        var derived = before.SortTitle == SeriesMetadataMapper.SortTitleFor(before.Title) &&
+                      series.SortTitle == SeriesMetadataMapper.SortTitleFor(series.Title);
+        if (!derived)
+        {
+            Record(series, SeriesMetadataField.SortTitle, before.SortTitle, series.SortTitle, source, userId);
+        }
+
+        Record(series, SeriesMetadataField.Type, before.Type, series.Type, source, userId);
+        Record(series, SeriesMetadataField.ContentRating, before.ContentRating, series.ContentRating, source, userId);
+    }
+
+    public static bool SameTitles(IReadOnlyList<LocalizedTitle>? a, IReadOnlyList<LocalizedTitle>? b) =>
+        (a ?? []).SequenceEqual(b ?? []);
 
     /// <summary>
     /// Records a status change and queues its announcement. A move to or from Unknown is recorded

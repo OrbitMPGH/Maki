@@ -34,6 +34,7 @@ public class SmartDownloadJob(
     DownloadBatchNotifier batches,
     SettingsService settings,
     SourceScoutService scout,
+    VolumeFirstGate volumeFirst,
     ILogger<SmartDownloadJob> logger) : IJob
 {
     public static readonly JobKey Key = new("smart-download");
@@ -75,6 +76,8 @@ public class SmartDownloadJob(
 
         foreach (var (series, after) in dueSeries)
         {
+            var hold = await volumeFirst.CheckAsync(series.Id, ct);
+
             var chapters = await db.Chapters.AsNoTracking().Where(c => c.SeriesId == series.Id).ToListAsync(ct);
             if (await WaitsForMeasurementAsync(db, scout, series.Id, chapters, scoutOnMatch, ct))
             {
@@ -90,6 +93,12 @@ public class SmartDownloadJob(
             var backingOff = await BackingOffAsync(db, chapters, maxAttempts, DateTime.UtcNow, ct);
             var walls = await WaitingOnManualRetryAsync(db, chapters, ct);
             var missing = Chapter.NextWanted(BeforeWall(Ahead(chapters, after), walls), batchSize, backingOff);
+            if (hold.Active)
+            {
+                // Smart reads in order, so a volume release covering the next chapter holds the whole batch.
+                var byId = chapters.ToDictionary(c => c.Id);
+                missing = missing.TakeWhile(id => !hold.Holds(byId[id])).ToList();
+            }
 
             if (missing.Count == 0)
             {

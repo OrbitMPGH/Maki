@@ -6,6 +6,7 @@ using Maki.Core.Naming;
 using Maki.Core.Notifications;
 using Maki.Core.Paths;
 using Maki.Core.Reading;
+using Maki.Core.Tags;
 using Maki.Data;
 using Maki.Data.Identity;
 using System.Security.Cryptography;
@@ -100,7 +101,8 @@ public class SeriesCreationService(
     IUserLocaleResolver locales,
     IMessageCatalog catalog,
     ILocalizer localizer,
-    ILogger<SeriesCreationService> logger)
+    ILogger<SeriesCreationService> logger,
+    AutoTagRuleService? autoTags = null)
 {
     /// <param name="deferSourceMatching">
     /// Hand auto-matching to <see cref="SourceMatchWorkerHostedService"/> instead of awaiting it.
@@ -291,6 +293,13 @@ public class SeriesCreationService(
 
         folderNameLock.Dispose();
         providerLock?.Dispose();
+
+        // Before the announcement, so a tag-scoped notification connection hears about a series a
+        // rule tagged.
+        if (autoTags is not null)
+        {
+            await autoTags.ApplyOnAddAsync(series, AutoTagAddedVia.FromAddedFrom(addedFrom), attributedUserId, ct);
+        }
 
         await NotifyAddedAsync(series, originatingRequest, ct);
 

@@ -174,6 +174,32 @@ public class LibraryFolderSafetyTests : IDisposable
     }
 
     [Fact]
+    public async Task RescanReadsTheFolderAMoveLeftBeforeItTookTheLock()
+    {
+        var (_, seriesId) = Seed("Chainsaw Man", files: [Path.Combine("Chainsaw Man", "Chainsaw Man c001.cbz")]);
+        Directory.CreateDirectory(Path.Combine(_root, "Other Series"));
+        var moved = Path.Combine(_root, "moved");
+        WriteComic(Path.Combine(moved, "Chainsaw Man", "Chainsaw Man c001.cbz"));
+
+        await using var db = _db.NewContext();
+        var stale = await db.Series.Include(s => s.RootFolder).SingleAsync(s => s.Id == seriesId);
+        await using (var mover = _db.NewContext())
+        {
+            var destination = new RootFolder { Path = moved };
+            mover.RootFolders.Add(destination);
+            await mover.SaveChangesAsync();
+            (await mover.Series.SingleAsync(s => s.Id == seriesId)).RootFolderId = destination.Id;
+            await mover.SaveChangesAsync();
+        }
+
+        var result = await LinkService(db).RescanSeriesAsync(stale);
+
+        Assert.Equal(0, result.Removed);
+        await using var check = _db.NewContext();
+        Assert.Equal(1, await check.ChapterFiles.CountAsync(f => f.SeriesId == seriesId));
+    }
+
+    [Fact]
     public async Task RescanKeepsEveryRowWhenTheRootIsEmpty()
     {
         var (_, seriesId) = Seed("Gone", files: [Path.Combine("Gone", "Chainsaw Man c001.cbz")]);

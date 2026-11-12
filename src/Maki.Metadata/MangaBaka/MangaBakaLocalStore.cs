@@ -761,6 +761,60 @@ public class MangaBakaLocalStore(
         return found;
     }
 
+    /// <summary>The five direct relation columns, with the key a notification uses for each.</summary>
+    public static readonly IReadOnlyList<(string Column, string Kind)> DirectRelationKinds =
+    [
+        ("relationships_sequel", "sequel"),
+        ("relationships_prequel", "prequel"),
+        ("relationships_spin_off", "spinOff"),
+        ("relationships_side_story", "sideStory"),
+        ("relationships_main_story", "mainStory"),
+    ];
+
+    /// <summary>
+    /// The raw direct relation ids of each seed, as the dump lists them: no merge following, no
+    /// filtering. A seed with no row is absent. Empty when no dump is installed.
+    /// </summary>
+    public virtual async Task<IReadOnlyDictionary<long, IReadOnlyList<(long Id, string Kind)>>> GetDirectRelationIdsAsync(
+        IReadOnlyCollection<long> seedIds, CancellationToken ct = default)
+    {
+        var result = new Dictionary<long, IReadOnlyList<(long Id, string Kind)>>();
+        if (seedIds.Count == 0 || !await IsAvailableAsync(ct))
+        {
+            return result;
+        }
+
+        using var conn = Open();
+        foreach (var chunk in seedIds.Distinct().Chunk(MaxInlineIds))
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = $"""
+                SELECT id, {string.Join(", ", DirectRelationKinds.Select(k => k.Column))}
+                FROM series WHERE id IN ({string.Join(",", chunk.Select(id => id.ToString(CultureInfo.InvariantCulture)))})
+                """;
+            using var reader = await cmd.ExecuteReaderAsync(ct);
+            while (await reader.ReadAsync(ct))
+            {
+                var related = new List<(long Id, string Kind)>();
+                var seen = new HashSet<long>();
+                for (var i = 0; i < DirectRelationKinds.Count; i++)
+                {
+                    foreach (var id in ParseIdArray(GetString(reader, i + 1)))
+                    {
+                        if (seen.Add(id))
+                        {
+                            related.Add((id, DirectRelationKinds[i].Kind));
+                        }
+                    }
+                }
+
+                result[reader.GetInt64(0)] = related;
+            }
+        }
+
+        return result;
+    }
+
     /// <summary>
     /// Direct relations (sequels, prequels, spin-offs, side/main stories) of the given
     /// library series, excluding anything already in the library. Merged entries are

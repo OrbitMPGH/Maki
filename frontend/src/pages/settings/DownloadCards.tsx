@@ -141,19 +141,22 @@ export function SourcePrioritySection() {
   const save = useSaveDownloadSettings()
   const [sourceOrder, setSourceOrder] = useState<SourceOrderMode>('manual')
   const [scoutOnMatch, setScoutOnMatch] = useState(false)
+  const [volumeFirst, setVolumeFirst] = useState(false)
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useSliceSync(
-    settings && { sourceOrder: settings.sourceOrder, scoutOnMatch: settings.scoutOnMatch },
+    settings && { sourceOrder: settings.sourceOrder, scoutOnMatch: settings.scoutOnMatch, volumeFirst: settings.volumeFirst },
     (slice) => {
       setSourceOrder(slice.sourceOrder)
       setScoutOnMatch(slice.scoutOnMatch)
+      setVolumeFirst(slice.volumeFirst)
     },
     discarded,
   )
 
   const dirty =
-    settings !== undefined && (sourceOrder !== settings.sourceOrder || scoutOnMatch !== settings.scoutOnMatch)
+    settings !== undefined &&
+    (sourceOrder !== settings.sourceOrder || scoutOnMatch !== settings.scoutOnMatch || volumeFirst !== settings.volumeFirst)
 
   const byName = new Map((sources ?? []).map((s) => [s.name, s]))
   const enabled = priority
@@ -178,7 +181,7 @@ export function SourcePrioritySection() {
       dirty={dirty}
       saving={save.isPending}
       onDiscard={discard}
-      onSave={() => save.mutate({ sourceOrder, scoutOnMatch }, { onSuccess: savedToast })}
+      onSave={() => save.mutate({ sourceOrder, scoutOnMatch, volumeFirst }, { onSuccess: savedToast })}
     >
       <Select
         label={t`Pick a source by`}
@@ -196,6 +199,13 @@ export function SourcePrioritySection() {
         description={t`Samples a few pages from every linked source.`}
         checked={scoutOnMatch}
         onChange={(e) => setScoutOnMatch(e.currentTarget.checked)}
+        mb="sm"
+      />
+      <Switch
+        label={t`Look for volume releases first`}
+        description={t`A new series with nothing on disk asks your indexers for a volume release once its sources are matched, before anything is downloaded from them. Series from an import list wait up to a day for their turn. While a release waits for approval (up to 48 hours) or downloads (up to 72 hours), automatic downloads from sources skip the chapters it covers, so they are not fetched twice. Needs Prowlarr or Jackett, and a quality profile that upgrades the series to volumes. Downloads you start yourself are never held.`}
+        checked={volumeFirst}
+        onChange={(e) => setVolumeFirst(e.currentTarget.checked)}
         mb="lg"
       />
       {(sources || priority) && (
@@ -731,10 +741,14 @@ export function VolumeReleasesSection() {
   const [volumeMissingTolerance, setVolumeMissingTolerance] = useState<number>(3)
   const [volumeSearchesPerRun, setVolumeSearchesPerRun] = useState<number>(10)
   const [proposalExpiryDays, setProposalExpiryDays] = useState<number>(30)
+  const [autoApprove, setAutoApprove] = useState(false)
+  const [autoApproveMb, setAutoApproveMb] = useState<number>(12288)
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useSliceSync(
     settings && {
+      autoApprove: settings.autoApprove,
+      autoApproveMaxBytes: settings.autoApproveMaxBytes,
       volumeSearch: settings.volumeSearch,
       torrentAutoGrabMaxBytes: settings.torrentAutoGrabMaxBytes,
       volumeMissingTolerance: settings.volumeMissingTolerance,
@@ -747,11 +761,14 @@ export function VolumeReleasesSection() {
       setVolumeMissingTolerance(slice.volumeMissingTolerance)
       setVolumeSearchesPerRun(slice.volumeSearchesPerRun)
       setProposalExpiryDays(slice.proposalExpiryDays)
+      setAutoApprove(slice.autoApprove)
+      setAutoApproveMb(slice.autoApproveMaxBytes / BYTES_PER_MB)
     },
     discarded,
   )
 
   const autoGrabBytes = Math.round(Number(autoGrabMb) * BYTES_PER_MB)
+  const autoApproveBytes = Math.round(Number(autoApproveMb) * BYTES_PER_MB)
 
   const dirty =
     settings !== undefined &&
@@ -759,7 +776,9 @@ export function VolumeReleasesSection() {
       autoGrabBytes !== settings.torrentAutoGrabMaxBytes ||
       Number(volumeMissingTolerance) !== settings.volumeMissingTolerance ||
       Number(volumeSearchesPerRun) !== settings.volumeSearchesPerRun ||
-      Number(proposalExpiryDays) !== settings.proposalExpiryDays)
+      Number(proposalExpiryDays) !== settings.proposalExpiryDays ||
+      autoApprove !== settings.autoApprove ||
+      autoApproveBytes !== settings.autoApproveMaxBytes)
 
   return (
     <SettingsSection
@@ -777,6 +796,8 @@ export function VolumeReleasesSection() {
             volumeMissingTolerance: Number(volumeMissingTolerance),
             volumeSearchesPerRun: Number(volumeSearchesPerRun),
             proposalExpiryDays: Number(proposalExpiryDays),
+            autoApprove,
+            autoApproveMaxBytes: autoApproveBytes,
           },
           { onSuccess: savedToast },
         )
@@ -829,6 +850,25 @@ export function VolumeReleasesSection() {
           disabled={!volumeSearch}
         />
       </Group>
+      <Switch
+        label={t`Approve volume releases automatically`}
+        description={t`Grabs a proposed release without waiting for you when it is a digital release within the size ceiling and its only reasons for waiting are that it names no volume range, adds chapters you don't have, or is over the auto-grab size. Anything Maki is unsure about, such as chapters it cannot place, still waits for you. It only replaces files the release is at least as good as, and replaced files go to the trash as usual. Pending proposals are checked on the next daily run, or when you press Search now.`}
+        checked={autoApprove}
+        onChange={(e) => setAutoApprove(e.currentTarget.checked)}
+        disabled={!volumeSearch}
+        mt="md"
+        mb="sm"
+      />
+      <SettingsNumberInput
+        label={t`Automatic approval size ceiling (MB)`}
+        description={t`Never approve a release larger than this on your behalf. The 12288 MB default is about 50 digital volumes.`}
+        min={100}
+        max={204800}
+        decimalScale={0}
+        value={autoApproveMb}
+        onChange={setAutoApproveMb}
+        disabled={!volumeSearch || !autoApprove}
+      />
     </SettingsSection>
   )
 }

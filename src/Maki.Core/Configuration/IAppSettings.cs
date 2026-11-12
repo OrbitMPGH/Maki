@@ -205,6 +205,18 @@ public static class SettingKeys
     /// </summary>
     public const string LibraryWriteCoverToFolder = "library.writecovertofolder";
 
+    /// <summary>"true" turns on the drop folder: <see cref="ImportDropFolderPath"/> is polled and comics that match one library series are imported into it.</summary>
+    public const string ImportDropFolderEnabled = "import.dropfolder.enabled";
+
+    /// <summary>The folder polled for comics to import. Admin-set, so it may be anywhere on the host.</summary>
+    public const string ImportDropFolderPath = "import.dropfolder.path";
+
+    /// <summary>Minutes between polls, 1 to 1440; unset is 5. A file is touched only once its size held across two polls.</summary>
+    public const string ImportDropFolderIntervalMinutes = "import.dropfolder.intervalminutes";
+
+    /// <summary>"move" moves matched comics into the series folder; anything else hardlinks or copies them per <see cref="DownloadUseHardlinks"/>.</summary>
+    public const string ImportDropFolderPlacement = "import.dropfolder.placement";
+
     /// <summary>
     /// Comma-separated languages whose volume and chapter words the file name and release parsers
     /// read besides English ("fr,de"), see <see cref="Parsing.NameParsingProfile"/>. Unset reads
@@ -479,6 +491,14 @@ public static class SettingKeys
     /// </summary>
     public const string SourcesScoutOnMatch = "sources.scoutonmatch";
 
+    /// <summary>
+    /// "true" → a new series looks for a volume release before anything is downloaded from its sources:
+    /// the volume search runs once its sources are matched, a series with no files is eligible for it,
+    /// and automatic source downloads wait while a release is pending or downloading
+    /// (<c>VolumeFirstGate</c>). Off by default.
+    /// </summary>
+    public const string DownloadsVolumeFirst = "downloads.volumefirst";
+
     /// <summary>"true" turns on the daily automatic upgrade scan. A per-series manual scan ignores it.</summary>
     public const string UpgradesEnabled = "upgrades.enabled";
 
@@ -559,6 +579,12 @@ public static class SettingKeys
 
     /// <summary>Days a pending torrent proposal waits before it expires (1..365, default 30).</summary>
     public const string UpgradesProposalExpiryDays = "upgrades.proposalExpiryDays";
+
+    /// <summary>"true" → a volume release proposal that <c>ProposalAutoApproval</c> allows is grabbed without waiting for a click. Off by default.</summary>
+    public const string UpgradesAutoApprove = "upgrades.autoApprove";
+
+    /// <summary>Largest release, in bytes, that may be approved automatically.</summary>
+    public const string UpgradesAutoApproveMaxBytes = "upgrades.autoApproveMaxBytes";
 
     /// <summary>Local date (yyyy-MM-dd) the volume search last ran, written by <c>UpgradeVolumeSearchJob</c>.</summary>
     public const string UpgradesLastVolumeSearchDate = "upgrades.lastVolumeSearchDate";
@@ -784,6 +810,12 @@ public static class SettingKeys
     /// new to the catalogue. Unset means the check has never run, and its first pass only records this.
     /// </summary>
     public const string DiscoverFollowingWatermark = "discover.following.watermark";
+
+    /// <summary>
+    /// Instance: JSON map from a library series' MangaBaka id to every direct relation id already
+    /// seen for it (<c>RelatedWorkWatchService</c>). Unset means the check has never run.
+    /// </summary>
+    public const string DiscoverRelatedSeen = "discover.related.seen";
 
     /// <summary>
     /// Instance: write time and length of the dump, vector database and taste file the search

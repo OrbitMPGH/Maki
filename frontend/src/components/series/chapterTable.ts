@@ -128,3 +128,95 @@ export function countSkipped(
 }
 
 export type FileOrigin = { label: string; scraped: boolean; hint: string }
+
+export const CHAPTER_SORTS = ['asc', 'desc', 'releasedAsc', 'releasedDesc'] as const
+export type ChapterSort = (typeof CHAPTER_SORTS)[number]
+
+export const isReleaseSort = (sort: ChapterSort) => sort === 'releasedAsc' || sort === 'releasedDesc'
+export const isDescendingSort = (sort: ChapterSort) => sort === 'desc' || sort === 'releasedDesc'
+
+/**
+ * The chapter list in the requested order. The API sends numbered chapters ascending with
+ * unnumbered one-shots after them; descending by number flips only the numbered run, so a pile of
+ * one-shots doesn't bury the latest chapter. Release date sorts keep chapters without a date at
+ * the end in either direction, and break ties (a batch released the same day) by number in the
+ * same direction as the date.
+ */
+export function sortChapters(chapters: readonly ChapterDto[], sort: ChapterSort): ChapterDto[] {
+  if (sort === 'asc') return [...chapters]
+  if (sort === 'desc') {
+    return [...chapters.filter((c) => c.number !== null).reverse(), ...chapters.filter((c) => c.number === null)]
+  }
+  const sign = sort === 'releasedAsc' ? 1 : -1
+  const stamp = (c: ChapterDto) => {
+    const time = c.releaseDate ? Date.parse(c.releaseDate) : NaN
+    return Number.isNaN(time) ? null : time
+  }
+  const order = new Map(chapters.map((c, i) => [c.id, i]))
+  return [...chapters].sort((a, b) => {
+    const ta = stamp(a)
+    const tb = stamp(b)
+    if (ta === null || tb === null) {
+      if (ta === tb) return (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0)
+      return ta === null ? 1 : -1
+    }
+    if (ta !== tb) return sign * (ta - tb)
+    if (a.number !== null && b.number !== null && a.number !== b.number) return sign * (a.number - b.number)
+    return (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0)
+  })
+}
+
+/** The columns the table lets the reader hide. The chapter number, the switch and the row actions always show. */
+export const HIDABLE_CHAPTER_COLUMNS = ['title', 'released', 'source', 'status'] as const
+export type HidableChapterColumn = (typeof HIDABLE_CHAPTER_COLUMNS)[number]
+
+export function parseHiddenColumns(raw: string | null): ReadonlySet<HidableChapterColumn> {
+  const wanted = new Set((raw ?? '').split(','))
+  return new Set(HIDABLE_CHAPTER_COLUMNS.filter((key) => wanted.has(key)))
+}
+
+export const serializeHiddenColumns = (hidden: ReadonlySet<HidableChapterColumn>) =>
+  HIDABLE_CHAPTER_COLUMNS.filter((key) => hidden.has(key)).join(',')
+
+/**
+ * The volume a chapter belongs to: the metadata volume, else the first number of the volume or
+ * compilation file backing it ("1-2" files under 1). Null when nothing names one.
+ */
+export function volumeOf(c: ChapterDto): number | null {
+  if (c.volume !== null) return c.volume
+  const fromFile = c.fileVolume?.match(/\d+(?:\.\d+)?/)?.[0]
+  return fromFile === undefined ? null : Number(fromFile)
+}
+
+export type VolumeGroup = {
+  key: string
+  /** Null for the trailing "No volume" group. */
+  volume: number | null
+  chapters: ChapterDto[]
+}
+
+/** Grouping starts on by default only when most chapters name a volume. */
+export function mostHaveVolumes(chapters: readonly ChapterDto[]): boolean {
+  if (chapters.length === 0) return false
+  return chapters.filter((c) => volumeOf(c) !== null).length * 2 > chapters.length
+}
+
+/**
+ * Splits an already sorted list into volumes, keeping each chapter's place within its group.
+ * Groups run in volume order (reversed when descending) with chapters that name no volume last.
+ */
+export function groupByVolume(chapters: readonly ChapterDto[], descending: boolean): VolumeGroup[] {
+  const groups = new Map<string, VolumeGroup>()
+  for (const c of chapters) {
+    const volume = volumeOf(c)
+    const key = volume === null ? 'none' : `v${volume}`
+    let group = groups.get(key)
+    if (!group) groups.set(key, (group = { key, volume, chapters: [] }))
+    group.chapters.push(c)
+  }
+  const sign = descending ? -1 : 1
+  return [...groups.values()].sort((a, b) => {
+    if (a.volume === null || b.volume === null) return a.volume === b.volume ? 0 : a.volume === null ? 1 : -1
+    return sign * (a.volume - b.volume)
+  })
+}

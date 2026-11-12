@@ -48,6 +48,7 @@ import type { InboxPrefs } from '../../../src/api/inbox'
 import type { ReaderSettings } from '../../../src/api/reader'
 import type { ReadingProfile } from '../../../src/api/readingProfiles'
 import type { RecycleBin } from '../../../src/api/recycleBin'
+import type { AutoTagRule } from '../../../src/api/autoTagRules'
 import type { PageConversionStatus } from '../../../src/api/pageConversion'
 import type { UpscaleCatalogEntry, UpscalingState } from '../../../src/api/upscaling'
 import type { SuwayomiConnection } from '../../../src/api/suwayomi'
@@ -129,6 +130,19 @@ export const tags = [
   { id: 2, label: 'Weekend read', color: 'teal', seriesCount: 4 },
   { id: 3, label: 'Re-read', color: 'orange', seriesCount: 2 },
 ] satisfies TagDto[]
+
+export const autoTagRules = [
+  {
+    id: 1,
+    tagId: 2,
+    enabled: true,
+    conditions: [
+      { field: 'type', value: 'manhwa' },
+      { field: 'addedVia', value: 'importList' },
+    ],
+  },
+  { id: 2, tagId: 3, enabled: false, conditions: [{ field: 'contentRating', value: 'suggestive' }] },
+] satisfies AutoTagRule[]
 
 const sourceBase = {
   needsFlareSolverr: false,
@@ -427,6 +441,7 @@ export const downloadSettings: DownloadSettings = {
   adaptiveRefresh: true,
   removeCompleted: 'never',
   removeData: true,
+  volumeFirst: false,
 }
 
 export const readFileCleanup: ReadFileCleanupSettings = { enabled: false, days: 7, keepLast: true }
@@ -493,6 +508,8 @@ export const upgradeSettings: UpgradeSettings = {
   volumeMissingTolerance: 3,
   volumeSearchesPerRun: 10,
   proposalExpiryDays: 30,
+  autoApprove: false,
+  autoApproveMaxBytes: 12884901888,
 }
 
 export const qualityFormats: QualityFormatDto[] = [

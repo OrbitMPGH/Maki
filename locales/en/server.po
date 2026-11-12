@@ -756,6 +756,11 @@ msgstr "Folder no longer exists"
 msgid "error.libraryImport.folderOwnedByOtherSeries"
 msgstr "This folder already belongs to another series in the library"
 
+#: src/Maki.Api/Services/ManualImportService.cs
+#: src/Maki.Api/Controllers/DropFolderController.cs
+msgid "error.import.holdsRootFolder"
+msgstr "This folder is a library root folder or contains one, so Maki won't import from it"
+
 #: src/Maki.Api/Services/LibraryImportResolver.cs
 msgid "error.libraryImport.idNeedsDump"
 msgstr "Ids are looked up in the local MangaBaka database, which is not downloaded yet. Try again once it is installed."
@@ -902,6 +907,23 @@ msgstr "Chapter and volume counts must be between 0 and {max}."
 #: src/Maki.Api/Controllers/SeriesMetadataController.cs
 msgid "error.metadata.invalidStatus"
 msgstr "Unknown status."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.invalidYear"
+msgstr "The year must be between {minYear} and {maxYear}."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.resetAboveRatingLimit"
+msgstr "The provider rates this series above your content rating limit, so its rating can't be reset."
+
+#: src/Maki.Api/Controllers/SeriesMetadataController.cs
+msgid "error.metadata.unknownType"
+msgstr "Unknown series type."
+
+#. {url} is the address the user entered. {status} is an HTTP status code.
+#: src/Maki.Api/Controllers/MediaCoverController.cs
+msgid "error.metadata.coverFetchFailed"
+msgstr "{reason, select, refused {Maki only fetches images from public web addresses, so it skipped {url}.} timeout {{url} took too long to answer.} status {{url} answered with HTTP {status}.} redirects {{url} redirected too many times.} other {Maki could not reach {url}.}}"
 
 #: src/Maki.Api/Controllers/SeriesMetadataController.cs
 msgid "error.metadata.noFields"
@@ -1983,6 +2005,10 @@ msgstr "This sign-in mode needs a username."
 #: src/Maki.Api/Controllers/SuwayomiController.cs
 msgid "error.suwayomi.versionUnsupported"
 msgstr "Suwayomi {version} is too old for this sign-in mode. Maki needs {minimum} or later."
+
+#: src/Maki.Api/Controllers/AutoTagRulesController.cs
+msgid "error.autoTagRules.invalidConditions"
+msgstr "A rule needs between 1 and 20 conditions, each with a known field and a valid value"
 
 #. {label} is the tag name the user typed in.
 #: src/Maki.Api/Controllers/TagsController.cs
@@ -3241,6 +3267,23 @@ msgstr "New from creators you follow"
 msgid "inbox.followedReleases.body"
 msgstr "{count, plural, one {# new title} other {# new titles}} in the catalogue."
 
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWork.title"
+msgstr "{kind, select, sequel {New sequel} prequel {New prequel} spinOff {New spin-off} sideStory {New side story} mainStory {New main story} other {New related work}}"
+
+#. {title} is a catalogue title and is not translated.
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWork.body"
+msgstr "{kind, select, sequel {{title} is a new sequel to a series you read.} prequel {{title} is a new prequel to a series you read.} spinOff {{title} is a new spin-off of a series you read.} sideStory {{title} is a new side story to a series you read.} mainStory {{title} is the main story of a series you read.} other {{title} is related to a series you read.}}"
+
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWorks.title"
+msgstr "New sequels and spin-offs"
+
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWorks.body"
+msgstr "{count, plural, one {# new work} other {# new works}} related to series you read."
+
 #: src/Maki.Api/Services/UpdateCheckService.cs
 msgid "inbox.update.available.title"
 msgstr "Update available"
@@ -4346,6 +4389,10 @@ msgid "health.job.discoverCacheWarm"
 msgstr "Prepare Discover"
 
 #: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.dropFolder"
+msgstr "Check the drop folder"
+
+#: src/Maki.Api/Services/JobLabels.cs
 msgid "health.job.embedderIdleUnload"
 msgstr "Unload the idle text model"
 
@@ -4412,6 +4459,10 @@ msgstr "Install the recommendation graph"
 #: src/Maki.Api/Services/JobLabels.cs
 msgid "health.job.refreshMonitored"
 msgstr "Check monitored series for new chapters"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.relatedWorkWatch"
+msgstr "Look for new sequels and spin-offs"
 
 #: src/Maki.Api/Services/JobLabels.cs
 msgid "health.job.retryFailedDownloads"
