@@ -303,6 +303,12 @@ public record SeriesDto(
     public int? PendingProposalId { get; init; }
 
     /// <summary>
+    /// What volume first holds back from automatic source downloads, filled only by the detail
+    /// endpoint and only while something is held (<see cref="Services.VolumeFirstGate"/>).
+    /// </summary>
+    public VolumeHoldDto? VolumeHold { get; init; }
+
+    /// <summary>
     /// Metadata fields a user set by hand (<see cref="Series.LockedFields"/>), camelCased:
     /// "title", "overview", "status", "totalChapters", "totalVolumes", "genres", "cover".
     /// </summary>
@@ -477,3 +483,8 @@ public record AddSeriesRequest(
     string? AddedFrom = null,
     Guid? ClientMutationId = null,
     int? UpgradeProfileId = null);
+
+/// <param name="Reason">searching, proposal or downloading.</param>
+/// <param name="Through">The highest chapter number held; null holds every chapter.</param>
+/// <param name="Until">When the hold lapses on its own; null while the search runs.</param>
+public sealed record VolumeHoldDto(string Reason, decimal? Through, int? ProposalId, DateTime? Until);

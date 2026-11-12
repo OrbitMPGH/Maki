@@ -17,7 +17,9 @@ public sealed record UpgradeOptions(
     long TorrentAutoGrabMaxBytes = UpgradeOptions.DefaultAutoGrabMaxBytes,
     int VolumeMissingTolerance = 3,
     int VolumeSearchesPerRun = 10,
-    int ProposalExpiryDays = 30)
+    int ProposalExpiryDays = 30,
+    bool AutoApprove = false,
+    long AutoApproveMaxBytes = Maki.Core.Quality.ProposalAutoApproval.DefaultMaxBytes)
 {
     public const long DefaultAutoGrabMaxBytes = 524288000;
 
@@ -55,6 +57,11 @@ public sealed record UpgradeOptions(
             maxBytes,
             await Int(SettingKeys.UpgradesVolumeMissingTolerance, Defaults.VolumeMissingTolerance, 0, 50),
             await Int(SettingKeys.UpgradesVolumeSearchesPerRun, Defaults.VolumeSearchesPerRun, 1, 200),
-            await Int(SettingKeys.UpgradesProposalExpiryDays, Defaults.ProposalExpiryDays, 1, 365));
+            await Int(SettingKeys.UpgradesProposalExpiryDays, Defaults.ProposalExpiryDays, 1, 365),
+            await settings.GetAsync(SettingKeys.UpgradesAutoApprove, ct) == "true",
+            long.TryParse(await settings.GetAsync(SettingKeys.UpgradesAutoApproveMaxBytes, ct), NumberStyles.Integer,
+                CultureInfo.InvariantCulture, out var approveBytes)
+                ? Maki.Core.Quality.ProposalAutoApproval.ClampMaxBytes(approveBytes)
+                : Maki.Core.Quality.ProposalAutoApproval.DefaultMaxBytes);
     }
 }

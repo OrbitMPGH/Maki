@@ -143,6 +143,26 @@ public sealed class ArchiveGuardTests : IDisposable
     }
 
     [Fact]
+    public async Task VolumeFirstDue_skips_archived_series()
+    {
+        var (active, archived) = Pair();
+        using (var db = _db.NewContext())
+        {
+            foreach (var series in db.Series.IgnoreQueryFilters().Where(s => s.Id == active || s.Id == archived))
+            {
+                series.VolumeFirstPendingAt = DateTime.UtcNow;
+            }
+
+            db.SaveChanges();
+        }
+
+        using var context = _db.NewContext();
+        var service = new TorrentUpgradeService(context, null!, null!, null!, null!, TimeProvider.System, null!,
+            NullLogger<TorrentUpgradeService>.Instance);
+        Assert.Equal([active], await service.VolumeFirstDueAsync(5, CancellationToken.None));
+    }
+
+    [Fact]
     public async Task CandidateSeries_skips_archived_series()
     {
         var (active, _) = Pair();

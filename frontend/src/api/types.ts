@@ -200,8 +200,19 @@ export interface SeriesDto {
   } | null
   /** Id of the series' pending torrent volume proposal, if any. */
   pendingProposalId: number | null
+  /** What volume first holds back from automatic source downloads, while anything is held. */
+  volumeHold?: VolumeHold | null
   /** Metadata fields set by hand, which a refresh leaves alone. See `MetadataField`. */
   lockedFields: MetadataField[]
+}
+
+export interface VolumeHold {
+  reason: 'searching' | 'proposal' | 'downloading'
+  /** The highest chapter number held; null holds every chapter. */
+  through: number | null
+  proposalId: number | null
+  /** When the hold lapses on its own; null while the search runs. */
+  until: string | null
 }
 
 /** The camelCase names of `SeriesMetadataField` on the server. */

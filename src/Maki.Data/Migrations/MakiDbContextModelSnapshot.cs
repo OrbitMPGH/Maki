@@ -2200,6 +2200,9 @@ namespace Maki.Data.Migrations
                     b.Property<int?>("UpgradeProfileId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("VolumeFirstPendingAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<int?>("Year")
                         .HasColumnType("INTEGER");
 
@@ -2712,6 +2715,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("UpgradeCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("VolumeFirst")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");

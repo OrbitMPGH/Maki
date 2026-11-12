@@ -495,4 +495,24 @@ public class QualityScorerTests
 
         Assert.False(QualityScorer.IsUnmeasuredUpgrade(profile, sharp, false, S(QualityTier.Volume)));
     }
+
+    [Fact]
+    public void At_least_as_good_takes_an_equal_copy_that_an_upgrade_would_not()
+    {
+        var profile = Profile(p => p.Cutoff = QualityTier.Scanlator);
+
+        Assert.False(QualityScorer.IsUnmeasuredUpgrade(profile, S(QualityTier.Volume, 10), false, S(QualityTier.Volume, 10)));
+        Assert.True(QualityScorer.IsUnmeasuredAtLeastAsGood(profile, S(QualityTier.Volume, 10), false, S(QualityTier.Volume, 10)));
+        Assert.True(QualityScorer.IsUnmeasuredAtLeastAsGood(profile, S(QualityTier.Scanlator, 50), false, S(QualityTier.Volume)));
+    }
+
+    [Fact]
+    public void At_least_as_good_refuses_a_worse_copy_and_a_protected_file()
+    {
+        var profile = Profile();
+
+        Assert.False(QualityScorer.IsUnmeasuredAtLeastAsGood(profile, S(QualityTier.Volume, 10), false, S(QualityTier.Volume, 9)));
+        Assert.False(QualityScorer.IsUnmeasuredAtLeastAsGood(profile, S(QualityTier.Volume), false, S(QualityTier.Scanlator, 100)));
+        Assert.False(QualityScorer.IsUnmeasuredAtLeastAsGood(profile, S(QualityTier.Scanlator), true, S(QualityTier.Volume)));
+    }
 }

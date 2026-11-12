@@ -3034,6 +3034,10 @@ msgstr "A missing file's record most likely belongs to this file. The Missing fi
 msgid "A new copy is downloaded from the series' sources and shown to you before it replaces this one."
 msgstr "A new copy is downloaded from the series' sources and shown to you before it replaces this one."
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "A new series with nothing on disk asks your indexers for a volume release once its sources are matched, before anything is downloaded from them. Series from an import list wait up to a day for their turn. While a release waits for approval (up to 48 hours) or downloads (up to 72 hours), automatic downloads from sources skip the chapters it covers, so they are not fetched twice. Needs Prowlarr or Jackett, and a quality profile that upgrades the series to volumes. Downloads you start yourself are never held."
+msgstr "A new series with nothing on disk asks your indexers for a volume release once its sources are matched, before anything is downloaded from them. Series from an import list wait up to a day for their turn. While a release waits for approval (up to 48 hours) or downloads (up to 72 hours), automatic downloads from sources skip the chapters it covers, so they are not fetched twice. Needs Prowlarr or Jackett, and a quality profile that upgrades the series to volumes. Downloads you start yourself are never held."
+
 #: src/pages/settings/SuwayomiCards.tsx
 msgid "A new URL clears the saved password, so enter it again."
 msgstr "A new URL clears the saved password, so enter it again."
@@ -3131,6 +3135,18 @@ msgstr "A token with no value for a given series renders as nothing, and the sur
 #: src/pages/stats/sections/RhythmSection.tsx
 msgid "A typical sitting runs <0>{sittingDuration}</0>."
 msgstr "A typical sitting runs <0>{sittingDuration}</0>."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "A volume release for this series is waiting for your answer. Grabbing it instead may bring these chapters in one download."
+msgstr "A volume release for this series is waiting for your answer. Grabbing it instead may bring these chapters in one download."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "A volume release is downloading."
+msgstr "A volume release is downloading."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "A volume release is waiting for your answer."
+msgstr "A volume release is waiting for your answer."
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "A watched anime counts for as much as a manga you rated yourself."
@@ -4022,6 +4038,10 @@ msgstr "Approve and queue"
 msgid "Approve request"
 msgstr "Approve request"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Approve volume releases automatically"
+msgstr "Approve volume releases automatically"
+
 #: src/pages/RequestsPage.tsx
 msgid "Approved"
 msgstr "Approved"
@@ -4254,9 +4274,17 @@ msgstr "Automatic (match my browser)"
 msgid "Automatic (source priority)"
 msgstr "Automatic (source priority)"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Automatic approval size ceiling (MB)"
+msgstr "Automatic approval size ceiling (MB)"
+
 #: src/api/inbox.ts
 msgid "Automatic download failed"
 msgstr "Automatic download failed"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Automatic downloads from sources wait for it until {holdUntil}."
+msgstr "Automatic downloads from sources wait for it until {holdUntil}."
 
 #: src/api/upgrades.ts
 msgid "Automatic upgrades are off, needs your call"
@@ -5295,6 +5323,10 @@ msgstr "Chapters that share a volume archive will also lose their file."
 #: src/pages/settings/DownloadCards.tsx
 msgid "Chapters to fetch each time"
 msgstr "Chapters to fetch each time"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters up to {holdThrough} wait for it until {holdUntil}. Later ones download as usual."
+msgstr "Chapters up to {holdThrough} wait for it until {holdUntil}. Later ones download as usual."
 
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Chapters whose file has one of these qualities are shown as they are. A digital volume is usually clean already."
@@ -7148,6 +7180,10 @@ msgstr "Download failed"
 msgid "Download failed: {detail}"
 msgstr "Download failed: {detail}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Download from sources now"
+msgstr "Download from sources now"
+
 #: src/components/CatalogueBrowser.tsx
 msgid "Download index"
 msgstr "Download index"
@@ -8824,6 +8860,10 @@ msgstr "Grabbed from {indexer}"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Grabbed from {indexer}: {releaseName}"
 msgstr "Grabbed from {indexer}: {releaseName}"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Grabs a proposed release without waiting for you when it is a digital release within the size ceiling and its only reasons for waiting are that it names no volume range, adds chapters you don't have, or is over the auto-grab size. Anything Maki is unsure about, such as chapters it cannot place, still waits for you. It only replaces files the release is at least as good as, and replaced files go to the trash as usual. Pending proposals are checked on the next daily run, or when you press Search now."
+msgstr "Grabs a proposed release without waiting for you when it is a digital release within the size ceiling and its only reasons for waiting are that it names no volume range, adds chapters you don't have, or is over the auto-grab size. Anything Maki is unsure about, such as chapters it cannot place, still waits for you. It only replaces files the release is at least as good as, and replaced files go to the trash as usual. Pending proposals are checked on the next daily run, or when you press Search now."
 
 #: src/components/settings/UsersSection.tsx
 msgid "Grants every permission and the Settings pages."
@@ -10639,6 +10679,10 @@ msgstr "login page, background, covers, mosaic, wallpaper"
 msgid "longest {longestSitting}"
 msgstr "longest {longestSitting}"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Look for volume releases first"
+msgstr "Look for volume releases first"
+
 #: src/components/series/UpgradeNowResultModal.tsx
 msgid "Looked for a better copy of this chapter."
 msgstr "Looked for a better copy of this chapter."
@@ -10646,6 +10690,10 @@ msgstr "Looked for a better copy of this chapter."
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "Looking for a source…"
 msgstr "Looking for a source…"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Looking for a volume release before downloading from sources."
+msgstr "Looking for a volume release before downloading from sources."
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Looking up {looked} of {total}"
@@ -11760,6 +11808,10 @@ msgstr "never"
 #: src/pages/LibraryPage.tsx
 msgid "Never"
 msgstr "Never"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Never approve a release larger than this on your behalf. The 12288 MB default is about 50 digital volumes."
+msgstr "Never approve a release larger than this on your behalf. The 12288 MB default is about 50 digital volumes."
 
 #: src/components/NotificationsSection.tsx
 msgid "Never delivered."

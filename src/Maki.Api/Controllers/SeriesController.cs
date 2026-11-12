@@ -146,6 +146,19 @@ public class SeriesController(
         return Ok(new { updated, total });
     }
 
+    private async Task<VolumeHoldDto?> VolumeHoldAsync(int id, CancellationToken ct)
+    {
+        if (HttpContext?.RequestServices.GetService<VolumeFirstGate>() is not { } gate)
+        {
+            return null;
+        }
+
+        var hold = await gate.CheckAsync(id, ct);
+        return hold.Active
+            ? new VolumeHoldDto(hold.Reason.ToString().ToLowerInvariant(), hold.Through, hold.ProposalId, hold.Until)
+            : null;
+    }
+
     /// <summary>Queues downloads for every wanted chapter that has no file yet.</summary>
     [Authorize(Policy = Policies.DownloadChapters)]
     [HttpPost("{id:int}/searchmissing")]
@@ -1249,6 +1262,7 @@ public class SeriesController(
                 : null,
             ReadFileCleanupActive = ReadFileCleanupService.AppliesTo(series.ReadFileCleanup, await readFileCleanup.OptionsAsync(ct)),
             PendingProposalId = pendingProposalId,
+            VolumeHold = await VolumeHoldAsync(id, ct),
             ArchiveHintEligible = currentUser.Has(MakiPermission.ArchiveSeries) &&
                                   await SeriesArchiveService.FinishedHintAsync(db, series, ct),
             RateHintEligible = await RateHintAsync(db, id, ct),

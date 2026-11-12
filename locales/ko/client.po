@@ -3649,6 +3649,10 @@ msgstr "사라진 파일의 기록은 아마 이 파일의 것일 가능성이 �
 msgid "A new copy is downloaded from the series' sources and shown to you before it replaces this one."
 msgstr "시리즈의 소스에서 새 사본을 다운로드하며, 이 파일을 대체하기 전에 먼저 보여 줍니다."
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "A new series with nothing on disk asks your indexers for a volume release once its sources are matched, before anything is downloaded from them. Series from an import list wait up to a day for their turn. While a release waits for approval (up to 48 hours) or downloads (up to 72 hours), automatic downloads from sources skip the chapters it covers, so they are not fetched twice. Needs Prowlarr or Jackett, and a quality profile that upgrades the series to volumes. Downloads you start yourself are never held."
+msgstr ""
+
 #: src/pages/settings/SuwayomiCards.tsx
 #, fuzzy
 msgid "A new URL clears the saved password, so enter it again."
@@ -3768,6 +3772,18 @@ msgstr "특정 시리즈에 값이 없는 토큰은 아무것도 표시하지 �
 #, fuzzy
 msgid "A typical sitting runs <0>{sittingDuration}</0>."
 msgstr "일반적인 한 번의 독서는 <0>{sittingDuration}</0> 동안 이어집니다."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "A volume release for this series is waiting for your answer. Grabbing it instead may bring these chapters in one download."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "A volume release is downloading."
+msgstr ""
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "A volume release is waiting for your answer."
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -4849,6 +4865,10 @@ msgstr "승인하고 대기열에 추가"
 msgid "Approve request"
 msgstr "요청 승인"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Approve volume releases automatically"
+msgstr ""
+
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Approved"
@@ -5133,10 +5153,18 @@ msgstr "자동 (내 브라우저에 맞춤)"
 msgid "Automatic (source priority)"
 msgstr "자동 (소스 우선순위)"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Automatic approval size ceiling (MB)"
+msgstr ""
+
 #: src/api/inbox.ts
 #, fuzzy
 msgid "Automatic download failed"
 msgstr "자동 다운로드 실패"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Automatic downloads from sources wait for it until {holdUntil}."
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -6392,6 +6420,10 @@ msgstr "같은 권 아카이브를 공유하는 챕터의 파일도 삭제됩니
 #, fuzzy
 msgid "Chapters to fetch each time"
 msgstr "매번 가져올 챕터 수"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Chapters up to {holdThrough} wait for it until {holdUntil}. Later ones download as usual."
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
@@ -8648,6 +8680,10 @@ msgstr "다운로드 실패"
 msgid "Download failed: {detail}"
 msgstr "다운로드 실패: {detail}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Download from sources now"
+msgstr ""
+
 #: src/components/CatalogueBrowser.tsx
 #, fuzzy
 msgid "Download index"
@@ -10681,6 +10717,10 @@ msgstr "{indexer}에서 가져옴"
 #, fuzzy
 msgid "Grabbed from {indexer}: {releaseName}"
 msgstr "{indexer}에서 가져옴: {releaseName}"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Grabs a proposed release without waiting for you when it is a digital release within the size ceiling and its only reasons for waiting are that it names no volume range, adds chapters you don't have, or is over the auto-grab size. Anything Maki is unsure about, such as chapters it cannot place, still waits for you. It only replaces files the release is at least as good as, and replaced files go to the trash as usual. Pending proposals are checked on the next daily run, or when you press Search now."
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 msgid "Grants every permission and the Settings pages."
@@ -12890,6 +12930,10 @@ msgstr "로그인 페이지, 배경, 표지, 커버, 모자이크, 벽지, login
 msgid "longest {longestSitting}"
 msgstr "최장 {longestSitting}"
 
+#: src/pages/settings/DownloadCards.tsx
+msgid "Look for volume releases first"
+msgstr ""
+
 #: src/components/series/UpgradeNowResultModal.tsx
 msgid "Looked for a better copy of this chapter."
 msgstr ""
@@ -12898,6 +12942,10 @@ msgstr ""
 #, fuzzy
 msgid "Looking for a source…"
 msgstr "소스를 찾는 중…"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Looking for a volume release before downloading from sources."
+msgstr ""
 
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -14259,6 +14307,10 @@ msgstr "절대 안 함"
 #, fuzzy
 msgid "Never"
 msgstr "절대 안 함"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Never approve a release larger than this on your behalf. The 12288 MB default is about 50 digital volumes."
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy

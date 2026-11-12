@@ -46,6 +46,7 @@ import {
   IconEyeCheck,
   IconHistory,
   IconLink,
+  IconHourglass,
   IconLinkOff,
   IconListCheck,
   IconSearch,
@@ -197,7 +198,7 @@ import { SourceMappingsSection } from '../components/SourceMappingsSection'
 import { ReleaseOutlookSummary } from '../components/releases/ReleaseOutlookSummary'
 import { SourceCompareModal } from '../components/SourceCompareModal'
 import type { PickChapter } from '../components/SourceCompareModal'
-import { formatDate, formatReadingTime } from '../format'
+import { formatDate, formatDateTime, formatDecimal, formatReadingTime } from '../format'
 import {
   contentRatingVisual,
   seriesProgressVisual,
@@ -772,6 +773,9 @@ function SeriesDetailBody() {
   const pendingProposalId = series?.pendingProposalId ?? null
   const { data: seriesProposals } = useTorrentProposals(seriesId, canDownload && pendingProposalId != null)
   const pendingProposal = seriesProposals?.find((p) => p.id === pendingProposalId) ?? null
+  const volumeHold = series?.volumeHold ?? null
+  const holdUntil = volumeHold?.until ? formatDateTime(volumeHold.until) : null
+  const holdThrough = volumeHold?.through != null ? formatDecimal(volumeHold.through) : null
   const createRequest = useCreateSeriesRequest()
   // Already in cache: the sources section below this page fetches the same query. Two enabled
   // mappings is the floor for "find better copy" having anything to show.
@@ -1683,7 +1687,8 @@ function SeriesDetailBody() {
       })
 
   const requestQueueAllWanted = () => {
-    if (missingWanted >= LARGE_WANTED_DOWNLOAD_THRESHOLD) {
+    // A pending volume release may bring these chapters in one download, so say so before the sources go.
+    if (missingWanted >= LARGE_WANTED_DOWNLOAD_THRESHOLD || (canDownload && pendingProposal)) {
       setDownloadAllConfirmOpen(true)
       return
     }
@@ -2820,6 +2825,14 @@ function SeriesDetailBody() {
                 other: 'This will add # chapters to the download queue.',
               })}
             </Text>
+            {canDownload && pendingProposal && (
+                <>
+                  <Text size="sm" c="var(--ink-3)">
+                    <Trans>A volume release for this series is waiting for your answer. Grabbing it instead may bring these chapters in one download.</Trans>
+                  </Text>
+                  <TorrentProposalCard proposal={pendingProposal} banner />
+                </>
+            )}
             <Group justify="flex-end">
               <Button variant="default" onClick={() => setDownloadAllConfirmOpen(false)}>
                 <Trans>Cancel</Trans>
@@ -3106,6 +3119,31 @@ function SeriesDetailBody() {
 
             {!selectMode && canDownload && pendingProposal && (
                 <TorrentProposalCard proposal={pendingProposal} banner />
+            )}
+
+            {!selectMode && canDownload && volumeHold && missingWanted > 0 && (
+                <div className="series-detail-chapter-hint">
+                  <IconHourglass size={16} className="series-detail-chapter-hint-icon" aria-hidden />
+                  <Text size="sm" c="var(--ink-2)" className="series-detail-chapter-hint-text">
+                    {volumeHold.reason === 'searching'
+                        ? <Trans>Looking for a volume release before downloading from sources.</Trans>
+                        : volumeHold.reason === 'proposal'
+                            ? <Trans>A volume release is waiting for your answer.</Trans>
+                            : <Trans>A volume release is downloading.</Trans>}{' '}
+                    <Text span inherit c="var(--ink-3)">
+                      {holdUntil == null
+                          ? null
+                          : holdThrough == null
+                              ? <Trans>Automatic downloads from sources wait for it until {holdUntil}.</Trans>
+                              : <Trans>Chapters up to {holdThrough} wait for it until {holdUntil}. Later ones download as usual.</Trans>}
+                    </Text>
+                  </Text>
+                  <div className="series-detail-chapter-hint-actions">
+                    <Button size="compact-sm" variant="subtle" loading={searchMissing.isPending} onClick={requestQueueAllWanted}>
+                      <Trans>Download from sources now</Trans>
+                    </Button>
+                  </div>
+                </div>
             )}
 
             <ConfirmDialog

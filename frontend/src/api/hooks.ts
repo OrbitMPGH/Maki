@@ -4286,6 +4286,8 @@ export interface DownloadSettings {
   removeCompleted: TorrentRemovalMode
   /** Delete the downloaded files with the torrent, where the library is known to hold its own copy. */
   removeData: boolean
+  /** Look for a volume release before a new series downloads anything from its sources. */
+  volumeFirst: boolean
 }
 
 export type TorrentRemovalMode = 'never' | 'afterimport'

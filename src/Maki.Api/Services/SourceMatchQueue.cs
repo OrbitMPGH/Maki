@@ -49,8 +49,25 @@ public class SourceMatchQueue
     public Task MatchInProgress(int seriesId) =>
         matching.TryGetValue(seriesId, out var run) ? run : Task.CompletedTask;
 
-    public void Enqueue(int seriesId, SourceMatchLane lane = SourceMatchLane.Interactive) =>
-        (lane == SourceMatchLane.Interactive ? interactive : background).Writer.TryWrite(seriesId);
+    // Series whose latest enqueue was a background one (library import, import lists, bulk re-match).
+    private readonly ConcurrentDictionary<int, byte> queuedInBackground = new();
+
+    public void Enqueue(int seriesId, SourceMatchLane lane = SourceMatchLane.Interactive)
+    {
+        if (lane == SourceMatchLane.Interactive)
+        {
+            queuedInBackground.TryRemove(seriesId, out _);
+            interactive.Writer.TryWrite(seriesId);
+        }
+        else
+        {
+            queuedInBackground[seriesId] = 0;
+            background.Writer.TryWrite(seriesId);
+        }
+    }
+
+    /// <summary>Whether the series came in on the background lane; asking clears it.</summary>
+    internal bool TakeQueuedInBackground(int seriesId) => queuedInBackground.TryRemove(seriesId, out _);
 
     public void EnqueueLink(int seriesId) => link.Writer.TryWrite(seriesId);
 

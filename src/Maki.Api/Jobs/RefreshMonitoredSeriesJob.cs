@@ -37,11 +37,14 @@ public class RefreshMonitoredSeriesJob(
     SourceAvailability sourceAvailability,
     IMessageCatalog localizer,
     IUserLocaleResolver locales,
-    ILogger<RefreshMonitoredSeriesJob> logger) : IJob
+    ILogger<RefreshMonitoredSeriesJob> logger,
+    VolumeFirstDeferrals? deferrals = null) : IJob
 {
     public async Task Execute(IJobExecutionContext context)
     {
         var ct = context.CancellationToken;
+
+        await ReleaseDeferredAsync(ct);
 
         List<int> seriesIds;
         using (var scope = scopeFactory.CreateScope())
@@ -76,6 +79,75 @@ public class RefreshMonitoredSeriesJob(
         {
             // Shutdown, not a broken series: end the pass rather than walking the rest of the library.
             logger.LogInformation("Refresh cancelled after {Done} of {Total} series", done, seriesIds.Count);
+        }
+    }
+
+    /// <summary>
+    /// Queues the chapters a volume hold kept back once nothing holds them any more: the proposal was
+    /// answered or lapsed, or the release finished without bringing them. A chapter that got a file,
+    /// is no longer wanted or is already queued is just forgotten.
+    /// </summary>
+    internal async Task ReleaseDeferredAsync(CancellationToken ct)
+    {
+        if (deferrals is null)
+        {
+            return;
+        }
+
+        foreach (var seriesId in deferrals.SeriesIds)
+        {
+            try
+            {
+                using var scope = scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+                var ids = deferrals.For(seriesId);
+                var series = await db.Series.AsNoTracking().Where(s => s.Id == seriesId)
+                    .Select(s => new { s.Title, s.MonitorNewItems, s.ArchivedAt, s.PendingImportLink })
+                    .FirstOrDefaultAsync(ct);
+                if (series is null || series.ArchivedAt is not null ||
+                    series.MonitorNewItems is NewChapterMonitorMode.Smart or NewChapterMonitorMode.None)
+                {
+                    deferrals.Settle(seriesId, ids);
+                    continue;
+                }
+
+                if (series.PendingImportLink != PendingImportLink.None)
+                {
+                    continue;
+                }
+
+                var hold = await scope.ServiceProvider.GetRequiredService<VolumeFirstGate>().CheckAsync(seriesId, ct);
+                var chapters = await db.Chapters.AsNoTracking().Where(c => ids.Contains(c.Id)).ToListAsync(ct);
+                var gone = ids.Except(chapters.Where(Chapter.IsMissing).Select(c => c.Id)).ToList();
+                var due = chapters.Where(c => Chapter.IsMissing(c) && !hold.Holds(c)).Select(c => c.Id).ToList();
+                deferrals.Settle(seriesId, gone);
+                if (due.Count == 0)
+                {
+                    continue;
+                }
+
+                var result = await queue.EnqueueChaptersAsync(due, DownloadOrigin.MonitorRefresh, null, ct);
+                if (result.Error is not null && result.Queued.Count == 0)
+                {
+                    logger.LogWarning("Series {SeriesId}: could not queue chapters after the volume hold: {Error}",
+                        seriesId, result.Error);
+                    continue;
+                }
+
+                // Already queued counts as settled: the enqueue drops a chapter with a live row.
+                deferrals.Settle(seriesId, due);
+                logger.LogInformation("Series {SeriesId}: queued {Count} chapter(s) the volume hold had kept back",
+                    seriesId, result.Queued.Count);
+                if (result.Queued.Count > 0)
+                {
+                    await batches.QueuedAsync(seriesId, series.Title, [.. result.Queued.Select(item => item.Id)],
+                        DownloadOrigin.MonitorRefresh);
+                }
+            }
+            catch (Exception ex) when (!ct.IsCancellationRequested)
+            {
+                logger.LogWarning(ex, "Could not release the volume hold of series {SeriesId}", seriesId);
+            }
         }
     }
 
@@ -131,9 +203,35 @@ public class RefreshMonitoredSeriesJob(
         var threshold = smart ? 0 : await BulkHoldThresholdAsync(scope.ServiceProvider.GetRequiredService<IAppSettings>(), ct);
         var held = threshold > 0 && wanted.Count > threshold;
 
+        // With volume first on, chapters a pending volume release covers wait for it. They stay wanted,
+        // anything past the release's last volume is queued as usual, and the held ones are tried again
+        // once the hold ends (ReleaseDeferredAsync).
+        var volumeHold = false;
+        if (!smart && !held && await scope.ServiceProvider.GetRequiredService<IAppSettings>()
+                .GetAsync(SettingKeys.DownloadsVolumeFirst, ct) == "true")
+        {
+            var hold = await scope.ServiceProvider.GetRequiredService<VolumeFirstGate>().CheckAsync(seriesId, ct);
+            if (hold.Active)
+            {
+                var chapters = await db.Chapters.AsNoTracking().Where(c => wanted.Contains(c.Id)).ToListAsync(ct);
+                var heldIds = chapters.Where(hold.Holds).Select(c => c.Id).ToHashSet();
+                deferrals?.Add(seriesId, heldIds);
+                volumeHold = heldIds.Count == wanted.Count;
+                if (heldIds.Count > 0 && !volumeHold)
+                {
+                    logger.LogInformation(
+                        "Series {SeriesId}: {Count} new chapter(s) wait for a volume release ({Reason})",
+                        seriesId, heldIds.Count, hold.Reason);
+                    wanted = wanted.Where(id => !heldIds.Contains(id)).ToList();
+                }
+            }
+        }
+
+        var deferred = smart || volumeHold;
+
         var queuedItemIds = new List<int>();
         string? enqueueError = null;
-        if (!smart && !held)
+        if (!deferred && !held)
         {
             var result = await queue.EnqueueChaptersAsync(wanted, DownloadOrigin.MonitorRefresh, null, ct);
             queuedItemIds.AddRange(result.Queued.Select(item => item.Id));
@@ -160,7 +258,8 @@ public class RefreshMonitoredSeriesJob(
         else
         {
             logger.LogInformation(
-                smart ? "Series {SeriesId}: found {Count} new chapter(s), left to Smart Download"
+                volumeHold ? "Series {SeriesId}: found {Count} new chapter(s), waiting for its volume release"
+                : smart ? "Series {SeriesId}: found {Count} new chapter(s), left to Smart Download"
                       : "Series {SeriesId}: queued {Count} new chapter(s)",
                 seriesId, announced);
         }
@@ -171,7 +270,7 @@ public class RefreshMonitoredSeriesJob(
         // Two messages rather than one with a `select`, because "available" and "queued for
         // download" are different sentences, not two words in the same one.
         var bodyKey = held ? "notify.chapters.held.body"
-            : smart ? "notify.chapters.available.body"
+            : deferred ? "notify.chapters.available.body"
             : "notify.chapters.queued.body";
         notifications.Dispatch(NotificationEventType.NewChapterAvailable, new NotificationMessage(
             NotificationEventType.NewChapterAvailable,
@@ -185,7 +284,7 @@ public class RefreshMonitoredSeriesJob(
             // {series} is filled at read time from SeriesId, not from `title` here, so somebody
             // whose ui.titlelanguage is Japanese reads the Japanese title in their bell.
             inbox.Raise(InboxEventType.NewChapterAvailable, new InboxMessage(
-                    Key: held ? "inbox.chapters.held" : smart ? "inbox.chapters.available" : "inbox.chapters.queued",
+                    Key: held ? "inbox.chapters.held" : deferred ? "inbox.chapters.available" : "inbox.chapters.queued",
                     Params: InboxMessage.Args(new { count = announced }),
                     SeriesId: seriesId,
                     Url: $"/series/{seriesId}"),
