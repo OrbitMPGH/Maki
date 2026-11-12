@@ -626,6 +626,21 @@ public class CompletedDownloadJobTests : IDisposable
     }
 
     [Fact]
+    public async Task A_torrent_that_moved_while_Maki_was_down_is_not_failed_for_no_peers_on_the_first_look()
+    {
+        var queuedAt = DateTime.UtcNow.AddHours(-3);
+        var id = SeedItem(QueueStatus.Downloading, "moved2", queuedAt);
+        _client.Torrents.Add(Torrent("moved2", 0.45, queuedAt, peers: 0));
+        SetClocks(id, DateTime.UtcNow.AddHours(-2), DateTime.UtcNow.AddHours(-2), pagesDone: 30);
+
+        await RunAsync();
+
+        var row = Reload(id);
+        Assert.Equal(QueueStatus.Downloading, row.Status);
+        Assert.True(row.LastPeerSeenAt > DateTime.UtcNow.AddMinutes(-1));
+    }
+
+    [Fact]
     public async Task The_stall_limit_follows_the_setting_and_zero_turns_it_off()
     {
         var queuedAt = DateTime.UtcNow.AddHours(-3);

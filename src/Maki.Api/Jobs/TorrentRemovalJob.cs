@@ -32,6 +32,12 @@ public class TorrentRemovalJob(
     /// <summary>A removal the client keeps refusing is dropped after this long, and the row ages out as usual.</summary>
     internal static readonly TimeSpan GiveUpAfter = TimeSpan.FromDays(30);
 
+    /// <summary>
+    /// How long a row waiting on a seed target may wait: past any sensible seeding time, so a target
+    /// the client never reports (a Transmission ratio of -1) cannot keep a row pending for good.
+    /// </summary>
+    internal static readonly TimeSpan SeedGiveUpAfter = TimeSpan.FromDays(180);
+
     // Per row, so a client that stays down logs one line per torrent rather than one every run.
     internal static readonly ConcurrentDictionary<int, byte> FailureLogged = new();
 
@@ -91,11 +97,11 @@ public class TorrentRemovalJob(
 
             // Either side asking to seed first wins: a later setting may narrow a removal, never widen it.
             var seedFirst = item.ClientRemovalMode == TorrentRemovalModes.AfterSeeding || mode == TorrentRemovalModes.AfterSeeding;
-            if (!seedFirst && DateTime.UtcNow - item.ClientRemovalPendingAt > GiveUpAfter)
+            if (DateTime.UtcNow - item.ClientRemovalPendingAt > (seedFirst ? SeedGiveUpAfter : GiveUpAfter))
             {
                 logger.LogWarning(
                     "Gave up removing torrent '{Title}' from {Client} after {Days} days", item.Title,
-                    client.Kind.DisplayName(), (int)GiveUpAfter.TotalDays);
+                    client.Kind.DisplayName(), (int)(seedFirst ? SeedGiveUpAfter : GiveUpAfter).TotalDays);
                 await SettleAsync(item, removed: false, ct);
                 continue;
             }
@@ -105,6 +111,12 @@ public class TorrentRemovalJob(
             // which tells a torrent that is gone from one held under another label.
             if (seedFirst)
             {
+                // No target means keep seeding, and there is nothing to read the client for.
+                if (targets.IsEmpty)
+                {
+                    continue;
+                }
+
                 if (listed is null && !listFailed)
                 {
                     try

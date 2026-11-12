@@ -476,7 +476,11 @@ public class CompletedDownloadJob(
             : (int)(torrent.Progress * 100) > previousPercent;
         ProgressSeen.AddOrUpdate(item.Id, torrent.Progress, (_, previous) => Math.Max(previous, torrent.Progress));
         item.LastProgressAt = StallClock(item.LastProgressAt, progressed, now);
-        item.LastPeerSeenAt = torrent.Peers is { } peers ? StallClock(item.LastPeerSeenAt, peers > 0, now) : null;
+        // Progress is proof of peers, including progress made while Maki was down, when a first look
+        // after a restart may still catch the client reconnecting with nobody connected.
+        item.LastPeerSeenAt = torrent.Peers is { } peers
+            ? StallClock(item.LastPeerSeenAt, peers > 0 || progressed, now)
+            : null;
 
         var stall = torrent.Peers == 0 && now - item.LastPeerSeenAt >= limit ? NoPeersKey
             : now - item.LastProgressAt >= limit ? StalledKey

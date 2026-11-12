@@ -294,7 +294,7 @@ public class QueueController(
         var dto = await QueuePauseDto.CreateAsync(state, diskHold?.Current, db, ct);
         try
         {
-            await events.QueuePauseChanged(dto);
+            await events.QueuePauseChanged();
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

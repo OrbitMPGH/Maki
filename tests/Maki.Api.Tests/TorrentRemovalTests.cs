@@ -588,7 +588,7 @@ public class TorrentRemovalTests : IDisposable
     }
 
     [Fact]
-    public async Task A_seeding_row_is_never_given_up_while_it_waits_for_its_target()
+    public async Task A_seeding_row_outwaits_the_import_give_up_while_it_waits_for_its_target()
     {
         SeedTargets("5", null);
         var id = SeedPending(mode: TorrentRemovalModes.AfterSeeding,
@@ -598,6 +598,34 @@ public class TorrentRemovalTests : IDisposable
         await RunAsync();
 
         Assert.NotNull(Reload(id).ClientRemovalPendingAt);
+    }
+
+    [Fact]
+    public async Task A_seeding_row_whose_target_is_never_reached_settles_after_the_seed_give_up()
+    {
+        SeedTargets("5", null);
+        var id = SeedPending(mode: TorrentRemovalModes.AfterSeeding,
+            pendingSince: DateTime.UtcNow - TorrentRemovalJob.SeedGiveUpAfter - TimeSpan.FromDays(1));
+        Seeding(1, TimeSpan.FromDays(200));
+
+        await RunAsync();
+
+        Assert.Empty(_client.Removed);
+        Assert.Null(Reload(id).ClientRemovalPendingAt);
+    }
+
+    [Fact]
+    public async Task With_no_seed_target_the_torrent_keeps_seeding_and_the_client_is_not_read()
+    {
+        SeedTargets(null, null);
+        var id = SeedPending(mode: TorrentRemovalModes.AfterSeeding);
+        Seeding(10, TimeSpan.FromDays(10));
+
+        await RunAsync();
+
+        Assert.Empty(_client.Removed);
+        Assert.NotNull(Reload(id).ClientRemovalPendingAt);
+        Assert.Equal(0, _client.ListCalls);
     }
 
     [Fact]

@@ -186,9 +186,7 @@ public class DownloadWorkerHostedService(
             using var scope = scopeFactory.CreateScope();
             if (scope.ServiceProvider.GetService<EventBroadcaster>() is { } events)
             {
-                var state = pauses is null ? DownloadPauseState.None : await pauses.ActiveAsync(ct);
-                await events.QueuePauseChanged(await QueuePauseDto.CreateAsync(
-                    state, diskHold.Current, scope.ServiceProvider.GetRequiredService<MakiDbContext>(), ct));
+                await events.QueuePauseChanged();
             }
 
             await queue.WakeWorkersAsync(ct);
@@ -224,9 +222,7 @@ public class DownloadWorkerHostedService(
             {
                 try
                 {
-                    await events.QueuePauseChanged(await QueuePauseDto.CreateAsync(
-                        await pauses.ActiveAsync(ct), diskHold?.Current,
-                        scope.ServiceProvider.GetRequiredService<MakiDbContext>(), ct));
+                    await events.QueuePauseChanged();
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
