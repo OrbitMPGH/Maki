@@ -62,7 +62,9 @@ jobs:
         with:
           dotnet-version: 10.0.x
       - run: dotnet restore
-      - run: dotnet build --no-restore -c Release
+      # Warnings fail the build. NuGet vulnerability advisories stay warnings: one is published against a
+      # package, not against the PR, and would otherwise fail every backend PR on the same day.
+      - run: dotnet build --no-restore -c Release -warnaserror -warnnotaserror:NU1901,NU1902,NU1903,NU1904
 
       # The JPEG XL tests skip without libjxl, so CI provides it (cached on the build script, which pins
       # the version) and sets MAKI_REQUIRE_LIBJXL so a missing or broken library fails them instead.
@@ -118,6 +120,11 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+
+      # Errors fail the job. Warnings (exhaustive-deps, only-export-components) are only reported.
+      - name: Lint
+        run: npm run lint
+
       - run: npm run build
 
       # Self-hosters open the app over plain HTTP on a LAN address, where crypto.randomUUID and

@@ -3,6 +3,8 @@
   "plugins": ["react", "typescript", "oxc"],
   "rules": {
     "react/rules-of-hooks": "error",
+    "react/jsx-key": "error",
+    "no-unused-vars": "error",
     "react/only-export-components": ["warn", { "allowConstantExport": true }],
     "no-restricted-imports": [
       "error",
