@@ -333,3 +333,20 @@ export const Phone: Story = {
   parameters: { viewport: { defaultViewport: 'mobile1' } },
   globals: { viewport: { value: 'mobile1', isRotated: false } },
 }
+
+/** With tap zones on, the While reading page picks the layout, the zone size and the swap, and draws the zones. */
+export const TapZoneLayouts: Story = {
+  play: async ({ args, canvasElement, userEvent }) => {
+    const b = body(canvasElement)
+    await userEvent.click(await b.findByRole('button', { name: /^While reading/ }))
+    await userEvent.click(within(await b.findByRole('radiogroup', { name: 'Tap zone layout' })).getByText('Kindle'))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ tapLayout: 'kindle' }))
+    await expect(await b.findByText(/Most of the page goes forward/)).toBeVisible()
+    await waitFor(() => expect(canvasElement.ownerDocument.querySelectorAll('.reader-tap-preview rect[data-action="next"]').length).toBe(4))
+    await userEvent.click(b.getByRole('switch', { name: /Swap back and forward/ }))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ tapInvert: true }))
+    await waitFor(() => expect(canvasElement.ownerDocument.querySelectorAll('.reader-tap-preview rect[data-action="previous"]').length).toBe(4))
+    await userEvent.click(b.getByRole('switch', { name: /Tap zones/ }))
+    await waitFor(() => expect(b.queryByRole('radiogroup', { name: 'Tap zone layout' })).toBeNull())
+  },
+}

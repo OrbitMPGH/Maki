@@ -5,6 +5,7 @@ import { readerSettingsQuery } from '../../api/reader'
 import type { PrefsSource, ReaderManifest, ResolvedReaderPrefs } from '../../api/reader'
 import { useReadingProfiles, type ReadingProfile } from '../../api/readingProfiles'
 import type { QualityTierName } from '../../api/upgrades'
+import type { TapLayout } from './tapZones'
 
 export type ReaderMode = 'paged' | 'double' | 'vertical'
 export type ReaderDirection = 'ltr' | 'rtl'
@@ -65,6 +66,12 @@ export interface ReaderPrefs {
   enhanceWholeChapter: boolean
   /** Jump past the recap of the previous chapter at a chapter's start instead of offering a button. */
   autoSkipRecap: boolean
+  /** How the page divides into tap zones in Single and Double. */
+  tapLayout: TapLayout
+  /** The side zones' share of the page, in percent. */
+  tapWidth: number
+  /** Swap the back and forward zones. */
+  tapInvert: boolean
 }
 
 /** The two page backgrounds. OLED is true black so the panel edge disappears on an OLED panel. */
@@ -107,6 +114,9 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   notesBeside: true,
   enhanceWholeChapter: false,
   autoSkipRecap: false,
+  tapLayout: 'sides',
+  tapWidth: 33,
+  tapInvert: false,
 }
 
 /** The enhance level a chapter actually gets: off when its file's tier is one the prefs skip. */

@@ -5452,6 +5452,10 @@ msgstr "Bot トークン"
 msgid "Both"
 msgstr "両方"
 
+#: src/pages/reader/tapZones.ts
+msgid "Both edges go forward and the bottom middle goes back, for reading with one hand."
+msgstr ""
+
 #: src/components/layout/SectionProperties.tsx
 #, fuzzy
 msgid "Bottom"
@@ -8845,6 +8849,10 @@ msgstr "ライブラリ自体で獲得するため、このインスタンスの
 msgid "Ecchi"
 msgstr "エッチ"
 
+#: src/pages/reader/tapZones.ts
+msgid "Edges"
+msgstr ""
+
 #: src/components/notes/NoteThread.tsx
 #: src/components/rails/CustomRailSection.tsx
 #: src/components/SeriesTagsEditor.tsx
@@ -11984,6 +11992,10 @@ msgstr "種類"
 msgid "Kind of release"
 msgstr "リリースの種類"
 
+#: src/pages/reader/tapZones.ts
+msgid "Kindle"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Kinds"
@@ -12016,6 +12028,10 @@ msgstr "koreader, kosync, 進捗同期, progress sync, 同期サーバー, sync 
 #, fuzzy
 msgid "Korean"
 msgstr "韓国語"
+
+#: src/pages/reader/tapZones.ts
+msgid "L-shape"
+msgstr ""
 
 #: src/components/settings/downloadClientFields.ts
 #, fuzzy
@@ -13772,6 +13788,10 @@ msgstr "Maki以外でフォルダー名が変更されたか、整理された�
 #, fuzzy
 msgid "Most missing"
 msgstr "不足が最多"
+
+#: src/pages/reader/tapZones.ts
+msgid "Most of the page goes forward. A strip on one side goes back, the top opens the bars."
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -16207,6 +16227,10 @@ msgstr "週に1日の休みは許容され、今日の未読は連続記録を�
 msgid "One refresh required"
 msgstr "更新が1回必要です"
 
+#: src/pages/reader/tapZones.ts
+msgid "One side goes back, the other goes forward."
+msgstr ""
+
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "One tile per genre, each opening its most popular titles."
@@ -17604,6 +17628,10 @@ msgstr ""
 #, fuzzy
 msgid "Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS."
 msgstr "HTTPSの背後に置いてから、設定 → システム → ネットワーク → HTTPSを必須にするをオンにしてください。"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Puts the back zones where the forward ones were, for the other hand."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -21635,6 +21663,10 @@ msgstr "外伝："
 msgid "Side story of {relatedTo}"
 msgstr "{relatedTo}の外伝"
 
+#: src/pages/reader/tapZones.ts
+msgid "Sides"
+msgstr ""
+
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Sign in"
@@ -22596,6 +22628,10 @@ msgstr "Suwayomi"
 msgid "suwayomi, tachidesk, mihon, tachiyomi, extensions, extension sources, more sources, graphql, 4567"
 msgstr "suwayomi, tachidesk, mihon, tachiyomi, 拡張機能, 拡張ソース, ソース追加, graphql, 4567"
 
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Swap back and forward"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way."
@@ -22752,6 +22788,10 @@ msgstr "ページの端をタップしてページをめくります。連続表
 #, fuzzy
 msgid "Tap to show"
 msgstr "タップして表示"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Tap zone layout"
+msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -23548,6 +23588,10 @@ msgstr "今、人気が最も急上昇している作品です。"
 #, fuzzy
 msgid "The token @BotFather gave you."
 msgstr "@BotFather から受け取ったトークン。"
+
+#: src/pages/reader/tapZones.ts
+msgid "The top and one side go back, the bottom and the other side go forward."
+msgstr ""
 
 #. {series} is a series title and is never translated. It may be this row's own series, when an older download of it holds the torrent.
 #: src/api/queue.ts
@@ -26601,6 +26645,14 @@ msgstr "あなただけに適用されます。変わるのはあなたの通知
 #, fuzzy
 msgid "Z:\\downloads (optional)"
 msgstr "Z:\\downloads（省略可）"
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Zone size"
+msgstr ""
+
+#: src/pages/reader/TapZoneSettings.tsx
+msgid "Zone size ({width}%)"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #, fuzzy

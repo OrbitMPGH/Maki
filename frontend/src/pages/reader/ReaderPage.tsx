@@ -47,6 +47,8 @@ import { spreadIndexOf, usePageAspects, useSpreads } from './useSpreads'
 import { serverChapterLabel } from '../../format'
 import { scrollBehavior } from '../../lib/scrollBehavior'
 import { useAutoScroll, useAutoScrollLevel } from './useAutoScroll'
+import { usePagedGestures } from './usePagedGestures'
+import { tapActionAt } from './tapZones'
 
 const ZOOM_STEP = 0.25
 const ZOOM_MAX = 4
@@ -905,7 +907,25 @@ export default function ReaderPage() {
     return () => window.removeEventListener('keydown', listener)
   }, [])
 
-  /** Tap zones: outer thirds page, the middle toggles the chrome. Continuous mode splits top to bottom instead. */
+  usePagedGestures(surface, {
+    enabled: mode !== 'vertical',
+    zoom,
+    zoomMax: ZOOM_MAX,
+    rtl: prefs.direction === 'rtl',
+    onZoom: setZoom,
+    onTurn: (forward) => (forward ? next() : previous()),
+  })
+  const tapAction = (clientX: number, clientY: number, bounds: DOMRect) =>
+    tapActionAt(
+      prefs.tapLayout,
+      prefs.tapWidth,
+      prefs.tapInvert,
+      prefs.direction === 'rtl',
+      (clientX - bounds.left) / bounds.width,
+      (clientY - bounds.top) / bounds.height,
+    )
+
+  /** Tap zones: the paged layouts follow the chosen zone layout. Continuous mode splits top to bottom in thirds. */
   const handleTap = (clientX: number, clientY: number, bounds: DOMRect) => {
     if (prefs.tapZones && mode === 'vertical') {
       const ratio = (clientY - bounds.top) / bounds.height
@@ -921,18 +941,10 @@ export default function ReaderPage() {
       return
     }
 
-    const ratio = (clientX - bounds.left) / bounds.width
-    // Right-to-left reading puts "next" on the left edge.
-    const leftAdvances = prefs.direction === 'rtl'
-    if (ratio < 0.33) {
-      if (leftAdvances) next()
-      else previous()
-    } else if (ratio > 0.67) {
-      if (leftAdvances) previous()
-      else next()
-    } else {
-      setChrome((visible) => !visible)
-    }
+    const action = tapAction(clientX, clientY, bounds)
+    if (action === 'next') next()
+    else if (action === 'previous') previous()
+    else setChrome((visible) => !visible)
   }
 
   // Read through a ref so the delayed single tap acts on the state at the time it fires.
@@ -976,8 +988,7 @@ export default function ReaderPage() {
     }
 
     const { clientX, clientY } = event
-    const ratio = (clientX - bounds.left) / bounds.width
-    if (zoom === 1 && prefs.tapZones && (ratio < 0.33 || ratio > 0.67)) {
+    if (zoom === 1 && prefs.tapZones && tapAction(clientX, clientY, bounds) !== 'menu') {
       handleTap(clientX, clientY, bounds)
       return
     }

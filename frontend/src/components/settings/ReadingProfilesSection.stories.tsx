@@ -100,3 +100,14 @@ export const Loading: Story = {
 export const LoadFailed: Story = {
   parameters: { msw: settingsMsw(http.get(api('/readingprofiles'), () => failWith(500))) },
 }
+
+export const TapZoneFields: Story = {
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'New profile' }))
+    const layouts = await canvas.findByRole('radiogroup', { name: 'Tap zone layout' })
+    await userEvent.click(within(layouts).getByText('Edges'))
+    await expect(await canvas.findByText(/Both edges go forward/)).toBeVisible()
+    await userEvent.click(canvas.getByRole('switch', { name: /^Tap zones/ }))
+    await waitFor(() => expect(canvas.queryByRole('radiogroup', { name: 'Tap zone layout' })).toBeNull())
+  },
+}
