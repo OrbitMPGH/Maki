@@ -57,6 +57,13 @@ public static class SelfTest
             }
         });
 
+        Check("libjxl", () =>
+        {
+            var pixels = new byte[16 * 16 * 3];
+            var (_, width, _, _) = JpegXl.Decode(JpegXl.Encode(pixels, 16, 16, 3, 1.5f, 3), 256);
+            return width == 16 ? $"version {JpegXl.Version}" : throw new InvalidOperationException("the round trip changed the size");
+        });
+
         Check("onnxruntime", () =>
         {
             var providers = Microsoft.ML.OnnxRuntime.OrtEnv.Instance().GetAvailableProviders();

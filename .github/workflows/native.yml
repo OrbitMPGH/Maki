@@ -175,6 +175,10 @@ jobs:
           name: frontend-dist
           path: frontend-dist
 
+      # build-linux.sh compiles libjxl (distribution/libjxl/build.sh).
+      - name: Install the libjxl toolchain
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake ninja-build g++
+
       - name: Build and self-test
         run: bash distribution/native/build-linux.sh '${{ needs.frontend.outputs.version }}' frontend-dist
 

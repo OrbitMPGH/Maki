@@ -429,14 +429,21 @@ public class ReaderController(
 
     private static string? EnhanceSession(string? session) => session is { Length: > 0 and <= 64 } ? session : null;
 
-    /// <summary>A server upscale from the cache. 404 until it is there; this never queues one.</summary>
+    /// <summary>
+    /// A server upscale from the cache. 404 until it is there; this never queues one. A page cached as
+    /// JPEG XL is sent as it is only when <paramref name="jxl"/> is "1" (the reader decoded a test
+    /// image); otherwise it is converted to WebP on the way out, since Edge and older browsers cannot
+    /// decode it.
+    /// </summary>
     [HttpGet("chapter/{id:int}/page/{page:int}/enhanced")]
     public async Task<IActionResult> EnhancedPage(
         int id,
         int page,
         [FromQuery] string? model,
+        [FromQuery] string? jxl,
         [FromServices] UpscaleModelStore store,
         [FromServices] UpscaleCache cache,
+        [FromServices] ILogger<ReaderController> logger,
         CancellationToken ct)
     {
         var (refusal, modelId) = await EnhanceAvailability.CheckAsync(appSettings, store, model, ct);
@@ -458,8 +465,10 @@ public class ReaderController(
             return NotFound();
         }
 
+        var convert = UpscaleCache.IsJpegXl(cached) && jxl != "1";
+        var representation = UpscaleCache.IsJpegXl(cached) ? convert ? "-webp" : "-jxl" : "";
         var etag = new EntityTagHeaderValue(
-            $"\"{key.ChapterFileId}-{key.ArchiveVersion}-{key.AbsIndex}-{key.Model}-{UpscaleCache.Generation}\"");
+            $"\"{key.ChapterFileId}-{key.ArchiveVersion}-{key.AbsIndex}-{key.Model}-{UpscaleCache.Generation}{representation}\"");
         SetPageCacheControl(slice);
         // A pipeline change raises the generation; a URL without the current one must not be kept for a year.
         if (Request.Query["g"] != UpscaleCache.Generation)
@@ -469,6 +478,28 @@ public class ReaderController(
         if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
         {
             return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        if (convert)
+        {
+            UpscaledImage converted;
+            try
+            {
+                var bytes = await System.IO.File.ReadAllBytesAsync(cached, ct);
+                // libvips cannot read a JPEG XL header, so the page is weighed at the most it can be.
+                converted = await ImageWorkGate.RunAsync(
+                    () => Task.FromResult(ImageCodec.TranscodeUpscaledJpegXl(bytes)),
+                    ImageWorkGate.Weigh(1, (int)ImageCodec.MaxJpegXlPixels), ct);
+            }
+            catch (Exception ex) when (ex is JpegXlException or IOException)
+            {
+                logger.LogInformation(ex, "Converting the upscaled page {Path} to WebP failed", cached);
+                return NotFound();
+            }
+
+            PageCache.DropAfterScan(cached);
+            return File(converted.Bytes, converted.Extension == "webp" ? "image/webp" : "image/jpeg",
+                lastModified: null, entityTag: etag);
         }
 
         // The browser keeps the page as immutable, so the server rarely reads it again; without this its

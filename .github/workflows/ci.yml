@@ -9,8 +9,9 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     # A stalled step (registry outage, hung native install) would otherwise ride to GitHub's
-    # 6-hour job cap before it gets cancelled — fail fast instead.
-    timeout-minutes: 20
+    # 6-hour job cap before it gets cancelled — fail fast instead. 30 rather than 20 for the run that
+    # builds libjxl after build.sh changes; later runs take it from the cache.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-dotnet@v5
@@ -18,7 +19,26 @@ jobs:
           dotnet-version: 10.0.x
       - run: dotnet restore
       - run: dotnet build --no-restore -c Release
+
+      # The JPEG XL tests skip without libjxl, so CI builds it (cached on the build script, which pins
+      # the version) and sets MAKI_REQUIRE_LIBJXL so a missing or broken library fails them instead.
+      - name: Cache libjxl
+        id: libjxl
+        uses: actions/cache@v4
+        with:
+          path: .artifacts/libjxl
+          key: libjxl-${{ runner.os }}-${{ hashFiles('distribution/libjxl/build.sh') }}
+      - name: Build libjxl
+        if: steps.libjxl.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends cmake ninja-build g++
+          bash distribution/libjxl/build.sh .artifacts/libjxl
+      - name: Put libjxl beside the test assemblies
+        run: for dir in tests/*/bin/Release/net10.0; do cp .artifacts/libjxl/* "$dir/"; done
+
       - run: dotnet test --no-build -c Release
+        env:
+          MAKI_REQUIRE_LIBJXL: '1'
 
   frontend:
     runs-on: ubuntu-latest

@@ -9672,6 +9672,10 @@ msgstr "JPEG"
 msgid "JPEG pages are kept as they are at Lossless."
 msgstr "JPEG pages are kept as they are at Lossless."
 
+#: src/pages/settings/UpscalingSection.tsx
+msgid "JPEG XL for colour pages"
+msgstr "JPEG XL for colour pages"
+
 #: src/components/series/EditMetadataModal.tsx
 msgid "JPEG, PNG, GIF or WebP, up to 10 MB."
 msgstr "JPEG, PNG, GIF or WebP, up to 10 MB."
@@ -12454,6 +12458,10 @@ msgstr "Not available"
 #: src/pages/SeriesDetailPage.tsx
 msgid "Not available offline"
 msgstr "Not available offline"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Not available: this build of Maki has no JPEG XL library, so colour pages are WebP."
+msgstr "Not available: this build of Maki has no JPEG XL library, so colour pages are WebP."
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "Not checked for new chapters: it is finished and complete, or has no source switched on."
@@ -18009,6 +18017,10 @@ msgstr "Slow"
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "Slower ([)"
 msgstr "Slower ([)"
+
+#: src/pages/settings/UpscalingSection.tsx
+msgid "Smaller files and smooth dark gradients where WebP shows blocks. Browsers that can't show JPEG XL, such as Edge, get WebP. Grey pages are always WebP."
+msgstr "Smaller files and smooth dark gradients where WebP shows blocks. Browsers that can't show JPEG XL, such as Edge, get WebP. Grey pages are always WebP."
 
 #: src/components/pageconversion/FormatStep.tsx
 msgid "Smaller than WebP at the same look. KOReader and some e-readers can't open AVIF pages."

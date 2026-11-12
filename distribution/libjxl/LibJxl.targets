@@ -1,0 +1,42 @@
+<Project>
+  <!--
+    libjxl for Windows builds: the official release DLLs, checked against a pinned SHA-256 and copied
+    beside Maki.Api, where Maki.Core.Images.JpegXl looks for them. Linux builds get libjxl from
+    distribution/libjxl/build.sh instead (the Dockerfile and build-linux.sh call it), because libjxl
+    publishes no arm64 Linux libraries. They link the Visual C++ runtime, which ONNX Runtime needs
+    already. Offline, the build goes on without them and upscaled pages stay WebP.
+    -p:SkipLibJxl=true skips it.
+  -->
+  <PropertyGroup>
+    <LibJxlVersion>0.12.0</LibJxlVersion>
+    <LibJxlSha256>4ee3f72134a2a49774c357f2bffecf30d752d702147896c493578789de15a97c</LibJxlSha256>
+    <LibJxlUrl>https://github.com/libjxl/libjxl/releases/download/v$(LibJxlVersion)/jxl-x64-windows.zip</LibJxlUrl>
+    <LibJxlDir>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(BaseIntermediateOutputPath)', 'libjxl', '$(LibJxlVersion)'))</LibJxlDir>
+    <LibJxlWanted Condition="'$(SkipLibJxl)' != 'true' And $([MSBuild]::IsOSPlatform('Windows')) And ('$(RuntimeIdentifier)' == '' Or '$(RuntimeIdentifier)' == 'win-x64')">true</LibJxlWanted>
+  </PropertyGroup>
+
+  <Target Name="FetchLibJxl" BeforeTargets="AssignTargetPaths" Condition="'$(LibJxlWanted)' == 'true'">
+    <PropertyGroup>
+      <_LibJxlZip>$(LibJxlDir)jxl-x64-windows.zip</_LibJxlZip>
+      <_LibJxlBin>$(LibJxlDir)x64-windows\bin\</_LibJxlBin>
+    </PropertyGroup>
+
+    <DownloadFile SourceUrl="$(LibJxlUrl)" DestinationFolder="$(LibJxlDir)" Condition="!Exists('$(_LibJxlBin)jxl.dll')"
+                  ContinueOnError="true" />
+    <GetFileHash Files="$(_LibJxlZip)" Algorithm="SHA256" Condition="Exists('$(_LibJxlZip)') And !Exists('$(_LibJxlBin)jxl.dll')">
+      <Output TaskParameter="Hash" PropertyName="_LibJxlHash" />
+    </GetFileHash>
+    <Delete Files="$(_LibJxlZip)" Condition="'$(_LibJxlHash)' != '' And '$(_LibJxlHash.ToLowerInvariant())' != '$(LibJxlSha256)'" />
+    <Error Text="libjxl $(LibJxlVersion) from $(LibJxlUrl) has SHA-256 $(_LibJxlHash), expected $(LibJxlSha256)."
+           Condition="'$(_LibJxlHash)' != '' And '$(_LibJxlHash.ToLowerInvariant())' != '$(LibJxlSha256)'" />
+    <Unzip SourceFiles="$(_LibJxlZip)" DestinationFolder="$(LibJxlDir)" Condition="'$(_LibJxlHash)' != ''" />
+    <Delete Files="$(_LibJxlZip)" Condition="'$(_LibJxlHash)' != ''" />
+    <Message Importance="high" Text="libjxl could not be fetched; upscaled colour pages will be WebP." Condition="!Exists('$(_LibJxlBin)jxl.dll')" />
+
+    <ItemGroup Condition="Exists('$(_LibJxlBin)jxl.dll')">
+      <_LibJxlFile Include="$(_LibJxlBin)jxl.dll;$(_LibJxlBin)jxl_cms.dll;$(_LibJxlBin)brotlicommon.dll;$(_LibJxlBin)brotlidec.dll;$(_LibJxlBin)brotlienc.dll" />
+      <None Include="@(_LibJxlFile)" Link="%(_LibJxlFile.Filename)%(_LibJxlFile.Extension)"
+            CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Visible="false" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -294,16 +294,24 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
-    public async Task A_colour_page_comes_back_as_a_three_band_webp_at_twice_the_size()
+    public async Task A_colour_page_comes_back_three_band_at_twice_the_size_as_jpeg_xl_unless_turned_off()
     {
         using var upscaler = NewUpscaler();
+        var png = Pattern(400, 500).EncodePng();
 
-        var result = await upscaler.UpscaleAsync(Pattern(400, 500).EncodePng(), "span-s", CancellationToken.None);
+        var result = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None);
+        _settings.Set(SettingKeys.UpscalingJpegXl, "false");
+        var webp = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None);
 
         Assert.Equal(UpscaleOutcome.Ready, result.Outcome);
-        Assert.Equal(("webp", 800, 1000), (result.Extension, result.Width, result.Height));
-        using var decoded = NetVips.Image.NewFromBuffer(result.Bytes!);
+        Assert.Equal((JpegXl.IsAvailable ? "jxl" : "webp", 800, 1000), (result.Extension, result.Width, result.Height));
+        Assert.Equal(("webp", 800, 1000), (webp.Extension, webp.Width, webp.Height));
+        using var decoded = NetVips.Image.NewFromBuffer(webp.Bytes!);
         Assert.Equal((3, 800, 1000), (decoded.Bands, decoded.Width, decoded.Height));
+        if (JpegXl.IsAvailable)
+        {
+            Assert.Equal((800, 1000, 3), JpegXl.Decode(result.Bytes!, 1_000_000) is var (_, w, h, b) ? (w, h, b) : default);
+        }
     }
 
     [Fact]
@@ -346,15 +354,19 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
-    public async Task An_output_taller_than_webp_allows_is_a_jpeg()
+    public async Task An_output_taller_than_webp_allows_is_a_jpeg_or_jpeg_xl_which_has_no_edge_limit()
     {
         using var upscaler = NewUpscaler();
+        var png = Pattern(40, 8200).EncodePng();
 
-        var result = await upscaler.UpscaleAsync(Pattern(40, 8200).EncodePng(), "span-s", CancellationToken.None);
+        var result = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None);
+        _settings.Set(SettingKeys.UpscalingJpegXl, "false");
+        var jpeg = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None);
 
         Assert.Equal(UpscaleOutcome.Ready, result.Outcome);
-        Assert.Equal(("jpg", 80, 16400), (result.Extension, result.Width, result.Height));
-        Assert.Equal(ImageFormat.Jpeg, ImageCodec.DetectFormat(result.Bytes!));
+        Assert.Equal((JpegXl.IsAvailable ? "jxl" : "jpg", 80, 16400), (result.Extension, result.Width, result.Height));
+        Assert.Equal(("jpg", 80, 16400), (jpeg.Extension, jpeg.Width, jpeg.Height));
+        Assert.Equal(ImageFormat.Jpeg, ImageCodec.DetectFormat(jpeg.Bytes!));
     }
 
     [Fact]

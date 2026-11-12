@@ -3,7 +3,7 @@ import { expect, waitFor } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../../.storybook/mocks/settings'
 import { api } from '../../../.storybook/mocks/api'
-import { upscalingFailed, upscalingOff } from '../../../.storybook/mocks/settings/data'
+import { upscalingFailed, upscalingNoJpegXl, upscalingOff } from '../../../.storybook/mocks/settings/data'
 import { UpscalingSection } from './UpscalingSection'
 
 const meta = {
@@ -92,5 +92,29 @@ export const TestSpeed: Story = {
     await waitFor(() => expect(buttons[0]).toBeEnabled())
     await userEvent.click(buttons[0])
     await expect(await canvas.findByText('5.5 s per sample page')).toBeVisible()
+  },
+}
+
+export const JpegXlOffMarksUnsaved: Story = {
+  play: async ({ canvas, userEvent }) => {
+    const toggle = await canvas.findByRole('switch', { name: /JPEG XL for colour pages/ })
+    await waitFor(() => expect(toggle).toBeChecked())
+    await userEvent.click(toggle)
+    await expect(await canvas.findByText('Unsaved')).toBeVisible()
+    await waitFor(() => expect(toggle).not.toBeChecked())
+  },
+}
+
+export const JpegXlUnavailable: Story = {
+  parameters: {
+    msw: settingsMsw(http.get(api('/upscaling'), () => HttpResponse.json(upscalingNoJpegXl))),
+  },
+  play: async ({ canvas }) => {
+    const toggle = await canvas.findByRole('switch', { name: /JPEG XL for colour pages/ })
+    await waitFor(() => {
+      expect(toggle).toBeDisabled()
+      expect(toggle).not.toBeChecked()
+    })
+    await expect(canvas.getByText(/this build of Maki has no JPEG XL library/)).toBeVisible()
   },
 }

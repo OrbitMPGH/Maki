@@ -41,6 +41,7 @@ export function UpscalingSection() {
     (draft.enabled !== saved.enabled ||
       draft.threads !== saved.threads ||
       draft.cacheMb !== saved.cacheMb ||
+      draft.jpegXl !== saved.jpegXl ||
       !sameModels(draft.models, saved.models))
   const update = (changes: Partial<UpscalingSettings>) => {
     if (current) setDraft({ ...current, ...changes })
@@ -122,6 +123,18 @@ export function UpscalingSection() {
                   onChange={(cacheMb) => update({ cacheMb })}
                 />
               </Group>
+
+              <Switch
+                label={t`JPEG XL for colour pages`}
+                description={
+                  saved?.jpegXlAvailable === false
+                    ? t`Not available: this build of Maki has no JPEG XL library, so colour pages are WebP.`
+                    : t`Smaller files and smooth dark gradients where WebP shows blocks. Browsers that can't show JPEG XL, such as Edge, get WebP. Grey pages are always WebP.`
+                }
+                disabled={saved?.jpegXlAvailable === false}
+                checked={current.jpegXl !== false && saved?.jpegXlAvailable !== false}
+                onChange={(e) => update({ jpegXl: e.currentTarget.checked })}
+              />
 
               <CacheUsage bytes={state.cache.bytes} files={state.cache.files} limitMb={saved?.cacheMb ?? current.cacheMb} />
             </>

@@ -21,7 +21,7 @@ public static class UpscaleReasons
     public const string Abandoned = "abandoned";
 }
 
-/// <param name="Extension">"webp" or "jpg", without the dot. Null unless Ready.</param>
+/// <param name="Extension">"webp", "jxl" or "jpg", without the dot. Null unless Ready.</param>
 /// <param name="Reason">One of <see cref="UpscaleReasons"/> when Skipped or Failed.</param>
 public sealed record UpscaleResult(
     UpscaleOutcome Outcome,

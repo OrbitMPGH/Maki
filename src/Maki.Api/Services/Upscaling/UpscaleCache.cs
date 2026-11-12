@@ -6,7 +6,7 @@ using Maki.Core.Configuration;
 namespace Maki.Api.Services.Upscaling;
 
 /// <summary>
-/// Upscaled pages on disk at <c>{ConfigDir}/cache/upscale/{ChapterFileId}/{ArchiveVersion}-{absIndex}.{model}.{webp|jpg}</c>,
+/// Upscaled pages on disk at <c>{ConfigDir}/cache/upscale/{ChapterFileId}/{ArchiveVersion}-{absIndex}.{model}.{webp|jxl|jpg}</c>,
 /// a root of its own so the reader cache prune never sees them. Eviction is by last access as this
 /// index records it (filesystem atime is not updated on read on NTFS or under relatime), seeded from
 /// each file's write time by a walk off the request path.
@@ -33,7 +33,7 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
     /// </summary>
     internal const string Generation = "g6";
 
-    [GeneratedRegex(@"^(\d+)-(\d+)-(\d+)\.([a-z0-9-]+)\.g6\.(webp|jpg)$")]
+    [GeneratedRegex(@"^(\d+)-(\d+)-(\d+)\.([a-z0-9-]+)\.g6\.(webp|jxl|jpg)$")]
     internal static partial Regex FileName();
 
     public string Root { get; } = Path.GetFullPath(Path.Combine(paths.CacheDir, "upscale"));
@@ -45,8 +45,14 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
         Root, key.ChapterFileId.ToString(CultureInfo.InvariantCulture),
         $"{key.ArchiveVersion}-{key.AbsIndex.ToString(CultureInfo.InvariantCulture)}.{key.Model}.{Generation}.{extension}");
 
-    public static string ContentType(string path) =>
-        path.EndsWith(".webp", StringComparison.OrdinalIgnoreCase) ? "image/webp" : "image/jpeg";
+    public static string ContentType(string path) => Path.GetExtension(path).ToLowerInvariant() switch
+    {
+        ".webp" => "image/webp",
+        ".jxl" => "image/jxl",
+        _ => "image/jpeg"
+    };
+
+    public static bool IsJpegXl(string path) => path.EndsWith(".jxl", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Starts the index walk once; later calls return the same task.</summary>
     public Task EnsureSeededAsync()
@@ -60,7 +66,7 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
     /// <summary>The cached file for <paramref name="key"/>, recording the access, or null.</summary>
     public string? TryGet(UpscaleWorkKey key)
     {
-        foreach (var extension in (string[])["webp", "jpg"])
+        foreach (var extension in (string[])["webp", "jxl", "jpg"])
         {
             var path = PathFor(key, extension);
             if (File.Exists(path))
@@ -78,9 +84,9 @@ public sealed partial class UpscaleCache(AppPaths paths, IAppSettings settings, 
     /// <summary>Writes the page aside and moves it into place, then evicts down to the cap.</summary>
     public async Task<string> WriteAsync(UpscaleWorkKey key, byte[] bytes, string extension, CancellationToken ct)
     {
-        if (extension is not ("webp" or "jpg"))
+        if (extension is not ("webp" or "jxl" or "jpg"))
         {
-            throw new ArgumentOutOfRangeException(nameof(extension), extension, "webp or jpg");
+            throw new ArgumentOutOfRangeException(nameof(extension), extension, "webp, jxl or jpg");
         }
 
         await EnsureSeededAsync();

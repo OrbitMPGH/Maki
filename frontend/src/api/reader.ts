@@ -4,6 +4,7 @@ import type { ReaderPrefs } from '../pages/reader/prefs'
 import type { QualityTierName } from './upgrades'
 import { t } from '@lingui/core/macro'
 import { getConnectivity } from '../lib/connectivity'
+import { jpegXlSupported, jpegXlSupportedNow } from '../lib/enhance/jpegXl'
 import { randomUUID } from '../lib/uuid'
 import { queueOfflineWrite } from '../pwa/progressQueue'
 import { api, ApiError, apiRootNow, apiWithOrigin, authHeaders, getInitialize, trackedFetch } from './client'
@@ -112,21 +113,26 @@ export async function pageUrl(chapterId: number, page: number, thumb = false, ve
  */
 const ENHANCE_GENERATION = 'g6'
 
-function enhancedUrl(apiRoot: string, chapterId: number, page: number, model: string, pageVersion: string): string {
-  const query = `?model=${encodeURIComponent(model)}&v=${encodeURIComponent(pageVersion)}&g=${ENHANCE_GENERATION}`
+void jpegXlSupported()
+
+function enhancedUrl(apiRoot: string, chapterId: number, page: number, model: string, pageVersion: string, jpegXl: boolean): string {
+  // Colour pages are cached as JPEG XL; without `jxl=1` the server sends them as WebP instead.
+  const jxl = jpegXl ? '&jxl=1' : ''
+  const query = `?model=${encodeURIComponent(model)}&v=${encodeURIComponent(pageVersion)}&g=${ENHANCE_GENERATION}${jxl}`
   return `${apiRoot}/reader/chapter/${chapterId}/page/${page}/enhanced${query}`
 }
 
 /** Where a page upscaled on the server is served from. A 404 there means not upscaled yet; it never queues one. */
 export async function serverEnhancedUrl(chapterId: number, page: number, model: string, pageVersion: string): Promise<string> {
-  const init = await getInitialize()
-  return enhancedUrl(init.apiRoot, chapterId, page, model, pageVersion)
+  const [init, jpegXl] = await Promise.all([getInitialize(), jpegXlSupported()])
+  return enhancedUrl(init.apiRoot, chapterId, page, model, pageVersion, jpegXl)
 }
 
-/** `serverEnhancedUrl` without the wait, or null while the bootstrap has not loaded. */
+/** `serverEnhancedUrl` without the wait, or null while the bootstrap or the JPEG XL probe has not settled. */
 export function serverEnhancedUrlNow(chapterId: number, page: number, model: string, pageVersion: string): string | null {
   const apiRoot = apiRootNow()
-  return apiRoot === null ? null : enhancedUrl(apiRoot, chapterId, page, model, pageVersion)
+  const jpegXl = jpegXlSupportedNow()
+  return apiRoot === null || jpegXl === null ? null : enhancedUrl(apiRoot, chapterId, page, model, pageVersion, jpegXl)
 }
 
 export type ServerPageState = 'ready' | 'queued' | 'working' | 'failed' | 'skipped'
