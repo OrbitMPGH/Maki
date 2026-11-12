@@ -20214,6 +20214,10 @@ msgstr "要重置 {editName} 的双重验证吗？"
 msgid "Reset zoom"
 msgstr "重置缩放"
 
+#: src/components/library/LibraryTable.tsx
+msgid "Resize {label} column"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Resize Chapter column"

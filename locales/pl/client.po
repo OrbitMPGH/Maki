@@ -20214,6 +20214,10 @@ msgstr "Zresetować uwierzytelnianie dwuskładnikowe dla {editName}?"
 msgid "Reset zoom"
 msgstr "Resetuj powiększenie"
 
+#: src/components/library/LibraryTable.tsx
+msgid "Resize {label} column"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Resize Chapter column"

@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode, type Ref, memo } from 'react'
+import { type CSSProperties, type ReactNode, type Ref, createContext, memo, useContext, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useLingui } from '@lingui/react'
 import { Trans, useLingui as useLinguiMacro } from '@lingui/react/macro'
@@ -22,24 +22,45 @@ import { shownRating, isProvisional } from '../../lib/rating'
 import {
   LIBRARY_COLUMN_LABELS,
   LIBRARY_COLUMN_SORTS,
-  LIBRARY_COLUMN_TRACKS,
+  LIBRARY_COLUMN_WIDTHS,
   type LibraryColumn,
 } from './libraryColumns'
+import { type ColumnSpec, useColumnWidths } from '../../lib/useColumnWidths'
 
-const TITLE_TRACK = 'minmax(240px, 2fr)'
+const TITLE_MIN = 240
 const CHECK_TRACK = '36px'
+const WIDTHS_STORAGE_KEY = 'library-table-widths'
+
+type TableColumn = LibraryColumn | 'title'
+
+/**
+ * Title's default of 0 means it stretches over whatever the other columns leave. The first resize
+ * of any column pins it at its laid-out width, so a drag moves every column after the divider.
+ */
+const TABLE_COLUMN_WIDTHS: Record<TableColumn, ColumnSpec> = {
+  title: { width: 0, min: TITLE_MIN, max: 1200 },
+  ...LIBRARY_COLUMN_WIDTHS,
+}
 
 /** The grid template every row of one table shares, and the width under which it scrolls sideways. */
-function libraryTableLayout(columns: readonly LibraryColumn[], selectMode: boolean): CSSProperties {
-  const tracks = [...(selectMode ? [CHECK_TRACK] : []), TITLE_TRACK, ...columns.map((c) => LIBRARY_COLUMN_TRACKS[c])]
+function libraryTableLayout(
+  columns: readonly LibraryColumn[],
+  selectMode: boolean,
+  widths: Record<TableColumn, number>,
+): Record<string, string> {
+  const title = widths.title > 0 ? `${widths.title}px` : `minmax(${TITLE_MIN}px, 1fr)`
+  const tracks = [...(selectMode ? [CHECK_TRACK] : []), title, ...columns.map((c) => `${widths[c]}px`)]
   const minWidth = tracks.reduce((sum, track) => sum + Number(/(\d+)px/.exec(track)?.[1] ?? 0), 0)
   return {
     '--library-table-cols': tracks.join(' '),
     '--library-table-min': `${minWidth + 12 * tracks.length}px`,
-  } as CSSProperties
+  }
 }
 
-/** The scrolling frame the header and the rows sit in. */
+type ResizeHandle = ReturnType<typeof useColumnWidths<TableColumn>>['handleProps']
+const ResizeContext = createContext<ResizeHandle | null>(null)
+
+/** The scrolling frame the header and the rows sit in. It owns the column widths. */
 export function LibraryTableFrame({
   columns,
   selectMode,
@@ -50,9 +71,35 @@ export function LibraryTableFrame({
   children: ReactNode
 }) {
   const { t } = useLinguiMacro()
+  const frame = useRef<HTMLDivElement>(null)
+  // The rows are grid items, so a drag moves the shared template, not the header cell the hook
+  // sizes; that cell's own width is taken straight back off.
+  const { widths, handleProps } = useColumnWidths(
+    WIDTHS_STORAGE_KEY,
+    TABLE_COLUMN_WIDTHS,
+    (live, key) => {
+      const el = frame.current
+      if (!el) return
+      for (const [name, value] of Object.entries(libraryTableLayout(columns, selectMode, live))) {
+        el.style.setProperty(name, value)
+      }
+      el.querySelector<HTMLElement>(`.library-table-th[data-col="${key}"]`)?.style.removeProperty('width')
+    },
+    (start) => {
+      if (start.title > 0) return start
+      const title = frame.current?.querySelector('.library-table-th[data-col="title"]')
+      return title ? { ...start, title: Math.round(title.getBoundingClientRect().width) } : start
+    },
+  )
   return (
-    <div className="library-table" role="table" aria-label={t`Library`} style={libraryTableLayout(columns, selectMode)}>
-      {children}
+    <div
+      ref={frame}
+      className="library-table"
+      role="table"
+      aria-label={t`Library`}
+      style={libraryTableLayout(columns, selectMode, widths) as CSSProperties}
+    >
+      <ResizeContext.Provider value={handleProps}>{children}</ResizeContext.Provider>
     </div>
   )
 }
@@ -79,6 +126,7 @@ export function LibraryTableHeader({
 }) {
   const { _ } = useLingui()
   const { t } = useLinguiMacro()
+  const resize = useContext(ResizeContext)
   const header = (key: LibraryColumn | 'title', label: string) => {
     const value = LIBRARY_COLUMN_SORTS[key]
     const sortable = value != null && sorts.includes(value)
@@ -95,6 +143,7 @@ export function LibraryTableHeader({
         ) : (
           <span>{label}</span>
         )}
+        {resize && <div {...resize(key)} aria-label={t`Resize ${label} column`} />}
       </div>
     )
   }

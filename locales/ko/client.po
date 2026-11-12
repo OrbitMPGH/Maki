@@ -20214,6 +20214,10 @@ msgstr "{editName}의 2단계 인증을 초기화할까요?"
 msgid "Reset zoom"
 msgstr "확대/축소 초기화"
 
+#: src/components/library/LibraryTable.tsx
+msgid "Resize {label} column"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Resize Chapter column"

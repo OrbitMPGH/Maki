@@ -20214,6 +20214,10 @@ msgstr "Redefinir a autenticação em dois fatores de {editName}?"
 msgid "Reset zoom"
 msgstr "Redefinir zoom"
 
+#: src/components/library/LibraryTable.tsx
+msgid "Resize {label} column"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Resize Chapter column"

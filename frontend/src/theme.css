@@ -11883,13 +11883,24 @@ body.reader-open {
   opacity: 0.55;
 }
 .library-table-th {
+  position: relative;
   min-width: 0;
   font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
   color: var(--ink-3);
   white-space: nowrap;
+}
+.library-table-th > span {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* Centred on the 12px column gap rather than on the cell's own edge. */
+.library-table-th > .column-resize-handle {
+  inset-inline-end: -11px;
+}
+.library-table-th:hover > .column-resize-handle::after {
+  opacity: 1;
 }
 .library-table-sort {
   display: inline-flex;

@@ -1,5 +1,6 @@
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
+import type { ColumnSpec } from '../../lib/useColumnWidths'
 
 /** Every column the Library table can show beside the cover and title, which are always there. */
 export const LIBRARY_COLUMNS = [
@@ -68,23 +69,23 @@ export const LIBRARY_COLUMN_SORTS: Partial<Record<LibraryColumn | 'title', strin
   rating: 'rating',
 }
 
-/** CSS grid track per column. Flexible tracks share what the fixed ones leave. */
-export const LIBRARY_COLUMN_TRACKS: Record<LibraryColumn, string> = {
-  status: '128px',
-  chapters: '128px',
-  unread: '84px',
-  added: '104px',
-  lastRead: '104px',
-  released: '116px',
-  size: '96px',
-  sources: 'minmax(150px, 1fr)',
-  quality: '140px',
-  nextCheck: '104px',
-  year: '64px',
-  author: 'minmax(130px, 1fr)',
-  score: '84px',
-  rating: '84px',
-  tags: 'minmax(150px, 1fr)',
+/** Default and smallest width per column, in px. Title, set in LibraryTable, is the flexible one. */
+export const LIBRARY_COLUMN_WIDTHS: Record<LibraryColumn, ColumnSpec> = {
+  status: { width: 128, min: 96 },
+  chapters: { width: 128, min: 96 },
+  unread: { width: 84, min: 64 },
+  added: { width: 104, min: 80 },
+  lastRead: { width: 104, min: 80 },
+  released: { width: 116, min: 88 },
+  size: { width: 96, min: 72 },
+  sources: { width: 180, min: 100 },
+  quality: { width: 140, min: 100 },
+  nextCheck: { width: 104, min: 80 },
+  year: { width: 64, min: 52 },
+  author: { width: 160, min: 90 },
+  score: { width: 84, min: 64 },
+  rating: { width: 84, min: 64 },
+  tags: { width: 180, min: 100 },
 }
 
 const STORAGE_KEY = 'library-table-columns'

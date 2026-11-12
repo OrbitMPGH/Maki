@@ -20214,6 +20214,10 @@ msgstr "¿Restablecer la autenticación en dos pasos de {editName}?"
 msgid "Reset zoom"
 msgstr "Restablecer zoom"
 
+#: src/components/library/LibraryTable.tsx
+msgid "Resize {label} column"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Resize Chapter column"

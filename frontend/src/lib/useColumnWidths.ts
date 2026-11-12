@@ -28,6 +28,7 @@ function readWidths<K extends string>(storageKey: string, specs: Record<K, Colum
 }
 
 export type LiveResize<K extends string> = (widths: Record<K, number>, key: K, shift: number) => void
+export type PrepareResize<K extends string> = (widths: Record<K, number>) => Record<K, number>
 
 /**
  * Per-device column widths for a table with drag handles in its header. Dragging, arrow keys on a
@@ -40,17 +41,24 @@ export type LiveResize<K extends string> = (widths: Record<K, number>, key: K, s
  * lag. `onLive` gets the in-flight widths and how far the dragged column has grown since the drag
  * began, for anything else that has to follow along without a render; it is called once more with
  * a shift of 0 after the commit.
+ *
+ * `onPrepare` runs as a resize starts and can adjust the other widths first, such as pinning a
+ * flexible column to its laid-out width so the columns after it follow the divider.
  */
 export function useColumnWidths<K extends string>(
   storageKey: string,
   specs: Record<K, ColumnSpec>,
   onLive?: LiveResize<K>,
+  onPrepare?: PrepareResize<K>,
 ) {
   const [widths, setWidths] = useState(() => readWidths(storageKey, specs))
   const latest = useRef(widths)
   latest.current = widths
   const live = useRef(onLive)
   live.current = onLive
+  const prepare = useRef(onPrepare)
+  prepare.current = onPrepare
+  const prepared = () => prepare.current?.({ ...latest.current }) ?? { ...latest.current }
 
   const persist = (next: Record<K, number>) => {
     const changed: Partial<Record<K, number>> = {}
@@ -65,12 +73,13 @@ export function useColumnWidths<K extends string>(
     }
   }
 
-  const setWidth = (key: K, width: number) => {
-    const next = { ...latest.current, [key]: clampWidth(specs[key], width) }
+  const commit = (next: Record<K, number>) => {
     latest.current = next
     setWidths(next)
     persist(next)
   }
+
+  const setWidth = (key: K, width: number) => commit({ ...prepared(), [key]: clampWidth(specs[key], width) })
 
   // The column's laid-out width, which can be wider than what was asked for when its content
   // doesn't fit. Drags start from it so the divider never has to cross a dead zone first.
@@ -94,7 +103,8 @@ export function useColumnWidths<K extends string>(
       className: 'column-resize-handle',
       'data-edge': edge,
       onClick: (e: { stopPropagation: () => void }) => e.stopPropagation(),
-      onDoubleClick: () => setWidth(key, specs[key].width),
+      // Unclamped: a default can stand for "flexible" and sit outside the drag bounds.
+      onDoubleClick: () => commit({ ...latest.current, [key]: specs[key].width }),
       onKeyDown: (e: KeyboardEvent<HTMLElement>) => {
         if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
         e.preventDefault()
@@ -109,13 +119,15 @@ export function useColumnWidths<K extends string>(
         if (!cell) return
         const startX = e.clientX
         const startWidth = renderedWidth(key, handle)
-        let current = { ...latest.current }
+        let current = prepared()
         let pendingX: number | null = null
         let frame = 0
+        let moved = false
 
         const apply = () => {
           frame = 0
           if (pendingX === null) return
+          moved = true
           const width = clampWidth(specs[key], startWidth + (pendingX - startX) * sign)
           pendingX = null
           current = { ...current, [key]: width }
@@ -134,6 +146,8 @@ export function useColumnWidths<K extends string>(
           apply()
           document.body.classList.remove('column-resizing')
           delete handle.dataset.resizing
+          // A click (or the first half of a double-click) changes nothing, so it saves nothing either.
+          if (!moved) return
           latest.current = current
           // Synchronous, so whatever re-measures off the committed widths has done so before the
           // live adjustments are taken back off.

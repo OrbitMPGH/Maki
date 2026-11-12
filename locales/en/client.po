@@ -16778,6 +16778,10 @@ msgstr "Reset two-factor for {editName}?"
 msgid "Reset zoom"
 msgstr "Reset zoom"
 
+#: src/components/library/LibraryTable.tsx
+msgid "Resize {label} column"
+msgstr "Resize {label} column"
+
 #: src/pages/SeriesDetailPage.tsx
 msgid "Resize Chapter column"
 msgstr "Resize Chapter column"

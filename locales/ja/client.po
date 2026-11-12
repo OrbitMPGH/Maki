@@ -20214,6 +20214,10 @@ msgstr "{editName}の二要素認証をリセットしますか？"
 msgid "Reset zoom"
 msgstr "ズームをリセット"
 
+#: src/components/library/LibraryTable.tsx
+msgid "Resize {label} column"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Resize Chapter column"

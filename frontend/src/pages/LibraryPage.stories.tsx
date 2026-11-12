@@ -167,6 +167,42 @@ export const TableColumnPicker: Story = {
   },
 }
 
+export const TableColumnResize: Story = {
+  beforeEach: () => seedLibraryPrefs({ view: 'table' }),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('table', { name: 'Library' })
+    const box = (col: string) => canvasElement.querySelector(`.library-table-th[data-col="${col}"]`)!.getBoundingClientRect()
+    const rowBox = (col: string) =>
+      canvasElement.querySelector(`.library-table-body > [role="row"] [data-col="${col}"]`)!.getBoundingClientRect()
+    const stored = () => JSON.parse(localStorage.getItem('library-table-widths') ?? '{}')
+    const titleWidth = box('title').width
+    const statusLeft = box('status').left
+
+    // Shrinking Title pins it and pulls every column after it left, rows included.
+    ;(await canvas.findByRole('separator', { name: 'Resize Title column' })).focus()
+    await userEvent.keyboard('{ArrowLeft}')
+    await waitFor(() => expect(stored().title).toBeLessThan(Math.round(titleWidth)))
+    const shrunk = Math.round(titleWidth) - stored().title
+    await waitFor(() => expect(box('status').left).toBeCloseTo(statusLeft - shrunk, 0))
+    await waitFor(() => expect(rowBox('status').left).toBeCloseTo(statusLeft - shrunk, 0))
+
+    // Widening Status pushes the next column right and leaves Status where it is.
+    const chaptersLeft = box('chapters').left
+    const status = await canvas.findByRole('separator', { name: 'Resize Status column' })
+    status.focus()
+    await userEvent.keyboard('{ArrowRight}{ArrowRight}')
+    await waitFor(() => expect(stored().status).toBe(160))
+    await waitFor(() => expect(box('chapters').left).toBeCloseTo(chaptersLeft + 32, 0))
+    await waitFor(() => expect(box('status').left).toBeCloseTo(statusLeft - shrunk, 0))
+
+    // Double-click resets: Status to its default, Title back to filling the row.
+    await userEvent.dblClick(status)
+    await userEvent.dblClick(await canvas.findByRole('separator', { name: 'Resize Title column' }))
+    await waitFor(() => expect(localStorage.getItem('library-table-widths')).toBeNull())
+    await waitFor(() => expect(box('status').left).toBeCloseTo(statusLeft, 0))
+  },
+}
+
 export const TableSelectRangeWithShift: Story = {
   beforeEach: () => seedLibraryPrefs({ view: 'table' }),
   play: async ({ canvas, canvasElement, userEvent }) => {

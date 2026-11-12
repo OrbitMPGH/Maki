@@ -20214,6 +20214,10 @@ msgstr "Réinitialiser la double authentification pour {editName} ?"
 msgid "Reset zoom"
 msgstr "Réinitialiser le zoom"
 
+#: src/components/library/LibraryTable.tsx
+msgid "Resize {label} column"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Resize Chapter column"

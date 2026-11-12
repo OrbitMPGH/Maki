@@ -20214,6 +20214,10 @@ msgstr "Сбросить двухфакторную аутентификацию
 msgid "Reset zoom"
 msgstr "Сбросить масштаб"
 
+#: src/components/library/LibraryTable.tsx
+msgid "Resize {label} column"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Resize Chapter column"

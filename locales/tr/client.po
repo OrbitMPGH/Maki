@@ -20214,6 +20214,10 @@ msgstr "{editName} için iki aşamalı doğrulama sıfırlansın mı?"
 msgid "Reset zoom"
 msgstr "Yakınlaştırmayı sıfırla"
 
+#: src/components/library/LibraryTable.tsx
+msgid "Resize {label} column"
+msgstr ""
+
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Resize Chapter column"
