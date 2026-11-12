@@ -14,8 +14,10 @@ namespace Maki.Api.Services;
 /// <para>
 /// Near the end means at most <see cref="DownloadsAhead"/> downloaded chapters sit between the one
 /// being read and the series' first queued chapter. Only the next <see cref="BumpCount"/> scraper rows of that series move, in
-/// reading order, ahead of everything claimable and without renumbering anyone else. A series is
-/// looked at once per <see cref="Window"/>, and nothing is written when its rows already lead.
+/// reading order, ahead of everything claimable and without renumbering anyone else. Only the
+/// chapter's own language counts, as for the reader's next chapter. A series is looked at again when
+/// the reader moves to another chapter, else once per <see cref="Window"/>, and nothing is written
+/// when its rows already lead.
 /// </para>
 /// <para>
 /// Rows in flight, <see cref="QueueStatus.Waiting"/> (an early-access chapter nothing can fetch
@@ -34,10 +36,10 @@ public class ReadingAwareQueueBump(
     /// <summary>How many of the series' next chapters move to the front.</summary>
     public const int BumpCount = 3;
 
-    /// <summary>The shortest time between two looks at one series.</summary>
+    /// <summary>The shortest time between two looks at one series while the reader stays in one chapter.</summary>
     public static readonly TimeSpan Window = TimeSpan.FromMinutes(2);
 
-    private readonly ConcurrentDictionary<int, DateTime> _lastLook = new();
+    private readonly ConcurrentDictionary<int, (int ChapterId, DateTime At)> _lastLook = new();
 
     /// <summary>
     /// Fire and forget. The throttle is checked synchronously so a burst of page writes costs a
@@ -45,7 +47,7 @@ public class ReadingAwareQueueBump(
     /// </summary>
     public void Notify(int seriesId, int chapterId)
     {
-        if (!Due(seriesId))
+        if (!Due(seriesId, chapterId))
         {
             return;
         }
@@ -63,17 +65,21 @@ public class ReadingAwareQueueBump(
         });
     }
 
-    internal bool Due(int seriesId)
+    /// <summary>
+    /// A look that moved nothing still counts for the window, but a new chapter is a new answer:
+    /// reading quickly through the last chapters on disk must not wait out a look made further back.
+    /// </summary>
+    internal bool Due(int seriesId, int chapterId)
     {
         var now = time.GetUtcNow().UtcDateTime;
         var due = false;
         _lastLook.AddOrUpdate(
             seriesId,
-            _ => { due = true; return now; },
+            _ => { due = true; return (chapterId, now); },
             (_, last) =>
             {
-                due = now - last >= Window;
-                return due ? now : last;
+                due = last.ChapterId != chapterId || now - last.At >= Window;
+                return due ? (chapterId, now) : last;
             });
         return due;
     }
@@ -87,7 +93,7 @@ public class ReadingAwareQueueBump(
         var chapters = await db.Chapters
             .AsNoTracking()
             .Where(c => c.SeriesId == seriesId)
-            .Select(c => new { c.Id, c.Number, c.Volume, HasFile = c.ChapterFileId != null })
+            .Select(c => new { c.Id, c.Number, c.Volume, c.Language, HasFile = c.ChapterFileId != null })
             .ToListAsync(ct);
 
         var reading = chapters.FirstOrDefault(c => c.Id == chapterId);
@@ -95,6 +101,9 @@ public class ReadingAwareQueueBump(
         {
             return 0;
         }
+
+        // Another language's copies are other chapters to the reader (ReaderService.NeighboursAsync).
+        chapters = chapters.Where(c => c.Language == reading.Language).ToList();
 
         var candidates = await db.DownloadQueue
             .Where(q => q.SeriesId == seriesId && q.Protocol == AcquisitionProtocol.Scraper &&
@@ -119,7 +128,7 @@ public class ReadingAwareQueueBump(
         }
 
         // Only what the reader can get through before the first queued gap counts as ahead, and
-        // distinct numbers, so a second language's copy of a chapter is not another one to read.
+        // distinct numbers, so two copies of one chapter count once.
         var gap = byId[nextRows[0].ChapterId].Number!.Value;
         var ahead = chapters
             .Where(c => c.HasFile && c.Number is { } n && n > place && n < gap)

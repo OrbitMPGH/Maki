@@ -170,16 +170,27 @@ public class ReadingAwareQueueBumpTests : IDisposable
     {
         var bump = Bump();
 
-        Assert.True(bump.Due(1));
-        Assert.False(bump.Due(1));
-        Assert.True(bump.Due(2));
+        Assert.True(bump.Due(1, 10));
+        Assert.False(bump.Due(1, 10));
+        Assert.True(bump.Due(2, 20));
 
         _clock.Now = T0 + ReadingAwareQueueBump.Window - TimeSpan.FromSeconds(1);
-        Assert.False(bump.Due(1));
+        Assert.False(bump.Due(1, 10));
 
         _clock.Now = T0 + ReadingAwareQueueBump.Window;
-        Assert.True(bump.Due(1));
-        Assert.False(bump.Due(1));
+        Assert.True(bump.Due(1, 10));
+        Assert.False(bump.Due(1, 10));
+    }
+
+    [Fact]
+    public void Moving_to_another_chapter_is_looked_at_inside_the_window()
+    {
+        var bump = Bump();
+
+        Assert.True(bump.Due(1, 10));
+        Assert.True(bump.Due(1, 11));
+        Assert.False(bump.Due(1, 11));
+        Assert.True(bump.Due(1, 10));
     }
 
     [Theory]
@@ -269,5 +280,41 @@ public class ReadingAwareQueueBumpTests : IDisposable
 
         Assert.Equal(1, await Bump().BumpAsync(series, ch[1], default));
         Assert.Equal(q3, Dispatch()[0]);
+    }
+
+    [Fact]
+    public async Task Another_languages_files_and_rows_are_left_out()
+    {
+        var series = SeedSeries();
+        var ch = SeedChapters(series, 6, onDisk: [1, 2, 3]);
+        int SpanishChapter(int number, bool onDisk)
+        {
+            using var db = _db.NewContext();
+            var chapter = new Chapter { SeriesId = series, Number = number, Language = "es" };
+            if (onDisk)
+            {
+                var file = new ChapterFile
+                {
+                    SeriesId = series, RelativePath = $"{number}-es.cbz", Size = 1, SourceName = "Test", DateAdded = T0.UtcDateTime
+                };
+                db.ChapterFiles.Add(file);
+                db.SaveChanges();
+                chapter.ChapterFileId = file.Id;
+            }
+
+            db.Chapters.Add(chapter);
+            db.SaveChanges();
+            return chapter.Id;
+        }
+
+        // Spanish 4 and 5 on disk would read as two chapters ahead of English 3; a Spanish row is not the next chapter.
+        SpanishChapter(4, onDisk: true);
+        SpanishChapter(5, onDisk: true);
+        var spanish6 = Queue(series, SpanishChapter(6, onDisk: false), 1);
+        var foreign = Queue(_db.SeedSeries(), SeedChapters(_db.SeedSeries(), 1)[1], 0);
+        var q4 = Queue(series, ch[4], 9);
+
+        Assert.Equal(1, await Bump().BumpAsync(series, ch[3], default));
+        Assert.Equal([q4, foreign, spanish6], Dispatch());
     }
 }
