@@ -1036,6 +1036,7 @@ msgid "{chapters, plural, one {# chapter held, {used} of {limit}} other {# chapt
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/ScanlationGroupsModal.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr ""
 
@@ -1390,17 +1391,17 @@ msgstr "{count, plural, one {Следующая непрочитанная гл�
 msgid "{count, plural, one {Undo the import of # folder?} other {Undo the import of # folders?}}"
 msgstr "{count, plural, one {Отменить импорт # папки?} few {Отменить импорт # папок?} many {Отменить импорт # папок?} other {Отменить импорт # папки?}}"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "{count} chapters"
 msgstr "Глав: {count}"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "{count} pages"
 msgstr "Страниц: {count}"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "{count} results"
 msgstr "Результатов: {count}"
@@ -1816,7 +1817,7 @@ msgstr "{intoLevel} / {levelSpan} XP до уровня {nextLevel}"
 msgid "{inTrash, plural, one {# of them still has its original in the trash. Undo it from the series page.} other {# of them still have their original in the trash. Undo them from the series page.}}"
 msgstr "{inTrash, plural, one {# из них оригинал всё ещё в корзине. Отмените это на странице серии.} few {# из них оригиналы всё ещё в корзине. Отмените их на странице серии.} many {# из них оригиналы всё ещё в корзине. Отмените их на странице серии.} other {# из них оригиналы всё ещё в корзине. Отмените их на странице серии.}}"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "{kb} KB"
 msgstr "{kb} КБ"
@@ -1983,6 +1984,10 @@ msgstr "{linkingTotal, plural, one {Источники найдены, файл�
 
 #: src/components/series/ChapterCountsInfo.tsx
 msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
+msgstr ""
+
+#: src/pages/settings/CustomSourceReport.tsx
+msgid "{locked, plural, one {# chapter listed as locked} other {# chapters listed as locked}}"
 msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
@@ -3691,6 +3696,10 @@ msgstr "Аниме с оценкой 10/10 даёт вес {topSeed}, проти
 msgid "A bulk move, rename or rescan is running."
 msgstr ""
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "A chapter is taken from the first group on this list that uploaded it. With none of them, the earliest upload is taken."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "A connection has unsaved changes."
@@ -4128,6 +4137,10 @@ msgstr ""
 #, fuzzy
 msgid "Add a note"
 msgstr "Добавить заметку"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Add a preferred group"
+msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
@@ -4615,6 +4628,10 @@ msgstr "Уже у вас"
 msgid "Also ask at the end of each volume"
 msgstr "Также спрашивать в конце каждого тома"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Also blocked everywhere: {inheritedBlocked}"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Also delete detached files from disk"
@@ -4958,6 +4975,10 @@ msgstr ""
 #, fuzzy
 msgid "Applies automatically to"
 msgstr "Применяется автоматически к"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Applies to {sources}."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -5685,10 +5706,18 @@ msgstr "Бит на пиксель, больше"
 msgid "Bits per pixel, under"
 msgstr "Бит на пиксель, меньше"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Block a group"
+msgstr ""
+
 #: src/components/settings/PushNotificationsSection.tsx
 #, fuzzy
 msgid "Blocked for Maki in your browser settings. Allow notifications there, then come back."
 msgstr "Заблокировано для Maki в настройках браузера. Разрешите уведомления там и вернитесь сюда."
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Blocked groups"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5968,6 +5997,7 @@ msgstr "Не удаётся войти с сохранёнными данным�
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/components/RenameSeriesModal.tsx
+#: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/RestoreSeriesDialog.tsx
 #: src/components/series/UndoConversionModal.tsx
@@ -6458,7 +6488,7 @@ msgstr "Язык глав для {label}"
 msgid "Chapter languages"
 msgstr "Языки глав"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Chapter list"
 msgstr "Список глав"
@@ -6487,7 +6517,7 @@ msgstr ""
 msgid "Chapter page"
 msgstr "Страница главы"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Chapter pages"
 msgstr "Страницы главы"
@@ -7041,6 +7071,7 @@ msgstr "Секрет клиента"
 #: src/components/LuckyButton.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/RenameSeriesModal.tsx
+#: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/series/SeriesReviews.tsx
 #: src/components/series/UpgradeNowResultModal.tsx
@@ -7771,6 +7802,10 @@ msgstr "Не удалось загрузить прогресс для {seriesFa
 #, fuzzy
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
 msgstr "Не удалось загрузить прогресс для {seriesFailed, plural, one {# серии} few {# серий} many {# серий} other {# серий}}: {titles}"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Could not read the groups on {unreachable} just now. You can still type a name."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -8817,6 +8852,11 @@ msgstr "Не понравилось"
 msgid "Dismiss"
 msgstr "Скрыть"
 
+#. placeholder {0}: n.title
+#: src/components/SourceMappingsSection.tsx
+msgid "Dismiss {0} on {label}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Dismiss all"
@@ -9696,7 +9736,7 @@ msgstr ""
 msgid "Every chapter released from now on is wanted."
 msgstr "Каждая глава, которая выйдет отныне, запрашивается."
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Every check passed"
 msgstr "Все проверки пройдены"
@@ -10546,7 +10586,7 @@ msgstr "Первая доступная папка"
 msgid "First page"
 msgstr "Первая страница"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "First page image"
 msgstr "Изображение первой страницы"
@@ -10739,6 +10779,10 @@ msgstr "Для приложений, которые подключаются т�
 #, fuzzy
 msgid "For reading apps like Panels, KOReader and Mihon."
 msgstr "Для приложений для чтения вроде Panels, KOReader и Mihon."
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "For this series only. Its preferred list replaces the global one; blocked groups add to it."
+msgstr ""
 
 #: src/components/pageconversion/FormatStep.tsx
 #: src/components/pageconversion/StartStep.tsx
@@ -11164,6 +11208,10 @@ msgstr "Объединить с уровнем выше"
 
 #: src/components/series/ChapterViewMenu.tsx
 msgid "Grouping is off while anime seasons are marked in the table."
+msgstr ""
+
+#: src/pages/settings/CustomSourceReport.tsx
+msgid "Groups credited: {groupList}"
 msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
@@ -12251,6 +12299,10 @@ msgstr "Пригласите пользователей"
 msgid "iPhone and iPad only deliver push notifications to apps added to the home screen. Add Maki to your home screen, open it from there, and come back to this card."
 msgstr "iPhone и iPad доставляют push-уведомления только приложениям, добавленным на главный экран. Добавьте Maki на главный экран, откройте оттуда и вернитесь к этой карточке."
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Is this it?"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Isekai"
@@ -13144,9 +13196,15 @@ msgstr "Линейный"
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesScrobbleSection.tsx
+#: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Link"
 msgstr "Связать"
+
+#. placeholder {0}: n.title
+#: src/components/SourceMappingsSection.tsx
+msgid "Link {0} on {label}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -14509,6 +14567,14 @@ msgstr "Переместить {label} вниз"
 msgid "Move {label} up"
 msgstr "Переместить {label} вверх"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Move {name} down"
+msgstr ""
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Move {name} up"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Move {tierLabel} down"
@@ -14856,6 +14922,10 @@ msgstr "Улучшения ещё ни разу не проверялись"
 msgid "Never shows which series you read."
 msgstr "Никогда не показывает, какие серии вы читаете."
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Never taken. A chapter only these groups uploaded comes from another source, or waits until one has it."
+msgstr ""
+
 #: src/components/pageconversion/ruleTemplates.ts
 #, fuzzy
 msgid "Never touch tagged series"
@@ -15139,6 +15209,10 @@ msgstr ""
 #, fuzzy
 msgid "No better copy found"
 msgstr "Лучшая копия не найдена"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "No blocked groups."
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -15538,6 +15612,10 @@ msgstr "Нет страниц"
 msgid "No pending requests"
 msgstr "Нет ожидающих запросов"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "No preferred groups."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "No quality formats defined yet. Add one below to score files by it."
@@ -15857,6 +15935,10 @@ msgstr "Нет"
 #, fuzzy
 msgid "None available"
 msgstr "Нет доступных"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "None for this series, so the global order applies: {inheritedPreferred}"
+msgstr ""
 
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -18227,6 +18309,10 @@ msgstr "Публикует в одну тему форумной группы."
 msgid "Preferences"
 msgstr "Предпочтения"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Preferred groups"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Preload"
@@ -19678,6 +19764,10 @@ msgstr "Удалить {label}"
 msgid "Remove {label} from this device"
 msgstr "Удалить {label} с этого устройства"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Remove {name} from the preferred groups"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Remove {removingSourceName}?"
@@ -21017,6 +21107,7 @@ msgstr "Берёт несколько страниц из каждого свя�
 #: src/components/notes/NoteThread.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailEditor.tsx
+#: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
@@ -21246,6 +21337,10 @@ msgstr "Сохранённые правила не удалось загрузи
 msgid "Saved. Leave empty to keep it."
 msgstr "Сохранено. Оставьте поле пустым, чтобы не менять его."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Saved. Refreshing chapters to pick up the change."
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Saved. Restart Maki to apply it."
@@ -21357,6 +21452,19 @@ msgstr "сканирование, api key, сопоставление путей
 #, fuzzy
 msgid "Scanlation group"
 msgstr "Группа сканлейтеров"
+
+#: src/components/ScanlationGroupsModal.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Scanlation groups"
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Scanlation groups for {label}"
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Scanlation groups..."
+msgstr ""
 
 #: src/api/upgrades.ts
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -21558,6 +21666,7 @@ msgstr "Прокрутка глав вебтуна"
 #: src/components/CommandPalette.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Search"
@@ -22125,6 +22234,7 @@ msgstr "Серии перемещены"
 msgid "Series not found"
 msgstr "Серия не найдена"
 
+#: src/pages/settings/CustomSourceReport.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
@@ -22938,7 +23048,7 @@ msgstr "Перейти к содержимому"
 msgid "skipped"
 msgstr "пропущен"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Skipped"
 msgstr "Пропущено"
@@ -23050,7 +23160,7 @@ msgstr ""
 msgid "so far, at ch. {soFarChapter}"
 msgstr "на данный момент, на гл. {soFarChapter}"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Some checks failed"
 msgstr "Некоторые проверки не пройдены"
@@ -23859,6 +23969,10 @@ msgstr "Теги для исключения"
 #, fuzzy
 msgid "Tags to include"
 msgstr "Теги для включения"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Takes effect at each series' next chapter refresh."
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Takes the colour of the page's edge."
@@ -25837,6 +25951,10 @@ msgstr "Не авторизован"
 msgid "Unavailable"
 msgstr "Недоступно"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Unblock {name}"
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -27235,6 +27353,10 @@ msgstr "Где хранится манга"
 #, fuzzy
 msgid "Where your taste has moved"
 msgstr "Куда переместился ваш вкус"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Which group's upload Maki takes when a source has several. Applies to every series."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy

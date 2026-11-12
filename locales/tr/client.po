@@ -1036,6 +1036,7 @@ msgid "{chapters, plural, one {# chapter held, {used} of {limit}} other {# chapt
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/ScanlationGroupsModal.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr ""
 
@@ -1390,17 +1391,17 @@ msgstr "{count, plural, one {Sonraki okunmamış bölüm} other {Sonraki # okunm
 msgid "{count, plural, one {Undo the import of # folder?} other {Undo the import of # folders?}}"
 msgstr "{count, plural, one {# klasörün içe aktarması geri alınsın mı?} other {# klasörün içe aktarması geri alınsın mı?}}"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "{count} chapters"
 msgstr "{count} bölüm"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "{count} pages"
 msgstr "{count} sayfa"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "{count} results"
 msgstr "{count} sonuç"
@@ -1816,7 +1817,7 @@ msgstr "Seviye {nextLevel} için {intoLevel} / {levelSpan} XP"
 msgid "{inTrash, plural, one {# of them still has its original in the trash. Undo it from the series page.} other {# of them still have their original in the trash. Undo them from the series page.}}"
 msgstr "{inTrash, plural, one {Bunlardan # tanesinin orijinali hâlâ geri dönüşüm kutusunda. Bunu seri sayfasından geri alabilirsiniz.} other {Bunlardan # tanesinin orijinalleri hâlâ geri dönüşüm kutusunda. Bunları seri sayfasından geri alabilirsiniz.}}"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "{kb} KB"
 msgstr "{kb} KB"
@@ -1983,6 +1984,10 @@ msgstr "{linkingTotal, plural, one {# seri için kaynaklar bulundu ve dosyalar b
 
 #: src/components/series/ChapterCountsInfo.tsx
 msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
+msgstr ""
+
+#: src/pages/settings/CustomSourceReport.tsx
+msgid "{locked, plural, one {# chapter listed as locked} other {# chapters listed as locked}}"
 msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
@@ -3691,6 +3696,10 @@ msgstr "10/10 puanlı bir anime, {topSeed} başlangıç ağırlığına sahip ol
 msgid "A bulk move, rename or rescan is running."
 msgstr ""
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "A chapter is taken from the first group on this list that uploaded it. With none of them, the earliest upload is taken."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "A connection has unsaved changes."
@@ -4128,6 +4137,10 @@ msgstr ""
 #, fuzzy
 msgid "Add a note"
 msgstr "Not ekle"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Add a preferred group"
+msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
@@ -4615,6 +4628,10 @@ msgstr "Zaten sizde"
 msgid "Also ask at the end of each volume"
 msgstr "Her cildin sonunda da sor"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Also blocked everywhere: {inheritedBlocked}"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Also delete detached files from disk"
@@ -4958,6 +4975,10 @@ msgstr ""
 #, fuzzy
 msgid "Applies automatically to"
 msgstr "Şuna otomatik olarak uygulanır:"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Applies to {sources}."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -5685,10 +5706,18 @@ msgstr "Piksel başına bit, üstü"
 msgid "Bits per pixel, under"
 msgstr "Piksel başına bit, altı"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Block a group"
+msgstr ""
+
 #: src/components/settings/PushNotificationsSection.tsx
 #, fuzzy
 msgid "Blocked for Maki in your browser settings. Allow notifications there, then come back."
 msgstr "Tarayıcı ayarlarınızda Maki için engellendi. Orada bildirimlere izin verin, sonra geri dönün."
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Blocked groups"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5968,6 +5997,7 @@ msgstr "Kaydedilmiş bilgilerle oturum açılamıyor."
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/components/RenameSeriesModal.tsx
+#: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/RestoreSeriesDialog.tsx
 #: src/components/series/UndoConversionModal.tsx
@@ -6458,7 +6488,7 @@ msgstr "{label} için bölüm dili"
 msgid "Chapter languages"
 msgstr "Bölüm dilleri"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Chapter list"
 msgstr "Bölüm listesi"
@@ -6487,7 +6517,7 @@ msgstr ""
 msgid "Chapter page"
 msgstr "Bölüm sayfası"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Chapter pages"
 msgstr "Bölüm sayfaları"
@@ -7041,6 +7071,7 @@ msgstr "İstemci gizli anahtarı"
 #: src/components/LuckyButton.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/RenameSeriesModal.tsx
+#: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/series/SeriesReviews.tsx
 #: src/components/series/UpgradeNowResultModal.tsx
@@ -7771,6 +7802,10 @@ msgstr "{seriesFailed, plural, one {# seri} other {# seri}} için ilerleme okuna
 #, fuzzy
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
 msgstr "{seriesFailed, plural, one {# seri} other {# seri}} için ilerleme okunamadı: {titles}"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Could not read the groups on {unreachable} just now. You can still type a name."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -8817,6 +8852,11 @@ msgstr "Beğenmedim"
 msgid "Dismiss"
 msgstr "Kapat"
 
+#. placeholder {0}: n.title
+#: src/components/SourceMappingsSection.tsx
+msgid "Dismiss {0} on {label}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Dismiss all"
@@ -9696,7 +9736,7 @@ msgstr ""
 msgid "Every chapter released from now on is wanted."
 msgstr "Bundan sonra yayımlanan her bölüm istenir."
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Every check passed"
 msgstr "Tüm kontroller geçti"
@@ -10546,7 +10586,7 @@ msgstr "Görebildiğin ilk klasör"
 msgid "First page"
 msgstr "İlk sayfa"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "First page image"
 msgstr "İlk sayfa görseli"
@@ -10739,6 +10779,10 @@ msgstr "Yalnızca Komga'ya bağlanan Tachimanga gibi uygulamalar için."
 #, fuzzy
 msgid "For reading apps like Panels, KOReader and Mihon."
 msgstr "Panels, KOReader ve Mihon gibi okuma uygulamaları için."
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "For this series only. Its preferred list replaces the global one; blocked groups add to it."
+msgstr ""
 
 #: src/components/pageconversion/FormatStep.tsx
 #: src/components/pageconversion/StartStep.tsx
@@ -11164,6 +11208,10 @@ msgstr "Üstteki kademeyle grupla"
 
 #: src/components/series/ChapterViewMenu.tsx
 msgid "Grouping is off while anime seasons are marked in the table."
+msgstr ""
+
+#: src/pages/settings/CustomSourceReport.tsx
+msgid "Groups credited: {groupList}"
 msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
@@ -12251,6 +12299,10 @@ msgstr "Kişileri davet edin"
 msgid "iPhone and iPad only deliver push notifications to apps added to the home screen. Add Maki to your home screen, open it from there, and come back to this card."
 msgstr "iPhone ve iPad, push bildirimlerini yalnızca ana ekrana eklenen uygulamalara iletir. Maki'yi ana ekranınıza ekleyin, oradan açın ve bu karta geri dönün."
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Is this it?"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Isekai"
@@ -13144,9 +13196,15 @@ msgstr "Çizgi"
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesScrobbleSection.tsx
+#: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Link"
 msgstr "Bağla"
+
+#. placeholder {0}: n.title
+#: src/components/SourceMappingsSection.tsx
+msgid "Link {0} on {label}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -14509,6 +14567,14 @@ msgstr "{label} etiketini aşağı taşı"
 msgid "Move {label} up"
 msgstr "{label} etiketini yukarı taşı"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Move {name} down"
+msgstr ""
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Move {name} up"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Move {tierLabel} down"
@@ -14856,6 +14922,10 @@ msgstr "Yükseltmeler için hiç taranmadı"
 msgid "Never shows which series you read."
 msgstr "Hangi serileri okuduğunuzu asla göstermez."
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Never taken. A chapter only these groups uploaded comes from another source, or waits until one has it."
+msgstr ""
+
 #: src/components/pageconversion/ruleTemplates.ts
 #, fuzzy
 msgid "Never touch tagged series"
@@ -15139,6 +15209,10 @@ msgstr ""
 #, fuzzy
 msgid "No better copy found"
 msgstr "Daha iyi kopya bulunamadı"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "No blocked groups."
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -15538,6 +15612,10 @@ msgstr "Sayfa yok"
 msgid "No pending requests"
 msgstr "Bekleyen istek yok"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "No preferred groups."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "No quality formats defined yet. Add one below to score files by it."
@@ -15857,6 +15935,10 @@ msgstr "Yok"
 #, fuzzy
 msgid "None available"
 msgstr "Kullanılabilir yok"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "None for this series, so the global order applies: {inheritedPreferred}"
+msgstr ""
 
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -18227,6 +18309,10 @@ msgstr "Bir forum grubunun tek bir konusuna gönderi paylaşır."
 msgid "Preferences"
 msgstr "Tercihler"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Preferred groups"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Preload"
@@ -19678,6 +19764,10 @@ msgstr "{label} öğesini kaldır"
 msgid "Remove {label} from this device"
 msgstr "{label} bu cihazdan kaldır"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Remove {name} from the preferred groups"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Remove {removingSourceName}?"
@@ -21017,6 +21107,7 @@ msgstr "Bağlı her kaynaktan birkaç sayfa örnekler."
 #: src/components/notes/NoteThread.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailEditor.tsx
+#: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
@@ -21246,6 +21337,10 @@ msgstr "Kaydedilmiş kurallar yüklenemedi; kaydetmek bunların yerine geçer."
 msgid "Saved. Leave empty to keep it."
 msgstr "Kaydedildi. Mevcut değeri korumak için boş bırakın."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Saved. Refreshing chapters to pick up the change."
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Saved. Restart Maki to apply it."
@@ -21357,6 +21452,19 @@ msgstr "tarama, api anahtarı, yol eşleme, kapaklar, kitaplık sunucusu, okumay
 #, fuzzy
 msgid "Scanlation group"
 msgstr "Scanlation grubu"
+
+#: src/components/ScanlationGroupsModal.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Scanlation groups"
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Scanlation groups for {label}"
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Scanlation groups..."
+msgstr ""
 
 #: src/api/upgrades.ts
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -21558,6 +21666,7 @@ msgstr "Webtoon bölümlerini kaydır"
 #: src/components/CommandPalette.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Search"
@@ -22125,6 +22234,7 @@ msgstr "Seri taşındı"
 msgid "Series not found"
 msgstr "Seri bulunamadı"
 
+#: src/pages/settings/CustomSourceReport.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
@@ -22938,7 +23048,7 @@ msgstr "İçeriğe geç"
 msgid "skipped"
 msgstr "atlandı"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Skipped"
 msgstr "Atlandı"
@@ -23050,7 +23160,7 @@ msgstr ""
 msgid "so far, at ch. {soFarChapter}"
 msgstr "şimdiye kadar, {soFarChapter}. bölümde"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Some checks failed"
 msgstr "Bazı kontroller başarısız oldu"
@@ -23859,6 +23969,10 @@ msgstr "Hariç tutulacak etiketler"
 #, fuzzy
 msgid "Tags to include"
 msgstr "Eklenecek etiketler"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Takes effect at each series' next chapter refresh."
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Takes the colour of the page's edge."
@@ -25837,6 +25951,10 @@ msgstr "Yetkisiz"
 msgid "Unavailable"
 msgstr "Kullanılamıyor"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Unblock {name}"
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -27235,6 +27353,10 @@ msgstr "Manganızın bulunduğu yer"
 #, fuzzy
 msgid "Where your taste has moved"
 msgstr "Zevkinizin nereye kaydığı"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Which group's upload Maki takes when a source has several. Applies to every series."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
