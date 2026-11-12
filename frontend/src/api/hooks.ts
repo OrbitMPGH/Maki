@@ -3447,6 +3447,8 @@ export interface SourceInfo {
    * answers false, because each is a separate series id rather than a filter over one list.
    */
   supportsLanguageFilter: boolean
+  /** Lists several scanlation groups' uploads of a chapter, so the preferred and blocked groups apply to it. */
+  scanlationGroups?: boolean
   /** Language codes this source publishes content in (`ISource.SupportedLanguages`). */
   supportedLanguages: string[]
   /** Global switch. False = can't be linked, and none of its existing mappings run. */

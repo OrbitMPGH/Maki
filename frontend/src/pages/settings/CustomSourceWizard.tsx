@@ -9,17 +9,16 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconFileImport,
-  IconMinus,
-  IconX,
 } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { errorText } from '../../api/errorText'
 import { languageName } from '../../api/titles'
 import { useSourceLanguages, type CustomSourceState } from '../../api/hooks'
 import { CustomSourceUpdateDialog } from './CustomRepositoriesPanel'
+import { CustomSourceReport as Report } from './CustomSourceReport'
 import {
   compact, identityChangeOf, problemsOf, useProbeSearch, useProbeSite, useRevertCustomSource, useSaveCustomSource, useTestCustomSource,
-  type CustomSourceDefinition, type CustomSourceTestReport, type CustomSourceTestStep, type IdentityReason,
+  type CustomSourceDefinition, type IdentityReason,
   type ProbeSearchResult, type ProbeSiteResult, type Section,
 } from '../../api/customSources'
 import { COMMON_LANGUAGES } from './sourceLanguages'
@@ -51,60 +50,6 @@ function parseJson(text: string): { value: Section | null; invalid: boolean } {
 }
 
 const pretty = (value: unknown) => JSON.stringify(compact(value ?? {}), null, 2)
-
-function StepIcon({ status }: { status: CustomSourceTestStep['status'] }) {
-  if (status === 'ok') return <IconCheck size={16} color="var(--ok)" />
-  if (status === 'failed') return <IconX size={16} color="var(--danger)" />
-  return <IconMinus size={16} color="var(--ink-4)" />
-}
-
-function StepRow({ step }: { step: CustomSourceTestStep }) {
-  const { t } = useLingui()
-  const label = {
-    search: t`Search`,
-    series: t`Series page`,
-    chapters: t`Chapter list`,
-    pages: t`Chapter pages`,
-    image: t`First page image`,
-  }[step.name]
-  const count = typeof step.detail?.count === 'number' ? step.detail.count : null
-  const bytes = typeof step.detail?.bytes === 'number' ? step.detail.bytes : null
-  const kb = bytes === null ? null : Math.round(bytes / 1024)
-  let summary: string | null = null
-  if (step.status === 'skipped') summary = t`Skipped`
-  else if (step.name === 'search' && count !== null) summary = t`${count} results`
-  else if (step.name === 'chapters' && count !== null) summary = t`${count} chapters`
-  else if (step.name === 'pages' && count !== null) summary = t`${count} pages`
-  else if (step.name === 'image' && kb !== null) summary = t`${kb} KB`
-  else if (step.name === 'series' && typeof step.detail?.title === 'string') summary = step.detail.title
-  return (
-    <li className="report-row">
-      <StepIcon status={step.status} />
-      <div style={{ minWidth: 0 }}>
-        <div>
-          <span className="report-row-name">{label}</span>
-          {summary && <span className="report-row-summary">{summary}</span>}
-        </div>
-        {step.error && <div className="report-row-error">{step.error}</div>}
-      </div>
-    </li>
-  )
-}
-
-/** The test run's result for some of its steps, or every step when `only` is left out. */
-function Report({ report, only }: { report: CustomSourceTestReport; only?: CustomSourceTestStep['name'][] }) {
-  const { t } = useLingui()
-  const steps = only ? report.steps.filter((s) => only.includes(s.name)) : report.steps
-  const passed = steps.every((s) => s.status !== 'failed')
-  return (
-    <Stack gap={4}>
-      <ModalNote tone={passed ? 'ok' : 'warn'}>
-        <Text span fw={600}>{passed ? t`Every check passed` : t`Some checks failed`}</Text>
-      </ModalNote>
-      <ul className="report-rows">{steps.map((step) => <StepRow key={step.name} step={step} />)}</ul>
-    </Stack>
-  )
-}
 
 /** A section of the draft as JSON, applied when it parses. */
 function Advanced({ value, onApply, label }: { value: unknown; onApply: (section: Section | null) => void; label: string }) {

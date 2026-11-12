@@ -23,6 +23,7 @@ import {
   IconShield,
   IconTool,
   IconTrash,
+  IconUsers,
   IconWorldWww,
   IconPackages,
 } from '../../lib/icons'
@@ -43,6 +44,7 @@ import { CustomSourceWizard, type WizardMode } from './CustomSourceWizard'
 import { CustomRepositoriesPanel } from './CustomRepositoriesPanel'
 import { COMMON_LANGUAGES, LANGUAGE_CODE, MIXED_LANGUAGE } from './sourceLanguages'
 import { MetaList } from '../../components/ui/MetaList'
+import { GlobalScanlationGroupsModal } from '../../components/ScanlationGroupsModal'
 
 type StateFilter = 'all' | 'on' | 'off'
 export type ProviderFilter = 'builtin' | 'suwayomi' | 'custom'
@@ -587,6 +589,7 @@ export function ManageSourcesModal({
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [setupFor, setSetupFor] = useState<string | null>(null)
   const [confirmDiscard, setConfirmDiscard] = useState(false)
+  const [groupsOpen, setGroupsOpen] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()
   const { can } = useAuth()
@@ -956,6 +959,18 @@ export function ManageSourcesModal({
           <SourceTags source={source} contentLabels={contentLabels} nameOfLanguage={nameOfLanguage} />
         </div>
         <Group gap={8} wrap="nowrap">
+          {source.scanlationGroups && isAdmin && (
+            <Tooltip label={t`Scanlation groups`} withArrow>
+              <ActionIcon
+                variant="subtle"
+                color="var(--neutral)"
+                aria-label={t`Scanlation groups for ${label}`}
+                onClick={() => setGroupsOpen(true)}
+              >
+                <IconUsers size={16} />
+              </ActionIcon>
+            </Tooltip>
+          )}
           {source.custom && isAdmin && (
             <Menu position="bottom-end" withinPortal>
               <Menu.Target>
@@ -1210,7 +1225,7 @@ export function ManageSourcesModal({
       opened={opened}
       onClose={requestClose}
       size={980}
-      closeOnEscape={!filtersOpen && !setupFor}
+      closeOnEscape={!filtersOpen && !setupFor && !groupsOpen}
       fullScreen={narrow}
       closeButtonProps={{ 'aria-label': t`Close` }}
       styles={{
@@ -1271,6 +1286,13 @@ export function ManageSourcesModal({
         onSaved={customSaved}
         onEditExisting={openEditById}
         state={wizard?.id ? sources?.find((s) => s.custom?.id === wizard.id)?.custom ?? null : null}
+      />
+    )}
+    {isAdmin && (
+      <GlobalScanlationGroupsModal
+        opened={groupsOpen}
+        onClose={() => setGroupsOpen(false)}
+        onSaved={() => notifications.show({ message: now`Saved`, color: 'var(--ok)' })}
       />
     )}
     {isAdmin && (

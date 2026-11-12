@@ -500,6 +500,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.ArchivedByUserId).OnDelete(DeleteBehavior.SetNull);
             e.Property(s => s.Genres).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
             e.Property(s => s.Tags).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
+            e.Property(s => s.PreferredGroups).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
+            e.Property(s => s.BlockedGroups).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
             e.Property(s => s.AltTitles).HasConversion(LocalizedTitleListConverter.Instance, LocalizedTitleListComparer.Instance);
             e.HasMany(s => s.Chapters).WithOne(c => c.Series!).HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(s => s.SourceMappings).WithOne(m => m.Series!).HasForeignKey(m => m.SeriesId).OnDelete(DeleteBehavior.Cascade);
