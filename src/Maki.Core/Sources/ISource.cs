@@ -218,6 +218,10 @@ public enum SourceCapabilities
 /// call their comic anything, so a matching title says nothing about which work it is.
 /// </param>
 /// <param name="Author">The creator credit the search result shows, when it shows one.</param>
+/// <param name="Language">
+/// Set by sources where each language edition is its own series id (WEBTOON locales, MANGA Plus),
+/// so auto-matching can skip an edition in a language nobody enabled.
+/// </param>
 public record SourceSeriesResult(
     string SourceSeriesId,
     string Title,
@@ -226,7 +230,8 @@ public record SourceSeriesResult(
     string? Description = null,
     IReadOnlyDictionary<string, string>? ExternalIds = null,
     bool UserGenerated = false,
-    string? Author = null);
+    string? Author = null,
+    string? Language = null);
 
 /// <summary>Full series info as the source presents it.</summary>
 public record SourceSeriesDetail(

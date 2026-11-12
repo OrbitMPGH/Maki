@@ -289,6 +289,50 @@ public class SourceMatchServiceTests : IDisposable
         Assert.Equal(0, japanese.SearchCalls);
     }
 
+    // The only WEBTOON "The Infinite Mage" is the French edition. Mapped on an English-only
+    // instance, its chapters sat beside every English one, since rows merge only within a language.
+    [Fact]
+    public async Task An_edition_in_a_language_nobody_enabled_is_not_mapped()
+    {
+        var seriesId = _db.SeedSeries("The Infinite Mage");
+        var webtoons = new FakeSource
+        {
+            Name = "webtoons",
+            SupportedLanguages = ["en", "fr"],
+            OnSearch = _ =>
+            [
+                new SourceSeriesResult("fr/action/the-infinite-mage/10809", "The Infinite Mage", "https://x.test/tim",
+                    Language: "fr")
+            ]
+        };
+
+        Assert.Empty(await RunAutoMatch(seriesId, webtoons));
+        Assert.Empty(MappingsOf(seriesId));
+    }
+
+    [Fact]
+    public async Task An_edition_in_an_enabled_language_is_mapped()
+    {
+        var seriesId = _db.SeedSeries("The Infinite Mage");
+        var webtoons = new FakeSource
+        {
+            Name = "webtoons",
+            SupportedLanguages = ["en", "fr"],
+            OnSearch = _ =>
+            [
+                new SourceSeriesResult("fr/action/the-infinite-mage/10809", "The Infinite Mage", "https://x.test/fr",
+                    Language: "fr"),
+                new SourceSeriesResult("action/the-infinite-mage/1", "The Infinite Mage", "https://x.test/en",
+                    Language: "en")
+            ]
+        };
+        var appSettings = new FakeAppSettings().Set(SettingKeys.SourceLanguageOrder, "fr,en");
+
+        await RunAutoMatch(seriesId, Sources.AllEnabled, null, appSettings, webtoons);
+
+        Assert.Equal("fr/action/the-infinite-mage/10809", Assert.Single(MappingsOf(seriesId)).SourceSeriesId);
+    }
+
     [Fact]
     public async Task Exact_normalized_match_creates_a_mapping()
     {

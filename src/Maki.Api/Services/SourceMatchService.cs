@@ -406,13 +406,16 @@ public partial class SourceMatchService(
         ISource source,
         int priority,
         MatchTarget target,
+        SourceLanguagePreference languages,
         IProgress<SourceMatchStep>? progress,
         CancellationToken ct)
     {
         var nothing = new SourceOutcome(source, priority, null, SourceMappingOrigin.TitleSearch, null);
         try
         {
-            var results = await source.SearchAsync(target.Title, ct);
+            // An edition in a language nobody enabled would list chapters that never merge with the
+            // rest: the French WEBTOON "The Infinite Mage" duplicated every English chapter.
+            var results = Wanted(await source.SearchAsync(target.Title, ct), languages);
             var namedRivals = new Dictionary<string, string?>(StringComparer.Ordinal);
             var outcome = await JudgeAsync(source, priority, target, results, namedRivals, ct);
 
@@ -425,7 +428,7 @@ public partial class SourceMatchService(
                 {
                     try
                     {
-                        var more = await source.SearchAsync(term, ct);
+                        var more = Wanted(await source.SearchAsync(term, ct), languages);
                         results = [.. results.Concat(more.Where(m =>
                             !results.Any(r => r.SourceSeriesId == m.SourceSeriesId)))];
                     }
@@ -454,6 +457,10 @@ public partial class SourceMatchService(
             return nothing with { Failed = true };
         }
     }
+
+    private static List<SourceSeriesResult> Wanted(
+        IReadOnlyList<SourceSeriesResult> results, SourceLanguagePreference languages) =>
+        [.. results.Where(r => languages.Wants(r.Language))];
 
     private async Task<SourceOutcome> JudgeAsync(
         ISource source, int priority, MatchTarget target, IReadOnlyList<SourceSeriesResult> results,
@@ -684,7 +691,8 @@ public partial class SourceMatchService(
         var outcomes = await Task.WhenAll(work.Select(async item =>
         {
             SourceOutcome outcome;
-            if (known?.TryGetValue(item.Source.Name, out var earlier) == true)
+            if (known?.TryGetValue(item.Source.Name, out var earlier) == true &&
+                languages.Wants(earlier.Match?.Language))
             {
                 progress?.Report(new SourceMatchStep(
                     item.Source.Name, earlier.Match is null ? SourceMatchState.NoMatch : SourceMatchState.Matched));
@@ -693,7 +701,7 @@ public partial class SourceMatchService(
             }
             else
             {
-                outcome = await WithGate(gate, () => SearchOneAsync(item.Source, item.Priority, target, progress, ct), ct);
+                outcome = await WithGate(gate, () => SearchOneAsync(item.Source, item.Priority, target, languages, progress, ct), ct);
             }
 
             settled?.Invoke(outcome, languages);

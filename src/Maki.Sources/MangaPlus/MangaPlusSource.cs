@@ -270,7 +270,7 @@ public class MangaPlusSource(IHttpClientFactory httpClientFactory) : ISource, IN
 
                 var entry = new SourceSeriesResult(
                     id, name, $"{BaseUrl}/titles/{id}", title.String(TitlePortraitImageUrl),
-                    WithLanguage(null, language));
+                    WithLanguage(null, language), Language: language);
 
                 (language == SourceLanguages.Default ? catalog : translated).Add(entry);
             }
