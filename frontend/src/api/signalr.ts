@@ -386,6 +386,7 @@ export function useLiveEvents() {
       listen(conn, 'sourceMatchFinished', ({ seriesId, failedSources }: { seriesId: number; failedSources?: string[] }) => {
         queryClient.setQueryData(['sourcematch-failed', seriesId], failedSources ?? [])
         void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
+        void queryClient.invalidateQueries({ queryKey: ['sourcenearmisses', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
         // The scout-on-match run is registered before this push goes out; the refetch sees it running
         // and starts the source order's progress polling.

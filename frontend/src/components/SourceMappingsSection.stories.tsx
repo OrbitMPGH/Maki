@@ -48,6 +48,48 @@ export const NoSourcesLinked: Story = {
   },
 }
 
+const nearMisses = [
+  {
+    id: 1,
+    sourceName: 'weebcentral',
+    sourceSeriesId: 'kasumi-lanterns',
+    title: 'Kasumi no Chochin',
+    url: 'https://weebcentral.example/series/kasumi-lanterns',
+    coverUrl: null,
+    author: 'Aoi Hoshino',
+    language: 'en',
+    description: 'A lantern keeper in a mountain village guards the lights that guide the dead home.',
+    score: 0.52,
+  },
+]
+
+export const NearMissSuggestion: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/sourcemapping'), () => HttpResponse.json(mappingsFor(1).slice(0, 1))),
+      http.get(api('/sourcemapping/nearmisses'), () => HttpResponse.json(nearMisses)),
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Is this it?')).toBeVisible()
+    await expect(await canvas.findByText('Kasumi no Chochin')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /^Link Kasumi no Chochin/ })).toBeVisible()
+  },
+}
+
+export const NearMissWithNothingLinked: Story = {
+  parameters: {
+    msw: seriesMsw(
+      http.get(api('/sourcemapping'), () => HttpResponse.json([])),
+      http.get(api('/sourcemapping/nearmisses'), () => HttpResponse.json(nearMisses)),
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Is this it?')).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: /^Dismiss Kasumi no Chochin/ })).toBeVisible()
+  },
+}
+
 export const MatchingInBackground: Story = {
   args: { matching: true },
   parameters: { msw: seriesMsw(http.get(api('/sourcemapping'), () => HttpResponse.json([]))) },
