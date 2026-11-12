@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    [Migration("20261112222958_QueuePriorityDiskHold")]
-    partial class QueuePriorityDiskHold
+    [Migration("20261112224609_DownloadQueueLanes")]
+    partial class DownloadQueueLanes
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -518,6 +518,12 @@ namespace Maki.Data.Migrations
 
                     b.Property<int?>("HealthOperationId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("LastPeerSeenAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastProgressAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<DateTime?>("NextAttempt")
                         .HasColumnType("TEXT");
@@ -2194,6 +2200,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("PendingImportLink")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("PrepareChapters")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Publisher")

@@ -198,6 +198,15 @@ public class DownloadQueueItem
     public DateTime? ClientRemovedAt { get; set; }
 
     /// <summary>
+    /// When the torrent last got further, or when its stall clock started. Null while the clock is not running
+    /// (the client holds it, it errored, finished, or stall handling is off). Written at most every few minutes.
+    /// </summary>
+    public DateTime? LastProgressAt { get; set; }
+
+    /// <summary>When the torrent last had a seed or peer connected, kept like <see cref="LastProgressAt"/>.</summary>
+    public DateTime? LastPeerSeenAt { get; set; }
+
+    /// <summary>
     /// Record why this item stopped, as a catalogue key plus the values its placeholders need.
     /// <para>
     /// <paramref name="args"/> is an anonymous object: <c>SetError("error.download.rateLimited",

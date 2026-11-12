@@ -88,6 +88,12 @@ public class SettingsController(
     public record IndexerConnection(string? Backend, string? Url, string? ApiKey);
     public record DownloadClientSettings(
         string? Kind, string? Url, string? Username, string? Password, string? Label, string? PathMapFrom, string? PathMapTo);
+    /// <param name="StallHours">See <see cref="SettingKeys.DownloadClientStallHours"/>; 0 is off.</param>
+    /// <param name="SeedRatio">Seed ratio target for after-seeding removal; null is none.</param>
+    /// <param name="SeedMinutes">Seed time target in minutes for after-seeding removal; null is none.</param>
+    public record TorrentLifecycleSettings(int StallHours, double? SeedRatio, int? SeedMinutes);
+    /// <param name="Found">Whether the client had any seed limit switched on.</param>
+    public record SeedLimitImport(double? SeedRatio, int? SeedMinutes, bool Found);
     /// <param name="DumpDownloadFailed">
     /// No dump is installed and the last download failed, for the gate's waiting screen. Only a bit:
     /// the error text stays on the admin-only progress endpoint.
@@ -1769,6 +1775,9 @@ public class SettingsController(
             }
         }
 
+        var addedClient = current.Kind != kind ||
+            !string.Equals(current.Url.Trim().TrimEnd('/'), (request.Url ?? string.Empty).Trim().TrimEnd('/'),
+                StringComparison.OrdinalIgnoreCase);
         await settings.SetAsync(SettingKeys.DownloadClientKind, kind.Key(), ct);
         await settings.SetAsync(SettingKeys.DownloadClientUrl, request.Url, ct);
         await settings.SetAsync(SettingKeys.DownloadClientUsername, request.Username, ct);
@@ -1776,7 +1785,94 @@ public class SettingsController(
         await settings.SetAsync(SettingKeys.DownloadClientLabel, request.Label, ct);
         await settings.SetAsync(SettingKeys.DownloadClientPathMapFrom, request.PathMapFrom, ct);
         await settings.SetAsync(SettingKeys.DownloadClientPathMapTo, request.PathMapTo, ct);
+
+        // A different client: the old one's seed targets say nothing about it, so its own defaults replace them.
+        if (addedClient && !string.IsNullOrWhiteSpace(request.Url))
+        {
+            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeout.CancelAfter(SeedLimitImportTimeout);
+            var imported = await ReadSeedLimitsAsync(await DownloadClientSettingsStore.LoadAsync(settings, ct), timeout.Token);
+            await TorrentSeedTargets.SaveAsync(settings, new TorrentSeedTargets(imported?.Ratio, imported?.SeedingMinutes), ct);
+        }
+
         return Ok(request with { Kind = kind.Key() });
+    }
+
+    private static readonly TimeSpan SeedLimitImportTimeout = TimeSpan.FromSeconds(10);
+
+    /// <summary>The client's own seed limits, or null when it could not be asked.</summary>
+    private async Task<TorrentSeedLimits?> ReadSeedLimitsAsync(TorrentClientSettings client, CancellationToken ct)
+    {
+        try
+        {
+            return await torrentClients.For(client.Kind).GetSeedLimitsAsync(client, ct);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or OperationCanceledException)
+        {
+            logger.LogInformation("Could not read seed limits from {Client} at {Url}: {Error}",
+                client.Kind.DisplayName(), client.Url, ex.Message);
+            return null;
+        }
+    }
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("downloadclient/lifecycle")]
+    public async Task<IActionResult> GetTorrentLifecycle(CancellationToken ct)
+    {
+        var targets = await TorrentSeedTargets.LoadAsync(settings, ct);
+        return Ok(new TorrentLifecycleSettings(
+            CompletedDownloadJob.StallHours(await settings.GetAsync(SettingKeys.DownloadClientStallHours, ct)),
+            targets.Ratio, targets.Minutes));
+    }
+
+    public const double MaxSeedRatio = 1000;
+    public const int MaxSeedMinutes = 525_600;
+
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("downloadclient/lifecycle")]
+    public async Task<IActionResult> SetTorrentLifecycle([FromBody] TorrentLifecycleSettings request, CancellationToken ct)
+    {
+        if (request.StallHours is < 0 or > CompletedDownloadJob.MaxStallHours)
+        {
+            return this.Fail(localizer, "error.settings.stallHoursRange", new { max = CompletedDownloadJob.MaxStallHours });
+        }
+
+        if (request.SeedRatio is { } ratio && (!double.IsFinite(ratio) || ratio is < 0 or > MaxSeedRatio))
+        {
+            return this.Fail(localizer, "error.settings.seedRatioRange", new { max = MaxSeedRatio });
+        }
+
+        if (request.SeedMinutes is < 0 or > MaxSeedMinutes)
+        {
+            return this.Fail(localizer, "error.settings.seedMinutesRange", new { max = MaxSeedMinutes });
+        }
+
+        await settings.SetAsync(SettingKeys.DownloadClientStallHours,
+            request.StallHours.ToString(CultureInfo.InvariantCulture), ct);
+        await TorrentSeedTargets.SaveAsync(settings,
+            new TorrentSeedTargets(request.SeedRatio is { } r ? Math.Round(r, 3) : null, request.SeedMinutes), ct);
+        return await GetTorrentLifecycle(ct);
+    }
+
+    /// <summary>Replaces the seed targets with the configured client's own default limits, empty where it has none.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPost("downloadclient/lifecycle/import")]
+    public async Task<IActionResult> ImportSeedLimits(CancellationToken ct)
+    {
+        var client = await DownloadClientSettingsStore.LoadAsync(settings, ct);
+        if (string.IsNullOrWhiteSpace(client.Url))
+        {
+            return this.Fail(localizer, "error.settings.urlRequired");
+        }
+
+        if (await ReadSeedLimitsAsync(client, ct) is not { } limits)
+        {
+            const string code = "error.settings.downloadClientNoResponse";
+            return StatusCode(StatusCodes.Status502BadGateway, new { success = false, code, error = localizer.Get(code) });
+        }
+
+        await TorrentSeedTargets.SaveAsync(settings, new TorrentSeedTargets(limits.Ratio, limits.SeedingMinutes), ct);
+        return Ok(new SeedLimitImport(limits.Ratio, limits.SeedingMinutes, limits.Ratio is not null || limits.SeedingMinutes is not null));
     }
 
     [Authorize(Policy = Policies.Admin)]

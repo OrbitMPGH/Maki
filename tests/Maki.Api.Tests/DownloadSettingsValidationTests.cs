@@ -109,9 +109,18 @@ public class DownloadSettingsValidationTests : IDisposable
     [Fact]
     public async Task An_unknown_torrent_removal_mode_is_refused()
     {
-        var result = await Controller().SetDownload(Payload() with { RemoveCompleted = "afterseeding" }, Queue(), CancellationToken.None);
+        var result = await Controller().SetDownload(Payload() with { RemoveCompleted = "afterwatching" }, Queue(), CancellationToken.None);
 
         Assert.IsNotType<OkObjectResult>(result);
         Assert.Null(await Store().GetAsync(SettingKeys.DownloadClientRemoveCompleted));
+    }
+
+    [Fact]
+    public async Task Removal_after_seeding_is_saved()
+    {
+        var result = await Controller().SetDownload(Payload() with { RemoveCompleted = "afterseeding" }, Queue(), CancellationToken.None);
+
+        Assert.IsType<OkObjectResult>(result);
+        Assert.Equal("afterseeding", await Store().GetAsync(SettingKeys.DownloadClientRemoveCompleted));
     }
 }

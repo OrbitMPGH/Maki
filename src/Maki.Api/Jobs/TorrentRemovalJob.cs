@@ -13,7 +13,8 @@ using Quartz;
 namespace Maki.Api.Jobs;
 
 /// <summary>
-/// Removes imported torrents from the download client (<see cref="DownloadQueueItem.ClientRemovalPendingAt"/>).
+/// Removes imported torrents from the download client (<see cref="DownloadQueueItem.ClientRemovalPendingAt"/>),
+/// right away or, for <see cref="TorrentRemovalModes.AfterSeeding"/>, once the torrent meets a seed target.
 /// <para>
 /// Its own job rather than part of <see cref="CompletedDownloadJob"/>: that poll stops listing the
 /// client once no torrent is in flight, which is exactly when an imported one is waiting here. Nothing
@@ -62,16 +63,19 @@ public class TorrentRemovalJob(
 
         // The snapshot keeps a later setting from widening a removal, never from narrowing one: turning
         // removal or file deletion off still reaches rows that are waiting.
-        var removing = TorrentRemovalModes.Parse(
-            await settings.GetAsync(SettingKeys.DownloadClientRemoveCompleted, ct)) == TorrentRemovalModes.AfterImport;
+        var mode = TorrentRemovalModes.Parse(await settings.GetAsync(SettingKeys.DownloadClientRemoveCompleted, ct));
+        var removing = TorrentRemovalModes.Removes(mode);
         var deletingData = await settings.GetAsync(SettingKeys.DownloadClientRemoveData, ct) != "false";
         var roots = await db.RootFolders.IgnoreQueryFilters().Select(r => r.Path).ToListAsync(ct);
         var driver = torrentClients.For(client.Kind);
+        var targets = await TorrentSeedTargets.LoadAsync(settings, ct);
+        Dictionary<string, ClientTorrent>? listed = null;
+        var listFailed = false;
 
         foreach (var item in pending)
         {
             var info = ReleaseInfoOf(item);
-            if (info?.TorrentHash is not { } hash || !removing || item.ClientRemovalMode != TorrentRemovalModes.AfterImport)
+            if (info?.TorrentHash is not { } hash || !removing || !TorrentRemovalModes.Removes(item.ClientRemovalMode))
             {
                 await SettleAsync(item, removed: false, ct);
                 continue;
@@ -85,13 +89,46 @@ public class TorrentRemovalJob(
                 continue;
             }
 
-            if (DateTime.UtcNow - item.ClientRemovalPendingAt > GiveUpAfter)
+            // Either side asking to seed first wins: a later setting may narrow a removal, never widen it.
+            var seedFirst = item.ClientRemovalMode == TorrentRemovalModes.AfterSeeding || mode == TorrentRemovalModes.AfterSeeding;
+            if (!seedFirst && DateTime.UtcNow - item.ClientRemovalPendingAt > GiveUpAfter)
             {
                 logger.LogWarning(
                     "Gave up removing torrent '{Title}' from {Client} after {Days} days", item.Title,
                     client.Kind.DisplayName(), (int)GiveUpAfter.TotalDays);
                 await SettleAsync(item, removed: false, ct);
                 continue;
+            }
+
+            // Maki checks the targets itself: a client reports a torrent it paused at its own limit the
+            // same way as one the user paused by hand. One the list does not show goes on to the removal,
+            // which tells a torrent that is gone from one held under another label.
+            if (seedFirst)
+            {
+                if (listed is null && !listFailed)
+                {
+                    try
+                    {
+                        listed = (await driver.ListAsync(client, ct))
+                            .GroupBy(t => t.Hash, StringComparer.OrdinalIgnoreCase)
+                            .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+                    }
+                    catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException ||
+                                               (ex is TaskCanceledException && !ct.IsCancellationRequested))
+                    {
+                        listFailed = true;
+                        if (FailureLogged.TryAdd(item.Id, 0))
+                        {
+                            logger.LogWarning("Could not read seeding progress from {Client} ({Error}); trying again later",
+                                client.Kind.DisplayName(), ex.Message);
+                        }
+                    }
+                }
+
+                if (listed is null || (listed.TryGetValue(hash, out var seeding) && !targets.MetBy(seeding)))
+                {
+                    continue;
+                }
             }
 
             // Asked per row, just before the call, so a grab of the same release made while this run works

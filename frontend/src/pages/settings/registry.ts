@@ -463,7 +463,7 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     title: msg`Download client`,
     admin: true,
     keywords: msg({
-      message: `download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping`,
+      message: `download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping, seeding, seed ratio, stalled, declined releases`,
       comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
     }),
   },

@@ -54,8 +54,17 @@ public static class SettingKeys
     public const string DownloadClientPathMapFrom = "downloadclient.pathmapfrom";
     /// <summary>...the path Maki can actually read (e.g. @"Z:\downloads"). Empty = no rewrite.</summary>
     public const string DownloadClientPathMapTo = "downloadclient.pathmapto";
-    /// <summary>When Maki removes a torrent from the client: <c>never</c> (unset) or <c>afterimport</c>.</summary>
+    /// <summary>When Maki removes a torrent from the client: <c>never</c> (unset), <c>afterimport</c> or <c>afterseeding</c>.</summary>
     public const string DownloadClientRemoveCompleted = "downloadclient.removecompleted";
+    /// <summary>Seed ratio target for <c>afterseeding</c>, invariant decimal; unset means no ratio target.</summary>
+    public const string DownloadClientSeedRatio = "downloadclient.seedratio";
+    /// <summary>Seed time target in minutes for <c>afterseeding</c>; unset means no time target.</summary>
+    public const string DownloadClientSeedMinutes = "downloadclient.seedminutes";
+    /// <summary>
+    /// Hours a downloading torrent may go without progress, or without a connected seed or peer, before
+    /// its row fails as stalled. Unset is <c>CompletedDownloadJob.DefaultStallHours</c>, 0 turns it off.
+    /// </summary>
+    public const string DownloadClientStallHours = "downloadclient.stallhours";
     /// <summary>"false" keeps the downloaded files when a torrent is removed; unset or "true" deletes them.</summary>
     public const string DownloadClientRemoveData = "downloadclient.removedata";
     public const string KavitaUrl = "kavita.url";

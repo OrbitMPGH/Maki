@@ -3346,6 +3346,24 @@ msgstr "Тайм-аут загрузки должен быть равен 0 (б�
 msgid "error.settings.bulkHoldRange"
 msgstr "Массовая задержка должна быть от 0 (отключено) до {max} глав"
 
+#. The stall limit for torrents, in hours. 0 turns stall handling off.
+#. English: The stall limit must be between 0 (off) and {max} hours
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.stallHoursRange"
+msgstr ""
+
+#. The seed ratio a torrent must reach before Maki removes it from the download client.
+#. English: The seed ratio must be between 0 and {max}
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.seedRatioRange"
+msgstr ""
+
+#. The seeding time a torrent must reach before Maki removes it from the download client, in minutes.
+#. English: The seeding time must be between 0 and {max} minutes
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.seedMinutesRange"
+msgstr ""
+
 #. {mode} is the value that was sent and is never translated.
 #. English: Unknown torrent removal mode: {mode}
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -5114,11 +5132,19 @@ msgstr "Торрент есть в клиенте загрузки, но им в
 msgid "error.download.torrentRemoved"
 msgstr "Торрента больше нет в qBittorrent"
 
-#. The download client was downloading this torrent but it made no progress for an hour, usually because
-#. nobody is seeding it. Maki takes a torrent it added out of the client and leaves the release out of later searches.
-#. English: The torrent made no progress for an hour
+#. The download client was downloading this torrent but it made no progress for as long as the stall limit in the
+#. download client settings allows (an hour unless changed). Maki takes a torrent it added out of the client, leaves
+#. the release out of later searches and looks for another one.
+#. English: The torrent made no progress within the stall limit
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
 msgid "error.download.torrentStalled"
+msgstr ""
+
+#. The download client was downloading this torrent but no seed or peer was connected to it for as long as the
+#. stall limit allows. Handled like a torrent that made no progress.
+#. English: No seeds or peers connected to the torrent within the stall limit
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "error.download.torrentNoPeers"
 msgstr ""
 
 #. The download client has held this torrent in an error state for half an hour. The client's own message follows.

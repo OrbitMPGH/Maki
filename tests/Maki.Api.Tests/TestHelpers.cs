@@ -338,6 +338,14 @@ internal sealed class FakeTorrentClient : ITorrentClient
         return Task.FromResult(TorrentRemoval.Removed);
     }
 
+    /// <summary>What <see cref="GetSeedLimitsAsync"/> answers; null throws as an unreachable client would.</summary>
+    public TorrentSeedLimits? SeedLimits { get; set; } = TorrentSeedLimits.None;
+
+    public Task<TorrentSeedLimits> GetSeedLimitsAsync(TorrentClientSettings settings, CancellationToken ct = default) =>
+        SeedLimits is { } limits
+            ? Task.FromResult(limits)
+            : Task.FromException<TorrentSeedLimits>(new TorrentClientException(TorrentClientFailure.Unreachable, "down"));
+
     public TorrentClientRegistry Registry() => new([this]);
 }
 
