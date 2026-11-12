@@ -6,11 +6,18 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Maki.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class AutoTagRules : Migration
+    public partial class SavedFilterDefaultAndAutoTagRules : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<bool>(
+                name: "IsDefault",
+                table: "SavedFilters",
+                type: "INTEGER",
+                nullable: false,
+                defaultValue: false);
+
             migrationBuilder.CreateTable(
                 name: "AutoTagRules",
                 columns: table => new
@@ -44,6 +51,10 @@ namespace Maki.Data.Migrations
         {
             migrationBuilder.DropTable(
                 name: "AutoTagRules");
+
+            migrationBuilder.DropColumn(
+                name: "IsDefault",
+                table: "SavedFilters");
         }
     }
 }

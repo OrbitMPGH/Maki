@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    [Migration("20261112075554_SavedFilterDefault")]
-    partial class SavedFilterDefault
+    [Migration("20261112084654_SavedFilterDefaultAndAutoTagRules")]
+    partial class SavedFilterDefaultAndAutoTagRules
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -129,6 +129,32 @@ namespace Maki.Data.Migrations
                     b.HasKey("Key");
 
                     b.ToTable("AppConfig");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.AutoTagRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ConditionsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TagId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TagId");
+
+                    b.ToTable("AutoTagRules");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.Chapter", b =>
@@ -3403,6 +3429,17 @@ namespace Maki.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.AutoTagRule", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Tag", "Tag")
+                        .WithMany()
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tag");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.Chapter", b =>
