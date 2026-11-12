@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { requestWakeLock, wakeLockSupported } from '../../lib/wakeLock'
-import { ACTIVITY_EVENTS, IDLE_MS } from './useReadingClock'
+import { ACTIVITY_EVENTS, IDLE_MS, isProgrammaticScroll } from './useReadingClock'
 
 const MAX_REFUSALS = 3
 const RETRY_AFTER_MS = 5000
@@ -71,7 +71,8 @@ export function useWakeLock(enabled: boolean) {
       }, Math.max(remaining, 1000))
     }
 
-    const poke = () => {
+    const poke = (event: Event) => {
+      if (isProgrammaticScroll(event)) return
       lastActivity = Date.now()
       if (!idle) {
         if (!held && refusals > 0 && refusals < MAX_REFUSALS && lastActivity - lastRefusalAt >= RETRY_AFTER_MS) {

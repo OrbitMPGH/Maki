@@ -169,6 +169,7 @@ export default function ReaderPage() {
   const [fullscreen, setFullscreen] = useState(false)
   const [stripOpen, setStripOpen] = useState(false)
   const [zoom, setZoom] = useState(1)
+  const zoomFocus = useRef<{ x: number; y: number } | null>(null)
   const [incognito, setIncognito] = useState(false)
   const [atEnd, setAtEnd] = useState(false)
   // The chapter this visit ran off the end of. Sticky, so "Stay here" and paging back cannot take
@@ -986,6 +987,7 @@ export default function ReaderPage() {
       clearTimeout(first.timer)
       pendingTap.current = null
       if (Math.hypot(clientX - first.x, clientY - first.y) <= DOUBLE_TAP_SLOP) {
+        zoomFocus.current = { x: clientX, y: clientY }
         setZoom((z) => (z === 1 ? DOUBLE_TAP_ZOOM : 1))
         return
       }
@@ -1208,6 +1210,7 @@ export default function ReaderPage() {
               fit={fit}
               direction={prefs.direction}
               zoom={zoom}
+              zoomFocus={zoomFocus}
               scale={prefs.scale}
               tone={tone}
               label={serverChapterLabel(manifest.label)}

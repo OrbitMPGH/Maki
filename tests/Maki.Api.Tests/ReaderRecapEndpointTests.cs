@@ -153,4 +153,44 @@ public sealed class ReaderRecapEndpointTests : IDisposable
             Assert.Equal(JsonValueKind.Null, recap.GetProperty("offset").ValueKind);
         }
     }
+
+    private async Task<IActionResult> ToggleBookmarkAsync(int chapterId, int page)
+    {
+        using var db = _db.NewContext(1);
+        var controller = new ReaderController(
+            new TestLocalizer(), db,
+            new ReaderService(db, _archives, null!, null!, new ReadingSessionService(db), NullLogger<ReaderService>.Instance),
+            null!, null!, null!, null!, null!, new AppPaths(_configDir),
+            new TestCurrentUser(1), null!, new FakeAppSettings())
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+        };
+        return await controller.ToggleBookmark(chapterId, page, default);
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(5)]
+    [InlineData(100)]
+    public async Task A_bookmark_outside_the_chapter_is_refused_and_not_stored(int page)
+    {
+        var chapter = AddChapter(1, Art(5, 500), 100);
+
+        var result = await ToggleBookmarkAsync(chapter, page);
+
+        Assert.IsNotType<OkObjectResult>(result);
+        using var db = _db.NewContext(1);
+        Assert.Empty(db.ReaderBookmarks.Where(b => b.ChapterId == chapter));
+    }
+
+    [Fact]
+    public async Task A_bookmark_on_a_real_page_toggles_on_and_off()
+    {
+        var chapter = AddChapter(1, Art(6, 500), 100);
+
+        var on = JsonSerializer.SerializeToElement(Assert.IsType<OkObjectResult>(await ToggleBookmarkAsync(chapter, 4)).Value, Web);
+        Assert.True(on.GetProperty("bookmarked").GetBoolean());
+        var off = JsonSerializer.SerializeToElement(Assert.IsType<OkObjectResult>(await ToggleBookmarkAsync(chapter, 4)).Value, Web);
+        Assert.False(off.GetProperty("bookmarked").GetBoolean());
+    }
 }

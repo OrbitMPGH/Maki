@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { markProgrammaticScroll } from './useReadingClock'
 
 export const AUTO_SCROLL_MIN = 1
 export const AUTO_SCROLL_MAX = 10
@@ -89,6 +90,7 @@ export function useAutoScroll(scroller: HTMLElement | null, running: boolean, le
       }
       endSince = 0
       pos = Math.min(max, pos + scroller.clientHeight * speed * dt)
+      markProgrammaticScroll()
       scroller.scrollTop = pos
     }
 

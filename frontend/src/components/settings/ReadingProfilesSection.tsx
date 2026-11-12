@@ -397,7 +397,7 @@ function ProfileEditor({
         />
         <SettingsNumberInput
           label={t`Preload`}
-          description={t`Pages fetched ahead.`}
+          description={t`Paged layouts only. Pages fetched ahead.`}
           min={0}
           max={10}
           value={prefs.preload}
@@ -516,7 +516,8 @@ function ProfileEditor({
       />
       <Switch
         size="sm"
-        label={t`Tap zones (click the page edges to turn), paged layouts only`}
+        label={t`Tap zones`}
+        description={t`Paged layouts turn the page from the left and right edges. Continuous scrolls from the top and bottom.`}
         checked={prefs.tapZones}
         onChange={(e) => set({ tapZones: e.currentTarget.checked })}
       />

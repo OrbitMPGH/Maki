@@ -779,6 +779,17 @@ public class ReaderController(
             return Ok(new { chapterId = id, page, bookmarked = false });
         }
 
+        var slice = await reader.SliceAsync(id, ct);
+        if (slice is null)
+        {
+            return this.NotFoundMessage(localizer, "error.reader.chapterNotReadable");
+        }
+
+        if (!ReaderService.IsPageInRange(page, slice.PageCount))
+        {
+            return this.Fail(localizer, "error.reader.pageOutOfRange");
+        }
+
         db.ReaderBookmarks.Add(new ReaderBookmark
         {
             SeriesId = chapter.SeriesId,
