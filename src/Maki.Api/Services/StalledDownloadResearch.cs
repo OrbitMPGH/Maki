@@ -14,7 +14,7 @@ public interface IStalledDownloadResearch
 /// <summary>
 /// Runs the volume search for a series whose torrent stalled (<see cref="TorrentUpgradeService.SearchSeriesAsync"/>,
 /// with the instance switches and the series' upgrade eligibility as the daily search applies them, minus the
-/// weekly interval). The stalled release was declined before this runs, so the search takes the next best one.
+/// weekly interval, plus the missing-chapter scope). The stalled release was declined before this runs, so the search takes the next best one.
 /// Off the poll's thread, in its own scope, because an indexer search can take most of a minute.
 /// </summary>
 public sealed class StalledDownloadResearch(
@@ -48,7 +48,7 @@ public sealed class StalledDownloadResearch(
             }
 
             var result = await scope.ServiceProvider.GetRequiredService<TorrentUpgradeService>()
-                .SearchSeriesAsync(seriesId, deadline.Token);
+                .SearchSeriesAsync(seriesId, deadline.Token, missing: true);
             if (result.Grabbed is { } grabbed)
             {
                 logger.LogInformation("Grabbed another release for series {SeriesId} after a stalled torrent (queue row {Row})",
