@@ -285,6 +285,27 @@ function unreadCount(s: SeriesDto): number {
   return Math.max(0, s.chapterFileCount - (s.readChapterCount ?? 0))
 }
 
+/** Every name credited for story or art, split the way the series page splits them. */
+function creditsOf(s: SeriesDto): string[] {
+  const names = new Set<string>()
+  for (const credit of [s.authorStory, s.authorArt]) {
+    for (const name of (credit ?? '').split(',')) {
+      const trimmed = name.trim()
+      if (trimmed !== '') names.add(trimmed)
+    }
+  }
+  return [...names]
+}
+
+const OVERRIDE_VALUES = ['readCleanup', 'pageConversion'] as const
+
+const OVERRIDE_LABELS: Record<string, MessageDescriptor> = {
+  readCleanup: msg`Read file cleanup`,
+  pageConversion: msg`Page conversion`,
+}
+
+const DAY_MS = 86_400_000
+
 function authorOf(s: SeriesDto): string | null {
   const name = (s.authorStory || s.authorArt || '').trim()
   return name === '' ? null : name.toLowerCase()
@@ -400,6 +421,17 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   communityRatingMin: 0,
   communityRatingMax: 10,
   readingStatuses: [],
+  yearMin: null,
+  yearMax: null,
+  credits: [],
+  publishers: [],
+  rootFolderIds: [],
+  incognito: 'all',
+  muted: 'all',
+  anime: 'all',
+  numberingClash: 'all',
+  overrides: [],
+  addedWithinDays: null,
 }
 
 /** The filter drawer's groups, in the order they appear. */
@@ -602,6 +634,17 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const [fileSourceFilter, setFileSourceFilter] = usePageState<string[]>(`${MEM}:file-sources`, [])
   const [fileSourceMatch, setFileSourceMatch] = usePageState(`${MEM}:file-source-match`, 'any')
   const [qualityProfileFilter, setQualityProfileFilter] = usePageState(`${MEM}:quality-profile`, 'all')
+  const [yearMin, setYearMin] = usePageState<number | null>(`${MEM}:year-min`, null)
+  const [yearMax, setYearMax] = usePageState<number | null>(`${MEM}:year-max`, null)
+  const [creditFilter, setCreditFilter] = usePageState<string[]>(`${MEM}:credits`, [])
+  const [publisherFilter, setPublisherFilter] = usePageState<string[]>(`${MEM}:publishers`, [])
+  const [rootFolderFilter, setRootFolderFilter] = usePageState<string[]>(`${MEM}:root-folders`, [])
+  const [incognitoFilter, setIncognitoFilter] = usePageState(`${MEM}:incognito`, 'all')
+  const [mutedFilter, setMutedFilter] = usePageState(`${MEM}:muted`, 'all')
+  const [animeFilter, setAnimeFilter] = usePageState(`${MEM}:anime`, 'all')
+  const [clashFilter, setClashFilter] = usePageState(`${MEM}:numbering-clash`, 'all')
+  const [overrideFilter, setOverrideFilter] = usePageState<string[]>(`${MEM}:overrides`, [])
+  const [addedWithin, setAddedWithin] = usePageState<number | null>(`${MEM}:added-within`, null)
   const [activeFilterId, setActiveFilterId] = usePageState<number | null>(`${MEM}:saved-filter`, null)
   const [saveFilterOpen, setSaveFilterOpen] = useState(false)
   const [filterName, setFilterName] = useState('')
@@ -718,6 +761,31 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     if (completeness !== 'all') {
       list = list.filter((s) => (completeness === 'behind' ? missingCount(s) > 0 : missingCount(s) <= 0))
     }
+    if (yearMin != null || yearMax != null) {
+      list = list.filter(
+        (s) => s.year != null && (yearMin == null || s.year >= yearMin) && (yearMax == null || s.year <= yearMax),
+      )
+    }
+    if (creditFilter.length > 0) list = list.filter((s) => creditsOf(s).some((name) => creditFilter.includes(name)))
+    if (publisherFilter.length > 0) {
+      list = list.filter((s) => s.publisher != null && publisherFilter.includes(s.publisher))
+    }
+    if (rootFolderFilter.length > 0) list = list.filter((s) => rootFolderFilter.includes(String(s.rootFolderId)))
+    if (incognitoFilter !== 'all') list = list.filter((s) => (s.incognito !== 'Off') === (incognitoFilter === 'on'))
+    if (mutedFilter !== 'all') list = list.filter((s) => (s.notificationMode === 'Muted') === (mutedFilter === 'muted'))
+    if (animeFilter !== 'all') list = list.filter((s) => s.hasAnime === (animeFilter === 'has'))
+    if (clashFilter !== 'all') list = list.filter((s) => (s.numberingClash != null) === (clashFilter === 'clash'))
+    if (overrideFilter.length > 0) {
+      list = list.filter(
+        (s) =>
+          (overrideFilter.includes('readCleanup') && s.readFileCleanup !== 'Default') ||
+          (overrideFilter.includes('pageConversion') && s.pageConversion !== 'Default'),
+      )
+    }
+    if (addedWithin != null) {
+      const cutoff = Date.now() - addedWithin * DAY_MS
+      list = list.filter((s) => (toTime(s.added) ?? 0) >= cutoff)
+    }
     if (sourceState !== 'all') list = list.filter((s) => matchesSourceState(s, sourceState))
     if (sourceFilter.length > 0) {
       list = list.filter((s) => matches(sourceFilter, s.sources, sourceMatch))
@@ -751,6 +819,8 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     metaTagFilter, metaTagMatch, monitoredFilter, completeness, readRange, readTracking, sort, sortDir, contentRatingFilter, readingStatusFilter,
     sourceFilter, sourceMatch, sourceState, fileSourceFilter, fileSourceMatch,
     chapterMin, chapterMax, chapterMode, qualityProfileFilter, ratingState, ratingRange, communityRange,
+    yearMin, yearMax, creditFilter, publisherFilter, rootFolderFilter, incognitoFilter, mutedFilter, animeFilter,
+    clashFilter, overrideFilter, addedWithin,
     onDevice, offlineSeries, isOffline, availableOffline,
   ])
 
@@ -789,6 +859,21 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     setTagFilter(dropStale)
     setExcludeTagFilter(dropStale)
   }, [tags, tagOptions, setTagFilter, setExcludeTagFilter])
+
+  const creditOptions = useMemo(() => facetOptions(series, creditsOf), [series])
+  const publisherOptions = useMemo(
+    () => facetOptions(series, (s) => (s.publisher ? [s.publisher] : undefined)),
+    [series],
+  )
+  const rootFolderOptions = useMemo(
+    () => (rootFolders ?? []).map((f) => ({ value: String(f.id), label: f.path })),
+    [rootFolders],
+  )
+  const overrideOptions = useMemo(
+    () => OVERRIDE_VALUES.map((value) => ({ value, label: _(OVERRIDE_LABELS[value]) })),
+    [_, i18n.locale],
+  )
+  const showRootFolderFilter = rootFolderOptions.length > 1 || rootFolderFilter.length > 0
 
   const genreOptions = useMemo(() => facetOptions(series, (s) => s.genres), [series])
   const metaTagOptions = useMemo(() => facetOptions(series, (s) => s.metadataTags), [series])
@@ -873,6 +958,17 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     ratingMax: ratingRange[1],
     communityRatingMin: communityRange[0],
     communityRatingMax: communityRange[1],
+    yearMin,
+    yearMax,
+    credits: creditFilter,
+    publishers: publisherFilter,
+    rootFolderIds: rootFolderFilter.map(Number),
+    incognito: incognitoFilter,
+    muted: mutedFilter,
+    anime: animeFilter,
+    numberingClash: clashFilter,
+    overrides: overrideFilter,
+    addedWithinDays: addedWithin,
   })
 
   const applySpec = (spec: LibraryFilterSpec, id: number | null) => {
@@ -910,6 +1006,17 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     setRatingState(merged.ratingState ?? 'all')
     setRatingRange([merged.ratingMin ?? 1, merged.ratingMax ?? 10])
     setCommunityRange([merged.communityRatingMin ?? 0, merged.communityRatingMax ?? 10])
+    setYearMin(merged.yearMin ?? null)
+    setYearMax(merged.yearMax ?? null)
+    setCreditFilter(merged.credits ?? [])
+    setPublisherFilter(merged.publishers ?? [])
+    setRootFolderFilter((merged.rootFolderIds ?? []).map(String))
+    setIncognitoFilter(merged.incognito ?? 'all')
+    setMutedFilter(merged.muted ?? 'all')
+    setAnimeFilter(merged.anime ?? 'all')
+    setClashFilter(merged.numberingClash ?? 'all')
+    setOverrideFilter(merged.overrides ?? [])
+    setAddedWithin(merged.addedWithinDays ?? null)
     setSort(merged.sort)
     setSortDirOverride(merged.sortDir === 'asc' || merged.sortDir === 'desc' ? merged.sortDir : '')
     setActiveFilterId(id)
@@ -922,7 +1029,13 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       (typeFilter.length > 0 ? 1 : 0) +
       (contentRatingFilter.length > 0 ? 1 : 0) +
       (readingStatusFilter.length > 0 ? 1 : 0) +
-      (chapterMin != null || chapterMax != null ? 1 : 0),
+      (chapterMin != null || chapterMax != null ? 1 : 0) +
+      (yearMin != null || yearMax != null ? 1 : 0) +
+      (creditFilter.length > 0 ? 1 : 0) +
+      (publisherFilter.length > 0 ? 1 : 0) +
+      (animeFilter !== 'all' ? 1 : 0) +
+      (clashFilter !== 'all' ? 1 : 0) +
+      (addedWithin != null ? 1 : 0),
     tags:
       (!untaggedOnly && tagFilter.length > 0 ? 1 : 0) +
       (!untaggedOnly && excludeTagFilter.length > 0 ? 1 : 0) +
@@ -940,7 +1053,11 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       (qualityProfileFilter !== 'all' ? 1 : 0) +
       (sourceState !== 'all' ? 1 : 0) +
       (sourceFilter.length > 0 ? 1 : 0) +
-      (fileSourceFilter.length > 0 ? 1 : 0),
+      (fileSourceFilter.length > 0 ? 1 : 0) +
+      (rootFolderFilter.length > 0 ? 1 : 0) +
+      (incognitoFilter !== 'all' ? 1 : 0) +
+      (mutedFilter !== 'all' ? 1 : 0) +
+      (overrideFilter.length > 0 ? 1 : 0),
   }
   const activeFilterCount = Object.values(groupCounts).reduce((a, b) => a + b, 0)
   const toggleGroup = (group: FilterGroup) =>
@@ -961,6 +1078,13 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       if (chapterMin != null && chapterMax != null) parts.push(t`${chapters} chapters`)
       else if (chapterMin != null) parts.push(plural(chapterMin, { one: 'At least # chapter', other: 'At least # chapters' }))
       else if (chapterMax != null) parts.push(plural(chapterMax, { one: 'At most # chapter', other: 'At most # chapters' }))
+      const years = `${yearMin ?? ''}–${yearMax ?? ''}`
+      if (yearMin != null || yearMax != null) parts.push(t`Year ${years}`)
+      if (creditFilter.length > 0) parts.push(creditFilter.join(', '))
+      if (publisherFilter.length > 0) parts.push(publisherFilter.join(', '))
+      if (animeFilter !== 'all') parts.push(animeFilter === 'has' ? t`Has anime` : t`No anime`)
+      if (clashFilter !== 'all') parts.push(clashFilter === 'clash' ? t`Numbering clash` : t`No numbering clash`)
+      if (addedWithin != null) parts.push(plural(addedWithin, { one: 'Added in the last # day', other: 'Added in the last # days' }))
     } else if (group === 'tags') {
       if (untaggedOnly) parts.push(t`Untagged only`)
       else {
@@ -993,13 +1117,17 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       if (sourceFilter.length > 0) parts.push(label(sourceOptions, sourceFilter))
       const origins = label(fileSourceOptions, fileSourceFilter)
       if (fileSourceFilter.length > 0) parts.push(t`From ${origins}`)
+      if (rootFolderFilter.length > 0) parts.push(label(rootFolderOptions, rootFolderFilter))
+      if (incognitoFilter !== 'all') parts.push(incognitoFilter === 'on' ? t`Incognito` : t`Not incognito`)
+      if (mutedFilter !== 'all') parts.push(mutedFilter === 'muted' ? t`Muted` : t`Not muted`)
+      if (overrideFilter.length > 0) parts.push(label(overrideOptions, overrideFilter))
     }
     if (parts.length > 0) return <MetaList inline className="disclosure-summary-active" items={parts} />
     return {
-      series: t`Status, type, content rating, chapters`,
+      series: t`Status, type, year, credits, chapters`,
       tags: t`Your tags, genres, provider tags`,
       ratings: t`Your rating, score, how much you've read`,
-      monitoring: t`Monitoring, quality profile, completeness, sources`,
+      monitoring: t`Monitoring, quality profile, completeness, sources, folder`,
     }[group]
   }
   const groupProps = (group: FilterGroup) => ({
@@ -2257,6 +2385,99 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                   />
                 </Group>
               </div>
+              <div>
+                <Text size="sm" fw={500} mb={2}>
+                  <Trans>Year</Trans>
+                </Text>
+                <Text size="xs" c="var(--ink-3)" mb="xs">
+                  <Trans>Leave both boxes empty to ignore. Series without a year drop out once one is set.</Trans>
+                </Text>
+                <Group grow gap="xs" align="flex-start">
+                  <NumberInput
+                    aria-label={t`Earliest year`}
+                    className="field-default-value"
+                    placeholder={t`From`}
+                    min={0}
+                    max={9999}
+                    allowDecimal={false}
+                    allowNegative={false}
+                    thousandSeparator={false}
+                    value={yearMin ?? ''}
+                    onChange={(v) => setYearMin(toBound(v))}
+                  />
+                  <NumberInput
+                    aria-label={t`Latest year`}
+                    className="field-default-value"
+                    placeholder={t`To`}
+                    min={0}
+                    max={9999}
+                    allowDecimal={false}
+                    allowNegative={false}
+                    thousandSeparator={false}
+                    value={yearMax ?? ''}
+                    onChange={(v) => setYearMax(toBound(v))}
+                  />
+                </Group>
+              </div>
+              <NumberInput
+                label={t`Added within (days)`}
+                className="field-default-value"
+                placeholder={t`Any time`}
+                min={1}
+                allowDecimal={false}
+                allowNegative={false}
+                value={addedWithin ?? ''}
+                onChange={(v) => setAddedWithin(toBound(v))}
+              />
+              <MultiSelect
+                label={t`Author or artist`}
+                className="field-default-value"
+                placeholder={creditFilter.length ? undefined : creditOptions.length > 0 ? t`Any` : t`None available`}
+                data={creditOptions}
+                value={creditFilter}
+                onChange={setCreditFilter}
+                disabled={creditOptions.length === 0}
+                searchable
+                clearable
+                limit={100}
+                comboboxProps={{ withinPortal: true }}
+              />
+              <MultiSelect
+                label={t`Publisher`}
+                className="field-default-value"
+                placeholder={publisherFilter.length ? undefined : publisherOptions.length > 0 ? t`Any` : t`None available`}
+                data={publisherOptions}
+                value={publisherFilter}
+                onChange={setPublisherFilter}
+                disabled={publisherOptions.length === 0}
+                searchable
+                clearable
+                limit={100}
+                comboboxProps={{ withinPortal: true }}
+              />
+              <Select
+                label={t`Anime adaptation`}
+                data={[
+                  { value: 'all', label: t`Any` },
+                  { value: 'has', label: t`Has anime` },
+                  { value: 'none', label: t`No anime` },
+                ]}
+                value={animeFilter}
+                onChange={(v) => setAnimeFilter(v ?? 'all')}
+                comboboxProps={{ withinPortal: true }}
+              />
+              <Select
+                label={t`Chapter numbering`}
+                description={t`Sources that number the same chapters differently`}
+                data={[
+                  { value: 'all', label: t`Any` },
+                  { value: 'clash', label: t`Numbering clash` },
+                  { value: 'none', label: t`No numbering clash` },
+                ]}
+                value={clashFilter}
+                onChange={(v) => setClashFilter(v ?? 'all')}
+                comboboxProps={{ withinPortal: true }}
+              />
             </Disclosure>
             <Disclosure title={t`Tags and genres`} {...groupProps('tags')}>
               {facetFilter({
@@ -2463,6 +2684,51 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                 mode: fileSourceMatch,
                 onModeChange: setFileSourceMatch,
               })}
+              {showRootFolderFilter && (
+                <MultiSelect
+                  label={t`Root folder`}
+                  className="field-default-value"
+                  placeholder={rootFolderFilter.length ? undefined : t`Any`}
+                  data={rootFolderOptions}
+                  value={rootFolderFilter}
+                  onChange={setRootFolderFilter}
+                  clearable
+                  comboboxProps={{ withinPortal: true }}
+                />
+              )}
+              <Select
+                label={t`Incognito`}
+                data={[
+                  { value: 'all', label: t`Any` },
+                  { value: 'on', label: t`Incognito` },
+                  { value: 'off', label: t`Not incognito` },
+                ]}
+                value={incognitoFilter}
+                onChange={(v) => setIncognitoFilter(v ?? 'all')}
+                comboboxProps={{ withinPortal: true }}
+              />
+              <Select
+                label={t`Notifications`}
+                data={[
+                  { value: 'all', label: t`Any` },
+                  { value: 'muted', label: t`Muted` },
+                  { value: 'unmuted', label: t`Not muted` },
+                ]}
+                value={mutedFilter}
+                onChange={(v) => setMutedFilter(v ?? 'all')}
+                comboboxProps={{ withinPortal: true }}
+              />
+              <MultiSelect
+                label={t`Own settings`}
+                description={t`Series that override the default for this`}
+                className="field-default-value"
+                placeholder={overrideFilter.length ? undefined : t`Any`}
+                data={overrideOptions}
+                value={overrideFilter}
+                onChange={setOverrideFilter}
+                clearable
+                comboboxProps={{ withinPortal: true }}
+              />
             </Disclosure>
           </div>
           {activeFilterCount > 0 && (

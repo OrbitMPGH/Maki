@@ -47,7 +47,10 @@ public class LibraryFiltersControllerTests : IDisposable
             Types: [SeriesTypes.Manhwa, SeriesTypes.Manhua],
             ExcludeTagIds: [4, 5], ExcludeGenres: ["Horror"], UntaggedOnly: true,
             SortDir: "asc",
-            RatingState: "rated", RatingMin: 7, RatingMax: 9, CommunityRatingMin: 7.5, CommunityRatingMax: 9.5);
+            RatingState: "rated", RatingMin: 7, RatingMax: 9, CommunityRatingMin: 7.5, CommunityRatingMax: 9.5,
+            YearMin: 1995, YearMax: 2005, Credits: ["Kentaro Miura"], Publishers: ["Hakusensha"],
+            RootFolderIds: [2, 3], Incognito: "on", Muted: "muted", Anime: "has", NumberingClash: "clash",
+            Overrides: ["readCleanup", "pageConversion"], AddedWithinDays: 30);
 
         var created = Body<SavedFilterDto>(
             await Controller().Create(new SaveFilterRequest("Ongoing & behind", spec), CancellationToken.None));
@@ -98,6 +101,17 @@ public class LibraryFiltersControllerTests : IDisposable
         Assert.Null(listed.Spec.ExcludeTagIds);
         Assert.Null(listed.Spec.ExcludeGenres);
         Assert.False(listed.Spec.UntaggedOnly);
+        Assert.Null(listed.Spec.YearMin);
+        Assert.Null(listed.Spec.YearMax);
+        Assert.Null(listed.Spec.Credits);
+        Assert.Null(listed.Spec.Publishers);
+        Assert.Null(listed.Spec.RootFolderIds);
+        Assert.Equal("all", listed.Spec.Incognito);
+        Assert.Equal("all", listed.Spec.Muted);
+        Assert.Equal("all", listed.Spec.Anime);
+        Assert.Equal("all", listed.Spec.NumberingClash);
+        Assert.Null(listed.Spec.Overrides);
+        Assert.Null(listed.Spec.AddedWithinDays);
     }
 
     [Fact]

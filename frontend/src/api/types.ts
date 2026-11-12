@@ -287,6 +287,25 @@ export interface LibraryFilterSpec {
   communityRatingMax?: number
   /** `SeriesDto.readingStatus` values to include. Empty means any. */
   readingStatuses: string[]
+  /** First-year window; null on either end is unbounded. Series with no year drop out once either is set. Absent on older presets. */
+  yearMin?: number | null
+  yearMax?: number | null
+  /** Story or art credits, any one of which the series must carry. */
+  credits?: string[] | null
+  publishers?: string[] | null
+  rootFolderIds?: number[] | null
+  /** "all" | "on" | "off" */
+  incognito?: string
+  /** "all" | "muted" | "unmuted", on your own notification mode. */
+  muted?: string
+  /** "all" | "has" | "none" */
+  anime?: string
+  /** "all" | "clash" | "none" */
+  numberingClash?: string
+  /** "readCleanup" and/or "pageConversion": series with a setting of their own. */
+  overrides?: string[] | null
+  /** Only series added within this many days; null for any time. */
+  addedWithinDays?: number | null
 }
 
 export interface SavedFilterDto {

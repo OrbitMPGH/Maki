@@ -101,7 +101,28 @@ public record LibraryFilterSpec(
     double CommunityRatingMin = 0,
     double CommunityRatingMax = 10,
     /// <summary>The caller's own <see cref="Maki.Core.Entities.ReadingStatus"/> names to include, empty for "any".</summary>
-    List<string>? ReadingStatuses = null);
+    List<string>? ReadingStatuses = null,
+    /// <summary>First-year window; null on either end for "unbounded". Series without a year drop out once either is set.</summary>
+    int? YearMin = null,
+    int? YearMax = null,
+    /// <summary>Story or art credits, any one of which the series must carry. Empty for "any".</summary>
+    List<string>? Credits = null,
+    /// <summary>Publishers to include, empty for "any".</summary>
+    List<string>? Publishers = null,
+    /// <summary>Root folder ids to include, empty for "any".</summary>
+    List<int>? RootFolderIds = null,
+    /// <summary>"all" | "on" (any incognito mode) | "off".</summary>
+    string Incognito = "all",
+    /// <summary>"all" | "muted" | "unmuted", on the caller's own notification mode.</summary>
+    string Muted = "all",
+    /// <summary>"all" | "has" | "none", on whether an anime adaptation is recorded.</summary>
+    string Anime = "all",
+    /// <summary>"all" | "clash" | "none", on whether sources disagree on chapter numbering.</summary>
+    string NumberingClash = "all",
+    /// <summary>"readCleanup" and/or "pageConversion": series with their own setting rather than the default.</summary>
+    List<string>? Overrides = null,
+    /// <summary>Only series added within this many days; null for "any time".</summary>
+    int? AddedWithinDays = null);
 
 public record SavedFilterDto(int Id, string Name, LibraryFilterSpec Spec, int SortOrder);
 
