@@ -40,6 +40,7 @@ inside them.
 | `Publisher` | Publisher |
 | `Genre` | Series genres |
 | `Tags` | Series tags from metadata |
+| `SeriesGroup` | Your own tags on the series, which Kavita and Komga turn into collections |
 | `Web` | Links to the series on MangaBaka, AniList, MyAnimeList, and the other sites Maki knows |
 | `LanguageISO` | The chapter's language |
 | `Manga` | Reading direction, from the series type (see below) |
@@ -70,8 +71,13 @@ ComicInfo.xml rewritten. The **Write ComicInfo.xml into imported files** switch,
 - Series-level fields (title, summary, authors, genres) are standardized to Maki's metadata.
 - Number and volume always come from the linked chapter or the file name. The date comes from the
   chapter when it has one. Title is kept unless it is empty.
+- `SeriesGroup` takes the series' tags. A series with no tags keeps whatever the file already had.
 - Fields Maki has no opinion on, such as translator or characters, and unknown elements stay as
   they were.
+
+Adding or removing a tag does not rewrite any files, since that would mean rewriting every chapter
+of the series at once. New downloads and newly adopted files pick up the current tags. To bring
+existing files up to date, select the series in the library and pick **ComicInfo** from the bulk actions.
 
 Torrent imports rewrite ComicInfo.xml only when every file was copied. A hardlinked file is left
 alone, because a rewrite would replace the shared file with a full copy and undo the hardlink.

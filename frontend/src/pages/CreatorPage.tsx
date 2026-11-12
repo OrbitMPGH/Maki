@@ -21,6 +21,7 @@ import {
   type CatalogueCredit,
   type RecommendationFilters,
   type RecommendationItem,
+  recommendationStub,
 } from '../api/hooks'
 import { ApiError } from '../api/client'
 import { useFollowToggle } from '../api/following'
@@ -149,7 +150,7 @@ export default function CreatorPage() {
 
   useEffect(() => {
     if (!openId || !/^\d+$/.test(openId)) return
-    setDetailItem(stubItem(openId))
+    setDetailItem(recommendationStub(openId))
   }, [openId])
 
   const closeDetail = () => {
@@ -380,26 +381,4 @@ export default function CreatorPage() {
       />
     </SurfaceFrame>
   )
-}
-
-/** Enough of a card for the detail modal, which loads everything else by id. */
-function stubItem(providerId: string): RecommendationItem {
-  return {
-    providerId,
-    title: '',
-    coverUrl: null,
-    thumbUrl: null,
-    thumbUrlHiDpi: null,
-    year: null,
-    description: null,
-    status: '',
-    rating: null,
-    totalChapters: null,
-    matchedGenres: [],
-    matchedTags: [],
-    authorMatch: false,
-    relationKind: null,
-    relatedToTitle: null,
-    becauseOfTitle: null,
-  }
 }

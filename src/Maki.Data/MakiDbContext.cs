@@ -87,6 +87,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
 
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<SeriesTag> SeriesTags => Set<SeriesTag>();
+    public DbSet<AutoTagRule> AutoTagRules => Set<AutoTagRule>();
     public DbSet<SavedFilter> SavedFilters => Set<SavedFilter>();
     public DbSet<SeriesRequest> SeriesRequests => Set<SeriesRequest>();
     public DbSet<UserAchievement> UserAchievements => Set<UserAchievement>();
@@ -483,6 +484,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             // No FK to MakiUser: a failed login for a username that does not exist has no user to
             // point at, and the row must outlive a deleted account (UserName is denormalized for
             // exactly that).
+        });
+
+        modelBuilder.Entity<AutoTagRule>(e =>
+        {
+            e.HasOne(r => r.Tag).WithMany().HasForeignKey(r => r.TagId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Series>(e =>

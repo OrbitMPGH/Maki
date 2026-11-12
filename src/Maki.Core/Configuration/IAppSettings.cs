@@ -786,6 +786,12 @@ public static class SettingKeys
     public const string DiscoverFollowingWatermark = "discover.following.watermark";
 
     /// <summary>
+    /// Instance: JSON map from a library series' MangaBaka id to every direct relation id already
+    /// seen for it (<c>RelatedWorkWatchService</c>). Unset means the check has never run.
+    /// </summary>
+    public const string DiscoverRelatedSeen = "discover.related.seen";
+
+    /// <summary>
     /// Instance: write time and length of the dump, vector database and taste file the search
     /// indexes were last warmed from. A restart with these unchanged skips the warm.
     /// </summary>

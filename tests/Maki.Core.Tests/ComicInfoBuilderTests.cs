@@ -37,6 +37,18 @@ public class ComicInfoBuilderTests
     }
 
     [Fact]
+    public void User_tags_become_the_series_group_in_a_stable_order()
+    {
+        var chapter = new Chapter { Number = 1, Language = "en" };
+
+        var tagged = ComicInfoBuilder.Build(TestSeries(), chapter, pageCount: 1, userTags: ["To read", "Favourites"]);
+        var untagged = ComicInfoBuilder.Build(TestSeries(), chapter, pageCount: 1, userTags: []);
+
+        Assert.Equal("Favourites, To read", tagged.SeriesGroup);
+        Assert.Null(untagged.SeriesGroup);
+    }
+
+    [Fact]
     public void Localized_series_prefers_the_alt_title_in_the_chapters_language()
     {
         var series = TestSeries();

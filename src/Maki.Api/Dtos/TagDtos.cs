@@ -132,3 +132,9 @@ public record SetDefaultFilterRequest(bool IsDefault);
 public record ReorderFiltersRequest(List<int> Ids);
 
 public record SaveFilterRequest(string Name, LibraryFilterSpec Spec);
+
+public record AutoTagConditionDto(string Field, string Value);
+
+public record AutoTagRuleDto(int Id, int TagId, bool Enabled, IReadOnlyList<AutoTagConditionDto> Conditions);
+
+public record SaveAutoTagRuleRequest(int TagId, bool Enabled, List<AutoTagConditionDto>? Conditions);

@@ -3719,6 +3719,9 @@ button.site-chip:hover {
 .discover-add-pages {
   margin-inline: -10px;
 }
+.auto-tag-rule-pages {
+  margin-inline: -10px;
+}
 /* Starter profiles are written to fit two lines here; an admin's own description stops at two. */
 .discover-add-pages .drill-choice-hint {
   display: -webkit-box;

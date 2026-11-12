@@ -119,6 +119,27 @@ public class ComicInfoUpdaterTests : IDisposable
     }
 
     [Fact]
+    public void User_tags_replace_the_series_group_and_no_tags_keep_the_files_own()
+    {
+        const string xml = """
+            <?xml version="1.0"?>
+            <ComicInfo>
+              <SeriesGroup>Old Shelf</SeriesGroup>
+            </ComicInfo>
+            """;
+        var tagged = CreateCbz("Berserk v01.cbz", xml);
+        var untagged = CreateCbz("Berserk v02.cbz", xml);
+
+        ComicInfoUpdater.UpdateFile(tagged, TestSeries(), ReleaseNameParser.ParseFileName(tagged), null,
+            userTags: ["Favourites", " dark  fantasy "]);
+        ComicInfoUpdater.UpdateFile(untagged, TestSeries(), ReleaseNameParser.ParseFileName(untagged), null,
+            userTags: []);
+
+        Assert.Equal("dark fantasy, Favourites", ReadComicInfo(tagged).SeriesGroup);
+        Assert.Equal("Old Shelf", ReadComicInfo(untagged).SeriesGroup);
+    }
+
+    [Fact]
     public void A_known_group_replaces_the_scan_information_a_file_declared()
     {
         var path = CreateCbz("Berserk v01.cbz", """

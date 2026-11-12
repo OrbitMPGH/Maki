@@ -940,6 +940,7 @@ try
         .ConfigurePrimaryHttpMessageHandler(PublicAddressGuard.CreateManualRedirectHandler);
     builder.Services.AddSingleton<AccountSecurityAlerts>();
     builder.Services.AddSingleton<FollowedCreatorReleaseService>();
+    builder.Services.AddSingleton<RelatedWorkWatchService>();
     builder.Services.AddSingleton<ReadingStatusAutoService>();
 
     builder.Services.AddHttpClient(UpdateCheckService.HttpClientName, client =>
@@ -1026,6 +1027,7 @@ try
     builder.Services.AddScoped<TorrentUpgradeService>();
     builder.Services.AddScoped<SeriesCreationService>();
     builder.Services.AddScoped<TagService>();
+    builder.Services.AddScoped<AutoTagRuleService>();
     builder.Services.AddScoped<NamingService>();
     builder.Services.AddScoped<SeriesRenameService>();
     builder.Services.AddScoped<TorrentImportService>();
@@ -1403,6 +1405,15 @@ try
             .ForJob(Maki.Api.Jobs.FollowedCreatorReleaseJob.Key)
             .WithIdentity("followed-creator-releases-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(20))
+            .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
+
+        // New sequels and spin-offs of library series, same schedule as the follow check.
+        q.AddJob<Maki.Api.Jobs.RelatedWorkWatchJob>(j => j
+            .WithIdentity(Maki.Api.Jobs.RelatedWorkWatchJob.Key));
+        q.AddTrigger(t => t
+            .ForJob(Maki.Api.Jobs.RelatedWorkWatchJob.Key)
+            .WithIdentity("related-work-watch-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddMinutes(22))
             .WithSimpleSchedule(s => s.WithIntervalInHours(24).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
         // Reading status auto rules (put on hold / drop after N idle days), opt-in per reader.

@@ -43,6 +43,7 @@ import {
   RecommendationIndexSection,
   RecycleBinSection,
   RootFoldersSection,
+  AutoTagRulesSection,
 } from './settings/LibraryCards'
 import { PageConversionSection } from './settings/PageConversionSection'
 import { UpscalingSection } from './settings/UpscalingSection'
@@ -103,6 +104,7 @@ function useSectionNodes(): Record<string, ReactNode> {
       'page-conversion': <PageConversionSection />,
       upscaling: <UpscalingSection />,
       'recycle-bin': <RecycleBinSection />,
+      'auto-tag-rules': <AutoTagRulesSection />,
       monitoring: <NewSeriesDefaultsSection />,
       metadata: <MetadataSection />,
       recommendations: <RecommendationIndexSection />,

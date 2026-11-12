@@ -128,6 +128,32 @@ namespace Maki.Data.Migrations
                     b.ToTable("AppConfig");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.AutoTagRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ConditionsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Enabled")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TagId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TagId");
+
+                    b.ToTable("AutoTagRules");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.Chapter", b =>
                 {
                     b.Property<int>("Id")
@@ -3400,6 +3426,17 @@ namespace Maki.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.AutoTagRule", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Tag", "Tag")
+                        .WithMany()
+                        .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tag");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.Chapter", b =>

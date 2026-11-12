@@ -1984,6 +1984,10 @@ msgstr "This sign-in mode needs a username."
 msgid "error.suwayomi.versionUnsupported"
 msgstr "Suwayomi {version} is too old for this sign-in mode. Maki needs {minimum} or later."
 
+#: src/Maki.Api/Controllers/AutoTagRulesController.cs
+msgid "error.autoTagRules.invalidConditions"
+msgstr "A rule needs between 1 and 20 conditions, each with a known field and a valid value"
+
 #. {label} is the tag name the user typed in.
 #: src/Maki.Api/Controllers/TagsController.cs
 msgid "error.tags.labelExists"
@@ -3241,6 +3245,23 @@ msgstr "New from creators you follow"
 msgid "inbox.followedReleases.body"
 msgstr "{count, plural, one {# new title} other {# new titles}} in the catalogue."
 
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWork.title"
+msgstr "{kind, select, sequel {New sequel} prequel {New prequel} spinOff {New spin-off} sideStory {New side story} mainStory {New main story} other {New related work}}"
+
+#. {title} is a catalogue title and is not translated.
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWork.body"
+msgstr "{kind, select, sequel {{title} is a new sequel to a series you read.} prequel {{title} is a new prequel to a series you read.} spinOff {{title} is a new spin-off of a series you read.} sideStory {{title} is a new side story to a series you read.} mainStory {{title} is the main story of a series you read.} other {{title} is related to a series you read.}}"
+
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWorks.title"
+msgstr "New sequels and spin-offs"
+
+#: src/Maki.Api/Services/RelatedWorkWatchService.cs
+msgid "inbox.relatedWorks.body"
+msgstr "{count, plural, one {# new work} other {# new works}} related to series you read."
+
 #: src/Maki.Api/Services/UpdateCheckService.cs
 msgid "inbox.update.available.title"
 msgstr "Update available"
@@ -4412,6 +4433,10 @@ msgstr "Install the recommendation graph"
 #: src/Maki.Api/Services/JobLabels.cs
 msgid "health.job.refreshMonitored"
 msgstr "Check monitored series for new chapters"
+
+#: src/Maki.Api/Services/JobLabels.cs
+msgid "health.job.relatedWorkWatch"
+msgstr "Look for new sequels and spin-offs"
 
 #: src/Maki.Api/Services/JobLabels.cs
 msgid "health.job.retryFailedDownloads"

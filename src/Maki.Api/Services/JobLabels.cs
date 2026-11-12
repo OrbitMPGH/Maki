@@ -39,6 +39,7 @@ public static class JobLabels
         [nameof(ReadingStatusAutoJob)] = "health.job.readingStatusRules",
         [nameof(RecoGraphJob)] = "health.job.recoGraph",
         [nameof(RefreshMonitoredSeriesJob)] = "health.job.refreshMonitored",
+        [nameof(RelatedWorkWatchJob)] = "health.job.relatedWorkWatch",
         [nameof(RetryFailedDownloadsJob)] = "health.job.retryFailedDownloads",
         [nameof(ScheduledBackupJob)] = "health.job.scheduledBackup",
         [nameof(ScrobbleJob)] = "health.job.scrobble",
