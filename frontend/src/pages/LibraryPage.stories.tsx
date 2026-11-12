@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, userEvent as userEventApi, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
@@ -375,6 +376,48 @@ export const SavedFilterAsDefault: Story = {
     await userEvent.click(await canvas.findByRole('button', { name: 'Options for Favourites' }))
     await userEvent.click(await body(canvasElement).findByRole('menuitem', { name: 'Open the Library with this' }))
     await waitFor(() => expect(onDefaultFilter).toHaveBeenCalledWith({ id: 2, isDefault: true }))
+  },
+}
+
+function LocationProbe() {
+  const { search } = useLocation()
+  return <output data-testid="location" hidden>{search}</output>
+}
+
+export const ViewWritesTheLink: Story = {
+  decorators: [
+    (Story) => (
+      <>
+        <LocationProbe />
+        <Story />
+      </>
+    ),
+  ],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Ongoing and behind' }))
+    const probe = () => canvasElement.ownerDocument.querySelector('[data-testid="location"]')
+    await waitFor(() => expect(probe()?.textContent).toContain('status=Ongoing'))
+    await waitFor(() => expect(probe()?.textContent).toContain('completeness=behind'))
+    await waitFor(() => expect(probe()?.textContent).toContain('sort=incomplete'))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Clear' }))
+    await waitFor(() => expect(probe()?.textContent).toBe(''))
+  },
+}
+
+export const ViewFromTheLink: Story = {
+  beforeEach: () => seedLibraryPrefs({ page: { status: 'Hiatus' } }),
+  parameters: { router: { initialEntries: ['/library?status=Completed&sort=title&sortDir=desc&bogus=1'] } },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(await canvas.findByText('4 of 14')).toBeVisible()
+    await waitFor(() => expect(canvasElement.querySelector('.cover-title')).not.toBeNull())
+  },
+}
+
+export const UnusableLinkParamsAreIgnored: Story = {
+  parameters: { router: { initialEntries: ['/library?sort=bogus&status=&tagIds=x&readMin=80&readMax=20&yearMin=abc'] } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })).toBeVisible()
+    expect(canvas.queryByText(/ of 14$/)).toBeNull()
   },
 }
 

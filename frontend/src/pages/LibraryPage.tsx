@@ -1,6 +1,7 @@
 import { errorText } from '../api/errorText'
-import { type FormEvent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type FormEvent, type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { hasPageState, usePageState } from '../lib/pageState'
+import { paramsToSpec, specToParams } from '../lib/libraryUrl'
 import { onPageScroll } from '../lib/pageScroll'
 import { shownRating } from '../lib/rating'
 import { fuzzyFilter, titleIndex } from '../lib/fuzzySearch'
@@ -80,7 +81,7 @@ import {
 } from '../components/ui/seriesNotifications'
 import { useDebouncedValue } from '@mantine/hooks'
 import { useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { api } from '../api/client'
 import {
   allowedContentRatings,
@@ -659,7 +660,11 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const [renameValue, setRenameValue] = useState('')
   // Read before usePageState's effects store anything: a tab that has never opened this view has
   // nothing remembered, which is when the default preset applies.
-  const [freshView] = useState(() => scope === 'library' && !hasPageState(`${MEM}:sort`))
+  const [searchParams, setSearchParams] = useSearchParams()
+  // A link's own view wins over what this tab remembered, and over the default preset.
+  const [urlSpec] = useState(() => paramsToSpec(searchParams, SCOPE_SORTS[scope]))
+  const [urlHydrated, setUrlHydrated] = useState(urlSpec === null)
+  const [freshView] = useState(() => urlSpec === null && scope === 'library' && !hasPageState(`${MEM}:sort`))
   const defaultApplied = useRef(false)
   const [filterName, setFilterName] = useState('')
   const [filtersOpen, setFiltersOpen] = usePageState(`${MEM}:filters-open`, false)
@@ -1161,6 +1166,21 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     // Anything the user already did while the presets loaded wins over the default.
     if (defaultFilter && !specActive && activeFilterId === null) applySpec(defaultFilter.spec, defaultFilter.id)
   }, [freshView, savedFilters])
+
+  useLayoutEffect(() => {
+    if (urlHydrated || urlSpec === null) return
+    applySpec({ ...DEFAULT_SPEC, ...urlSpec }, null)
+    setUrlHydrated(true)
+  }, [])
+
+  // The address bar follows the view: replaced, never pushed, and only once the search box has
+  // settled so typing does not rewrite it on every keystroke.
+  const viewParams = specToParams({ ...currentSpec(), query }, { ...DEFAULT_SPEC, sort: defaultSort }).toString()
+  useEffect(() => {
+    if (!urlHydrated || query !== debouncedQuery) return
+    if (viewParams === searchParams.toString()) return
+    setSearchParams(new URLSearchParams(viewParams), { replace: true })
+  }, [viewParams, urlHydrated, query, debouncedQuery, setSearchParams])
 
   const moveSavedFilter = (f: SavedFilterDto, by: -1 | 1) => {
     const ids = (savedFilters ?? []).map((x) => x.id)
