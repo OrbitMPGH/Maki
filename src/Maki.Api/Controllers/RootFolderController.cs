@@ -151,6 +151,35 @@ public class RootFolderController(
             _ => checkedResult(outcome.Check!),
         };
 
+    /// <param name="MinFreeBytes">Null for the default, 0 to never hold downloads for this folder.</param>
+    public record MinFreeRequest(long? MinFreeBytes);
+
+    /// <summary>
+    /// The free space below which new downloads into this folder wait (<see cref="DownloadDiskHold"/>).
+    /// The next claim reads the folder's free space again rather than waiting out the cached reading.
+    /// </summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpPut("{id:int}/minfree")]
+    public async Task<IActionResult> SetMinFree(int id, [FromBody] MinFreeRequest request,
+        [FromServices] DownloadDiskHold? diskHold, CancellationToken ct)
+    {
+        if (request.MinFreeBytes < 0)
+        {
+            return this.Fail(localizer, "error.rootFolder.minFreeNegative");
+        }
+
+        var folder = await db.RootFolders.FindAsync([id], ct);
+        if (folder is null)
+        {
+            return NotFound();
+        }
+
+        folder.MinFreeBytes = request.MinFreeBytes;
+        await db.SaveChangesAsync(ct);
+        diskHold?.Expire();
+        return Ok(ToDto(folder));
+    }
+
     [Authorize(Policy = Policies.Admin)]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
@@ -217,5 +246,7 @@ public class RootFolderController(
         folder.Path,
         FreeSpace = DiskSpace.AvailableFor(folder.Path),
         Accessible = Directory.Exists(folder.Path),
+        folder.MinFreeBytes,
+        DefaultMinFreeBytes = RootFolder.DefaultMinFreeBytes,
     };
 }

@@ -33,6 +33,38 @@ public enum DownloadOrigin
     // retried automatic download keeps its origin and still reports when it finally succeeds.
 }
 
+/// <summary>
+/// The claim class of a scraper row. Workers take every High row before any Normal one, and every
+/// Normal one before any Low one; <see cref="DownloadQueueItem.SortOrder"/> orders rows within a
+/// class. Stored as its number, and ordered by it, so new classes go between or around these values.
+/// </summary>
+public enum QueuePriority
+{
+    /// <summary>New releases, Smart top-ups and a single chapter somebody clicked.</summary>
+    High = -1,
+
+    /// <summary>Everything else, and every row written before priorities existed.</summary>
+    Normal = 0,
+
+    /// <summary>Backlog: "Download all", other bulk downloads and upgrades.</summary>
+    Low = 1,
+}
+
+public static class QueuePriorities
+{
+    /// <summary>
+    /// The class a new row takes from what queued it. <paramref name="bulk"/> marks a manual enqueue of
+    /// more than one chapter, which is backlog however it was asked for.
+    /// </summary>
+    public static QueuePriority For(DownloadOrigin origin, bool bulk) => origin switch
+    {
+        DownloadOrigin.MonitorRefresh or DownloadOrigin.SmartDownload => QueuePriority.High,
+        DownloadOrigin.Manual => bulk ? QueuePriority.Low : QueuePriority.High,
+        DownloadOrigin.Upgrade => QueuePriority.Low,
+        _ => QueuePriority.Normal,
+    };
+}
+
 public class DownloadQueueItem
 {
     public int Id { get; set; }
@@ -120,6 +152,12 @@ public class DownloadQueueItem
 
     /// <summary>What queued this. See <see cref="DownloadOrigin"/>.</summary>
     public DownloadOrigin Origin { get; set; }
+
+    /// <summary>Claim class, ahead of <see cref="SortOrder"/>. See <see cref="QueuePriority"/>.</summary>
+    public QueuePriority Priority { get; set; }
+
+    /// <summary>When a worker last claimed the row. With <see cref="CompletedAt"/> it times the download, which the queue ETA reads.</summary>
+    public DateTime? StartedAt { get; set; }
 
     /// <summary>
     /// Who the download is for, when that is a specific person: the requester behind a

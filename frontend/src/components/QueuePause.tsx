@@ -3,8 +3,8 @@ import { Alert, Button, Group, Popover, Stack, Text, TextInput } from '@mantine/
 import { IconClockPlay, IconPlayerPause, IconPlayerPlay, IconWorld } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { usePauseQueue, useQueuePause, useResumeQueue, useSources } from '../api/hooks'
-import { formatDateTime, formatTime } from '../format'
+import { usePauseQueue, useQueuePause, useResumeQueue, useResumeSeriesQueue, useSources } from '../api/hooks'
+import { formatBytes, formatDateTime, formatTime } from '../format'
 import { useSourceLabel } from '../sourceLabels'
 import { DrillPanes } from './ui/DrillPanes'
 import { DrillBack, DrillChoices, DrillRow, useDrillPages } from './ui/DrillPanel'
@@ -211,31 +211,61 @@ export function QueuePauseButton() {
   )
 }
 
-/** One line per active pause, each with its own Resume. Renders nothing while the queue is running. */
+/**
+ * One line per active pause, each with its own Resume, plus one per root folder held for disk space,
+ * which lifts by itself. Renders nothing while the queue is running.
+ */
 export function QueuePauseBanner({ canManage }: { canManage: boolean }) {
   const { t } = useLingui()
   const sourceLabel = useSourceLabel()
   const pause = useQueuePause().data
   const resume = useResumeQueue()
+  const resumeSeries = useResumeSeriesQueue()
 
-  if (!pause || (pause.all === null && pause.sources.length === 0)) return null
+  const series = pause?.series ?? []
+  const diskHolds = pause?.diskHolds ?? []
+  if (!pause || (pause.all === null && pause.sources.length === 0 && series.length === 0 && diskHolds.length === 0)) {
+    return null
+  }
 
-  const lines: { key: string; source: string | undefined; text: string }[] = []
+  const failed = () => notifications.show({ message: t`Couldn't resume the downloads`, color: 'var(--danger)' })
+  const lines: { key: string; text: string; resume?: () => void; pending?: boolean }[] = []
   if (pause.all) {
     const time = pause.all.until ? untilText(pause.all.until) : null
     lines.push({
       key: ALL_SOURCES,
-      source: undefined,
       text: time ? t`Downloads paused until ${time}` : t`Downloads paused`,
+      resume: () => resume.mutate(undefined, { onError: failed }),
+      pending: resume.isPending && resume.variables === undefined,
     })
   }
   for (const s of pause.sources) {
     const name = sourceLabel(s.sourceName)
     const time = s.until ? untilText(s.until) : null
     lines.push({
-      key: s.sourceName,
-      source: s.sourceName,
+      key: `source:${s.sourceName}`,
       text: time ? t`${name} paused until ${time}` : t`${name} paused`,
+      resume: () => resume.mutate(s.sourceName, { onError: failed }),
+      pending: resume.isPending && resume.variables === s.sourceName,
+    })
+  }
+  for (const s of series) {
+    const { title } = s
+    const time = s.until ? untilText(s.until) : null
+    lines.push({
+      key: `series:${s.seriesId}`,
+      text: time ? t`Downloads for ${title} paused until ${time}` : t`Downloads for ${title} paused`,
+      resume: () => resumeSeries.mutate(s.seriesId, { onError: failed }),
+      pending: resumeSeries.isPending && resumeSeries.variables === s.seriesId,
+    })
+  }
+  for (const h of diskHolds) {
+    const { path } = h
+    const free = formatBytes(h.freeBytes)
+    const needed = formatBytes(h.minFreeBytes)
+    lines.push({
+      key: `disk:${h.rootFolderId}`,
+      text: t`Downloads into ${path} wait for disk space: ${free} free, ${needed} wanted`,
     })
   }
 
@@ -244,20 +274,16 @@ export function QueuePauseBanner({ canManage }: { canManage: boolean }) {
       <Stack gap="xs">
         {lines.map((line) => (
           <Group key={line.key} justify="space-between" wrap="nowrap">
-            <Text size="sm" fw={600}>
+            <Text size="sm" fw={600} style={{ overflowWrap: 'anywhere' }}>
               {line.text}
             </Text>
-            {canManage && (
+            {canManage && line.resume && (
               <Button
                 size="compact-sm"
                 variant="light"
                 leftSection={<IconPlayerPlay size={16} />}
-                loading={resume.isPending && resume.variables === line.source}
-                onClick={() =>
-                  resume.mutate(line.source, {
-                    onError: () => notifications.show({ message: t`Couldn't resume the downloads`, color: 'var(--danger)' }),
-                  })
-                }
+                loading={line.pending}
+                onClick={line.resume}
               >
                 <Trans>Resume</Trans>
               </Button>
@@ -269,6 +295,14 @@ export function QueuePauseBanner({ canManage }: { canManage: boolean }) {
             Chapters already downloading finish. Torrents already handed to the download client keep downloading.
           </Trans>
         </Text>
+        {diskHolds.length > 0 && (
+          <Text size="xs" c="var(--ink-3)">
+            <Trans>
+              Held folders resume by themselves once there is room again. The threshold is set per root folder in
+              Settings, Library.
+            </Trans>
+          </Text>
+        )}
       </Stack>
     </Alert>
   )

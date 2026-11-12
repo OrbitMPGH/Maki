@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, fn, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api } from '../../.storybook/mocks/api'
-import { pausedAll, pausedSources } from '../../.storybook/mocks/operations/queue'
+import { pausedAll, pausedSeriesAndDisk, pausedSources } from '../../.storybook/mocks/operations/queue'
 import { QueuePauseBanner, QueuePauseButton } from './QueuePause'
 
 const meta = {
@@ -80,6 +80,17 @@ export const BannerSourcesPaused: Story = {
     await expect(await canvas.findByText(/Weeb Central paused until/)).toBeVisible()
     await expect(await canvas.findByText('Asura Scans paused')).toBeVisible()
     await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Resume' })).toHaveLength(2))
+  },
+}
+
+export const BannerSeriesAndDiskHold: Story = {
+  render: () => <QueuePauseBanner canManage />,
+  parameters: { msw: [http.get(api('/queue/pause'), () => HttpResponse.json(pausedSeriesAndDisk))] },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/^Downloads for .+ paused$/)).toBeVisible()
+    await expect(await canvas.findByText(/wait for disk space: 3\.2 GB free, 5 GB wanted/)).toBeVisible()
+    // A disk hold lifts by itself, so only the series line has a Resume.
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Resume' })).toHaveLength(1))
   },
 }
 

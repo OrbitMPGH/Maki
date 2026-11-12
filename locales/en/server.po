@@ -1349,6 +1349,11 @@ msgstr "The original location is outside the root folder or behind a link, so th
 msgid "error.release.grabFailed"
 msgstr "Could not send the release to the download client. Details are in the server log."
 
+#. A torrent grab refused because the series' root folder has less free space than its threshold.
+#: src/Maki.Api/Services/DownloadDiskHold.cs
+msgid "error.release.diskLow"
+msgstr "The library folder for this series is low on free space, so new downloads into it are on hold. Free some space or lower the threshold in Settings → Library."
+
 #: src/Maki.Api/Services/ReleaseService.cs
 msgid "error.release.noDownloadLink"
 msgstr "This release has no download link"
@@ -1472,6 +1477,11 @@ msgstr "Unknown user"
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 msgid "error.requests.unknownKind"
 msgstr "Unknown request kind"
+
+#. A root folder's free-space threshold for holding downloads was below zero.
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.minFreeNegative"
+msgstr "The free space to keep must be zero or more"
 
 #: src/Maki.Api/Controllers/RootFolderController.cs
 msgid "error.rootFolder.alreadyExists"

@@ -531,6 +531,9 @@ namespace Maki.Data.Migrations
                     b.Property<int?>("PreferredMappingId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("Priority")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Protocol")
                         .HasColumnType("INTEGER");
 
@@ -557,6 +560,9 @@ namespace Maki.Data.Migrations
 
                     b.Property<int?>("SourceMappingId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
@@ -587,10 +593,10 @@ namespace Maki.Data.Migrations
 
                     b.HasIndex("Status");
 
-                    b.HasIndex("SortOrder", "QueuedAt")
+                    b.HasIndex("Priority", "SortOrder", "QueuedAt")
                         .HasFilter("\"Status\" NOT IN (6, 8)");
 
-                    b.HasIndex("Protocol", "Status", "SortOrder", "QueuedAt");
+                    b.HasIndex("Protocol", "Status", "Priority", "SortOrder", "QueuedAt");
 
                     b.ToTable("DownloadQueue");
                 });
@@ -1824,6 +1830,9 @@ namespace Maki.Data.Migrations
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long?>("MinFreeBytes")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Path")
