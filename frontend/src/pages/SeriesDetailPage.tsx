@@ -56,7 +56,9 @@ import {
   IconX,
   IconDeviceTv,
   IconEyeOff,
+  IconSortAscending,
   IconSortAscendingNumbers,
+  IconSortDescending,
   IconSortDescendingNumbers,
   IconDatabase,
   IconFileText,
@@ -153,21 +155,36 @@ import { TorrentProposalCard } from '../components/upgrades/TorrentProposalCard'
 import { RenameSeriesModal } from '../components/RenameSeriesModal'
 import { RequestForm } from '../components/RequestForm'
 import { AnimeResumeCallout } from '../components/series/AnimeResumeCallout'
+import { ChapterViewMenu } from '../components/series/ChapterViewMenu'
 import {
   ChapterRow,
   ChapterRowSkeletons,
   ChapterSpanRow,
+  ChapterVolumeRow,
   ChunkedRows,
   type ChapterRowActions,
   type ChapterSpanRowActions,
+  type ChapterVolumeRowActions,
 } from '../components/series/ChapterTableRows'
 import {
+  CHAPTER_SORTS,
   chapterLabel,
   finishedHighWater,
+  groupByVolume,
+  isDescendingSort,
+  isReleaseSort,
   isSkipped,
+  mostHaveVolumes,
+  parseHiddenColumns,
   readLanguagesOf,
   readStateOf,
+  serializeHiddenColumns,
+  sortChapters,
+  volumeOf,
+  type ChapterSort,
   type FileOrigin,
+  type HidableChapterColumn,
+  type VolumeGroup,
 } from '../components/series/chapterTable'
 import { ArchivedBanner } from '../components/series/ArchivedBanner'
 import { SeriesTorrentDownloads } from '../components/series/SeriesTorrentDownloads'
@@ -260,8 +277,9 @@ const CHAPTER_FILTERS = [
 type ChapterFilter = (typeof CHAPTER_FILTERS)[number]
 
 const CHAPTER_SORT_STORAGE_KEY = 'series-chapter-sort'
-const CHAPTER_SORTS = ['asc', 'desc'] as const
-type ChapterSort = (typeof CHAPTER_SORTS)[number]
+const CHAPTER_HIDDEN_COLUMNS_STORAGE_KEY = 'series-chapter-hidden-columns'
+const CHAPTER_GROUPING_STORAGE_KEY = 'series-chapter-grouping'
+const CHAPTER_GROUPINGS = ['auto', 'on', 'off'] as const
 
 const CHAPTER_COLUMNS_STORAGE_KEY = 'series-chapter-columns'
 const CHAPTER_COLUMNS = {
@@ -286,29 +304,52 @@ const CHAPTER_COLUMN_MAX = 640
  */
 type ChapterLayout = 'full' | 'compact' | 'list'
 const CHAPTER_SHED_COLUMN: ChapterColumn = 'released'
-const shownChapterColumns = (layout: ChapterLayout) =>
-  layout === 'compact' ? CHAPTER_COLUMN_KEYS.filter((key) => key !== CHAPTER_SHED_COLUMN) : CHAPTER_COLUMN_KEYS
-const chapterColumnsWidthFor = (widths: Record<ChapterColumn, number>, layout: ChapterLayout) =>
-  CHAPTER_FIXED_COLUMNS_WIDTH + CHAPTER_TITLE_MIN_WIDTH + shownChapterColumns(layout).reduce((sum, key) => sum + widths[key], 0)
+type HiddenChapterColumns = ReadonlySet<HidableChapterColumn>
+const NO_HIDDEN_COLUMNS: HiddenChapterColumns = new Set()
+// Columns the reader hid never count towards the width a layout needs, so hiding some lets the full
+// layout hold in a narrower panel. The auto-shed of Released on top of that is unchanged.
+const shownChapterColumns = (layout: ChapterLayout, hidden: HiddenChapterColumns = NO_HIDDEN_COLUMNS) =>
+  CHAPTER_COLUMN_KEYS.filter(
+      (key) => !hidden.has(key as HidableChapterColumn) && !(layout === 'compact' && key === CHAPTER_SHED_COLUMN),
+  )
+const chapterColumnsWidthFor = (
+  widths: Record<ChapterColumn, number>,
+  layout: ChapterLayout,
+  hidden: HiddenChapterColumns = NO_HIDDEN_COLUMNS,
+) =>
+  CHAPTER_FIXED_COLUMNS_WIDTH +
+  (hidden.has('title') ? 0 : CHAPTER_TITLE_MIN_WIDTH) +
+  shownChapterColumns(layout, hidden).reduce((sum, key) => sum + widths[key], 0)
 // Off the default widths, never the dragged ones: a column dragged wide used to tip the table into
 // list rows, which have no header to drag it back from.
 const CHAPTER_DEFAULT_WIDTHS = Object.fromEntries(
     CHAPTER_COLUMN_KEYS.map((key) => [key, CHAPTER_COLUMNS[key].width]),
 ) as Record<ChapterColumn, number>
-const CHAPTER_FULL_MIN_WIDTH = chapterColumnsWidthFor(CHAPTER_DEFAULT_WIDTHS, 'full')
-const CHAPTER_COMPACT_MIN_WIDTH = chapterColumnsWidthFor(CHAPTER_DEFAULT_WIDTHS, 'compact')
+const chapterFullMinWidth = (hidden: HiddenChapterColumns) => chapterColumnsWidthFor(CHAPTER_DEFAULT_WIDTHS, 'full', hidden)
+const chapterCompactMinWidth = (hidden: HiddenChapterColumns) => chapterColumnsWidthFor(CHAPTER_DEFAULT_WIDTHS, 'compact', hidden)
 // The layout was picked because the panel holds at least this much, so a table never needs to
 // scroll sideways in it. Widths stored from a wider window stay as preferences the browser can
 // squeeze rather than a floor that pushes the table past the panel.
-const chapterTableMinWidthFor = (widths: Record<ChapterColumn, number>, layout: ChapterLayout) =>
+const chapterTableMinWidthFor = (
+  widths: Record<ChapterColumn, number>,
+  layout: ChapterLayout,
+  hidden: HiddenChapterColumns = NO_HIDDEN_COLUMNS,
+) =>
   Math.min(
-      chapterColumnsWidthFor(widths, layout),
-      layout === 'full' ? CHAPTER_FULL_MIN_WIDTH : CHAPTER_COMPACT_MIN_WIDTH,
+      chapterColumnsWidthFor(widths, layout, hidden),
+      layout === 'full' ? chapterFullMinWidth(hidden) : chapterCompactMinWidth(hidden),
   )
-const chapterLayoutFor = (panelWidth: number): ChapterLayout =>
-  panelWidth === 0 || panelWidth >= CHAPTER_FULL_MIN_WIDTH ? 'full' : panelWidth >= CHAPTER_COMPACT_MIN_WIDTH ? 'compact' : 'list'
+const chapterLayoutFor = (panelWidth: number, hidden: HiddenChapterColumns = NO_HIDDEN_COLUMNS): ChapterLayout =>
+  panelWidth === 0 || panelWidth >= chapterFullMinWidth(hidden)
+      ? 'full'
+      : panelWidth >= chapterCompactMinWidth(hidden) ? 'compact' : 'list'
 
-type ChapterColumnRoom = { panel: number; layout: ChapterLayout; widths: Record<ChapterColumn, number> | null }
+type ChapterColumnRoom = {
+  panel: number
+  layout: ChapterLayout
+  widths: Record<ChapterColumn, number> | null
+  hidden: HiddenChapterColumns
+}
 /**
  * Column specs whose max is whatever the panel has left once every other shown column has its
  * width, so a drag can't push the table wider than the panel. Read at drag time from `room`, which
@@ -319,10 +360,11 @@ const chapterColumnSpecsWithin = (room: RefObject<ChapterColumnRoom>) =>
       CHAPTER_COLUMN_KEYS.map((key): [ChapterColumn, ColumnSpec] => [key, {
         ...CHAPTER_COLUMNS[key],
         get max() {
-          const { panel, layout, widths } = room.current
+          const { panel, layout, widths, hidden } = room.current
           if (panel === 0 || layout === 'list' || !widths) return CHAPTER_COLUMN_MAX
-          const others = shownChapterColumns(layout).reduce((sum, k) => (k === key ? sum : sum + widths[k]), 0)
-          const left = Math.floor(panel - CHAPTER_FIXED_COLUMNS_WIDTH - CHAPTER_TITLE_MIN_WIDTH - others)
+          const others = shownChapterColumns(layout, hidden).reduce((sum, k) => (k === key ? sum : sum + widths[k]), 0)
+          const titleMin = hidden.has('title') ? 0 : CHAPTER_TITLE_MIN_WIDTH
+          const left = Math.floor(panel - CHAPTER_FIXED_COLUMNS_WIDTH - titleMin - others)
           return Math.min(CHAPTER_COLUMN_MAX, Math.max(CHAPTER_COLUMNS[key].min, left))
         },
       }]),
@@ -355,8 +397,10 @@ const LARGE_WANTED_DOWNLOAD_THRESHOLD = 50
 type RenderedRow =
     | { kind: 'chapter'; chapter: ChapterDto }
     | { kind: 'span'; span: AnimeSpan; rows: ChapterDto[] }
+    | { kind: 'volume'; group: VolumeGroup; collapsed: boolean }
 
 const NO_ROWS: RenderedRow[] = []
+const NO_VOLUME_KEYS: string[] = []
 
 type ReadTimeEstimate = {
   seconds: number
@@ -697,12 +741,54 @@ function SeriesDetailBody() {
   const [chapterSort, setChapterSortState] = useState<ChapterSort>(() =>
       readStored(CHAPTER_SORT_STORAGE_KEY, CHAPTER_SORTS, 'asc'),
   )
-  const toggleChapterSort = () => {
-    const next = chapterSort === 'asc' ? 'desc' : 'asc'
+  const chapterSortedByRelease = isReleaseSort(chapterSort)
+  const chapterSortDescending = isDescendingSort(chapterSort)
+  const setChapterSort = (next: ChapterSort) => {
     setChapterSortState(next)
     writeStored(CHAPTER_SORT_STORAGE_KEY, next)
   }
-  const chapterColumnRoom = useRef<ChapterColumnRoom>({ panel: 0, layout: 'full', widths: null })
+  const toggleChapterSort = () =>
+      setChapterSort(
+          chapterSortedByRelease
+              ? (chapterSortDescending ? 'releasedAsc' : 'releasedDesc')
+              : (chapterSortDescending ? 'asc' : 'desc'),
+      )
+  const chooseChapterSortKey = (key: 'number' | 'released') =>
+      setChapterSort(
+          key === 'released'
+              ? (chapterSortDescending ? 'releasedDesc' : 'releasedAsc')
+              : (chapterSortDescending ? 'desc' : 'asc'),
+      )
+  const [hiddenChapterColumns, setHiddenChapterColumns] = useState<HiddenChapterColumns>(() => {
+    try {
+      return parseHiddenColumns(localStorage.getItem(CHAPTER_HIDDEN_COLUMNS_STORAGE_KEY))
+    } catch {
+      return NO_HIDDEN_COLUMNS
+    }
+  })
+  const toggleChapterColumn = (column: HidableChapterColumn) => {
+    const next = new Set(hiddenChapterColumns)
+    if (!next.delete(column)) next.add(column)
+    setHiddenChapterColumns(next)
+    writeStored(CHAPTER_HIDDEN_COLUMNS_STORAGE_KEY, serializeHiddenColumns(next))
+  }
+  const [chapterGroupingPref, setChapterGroupingPref] = useState(() =>
+      readStored(CHAPTER_GROUPING_STORAGE_KEY, CHAPTER_GROUPINGS, 'auto'),
+  )
+  const [collapsedVolumes, setCollapsedVolumes] = useState<ReadonlySet<string>>(new Set())
+  const toggleVolume = useCallback((key: string) => {
+    setCollapsedVolumes((current) => {
+      const next = new Set(current)
+      if (!next.delete(key)) next.add(key)
+      return next
+    })
+  }, [])
+  const chapterColumnRoom = useRef<ChapterColumnRoom>({
+    panel: 0,
+    layout: 'full',
+    widths: null,
+    hidden: hiddenChapterColumns,
+  })
   const [chapterColumnSpecs] = useState(() => chapterColumnSpecsWithin(chapterColumnRoom))
   const { widths: chapterColumnWidths, handleProps: chapterColumnHandle } = useColumnWidths(
       CHAPTER_COLUMNS_STORAGE_KEY,
@@ -712,7 +798,10 @@ function SeriesDetailBody() {
         // hand. The lines sit at the Chapter cell's end, so they shift by exactly what it grew.
         chapterTable
             ?.querySelector<HTMLElement>('.mantine-TableScrollContainer-scrollContainer')
-            ?.style.setProperty('--table-min-width', `${chapterTableMinWidthFor(widths, chapterColumnRoom.current.layout)}px`)
+            ?.style.setProperty(
+                '--table-min-width',
+                `${chapterTableMinWidthFor(widths, chapterColumnRoom.current.layout, chapterColumnRoom.current.hidden)}px`,
+            )
         const overlay = chapterTable?.querySelector<HTMLElement>('.chapter-span-overlay')
         if (overlay) overlay.style.transform = key === 'chapter' && shift ? `translateX(${shift}px)` : ''
       },
@@ -859,15 +948,7 @@ function SeriesDetailBody() {
   const visibleChapters = useMemo(() => {
     const query = chapterSearch.trim().toLocaleLowerCase()
     const numberQuery = query.match(/^(?:ch(?:apter)?\.?\s*)?(\d+(?:\.\d+)?)$/)?.[1]
-    // The API sends numbered chapters ascending with unnumbered one-shots after them. Descending
-    // flips only the numbered run, so a pile of one-shots doesn't bury the latest chapter.
-    const ordered = chapterSort === 'desc'
-        ? [
-          ...(chapters ?? []).filter((c) => c.number !== null).reverse(),
-          ...(chapters ?? []).filter((c) => c.number === null),
-        ]
-        : (chapters ?? [])
-    return ordered
+    return sortChapters(chapters ?? [], chapterSort)
         .filter(filters[chapterFilter] ?? filters.all)
         .filter((chapter) => {
           if (!query) return true
@@ -952,10 +1033,12 @@ function SeriesDetailBody() {
     return numbered.length === 0 ? null : Math.max(...numbered)
   }, [chapters])
 
+  // A season is a run of chapter numbers, so it only means something while the table is in number
+  // order. Sorted by release date the markers stay as plain badges and nothing folds.
   const animeSpans = useMemo(() => {
-    if (lastChapterNumber === null) return [] as AnimeSpan[]
+    if (lastChapterNumber === null || chapterSortedByRelease) return [] as AnimeSpan[]
     return buildAnimeSpans(animeMarkers, lastChapterNumber)
-  }, [animeMarkers, lastChapterNumber])
+  }, [animeMarkers, lastChapterNumber, chapterSortedByRelease])
 
   /**
    * Which spans are folded into a single summary row. Keyed by span key rather than by index so a
@@ -1050,21 +1133,22 @@ function SeriesDetailBody() {
     if (!chapterTable) return
     const observer = new ResizeObserver(([entry]) => {
       chapterColumnRoom.current.panel = entry.contentRect.width
-      setChapterLayoutByWidth(chapterLayoutFor(entry.contentRect.width))
+      setChapterLayoutByWidth(chapterLayoutFor(entry.contentRect.width, hiddenChapterColumns))
     })
     observer.observe(chapterTable)
     return () => observer.disconnect()
-  }, [chapterTable])
+  }, [chapterTable, hiddenChapterColumns])
   // A panel that can't hold the default columns first drops Released, then turns rows into two-line
   // list rows. A scrolling table squeezed Title to a few characters and pushed the switch and
   // actions out of view.
   const chapterLayout: ChapterLayout = isMobile ? 'list' : chapterLayoutByWidth
   const chapterRowsAsList = chapterLayout === 'list'
-  const chapterTableMinWidth = chapterTableMinWidthFor(chapterColumnWidths, chapterLayout)
+  const chapterTableMinWidth = chapterTableMinWidthFor(chapterColumnWidths, chapterLayout, hiddenChapterColumns)
   useLayoutEffect(() => {
     chapterColumnRoom.current.layout = chapterLayout
     chapterColumnRoom.current.widths = chapterColumnWidths
-  }, [chapterLayout, chapterColumnWidths])
+    chapterColumnRoom.current.hidden = hiddenChapterColumns
+  }, [chapterLayout, chapterColumnWidths, hiddenChapterColumns])
   const [spanLines, setSpanLines] = useState<
       { key: string; label: string; top: number; height: number; left: number; openStart: boolean; openEnded: boolean }[]
   >([])
@@ -1075,6 +1159,19 @@ function SeriesDetailBody() {
    */
   const [markerSlot, setMarkerSlot] = useState(0)
   const hasAnimeMarkers = animeMarkers.size > 0
+
+  const hasVolumes = useMemo(() => (chapters ?? []).some((c) => volumeOf(c) !== null), [chapters])
+  const groupingDefault = useMemo(() => mostHaveVolumes(chapters ?? []), [chapters])
+  const groupingChosen = chapterGroupingPref === 'auto' ? groupingDefault : chapterGroupingPref === 'on'
+  // Volumes follow chapter order, and an anime season is a run of chapter numbers, so either one
+  // being in play means the table stays flat.
+  const groupingBlockedBy = chapterSortedByRelease ? 'release' : animeSpans.length > 0 ? 'seasons' : null
+  const groupingActive = groupingChosen && hasVolumes && groupingBlockedBy === null
+  const setChapterGrouping = (on: boolean) => {
+    const next = on ? 'on' : 'off'
+    setChapterGroupingPref(next)
+    writeStored(CHAPTER_GROUPING_STORAGE_KEY, next)
+  }
 
   /**
    * The table's rows, with folded spans collapsed to one summary row each.
@@ -1116,8 +1213,20 @@ function SeriesDetailBody() {
       out.push({ kind: 'chapter', chapter: c })
     }
 
-    return { rows: out, visibleSpans }
-  }, [visibleChapters, animeSpans, foldedSpans])
+    if (groupingActive) {
+      const rows: RenderedRow[] = []
+      const volumeKeys: string[] = []
+      for (const group of groupByVolume(visibleChapters, chapterSortDescending)) {
+        const collapsed = collapsedVolumes.has(group.key)
+        volumeKeys.push(group.key)
+        rows.push({ kind: 'volume', group, collapsed })
+        if (!collapsed) for (const chapter of group.chapters) rows.push({ kind: 'chapter', chapter })
+      }
+      return { rows, visibleSpans, volumeKeys }
+    }
+
+    return { rows: out, visibleSpans, volumeKeys: NO_VOLUME_KEYS }
+  }, [visibleChapters, animeSpans, foldedSpans, groupingActive, collapsedVolumes, chapterSortDescending])
 
   /**
    * Highest chapter number the reader has finished, for the marker on the coverage bar. The DTO's
@@ -1137,39 +1246,57 @@ function SeriesDetailBody() {
       chapterPageSizePreference === 'all'
           ? Math.max(1, renderedRows.rows.length)
           : Number(chapterPageSizePreference)
-  const chapterPageCount = Math.max(1, Math.ceil(renderedRows.rows.length / chapterPageSize))
-  const chapterPageLabels = useMemo(
-      () =>
-          Array.from({ length: chapterPageCount }, (_, index) => {
-            const rows = renderedRows.rows.slice(index * chapterPageSize, (index + 1) * chapterPageSize)
-            const numbers = rows.flatMap((row) =>
-                row.kind === 'chapter'
-                    ? row.chapter.number === null
-                        ? []
-                        : [row.chapter.number]
-                    : row.rows.flatMap((chapter) => (chapter.number === null ? [] : [chapter.number])),
-            )
+  /**
+   * The rows split into pages. A grouped table never ends a page on a volume header whose chapters
+   * start the next one, and a page that opens inside a volume repeats that volume's header, so every
+   * page reads on its own.
+   */
+  const chapterPages = useMemo(() => {
+    const rows = renderedRows.rows
+    const pages: RenderedRow[][] = []
+    if (!groupingActive) {
+      for (let i = 0; i < rows.length; i += chapterPageSize) pages.push(rows.slice(i, i + chapterPageSize))
+      return pages
+    }
+    let current: RenderedRow[] = []
+    let header: RenderedRow | null = null
+    for (const row of rows) {
+      if (current.length >= chapterPageSize) {
+        const last = current[current.length - 1]
+        const carried = current.length > 1 && last.kind === 'volume' && !last.collapsed ? [current.pop()!] : []
+        pages.push(current)
+        current = header !== null && carried.length === 0 && row.kind === 'chapter' ? [header] : carried
+      }
+      if (row.kind === 'volume') header = row
+      current.push(row)
+    }
+    if (current.length > 0) pages.push(current)
+    return pages
+  }, [renderedRows.rows, chapterPageSize, groupingActive])
+  const chapterPageCount = Math.max(1, chapterPages.length)
+  const chapterPageLabels = useMemo(() => {
+    let offset = 0
+    return Array.from({ length: chapterPageCount }, (_, index) => {
+      const rows = chapterPages[index] ?? NO_ROWS
+      const start = offset + 1
+      offset += rows.length
+      const numbers = rows.flatMap((row) => {
+        const chapters =
+            row.kind === 'chapter' ? [row.chapter] : row.kind === 'span' ? row.rows : row.collapsed ? row.group.chapters : []
+        return chapters.flatMap((chapter) => (chapter.number === null ? [] : [chapter.number]))
+      })
 
-            if (numbers.length === 0) {
-              const start = index * chapterPageSize + 1
-              const end = index * chapterPageSize + rows.length
-              return t`Items ${start}–${end}`
-            }
-            const first = Math.min(...numbers)
-            const last = Math.max(...numbers)
-            return first === last ? String(first) : `${first}–${last}`
-          }),
-      [renderedRows.rows, chapterPageCount, chapterPageSize, t, i18n.locale],
-  )
+      if (numbers.length === 0) {
+        const end = offset
+        return t`Items ${start}–${end}`
+      }
+      const first = Math.min(...numbers)
+      const last = Math.max(...numbers)
+      return first === last ? String(first) : `${first}–${last}`
+    })
+  }, [chapterPages, chapterPageCount, t, i18n.locale])
   const currentChapterPage = Math.min(chapterPage, chapterPageCount)
-  const pagedRows = useMemo(
-      () =>
-          renderedRows.rows.slice(
-              (currentChapterPage - 1) * chapterPageSize,
-              currentChapterPage * chapterPageSize,
-          ),
-      [renderedRows.rows, currentChapterPage, chapterPageSize],
-  )
+  const pagedRows = chapterPages[currentChapterPage - 1] ?? NO_ROWS
   /**
    * What the table body actually renders. Deferred, and empty while another tab is open, so that
    * opening Chapters commits the tab with a skeleton at once and builds the rows in a background
@@ -1182,7 +1309,7 @@ function SeriesDetailBody() {
   useEffect(() => {
     setChapterPage(1)
     selectAnchor.current = null
-  }, [chapterFilter, chapterSort, chapterSearch, chapterPageSizePreference])
+  }, [chapterFilter, chapterSort, chapterSearch, chapterPageSizePreference, groupingActive])
 
   useEffect(() => {
     if (chapterPage > chapterPageCount) setChapterPage(chapterPageCount)
@@ -1192,7 +1319,13 @@ function SeriesDetailBody() {
   const rangeUnits = useMemo(
       () =>
           shownRows.map((r) =>
-              r.kind === 'chapter' ? { ids: [r.chapter.id] } : { ids: r.rows.map((c) => c.id) },
+              r.kind === 'chapter'
+                  ? { ids: [r.chapter.id] }
+                  : r.kind === 'span'
+                      ? { ids: r.rows.map((c) => c.id) }
+                      // An open header is just a divider in a range. A folded one stands in for
+                      // the chapters it hides, like a folded season.
+                      : { ids: r.collapsed ? r.group.chapters.map((c) => c.id) : [] },
           ),
       [shownRows],
   )
@@ -1251,8 +1384,8 @@ function SeriesDetailBody() {
         const startEl = markerRefs.current.get(`${span.key}:start`)
         const endEl = markerRefs.current.get(`${span.key}:end`)
         // Sorted descending, the end badge is the one on top.
-        const topEl = chapterSort === 'desc' ? endEl : startEl
-        const bottomEl = chapterSort === 'desc' ? startEl : endEl
+        const topEl = chapterSortDescending ? endEl : startEl
+        const bottomEl = chapterSortDescending ? startEl : endEl
         // Clip to the visible run, below the table header. Either badge can be on another
         // page (or hidden by a filter), including both on a middle page of a long season.
         const top = topEl
@@ -1318,7 +1451,7 @@ function SeriesDetailBody() {
       observer.disconnect()
       viewport?.removeEventListener('scroll', measure)
     }
-  }, [chapterTable, animeSpans, foldedSpans, shownRows, markerSlot, chapterSort, chapterColumnWidths, chapterLayout])
+  }, [chapterTable, animeSpans, foldedSpans, shownRows, markerSlot, chapterSortDescending, chapterColumnWidths, chapterLayout, hiddenChapterColumns])
 
   // On a phone only the toolbar stays pinned; the search scrolls away with the page, or the two
   // together cover a third of the screen.
@@ -1434,6 +1567,26 @@ function SeriesDetailBody() {
       setSelected(new Set(ids))
     },
     toggleSpanFold,
+  })
+
+  const volumeRowActions = useStableActions<ChapterVolumeRowActions>({
+    applyWanted,
+    applyReadState,
+    download: (chapterIds) => {
+      if (archived || chapterIds.length === 0) return
+      downloadChapters.mutate(chapterIds, {
+        onSuccess: (r) =>
+          r.queued > 0
+            ? notify.ok(plural(r.queued, { one: 'Queued # chapter', other: 'Queued # chapters' }))
+            : notify.info(r.error ?? staticT`Nothing to queue, those chapters are already on disk`),
+      })
+    },
+    selectChapters: (ids) => {
+      setSelectMode(true)
+      selectAnchor.current = null
+      setSelected(new Set(ids))
+    },
+    toggleVolume,
   })
 
   const nextChapter = useMemo(
@@ -3019,18 +3172,45 @@ function SeriesDetailBody() {
                             {chapterFilterChips}
                           </div>
                       )}
-                      <Tooltip label={chapterSort === 'asc' ? t`Oldest first` : t`Newest first`} withArrow>
+                      <Tooltip
+                          label={
+                            chapterSortedByRelease
+                                ? chapterSortDescending ? t`Newest release first` : t`Oldest release first`
+                                : chapterSortDescending ? t`Newest first` : t`Oldest first`
+                          }
+                          withArrow
+                      >
                         <ActionIcon
                             size="input-xs"
                             variant="default"
-                            aria-label={chapterSort === 'asc' ? t`Sort newest first` : t`Sort oldest first`}
+                            aria-label={
+                              chapterSortedByRelease
+                                  ? chapterSortDescending ? t`Sort oldest release first` : t`Sort newest release first`
+                                  : chapterSortDescending ? t`Sort oldest first` : t`Sort newest first`
+                            }
                             onClick={toggleChapterSort}
                         >
-                          {chapterSort === 'asc'
-                              ? <IconSortAscendingNumbers size={16} />
-                              : <IconSortDescendingNumbers size={16} />}
+                          {chapterSortedByRelease
+                              ? chapterSortDescending ? <IconSortDescending size={16} /> : <IconSortAscending size={16} />
+                              : chapterSortDescending
+                                  ? <IconSortDescendingNumbers size={16} />
+                                  : <IconSortAscendingNumbers size={16} />}
                         </ActionIcon>
                       </Tooltip>
+                      <ChapterViewMenu
+                          sortKey={chapterSortedByRelease ? 'released' : 'number'}
+                          onSortKey={chooseChapterSortKey}
+                          hidden={hiddenChapterColumns}
+                          onToggleColumn={toggleChapterColumn}
+                          grouping={{
+                            checked: groupingChosen && hasVolumes,
+                            blockedBy: hasVolumes ? groupingBlockedBy : 'none',
+                            onChange: setChapterGrouping,
+                            active: groupingActive,
+                            onCollapseAll: () => setCollapsedVolumes(new Set(renderedRows.volumeKeys)),
+                            onExpandAll: () => setCollapsedVolumes(new Set()),
+                          }}
+                      />
                       <Select
                           size="xs"
                           aria-label={t`Chapters per page`}
@@ -3218,7 +3398,11 @@ function SeriesDetailBody() {
             ) : (
                 <Stack gap="sm">
                   <Paper
-                      className={`series-detail-chapter-table chapter-rows-${chapterLayout}`}
+                      className={[
+                        'series-detail-chapter-table',
+                        `chapter-rows-${chapterLayout}`,
+                        ...[...hiddenChapterColumns].map((column) => `chapter-hide-${column}`),
+                      ].join(' ')}
                       withBorder
                       radius="lg"
                       style={{ overflow: 'hidden' }}
@@ -3279,6 +3463,23 @@ function SeriesDetailBody() {
                             ) : (
                                 <ChunkedRows rows={shownRows}>
                                   {(rows) => rows.map((row) => {
+                                  if (row.kind === 'volume') {
+                                    return (
+                                        <ChapterVolumeRow
+                                            key={`volume:${row.group.key}`}
+                                            group={row.group}
+                                            collapsed={row.collapsed}
+                                            readProgress={readProgress}
+                                            readTracking={readTracking}
+                                            canEditMetadata={canEditMetadata}
+                                            canDownload={canDownload}
+                                            downloadDisabled={archived}
+                                            wantedPending={setChaptersWanted.isPending}
+                                            downloadPending={downloadChapters.isPending}
+                                            actions={volumeRowActions}
+                                        />
+                                    )
+                                  }
                                   if (row.kind === 'span') {
                                     return (
                                         <ChapterSpanRow
