@@ -489,11 +489,7 @@ public class ReadingProgressService(
             return false;
         }
 
-        var highest = await db.Chapters
-            .Where(c => c.SeriesId == sid && c.Number != null)
-            .OrderByDescending(c => c.Number)
-            .Select(c => c.Number)
-            .FirstOrDefaultAsync(ct);
+        var highest = await SeriesFinishRule.HighestNumberAsync(db, sid, ct);
         return SeriesFinishRule.Closes(status, maxChapter, highest);
     }
 

@@ -215,15 +215,13 @@ public class ReaderController(
 
         // Whether finishing this chapter finishes the series, so the end screen can ask for the final
         // rating without waiting for the write that sets the flag. Only a completed series can end.
-        var seriesFinished = await RatingCheckpointService.FinishedAsync(db, currentUser.UserId, slice.Series.Id, ct);
+        // Finished is sticky, so a series whose status left Completed would still say so; only a completed one can end here.
+        var seriesFinished = slice.Series.Status == SeriesStatus.Completed &&
+            await RatingCheckpointService.FinishedAsync(db, currentUser.UserId, slice.Series.Id, ct);
         var finishesSeries = false;
         if (slice.Series.Status == SeriesStatus.Completed && slice.Chapter.Number is { } thisNumber)
         {
-            var highest = await db.Chapters
-                .Where(c => c.SeriesId == slice.Series.Id && c.Number != null)
-                .OrderByDescending(c => c.Number)
-                .Select(c => c.Number)
-                .FirstOrDefaultAsync(ct);
+            var highest = await SeriesFinishRule.HighestNumberAsync(db, slice.Series.Id, ct);
             finishesSeries = SeriesFinishRule.Closes(slice.Series.Status, (double)thisNumber, highest);
         }
 
@@ -290,7 +288,11 @@ public class ReaderController(
     [HttpGet("chapter/{id:int}/ending")]
     public async Task<IActionResult> Ending(int id, CancellationToken ct)
     {
-        var chapter = await db.Chapters.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id, ct);
+        var row = await db.Chapters.AsNoTracking()
+            .Where(c => c.Id == id)
+            .Select(c => new { Chapter = c, Completed = c.Series!.Status == SeriesStatus.Completed })
+            .FirstOrDefaultAsync(ct);
+        var chapter = row?.Chapter;
         if (chapter is null)
         {
             return this.NotFoundMessage(localizer, "error.reader.chapterNotReadable");
@@ -311,7 +313,7 @@ public class ReaderController(
             seriesReadCount = ending.ReadCount,
             seriesWantedCount = ending.WantedCount,
             completed = (await reader.ProgressAsync(id, ct))?.Completed ?? false,
-            finished = await RatingCheckpointService.FinishedAsync(db, currentUser.UserId, chapter.SeriesId, ct),
+            finished = row!.Completed && await RatingCheckpointService.FinishedAsync(db, currentUser.UserId, chapter.SeriesId, ct),
             rating = state?.Rating,
             provisionalRating = state?.ProvisionalRating,
             rateHintDismissed = state?.RateHintDismissedAt != null,
