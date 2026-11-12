@@ -207,6 +207,7 @@ const ICONS = {
   IconStethoscope: 'stethoscope',
   IconSun: 'sun',
   IconSunrise: 'sun-horizon',
+  IconTable: 'table',
   IconTag: 'tag',
   IconTags: 'tag-chevron',
   IconTarget: 'target',

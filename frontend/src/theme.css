@@ -11841,6 +11841,242 @@ body.reader-open {
   background: var(--surface-2);
   overflow: hidden;
 }
+/* --- Library table view ------------------------------------------------- */
+/* Rows are grids sharing one template (`--library-table-cols`, set by LibraryTable), so the
+   windowing hook can treat the body like the list: one fixed-height child per row. The frame
+   scrolls sideways when the picked columns are wider than the page. */
+.library-table {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--mantine-radius-lg);
+  background: var(--surface);
+}
+.library-table-head,
+.library-table-body {
+  min-width: var(--library-table-min);
+}
+.library-table-row {
+  display: grid;
+  grid-template-columns: var(--library-table-cols);
+  column-gap: 12px;
+  align-items: center;
+  height: 52px;
+  padding-inline: var(--mantine-spacing-sm);
+  border-bottom: 1px solid var(--hairline);
+}
+.library-table-head .library-table-row {
+  height: 40px;
+  background: var(--surface-2);
+  border-bottom-color: var(--border);
+}
+.library-table-body > .library-table-row:last-child {
+  border-bottom: none;
+}
+.library-table-body > .library-table-row:hover {
+  background: var(--surface-hover);
+}
+.library-table-row[data-selected] {
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+  box-shadow: inset 3px 0 0 var(--brand);
+}
+.library-table-row[data-offline='unavailable'] .library-table-thumb img {
+  opacity: 0.55;
+}
+.library-table-th {
+  min-width: 0;
+  font-size: var(--type-micro);
+  font-weight: var(--fw-semibold);
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.library-table-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.library-table-sort > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.library-table-sort:hover,
+.library-table-sort[data-active] {
+  color: var(--ink-hi);
+}
+.library-table-sort:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-2xs);
+}
+.library-table-td {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--type-meta);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.library-table-check {
+  position: static;
+  display: block;
+}
+.library-table-title {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  min-width: 0;
+  color: var(--ink-hi);
+  text-decoration: none;
+}
+.library-table-title:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-2xs);
+}
+.library-table-thumb {
+  width: 28px;
+  height: 42px;
+}
+.library-table-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.library-table-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-display);
+  font-weight: var(--fw-strong);
+  font-size: var(--type-body);
+}
+.library-table-title:hover .library-table-name {
+  text-decoration: underline;
+}
+.library-table-chips {
+  display: flex;
+  gap: 4px;
+  overflow: hidden;
+}
+.library-table-chips > .tag-chip {
+  flex-shrink: 0;
+}
+.library-table-chip-off {
+  color: var(--ink-3);
+}
+.library-table-empty {
+  color: var(--ink-4);
+}
+.library-table-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.library-table-score {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-hi);
+}
+.library-table-score > svg {
+  color: var(--rating);
+}
+.library-table-score[data-provisional] {
+  color: var(--ink-3);
+}
+.library-table-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.library-table-progress > .row-bar {
+  flex: 0 0 48px;
+}
+
+/* --- Library groups ------------------------------------------------------- */
+/* Group by status, tag, folder or type: a full-width header per group with its mark, name and
+   count, the whole row being the fold button. In the table it is a row of its own. */
+.library-groups:not([data-view='table']) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-sm);
+}
+.library-groups:not([data-view='table']) > .library-group:not(:first-child) {
+  margin-top: var(--mantine-spacing-md);
+}
+.library-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  width: 100%;
+  padding: 8px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  font: inherit;
+  color: var(--ink-hi);
+  text-align: start;
+  cursor: pointer;
+}
+.library-group-header:hover {
+  background: var(--surface-hover);
+}
+.library-group-header:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+  border-radius: var(--radius-2xs);
+}
+.library-group-chevron {
+  flex-shrink: 0;
+  color: var(--ink-3);
+  transition: transform var(--dur-fast) var(--ease);
+}
+.library-group-chevron[data-collapsed] {
+  transform: rotate(-90deg);
+}
+.library-group-dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--group-color);
+}
+.library-group-icon {
+  flex-shrink: 0;
+  color: var(--group-color);
+}
+.library-group-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--type-body);
+}
+.library-group-count {
+  flex-shrink: 0;
+  font-size: var(--type-micro);
+  color: var(--ink-4);
+}
+.library-group-row {
+  min-width: var(--library-table-min);
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--hairline);
+}
+.library-group-row .library-group-header {
+  padding-inline: var(--mantine-spacing-sm);
+  border-bottom: 0;
+}
+
 /* Density overrides */
 .series-row.compact {
   padding: 8px var(--mantine-spacing-sm);

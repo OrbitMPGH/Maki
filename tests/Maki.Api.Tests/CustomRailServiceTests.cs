@@ -1,6 +1,8 @@
 using Maki.Api.Services;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Sources;
+using Maki.Data.Identity;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Maki.Api.Tests;
@@ -78,5 +80,95 @@ public sealed class CustomRailServiceTests : IDisposable
         Assert.Equal(1, first);
         Assert.Equal(1, reused);
         Assert.Equal(2, other);
+    }
+
+    private CustomRailService SavedFilterService(int userId, bool allRootFolders = true)
+    {
+        var settings = new FakeAppSettings();
+        return new CustomRailService(
+            _db.NewContext(userId, allRootFolders), new TestCurrentUser(userId, allRootFolders: allRootFolders),
+            null!, null!, null!, null!, null!, null,
+            new SourceAvailability(settings, new SourceRegistry([])), settings);
+    }
+
+    private int SaveLibraryFilter(int userId, string spec)
+    {
+        using var db = _db.NewContext();
+        var filter = new SavedFilter
+        {
+            UserId = userId, Name = "Filter", Scope = SavedFilter.LibraryScope, Spec = spec, Created = DateTime.UtcNow,
+        };
+        db.SavedFilters.Add(filter);
+        db.SaveChanges();
+        return filter.Id;
+    }
+
+    private static CustomRailSpec FromFilter(int id) => new(Source: CustomRailSources.Library, LibraryFilterId: id);
+
+    [Fact]
+    public async Task A_saved_library_filter_rail_shows_what_the_filter_shows_in_its_sort()
+    {
+        var alice = _db.SeedUser("alice");
+        var berserk = _db.SeedSeries("Berserk", configure: s => s.Genres = ["Action"]);
+        _db.SeedSeries("Yotsuba", configure: s => s.Genres = ["Comedy"]);
+        var claymore = _db.SeedSeries("Claymore", configure: s => s.Genres = ["Action"]);
+        var filter = SaveLibraryFilter(alice, """{"genres":["Action"],"sort":"title","status":"all"}""");
+
+        var items = await SavedFilterService(alice).ItemsAsync(FromFilter(filter), 20);
+
+        Assert.Equal([berserk, claymore], items.SeriesIds);
+        Assert.Null(items.Unavailable);
+        Assert.Equal(2, await SavedFilterService(alice).CountAsync(FromFilter(filter)));
+    }
+
+    [Fact]
+    public async Task A_deleted_or_someone_elses_filter_says_so_instead_of_showing_everything()
+    {
+        var alice = _db.SeedUser("alice");
+        var bob = _db.SeedUser("bob");
+        _db.SeedSeries("Berserk");
+        var bobs = SaveLibraryFilter(bob, """{"status":"all"}""");
+
+        var foreign = await SavedFilterService(alice).ItemsAsync(FromFilter(bobs), 20);
+        var missing = await SavedFilterService(alice).ItemsAsync(FromFilter(bobs + 100), 20);
+
+        Assert.Equal(CustomRailService.FilterDeleted, foreign.Unavailable);
+        Assert.Empty(foreign.SeriesIds);
+        Assert.Equal(CustomRailService.FilterDeleted, missing.Unavailable);
+        Assert.Null(await SavedFilterService(alice).CountAsync(FromFilter(bobs)));
+    }
+
+    [Fact]
+    public async Task A_saved_filter_rail_only_lists_root_folders_the_caller_can_see()
+    {
+        var reader = _db.SeedUser("reader", Maki.Core.Security.MakiPermission.None, allRootFolders: false);
+        var granted = _db.SeedSeries("Granted");
+        _db.SeedSeries("Hidden");
+        var archived = _db.SeedSeries("Archived", configure: s => s.ArchivedAt = DateTime.UtcNow);
+        using (var db = _db.NewContext())
+        {
+            foreach (var id in new[] { granted, archived })
+            {
+                db.UserRootFolders.Add(new UserRootFolder { UserId = reader, RootFolderId = db.Series.Single(s => s.Id == id).RootFolderId });
+            }
+
+            db.SaveChanges();
+        }
+
+        var filter = SaveLibraryFilter(reader, "{}");
+
+        var items = await SavedFilterService(reader, allRootFolders: false).ItemsAsync(FromFilter(filter), 20);
+
+        Assert.Equal([granted], items.SeriesIds);
+    }
+
+    [Fact]
+    public void Only_a_library_rail_keeps_a_saved_filter_reference()
+    {
+        Assert.Equal(5, new CustomRailSpec(Source: CustomRailSources.Library, LibraryFilterId: 5).Normalize().LibraryFilterId);
+        Assert.Null(new CustomRailSpec(Source: CustomRailSources.Catalogue, LibraryFilterId: 5).Normalize().LibraryFilterId);
+        Assert.Null(new CustomRailSpec(Source: CustomRailSources.Library, LibraryFilterId: 0).Normalize().LibraryFilterId);
+        var parsed = CustomRailSpec.Parse(CustomRailSpec.Serialize(new CustomRailSpec(Source: CustomRailSources.Library, LibraryFilterId: 9)));
+        Assert.Equal(9, parsed.LibraryFilterId);
     }
 }

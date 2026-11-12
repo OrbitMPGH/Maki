@@ -122,7 +122,9 @@ public record LibraryFilterSpec(
     /// <summary>"readCleanup" and/or "pageConversion": series with their own setting rather than the default.</summary>
     List<string>? Overrides = null,
     /// <summary>Only series added within this many days; null for "any time".</summary>
-    int? AddedWithinDays = null);
+    int? AddedWithinDays = null,
+    /// <summary>"none" | "status" | "tag" | "rootFolder" | "type": how the Library groups what it shows. Not a filter.</summary>
+    string GroupBy = "none");
 
 public record SavedFilterDto(int Id, string Name, LibraryFilterSpec Spec, int SortOrder, bool IsDefault = false);
 

@@ -124,6 +124,135 @@ export const ListView: Story = {
   },
 }
 
+export const TableView: Story = {
+  beforeEach: () => seedLibraryPrefs({ view: 'table' }),
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByRole('table', { name: 'Library' })
+    await waitFor(() => expect(canvasElement.querySelectorAll('.library-table-body > [role="row"]')).toHaveLength(14))
+    await waitFor(() => expect(canvas.getAllByRole('columnheader').map((h) => h.textContent)).toEqual([
+      'Title', 'Status', 'Chapters', 'Unread', 'Last read', 'Latest release', 'Size on disk', 'Sources',
+    ]))
+  },
+}
+
+/** A header with a Library sort sets it; clicking it again reverses it. Sources has no sort and is not a button. */
+export const TableHeaderSorts: Story = {
+  beforeEach: () => seedLibraryPrefs({ view: 'table' }),
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('table', { name: 'Library' })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Title' }))
+    const title = () => canvas.getAllByRole('columnheader').find((h) => h.textContent === 'Title')
+    await waitFor(() => expect(title()).toHaveAttribute('aria-sort', 'ascending'))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Title' }))
+    await waitFor(() => expect(title()).toHaveAttribute('aria-sort', 'descending'))
+    expect(canvas.queryByRole('button', { name: 'Sources' })).toBeNull()
+  },
+}
+
+export const TableColumnPicker: Story = {
+  beforeEach: () => seedLibraryPrefs({ view: 'table' }),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('table', { name: 'Library' })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Columns' }))
+    const dialog = await body(canvasElement).findByRole('dialog', { name: 'Columns' })
+    await userEvent.click(await within(dialog).findByRole('checkbox', { name: 'Tags' }))
+    await userEvent.click(await within(dialog).findByRole('checkbox', { name: 'Size on disk' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Move Tags up' }))
+    await waitFor(() =>
+      expect(JSON.parse(localStorage.getItem('library-table-columns') ?? '[]')).toEqual([
+        'status', 'chapters', 'unread', 'lastRead', 'released', 'tags', 'sources',
+      ]),
+    )
+    await waitFor(() => expect(canvas.getAllByRole('columnheader').at(-2)?.textContent).toBe('Tags'))
+  },
+}
+
+export const TableSelectRangeWithShift: Story = {
+  beforeEach: () => seedLibraryPrefs({ view: 'table' }),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('table', { name: 'Library' })
+    await userEvent.click(await canvas.findByRole('button', { name: /^select$/i }))
+    const rows = () => [...canvasElement.querySelectorAll<HTMLElement>('.library-table-body > [role="row"]')]
+    await waitFor(() => expect(rows().length).toBe(14))
+    await userEvent.click(rows()[1].querySelector('[data-col="status"]')!)
+    await expect(await canvas.findByText('1 selected')).toBeVisible()
+    await userEvent.keyboard('{Shift>}')
+    await userEvent.click(rows()[4].querySelector('[data-col="status"]')!)
+    await userEvent.keyboard('{/Shift}')
+    await expect(await canvas.findByText('4 selected')).toBeVisible()
+    await waitFor(() => expect(rows()[0]).not.toHaveAttribute('data-selected'))
+  },
+}
+
+export const TableViewFromTheLink: Story = {
+  decorators: [
+    (Story) => (
+      <>
+        <LocationProbe />
+        <Story />
+      </>
+    ),
+  ],
+  parameters: { router: { initialEntries: ['/library?view=table'] } },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('table', { name: 'Library' })
+    // The link does not change what this browser remembers.
+    expect(localStorage.getItem('library-view')).toBeNull()
+    await userEvent.click(await canvas.findByRole('radio', { name: 'List view' }))
+    const probe = () => canvasElement.ownerDocument.querySelector('[data-testid="location"]')
+    await waitFor(() => expect(probe()?.textContent).toBe('?view=list'))
+  },
+}
+
+/** Grouped by status from a link: one header per status, and a fold is remembered by the browser. */
+export const GroupedByStatus: Story = {
+  parameters: { router: { initialEntries: ['/library?groupBy=status'] } },
+  play: async ({ canvasElement, userEvent }) => {
+    await waitFor(() => expect(canvasElement.querySelector('.library-groups')).not.toBeNull())
+    const groups = within(canvasElement.querySelector<HTMLElement>('.library-groups')!)
+    const ongoing = await groups.findByRole('button', { name: /^Ongoing/ })
+    await waitFor(() => expect(ongoing).toHaveAttribute('aria-expanded', 'true'))
+    const cards = () => canvasElement.querySelectorAll('.cover-card').length
+    await waitFor(() => expect(cards()).toBe(14))
+    await userEvent.click(ongoing)
+    await waitFor(() => expect(ongoing).toHaveAttribute('aria-expanded', 'false'))
+    await waitFor(() => expect(cards()).toBeLessThan(14))
+    await waitFor(() => expect(JSON.parse(localStorage.getItem('library-collapsed-groups') ?? '[]')).toEqual(['status:Ongoing']))
+  },
+}
+
+/** By tag, a series with two tags is listed under both, and untagged series close the list. */
+export const GroupedByTagInTable: Story = {
+  beforeEach: () => seedLibraryPrefs({ view: 'table', page: { 'group-by': 'tag' } }),
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByRole('table', { name: 'Library' })
+    const names = () => [...canvasElement.querySelectorAll('.library-group-name')].map((n) => n.textContent)
+    await waitFor(() =>
+      expect(names()).toEqual(['Comfort reads', 'Favourites', 'Shared with Sam', 'To re-read', 'Waiting for volume', 'No tag']),
+    )
+    await waitFor(() => expect(canvas.getAllByRole('link', { name: /Lanterns Over Kasumi/ })).toHaveLength(2))
+  },
+}
+
+export const GroupByWritesTheLink: Story = {
+  decorators: [
+    (Story) => (
+      <>
+        <LocationProbe />
+        <Story />
+      </>
+    ),
+  ],
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })
+    await userEvent.click(await canvas.findByRole('combobox', { name: 'Group by' }))
+    await userEvent.click(await body(canvasElement).findByRole('option', { name: 'Type' }))
+    const probe = () => canvasElement.ownerDocument.querySelector('[data-testid="location"]')
+    await waitFor(() => expect(probe()?.textContent).toContain('groupBy=type'))
+    await expect(await canvas.findByRole('button', { name: /^Manga/ })).toBeVisible()
+  },
+}
+
 export const DensityChoiceIsKept: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await canvas.findByRole('link', { name: /Lanterns Over Kasumi/ })

@@ -133,6 +133,50 @@ public sealed class SeriesListSortDatesTests : IDisposable
         Assert.Null(list.Single(s => s.Id == unlinked).CommunityRating);
     }
 
+    [Fact]
+    public async Task Size_on_disk_sums_the_files_and_is_null_without_any()
+    {
+        var alice = _db.SeedUser("alice");
+        var withFiles = _db.SeedSeries("With files");
+        var empty = _db.SeedSeries("Empty");
+        using (var seed = _db.NewContext())
+        {
+            seed.ChapterFiles.AddRange(
+                new ChapterFile { SeriesId = withFiles, RelativePath = "a", SourceName = "x", Size = 1_000, DateAdded = Older },
+                new ChapterFile { SeriesId = withFiles, RelativePath = "b", SourceName = "x", Size = 2_500, DateAdded = Newer });
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext(alice);
+        var list = Listed(await Controller(db).List(default));
+
+        Assert.Equal(3_500, list.Single(s => s.Id == withFiles).SizeOnDisk);
+        Assert.Null(list.Single(s => s.Id == empty).SizeOnDisk);
+    }
+
+    [Fact]
+    public async Task Next_check_is_set_only_for_series_the_refresh_will_sync()
+    {
+        var alice = _db.SeedUser("alice");
+        var planned = _db.SeedSeries("Planned", configure: s => s.NextCheckAt = Newer);
+        var due = _db.SeedSeries("Due");
+        var unlinked = _db.SeedSeries("Unlinked", configure: s => s.NextCheckAt = Newer);
+        using (var seed = _db.NewContext())
+        {
+            seed.SourceMappings.AddRange(
+                new SourceMapping { SeriesId = planned, SourceName = "src", SourceSeriesId = "1", Enabled = true },
+                new SourceMapping { SeriesId = due, SourceName = "src", SourceSeriesId = "2", Enabled = true });
+            seed.SaveChanges();
+        }
+
+        using var db = _db.NewContext(alice);
+        var list = Listed(await Controller(db).List(default));
+
+        Assert.Equal(Newer, list.Single(s => s.Id == planned).NextCheckAt);
+        Assert.Equal(new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc), list.Single(s => s.Id == due).NextCheckAt);
+        Assert.Null(list.Single(s => s.Id == unlinked).NextCheckAt);
+    }
+
     private sealed class RatedStore(Dictionary<long, double> ratings) : MangaBakaLocalStore(
         new MangaBakaDumpOptions("", ""), NullLogger<MangaBakaLocalStore>.Instance)
     {
