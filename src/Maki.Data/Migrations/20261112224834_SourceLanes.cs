@@ -6,11 +6,25 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Maki.Data.Migrations
 {
     /// <inheritdoc />
-    public partial class SourceNearMisses : Migration
+    public partial class SourceLanes : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<string>(
+                name: "BlockedGroups",
+                table: "Series",
+                type: "TEXT",
+                nullable: false,
+                defaultValue: "");
+
+            migrationBuilder.AddColumn<string>(
+                name: "PreferredGroups",
+                table: "Series",
+                type: "TEXT",
+                nullable: false,
+                defaultValue: "");
+
             migrationBuilder.CreateTable(
                 name: "SourceNearMisses",
                 columns: table => new
@@ -53,6 +67,14 @@ namespace Maki.Data.Migrations
         {
             migrationBuilder.DropTable(
                 name: "SourceNearMisses");
+
+            migrationBuilder.DropColumn(
+                name: "BlockedGroups",
+                table: "Series");
+
+            migrationBuilder.DropColumn(
+                name: "PreferredGroups",
+                table: "Series");
         }
     }
 }

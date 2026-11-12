@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    [Migration("20261112221219_SourceNearMisses")]
-    partial class SourceNearMisses
+    [Migration("20261112224834_SourceLanes")]
+    partial class SourceLanes
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -2104,6 +2104,10 @@ namespace Maki.Data.Migrations
                     b.Property<string>("AuthorStory")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("BlockedGroups")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ContentRating")
                         .HasColumnType("TEXT");
 
@@ -2185,6 +2189,13 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("PendingImportLink")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("PreferredGroups")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("PrepareChapters")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Publisher")

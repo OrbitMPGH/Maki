@@ -2101,6 +2101,10 @@ namespace Maki.Data.Migrations
                     b.Property<string>("AuthorStory")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("BlockedGroups")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ContentRating")
                         .HasColumnType("TEXT");
 
@@ -2183,6 +2187,10 @@ namespace Maki.Data.Migrations
 
                     b.Property<int>("PendingImportLink")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("PreferredGroups")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<int?>("PrepareChapters")
                         .HasColumnType("INTEGER");
