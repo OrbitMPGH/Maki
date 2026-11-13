@@ -372,7 +372,7 @@ internal static class LibraryListRows
 
     internal sealed record ChapterTallies(
         int SeriesId, int Wanted, int WithFile, int Known, int Removed, int Specials, int SpecialsHad, double? HighestMain,
-        double? HighestKeptMain = null, int SwitchedOff = 0, int SwitchedOffSpecials = 0);
+        double? HighestKeptMain = null, int SwitchedOff = 0, int SwitchedOffSpecials = 0, double? HighestSpecial = null);
 
     /// <summary>
     /// The chapter counts every series surface reports, keyed by series id. The list and detail
@@ -387,7 +387,7 @@ internal static class LibraryListRows
     /// <para>
     /// <c>SwitchedOff</c> is the complement: Wanted off, no file, never had one.
     /// <c>HighestKeptMain</c> leaves those out, so switching off the last chapter lowers the
-    /// progress total too.
+    /// progress total too. <c>HighestSpecial</c> is the highest decimal chapter, switched off or not.
     /// </para>
     /// <para>
     /// A chapter in <paramref name="reads"/> is never switched off: it moves to <c>Wanted</c>, so a
@@ -418,6 +418,19 @@ internal static class LibraryListRows
                 g.Count(c => !c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null &&
                              c.Number != null && c.Number != (decimal)(long)c.Number)))
             .ToDictionaryAsync(x => x.SeriesId, ct);
+
+        // Read apart and grouped here: Number is a decimal stored as REAL, which SQLite can't aggregate.
+        var specials = await chapters
+            .Where(c => c.Number != null && c.Number != (decimal)(long)c.Number)
+            .Select(c => new { c.SeriesId, c.Number })
+            .ToListAsync(ct);
+        foreach (var group in specials.GroupBy(c => c.SeriesId))
+        {
+            if (tallies.TryGetValue(group.Key, out var t))
+            {
+                tallies[group.Key] = t with { HighestSpecial = (double)group.Max(c => c.Number!.Value) };
+            }
+        }
 
         var readOff = await chapters
             .Where(c => !c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null &&
@@ -467,7 +480,8 @@ internal static class LibraryListRows
             counts?.Specials ?? 0, counts?.SpecialsHad ?? 0, counts?.HighestMain,
             read, readSpecials, unmonitorSpecials,
             new SeriesProgressScope.SwitchedOff(
-                counts?.SwitchedOff ?? 0, counts?.SwitchedOffSpecials ?? 0, counts?.HighestKeptMain));
+                counts?.SwitchedOff ?? 0, counts?.SwitchedOffSpecials ?? 0, counts?.HighestKeptMain),
+            counts?.HighestSpecial);
 
     internal static async Task<bool> UnmonitorSpecialsAsync(IAppSettings appSettings, CancellationToken ct) =>
         await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true";

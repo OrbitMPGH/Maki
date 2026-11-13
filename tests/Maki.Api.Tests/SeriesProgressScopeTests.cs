@@ -137,6 +137,34 @@ public sealed class SeriesProgressScopeTests : IDisposable
         Assert.Equal(26, SeriesProgressScope.Compute(Series(29), 29, 29, 3, 3, 26, 29, 3, true).Total);
     }
 
+    // Chapters 0 to 53 and twelve specials up to 53.8, against 63. Chapter 0 and the specials are off.
+    [Fact]
+    public void Side_stories_after_the_ending_that_MangaBaka_counts_leave_the_total_with_their_switch()
+    {
+        var series = Series(63);
+        series.Status = SeriesStatus.Completed;
+        var t = SeriesProgressScope.Compute(series, known: 66, had: 53, specials: 12, specialsHad: 0,
+            highestMain: 53, read: 53, readSpecials: 0, unmonitorSpecials: false,
+            new SeriesProgressScope.SwitchedOff(13, 12, 53), highestSpecial: 53.8);
+
+        Assert.Equal((53, 53, 13), (t.Total, t.Read, t.Skipped));
+
+        series.Status = SeriesStatus.Ongoing;
+        Assert.Equal(63, SeriesProgressScope.Compute(series, 66, 53, 12, 0, 53, 53, 0, false,
+            new SeriesProgressScope.SwitchedOff(13, 12, 53), 53.8).Total);
+    }
+
+    [Fact]
+    public void Specials_inside_the_story_do_not_stand_in_for_missing_final_chapters()
+    {
+        var series = Series(100);
+        series.Status = SeriesStatus.Completed;
+        var t = SeriesProgressScope.Compute(series, known: 105, had: 105, specials: 15, specialsHad: 15,
+            highestMain: 90, read: null, readSpecials: 0, unmonitorSpecials: true, highestSpecial: 48.5);
+
+        Assert.Equal(100, t.Total);
+    }
+
     [Fact]
     public void A_listing_short_of_the_MangaBaka_total_keeps_it_whole()
     {
