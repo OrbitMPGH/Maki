@@ -216,6 +216,9 @@ namespace Maki.Data.Migrations
                     b.Property<int>("ChapterId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("BankSeen")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("CandidatesJson")
                         .HasColumnType("TEXT");
 
@@ -246,6 +249,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("OcrVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PageCount")
                         .HasColumnType("INTEGER");
 
                     b.Property<bool?>("ProbeHit")
@@ -543,6 +549,49 @@ namespace Maki.Data.Migrations
                     b.HasIndex("SourceMappingId");
 
                     b.ToTable("ChapterSourceLinks");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.CreditBankEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Hits")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("Signature")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<int>("SignatureFirst")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("SourceChapterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("Strip")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<bool>("Tail")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeriesId");
+
+                    b.HasIndex("SourceChapterId");
+
+                    b.HasIndex("Tail");
+
+                    b.ToTable("CreditBank", (string)null);
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.DownloadQueueItem", b =>
@@ -3735,6 +3784,20 @@ namespace Maki.Data.Migrations
                     b.Navigation("Chapter");
 
                     b.Navigation("SourceMapping");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.CreditBankEntry", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Maki.Core.Entities.Chapter", null)
+                        .WithMany()
+                        .HasForeignKey("SourceChapterId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.DownloadQueueItem", b =>

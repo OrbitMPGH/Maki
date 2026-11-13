@@ -88,11 +88,17 @@ public sealed class CreditStore(IServiceScopeFactory scopes, IPageTextReader tex
 
     /// <summary>Stores what a search found for <paramref name="slice"/>.</summary>
     /// <param name="probeHit">For a volume's chapter, what the probe of its file read; kept so the next pass need not probe again.</param>
+    /// <param name="bankSeen">The newest bank entry the search compared against; null keeps what the row had.</param>
     public Task SaveAsync(ReaderService.ChapterSlice slice, string referencesKey, CreditPages found, CreditJudge judge,
-        IReadOnlyList<JudgedCandidate> judged, CancellationToken ct, bool? probeHit = null) =>
+        IReadOnlyList<JudgedCandidate> judged, CancellationToken ct, bool? probeHit = null, int? bankSeen = null) =>
         UpsertAsync(slice, row =>
         {
             row.ProbeHit = probeHit;
+            if (bankSeen is { } seen)
+            {
+                row.BankSeen = seen;
+            }
+
             row.ReferencesKey = referencesKey;
             row.HeadPages = found.HeadPages;
             row.HeadOffset = found.HeadOffset;
@@ -130,6 +136,29 @@ public sealed class CreditStore(IServiceScopeFactory scopes, IPageTextReader tex
             row.TailPages = 0;
             row.Failed = true;
         }, ct);
+
+    /// <summary>Records that a chapter was compared against every bank entry up to <paramref name="bankSeen"/>.</summary>
+    public async Task MarkBankSeenAsync(int chapterId, int bankSeen, CancellationToken ct)
+    {
+        using var scope = scopes.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        await db.ChapterCredits.IgnoreQueryFilters()
+            .Where(c => c.ChapterId == chapterId && c.BankSeen < bankSeen)
+            .ExecuteUpdateAsync(u => u.SetProperty(c => c.BankSeen, bankSeen), ct);
+    }
+
+    /// <summary>
+    /// Sends a chapter back to the scan for a full search (a new bank entry may match it): its row stops
+    /// being current, so the reader searches too until the scan gets to it.
+    /// </summary>
+    public async Task RequeueAsync(int chapterId, CancellationToken ct)
+    {
+        using var scope = scopes.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        await db.ChapterCredits.IgnoreQueryFilters()
+            .Where(c => c.ChapterId == chapterId)
+            .ExecuteUpdateAsync(u => u.SetProperty(c => c.DetectorVersion, 0), ct);
+    }
 
     /// <summary>Records what the probe of a volume file read on a row the search already wrote.</summary>
     public async Task SetProbeAsync(int chapterId, bool probeHit, CancellationToken ct)
@@ -215,6 +244,7 @@ public sealed class CreditStore(IServiceScopeFactory scopes, IPageTextReader tex
             row.FileSize = slice.ArchiveSize;
             // A PDF has no edge key: its row only tells the scan it was seen, and is never served.
             row.EdgeKey = slice.EdgeKey ?? string.Empty;
+            row.PageCount = slice.PageCount;
             row.DetectorVersion = CreditDetector.Version;
             row.TextVersion = CreditText.Version;
             row.OcrVersion = PageTextReader.Version;

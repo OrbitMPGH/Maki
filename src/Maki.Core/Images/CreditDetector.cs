@@ -394,6 +394,106 @@ public static class CreditDetector
     }
 
     /// <summary>
+    /// Candidates at one edge of <paramref name="chapter"/> found against one credit region already
+    /// accepted elsewhere (a bank entry: that chapter's strip of the same edge), as if two neighbours
+    /// repeated it. A credit pasted into one chapter of a series, which nothing nearby repeats, is found
+    /// this way when the same group's notice was seen in any other chapter. The text judge still
+    /// decides: a bank match alone also catches blank margins.
+    /// </summary>
+    public static IReadOnlyList<CreditCandidate> BankCandidates(int pageCount, Edges chapter, Edge entry, bool tail)
+    {
+        var pair = tail
+            ? new Edges(Edge.Of([], tail: false), entry)
+            : new Edges(entry, Edge.Of([], tail: true));
+        var found = Candidates(pageCount, chapter, [pair, pair]);
+        return tail ? found.Tail : found.Head;
+    }
+
+    /// <summary>Rows a <see cref="BankSignature"/> holds, from the first informative one.</summary>
+    public const int SignatureRows = 12;
+
+    /// <summary>A row whose grey values spread wider than this (standard deviation) shows something.</summary>
+    private const double SignatureSpread = 12;
+
+    /// <summary>
+    /// The first informative rows at an edge, for <see cref="Alike"/>: a cheap test run before
+    /// <see cref="BankCandidates"/>, which on its own would cost seconds per chapter against a few
+    /// hundred entries. Null for an edge with too few rows to say anything.
+    /// </summary>
+    public static BankSignature? SignatureOf(Edge edge)
+    {
+        var rows = edge.Rows;
+        for (var r = 0; r + SignatureRows <= edge.RowCount; r++)
+        {
+            if (Spread(rows.Slice(r * Width, Width)) > SignatureSpread)
+            {
+                return new BankSignature(r, rows.Slice(r * Width, SignatureRows * Width).ToArray());
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Whether two edges may show the same thing: their first informative rows start within a few rows
+    /// of each other and, at some shift of up to two rows, at most three of the twelve differ by more
+    /// than a mean of 24 grey levels. Measured on the 4,942-chapter scan (2026-11-13, git-ignored
+    /// <c>research/credit-pages/2026-11-13-lone-credits</c>): 0.7% of pairs pass, and 33 of 34 credits
+    /// the full match found still do.
+    /// </summary>
+    public static bool Alike(BankSignature a, BankSignature b)
+    {
+        if (Math.Abs(a.First - b.First) > 6)
+        {
+            return false;
+        }
+
+        for (var shift = -2; shift <= 2; shift++)
+        {
+            var bad = 0;
+            for (var i = 0; i < SignatureRows && bad <= 3; i++)
+            {
+                var j = i + shift;
+                if (j < 0 || j >= SignatureRows)
+                {
+                    continue;
+                }
+
+                var d = 0;
+                for (var x = 0; x < Width; x++)
+                {
+                    d += Math.Abs(a.Rows[i * Width + x] - b.Rows[j * Width + x]);
+                }
+
+                if (d > 24 * Width)
+                {
+                    bad++;
+                }
+            }
+
+            if (bad <= 3)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static double Spread(ReadOnlySpan<byte> row)
+    {
+        double sum = 0, squares = 0;
+        foreach (var v in row)
+        {
+            sum += v;
+            squares += v * (double)v;
+        }
+
+        var mean = sum / row.Length;
+        return Math.Sqrt(Math.Max(0, squares / row.Length - mean * mean));
+    }
+
+    /// <summary>
     /// What to hide once <paramref name="headAccepted"/> candidates from the head and
     /// <paramref name="tailAccepted"/> from the tail are known to be a scanlator's: the run from each
     /// edge stops at the first that is not, and the caps apply after.
@@ -768,3 +868,9 @@ public static class CreditDetector
         }
     }
 }
+
+/// <summary>
+/// An edge's first informative rows (<see cref="CreditDetector.SignatureRows"/> of
+/// <see cref="CreditDetector.Width"/> grey bytes) and where they start, for <see cref="CreditDetector.Alike"/>.
+/// </summary>
+public sealed record BankSignature(int First, byte[] Rows);
