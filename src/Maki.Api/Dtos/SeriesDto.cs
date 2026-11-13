@@ -433,7 +433,7 @@ public record SeriesDto(
         queuedCount,
         downloadingCount,
         s.HasAnime,
-        s.AnimeName,
+        string.IsNullOrWhiteSpace(s.AnimeName) ? null : s.AnimeName,
         s.AnimeStart,
         s.AnimeEnd,
         readChapterCount,
