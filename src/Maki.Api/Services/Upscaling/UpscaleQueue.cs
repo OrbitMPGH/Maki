@@ -23,7 +23,8 @@ public enum UpscaleJobState
 }
 
 public sealed record UpscaleQueueSnapshot(
-    int Pending, int Working, IReadOnlyDictionary<UpscaleWorkKey, UpscaleJobState> States, int Background = 0);
+    int Pending, int Working, IReadOnlyDictionary<UpscaleWorkKey, UpscaleJobState> States, int Background = 0,
+    int BackgroundWorking = 0);
 
 public sealed class UpscaleJob(UpscaleWorkKey key, ReaderService.PageSlice slice)
 {
@@ -645,7 +646,8 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
         {
             var states = _jobs.ToDictionary(j => j.Key, j => j.Value.Working ? UpscaleJobState.Working : UpscaleJobState.Queued);
             var working = states.Values.Count(s => s == UpscaleJobState.Working);
-            return new UpscaleQueueSnapshot(states.Count - working, working, states, _background.Count);
+            var backgroundWorking = _jobs.Values.Count(j => j.Working && j.Background && j.Waiters.Count == 0);
+            return new UpscaleQueueSnapshot(states.Count - working, working, states, _background.Count, backgroundWorking);
         }
     }
 

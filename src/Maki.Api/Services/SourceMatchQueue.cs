@@ -45,6 +45,9 @@ public class SourceMatchQueue
 
     internal void EndMatch(int seriesId) => matching.TryRemove(seriesId, out _);
 
+    /// <summary>How many series are being matched right now.</summary>
+    public int Matching => matching.Count;
+
     /// <summary>The run in progress for the series, or a finished task when there is none.</summary>
     public Task MatchInProgress(int seriesId) =>
         matching.TryGetValue(seriesId, out var run) ? run : Task.CompletedTask;

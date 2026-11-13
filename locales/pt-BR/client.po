@@ -841,9 +841,18 @@ msgid "{active, plural, one {# download in progress} other {# downloads in progr
 msgstr "{active, plural, one {# download em andamento} many {# downloads em andamento} other {# downloads em andamento}}"
 
 #: src/components/ActivityButton.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{active, plural, one {# in progress} other {# in progress}}"
 msgstr "{active, plural, one {# em andamento} many {# em andamento} other {# em andamento}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{active, plural, one {# page in progress} other {# pages in progress}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{active, plural, one {# series} other {# series}}"
+msgstr ""
 
 #: src/components/ActivityButton.tsx
 #, fuzzy
@@ -1178,6 +1187,10 @@ msgstr "{convertedFiles, plural, one {# arquivo convertido até agora, {saved} e
 msgid "{copyCount, plural, one {# copy} other {# copies}}"
 msgstr "{copyCount, plural, one {# cópia} many {# cópias} other {# cópias}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{cores, plural, one {of # core} other {of # cores}}"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "{count, plural, =2 {Both trackers} other {All # trackers}}"
@@ -1438,6 +1451,10 @@ msgstr "{damagedCount, plural, one {Baixar uma cópia nova} many {Baixar # cópi
 msgid "{days, plural, one {Deleted files wait here for # day, then they're gone for good.} other {Deleted files wait here for # days, then they're gone for good.}}"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "{days, plural, one {Every day} other {Every # days}}"
+msgstr ""
+
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "{days, plural, one {The originals ({trash}) wait in the upgrade trash for # day, then are deleted.} other {The originals ({trash}) wait in the upgrade trash for # days, then are deleted.}}"
@@ -1492,6 +1509,10 @@ msgstr "{deletingSeriesCount, plural, one {Ela é removida de # série. Isso nã
 msgid "{diff, plural, other {# behind}}"
 msgstr "{diff, plural, one {# atrás} many {# atrás} other {# atrás}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{done, plural, one {# file done this pass} other {# files done this pass}}"
+msgstr ""
+
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "{done} of {probes} chapter samples. The order below updates once it finishes."
@@ -1506,6 +1527,14 @@ msgstr "{done} de {total}"
 #, fuzzy
 msgid "{done} of {total} matched before this stopped. Retry to carry on, or review what matched so far. The rest will show as not found, and you can match them by hand."
 msgstr "{done} de {total} correspondidos antes da parada. Tente de novo para continuar, ou revise o que já foi correspondido. O restante aparecerá como não encontrado, e você poderá vinculá-los manualmente."
+
+#: src/pages/HealthPage.tsx
+msgid "{doneText} of {totalText}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{doneText} of {totalText} series"
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -1780,6 +1809,10 @@ msgstr "{hours, plural, one {# h} many {# h}other {# h}}"
 #, fuzzy
 msgid "{hours, plural, one {about # hr left} other {about # hr left}}"
 msgstr "{hours, plural, one {cerca de # h restante} many {cerca de # h restantes}other {cerca de # h restantes}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{hours, plural, one {Every hour} other {Every # hours}}"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -2072,6 +2105,10 @@ msgstr ""
 #, fuzzy
 msgid "{minutes, plural, one {about # min left} other {about # min left}}"
 msgstr "{minutes, plural, one {cerca de # min restante} many {cerca de # min restantes}other {cerca de # min restantes}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{minutes, plural, one {Every minute} other {Every # minutes}}"
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -2649,6 +2686,10 @@ msgstr "{sampleChapters, plural, one {baseado em # leitura parecida} many {basea
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Medido a partir de # capítulo em {series} séries da sua biblioteca: {bpp} bits por pixel, equivalente em JPG.} many {Medido a partir de # capítulos em {series} séries da sua biblioteca: {bpp} bits por pixel, equivalente em JPG.} other {Medido a partir de # capítulos em {series} séries da sua biblioteca: {bpp} bits por pixel, equivalente em JPG.}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{seconds, plural, one {Every second} other {Every # seconds}}"
+msgstr ""
+
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "{seconds} s per sample page"
@@ -3135,6 +3176,10 @@ msgstr "{total, plural, one {Amostrando {done} de # arquivo} many {Amostrando {d
 msgid "{total, plural, one {Search # source} other {Search # sources}}"
 msgstr "{total, plural, one {Pesquisar # fonte} many {Pesquisar # fontes} other {Pesquisar # fontes}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{total, plural, one {Show all # job} other {Show all # jobs}}"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "{total, plural, one {Show all #} other {Show all #}}"
@@ -3386,8 +3431,24 @@ msgstr "{volumesText} + {chaptersText}"
 msgid "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
 msgstr "{waited, plural, one {# título esperou mais de seis meses.} many {# títulos esperaram mais de seis meses.} other {# títulos esperaram mais de seis meses.}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# file left} other {# files left}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# page left} other {# pages left}}"
+msgstr ""
+
 #: src/pages/settings/UpscalingSection.tsx
 msgid "{waiting, plural, one {# page still to make} other {# pages still to make}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# page waiting} other {# pages waiting}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# queued} other {# queued}}"
 msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
@@ -5852,6 +5913,10 @@ msgstr "Criando índices de pesquisa de metadados"
 msgid "Built in"
 msgstr "Integrada"
 
+#: src/pages/HealthPage.tsx
+msgid "Bulk series edit"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "Busiest day"
@@ -7568,6 +7633,10 @@ msgstr "Página convertida"
 msgid "Converted with {list}."
 msgstr "Convertido com {list}."
 
+#: src/pages/HealthPage.tsx
+msgid "Converting pages"
+msgstr ""
+
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "Converting would not make this page at least 5% smaller, so the pass keeps it as it is."
@@ -9121,6 +9190,10 @@ msgstr ""
 msgid "Downloading {outstanding}"
 msgstr "Baixando {outstanding}"
 
+#: src/pages/HealthPage.tsx
+msgid "Downloading chapters"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Downloading cover"
@@ -9590,6 +9663,10 @@ msgstr ""
 msgid "Enhance: Off"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Enhancing pages for readers"
+msgstr ""
+
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Enter one of your recovery codes"
@@ -9994,6 +10071,11 @@ msgstr "Exportar"
 #, fuzzy
 msgid "Failed"
 msgstr "Falhou"
+
+#. placeholder {0}: formatDateTime(job.lastRunUtc)
+#: src/pages/HealthPage.tsx
+msgid "Failed at {0}"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -12048,6 +12130,10 @@ msgstr "Na biblioteca"
 msgid "in the reader"
 msgstr "no leitor"
 
+#: src/pages/HealthPage.tsx
+msgid "in under a minute"
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "In your library"
@@ -12794,6 +12880,10 @@ msgstr "Última leitura {lastRead}"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Last rebuild"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Last run"
 msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
@@ -13987,6 +14077,10 @@ msgstr "Corresponde por significado, descrição e clima. Usa a pesquisa por tí
 msgid "Matches your naming formats. Only the highlighted parts change."
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Matching series to their sources"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Matching the remaining sources…"
@@ -14102,6 +14196,10 @@ msgstr "Médio"
 #, fuzzy
 msgid "Medium confidence"
 msgstr "Confiança média"
+
+#: src/pages/HealthPage.tsx
+msgid "Memory"
+msgstr ""
 
 #: src/App.tsx
 #, fuzzy
@@ -14601,6 +14699,10 @@ msgstr "passa a fazer parte de um volume"
 msgid "Moving covers"
 msgstr "Capas em movimento"
 
+#: src/pages/HealthPage.tsx
+msgid "Moving series"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
@@ -15074,6 +15176,10 @@ msgstr ""
 #, fuzzy
 msgid "Next page"
 msgstr "Próxima página"
+
+#: src/pages/HealthPage.tsx
+msgid "Next run"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -16257,6 +16363,10 @@ msgstr "Ainda não verificado. Substituir ou excluir este arquivo exige uma veri
 msgid "Not working"
 msgstr "Não está funcionando"
 
+#: src/pages/HealthPage.tsx
+msgid "Not yet"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "not yet synced"
@@ -16470,6 +16580,10 @@ msgstr "Ainda não há nada na sua biblioteca"
 #, fuzzy
 msgid "Nothing is renamed and everything stays in the folder you had."
 msgstr "Nada será renomeado e tudo continuará na pasta atual."
+
+#: src/pages/HealthPage.tsx
+msgid "Nothing is running in the background."
+msgstr ""
 
 #: src/components/home/OfflineHome.tsx
 #, fuzzy
@@ -16967,6 +17081,10 @@ msgstr "Ativado"
 msgid "On another file"
 msgstr "Em outro arquivo"
 
+#: src/pages/HealthPage.tsx
+msgid "On demand"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -17214,6 +17332,10 @@ msgstr "Abra um capítulo e ele aparecerá aqui, pronto para retomar."
 
 #: src/components/import/ManualImport.tsx
 msgid "Open a folder, or click a file in it, then choose the series the comics belong to."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Open activity"
 msgstr ""
 
 #: src/components/ActivityButton.tsx
@@ -17841,9 +17963,14 @@ msgid "Pause"
 msgstr "Pausar"
 
 #: src/components/QueuePause.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Pause downloads"
 msgstr "Pausar downloads"
+
+#: src/pages/HealthPage.tsx
+msgid "Pause pass"
+msgstr ""
 
 #: src/pages/rewind/RewindIntro.tsx
 #, fuzzy
@@ -17868,6 +17995,7 @@ msgstr "Pausar a varredura em andamento?"
 #: src/components/ActivityButton.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Paused"
@@ -18252,6 +18380,10 @@ msgstr ""
 msgid "Prepared pages are kept until read, apart from the cache size."
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Preparing chapters ahead"
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Preparing model…"
@@ -18350,6 +18482,10 @@ msgstr ""
 #, fuzzy
 msgid "Private"
 msgstr "Privado"
+
+#: src/pages/HealthPage.tsx
+msgid "Processor"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -19465,6 +19601,14 @@ msgstr "Atualizando"
 msgid "Refreshing {done} of {total}"
 msgstr "Atualizando {done} de {total}"
 
+#: src/pages/HealthPage.tsx
+msgid "Refreshing series"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Refreshing series metadata"
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Regenerate"
@@ -20063,6 +20207,10 @@ msgid "Renaming folder"
 msgstr "Renomeando pasta"
 
 #: src/pages/HealthPage.tsx
+msgid "Renaming series"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Reopen"
 msgstr "Reabrir"
@@ -20086,6 +20234,10 @@ msgstr "Reparo"
 #, fuzzy
 msgid "Repairs"
 msgstr "Reparos"
+
+#: src/pages/HealthPage.tsx
+msgid "Repeats"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -20284,6 +20436,10 @@ msgstr "Verificar arquivos novamente"
 #, fuzzy
 msgid "Rescanned: {newFiles} new, {relinked} relinked, {removed} removed"
 msgstr "Verificado novamente: {newFiles} novos, {relinked} religados, {removed} removidos"
+
+#: src/pages/HealthPage.tsx
+msgid "Rescanning series files"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -20566,6 +20722,10 @@ msgstr "Retomar {seriesTitle}, {chapterLabel}"
 #, fuzzy
 msgid "Resume at"
 msgstr "Retomar em"
+
+#: src/pages/HealthPage.tsx
+msgid "Resume downloads"
+msgstr ""
 
 #: src/pages/rewind/RewindIntro.tsx
 #, fuzzy
@@ -20911,6 +21071,7 @@ msgid "Rules are checked from the top, and the first one a file matches decides 
 msgstr "As regras são verificadas de cima para baixo, e a primeira que um arquivo atinge decide o que acontece com ele. Uma série configurada como Nunca ou com qualidade fixa no menu ignora as regras."
 
 #: src/components/ImportListsSection.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Run now"
 msgstr "Executar agora"
@@ -20935,6 +21096,10 @@ msgstr "Em execução"
 #, fuzzy
 msgid "Running late"
 msgstr "Atrasada"
+
+#: src/pages/HealthPage.tsx
+msgid "Running now"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -21782,6 +21947,10 @@ msgstr ""
 msgid "Searching"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Searching for missing chapters"
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
 msgid "Searching indexers…"
@@ -22358,6 +22527,7 @@ msgid "Set up trackers"
 msgstr "Configurar trackers"
 
 #: src/nav.ts
+#: src/pages/HealthPage.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Settings"
@@ -23389,6 +23559,10 @@ msgstr "Iniciar"
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr "Iniciar {seriesTitle}, {chapterLabel}"
 
+#: src/pages/HealthPage.tsx
+msgid "Start building"
+msgstr ""
+
 #: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Start chapter"
@@ -23424,6 +23598,14 @@ msgstr "Começar a ler no cap. {startReadingAt}."
 #, fuzzy
 msgid "Started"
 msgstr "Iniciado"
+
+#: src/pages/HealthPage.tsx
+msgid "Started {label}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Started {time}"
+msgstr ""
 
 #: src/components/pageconversion/ReviewStep.tsx
 #, fuzzy
@@ -23551,6 +23733,7 @@ msgstr "Em andamento"
 msgid "Still shown in Discover rails"
 msgstr "Ainda aparece nas faixas do Descobrir"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Stop"
@@ -23590,6 +23773,7 @@ msgstr "Parar de mostrar os novos títulos deles no Início e em Descobrir"
 msgid "Stopped before finishing"
 msgstr "Paradas antes de concluir"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Stopping"
@@ -23883,6 +24067,10 @@ msgstr ""
 #, fuzzy
 msgid "Tap zones"
 msgstr "Zonas de toque"
+
+#: src/pages/HealthPage.tsx
+msgid "Tasks"
+msgstr ""
 
 #: src/pages/stats/sectionList.ts
 #, fuzzy
@@ -24770,6 +24958,10 @@ msgstr "A atualização foi baixada. O Maki fica fora do ar por cerca de um minu
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "A verificação de upgrades não pôde ser executada. O log do servidor tem os detalhes."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "The upgrade scan was stopped."
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."
@@ -24914,6 +25106,10 @@ msgstr "Este backup não tem categorias."
 #, fuzzy
 msgid "This browser does not support push notifications."
 msgstr "Este navegador não suporta notificações push."
+
+#: src/pages/HealthPage.tsx
+msgid "This builds the search index on this server and can keep the processor busy for an hour or more."
+msgstr ""
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
