@@ -13141,6 +13141,13 @@ button.import-plan-folder-head:hover {
   z-index: 3;
   background: var(--app-bg);
 }
+/* A segmented control used as a form field sits under its label, like an input. */
+.mantine-InputWrapper-root > .mantine-SegmentedControl-root {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+}
+
 .settings-section-title {
   margin: 0;
   min-width: 0;
