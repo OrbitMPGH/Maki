@@ -13912,7 +13912,8 @@ button.settings-row-head:hover,
 }
 .library-filter-scroll .drill-panel-back {
   position: sticky;
-  top: 0;
+  /* Sticky offsets start inside the scroller's 4px top padding; pull it up to cover that strip. */
+  top: -4px;
   z-index: 1;
   background: var(--surface-raised);
 }
