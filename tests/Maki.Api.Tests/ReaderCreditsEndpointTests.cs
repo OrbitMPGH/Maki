@@ -1,0 +1,228 @@
+using System.IO.Compression;
+using System.Text.Json;
+using Maki.Api.Configuration;
+using Maki.Api.Controllers;
+using Maki.Api.Services;
+using Maki.Api.Services.Ocr;
+using Maki.Core.Entities;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
+
+namespace Maki.Api.Tests;
+
+public sealed class ReaderCreditsEndpointTests : IDisposable
+{
+    private const int W = 64;
+    private static readonly JsonSerializerOptions Web = new(JsonSerializerDefaults.Web);
+
+    private readonly TestDb _db = new();
+    private readonly string _configDir = Path.Combine(Path.GetTempPath(), "maki-credits-" + Guid.NewGuid().ToString("N"));
+    private readonly string _root;
+    private readonly int _seriesId;
+    private readonly ReaderArchiveCache _archives = new(NullLogger<ReaderArchiveCache>.Instance);
+
+    /// <summary>The colour rule alone: no OCR models where this reader looks, as on an install without them.</summary>
+    private ReaderCreditsCache _credits = Credits(Path.Combine(Path.GetTempPath(), "maki-no-ocr-" + Guid.NewGuid().ToString("N")));
+
+    private static ReaderCreditsCache Credits(string ocrFolder) => new(
+        new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
+        new PageTextReader(NullLogger<PageTextReader>.Instance, ocrFolder),
+        NullLogger<ReaderCreditsCache>.Instance);
+
+    private static string Fixture(string name) => Path.Combine(AppContext.BaseDirectory, "Fixtures", "ocr", name);
+
+    public ReaderCreditsEndpointTests()
+    {
+        _root = Path.Combine(_configDir, "library");
+        using var db = _db.NewContext();
+        var folder = new RootFolder { Path = _root };
+        db.RootFolders.Add(folder);
+        db.SaveChanges();
+        var series = new Series { Title = "S", SortTitle = "s", FolderName = "S", RootFolderId = folder.Id };
+        db.Series.Add(series);
+        db.SaveChanges();
+        _seriesId = series.Id;
+    }
+
+    public void Dispose()
+    {
+        _db.Dispose();
+        try
+        {
+            Directory.Delete(_configDir, true);
+        }
+        catch (IOException)
+        {
+        }
+    }
+
+    /// <summary>Seeded smooth noise: a page that never repeats unless the same seed is used again.</summary>
+    private static byte[] Noise(int seed, int rows)
+    {
+        var random = new Random(seed);
+        var grid = new double[(rows / 24 + 2) * 9];
+        for (var g = 0; g < grid.Length; g++)
+        {
+            grid[g] = random.Next(20, 236);
+        }
+
+        var page = new byte[rows * W];
+        for (var r = 0; r < rows; r++)
+        {
+            var fy = r / 24.0 - r / 24;
+            for (var x = 0; x < W; x++)
+            {
+                var (cx, fx) = (x / 8, x / 8.0 - x / 8);
+                double At(int row) => grid[row * 9 + cx] * (1 - fx) + grid[row * 9 + Math.Min(cx + 1, 8)] * fx;
+                page[r * W + x] = (byte)(At(r / 24) * (1 - fy) + At(r / 24 + 1) * fy);
+            }
+        }
+
+        return page;
+    }
+
+    private int AddChapter(int number, IEnumerable<byte[]> pages) =>
+        AddEncodedChapter(number, pages.Select(pixels =>
+        {
+            using var image = NetVips.Image.NewFromMemory(pixels, W, pixels.Length / (W * 3), 3, NetVips.Enums.BandFormat.Uchar);
+            return image.PngsaveBuffer();
+        }));
+
+    private int AddEncodedChapter(int number, IEnumerable<byte[]> pages)
+    {
+        var name = $"c{number}.cbz";
+        var path = Path.Combine(_root, "S", name);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        using (var zip = ZipFile.Open(path, ZipArchiveMode.Create))
+        {
+            var index = 1;
+            foreach (var png in pages)
+            {
+                using var entry = zip.CreateEntry($"{index++:000}.png").Open();
+                entry.Write(png);
+            }
+        }
+
+        using var db = _db.NewContext();
+        var file = new ChapterFile
+        {
+            SeriesId = _seriesId, RelativePath = $"S/{name}", Size = new FileInfo(path).Length,
+            SourceName = "test", DateAdded = DateTime.UtcNow
+        };
+        db.ChapterFiles.Add(file);
+        db.SaveChanges();
+        var chapter = new Chapter { SeriesId = _seriesId, Number = number, ChapterFileId = file.Id };
+        db.Chapters.Add(chapter);
+        db.SaveChanges();
+        return chapter.Id;
+    }
+
+    /// <summary>A black and white page as RGB.</summary>
+    private static byte[] Grey(byte[] page) => [.. page.SelectMany(v => new[] { v, v, v })];
+
+    /// <summary>The same page in colour: its channels pulled apart, as a scanlator's coloured page.</summary>
+    private static byte[] Tinted(byte[] page) => [.. page.SelectMany(v => new[] { v, (byte)(v / 2), (byte)(255 - v) })];
+
+    private static IEnumerable<byte[]> Story(int seed, int count) =>
+        Enumerable.Range(0, count).Select(n => Grey(Noise(seed * 100 + n, 90)));
+
+    private async Task<IActionResult> CreditsAsync(int chapterId)
+    {
+        using var db = _db.NewContext(1);
+        var controller = new ReaderController(
+            new TestLocalizer(), db,
+            new ReaderService(db, _archives, null!, null!, new ReadingSessionService(db), NullLogger<ReaderService>.Instance),
+            null!, null!, null!, null!, null!, new AppPaths(_configDir),
+            new TestCurrentUser(1), null!, new FakeAppSettings())
+        {
+            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+        };
+        return await controller.Credits(chapterId, _credits, default);
+    }
+
+    private async Task<JsonElement> FoundAsync(int chapterId) =>
+        JsonSerializer.SerializeToElement(Assert.IsType<OkObjectResult>(await CreditsAsync(chapterId)).Value, Web);
+
+    [Fact]
+    public async Task Hides_the_credit_page_nearby_chapters_open_and_close_with()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var recruit = Tinted(Noise(8, 120));
+        var chapters = Enumerable.Range(1, 4)
+            .Select(n => AddChapter(n, [credit, .. Story(n, 8), recruit]))
+            .ToList();
+
+        foreach (var chapter in chapters)
+        {
+            var found = await FoundAsync(chapter);
+            Assert.Equal(1, found.GetProperty("headPages").GetInt32());
+            Assert.Equal(0, found.GetProperty("headOffset").GetDouble());
+            Assert.Equal(1, found.GetProperty("tailPages").GetInt32());
+        }
+    }
+
+    [Fact]
+    public async Task Keeps_a_black_and_white_page_every_chapter_repeats()
+    {
+        var colophon = Grey(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [colophon, .. Story(n, 8)])).ToList();
+
+        var found = await FoundAsync(chapters[1]);
+
+        Assert.Equal(0, found.GetProperty("headPages").GetInt32());
+        Assert.Equal(0, found.GetProperty("tailPages").GetInt32());
+    }
+
+    [Fact]
+    public async Task A_chapter_without_repeated_pages_or_neighbours_hides_nothing()
+    {
+        var alone = AddChapter(1, Story(1, 9));
+
+        var found = await FoundAsync(alone);
+
+        Assert.Equal(0, found.GetProperty("headPages").GetInt32());
+        Assert.Equal(0, found.GetProperty("headOffset").GetDouble());
+        Assert.Equal(0, found.GetProperty("tailPages").GetInt32());
+    }
+
+    [Fact]
+    public async Task An_unknown_chapter_is_not_found()
+    {
+        Assert.IsNotType<OkObjectResult>(await CreditsAsync(999));
+    }
+
+    private List<int> ChaptersOpeningWith(byte[] png) =>
+        [.. Enumerable.Range(1, 4).Select(n => AddEncodedChapter(n, [png, .. Story(n, 8).Select(pixels =>
+        {
+            using var image = NetVips.Image.NewFromMemory(pixels, W, pixels.Length / (W * 3), 3, NetVips.Enums.BandFormat.Uchar);
+            return image.PngsaveBuffer();
+        })]))];
+
+    private static bool HidesTheHead(JsonElement found) =>
+        found.GetProperty("headPages").GetInt32() > 0 || found.GetProperty("headOffset").GetDouble() > 0;
+
+    [Fact]
+    public async Task Reads_a_repeated_credit_page_and_hides_it()
+    {
+        _credits = Credits(Path.Combine(AppContext.BaseDirectory, PageTextReader.FolderName));
+        var chapters = ChaptersOpeningWith(await File.ReadAllBytesAsync(Fixture("ocr-credit-page.png")));
+
+        Assert.True(HidesTheHead(await FoundAsync(chapters[1])));
+    }
+
+    [Fact]
+    public async Task Reads_a_repeated_colour_colophon_and_keeps_it_where_colour_alone_would_hide_it()
+    {
+        using var colophon = NetVips.Image.NewFromFile(Fixture("ocr-colophon.png"));
+        using var tinted = colophon.Linear([1.0, 0.6, 0.8], [0.0, 0.0, 0.0]).Cast(NetVips.Enums.BandFormat.Uchar);
+        var chapters = ChaptersOpeningWith(tinted.PngsaveBuffer());
+
+        Assert.True(HidesTheHead(await FoundAsync(chapters[1])));
+
+        _credits = Credits(Path.Combine(AppContext.BaseDirectory, PageTextReader.FolderName));
+        var found = await FoundAsync(chapters[1]);
+        Assert.Equal(0, found.GetProperty("headPages").GetInt32());
+        Assert.Equal(0, found.GetProperty("headOffset").GetDouble());
+    }
+}

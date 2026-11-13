@@ -1,7 +1,7 @@
 # Third-party notices
 
-Maki's own code is GPL-3.0 (see [LICENSE](LICENSE)). The Page Enhance feature uses the third-party
-works below. Each keeps its own licence, and none of them is relicensed by being used here.
+Maki's own code is GPL-3.0 (see [LICENSE](LICENSE)). Page Enhance and the reader's "Hide credit
+pages" setting use the third-party works below. Each keeps its own licence, and none of them is relicensed by being used here.
 
 ## Server upscaling models
 
@@ -30,6 +30,22 @@ the release carries a `LICENSES.txt` with the full licence texts. The same texts
 - Source: https://github.com/xinntao/Real-ESRGAN/releases/tag/v0.2.5.0
 - Converted from the original `.pth` file to ONNX (opset 17, fp32, dynamic height and width) by
   `distribution/upscale-models/prepare.py`. The weights are unchanged.
+
+## Text recognition for credit pages
+
+The reader reads the text on repeated pages at a chapter's edges to tell scanlator credit pages from
+publisher pages. Maki ships these two models beside the server, in `OcrModels/`, with the licence
+text in `OcrModels/LICENSE-Apache-2.0.txt`. They are neural network weights, not code, and are
+unchanged.
+
+### PaddleOCR PP-OCRv3 text detection and recognition
+
+- Files: `ch_PP-OCRv3_det_infer.onnx`, `ch_PP-OCRv3_rec_infer.onnx`
+- Authors: the PaddlePaddle Authors (PaddleOCR)
+- Licence: Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
+- Source: https://github.com/PaddlePaddle/PaddleOCR
+- The ONNX files are the ones RapidOCR 1.2.3 ships (Apache License 2.0,
+  https://github.com/RapidAI/RapidOCR).
 
 ## JPEG XL encoder for upscaled pages
 

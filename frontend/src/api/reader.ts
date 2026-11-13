@@ -271,6 +271,27 @@ export const readerRecapQuery = (chapterId: number) =>
   })
 
 /**
+ * The credit, recruitment and notice pages the reader leaves out: whole pages at the chapter's start
+ * and end, and how far down the first page shown (0 to 1) a banner fused into it ends. All zero when
+ * nothing repeats.
+ */
+export interface ReaderCredits {
+  headPages: number
+  headOffset: number
+  tailPages: number
+}
+
+/** The first search decodes the edges of up to seven chapters, so the reader also asks ahead for the next chapter. */
+export const readerCreditsQuery = (chapterId: number) =>
+  queryOptions({
+    queryKey: ['reader-credits', chapterId],
+    queryFn: () => api<ReaderCredits>(`/reader/chapter/${chapterId}/credits`),
+    staleTime: Infinity,
+    retry: false,
+    meta: { silent: true },
+  })
+
+/**
  * Whether the built-in reader has ever been used, and whether Kavita is connected. Kavita's state
  * comes from here rather than `useConnectionSettings('kavita')`, which is admin-only and 403s for
  * everyone else on every page that shows read state.

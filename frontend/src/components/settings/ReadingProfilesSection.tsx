@@ -518,6 +518,13 @@ function ProfileEditor({
       />
       <Switch
         size="sm"
+        label={t`Hide credit pages`}
+        description={t`Leave out credit and recruitment pages that repeat at the start or end of chapters.`}
+        checked={prefs.hideCredits}
+        onChange={(e) => set({ hideCredits: e.currentTarget.checked })}
+      />
+      <Switch
+        size="sm"
         label={t`Progress rail`}
         description={t`Continuous layout only. A bar down the right edge you can drag to move through the chapter.`}
         checked={prefs.progressRail}

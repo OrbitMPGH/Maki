@@ -90,6 +90,8 @@ export default function ReaderToolbar({
   thumbs = [],
   shownTo,
   autoScroll,
+  pageWindow,
+  hiddenCredits,
 }: {
   manifest: ReaderManifest
   page: number
@@ -152,6 +154,10 @@ export default function ReaderToolbar({
   shownTo?: number
   /** Continuous mode's auto-scroll, which takes the zoom buttons' place there. */
   autoScroll?: AutoScrollControls
+  /** The pages the reader shows when credit pages are left out: the first one's index and how many. */
+  pageWindow?: { first: number; count: number }
+  /** Credit pages left out of this chapter, and a way to show them, for the settings panel. */
+  hiddenCredits?: { count: number; onShow: () => void } | null
 }) {
   const { t } = useLingui()
 
@@ -419,7 +425,8 @@ export default function ReaderToolbar({
           </Tooltip>
 
           <PageScrubber
-            count={manifest.pageCount}
+            count={pageWindow?.count ?? manifest.pageCount}
+            first={pageWindow?.first}
             page={page}
             shownTo={shownTo ?? page}
             rtl={rtl}
@@ -452,7 +459,7 @@ export default function ReaderToolbar({
               c="var(--ink-3)"
               style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
             >
-              {pageLabel} / {manifest.pageCount}
+              {pageLabel} / {pageWindow?.count ?? manifest.pageCount}
             </Text>
           </Tooltip>
 
@@ -495,6 +502,7 @@ export default function ReaderToolbar({
             onIncognito={onIncognito}
             previewSrc={thumbs[page]}
             onTapZonesShown={onTapZonesShown}
+            hiddenCredits={hiddenCredits}
           />
 
           {/* No keyboard on a touch screen, so nothing for this to list there. */}

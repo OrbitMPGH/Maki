@@ -3,7 +3,7 @@ import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
 import { chapters } from '../../../.storybook/mocks/entry/fixtures'
-import type { ReaderManifest, ServerPageState } from '../../api/reader'
+import type { ReaderCredits, ReaderManifest, ServerPageState } from '../../api/reader'
 import ReaderPage from './ReaderPage'
 import type { ReaderPrefs } from './prefs'
 
@@ -219,6 +219,55 @@ export const ContinuousRecapSkippedAutomatically: Story = {
     const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
     await waitFor(() => expect(surface.scrollTop).toBeGreaterThan(surface.clientHeight))
     await expect(canvas.queryByRole('button', { name: 'Skip recap' })).toBeNull()
+  },
+}
+
+const creditsAt = (found: ReaderCredits) => http.get(api('/reader/chapter/:id/credits'), () => HttpResponse.json(found))
+const hidingCredits = (chapterId: number) =>
+  withManifest({ ...chapters[chapterId], resumePage: 0, prefs: { ...chapters[chapterId].prefs, hideCredits: true } })
+const creditPages = [creditsAt({ headPages: 1, headOffset: 0, tailPages: 2 }), hidingCredits(1132)]
+
+/** A credit page at the start and two notices at the end are left out: the chapter opens on its second page and counts 15. */
+export const CreditPagesHidden: Story = {
+  parameters: { ...open(1132), msw: creditPages },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 2' })).toBeVisible()
+    await expect(await canvas.findByText('Page 1 of 15')).toBeInTheDocument()
+    await userEvent.keyboard('{End}')
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 16' })).toBeVisible()
+    await expect(await canvas.findByText('Page 15 of 15')).toBeInTheDocument()
+  },
+}
+
+/** The settings panel says how many pages were left out, and shows them again for this visit. */
+export const HiddenCreditPagesShownAgain: Story = {
+  parameters: { ...open(1132), msw: creditPages },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 2' })
+    await summonChrome({ canvasElement, userEvent })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await body.findByRole('button', { name: /^Chapters/ }))
+    const line = await body.findByText('3 pages hidden in this chapter')
+    await waitFor(() => expect(line).toBeVisible())
+    await userEvent.click(await body.findByRole('button', { name: 'Show' }))
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 1' })).toBeVisible()
+    await expect(await canvas.findByText('Page 1 of 18')).toBeInTheDocument()
+    await expect(body.queryByText('3 pages hidden in this chapter')).toBeNull()
+  },
+}
+
+/** In Continuous the strip starts at the first page shown, below the banner fused into its top. */
+export const ContinuousOpensBelowCreditPages: Story = {
+  parameters: { ...open(3040), msw: [creditsAt({ headPages: 2, headOffset: 0.4, tailPages: 0 }), hidingCredits(3040)] },
+  play: async ({ canvas, canvasElement }) => {
+    await canvas.findByRole('img', { name: 'Chapter 40 - page 3' })
+    await expect(canvas.queryByRole('img', { name: 'Chapter 40 - page 1' })).toBeNull()
+    const surface = canvasElement.querySelector<HTMLElement>('.reader-surface')!
+    const target = canvasElement.querySelector<HTMLElement>('[data-page="0"]')!
+    await waitFor(() =>
+      expect(Math.abs(target.getBoundingClientRect().top + target.offsetHeight * 0.4 - surface.getBoundingClientRect().top)).toBeLessThan(4),
+    )
   },
 }
 

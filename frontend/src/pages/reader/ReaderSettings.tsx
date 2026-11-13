@@ -18,8 +18,10 @@ import {
   IconArrowAutofitHeight,
   IconArrowAutofitWidth,
   IconArrowsMaximize,
+  IconBooks,
   IconChevronDown,
   IconEyeOff,
+  IconHandTap,
   IconListCheck,
   IconMoon,
   IconPalette,
@@ -31,8 +33,8 @@ import {
   IconViewportWide,
   IconWand,
 } from '../../lib/icons'
-import { useEffect, useState, type ReactNode } from 'react'
-import { Trans, useLingui } from '@lingui/react/macro'
+import { Fragment, useEffect, useState, type ReactNode } from 'react'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { PrefsSource, ReaderManifest } from '../../api/reader'
 import type { ReadingProfile } from '../../api/readingProfiles'
 import { wakeLockSupported } from '../../lib/wakeLock'
@@ -54,6 +56,7 @@ import {
 import { BACKGROUNDS, backgroundChoice, enhanceFor, toneFilter, type BackgroundChoice, type PrefsSelection, type ReaderPrefs } from './prefs'
 import { useEnhanceEngine } from './enhanceRuntime'
 import TapZoneSettings from './TapZoneSettings'
+import { TAP_LAYOUTS } from './tapZones'
 
 /**
  * The reader renders above Mantine's popover layer, so anything that portals to <body> has to
@@ -66,7 +69,7 @@ export const OVERLAY_Z = 500
 // both, so it could never be scrolled. Rendered in place, fixed so the popover does not clip it.
 const NESTED_COMBOBOX = { zIndex: OVERLAY_Z + 1, withinPortal: false, floatingStrategy: 'fixed' } as const
 
-type View = 'main' | 'wide' | 'look' | 'enhance' | 'method' | 'reading'
+type View = 'main' | 'wide' | 'look' | 'enhance' | 'method' | 'chapters' | 'reading' | 'taps'
 
 const PARENTS: Record<View, View> = {
   main: 'main',
@@ -74,7 +77,9 @@ const PARENTS: Record<View, View> = {
   look: 'main',
   enhance: 'main',
   method: 'enhance',
+  chapters: 'main',
   reading: 'main',
+  taps: 'reading',
 }
 
 type Toggle =
@@ -83,6 +88,7 @@ type Toggle =
   | 'chapterBanner'
   | 'autoNextChapter'
   | 'autoSkipRecap'
+  | 'hideCredits'
   | 'autoWebtoon'
   | 'keepAwake'
   | 'notesBeside'
@@ -158,6 +164,7 @@ export default function ReaderSettings({
   onIncognito,
   previewSrc,
   onTapZonesShown,
+  hiddenCredits,
 }: {
   opened: boolean
   onOpenedChange: (opened: boolean) => void
@@ -176,6 +183,8 @@ export default function ReaderSettings({
   previewSrc?: string
   /** Whether the tap zone controls are on screen, so the reader can draw the zones on the page. */
   onTapZonesShown?: (shown: boolean) => void
+  /** Credit pages left out of the chapter on screen, and a way to show them for this visit. */
+  hiddenCredits?: { count: number; onShow: () => void } | null
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -191,7 +200,7 @@ export default function ReaderSettings({
     else setProfileMenu(false)
   }
 
-  const tapZonesShown = opened && view === 'reading' && prefs.tapZones
+  const tapZonesShown = opened && view === 'taps' && prefs.tapZones
   useEffect(() => {
     onTapZonesShown?.(tapZonesShown)
   }, [tapZonesShown, onTapZonesShown])
@@ -296,17 +305,26 @@ export default function ReaderSettings({
     { value: 'sepia', label: t`Sepia` },
     { value: 'invert', label: t`Invert` },
   ] as const
-  const toggles: { key: Toggle; label: string; hint?: string }[] = [
-    { key: 'tapZones', label: t`Tap zones`, hint: t`Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen` },
-    { key: 'showPageNumber', label: t`Show page number` },
+  type ToggleRow = { key: Toggle; label: string; hint?: string }
+  // Chapters: what happens as a chapter opens and ends. While reading: what is on screen meanwhile.
+  const chapterToggles: ToggleRow[] = [
     { key: 'chapterBanner', label: t`Show the chapter name`, hint: t`Briefly, when a new chapter opens` },
     { key: 'autoNextChapter', label: t`Auto-advance to next chapter` },
     { key: 'autoSkipRecap', label: t`Skip recaps`, hint: t`In Continuous, jump past the end of the previous chapter when a chapter repeats it` },
+    { key: 'hideCredits', label: t`Hide credit pages`, hint: t`Leave out credit and recruitment pages that repeat at the start or end of chapters` },
     { key: 'autoWebtoon', label: t`Scroll webtoon chapters`, hint: t`Chapters of very tall pages open in Continuous` },
+  ]
+  const readingToggles: ToggleRow[] = [
+    { key: 'showPageNumber', label: t`Show page number` },
     { key: 'notesBeside', label: t`Notes beside the page`, hint: t`When the screen has room for them` },
     { key: 'progressRail', label: t`Progress rail`, hint: t`In Continuous, a bar down the right edge you can drag to move through the chapter` },
     ...(wakeLockSupported() ? [{ key: 'keepAwake' as const, label: t`Keep the screen awake` }] : []),
   ]
+  const tapToggle: ToggleRow = {
+    key: 'tapZones',
+    label: t`Tap zones`,
+    hint: t`Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen`,
+  }
 
   const wideLabel = { off: t`Whole`, split: t`Split`, rotate: t`Rotate` }[prefs.splitWide]
   const backgroundName = {
@@ -327,8 +345,38 @@ export default function ReaderSettings({
       : methodName
         ? t`${levelName}, ${methodName}`
         : levelName
-  const togglesOn = toggles.filter((toggle) => prefs[toggle.key]).length
-  const togglesTotal = toggles.length
+  const hiddenCount = prefs.hideCredits ? (hiddenCredits?.count ?? 0) : 0
+  const onSummary = (toggles: ToggleRow[]) => {
+    const togglesOn = toggles.filter((toggle) => prefs[toggle.key]).length
+    const togglesTotal = toggles.length
+    return t`${togglesOn} of ${togglesTotal} on`
+  }
+  const tapLayout = TAP_LAYOUTS.find((entry) => entry.value === prefs.tapLayout) ?? TAP_LAYOUTS[0]
+  const tapSummary = !prefs.tapZones ? t`Off` : prefs.mode === 'vertical' ? t`On` : renderLabel(tapLayout.label)
+  const renderToggles = (toggles: ToggleRow[]) =>
+    toggles.map((toggle) => (
+      <Fragment key={toggle.key}>
+        <Switch
+          size="xs"
+          labelPosition="left"
+          label={toggle.label}
+          description={toggle.hint}
+          checked={prefs[toggle.key]}
+          onChange={(event) => onPrefs({ [toggle.key]: event.currentTarget.checked })}
+          classNames={{ body: 'reader-settings-switch', description: 'reader-settings-hint' }}
+        />
+        {toggle.key === 'hideCredits' && hiddenCredits && hiddenCount > 0 && (
+          <Group gap={8} wrap="nowrap" justify="space-between" mt={-6}>
+            <Text className="reader-settings-hint" fz="xs">
+              <Plural value={hiddenCount} one="# page hidden in this chapter" other="# pages hidden in this chapter" />
+            </Text>
+            <Button size="compact-xs" variant="subtle" onClick={hiddenCredits.onShow}>
+              <Trans>Show</Trans>
+            </Button>
+          </Group>
+        )}
+      </Fragment>
+    ))
 
   const row = (target: View, Icon: typeof IconAperture, label: string, value: string) => (
     <DrillRow ref={pages.rowRef(target)} icon={Icon} label={label} value={value} onClick={() => open(target)} />
@@ -581,7 +629,8 @@ export default function ReaderSettings({
                   {prefs.mode === 'paged' && row('wide', IconViewportWide, t`Wide pages`, wideLabel)}
                   {row('look', IconPalette, t`Page look`, lookSummary)}
                   {row('enhance', IconAperture, t`Enhance`, enhanceSummary)}
-                  {row('reading', IconListCheck, t`While reading`, t`${togglesOn} of ${togglesTotal} on`)}
+                  {row('chapters', IconBooks, t`Chapters`, onSummary(chapterToggles))}
+                  {row('reading', IconListCheck, t`While reading`, onSummary(readingToggles))}
                 </Stack>
               </Stack>
             )}
@@ -761,21 +810,25 @@ export default function ReaderSettings({
               </SubPage>
             )}
 
+            {view === 'chapters' && (
+              <SubPage title={t`Chapters`} onBack={back} backRef={backRef}>
+                <Stack gap={12}>{renderToggles(chapterToggles)}</Stack>
+              </SubPage>
+            )}
+
             {view === 'reading' && (
               <SubPage title={t`While reading`} onBack={back} backRef={backRef}>
                 <Stack gap={12}>
-                  {toggles.map((toggle) => (
-                    <Switch
-                      key={toggle.key}
-                      size="xs"
-                      labelPosition="left"
-                      label={toggle.label}
-                      description={toggle.hint}
-                      checked={prefs[toggle.key]}
-                      onChange={(event) => onPrefs({ [toggle.key]: event.currentTarget.checked })}
-                      classNames={{ body: 'reader-settings-switch', description: 'reader-settings-hint' }}
-                    />
-                  ))}
+                  <div className="reader-settings-inline-row">{row('taps', IconHandTap, t`Tap zones`, tapSummary)}</div>
+                  {renderToggles(readingToggles)}
+                </Stack>
+              </SubPage>
+            )}
+
+            {view === 'taps' && (
+              <SubPage title={t`Tap zones`} onBack={back} backRef={backRef}>
+                <Stack gap={12}>
+                  {renderToggles([tapToggle])}
                   {prefs.tapZones && (
                     <TapZoneSettings
                       prefs={prefs}

@@ -11,6 +11,7 @@ import { settleQueuedProgress } from '../../pwa/progressQueue'
 import {
   flushProgress,
   manifestServedOffline,
+  readerCreditsQuery,
   readerRecapQuery,
   useBookmarks,
   useReaderEnding,
@@ -55,6 +56,7 @@ import { useAutoScroll, useAutoScrollLevel } from './useAutoScroll'
 import ProgressRail from './ProgressRail'
 import { createStripTracker, liveStripOffset, resumeOffsetOf, useStripOffset, type StripResume } from './stripPosition'
 import { usePagedGestures } from './usePagedGestures'
+import { CREDITS_MIN_PAGES, clampToWindow, creditWindow, type PageWindow } from './creditWindow'
 import { stripTapActionAt, tapActionAt } from './tapZones'
 import TapZoneOverlay from './TapZoneOverlay'
 
@@ -69,6 +71,8 @@ const DOUBLE_TAP_SLOP = 40
 const WARM_NEXT_WITHIN = 3
 /** How long "Recap skipped" stays up after an automatic skip. */
 const RECAP_SKIPPED_MS = 2400
+/** How long a chapter's first render waits for its credit pages. Later than this, only the end is trimmed. */
+const CREDITS_WAIT_MS = 1200
 const PLAIN_SEEK = { offset: 0, smooth: false }
 const CHROME_HIDE_MS = 4000
 const NO_PAGES: ReadonlySet<number> = new Set()
@@ -100,6 +104,17 @@ function useWebtoonGuess(urls: string[], active: boolean, from: number): boolean
   }, [urls, active, from])
   if (!active) return false
   return guess?.urls === urls ? guess.webtoon : undefined
+}
+
+/** Announces the page to screen readers, counted over the pages shown. */
+function PageStatus({ pageNumber, pageCount }: { pageNumber: string; pageCount: number }) {
+  return (
+    <VisuallyHidden role="status" aria-live="polite">
+      <Trans>
+        Page {pageNumber} of {pageCount}
+      </Trans>
+    </VisuallyHidden>
+  )
 }
 
 /**
@@ -140,8 +155,10 @@ export default function ReaderPage() {
   // Where on the target page continuous mode lands, and whether it scrolls there. Only a recap
   // skip asks for more than the top of the page, at once.
   const [seekAt, setSeekAt] = useState(PLAIN_SEEK)
+  // The pages shown, read by every explicit jump so none lands on a credit page left out.
+  const windowRef = useRef<PageWindow>({ first: 0, last: Number.MAX_SAFE_INTEGER })
   const seekToPage = useCallback((index: number, toHalf: 0 | 1 = 0, at = PLAIN_SEEK) => {
-    setPage(index)
+    setPage(clampToWindow(index, windowRef.current))
     setHalf(toHalf)
     setSeekAt(at)
     setSeekVersion((v) => v + 1)
@@ -156,6 +173,16 @@ export default function ReaderPage() {
    * queued row is newer than anything the manifest says, so it wins.
    */
   const [queued, setQueued] = useState<{ chapterId: number; resumePage: number; resumeOffset: number; finished: boolean } | null>(null)
+  /**
+   * Which edges this visit leaves credit pages out of. The start only when they were known before
+   * the first render, so the page under the reader never moves; the end once known (null until then),
+   * unless the reader is already past where it begins.
+   */
+  const [creditsVisit, setCreditsVisit] = useState<{ chapterId: number; head: boolean; tail: boolean | null } | null>(null)
+  /** The chapter whose first render stopped waiting for its credit pages. */
+  const [creditsWaited, setCreditsWaited] = useState<number | null>(null)
+  /** The chapter whose hidden pages were shown again this visit. */
+  const [creditsShown, setCreditsShown] = useState<number | null>(null)
   const [stripTracker] = useState(createStripTracker)
   const [resumedAt, setResumedAt] = useState<StripResume | null>(null)
   // Set just before navigating to a *previous* chapter: stepping backward off page 1 should land
@@ -205,6 +232,30 @@ export default function ReaderPage() {
   const urls = usePageUrls(chapterId, pageCount, manifest?.pageVersion)
   const thumbs = usePageUrls(chapterId, pageCount, manifest?.pageVersion, true)
   const { wide, measure } = usePageAspects(urls)
+  const offline = useConnectivity() === 'offline'
+
+  // Credit pages are left out as a window over the chapter's own page indexes (see creditWindow.ts).
+  // Offline, or when the search fails, nothing is left out.
+  const creditsWanted =
+    prefs.hideCredits &&
+    manifest?.chapterId === chapterId &&
+    pageCount >= CREDITS_MIN_PAGES &&
+    !offline &&
+    !manifestServedOffline(chapterId)
+  const { data: creditsFound, isError: creditsFailed } = useQuery({ ...readerCreditsQuery(chapterId), enabled: creditsWanted })
+  const creditsPending = creditsWanted && creditsFound === undefined && !creditsFailed
+  const creditsHeld = creditsPending && creditsWaited !== chapterId
+  const visit = creditsVisit?.chapterId === chapterId ? creditsVisit : null
+  const credits = creditsWanted && creditsShown !== chapterId ? creditsFound : undefined
+  const pageWindow = useMemo(
+    () => creditWindow(pageCount, credits, visit?.head ?? false, visit?.tail ?? false),
+    [pageCount, credits, visit?.head, visit?.tail],
+  )
+  windowRef.current = pageWindow
+  const { first, last } = pageWindow
+  const shownCount = last - first + 1
+  const hiddenCount = pageCount > 0 ? pageCount - shownCount : 0
+  const shownUrls = useMemo(() => (first === 0 && last === urls.length - 1 ? urls : urls.slice(first, last + 1)), [urls, first, last])
 
   const autoWanted = prefs.autoWebtoon && prefs.mode !== 'vertical' && !picked?.mode && pageCount > 0
   const webtoon = useWebtoonGuess(urls, autoWanted, manifest?.resumePage ?? 0)
@@ -243,16 +294,19 @@ export default function ReaderPage() {
     setHalf(0)
   }, [])
 
-  const spreads = useSpreads(pageCount, wide, mode === 'double')
+  const spreads = useSpreads(pageCount, wide, mode === 'double', first, last)
   const spreadIndex = useMemo(() => spreadIndexOf(spreads, page), [spreads, page])
   // `page` is a spread's first index; the position on record is the furthest page on screen.
   const shownTo = useMemo(() => Math.max(page, ...(spreads[spreadIndex] ?? [])), [spreads, spreadIndex, page])
   // "4-5" while a spread shows two pages, so the last spread can say it reached the final page.
-  const pageNumber = shownTo > page ? `${page + 1}-${shownTo + 1}` : `${page + 1}`
+  // Counted from the first page shown, like the total beside it.
+  const pageNumber = shownTo > page ? `${page - first + 1}-${shownTo - first + 1}` : `${page - first + 1}`
   // The first half of a wide last page is not the end of the chapter: it completes once the second
   // half is up, so until then the position on record stops a page short.
-  const heldBack = splitting && half === 0 && wide[shownTo] && shownTo >= pageCount - 1
-  const recordedTo = heldBack ? Math.max(0, shownTo - 1) : shownTo
+  const heldBack = splitting && half === 0 && wide[shownTo] && shownTo >= last
+  // The last page shown completes the chapter, as the real last page does: credit pages left out
+  // after it are recorded as read past.
+  const recordedTo = heldBack ? Math.max(0, shownTo - 1) : shownTo >= last ? Math.max(shownTo, pageCount - 1) : shownTo
   const ground = useReaderGround(prefs.background, urls, page, shownTo, mode === 'vertical')
   const cursorIdle = useIdleCursor(chromeHeld || shortcutsOpen || notesOpen)
   // A one-page chapter has no page before it, so the hold has to be sent as `completed: false`.
@@ -261,7 +315,6 @@ export default function ReaderPage() {
   const { data: bookmarks } = useBookmarks(chapterId)
   const toggleBookmark = useToggleBookmark(chapterId)
   // A toggle cannot be replayed safely, so bookmarks wait for the connection.
-  const offline = useConnectivity() === 'offline'
   const bookmarkOffline = offline
   const bookmarkedPages = useMemo(
     () => new Set((bookmarks ?? []).map((b) => b.pageIndex)),
@@ -417,7 +470,7 @@ export default function ReaderPage() {
     atEnd ||
     (pageCount > 0 &&
       (mode === 'vertical'
-        ? page >= pageCount - WARM_NEXT_WITHIN
+        ? page >= last + 1 - WARM_NEXT_WITHIN
         : spreadIndex >= spreads.length - WARM_NEXT_WITHIN))
   useWarmChapter(
     manifest?.nextChapterId ?? null,
@@ -446,6 +499,12 @@ export default function ReaderPage() {
   useEffect(() => {
     if (recapAhead != null) void queryClient.prefetchQuery(readerRecapQuery(recapAhead))
   }, [recapAhead, queryClient])
+  // The next chapter's credit pages are asked for while this one ends, so it opens without waiting.
+  const creditsAhead =
+    prefs.hideCredits && !offline && resumedFor === manifest?.chapterId && nearEnd ? (manifest?.nextChapterId ?? null) : null
+  useEffect(() => {
+    if (creditsAhead != null) void queryClient.prefetchQuery(readerCreditsQuery(creditsAhead))
+  }, [creditsAhead, queryClient])
   const recapPhase = recap?.chapterId === chapterId ? recap.phase : null
   const skipRecap = useCallback(
     (smooth: boolean) => {
@@ -457,13 +516,13 @@ export default function ReaderPage() {
     if (!recapEnd || recapPhase !== null) return
     if (page >= recapEnd.page) {
       setRecap({ chapterId, phase: 'done' })
-    } else if (prefs.autoSkipRecap && page === 0) {
+    } else if (prefs.autoSkipRecap && page === first) {
       skipRecap(false)
       setRecap({ chapterId, phase: 'skipped' })
     } else {
       setRecap({ chapterId, phase: 'offer' })
     }
-  }, [recapEnd, recapPhase, page, prefs.autoSkipRecap, chapterId, skipRecap])
+  }, [recapEnd, recapPhase, page, first, prefs.autoSkipRecap, chapterId, skipRecap])
   // Scrolling past the recap by hand retires the offer.
   useEffect(() => {
     if (recapPhase === 'offer' && recapEnd && page >= recapEnd.page) setRecap({ chapterId, phase: 'done' })
@@ -537,16 +596,28 @@ export default function ReaderPage() {
     // visit's snapshot: resuming from it would start writing that position back.
     if (!manifest || isFetching || isError || resumedFor === manifest.chapterId) return
     if (queued?.chapterId !== manifest.chapterId) return
+    if (creditsHeld) return
     setResumedFor(manifest.chapterId)
     setQueued(null)
     const toEnd = enterAtEndRef.current
     enterAtEndRef.current = false
+    // Credit pages known by now are left out from the start; ones that arrive later trim only the end.
+    const found = creditsWanted ? creditsFound : undefined
+    setCreditsVisit({ chapterId: manifest.chapterId, head: found !== undefined, tail: found !== undefined ? true : null })
+    setCreditsShown(null)
+    setCreditsWaited(null)
+    const shown = creditWindow(manifest.pageCount, found, true, true)
     const lastPage = Math.max(0, manifest.pageCount - 1)
-    const saved = queued.resumePage <= lastPage ? Math.max(0, queued.resumePage) : 0
-    const offset = !toEnd && saved === queued.resumePage ? queued.resumeOffset : 0
-    seekToPage(toEnd ? lastPage : saved, 0, offset > 0 ? { offset, smooth: false } : PLAIN_SEEK)
+    const stored = queued.resumePage <= lastPage ? Math.max(0, queued.resumePage) : 0
+    // A position inside a run of pages left out opens at the nearest page shown.
+    const saved = clampToWindow(stored, shown)
+    const resumed = !toEnd && saved === queued.resumePage ? queued.resumeOffset : 0
+    const fromStart = !toEnd && saved === shown.first && stored <= shown.first && resumed === 0
+    // Opened at its first page shown, the strip starts below a banner fused into the top of it.
+    const offset = fromStart && found ? found.headOffset : resumed
+    seekToPage(toEnd ? shown.last : saved, 0, offset > 0 ? { offset, smooth: false } : PLAIN_SEEK)
     setResumedAt({ chapterId: manifest.chapterId, page: saved, offset })
-    setStartedFor(!toEnd && saved === 0 && offset === 0 ? manifest.chapterId : null)
+    setStartedFor(fromStart ? manifest.chapterId : null)
     setZoom(1)
     setAtEnd(false)
     // A completion still in the queue rides along on this visit's own writes, as if finished here.
@@ -554,7 +625,43 @@ export default function ReaderPage() {
     leavingRef.current = false
     if (changingChapterRef.current) lastTransitionRef.current = Date.now()
     changingChapterRef.current = false
-  }, [manifest, isFetching, isError, resumedFor, queued, seekToPage])
+  }, [manifest, isFetching, isError, resumedFor, queued, seekToPage, creditsHeld, creditsWanted, creditsFound])
+
+  // The first render waits for the credit pages only so long.
+  useEffect(() => {
+    if (!creditsPending || resumedFor === chapterId) return
+    const timer = setTimeout(() => setCreditsWaited(chapterId), CREDITS_WAIT_MS)
+    return () => clearTimeout(timer)
+  }, [creditsPending, resumedFor, chapterId])
+
+  /** Lands explicitly where the reader already is, so a strip whose pages change keeps its place. */
+  const holdPlace = useCallback(() => {
+    const place = stripTracker.get()
+    const offset = mode === 'vertical' && place?.page === page ? place.offset : 0
+    seekToPage(page, half, offset > 0 ? { offset, smooth: false } : PLAIN_SEEK)
+  }, [stripTracker, mode, page, half, seekToPage])
+
+  // Credit pages that arrive after the chapter opened trim only its end, and not at all once the
+  // reader is already past where they begin.
+  useEffect(() => {
+    if (!visit || visit.tail !== null || !credits) return
+    const tail = shownTo <= creditWindow(pageCount, credits, visit.head, true).last
+    setCreditsVisit({ ...visit, tail })
+    if (tail) holdPlace()
+  }, [visit, credits, shownTo, pageCount, holdPlace])
+
+  // Turning the setting back on mid-chapter can leave the reader on a page no longer shown.
+  useEffect(() => {
+    if (resumedFor === chapterId && !atEnd && (page < first || page > last)) seekToPage(page)
+  }, [resumedFor, chapterId, atEnd, page, first, last, seekToPage])
+
+  const showCredits = useCallback(() => {
+    setCreditsShown(chapterId)
+    // The jump below must not be held to the window that is going away.
+    windowRef.current = creditWindow(pageCount, undefined, false, false)
+    if (page === first && first > 0) seekToPage(0)
+    else holdPlace()
+  }, [chapterId, page, first, pageCount, seekToPage, holdPlace])
 
   // An inbox link names a thread. It is read once and then dropped from the address, or paging to
   // the next chapter (this component stays mounted) would open the panel again.
@@ -1195,6 +1302,8 @@ export default function ReaderPage() {
         enhancePhase={enhancePhase}
         thumbs={thumbs}
         shownTo={shownTo}
+        pageWindow={{ first, count: shownCount }}
+        hiddenCredits={hiddenCount > 0 ? { count: hiddenCount, onShow: showCredits } : null}
         autoScroll={{
           on: autoScroll,
           level: autoScrollLevel,
@@ -1245,7 +1354,8 @@ export default function ReaderPage() {
         >
           {mode === 'vertical' ? (
             <ContinuousView
-              urls={urls}
+              urls={shownUrls}
+              first={first}
               page={page}
               onPageChange={onStripPage}
               seekVersion={seekVersion}
@@ -1328,6 +1438,8 @@ export default function ReaderPage() {
         >
           <PageStrip
             urls={thumbs}
+            first={first}
+            last={last}
             page={page}
             bookmarks={bookmarkedPages}
             notedPages={notedPageSet}
@@ -1344,7 +1456,7 @@ export default function ReaderPage() {
           key={manifest.chapterId}
           seriesTitle={manifest.seriesTitle}
           label={serverChapterLabel(manifest.label)}
-          pageCount={manifest.pageCount}
+          pageCount={shownCount}
           coverUrl={manifest.seriesCoverUrl}
         />
       )}
@@ -1403,7 +1515,8 @@ export default function ReaderPage() {
       {mode === 'vertical' && prefs.progressRail && !atEnd && (
         <ProgressRail
           tracker={stripTracker}
-          count={manifest.pageCount}
+          count={shownCount}
+          first={first}
           active={chrome}
           strip={chrome && stripOpen}
           onHold={setRailHeld}
@@ -1412,17 +1525,11 @@ export default function ReaderPage() {
 
       {prefs.showPageNumber && !chrome && !atEnd && (
         <div className="reader-page-badge">
-          {pageNumber} / {manifest.pageCount}
+          {pageNumber} / {shownCount}
         </div>
       )}
 
-      {!atEnd && (
-        <VisuallyHidden role="status" aria-live="polite">
-          <Trans>
-            Page {pageNumber} of {pageCount}
-          </Trans>
-        </VisuallyHidden>
-      )}
+      {!atEnd && <PageStatus pageNumber={pageNumber} pageCount={shownCount} />}
     </div>
   )
 }

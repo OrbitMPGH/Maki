@@ -47,7 +47,7 @@ public sealed class ReaderRecapCache(ReaderArchiveCache archives, ILogger<Reader
         }
     }
 
-    private static string Key(ReaderService.ChapterSlice slice) =>
+    internal static string Key(ReaderService.ChapterSlice slice) =>
         $"{slice.ChapterFileId}-{slice.ArchiveVersion}-{slice.StartPage}-{slice.PageCount}";
 
     private async Task<RecapEnd?> RunAsync(ReaderService.ChapterSlice chapter, ReaderService.ChapterSlice previous)

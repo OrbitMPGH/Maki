@@ -1505,6 +1505,10 @@ msgstr "{haveCount} / {totalCount, plural, one {# chapter} other {# chapters}} l
 msgid "{haveCount} / {totalCount, plural, one {# wanted} other {# wanted}}"
 msgstr "{haveCount} / {totalCount, plural, one {# wanted} other {# wanted}}"
 
+#: src/pages/reader/ReaderSettings.tsx
+msgid "{hiddenCount, plural, one {# page hidden in this chapter} other {# pages hidden in this chapter}}"
+msgstr "{hiddenCount, plural, one {# page hidden in this chapter} other {# pages hidden in this chapter}}"
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "{hits} of the last {checked} chapters came out inside the window drawn for them."
 msgstr "{hits} of the last {checked} chapters came out inside the window drawn for them."
@@ -5449,6 +5453,7 @@ msgstr "chapters"
 #: src/components/library/libraryColumns.ts
 #: src/components/RequestForm.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
@@ -9488,6 +9493,11 @@ msgstr "Hide affected series"
 msgid "Hide chapters"
 msgstr "Hide chapters"
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Hide credit pages"
+msgstr "Hide credit pages"
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ScrobblePage.tsx
 msgid "Hide details"
@@ -10783,6 +10793,14 @@ msgstr "Leave empty to send to every device."
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Leave empty to use this profile only on series you pin it to."
 msgstr "Leave empty to use this profile only on series you pin it to."
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Leave out credit and recruitment pages that repeat at the start or end of chapters"
+msgstr "Leave out credit and recruitment pages that repeat at the start or end of chapters"
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Leave out credit and recruitment pages that repeat at the start or end of chapters."
+msgstr "Leave out credit and recruitment pages that repeat at the start or end of chapters."
 
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Leave out series in your library"
@@ -14098,6 +14116,7 @@ msgstr "OLED black"
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ReaderSettings.tsx
 msgid "On"
 msgstr "On"
 
@@ -18666,6 +18685,7 @@ msgstr "Shounen"
 
 #: src/pages/HealthPage.tsx
 #: src/pages/reader/NotesMargin.tsx
+#: src/pages/reader/ReaderSettings.tsx
 msgid "Show"
 msgstr "Show"
 

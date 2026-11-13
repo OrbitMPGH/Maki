@@ -136,17 +136,42 @@ export const EscapeStepsBackThenCloses: Story = {
   },
 }
 
+/** While reading holds what is on screen as you read, with the tap zones one level down. */
 export const WhileReading: Story = {
   play: async ({ args, canvasElement, userEvent }) => {
     const b = body(canvasElement)
     const row = await b.findByRole('button', { name: /^While reading/ })
     const before = row.textContent
     await userEvent.click(row)
-    await userEvent.click(await b.findByRole('switch', { name: /Tap zones/ }))
-    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ tapZones: false }))
+    await expect(await b.findByRole('button', { name: /^Tap zones\s*Sides$/ })).toBeVisible()
+    await userEvent.click(await b.findByRole('switch', { name: /Show page number/ }))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ showPageNumber: false }))
+    await expect(b.queryByRole('switch', { name: /Skip recaps/ })).toBeNull()
     await userEvent.click(b.getByRole('button', { name: /^Back/ }))
     await waitFor(() => expect(b.getByRole('button', { name: /^While reading/ }).textContent).not.toBe(before))
   },
+}
+
+/** Chapters holds what happens as a chapter opens and ends, and says how many credit pages this one left out. */
+export const Chapters: Story = {
+  args: { prefs: { ...mangaPrefs, hideCredits: true }, hiddenCredits: { count: 2, onShow: fn() } },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const b = body(canvasElement)
+    await userEvent.click(await b.findByRole('button', { name: /^Chapters/ }))
+    await userEvent.click(await b.findByRole('switch', { name: /Skip recaps/ }))
+    await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ autoSkipRecap: true }))
+    const line = await b.findByText('2 pages hidden in this chapter')
+    await waitFor(() => expect(line).toBeVisible())
+    await userEvent.click(b.getByRole('button', { name: 'Show' }))
+    await waitFor(() => expect(args.hiddenCredits?.onShow).toHaveBeenCalled())
+    await expect(b.queryByRole('switch', { name: /Show page number/ })).toBeNull()
+  },
+}
+
+/** Opens While reading, then its Tap zones page. */
+async function openTapZones(b: ReturnType<typeof body>, userEvent: Parameters<NonNullable<Story['play']>>[0]['userEvent']) {
+  await userEvent.click(await b.findByRole('button', { name: /^While reading/ }))
+  await userEvent.click(await b.findByRole('button', { name: /^Tap zones/ }))
 }
 
 export const PageLook: Story = {
@@ -348,12 +373,15 @@ export const Phone: Story = {
   globals: { viewport: { value: 'mobile1', isRotated: false } },
 }
 
-/** With tap zones on, the While reading page picks the layout, the zone size and the swap, and draws the zones. */
+/** With tap zones on, the Tap zones page picks the layout, the zone size and the swap, and draws the zones. */
 export const TapZoneLayouts: Story = {
   args: { onTapZonesShown: fn() },
   play: async ({ args, canvasElement, userEvent }) => {
     const b = body(canvasElement)
     await userEvent.click(await b.findByRole('button', { name: /^While reading/ }))
+    await b.findByRole('button', { name: /^Tap zones/ })
+    await expect(args.onTapZonesShown).not.toHaveBeenCalledWith(true)
+    await userEvent.click(b.getByRole('button', { name: /^Tap zones/ }))
     await waitFor(() => expect(args.onTapZonesShown).toHaveBeenLastCalledWith(true))
     await expect(canvasElement.ownerDocument.querySelector('.reader-tap-preview')).toBeNull()
     await userEvent.click(within(await b.findByRole('radiogroup', { name: 'Tap zone layout' })).getByText('Kindle'))
@@ -364,6 +392,8 @@ export const TapZoneLayouts: Story = {
     await userEvent.click(b.getByRole('switch', { name: /Tap zones/ }))
     await waitFor(() => expect(b.queryByRole('radiogroup', { name: 'Tap zone layout' })).toBeNull())
     await waitFor(() => expect(args.onTapZonesShown).toHaveBeenLastCalledWith(false))
+    await userEvent.click(b.getByRole('button', { name: /^Back/ }))
+    await expect(await b.findByRole('button', { name: /^Tap zones\s*Off$/ })).toBeVisible()
   },
 }
 
@@ -372,7 +402,7 @@ export const TapZonesContinuous: Story = {
   args: { prefs: { ...mangaPrefs, mode: 'vertical', tapZones: true } },
   play: async ({ canvasElement, userEvent }) => {
     const b = body(canvasElement)
-    await userEvent.click(await b.findByRole('button', { name: /^While reading/ }))
+    await openTapZones(b, userEvent)
     await waitFor(() => expect(b.getByText(/a band at the top goes back/)).toBeVisible())
     await waitFor(() => expect(b.getByRole('radio', { name: 'Kindle' })).toBeDisabled())
     await waitFor(() => expect(b.getByRole('slider', { name: 'Zone size' })).toBeEnabled())

@@ -1,0 +1,82 @@
+using System.Text.RegularExpressions;
+
+namespace Maki.Core.Images;
+
+/// <summary>
+/// Tells a scanlator's page from a publisher's by the text read off it (OCR lines joined with
+/// <c>" | "</c>). Two views of the lowercased text: as read, for short tokens that need word
+/// boundaries, and squashed, with whitespace and line breaks removed, for phrases, because OCR drops
+/// spaces ("READAT") and banners break phrases over lines.
+/// <para>
+/// The lists were tuned on 225 hand-labelled repeated pages (2026-11-13, git-ignored
+/// <c>research/credit-pages</c>): 115 of 116 scanlator pages, 0 of 53 publisher pages and 1 of 44
+/// title pages (a cover carrying the scanlator's credit) came out as scanlator. Change them only
+/// against that set.
+/// </para>
+/// </summary>
+public static partial class CreditText
+{
+    private static readonly string[] StrongPhrases =
+    [
+        "discord", "patreon", "ko-fi", "kofi", "paypal", "recruit", "scanlat", "mangadex", "bato.to", "repost", "reupload", "re-upload", "uploadover",
+        "joinus", "joinour", "supportus", "donat", "buyusa", "fantranslat", "lookingfor", "earlyaccess",
+        "fasterrelease", "fasterupdate", "fastestrelease", "fastrelease",
+        "officialrelease", "officialsite", "officialplatform", "officialvolume", "officialtranslation", "offical",
+        "supporttheauthor", "supporttheartist", "supporttheofficial", "readat", "readfirst", "readonlyat", "readonlyon",
+    ];
+
+    private static readonly Regex[] StrongWords = [Words(@"scans\b"), Words(@"\bmtl\b")];
+
+    private static readonly string[] WeakPhrases =
+        ["proofreader", "cleaner", "qualitycheck", "typeset", "redraw", "oursite", "ourwebsite", "twitter", "translator:", "translator;"];
+
+    private static readonly Regex[] WeakWords =
+    [
+        Words(@"\btl\s*[:;/]"), Words(@"\bpr\s*[:;]"), Words(@"\bts\s*[:;]"), Words(@"\bqc\s*[:;]"), Words(@"\brd\s*[:;]"),
+        Words(@"\braws?\b"), Words(@"\bscan\b"),
+    ];
+
+    private static readonly string[] OfficialPhrases =
+    [
+        "allrightsreserved", "publishedby", "firstpublished", "printedin", "vizmedia", "kodansha", "sevenseas", "squareenix", "yenpress", "copyright", "©",
+        "translationrights", "localizationproduced", "authorizedforpublishing", "libraryofcongress", "readingdirections", "digitaledition", "ghostship",
+    ];
+
+    private static readonly Regex[] OfficialWords = [Words(@"\bisbn\b")];
+
+    /// <summary>
+    /// Whether <paramref name="text"/> reads as a scanlator's page: a strong sign with at most one
+    /// publisher marker beside it, or a weak sign with none. A bare web address is a weak sign only
+    /// when <paramref name="colour"/> (the colour rule also takes the page for a scanlator's), because
+    /// Japanese colophons print one too, in black and white.
+    /// </summary>
+    public static bool IsScanlator(string text, bool colour)
+    {
+        var spaced = text.ToLowerInvariant();
+        var squashed = Squash().Replace(spaced, "");
+
+        var official = Count(OfficialPhrases, OfficialWords, spaced, squashed);
+        if (official <= 1 && Count(StrongPhrases, StrongWords, spaced, squashed) > 0)
+        {
+            return true;
+        }
+
+        if (official > 0)
+        {
+            return false;
+        }
+
+        return Count(WeakPhrases, WeakWords, spaced, squashed) > 0 || (colour && Domain().IsMatch(spaced));
+    }
+
+    private static int Count(string[] phrases, Regex[] words, string spaced, string squashed) =>
+        phrases.Count(p => squashed.Contains(p, StringComparison.Ordinal)) + words.Count(w => w.IsMatch(spaced));
+
+    private static Regex Words(string pattern) => new(pattern, RegexOptions.CultureInvariant);
+
+    [GeneratedRegex(@"[\s|]+")]
+    private static partial Regex Squash();
+
+    [GeneratedRegex(@"\.(com|net|org|gg|xyz|to|co|io|me|moe)\b", RegexOptions.CultureInvariant)]
+    private static partial Regex Domain();
+}

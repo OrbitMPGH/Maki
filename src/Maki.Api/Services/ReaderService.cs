@@ -324,19 +324,59 @@ public class ReaderService(
     /// <summary>The previous/next downloaded chapter of the same series and language.</summary>
     public async Task<(int? Previous, int? Next)> NeighboursAsync(Chapter chapter, CancellationToken ct)
     {
+        var ordered = await ReadingOrderAsync(chapter, ct);
+        var at = ordered.IndexOf(chapter.Id);
+        return at < 0
+            ? (null, null)
+            : (at > 0 ? ordered[at - 1] : null,
+                at + 1 < ordered.Count ? ordered[at + 1] : null);
+    }
+
+    /// <summary>
+    /// Up to <paramref name="each"/> readable chapters on each side of <paramref name="chapter"/> in
+    /// reading order, nearest first, leaving out any <paramref name="usable"/> turns down. The nearest
+    /// candidates on both sides resolve in one <see cref="SlicesAsync"/>; a side only asks again when
+    /// some of them could not be read or used.
+    /// </summary>
+    public async Task<(List<ChapterSlice> Before, List<ChapterSlice> After)> NearbySlicesAsync(
+        Chapter chapter, int each, Func<ChapterSlice, bool> usable, CancellationToken ct)
+    {
+        var ordered = await ReadingOrderAsync(chapter, ct);
+        var at = ordered.IndexOf(chapter.Id);
+        if (at < 0)
+        {
+            return ([], []);
+        }
+
+        var before = ordered[..at];
+        before.Reverse();
+        var after = ordered[(at + 1)..];
+        var found = (Before: new List<ChapterSlice>(), After: new List<ChapterSlice>());
+        var (b, a) = (0, 0);
+        while ((found.Before.Count < each && b < before.Count) || (found.After.Count < each && a < after.Count))
+        {
+            var askBefore = before.Skip(b).Take(each - found.Before.Count).ToList();
+            var askAfter = after.Skip(a).Take(each - found.After.Count).ToList();
+            b += askBefore.Count;
+            a += askAfter.Count;
+            var slices = await SlicesAsync([.. askBefore, .. askAfter], ct);
+            found.Before.AddRange(askBefore.Select(slices.GetValueOrDefault).OfType<ChapterSlice>().Where(usable));
+            found.After.AddRange(askAfter.Select(slices.GetValueOrDefault).OfType<ChapterSlice>().Where(usable));
+        }
+
+        return found;
+    }
+
+    /// <summary>The downloaded chapters of the chapter's series and language, in reading order.</summary>
+    private async Task<List<int>> ReadingOrderAsync(Chapter chapter, CancellationToken ct)
+    {
         var siblings = await db.Chapters
             .AsNoTracking()
             .Where(c => c.SeriesId == chapter.SeriesId && c.Language == chapter.Language && c.ChapterFileId != null)
             .Select(c => new { c.Id, c.Number, c.Volume })
             .ToListAsync(ct);
 
-        var ordered = ChapterOrder.Sort(siblings, c => c.Number, c => c.Volume, c => c.Id);
-
-        var at = ordered.FindIndex(c => c.Id == chapter.Id);
-        return at < 0
-            ? (null, null)
-            : (at > 0 ? ordered[at - 1].Id : null,
-                at + 1 < ordered.Count ? ordered[at + 1].Id : null);
+        return [.. ChapterOrder.Sort(siblings, c => c.Number, c => c.Volume, c => c.Id).Select(c => c.Id)];
     }
 
     /// <summary>

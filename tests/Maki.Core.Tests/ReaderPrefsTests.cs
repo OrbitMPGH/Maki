@@ -200,4 +200,11 @@ public class ReaderPrefsTests
         Assert.Equal(25, spec.TapWidth);
         Assert.True(spec.TapInvert);
     }
+
+    [Fact]
+    public void Hide_credits_is_off_on_an_older_blob_and_round_trips()
+    {
+        Assert.False(ReaderPrefsSpec.Parse("""{"mode":"paged","autoSkipRecap":true}""").HideCredits);
+        Assert.True(ReaderPrefsSpec.Parse(ReaderPrefsSpec.Serialize(new ReaderPrefsSpec(HideCredits: true))).HideCredits);
+    }
 }

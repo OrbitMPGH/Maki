@@ -1,0 +1,393 @@
+using Maki.Core.Images;
+
+namespace Maki.Core.Tests;
+
+/// <summary>
+/// Story pages are seeded value noise in panels with white gutters, so they never repeat by chance.
+/// Credit pages are seeded noise with no gutters, the same pixels wherever they are shared, the way a
+/// scanlator's page sits unchanged at the start of every chapter they release. A page is in colour or
+/// black and white as a whole: in colour, every pixel that is not white counts as coloured.
+/// </summary>
+public class CreditDetectorTests
+{
+    private const int W = CreditDetector.Width;
+    private const int PageRows = 90;
+
+    private static byte[] Art(int seed, int rows, bool gutters = true)
+    {
+        var random = new Random(seed);
+        var strip = new byte[rows * W];
+        Array.Fill(strip, (byte)255);
+        var y = 0;
+        while (y < rows)
+        {
+            var panel = gutters ? Math.Min(rows - y, random.Next(90, 220)) : rows - y;
+            const int cell = 24;
+            var cols = W / 8 + 1;
+            var grid = new double[(panel / cell + 2) * cols];
+            for (var g = 0; g < grid.Length; g++)
+            {
+                grid[g] = random.Next(20, 236);
+            }
+
+            for (var r = 0; r < panel; r++)
+            {
+                var gy = (double)r / cell;
+                var y0 = (int)gy;
+                var fy = gy - y0;
+                for (var x = 0; x < W; x++)
+                {
+                    var gx = x / 8.0;
+                    var x0 = (int)gx;
+                    var fx = gx - x0;
+                    var top = grid[y0 * cols + x0] * (1 - fx) + grid[y0 * cols + Math.Min(x0 + 1, cols - 1)] * fx;
+                    var bottom = grid[(y0 + 1) * cols + x0] * (1 - fx) + grid[(y0 + 1) * cols + Math.Min(x0 + 1, cols - 1)] * fx;
+                    strip[(y + r) * W + x] = (byte)(top * (1 - fy) + bottom * fy);
+                }
+            }
+
+            y += panel + (gutters ? random.Next(20, 60) : 0);
+        }
+
+        return strip;
+    }
+
+    private static CreditPage Page(byte[] grey, bool colour)
+    {
+        var height = grey.Length / W;
+        var (coloured, white) = (new byte[height], new byte[height]);
+        for (var i = 0; i < grey.Length; i++)
+        {
+            if (grey[i] > 235)
+            {
+                white[i / W]++;
+            }
+            else if (colour)
+            {
+                coloured[i / W]++;
+            }
+        }
+
+        return new CreditPage(new GreyPage(grey, height), coloured, white);
+    }
+
+    private static CreditPage Story(int seed, int rows = PageRows, bool colour = false) => Page(Art(seed, rows), colour);
+
+    private static CreditPage Credit(int seed, int rows = PageRows, bool colour = true) => Page(Art(seed, rows, gutters: false), colour);
+
+    /// <summary>A publisher's colophon: repeated like a credit page, but black and white.</summary>
+    private static CreditPage Colophon(int seed) => Credit(seed, colour: false);
+
+    /// <summary>A colour logo down the left of the page, on a ground of <paramref name="ground"/> across the rest.</summary>
+    private static CreditPage Logo(int seed, byte ground)
+    {
+        var art = Art(seed, PageRows, gutters: false);
+        for (var i = 0; i < art.Length; i++)
+        {
+            if (i % W >= 24)
+            {
+                art[i] = ground;
+            }
+        }
+
+        return Page(art, colour: true);
+    }
+
+    private static CreditPage Join(params CreditPage[] parts) => new(
+        new GreyPage([.. parts.SelectMany(p => p.Grey.Pixels)], parts.Sum(p => p.Height)),
+        [.. parts.SelectMany(p => p.Colour)],
+        [.. parts.SelectMany(p => p.White)]);
+
+    private static CreditPage Rows(CreditPage page, int from, int count) => new(
+        new GreyPage(page.Grey.Pixels.AsSpan(from * W, count * W).ToArray(), count),
+        page.Colour[from..(from + count)],
+        page.White[from..(from + count)]);
+
+    /// <summary>A chapter's edges, from its pages in reading order.</summary>
+    private static CreditDetector.Edges Chapter(params CreditPage[] pages) =>
+        new(CreditDetector.Edge.Of(pages, tail: false), CreditDetector.Edge.Of(pages.Reverse().ToArray(), tail: true));
+
+    /// <summary>A chapter of story pages from <paramref name="seed"/>, with the given pages before and after them.</summary>
+    private static CreditPage[] Pages(int seed, CreditPage[] head, CreditPage[] tail, int story = 10, bool colour = false) =>
+        [.. head, .. Enumerable.Range(0, story).Select(n => Story(seed * 100 + n, colour: colour)), .. tail];
+
+    private static CreditPages Find(CreditPage[] chapter, params CreditPage[][] references) =>
+        CreditDetector.Find(chapter.Length, Chapter(chapter), [.. references.Select(Chapter)]);
+
+    [Fact]
+    public void A_credit_page_shared_by_three_chapters_is_hidden_whole()
+    {
+        var credit = Credit(7);
+
+        var found = Find(Pages(1, [credit], []), Pages(2, [credit], []), Pages(3, [credit], []), Pages(4, [], []));
+
+        Assert.Equal(new CreditPages(1, 0, 0), found);
+    }
+
+    [Fact]
+    public void A_page_shared_with_only_one_reference_is_kept()
+    {
+        var credit = Credit(7);
+
+        var found = Find(Pages(1, [credit], []), Pages(2, [credit], []), Pages(3, [], []), Pages(4, [], []));
+
+        Assert.Equal(CreditPages.None, found);
+    }
+
+    [Fact]
+    public void Tail_pages_are_found_against_the_tails_of_nearby_chapters()
+    {
+        var recruit = Credit(8);
+        var donate = Credit(9);
+
+        var found = Find(
+            Pages(1, [], [recruit, donate]),
+            Pages(2, [], [recruit, donate]),
+            Pages(3, [], [recruit, donate]),
+            Pages(4, [], [donate]));
+
+        Assert.Equal(new CreditPages(0, 0, 2), found);
+    }
+
+    [Fact]
+    public void A_banner_fused_into_the_top_of_a_tall_slice_gives_where_it_ends()
+    {
+        var banner = Credit(5, 100);
+        CreditPage[] Webtoon(int seed) =>
+            [Join(banner, Story(seed, 500)), .. Enumerable.Range(1, 8).Select(n => Story(seed * 100 + n, 600))];
+
+        var found = Find(Webtoon(1), Webtoon(2), Webtoon(3), Webtoon(4));
+
+        Assert.Equal(0, found.HeadPages);
+        Assert.InRange(found.HeadOffset, 100 / 600.0 - 0.02, 100 / 600.0 + 0.005);
+        Assert.Equal(0, found.TailPages);
+    }
+
+    [Fact]
+    public void The_same_chapter_in_the_library_again_proves_nothing()
+    {
+        var credit = Credit(7);
+        var chapter = Pages(1, [credit], [credit]);
+
+        var found = Find(chapter, chapter, chapter, chapter);
+
+        Assert.Equal(CreditPages.None, found);
+    }
+
+    [Fact]
+    public void A_copy_of_the_chapter_with_a_damaged_band_still_proves_nothing()
+    {
+        var story = Pages(1, [], []);
+        CreditPage[] Copy(int seed) =>
+            [Join(Rows(story[0], 0, 30), Credit(seed, 6), Rows(story[0], 36, PageRows - 36)), .. story.Skip(1)];
+
+        var found = Find(Copy(21), Copy(22), Copy(23), Copy(24));
+
+        Assert.Equal(CreditPages.None, found);
+    }
+
+    [Fact]
+    public void A_page_sharing_only_its_top_and_bottom_rows_is_not_hidden_whole()
+    {
+        var notes = Credit(6);
+        CreditPage Variant(int seed) => Join(Rows(notes, 0, 20), Credit(seed, 50), Rows(notes, 70, 20));
+
+        var found = Find(
+            Pages(1, [Variant(11)], []),
+            Pages(2, [Variant(12)], []),
+            Pages(3, [Variant(13)], []),
+            Pages(4, [Variant(14)], []));
+
+        Assert.Equal(0, found.HeadPages);
+        Assert.InRange(found.HeadOffset, 0.15, 0.25);
+    }
+
+    [Fact]
+    public void A_recap_of_the_previous_chapters_ending_does_not_count()
+    {
+        var ending = Story(42);
+
+        // The chapter opens with a page two others end on: a recap, not a credit.
+        var found = Find(
+            Pages(1, [ending], []),
+            Pages(2, [], [ending]),
+            Pages(3, [], [ending]),
+            Pages(4, [], []));
+
+        Assert.Equal(CreditPages.None, found);
+    }
+
+    [Fact]
+    public void At_most_three_whole_pages_are_hidden_at_an_edge()
+    {
+        // The fourth page is shared but for its last rows, so it counts as whole while the chapters
+        // still differ before the strip ends. It is mostly blank, which keeps the shared rows under
+        // the share that would make the references copies of the chapter.
+        var blank = Page(Enumerable.Repeat((byte)255, 162 * W).ToArray(), colour: false);
+        CreditPage[] head = [Credit(21, 40), Credit(22, 40), Credit(23, 40)];
+        CreditPage[] Varied(int seed) => [.. head, Join(blank, Credit(24, 20), Credit(seed, 18))];
+
+        var found = Find(Pages(1, Varied(31), []), Pages(2, Varied(32), []), Pages(3, Varied(33), []));
+
+        Assert.Equal(new CreditPages(3, 0, 0), found);
+    }
+
+    [Fact]
+    public void Hidden_pages_never_take_more_than_a_third_of_the_chapter()
+    {
+        CreditPage[] head = [Credit(21), Credit(22)];
+        CreditPage[] tail = [Credit(23), Credit(24)];
+
+        var found = Find(Pages(1, head, tail, story: 2), Pages(2, head, tail), Pages(3, head, tail));
+
+        Assert.Equal(new CreditPages(2, 0, 0), found);
+    }
+
+    [Fact]
+    public void A_short_chapter_hides_nothing()
+    {
+        var credit = Credit(7);
+
+        var found = Find(Pages(1, [credit], [], story: 4), Pages(2, [credit], []), Pages(3, [credit], []));
+
+        Assert.Equal(CreditPages.None, found);
+    }
+
+    [Fact]
+    public void An_unreadable_page_ends_the_strip()
+    {
+        var edge = CreditDetector.Edge.Of([Credit(1), null, Credit(2)], tail: false);
+
+        Assert.Equal(PageRows * (W + 2), edge.Bytes);
+    }
+
+    [Fact]
+    public void Shrink_counts_each_rows_colour_and_white_pixels()
+    {
+        // Rows 0 to 9 red, 10 to 19 white, 20 to 29 mid grey, on a page twice the strip's width.
+        var pixels = new byte[128 * 30 * 3];
+        for (var y = 0; y < 30; y++)
+        {
+            for (var x = 0; x < 128; x++)
+            {
+                var (r, g, b) = y < 10 ? (220, 30, 30) : y < 20 ? (255, 255, 255) : (128, 128, 128);
+                var at = (y * 128 + x) * 3;
+                (pixels[at], pixels[at + 1], pixels[at + 2]) = ((byte)r, (byte)g, (byte)b);
+            }
+        }
+
+        using var image = NetVips.Image.NewFromMemory(pixels, 128, 30, 3, NetVips.Enums.BandFormat.Uchar);
+        var page = CreditDetector.Shrink(image.PngsaveBuffer());
+
+        Assert.Equal(15, page.Height);
+        Assert.Equal(W * page.Height, page.Grey.Pixels.Length);
+        Assert.Equal(W, page.Colour[1]);
+        Assert.Equal(0, page.White[1]);
+        Assert.Equal(W, page.White[7]);
+        Assert.Equal(0, page.Colour[7]);
+        Assert.Equal(0, page.Colour[13]);
+        Assert.Equal(0, page.White[13]);
+    }
+
+    [Fact]
+    public void A_black_and_white_repeated_page_is_kept()
+    {
+        var colophon = Colophon(7);
+
+        var found = Find(Pages(1, [colophon], []), Pages(2, [colophon], []), Pages(3, [colophon], []));
+
+        Assert.Equal(CreditPages.None, found);
+    }
+
+    [Fact]
+    public void In_a_colour_chapter_a_repeated_page_on_a_white_ground_is_kept()
+    {
+        var title = Logo(5, ground: 255);
+
+        var found = Find(
+            Pages(1, [title], [], colour: true),
+            Pages(2, [title], [], colour: true),
+            Pages(3, [title], [], colour: true));
+
+        Assert.Equal(CreditPages.None, found);
+    }
+
+    [Fact]
+    public void In_a_colour_chapter_a_repeated_page_on_a_filled_ground_is_hidden()
+    {
+        var credit = Logo(5, ground: 120);
+
+        var found = Find(
+            Pages(1, [credit], [], colour: true),
+            Pages(2, [credit], [], colour: true),
+            Pages(3, [credit], [], colour: true));
+
+        Assert.Equal(new CreditPages(1, 0, 0), found);
+    }
+
+    [Fact]
+    public void An_official_page_at_the_edge_keeps_the_credit_page_behind_it()
+    {
+        CreditPage[] head = [Colophon(3), Credit(7)];
+
+        var found = Find(Pages(1, head, []), Pages(2, head, []), Pages(3, head, []));
+
+        Assert.Equal(CreditPages.None, found);
+    }
+
+    [Fact]
+    public void A_banner_cut_over_grey_rows_is_dropped()
+    {
+        var banner = Credit(5, 100, colour: false);
+        CreditPage[] Webtoon(int seed) =>
+        [
+            Join(banner, Story(seed, 500, colour: true)),
+            .. Enumerable.Range(1, 8).Select(n => Story(seed * 100 + n, 600, colour: true)),
+        ];
+
+        var found = Find(Webtoon(1), Webtoon(2), Webtoon(3), Webtoon(4));
+
+        Assert.Equal(CreditPages.None, found);
+    }
+
+    [Fact]
+    public void Candidates_list_repeated_pages_edge_inward_with_their_colour_verdict()
+    {
+        var (official, credit) = (Colophon(1), Credit(2));
+        var chapter = Pages(10, [official, credit], [credit]);
+        var references = new[] { Pages(11, [official, credit], [credit]), Pages(12, [official, credit], [credit]) };
+
+        var candidates = CreditDetector.Candidates(chapter.Length, Chapter(chapter), [.. references.Select(Chapter)]);
+
+        Assert.Equal([new CreditCandidate(0, 1, false), new CreditCandidate(1, 1, true)], candidates.Head);
+        Assert.Equal([new CreditCandidate(0, 1, true)], candidates.Tail);
+    }
+
+    [Fact]
+    public void Settle_hides_the_accepted_run_from_each_edge()
+    {
+        var (official, credit) = (Colophon(1), Credit(2));
+        var chapter = Pages(10, [official, credit], [credit]);
+        var references = new[] { Pages(11, [official, credit], [credit]), Pages(12, [official, credit], [credit]) };
+        var candidates = CreditDetector.Candidates(chapter.Length, Chapter(chapter), [.. references.Select(Chapter)]);
+
+        Assert.Equal(new CreditPages(2, 0, 1), CreditDetector.Settle(candidates, 2, 1));
+        Assert.Equal(new CreditPages(0, 0, 0), CreditDetector.Settle(candidates, 0, 0));
+    }
+
+    [Fact]
+    public void A_banner_candidate_carries_its_share_and_settles_to_an_offset()
+    {
+        var banner = Credit(5, 100);
+        CreditPage[] Webtoon(int seed) =>
+            [Join(banner, Story(seed, 500)), .. Enumerable.Range(1, 8).Select(n => Story(seed * 100 + n, 600))];
+        var chapter = Webtoon(1);
+
+        var candidates = CreditDetector.Candidates(chapter.Length, Chapter(chapter), [Chapter(Webtoon(2)), Chapter(Webtoon(3))]);
+
+        var only = Assert.Single(candidates.Head);
+        Assert.True(only.Share is > 0 and < 1);
+        Assert.Equal(Math.Round(only.Share, 4), CreditDetector.Settle(candidates, 1, 0).HeadOffset);
+        Assert.Equal(CreditPages.None, CreditDetector.Settle(candidates, 0, 0));
+    }
+}

@@ -1092,6 +1092,11 @@ try
     builder.Services.AddScoped<ReaderService>();
     builder.Services.AddScoped<ReaderThumbnailCache>();
     builder.Services.AddSingleton<ReaderRecapCache>();
+    builder.Services.AddSingleton<ReaderCreditsCache>();
+    builder.Services.AddSingleton(sp => new Maki.Api.Services.Ocr.PageTextReader(
+        sp.GetRequiredService<ILogger<Maki.Api.Services.Ocr.PageTextReader>>()));
+    builder.Services.AddSingleton<Maki.Api.Services.Ocr.IPageTextReader>(sp =>
+        sp.GetRequiredService<Maki.Api.Services.Ocr.PageTextReader>());
     builder.Services.AddScoped<ContinueReadingService>();
     builder.Services.AddScoped<ReadingStatusService>();
     builder.Services.AddScoped<ReadingProfileService>();
