@@ -17,12 +17,18 @@ export function DrillRow({
   icon: Icon,
   label,
   value,
+  active,
+  chevron = true,
   onClick,
   ref,
 }: {
   icon: IconComponent
   label: ReactNode
   value?: ReactNode
+  /** The value is one the user set, not the default: it reads in the accent. */
+  active?: boolean
+  /** Off for a row that runs an action rather than opening a page. */
+  chevron?: boolean
   onClick: () => void
   ref?: Ref<HTMLButtonElement>
 }) {
@@ -30,8 +36,12 @@ export function DrillRow({
     <UnstyledButton ref={ref} className="drill-row" onClick={onClick}>
       <Icon size={16} className="drill-row-icon" aria-hidden />
       <span className="drill-row-label">{label}</span>
-      {value != null && <span className="drill-row-value">{value}</span>}
-      <IconChevronRight size={16} className="drill-row-chevron" aria-hidden />
+      {value != null && (
+        <span className="drill-row-value" data-active={active || undefined}>
+          {value}
+        </span>
+      )}
+      {chevron && <IconChevronRight size={16} className="drill-row-chevron" aria-hidden />}
     </UnstyledButton>
   )
 }

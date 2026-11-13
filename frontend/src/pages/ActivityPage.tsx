@@ -1,3 +1,4 @@
+import { SearchInput } from '../components/ui/SearchInput'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import {
   ActionIcon,
@@ -7,7 +8,6 @@ import {
   Checkbox,
   Group,
   Loader,
-  Modal,
   Pagination,
   Progress,
   Stack,
@@ -15,7 +15,7 @@ import {
   Table,
   Tabs,
   Text,
-  TextInput,
+  
   Tooltip,
   VisuallyHidden,
 } from '@mantine/core'
@@ -83,6 +83,7 @@ import { ImportReviewModal } from '../components/ImportReviewModal'
 import { QueuePauseBanner, QueuePauseButton } from '../components/QueuePause'
 import { FileQualityBadge } from '../components/series/FileQualityBadge'
 import { TorrentProposalCard } from '../components/upgrades/TorrentProposalCard'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { SeriesCell } from '../components/SeriesCell'
@@ -534,7 +535,7 @@ export default function ActivityPage() {
                 {sourceLabel(q.sourceName)}
               </Text>
               {q.upgrade && (isUpgradeOrigin || q.upgrade.force) && (
-                <Badge size="xs" variant="light" color="var(--brand-fg)">
+                <Badge size="sm" variant="light" color="var(--brand-fg)">
                   {isUpgradeOrigin ? <Trans>Upgrade</Trans> : <Trans>Replace</Trans>}
                 </Badge>
               )}
@@ -848,7 +849,7 @@ export default function ActivityPage() {
                                 {sourceLabel(q.sourceName)}
                               </Text>
                               {q.upgrade && (isUpgradeOrigin || q.upgrade.force) && (
-                                <Badge size="xs" variant="light" color="var(--brand-fg)">
+                                <Badge size="sm" variant="light" color="var(--brand-fg)">
                                   {isUpgradeOrigin ? <Trans>Upgrade</Trans> : <Trans>Replace</Trans>}
                                 </Badge>
                               )}
@@ -867,9 +868,8 @@ export default function ActivityPage() {
                             <Progress
                               value={(q.pagesDone / q.pagesTotal) * 100}
                               style={{ flex: 1 }}
-                              radius="xl"
                               animated={q.status === 'Downloading'}
-                              color={q.status === 'Failed' ? 'var(--danger)' : 'brand'}
+                              color={q.status === 'Failed' ? 'var(--danger)' : undefined}
                               aria-label={t`Download progress`}
                             />
                             <Text size="xs" c="var(--ink-3)" w={52} className="tnum" ta="right">
@@ -1018,37 +1018,25 @@ export default function ActivityPage() {
 
       <ImportReviewModal queueItemId={reviewing} onClose={() => setReviewing(null)} />
 
-      <Modal
+      <ConfirmDialog
         opened={removingRelease !== null}
         onClose={() => setRemovingRelease(null)}
         title={<Trans>Remove this torrent?</Trans>}
-        centered
+        confirmLabel={<Trans>Remove</Trans>}
+        loading={remove.isPending}
+        onConfirm={() => {
+          if (removingRelease === null) return
+          remove.mutate({ id: removingRelease, blockRelease }, { onSuccess: () => setRemovingRelease(null) })
+        }}
       >
-        <Stack gap="sm">
-          <Checkbox
-            checked={blockRelease}
-            onChange={(e) => setBlockRelease(e.currentTarget.checked)}
-            label={t`Don't grab this release again`}
-          />
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setRemovingRelease(null)}>
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button
-              color="var(--danger-fill)"
-              loading={remove.isPending}
-              onClick={() => {
-                if (removingRelease === null) return
-                remove.mutate({ id: removingRelease, blockRelease }, { onSuccess: () => setRemovingRelease(null) })
-              }}
-            >
-              <Trans>Remove</Trans>
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+        <Checkbox
+          checked={blockRelease}
+          onChange={(e) => setBlockRelease(e.currentTarget.checked)}
+          label={t`Don't grab this release again`}
+        />
+      </ConfirmDialog>
 
-      <Modal
+      <ConfirmDialog
         opened={clearConfirmOpen}
         onClose={() => setClearConfirmOpen(false)}
         title={
@@ -1058,28 +1046,13 @@ export default function ActivityPage() {
             other="Clear # queued downloads?"
           />
         }
-        centered
-      >
-        <Stack gap="sm">
-          <Text size="sm">
-            <Trans>Pending downloads will be removed. Downloads already in progress will be cancelled.</Trans>
-          </Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setClearConfirmOpen(false)}>
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button
-              color="var(--danger-fill)"
-              loading={clear.isPending}
-              onClick={() => {
-                clear.mutate(undefined, { onSuccess: () => setClearConfirmOpen(false) })
-              }}
-            >
-              <Trans>Clear queue</Trans>
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+        description={<Trans>Pending downloads will be removed. Downloads already in progress will be cancelled.</Trans>}
+        confirmLabel={<Trans>Clear queue</Trans>}
+        loading={clear.isPending}
+        onConfirm={() => {
+          clear.mutate(undefined, { onSuccess: () => setClearConfirmOpen(false) })
+        }}
+      />
 
       <Stack gap="sm" mt="xl">
         <SectionHeader icon={IconHistory} title={t`History`} count={history?.itemTotal} />
@@ -1107,14 +1080,15 @@ export default function ActivityPage() {
                 checked={groupHistory}
                 onChange={(event) => changeGroupHistory(event.currentTarget.checked)}
               />
-              <TextInput
-                size="sm"
+              <SearchInput
                 w={220}
-                type="search"
-                leftSection={<IconSearch size={16} />}
                 placeholder={t`Filter by series`}
                 aria-label={t`Filter by series`}
                 value={historySearch}
+                onClear={() => {
+                  setHistorySearch('')
+                  setHistoryPage(1)
+                }}
                 onChange={(event) => {
                   setHistorySearch(event.currentTarget.value)
                   setHistoryPage(1)
@@ -1128,7 +1102,7 @@ export default function ActivityPage() {
           historyQuery.isError ? (
             <LoadFailed query={historyQuery} />
           ) : (
-            <TableSkeleton columns={6} />
+            <TableSkeleton columns={5} />
           )
         ) : history.entries.length === 0 ? (
           historyFiltered ? (
@@ -1206,7 +1180,7 @@ export default function ActivityPage() {
                                 detail={
                                   <Group component="span" gap={8} wrap="nowrap">
                                     <span>{historyRunRange(entry.items)}</span>
-                                    <Badge size="xs" variant="light" color="var(--neutral)" className="tnum">
+                                    <Badge size="sm" variant="light" color="var(--neutral)" className="tnum">
                                       {plural(count, { one: '# chapter', other: '# chapters' })}
                                     </Badge>
                                   </Group>
@@ -1220,7 +1194,7 @@ export default function ActivityPage() {
                                     {sourceLabel(mainSource)}
                                   </Text>
                                   {first.upgrade && (
-                                    <Badge size="xs" variant="light" color="var(--brand-fg)">
+                                    <Badge size="sm" variant="light" color="var(--brand-fg)">
                                       <Trans>Upgrade</Trans>
                                     </Badge>
                                   )}
@@ -1285,10 +1259,10 @@ export default function ActivityPage() {
             upgradesSummaryQuery.isError ? (
               <LoadFailed query={upgradesSummaryQuery} />
             ) : (
-              <TableSkeleton columns={6} rows={4} />
+              <TableSkeleton columns={4} rows={4} />
             )
           ) : upgradeHistoryQuery.isPending ? (
-            <TableSkeleton columns={6} rows={4} />
+            <TableSkeleton columns={4} rows={4} />
           ) : upgradesUnset ? (
             <EmptyState
               compact
@@ -1386,7 +1360,7 @@ export default function ActivityPage() {
                   upgradeHistoryQuery.isError ? (
                     <LoadFailed query={upgradeHistoryQuery} />
                   ) : (
-                    <TableSkeleton columns={5} />
+                    <TableSkeleton columns={4} />
                   )
                 ) : upgradeHistory.rows.length === 0 ? (
                   <EmptyState
@@ -1575,7 +1549,7 @@ export default function ActivityPage() {
                   cutoffUnmetQuery.isError ? (
                     <LoadFailed query={cutoffUnmetQuery} />
                   ) : (
-                    <TableSkeleton columns={6} rows={4} />
+                    <TableSkeleton columns={5} rows={4} />
                   )
                 ) : !upgradesSummary.profilesConfigured ? (
                   <EmptyState

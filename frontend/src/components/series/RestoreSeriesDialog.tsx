@@ -44,7 +44,6 @@ export function RestoreSeriesDialog({
     <Modal
       opened={opened}
       onClose={onClose}
-      centered
       title={
         <ModalHeading
           title={<Trans context="series">Restore to the library?</Trans>}

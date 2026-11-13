@@ -1,4 +1,4 @@
-import { ActionIcon, Group, Menu, Text, UnstyledButton, VisuallyHidden } from '@mantine/core'
+import { Group, Menu, Text, UnstyledButton, VisuallyHidden } from '@mantine/core'
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 import {
   IconAperture,
@@ -10,7 +10,6 @@ import {
   IconDeviceMobile,
   IconDeviceMobileDown,
   IconDeviceMobileOff,
-  IconDotsVertical,
   IconEyeOff,
   IconFileText,
   IconFolder,
@@ -30,6 +29,7 @@ import {
   IconRanking,
   IconUsers,
 } from '../../lib/icons'
+import { OverflowButton } from '../ui/OverflowButton'
 import { useIncognitoOptions } from '../ui/incognito'
 import { useSeriesNotificationHelp, type SeriesNotificationMode } from '../ui/seriesNotifications'
 import { msg, plural } from '@lingui/core/macro'
@@ -766,19 +766,14 @@ export function SeriesActionsMenu({
             classNames={{ dropdown: 'series-actions menu-dropdown-scroll' }}
         >
             <Menu.Target>
-                <ActionIcon
-                    variant="subtle"
+                <OverflowButton
                     size={42}
                     radius="md"
-                    aria-label={t`More actions`}
                     style={{
-                        color: 'var(--ink-3)',
                         background: 'color-mix(in srgb, var(--app-bg) 45%, transparent)',
                         border: '1px solid var(--border-strong)',
                     }}
-                >
-                    <IconDotsVertical size={19} />
-                </ActionIcon>
+                />
             </Menu.Target>
 
             <Menu.Dropdown

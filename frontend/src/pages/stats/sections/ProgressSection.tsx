@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import {
-  Alert,
   Group,
   RingProgress,
   SimpleGrid,
@@ -8,9 +7,8 @@ import {
   Stack,
   Table,
   Text,
-  Title,
 } from '@mantine/core'
-import { IconAlertTriangle, IconInfoCircle } from '../../../lib/icons'
+import { IconInfoCircle } from '../../../lib/icons'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -19,6 +17,7 @@ import { useAuth } from '../../../auth/AuthProvider'
 import type { ReadingGoal } from '../../../api/hooks'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { Panel } from '../../../components/ui/Panel'
+import { PanelTitle } from '../../../components/ui/PanelTitle'
 import { formatNumber } from '../../../format'
 import { useLabel } from '../../../i18n-context'
 import {
@@ -28,6 +27,7 @@ import {
 } from '../AchievementGrid'
 import { StatsInsight } from '../StatsSection'
 import type { StatsSectionProps } from './types'
+import { Callout } from '../../../components/ui/Callout'
 
 export const GOAL_LABELS: Record<ReadingGoal['period'], MessageDescriptor> = {
   Day: msg`Today`,
@@ -79,7 +79,7 @@ function GoalRow({ goal }: { goal: ReadingGoal }) {
  */
 export default function ProgressSection({ userId }: StatsSectionProps) {
   const { t, i18n } = useLingui()
-  const { data: summary, isLoading, isError } = useProgressSummary(userId)
+  const { data: summary, isLoading, isError, refetch } = useProgressSummary(userId)
   const { data: achievements } = useAchievements(userId, summary?.enabled !== false)
   // Only meaningful for your own view: the endpoint answers about who opted in, not about whoever
   // an admin is currently looking at.
@@ -163,21 +163,24 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
   // is already in the position they want.
   if (isError || !summary) {
     return (
-      <Alert icon={<IconAlertTriangle size={16} />} color="var(--danger)" variant="light">
-        <Trans>Could not load your progress. The server logs will say why.</Trans>
-      </Alert>
+      <EmptyState
+        compact
+        title={t`Could not load your progress. The server logs will say why.`}
+        actionLabel={t`Try again`}
+        onAction={() => void refetch()}
+      />
     )
   }
 
   if (!summary.enabled) {
     return (
-      <Alert icon={<IconInfoCircle size={16} />} color="var(--neutral)" variant="light">
+      <Callout tone="neutral" role="alert" icon={IconInfoCircle}>
         <Trans>
           Progress tracking is switched off. Turn it back on under Settings to see levels,
           achievements and streaks. Nothing was lost while it was off: all of it is worked out from
           your reading history whenever it is asked for.
         </Trans>
-      </Alert>
+      </Callout>
     )
   }
 
@@ -209,9 +212,9 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
               }
             />
             <Stack gap={2}>
-              <Title order={3} size="h4">
+              <PanelTitle>
                 <Trans>Level {currentLevel}</Trans>
-              </Title>
+              </PanelTitle>
               <Text size="sm" c="var(--ink-3)">
                 <Trans>
                   {intoLevel} / {levelSpan} XP to level {nextLevel}
@@ -237,9 +240,9 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
         </Panel>
 
         <Panel p="md">
-          <p className="stats-panel-title">
+          <PanelTitle>
             <Trans>Goals</Trans>
-          </p>
+          </PanelTitle>
           {summary.goals.length > 0 ? (
             <ul className="stats-rows">
               {summary.goals.map((goal) => (
@@ -253,9 +256,9 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
 
         {showLeaderboard && (
           <Panel p="md">
-            <p className="stats-panel-title">
+            <PanelTitle>
               <Trans>Leaderboard</Trans>
-            </p>
+            </PanelTitle>
             {leaderboard && leaderboard.length >= 2 ? (
               <Table className="panel-table ops-table" highlightOnHover>
                 <Table.Thead>
@@ -305,9 +308,9 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
       {achievements && achievements.length > 0 && (
         <Panel p="md">
           <Group justify="space-between" align="baseline" mb="xs">
-            <p className="stats-panel-title" style={{ margin: 0 }}>
+            <PanelTitle>
               <Trans>Badges</Trans>
-            </p>
+            </PanelTitle>
             <Text size="sm" c="var(--ink-3)">
               <Trans>All {total}</Trans>
             </Text>

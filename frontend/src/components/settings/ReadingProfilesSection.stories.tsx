@@ -54,12 +54,11 @@ export const NewProfile: Story = {
 export const EnhanceFields: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'New profile' }))
-    const level = await canvas.findByLabelText('Enhance', { selector: 'input' })
-    await waitFor(() => expect(level).toHaveValue('Off'))
+    const level = await canvas.findByRole('radiogroup', { name: 'Enhance' })
+    await waitFor(() => expect(within(level).getByRole('radio', { name: 'Off' })).toBeChecked())
     await expect(canvas.queryByLabelText('Method', { selector: 'input' })).toBeNull()
 
-    await userEvent.click(level)
-    await userEvent.click(await within(canvasElement.ownerDocument.body).findByRole('option', { name: 'Always' }))
+    await userEvent.click(within(level).getByText('Always'))
     const method = await canvas.findByLabelText('Method', { selector: 'input' })
     await waitFor(() => expect(method).toHaveValue('Maki 2x'))
     await expect(

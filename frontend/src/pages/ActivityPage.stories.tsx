@@ -257,7 +257,7 @@ export const HistoryUngrouped: Story = {
 export const HistoryFilteredEmpty: Story = {
   play: async ({ canvas, userEvent }) => {
     await canvas.findByText('10 chapters')
-    await userEvent.type(await canvas.findByRole('searchbox', { name: 'Filter by series' }), 'zzz')
+    await userEvent.type(await canvas.findByRole('textbox', { name: 'Filter by series' }), 'zzz')
     await expect(await canvas.findByText('Nothing matches these filters')).toBeVisible()
     await userEvent.click(await canvas.findByRole('button', { name: 'Clear filters' }))
     await expect(await canvas.findByText('10 chapters')).toBeVisible()

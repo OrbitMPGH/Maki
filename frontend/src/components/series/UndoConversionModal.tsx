@@ -72,7 +72,6 @@ export function UndoConversionModal({
     <Modal
       opened={opened}
       onClose={close}
-      centered
       title={
         <ModalHeading
           title={<Trans>Undo conversion</Trans>}

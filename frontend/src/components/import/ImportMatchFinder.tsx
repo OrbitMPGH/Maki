@@ -3,7 +3,6 @@ import {
   Button,
   Divider,
   Group,
-  Image,
   Modal,
   ScrollArea,
   Stack,
@@ -22,6 +21,8 @@ import { IconChevronRight } from '../../lib/icons'
 import { EmptyState } from '../ui/EmptyState'
 import { ModalFooter, ModalHeading } from '../ui/ModalShell'
 import { StatusDot } from '../ui/StatusDot'
+import { Thumb } from '../ui/Thumb'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 /**
  * Picks the match for one import folder by hand: a title search (the same endpoint the Add dialog
@@ -64,7 +65,7 @@ export function ImportMatchFinder({
           description={<Trans>Search by title, or paste an id or link.</Trans>}
         />
       }
-      size="lg"
+      size={MODAL_SIZE.default}
     >
       <Stack gap="sm">
         <TextInput
@@ -80,11 +81,7 @@ export function ImportMatchFinder({
             <div className="modal-list" style={{ marginInline: 10 }}>
               {results.map((r) => (
                 <UnstyledButton key={r.providerId} onClick={() => onPick(r)} className="modal-list-row">
-                  {r.coverUrl ? (
-                    <Image src={r.coverUrl} w={28} h={40} radius="sm" fit="cover" alt="" style={{ flex: 'none' }} />
-                  ) : (
-                    <div style={{ width: 28, height: 40, flex: 'none' }} />
-                  )}
+                  <Thumb src={r.coverUrl} size="sm" />
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <Text size="sm" fw={600} lineClamp={1}>
                       {r.title}

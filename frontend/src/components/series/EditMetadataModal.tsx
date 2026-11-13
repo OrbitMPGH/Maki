@@ -33,6 +33,7 @@ import { useLabel } from '../../i18n-context'
 import { GENRE_LABELS } from '../CatalogueFilters'
 import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
 import { CoverPicker } from './CoverPicker'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 const STATUSES = ['Unknown', 'Ongoing', 'Completed', 'Hiatus', 'Cancelled']
 const GENRE_SUGGESTIONS = Object.keys(GENRE_LABELS)
@@ -225,8 +226,7 @@ export function EditMetadataModal({
     <Modal
       opened={opened}
       onClose={close}
-      size="lg"
-      centered
+      size={MODAL_SIZE.default}
       title={
         <ModalHeading
           title={<Trans>Edit metadata</Trans>}
@@ -516,7 +516,7 @@ function AltTitlesInput({
             />
             <ActionIcon
               variant="subtle"
-              color="gray"
+              color="var(--neutral)"
               aria-label={t`Remove title`}
               onClick={() => onChange(value.filter((_, i) => i !== index))}
             >

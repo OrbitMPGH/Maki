@@ -5,6 +5,7 @@ import { formatDate } from '../../format'
 import { useIgnoredImportFolders, useUnignoreImportFolder } from '../../api/libraryImport'
 import { EmptyState } from '../ui/EmptyState'
 import { ModalFooter, ModalHeading } from '../ui/ModalShell'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 /** The folders of one root that the import scan skips, each of which can be brought back. */
 export function IgnoredFoldersModal({ rootFolderId, onClose }: { rootFolderId: number; onClose: () => void }) {
@@ -18,7 +19,7 @@ export function IgnoredFoldersModal({ rootFolderId, onClose }: { rootFolderId: n
     <Modal
       opened
       onClose={onClose}
-      size="lg"
+      size={MODAL_SIZE.default}
       title={
         <ModalHeading
           title={t`Ignored folders`}

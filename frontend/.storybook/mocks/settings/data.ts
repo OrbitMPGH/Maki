@@ -4,6 +4,7 @@ import type { TorrentProposalDto } from '../../../src/api/upgrades'
 import type {
   BackupInfo,
   BackupRetentionSettings,
+  ConnectionTestStatus,
   DiscoverSettings,
   DownloadClientKindInfo,
   DownloadClientSettings,
@@ -505,6 +506,14 @@ export const indexerList: IndexerEntry[] = [
 ]
 
 export const flaresolverr = { url: 'http://192.168.1.10:8191' }
+
+/** The download client was never tested; everything else has a result. */
+export const connectionTests: ConnectionTestStatus[] = [
+  { key: 'flaresolverr', ok: false, message: 'FlareSolverr did not answer. Check the URL and that it is running.', testedAt: hoursAgo(5) },
+  { key: 'indexer:prowlarr', ok: true, message: null, testedAt: daysAgo(2) },
+  { key: 'kavita', ok: true, message: null, testedAt: minutesAgo(12) },
+  { key: 'suwayomi', ok: true, message: null, testedAt: hoursAgo(1) },
+]
 
 export const kavitaConnection = {
   url: 'http://192.168.1.20:5000',

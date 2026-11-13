@@ -1,7 +1,8 @@
-import { Button, Group, Paper, Text } from '@mantine/core'
+import { Button, Text } from '@mantine/core'
 import { Trans } from '@lingui/react/macro'
 import { IconArchive, IconArchiveOff, IconTrash } from '../../lib/icons'
 import { formatDate } from '../../format'
+import { Callout } from '../ui/Callout'
 
 /** Sits above the series page while it is archived: what that means and the two ways out of it. */
 export function ArchivedBanner({
@@ -22,43 +23,34 @@ export function ArchivedBanner({
 }) {
   const date = formatDate(archivedAt)
   return (
-    <Paper
-      className="series-archived-banner"
-      withBorder
-      p="sm"
-      radius="lg"
-      mt="lg"
-      style={{
-        borderColor: 'color-mix(in srgb, var(--brand) 35%, var(--border))',
-        background: 'color-mix(in srgb, var(--brand) 7%, var(--surface-2))',
-      }}
-    >
-      <Group justify="space-between" wrap="wrap" gap="sm">
-        <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: 1, minWidth: 240 }}>
-          <IconArchive size={18} style={{ flexShrink: 0, marginTop: 2, color: 'var(--brand-fg)' }} />
-          <Text size="sm" c="var(--ink-2)">
-            {archivedBy ? (
-              <Trans>
-                Archived on {date} by {archivedBy}. Maki is not checking sources for this series.
-              </Trans>
-            ) : (
-              <Trans>Archived on {date}. Maki is not checking sources for this series.</Trans>
-            )}
-          </Text>
-        </Group>
-        <Group gap="xs">
+    <Callout
+      tone="brand"
+      icon={IconArchive}
+      style={{ marginTop: 'var(--mantine-spacing-lg)' }}
+      actions={
+        <>
           {onRestore && (
             <Button size="xs" variant="light" leftSection={<IconArchiveOff size={16} />} loading={restoring} onClick={onRestore}>
               <Trans context="series">Restore to library</Trans>
             </Button>
           )}
           {onRemoveFiles && (
-            <Button size="xs" variant="subtle" leftSection={<IconTrash size={16} />} onClick={onRemoveFiles}>
+            <Button size="xs" variant="subtle" color="var(--danger)" leftSection={<IconTrash size={16} />} onClick={onRemoveFiles}>
               <Trans>Remove files</Trans>
             </Button>
           )}
-        </Group>
-      </Group>
-    </Paper>
+        </>
+      }
+    >
+      <Text size="sm" c="var(--ink-2)">
+        {archivedBy ? (
+          <Trans>
+            Archived on {date} by {archivedBy}. Maki is not checking sources for this series.
+          </Trans>
+        ) : (
+          <Trans>Archived on {date}. Maki is not checking sources for this series.</Trans>
+        )}
+      </Text>
+    </Callout>
   )
 }

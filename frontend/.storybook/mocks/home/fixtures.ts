@@ -15,6 +15,8 @@ import { cover, daysAgo, hoursAgo, minutesAgo } from '../api'
 import { catalogue, uiSettings, type CatalogueEntry } from '../shared'
 
 const OBTAINED_OVERRIDES: Record<number, number> = { 3: 60, 6: 180 }
+/** Unread files in each series' latest batch, the "N new" pill. */
+const NEW_CHAPTERS: Record<number, number> = { 1: 3, 3: 4 }
 const QUEUED: Record<number, { queued: number; downloading: number }> = {
   3: { queued: 4, downloading: 2 },
   9: { queued: 0, downloading: 1 },
@@ -84,6 +86,7 @@ function toSeries(entry: CatalogueEntry): SeriesDto {
     fileSources: [entry.source],
     lastReadAt: entry.read > 0 ? daysAgo(entry.id) : null,
     lastDownloadedAt: hoursAgo(entry.id * 5),
+    newChapterCount: NEW_CHAPTERS[entry.id] ?? 0,
     communityRating: entry.rating,
     upgradeProfileId: null,
     lastUpgradeScan: null,

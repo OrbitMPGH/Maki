@@ -476,7 +476,7 @@ export default function HomePage({ separation = 'none' }: { separation?: HomeSep
         <AddRailButton placement="home" />
         <Button
           variant="subtle"
-          color="gray"
+          color="var(--neutral)"
           leftSection={<IconLayoutDashboard size={16} />}
           onClick={enterEditing}
         >

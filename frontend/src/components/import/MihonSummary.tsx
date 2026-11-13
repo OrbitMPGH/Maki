@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Plural, Trans } from '@lingui/react/macro'
 import type { MihonImportResult } from '../../api/mihonImport'
 import { Panel } from '../ui/Panel'
+import { PanelTitle } from '../ui/PanelTitle'
 
 export interface MihonOutcomeRow extends MihonImportResult {
   title: string
@@ -19,9 +20,9 @@ export function MihonSummary({ results, onReset }: { results: MihonOutcomeRow[];
   return (
     <Panel>
       <Stack gap="sm">
-        <Text fw={600}>
+        <PanelTitle>
           <Trans>Import finished</Trans>
-        </Text>
+        </PanelTitle>
         <Group gap="lg">
           <Text size="sm" c="var(--ok)">
             <Plural value={created} one="# series added" other="# series added" />

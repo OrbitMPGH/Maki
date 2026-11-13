@@ -140,6 +140,7 @@ function toSeries(e: CatalogueEntry): SeriesDto {
     fileSources: sources.slice(0, 1),
     lastReadAt: o.lastRead == null ? null : daysAgo(o.lastRead),
     lastDownloadedAt: o.files > 0 ? hoursAgo(e.id * 7) : null,
+    newChapterCount: e.id % 3 === 1 ? Math.min(4, Math.max(0, o.files - e.read)) : 0,
     communityRating: Math.round(e.rating * 10) / 10,
     sizeOnDisk: o.files > 0 ? o.files * 31_457_280 : null,
     nextCheckAt: o.monitored === false || sources.length === 0 ? null : hoursAgo(-e.id),

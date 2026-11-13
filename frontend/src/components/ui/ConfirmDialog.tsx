@@ -24,6 +24,7 @@ export function ConfirmDialog({
   children,
   status,
   confirmLabel,
+  cancelLabel,
   onConfirm,
   loading,
   confirmDisabled,
@@ -36,6 +37,7 @@ export function ConfirmDialog({
   /** Left of the buttons in the footer, e.g. a count or what still has to be done. */
   status?: ReactNode
   confirmLabel: ReactNode
+  cancelLabel?: ReactNode
   onConfirm: () => void
   loading?: boolean
   /** Holds the button back, e.g. once the server refused the recycle bin and the body offers a permanent delete instead. */
@@ -64,7 +66,7 @@ export function ConfirmDialog({
         {children && <Text size="sm" component="div">{children}</Text>}
         <ModalFooter status={status}>
           <Button variant="default" onClick={onClose}>
-            <Trans>Cancel</Trans>
+            {cancelLabel ?? <Trans>Cancel</Trans>}
           </Button>
           <Button color="var(--danger-fill)" loading={loading} disabled={confirmDisabled} onClick={onConfirm}>
             {confirmLabel}

@@ -6,6 +6,7 @@ import { Badge, Button, Code, Group, Modal, PasswordInput, Stack, Text, TextInpu
 import { notifications } from '../../lib/toast'
 import { IconCheck, IconCopy, IconPlus } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { EmptyState } from '../ui/EmptyState'
 import { plural, t as now } from '@lingui/core/macro'
 import {
   useApiKeys,
@@ -33,6 +34,7 @@ import { useCopyText } from '../ui/useCopyText'
 import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
 import { SettingsRow, SettingsRows, SettingsRowsBlock } from './SettingsRow'
 import { MintPasswordField, RecentSignInNotice, useMintConfirmation } from './MintConfirmation'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 /**
  * Self-service account management: password, two-factor, single sign-on, sessions.
@@ -178,8 +180,7 @@ function SsoRow() {
           <Button
             size="compact-xs"
             variant="subtle"
-            color="var(--neutral)"
-            className="quiet-danger"
+            color="var(--danger)"
             loading={unlink.isPending}
             onClick={() =>
               unlink.mutate(undefined, {
@@ -612,7 +613,6 @@ function TwoFactorRow() {
             description={<Trans>Each code works once if you lose your authenticator.</Trans>}
           />
         }
-        centered
         closeOnClickOutside={false}
         closeOnEscape={false}
       >
@@ -752,8 +752,7 @@ function ApiKeysCard({ creating, onCloseCreate }: { creating: boolean; onCloseCr
                   <Button
                     size="compact-xs"
                     variant="subtle"
-                    color="var(--neutral)"
-                    className="quiet-danger"
+                    color="var(--danger)"
                     onClick={() => setRevoking(key)}
                   >
                     <Trans>Revoke</Trans>
@@ -766,9 +765,11 @@ function ApiKeysCard({ creating, onCloseCreate }: { creating: boolean; onCloseCr
       ) : (
         !creating && (
           <SettingsRowsBlock>
-            <Text size="sm" c="var(--ink-3)">
-              <Trans>No keys yet. New key makes one for a script or an app.</Trans>
-            </Text>
+            <EmptyState
+              compact
+              title={t`No keys yet`}
+              description={t`New key makes one for a script or an app.`}
+            />
           </SettingsRowsBlock>
         )
       )}
@@ -777,8 +778,7 @@ function ApiKeysCard({ creating, onCloseCreate }: { creating: boolean; onCloseCr
         opened={created !== null}
         onClose={() => setCreated(null)}
         title={<ModalHeading title={<Trans>Your new API key</Trans>} description={created?.key.name} />}
-        centered
-        size="lg"
+        size={MODAL_SIZE.default}
         closeOnClickOutside={false}
         closeOnEscape={false}
       >

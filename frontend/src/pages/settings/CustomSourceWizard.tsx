@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
-  Anchor, Button, Collapse, FileButton, Group, List, Modal, MultiSelect, NumberInput, Radio, Select, Stack,
+  Button, Collapse, FileButton, Group, Input, List, Modal, MultiSelect, NumberInput, Radio, SegmentedControl, Select, Stack,
   Switch, Text, TextInput, Textarea,
 } from '@mantine/core'
 import { ModalFooter, ModalHeading, ModalNote } from '../../components/ui/ModalShell'
+import { StepStrip } from '../../components/ui/StepStrip'
 import {
-  IconCheck,
   IconChevronDown,
   IconChevronRight,
   IconFileImport,
@@ -22,6 +22,7 @@ import {
   type ProbeSearchResult, type ProbeSiteResult, type Section,
 } from '../../api/customSources'
 import { COMMON_LANGUAGES } from './sourceLanguages'
+import { MODAL_SIZE } from '../../components/ui/modalSizes'
 
 export type WizardMode = 'setup' | 'import' | 'edit'
 
@@ -61,12 +62,16 @@ function Advanced({ value, onApply, label }: { value: unknown; onApply: (section
   const { value: parsed, invalid } = parseJson(text)
   return (
     <Stack gap={6}>
-      <Anchor component="button" type="button" size="sm" onClick={() => setOpen((o) => !o)} c="var(--ink-2)">
-        <Group gap={4}>
-          {open ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
-          <Trans>Advanced</Trans>
-        </Group>
-      </Anchor>
+      <Button
+        variant="subtle"
+        size="compact-sm"
+        color="var(--ink-2)"
+        justify="flex-start"
+        leftSection={open ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <Trans>Advanced</Trans>
+      </Button>
       <Collapse expanded={open}>
         <Stack gap={6}>
           <Textarea
@@ -599,17 +604,20 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
                 searchable
                 allowDeselect={false}
               />
-              <Select
-                label={t`Kind`}
-                data={[
-                  { value: 'scanlator', label: t`Scanlation group` },
-                  { value: 'aggregator', label: t`Aggregator` },
-                  { value: 'official', label: t`Official publisher` },
-                ]}
-                value={definition?.kind ?? 'scanlator'}
-                onChange={(v) => v && update({ kind: v })}
-                allowDeselect={false}
-              />
+              <Input.Wrapper label={t`Kind`}>
+                <SegmentedControl
+                  fullWidth
+                  mt={4}
+                  aria-label={t`Kind`}
+                  data={[
+                    { value: 'scanlator', label: t`Scanlation group` },
+                    { value: 'aggregator', label: t`Aggregator` },
+                    { value: 'official', label: t`Official publisher` },
+                  ]}
+                  value={definition?.kind ?? 'scanlator'}
+                  onChange={(v) => update({ kind: v })}
+                />
+              </Input.Wrapper>
             </Group>
             {languageOff && (
               <Text size="xs" c="var(--warn)">
@@ -629,17 +637,20 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
                 value={definition?.content ?? ['manga']}
                 onChange={(v) => update({ content: v })}
               />
-              <Select
-                label={t`Rating`}
-                data={[
-                  { value: 'general', label: t`General` },
-                  { value: 'mature', label: t`Mature` },
-                  { value: 'adult', label: t`Adult` },
-                ]}
-                value={definition?.rating ?? 'general'}
-                onChange={(v) => v && update({ rating: v })}
-                allowDeselect={false}
-              />
+              <Input.Wrapper label={t`Rating`}>
+                <SegmentedControl
+                  fullWidth
+                  mt={4}
+                  aria-label={t`Rating`}
+                  data={[
+                    { value: 'general', label: t`General` },
+                    { value: 'mature', label: t`Mature` },
+                    { value: 'adult', label: t`Adult` },
+                  ]}
+                  value={definition?.rating ?? 'general'}
+                  onChange={(v) => update({ rating: v })}
+                />
+              </Input.Wrapper>
             </Group>
             <Group grow align="flex-end">
               <NumberInput
@@ -660,17 +671,16 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
           </Stack>
         )}
         <Group justify="flex-end">
-          <Anchor
-            component="button"
-            type="button"
-            size="xs"
+          <Button
+            variant="subtle"
+            size="compact-xs"
             onClick={() => {
               if (!jsonMode) setJsonText(pretty(draft))
               setJsonMode((m) => !m)
             }}
           >
             {jsonMode ? <Trans>Edit as a form</Trans> : <Trans>Edit as JSON</Trans>}
-          </Anchor>
+          </Button>
         </Group>
         {idChanged && (
           <ModalNote tone="danger">
@@ -730,30 +740,20 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
     <Modal
       opened={opened}
       onClose={onClose}
-      size={760}
+      size={MODAL_SIZE.wide}
       closeButtonProps={{ 'aria-label': t`Close` }}
       title={<ModalHeading title={title} description={description} />}
     >
       <Stack gap="md">
-        <ol className="wizard-steps" aria-label={t`Steps`}>
-          {STEPS.map((name, i) => (
-            <li key={name} data-current={i === step || undefined}>
-              <button
-                type="button"
-                className="wizard-step"
-                data-state={stepsDone(i)}
-                aria-current={i === step ? 'step' : undefined}
-                disabled={!reachable(i) || (mode === 'setup' && i > step)}
-                onClick={() => setStep(i)}
-              >
-                <span className="wizard-step-mark" aria-hidden>
-                  {i < step ? <IconCheck size={12} /> : i + 1}
-                </span>
-                <span className="wizard-step-label">{stepLabels[name]}</span>
-              </button>
-            </li>
-          ))}
-        </ol>
+        <StepStrip
+          label={t`Steps`}
+          steps={STEPS.map((name, i) => ({
+            label: stepLabels[name],
+            state: stepsDone(i),
+            disabled: !reachable(i) || (mode === 'setup' && i > step),
+          }))}
+          onSelect={setStep}
+        />
         {stepBody[STEPS[step]]}
       </Stack>
       <CustomSourceUpdateDialog
@@ -775,7 +775,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
         <Button variant="default" onClick={onClose}><Trans>Cancel</Trans></Button>
         {step < DETAILS ? (
           <Button onClick={nextStep} disabled={!definition || (mode === 'setup' && step === 0 && !site)}>
-            <Trans>Next</Trans>
+            <Trans>Continue</Trans>
           </Button>
         ) : (
           <>

@@ -45,7 +45,7 @@ async function dialogOf(body: HTMLElement) {
 export const RootFolders: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('/library/manga')).toBeVisible()
-    await expect(await canvas.findByText('(inaccessible)')).toBeVisible()
+    await expect(await canvas.findByText('Inaccessible')).toBeVisible()
     await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Remove root folder' })).toHaveLength(3))
   },
 }
@@ -206,9 +206,12 @@ export const RecommendationIndexOff: Story = {
 export const NewSeriesDefaults: Story = {
   render: () => <NewSeriesDefaultsSection />,
   play: async ({ canvas }) => {
-    const pornographic = await canvas.findByLabelText('Incognito for Pornographic')
-    await waitFor(() => expect(pornographic).toHaveValue('Full'))
-    await waitFor(() => expect(canvas.getByLabelText('Incognito for Safe')).toHaveValue('Off'))
+    const pornographic = await canvas.findByRole('radiogroup', { name: 'Incognito for Pornographic' })
+    await waitFor(() => expect(within(pornographic).getByRole('radio', { name: 'Full' })).toBeChecked())
+    const safe = canvas.getByRole('radiogroup', { name: 'Incognito for Safe' })
+    await waitFor(() => expect(within(safe).getByRole('radio', { name: 'Off' })).toBeChecked())
+    const monitoring = canvas.getByRole('radiogroup', { name: 'Monitoring' })
+    await waitFor(() => expect(within(monitoring).getByRole('radio', { name: 'Smart' })).toBeChecked())
   },
 }
 

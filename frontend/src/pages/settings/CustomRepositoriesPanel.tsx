@@ -3,6 +3,7 @@ import { Button, Group, List, Modal, Stack, Switch, Text, TextInput, Tooltip } f
 import { IconRefresh, IconTrash } from '../../lib/icons'
 import { ModalFooter, ModalHeading, ModalNote } from '../../components/ui/ModalShell'
 import { Panel } from '../../components/ui/Panel'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { errorText } from '../../api/errorText'
 import { languageName } from '../../api/titles'
@@ -14,6 +15,7 @@ import {
   useSetRepositoryAutoUpdate, type CustomRepository, type CustomRepositoryEntry, type IdentityReason,
 } from '../../api/customSources'
 import { MetaList } from '../../components/ui/MetaList'
+import { MODAL_SIZE } from '../../components/ui/modalSizes'
 
 function useReasonLabels(): Record<IdentityReason, string> {
   const { t } = useLingui()
@@ -81,7 +83,7 @@ export function CustomSourceUpdateDialog({ id, opened, onClose, onApplied }: {
     <Modal
       opened={opened}
       onClose={onClose}
-      size={640}
+      size={MODAL_SIZE.default}
       title={<ModalHeading title={<Trans>Update {id}</Trans>} description={<Trans>Review what changes before it is applied.</Trans>} />}
       closeButtonProps={{ 'aria-label': t`Close` }}
     >
@@ -305,7 +307,7 @@ export function CustomRepositoriesPanel({ opened, onClose }: { opened: boolean; 
     <Modal
       opened={opened}
       onClose={onClose}
-      size={760}
+      size={MODAL_SIZE.wide}
       title={
         <ModalHeading
           title={<Trans>Repositories</Trans>}
@@ -336,7 +338,7 @@ export function CustomRepositoriesPanel({ opened, onClose }: { opened: boolean; 
         {add.error && <ModalNote tone="danger">{errorText(add.error)}</ModalNote>}
         {error && <ModalNote tone="danger">{errorText(error)}</ModalNote>}
         {repositories?.length === 0 && (
-          <Text size="sm" c="var(--ink-3)"><Trans>No repositories yet.</Trans></Text>
+          <EmptyState compact title={t`No repositories yet`} />
         )}
         {repositories?.map((repository) => (
           <RepositoryCard key={repository.url} repository={repository} onUpdate={setUpdating} />

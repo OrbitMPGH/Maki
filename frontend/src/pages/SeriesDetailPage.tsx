@@ -1,3 +1,4 @@
+import { SearchInput } from '../components/ui/SearchInput'
 import { errorText } from '../api/errorText'
 import { Fragment, useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent, ReactNode, RefObject } from 'react'
@@ -8,9 +9,7 @@ import { useLingui as useLinguiReact } from '@lingui/react'
 import type { MessageDescriptor } from '@lingui/core'
 import {
   ActionIcon,
-  Alert,
   Anchor,
-  Badge,
   Box,
   Button,
   Divider,
@@ -28,13 +27,11 @@ import {
   Table,
   Tabs,
   Text,
-  TextInput,
-  Title,
+  
   Tooltip,
   VisuallyHidden,
 } from '@mantine/core'
 import {
-  IconAlertTriangle,
   IconArrowLeft,
   IconBook,
   IconChevronDown,
@@ -229,7 +226,11 @@ import {
 } from '../components/ui/status'
 import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { MonoValue } from '../components/ui/MonoValue'
+import { Callout } from '../components/ui/Callout'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { ModalFooter, ModalHeading } from '../components/ui/ModalShell'
+import { MetaList } from '../components/ui/MetaList'
+import { SectionHeader } from '../components/ui/SectionHeader'
 import { useColumnWidths, type ColumnSpec } from '../lib/useColumnWidths'
 import { useStableActions } from '../lib/useStableActions'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
@@ -1481,25 +1482,11 @@ function SeriesDetailBody() {
   // On a phone only the toolbar stays pinned; the search scrolls away with the page, or the two
   // together cover a third of the screen.
   const chapterSearchInput = chapters && chapters.length > 0 && (
-      <TextInput
-          size="sm"
+      <SearchInput
           mt={isMobile ? -8 : undefined}
           value={chapterSearch}
           onChange={(event) => setChapterSearch(event.currentTarget.value)}
-          leftSection={<IconSearch size={16} />}
-          rightSection={
-            chapterSearch ? (
-                <ActionIcon
-                    size="sm"
-                    variant="subtle"
-                    color="var(--neutral)"
-                    aria-label={t`Clear chapter search`}
-                    onClick={() => setChapterSearch('')}
-                >
-                  <IconX size={16} />
-                </ActionIcon>
-            ) : null
-          }
+          onClear={() => setChapterSearch('')}
           placeholder={t`Search by chapter number or title`}
           aria-label={t`Search chapters`}
       />
@@ -2688,9 +2675,9 @@ function SeriesDetailBody() {
                 {(series.animeStart || series.animeEnd) && (
                     <>
                       <Divider my="md" color="var(--hairline)" />
-                      <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
+                      <PanelTitle>
                         <Trans>Anime coverage</Trans>
-                      </Title>
+                      </PanelTitle>
                       <AnimeCoverageBar
                           start={series.animeStart}
                           end={series.animeEnd}
@@ -2706,10 +2693,10 @@ function SeriesDetailBody() {
                 <Stack gap="md">
                   {series.genres.length > 0 && (
                       <div>
-                        <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
+                        <PanelTitle>
                           <Trans>Genres</Trans>
-                          {series.lockedFields.includes('genres') && <>{' '}<MetadataLock /></>}
-                        </Title>
+                          {series.lockedFields.includes('genres') && <MetadataLock />}
+                        </PanelTitle>
                         {/* Genres carry no relevance weight, so they are one flat row rather than
                             buckets, on their own dot colour to read apart from the tags below. */}
                         <div className="tag-chips" style={{ '--bucket': 'var(--neutral)' } as CSSProperties}>
@@ -2725,9 +2712,9 @@ function SeriesDetailBody() {
                   {(providerTags.length > 0 || series.metadataTags.length > 0) && (
                       <div>
                         <Divider my="md" color="var(--hairline)" />
-                        <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
+                        <PanelTitle>
                           <Trans>Tags</Trans>
-                        </Title>
+                        </PanelTitle>
                         <div ref={tagListRef}>
                           {providerTags.length > 0 ? (
                               <TagBuckets tags={providerTags} />
@@ -2751,13 +2738,13 @@ function SeriesDetailBody() {
                   {((series.links?.length ?? 0) > 0 || communityScore != null || sourceRatings.length > 0) && (
                       <div>
                         <Divider mb="sm" color="var(--hairline)" />
-                        <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
+                        <PanelTitle>
                           {communityScore != null || sourceRatings.length > 0 ? (
                               <Trans>Scores and links</Trans>
                           ) : (
                               <Trans>Open on</Trans>
                           )}
-                        </Title>
+                        </PanelTitle>
                         <Stack gap="sm" align="flex-start">
                           {communityScore != null && (
                               <ScoreFigure score={communityScore} standing={providerDetail?.scoreStanding} />
@@ -2776,10 +2763,8 @@ function SeriesDetailBody() {
               <div className="series-split-row">
                 <Panel className="series-detail-source-panel series-machine">
                   {series.numberingClash && (
-                      <Alert
-                          mb="md"
-                          color="var(--warn)"
-                          icon={<IconAlertTriangle size={18} />}
+                      <Callout
+                          style={{ marginBottom: 'var(--mantine-spacing-md)' }}
                           title={t`Sources disagree on chapter numbering`}
                       >
                         {(() => {
@@ -2801,23 +2786,19 @@ function SeriesDetailBody() {
                               </>
                           )
                         })()}
-                      </Alert>
+                      </Callout>
                   )}
                   <FigureStripReveal shown={delistedWithFileIds.length > 0}>
                     {alertDelistedIds.length > 0 && (
-                      <Alert
-                          mb="md"
-                          color="var(--warn)"
-                          icon={<IconLinkOff size={18} />}
+                      <Callout
+                          icon={IconLinkOff}
+                          style={{ marginBottom: 'var(--mantine-spacing-md)' }}
                           title={plural(alertDelistedIds.length, {
                             one: '# downloaded chapter is no longer listed',
                             other: '# downloaded chapters are no longer listed',
                           })}
-                      >
-                        <Text size="sm">
-                          <Trans>No source lists them any more. A source may have filed them here by mistake, or dropped them after a licence takedown, so check the files before reading them.</Trans>
-                        </Text>
-                        <Group gap="xs" mt="sm">
+                          actions={
+                            <>
                           <Button
                               size="xs"
                               variant="light"
@@ -2840,8 +2821,13 @@ function SeriesDetailBody() {
                                 <Trans>Keep them</Trans>
                               </Button>
                           )}
-                        </Group>
-                      </Alert>
+                            </>
+                          }
+                      >
+                        <Text size="sm">
+                          <Trans>No source lists them any more. A source may have filed them here by mistake, or dropped them after a licence takedown, so check the files before reading them.</Trans>
+                        </Text>
+                      </Callout>
                     )}
                   </FigureStripReveal>
                   {canManageSources && (
@@ -3008,19 +2994,20 @@ function SeriesDetailBody() {
         <Modal
             opened={downloadAllConfirmOpen}
             onClose={() => setDownloadAllConfirmOpen(false)}
-            title={plural(missingWanted, {
-              one: 'Download # wanted chapter?',
-              other: 'Download # wanted chapters?',
-            })}
-            centered
+            title={
+              <ModalHeading
+                  title={plural(missingWanted, {
+                    one: 'Download # wanted chapter?',
+                    other: 'Download # wanted chapters?',
+                  })}
+                  description={plural(missingWanted, {
+                    one: 'This will add # chapter to the download queue.',
+                    other: 'This will add # chapters to the download queue.',
+                  })}
+              />
+            }
         >
           <Stack gap="sm">
-            <Text mt="sm" size="sm">
-              {plural(missingWanted, {
-                one: 'This will add # chapter to the download queue.',
-                other: 'This will add # chapters to the download queue.',
-              })}
-            </Text>
             {canDownload && pendingProposal && (
                 <>
                   <Text size="sm" c="var(--ink-3)">
@@ -3029,7 +3016,7 @@ function SeriesDetailBody() {
                   <TorrentProposalCard proposal={pendingProposal} banner />
                 </>
             )}
-            <Group justify="flex-end">
+            <ModalFooter>
               <Button variant="default" onClick={() => setDownloadAllConfirmOpen(false)}>
                 <Trans>Cancel</Trans>
               </Button>
@@ -3042,7 +3029,7 @@ function SeriesDetailBody() {
               >
                 {plural(missingWanted, { one: 'Download # chapter', other: 'Download # chapters' })}
               </Button>
-            </Group>
+            </ModalFooter>
           </Stack>
         </Modal>
 
@@ -3050,7 +3037,6 @@ function SeriesDetailBody() {
             opened={nextCountOpen}
             onClose={() => setNextCountOpen(false)}
             title={t`Download next chapters`}
-            centered
         >
           <Stack
               component="form"
@@ -3070,14 +3056,14 @@ function SeriesDetailBody() {
                 onChange={setNextCount}
                 data-autofocus
             />
-            <Group justify="flex-end">
+            <ModalFooter>
               <Button variant="default" onClick={() => setNextCountOpen(false)}>
                 <Trans>Cancel</Trans>
               </Button>
               <Button type="submit" loading={downloadNext.isPending}>
                 <Trans>Download</Trans>
               </Button>
-            </Group>
+            </ModalFooter>
           </Stack>
         </Modal>
 
@@ -3108,13 +3094,23 @@ function SeriesDetailBody() {
             />
         )}
 
-        <Modal opened={moveModalOpen} onClose={() => setMoveModalOpen(false)} title={t`Move series`} centered>
+        <Modal
+            opened={moveModalOpen}
+            onClose={() => setMoveModalOpen(false)}
+            title={
+              <ModalHeading
+                  title={t`Move series`}
+                  description={
+                    <>
+                      <Trans>Re-triggers a Kavita scan of both locations either way.</Trans>{' '}
+                      <Trans>Blocked while a download for this series is in flight, unless Maki isn't touching the files
+                        itself.</Trans>
+                    </>
+                  }
+              />
+            }
+        >
           <Stack gap="md">
-            <Text size="sm" c="var(--ink-3)">
-              <Trans>Re-triggers a Kavita scan of both locations either way.</Trans>{' '}
-              <Trans>Blocked while a download for this series is in flight, unless Maki isn't touching the files
-                itself.</Trans>
-            </Text>
             <Select
                 label={t`Destination root folder`}
                 placeholder={t`Pick a root folder`}
@@ -3138,7 +3134,7 @@ function SeriesDetailBody() {
                 />
               </Stack>
             </Radio.Group>
-            <Group justify="flex-end">
+            <ModalFooter>
               <Button variant="default" onClick={() => setMoveModalOpen(false)}>
                 <Trans>Cancel</Trans>
               </Button>
@@ -3160,7 +3156,7 @@ function SeriesDetailBody() {
               >
                 <Trans>Move</Trans>
               </Button>
-            </Group>
+            </ModalFooter>
           </Stack>
         </Modal>
 
@@ -3169,21 +3165,11 @@ function SeriesDetailBody() {
           <Stack className="series-detail-chapters" gap="lg">
             <div className="series-detail-chapter-head" data-sticky={selectMode ? undefined : true}>
               <Stack className="series-detail-chapter-toolbar" gap="sm">
-                <Group justify="space-between" wrap="nowrap" align="flex-start" gap="sm">
-                  <Group gap="xs" align="baseline" style={{ flex: 1, minWidth: 0 }}>
-                    <Title order={2} size="h3"><Trans>Chapters</Trans></Title>
-                    {chapters && (
-                        <Text size="sm" c="var(--ink-3)" className="tnum">
-                          <Trans>{chaptersHave}/{chaptersCounted} downloaded</Trans>
-                        </Text>
-                    )}
-                    {chapters && readTracking && progress.have > 0 && (
-                        <Badge size="sm" variant="light" color="var(--brand)" className="tnum">
-                          <Trans>{readInTotal} read</Trans>
-                        </Badge>
-                    )}
-                  </Group>
-                  {chapters && chapters.length > 0 && !selectMode && (
+                <SectionHeader
+                    icon={IconBook}
+                    title={t`Chapters`}
+                    count={chapters ? chaptersCounted : undefined}
+                    action={chapters && chapters.length > 0 && !selectMode && (
                       isMobile ? (
                           <ActionIcon
                               size="input-xs"
@@ -3203,8 +3189,18 @@ function SeriesDetailBody() {
                             <Trans>Select</Trans>
                           </Button>
                       )
-                  )}
-                </Group>
+                    )}
+                />
+                {chapters && (
+                    <Text component="div" size="sm" c="var(--ink-3)" className="tnum">
+                      <MetaList
+                          items={[
+                            <Trans key="have">{chaptersHave}/{chaptersCounted} downloaded</Trans>,
+                            readTracking && progress.have > 0 && <Trans key="read">{readInTotal} read</Trans>,
+                          ]}
+                      />
+                    </Text>
+                )}
                 {chapters && chapters.length > 0 && (
                     // One row on a phone: the filter takes what the fixed-width controls leave.
                     <Group gap="xs" wrap={isMobile ? 'nowrap' : 'wrap'}>
@@ -3286,58 +3282,55 @@ function SeriesDetailBody() {
             {isMobile && chapterSearchInput}
 
             {!selectMode && fileMissingFilterCount > 0 && (
-                <Paper className="series-files-hint" withBorder p="xs" radius="lg" role="status">
-                  <Group gap="sm" wrap="wrap" justify="space-between">
-                    <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: '1 1 20rem', minWidth: 0 }}>
-                      <IconFileUnknown size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} aria-hidden />
-                      <Text size="sm" c="var(--ink-2)" className="tnum">
-                        <Plural
-                            value={fileMissingFilterCount}
-                            one="# chapter has no file on disk."
-                            other="# chapters have no file on disk."
-                        />{' '}
-                        {canEditMetadata && (
-                            <Trans>If they are in the folder under other names, Relink files finds them.</Trans>
-                        )}
-                      </Text>
-                    </Group>
-                    {canEditMetadata && (
+                <Callout
+                    icon={IconFileUnknown}
+                    role="status"
+                    actions={canEditMetadata && (
                         <Button size="xs" variant="default" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
                           <Trans>Relink files</Trans>
                         </Button>
                     )}
-                  </Group>
-                </Paper>
+                >
+                  <Text size="sm" c="var(--ink-2)" className="tnum">
+                    <Plural
+                        value={fileMissingFilterCount}
+                        one="# chapter has no file on disk."
+                        other="# chapters have no file on disk."
+                    />{' '}
+                    {canEditMetadata && (
+                        <Trans>If they are in the folder under other names, Relink files finds them.</Trans>
+                    )}
+                  </Text>
+                </Callout>
             )}
 
             {/* Two closed issues came from people who had a file on disk and could not find how to
                 tell Maki which chapters it holds. Point at it from the tab they were looking at. */}
             {!selectMode && canEditMetadata && unlinkedFilesOnDisk > 0 && (
-                <Paper className="series-files-hint" withBorder p="xs" radius="lg">
-                  <Group gap="sm" wrap="wrap" justify="space-between">
-                    <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: '1 1 20rem', minWidth: 0 }}>
-                      <IconLink size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} aria-hidden />
-                      <Text size="sm" c="var(--ink-2)">
-                        <Plural
-                            value={unlinkedFilesOnDisk}
-                            one="# file in the series folder isn't linked to any chapter."
-                            other="# files in the series folder aren't linked to any chapter."
-                        />{' '}
-                        <Text span inherit c="var(--ink-3)">
-                          <Trans>Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand.</Trans>
-                        </Text>
-                      </Text>
-                    </Group>
-                    <Group gap="xs" wrap="nowrap">
-                      <Button size="xs" variant="default" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
-                        <Trans>Relink files</Trans>
-                      </Button>
-                      <Button size="xs" variant="subtle" color="var(--ink-3)" onClick={() => changeTab('files')}>
-                        <Trans>Link by hand</Trans>
-                      </Button>
-                    </Group>
-                  </Group>
-                </Paper>
+                <Callout
+                    icon={IconLink}
+                    actions={
+                      <>
+                        <Button size="xs" variant="default" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
+                          <Trans>Relink files</Trans>
+                        </Button>
+                        <Button size="xs" variant="subtle" color="var(--ink-3)" onClick={() => changeTab('files')}>
+                          <Trans>Link by hand</Trans>
+                        </Button>
+                      </>
+                    }
+                >
+                  <Text size="sm" c="var(--ink-2)">
+                    <Plural
+                        value={unlinkedFilesOnDisk}
+                        one="# file in the series folder isn't linked to any chapter."
+                        other="# files in the series folder aren't linked to any chapter."
+                    />{' '}
+                    <Text span inherit c="var(--ink-3)">
+                      <Trans>Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand.</Trans>
+                    </Text>
+                  </Text>
+                </Callout>
             )}
 
             {!selectMode && canDownload && pendingProposal && (
@@ -3345,9 +3338,15 @@ function SeriesDetailBody() {
             )}
 
             {!selectMode && canDownload && volumeHold && missingWanted > 0 && (
-                <div className="series-detail-chapter-hint">
-                  <IconHourglass size={16} className="series-detail-chapter-hint-icon" aria-hidden />
-                  <Text size="sm" c="var(--ink-2)" className="series-detail-chapter-hint-text">
+                <Callout
+                    icon={IconHourglass}
+                    actions={
+                      <Button size="compact-sm" variant="subtle" loading={searchMissing.isPending} onClick={requestQueueAllWanted}>
+                        <Trans>Download from sources now</Trans>
+                      </Button>
+                    }
+                >
+                  <Text size="sm" c="var(--ink-2)">
                     {volumeHold.reason === 'searching'
                         ? <Trans>Looking for a volume release before downloading from sources.</Trans>
                         : volumeHold.reason === 'proposal'
@@ -3361,12 +3360,7 @@ function SeriesDetailBody() {
                               : <Trans>Chapters up to {holdThrough} wait for it until {holdUntil}. Later ones download as usual.</Trans>}
                     </Text>
                   </Text>
-                  <div className="series-detail-chapter-hint-actions">
-                    <Button size="compact-sm" variant="subtle" loading={searchMissing.isPending} onClick={requestQueueAllWanted}>
-                      <Trans>Download from sources now</Trans>
-                    </Button>
-                  </div>
-                </div>
+                </Callout>
             )}
 
             <ConfirmDialog
@@ -3469,13 +3463,15 @@ function SeriesDetailBody() {
             />
 
             {(chapters === undefined && chaptersFailed) || chapters?.length === 0 ? (
-                <Text c="var(--ink-3)" size="sm">
-                  <Trans>No chapters known.</Trans> <Trans>Link a source and refresh.</Trans>
-                </Text>
+                <EmptyState
+                    compact
+                    framed
+                    mood="asking"
+                    title={t`No chapters known.`}
+                    description={t`Link a source and refresh.`}
+                />
             ) : chapters !== undefined && renderedRows.rows.length === 0 ? (
-                <Text c="var(--ink-3)" size="sm">
-                  <Trans>No chapters match this search and filter.</Trans>
-                </Text>
+                <EmptyState compact framed mood="asleep" title={t`No chapters match this search and filter.`} />
             ) : (
                 <Stack gap="sm">
                   <Paper

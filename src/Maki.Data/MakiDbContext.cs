@@ -62,6 +62,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<DownloadQueueItem> DownloadQueue => Set<DownloadQueueItem>();
     public DbSet<RootFolder> RootFolders => Set<RootFolder>();
     public DbSet<AppConfigEntry> AppConfig => Set<AppConfigEntry>();
+    public DbSet<ConnectionTestResult> ConnectionTestResults => Set<ConnectionTestResult>();
     public DbSet<ScrobbleToken> ScrobbleTokens => Set<ScrobbleToken>();
     public DbSet<ScrobbleMapping> ScrobbleMappings => Set<ScrobbleMapping>();
     public DbSet<ScrobbleSyncState> ScrobbleSyncStates => Set<ScrobbleSyncState>();
@@ -829,6 +830,11 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         });
 
         modelBuilder.Entity<AppConfigEntry>(e =>
+        {
+            e.HasKey(c => c.Key);
+        });
+
+        modelBuilder.Entity<ConnectionTestResult>(e =>
         {
             e.HasKey(c => c.Key);
         });

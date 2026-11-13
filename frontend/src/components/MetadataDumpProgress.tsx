@@ -89,8 +89,6 @@ export function DumpProgressBar({ progress }: { progress: DumpProgress }) {
       <Progress
         value={percent ?? 100}
         animated={percent === null}
-        size="sm"
-        radius="xl"
         aria-label={phaseLabel}
       />
       <Text size="xs" c="var(--ink-3)">

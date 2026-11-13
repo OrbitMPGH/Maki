@@ -5,10 +5,11 @@ import {
   Button,
   Checkbox,
   Group,
+  Input,
   Modal,
   MultiSelect,
   PasswordInput,
-  Select,
+  SegmentedControl,
   SimpleGrid,
   Stack,
   Switch,
@@ -45,7 +46,6 @@ import {
 } from '../../api/auth'
 import { CONTENT_RATINGS, CONTENT_RATING_LABELS, useRootFolders } from '../../api/hooks'
 import { useAuth } from '../../auth/AuthProvider'
-import { formatDateTime } from '../../format'
 import { useLabel } from '../../i18n-context'
 import { useLingui } from '@lingui/react'
 import { Trans, Plural, useLingui as useLinguiMacro } from '@lingui/react/macro'
@@ -55,6 +55,8 @@ import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
 import { contentRatingVisual } from '../ui/status'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
+import { TimeAgo } from '../ui/TimeAgo'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 /**
  * Grantable permissions, in the order they read best. `Admin` is deliberately not in this list: it is
@@ -271,13 +273,13 @@ export function UsersSection() {
                     )}
                   </Table.Td>
                   <Table.Td c="var(--ink-3)">
-                    {user.lastLoginAt ? formatDateTime(user.lastLoginAt) : <Trans>never</Trans>}
+                    {user.lastLoginAt ? <TimeAgo value={user.lastLoginAt} /> : <Trans>never</Trans>}
                   </Table.Td>
                   <Table.Td ta="right">
                     <Group gap={2} justify="flex-end" wrap="nowrap">
                       <ActionIcon
                         variant="subtle"
-                        color="gray"
+                        color="var(--neutral)"
                         data-row-action
                         aria-label={t`Edit`}
                         onClick={() => setEditing(user)}
@@ -289,7 +291,7 @@ export function UsersSection() {
                       {user.id !== me?.id && (
                         <ActionIcon
                           variant="subtle"
-                          color="gray"
+                          color="var(--danger)"
                           data-row-action="danger"
                           aria-label={t`Delete`}
                           onClick={() => setDeleting(user)}
@@ -421,8 +423,7 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
           }
         />
       }
-      centered
-      size="lg"
+      size={MODAL_SIZE.default}
     >
       <Stack
         component="form"
@@ -517,13 +518,16 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
           <div className="user-form-title">
             <Trans>Library access</Trans>
           </div>
-          <Select
-            label={t`Maximum content rating`}
-            data={CONTENT_RATINGS.map((r) => ({ value: r, label: renderLabel(CONTENT_RATING_LABELS[r]) }))}
-            value={rating}
-            onChange={(v) => setRating(v ?? 'safe')}
-            allowDeselect={false}
-          />
+          <Input.Wrapper label={t`Maximum content rating`}>
+            <SegmentedControl
+              fullWidth
+              mt={4}
+              aria-label={t`Maximum content rating`}
+              data={CONTENT_RATINGS.map((r) => ({ value: r, label: renderLabel(CONTENT_RATING_LABELS[r]) }))}
+              value={rating}
+              onChange={setRating}
+            />
+          </Input.Wrapper>
           <Switch
             label={t`Access all root folders`}
             description={t`Including root folders added later.`}
@@ -558,12 +562,12 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
             {existing && !editingSelf && (existing.twoFactorEnabled || existing.oidcLinked) && (
               <Group gap="xs">
                 {existing.twoFactorEnabled && (
-                  <Button size="xs" variant="default" onClick={() => setConfirming('twoFactor')}>
+                  <Button size="xs" variant="light" color="var(--danger)" onClick={() => setConfirming('twoFactor')}>
                     <Trans>Reset two-factor</Trans>
                   </Button>
                 )}
                 {existing.oidcLinked && (
-                  <Button size="xs" variant="default" onClick={() => setConfirming('sso')}>
+                  <Button size="xs" variant="light" color="var(--danger)" onClick={() => setConfirming('sso')}>
                     <Trans>Remove single sign-on</Trans>
                   </Button>
                 )}

@@ -1,13 +1,15 @@
 import { useMemo, useState } from 'react'
 import { Group, SegmentedControl, SimpleGrid, Skeleton, Stack, Text } from '@mantine/core'
 import { AreaChart, BarChart } from '@mantine/charts'
+import { statsChartProps, statsGridProps, statsSeriesColor, statsXAxisProps } from '../chartTheme'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { useLibraryComposition, useLibraryGrowth } from '../../../api/hooks'
 import type { LibraryCompositionTotals } from '../../../api/hooks'
 import { EmptyState } from '../../../components/ui/EmptyState'
-import { Panel } from '../../../components/ui/Panel'
 import { FigureStrip } from '../../../components/ui/FigureStrip'
+import { Panel } from '../../../components/ui/Panel'
+import { PanelTitle } from '../../../components/ui/PanelTitle'
 import { TagChip, TagChips } from '../../../components/ui/TagChip'
 import { formatBytes, formatNumber, formatPercent, formatStatsBucket } from '../../../format'
 import { ChartSkeleton } from '../ChartSkeleton'
@@ -75,8 +77,7 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
   )
   // Both charts on one band axis with the same ticks, so a step in Total sits over the bar that
   // made it and the gridlines line up. syncWithTicks drops the extra lines at the plot edges.
-  const growthXAxis = { scale: 'band' as const, interval: Math.max(0, Math.ceil(growthData.length / 8) - 1) }
-  const growthGrid = { syncWithTicks: true }
+  const growthXAxis = statsXAxisProps(growthData.length)
 
   const topSource = useMemo(() => {
     if (!stats?.sourceReliability.length) return null
@@ -195,7 +196,7 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
         <div className="stats-grid-main">
           <Panel p="md">
             <Group justify="space-between" align="flex-start" mb="xs">
-              <p className="stats-panel-title">{t`Growth`}</p>
+              <PanelTitle>{t`Growth`}</PanelTitle>
               <SegmentedControl
                 aria-label={t`Growth`}
                 size="xs"
@@ -222,13 +223,11 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
                   curveType="monotone"
                   withGradient
                   withXAxis={false}
-                  tickLine="none"
-                  gridAxis="y"
-                  gridProps={growthGrid}
+                  {...statsChartProps}
+                  gridProps={statsGridProps}
                   xAxisProps={growthXAxis}
-                  yAxisProps={{ width: 64 }}
                   valueFormatter={growthMetric === 'size' ? formatBytes : undefined}
-                  series={[{ name: 'Total', label: t`Total`, color: 'var(--brand)' }]}
+                  series={[{ name: 'Total', label: t`Total`, color: statsSeriesColor.you }]}
                 />
                 <Text size="xs" fw={600} c="var(--ink-3)" mt="xs" mb={4}>
                   {t`Added`}
@@ -237,13 +236,11 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
                   h={110}
                   data={growthData}
                   dataKey="bucket"
-                  tickLine="none"
-                  gridAxis="y"
-                  gridProps={growthGrid}
+                  {...statsChartProps}
+                  gridProps={statsGridProps}
                   xAxisProps={growthXAxis}
-                  yAxisProps={{ width: 64 }}
                   valueFormatter={growthMetric === 'size' ? formatBytes : undefined}
-                  series={[{ name: 'Added', label: t`Added`, color: 'var(--neutral)' }]}
+                  series={[{ name: 'Added', label: t`Added`, color: statsSeriesColor.you }]}
                 />
               </>
             ) : (
@@ -252,7 +249,7 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
           </Panel>
 
           <Panel p="md">
-            <p className="stats-panel-title">{t`Composition`}</p>
+            <PanelTitle>{t`Composition`}</PanelTitle>
             <Stack gap="md" mt="xs">
               <div>
                 <Text size="xs" fw={600} c="var(--ink-3)" mb={6}>
@@ -278,13 +275,13 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
 
         <SimpleGrid cols={{ base: 1, md: 2 }} spacing="lg">
           <Panel p="md">
-            <p className="stats-panel-title">{t`Sources`}</p>
+            <PanelTitle>{t`Sources`}</PanelTitle>
             <p className="stats-panel-sub">{t`Success and wait cover the last 30 days.`}</p>
             <SourceReliability sources={stats.bySource} reliability={stats.sourceReliability} />
           </Panel>
 
           <Panel p="md">
-            <p className="stats-panel-title">{t`Biggest on disk`}</p>
+            <PanelTitle>{t`Biggest on disk`}</PanelTitle>
             {stats.largest.length === 0 ? (
               <EmptyState compact mood="asleep" title={t`Nothing downloaded yet.`} />
             ) : (
@@ -310,34 +307,37 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
               </ul>
             )}
 
-            <div className="stats-facts" style={{ marginTop: 16 }}>
-              <div className="stats-fact">
-                <span className="stats-fact-label">{requestsLabel}</span>
-                <span className="stats-fact-value">
-                  <Plural value={resolved} one="# resolved" other="# resolved" />
-                </span>
-                <span className="stats-fact-hint">
-                  {resolvedHours === null ? (
-                    <Trans>{requestsOpen} open</Trans>
-                  ) : (
-                    <Trans>
-                      {requestsOpen} open, median {resolvedHours}h
-                    </Trans>
-                  )}
-                </span>
-              </div>
-              <div className="stats-fact">
-                <span className="stats-fact-label">{t`Monitor catches`}</span>
-                <span className="stats-fact-value">{formatNumber(stats.monitorCatches)}</span>
-                <span className="stats-fact-hint">{t`New chapters fetched automatically, last 30 days.`}</span>
-              </div>
+            <div style={{ marginTop: 16 }}>
+            <FigureStrip
+              flush
+              figures={[
+                {
+                  label: requestsLabel,
+                  value: <Plural value={resolved} one="# resolved" other="# resolved" />,
+                  zero: false,
+                  hint:
+                    resolvedHours === null ? (
+                      <Trans>{requestsOpen} open</Trans>
+                    ) : (
+                      <Trans>
+                        {requestsOpen} open, median {resolvedHours}h
+                      </Trans>
+                    ),
+                },
+                {
+                  label: t`Monitor catches`,
+                  value: stats.monitorCatches,
+                  hint: t`New chapters fetched automatically, last 30 days.`,
+                },
+              ]}
+            />
             </div>
           </Panel>
         </SimpleGrid>
 
         {stats.topGenres.length > 0 && (
           <Panel p="md">
-            <p className="stats-panel-title">{t`Genres in the library`}</p>
+            <PanelTitle>{t`Genres in the library`}</PanelTitle>
             <TagChips>
               {stats.topGenres.map((g) => (
                 <TagChip key={g.name}>

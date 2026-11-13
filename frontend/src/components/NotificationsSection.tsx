@@ -11,11 +11,9 @@ import {
   Select,
   Stack,
   Switch,
-  Table,
   Text,
   TextInput,
   Tooltip,
-  VisuallyHidden,
 } from '@mantine/core'
 import {
   IconBell,
@@ -53,8 +51,10 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { SettingsSection } from '../pages/settings/SettingsSection'
+import { SettingsRow, SettingsRows, SettingsRowsBlock } from './settings/SettingsRow'
 import { EmptyState } from './ui/EmptyState'
 import { ConfirmDialog } from './ui/ConfirmDialog'
+import { ModalFooter } from './ui/ModalShell'
 import { useLabel } from '../i18n-context'
 import { useAuth } from '../auth/AuthProvider'
 import { formatDateTime } from '../format'
@@ -471,6 +471,7 @@ export function NotificationsSection() {
     <SettingsSection
       id="notifications"
       title={<Trans>Notification connections</Trans>}
+      panelProps={{ p: 0 }}
       actions={
         <Button
           size="xs"
@@ -484,66 +485,54 @@ export function NotificationsSection() {
     >
 
       {connectionsError ? (
-        <EmptyState
-          title={t`Couldn't load notification connections`}
-          actionLabel={t`Retry`}
-          onAction={() => void refetchConnections()}
-        />
+        <SettingsRowsBlock>
+          <EmptyState
+            title={t`Couldn't load notification connections`}
+            actionLabel={t`Retry`}
+            onAction={() => void refetchConnections()}
+          />
+        </SettingsRowsBlock>
       ) : connections && connections.length > 0 ? (
-        <Table className="panel-table ops-table">
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th><Trans>Name</Trans></Table.Th>
-              <Table.Th><Trans>Type</Trans></Table.Th>
-              <Table.Th><Trans>Scope</Trans></Table.Th>
-              <Table.Th><Trans>Status</Trans></Table.Th>
-              <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {connections.map((n) => (
-              <Table.Tr key={n.id}>
-                <Table.Td>{n.name}</Table.Td>
-                <Table.Td>
-                  <TypeBadge type={n.type} />
-                </Table.Td>
-                <Table.Td>
+        <SettingsRows>
+          {connections.map((n) => (
+            <SettingsRow
+              key={n.id}
+              title={n.name}
+              chips={<TypeBadge type={n.type} />}
+              status={n.enabled ? { tone: 'ok', label: t`Enabled` } : { tone: 'neutral', label: t`Disabled` }}
+              summary={
+                <Group component="span" gap={6} wrap="wrap">
                   <TagScope tagIds={n.tagIds} tags={tags} />
-                </Table.Td>
-                <Table.Td>
-                  <Group gap={6} wrap="wrap">
-                    <Badge size="sm" variant="light" color={n.enabled ? 'var(--ok)' : 'var(--neutral)'}>
-                      {n.enabled ? <Trans>Enabled</Trans> : <Trans>Disabled</Trans>}
-                    </Badge>
-                    {n.enabled && <DeliveryChip n={n} />}
-                  </Group>
-                </Table.Td>
-                <Table.Td>
-                  <Group gap="xs" justify="flex-end" wrap="nowrap">
-                    <ActionIcon variant="subtle" onClick={() => openEdit(n)} aria-label={t`Edit connection`}>
-                      <IconPencil size={16} />
-                    </ActionIcon>
-                    <ActionIcon
-                      variant="subtle"
-                      color="var(--danger)"
-                      onClick={() => setDeleting(n)}
-                      aria-label={t`Delete connection`}
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
-                  </Group>
-                </Table.Td>
-              </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+                  {n.enabled && <DeliveryChip n={n} />}
+                </Group>
+              }
+              aside={
+                <Group gap="xs" wrap="nowrap">
+                  <ActionIcon variant="subtle" onClick={() => openEdit(n)} aria-label={t`Edit connection`}>
+                    <IconPencil size={16} />
+                  </ActionIcon>
+                  <ActionIcon
+                    variant="subtle"
+                    color="var(--danger)"
+                    onClick={() => setDeleting(n)}
+                    aria-label={t`Delete connection`}
+                  >
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </Group>
+              }
+            />
+          ))}
+        </SettingsRows>
       ) : (
-        <EmptyState
-          compact
-          mood="asleep"
-          title={t`No connections yet`}
-          description={t`Notifications stay in the bell until you add one.`}
-        />
+        <SettingsRowsBlock>
+          <EmptyState
+            compact
+            mood="asleep"
+            title={t`No connections yet`}
+            description={t`Notifications stay in the bell until you add one.`}
+          />
+        </SettingsRowsBlock>
       )}
 
       <ConfirmDialog
@@ -563,7 +552,6 @@ export function NotificationsSection() {
         opened={editing !== null}
         onClose={close}
         title={editing?.id === null ? t`Add connection` : t`Edit connection`}
-        centered
       >
         {form && (
           <Stack>
@@ -639,19 +627,20 @@ export function NotificationsSection() {
               </Stack>
             ))}
 
-            <Group justify="space-between" mt="sm">
-              <Button variant="default" loading={test.isPending} disabled={missingRequired} onClick={runTest}>
-                <Trans>Test</Trans>
+            <ModalFooter
+              status={
+                <Button variant="default" loading={test.isPending} disabled={missingRequired} onClick={runTest}>
+                  <Trans>Test</Trans>
+                </Button>
+              }
+            >
+              <Button variant="default" onClick={close}>
+                <Trans>Cancel</Trans>
               </Button>
-              <Group>
-                <Button variant="subtle" onClick={close}>
-                  <Trans>Cancel</Trans>
-                </Button>
-                <Button loading={create.isPending || update.isPending} disabled={missingRequired} onClick={save}>
-                  <Trans>Save</Trans>
-                </Button>
-              </Group>
-            </Group>
+              <Button loading={create.isPending || update.isPending} disabled={missingRequired} onClick={save}>
+                <Trans>Save</Trans>
+              </Button>
+            </ModalFooter>
           </Stack>
         )}
       </Modal>

@@ -181,9 +181,10 @@ export const Sources: Story = {
 export const SourcesPickByQuality: Story = {
   render: () => <SourcePrioritySection />,
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByLabelText('Pick a source by'))
-    await userEvent.click(await within(document.body).findByRole('option', { name: 'Best measured quality' }))
-    await expect(await canvas.findByText('Unsaved')).toBeVisible()
+    await waitFor(async () => {
+      await userEvent.click(await canvas.findByRole('radio', { name: 'Best measured quality' }))
+      await expect(await canvas.findByText('Unsaved')).toBeVisible()
+    })
   },
 }
 

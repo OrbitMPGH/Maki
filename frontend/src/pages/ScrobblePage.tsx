@@ -1,7 +1,6 @@
 import { errorText } from '../api/errorText'
 import { useEffect, useId, useState } from 'react'
 import {
-  Alert,
   Box,
   Button,
   Group,
@@ -46,7 +45,10 @@ import {
 } from '../api/hooks'
 import { formatDateTime } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { Thumb } from '../components/ui/Thumb'
 import { MetadataSiteIcon } from '../components/MetadataSiteIcon'
+import { TimeAgo } from '../components/ui/TimeAgo'
+import { Callout } from '../components/ui/Callout'
 
 const TRACKER_SETTINGS = '/settings?tab=integrations&s=scrobbling'
 const KAVITA_SETTINGS = '/settings?tab=integrations&s=kavita'
@@ -472,25 +474,24 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
   }
 
   const href = item.seriesId != null ? `/series/${item.seriesId}` : null
-  const cover = item.coverUrl && <img src={item.coverUrl} alt="" loading="lazy" decoding="async" />
   return (
     <Panel p="md">
       <div className="cover-panel scrobble-review">
         {/* No library series matched this title, so there is no cover to show and no empty box either. */}
         {href && (
-          <Link to={href} className="cover-panel-cover" tabIndex={-1} aria-hidden>
-            {cover}
+          <Link to={href} className="series-cell-link" tabIndex={-1} aria-hidden>
+            <Thumb src={item.coverUrl} size="lg" />
           </Link>
         )}
         <div className="cover-panel-body">
           <Group gap="xs">
             <StatusDot tone="warn" aria-hidden />
             {href ? (
-              <Text component={Link} to={href} className="series-cell-title">
+              <Text component={Link} to={href} className="series-title">
                 {item.title}
               </Text>
             ) : (
-              <Text className="series-cell-title">{item.title}</Text>
+              <Text className="series-title">{item.title}</Text>
             )}
             <TagChip size="sm">{serviceLabel(data?.connections, item.service)}</TagChip>
           </Group>
@@ -654,9 +655,9 @@ export default function ScrobblePage() {
       {header}
 
       {error && (
-        <Alert color="var(--danger)" variant="light" mb="md">
+        <Callout tone="danger" role="alert" mb="md">
           {errorText(error)}
-        </Alert>
+        </Callout>
       )}
 
       <div className="scrobble-connections" role="group" aria-label={t`Connections`}>
@@ -725,7 +726,7 @@ export default function ScrobblePage() {
                         </Table.Td>
                         <Table.Td data-priority="low">
                           <Text size="sm" c="var(--ink-3)">
-                            {fmtTime(group.at)}
+                            <TimeAgo value={group.at} />
                           </Text>
                         </Table.Td>
                       </Table.Tr>

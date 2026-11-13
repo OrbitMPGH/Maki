@@ -79,6 +79,7 @@
   --q-aggregator-on: #24140a;
   --neutral: #a6adbb;
   --neutral-on: #11141c;
+  --brand-soft: color-mix(in srgb, var(--brand) 15%, transparent);
   --ok-soft: color-mix(in srgb, var(--ok) 15%, transparent);
   --warn-soft: color-mix(in srgb, var(--warn) 15%, transparent);
   --info-soft: color-mix(in srgb, var(--info) 15%, transparent);
@@ -105,7 +106,6 @@
   --radius-2xs: 2px;
   --radius-chip: 7px;
   --radius-thumb: 8px;
-  --radius-card: 10px;
   --radius-cover: 7px;
   --radius-hero: 12px;
   /* Bars, badges and anything whose ends should be fully round, whatever its height. */
@@ -159,6 +159,18 @@
   /* One tight layer: a few hundred posters each casting a wide blur made scrolling and hover slow. */
   --shadow-cover: 0 1px 2px rgba(0, 0, 0, 0.45);
   --shadow-cover-hover: 0 14px 26px -12px rgba(0, 0, 0, 0.8);
+  --shadow-chip: 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-stuck: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
+  --on-art-ink: #fff;
+  --on-art-ink-2: rgba(255, 255, 255, 0.7);
+  --on-art-ink-3: rgba(255, 255, 255, 0.52);
+  --on-art-chip: rgba(255, 255, 255, 0.18);
+  --on-art-scrim: rgba(0, 0, 0, 0.55);
+  --on-art-scrim-strong: rgba(0, 0, 0, 0.8);
+  --z-sticky: 20;
+  --z-nav-scrim: 99;
+  --z-float: 100;
+  --z-tip: 300;
   --cover-rim: rgba(255, 255, 255, 0.09);
   /* An ink edge, so a pointed-at cover never reads as focused or selected (both brand). */
   --cover-rim-hover: color-mix(in srgb, var(--ink-hi) 30%, transparent);
@@ -230,7 +242,6 @@ span[lang]:is(:lang(ja), :lang(ko)):not(:lang(ja-Latn), :lang(ko-Latn)) {
 }
 
 .cover-title,
-.row-title,
 .utility-modal-title {
   font-family: var(--font-display);
 }
@@ -770,11 +781,9 @@ body {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
 }
-/* Headline numbers: figure strips, stat tiles, the hero figures, the level. Sizes stay per call site. */
+/* Headline numbers: figure strips, stat tiles, the level. Sizes stay per call site. */
 .figure,
-.figure-strip-n,
-.hero-stat-n,
-.stats-fact-value {
+.figure-strip-n {
   font-family: var(--font-display);
   font-weight: var(--fw-bold);
   letter-spacing: -0.02em;
@@ -1291,7 +1300,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   position: fixed;
   top: 8px;
   left: 8px;
-  z-index: 300;
+  z-index: var(--z-tip, 300);
   padding: 10px 14px;
   border-radius: var(--radius-control);
   background: var(--mantine-primary-color-filled);
@@ -1313,7 +1322,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .nav-scrim {
   position: fixed;
   inset: 0;
-  z-index: 99;
+  z-index: var(--z-nav-scrim);
   background: rgba(6, 7, 11, 0.6);
 }
 
@@ -1686,19 +1695,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 
 /* Series poster standing in for the severity icon. Sized inline (the bell and the page use
    different widths); everything here is the framing that does not change between the two. */
-.inbox-cover {
-  position: relative;
-  flex-shrink: 0;
-  border-radius: var(--mantine-radius-xs);
-  overflow: hidden;
-  background: var(--surface-hover);
-}
-.inbox-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
 /* Severity over the poster, bottom-right. Its own opaque chip so a triangle never lands on a
    same-coloured patch of cover art and disappears. */
 .inbox-cover-badge {
@@ -1828,6 +1824,12 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   --badge-fz-md: var(--type-badge);
   text-transform: none;
   letter-spacing: 0;
+}
+/* One pill formula: a tint plus a 1px edge in the pill's own colour. Mantine's light variant draws
+   no border, so the edge is added here for every light badge, LightBadge included (same root class).
+   The badge height is border-box and its line-height already reserves the 2px. */
+.mantine-Badge-root[data-variant='light'] {
+  border: 1px solid color-mix(in srgb, var(--badge-color) 45%, transparent);
 }
 .mantine-Pill-root {
   --pill-fz-xs: var(--type-badge);
@@ -1996,7 +1998,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   line-height: 1;
   white-space: nowrap;
   color: #fff;
-  background: color-mix(in srgb, black 55%, transparent);
+  background: var(--on-art-scrim);
 }
 .cover-badge-circle {
   width: 20px;
@@ -2049,10 +2051,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: var(--mantine-primary-color-filled);
   color: var(--mantine-primary-color-contrast);
 }
-.cover-badge-read {
-  background: var(--brand);
-  color: var(--brand-on);
-}
 /* Compact density (or any narrow container) can put the left and right corner badges close
    enough to overlap (a wide label + eye + status colliding). Drop the text label and shrink to
    an icon-only dot below the width where both corners together would exceed the card. */
@@ -2091,7 +2089,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: conic-gradient(var(--brand) var(--ring-pct), rgba(255, 255, 255, 0.22) 0);
+  background: conic-gradient(var(--brand) var(--ring-pct), var(--on-art-chip) 0);
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
 }
@@ -2133,9 +2131,9 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .cover-card[data-offline='unavailable'] .cover-corners {
   filter: grayscale(1);
 }
-.series-row [data-offline-badge='saved'] {
-  background: color-mix(in srgb, var(--brand) 16%, transparent);
-  color: var(--brand-fg);
+.series-row .row-header > .mantine-Badge-root,
+.series-row .row-progress > .mantine-Badge-root {
+  flex-shrink: 0;
 }
 /* The row header never wraps, so on a phone the offline badge shrinks to its icon (the tooltip
    keeps the words) rather than crush the title beside the status badge and the eye. */
@@ -2144,6 +2142,9 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     width: 20px;
     padding: 0;
     justify-content: center;
+  }
+  .series-row [data-offline-badge] .mantine-Badge-section {
+    margin: 0;
   }
   .series-row .offline-badge-label {
     position: absolute;
@@ -2161,14 +2162,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: var(--tone);
   box-shadow:
     0 0 0 1.5px rgba(6, 7, 11, 0.45),
-    0 2px 6px rgba(0, 0, 0, 0.35);
+    var(--shadow-chip);
   color: var(--tone-on, #fff);
 }
 .cover-state[data-tone='status'][data-unmonitored] {
   background: rgba(6, 7, 11, 0.84);
   box-shadow:
     inset 0 0 0 1.5px var(--tone),
-    0 2px 6px rgba(0, 0, 0, 0.35);
+    var(--shadow-chip);
   color: var(--tone);
 }
 /* Read progress wraps the status disc: a brand arc on a dark track just outside it, so one mark per
@@ -2192,24 +2193,24 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     rgba(6, 7, 11, 0.86) 12.25px
   );
   background: var(--read-disc);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-chip);
 }
 .cover-state[data-tone='status'][data-unmonitored][data-read] {
   --disc-fill: rgba(6, 7, 11, 0.84);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-chip);
 }
 [data-theme='light'] .cover-state[data-tone='status'][data-unmonitored][data-read] {
   --disc-fill: rgba(6, 7, 11, 0.8);
   --disc-edge: var(--lift);
   background: var(--read-disc);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-chip);
 }
 .cover-state[data-tone='status'][data-read]::before {
   content: '';
   position: absolute;
   inset: 1.25px;
   border-radius: 50%;
-  background: conic-gradient(var(--brand) var(--ring-pct), rgba(255, 255, 255, 0.14) 0);
+  background: conic-gradient(var(--brand) var(--ring-pct), var(--on-art-chip) 0);
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.75px), #000 calc(100% - 2.5px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 2.75px), #000 calc(100% - 2.5px));
 }
@@ -2225,7 +2226,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: rgba(6, 7, 11, 0.8);
   box-shadow:
     inset 0 0 0 1.5px var(--lift),
-    0 2px 6px rgba(0, 0, 0, 0.35);
+    var(--shadow-chip);
   color: var(--lift);
 }
 [data-theme='light'] .cover-state:not([data-tone='status']) {
@@ -2281,7 +2282,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   height: 3px;
   margin: 7px 0 6px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--on-art-chip);
   overflow: hidden;
 }
 .cover-bar[data-empty] {
@@ -2298,7 +2299,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-weight: var(--fw-medium);
   line-height: 1;
   white-space: nowrap;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--on-art-ink-2);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 /* The count pill keeps its width; the text beside it gives way first. Onest's descenders hang below
@@ -2350,7 +2351,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   }
 }
 .cover-row > [data-nothing-wanted] {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--on-art-ink-3);
 }
 .cover-new {
   display: inline-flex;
@@ -2360,7 +2361,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   border-radius: var(--radius-pill);
   /* Neutral, not the accent: a solid brand pill read as a button, and Home's chapter pill already
      carries the accent on its cards. */
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--on-art-chip);
   color: #fff;
   flex-shrink: 0;
   font-size: var(--type-micro);
@@ -2386,7 +2387,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 .cover-corner-left > .cover-chapter {
   margin-bottom: 0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-chip);
 }
 /* Clears the card menu or add cue in the other corner, and lets a long label ellipsize. */
 .cover-corners:has(> .cover-corner-left > .cover-chapter) {
@@ -2420,7 +2421,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: color-mix(in srgb, white 82%, transparent);
 }
 .cover-count[data-nothing-wanted] {
-  color: color-mix(in srgb, white 55%, transparent);
+  color: var(--on-art-ink-3);
 }
 
 /* Shared delegated tooltip (TipLayer): one node for every `data-tip` in the app.
@@ -2432,7 +2433,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
    app's own `data-theme`, so the two can never drift apart. */
 .tip {
   position: fixed;
-  z-index: 300;
+  z-index: var(--z-tip, 300);
   max-width: 260px;
   padding: 5px 10px;
   border-radius: var(--mantine-radius-default);
@@ -3117,20 +3118,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
 }
-.next-up-thumb {
-  display: block;
-  overflow: hidden;
-  width: 30px;
-  aspect-ratio: 2 / 3;
-  border-radius: var(--mantine-radius-xs);
-  background: var(--surface-hover);
-}
-.next-up-thumb img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
 .next-up-copy {
   display: flex;
   min-width: 0;
@@ -3138,13 +3125,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   gap: 2px;
 }
 .next-up-name {
-  overflow: hidden;
-  color: var(--ink-hi);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-strong);
-  line-height: 1.3;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
 }
 .next-up-meta {
   display: flex;
@@ -3232,7 +3213,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   height: 3px;
   margin: 7px 0 6px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--on-art-chip);
   overflow: hidden;
 }
 .home-resume-fill {
@@ -3264,7 +3245,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   cursor: pointer;
   color: #fff;
   background: rgba(6, 7, 11, 0.62);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-chip);
   transition: opacity var(--dur-base) var(--ease), transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
 }
 /* The chapter pill is the card's mark; the button waits for hover, like the reading card menu. */
@@ -3313,7 +3294,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   pointer-events: none;
   color: var(--ok-on);
   background: var(--ok);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-chip);
 }
 /* In library: the accent with a check, so it never reads as a Library status disc. */
 .discover-corner[data-owned='true'] {
@@ -3343,7 +3324,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   z-index: 3;
   color: #fff;
   background: rgba(6, 7, 11, 0.62);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-chip);
   transition: opacity var(--dur-base) var(--ease), transform var(--dur-medium) var(--ease), background var(--dur-base) var(--ease),
     scale var(--dur-fast) var(--ease);
 }
@@ -3468,13 +3449,13 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   border-radius: 50%;
   cursor: pointer;
   color: #fff;
-  background: color-mix(in srgb, black 55%, transparent);
-  box-shadow: 0 2px 6px color-mix(in srgb, black 35%, transparent);
+  background: var(--on-art-scrim);
+  box-shadow: var(--shadow-chip);
   opacity: 0;
   transition: opacity var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
 }
 .discover-card-save:hover {
-  background: color-mix(in srgb, black 80%, transparent);
+  background: var(--on-art-scrim-strong);
 }
 /* Saved: the corner badge already shows the bookmark, so the button sits on top of it instead of
    beside it, turning the badge into the remove control on hover. */
@@ -3621,22 +3602,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--anime);
   border-radius: 2px;
 }
-/* The score on a line of its own and the other figures under it: side by side they needed more
-   room than the column has, and the figures stacked one per line beside the score. */
-.hero-figures.discover-figures {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 14px;
-  margin-top: 16px;
-}
-/* "19 ch", "~2 h": the unit is set down a step so the number stays the figure. */
-.hero-stat-unit {
-  margin-inline-start: 3px;
-  color: var(--ink-3);
-  font-size: 0.68em;
-  font-weight: var(--fw-semibold);
-  letter-spacing: 0;
-}
 /* The score and its word in gold, then where it stands in quiet ink: one line, read left to right. */
 .score-figure {
   display: inline-flex;
@@ -3665,6 +3630,26 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--ink-3);
   font-size: var(--type-body);
 }
+/* A score inline off cover art: one star size and gap, the number in strong ink. */
+.score-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-hi);
+  font-weight: var(--fw-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.score-inline svg {
+  flex: none;
+  color: var(--rating);
+}
+.score-inline[data-tone='yours'] svg {
+  color: var(--brand);
+}
+.score-inline[data-provisional] {
+  color: var(--ink-3);
+}
 /* A site and its score as one control: the logo, then the number, in a quiet chip. A rated site with
    no link (data-static) looks the same but is not a button. */
 .site-chip {
@@ -3674,7 +3659,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   height: 28px;
   padding: 0 10px 0 7px;
   border: 1px solid var(--border-strong);
-  border-radius: 7px;
+  border-radius: var(--radius-chip);
   background: color-mix(in srgb, var(--surface-2) 82%, transparent);
   color: var(--ink);
   font: inherit;
@@ -3837,7 +3822,7 @@ button.site-chip:hover {
   font-weight: var(--fw-medium);
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--on-art-ink-2);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 /* Wraps inside a one-line box, so a year with no room drops out whole instead of ellipsizing. */
@@ -3875,7 +3860,7 @@ button.site-chip:hover {
 }
 .discover-sub-year {
   line-height: 16px;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--on-art-ink-3);
 }
 .discover-sub-year::before {
   content: '';
@@ -4021,7 +4006,12 @@ button.site-chip:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  height: 22px;
+  height: 26px;
+  overflow: hidden;
+}
+.engine-why-chips > .tag-chip {
+  flex: none;
+  max-width: 100%;
   overflow: hidden;
 }
 /* The reason every card in a rail shares, said once above it instead of on each card. */
@@ -4051,20 +4041,6 @@ button.site-chip:hover {
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.engine-chip {
-  flex: none;
-  max-width: 100%;
-  padding: 2px 6px;
-  border-radius: var(--radius-control);
-  background: var(--surface-2);
-  color: var(--ink-3);
-  font-size: var(--type-micro);
-  font-weight: var(--fw-medium);
-  line-height: 18px;
-  white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
 }
 
@@ -4174,12 +4150,6 @@ button.site-chip:hover {
     align-self: flex-start;
   }
 }
-.discover-hero-eyebrow {
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-  color: var(--ink-3);
-  margin-bottom: 8px;
-}
 /* Poster and title are the click target, so they are buttons, but they must not look like one. */
 .discover-hero-poster,
 .discover-hero-title {
@@ -4220,52 +4190,53 @@ button.site-chip:hover {
   font-size: 0.58em;
   line-height: 1.07;
 }
-/* The feature's rows. Spacing lives here rather than on the elements so the short-viewport block
-   at the bottom can tune the whole stack in one place. */
-.discover-hero-pills {
-  margin-top: 14px;
+/* The modal's header rows, each held at one line even when empty: the meta, the score and the site
+   chips arrive with the detail request, and a row appearing from nothing moves the buttons. */
+.discover-hero .hero-kicker {
+  display: flex;
+  min-width: 0;
+  min-height: 18px;
+  white-space: nowrap;
 }
-/* Reserved, because the source scores arrive with the detail request and a row that appears from
-   nothing shoves the buttons down while somebody is reading them. */
-.discover-hero-sources .mantine-Badge-root {
-  --badge-fz-sm: var(--type-meta);
-  --badge-height-sm: 22px;
+.discover-hero .hero-kicker > svg {
+  flex: none;
 }
-.discover-hero-sources {
-  min-height: 22px;
-  margin-top: 14px;
+/* The compact band stays light behind the text in Light, so the on-art pink washed out there. */
+[data-theme='light'] .series-hero[data-compact] .hero-kicker {
+  color: var(--brand-fg);
 }
-/* One row, held even when empty. Reasons that wrap land on a second row the box cuts off whole, so
-   the band shows as many reasons as fit rather than growing to show all three. They are labels, not
-   buttons, so plain text between hairlines. */
-.discover-hero-reasons {
-  box-sizing: border-box;
-  height: 28px;
-  margin-top: 12px;
-  padding-top: 5px;
+.hero-kicker-text {
+  min-width: 0;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
-.discover-hero-reasons > .meta-list {
-  row-gap: 28px;
+.discover-hero .hero-meta {
+  min-height: 1.45em;
 }
-.discover-hero-reasons li {
+/* One line at every width, so a longer score word cannot make one pick a line taller than the
+   next. The standing gives way first; the modal shows it whole. */
+.discover-hero-score {
+  display: flex;
+  align-items: center;
+  min-width: 0;
   max-width: 100%;
+  min-height: 24px;
+}
+.discover-hero .score-figure {
+  flex-wrap: nowrap;
+  min-width: 0;
+  white-space: nowrap;
+}
+.discover-hero .score-figure-standing {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.discover-hero-sites {
+  min-height: 28px;
 }
 .discover-hero-actions {
   margin-top: 20px;
-}
-.discover-hero-facts {
-  display: none;
-}
-.discover-hero-reason {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  line-height: 18px;
-  font-size: var(--type-label);
-  font-weight: var(--fw-medium);
-  color: var(--ink-2);
 }
 
 .discover-hero-strip {
@@ -4428,11 +4399,6 @@ button.site-chip:hover {
   vertical-align: -0.1em;
   background: currentColor;
   opacity: 0.35;
-}
-.discover-hero-strip-rating {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
 }
 /* One line of whole tags: a tag that does not fit wraps below and the clip hides it. */
 .discover-hero-strip-match {
@@ -4839,8 +4805,6 @@ button.site-chip:hover {
   .discover-loading-hero {
     min-height: 480px;
   }
-  /* The buttons belong on the first screen, so the score, figures and source scores fold into one
-     line under them. The source scores stay in the detail view. */
   .discover-hero.series-hero[data-compact] .series-hero-poster {
     width: 104px;
     height: 156px;
@@ -4849,39 +4813,8 @@ button.site-chip:hover {
   .discover-hero .discover-hero-strip {
     display: none;
   }
-  .discover-hero .hero-figures,
-  .discover-hero .discover-hero-sources {
-    display: none;
-  }
   .discover-hero .discover-hero-actions {
     margin-top: 16px;
-  }
-  .discover-hero .discover-hero-reasons {
-    order: 1;
-  }
-  .discover-hero .discover-hero-facts {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 14px;
-    margin-top: 16px;
-    font-size: var(--type-body);
-    font-weight: var(--fw-medium);
-    color: var(--ink-2);
-  }
-  .discover-hero-facts-score {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: var(--radius-control);
-    font-weight: var(--fw-bold);
-    color: var(--ink-hi);
-    background: color-mix(in srgb, var(--rating) 15%, transparent);
-    border: 1px solid color-mix(in srgb, var(--rating) 34%, transparent);
-  }
-  .discover-hero-facts-score svg {
-    color: var(--rating);
   }
 }
 
@@ -4897,25 +4830,22 @@ button.site-chip:hover {
   .discover-hero.series-hero[data-compact] .series-hero-title {
     font-size: clamp(1.6rem, 2.6vw, 2.35rem);
   }
-  .discover-hero .hero-figures {
-    margin-top: 10px;
-    gap: 12px;
-  }
   .discover-hero.series-hero[data-compact] .series-hero-body {
     padding-top: 22px;
     padding-bottom: 22px;
   }
-  .discover-hero-eyebrow {
+  .discover-hero .hero-kicker {
     margin-bottom: 4px;
   }
-  .discover-hero-pills {
+  .discover-hero .hero-meta {
+    margin-top: 6px;
+  }
+  .discover-hero .hero-chips,
+  .discover-hero .hero-scoreline {
     margin-top: 10px;
   }
-  .discover-hero-sources {
-    margin-top: 8px;
-  }
-  .discover-hero-reasons {
-    margin-top: 8px;
+  .discover-hero .hero-scoreline {
+    gap: 8px;
   }
   .discover-hero-actions {
     margin-top: 14px;
@@ -5108,9 +5038,6 @@ button.site-chip:hover {
   line-height: 1.2;
   color: var(--ink-hi);
 }
-.auth-panel-body {
-  margin-top: var(--mantine-spacing-md);
-}
 /* Advice sitting under the panel, not in it: it is worth reading, but it is not part of the form. */
 .auth-note {
   padding: 14px 16px;
@@ -5124,7 +5051,7 @@ button.site-chip:hover {
 .auth-card {
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   box-shadow: var(--shadow-card);
 }
 .auth-card-head {
@@ -5222,7 +5149,7 @@ button.site-chip:hover {
   margin-bottom: var(--mantine-spacing-md);
   padding: 8px 16px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   background: var(--surface);
   color: var(--ink-hi);
 }
@@ -5341,111 +5268,6 @@ button.site-chip:hover {
   font-weight: var(--fw-semibold);
   color: var(--ink-3);
 }
-.setup-steps {
-  display: grid;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.setup-steps li {
-  position: relative;
-}
-/* The thread between step numbers: from under one circle to above the next. */
-.setup-steps li:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  left: 23px;
-  top: 40px;
-  bottom: -8px;
-  width: 1px;
-  background: var(--border);
-}
-.setup-step {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  width: 100%;
-  padding: 10px;
-  border-radius: var(--radius-surface);
-  color: var(--ink-3);
-  transition: background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
-}
-.setup-step:hover {
-  background: color-mix(in srgb, var(--surface-hover) 70%, transparent);
-  color: var(--ink-2);
-}
-.setup-step[data-current] {
-  background: var(--brand-soft);
-  color: var(--ink-hi);
-}
-.setup-step[data-current]::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 2px;
-  border-radius: 2px;
-  background: var(--brand);
-}
-.setup-step-index {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--border-strong);
-  border-radius: 50%;
-  background: var(--surface);
-  font-size: var(--type-micro);
-  font-weight: var(--fw-strong);
-  font-variant-numeric: tabular-nums;
-}
-.setup-step[data-done] .setup-step-index {
-  border-color: transparent;
-  background: var(--ok-soft);
-  color: var(--ok);
-}
-.setup-step[data-current] .setup-step-index {
-  border-color: var(--brand);
-  background: var(--mantine-primary-color-filled);
-  color: var(--mantine-primary-color-contrast);
-}
-.setup-step-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  padding-top: 3px;
-}
-.setup-step-label {
-  font-size: var(--type-body);
-  font-weight: var(--fw-semibold);
-}
-.setup-step-hint {
-  overflow: hidden;
-  font-size: var(--type-micro);
-  color: var(--ink-3);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.setup-step-hint[data-tone='warn'] {
-  color: var(--warn);
-}
-.setup-rail-foot {
-  display: grid;
-  justify-items: start;
-  gap: 4px;
-  margin-top: auto;
-}
-.setup-rail-note {
-  padding-inline: 10px;
-  font-size: var(--type-micro);
-  line-height: 1.5;
-  color: var(--ink-4);
-}
 
 .setup-main {
   display: flex;
@@ -5504,7 +5326,7 @@ button.site-chip:hover {
   margin-bottom: 20px;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   background: var(--surface);
   box-shadow: var(--shadow-card);
 }
@@ -5638,7 +5460,7 @@ button.site-chip:hover {
   align-items: flex-start;
   gap: 7px;
   min-width: 0;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
 }
 .ground-tiles .ground-tile:focus-visible {
   outline-offset: 7px;
@@ -5648,7 +5470,7 @@ button.site-chip:hover {
   align-self: stretch;
   height: 84px;
   overflow: hidden;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   box-shadow: 0 0 0 1px var(--border-strong);
   transition: box-shadow var(--dur-base) var(--ease);
 }
@@ -5831,7 +5653,8 @@ button.site-chip:hover {
   color: var(--brand-fg, var(--brand));
 }
 .setup-service-state {
-  padding: 3px 9px;
+  padding: 2px 8px;
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-pill);
   background: var(--neutral-soft);
   font-size: var(--type-micro);
@@ -5841,6 +5664,7 @@ button.site-chip:hover {
 }
 .setup-service-state[data-connected] {
   background: var(--ok-soft);
+  border-color: color-mix(in srgb, var(--ok) 45%, transparent);
   color: var(--ok);
 }
 .setup-service-chevron {
@@ -5900,7 +5724,7 @@ button.site-chip:hover {
 .setup-next-card {
   padding: 14px 16px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   background: var(--surface);
   box-shadow: var(--shadow-card);
   transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
@@ -6320,76 +6144,6 @@ button.site-chip:hover {
   line-height: 0.94;
 }
 
-/* --- The figures line ------------------------------------------------------ */
-/* The score and the three numbers a Discover card is opened to check. Set at display size rather
-   than folded into a dimmed facts line, where 236 chapters reads with the same weight as the
-   genre list beside it. */
-.hero-figures {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px;
-  margin-top: 16px;
-}
-/* A score is not a state, so every score is the same gold: the star carries the colour and the
-   number stays ink-hi, which gold cannot hold as text in Light. */
-.hero-score {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 42px;
-  padding: 0 14px;
-  border-radius: var(--radius-hero);
-  color: var(--ink-hi);
-  background: color-mix(in srgb, var(--rating) 15%, transparent);
-  border: 1px solid color-mix(in srgb, var(--rating) 34%, transparent);
-}
-.hero-score svg {
-  color: var(--rating);
-}
-.hero-score-n {
-  font-size: var(--type-figure);
-  font-weight: var(--fw-bold);
-  line-height: 1;
-}
-.hero-figure-rule {
-  width: 1px;
-  height: 30px;
-  background: var(--border-strong);
-}
-/* Hairlines rather than a wider gap: three numbers in a row read as one number until something
-   divides them, and the same rule already separates the score from the set.
-   The hairline is a shadow on the left of every figure, and the row is pulled left by one padding
-   and clipped. Whichever figure starts a line, including a wrapped one, has its hairline in the
-   clipped strip, so a line never opens with a rule and every line starts flush. A border on
-   `+ .hero-stat` could not know which figure a wrap had moved to the front. */
-.hero-stats {
-  --hero-stat-pad: 20px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  row-gap: 10px;
-  margin-left: calc(-1 * var(--hero-stat-pad));
-  overflow: hidden;
-}
-.hero-stat {
-  display: grid;
-  gap: 2px;
-  padding: 2px var(--hero-stat-pad);
-  box-shadow: -1px 0 0 var(--border-strong);
-}
-.hero-stat-n {
-  color: var(--ink-hi);
-  font-size: var(--type-figure);
-  font-weight: var(--fw-bold);
-  line-height: 1.05;
-}
-.hero-stat-l {
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-}
-
 /* --- The Continue header ---------------------------------------------------- */
 /* Both heroes in Home's Continue grammar: the title, one meta line, then the facts as a row of
    chips and, on the series page, the actions. The Discover modal leads with the card's reason as an
@@ -6546,7 +6300,8 @@ button.site-chip:hover {
   flex: none;
   align-items: center;
   height: 22px;
-  padding: 0 8px;
+  padding: 0 7px;
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
   border-radius: var(--radius-control);
   background: var(--warn-soft);
   color: var(--warn);
@@ -6825,19 +6580,6 @@ button.site-chip:hover {
 .review-row:last-child {
   padding-bottom: 0;
 }
-.review-score {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 22px;
-  padding: 0 7px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  background: var(--surface-2);
-  color: var(--ink-hi);
-  font-size: var(--type-micro);
-  font-weight: var(--fw-semibold);
-}
 .review-likes {
   display: inline-flex;
   align-items: center;
@@ -7026,9 +6768,6 @@ button.site-chip:hover {
 .tag-browser-spacer {
   flex-shrink: 0;
   width: 20px;
-}
-.tag-browser-footer {
-  border-top: 1px solid var(--border);
 }
 .spoiler-tag > .spoiler-tag-glyph {
   flex-shrink: 0;
@@ -7618,9 +7357,8 @@ button.site-chip:hover {
 }
 
 /* --- Panel titles ---------------------------------------------------------- */
-/* One tier under a section header (PanelTitle). Stats' panel titles share it. */
-.panel-title,
-.stats-panel-title {
+/* One tier under a section header (PanelTitle). */
+.panel-title {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -7661,7 +7399,7 @@ button.site-chip:hover {
 /* Holds the place of the table it stands in for: the dashed outline the app uses for an empty slot. */
 .empty-state[data-framed] {
   border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
 }
 
 /* The whole page is empty: centred in what's left of the viewport, over a picture of covers. */
@@ -8764,22 +8502,6 @@ body.column-resizing * {
 }
 
 /* --- Misc ---------------------------------------------------------------- */
-.hover-raise {
-  transition: transform var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease), background-color var(--dur-base) var(--ease);
-}
-.hover-raise:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
-}
-
-.pulse-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--ok);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ok) 40%, transparent);
-  animation: pulse var(--dur-loop) var(--ease-loop) infinite;
-}
 @keyframes pulse {
   0% {
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--ok) 40%, transparent);
@@ -8810,39 +8532,27 @@ body.column-resizing * {
 
 /* Rank rows and feed rows share a thumbnail. Small enough that a missing cover reads as a plain
    placeholder block rather than a hole in the layout. */
-.stats-thumb {
-  width: 32px;
-  height: 44px;
-  border-radius: var(--mantine-radius-xs);
-  object-fit: cover;
+.stats-avatar {
+  border-radius: 50%;
   flex-shrink: 0;
   background: var(--surface-2);
-  display: block;
-}
-.stats-thumb-empty {
-  border: 1px solid var(--border);
-}
-.stats-thumb-lg {
-  width: 44px;
-  height: 62px;
-  border-radius: var(--radius-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .signals-row + .signals-row {
   border-top: 1px solid var(--border);
 }
 
-.stats-rank-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 5px 0;
-  min-width: 0;
+.stats-row.stats-row-ranked {
+  grid-template-columns: 18px auto minmax(0, 1fr) auto;
 }
-.stats-rank-num {
-  width: 18px;
-  text-align: right;
-  flex-shrink: 0;
+.stats-row-rank {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-bold);
+  text-align: end;
 }
 .stats-rank-empty {
   display: flex;
@@ -8905,15 +8615,11 @@ body.column-resizing * {
   .page-tabs {
     gap: 22px;
   }
-  .stats-rank-row {
-    flex-wrap: wrap;
-    gap: 4px 10px;
+  .stats-row.stats-row-ranked {
+    grid-template-columns: 18px minmax(0, 1fr) auto;
   }
-  .stats-rank-row .stats-thumb {
+  .stats-row-ranked .stats-thumb {
     display: none;
-  }
-  .stats-rank-row > :last-child {
-    margin-inline-start: auto;
   }
   /* Mid-way: the count goes under the meter, so the title gets the row's full width. */
   .stats-row.stats-row-midway {
@@ -8932,10 +8638,6 @@ body.column-resizing * {
   }
   .stats-row-midway > .stats-row-value small {
     display: inline;
-  }
-  .stats-thumb-lg {
-    width: 34px;
-    height: 48px;
   }
 }
 
@@ -9029,7 +8731,7 @@ body.column-resizing * {
 .stats-rail {
   position: sticky;
   top: var(--app-shell-header-offset, 58px);
-  z-index: 20;
+  z-index: var(--z-sticky);
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -9049,7 +8751,7 @@ body.column-resizing * {
    instead of looking sliced. The shadow alone barely shows on a dark ground. */
 .stats-rail[data-stuck],
 .stats-rail-bar[data-stuck] {
-  box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--shadow-stuck);
 }
 .stats-rail[data-stuck]::after,
 .stats-rail-bar[data-stuck]::after {
@@ -9101,7 +8803,7 @@ body.column-resizing * {
   .stats-rail-bar {
     position: sticky;
     top: var(--app-shell-header-offset, 58px);
-    z-index: 20;
+    z-index: var(--z-sticky);
     margin-inline: calc(-1 * var(--mantine-spacing-lg));
     padding-inline: var(--mantine-spacing-lg);
     background: var(--stats-rail-ground);
@@ -9235,16 +8937,38 @@ body.column-resizing * {
   grid-template-columns: minmax(0, 1fr);
 }
 
-/* A panel's own title and the one line under it that says what is being counted. */
-.stats-panel-title {
-  margin: 0 0 2px;
-}
+/* The one line under a panel's title that says what is being counted. */
 .stats-panel-sub {
   margin: 0 0 var(--mantine-spacing-sm);
   color: var(--ink-3);
   font-size: var(--type-meta);
 }
 
+.stats-chart .recharts-cartesian-axis-tick text {
+  font-size: var(--type-micro);
+}
+/* The chart tooltip is a popover surface like Menu and Popover, not Mantine's stock paper. */
+[data-mantine-color-scheme] .mantine-ChartTooltip-tooltip {
+  padding: 8px 10px;
+  border: 1px solid var(--border-raised);
+  border-radius: var(--mantine-radius-default);
+  background-color: var(--surface-raised);
+  box-shadow: var(--shadow-raised);
+  color: var(--ink);
+  font-size: var(--type-meta);
+}
+.mantine-ChartTooltip-tooltipLabel {
+  margin-bottom: 4px;
+  color: var(--ink-hi);
+  font-weight: var(--fw-semibold);
+}
+.mantine-ChartTooltip-tooltipItemName {
+  color: var(--ink-2);
+}
+.mantine-ChartTooltip-tooltipItemData {
+  color: var(--ink-hi);
+  font-variant-numeric: tabular-nums;
+}
 .stats-legend {
   display: flex;
   flex-wrap: wrap;
@@ -9255,6 +8979,10 @@ body.column-resizing * {
   color: var(--ink-3);
   font-size: var(--type-meta);
 }
+.stats-legend b {
+  color: var(--ink-hi);
+  font-weight: var(--fw-bold);
+}
 .stats-legend-swatch {
   display: inline-block;
   width: 9px;
@@ -9264,41 +8992,7 @@ body.column-resizing * {
   vertical-align: -1px;
 }
 
-/* Label, figure, hint: the facts grid beside a chart. */
-.stats-facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 18px;
-}
-.stats-fact {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-.stats-fact-label {
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-}
-.stats-fact-value {
-  color: var(--ink-hi);
-  font-size: 1.25rem;
-  font-weight: var(--fw-heavy);
-  line-height: 1.2;
-  font-variant-numeric: tabular-nums;
-}
-.stats-fact-value small {
-  margin-inline-start: 3px;
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-}
-.stats-fact-hint {
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-}
-
-/* Cover, title with a sub line or meter, value on the right. Covers use .stats-thumb. */
+/* Cover, title with a sub line or meter, value on the right. Covers use .thumb. */
 .stats-rows {
   display: flex;
   flex-direction: column;
@@ -9379,20 +9073,6 @@ body.column-resizing * {
 .stats-split-seg {
   min-width: 3px;
   height: 100%;
-}
-.stats-split-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-  margin: 8px 0 0;
-  padding: 0;
-  list-style: none;
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-}
-.stats-split-legend b {
-  color: var(--ink-hi);
-  font-weight: var(--fw-bold);
 }
 
 /* Weekday by hour. Cells take their intensity inline as a color-mix of --brand into
@@ -9646,9 +9326,6 @@ body.column-resizing * {
   }
 }
 @media (max-width: 47.9375em) {
-  .stats-facts {
-    gap: 10px 14px;
-  }
   .stats-lean {
     grid-template-columns: minmax(0, 6rem) minmax(0, 1fr) 3rem;
   }
@@ -9929,12 +9606,42 @@ body.reader-open {
   overscroll-behavior: none;
 }
 
+/* The stage is dark in every theme, so these never change with the app theme. */
+:root {
+  --reader-surface: #0a0a0b;
+  --reader-surface-2: #121215;
+  --reader-border: rgba(255, 255, 255, 0.1);
+  --reader-border-strong: rgba(255, 255, 255, 0.16);
+  --reader-ink: #fff;
+  --reader-ink-2: rgba(255, 255, 255, 0.72);
+  --reader-ink-3: rgba(255, 255, 255, 0.58);
+  --reader-ink-4: rgba(255, 255, 255, 0.4);
+  --reader-chip: rgba(10, 10, 11, 0.7);
+  --reader-scrim: rgba(0, 0, 0, 0.7);
+}
+/* App inks and Mantine's gray and light variants flip with the app theme; on the dark stage they
+   are pinned to the reader's own. Notes keep the app surface on purpose, so they are left out. */
+:is(.reader-bar, .reader-end, .reader-message) {
+  --ink-2: var(--reader-ink-2);
+  --ink-3: var(--reader-ink-3);
+  --mantine-color-dimmed: var(--reader-ink-3);
+  --mantine-color-gray-light: var(--reader-border);
+  --mantine-color-gray-light-hover: rgba(255, 255, 255, 0.14);
+  --mantine-color-gray-light-color: var(--reader-ink-2);
+  --mantine-primary-color-light: color-mix(in srgb, var(--brand) 18%, transparent);
+  --mantine-primary-color-light-hover: color-mix(in srgb, var(--brand) 26%, transparent);
+  --mantine-primary-color-light-color: var(--brand-fg-on-art);
+}
+.reader-end .mantine-Rating-starSymbol:not([data-filled]) {
+  fill: rgba(255, 255, 255, 0.3);
+  stroke: rgba(255, 255, 255, 0.3);
+}
 .reader-root {
   position: fixed;
   inset: 0;
   z-index: 401;
-  color: #fff;
-  background: #0a0a0b;
+  color: var(--reader-ink);
+  background: var(--reader-surface);
 }
 /* Auto follows each page's edge colour, so a turn eases between them rather than cutting. */
 .reader-root[data-auto-ground] {
@@ -9963,7 +9670,7 @@ body.reader-open {
   color: #2b2b30;
 }
 .reader-root[data-ground='light'] .reader-end {
-  background: #0a0a0b;
+  background: var(--reader-surface);
 }
 /* The Discover preview opens over the detail modal (z-index 1000), and keeps its top bar up, so
    the pages sit below it rather than under it. */
@@ -10279,9 +9986,9 @@ body.reader-open {
   gap: 4px;
   padding: 4px;
   border-radius: var(--mantine-radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #0a0a0b;
-  color: #fff;
+  border: 1px solid var(--reader-border);
+  background: var(--reader-surface);
+  color: var(--reader-ink);
   font-size: var(--type-meta);
   font-variant-numeric: tabular-nums;
   pointer-events: none;
@@ -10343,7 +10050,7 @@ body.reader-open {
   width: 2px;
   height: 100%;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--reader-border);
   opacity: 0.7;
   transition: width var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
 }
@@ -10373,7 +10080,7 @@ body.reader-open {
   height: 14px;
   border-radius: 50%;
   background: var(--brand);
-  box-shadow: 0 0 0 2px #0a0a0b;
+  box-shadow: 0 0 0 2px var(--reader-surface);
   transform: translate(-50%, -50%) scale(0);
   transition: transform var(--dur-fast) var(--ease);
 }
@@ -10387,9 +10094,9 @@ body.reader-open {
   transform: translateY(-50%);
   padding: 2px 8px;
   border-radius: var(--radius-pill);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(10, 10, 11, 0.88);
-  color: #fff;
+  border: 1px solid var(--reader-border);
+  background: var(--reader-surface);
+  color: var(--reader-ink);
   font-size: var(--type-meta);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -10412,20 +10119,13 @@ body.reader-open {
   margin-inline: auto;
   padding: calc(var(--rc) * 10) calc(var(--rc) * 16) calc(var(--rc) * 10) calc(var(--rc) * 10);
   border-radius: var(--radius-hero);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(10, 10, 11, 0.88);
-  backdrop-filter: blur(12px) saturate(1.2);
-  -webkit-backdrop-filter: blur(12px) saturate(1.2);
-  color: #fff;
+  border: 1px solid var(--reader-border);
+  background: var(--reader-surface-2);
+  color: var(--reader-ink);
   pointer-events: none;
 }
 .reader-card:not(:has(> .reader-card-cover, > .reader-ring)) {
   padding-inline-start: calc(var(--rc) * 14);
-}
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .reader-card {
-    background: #0a0a0b;
-  }
 }
 .reader-card-cover {
   width: calc(var(--rc) * 40);
@@ -10433,7 +10133,7 @@ body.reader-open {
   flex-shrink: 0;
   object-fit: cover;
   border-radius: calc(var(--rc) * 5);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
+  box-shadow: 0 0 0 1px var(--reader-border-strong);
 }
 .reader-card-text {
   display: grid;
@@ -10468,7 +10168,7 @@ body.reader-open {
 .reader-card-meta {
   font-size: calc(var(--rc) * 12);
   font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--reader-ink-3);
 }
 
 /* Bottom-of-strip meter (NextChapterHint). The ring is the toolbar's upscale ring at a larger
@@ -10522,10 +10222,10 @@ body.reader-open {
   display: none;
 }
 .reader-next-chapter-hint[data-state='end'] .reader-ring {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--reader-ink-4);
 }
 .reader-next-chapter-hint[data-state='end'] .reader-card-title {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--reader-ink-2);
 }
 /* The meter and the upscale pill share the bottom slot; a pull in progress wins it. */
 .reader-root:has(.reader-next-chapter-hint) .reader-enhance-status {
@@ -10548,7 +10248,7 @@ body.reader-open {
   cursor: pointer;
 }
 .reader-recap-skip[data-state='offer']:hover {
-  border-color: rgba(255, 255, 255, 0.28);
+  border-color: var(--reader-border-strong);
 }
 .reader-recap-skip:focus-visible {
   outline: 2px solid var(--brand);
@@ -10580,9 +10280,9 @@ body.reader-open {
   gap: 8px;
   padding: 10px 18px;
   border-radius: var(--radius-pill);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #0a0a0b;
-  color: #fff;
+  border: 1px solid var(--reader-border);
+  background: var(--reader-surface-2);
+  color: var(--reader-ink);
   font-size: var(--type-meta);
   pointer-events: none;
   animation: reader-enhance-status-in var(--dur-medium) var(--ease);
@@ -10596,7 +10296,7 @@ body.reader-open {
 }
 .reader-enhance-status-method {
   margin-right: 8px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--reader-ink-3);
 }
 .reader-enhance-status-fill {
   width: 100%;
@@ -10618,7 +10318,7 @@ body.reader-open {
   width: 85%;
 }
 .reader-enhance-status[data-phase='failed'] {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--reader-ink-2);
 }
 @keyframes reader-enhance-sweep {
   from {
@@ -10705,7 +10405,7 @@ body.reader-open {
   transition: border-color var(--dur-base) var(--ease);
 }
 .reader-compare-button[data-busy]::after {
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--reader-border);
   border-top-color: var(--brand);
   animation: reader-enhance-spin var(--dur-spin) linear infinite;
 }
@@ -10758,8 +10458,8 @@ body.reader-open {
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--dur-base) var(--ease);
-  background: #0a0a0b;
-  color: #fff;
+  background: var(--reader-surface);
+  color: var(--reader-ink);
 }
 .reader-bar[data-visible='true'] {
   opacity: 1;
@@ -10773,16 +10473,16 @@ body.reader-open {
   top: 0;
   height: calc(56px + var(--safe-top));
   padding-top: var(--safe-top);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--reader-border);
 }
 .reader-bar-bottom {
   bottom: 0;
   height: calc(56px + env(safe-area-inset-bottom, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--reader-border);
 }
 .reader-bar .mantine-Text-root {
-  color: #fff;
+  color: var(--reader-ink);
 }
 .reader-bar {
   --reader-bar-gap: var(--mantine-spacing-xs);
@@ -10799,6 +10499,48 @@ body.reader-open {
   .reader-bar-top .mantine-ActionIcon-root {
     --ai-size: var(--ai-size-md);
   }
+}
+
+/* Portalled reader panels sit outside .reader-root, so they follow the app theme. This pins the
+   surface, ink and Mantine variables they read to the stage's dark values in every theme. */
+.reader-dark {
+  color-scheme: dark;
+  --surface: var(--reader-surface-2);
+  --surface-2: var(--reader-surface-2);
+  --surface-raised: var(--reader-surface-2);
+  --surface-sunken: var(--reader-surface);
+  --surface-hover: rgba(255, 255, 255, 0.08);
+  --border: var(--reader-border);
+  --border-raised: var(--reader-border);
+  --border-strong: var(--reader-border-strong);
+  --border-control: var(--reader-ink-4);
+  --ink-hi: var(--reader-ink);
+  --ink: var(--reader-ink);
+  --ink-2: var(--reader-ink-2);
+  --ink-3: var(--reader-ink-3);
+  --ink-4: var(--reader-ink-4);
+  --brand-fg: var(--brand-fg-on-art);
+  --ok: #3fb950;
+  --warn: #d6a327;
+  --info: #4c8dff;
+  --danger: #f2554c;
+  --danger-fg: #ff8b84;
+  --shadow-raised: 0 6px 20px -8px rgba(0, 0, 0, 0.6);
+  --mantine-color-text: var(--reader-ink);
+  --mantine-color-body: var(--reader-surface-2);
+  --mantine-color-dimmed: var(--reader-ink-3);
+  --mantine-color-placeholder: var(--reader-ink-3);
+  --mantine-color-default: var(--reader-surface-2);
+  --mantine-color-default-hover: rgba(255, 255, 255, 0.08);
+  --mantine-color-default-color: var(--reader-ink);
+  --mantine-color-default-border: var(--reader-border-strong);
+  --mantine-color-gray-light: var(--reader-border);
+  --mantine-color-gray-light-hover: rgba(255, 255, 255, 0.14);
+  --mantine-color-gray-light-color: var(--reader-ink-2);
+  --mantine-primary-color-light: color-mix(in srgb, var(--brand) 18%, transparent);
+  --mantine-primary-color-light-hover: color-mix(in srgb, var(--brand) 26%, transparent);
+  --mantine-primary-color-light-color: var(--brand-fg-on-art);
+  color: var(--reader-ink);
 }
 
 /* Reader settings popover (portalled, so not under .reader-bar). */
@@ -10894,7 +10636,7 @@ body.reader-open {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: #fff;
+  color: var(--reader-ink);
   transition:
     left var(--dur-fast) var(--ease),
     top var(--dur-fast) var(--ease),
@@ -10916,7 +10658,7 @@ body.reader-open {
 .reader-tap-zone-name {
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--reader-chip);
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
   white-space: nowrap;
@@ -10933,12 +10675,6 @@ body.reader-open {
   .reader-tap-zone {
     transition: none;
   }
-}
-.reader-settings-pair {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px;
-  align-items: start;
 }
 .reader-settings-fit {
   display: block;
@@ -11190,6 +10926,104 @@ body.reader-open {
   font-size: var(--type-meta);
   line-height: 1.45;
 }
+.drill-row-value[data-active] {
+  color: var(--brand-fg);
+  font-weight: var(--fw-semibold);
+}
+.drill-group + .drill-group {
+  margin-top: 6px;
+}
+/* Multi-pick and include/leave-out lists (DrillControls.tsx) draw a box in the check slot. */
+.drill-box {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-control);
+  border-radius: 4px;
+}
+.drill-choice[data-checked] .drill-box {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--brand-on);
+}
+.drill-choice[data-state='out'] .drill-box {
+  border-color: var(--ink-3);
+  color: var(--ink-hi);
+}
+.drill-choice[data-state='out'] .drill-choice-label {
+  color: var(--ink-3);
+  text-decoration: line-through;
+}
+.drill-choice:disabled .drill-box {
+  opacity: 0.5;
+}
+.drill-search {
+  padding: 4px 10px 6px;
+}
+.drill-range {
+  display: flex;
+  gap: 8px;
+}
+.drill-range > * {
+  flex: 1;
+  min-width: 0;
+}
+.drill-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.drill-slider-name {
+  min-width: 2.5rem;
+}
+.drill-slider-track {
+  flex: 1;
+}
+.drill-slider-value {
+  min-width: 3.2rem;
+  color: var(--ink-hi);
+  font-weight: var(--fw-semibold);
+  text-align: end;
+}
+.drill-sliders {
+  margin-top: 6px;
+}
+.drill-switch {
+  padding: 8px 10px;
+}
+.drill-switch-body {
+  justify-content: space-between;
+  gap: 12px;
+}
+.drill-switch-text {
+  flex: 1;
+}
+/* Pinned under the panes of a drill panel that fills a drawer. */
+.drill-footer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px var(--mantine-spacing-md) max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+.drill-footer-reset:disabled {
+  background: transparent;
+}
+.drill-footer-end {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.drill-footer-status {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  white-space: nowrap;
+}
 .reader-settings-back {
   width: calc(100% + 12px);
   min-height: 36px;
@@ -11341,8 +11175,8 @@ body.reader-open {
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--dur-base) var(--ease);
-  background: rgba(10, 10, 11, 0.9);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--reader-surface);
+  border-top: 1px solid var(--reader-border);
 }
 .reader-strip-wrap[data-visible='true'] {
   opacity: 1;
@@ -11392,8 +11226,8 @@ body.reader-open {
   border-radius: var(--mantine-radius-xs);
   font-size: var(--type-micro);
   line-height: 1.4;
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(0, 0, 0, 0.65);
+  color: var(--reader-ink-2);
+  background: var(--reader-chip);
 }
 
 /* Chapter-change flash (a .reader-card). Sits below the top bar, safe area included, so it doesn't
@@ -11444,7 +11278,7 @@ body.reader-open {
   flex-shrink: 0;
   object-fit: cover;
   border-radius: var(--radius-thumb);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--reader-border-strong);
   box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.85);
 }
 .reader-end-heading {
@@ -11456,7 +11290,7 @@ body.reader-open {
 .reader-end-eyebrow {
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--reader-ink-3);
 }
 .reader-end-title {
   margin: 0;
@@ -11465,12 +11299,12 @@ body.reader-open {
   font-weight: var(--fw-bold);
   line-height: 1;
   letter-spacing: -0.02em;
-  color: #fff;
+  color: var(--reader-ink);
   overflow-wrap: anywhere;
 }
 .reader-end-series {
   overflow: hidden;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--reader-ink-3);
   font-size: 0.95rem;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -11481,14 +11315,14 @@ body.reader-open {
   gap: 10px;
   margin-top: 10px;
   font-size: var(--type-micro);
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--reader-ink-3);
 }
 .reader-end-meter-track {
   flex: 1;
   max-width: 220px;
   height: 4px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--reader-border);
   overflow: hidden;
 }
 .reader-end-meter-fill {
@@ -11498,26 +11332,26 @@ body.reader-open {
 }
 .reader-end-timeleft {
   font-size: var(--type-micro);
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--reader-ink-3);
 }
 .reader-end-next {
   display: grid;
   justify-items: start;
   gap: 4px;
   padding-top: 22px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--reader-border);
 }
 .reader-end-next-label {
   font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: var(--fw-strong);
   letter-spacing: -0.01em;
-  color: #fff;
+  color: var(--reader-ink);
 }
 .reader-end-note {
   max-width: 46ch;
   font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--reader-ink-3);
 }
 .reader-end-complete {
   display: flex;
@@ -11525,13 +11359,13 @@ body.reader-open {
   margin-top: 14px;
 }
 .reader-end-quiet {
-  --button-color: rgba(255, 255, 255, 0.72);
-  --button-hover: rgba(255, 255, 255, 0.08);
+  --button-color: var(--reader-ink-2);
+  --button-hover: var(--reader-border);
 }
 .reader-end-hint {
   margin-top: 10px;
   font-size: var(--type-micro);
-  color: rgba(255, 255, 255, 0.38);
+  color: var(--reader-ink-4);
 }
 @media (hover: none) {
   .reader-end-hint {
@@ -11573,18 +11407,19 @@ body.reader-open {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--reader-scrim);
+  animation: reader-enhance-status-in var(--dur-medium) var(--ease);
 }
+/* The surface, border and radius of .reader-card. */
 .reader-shortcuts-panel {
   width: min(800px, 100%);
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
   padding: 20px 24px 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-overlay);
-  background: #121215;
-  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.9);
-  color: #fff;
+  border: 1px solid var(--reader-border);
+  border-radius: var(--radius-hero);
+  background: var(--reader-surface-2);
+  color: var(--reader-ink);
   outline: none;
 }
 .reader-shortcuts-head {
@@ -11609,7 +11444,7 @@ body.reader-open {
   margin: 0 0 8px;
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--reader-ink-3);
 }
 .reader-shortcuts-groups dl {
   margin: 0;
@@ -11623,7 +11458,7 @@ body.reader-open {
   font-size: 0.875rem;
 }
 .reader-shortcuts-row dt {
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--reader-ink-2);
 }
 .reader-shortcuts-row dd {
   display: flex;
@@ -11634,7 +11469,7 @@ body.reader-open {
 .reader-shortcuts-row kbd {
   min-width: 24px;
   padding: 1px 7px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--reader-border-strong);
   border-bottom-width: 2px;
   border-radius: var(--radius-control);
   background: rgba(255, 255, 255, 0.06);
@@ -11643,7 +11478,7 @@ body.reader-open {
   font-weight: var(--fw-semibold);
   line-height: 1.6;
   text-align: center;
-  color: #fff;
+  color: var(--reader-ink);
 }
 @media (hover: none) {
   .reader-shortcuts-button {
@@ -11660,9 +11495,10 @@ body.reader-open {
   border-radius: var(--radius-pill);
   font-size: var(--type-micro);
   font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.75);
-  background: rgba(10, 10, 11, 0.7);
+  color: var(--reader-ink-2);
+  background: var(--reader-chip);
   pointer-events: none;
+  animation: reader-enhance-status-in var(--dur-medium) var(--ease);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -11709,7 +11545,6 @@ body.reader-open {
      their track dimmed, the spinner turns dotted and Mantine's loader holds its first frame. */
   .mantine-Button-root[data-loading] .mantine-Button-label:not(:has(.pending-label))::after,
   .mantine-Button-root[data-loading] .pending-label-busy::after,
-  .pulse-dot,
   .status-dot[data-live]::before,
   .mantine-Loader-root,
   .reader-enhance-status:is([data-phase='queued'], [data-phase='working']) .reader-enhance-status-fill,
@@ -11718,7 +11553,6 @@ body.reader-open {
   .preview-chapter-button[data-indeterminate]::before {
     animation: busy-fade var(--dur-loop) var(--ease-loop) infinite !important;
   }
-  .pulse-dot,
   .status-dot[data-live]::before {
     box-shadow: none;
   }
@@ -11796,31 +11630,6 @@ body.reader-open {
   clip-path: polygon(14% 48%, 0 65%, 40% 100%, 100% 20%, 84% 4%, 38% 65%);
 }
 
-.row-cover {
-  border-radius: var(--radius-thumb);
-  overflow: hidden;
-  flex-shrink: 0;
-  background: var(--surface-2);
-}
-.row-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.row-cover-placeholder {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  font-size: var(--type-micro);
-  /* Scheme-aware, unlike the grid card's placeholder: that one sits on cover art behind a dark
-     scrim and can hard-code a light grey, while this one sits on `--surface-2`, which is #f7f8fc
-     in the light theme. */
-  color: var(--mantine-color-dimmed);
-  padding: 4px;
-  text-align: center;
-}
-
 .row-body {
   flex: 1;
   min-width: 0;
@@ -11836,12 +11645,7 @@ body.reader-open {
   flex-wrap: nowrap;
 }
 .row-title {
-  font-weight: var(--fw-strong);
-  font-size: var(--type-body);
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  --series-title-size: var(--type-body);
 }
 .row-year {
   font-size: var(--type-meta);
@@ -11982,23 +11786,8 @@ body.reader-open {
   outline-offset: 2px;
   border-radius: var(--radius-2xs);
 }
-.library-table-thumb {
-  width: 28px;
-  height: 42px;
-}
-.library-table-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
 .library-table-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: var(--font-display);
-  font-weight: var(--fw-strong);
-  font-size: var(--type-body);
+  --series-title-size: var(--type-body);
 }
 .library-table-title:hover .library-table-name {
   text-decoration: underline;
@@ -12021,18 +11810,6 @@ body.reader-open {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.library-table-score {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--ink-hi);
-}
-.library-table-score > svg {
-  color: var(--rating);
-}
-.library-table-score[data-provisional] {
-  color: var(--ink-3);
 }
 .library-table-progress {
   display: flex;
@@ -12133,14 +11910,13 @@ body.reader-open {
   -webkit-line-clamp: 3;
 }
 .series-row.comfortable .row-title {
-  font-size: var(--type-subhead);
+  --series-title-size: var(--type-subhead);
 }
 
-/* The row reuses `.cover-badge`/`.cover-ring`/`.cover-count` so both views stay identical, but
-   those are styled for a poster: they ride on cover art behind a dark scrim, which is why the
-   count is a hard-coded light grey. On a row that grey sits on `--surface` (#ffffff in the light
-   theme, about 1.4:1), so the count has to follow the colour scheme instead. The badges paint
-   their own opaque background and, through `badgeFill`, their own `-on` foreground. */
+/* The row reuses `.cover-ring`/`.cover-count` so both views stay identical, but those are styled
+   for a poster: they ride on cover art behind a dark scrim, which is why the count is a hard-coded
+   light grey. On a row that grey sits on `--surface` (#ffffff in the light theme, about 1.4:1), so
+   the count has to follow the colour scheme instead. */
 .series-row .cover-count {
   color: var(--mantine-color-dimmed);
 }
@@ -12215,21 +11991,6 @@ body.reader-open {
 .health-attention > .health-check-group-body,
 .health-attention > .health-source-series {
   grid-column: 2 / -1;
-}
-/* An error or note inside a page or dialog: icon in the tone's colour, text, optional dismiss. */
-.health-note[data-tone='danger'] > svg {
-  color: var(--danger);
-}
-.health-note[data-tone='info'] > svg {
-  color: var(--info);
-}
-.health-note[data-tone='neutral'] > svg {
-  color: var(--ink-3);
-}
-.health-note-body {
-  flex: 1;
-  min-width: 0;
-  overflow-wrap: anywhere;
 }
 /* A collapsed type's own rows, opened under its summary: indented to the message column so they
    read as the group's members, each keeping its Open and Acknowledge. */
@@ -12340,16 +12101,19 @@ body.reader-open {
 .health-copy-role {
   font-size: var(--type-meta);
   font-weight: 600;
-  padding: 1px 8px;
+  padding: 0 7px;
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-pill);
   color: var(--ink-2);
   background: color-mix(in srgb, var(--neutral) 16%, transparent);
 }
 .health-copy-role[data-role='keep'] {
+  border-color: color-mix(in srgb, var(--ok) 45%, transparent);
   color: var(--ok);
   background: color-mix(in srgb, var(--ok) 14%, transparent);
 }
 .health-copy-role[data-role='spare'] {
+  border-color: color-mix(in srgb, var(--warn) 45%, transparent);
   color: var(--warn);
   background: color-mix(in srgb, var(--warn) 14%, transparent);
 }
@@ -12722,6 +12486,9 @@ body.reader-open {
   --mantine-font-size-sm: var(--type-meta);
   --mantine-font-size-xs: var(--type-micro);
 }
+.series-machine .callout {
+  font-size: var(--type-meta);
+}
 
 /* MonoValue: a file name, path or id on one line that gives up its middle, never its end. */
 .mono-value {
@@ -13035,9 +12802,9 @@ tr:hover .mono-value-copy {
 }
 
 /* --- Import page --- */
-/* The import's three steps across the top of its toolbar, drawn like the setup wizard's rail: a
-   numbered circle that becomes a check, the current step tinted, a thread joining them. */
-.import-steps {
+/* StepStrip: numbered steps, the current one in the accent, finished ones green with a check. The
+   strip lays them across a toolbar with a thread between; the rail stacks them down a side column. */
+.step-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
@@ -13046,34 +12813,79 @@ tr:hover .mono-value-copy {
   border-bottom: 1px solid var(--hairline);
   list-style: none;
 }
-.import-step {
+.step-strip > li {
+  position: relative;
+  min-width: 0;
+}
+.step-strip[data-layout='rail'] {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  border-bottom: 0;
+}
+.step-strip[data-layout='rail'] > li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 23px;
+  top: 40px;
+  bottom: -8px;
+  width: 1px;
+  background: var(--border);
+}
+.step-strip-item {
   position: relative;
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  width: 100%;
   min-width: 0;
   padding: 10px 12px;
   border-radius: var(--radius-surface);
   color: var(--ink-3);
+  text-align: left;
+  transition: background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
 }
-.import-step-thread {
+button.step-strip-item:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--surface-hover) 70%, transparent);
+  color: var(--ink-2);
+}
+button.step-strip-item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+button.step-strip-item:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.step-strip-item[data-state='current'] {
+  background: var(--brand-soft);
+  color: var(--ink-hi);
+}
+.step-strip[data-layout='rail'] .step-strip-item[data-state='current']::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--brand);
+}
+.step-strip-item[data-state='done'] {
+  color: var(--ink-2);
+}
+.step-strip-thread {
   flex: 1 1 auto;
   min-width: 12px;
   height: 1px;
   margin-top: 13px;
   background: var(--border);
 }
-.import-step[data-state='done'] .import-step-thread {
-  background: color-mix(in srgb, var(--brand) 45%, var(--border));
+.step-strip-item[data-state='done'] .step-strip-thread {
+  background: color-mix(in srgb, var(--ok) 45%, var(--border));
 }
-.import-step[data-state='current'] {
-  background: color-mix(in srgb, var(--brand) 12%, transparent);
-  color: var(--ink-hi);
-}
-.import-step[data-state='done'] {
-  color: var(--ink-2);
-}
-.import-step-index {
+.step-strip-index {
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -13086,37 +12898,39 @@ tr:hover .mono-value-copy {
   font-weight: var(--fw-strong);
   font-variant-numeric: tabular-nums;
 }
-.import-step[data-state='done'] .import-step-index {
-  border-color: color-mix(in srgb, var(--brand) 60%, transparent);
-  background: color-mix(in srgb, var(--brand) 14%, var(--surface));
-  color: var(--brand-fg, var(--brand));
+.step-strip-item[data-state='done'] .step-strip-index {
+  border-color: transparent;
+  background: var(--ok-soft);
+  color: var(--ok);
 }
-.import-step[data-state='current'] .import-step-index {
+.step-strip-item[data-state='current'] .step-strip-index {
   border-color: var(--brand);
   background: var(--mantine-primary-color-filled);
   color: var(--mantine-primary-color-contrast);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 22%, transparent);
 }
-.import-step-text {
+.step-strip-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
   padding-top: 3px;
 }
-.import-step-label {
+.step-strip-label {
   font-size: var(--type-body);
   font-weight: var(--fw-semibold);
 }
-.import-step-hint {
+.step-strip-hint {
   overflow: hidden;
   font-size: var(--type-micro);
   color: var(--ink-4);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.import-step[data-state='current'] .import-step-hint {
+.step-strip-item[data-state='current'] .step-strip-hint {
   color: var(--ink-3);
+}
+.step-strip-hint[data-tone='warn'] {
+  color: var(--warn);
 }
 .import-root-select {
   flex: 1 1 20rem;
@@ -13150,26 +12964,26 @@ tr:hover .mono-value-copy {
   min-width: 22rem;
 }
 @media (max-width: 47.9375em) {
-  .import-step {
+  .step-strip-item {
     flex-direction: column;
     align-items: center;
     gap: 6px;
     padding: 8px 4px;
     text-align: center;
   }
-  .import-step-thread {
+  .step-strip-thread {
     display: none;
   }
-  .import-step-text {
+  .step-strip-text {
     align-items: center;
     padding-top: 0;
   }
-  .import-step-hint {
+  .step-strip-hint {
     display: none;
   }
   /* Five steps in a phone row left each label about 60px, and "What to convert" broke over three
      lines. Past three steps only the current one is named; the rest keep their number. */
-  .import-steps[data-many] .import-step:not([data-state='current']) .import-step-label {
+  .step-strip[data-many] .step-strip-item:not([data-state='current']) .step-strip-label {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -13177,22 +12991,23 @@ tr:hover .mono-value-copy {
     clip-path: inset(50%);
     white-space: nowrap;
   }
-  .import-steps[data-many] {
+  .step-strip[data-many] {
     display: flex;
     gap: 4px;
   }
-  .import-steps[data-many] .import-step {
+  .step-strip[data-many] > li {
     flex: none;
+  }
+  .step-strip[data-many] > li:has([data-state='current']) {
+    flex: 1 1 auto;
+  }
+  .step-strip[data-many] .step-strip-item {
     padding: 6px;
   }
-  .import-steps[data-many] .import-step[data-state='current'] {
-    flex: 1 1 auto;
+  .step-strip[data-many] .step-strip-item[data-state='current'] {
     flex-direction: row;
     justify-content: center;
     gap: 8px;
-  }
-  .import-steps[data-many] .import-step[data-state='current'] .import-step-text {
-    min-width: 0;
   }
   .import-root-select {
     min-width: 100%;
@@ -13331,6 +13146,13 @@ button.import-plan-folder-head:hover {
   z-index: 3;
   background: var(--app-bg);
 }
+/* A segmented control used as a form field sits under its label, like an input. */
+.mantine-InputWrapper-root > .mantine-SegmentedControl-root {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+}
+
 .settings-section-title {
   margin: 0;
   min-width: 0;
@@ -13552,7 +13374,7 @@ button.import-plan-folder-head:hover {
   border-radius: 5px;
   object-fit: cover;
   background: var(--surface-2);
-  box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 2.5px rgba(255, 255, 255, 0.16);
+  box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 2.5px var(--cover-rim);
 }
 .taste-theme-covers > :first-child {
   margin-left: 0;
@@ -13697,20 +13519,6 @@ button.settings-row-head:hover,
     white-space: normal;
   }
 }
-/* A one-line caution inside a settings panel, where a full alert block would outweigh the fields. */
-.settings-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  color: var(--ink-2);
-  font-size: var(--type-meta);
-  line-height: 1.45;
-}
-.settings-note > svg {
-  flex-shrink: 0;
-  margin-top: 1px;
-  color: var(--warn);
-}
 /* --- Users & security -------------------------------------------------------- */
 .users-count {
   color: var(--ink-3);
@@ -13815,49 +13623,6 @@ button.settings-row-head:hover,
 .sso-group + .sso-group {
   padding-top: var(--mantine-spacing-md);
   border-top: 1px solid var(--hairline);
-}
-.sso-group-title {
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-}
-
-/* External site marks: a small square in the neutral surface, the site's score beside it in gold.
-   The site's own colour stays out of it; the tooltip carries the name. */
-.site-mark-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-.site-mark.mantine-ActionIcon-root {
-  border-radius: 6px;
-  border-color: var(--border-strong);
-  background: var(--surface-2);
-  color: var(--ink-2);
-}
-.site-mark.mantine-ActionIcon-root:hover {
-  color: var(--ink-hi);
-  background: var(--surface-hover);
-}
-.site-mark-score {
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-  color: var(--rating);
-}
-/* Delete stays quiet in a row of actions and only turns red when the pointer is on it. */
-.quiet-danger.mantine-ActionIcon-root {
-  color: var(--ink-3);
-}
-.quiet-danger.mantine-ActionIcon-root:hover {
-  color: var(--danger);
-}
-.quiet-danger.mantine-Button-root {
-  --button-color: var(--ink-3);
-  color: var(--ink-3);
-}
-.quiet-danger.mantine-Button-root:hover {
-  --button-color: var(--danger);
-  color: var(--danger);
 }
 
 /* Settings > Account: identity line, in-row two-factor setup, one-time secrets. */
@@ -13965,7 +13730,7 @@ button.settings-row-head:hover,
      the toolbar stays; its height is measured into --library-strip-h. */
   position: sticky;
   top: calc(var(--app-shell-header-offset, 58px) - var(--library-strip-h, 0px));
-  z-index: 20;
+  z-index: var(--z-sticky);
 }
 /* Pinned, the toolbar ends in a hairline and a short shadow on its opaque ground, with square
    corners, so the covers scrolling under it meet an edge instead of being sliced by it. */
@@ -13973,7 +13738,7 @@ button.settings-row-head:hover,
   border-bottom-color: var(--hairline);
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
-  box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--shadow-stuck);
 }
 .figure-strip.library-index-metrics {
   padding: 0;
@@ -14118,38 +13883,49 @@ button.settings-row-head:hover,
     display: none;
   }
 }
-/* On a phone the drawer covers the grid it filters, so the count and the way back to the grid sit
-   in a footer that stays on screen however far the groups run. */
-.library-filter-footer {
+/* The filter drawer (LibraryFilterPanel): the drill pages scroll between the drawer's header and a
+   footer that stays put, and each page's back header sticks to the top while its list scrolls. */
+.library-filter-drawer {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.library-filter-drawer-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+}
+.library-filter-frame {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+.library-filter-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 6px var(--mantine-spacing-md);
+}
+.library-filter-scroll .drill-panel-back {
   position: sticky;
-  bottom: 0;
-  z-index: 2;
-  margin: auto calc(var(--mantine-spacing-md) * -1) 0;
-  padding: 12px var(--mantine-spacing-md) max(12px, env(safe-area-inset-bottom));
-  border-top: 1px solid var(--border);
+  top: 0;
+  z-index: 1;
   background: var(--surface-raised);
 }
-.library-filter-show {
-  flex: 1;
+.library-filter-help {
+  margin: 0 0 6px;
+  padding: 0 10px;
+}
+.library-filter-chips {
+  padding: 4px 10px 8px;
 }
 @media (max-width: 47.9375em) {
   .library-filter-drawer {
-    display: flex;
-    flex-direction: column;
-  }
-  .library-filter-drawer > .mantine-Drawer-body {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    padding-bottom: 0;
-  }
-  .library-filter-drawer-body {
-    flex: 1;
-  }
-}
-@media (min-width: 48em) {
-  .library-filter-drawer-body {
-    padding-bottom: var(--mantine-spacing-xl);
+    --drawer-size: 100%;
   }
 }
 @media (max-width: 47.9375em) {
@@ -14164,11 +13940,11 @@ button.settings-row-head:hover,
   .mantine-Paper-root.library-index {
     position: sticky;
     top: var(--app-shell-header-offset, 58px);
-    z-index: 20;
+    z-index: var(--z-sticky);
     margin-inline: calc(-1 * var(--mantine-spacing-lg));
     border-width: 0 0 1px;
     border-radius: 0;
-    box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
+    box-shadow: var(--shadow-stuck);
   }
   .library-toolbar,
   .library-selection-bar {
@@ -14271,6 +14047,18 @@ button.settings-row-head:hover,
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
 }
+/* The tab row already spaces the panel, so a header that opens a tab takes no rail-scale margin. */
+.series-detail-chapter-toolbar > .section-header {
+  margin-block: 0;
+}
+.series-detail-files > div > .section-header:first-child {
+  margin-top: 0;
+}
+/* Sub-labels inside the synopsis panel (Genres, Tags, Open on). */
+.series-detail-synopsis h3.panel-title {
+  margin-bottom: 10px;
+  font-size: var(--type-body);
+}
 /* Sized to its longest option in the active language ("100 / page", "100 / Seite"). The wrapper takes
    the field's font size so `ch` measures the text the field shows; the 44px is the field's start
    padding plus the chevron's section. */
@@ -14290,7 +14078,7 @@ button.settings-row-head:hover,
 .series-detail-chapter-head[data-sticky] {
   position: sticky;
   top: var(--app-shell-header-offset, 0px);
-  z-index: 20;
+  z-index: var(--z-sticky);
   padding-block: 12px;
   margin-block: -12px;
   background: var(--app-bg);
@@ -14300,7 +14088,7 @@ button.settings-row-head:hover,
 .series-detail-chapter-selection {
   position: sticky;
   bottom: 0;
-  z-index: 20;
+  z-index: var(--z-sticky);
   padding: 10px 16px max(10px, env(safe-area-inset-bottom));
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-surface);
@@ -14318,34 +14106,6 @@ button.settings-row-head:hover,
   .series-detail-chapter-selection > .mantine-Group-root > .mantine-Group-root:last-child > * {
     flex-shrink: 0;
   }
-}
-/* The chapters tab's hints are one line under the toolbar: tone icon, words, then their actions. */
-.series-detail-chapter-hint {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  min-height: 40px;
-  border-bottom: 1px solid var(--hairline);
-}
-.series-detail-chapter-hint-icon {
-  flex-shrink: 0;
-  color: var(--warn);
-}
-.series-detail-chapter-hint-text {
-  flex: 1 1 20rem;
-  min-width: 0;
-}
-.series-detail-chapter-hint-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-inline-start: auto;
-}
-/* A full border and fill in the tone, with the leading icon in it; no stripe down the left. */
-[data-mantine-color-scheme] .series-files-hint {
-  border-color: color-mix(in srgb, var(--warn) 35%, var(--border));
-  background: color-mix(in srgb, var(--warn) 7%, var(--surface-2));
 }
 .series-detail-chapter-table {
   overflow: hidden;
@@ -14690,23 +14450,6 @@ button.settings-row-head:hover,
   flex: 1 1 auto;
   min-width: 0;
   border-radius: var(--radius-control);
-}
-.recycle-bin-cover {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 28px;
-  height: 40px;
-  overflow: hidden;
-  border-radius: var(--radius-2xs);
-  background: var(--surface-2);
-  box-shadow: inset 0 0 0 1px var(--line-soft);
-  color: var(--ink-4);
-}
-.recycle-bin-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 .recycle-bin-group-text {
   display: flex;
@@ -15139,24 +14882,6 @@ button.settings-row-head:hover,
   background-color: var(--surface-hover);
 }
 
-/* A destructive confirm carries a rule along its top in the state colour. */
-.utility-modal-content[data-edge] {
-  --panel-edge: var(--border-strong);
-  border-top: 2px solid var(--panel-edge);
-}
-.utility-modal-content[data-edge='brand'] {
-  --panel-edge: var(--brand);
-}
-.utility-modal-content[data-edge='info'] {
-  --panel-edge: var(--info);
-}
-.utility-modal-content[data-edge='warn'] {
-  --panel-edge: var(--warn);
-}
-.utility-modal-content[data-edge='danger'] {
-  --panel-edge: var(--danger);
-}
-
 /* Confirm dialogs: a danger tile before the heading, no coloured edge. */
 .confirm-title {
   display: flex;
@@ -15176,20 +14901,12 @@ button.settings-row-head:hover,
 .confirm-title-text {
   min-width: 0;
 }
-.modal-role-chip {
-  flex: none;
-  padding: 2px 8px;
-  border-radius: 6px;
-  background-color: color-mix(in srgb, var(--neutral) 14%, transparent);
-  font-size: var(--type-meta);
-  color: var(--ink-2);
-}
 .confirm-files {
   max-height: 14rem;
   overflow-y: auto;
   padding-block: 4px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-surface);
   background-color: var(--surface-sunken);
 }
 .confirm-file {
@@ -15251,26 +14968,93 @@ button.settings-row-head:hover,
   margin-left: auto;
 }
 
-/* ModalNote: one line of attention inside a dialog, not a filled alert block. */
-.modal-note {
+/* Note: one quiet line with an icon in the tone's colour, in a dialog, a settings panel or a page. */
+.note {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
-  gap: var(--mantine-spacing-xs);
+  gap: 4px var(--mantine-spacing-xs);
   font-size: var(--type-meta);
+  line-height: 1.45;
   color: var(--ink-2);
 }
-.modal-note-icon {
+.note-icon {
   flex: none;
   margin-top: 1px;
-}
-.modal-note[data-tone='warn'] .modal-note-icon {
   color: var(--warn);
 }
-.modal-note[data-tone='info'] .modal-note-icon {
+.note[data-tone='info'] .note-icon {
   color: var(--info);
 }
-.modal-note-body {
+.note[data-tone='danger'] .note-icon {
+  color: var(--danger);
+}
+.note[data-tone='ok'] .note-icon {
+  color: var(--ok);
+}
+.note[data-tone='neutral'] .note-icon {
+  color: var(--ink-3);
+}
+.note-body {
+  flex: 1 1 12rem;
   min-width: 0;
+  overflow-wrap: anywhere;
+}
+.note-action {
+  margin-inline-start: auto;
+}
+
+/* Callout: a tinted box with a tone icon, text and optional actions at the end. */
+.callout {
+  --callout-tone: var(--ink-3);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border: 1px solid color-mix(in srgb, var(--callout-tone) 35%, var(--border));
+  border-radius: var(--mantine-radius-lg);
+  background: color-mix(in srgb, var(--callout-tone) 7%, var(--surface-2));
+  font-size: var(--type-body);
+  color: var(--ink-2);
+}
+.callout[data-tone='warn'] {
+  --callout-tone: var(--warn);
+}
+.callout[data-tone='info'] {
+  --callout-tone: var(--info);
+}
+.callout[data-tone='danger'] {
+  --callout-tone: var(--danger);
+}
+.callout[data-tone='ok'] {
+  --callout-tone: var(--ok);
+}
+.callout[data-tone='brand'] {
+  --callout-tone: var(--brand);
+}
+.callout-icon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--callout-tone);
+}
+.callout[data-tone='brand'] .callout-icon {
+  color: var(--brand-fg);
+}
+.callout-body {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+.callout-title {
+  color: var(--ink-hi);
+  font-weight: 600;
+}
+.callout-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  margin-inline-start: auto;
 }
 
 /* Hairline lists in the link, relink and import dialogs: mono file names, tabular figures. */
@@ -15318,29 +15102,8 @@ button.settings-row-head:hover,
   min-width: 4rem;
   text-align: right;
 }
-.modal-note[data-tone='danger'] .modal-note-icon {
-  color: var(--danger);
-}
-.modal-note[data-tone='ok'] .modal-note-icon {
-  color: var(--ok);
-}
 
-/* Settings tone notes, hairline tables and the custom source wizard's step strip and test report. */
-.settings-note[data-tone='danger'] > svg {
-  color: var(--danger);
-}
-.settings-note[data-tone='info'] > svg {
-  color: var(--info);
-}
-.settings-note-body {
-  display: flex;
-  flex: 1;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px 12px;
-  min-width: 0;
-}
+/* Hairline tables and the custom source wizard's step strip and test report. */
 .hair-table {
   width: 100%;
   border-collapse: collapse;
@@ -15376,68 +15139,6 @@ button.settings-row-head:hover,
 }
 .hair-table-wrap {
   overflow-x: auto;
-}
-.wizard-steps {
-  display: flex;
-  gap: 4px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border-bottom: 1px solid var(--hairline);
-}
-.wizard-steps li {
-  flex: 1;
-  min-width: 0;
-}
-.wizard-step {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 4px 10px;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-  text-align: left;
-}
-.wizard-step:disabled {
-  cursor: default;
-  opacity: 0.6;
-}
-.wizard-step[data-state='current'] {
-  border-bottom-color: var(--brand);
-  color: var(--ink-hi);
-  font-weight: var(--fw-semibold);
-}
-.wizard-step:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: -2px;
-}
-.wizard-step-mark {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border: 1px solid var(--border-strong);
-  border-radius: 50%;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-.wizard-step[data-state='current'] .wizard-step-mark {
-  border-color: var(--brand);
-  color: var(--brand-fg);
-}
-.wizard-step[data-state='done'] .wizard-step-mark {
-  border-color: var(--ok);
-  color: var(--ok);
-}
-.wizard-step-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .condition-row {
   padding: 10px 0;
@@ -15516,27 +15217,21 @@ button.settings-row-head:hover,
   color: var(--ink-3);
   font-size: var(--type-micro);
 }
-@media (max-width: 36em) {
-  .wizard-step[data-state='todo'] .wizard-step-label,
-  .wizard-step[data-state='done'] .wizard-step-label {
-    display: none;
-  }
-  .wizard-steps li[data-current] {
-    flex: 3;
-  }
-}
 
 /* Hairline rows and token table inside utility modals (naming tokens, rating import, ignored folders). */
 .modal-rows {
   display: flex;
   flex-direction: column;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
 }
 .modal-row {
   display: flex;
-  align-items: center;
+  align-items: baseline;
+  justify-content: space-between;
   gap: var(--mantine-spacing-sm);
   min-height: 40px;
-  padding: 6px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--hairline);
   font-size: var(--type-body);
 }
@@ -15740,22 +15435,6 @@ button.settings-row-head:hover,
   border-bottom: 1px solid var(--hairline);
 }
 .modal-choice-list .mantine-Radio-root:last-child {
-  border-bottom: 0;
-}
-.modal-rows {
-  border-top: 1px solid var(--hairline);
-  border-bottom: 1px solid var(--hairline);
-}
-.modal-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--mantine-spacing-sm);
-  min-height: 40px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--hairline);
-}
-.modal-row:last-child {
   border-bottom: 0;
 }
 @media (max-width: 30em) {
@@ -16150,11 +15829,6 @@ button.settings-row-head:hover,
 .settings-section .settings-field-row:not(:has(.mantine-InputWrapper-description)) {
   align-items: flex-end;
 }
-.panel-table .sticky-end-cell {
-  position: sticky;
-  right: 0;
-  background: var(--surface);
-}
 /* One width for every settings number field; the label and hint keep the full column. */
 .settings-number-field {
   max-width: 12rem;
@@ -16298,8 +15972,9 @@ button.settings-row-head:hover,
 }
 /* The status a change ended in, as a tinted pill so it outweighs the muted "from" beside it. */
 .health-history-status {
-  padding: 0 7px;
-  border-radius: 999px;
+  padding: 0 6px;
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+  border-radius: var(--radius-pill);
   color: var(--tone);
   background: color-mix(in srgb, var(--tone) 14%, transparent);
   font-weight: var(--fw-semibold);
@@ -16468,7 +16143,7 @@ button.settings-row-head:hover,
     display: none;
   }
   /* The candidates and the input need the width more than the card needs its cover. */
-  .scrobble-review .cover-panel-cover {
+  .scrobble-review .cover-panel .thumb {
     display: none;
   }
   .scrobble-log-line {
@@ -16551,44 +16226,56 @@ button.settings-row-head:hover,
   gap: 12px;
   min-width: 220px;
 }
-.series-cell-cover {
-  width: 32px;
-  height: 48px;
+.series-cell-link {
+  display: flex;
   flex-shrink: 0;
+}
+/* The small cover for rows, lists and tables (components/ui/Thumb.tsx). Without a cover it is the
+   brand tile, the same one lib/coverFallback.ts swaps in for a broken URL. */
+.thumb {
+  --thumb-w: 36px;
+  --thumb-r: var(--radius-control);
+  display: inline-block;
+  position: relative;
+  flex-shrink: 0;
+  width: var(--thumb-w);
+  aspect-ratio: 2 / 3;
   overflow: hidden;
-  border-radius: 5px;
-  background: var(--surface-2);
+  vertical-align: middle;
+  border-radius: var(--thumb-r);
+  background: linear-gradient(
+    163deg,
+    color-mix(in srgb, var(--brand) 30%, var(--app-bg)),
+    color-mix(in srgb, var(--brand) 10%, var(--app-bg))
+  );
 }
-.series-cell[data-small] .series-cell-cover {
-  width: 24px;
-  height: 36px;
-  border-radius: 4px;
+.thumb[data-size='sm'] {
+  --thumb-w: 28px;
+  --thumb-r: var(--mantine-radius-xs);
 }
-.series-cell-cover img {
+.thumb[data-size='lg'] {
+  --thumb-w: 56px;
+  --thumb-r: var(--radius-thumb);
+}
+.thumb img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
+}
+.thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--cover-rim);
+  pointer-events: none;
 }
 /* A panel led by its series' cover: a volume release on Activity > Upgrades, a Scrobble review. */
 .cover-panel {
   display: flex;
   align-items: flex-start;
   gap: var(--mantine-spacing-md);
-}
-.cover-panel-cover {
-  width: 48px;
-  height: 72px;
-  flex-shrink: 0;
-  overflow: hidden;
-  border-radius: var(--radius-thumb);
-  background: var(--surface-2);
-}
-.cover-panel-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
 }
 .cover-panel-body {
   flex: 1;
@@ -16602,13 +16289,34 @@ button.settings-row-head:hover,
 .series-cell-text {
   min-width: 0;
 }
-.series-cell-title {
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-  color: var(--ink-hi);
-  text-decoration: none;
+/* Titles that lead a card, next to the large thumbnail, sit one step up from a table row. */
+.requests-row,
+.archived-row,
+.cover-panel {
+  --series-title-size: var(--type-body);
 }
-.series-cell-title:hover {
+.series-title {
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  color: var(--ink-hi);
+  font-size: var(--series-title-size, var(--type-meta));
+  font-weight: var(--fw-semibold);
+  line-height: 1.3;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.series-title[data-lines='1'] {
+  display: block;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+}
+a.series-title:hover,
+button.series-title:hover {
   color: var(--brand-fg);
 }
 
@@ -16726,22 +16434,8 @@ button.settings-row-head:hover,
 .upcoming-name:hover .upcoming-title {
   color: var(--brand-fg);
 }
-.upcoming-cover {
-  flex: none;
-  width: 24px;
-  height: 36px;
-  border-radius: var(--radius-2xs);
-  object-fit: cover;
-  background: var(--surface-sunken);
-}
 .upcoming-title {
   flex: 1;
-  min-width: 0;
-  font-size: var(--type-meta);
-  font-weight: var(--fw-medium);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .upcoming-confidence {
   flex: none;
@@ -16758,7 +16452,7 @@ button.settings-row-head:hover,
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   background: var(--surface);
 }
 .upcoming-line .upcoming-name {
@@ -16835,10 +16529,9 @@ button.settings-row-head:hover,
     min-width: 0;
     gap: 8px;
   }
-  .series-cell .series-cell-cover {
-    width: 24px;
-    height: 36px;
-    border-radius: 4px;
+  .series-cell .thumb {
+    --thumb-w: 28px;
+    --thumb-r: var(--mantine-radius-xs);
   }
 }
 
@@ -16848,14 +16541,6 @@ button.settings-row-head:hover,
   display: flex;
   align-items: flex-start;
   gap: var(--mantine-spacing-md);
-}
-.requests-row-cover {
-  width: 48px;
-  height: 72px;
-  flex-shrink: 0;
-  border-radius: var(--radius-thumb);
-  overflow: hidden;
-  background: var(--surface-2);
 }
 .requests-row-main {
   flex: 1;
@@ -16886,31 +16571,12 @@ button.settings-row-head:hover,
 .archived-row[data-selected] {
   background: var(--brand-soft);
 }
-.archived-row-cover {
-  width: 36px;
-  height: 54px;
-  flex-shrink: 0;
-  overflow: hidden;
-  border-radius: var(--radius-thumb);
-  background: var(--surface-2);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
-}
-.archived-row-cover img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
 .archived-row-main {
   flex: 1;
   min-width: 0;
 }
 .archived-row-title {
-  overflow: hidden;
-  color: var(--ink-hi);
-  font-weight: var(--fw-semibold);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
 }
 .archived-row-meta {
   color: var(--ink-3);
@@ -17024,9 +16690,9 @@ button.settings-row-head:hover,
   }
   /* Forces every column onto its own line under the title instead of letting
      them ration what is left of the first one. */
-  /* 34px is `.stats-thumb-lg` at this width. */
+  /* 40px is the medium `.thumb`. */
   .signals-row-main {
-    flex-basis: calc(100% - 34px - var(--mantine-spacing-sm));
+    flex-basis: calc(100% - 36px - var(--mantine-spacing-sm));
   }
   .signals-col {
     width: auto;
@@ -17231,7 +16897,7 @@ button.settings-row-head:hover,
 /* Centred on the content column, not the viewport: the desktop navbar offsets the page. */
 .lucky-pill {
   position: fixed;
-  z-index: 100;
+  z-index: var(--z-float);
   left: calc(
     50% +
       (
@@ -17497,6 +17163,7 @@ button.settings-row-head:hover,
   font-weight: var(--fw-medium);
   white-space: nowrap;
   background: var(--neutral-soft);
+  border: 1px solid var(--border-strong);
   color: var(--ink-2);
 }
 .source-tag[data-tone='kind'] {
@@ -17521,25 +17188,30 @@ button.settings-row-head:hover,
 }
 .source-tag[data-tone='adult'] {
   background: var(--cr-explicit-soft);
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
   color: var(--cr-explicit);
   font-weight: var(--fw-semibold);
 }
 .source-tag[data-tone='mature'] {
   background: var(--cr-erotica-soft);
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
   color: var(--cr-erotica);
   font-weight: var(--fw-semibold);
 }
 .source-tag[data-tone='broken'] {
   background: var(--danger-soft);
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
   color: var(--danger-fg);
   font-weight: var(--fw-semibold);
 }
 .source-tag[data-tone='flare'] {
   background: var(--warn-soft);
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
   color: var(--warn);
 }
 .source-tag[data-tone='quality-high'] {
   background: var(--ok-soft);
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
   color: var(--ok);
   font-weight: var(--fw-semibold);
 }
@@ -17555,10 +17227,12 @@ button.settings-row-head:hover,
 }
 .source-tag[data-tone='quality-low'] {
   background: var(--danger-soft);
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
   color: var(--danger);
 }
 .source-tag[data-tone='filter'] {
   background: var(--info-soft);
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
   color: var(--info);
 }
 .source-tag[data-tone='setup'] {
@@ -17765,7 +17439,7 @@ button.settings-row-head:hover,
   top: 8px;
   padding: 2px 8px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--surface) 88%, transparent);
   font-size: var(--type-micro);
   font-weight: var(--fw-strong);
@@ -17896,20 +17570,13 @@ button.shortlist-title {
 button.shortlist-title:hover {
   text-decoration: underline;
 }
-.shortlist-score {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  color: var(--ink-2);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-}
 .shortlist-pill {
   display: inline-flex;
   align-items: center;
   gap: 5px;
   height: 24px;
-  padding: 0 9px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
   border-radius: var(--radius-chip);
   font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
@@ -17979,7 +17646,7 @@ button.shortlist-title:hover {
   gap: 8px 16px;
   padding: 12px 16px;
   border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
 }
 .shortlist-empty {
   display: flex;
@@ -18084,7 +17751,7 @@ button.shortlist-title:hover {
 .note-thread {
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   background: var(--surface);
 }
 .note-thread[data-highlight] {
@@ -18246,7 +17913,7 @@ button.shortlist-title:hover {
   width: min(460px, calc(100vw - 24px));
   max-height: min(720px, calc(100dvh - 76px - var(--safe-top)));
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   background: var(--surface);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
 }
@@ -18265,9 +17932,6 @@ button.shortlist-title:hover {
   font-weight: var(--fw-bold);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.chapter-notes-anchor {
-  display: inline-flex;
 }
 
 /* The margin sits on the reader's own background, which is dark in every theme, so its loose text
@@ -18369,7 +18033,7 @@ button.shortlist-title:hover {
   gap: 4px;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   background: var(--surface);
   color: var(--ink);
   cursor: pointer;
@@ -18441,7 +18105,7 @@ button.shortlist-title:hover {
 .notes-margin-compose {
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--brand) 55%, var(--border));
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   background: var(--surface);
   color: var(--ink);
 }

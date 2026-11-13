@@ -8,17 +8,20 @@ import {
   Skeleton,
   Stack,
   Text,
-  TextInput,
+  
   UnstyledButton,
 } from '@mantine/core'
-import { IconLinkOff, IconSearch } from '../lib/icons'
+import { SearchInput } from './ui/SearchInput'
+import { IconLinkOff } from '../lib/icons'
 import { ModalFooter, ModalHeading } from './ui/ModalShell'
+import { EmptyState } from './ui/EmptyState'
 import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import { useLinkChapters, useSeriesFiles } from '../api/hooks'
 import type { SeriesFileDto } from '../api/types'
 import { formatBytes } from '../format'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 export function LinkChaptersModal({
   seriesId,
@@ -84,7 +87,7 @@ export function LinkChaptersModal({
           description={<Trans>Pick the file in the series folder these chapters are contained in.</Trans>}
         />
       }
-      size="lg"
+      size={MODAL_SIZE.default}
     >
       <Stack gap="sm">
         {isLoading ? (
@@ -98,16 +101,13 @@ export function LinkChaptersModal({
             ))}
           </div>
         ) : !files || files.length === 0 ? (
-          <Text c="var(--ink-3)" size="sm" py="sm">
-            <Trans>No files found in the series folder.</Trans>
-          </Text>
+          <EmptyState compact mood="asleep" title={t`No files found in the series folder.`} />
         ) : (
           <>
-            <TextInput
-              size="xs"
+            <SearchInput
               value={query}
               onChange={(e) => setQuery(e.currentTarget.value)}
-              leftSection={<IconSearch size={16} />}
+              onClear={() => setQuery('')}
               placeholder={t`Find a file in the folder`}
               aria-label={t`Find a file`}
             />
@@ -146,9 +146,7 @@ export function LinkChaptersModal({
                   </UnstyledButton>
                 ))}
                 {shown.length === 0 && (
-                  <Text size="sm" c="var(--ink-3)" py="sm" ta="center">
-                    <Trans>No file matches that.</Trans>
-                  </Text>
+                  <EmptyState compact mood="asleep" title={t`No file matches that.`} />
                 )}
               </div>
             </ScrollArea.Autosize>

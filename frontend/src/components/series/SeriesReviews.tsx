@@ -22,6 +22,7 @@ export function SeriesReviews({ ids }: { ids: ReviewIds }) {
     <>
       <Button
         size="xs"
+        h={28}
         variant="light"
         leftSection={<IconMessage2 size={16} />}
         onClick={() => {

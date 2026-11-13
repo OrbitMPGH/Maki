@@ -346,7 +346,7 @@ function RuleBuilder({
           </div>
           <ActionIcon
             variant="subtle"
-            color="var(--neutral)"
+            color="var(--danger)"
             size="lg"
             aria-label={t`Remove rule`}
             onClick={() => {

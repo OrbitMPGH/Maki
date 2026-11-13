@@ -6,6 +6,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { errorText } from '../../api/errorText'
 import { formatDateTime } from '../../format'
 import { useDeclinedReleases, useUnblockRelease } from '../../api/torrentLifecycle'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 /**
  * Releases the automatic search passes over: proposals someone dismissed, and torrents that stalled,
@@ -21,7 +22,7 @@ export function DeclinedReleasesModal({ opened, onClose }: { opened: boolean; on
     <Modal
       opened={opened}
       onClose={onClose}
-      size={720}
+      size={MODAL_SIZE.wide}
       title={
         <ModalHeading
           title={<Trans>Declined releases</Trans>}
@@ -60,7 +61,7 @@ export function DeclinedReleasesModal({ opened, onClose }: { opened: boolean; on
                       <Text size="xs" c="var(--ink-3)">{row.indexer}</Text>
                     </td>
                     <td>
-                      <Text size="sm" component={Link} to={`/series/${row.seriesId}`} onClick={onClose}>
+                      <Text className="series-title" component={Link} to={`/series/${row.seriesId}`} onClick={onClose}>
                         {row.seriesTitle}
                       </Text>
                     </td>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Button, Group, Stack, Switch, Text } from '@mantine/core'
+import { Button, Group, Stack, Switch, Text } from '@mantine/core'
 import { notifications } from '../../lib/toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -22,6 +22,7 @@ import {
   unsubscribePush,
 } from '../../lib/pwa/push'
 import { pwaSupported } from '../../lib/pwa/serviceWorker'
+import { Callout } from '../ui/Callout'
 
 export function PushNotificationsSection() {
   const { t } = useLingui()
@@ -39,12 +40,12 @@ export function PushNotificationsSection() {
       {!supported ? (
         <SecureContextNote />
       ) : needsInstall ? (
-        <Alert color="var(--info)" variant="light">
+        <Callout tone="info" role="alert">
           <Trans>
             iPhone and iPad only deliver push notifications to apps added to the home screen. Add
             Maki to your home screen, open it from there, and come back to this card.
           </Trans>
-        </Alert>
+        </Callout>
       ) : !pushSupported() ? (
         <Text size="sm" c="var(--ink-2)">
           {t`This browser does not support push notifications.`}
@@ -149,12 +150,12 @@ function PushControls() {
         onChange={(e) => void (e.currentTarget.checked ? enable() : disable())}
       />
       {blocked && (
-        <Alert color="var(--warn)" variant="light">
+        <Callout tone="warn" role="alert">
           <Trans>
             Notifications are blocked for this site. Change the permission in your browser's site
             settings to turn them on.
           </Trans>
-        </Alert>
+        </Callout>
       )}
       {enabled && !blocked && (
         <Group>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Anchor, Group, Stack, Text, ThemeIcon } from '@mantine/core'
+import { Button, Group, Stack, Text, ThemeIcon } from '@mantine/core'
 import {
   IconChecks,
   IconBan,
@@ -199,13 +199,13 @@ export function ActivityFeed({ stats }: { stats: ActivityStats }) {
         })}
       </Stack>
       {entries.length > PAGE && (
-        <Anchor component="button" type="button" size="xs" mt="sm" onClick={() => setExpanded((v) => !v)}>
+        <Button variant="subtle" size="compact-xs" mt="sm" onClick={() => setExpanded((v) => !v)}>
           {expanded ? (
             <Trans>Show less</Trans>
           ) : (
             <Plural value={entries.length} one="Show all #" other="Show all #" />
           )}
-        </Anchor>
+        </Button>
       )}
       <DiscoverDetailModal
         item={selectedRemoved}

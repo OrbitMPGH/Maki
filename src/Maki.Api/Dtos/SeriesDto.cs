@@ -209,6 +209,12 @@ public record SeriesDto(
     /// <summary>When the newest chapter file landed in this series, or null with no files. Library list only.</summary>
     public DateTime? LastDownloadedAt { get; init; }
 
+    /// <summary>
+    /// The caller's unread files in the series' latest batch (<see cref="Services.NewChapterBatch"/>),
+    /// the "N new" pill Home's Recently added rail shows too. Filled by the list and detail endpoints.
+    /// </summary>
+    public int NewChapterCount { get; init; }
+
     /// <summary>The newest release date among this series' known chapters, or null when none has one. Library list only.</summary>
     public DateTime? LatestChapterAt { get; init; }
 

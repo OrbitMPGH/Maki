@@ -1,4 +1,5 @@
 import { Button, Divider, Group, Select, Stack, Text } from '@mantine/core'
+import { SettingsGroupTitle } from '../../components/settings/SettingsGroupTitle'
 import { IconPlayerPause, IconPlayerPlay, IconSettings } from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import { notifications } from '../../lib/toast'
@@ -30,9 +31,9 @@ export function PageConversionSection() {
         <Stack>
           <Group justify="space-between" wrap="wrap" gap="sm">
             <Stack gap={2}>
-              <Text fw={500} size="sm">
+              <SettingsGroupTitle>
                 <Trans>Current setting</Trans>
-              </Text>
+              </SettingsGroupTitle>
               <Text size="sm">{summarize(status.settings, status.library.ruleCount)}</Text>
               {status.settings.format && status.settings.pngLossless && (
                 <Text size="xs" c="var(--ink-3)">
@@ -90,9 +91,9 @@ export function PageConversionSection() {
 function NewDownloads({ queued }: { queued: number }) {
   return (
     <Stack gap={2}>
-      <Text fw={500} size="sm">
+      <SettingsGroupTitle>
         <Trans>New downloads</Trans>
-      </Text>
+      </SettingsGroupTitle>
       <Text size="sm" c="var(--ink-3)">
         {queued > 0 ? (
           <Plural
@@ -122,9 +123,9 @@ function LibraryPass({ status }: { status: PageConversionStatus }) {
   return (
     <Stack gap="xs">
       <Group justify="space-between" wrap="wrap" gap="sm">
-        <Text fw={500} size="sm">
+        <SettingsGroupTitle>
           <Trans>Existing library</Trans>
-        </Text>
+        </SettingsGroupTitle>
         {pass.state === 'running' ? (
           <Button
             variant="default"

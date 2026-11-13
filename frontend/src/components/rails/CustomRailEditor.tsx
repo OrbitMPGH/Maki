@@ -36,6 +36,7 @@ import { CatalogueFilters, filtersFromSpec, useCatalogueFilters } from '../Catal
 import { RecommenderDials } from '../discover/RecommenderDials'
 import { ModalFooter, ModalHeading } from '../ui/ModalShell'
 import { IconPlus } from '../../lib/icons'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 /** A rail that doesn't exist yet: what the editor opens with when creating one. */
 export interface CustomRailDraft {
@@ -67,7 +68,7 @@ export function CustomRailEditor({
     <Modal
       opened
       onClose={onClose}
-      size="xl"
+      size={MODAL_SIZE.wide}
       title={
         <ModalHeading
           title={rail ? t`Edit rail` : t`New rail`}
@@ -199,7 +200,7 @@ export function CustomRailForm({
 
   const matchCount = count != null && <Plural value={count} one="# title matches" other="# titles match" />
   const cancelButton = onCancel && (
-    <Button variant="subtle" onClick={onCancel}>
+    <Button variant="default" onClick={onCancel}>
       <Trans>Cancel</Trans>
     </Button>
   )

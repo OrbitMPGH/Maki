@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SettingsGroupTitle } from '../../components/settings/SettingsGroupTitle'
 import { Anchor, Badge, Button, Checkbox, Divider, Group, Stack, Switch, Text } from '@mantine/core'
 import { IconDownload, IconGauge, IconTrash } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
@@ -93,9 +94,9 @@ export function UpscalingSection() {
             <>
               <Divider />
               <Stack gap="xs">
-                <Text fw={500} size="sm">
+                <SettingsGroupTitle>
                   <Trans>Models</Trans>
-                </Text>
+                </SettingsGroupTitle>
                 <Text size="sm" c="var(--ink-3)">
                   <Trans>
                     Readers can pick the ticked models. Saving a ticked model that isn't downloaded yet starts its
@@ -272,7 +273,8 @@ function ModelRow({
       <Group gap="xs" wrap="wrap">
         {model.bundled ? null : ready ? (
           <Button
-            variant="default"
+            variant="light"
+            color="var(--danger)"
             size="xs"
             leftSection={<IconTrash size={16} />}
             loading={remove.isPending}
@@ -441,7 +443,8 @@ function CacheUsage({ bytes, files, limitMb }: { bytes: number; files: number; l
         <Plural value={files} one={`${used} of ${limit}, # page`} other={`${used} of ${limit}, # pages`} />
       </Text>
       <Button
-        variant="default"
+        variant="light"
+        color="var(--danger)"
         size="xs"
         leftSection={<IconTrash size={16} />}
         disabled={files === 0}

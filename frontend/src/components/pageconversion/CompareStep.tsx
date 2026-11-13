@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Alert, Button, Group, Skeleton, Slider, Stack, Text } from '@mantine/core'
+import { Button, Group, Skeleton, Slider, Stack, Text } from '@mantine/core'
+import { Callout } from '../ui/Callout'
 import { useDebouncedValue } from '@mantine/hooks'
 import { IconPhotoSearch, IconZoomIn } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -127,9 +128,9 @@ export function CompareStep({
         />
       )}
       {encoded.isError && (
-        <Alert color="var(--danger)" variant="light">
+        <Callout tone="danger" role="alert">
           <Trans>Maki could not encode this page. Try another page or another format.</Trans>
-        </Alert>
+        </Callout>
       )}
 
       <Stack gap="xs">

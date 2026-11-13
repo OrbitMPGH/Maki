@@ -271,7 +271,6 @@ export default function ReaderToolbar({
                     <Progress
                       value={(chaptersRead / manifest.seriesChapterCount) * 100}
                       color="var(--brand)"
-                      radius="xl"
                       size="xs"
                       w={64}
                       style={{ flexShrink: 0 }}

@@ -2,7 +2,6 @@ import { errorText } from '../../api/errorText'
 import { useId, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
-  Alert,
   Anchor,
   Box,
   Button,
@@ -65,6 +64,7 @@ import { SignalsCard } from './FeedbackLab'
 import { formatFixedDecimal, formatNumber, formatPercent, formatReadingTime } from '../../format'
 import { GENRE_LABELS, TYPE_LABELS } from '../../components/CatalogueFilters'
 import { useLabel } from '../../i18n-context'
+import { Callout } from '../../components/ui/Callout'
 
 const SLICE_COLORS = [
   'var(--chart-1)',
@@ -664,9 +664,9 @@ export function TasteTab() {
 
   if (error) {
     return (
-      <Alert color="var(--danger)" icon={<IconAlertCircle size={16} />} title={t`Could not read your profile`}>
+      <Callout tone="danger" role="alert" icon={IconAlertCircle} title={t`Could not read your profile`}>
         {errorText(error)}
-      </Alert>
+      </Callout>
     )
   }
 
@@ -678,9 +678,9 @@ export function TasteTab() {
   if (nothingAtAll) {
     return (
       <Stack gap="md" className="discover-tab-body">
-      <Alert color="var(--neutral)" icon={<IconAlertCircle size={16} />} title={t`Nothing to profile yet`}>
+      <Callout tone="neutral" role="alert" icon={IconAlertCircle} title={t`Nothing to profile yet`}>
         <Trans>Read a few chapters and this fills in.</Trans>
-      </Alert>
+      </Callout>
       <SignalsCard />
       </Stack>
     )
@@ -732,9 +732,9 @@ export function TasteTab() {
         {summaryText}
       </Text>
       {insights?.unavailable || insights?.groupsUnavailable ? (
-        <Alert color="var(--neutral)" icon={<IconAlertCircle size={16} />}>
+        <Callout tone="neutral" role="alert" icon={IconAlertCircle}>
           {insights.unavailable ?? insights.groupsUnavailable}
-        </Alert>
+        </Callout>
       ) : (
         <>
           <Text c="var(--ink-3)" size="xs">
@@ -775,9 +775,9 @@ export function TasteTab() {
         <>
           <SectionHeader icon={IconRoute} title={t`Where your taste has moved`} />
           {insights.driftUnavailable ? (
-            <Alert color="var(--neutral)" icon={<IconAlertCircle size={16} />}>
+            <Callout tone="neutral" role="alert" icon={IconAlertCircle}>
               {insights.driftUnavailable}
-            </Alert>
+            </Callout>
           ) : (
             <DriftSection insights={insights} />
           )}

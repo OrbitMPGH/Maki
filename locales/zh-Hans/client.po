@@ -49,11 +49,6 @@ msgstr "（未设置时留空）"
 msgid "(cannot be undone)"
 msgstr "（无法撤销）"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "(inaccessible)"
-msgstr "（无法访问）"
-
 #. placeholder {0}: history.convertedFiles
 #. placeholder {1}: history.restorableFiles
 #. placeholder {2}: history.restorableFiles
@@ -286,9 +281,7 @@ msgid "{0, plural, one {# file} other {# files}}"
 msgstr "{0, plural, other {# 个文件}}"
 
 #. placeholder {0}: counts[group]
-#. placeholder {0}: groupCounts[group]
 #: src/components/CatalogueFilters.tsx
-#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{0, plural, one {# filter active} other {# filters active}}"
 msgstr "{0, plural, other {已启用 # 个筛选条件}}"
@@ -784,6 +777,11 @@ msgstr "已有 {0} 读取此站点。"
 msgid "{0} by {deletedBy}"
 msgstr ""
 
+#. placeholder {0}: formatBytes(f.freeSpace)
+#: src/pages/settings/LibraryCards.tsx
+msgid "{0} free"
+msgstr ""
+
 #. placeholder {0}: percent(item.measure)
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -859,8 +857,8 @@ msgstr ""
 msgid "{active, plural, one {Activity, # download in progress} other {Activity, # downloads in progress}}"
 msgstr "{active, plural, other {活动，# 个下载正在进行}}"
 
-#: src/pages/LibraryPage.tsx
-msgid "{addedWithin, plural, one {Added in the last # day} other {Added in the last # days}}"
+#: src/components/library/LibraryFilterPanel.tsx
+msgid "{addedWithin, plural, one {# day} other {# days}}"
 msgstr ""
 
 #: src/pages/discover/FeedbackLab.tsx
@@ -1019,16 +1017,6 @@ msgstr "{chapterCount, plural, other {# 个章节}}"
 msgid "{chapterLabel}, page {pageNumber}, {pageHeight} px tall"
 msgstr ""
 
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "{chapterMax, plural, one {At most # chapter} other {At most # chapters}}"
-msgstr "{chapterMax, plural, other {最多 # 个章节}}"
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "{chapterMin, plural, one {At least # chapter} other {At least # chapters}}"
-msgstr "{chapterMin, plural, other {至少 # 个章节}}"
-
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "{chapterMinChip}–{chapterMaxChip} ch."
@@ -1049,22 +1037,19 @@ msgid "{chapters, plural, one {# chapter held, {used} of {limit}} other {# chapt
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/ScanlationGroupsModal.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/discover/DiscoverHero.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
 msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "{chapters, plural, one {Prepare ahead: # chapter} other {Prepare ahead: # chapters}}"
 msgstr ""
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "{chapters} chapters"
-msgstr "{chapters} 个章节"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -1283,6 +1268,10 @@ msgstr ""
 #, fuzzy
 msgid "{count, plural, one {# saved} other {# saved}}"
 msgstr "{count, plural, other {已保存 # 个}}"
+
+#: src/components/library/LibraryFilterPanel.tsx
+msgid "{count, plural, one {# selected} other {# selected}}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -1673,11 +1662,6 @@ msgstr "{fileName} 替换了 {filesText}"
 msgid "{files, plural, one {{used} of {limit}, # page} other {{used} of {limit}, # pages}}"
 msgstr "{files, plural, other {{used} / {limit}，# 页}}"
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "{finalVolume} vol."
-msgstr "{finalVolume} 卷"
-
 #: src/pages/rewind/slides.tsx
 #, fuzzy
 msgid "{finishedCount, plural, one {# series finished} other {# series finished}}"
@@ -1748,6 +1732,7 @@ msgstr ""
 msgid "{free} free"
 msgstr "{free} 可用"
 
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/pageconversion/EstimateTable.tsx
 #, fuzzy
 msgid "{from} to {to}"
@@ -1845,6 +1830,14 @@ msgstr "{importedCount, plural, other {导入 # 个文件}}"
 #, fuzzy
 msgid "{importShown, plural, one {Import it} other {Import all #}}"
 msgstr "{importShown, plural, other {导入全部 #}}"
+
+#: src/components/library/LibraryFilterPanel.tsx
+msgid "{included}, not {excluded}"
+msgstr ""
+
+#: src/components/library/LibraryFilterPanel.tsx
+msgid "{inCount} in, {outCount} out"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -2296,10 +2289,14 @@ msgid "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
 msgstr "{name}：已停止，{ok}/{total} 成功，首个错误：{firstError}"
 
 #: src/components/home/RecentlyAddedRail.tsx
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
 msgid "{newChapterCount, plural, one {# new} other {# new}}"
 msgstr "{newChapterCount, plural, other {新增 #}}"
 
 #: src/components/home/RecentlyAddedRail.tsx
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
 #, fuzzy
 msgid "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
 msgstr "{newChapterCount, plural, other {最近新增的 # 个章节文件}}"
@@ -2510,11 +2507,6 @@ msgstr "{rating}/10，你在第 {chapter} 章时的评分"
 #, fuzzy
 msgid "{ratioValue} more than the MangaBaka catalogue carries, weighted toward titles more people read"
 msgstr "比 MangaBaka 目录收录的多 {ratioValue}，偏向更多人阅读的标题"
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "{read}% read"
-msgstr "已读 {read}%"
 
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -2896,10 +2888,9 @@ msgstr "{shown, plural, other {显示前 # 条结果。搜索以缩小范围。}
 msgid "{shown} +{more} more"
 msgstr "{shown}，另外 +{more}"
 
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "{shownCount, plural, one {Show # series} other {Show # series}}"
-msgstr "{shownCount, plural, other {显示 # 个系列}}"
+#: src/components/library/LibraryFilterPanel.tsx
+msgid "{shownCount, plural, one {# series} other {# series}}"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -3242,7 +3233,6 @@ msgstr "{totalChapters, plural, other {MangaBaka 列出 # 个章节。}}"
 msgid "{totalChapters, plural, one {You set the total to # chapter.} other {You set the total to # chapters.}}"
 msgstr "{totalChapters, plural, other {你设置的总数为 # 章。}}"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
@@ -3263,11 +3253,6 @@ msgstr "{totalCount, plural, other {{visibleCount}/# 个系列符合条件}}"
 #, fuzzy
 msgid "{totalSeries, plural, one {# series} other {# series}}"
 msgstr "{totalSeries, plural, other {# 个系列}}"
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "{totalSeriesShown, plural, one {{shownCount} of # series shown.} other {{shownCount} of # series shown.}}"
-msgstr "{totalSeriesShown, plural, other {已显示 {shownCount}/# 个系列。}}"
 
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
@@ -3339,13 +3324,7 @@ msgstr "{unread, plural, other {还有 # 个更早的章节未读。}}"
 msgid "{unread, plural, one {# left} other {# left}}"
 msgstr "{unread, plural, other {还剩 # 个}}"
 
-#: src/components/ui/CoverCard.tsx
-#, fuzzy
-msgid "{unread, plural, one {# new} other {# new}}"
-msgstr "{unread, plural, other {新增 #}}"
-
 #: src/components/library/LibraryTable.tsx
-#: src/components/ui/SeriesRow.tsx
 #, fuzzy
 msgid "{unread, plural, one {# unread} other {# unread}}"
 msgstr "{unread, plural, other {# 个未读}}"
@@ -3451,6 +3430,7 @@ msgid "{visibleCount} of {totalCount}"
 msgstr "{visibleCount}/{totalCount}"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/discover/DiscoverHero.tsx
 msgid "{volumes, plural, one {# volume} other {# volumes}}"
 msgstr ""
 
@@ -4097,6 +4077,10 @@ msgstr "还剩约一分钟"
 msgid "About ten chapters in, and when you catch up on a series that's still running. At most once a day, and never once you've rated it."
 msgstr "读到约十章时，以及你追上一部仍在连载的系列时。最多每天一次，且你评分之后就不再提示。"
 
+#: src/components/library/LibraryFilterPanel.tsx
+msgid "About the series"
+msgstr ""
+
 #: src/components/AppearancePicker.tsx
 #, fuzzy
 msgid "Accent"
@@ -4175,7 +4159,6 @@ msgstr "动作"
 msgid "Action for rule {number}"
 msgstr "规则 {number} 的操作"
 
-#: src/components/NotificationsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/DeclinedReleasesModal.tsx
@@ -4185,7 +4168,6 @@ msgstr "规则 {number} 的操作"
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Actions"
@@ -4425,7 +4407,7 @@ msgstr "{windowLabel}新增"
 msgid "Added manually"
 msgstr "手动添加"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 msgid "Added within (days)"
 msgstr ""
 
@@ -4648,11 +4630,6 @@ msgstr "所有来源"
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "All states"
-msgstr "所有状态"
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "All statuses"
 msgstr "所有状态"
 
 #: src/components/TagBrowserModal.tsx
@@ -4937,7 +4914,7 @@ msgstr "动画"
 msgid "Anime"
 msgstr "动画"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 msgid "Anime adaptation"
 msgstr ""
 
@@ -5000,6 +4977,7 @@ msgstr "任意"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/settings/RuleConditions.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -5027,7 +5005,7 @@ msgstr "每个系列都可以在它自己的页面上单独设置。"
 msgid "Any tags"
 msgstr "任意标签"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 msgid "Any time"
 msgstr ""
 
@@ -5393,7 +5371,7 @@ msgstr "将 Kavita 的阅读归属于"
 msgid "Author"
 msgstr ""
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 msgid "Author or artist"
 msgstr ""
 
@@ -5746,11 +5724,6 @@ msgstr "基于你收藏的内容"
 msgid "Because you read"
 msgstr "因为你阅读了"
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Because you read {becauseOfTitle}"
-msgstr "因为你阅读了 {becauseOfTitle}"
-
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Because: {reasonList}"
@@ -5766,7 +5739,7 @@ msgstr "变为可阅读"
 msgid "Before exposing Maki to the internet"
 msgstr "在将 Maki 暴露到互联网之前"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Behind (missing chapters)"
 msgstr "落后（缺少章节）"
@@ -6129,7 +6102,6 @@ msgstr "无法使用已保存的信息登录。"
 #: src/components/DiscoverPresets.tsx
 #: src/components/import/ImportMatchFinder.tsx
 #: src/components/import/MihonImport.tsx
-#: src/components/import/RecentImports.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
@@ -6154,10 +6126,8 @@ msgstr "无法使用已保存的信息登录。"
 #: src/components/settings/RootFolderRulesModal.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
-#: src/components/SourceMappingsSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/components/ui/ConfirmDialog.tsx
-#: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -6165,7 +6135,6 @@ msgstr "无法使用已保存的信息登录。"
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
-#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/SystemCards.tsx
@@ -6508,11 +6477,6 @@ msgstr "保存后已更改"
 msgid "Changed since you saved them"
 msgstr "自你保存后已更改"
 
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "Changes apply straight to the grid behind this panel."
-msgstr "更改会直接应用到此面板后面的网格。"
-
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Changes apply to <0>this series</0> only."
@@ -6652,7 +6616,7 @@ msgstr ""
 msgid "Chapter number and volume also take zero-padding: <0>{paddingExampleToken}</0> renders 24 as 024."
 msgstr "章节编号和卷号也支持补零：<0>{paddingExampleToken}</0> 会将 24 显示为 024。"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 msgid "Chapter numbering"
 msgstr ""
 
@@ -6691,12 +6655,11 @@ msgid "chapters"
 msgstr "章节"
 
 #: src/components/discover/DiscoverGlance.tsx
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/home/ReadingWeeks.tsx
 #: src/components/import/ManualImport.tsx
 #: src/components/library/libraryColumns.ts
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/RequestForm.tsx
-#: src/pages/LibraryPage.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -7098,11 +7061,6 @@ msgstr "清除所有通知？"
 msgid "Clear cache"
 msgstr "清除缓存"
 
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Clear chapter search"
-msgstr "清除章节搜索"
-
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Clear default"
@@ -7148,9 +7106,7 @@ msgstr "清除 {chapterLbl} 的阅读进度"
 msgid "Clear records"
 msgstr "清除记录"
 
-#: src/components/CatalogueBrowser.tsx
-#: src/components/LinkFileToChaptersModal.tsx
-#: src/components/TagBrowserModal.tsx
+#: src/components/ui/SearchInput.tsx
 #, fuzzy
 msgid "Clear search"
 msgstr "清除搜索"
@@ -7258,11 +7214,6 @@ msgstr "关闭预览"
 #, fuzzy
 msgid "Close Rewind"
 msgstr "关闭 Rewind"
-
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Close to what you read"
-msgstr "接近你的阅读内容"
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -7418,8 +7369,8 @@ msgstr "对比分隔线"
 msgid "Comparisons against the wider catalogue need the embedding index."
 msgstr "与更大目录的比较需要嵌入索引。"
 
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/pages/HealthPage.tsx
-#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Complete"
 msgstr "完成"
@@ -7447,7 +7398,7 @@ msgstr "已完成和已取消的下载会显示在这里。"
 msgid "Completed since you saved it"
 msgstr "自你保存后已完结"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Completeness"
 msgstr "完整度"
@@ -7564,6 +7515,7 @@ msgstr ""
 msgid "Connect your trackers"
 msgstr "连接进度跟踪服务"
 
+#: src/components/ConnectionSettingsCardStatus.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ScrobblePage.tsx
@@ -7614,11 +7566,11 @@ msgstr "内容"
 #: src/components/CatalogueFilters.tsx
 #: src/components/ContentRatingChip.tsx
 #: src/components/discover/DiscoverGlance.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/SetupWizard.tsx
 #: src/pages/DiscoverPage.tsx
-#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
@@ -7639,6 +7591,8 @@ msgid "contents read"
 msgstr "已读内容"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/PageConversionWizardPage.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Continue"
 msgstr "继续"
@@ -7700,11 +7654,6 @@ msgstr ""
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Continuous layout only. Off shows a Skip recap button instead."
 msgstr ""
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Continuous vertical (webtoon)"
-msgstr "连续垂直（条漫）"
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -7924,6 +7873,10 @@ msgstr "无法加载笔记。"
 #, fuzzy
 msgid "Could not load this chapter."
 msgstr "无法加载此章节。"
+
+#: src/pages/stats/sections/HabitsSection.tsx
+msgid "Could not load your habits. The server logs will say why."
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -8157,7 +8110,7 @@ msgstr ""
 msgid "counts a little more than the rest"
 msgstr "权重略高于其余内容"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Counts both switches: the per-series link and the global source toggle"
 msgstr "两个开关都会计入：按系列的链接开关和全局来源开关"
@@ -9111,6 +9064,7 @@ msgstr "不想要"
 #: src/components/NamingTokenModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/TagBrowserModal.tsx
+#: src/components/ui/DrillControls.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/CustomRepositoriesPanel.tsx
@@ -9119,6 +9073,7 @@ msgstr "不想要"
 msgid "Done"
 msgstr "完成"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Double"
@@ -9304,7 +9259,7 @@ msgstr "已于 {installedDate} 下载。"
 msgid "Downloaded chapters no longer listed"
 msgstr "已下载章节不再被列出"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Downloaded from"
 msgstr "下载来源"
@@ -9530,8 +9485,8 @@ msgid "Each page takes several seconds of server CPU, and upscaled pages are kep
 msgstr "每页需要占用服务器 CPU 数秒，放大后的页面会保存在磁盘缓存中。在阅读者开启增强之前，不会运行任何处理。"
 
 #: src/components/CatalogueFilters.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/pages/DiscoverPage.tsx
-#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Earliest year"
 msgstr "最早年份"
@@ -10153,16 +10108,6 @@ msgstr "排除 {label}"
 msgid "Exclude from taste"
 msgstr "从品味中排除"
 
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "Exclude genres"
-msgstr "排除类型"
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "Exclude your tags"
-msgstr "排除你的标签"
-
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
@@ -10232,6 +10177,7 @@ msgstr "预期关联为 <0/>"
 msgid "Export"
 msgstr "导出"
 
+#: src/components/ConnectionSettingsCardStatus.tsx
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
@@ -10558,6 +10504,10 @@ msgstr "已转换的文件保持不变。"
 msgid "Files already on disk keep their names until you rename them."
 msgstr "磁盘上已有的文件在你重命名之前会保持原名。"
 
+#: src/components/library/LibraryFilterPanel.tsx
+msgid "Files and sources"
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #, fuzzy
 msgid "Files in this download"
@@ -10661,6 +10611,7 @@ msgid "Filter the catalogue"
 msgstr "筛选目录"
 
 #: src/components/CatalogueBrowser.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/pages/CreatorPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -11045,11 +10996,6 @@ msgstr ""
 msgid "Found"
 msgstr "已找到"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Free space"
-msgstr "可用空间"
-
 #: src/components/settings/RootFolderMinFreeInput.tsx
 msgid "Free space to keep on {path}"
 msgstr ""
@@ -11060,21 +11006,21 @@ msgstr ""
 msgid "French"
 msgstr "法语"
 
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/RequestForm.tsx
-#: src/pages/LibraryPage.tsx
+#: src/components/ui/DrillControls.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "From"
 msgstr "从"
 
+#: src/components/library/LibraryFilterPanel.tsx
+msgid "From {from}"
+msgstr ""
+
 #: src/components/discover/DiscoverReviews.tsx
 msgid "From {label}"
 msgstr ""
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "From {origins}"
-msgstr "来自 {origins}"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -11110,7 +11056,7 @@ msgstr "在局域网之外访问时，请将主机名替换为你在那里使用
 msgid "From the chapter you would open next."
 msgstr ""
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "From the metadata provider, not your own tags"
 msgstr "来自元数据提供方，而不是你自己的标签"
@@ -11187,11 +11133,11 @@ msgid "Genre"
 msgstr ""
 
 #: src/components/CatalogueRules.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/TasteTab.tsx
-#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Genres"
@@ -11376,15 +11322,11 @@ msgstr ""
 msgid "Grants every permission and the Settings pages."
 msgstr ""
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Gray"
 msgstr "灰色"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Grayscale"
-msgstr "灰度"
 
 #: src/components/discover/ScoreFigure.tsx
 msgctxt "score"
@@ -11509,7 +11451,7 @@ msgstr "有动画版"
 msgid "Has an anime adaptation"
 msgstr ""
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 msgid "Has anime"
 msgstr ""
 
@@ -12345,6 +12287,10 @@ msgstr ""
 msgid "In your library"
 msgstr "已在你的资料库中"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Inaccessible"
+msgstr ""
+
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Incidental"
@@ -12375,6 +12321,7 @@ msgstr "添加时包含子标签"
 msgid "Include the subpath if Suwayomi runs under one."
 msgstr "如果 Suwayomi 运行在子路径下，请包含该子路径。"
 
+#: src/components/ui/DrillControls.tsx
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Included"
 msgstr "内置"
@@ -12390,6 +12337,7 @@ msgid "Including root folders added later."
 msgstr "包括之后添加的根文件夹。"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -12724,10 +12672,6 @@ msgstr "保留每位读者最后阅读的章节"
 #, fuzzy
 msgid "Keep editing"
 msgstr "继续编辑"
-
-#: src/pages/settings/LibraryCards.tsx
-msgid "Keep free"
-msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -13160,9 +13104,8 @@ msgstr "上次卷搜索：{lastVolumeSearchText}"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx
-#, fuzzy
-msgid "Later than expected. We guessed {range}."
-msgstr "晚于预期。我们估计为 {range}。"
+msgid "Later than expected. Maki guessed {range}."
+msgstr ""
 
 #: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
@@ -13179,8 +13122,8 @@ msgid "Latest release"
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/pages/DiscoverPage.tsx
-#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Latest year"
 msgstr "最晚年份"
@@ -13222,12 +13165,12 @@ msgstr "与你阅读过的其他内容最不像"
 msgid "Leave a field blank for no bound. Approving queues exactly this range."
 msgstr "字段留空表示没有边界。批准后会将此范围准确加入队列。"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Leave at 0–10 to ignore. Narrowing it hides series without a score."
 msgstr "保持 0–10 即忽略此筛选。缩小范围会隐藏没有评分的系列。"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Leave at 0–100% to ignore."
 msgstr "保持为 0–100% 即可忽略。"
@@ -13242,12 +13185,12 @@ msgstr "留空表示全部。"
 msgid "Leave blank to keep the current one"
 msgstr "留空以保留当前值"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Leave both boxes empty to ignore."
 msgstr "两个输入框都留空即可忽略。"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 msgid "Leave both boxes empty to ignore. Series without a year drop out once one is set."
 msgstr ""
 
@@ -13294,6 +13237,7 @@ msgid "Left"
 msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
+#: src/components/ui/DrillControls.tsx
 #, fuzzy
 msgid "Left out"
 msgstr "已排除"
@@ -13416,6 +13360,10 @@ msgstr "资料库导入完成"
 #, fuzzy
 msgid "library path, storage, disk, free space, folder"
 msgstr "资料库路径，存储，磁盘，可用空间，文件夹"
+
+#: src/components/library/LibraryFilterPanel.tsx
+msgid "Library state"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -13585,7 +13533,7 @@ msgstr "已关联文件"
 msgid "Linked here"
 msgstr ""
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Linked to the series, enabled or not"
 msgstr "已与系列关联，不论是否启用"
@@ -13819,6 +13767,8 @@ msgid "Lowest-numbered admin"
 msgstr "编号最小的管理员"
 
 #. Short for "left to right", the reading direction
+#. Short for "left to right", the reading direction
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "LTR"
@@ -14080,6 +14030,7 @@ msgstr "管理信号"
 msgid "Manage sources"
 msgstr "管理来源"
 
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/pages/LibraryPage.tsx
@@ -14261,6 +14212,7 @@ msgid "Martial Arts"
 msgstr "武术"
 
 #: src/components/import/MihonReview.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Match"
@@ -14271,7 +14223,7 @@ msgstr "匹配"
 msgid "Match for {title}"
 msgstr "{title} 的匹配项"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Match mode for {label}"
 msgstr "{label} 的匹配模式"
@@ -14342,7 +14294,7 @@ msgstr "正在将资料库与 MangaBaka 匹配"
 msgid "Mature"
 msgstr "成人"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Max"
 msgstr "最大"
@@ -14357,7 +14309,7 @@ msgstr "每次运行上限"
 msgid "Max upgrades per day"
 msgstr "每日最大升级数"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Maximum chapters"
 msgstr "最大章节数"
@@ -14540,7 +14492,7 @@ msgstr ""
 msgid "Mihon title"
 msgstr "Mihon 标题"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Min"
 msgstr "最小"
@@ -14550,7 +14502,7 @@ msgstr "最小"
 msgid "Minimum bytes per page"
 msgstr "每页最小字节数"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Minimum chapters"
 msgstr "最小章节数"
@@ -14656,6 +14608,7 @@ msgstr "监控器捕获"
 msgid "Monitor for new chapters"
 msgstr "监视新章节"
 
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
@@ -14663,20 +14616,12 @@ msgstr "监视新章节"
 msgid "Monitored"
 msgstr "已监控"
 
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/LibraryCards.tsx
 #, fuzzy
 msgid "Monitoring"
 msgstr "监控"
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "Monitoring and sources"
-msgstr "监控与来源"
-
-#: src/pages/LibraryPage.tsx
-msgid "Monitoring, quality profile, completeness, sources, folder"
-msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -14697,7 +14642,7 @@ msgstr "月"
 msgid "More"
 msgstr "更多"
 
-#: src/components/series/SeriesActionsMenu.tsx
+#: src/components/ui/OverflowButton.tsx
 #, fuzzy
 msgid "More actions"
 msgstr "更多操作"
@@ -14972,9 +14917,9 @@ msgstr "因为启用了多个账户，多用户模式已开启。若要切回，
 msgid "Mute notifications"
 msgstr "静音通知"
 
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/ui/seriesNotifications.ts
-#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Muted"
 msgstr "已静音"
@@ -15000,17 +14945,18 @@ msgid "My phone"
 msgstr "我的手机"
 
 #: src/components/library/libraryColumns.ts
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "My rating"
 msgstr "我的评分"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "My rating from"
 msgstr "我的评分下限"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "My rating to"
 msgstr "我的评分上限"
@@ -15304,6 +15250,10 @@ msgstr "关注创作者的新作"
 msgid "New key"
 msgstr ""
 
+#: src/components/settings/AccountSection.tsx
+msgid "New key makes one for a script or an app."
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "New OPDS feed URL generated"
@@ -15404,12 +15354,6 @@ msgstr ""
 msgid "Newly enabled sources join at the bottom."
 msgstr "新启用的来源会排在列表末尾。"
 
-#: src/pages/PageConversionWizardPage.tsx
-#: src/pages/settings/CustomSourceWizard.tsx
-#, fuzzy
-msgid "Next"
-msgstr "下一步"
-
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "Next {nextSync}"
@@ -15501,7 +15445,7 @@ msgstr "{windowLabel}内没有活动。"
 msgid "No activity yet."
 msgstr "暂无活动。"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 msgid "No anime"
 msgstr ""
 
@@ -15753,7 +15697,7 @@ msgid "No indexers configured in {backendName}."
 msgstr "{backendName} 中未配置索引器。"
 
 #: src/components/settings/AccountSection.tsx
-msgid "No keys yet. New key makes one for a script or an app."
+msgid "No keys yet"
 msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -15812,6 +15756,7 @@ msgstr "未找到匹配项。"
 #: src/components/CatalogueBrowser.tsx
 #: src/components/CatalogueRules.tsx
 #: src/components/CreditPicker.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -15877,7 +15822,7 @@ msgstr "无编号"
 msgid "no number in the name, links if the series has exactly one chapter"
 msgstr "文件名中没有编号，如果系列只有一个章节则会自动关联"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 msgid "No numbering clash"
 msgstr ""
 
@@ -15986,9 +15931,8 @@ msgid "No repeat creators yet"
 msgstr "尚无常看的创作者"
 
 #: src/pages/settings/CustomRepositoriesPanel.tsx
-#, fuzzy
-msgid "No repositories yet."
-msgstr "还没有仓库。"
+msgid "No repositories yet"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -16256,7 +16200,7 @@ msgstr "无"
 msgid "None"
 msgstr "无"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "None available"
 msgstr "无可用项"
@@ -16309,7 +16253,7 @@ msgstr "无，所有文件都使用上方的质量"
 msgid "None, use the filters below"
 msgstr ""
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Not {excluded}"
 msgstr "不含 {excluded}"
@@ -16487,7 +16431,7 @@ msgstr "不在资料库中"
 msgid "Not in your library yet"
 msgstr "尚未在资料库中"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 msgid "Not incognito"
 msgstr ""
 
@@ -16537,7 +16481,7 @@ msgstr "尚未测量，{name}"
 msgid "Not monitored"
 msgstr "未监控"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 msgid "Not muted"
 msgstr ""
 
@@ -16633,6 +16577,10 @@ msgstr "此设备不支持"
 #, fuzzy
 msgid "Not synced yet"
 msgstr "尚未同步"
+
+#: src/components/ConnectionSettingsCardStatus.tsx
+msgid "Not tested"
+msgstr ""
 
 #: src/components/series/AnimeResumeCallout.tsx
 #, fuzzy
@@ -16888,15 +16836,14 @@ msgstr "不会重命名任何内容，所有文件仍留在原文件夹中。"
 msgid "Nothing is running in the background."
 msgstr ""
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Nothing is saved on this device yet"
+msgstr ""
+
 #: src/components/home/OfflineHome.tsx
 #, fuzzy
 msgid "Nothing is saved on this device yet. Once you're back online, save chapters from a series page and they'll be here to read without a connection."
 msgstr "此设备上尚未保存任何内容。恢复联网后，从系列页面保存章节，它们就会出现在这里，无需连接即可阅读。"
-
-#: src/components/settings/OfflineReadingSection.tsx
-#, fuzzy
-msgid "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
-msgstr "此设备上尚未保存任何内容。可在章节或系列上使用「保存以供离线阅读」。"
 
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
@@ -17140,6 +17087,7 @@ msgid "Notification URLs"
 msgstr "通知 URL"
 
 #: src/components/CommandPalette.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/NotificationBell.tsx
 #: src/components/settings/NotificationPrefsSection.tsx
 #: src/lib/toast.tsx
@@ -17210,7 +17158,7 @@ msgstr "已加入资料库。正在后台匹配来源。"
 msgid "Number"
 msgstr "编号"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 msgid "Numbering clash"
 msgstr ""
 
@@ -17933,7 +17881,7 @@ msgstr "概览"
 msgid "Own more than you read"
 msgstr "收藏多于阅读"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 msgid "Own settings"
 msgstr ""
 
@@ -18923,9 +18871,9 @@ msgstr "心理"
 msgid "Published"
 msgstr "已发布"
 
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
-#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Publisher"
@@ -19042,6 +18990,7 @@ msgstr "质量格式"
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 #: src/components/library/libraryColumns.ts
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -19207,11 +19156,6 @@ msgstr "为此系列目前的进度评分"
 msgid "Rated"
 msgstr "已评分"
 
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "Rated {rated}"
-msgstr "评分 {rated}"
-
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Rated {rating}"
 msgstr ""
@@ -19246,7 +19190,7 @@ msgstr ""
 msgid "Rating"
 msgstr "评分"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgctxt "MangaBaka score filter"
 msgid "Rating"
@@ -19259,7 +19203,7 @@ msgstr "评分"
 msgid "Rating cleared"
 msgstr "评分已清除"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Rating from"
 msgstr "评分下限"
@@ -19270,7 +19214,7 @@ msgstr "评分下限"
 msgid "Rating prompts"
 msgstr "评分提示"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Rating to"
 msgstr "评分上限"
@@ -19280,11 +19224,6 @@ msgstr "评分上限"
 #, fuzzy
 msgid "rating, rate, so far, provisional, score, prompt, ask, stars"
 msgstr "评分, 打分, 目前, 暂定, 分数, 提示, 询问, 星星"
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "Ratings and reading"
-msgstr "评分与阅读"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -19312,13 +19251,13 @@ msgid "Reached for {ratioValue} more than owning it would predict, across {serie
 msgstr "在 {seriesPhrase} 中，被阅读的次数比拥有它所预测的多 {ratioValue}"
 
 #: src/components/discover/PreviewChapterButton.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/library/LibraryTable.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesHero.tsx
 #: src/components/ui/SeriesRow.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
-#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -19413,7 +19352,7 @@ msgstr "已读文件会保留在磁盘上。"
 msgid "Read first chapter"
 msgstr "阅读第一章"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Read from"
 msgstr "阅读起点"
@@ -19499,7 +19438,7 @@ msgstr "读取网站"
 msgid "Read ticks show in the chapter list. Series read counts only include downloaded chapters."
 msgstr "已读标记会显示在章节列表中。系列的已读数只计入已下载的章节。"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Read to"
 msgstr "阅读终点"
@@ -19554,13 +19493,11 @@ msgstr "阅读者可以选择已勾选的模型。保存尚未下载的已勾选
 msgid "Readers like you"
 msgstr "和你相似的读者"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Readers like you also finished this"
 msgstr "像你一样的读者也读完了此内容"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Readers like you also recommended this"
@@ -19583,6 +19520,7 @@ msgstr "没有显示名称的读者，在共享笔记、排行榜和编辑历史
 
 #. Notify only while the user is partway through the series
 #: src/components/ImportListsSection.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/ui/status.tsx
@@ -19676,6 +19614,7 @@ msgstr ""
 msgid "Reading since {since}"
 msgstr ""
 
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/settings/ReadingStatusSection.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/registry.ts
@@ -20094,7 +20033,6 @@ msgstr "发行说明"
 msgid "Release number may be a sequel, not a chapter"
 msgstr "资源编号可能是续作，而不是章节"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/series/ChapterViewMenu.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -20816,6 +20754,7 @@ msgid "Rescanning series files"
 msgstr ""
 
 #: src/components/CatalogueFilters.tsx
+#: src/components/ui/DrillControls.tsx
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Reset"
@@ -21339,15 +21278,11 @@ msgstr "目前，「截至目前」的评分只保留在 Maki 中，只有你的
 msgid "right to left"
 msgstr "从右到左"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Right to left"
 msgstr "从右到左"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Right to left (manga)"
-msgstr "从右到左（漫画）"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/LuckyButton.tsx
@@ -21368,9 +21303,9 @@ msgstr "罗马字"
 #: src/api/autoTagRules.ts
 #: src/components/import/MihonReview.tsx
 #: src/components/ImportListsSection.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/library/libraryGroups.ts
 #: src/pages/ImportPage.tsx
-#: src/pages/LibraryPage.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Root folder"
@@ -21403,15 +21338,11 @@ msgstr "根文件夹"
 msgid "Rose"
 msgstr "玫瑰色"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Rotate"
 msgstr "旋转"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Rotate to fit"
-msgstr "旋转以适应"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -21419,6 +21350,8 @@ msgid "Row {zoomRowNumber} of {zoomTotalPages}"
 msgstr "第 {zoomRowNumber}/{zoomTotalPages} 行"
 
 #. Short for "right to left", the reading direction
+#. Short for "right to left", the reading direction
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "RTL"
@@ -22005,11 +21938,6 @@ msgstr "校园恋爱，不含成年人"
 msgid "Sci-Fi"
 msgstr "科幻"
 
-#: src/components/NotificationsSection.tsx
-#, fuzzy
-msgid "Scope"
-msgstr "Scope"
-
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Scopes"
@@ -22028,7 +21956,6 @@ msgid "score {score}"
 msgstr "分数 {score}"
 
 #: src/components/SourceCompareModal.tsx
-#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Score {score}"
 msgstr "分数 {score}"
@@ -22151,12 +22078,17 @@ msgstr "滚动条漫章节"
 
 #: src/components/CommandPalette.tsx
 #: src/components/ImportListsSection.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/pages/settings/CustomSourceReport.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Search"
 msgstr "搜索"
+
+#: src/components/library/LibraryFilterPanel.tsx
+msgid "Search {title}"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -22785,7 +22717,7 @@ msgstr "系列状态已更改"
 msgid "Series tags"
 msgstr "系列标签"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 msgid "Series that override the default for this"
 msgstr ""
 
@@ -22814,7 +22746,7 @@ msgstr "列表中的作品不会出现在“发现”的任何位置：推荐栏
 msgid "Series with newly added chapters."
 msgstr "有新增章节的作品。"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Series with none of your tags"
 msgstr "没有你任何标签的系列"
@@ -23031,7 +22963,7 @@ msgstr "影响推荐"
 msgid "Share of chapters read minus share of the library. Right means you read more of it than you own."
 msgstr "已读章节占比减去资料库占比。右侧表示你阅读该类型的比例高于收藏占比。"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Share of the series you've read."
 msgstr "你读过的系列占比。"
@@ -23256,11 +23188,6 @@ msgstr "显示它们"
 msgid "Show this section"
 msgstr "显示此区块"
 
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Show whole"
-msgstr "完整显示"
-
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Showing {shown} of {total}"
@@ -23407,6 +23334,7 @@ msgstr "与起点的相似度"
 msgid "Simple"
 msgstr "简单"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Single"
@@ -23812,7 +23740,7 @@ msgstr "来源已移除但未清理"
 msgid "Source search, chapter sync, downloads"
 msgstr "来源搜索、章节同步、下载"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Source state"
 msgstr "来源状态"
@@ -23823,9 +23751,9 @@ msgid "Source: {synopsisSource}"
 msgstr "来源：{synopsisSource}"
 
 #: src/components/library/libraryColumns.ts
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/LibraryPage.tsx
 #: src/pages/settings/DownloadCards.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/sections/LibrarySection.tsx
@@ -23848,7 +23776,7 @@ msgstr "来源最多到第 {highest} 章，MangaBaka 列出 {listed} 章。"
 msgid "Sources go up to ch. {highest}, your total is {listed}."
 msgstr "来源最多到第 {highest} 章，你设置的总数为 {listed}。"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 msgid "Sources that number the same chapters differently"
 msgstr ""
 
@@ -23936,6 +23864,7 @@ msgstr "衍生："
 msgid "Spin-off of {relatedTo}"
 msgstr "{relatedTo} 的衍生作品"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Split"
@@ -23949,11 +23878,6 @@ msgstr ""
 #, fuzzy
 msgid "Split from the tier above"
 msgstr "与上一层级分开"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Split into two pages"
-msgstr "拆分为两页"
 
 #: src/components/pageconversion/FormatStep.tsx
 msgid "Split pages taller than"
@@ -24105,8 +24029,8 @@ msgstr "统计、回顾、经验值"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/libraryColumns.ts
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/library/libraryGroups.ts
-#: src/components/NotificationsSection.tsx
 #: src/components/series/ChapterViewMenu.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
@@ -24128,10 +24052,6 @@ msgstr "状态变更"
 #, fuzzy
 msgid "Status changed since you saved it"
 msgstr "自你保存后状态已更改"
-
-#: src/pages/LibraryPage.tsx
-msgid "Status, type, year, credits, chapters"
-msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #: src/pages/reader/ChapterEnd.tsx
@@ -24485,6 +24405,7 @@ msgstr ""
 #: src/components/CatalogueRules.tsx
 #: src/components/discover/DiscoverTags.tsx
 #: src/components/library/libraryColumns.ts
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/pages/discover/TasteTab.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -24492,7 +24413,7 @@ msgstr ""
 msgid "Tags"
 msgstr "标签"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Tags and genres"
 msgstr "标签与题材"
@@ -24538,6 +24459,10 @@ msgstr ""
 
 #: src/components/pageconversion/SplitPreview.tsx
 msgid "Tallest page with its cuts"
+msgstr ""
+
+#: src/components/library/LibraryFilterPanel.tsx
+msgid "Tap once to include, again to leave out, a third time to clear."
 msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
@@ -26118,8 +26043,9 @@ msgstr "你想再回来看的标题。在你添加之前，这里的内容不会
 msgid "to"
 msgstr ""
 
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/RequestForm.tsx
-#: src/pages/LibraryPage.tsx
+#: src/components/ui/DrillControls.tsx
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "To"
@@ -26368,7 +26294,9 @@ msgstr "尝试更短或不同的查询。"
 #: src/pages/reader/PagedView.tsx
 #: src/pages/reader/ReaderPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
+#: src/pages/stats/sections/HabitsSection.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
+#: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
 msgid "Try again"
 msgstr "重试"
@@ -26447,11 +26375,6 @@ msgstr "两个章节需要同一个名称"
 msgid "Two pages"
 msgstr "两页"
 
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Two pages side by side"
-msgstr "两页并排"
-
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Two-factor authentication"
@@ -26480,13 +26403,13 @@ msgstr "已关闭此账户的双重身份验证"
 #: src/api/autoTagRules.ts
 #: src/components/CatalogueFilters.tsx
 #: src/components/discover/DiscoverGlance.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/library/libraryGroups.ts
 #: src/components/NotificationsSection.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/pages/DiscoverPage.tsx
-#: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Type"
@@ -26697,7 +26620,7 @@ msgstr "已解锁。提供方的值会在下次元数据刷新时恢复。"
 msgid "Unmatched"
 msgstr "未匹配"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Unmonitored"
 msgstr "未监控"
@@ -26807,7 +26730,7 @@ msgstr "未指定"
 msgid "Unsupported file type"
 msgstr "不支持的文件类型"
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Untagged only"
 msgstr "仅限未添加标签的"
@@ -26867,6 +26790,10 @@ msgstr "返回上一级文件夹"
 #, fuzzy
 msgid "Up to {max}"
 msgstr "最多 {max}"
+
+#: src/components/library/LibraryFilterPanel.tsx
+msgid "Up to {to}"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -27158,6 +27085,10 @@ msgstr ""
 #, fuzzy
 msgid "Use OPDS"
 msgstr "使用 OPDS"
+
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Use Save for offline on a chapter or a series."
+msgstr ""
 
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
@@ -27593,7 +27524,6 @@ msgid "volume, volume packs, volume search, auto-grab, proposals, torrent, missi
 msgstr ""
 
 #: src/components/discover/DiscoverGlance.tsx
-#: src/components/discover/DiscoverHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Volumes"
@@ -27905,10 +27835,14 @@ msgstr "屏幕空间足够时"
 msgid "When to remove"
 msgstr ""
 
-#: src/pages/LibraryPage.tsx
+#: src/components/library/LibraryFilterPanel.tsx
 #, fuzzy
 msgid "Where the files on disk came from, which can outlive the link"
 msgstr "磁盘上文件的来源，可能会比关联本身存在得更久"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Where the library lives on disk. Each series is stored in one of these."
+msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
 msgid "Where the series sits in a list sorted by title"
@@ -28009,6 +27943,7 @@ msgstr ""
 msgid "Who can see this note"
 msgstr "谁可以看到此笔记"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Whole"
@@ -28147,6 +28082,7 @@ msgid "Written in a different language from your files"
 msgstr ""
 
 #: src/components/library/libraryColumns.ts
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/pages/LibraryPage.tsx
@@ -28156,10 +28092,6 @@ msgstr ""
 #, fuzzy
 msgid "Year"
 msgstr "年份"
-
-#: src/pages/LibraryPage.tsx
-msgid "Year {years}"
-msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -28503,11 +28435,6 @@ msgstr "你对 {title} 的评分"
 msgid "Your rating over time"
 msgstr "你的评分变化"
 
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "Your rating, score, how much you've read"
-msgstr "你的评分、分数和阅读进度"
-
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "Your reading"
 msgstr ""
@@ -28575,16 +28502,11 @@ msgstr "你的来源只到第 {highest} 章，但 MangaBaka 列出 {listed} 章�
 msgid "Your sources only reach chapter {highest}, but the total you set is {listed}. Roughly {missing, plural, one {# chapter} other {# chapters}} can't be downloaded from the sources linked here. Link another source to close the gap."
 msgstr "你的来源只到第 {highest} 章，但你设置的总数为 {listed}。大约 {missing, plural, other {# 个章节}} 无法从此处关联的来源下载。请关联另一个来源以补上缺口。"
 
+#: src/components/library/LibraryFilterPanel.tsx
 #: src/components/SeriesTagsEditor.tsx
-#: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Your tags"
 msgstr "你的标签"
-
-#: src/pages/LibraryPage.tsx
-#, fuzzy
-msgid "Your tags, genres, provider tags"
-msgstr "你的标签、题材、来源提供的标签"
 
 #: src/pages/DiscoverPage.tsx
 #, fuzzy

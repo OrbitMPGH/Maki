@@ -9,7 +9,7 @@ import { useChangeReadingStatus } from '../../components/series/ReadingStatus'
 import { useChapterNotes } from '../../api/notes'
 import NoteBody from '../../components/notes/NoteBody'
 import { useAuthorLabel } from '../../components/notes/useAuthorLabel'
-import { formatDateTime, formatReadingTime } from '../../format'
+import { formatDateTime, formatReadingTime, serverChapterLabel } from '../../format'
 import ChapterEndDownloads from './ChapterEndDownloads'
 import ChapterEndOutlook from './ChapterEndOutlook'
 import ChapterEndRating from './ChapterEndRating'
@@ -161,8 +161,9 @@ export default function ChapterEnd({
   // manifest stays as it was when the chapter opened; this overlays what has moved since.
   const { data: ending } = useReaderEnding(manifest.seriesId, manifest.chapterId)
   const live = ending ?? manifest
-  const { seriesChapterCount, nextChapterId, nextChapterLabel, nextChapterNumber } = live
-  const chapterLabel = manifest.label
+  const { seriesChapterCount, nextChapterId, nextChapterNumber } = live
+  const nextChapterLabel = live.nextChapterLabel ? serverChapterLabel(live.nextChapterLabel) : live.nextChapterLabel
+  const chapterLabel = serverChapterLabel(manifest.label)
   // The ending's read count already includes this chapter once its completing write has landed.
   const readCount = Math.min(
     seriesChapterCount,

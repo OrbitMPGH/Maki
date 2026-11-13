@@ -420,12 +420,14 @@ export const ManageTagsFromMenu: Story = {
 }
 
 export const FilterDrawer: Story = {
-  beforeEach: () =>
-    seedLibraryPrefs({ page: { 'filters-open': true, 'filter-groups': ['series', 'tags', 'ratings', 'monitoring'] } }),
-  play: async ({ canvasElement }) => {
+  beforeEach: () => seedLibraryPrefs({ page: { 'filters-open': true } }),
+  play: async ({ canvasElement, userEvent }) => {
     const drawer = await body(canvasElement).findByRole('dialog', { name: 'Filters' })
-    await expect(await within(drawer).findByText(/14 of 14 series shown/)).toBeVisible()
-    await expect(await within(drawer).findByRole('textbox', { name: 'Minimum chapters' })).toBeVisible()
+    await waitFor(async () => expect(await within(drawer).findByText('14 series')).toBeVisible())
+    await userEvent.click(await within(drawer).findByRole('button', { name: /^Chapters/ }))
+    await waitFor(async () => expect(await within(drawer).findByRole('textbox', { name: 'Minimum chapters' })).toBeVisible())
+    await userEvent.click(await within(drawer).findByRole('button', { name: 'Back Chapters' }))
+    await userEvent.click(await within(drawer).findByRole('button', { name: /^Your tags/ }))
     await expect(await within(drawer).findByRole('switch', { name: /Untagged only/ })).toBeInTheDocument()
   },
 }
@@ -435,7 +437,6 @@ export const FilterDrawerWithActiveFilters: Story = {
     seedLibraryPrefs({
       page: {
         'filters-open': true,
-        'filter-groups': ['series', 'tags'],
         status: 'Ongoing',
         types: ['manhwa'],
         tags: ['4'],
@@ -444,8 +445,9 @@ export const FilterDrawerWithActiveFilters: Story = {
     }),
   play: async ({ canvasElement }) => {
     const drawer = await body(canvasElement).findByRole('dialog', { name: 'Filters' })
-    await expect(await within(drawer).findByText(/1 of 14 series shown/)).toBeVisible()
-    await expect(await within(drawer).findByRole('button', { name: 'Clear all filters' })).toBeVisible()
+    await waitFor(async () => expect(await within(drawer).findByText('1 series')).toBeVisible())
+    await waitFor(() => expect(within(drawer).getByRole('button', { name: 'Reset' })).toBeEnabled())
+    await waitFor(() => expect(within(drawer).getByRole('button', { name: 'Ongoing', pressed: true })).toBeVisible())
   },
 }
 
@@ -453,9 +455,35 @@ export const FilterDrawerClearAll: Story = {
   beforeEach: () => seedLibraryPrefs({ page: { 'filters-open': true, status: 'Completed', monitored: 'unmonitored' } }),
   play: async ({ canvasElement, userEvent }) => {
     const drawer = await body(canvasElement).findByRole('dialog', { name: 'Filters' })
-    await expect(await within(drawer).findByText(/^[0-9] of 14 series shown/)).toBeVisible()
-    await userEvent.click(await within(drawer).findByRole('button', { name: 'Clear all filters' }))
-    await expect(await within(drawer).findByText(/14 of 14 series shown/)).toBeVisible()
+    await waitFor(async () => expect(await within(drawer).findByText(/^[0-9] series$/)).toBeVisible())
+    await userEvent.click(await within(drawer).findByRole('button', { name: 'Reset' }))
+    await waitFor(async () => expect(await within(drawer).findByText('14 series')).toBeVisible())
+  },
+}
+
+export const FilterDrawerChipAndRowAgree: Story = {
+  beforeEach: () => seedLibraryPrefs({ page: { 'filters-open': true } }),
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const drawer = await body(canvasElement).findByRole('dialog', { name: 'Filters' })
+    await userEvent.click(await within(drawer).findByRole('button', { name: 'Ongoing', pressed: false }))
+    await waitFor(() => expect(canvas.getByText(/ of 14$/)).toBeVisible())
+    await userEvent.click(await within(drawer).findByRole('button', { name: /^Monitoring/ }))
+    await userEvent.click(await within(drawer).findByRole('radio', { name: 'Unmonitored' }))
+    await waitFor(() => expect(within(drawer).getByRole('button', { name: /^Monitoring Unmonitored/ })).toHaveFocus())
+    await userEvent.keyboard('{Escape}')
+    await expect(body(canvasElement).queryByRole('dialog', { name: 'Filters' })).toBeNull()
+  },
+}
+
+export const FilterDrawerEscapeStepsBack: Story = {
+  beforeEach: () => seedLibraryPrefs({ page: { 'filters-open': true } }),
+  play: async ({ canvasElement, userEvent }) => {
+    const drawer = await body(canvasElement).findByRole('dialog', { name: 'Filters' })
+    await userEvent.click(await within(drawer).findByRole('button', { name: /^Year/ }))
+    await waitFor(() => expect(within(drawer).getByRole('button', { name: 'Back Year' })).toHaveFocus())
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(within(drawer).getByRole('button', { name: /^Year/ })).toHaveFocus())
+    await expect(body(canvasElement).getByRole('dialog', { name: 'Filters' })).toBeVisible()
   },
 }
 

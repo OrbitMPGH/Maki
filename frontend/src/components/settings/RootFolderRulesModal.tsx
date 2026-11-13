@@ -1,5 +1,6 @@
+import { SearchInput } from '../ui/SearchInput'
 import { useMemo, useState } from 'react'
-import { ActionIcon, Badge, Button, Group, Modal, Stack, Switch, Text, TextInput, Tooltip } from '@mantine/core'
+import { ActionIcon, Badge, Button, Group, Modal, Stack, Switch, Text, Tooltip } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import {
@@ -9,7 +10,7 @@ import {
   IconFolderSearch,
   IconPencil,
   IconPlus,
-  IconSearch,
+  
   IconTrash,
 } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
@@ -31,6 +32,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { ModalFooter, ModalHeading } from '../ui/ModalShell'
 import { ConditionFieldPage, ConditionGroupRows } from './RuleConditions'
 import { conditionParents, savedGroups, useGroupsSummary } from './conditionGroups'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 type View = { kind: 'list' } | { kind: 'edit'; id: number | null; draft: SaveRootFolderRule } | { kind: 'check' }
 
@@ -57,7 +59,7 @@ export function RootFolderRulesModal({ opened, onClose }: { opened: boolean; onC
     <Modal
       opened={opened}
       onClose={close}
-      size="md"
+      size={MODAL_SIZE.narrow}
       title={
         <ModalHeading
           title={title}
@@ -358,11 +360,11 @@ function SeriesCheck({ onDone }: { onDone: () => void }) {
 
   return (
     <Stack gap="sm">
-      <TextInput
-        leftSection={<IconSearch size={16} />}
+      <SearchInput
         placeholder={t`Search the library`}
         aria-label={t`Search the library`}
         value={query}
+        onClear={() => setQuery('')}
         onChange={(e) => setQuery(e.currentTarget.value)}
       />
       <div className="auto-tag-rule-pages drill-scroll" style={{ maxHeight: 280 }}>

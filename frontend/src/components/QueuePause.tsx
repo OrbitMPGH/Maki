@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Alert, Button, Group, Popover, Stack, Text, TextInput } from '@mantine/core'
+import { Button, Group, Popover, Stack, Text, TextInput } from '@mantine/core'
 import { IconClockPlay, IconPlayerPause, IconPlayerPlay, IconWorld } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -8,6 +8,7 @@ import { formatBytes, formatDateTime, formatTime } from '../format'
 import { useSourceLabel } from '../sourceLabels'
 import { DrillPanes } from './ui/DrillPanes'
 import { DrillBack, DrillChoices, DrillRow, useDrillPages } from './ui/DrillPanel'
+import { Callout } from './ui/Callout'
 
 const ALL_SOURCES = '*'
 
@@ -270,7 +271,7 @@ export function QueuePauseBanner({ canManage }: { canManage: boolean }) {
   }
 
   return (
-    <Alert color="var(--warn)" variant="light" icon={<IconPlayerPause size={16} />} mb="md">
+    <Callout tone="warn" role="alert" icon={IconPlayerPause} mb="md">
       <Stack gap="xs">
         {lines.map((line) => (
           <Group key={line.key} justify="space-between" wrap="nowrap">
@@ -304,6 +305,6 @@ export function QueuePauseBanner({ canManage }: { canManage: boolean }) {
           </Text>
         )}
       </Stack>
-    </Alert>
+    </Callout>
   )
 }

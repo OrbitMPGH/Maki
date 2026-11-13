@@ -19,6 +19,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { ModalFooter, ModalHeading } from '../ui/ModalShell'
 import { RailSkeleton } from '../ui/RailSkeleton'
 import { SectionHeader } from '../ui/SectionHeader'
+import { TagChip } from '../ui/TagChip'
 import { useLabel } from '../../i18n-context'
 
 export function creatorHref(c: CatalogueCredit) {
@@ -148,7 +149,7 @@ function FollowingManager({
                   <Anchor component={Link} to={creatorHref(c)} onClick={onClose} size="sm" fw={600} style={{ flex: 1, minWidth: 0 }}>
                     {name}
                   </Anchor>
-                  {c.role && <span className="modal-role-chip">{renderLabel(CREDIT_ROLE_LABELS[c.role] ?? c.role)}</span>}
+                  {c.role && <TagChip size="sm" style={{ flex: 'none' }}>{renderLabel(CREDIT_ROLE_LABELS[c.role] ?? c.role)}</TagChip>}
                   <Button
                     variant="subtle"
                     color="var(--neutral)"

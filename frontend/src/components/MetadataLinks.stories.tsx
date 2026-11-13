@@ -20,10 +20,6 @@ export const Default: Story = {
   },
 }
 
-export const Compact: Story = {
-  args: { compact: true },
-}
-
 export const Empty: Story = {
   args: { links: [] },
   play: async ({ canvas }) => {

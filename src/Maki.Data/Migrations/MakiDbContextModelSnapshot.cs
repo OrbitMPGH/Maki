@@ -551,6 +551,32 @@ namespace Maki.Data.Migrations
                     b.ToTable("ChapterSourceLinks");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.ConnectionTestResult", b =>
+                {
+                    b.Property<string>("Key")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MessageKey")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Ok")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ParamsJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("TestedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Key");
+
+                    b.ToTable("ConnectionTestResults");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.CreditBankEntry", b =>
                 {
                     b.Property<int>("Id")

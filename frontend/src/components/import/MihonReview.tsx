@@ -1,10 +1,8 @@
 import { useMemo, useState } from 'react'
 import {
-  Badge,
   Button,
   Checkbox,
   Group,
-  Image,
   Pagination,
   Select,
   Stack,
@@ -22,6 +20,8 @@ import type { MihonParseResponse } from '../../api/mihonImport'
 import type { MetadataSearchResult } from '../../api/types'
 import { Panel } from '../ui/Panel'
 import { TagChip } from '../ui/TagChip'
+import { Thumb } from '../ui/Thumb'
+import { LightBadge } from '../series/lightMantine'
 import { okButtonVars } from '../ui/status'
 import { MONITOR_OPTIONS } from '../series/SeriesActionsMenu'
 import { ImportMatchFinder } from './ImportMatchFinder'
@@ -256,7 +256,7 @@ export function MihonReview({
       ) : (
         <Panel p={0} className="table-panel">
           <Table.ScrollContainer minWidth={760}>
-            <Table className="panel-table import-table">
+            <Table className="panel-table ops-table import-table">
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th w={40} />
@@ -325,18 +325,14 @@ export function MihonReview({
                             onChange={(v) => patch(row.manga.index, { picked: v ?? undefined, checked: v !== null })}
                             leftSection={
                               match?.coverUrl ? (
-                                <Image src={match.coverUrl} w={20} h={30} radius="xs" fit="cover" alt="" />
+                                <Thumb src={match.coverUrl} size="sm" width={20} />
                               ) : undefined
                             }
                             leftSectionWidth={match?.coverUrl ? 36 : undefined}
                           />
                         ) : match ? (
                           <Group wrap="nowrap" gap="xs">
-                            {match.coverUrl ? (
-                              <Image src={match.coverUrl} w={32} h={48} radius="sm" fit="cover" alt="" loading="lazy" />
-                            ) : (
-                              <div style={{ width: 32, height: 48 }} />
-                            )}
+                            <Thumb src={match.coverUrl} width={32} />
                             <div style={{ minWidth: 0 }}>
                               <Text size="sm" lineClamp={1}>
                                 {match.title}
@@ -344,18 +340,14 @@ export function MihonReview({
                               </Text>
                               <Group gap={4}>
                                 {matchedBy && !choice?.manual && (
-                                  <Badge size="xs" variant="light">
+                                  <LightBadge color="var(--neutral)">
                                     {label(MATCHED_BY_LABELS[matchedBy])}
-                                  </Badge>
+                                  </LightBadge>
                                 )}
                                 {library !== 'none' && (
-                                  <Badge
-                                    size="xs"
-                                    variant="light"
-                                    color={library === 'elsewhere' ? 'var(--warn)' : undefined}
-                                  >
+                                  <LightBadge color={library === 'elsewhere' ? 'var(--warn)' : 'var(--ok)'}>
                                     <Trans>In library</Trans>
-                                  </Badge>
+                                  </LightBadge>
                                 )}
                               </Group>
                             </div>

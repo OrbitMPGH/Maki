@@ -570,12 +570,12 @@ export function SourceCompareModal({
                           {blind ? (blindLabels.get(panel.mappingId) ?? '?') : panel.displayName}
                         </Text>
                         {pick && pick.currentSourceName === panel.sourceName && (
-                          <Badge size="xs" variant="light" color="var(--neutral)">
+                          <Badge size="sm" variant="light" color="var(--neutral)">
                             <Trans>Current copy</Trans>
                           </Badge>
                         )}
                         {snapshot?.mixedChapters && panel.chapterLabel && (
-                          <Badge size="xs" variant="light" color="var(--neutral)">
+                          <Badge size="sm" variant="light" color="var(--neutral)">
                             <Trans>Ch. {chapterLabel}</Trans>
                           </Badge>
                         )}
@@ -586,7 +586,7 @@ export function SourceCompareModal({
                             multiline
                             w={280}
                           >
-                            <Badge size="xs" variant="light" color="var(--warn)">
+                            <Badge size="sm" variant="light" color="var(--warn)">
                               <Trans>Unmatched</Trans>
                             </Badge>
                           </Tooltip>
@@ -595,7 +595,7 @@ export function SourceCompareModal({
 
                       {quality && (
                         <Group gap={6} wrap="wrap" mb={4}>
-                          <Badge size="xs" variant="light" color={QUALITY_TIER_COLOR[quality.tier]}>
+                          <Badge size="sm" variant="light" color={QUALITY_TIER_COLOR[quality.tier]}>
                             {tierWidthLabel(renderLabel, quality.tier, quality.medianWidth)}
                           </Badge>
                           <Tooltip label={scoreBreakdown(quality)} withArrow multiline w={260}>
@@ -605,7 +605,7 @@ export function SourceCompareModal({
                           </Tooltip>
                           {pick &&
                             (quality.isUpgrade ? (
-                              <Badge size="xs" variant="light" color="var(--ok)">
+                              <Badge size="sm" variant="light" color="var(--ok)">
                                 <Trans>Upgrade</Trans>
                               </Badge>
                             ) : (
@@ -800,7 +800,6 @@ export function SourceCompareModal({
         size="auto"
         withCloseButton={false}
         padding={0}
-        centered
         styles={{ content: { overflow: 'hidden' } }}
       >
         {zoomPage && zoomPanel && (

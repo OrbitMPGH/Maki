@@ -48,6 +48,9 @@ export const Default: Story = {
     const body = within(canvasElement.ownerDocument.body)
     const dialog = await body.findByRole('dialog', { name: 'Rename files' })
     await waitFor(() => expect(dialog).toHaveAccessibleName('Rename files'))
+    await waitFor(() =>
+      expect(dialog).toHaveAccessibleDescription(/Matches your naming formats\. Only the highlighted parts change\./),
+    )
     await expect(await within(dialog).findByText('4 files will be renamed')).toBeVisible()
   },
 }
