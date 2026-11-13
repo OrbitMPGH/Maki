@@ -35,9 +35,10 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
     private static readonly string NoOcr = Path.Combine(Path.GetTempPath(), "maki-no-ocr-" + Guid.NewGuid().ToString("N"));
 
     /// <summary>A search with its own OCR reader, storing into this test's database and strips folder.</summary>
-    private ReaderCreditsCache Credits(string ocrFolder)
+    private ReaderCreditsCache Credits(string ocrFolder) => Credits(new PageTextReader(NullLogger<PageTextReader>.Instance, ocrFolder));
+
+    private ReaderCreditsCache Credits(IPageTextReader text)
     {
-        var text = new PageTextReader(NullLogger<PageTextReader>.Instance, ocrFolder);
         _store = new CreditStore(_db.ScopeFactory(), text, NullLogger<CreditStore>.Instance);
         return new ReaderCreditsCache(
             new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), text, _store,
@@ -482,5 +483,50 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         await worker.ScanSeriesAsync(_seriesId, "en", default);
 
         Assert.NotEqual(before, (await RowAsync(chapters[2]))!.ReferencesKey);
+    }
+
+    /// <summary>A reader whose every read throws, as a share dropping mid-search would.</summary>
+    private sealed class ThrowingTextReader : IPageTextReader
+    {
+        public bool Available => true;
+
+        public Task<string?> ReadAsync(byte[] image, double share, CancellationToken ct) => throw new IOException("share went away");
+
+        public Task PrepareAsync() => Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task A_search_that_fails_is_stored_as_failed_and_not_as_no_credits()
+    {
+        _credits = Credits(new ThrowingTextReader());
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        var worker = Worker();
+
+        await worker.ScanSeriesAsync(_seriesId, "en", default);
+
+        foreach (var chapter in chapters)
+        {
+            Assert.True((await RowAsync(chapter))!.Failed);
+        }
+
+        // Not served, and not picked again before its retry.
+        Assert.Equal(0, (await FoundAsync(chapters[1])).GetProperty("headPages").GetInt32());
+        Assert.Null(await worker.NextSeriesAsync(default));
+    }
+
+    [Fact]
+    public async Task A_series_waits_while_any_of_its_files_is_queued_for_conversion()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        using (var db = _db.NewContext())
+        {
+            var fileId = db.Chapters.Where(c => c.Id == chapters[2]).Select(c => c.ChapterFileId).First();
+            db.ChapterFiles.Where(f => f.Id == fileId)
+                .ExecuteUpdate(u => u.SetProperty(f => f.ConversionQueuedAtUtc, DateTime.UtcNow));
+        }
+
+        Assert.Null(await Worker().NextSeriesAsync(default));
     }
 }

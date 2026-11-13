@@ -120,9 +120,14 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
     /// One page of a library archive, read out of memory so the response can stream it after the
     /// archive's lock is released. A PDF page is rendered exactly as <see cref="CbzReader"/> does.
     /// </summary>
-    public async Task<Stream?> OpenPageAsync(string absolutePath, string entryName, CancellationToken ct)
+    /// <param name="forReader">
+    /// False for work done ahead of a reader (prepare-ahead upscales, the recap search): the file still
+    /// counts as read for <see cref="ReadWithin"/>, but not for <see cref="SinceLastServed"/>, which
+    /// background work uses to keep out of a reader's way and would otherwise wait on other background work.
+    /// </param>
+    public async Task<Stream?> OpenPageAsync(string absolutePath, string entryName, CancellationToken ct, bool forReader = true)
     {
-        MarkRead(absolutePath);
+        MarkRead(absolutePath, forReader);
         return await OpenPageUnmarkedAsync(absolutePath, entryName, ct);
     }
 
@@ -148,7 +153,7 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
     public bool ReadWithin(string absolutePath, TimeSpan window) =>
         _lastRead.TryGetValue(Path.GetFullPath(absolutePath), out var at) && Clock.GetElapsedTime(at) < window;
 
-    /// <summary>When any reader was last served a page of any file, so background work can keep out of the way.</summary>
+    /// <summary>How long since any reader (the web reader, OPDS, Komga, reader thumbnails) was served a page, so background work can keep out of the way.</summary>
     public TimeSpan SinceLastServed =>
         Interlocked.Read(ref _lastServed) is var at and > 0 ? Clock.GetElapsedTime(at) : TimeSpan.MaxValue;
 
@@ -157,10 +162,14 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
     private const int MaxReadMarks = 512;
     private static readonly TimeSpan ReadMarkLifetime = TimeSpan.FromHours(1);
 
-    private void MarkRead(string absolutePath)
+    private void MarkRead(string absolutePath, bool forReader)
     {
         var now = Clock.GetTimestamp();
-        Interlocked.Exchange(ref _lastServed, now);
+        if (forReader)
+        {
+            Interlocked.Exchange(ref _lastServed, now);
+        }
+
         _lastRead[Path.GetFullPath(absolutePath)] = now;
         if (_lastRead.Count <= MaxReadMarks)
         {

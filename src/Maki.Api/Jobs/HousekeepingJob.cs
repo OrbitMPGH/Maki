@@ -210,12 +210,24 @@ public class HousekeepingJob(
             {
                 var named = (await db.ChapterCredits.IgnoreQueryFilters().Select(c => c.EdgeKey).ToListAsync(ct)).ToHashSet();
                 var stripCutoff = DateTime.UtcNow - CreditStrips.UnnamedLifetime;
+                var writing = DateTime.UtcNow - TimeSpan.FromHours(1);
                 foreach (var file in Directory.EnumerateFiles(creditStrips, "*", SearchOption.AllDirectories))
                 {
-                    var key = CreditStrips.KeyOf(Path.GetFileName(file));
-                    if (key is null || (!named.Contains(key) && File.GetLastWriteTimeUtc(file) < stripCutoff))
+                    try
                     {
-                        File.Delete(file);
+                        var written = File.GetLastWriteTimeUtc(file);
+                        var key = CreditStrips.KeyOf(Path.GetFileName(file));
+                        var stale = key is null
+                            ? written < writing
+                            : !named.Contains(key) && written < stripCutoff;
+                        if (stale)
+                        {
+                            File.Delete(file);
+                        }
+                    }
+                    catch (IOException ex)
+                    {
+                        logger.LogDebug(ex, "Could not delete the credit strip {File}", file);
                     }
                 }
             }

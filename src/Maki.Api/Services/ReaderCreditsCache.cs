@@ -58,17 +58,23 @@ public sealed class ReaderCreditsCache(
     /// </summary>
     public async Task<CreditPages> FindAsync(
         ReaderService.ChapterSlice chapter, IReadOnlyList<ReaderService.ChapterSlice> references, CancellationToken ct,
+        int parallelism = 0) =>
+        (await SearchAsync(chapter, references, ct, parallelism)).Found;
+
+    /// <summary><see cref="FindAsync"/>, also saying whether the search failed (and was stored as failed).</summary>
+    public async Task<(CreditPages Found, bool Failed)> SearchAsync(
+        ReaderService.ChapterSlice chapter, IReadOnlyList<ReaderService.ChapterSlice> references, CancellationToken ct,
         int parallelism = 0)
     {
         if (!Applies(chapter))
         {
-            return CreditPages.None;
+            return (CreditPages.None, false);
         }
 
         var usable = references.Where(Usable).ToList();
         if (usable.Count == 0)
         {
-            return CreditPages.None;
+            return (CreditPages.None, false);
         }
 
         var key = string.Join('|', usable.Select(Key).Prepend(Key(chapter)));
@@ -81,30 +87,54 @@ public sealed class ReaderCreditsCache(
             RunAsync(chapter, usable, parallelism > 0 ? parallelism : ImageWorkGate.Parallelism)));
         try
         {
-            return await run.Value.WaitAsync(ct);
+            return (await run.Value.WaitAsync(ct), false);
         }
         catch (Exception e) when (e is not OperationCanceledException || !ct.IsCancellationRequested)
         {
             _results.TryRemove(new KeyValuePair<string, Lazy<Task<CreditPages>>>(key, run));
             logger.LogDebug(e, "Credit page search failed for chapter {ChapterId}", chapter.Chapter.Id);
             await TryAsync(() => store.SaveFailedAsync(chapter, CancellationToken.None), chapter);
-            return CreditPages.None;
+            return (CreditPages.None, true);
         }
     }
 
+    private int _warming;
+
     /// <summary>
     /// Starts the search for <paramref name="chapter"/> without waiting for it, so the reader finds the
-    /// answer ready (or the run under way) when it asks. A failure is dropped as <see cref="FindAsync"/> drops it.
+    /// answer ready (or the run under way) when it asks. One warm-up runs at a time and any other is
+    /// dropped: cards warm on hover, and a pointer run along a rail would otherwise start a search per
+    /// card. A failure is dropped as <see cref="FindAsync"/> drops it.
     /// </summary>
-    public void Warm(ReaderService.ChapterSlice chapter, IReadOnlyList<ReaderService.ChapterSlice> references) =>
-        _ = Task.Run(() => FindAsync(chapter, references, CancellationToken.None));
+    /// <returns>Whether a search was started.</returns>
+    public bool Warm(ReaderService.ChapterSlice chapter, IReadOnlyList<ReaderService.ChapterSlice> references)
+    {
+        if (Interlocked.CompareExchange(ref _warming, 1, 0) != 0)
+        {
+            return false;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await FindAsync(chapter, references, CancellationToken.None);
+            }
+            finally
+            {
+                Volatile.Write(ref _warming, 0);
+            }
+        });
+        return true;
+    }
 
     /// <summary>
     /// Whether the text on the first and last pages of the file behind <paramref name="slice"/> reads as
     /// a scanlator's: how a volume file tells a scanlation pack from a published volume without a
-    /// search. False when the OCR models are not available.
+    /// search. False without the OCR models (the caller stores that as the colour rule's, to probe again
+    /// once they load); null when a page could not be read, so it cannot tell.
     /// </summary>
-    public async Task<bool> ProbeAsync(ReaderService.ChapterSlice slice, CancellationToken ct)
+    public async Task<bool?> ProbeAsync(ReaderService.ChapterSlice slice, CancellationToken ct)
     {
         if (!text.Available || ComicFile.IsPdf(slice.ArchivePath))
         {
@@ -119,7 +149,18 @@ public sealed class ReaderCreditsCache(
         {
             ct.ThrowIfCancellationRequested();
             var bytes = await ReadAsync(slice.ArchivePath, slice.Pages[index], ct);
-            if (bytes is not null && await text.ReadAsync(bytes, 1, ct) is { } read && CreditText.IsScanlator(read, colour: false))
+            if (bytes is null)
+            {
+                return null;
+            }
+
+            var read = await text.ReadAsync(bytes, 1, ct);
+            if (read is null && !text.Available)
+            {
+                return false;
+            }
+
+            if (read is not null && CreditText.IsScanlator(read, colour: false))
             {
                 return true;
             }

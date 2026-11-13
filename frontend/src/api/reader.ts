@@ -302,11 +302,6 @@ export const readerCreditsQuery = (chapterId: number, pageVersion: string | unde
     meta: { silent: true },
   })
 
-/**
- * Asks ahead for the next chapter's credit pages once this one's are known, since the first search
- * decodes the edges of up to seven chapters. Its file version is not known yet, so the answer is
- * stored under the version it carries.
- */
 const warmed = new Set<number>()
 
 /**
@@ -320,6 +315,11 @@ export function warmReaderCredits(chapterId: number): void {
   api(`${readerCreditsUrl(chapterId)}/warm`, { method: 'POST' }).catch(() => warmed.delete(chapterId))
 }
 
+/**
+ * Asks ahead for the next chapter's credit pages once this one's are known, since a search that is
+ * not stored yet decodes the edges of up to seven chapters. Its file version is not known yet, so the
+ * answer is stored under the version it carries.
+ */
 export async function prefetchReaderCredits(queryClient: QueryClient, chapterId: number): Promise<void> {
   try {
     const found = await api<ReaderCredits>(readerCreditsUrl(chapterId))

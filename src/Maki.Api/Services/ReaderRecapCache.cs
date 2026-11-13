@@ -71,7 +71,7 @@ public sealed class ReaderRecapCache(ReaderArchiveCache archives, ILogger<Reader
                 var entry = slice.Pages[slice.StartPage + from + index];
                 pages[index] = await ImageWorkGate.RunAsync<GreyPage?>(async () =>
                 {
-                    await using var source = await archives.OpenPageAsync(slice.ArchivePath, entry, token);
+                    await using var source = await archives.OpenPageAsync(slice.ArchivePath, entry, token, forReader: false);
                     if (source is null)
                     {
                         return null;

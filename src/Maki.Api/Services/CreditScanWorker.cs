@@ -55,7 +55,7 @@ public sealed class CreditScanWorker(
     private static volatile bool _wanted;
 
     private readonly Lock _sync = new();
-    private readonly Dictionary<int, DateTime> _backoff = [];
+    private readonly Dictionary<string, DateTime> _backoff = [];
     private bool _paused;
     private int _done;
     private string? _working;
@@ -160,8 +160,8 @@ public sealed class CreditScanWorker(
     {
         try
         {
-            await Task.Delay(StartDelay, stoppingToken);
             _wanted = _wanted || await settings.GetAsync(SettingKeys.CreditScanWanted, stoppingToken) == "true";
+            await Task.Delay(StartDelay, stoppingToken);
         }
         catch (OperationCanceledException)
         {
@@ -221,7 +221,7 @@ public sealed class CreditScanWorker(
         }
 
         var now = DateTime.UtcNow;
-        List<int> held;
+        List<string> held;
         lock (_sync)
         {
             foreach (var (id, until) in _backoff.ToList())
@@ -237,11 +237,13 @@ public sealed class CreditScanWorker(
 
         using var scope = scopes.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        // A conversion swap changes a file's pages, so a series waits until every queued file is converted.
         var due = Dirty(db, now, store.OcrAvailable)
             .Where(c => c.Series!.PendingImportLink == PendingImportLink.None)
-            .Where(c => c.ChapterFile!.ConversionQueuedAtUtc == null)
+            .Where(c => !db.Chapters.IgnoreQueryFilters().Any(o =>
+                o.SeriesId == c.SeriesId && o.ChapterFile != null && o.ChapterFile.ConversionQueuedAtUtc != null))
             .Where(c => !db.DownloadQueue.Any(q => q.SeriesId == c.SeriesId && q.ActiveChapterId != null))
-            .Where(c => !held.Contains(c.SeriesId));
+            .Where(c => !held.Contains(c.SeriesId + "|" + c.Language));
 
         var readSince = now - ReadRecently;
         var read = await db.ChapterProgress.IgnoreQueryFilters()
@@ -290,19 +292,28 @@ public sealed class CreditScanWorker(
     /// </summary>
     internal async Task ScanSeriesAsync(int seriesId, string language, CancellationToken ct)
     {
-        using (var scope = scopes.CreateScope())
+        try
         {
-            await PassAsync(scope.ServiceProvider, seriesId, language, ct);
+            using (var scope = scopes.CreateScope())
+            {
+                await PassAsync(scope.ServiceProvider, seriesId, language, ct);
+            }
+
+            using var check = scopes.CreateScope();
+            var db = check.ServiceProvider.GetRequiredService<MakiDbContext>();
+            if (Paused || !await Dirty(db, DateTime.UtcNow, store.OcrAvailable).AnyAsync(c => c.SeriesId == seriesId && c.Language == language, ct))
+            {
+                return;
+            }
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            logger.LogWarning(e, "Credit page scan of series {SeriesId} failed; trying it again in an hour", seriesId);
         }
 
-        using var check = scopes.CreateScope();
-        var db = check.ServiceProvider.GetRequiredService<MakiDbContext>();
-        if (!Paused && await Dirty(db, DateTime.UtcNow, store.OcrAvailable).AnyAsync(c => c.SeriesId == seriesId && c.Language == language, ct))
+        lock (_sync)
         {
-            lock (_sync)
-            {
-                _backoff[seriesId] = DateTime.UtcNow + Backoff;
-            }
+            _backoff[$"{seriesId}|{language}"] = DateTime.UtcNow + Backoff;
         }
     }
 
@@ -325,8 +336,9 @@ public sealed class CreditScanWorker(
             .ToDictionaryAsync(r => r.ChapterId, ct);
         var files = await db.Chapters.IgnoreQueryFilters()
             .Where(c => c.SeriesId == seriesId && c.Language == language && c.ChapterFileId != null)
-            .Select(c => new { c.Id, FileId = c.ChapterFileId!.Value, c.ChapterFile!.Size })
+            .Select(c => new { c.Id, FileId = c.ChapterFileId!.Value, c.ChapterFile!.Size, Queued = c.ChapterFile.ConversionQueuedAtUtc != null })
             .ToListAsync(ct);
+        var queued = files.Where(f => f.Queued).Select(f => f.Id).ToHashSet();
         var shares = files.GroupBy(f => f.FileId).ToDictionary(g => g.Key, g => g.Count());
         bool IsVolume(ReaderService.ChapterSlice s) => Chapter.IsVolumeEntry(s.Chapter) || shares.GetValueOrDefault(s.ChapterFileId) > 1;
 
@@ -336,8 +348,9 @@ public sealed class CreditScanWorker(
             await store.SaveUnreadableAsync(file.Id, seriesId, file.FileId, file.Size, ct);
         }
 
-        // Each volume file is probed once; a hit on any makes the whole series a scanlation pack.
-        var probes = new Dictionary<int, bool>();
+        // Each volume file is probed once, and the answer kept on its rows; a hit on any makes the whole
+        // series a scanlation pack. A probe that could not tell (null) leaves the volumes as they are.
+        var probes = new Dictionary<int, bool?>();
         foreach (var slice in ordered.OfType<ReaderService.ChapterSlice>().Where(IsVolume))
         {
             if (probes.ContainsKey(slice.ChapterFileId))
@@ -348,11 +361,12 @@ public sealed class CreditScanWorker(
             var known = ordered.OfType<ReaderService.ChapterSlice>()
                 .Where(s => s.ChapterFileId == slice.ChapterFileId)
                 .Select(s => (Slice: s, Row: rows.GetValueOrDefault(s.Chapter.Id)))
-                .FirstOrDefault(x => x.Row is { ProbeHit: not null } && store.Current(x.Row, x.Slice.EdgeKey));
+                .FirstOrDefault(x => x.Row is { ProbeHit: not null } && x.Row.EdgeKey == x.Slice.EdgeKey);
             probes[slice.ChapterFileId] = known.Row?.ProbeHit ?? await ProbeAsync(slice, ct);
         }
 
-        var pack = probes.Values.Any(hit => hit);
+        var pack = probes.Values.Any(hit => hit == true);
+        var volumesKnown = pack || probes.Values.All(hit => hit is not null);
         var lastRead = await db.ChapterProgress.IgnoreQueryFilters()
             .Where(p => order.Contains(p.ChapterId))
             .OrderByDescending(p => p.UpdatedAt)
@@ -369,10 +383,15 @@ public sealed class CreditScanWorker(
             }
 
             var row = rows.GetValueOrDefault(slice.Chapter.Id);
+            if (queued.Contains(slice.Chapter.Id))
+            {
+                continue;
+            }
+
             var current = row is not null && store.Current(row, slice.EdgeKey);
             if (!ReaderCreditsCache.Applies(slice) || slice.EdgeKey is null)
             {
-                if (!current)
+                if (row is null || !CreditStore.Settled(row, slice))
                 {
                     await store.SaveAsync(slice, string.Empty, CreditPages.None, CreditJudge.Ocr, [], ct);
                 }
@@ -380,15 +399,21 @@ public sealed class CreditScanWorker(
                 continue;
             }
 
-            if (IsVolume(slice) && !pack)
+            var volume = IsVolume(slice);
+            if (volume && !pack)
             {
+                if (!volumesKnown)
+                {
+                    continue;
+                }
+
                 if (current && row is { Skipped: true })
                 {
                     await RestampAsync(row, slice, ct);
                 }
                 else
                 {
-                    await store.SaveSkippedAsync(slice, probes.GetValueOrDefault(slice.ChapterFileId), ct);
+                    await store.SaveSkippedAsync(slice, probes.GetValueOrDefault(slice.ChapterFileId) == true, ct);
                 }
 
                 continue;
@@ -404,13 +429,23 @@ public sealed class CreditScanWorker(
             }
 
             await QuietAsync(ct);
-            var found = references.Count == 0
-                ? CreditPages.None
-                : await credits.FindAsync(slice, references, ct, parallelism: 1);
-            if (await store.GetAsync(slice, ct) is null)
+            var (found, failed) = references.Count == 0
+                ? (CreditPages.None, false)
+                : await credits.SearchAsync(slice, references, ct, parallelism: 1);
+            var probe = volume ? probes.GetValueOrDefault(slice.ChapterFileId) : null;
+            if (!failed)
             {
-                // A run the cache already held answers without writing; store it so the chapter is settled.
-                await store.SaveAsync(slice, referencesKey, found, CreditJudge.Ocr, [], ct);
+                // A run the cache already held answers without writing (or wrote for other neighbours);
+                // store it so the chapter is settled under the neighbours it has now.
+                var written = await store.RowAsync(slice.Chapter.Id, ct);
+                if (written is null || !store.Current(written, slice.EdgeKey) || written.ReferencesKey != referencesKey)
+                {
+                    await store.SaveAsync(slice, referencesKey, found, written?.Judge ?? CreditJudge.Ocr, [], ct, probe);
+                }
+                else if (probe is { } hit && written.ProbeHit != hit)
+                {
+                    await store.SetProbeAsync(slice.Chapter.Id, hit, ct);
+                }
             }
 
             lock (_sync)
@@ -422,7 +457,7 @@ public sealed class CreditScanWorker(
         }
     }
 
-    private async Task<bool> ProbeAsync(ReaderService.ChapterSlice slice, CancellationToken ct)
+    private async Task<bool?> ProbeAsync(ReaderService.ChapterSlice slice, CancellationToken ct)
     {
         await QuietAsync(ct);
         try
@@ -432,7 +467,7 @@ public sealed class CreditScanWorker(
         catch (Exception e) when (e is not OperationCanceledException)
         {
             logger.LogDebug(e, "Could not probe {Path} for scanlator pages", slice.ArchivePath);
-            return false;
+            return null;
         }
     }
 

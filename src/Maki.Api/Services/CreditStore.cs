@@ -60,6 +60,14 @@ public sealed class CreditStore(IServiceScopeFactory scopes, IPageTextReader tex
         return row is not null && Current(row, slice.EdgeKey) ? Answer(row) : null;
     }
 
+    /// <summary>The stored row for a chapter, current or not.</summary>
+    public async Task<ChapterCredits?> RowAsync(int chapterId, CancellationToken ct)
+    {
+        using var scope = scopes.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        return await db.ChapterCredits.AsNoTracking().IgnoreQueryFilters().FirstOrDefaultAsync(c => c.ChapterId == chapterId, ct);
+    }
+
     /// <summary>The candidates a row stored, or empty when it stored none or they cannot be read.</summary>
     public static IReadOnlyList<JudgedCandidate> Candidates(ChapterCredits row)
     {
@@ -79,10 +87,12 @@ public sealed class CreditStore(IServiceScopeFactory scopes, IPageTextReader tex
     }
 
     /// <summary>Stores what a search found for <paramref name="slice"/>.</summary>
+    /// <param name="probeHit">For a volume's chapter, what the probe of its file read; kept so the next pass need not probe again.</param>
     public Task SaveAsync(ReaderService.ChapterSlice slice, string referencesKey, CreditPages found, CreditJudge judge,
-        IReadOnlyList<JudgedCandidate> judged, CancellationToken ct) =>
+        IReadOnlyList<JudgedCandidate> judged, CancellationToken ct, bool? probeHit = null) =>
         UpsertAsync(slice, row =>
         {
+            row.ProbeHit = probeHit;
             row.ReferencesKey = referencesKey;
             row.HeadPages = found.HeadPages;
             row.HeadOffset = found.HeadOffset;
@@ -93,7 +103,10 @@ public sealed class CreditStore(IServiceScopeFactory scopes, IPageTextReader tex
             row.Failed = false;
         }, ct);
 
-    /// <summary>Stores a volume chapter left unsearched, with what the probe of its file's edges read.</summary>
+    /// <summary>
+    /// Stores a volume chapter left unsearched, with what the probe of its file's edges read. A probe made
+    /// without the OCR models is stored as the colour rule's, so the scan probes again once they load.
+    /// </summary>
     public Task SaveSkippedAsync(ReaderService.ChapterSlice slice, bool probeHit, CancellationToken ct) =>
         UpsertAsync(slice, row =>
         {
@@ -101,7 +114,7 @@ public sealed class CreditStore(IServiceScopeFactory scopes, IPageTextReader tex
             row.HeadPages = 0;
             row.HeadOffset = 0;
             row.TailPages = 0;
-            row.Judge = CreditJudge.Ocr;
+            row.Judge = text.Available ? CreditJudge.Ocr : CreditJudge.Colour;
             row.CandidatesJson = null;
             row.Skipped = true;
             row.ProbeHit = probeHit;
@@ -117,6 +130,25 @@ public sealed class CreditStore(IServiceScopeFactory scopes, IPageTextReader tex
             row.TailPages = 0;
             row.Failed = true;
         }, ct);
+
+    /// <summary>Records what the probe of a volume file read on a row the search already wrote.</summary>
+    public async Task SetProbeAsync(int chapterId, bool probeHit, CancellationToken ct)
+    {
+        using var scope = scopes.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        await db.ChapterCredits.IgnoreQueryFilters()
+            .Where(c => c.ChapterId == chapterId)
+            .ExecuteUpdateAsync(u => u.SetProperty(c => c.ProbeHit, probeHit), ct);
+    }
+
+    /// <summary>
+    /// Whether <paramref name="row"/> settles a chapter the search cannot key (a PDF, a short chapter):
+    /// written for this file and size under the current versions.
+    /// </summary>
+    public static bool Settled(ChapterCredits row, ReaderService.ChapterSlice slice) =>
+        !row.Failed && row.ChapterFileId == slice.ChapterFileId && row.FileSize == slice.ArchiveSize &&
+        row.DetectorVersion == CreditDetector.Version && row.TextVersion == CreditText.Version &&
+        row.OcrVersion == PageTextReader.Version;
 
     /// <summary>Writes the file a row was stamped with, after the scan found its edge key unchanged (a ComicInfo rewrite).</summary>
     public async Task RestampAsync(int chapterId, int chapterFileId, long fileSize, CancellationToken ct)
