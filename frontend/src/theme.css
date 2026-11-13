@@ -159,6 +159,18 @@
   /* One tight layer: a few hundred posters each casting a wide blur made scrolling and hover slow. */
   --shadow-cover: 0 1px 2px rgba(0, 0, 0, 0.45);
   --shadow-cover-hover: 0 14px 26px -12px rgba(0, 0, 0, 0.8);
+  --shadow-chip: 0 2px 6px rgba(0, 0, 0, 0.35);
+  --shadow-stuck: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
+  --on-art-ink: #fff;
+  --on-art-ink-2: rgba(255, 255, 255, 0.7);
+  --on-art-ink-3: rgba(255, 255, 255, 0.52);
+  --on-art-chip: rgba(255, 255, 255, 0.18);
+  --on-art-scrim: rgba(0, 0, 0, 0.55);
+  --on-art-scrim-strong: rgba(0, 0, 0, 0.8);
+  --z-sticky: 20;
+  --z-nav-scrim: 99;
+  --z-float: 100;
+  --z-tip: 300;
   --cover-rim: rgba(255, 255, 255, 0.09);
   /* An ink edge, so a pointed-at cover never reads as focused or selected (both brand). */
   --cover-rim-hover: color-mix(in srgb, var(--ink-hi) 30%, transparent);
@@ -1289,7 +1301,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   position: fixed;
   top: 8px;
   left: 8px;
-  z-index: 300;
+  z-index: var(--z-tip, 300);
   padding: 10px 14px;
   border-radius: var(--radius-control);
   background: var(--mantine-primary-color-filled);
@@ -1311,7 +1323,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .nav-scrim {
   position: fixed;
   inset: 0;
-  z-index: 99;
+  z-index: var(--z-nav-scrim);
   background: rgba(6, 7, 11, 0.6);
 }
 
@@ -1987,7 +1999,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   line-height: 1;
   white-space: nowrap;
   color: #fff;
-  background: color-mix(in srgb, black 55%, transparent);
+  background: var(--on-art-scrim);
 }
 .cover-badge-circle {
   width: 20px;
@@ -2040,10 +2052,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: var(--mantine-primary-color-filled);
   color: var(--mantine-primary-color-contrast);
 }
-.cover-badge-read {
-  background: var(--brand);
-  color: var(--brand-on);
-}
 /* Compact density (or any narrow container) can put the left and right corner badges close
    enough to overlap (a wide label + eye + status colliding). Drop the text label and shrink to
    an icon-only dot below the width where both corners together would exceed the card. */
@@ -2082,7 +2090,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  background: conic-gradient(var(--brand) var(--ring-pct), rgba(255, 255, 255, 0.22) 0);
+  background: conic-gradient(var(--brand) var(--ring-pct), var(--on-art-chip) 0);
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
 }
@@ -2155,14 +2163,14 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: var(--tone);
   box-shadow:
     0 0 0 1.5px rgba(6, 7, 11, 0.45),
-    0 2px 6px rgba(0, 0, 0, 0.35);
+    var(--shadow-chip);
   color: var(--tone-on, #fff);
 }
 .cover-state[data-tone='status'][data-unmonitored] {
   background: rgba(6, 7, 11, 0.84);
   box-shadow:
     inset 0 0 0 1.5px var(--tone),
-    0 2px 6px rgba(0, 0, 0, 0.35);
+    var(--shadow-chip);
   color: var(--tone);
 }
 /* Read progress wraps the status disc: a brand arc on a dark track just outside it, so one mark per
@@ -2186,24 +2194,24 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     rgba(6, 7, 11, 0.86) 12.25px
   );
   background: var(--read-disc);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-chip);
 }
 .cover-state[data-tone='status'][data-unmonitored][data-read] {
   --disc-fill: rgba(6, 7, 11, 0.84);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-chip);
 }
 [data-theme='light'] .cover-state[data-tone='status'][data-unmonitored][data-read] {
   --disc-fill: rgba(6, 7, 11, 0.8);
   --disc-edge: var(--lift);
   background: var(--read-disc);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-chip);
 }
 .cover-state[data-tone='status'][data-read]::before {
   content: '';
   position: absolute;
   inset: 1.25px;
   border-radius: 50%;
-  background: conic-gradient(var(--brand) var(--ring-pct), rgba(255, 255, 255, 0.14) 0);
+  background: conic-gradient(var(--brand) var(--ring-pct), var(--on-art-chip) 0);
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2.75px), #000 calc(100% - 2.5px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 2.75px), #000 calc(100% - 2.5px));
 }
@@ -2219,7 +2227,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   background: rgba(6, 7, 11, 0.8);
   box-shadow:
     inset 0 0 0 1.5px var(--lift),
-    0 2px 6px rgba(0, 0, 0, 0.35);
+    var(--shadow-chip);
   color: var(--lift);
 }
 [data-theme='light'] .cover-state:not([data-tone='status']) {
@@ -2275,7 +2283,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   height: 3px;
   margin: 7px 0 6px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--on-art-chip);
   overflow: hidden;
 }
 .cover-bar[data-empty] {
@@ -2292,7 +2300,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   font-weight: var(--fw-medium);
   line-height: 1;
   white-space: nowrap;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--on-art-ink-2);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 /* The count pill keeps its width; the text beside it gives way first. Onest's descenders hang below
@@ -2344,7 +2352,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   }
 }
 .cover-row > [data-nothing-wanted] {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--on-art-ink-3);
 }
 .cover-new {
   display: inline-flex;
@@ -2354,7 +2362,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   border-radius: var(--radius-pill);
   /* Neutral, not the accent: a solid brand pill read as a button, and Home's chapter pill already
      carries the accent on its cards. */
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--on-art-chip);
   color: #fff;
   flex-shrink: 0;
   font-size: var(--type-micro);
@@ -2380,7 +2388,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 }
 .cover-corner-left > .cover-chapter {
   margin-bottom: 0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-chip);
 }
 /* Clears the card menu or add cue in the other corner, and lets a long label ellipsize. */
 .cover-corners:has(> .cover-corner-left > .cover-chapter) {
@@ -2414,7 +2422,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: color-mix(in srgb, white 82%, transparent);
 }
 .cover-count[data-nothing-wanted] {
-  color: color-mix(in srgb, white 55%, transparent);
+  color: var(--on-art-ink-3);
 }
 
 /* Shared delegated tooltip (TipLayer): one node for every `data-tip` in the app.
@@ -2426,7 +2434,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
    app's own `data-theme`, so the two can never drift apart. */
 .tip {
   position: fixed;
-  z-index: 300;
+  z-index: var(--z-tip, 300);
   max-width: 260px;
   padding: 5px 10px;
   border-radius: var(--mantine-radius-default);
@@ -3212,7 +3220,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   height: 3px;
   margin: 7px 0 6px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--on-art-chip);
   overflow: hidden;
 }
 .home-resume-fill {
@@ -3244,7 +3252,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   cursor: pointer;
   color: #fff;
   background: rgba(6, 7, 11, 0.62);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-chip);
   transition: opacity var(--dur-base) var(--ease), transform var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
 }
 /* The chapter pill is the card's mark; the button waits for hover, like the reading card menu. */
@@ -3293,7 +3301,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   pointer-events: none;
   color: var(--ok-on);
   background: var(--ok);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-chip);
 }
 /* In library: the accent with a check, so it never reads as a Library status disc. */
 .discover-corner[data-owned='true'] {
@@ -3323,7 +3331,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   z-index: 3;
   color: #fff;
   background: rgba(6, 7, 11, 0.62);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-chip);
   transition: opacity var(--dur-base) var(--ease), transform var(--dur-medium) var(--ease), background var(--dur-base) var(--ease),
     scale var(--dur-fast) var(--ease);
 }
@@ -3448,13 +3456,13 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   border-radius: 50%;
   cursor: pointer;
   color: #fff;
-  background: color-mix(in srgb, black 55%, transparent);
-  box-shadow: 0 2px 6px color-mix(in srgb, black 35%, transparent);
+  background: var(--on-art-scrim);
+  box-shadow: var(--shadow-chip);
   opacity: 0;
   transition: opacity var(--dur-base) var(--ease), background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
 }
 .discover-card-save:hover {
-  background: color-mix(in srgb, black 80%, transparent);
+  background: var(--on-art-scrim-strong);
 }
 /* Saved: the corner badge already shows the bookmark, so the button sits on top of it instead of
    beside it, turning the badge into the remove control on hover. */
@@ -3821,7 +3829,7 @@ button.site-chip:hover {
   font-weight: var(--fw-medium);
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--on-art-ink-2);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 /* Wraps inside a one-line box, so a year with no room drops out whole instead of ellipsizing. */
@@ -3859,7 +3867,7 @@ button.site-chip:hover {
 }
 .discover-sub-year {
   line-height: 16px;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--on-art-ink-3);
 }
 .discover-sub-year::before {
   content: '';
@@ -8501,14 +8509,6 @@ body.column-resizing * {
 }
 
 /* --- Misc ---------------------------------------------------------------- */
-.pulse-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--ok);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ok) 40%, transparent);
-  animation: pulse var(--dur-loop) var(--ease-loop) infinite;
-}
 @keyframes pulse {
   0% {
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--ok) 40%, transparent);
@@ -8738,7 +8738,7 @@ body.column-resizing * {
 .stats-rail {
   position: sticky;
   top: var(--app-shell-header-offset, 58px);
-  z-index: 20;
+  z-index: var(--z-sticky);
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
@@ -8758,7 +8758,7 @@ body.column-resizing * {
    instead of looking sliced. The shadow alone barely shows on a dark ground. */
 .stats-rail[data-stuck],
 .stats-rail-bar[data-stuck] {
-  box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--shadow-stuck);
 }
 .stats-rail[data-stuck]::after,
 .stats-rail-bar[data-stuck]::after {
@@ -8810,7 +8810,7 @@ body.column-resizing * {
   .stats-rail-bar {
     position: sticky;
     top: var(--app-shell-header-offset, 58px);
-    z-index: 20;
+    z-index: var(--z-sticky);
     margin-inline: calc(-1 * var(--mantine-spacing-lg));
     padding-inline: var(--mantine-spacing-lg);
     background: var(--stats-rail-ground);
@@ -10508,6 +10508,48 @@ body.reader-open {
   }
 }
 
+/* Portalled reader panels sit outside .reader-root, so they follow the app theme. This pins the
+   surface, ink and Mantine variables they read to the stage's dark values in every theme. */
+.reader-dark {
+  color-scheme: dark;
+  --surface: var(--reader-surface-2);
+  --surface-2: var(--reader-surface-2);
+  --surface-raised: var(--reader-surface-2);
+  --surface-sunken: var(--reader-surface);
+  --surface-hover: rgba(255, 255, 255, 0.08);
+  --border: var(--reader-border);
+  --border-raised: var(--reader-border);
+  --border-strong: var(--reader-border-strong);
+  --border-control: var(--reader-ink-4);
+  --ink-hi: var(--reader-ink);
+  --ink: var(--reader-ink);
+  --ink-2: var(--reader-ink-2);
+  --ink-3: var(--reader-ink-3);
+  --ink-4: var(--reader-ink-4);
+  --brand-fg: var(--brand-fg-on-art);
+  --ok: #3fb950;
+  --warn: #d6a327;
+  --info: #4c8dff;
+  --danger: #f2554c;
+  --danger-fg: #ff8b84;
+  --shadow-raised: 0 6px 20px -8px rgba(0, 0, 0, 0.6);
+  --mantine-color-text: var(--reader-ink);
+  --mantine-color-body: var(--reader-surface-2);
+  --mantine-color-dimmed: var(--reader-ink-3);
+  --mantine-color-placeholder: var(--reader-ink-3);
+  --mantine-color-default: var(--reader-surface-2);
+  --mantine-color-default-hover: rgba(255, 255, 255, 0.08);
+  --mantine-color-default-color: var(--reader-ink);
+  --mantine-color-default-border: var(--reader-border-strong);
+  --mantine-color-gray-light: var(--reader-border);
+  --mantine-color-gray-light-hover: rgba(255, 255, 255, 0.14);
+  --mantine-color-gray-light-color: var(--reader-ink-2);
+  --mantine-primary-color-light: color-mix(in srgb, var(--brand) 18%, transparent);
+  --mantine-primary-color-light-hover: color-mix(in srgb, var(--brand) 26%, transparent);
+  --mantine-primary-color-light-color: var(--brand-fg-on-art);
+  color: var(--reader-ink);
+}
+
 /* Reader settings popover (portalled, so not under .reader-bar). */
 .reader-settings-scroll {
   max-height: calc(100dvh - 72px);
@@ -10640,12 +10682,6 @@ body.reader-open {
   .reader-tap-zone {
     transition: none;
   }
-}
-.reader-settings-pair {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px;
-  align-items: start;
 }
 .reader-settings-fit {
   display: block;
@@ -11413,7 +11449,6 @@ body.reader-open {
      their track dimmed, the spinner turns dotted and Mantine's loader holds its first frame. */
   .mantine-Button-root[data-loading] .mantine-Button-label:not(:has(.pending-label))::after,
   .mantine-Button-root[data-loading] .pending-label-busy::after,
-  .pulse-dot,
   .status-dot[data-live]::before,
   .mantine-Loader-root,
   .reader-enhance-status:is([data-phase='queued'], [data-phase='working']) .reader-enhance-status-fill,
@@ -11422,7 +11457,6 @@ body.reader-open {
   .preview-chapter-button[data-indeterminate]::before {
     animation: busy-fade var(--dur-loop) var(--ease-loop) infinite !important;
   }
-  .pulse-dot,
   .status-dot[data-live]::before {
     box-shadow: none;
   }
@@ -12365,6 +12399,9 @@ body.reader-open {
 .series-machine {
   --mantine-font-size-sm: var(--type-meta);
   --mantine-font-size-xs: var(--type-micro);
+}
+.series-machine .callout {
+  font-size: var(--type-meta);
 }
 
 /* MonoValue: a file name, path or id on one line that gives up its middle, never its end. */
@@ -13494,21 +13531,6 @@ button.settings-row-head:hover,
   padding-top: var(--mantine-spacing-md);
   border-top: 1px solid var(--hairline);
 }
-/* Delete stays quiet in a row of actions and only turns red when the pointer is on it. */
-.quiet-danger.mantine-ActionIcon-root {
-  color: var(--ink-3);
-}
-.quiet-danger.mantine-ActionIcon-root:hover {
-  color: var(--danger);
-}
-.quiet-danger.mantine-Button-root {
-  --button-color: var(--ink-3);
-  color: var(--ink-3);
-}
-.quiet-danger.mantine-Button-root:hover {
-  --button-color: var(--danger);
-  color: var(--danger);
-}
 
 /* Settings > Account: identity line, in-row two-factor setup, one-time secrets. */
 .account-identity {
@@ -13615,7 +13637,7 @@ button.settings-row-head:hover,
      the toolbar stays; its height is measured into --library-strip-h. */
   position: sticky;
   top: calc(var(--app-shell-header-offset, 58px) - var(--library-strip-h, 0px));
-  z-index: 20;
+  z-index: var(--z-sticky);
 }
 /* Pinned, the toolbar ends in a hairline and a short shadow on its opaque ground, with square
    corners, so the covers scrolling under it meet an edge instead of being sliced by it. */
@@ -13623,7 +13645,7 @@ button.settings-row-head:hover,
   border-bottom-color: var(--hairline);
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
-  box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--shadow-stuck);
 }
 .figure-strip.library-index-metrics {
   padding: 0;
@@ -13814,11 +13836,11 @@ button.settings-row-head:hover,
   .mantine-Paper-root.library-index {
     position: sticky;
     top: var(--app-shell-header-offset, 58px);
-    z-index: 20;
+    z-index: var(--z-sticky);
     margin-inline: calc(-1 * var(--mantine-spacing-lg));
     border-width: 0 0 1px;
     border-radius: 0;
-    box-shadow: 0 10px 18px -14px rgba(0, 0, 0, 0.7);
+    box-shadow: var(--shadow-stuck);
   }
   .library-toolbar,
   .library-selection-bar {
@@ -13952,7 +13974,7 @@ button.settings-row-head:hover,
 .series-detail-chapter-head[data-sticky] {
   position: sticky;
   top: var(--app-shell-header-offset, 0px);
-  z-index: 20;
+  z-index: var(--z-sticky);
   padding-block: 12px;
   margin-block: -12px;
   background: var(--app-bg);
@@ -13962,7 +13984,7 @@ button.settings-row-head:hover,
 .series-detail-chapter-selection {
   position: sticky;
   bottom: 0;
-  z-index: 20;
+  z-index: var(--z-sticky);
   padding: 10px 16px max(10px, env(safe-area-inset-bottom));
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-surface);
@@ -14889,7 +14911,7 @@ button.settings-row-head:hover,
   border: 1px solid color-mix(in srgb, var(--callout-tone) 35%, var(--border));
   border-radius: var(--mantine-radius-lg);
   background: color-mix(in srgb, var(--callout-tone) 7%, var(--surface-2));
-  font-size: var(--mantine-font-size-sm);
+  font-size: var(--type-body);
   color: var(--ink-2);
 }
 .callout[data-tone='warn'] {
@@ -16765,7 +16787,7 @@ button.settings-row-head:hover,
 /* Centred on the content column, not the viewport: the desktop navbar offsets the page. */
 .lucky-pill {
   position: fixed;
-  z-index: 100;
+  z-index: var(--z-float);
   left: calc(
     50% +
       (

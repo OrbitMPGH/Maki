@@ -44,11 +44,11 @@ Borders are 1px `border`; hovered or emphasised edges take `border-strong`; row 
 
 Two families. **Bricolage Grotesque** (`display`) is for names and figures: page, section and modal titles, every series title (hero, cover cards, rows) and the headline numbers. **Onest** (`sans`) sets everything that is read or operated, and carries Cyrillic, so the Russian locale sets in the same face. Bricolage has no Cyrillic or CJK, so those titles fall through to Onest by the stack. Antialiasing is on.
 
-- Display: `display` (series hero, Rewind), `route`, `page-title` (every `PageHeader`), `section-title` (every `SectionHeader`), `wordmark`. All at 700 with -0.025em tracking (-0.02em for section titles).
+- Titles: `display` (series hero, Rewind, up to 4rem), `route` (up to 2.8rem), `page-title` (1.7rem, every `PageHeader`), `feature` (up to 1.625rem), `section-title` (1.375rem, every `SectionHeader`). All at 700 with -0.025em tracking (-0.02em for section titles). The brand wordmark in the navbar and on sign-in is its own class, not a tier.
 - Headings: `h1` to `h4`, Mantine's Title scale (1.9rem 800, 1.5rem 800, 1.2rem 700, 1rem 700).
-- Roles: pick the tier by what the text is, not how big you want it. `body` (0.9375rem, Mantine `sm`) is the default. `meta` (0.8125rem, Mantine `xs`) for labels, chips and status words, `micro` (0.8125rem, the same size as `meta`) is the floor for anything read (counts, table headers), `label` for sentence-case labels over figures, `badge-text` for badges only. `figure` for numbers.
+- Roles: pick the tier by what the text is, not how big you want it. `body` (0.9375rem, Mantine `sm`) is the default. `subhead` (1rem) and `section` (1.125rem) sit between body and the titles. `meta` (0.8125rem, Mantine `xs`) for labels, chips and status words, `micro` (0.8125rem, the same size as `meta`) is the floor for anything read (counts, table headers), `label` (0.8125rem) for sentence-case labels over figures, `badge` (0.78125rem) for badges only. `figure` (1.3125rem) for numbers.
 - Figures (strips, stat tiles, the hero figures and the level) set in the display face through the `.figure` class: 700, -0.02em, tabular. Sizes stay per call site. Their labels are sentence case at `meta` size in `ink-3`.
-- The same scale is exposed as CSS variables (`type-display` through `type-badge`); the three largest are fluid `clamp()` values. If no tier fits, the scale gains a tier; call sites never get an off-scale size.
+- The same scale is exposed as CSS variables (`type-display` through `type-badge`); `display`, `route` and `feature` are fluid `clamp()` values, the rest fixed rem. If no tier fits, the scale gains a tier; call sites never get an off-scale size.
 - Weights come from six steps: `fw-regular` 400, `fw-medium` 500, `fw-semibold` 600, `fw-strong` 650, `fw-bold` 700, `fw-heavy` 800. A weight between two steps belongs on one of them.
 - Any count, ratio or date shown next to another uses tabular figures (the `.tnum` class).
 - `mono` for naming-format tokens, paths and logs.
@@ -82,7 +82,8 @@ Small settings panels that open in place share one grammar: the reader settings,
 - Anything with round ends, whatever its height, takes `radius-pill`: progress bars and their fills, cover badges, seeds. Never set a radius of half the height by hand.
 - No other radius. A value between two steps belongs on one of them.
 - Panels carry a border and the 1px `shadow-card` in both schemes, and no accent edges. A panel that needs to report state does it with a `StatusDot` beside its title. No glows and no `backdrop-filter` anywhere: a selected or active thing takes a flat ring or fill, never a blurred halo, and anything floating over content is opaque.
-- Shadows only where they read: `shadow-lg` under a hovered cover card, `shadow-raised` for the light theme's floating layer (none in dark, where a shadow on near-black is invisible).
+- Shadows only where they read: `shadow-cover` and `shadow-cover-hover` on posters, `shadow-chip` under small floating chips, `shadow-stuck` under a sticky bar once content scrolls beneath it, `shadow-raised` for the light theme's floating layer (none in dark, where a shadow on near-black is invisible), `shadow-object` for borderless objects. Text and icons drawn on cover art use the `on-art-*` colours, never a raw white or black.
+- Layers that need a stacking order use the `--z-*` steps (`z-sticky` 20, `z-nav-scrim` 99, `z-float` 100, `z-tip` 300). Small local values (1 to 5) inside a component are fine.
 - Modals: centred, `radius-lg`, `spacing-lg` padding, a 60% scrim with no blur, a sectioned header over a hairline with only the body scrolling.
 
 ## Motion
@@ -101,6 +102,14 @@ Small settings panels that open in place share one grammar: the reader settings,
 - Loading: skeletons in place of the content, keeping labels and icons in place and blanking only the numbers, so a count never reads as zero before it arrives. No page-level spinners.
 - Text selection highlights in `brand-glow`.
 - Dirty: a Settings section with unsaved edits shows Save and Discard beside an "Unsaved" marker in its heading row; both disappear once it matches what is saved.
+
+## Settled patterns
+
+- Label pills are a tint of their colour plus a 1px edge in the same colour.
+- Colour carries state: in-flight progress is blue, accent is "you" (your selection, your place), done is green, waiting is amber, failed is red.
+- Destructive icon buttons are subtle red at rest.
+- Ops timestamps are relative ("3 min ago") with the absolute time on hover.
+- One of each: one search box, one overflow button, one thumbnail, one callout, one note, one step strip. A new screen uses the shared component rather than a lookalike.
 
 ## Iconography
 

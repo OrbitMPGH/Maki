@@ -4153,7 +4153,6 @@ msgstr "アクション"
 msgid "Action for rule {number}"
 msgstr "ルール{number}の処理"
 
-#: src/components/NotificationsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/DeclinedReleasesModal.tsx
@@ -7658,11 +7657,6 @@ msgstr ""
 msgid "Continuous layout only. Off shows a Skip recap button instead."
 msgstr ""
 
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Continuous vertical (webtoon)"
-msgstr "連続縦スクロール（webtoon）"
-
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Continuous, because this chapter's pages are very tall."
@@ -9076,6 +9070,7 @@ msgstr "希望しない"
 msgid "Done"
 msgstr "完了"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Double"
@@ -11324,15 +11319,11 @@ msgstr ""
 msgid "Grants every permission and the Settings pages."
 msgstr ""
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Gray"
 msgstr "グレー"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Grayscale"
-msgstr "グレースケール"
 
 #: src/components/discover/ScoreFigure.tsx
 msgctxt "score"
@@ -13766,6 +13757,8 @@ msgid "Lowest-numbered admin"
 msgstr "番号が最も小さい管理者"
 
 #. Short for "left to right", the reading direction
+#. Short for "left to right", the reading direction
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "LTR"
@@ -21270,15 +21263,11 @@ msgstr "現在、「途中経過」のスコアはMakiに残り、トラッカ�
 msgid "right to left"
 msgstr "右から左"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Right to left"
 msgstr "右から左"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Right to left (manga)"
-msgstr "右から左（manga）"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/LuckyButton.tsx
@@ -21334,15 +21323,11 @@ msgstr "ルートフォルダー"
 msgid "Rose"
 msgstr "ローズ"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Rotate"
 msgstr "回転"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Rotate to fit"
-msgstr "回転して収める"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -21350,6 +21335,8 @@ msgid "Row {zoomRowNumber} of {zoomTotalPages}"
 msgstr "{zoomTotalPages}行中{zoomRowNumber}行"
 
 #. Short for "right to left", the reading direction
+#. Short for "right to left", the reading direction
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "RTL"
@@ -21935,11 +21922,6 @@ msgstr "大人が登場しない学園ロマンス"
 #, fuzzy
 msgid "Sci-Fi"
 msgstr "SF"
-
-#: src/components/NotificationsSection.tsx
-#, fuzzy
-msgid "Scope"
-msgstr "Scope"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -23183,11 +23165,6 @@ msgstr "表示"
 msgid "Show this section"
 msgstr "このセクションを表示"
 
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Show whole"
-msgstr "全体を表示"
-
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Showing {shown} of {total}"
@@ -23334,6 +23311,7 @@ msgstr "開始時との類似度"
 msgid "Simple"
 msgstr "シンプル"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Single"
@@ -23863,6 +23841,7 @@ msgstr "スピンオフ："
 msgid "Spin-off of {relatedTo}"
 msgstr "{relatedTo}のスピンオフ"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Split"
@@ -23876,11 +23855,6 @@ msgstr ""
 #, fuzzy
 msgid "Split from the tier above"
 msgstr "上のティアから分離"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Split into two pages"
-msgstr "2ページに分割"
 
 #: src/components/pageconversion/FormatStep.tsx
 msgid "Split pages taller than"
@@ -24033,7 +24007,6 @@ msgstr "統計、Rewind、XP"
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/libraryColumns.ts
 #: src/components/library/libraryGroups.ts
-#: src/components/NotificationsSection.tsx
 #: src/components/series/ChapterViewMenu.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
@@ -26375,11 +26348,6 @@ msgstr "2つの章が1つの名前を必要としています"
 msgid "Two pages"
 msgstr "2ページ"
 
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Two pages side by side"
-msgstr "2ページを横並び"
-
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Two-factor authentication"
@@ -27944,6 +27912,7 @@ msgstr ""
 msgid "Who can see this note"
 msgstr "このノートを見られる人"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Whole"

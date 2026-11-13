@@ -4153,7 +4153,6 @@ msgstr "Aksiyon"
 msgid "Action for rule {number}"
 msgstr "Kural {number} için işlem"
 
-#: src/components/NotificationsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/DeclinedReleasesModal.tsx
@@ -7658,11 +7657,6 @@ msgstr ""
 msgid "Continuous layout only. Off shows a Skip recap button instead."
 msgstr ""
 
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Continuous vertical (webtoon)"
-msgstr "Sürekli dikey (webtoon)"
-
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Continuous, because this chapter's pages are very tall."
@@ -9076,6 +9070,7 @@ msgstr "İstemiyorum"
 msgid "Done"
 msgstr "Bitti"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Double"
@@ -11324,15 +11319,11 @@ msgstr ""
 msgid "Grants every permission and the Settings pages."
 msgstr ""
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Gray"
 msgstr "Gri"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Grayscale"
-msgstr "Gri tonlama"
 
 #: src/components/discover/ScoreFigure.tsx
 msgctxt "score"
@@ -13766,6 +13757,8 @@ msgid "Lowest-numbered admin"
 msgstr "En düşük numaralı yönetici"
 
 #. Short for "left to right", the reading direction
+#. Short for "left to right", the reading direction
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "LTR"
@@ -21270,15 +21263,11 @@ msgstr "Şimdilik \"şimdiye kadar\" puanı Maki'de kalır, yalnızca son puanı
 msgid "right to left"
 msgstr "sağdan sola"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Right to left"
 msgstr "Sağdan sola"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Right to left (manga)"
-msgstr "Sağdan sola (manga)"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/LuckyButton.tsx
@@ -21334,15 +21323,11 @@ msgstr "Kök klasörler"
 msgid "Rose"
 msgstr "Gül"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Rotate"
 msgstr "Döndür"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Rotate to fit"
-msgstr "Sığacak şekilde döndür"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -21350,6 +21335,8 @@ msgid "Row {zoomRowNumber} of {zoomTotalPages}"
 msgstr "Satır {zoomRowNumber} / {zoomTotalPages}"
 
 #. Short for "right to left", the reading direction
+#. Short for "right to left", the reading direction
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "RTL"
@@ -21935,11 +21922,6 @@ msgstr "Okul romantizmi, yetişkin karakter yok"
 #, fuzzy
 msgid "Sci-Fi"
 msgstr "Bilim Kurgu"
-
-#: src/components/NotificationsSection.tsx
-#, fuzzy
-msgid "Scope"
-msgstr "Kapsam"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -23183,11 +23165,6 @@ msgstr "Bunları göster"
 msgid "Show this section"
 msgstr "Bu bölümü göster"
 
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Show whole"
-msgstr "Tamamını göster"
-
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Showing {shown} of {total}"
@@ -23334,6 +23311,7 @@ msgstr "Başlangıca benzerlik"
 msgid "Simple"
 msgstr "Basit"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Single"
@@ -23863,6 +23841,7 @@ msgstr "Spin-off'u:"
 msgid "Spin-off of {relatedTo}"
 msgstr "{relatedTo} yan ürünü"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Split"
@@ -23876,11 +23855,6 @@ msgstr ""
 #, fuzzy
 msgid "Split from the tier above"
 msgstr "Üstteki kademeden ayır"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Split into two pages"
-msgstr "İki sayfaya böl"
 
 #: src/components/pageconversion/FormatStep.tsx
 msgid "Split pages taller than"
@@ -24033,7 +24007,6 @@ msgstr "İstatistikler, Rewind, XP"
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/libraryColumns.ts
 #: src/components/library/libraryGroups.ts
-#: src/components/NotificationsSection.tsx
 #: src/components/series/ChapterViewMenu.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
@@ -26375,11 +26348,6 @@ msgstr "İki bölüm aynı adı istiyor"
 msgid "Two pages"
 msgstr "İki sayfa"
 
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Two pages side by side"
-msgstr "Yan yana iki sayfa"
-
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Two-factor authentication"
@@ -27944,6 +27912,7 @@ msgstr ""
 msgid "Who can see this note"
 msgstr "Bu notu kimler görebilir"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Whole"

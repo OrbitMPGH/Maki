@@ -4153,7 +4153,6 @@ msgstr "Action"
 msgid "Action for rule {number}"
 msgstr "Aktion für Regel {number}"
 
-#: src/components/NotificationsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/DeclinedReleasesModal.tsx
@@ -7658,11 +7657,6 @@ msgstr ""
 msgid "Continuous layout only. Off shows a Skip recap button instead."
 msgstr ""
 
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Continuous vertical (webtoon)"
-msgstr "Kontinuierlich vertikal (Webtoon)"
-
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Continuous, because this chapter's pages are very tall."
@@ -9076,6 +9070,7 @@ msgstr "Nicht gewünscht"
 msgid "Done"
 msgstr "Fertig"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Double"
@@ -11324,15 +11319,11 @@ msgstr ""
 msgid "Grants every permission and the Settings pages."
 msgstr ""
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Gray"
 msgstr "Grau"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Grayscale"
-msgstr "Graustufen"
 
 #: src/components/discover/ScoreFigure.tsx
 msgctxt "score"
@@ -13766,6 +13757,8 @@ msgid "Lowest-numbered admin"
 msgstr "Administrator mit niedrigster Nummer"
 
 #. Short for "left to right", the reading direction
+#. Short for "left to right", the reading direction
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "LTR"
@@ -21270,15 +21263,11 @@ msgstr "Im Moment bleibt eine „vorläufige“ Bewertung in Maki, und nur deine
 msgid "right to left"
 msgstr "von rechts nach links"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Right to left"
 msgstr "Von rechts nach links"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Right to left (manga)"
-msgstr "Von rechts nach links (Manga)"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/LuckyButton.tsx
@@ -21334,15 +21323,11 @@ msgstr "Stammordner"
 msgid "Rose"
 msgstr "Rose"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Rotate"
 msgstr "Drehen"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Rotate to fit"
-msgstr "Zum Einpassen drehen"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -21350,6 +21335,8 @@ msgid "Row {zoomRowNumber} of {zoomTotalPages}"
 msgstr "Zeile {zoomRowNumber} von {zoomTotalPages}"
 
 #. Short for "right to left", the reading direction
+#. Short for "right to left", the reading direction
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "RTL"
@@ -21935,11 +21922,6 @@ msgstr "Schulromanze, keine erwachsenen Figuren"
 #, fuzzy
 msgid "Sci-Fi"
 msgstr "Science-Fiction"
-
-#: src/components/NotificationsSection.tsx
-#, fuzzy
-msgid "Scope"
-msgstr "Scope"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -23183,11 +23165,6 @@ msgstr "Anzeigen"
 msgid "Show this section"
 msgstr "Diesen Abschnitt anzeigen"
 
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Show whole"
-msgstr "Ganz anzeigen"
-
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Showing {shown} of {total}"
@@ -23334,6 +23311,7 @@ msgstr "Ähnlichkeit zum Ausgangspunkt"
 msgid "Simple"
 msgstr "Einfach"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Single"
@@ -23863,6 +23841,7 @@ msgstr "Spin-off von"
 msgid "Spin-off of {relatedTo}"
 msgstr "Spin-off von {relatedTo}"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Split"
@@ -23876,11 +23855,6 @@ msgstr ""
 #, fuzzy
 msgid "Split from the tier above"
 msgstr "Von der Stufe darüber trennen"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Split into two pages"
-msgstr "In zwei Seiten aufteilen"
 
 #: src/components/pageconversion/FormatStep.tsx
 msgid "Split pages taller than"
@@ -24033,7 +24007,6 @@ msgstr "Statistiken, Rewind, XP"
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/libraryColumns.ts
 #: src/components/library/libraryGroups.ts
-#: src/components/NotificationsSection.tsx
 #: src/components/series/ChapterViewMenu.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
@@ -26375,11 +26348,6 @@ msgstr "Zwei Kapitel beanspruchen denselben Namen"
 msgid "Two pages"
 msgstr "Zwei Seiten"
 
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Two pages side by side"
-msgstr "Zwei Seiten nebeneinander"
-
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Two-factor authentication"
@@ -27944,6 +27912,7 @@ msgstr ""
 msgid "Who can see this note"
 msgstr "Wer diese Notiz sehen kann"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Whole"

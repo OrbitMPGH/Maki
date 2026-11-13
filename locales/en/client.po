@@ -3495,7 +3495,6 @@ msgstr "Action"
 msgid "Action for rule {number}"
 msgstr "Action for rule {number}"
 
-#: src/components/NotificationsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/DeclinedReleasesModal.tsx
@@ -6427,10 +6426,6 @@ msgstr "Continuous layout only. A bar down the right edge you can drag to move t
 msgid "Continuous layout only. Off shows a Skip recap button instead."
 msgstr "Continuous layout only. Off shows a Skip recap button instead."
 
-#: src/components/settings/ReadingProfilesSection.tsx
-msgid "Continuous vertical (webtoon)"
-msgstr "Continuous vertical (webtoon)"
-
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Continuous, because this chapter's pages are very tall."
 msgstr "Continuous, because this chapter's pages are very tall."
@@ -7600,6 +7595,7 @@ msgstr "Don't want"
 msgid "Done"
 msgstr "Done"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Double"
 msgstr "Double"
@@ -9477,13 +9473,10 @@ msgstr "Grabs a proposed release without waiting for you when it is a digital re
 msgid "Grants every permission and the Settings pages."
 msgstr "Grants every permission and the Settings pages."
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Gray"
 msgstr "Gray"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-msgid "Grayscale"
-msgstr "Grayscale"
 
 #: src/components/discover/ScoreFigure.tsx
 msgctxt "score"
@@ -11507,6 +11500,8 @@ msgid "Lowest-numbered admin"
 msgstr "Lowest-numbered admin"
 
 #. Short for "left to right", the reading direction
+#. Short for "left to right", the reading direction
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 msgid "LTR"
 msgstr "LTR"
@@ -17773,13 +17768,10 @@ msgstr "Right now a \"so far\" score stays in Maki, and only your final rating g
 msgid "right to left"
 msgstr "right to left"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Right to left"
 msgstr "Right to left"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-msgid "Right to left (manga)"
-msgstr "Right to left (manga)"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/LuckyButton.tsx
@@ -17829,19 +17821,18 @@ msgstr "Root folders"
 msgid "Rose"
 msgstr "Rose"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Rotate"
 msgstr "Rotate"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-msgid "Rotate to fit"
-msgstr "Rotate to fit"
 
 #: src/components/SourceCompareModal.tsx
 msgid "Row {zoomRowNumber} of {zoomTotalPages}"
 msgstr "Row {zoomRowNumber} of {zoomTotalPages}"
 
 #. Short for "right to left", the reading direction
+#. Short for "right to left", the reading direction
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 msgid "RTL"
 msgstr "RTL"
@@ -18330,10 +18321,6 @@ msgstr "School romance, no adult cast"
 #: src/components/CatalogueFilters.tsx
 msgid "Sci-Fi"
 msgstr "Sci-Fi"
-
-#: src/components/NotificationsSection.tsx
-msgid "Scope"
-msgstr "Scope"
 
 #: src/components/settings/SecuritySection.tsx
 msgid "Scopes"
@@ -19366,10 +19353,6 @@ msgstr "Show them"
 msgid "Show this section"
 msgstr "Show this section"
 
-#: src/components/settings/ReadingProfilesSection.tsx
-msgid "Show whole"
-msgstr "Show whole"
-
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Showing {shown} of {total}"
 msgstr "Showing {shown} of {total}"
@@ -19491,6 +19474,7 @@ msgstr "Similarity to start"
 msgid "Simple"
 msgstr "Simple"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Single"
 msgstr "Single"
@@ -19933,6 +19917,7 @@ msgstr "Spin-off of"
 msgid "Spin-off of {relatedTo}"
 msgstr "Spin-off of {relatedTo}"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Split"
 msgstr "Split"
@@ -19944,10 +19929,6 @@ msgstr "Split above {splitHeight} px"
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Split from the tier above"
 msgstr "Split from the tier above"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-msgid "Split into two pages"
-msgstr "Split into two pages"
 
 #: src/components/pageconversion/FormatStep.tsx
 msgid "Split pages taller than"
@@ -20076,7 +20057,6 @@ msgstr "Stats, Rewind, XP"
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/libraryColumns.ts
 #: src/components/library/libraryGroups.ts
-#: src/components/NotificationsSection.tsx
 #: src/components/series/ChapterViewMenu.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
@@ -22025,10 +22005,6 @@ msgstr "Two chapters want one name"
 msgid "Two pages"
 msgstr "Two pages"
 
-#: src/components/settings/ReadingProfilesSection.tsx
-msgid "Two pages side by side"
-msgstr "Two pages side by side"
-
 #: src/components/settings/AccountSection.tsx
 msgid "Two-factor authentication"
 msgstr "Two-factor authentication"
@@ -23327,6 +23303,7 @@ msgstr "White"
 msgid "Who can see this note"
 msgstr "Who can see this note"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Whole"
 msgstr "Whole"

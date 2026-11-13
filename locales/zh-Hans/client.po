@@ -4153,7 +4153,6 @@ msgstr "动作"
 msgid "Action for rule {number}"
 msgstr "规则 {number} 的操作"
 
-#: src/components/NotificationsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/settings/DeclinedReleasesModal.tsx
@@ -7658,11 +7657,6 @@ msgstr ""
 msgid "Continuous layout only. Off shows a Skip recap button instead."
 msgstr ""
 
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Continuous vertical (webtoon)"
-msgstr "连续垂直（条漫）"
-
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Continuous, because this chapter's pages are very tall."
@@ -9076,6 +9070,7 @@ msgstr "不想要"
 msgid "Done"
 msgstr "完成"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Double"
@@ -11324,15 +11319,11 @@ msgstr ""
 msgid "Grants every permission and the Settings pages."
 msgstr ""
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Gray"
 msgstr "灰色"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Grayscale"
-msgstr "灰度"
 
 #: src/components/discover/ScoreFigure.tsx
 msgctxt "score"
@@ -13766,6 +13757,8 @@ msgid "Lowest-numbered admin"
 msgstr "编号最小的管理员"
 
 #. Short for "left to right", the reading direction
+#. Short for "left to right", the reading direction
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "LTR"
@@ -21270,15 +21263,11 @@ msgstr "目前，「截至目前」的评分只保留在 Maki 中，只有你的
 msgid "right to left"
 msgstr "从右到左"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Right to left"
 msgstr "从右到左"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Right to left (manga)"
-msgstr "从右到左（漫画）"
 
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/LuckyButton.tsx
@@ -21334,15 +21323,11 @@ msgstr "根文件夹"
 msgid "Rose"
 msgstr "玫瑰色"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Rotate"
 msgstr "旋转"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Rotate to fit"
-msgstr "旋转以适应"
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -21350,6 +21335,8 @@ msgid "Row {zoomRowNumber} of {zoomTotalPages}"
 msgstr "第 {zoomRowNumber}/{zoomTotalPages} 行"
 
 #. Short for "right to left", the reading direction
+#. Short for "right to left", the reading direction
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "RTL"
@@ -21935,11 +21922,6 @@ msgstr "校园恋爱，不含成年人"
 #, fuzzy
 msgid "Sci-Fi"
 msgstr "科幻"
-
-#: src/components/NotificationsSection.tsx
-#, fuzzy
-msgid "Scope"
-msgstr "Scope"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -23183,11 +23165,6 @@ msgstr "显示它们"
 msgid "Show this section"
 msgstr "显示此区块"
 
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Show whole"
-msgstr "完整显示"
-
 #: src/pages/discover/ManageSignalsModal.tsx
 #, fuzzy
 msgid "Showing {shown} of {total}"
@@ -23334,6 +23311,7 @@ msgstr "与起点的相似度"
 msgid "Simple"
 msgstr "简单"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Single"
@@ -23863,6 +23841,7 @@ msgstr "衍生："
 msgid "Spin-off of {relatedTo}"
 msgstr "{relatedTo} 的衍生作品"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Split"
@@ -23876,11 +23855,6 @@ msgstr ""
 #, fuzzy
 msgid "Split from the tier above"
 msgstr "与上一层级分开"
-
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Split into two pages"
-msgstr "拆分为两页"
 
 #: src/components/pageconversion/FormatStep.tsx
 msgid "Split pages taller than"
@@ -24033,7 +24007,6 @@ msgstr "统计、回顾、经验值"
 #: src/components/CatalogueFilters.tsx
 #: src/components/library/libraryColumns.ts
 #: src/components/library/libraryGroups.ts
-#: src/components/NotificationsSection.tsx
 #: src/components/series/ChapterViewMenu.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
@@ -26375,11 +26348,6 @@ msgstr "两个章节需要同一个名称"
 msgid "Two pages"
 msgstr "两页"
 
-#: src/components/settings/ReadingProfilesSection.tsx
-#, fuzzy
-msgid "Two pages side by side"
-msgstr "两页并排"
-
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "Two-factor authentication"
@@ -27944,6 +27912,7 @@ msgstr ""
 msgid "Who can see this note"
 msgstr "谁可以看到此笔记"
 
+#: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Whole"

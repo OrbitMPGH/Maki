@@ -833,7 +833,7 @@ export default function HealthPage() {
             )}
 
             {files.isPending ? (
-              <TableSkeleton columns={5} />
+              <TableSkeleton columns={6} />
             ) : (
               <>
                 <Panel p={0} className="table-panel">

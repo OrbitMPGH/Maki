@@ -1102,7 +1102,7 @@ export default function ActivityPage() {
           historyQuery.isError ? (
             <LoadFailed query={historyQuery} />
           ) : (
-            <TableSkeleton columns={6} />
+            <TableSkeleton columns={5} />
           )
         ) : history.entries.length === 0 ? (
           historyFiltered ? (
@@ -1259,10 +1259,10 @@ export default function ActivityPage() {
             upgradesSummaryQuery.isError ? (
               <LoadFailed query={upgradesSummaryQuery} />
             ) : (
-              <TableSkeleton columns={6} rows={4} />
+              <TableSkeleton columns={4} rows={4} />
             )
           ) : upgradeHistoryQuery.isPending ? (
-            <TableSkeleton columns={6} rows={4} />
+            <TableSkeleton columns={4} rows={4} />
           ) : upgradesUnset ? (
             <EmptyState
               compact
@@ -1360,7 +1360,7 @@ export default function ActivityPage() {
                   upgradeHistoryQuery.isError ? (
                     <LoadFailed query={upgradeHistoryQuery} />
                   ) : (
-                    <TableSkeleton columns={5} />
+                    <TableSkeleton columns={4} />
                   )
                 ) : upgradeHistory.rows.length === 0 ? (
                   <EmptyState
@@ -1549,7 +1549,7 @@ export default function ActivityPage() {
                   cutoffUnmetQuery.isError ? (
                     <LoadFailed query={cutoffUnmetQuery} />
                   ) : (
-                    <TableSkeleton columns={6} rows={4} />
+                    <TableSkeleton columns={5} rows={4} />
                   )
                 ) : !upgradesSummary.profilesConfigured ? (
                   <EmptyState

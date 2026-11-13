@@ -418,7 +418,7 @@ export default function ReaderSettings({
       </Popover.Target>
       {/* Taller than a landscape phone or a short window: it scrolls rather than running off the top.
           The scroller sits inside the dropdown so the arrow, which hangs below it, is not overflow. */}
-      <Popover.Dropdown className="reader-settings" p={0}>
+      <Popover.Dropdown className="reader-settings reader-dark" data-mantine-color-scheme="dark" p={0}>
         <div className="reader-settings-scroll">
           <DrillPanes page={view} depth={pages.depth} bleed={8}>
             {view === 'main' && (
@@ -446,7 +446,7 @@ export default function ReaderSettings({
                           <IconChevronDown size={12} aria-hidden className="reader-settings-chip-caret" />
                         </UnstyledButton>
                       </Menu.Target>
-                      <Menu.Dropdown className="reader-settings-profiles">
+                      <Menu.Dropdown className="reader-settings-profiles reader-dark" data-mantine-color-scheme="dark">
                         <Menu.Label>
                           <Trans>Reading profile</Trans>
                         </Menu.Label>
