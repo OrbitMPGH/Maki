@@ -188,16 +188,20 @@ export function SeriesHero({
     // use of them sits behind `sourceGap &&`; they are here to keep the destructure typed as numbers.
     const totalCount = downloads.total
     const scoped = (series.progressTotal ?? 0) > 0
-    // Only the wanted-total fallback needs this: there a series with unwanted chapters read 100%
-    // while the Chapters tab counted everything listed. The scoped total isn't built from Wanted.
-    const notWanted = scoped || progress.nothingWanted ? 0 : Math.max(0, series.knownChapterCount - totalCount)
+    // The scoped total leaves out what was switched off and says how many; the wanted-total fallback
+    // has to work it out, or a series with unwanted chapters reads 100% beside a longer Chapters tab.
+    const notWanted = scoped
+        ? (series.progressSkipped ?? 0)
+        : progress.nothingWanted
+          ? 0
+          : Math.max(0, series.knownChapterCount - totalCount)
     const readChapters = scoped && series.progressRead !== undefined ? series.progressRead : series.readChapterCount
     const readCount = readChapters ?? 0
     // Reading counts against the series' total, not what happens to be downloaded: Smart mode keeps
     // only the next few on disk, which would read as nearly finished all the way through.
     // Still named haveCount so the "{readCount} / {haveCount}" message keeps its translations.
     const haveCount = scoped ? progress.total : progress.have
-    const extrasIncluded = scoped && series.specialsCounted ? (series.listedSpecials ?? 0) : 0
+    const extrasIncluded = scoped && series.specialsCounted ? (series.includedSpecials ?? series.listedSpecials ?? 0) : 0
     const { highest = 0, total: listed = 0, missing = 0 } = sourceGap ?? {}
     // Named as the Chapters tab names it, so both lines share one translated message.
     const fileMissingFilterCount = noFileCount

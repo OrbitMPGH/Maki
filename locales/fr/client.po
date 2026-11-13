@@ -2310,6 +2310,10 @@ msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed,
 msgstr "{notWanted, plural, one {# de plus listé, non voulu} many {# de plus listés, non voulus} other {# de plus listés, non voulus}}"
 
 #: src/components/series/ChapterCountsInfo.tsx
+msgid "{notWanted, plural, one {Reading and Downloads leave out # chapter you switched off.} other {Reading and Downloads leave out # chapters you switched off.}}"
+msgstr ""
+
+#: src/components/series/ChapterCountsInfo.tsx
 #, fuzzy
 msgid "{offNumbering, plural, one {# of them has a decimal number or none, like an extra or a special.} other {# of them have a decimal number or none, like extras or specials.}}"
 msgstr "{offNumbering, plural, one {# d'entre eux a un numéro décimal ou n'en a pas, comme un bonus ou un spécial.} many {# d'entre eux ont un numéro décimal ou n'en ont pas, comme des bonus ou des spéciaux.} other {# d'entre eux ont un numéro décimal ou n'en ont pas, comme des bonus ou des spéciaux.}}"
