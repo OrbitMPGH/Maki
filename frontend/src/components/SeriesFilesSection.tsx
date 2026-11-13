@@ -28,6 +28,7 @@ import { useLabel } from '../i18n-context'
 import { isPdfFile } from '../lib/files'
 import { fileStatusVisual } from './ui/status'
 import { MonoValue, sharedPrefixLength, splitForTruncation } from './ui/MonoValue'
+import { Callout } from './ui/Callout'
 import { Panel } from './ui/Panel'
 import { useAuth } from '../auth/AuthProvider'
 import { LinkFileToChaptersModal } from './LinkFileToChaptersModal'
@@ -234,26 +235,12 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
         ) : (
         <>
           {mostlyMissing && !selectMode && (
-            <Paper className="series-files-hint" withBorder p="xs" radius="lg" mt="sm" role="status">
-              <Group gap="sm" wrap="wrap" justify="space-between">
-                <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: '1 1 20rem', minWidth: 0 }}>
-                  <IconFileUnknown size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} />
-                  <Text size="sm" c="var(--ink-2)">
-                    {missingCount === fileCount ? (
-                      <Plural
-                        value={missingCount}
-                        one="The file listed for this series is missing from disk."
-                        other="All # files listed for this series are missing from disk."
-                      />
-                    ) : (
-                      <Trans>{missingCount} of {fileCount} files listed for this series are missing from disk.</Trans>
-                    )}{' '}
-                    {canLink && (
-                      <Trans>If they are in the folder under other names, Relink files finds them.</Trans>
-                    )}
-                  </Text>
-                </Group>
-                {canLink && (
+            <Callout
+              icon={IconFileUnknown}
+              role="status"
+              style={{ marginTop: 'var(--mantine-spacing-sm)' }}
+              actions={
+                canLink && (
                   <Button
                     size="xs"
                     variant="default"
@@ -262,28 +249,40 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                   >
                     <Trans>Relink files</Trans>
                   </Button>
+                )
+              }
+            >
+              <Text size="sm" c="var(--ink-2)">
+                {missingCount === fileCount ? (
+                  <Plural
+                    value={missingCount}
+                    one="The file listed for this series is missing from disk."
+                    other="All # files listed for this series are missing from disk."
+                  />
+                ) : (
+                  <Trans>{missingCount} of {fileCount} files listed for this series are missing from disk.</Trans>
+                )}{' '}
+                {canLink && (
+                  <Trans>If they are in the folder under other names, Relink files finds them.</Trans>
                 )}
-              </Group>
-            </Paper>
+              </Text>
+            </Callout>
           )}
           {unlinkedOnDisk > 0 && canLink && !selectMode && (
-            <Paper className="series-files-hint" withBorder p="xs" radius="lg" mt="sm">
-              <Group gap="xs" wrap="nowrap" align="flex-start">
-                <IconLink size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} />
-                <Text size="sm" c="var(--ink-2)">
-                  <Plural
-                    value={unlinkedOnDisk}
-                    one="# file in this folder isn't linked to any chapter, so it can't be read yet."
-                    other="# files in this folder aren't linked to any chapter, so they can't be read yet."
-                  />{' '}
-                  <Trans>
-                    That happens with omnibus volumes and names the matcher can't parse. Try Relink files
-                    first, which reads each volume to find the chapters inside it; use the link button on
-                    a row for anything it can't place.
-                  </Trans>
-                </Text>
-              </Group>
-            </Paper>
+            <Callout icon={IconLink} style={{ marginTop: 'var(--mantine-spacing-sm)' }}>
+              <Text size="sm" c="var(--ink-2)">
+                <Plural
+                  value={unlinkedOnDisk}
+                  one="# file in this folder isn't linked to any chapter, so it can't be read yet."
+                  other="# files in this folder aren't linked to any chapter, so they can't be read yet."
+                />{' '}
+                <Trans>
+                  That happens with omnibus volumes and names the matcher can't parse. Try Relink files
+                  first, which reads each volume to find the chapters inside it; use the link button on
+                  a row for anything it can't place.
+                </Trans>
+              </Text>
+            </Callout>
           )}
           {selectMode && (
             <Paper bg="var(--surface-sunken)" px="sm" py="xs" mt="sm" style={{ borderRadius: 'var(--radius-control)' }}>
@@ -446,7 +445,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                               >
                                 <ActionIcon
                                   variant="subtle"
-                                  color={hasLinks(f) ? 'gray' : 'brand'}
+                                  color={hasLinks(f) ? 'var(--neutral)' : 'brand'}
                                   data-row-action={hasLinks(f) ? '' : undefined}
                                   disabled={!f.onDisk}
                                   onClick={() => setLinkFile(f)}

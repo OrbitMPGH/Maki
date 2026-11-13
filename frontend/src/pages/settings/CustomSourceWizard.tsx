@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
-  Anchor, Button, Collapse, FileButton, Group, List, Modal, MultiSelect, NumberInput, Radio, Select, Stack,
+  Button, Collapse, FileButton, Group, List, Modal, MultiSelect, NumberInput, Radio, Select, Stack,
   Switch, Text, TextInput, Textarea,
 } from '@mantine/core'
 import { ModalFooter, ModalHeading, ModalNote } from '../../components/ui/ModalShell'
@@ -61,12 +61,16 @@ function Advanced({ value, onApply, label }: { value: unknown; onApply: (section
   const { value: parsed, invalid } = parseJson(text)
   return (
     <Stack gap={6}>
-      <Anchor component="button" type="button" size="sm" onClick={() => setOpen((o) => !o)} c="var(--ink-2)">
-        <Group gap={4}>
-          {open ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
-          <Trans>Advanced</Trans>
-        </Group>
-      </Anchor>
+      <Button
+        variant="subtle"
+        size="compact-sm"
+        color="var(--ink-2)"
+        justify="flex-start"
+        leftSection={open ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <Trans>Advanced</Trans>
+      </Button>
       <Collapse expanded={open}>
         <Stack gap={6}>
           <Textarea
@@ -660,17 +664,16 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
           </Stack>
         )}
         <Group justify="flex-end">
-          <Anchor
-            component="button"
-            type="button"
-            size="xs"
+          <Button
+            variant="subtle"
+            size="compact-xs"
             onClick={() => {
               if (!jsonMode) setJsonText(pretty(draft))
               setJsonMode((m) => !m)
             }}
           >
             {jsonMode ? <Trans>Edit as a form</Trans> : <Trans>Edit as JSON</Trans>}
-          </Anchor>
+          </Button>
         </Group>
         {idChanged && (
           <ModalNote tone="danger">

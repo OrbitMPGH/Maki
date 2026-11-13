@@ -4,13 +4,14 @@ import { randomUUID } from '../../lib/uuid'
 import { fuzzyFilter, titleIndex } from '../../lib/fuzzySearch'
 import { useQueryClient } from '@tanstack/react-query'
 import {
-  ActionIcon, Alert, Button, Chip, Group, Menu, Modal, Select, Stack, Tabs, Text,
+  Alert, Button, Chip, Group, Menu, Modal, Select, Stack, Tabs, Text,
   TextInput,
 } from '@mantine/core'
 import {
-  IconBan, IconBook, IconBooks, IconClockPause, IconCompass, IconDots, IconEyeCheck, IconEyeOff, IconRestore,
+  IconBan, IconBook, IconBooks, IconClockPause, IconCompass, IconEyeCheck, IconEyeOff, IconRestore,
   IconSearch, IconStarFilled, IconThumbDown, IconThumbUp, IconX, type Icon,
 } from '../../lib/icons'
+import { OverflowButton } from '../../components/ui/OverflowButton'
 import { SignalStatus, type SignalStatusInfo } from './SignalStatus'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
@@ -510,9 +511,7 @@ function SignalRow({ row, busy, onClear, onExclude, onHide }: {
         {actions.length > 0 && (
           <Menu position="bottom-end" width={240} withinPortal>
             <Menu.Target>
-              <ActionIcon variant="subtle" color="var(--ink-3)" loading={busy} aria-label={t`Actions for ${title}`}>
-                <IconDots size={16} />
-              </ActionIcon>
+              <OverflowButton loading={busy} aria-label={t`Actions for ${title}`} />
             </Menu.Target>
             <Menu.Dropdown>
               {actions.map((action) => {

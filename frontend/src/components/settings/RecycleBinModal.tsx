@@ -34,6 +34,7 @@ import { formatBytes, formatDate, formatNumber } from '../../format'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { EmptyState } from '../ui/EmptyState'
 import { MetaList } from '../ui/MetaList'
+import { Thumb } from '../ui/Thumb'
 import { ModalFooter, ModalHeading } from '../ui/ModalShell'
 
 const REASON_ORDER: RecycleReason[] = ['deleteFile', 'removeChapter', 'seriesDelete', 'seriesArchive']
@@ -301,7 +302,7 @@ export function RecycleBinModal({ opened, onClose }: { opened: boolean; onClose:
         }
       >
         <Button
-          variant="default"
+          variant="light"
           color="var(--danger)"
           leftSection={<IconTrash size={16} />}
           disabled={total === 0}
@@ -427,9 +428,7 @@ function BinGroupSection({
           aria-controls={bodyId}
           onClick={onToggle}
         >
-          <span className="recycle-bin-cover" aria-hidden>
-            {coverUrl ? <img src={coverUrl} alt="" loading="lazy" decoding="async" /> : <IconTrash size={16} />}
-          </span>
+          <Thumb src={coverUrl} size="sm" aria-hidden />
           <span className="recycle-bin-group-text">
             <Text component="span" className="recycle-bin-group-title" fw={600} size="sm">
               {group.seriesTitle}

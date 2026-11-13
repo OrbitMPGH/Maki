@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
-  Anchor,
   Button,
   Center,
   Checkbox,
@@ -177,11 +176,10 @@ export function LoginPage() {
             >
               <Trans>Verify</Trans>
             </Button>
-            <Anchor
-              component="button"
-              type="button"
-              fz="sm"
-              ta="center"
+            <Button
+              variant="subtle"
+              size="compact-sm"
+              fullWidth
               onClick={() => {
                 setUseRecovery(!useRecovery)
                 setCode('')
@@ -189,12 +187,11 @@ export function LoginPage() {
               }}
             >
               {useRecovery ? <Trans>Use your authenticator app</Trans> : <Trans>Use a recovery code</Trans>}
-            </Anchor>
-            <Anchor
-              component="button"
-              type="button"
-              fz="sm"
-              ta="center"
+            </Button>
+            <Button
+              variant="subtle"
+              size="compact-sm"
+              fullWidth
               onClick={() => {
                 setNeedsCode(false)
                 setUseRecovery(false)
@@ -203,7 +200,7 @@ export function LoginPage() {
               }}
             >
               <Trans>Start over</Trans>
-            </Anchor>
+            </Button>
           </Stack>
         </form>
       ) : (
@@ -228,9 +225,9 @@ export function LoginPage() {
           )}
 
           {passwordHidden ? (
-            <Anchor component="button" type="button" fz="sm" ta="center" onClick={() => setShowPassword(true)}>
+            <Button variant="subtle" size="compact-sm" fullWidth onClick={() => setShowPassword(true)}>
               <Trans>Sign in with a password</Trans>
-            </Anchor>
+            </Button>
           ) : (
             <form onSubmit={submitPassword}>
               <Stack>

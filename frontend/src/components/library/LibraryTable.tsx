@@ -27,6 +27,7 @@ import {
   type LibraryColumn,
 } from './libraryColumns'
 import { type ColumnSpec, useColumnWidths } from '../../lib/useColumnWidths'
+import { Thumb } from '../ui/Thumb'
 
 const TITLE_MIN = 240
 const CHECK_TRACK = '36px'
@@ -372,9 +373,7 @@ export const LibraryTableRow = memo(function LibraryTableRow({
             }
           }}
         >
-          <span className="library-table-thumb row-cover">
-            {series.coverUrl ? <img src={series.coverUrl} alt="" loading="lazy" decoding="async" /> : null}
-          </span>
+          <Thumb className="library-table-thumb" src={series.coverUrl} size="sm" />
           <span className="library-table-name" title={series.title}>
             {series.displayTitle}
           </span>

@@ -115,8 +115,7 @@ export function SourceReliability({
                         <Progress
                           value={successRate * 100}
                           size={4}
-                          radius="xl"
-                          color={low ? 'var(--warn)' : 'var(--brand)'}
+                          color={low ? 'var(--warn)' : 'var(--ok)'}
                           mt={4}
                           aria-label={t`Success rate`}
                         />

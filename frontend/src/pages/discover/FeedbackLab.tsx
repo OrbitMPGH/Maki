@@ -409,7 +409,7 @@ function SignalsSkeleton() {
         </PanelTitle>
         {Array.from({ length: 4 }, (_, i) => (
           <div key={i} className="signals-feed-row">
-            <Skeleton className="stats-thumb stats-thumb-lg" />
+            <Skeleton w={36} h={54} radius="sm" />
             <div className="signals-feed-main">
               <Skeleton h={14} w={`${50 + (i % 3) * 12}%`} />
               <Skeleton h={12} w="40%" mt={8} />

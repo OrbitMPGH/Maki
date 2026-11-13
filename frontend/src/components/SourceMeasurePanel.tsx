@@ -64,7 +64,7 @@ export function MeasureProgress({ order }: { order: SourceOrderDto }) {
           other: `Measuring # sources on chapters ${chapters}`,
         })}
       </Text>
-      <Progress value={probes > 0 ? (done / probes) * 100 : 0} size="sm" mt={6} mb={4} animated aria-label={t`Measuring progress`} />
+      <Progress value={probes > 0 ? (done / probes) * 100 : 0} mt={6} mb={4} animated aria-label={t`Measuring progress`} />
       <Text size="xs" c="var(--ink-3)">
         <Trans>
           {done} of {probes} chapter samples. The order below updates once it finishes.

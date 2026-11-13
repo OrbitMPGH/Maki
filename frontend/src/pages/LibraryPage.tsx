@@ -65,7 +65,6 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconColumns,
-  IconDots,
   IconArrowUp,
   IconArrowDown,
   IconStar,
@@ -75,6 +74,7 @@ import {
   IconWand,
   IconX,
 } from '../lib/icons'
+import { OverflowButton } from '../components/ui/OverflowButton'
 import { useIncognitoOptions } from '../components/ui/incognito'
 import { INCOGNITO_HELP } from '../components/series/SeriesActionsMenu'
 import { PAGE_CONVERSION_STOPS } from '../api/pageConversion'
@@ -2588,9 +2588,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                 </TagChip>
                 <Menu position="bottom-end" withinPortal>
                   <Menu.Target>
-                    <ActionIcon size={24} variant="subtle" color="var(--ink-4)" aria-label={t`Options for ${name}`}>
-                      <IconDots size={14} />
-                    </ActionIcon>
+                    <OverflowButton size={24} aria-label={t`Options for ${name}`} />
                   </Menu.Target>
                   <Menu.Dropdown>
                     <Menu.Item

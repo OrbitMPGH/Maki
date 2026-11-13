@@ -12242,7 +12242,7 @@ msgstr "Month"
 msgid "More"
 msgstr "More"
 
-#: src/components/series/SeriesActionsMenu.tsx
+#: src/components/ui/OverflowButton.tsx
 msgid "More actions"
 msgstr "More actions"
 

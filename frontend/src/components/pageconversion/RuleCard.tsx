@@ -295,7 +295,7 @@ export function RuleCard({
           />
           <ActionIcon
             variant="subtle"
-            color="gray"
+            color="var(--neutral)"
             aria-label={t`Move rule ${number} up`}
             disabled={index === 0}
             onClick={() => onMove(-1)}
@@ -304,7 +304,7 @@ export function RuleCard({
           </ActionIcon>
           <ActionIcon
             variant="subtle"
-            color="gray"
+            color="var(--neutral)"
             aria-label={t`Move rule ${number} down`}
             disabled={index === total - 1}
             onClick={() => onMove(1)}
@@ -325,7 +325,7 @@ export function RuleCard({
                   {editor(kind)}
                   <ActionIcon
                     variant="subtle"
-                    color="gray"
+                    color="var(--neutral)"
                     mb={2}
                     aria-label={t`Remove condition: ${conditionLabel}`}
                     onClick={() => removeCondition(kind)}

@@ -149,7 +149,6 @@ function Sampling({ estimate, starting }: { estimate: PageConversionEstimate | u
       </Text>
       <Progress
         value={total > 0 ? (done / total) * 100 : 0}
-        size="sm"
         aria-label={t`Estimate progress`}
         animated={total === 0}
       />

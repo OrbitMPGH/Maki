@@ -10,7 +10,6 @@ import {
   IconArrowUp,
   IconChevronDown,
   IconChevronUp,
-  IconDots,
   IconDownload,
   IconFileImport,
   IconFilter,
@@ -27,6 +26,7 @@ import {
   IconWorldWww,
   IconPackages,
 } from '../../lib/icons'
+import { OverflowButton } from '../../components/ui/OverflowButton'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
@@ -974,9 +974,7 @@ export function ManageSourcesModal({
           {source.custom && isAdmin && (
             <Menu position="bottom-end" withinPortal>
               <Menu.Target>
-                <ActionIcon variant="subtle" color="var(--neutral)" aria-label={t`More for ${label}`}>
-                  <IconDots size={16} />
-                </ActionIcon>
+                <OverflowButton aria-label={t`More for ${label}`} />
               </Menu.Target>
               <Menu.Dropdown>
                 <Menu.Item leftSection={<IconPencil size={16} />} onClick={() => openEdit(source)}>

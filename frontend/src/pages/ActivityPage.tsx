@@ -867,9 +867,8 @@ export default function ActivityPage() {
                             <Progress
                               value={(q.pagesDone / q.pagesTotal) * 100}
                               style={{ flex: 1 }}
-                              radius="xl"
                               animated={q.status === 'Downloading'}
-                              color={q.status === 'Failed' ? 'var(--danger)' : 'brand'}
+                              color={q.status === 'Failed' ? 'var(--danger)' : undefined}
                               aria-label={t`Download progress`}
                             />
                             <Text size="xs" c="var(--ink-3)" w={52} className="tnum" ta="right">

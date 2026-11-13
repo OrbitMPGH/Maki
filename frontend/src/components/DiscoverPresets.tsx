@@ -120,7 +120,7 @@ export function PresetMenu({
               </Menu.Item>
               <ActionIcon
                 variant="subtle"
-                color="var(--neutral)"
+                color="var(--danger)"
                 aria-label={t`Delete saved filter`}
                 onClick={() => removePreset(preset)}
               >

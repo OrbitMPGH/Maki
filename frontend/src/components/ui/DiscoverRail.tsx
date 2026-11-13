@@ -24,6 +24,7 @@ import type { ShortlistSource } from '../../api/shortlist'
 import { useShortlistToggle } from '../discover/shortlistActions'
 import { t as now } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { Thumb } from './Thumb'
 
 /**
  * Poster cards for catalogue (MangaBaka) items, and the horizontal rail that lays them out.
@@ -303,18 +304,13 @@ export const RecommendationRow = memo(function RecommendationRow({
         aria-label={cardLabel(title, owned, saved)}
         onClick={() => (owned ? navigate(`/series/${inLibrarySeriesId}`) : openWith(onOpen, item, savedFrom))}
       />
-      <div className="row-cover" data-series-cover={inLibrarySeriesId ?? undefined} style={{ width: thumbSize, height: thumbSize * 1.5, flexShrink: 0 }}>
-        {posterUrl(item) ? (
-          <img
-            src={posterUrl(item) ?? undefined}
-            alt=""
-            loading="lazy"
-            decoding="async"
-          />
-        ) : (
-          <div className="row-cover-placeholder" aria-hidden>{item.title}</div>
-        )}
-      </div>
+      <Thumb
+        className="row-cover"
+        src={posterUrl(item)}
+        size="lg"
+        width={thumbSize}
+        data-series-cover={inLibrarySeriesId ?? undefined}
+      />
 
       <div className="row-body">
         <div className="row-header">

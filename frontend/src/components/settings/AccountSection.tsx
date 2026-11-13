@@ -178,8 +178,7 @@ function SsoRow() {
           <Button
             size="compact-xs"
             variant="subtle"
-            color="var(--neutral)"
-            className="quiet-danger"
+            color="var(--danger)"
             loading={unlink.isPending}
             onClick={() =>
               unlink.mutate(undefined, {
@@ -751,8 +750,7 @@ function ApiKeysCard({ creating, onCloseCreate }: { creating: boolean; onCloseCr
                   <Button
                     size="compact-xs"
                     variant="subtle"
-                    color="var(--neutral)"
-                    className="quiet-danger"
+                    color="var(--danger)"
                     onClick={() => setRevoking(key)}
                   >
                     <Trans>Revoke</Trans>

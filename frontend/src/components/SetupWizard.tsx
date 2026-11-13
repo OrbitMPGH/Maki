@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   ActionIcon,
-  Anchor,
   Button,
   Collapse,
   Group,
@@ -213,7 +212,7 @@ function LibraryStep() {
                 </StatusDot>
                 <ActionIcon
                   variant="subtle"
-                  className="quiet-danger"
+                  color="var(--danger)"
                   onClick={() => setDeleting({ id: f.id, path: f.path })}
                   aria-label={t`Remove root folder`}
                 >
@@ -621,9 +620,9 @@ function FinishStep({
           <SummaryLine
             tone="warn"
             action={
-              <Anchor component="button" type="button" size="sm" onClick={() => goTo('library')}>
+              <Button variant="subtle" size="compact-sm" onClick={() => goTo('library')}>
                 <Trans>Add one</Trans>
-              </Anchor>
+              </Button>
             }
           >
             <Trans>No library folder yet. Series need one to download into.</Trans>
@@ -637,9 +636,9 @@ function FinishStep({
           <SummaryLine
             tone="warn"
             action={
-              <Anchor component="button" type="button" size="sm" onClick={() => goTo('discovery')}>
+              <Button variant="subtle" size="compact-sm" onClick={() => goTo('discovery')}>
                 <Trans>See progress</Trans>
-              </Anchor>
+              </Button>
             }
           >
             <Trans>The local MangaBaka database is still downloading. Setup finishes once it is in.</Trans>

@@ -132,8 +132,7 @@ function OfflineControls() {
         {usage && usage.quota > 0 && (
           <Progress
             value={Math.min(100, (usage.usage / usage.quota) * 100)}
-            size="sm"
-            radius="xl"
+            color="var(--neutral)"
             aria-label={t`Storage used`}
           />
         )}
@@ -332,7 +331,7 @@ function SavedSeriesGroup({
               )}
               <ActionIcon
                 variant="subtle"
-                color="var(--neutral)"
+                color="var(--danger)"
                 onClick={() => void removeChaptersOffline([record.chapterId])}
                 aria-label={t`Remove ${label} from this device`}
               >

@@ -82,7 +82,7 @@ function SeriesStage({ onPick }: { onPick: (series: SeriesDto) => void }) {
       <div className="pc-pick-list">
         <Stack gap={2}>
           {rows.slice(0, MAX_SERIES_ROWS).map((s) => (
-            <Button key={s.id} variant="subtle" color="gray" justify="flex-start" onClick={() => onPick(s)}>
+            <Button key={s.id} variant="subtle" color="var(--neutral)" justify="flex-start" onClick={() => onPick(s)}>
               {s.displayTitle}
             </Button>
           ))}
@@ -131,7 +131,7 @@ function ChapterStage({
   return (
     <Stack gap="sm">
       <Group gap="xs" wrap="nowrap">
-        <Button variant="subtle" color="gray" size="xs" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>
+        <Button variant="subtle" color="var(--neutral)" size="xs" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>
           <Trans>Back</Trans>
         </Button>
         <Text fw={600} truncate="end">
@@ -145,7 +145,7 @@ function ChapterStage({
             <Button
               key={file.fileId}
               variant="subtle"
-              color="gray"
+              color="var(--neutral)"
               justify="space-between"
               fullWidth
               onClick={() => onPick(file)}
@@ -196,7 +196,7 @@ function PageStage({
   return (
     <Stack gap="sm">
       <Group gap="xs" wrap="nowrap">
-        <Button variant="subtle" color="gray" size="xs" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>
+        <Button variant="subtle" color="var(--neutral)" size="xs" leftSection={<IconArrowLeft size={16} />} onClick={onBack}>
           <Trans>Back</Trans>
         </Button>
         <Text fw={600} truncate="end">

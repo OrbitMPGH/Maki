@@ -25,7 +25,6 @@ import {
   Box,
 } from '@mantine/core'
 import {
-  IconAlertTriangle,
   IconChevronDown,
   IconChevronRight,
   IconDownload,
@@ -35,6 +34,7 @@ import {
 import { notifications } from '../../lib/toast'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { ModalFooter, ModalHeading } from '../../components/ui/ModalShell'
+import { Note } from '../../components/ui/Note'
 import { FigureStrip } from '../../components/ui/FigureStrip'
 import { TagChip } from '../../components/ui/TagChip'
 import { relativeTime } from '../../components/ui/time'
@@ -59,6 +59,7 @@ import {
 import { formatBytes, formatDateTime, formatNumber } from '../../format'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 import { useHealthAction, useHealthData, type HealthOptions } from '../../api/health'
+import { TimeAgo } from '../../components/ui/TimeAgo'
 
 type RestoreTarget = { kind: 'existing'; name: string } | { kind: 'upload'; file: File }
 
@@ -139,15 +140,12 @@ export function BackupSection() {
       }
     >
       <Stack>
-        <div className="settings-note">
-          <IconAlertTriangle size={16} aria-hidden />
-          <span>
-            <Trans>
-              Backups hold API keys and passwords in plain text. Treat a downloaded one like a
-              password.
-            </Trans>
-          </span>
-        </div>
+        <Note>
+          <Trans>
+            Backups hold API keys and passwords in plain text. Treat a downloaded one like a
+            password.
+          </Trans>
+        </Note>
 
         {backups && backups.length > 0 && (
           <Table.ScrollContainer minWidth={520}>
@@ -164,7 +162,7 @@ export function BackupSection() {
               <Table.Tbody>
                 {backups.map((b) => (
                   <Table.Tr key={b.name}>
-                    <Table.Td className="tnum" style={{ whiteSpace: 'nowrap' }}>{formatDateTime(b.manifest.createdUtc)}</Table.Td>
+                    <Table.Td className="tnum" style={{ whiteSpace: 'nowrap' }}><TimeAgo value={b.manifest.createdUtc} /></Table.Td>
                     <Table.Td>
                       <TagChip size="sm">{kindLabel(b.manifest.kind)}</TagChip>
                     </Table.Td>
@@ -194,7 +192,7 @@ export function BackupSection() {
                         </ActionIcon>
                         <ActionIcon
                           variant="subtle"
-                          className="quiet-danger"
+                          color="var(--danger)"
                           onClick={() => setDeleting(b.name)}
                           aria-label={t`Delete backup`}
                         >
@@ -529,7 +527,7 @@ export function ImageCacheSection() {
     : lastError
       ? t`Failed`
       : status?.finishedAt
-        ? relativeTime(status.finishedAt)
+        ? relativeTime(status.finishedAt, 'narrow')
         : t`Not run yet`
 
   const lastRunHint = running ? (
@@ -592,7 +590,7 @@ export function ImageCacheSection() {
           value={pct ?? 100}
           animated={running}
           striped={running}
-          color={status?.lastError ? 'var(--danger)' : 'brand'}
+          color={status?.lastError ? 'var(--danger)' : undefined}
           aria-label={t`Cache progress`}
         />
       )}

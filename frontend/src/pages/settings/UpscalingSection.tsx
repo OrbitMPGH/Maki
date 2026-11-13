@@ -272,7 +272,8 @@ function ModelRow({
       <Group gap="xs" wrap="wrap">
         {model.bundled ? null : ready ? (
           <Button
-            variant="default"
+            variant="light"
+            color="var(--danger)"
             size="xs"
             leftSection={<IconTrash size={16} />}
             loading={remove.isPending}
@@ -441,7 +442,8 @@ function CacheUsage({ bytes, files, limitMb }: { bytes: number; files: number; l
         <Plural value={files} one={`${used} of ${limit}, # page`} other={`${used} of ${limit}, # pages`} />
       </Text>
       <Button
-        variant="default"
+        variant="light"
+        color="var(--danger)"
         size="xs"
         leftSection={<IconTrash size={16} />}
         disabled={files === 0}

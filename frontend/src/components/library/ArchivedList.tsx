@@ -12,6 +12,7 @@ import { SignalStatus } from '../../pages/discover/SignalStatus'
 import { countSkipped } from '../series/chapterTable'
 import type { ArchivedCardAction } from '../series/ArchivedSeriesCard'
 import { Panel } from '../ui/Panel'
+import { Thumb } from '../ui/Thumb'
 
 interface RowProps {
   selectMode: boolean
@@ -74,9 +75,7 @@ const ArchivedRow = memo(function ArchivedRow({
           onClick={(e) => e.stopPropagation()}
         />
       )}
-      <div className="archived-row-cover" aria-hidden>
-        {series.coverUrl && <img src={series.coverUrl} alt="" loading="lazy" data-series-cover={series.id} />}
-      </div>
+      <Thumb src={series.coverUrl} size="md" aria-hidden data-series-cover={series.id} />
       <div className="archived-row-main">
         <div className="archived-row-title">
           {selectMode ? (
@@ -171,8 +170,7 @@ const ArchivedRow = memo(function ArchivedRow({
             <Tooltip label={t`Delete series`} withArrow>
               <ActionIcon
                 variant="subtle"
-                color="var(--neutral)"
-                className="quiet-danger"
+                color="var(--danger)"
                 aria-label={t`Delete ${displayTitle}`}
                 onClick={() => onAction('delete', series)}
               >

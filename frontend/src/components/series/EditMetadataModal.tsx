@@ -515,7 +515,7 @@ function AltTitlesInput({
             />
             <ActionIcon
               variant="subtle"
-              color="gray"
+              color="var(--neutral)"
               aria-label={t`Remove title`}
               onClick={() => onChange(value.filter((_, i) => i !== index))}
             >

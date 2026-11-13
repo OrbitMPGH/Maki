@@ -7,6 +7,7 @@ import { formatDayRange, formatPercent, formatRecentDate, formatWeekdayDate, for
 import { useLabel } from '../../i18n-context'
 import { IconCalendarEvent, IconClock, type Icon } from '../../lib/icons'
 import { EmptyState } from '../ui/EmptyState'
+import { Thumb } from '../ui/Thumb'
 import { Panel } from '../ui/Panel'
 import { SectionHeader } from '../ui/SectionHeader'
 import { TableSkeleton } from '../ui/TableSkeleton'
@@ -238,7 +239,7 @@ function UpcomingName({ item }: { item: UpcomingSeriesDto }) {
   const showsWindow = outlook.state === 'Expected' || outlook.state === 'Late'
   return (
     <Link to={`/series/${seriesId}`} className="upcoming-name-cell upcoming-name">
-      {coverUrl ? <img src={coverUrl} alt="" className="upcoming-cover" loading="lazy" /> : <span className="upcoming-cover" />}
+      <Thumb src={coverUrl} size="sm" aria-hidden />
       <span className="upcoming-title">{title}</span>
       {showsWindow && (
         <span className="upcoming-confidence tnum" data-level={confidenceLevel(outlook.confidence)}>

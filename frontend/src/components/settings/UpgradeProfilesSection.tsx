@@ -932,7 +932,7 @@ function FormatEditor({
 
                 <ActionIcon
                   variant="subtle"
-                  className="quiet-danger"
+                  color="var(--danger)"
                   onClick={() => removeCondition(index)}
                   disabled={conditions.length <= 1}
                   aria-label={t`Remove condition`}

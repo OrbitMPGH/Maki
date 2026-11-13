@@ -15,7 +15,6 @@ import {
   IconDeviceMobileOff,
   IconDeviceMobileX,
   IconDeviceTv,
-  IconDotsVertical,
   IconDownload,
   IconEye,
   IconEyeCheck,
@@ -34,6 +33,7 @@ import {
   IconTrashX,
   IconUsers,
 } from '../../lib/icons'
+import { OverflowButton } from '../ui/OverflowButton'
 import type { NoteCountDto } from '../../api/notes'
 import { ChapterNotesDropdown } from '../notes/NotesDropdown'
 import { usePhoneSheet } from '../notes/phone'
@@ -319,7 +319,6 @@ export const ChapterRow = memo(function ChapterRow({
                               <Progress
                                   value={(queueItem.pagesDone / queueItem.pagesTotal) * 100}
                                   w={72}
-                                  radius="xl"
                                   animated={queueItem.status === 'Downloading'}
                                   color={queueTone}
                                   aria-label={t`Download progress`}
@@ -476,7 +475,7 @@ export const ChapterRow = memo(function ChapterRow({
                 <HoverTooltip label={read ? t`Mark unread` : t`Mark read`} withArrow>
                   <LightActionIcon
                       variant={read ? 'light' : 'subtle'}
-                      color={read ? 'var(--brand)' : 'gray'}
+                      color={read ? 'var(--brand)' : 'var(--neutral)'}
                       data-row-action={read ? undefined : ''}
                       loading={readPending}
                       onClick={() => actions.setRead(c.id, !read)}
@@ -542,14 +541,7 @@ export const ChapterRow = memo(function ChapterRow({
             {(canDownload || canDelete || canSaveOffline) && c.hasFile && (
                 <Menu shadow="md" position="bottom-end" withinPortal>
                   <Menu.Target>
-                    <ActionIcon
-                        variant="subtle"
-                        color="var(--neutral)"
-                        data-row-action=""
-                        aria-label={t`More actions for ${chapterLbl}`}
-                    >
-                      <IconDotsVertical size={19} />
-                    </ActionIcon>
+                    <OverflowButton data-row-action="" aria-label={t`More actions for ${chapterLbl}`} />
                   </Menu.Target>
                   <Menu.Dropdown>
                     {canSaveOffline && (!offline || offline.state === 'error') && (
@@ -798,8 +790,6 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
                 <Progress
                     value={(done / downloaded.length) * 100}
                     color={watchedCount > readCount ? 'var(--anime)' : 'var(--brand)'}
-                    size="sm"
-                    radius="xl"
                     aria-label={t`Reading progress`}
                 />
               </div>
@@ -822,9 +812,7 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
             {readTracking ? (
                 <Menu shadow="md" position="bottom-end" withinPortal>
                   <Menu.Target>
-                    <ActionIcon variant="subtle" color="var(--neutral)" data-row-action="" aria-label={t`Actions for ${spanLabel}`}>
-                      <IconDotsVertical size={19} />
-                    </ActionIcon>
+                    <OverflowButton data-row-action="" aria-label={t`Actions for ${spanLabel}`} />
                   </Menu.Target>
                   <Menu.Dropdown>
                     <Menu.Item
@@ -978,8 +966,6 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
               <Progress
                   value={(readCount / downloaded.length) * 100}
                   color="var(--brand)"
-                  size="sm"
-                  radius="xl"
                   aria-label={t`Reading progress`}
               />
           )}
@@ -1005,9 +991,7 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
             )}
             <Menu shadow="md" position="bottom-end" withinPortal>
               <Menu.Target>
-                <ActionIcon variant="subtle" color="var(--neutral)" data-row-action="" aria-label={t`Actions for ${name}`}>
-                  <IconDotsVertical size={19} />
-                </ActionIcon>
+                <OverflowButton data-row-action="" aria-label={t`Actions for ${name}`} />
               </Menu.Target>
               <Menu.Dropdown>
                 {readTracking && (

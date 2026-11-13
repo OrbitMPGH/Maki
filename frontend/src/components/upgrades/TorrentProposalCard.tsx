@@ -1,4 +1,4 @@
-import { Badge, Button, Group, Paper, Stack, Text, Tooltip } from '@mantine/core'
+import { Badge, Button, Group, Stack, Text, Tooltip } from '@mantine/core'
 import { notifications } from '../../lib/toast'
 import { IconDownload, IconX } from '../../lib/icons'
 import { Link } from 'react-router-dom'
@@ -17,7 +17,9 @@ import type { TorrentProposalDto } from '../../api/upgrades'
 import { useAuth } from '../../auth/AuthProvider'
 import { useLabel } from '../../i18n-context'
 import { formatBytes } from '../../format'
+import { Callout } from '../ui/Callout'
 import { Panel } from '../ui/Panel'
+import { Thumb } from '../ui/Thumb'
 
 /**
  * A torrent volume release the nightly search found but did not grab on its own, waiting for a
@@ -133,16 +135,14 @@ export function TorrentProposalCard({
 
   if (banner) {
     return (
-      <Paper className="series-detail-chapter-hint" withBorder p="xs" radius="lg">
-        {body}
-      </Paper>
+      <Callout icon={IconDownload}>{body}</Callout>
     )
   }
   return (
     <Panel p="md">
       <div className="cover-panel">
-        <Link to={`/series/${seriesId}?tab=chapters`} className="cover-panel-cover" tabIndex={-1} aria-hidden>
-          {proposal.seriesCoverUrl && <img src={proposal.seriesCoverUrl} alt="" loading="lazy" decoding="async" />}
+        <Link to={`/series/${seriesId}?tab=chapters`} className="series-cell-link" tabIndex={-1} aria-hidden>
+          <Thumb src={proposal.seriesCoverUrl} size="lg" />
         </Link>
         <div className="cover-panel-body">{body}</div>
       </div>

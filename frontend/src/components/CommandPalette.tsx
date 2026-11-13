@@ -14,6 +14,7 @@ import { Trans, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import { useLabel } from '../i18n-context'
 import { seriesStatusVisual } from './ui/status'
+import { Thumb } from './ui/Thumb'
 import type { SettingsTabKey } from '../pages/settings/registry'
 import type { NavItem } from '../nav'
 
@@ -415,13 +416,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
                       <IconSend size={18} />
                     )
                   ) : r.coverUrl ? (
-                    <img
-                      src={r.coverUrl}
-                      alt=""
-                      width={24}
-                      height={32}
-                      style={{ objectFit: 'cover', borderRadius: 'var(--mantine-radius-xs)', flexShrink: 0 }}
-                    />
+                    <Thumb src={r.coverUrl} size="sm" aria-hidden />
                   ) : (
                     <IconBooks size={18} />
                   )}

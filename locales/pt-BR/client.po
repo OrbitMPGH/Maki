@@ -14650,7 +14650,7 @@ msgstr "Mês"
 msgid "More"
 msgstr "Mais"
 
-#: src/components/series/SeriesActionsMenu.tsx
+#: src/components/ui/OverflowButton.tsx
 #, fuzzy
 msgid "More actions"
 msgstr "Mais ações"

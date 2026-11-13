@@ -885,7 +885,6 @@ function FolderImport() {
                           {rowProgress ? (
                             <Stack gap={4} style={{ flex: 1 }}>
                               <Progress
-                                size="sm"
                                 value={
                                   rowProgress.total
                                     ? (100 * (rowProgress.current ?? 0)) / rowProgress.total
@@ -899,7 +898,7 @@ function FolderImport() {
                                     ? rowProgress.success
                                       ? 'var(--ok)'
                                       : 'var(--danger)'
-                                    : 'brand'
+                                    : undefined
                                 }
                                 aria-label={t`Import progress`}
                               />

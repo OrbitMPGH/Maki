@@ -1685,19 +1685,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 
 /* Series poster standing in for the severity icon. Sized inline (the bell and the page use
    different widths); everything here is the framing that does not change between the two. */
-.inbox-cover {
-  position: relative;
-  flex-shrink: 0;
-  border-radius: var(--mantine-radius-xs);
-  overflow: hidden;
-  background: var(--surface-hover);
-}
-.inbox-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
 /* Severity over the poster, bottom-right. Its own opaque chip so a triangle never lands on a
    same-coloured patch of cover art and disappears. */
 .inbox-cover-badge {
@@ -3124,20 +3111,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .next-up-row:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: -2px;
-}
-.next-up-thumb {
-  display: block;
-  overflow: hidden;
-  width: 30px;
-  aspect-ratio: 2 / 3;
-  border-radius: var(--mantine-radius-xs);
-  background: var(--surface-hover);
-}
-.next-up-thumb img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 .next-up-copy {
   display: flex;
@@ -8670,22 +8643,13 @@ body.column-resizing * {
 
 /* Rank rows and feed rows share a thumbnail. Small enough that a missing cover reads as a plain
    placeholder block rather than a hole in the layout. */
-.stats-thumb {
-  width: 32px;
-  height: 44px;
-  border-radius: var(--mantine-radius-xs);
-  object-fit: cover;
+.stats-avatar {
+  border-radius: 50%;
   flex-shrink: 0;
   background: var(--surface-2);
-  display: block;
-}
-.stats-thumb-empty {
-  border: 1px solid var(--border);
-}
-.stats-thumb-lg {
-  width: 44px;
-  height: 62px;
-  border-radius: var(--radius-control);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .signals-row + .signals-row {
@@ -8785,10 +8749,6 @@ body.column-resizing * {
   }
   .stats-row-midway > .stats-row-value small {
     display: inline;
-  }
-  .stats-thumb-lg {
-    width: 34px;
-    height: 48px;
   }
 }
 
@@ -9118,7 +9078,7 @@ body.column-resizing * {
   vertical-align: -1px;
 }
 
-/* Cover, title with a sub line or meter, value on the right. Covers use .stats-thumb. */
+/* Cover, title with a sub line or meter, value on the right. Covers use .thumb. */
 .stats-rows {
   display: flex;
   flex-direction: column;
@@ -11594,31 +11554,6 @@ body.reader-open {
   clip-path: polygon(14% 48%, 0 65%, 40% 100%, 100% 20%, 84% 4%, 38% 65%);
 }
 
-.row-cover {
-  border-radius: var(--radius-thumb);
-  overflow: hidden;
-  flex-shrink: 0;
-  background: var(--surface-2);
-}
-.row-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.row-cover-placeholder {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  place-items: center;
-  font-size: var(--type-micro);
-  /* Scheme-aware, unlike the grid card's placeholder: that one sits on cover art behind a dark
-     scrim and can hard-code a light grey, while this one sits on `--surface-2`, which is #f7f8fc
-     in the light theme. */
-  color: var(--mantine-color-dimmed);
-  padding: 4px;
-  text-align: center;
-}
-
 .row-body {
   flex: 1;
   min-width: 0;
@@ -11779,16 +11714,6 @@ body.reader-open {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
   border-radius: var(--radius-2xs);
-}
-.library-table-thumb {
-  width: 28px;
-  height: 42px;
-}
-.library-table-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
 }
 .library-table-name {
   min-width: 0;
@@ -12000,21 +11925,6 @@ body.reader-open {
 .health-attention > .health-check-group-body,
 .health-attention > .health-source-series {
   grid-column: 2 / -1;
-}
-/* An error or note inside a page or dialog: icon in the tone's colour, text, optional dismiss. */
-.health-note[data-tone='danger'] > svg {
-  color: var(--danger);
-}
-.health-note[data-tone='info'] > svg {
-  color: var(--info);
-}
-.health-note[data-tone='neutral'] > svg {
-  color: var(--ink-3);
-}
-.health-note-body {
-  flex: 1;
-  min-width: 0;
-  overflow-wrap: anywhere;
 }
 /* A collapsed type's own rows, opened under its summary: indented to the message column so they
    read as the group's members, each keeping its Open and Acknowledge. */
@@ -13485,20 +13395,6 @@ button.settings-row-head:hover,
     white-space: normal;
   }
 }
-/* A one-line caution inside a settings panel, where a full alert block would outweigh the fields. */
-.settings-note {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  color: var(--ink-2);
-  font-size: var(--type-meta);
-  line-height: 1.45;
-}
-.settings-note > svg {
-  flex-shrink: 0;
-  margin-top: 1px;
-  color: var(--warn);
-}
 /* --- Users & security -------------------------------------------------------- */
 .users-count {
   color: var(--ink-3);
@@ -14097,34 +13993,6 @@ button.settings-row-head:hover,
     flex-shrink: 0;
   }
 }
-/* The chapters tab's hints are one line under the toolbar: tone icon, words, then their actions. */
-.series-detail-chapter-hint {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  min-height: 40px;
-  border-bottom: 1px solid var(--hairline);
-}
-.series-detail-chapter-hint-icon {
-  flex-shrink: 0;
-  color: var(--warn);
-}
-.series-detail-chapter-hint-text {
-  flex: 1 1 20rem;
-  min-width: 0;
-}
-.series-detail-chapter-hint-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-inline-start: auto;
-}
-/* A full border and fill in the tone, with the leading icon in it; no stripe down the left. */
-[data-mantine-color-scheme] .series-files-hint {
-  border-color: color-mix(in srgb, var(--warn) 35%, var(--border));
-  background: color-mix(in srgb, var(--warn) 7%, var(--surface-2));
-}
 .series-detail-chapter-table {
   overflow: hidden;
 }
@@ -14468,23 +14336,6 @@ button.settings-row-head:hover,
   flex: 1 1 auto;
   min-width: 0;
   border-radius: var(--radius-control);
-}
-.recycle-bin-cover {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 28px;
-  height: 40px;
-  overflow: hidden;
-  border-radius: var(--radius-2xs);
-  background: var(--surface-2);
-  box-shadow: inset 0 0 0 1px var(--line-soft);
-  color: var(--ink-4);
-}
-.recycle-bin-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 .recycle-bin-group-text {
   display: flex;
@@ -15012,26 +14863,98 @@ button.settings-row-head:hover,
   margin-left: auto;
 }
 
-/* ModalNote: one line of attention inside a dialog, not a filled alert block. */
-.modal-note {
+/* Note: one quiet line with an icon in the tone's colour, in a dialog, a settings panel or a page. */
+.note {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
-  gap: var(--mantine-spacing-xs);
+  gap: 4px var(--mantine-spacing-xs);
   font-size: var(--type-meta);
+  line-height: 1.45;
   color: var(--ink-2);
 }
-.modal-note-icon {
+.note-icon {
   flex: none;
   margin-top: 1px;
-}
-.modal-note[data-tone='warn'] .modal-note-icon {
   color: var(--warn);
 }
-.modal-note[data-tone='info'] .modal-note-icon {
+.note[data-tone='info'] .note-icon {
   color: var(--info);
 }
-.modal-note-body {
+.note[data-tone='danger'] .note-icon {
+  color: var(--danger);
+}
+.note[data-tone='ok'] .note-icon {
+  color: var(--ok);
+}
+.note[data-tone='neutral'] .note-icon {
+  color: var(--ink-3);
+}
+.note-body {
+  flex: 1 1 12rem;
   min-width: 0;
+  overflow-wrap: anywhere;
+}
+.note-action {
+  margin-inline-start: auto;
+}
+
+/* Callout: a tinted box with a tone icon, text and optional actions at the end. */
+.callout {
+  --callout-tone: var(--ink-3);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  border: 1px solid color-mix(in srgb, var(--callout-tone) 35%, var(--border));
+  border-radius: var(--mantine-radius-lg);
+  background: color-mix(in srgb, var(--callout-tone) 7%, var(--surface-2));
+  font-size: var(--mantine-font-size-sm);
+  color: var(--ink-2);
+}
+.callout[data-tone='warn'] {
+  --callout-tone: var(--warn);
+}
+.callout[data-tone='info'] {
+  --callout-tone: var(--info);
+}
+.callout[data-tone='danger'] {
+  --callout-tone: var(--danger);
+}
+.callout[data-tone='ok'] {
+  --callout-tone: var(--ok);
+}
+.callout[data-tone='brand'] {
+  --callout-tone: var(--brand);
+}
+.callout-icon {
+  flex: none;
+  margin-top: 2px;
+  color: var(--callout-tone);
+}
+.callout[data-tone='brand'] .callout-icon {
+  color: var(--brand-fg);
+}
+.callout-body {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+.callout-title {
+  color: var(--ink-hi);
+  font-weight: 600;
+}
+.callout-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  margin-inline-start: auto;
+}
+/* Mantine Alert takes the same tint and edge, so the ones left in place match Callout. */
+.mantine-Alert-root[data-variant='light'] {
+  border: 1px solid color-mix(in srgb, var(--alert-color) 35%, var(--border));
+  background: color-mix(in srgb, var(--alert-color) 7%, var(--surface-2));
 }
 
 /* Hairline lists in the link, relink and import dialogs: mono file names, tabular figures. */
@@ -15079,29 +15002,8 @@ button.settings-row-head:hover,
   min-width: 4rem;
   text-align: right;
 }
-.modal-note[data-tone='danger'] .modal-note-icon {
-  color: var(--danger);
-}
-.modal-note[data-tone='ok'] .modal-note-icon {
-  color: var(--ok);
-}
 
-/* Settings tone notes, hairline tables and the custom source wizard's step strip and test report. */
-.settings-note[data-tone='danger'] > svg {
-  color: var(--danger);
-}
-.settings-note[data-tone='info'] > svg {
-  color: var(--info);
-}
-.settings-note-body {
-  display: flex;
-  flex: 1;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px 12px;
-  min-width: 0;
-}
+/* Hairline tables and the custom source wizard's step strip and test report. */
 .hair-table {
   width: 100%;
   border-collapse: collapse;
@@ -16212,7 +16114,7 @@ button.settings-row-head:hover,
     display: none;
   }
   /* The candidates and the input need the width more than the card needs its cover. */
-  .scrobble-review .cover-panel-cover {
+  .scrobble-review .cover-panel .thumb {
     display: none;
   }
   .scrobble-log-line {
@@ -16295,44 +16197,56 @@ button.settings-row-head:hover,
   gap: 12px;
   min-width: 220px;
 }
-.series-cell-cover {
-  width: 32px;
-  height: 48px;
+.series-cell-link {
+  display: flex;
   flex-shrink: 0;
+}
+/* The small cover for rows, lists and tables (components/ui/Thumb.tsx). Without a cover it is the
+   brand tile, the same one lib/coverFallback.ts swaps in for a broken URL. */
+.thumb {
+  --thumb-w: 36px;
+  --thumb-r: var(--radius-control);
+  display: inline-block;
+  position: relative;
+  flex-shrink: 0;
+  width: var(--thumb-w);
+  aspect-ratio: 2 / 3;
   overflow: hidden;
-  border-radius: 5px;
-  background: var(--surface-2);
+  vertical-align: middle;
+  border-radius: var(--thumb-r);
+  background: linear-gradient(
+    163deg,
+    color-mix(in srgb, var(--brand) 30%, var(--app-bg)),
+    color-mix(in srgb, var(--brand) 10%, var(--app-bg))
+  );
 }
-.series-cell[data-small] .series-cell-cover {
-  width: 24px;
-  height: 36px;
-  border-radius: 4px;
+.thumb[data-size='sm'] {
+  --thumb-w: 28px;
+  --thumb-r: var(--mantine-radius-xs);
 }
-.series-cell-cover img {
+.thumb[data-size='lg'] {
+  --thumb-w: 56px;
+  --thumb-r: var(--radius-thumb);
+}
+.thumb img {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
+}
+.thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--cover-rim);
+  pointer-events: none;
 }
 /* A panel led by its series' cover: a volume release on Activity > Upgrades, a Scrobble review. */
 .cover-panel {
   display: flex;
   align-items: flex-start;
   gap: var(--mantine-spacing-md);
-}
-.cover-panel-cover {
-  width: 48px;
-  height: 72px;
-  flex-shrink: 0;
-  overflow: hidden;
-  border-radius: var(--radius-thumb);
-  background: var(--surface-2);
-}
-.cover-panel-cover img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
 }
 .cover-panel-body {
   flex: 1;
@@ -16470,14 +16384,6 @@ button.settings-row-head:hover,
 .upcoming-name:hover .upcoming-title {
   color: var(--brand-fg);
 }
-.upcoming-cover {
-  flex: none;
-  width: 24px;
-  height: 36px;
-  border-radius: var(--radius-2xs);
-  object-fit: cover;
-  background: var(--surface-sunken);
-}
 .upcoming-title {
   flex: 1;
   min-width: 0;
@@ -16579,10 +16485,9 @@ button.settings-row-head:hover,
     min-width: 0;
     gap: 8px;
   }
-  .series-cell .series-cell-cover {
-    width: 24px;
-    height: 36px;
-    border-radius: 4px;
+  .series-cell .thumb {
+    --thumb-w: 28px;
+    --thumb-r: var(--mantine-radius-xs);
   }
 }
 
@@ -16592,14 +16497,6 @@ button.settings-row-head:hover,
   display: flex;
   align-items: flex-start;
   gap: var(--mantine-spacing-md);
-}
-.requests-row-cover {
-  width: 48px;
-  height: 72px;
-  flex-shrink: 0;
-  border-radius: var(--radius-thumb);
-  overflow: hidden;
-  background: var(--surface-2);
 }
 .requests-row-main {
   flex: 1;
@@ -16629,21 +16526,6 @@ button.settings-row-head:hover,
 }
 .archived-row[data-selected] {
   background: var(--brand-soft);
-}
-.archived-row-cover {
-  width: 36px;
-  height: 54px;
-  flex-shrink: 0;
-  overflow: hidden;
-  border-radius: var(--radius-thumb);
-  background: var(--surface-2);
-  box-shadow: 0 0 0 1px var(--cover-rim);
-}
-.archived-row-cover img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 .archived-row-main {
   flex: 1;
@@ -16768,9 +16650,9 @@ button.settings-row-head:hover,
   }
   /* Forces every column onto its own line under the title instead of letting
      them ration what is left of the first one. */
-  /* 34px is `.stats-thumb-lg` at this width. */
+  /* 40px is the medium `.thumb`. */
   .signals-row-main {
-    flex-basis: calc(100% - 34px - var(--mantine-spacing-sm));
+    flex-basis: calc(100% - 36px - var(--mantine-spacing-sm));
   }
   .signals-col {
     width: auto;

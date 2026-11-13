@@ -164,7 +164,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
                         </ActionIcon>
                         <ActionIcon
                           variant="subtle"
-                          color="var(--ink-3)"
+                          color="var(--danger)"
                           className="tag-manager-delete"
                           onClick={() => setDeleting({ id, label, seriesCount })}
                           aria-label={t`Delete ${label}`}

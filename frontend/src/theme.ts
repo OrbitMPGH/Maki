@@ -1,4 +1,5 @@
 import {
+  Alert,
   Badge,
   Button,
   Card,
@@ -15,6 +16,7 @@ import {
   Pagination,
   Paper,
   type PopoverProps,
+  Progress,
   Rating,
   type SegmentedControlProps,
   Table,
@@ -465,8 +467,15 @@ const themeBase: MantineThemeOverride = {
     Button: Button.extend({
       defaultProps: { radius: 'md' },
     }),
+    Alert: Alert.extend({
+      defaultProps: { variant: 'light', radius: 'lg' },
+    }),
     Badge: Badge.extend({
       defaultProps: { radius: 'sm', fw: 600 },
+    }),
+    // Blue is "happening now"; reading progress passes the accent explicitly.
+    Progress: Progress.extend({
+      defaultProps: { color: 'var(--info)', size: 'sm', radius: 'xl' },
     }),
     Rating: Rating.extend({
       defaultProps: { color: 'var(--rating)' },

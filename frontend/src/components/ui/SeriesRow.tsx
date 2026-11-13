@@ -8,6 +8,7 @@ import {
   IconEyeOff,
 } from '../../lib/icons'
 import { Link } from 'react-router-dom'
+import { Thumb } from './Thumb'
 import type { SeriesDto } from '../../api/types'
 import type { OfflineAvailability } from './CoverCard'
 import {
@@ -62,7 +63,6 @@ export const SeriesRow = memo(function SeriesRow({
   const newTip = plural(newChapterCount, { one: '# recent chapter file', other: '# recent chapter files' })
 
   const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
-  const thumbH = thumbSize * 1.5
 
   return (
     <Link
@@ -79,16 +79,7 @@ export const SeriesRow = memo(function SeriesRow({
     >
       {selectMode && <span className="row-check" data-checked={selected || undefined} />}
 
-      <div
-        className="row-cover"
-        style={{ width: thumbSize, height: thumbH, flexShrink: 0 }}
-      >
-        {series.coverUrl ? (
-          <img src={series.coverUrl} alt="" loading="lazy" decoding="async" />
-        ) : (
-          <div className="row-cover-placeholder" aria-hidden>{series.displayTitle}</div>
-        )}
-      </div>
+      <Thumb className="row-cover" src={series.coverUrl} size="lg" width={thumbSize} />
 
       <div className="row-body">
         <div className="row-header">

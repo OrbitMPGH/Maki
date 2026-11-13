@@ -19,7 +19,6 @@ import {
   IconAlertCircle,
   IconBookmark,
   IconBookmarkFilled,
-  IconDots,
   IconExternalLink,
   IconEyeOff,
   IconHistory,
@@ -27,6 +26,7 @@ import {
   IconPlus,
   IconThumbDown,
 } from '../../lib/icons'
+import { OverflowButton } from '../../components/ui/OverflowButton'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -378,9 +378,7 @@ function ShortlistRow({
               }}
             >
               <Menu.Target>
-                <ActionIcon size="lg" variant="subtle" color="var(--neutral)" aria-label={t`More actions for ${title}`}>
-                  <IconDots size={18} />
-                </ActionIcon>
+                <OverflowButton aria-label={t`More actions for ${title}`} />
               </Menu.Target>
               <Menu.Dropdown>
                 <Menu.Item leftSection={<IconPencil size={16} />} onClick={() => (editAfterMenu.current = true)}>

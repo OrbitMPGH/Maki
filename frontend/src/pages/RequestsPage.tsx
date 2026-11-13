@@ -8,7 +8,6 @@ import {
   Badge,
   Button,
   Group,
-  Image,
   Modal,
   NumberInput,
   Tabs,
@@ -54,8 +53,9 @@ import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { okButtonVars } from '../components/ui/status'
 import { useLabel } from '../i18n-context'
-import { formatDate } from '../format'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { Thumb } from '../components/ui/Thumb'
+import { TimeAgo } from '../components/ui/TimeAgo'
 
 const STATUS_COLOR: Record<SeriesRequest['status'], string> = {
   Pending: 'var(--warn)',
@@ -280,9 +280,7 @@ export default function RequestsPage() {
             return (
               <Panel key={r.id} p="sm">
                 <div className="requests-row">
-                  <div className="requests-row-cover" data-series-cover={r.seriesId ?? undefined}>
-                    {r.coverUrl && <Image src={r.coverUrl} w={48} h={72} fit="cover" alt="" />}
-                  </div>
+                  <Thumb src={r.coverUrl} size="lg" data-series-cover={r.seriesId ?? undefined} />
 
                   <div className="requests-row-main">
                     <Group gap="xs">
@@ -308,7 +306,7 @@ export default function RequestsPage() {
                       </Text>
                       <Divider orientation="vertical" />
                       <Text size="sm" c="var(--ink-3)">
-                        {r.requestedBy}, {formatDate(r.created)}
+                        {r.requestedBy}, <TimeAgo value={r.created} />
                       </Text>
                     </Group>
 

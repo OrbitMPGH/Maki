@@ -32,8 +32,6 @@ import {
   IconCircleCheck,
   IconChevronDown,
   IconCloudOff,
-  IconInfoCircle,
-  IconX,
   IconClock,
   IconClockPlay,
   IconDatabase,
@@ -92,6 +90,7 @@ import { SectionHeader } from '../components/ui/SectionHeader'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
 import { ModalFooter, ModalHeading, ModalNote } from '../components/ui/ModalShell'
+import { Note } from '../components/ui/Note'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { IconBrandMark } from '../components/IconBrandMark'
@@ -106,6 +105,7 @@ import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { relativeTime } from '../components/ui/time'
+import { TimeAgo } from '../components/ui/TimeAgo'
 
 /** Select value standing for "no pinned source": let the series' priority order decide. */
 const AUTOMATIC = 'automatic'
@@ -920,7 +920,7 @@ export default function HealthPage() {
                                 </ul>
                               ) : (
                                 <Text size="xs" c="var(--ink-3)">
-                                  {file.analyzedAt ? formatDateTime(file.analyzedAt) : <Trans>Not analyzed</Trans>}
+                                  {file.analyzedAt ? <TimeAgo value={file.analyzedAt} /> : <Trans>Not analyzed</Trans>}
                                 </Text>
                               )}
                               {foundAt && (
@@ -1938,55 +1938,6 @@ function ReviewSkeleton() {
       <Skeleton h={10} w="80%" />
       <Skeleton h={120} />
     </Stack>
-  )
-}
-
-type NoteTone = 'danger' | 'warn' | 'info' | 'neutral'
-
-const NOTE_ICON: Record<NoteTone, Icon> = {
-  danger: IconAlertOctagon,
-  warn: IconAlertTriangle,
-  info: IconInfoCircle,
-  neutral: IconInfoCircle,
-}
-
-/** A short statement with an icon in the tone's colour, in place of a filled alert block. */
-function Note({
-  tone: noteTone = 'warn',
-  mt,
-  mb,
-  closeLabel,
-  onClose,
-  children,
-}: {
-  tone?: NoteTone
-  /** Margin above, for notes that follow content in a panel. */
-  mt?: boolean
-  /** Margin below, for notes that sit above the page body. */
-  mb?: boolean
-  closeLabel?: string
-  onClose?: () => void
-  children: ReactNode
-}) {
-  const NoteIcon = NOTE_ICON[noteTone]
-  return (
-    <div
-      className="settings-note health-note"
-      data-tone={noteTone}
-      role={noteTone === 'danger' ? 'alert' : undefined}
-      style={{
-        marginTop: mt ? 'var(--mantine-spacing-md)' : undefined,
-        marginBottom: mb ? 'var(--mantine-spacing-lg)' : undefined,
-      }}
-    >
-      <NoteIcon size={16} aria-hidden />
-      <div className="health-note-body">{children}</div>
-      {closeLabel && onClose && (
-        <ActionIcon variant="subtle" color="var(--ink-3)" size="sm" aria-label={closeLabel} onClick={onClose}>
-          <IconX size={14} />
-        </ActionIcon>
-      )}
-    </div>
   )
 }
 
@@ -3332,7 +3283,7 @@ function OperationGroup({ group, onReview }: { group: OperationGroupData; onRevi
                 small
               />
               <Text size="xs" c="var(--ink-3)" className="health-op-when">
-                {formatDateTime(op.createdAt)}
+                <TimeAgo value={op.createdAt} />
               </Text>
               <Button size="compact-sm" variant="default" onClick={() => onReview(op.id)}>
                 {op.status === 'review' ? <Trans>Review</Trans> : <Trans>Details</Trans>}
@@ -3894,7 +3845,7 @@ function NextRun({ at }: { at: string }) {
   const soon = new Date(at).getTime() - Date.now() < 60_000
   return (
     <Tooltip label={formatDateTime(at)} withArrow>
-      <span>{soon ? t`in under a minute` : relativeTime(at)}</span>
+      <span>{soon ? t`in under a minute` : relativeTime(at, 'narrow')}</span>
     </Tooltip>
   )
 }
@@ -4057,7 +4008,7 @@ function ScheduledPanel() {
                               }
                               withArrow
                             >
-                              <span>{relativeTime(job.lastRunUtc)}</span>
+                              <span>{relativeTime(job.lastRunUtc, 'narrow')}</span>
                             </Tooltip>
                           ) : (
                             <Trans>Not yet</Trans>

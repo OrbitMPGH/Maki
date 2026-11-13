@@ -8,7 +8,6 @@ import { useLingui as useLinguiReact } from '@lingui/react'
 import type { MessageDescriptor } from '@lingui/core'
 import {
   ActionIcon,
-  Alert,
   Anchor,
   Box,
   Button,
@@ -32,7 +31,6 @@ import {
   VisuallyHidden,
 } from '@mantine/core'
 import {
-  IconAlertTriangle,
   IconArrowLeft,
   IconBook,
   IconChevronDown,
@@ -223,6 +221,7 @@ import {
 } from '../components/ui/status'
 import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { MonoValue } from '../components/ui/MonoValue'
+import { Callout } from '../components/ui/Callout'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { ModalFooter, ModalHeading } from '../components/ui/ModalShell'
 import { MetaList } from '../components/ui/MetaList'
@@ -2750,10 +2749,8 @@ function SeriesDetailBody() {
               <div className="series-split-row">
                 <Panel className="series-detail-source-panel series-machine">
                   {series.numberingClash && (
-                      <Alert
-                          mb="md"
-                          color="var(--warn)"
-                          icon={<IconAlertTriangle size={18} />}
+                      <Callout
+                          style={{ marginBottom: 'var(--mantine-spacing-md)' }}
                           title={t`Sources disagree on chapter numbering`}
                       >
                         {(() => {
@@ -2775,23 +2772,19 @@ function SeriesDetailBody() {
                               </>
                           )
                         })()}
-                      </Alert>
+                      </Callout>
                   )}
                   <FigureStripReveal shown={delistedWithFileIds.length > 0}>
                     {alertDelistedIds.length > 0 && (
-                      <Alert
-                          mb="md"
-                          color="var(--warn)"
-                          icon={<IconLinkOff size={18} />}
+                      <Callout
+                          icon={IconLinkOff}
+                          style={{ marginBottom: 'var(--mantine-spacing-md)' }}
                           title={plural(alertDelistedIds.length, {
                             one: '# downloaded chapter is no longer listed',
                             other: '# downloaded chapters are no longer listed',
                           })}
-                      >
-                        <Text size="sm">
-                          <Trans>No source lists them any more. A source may have filed them here by mistake, or dropped them after a licence takedown, so check the files before reading them.</Trans>
-                        </Text>
-                        <Group gap="xs" mt="sm">
+                          actions={
+                            <>
                           <Button
                               size="xs"
                               variant="light"
@@ -2814,8 +2807,13 @@ function SeriesDetailBody() {
                                 <Trans>Keep them</Trans>
                               </Button>
                           )}
-                        </Group>
-                      </Alert>
+                            </>
+                          }
+                      >
+                        <Text size="sm">
+                          <Trans>No source lists them any more. A source may have filed them here by mistake, or dropped them after a licence takedown, so check the files before reading them.</Trans>
+                        </Text>
+                      </Callout>
                     )}
                   </FigureStripReveal>
                   {canManageSources && (
@@ -3270,58 +3268,55 @@ function SeriesDetailBody() {
             {isMobile && chapterSearchInput}
 
             {!selectMode && fileMissingFilterCount > 0 && (
-                <Paper className="series-files-hint" withBorder p="xs" radius="lg" role="status">
-                  <Group gap="sm" wrap="wrap" justify="space-between">
-                    <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: '1 1 20rem', minWidth: 0 }}>
-                      <IconFileUnknown size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} aria-hidden />
-                      <Text size="sm" c="var(--ink-2)" className="tnum">
-                        <Plural
-                            value={fileMissingFilterCount}
-                            one="# chapter has no file on disk."
-                            other="# chapters have no file on disk."
-                        />{' '}
-                        {canEditMetadata && (
-                            <Trans>If they are in the folder under other names, Relink files finds them.</Trans>
-                        )}
-                      </Text>
-                    </Group>
-                    {canEditMetadata && (
+                <Callout
+                    icon={IconFileUnknown}
+                    role="status"
+                    actions={canEditMetadata && (
                         <Button size="xs" variant="default" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
                           <Trans>Relink files</Trans>
                         </Button>
                     )}
-                  </Group>
-                </Paper>
+                >
+                  <Text size="sm" c="var(--ink-2)" className="tnum">
+                    <Plural
+                        value={fileMissingFilterCount}
+                        one="# chapter has no file on disk."
+                        other="# chapters have no file on disk."
+                    />{' '}
+                    {canEditMetadata && (
+                        <Trans>If they are in the folder under other names, Relink files finds them.</Trans>
+                    )}
+                  </Text>
+                </Callout>
             )}
 
             {/* Two closed issues came from people who had a file on disk and could not find how to
                 tell Maki which chapters it holds. Point at it from the tab they were looking at. */}
             {!selectMode && canEditMetadata && unlinkedFilesOnDisk > 0 && (
-                <Paper className="series-files-hint" withBorder p="xs" radius="lg">
-                  <Group gap="sm" wrap="wrap" justify="space-between">
-                    <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: '1 1 20rem', minWidth: 0 }}>
-                      <IconLink size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} aria-hidden />
-                      <Text size="sm" c="var(--ink-2)">
-                        <Plural
-                            value={unlinkedFilesOnDisk}
-                            one="# file in the series folder isn't linked to any chapter."
-                            other="# files in the series folder aren't linked to any chapter."
-                        />{' '}
-                        <Text span inherit c="var(--ink-3)">
-                          <Trans>Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand.</Trans>
-                        </Text>
-                      </Text>
-                    </Group>
-                    <Group gap="xs" wrap="nowrap">
-                      <Button size="xs" variant="default" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
-                        <Trans>Relink files</Trans>
-                      </Button>
-                      <Button size="xs" variant="subtle" color="var(--ink-3)" onClick={() => changeTab('files')}>
-                        <Trans>Link by hand</Trans>
-                      </Button>
-                    </Group>
-                  </Group>
-                </Paper>
+                <Callout
+                    icon={IconLink}
+                    actions={
+                      <>
+                        <Button size="xs" variant="default" leftSection={<IconWand size={16} />} onClick={() => setRelinkOpen(true)}>
+                          <Trans>Relink files</Trans>
+                        </Button>
+                        <Button size="xs" variant="subtle" color="var(--ink-3)" onClick={() => changeTab('files')}>
+                          <Trans>Link by hand</Trans>
+                        </Button>
+                      </>
+                    }
+                >
+                  <Text size="sm" c="var(--ink-2)">
+                    <Plural
+                        value={unlinkedFilesOnDisk}
+                        one="# file in the series folder isn't linked to any chapter."
+                        other="# files in the series folder aren't linked to any chapter."
+                    />{' '}
+                    <Text span inherit c="var(--ink-3)">
+                      <Trans>Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand.</Trans>
+                    </Text>
+                  </Text>
+                </Callout>
             )}
 
             {!selectMode && canDownload && pendingProposal && (
@@ -3329,9 +3324,15 @@ function SeriesDetailBody() {
             )}
 
             {!selectMode && canDownload && volumeHold && missingWanted > 0 && (
-                <div className="series-detail-chapter-hint">
-                  <IconHourglass size={16} className="series-detail-chapter-hint-icon" aria-hidden />
-                  <Text size="sm" c="var(--ink-2)" className="series-detail-chapter-hint-text">
+                <Callout
+                    icon={IconHourglass}
+                    actions={
+                      <Button size="compact-sm" variant="subtle" loading={searchMissing.isPending} onClick={requestQueueAllWanted}>
+                        <Trans>Download from sources now</Trans>
+                      </Button>
+                    }
+                >
+                  <Text size="sm" c="var(--ink-2)">
                     {volumeHold.reason === 'searching'
                         ? <Trans>Looking for a volume release before downloading from sources.</Trans>
                         : volumeHold.reason === 'proposal'
@@ -3345,12 +3346,7 @@ function SeriesDetailBody() {
                               : <Trans>Chapters up to {holdThrough} wait for it until {holdUntil}. Later ones download as usual.</Trans>}
                     </Text>
                   </Text>
-                  <div className="series-detail-chapter-hint-actions">
-                    <Button size="compact-sm" variant="subtle" loading={searchMissing.isPending} onClick={requestQueueAllWanted}>
-                      <Trans>Download from sources now</Trans>
-                    </Button>
-                  </div>
-                </div>
+                </Callout>
             )}
 
             <ConfirmDialog

@@ -1,5 +1,4 @@
 import type { ReactNode } from 'react'
-import { IconAlertOctagon, IconAlertTriangle, IconCheck, IconInfoCircle } from '../../lib/icons'
 
 /**
  * A utility modal's title with one line under it saying what the dialog is for. Pass as the Modal's
@@ -33,20 +32,5 @@ export function ModalFooter({ status, children }: { status?: ReactNode; children
   )
 }
 
-/** One line inside a dialog that something needs attention: an icon in the tone's colour, then the words. */
-export function ModalNote({
-  tone = 'warn',
-  children,
-}: {
-  tone?: 'warn' | 'info' | 'danger' | 'ok'
-  children: ReactNode
-}) {
-  const Icon =
-    tone === 'info' ? IconInfoCircle : tone === 'ok' ? IconCheck : tone === 'danger' ? IconAlertOctagon : IconAlertTriangle
-  return (
-    <div className="modal-note" data-tone={tone} role={tone === 'warn' || tone === 'danger' ? 'status' : undefined}>
-      <Icon size={16} className="modal-note-icon" aria-hidden />
-      <div className="modal-note-body">{children}</div>
-    </div>
-  )
-}
+/** The shared one-line Note, under the name the dialogs already use. */
+export { Note as ModalNote } from './Note'
