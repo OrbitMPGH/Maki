@@ -130,7 +130,7 @@ public static class SeriesCompletion
 
         var tallies = await LibraryListRows.ChapterTalliesAsync(
             db.Chapters.IgnoreQueryFilters().Where(c => c.SeriesId == series.Id), ReadCounts.SeenFor(db, userId), ct);
-        return LibraryListRows.ProgressTotals(
+        return LibraryListRows.SeriesLength(
             series, tallies.GetValueOrDefault(series.Id), read, readSpecials, unmonitorSpecials);
     }
 }

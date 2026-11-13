@@ -970,9 +970,8 @@ public class SeriesController(
         // Through ReadCounts so this page and the library grid can't disagree about what "read" is.
         var readRows = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == id, ct);
         int? readCount = readRows > 0 ? readRows : null;
-        var readSpecials = (await LibraryListRows.ReadSpecialCountsBySeriesAsync(db, [id], ct)).GetValueOrDefault(id);
         var unmonitorSpecials = await LibraryListRows.UnmonitorSpecialsAsync(appSettings, ct);
-        var progress = LibraryListRows.ProgressTotals(series, counts, readCount, readSpecials, unmonitorSpecials);
+        var progress = LibraryListRows.ProgressTotals(counts, readCount);
 
         var userState = await db.UserSeriesStates
             .Where(x => x.SeriesId == id)
@@ -1008,9 +1007,7 @@ public class SeriesController(
             ProgressTotal = progress.Total,
             ProgressHave = progress.Have,
             ProgressRead = progress.Read,
-            SpecialsCounted = progress.SpecialsCounted,
             ListedSpecials = progress.ListedSpecials,
-            IncludedSpecials = progress.IncludedSpecials,
             ProgressSkipped = progress.Skipped,
             ProvisionalRating = userState?.ProvisionalRating,
             ProvisionalAtChapter = userState?.ProvisionalAtChapter,

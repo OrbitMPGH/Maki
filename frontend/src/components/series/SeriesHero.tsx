@@ -150,14 +150,7 @@ export function SeriesHero({
     const wantedSwitches = useMemo(() => (chapters ?? []).filter((c) => c.wanted).length, [chapters])
 
     // The server counts a file the health scan found missing as obtained; the Chapters tab does not.
-    // Only the ones inside the progress total come off it: skipped specials were never in it.
-    const fileMissing = useMemo(
-        () =>
-            (chapters ?? []).filter(
-                (c) => c.fileMissing && (series.specialsCounted !== false || c.number === null || Number.isInteger(c.number)),
-            ).length,
-        [chapters, series.specialsCounted],
-    )
+    const fileMissing = useMemo(() => (chapters ?? []).filter((c) => c.fileMissing).length, [chapters])
     const progress = useMemo(
         () =>
             seriesProgressVisual(
@@ -196,12 +189,11 @@ export function SeriesHero({
           ? 0
           : Math.max(0, series.knownChapterCount - totalCount)
     const readChapters = scoped && series.progressRead !== undefined ? series.progressRead : series.readChapterCount
-    const readCount = readChapters ?? 0
-    // Reading counts against the series' total, not what happens to be downloaded: Smart mode keeps
-    // only the next few on disk, which would read as nearly finished all the way through.
-    // Still named haveCount so the "{readCount} / {haveCount}" message keeps its translations.
-    const haveCount = scoped ? progress.total : progress.have
-    const extrasIncluded = scoped && series.specialsCounted ? (series.includedSpecials ?? series.listedSpecials ?? 0) : 0
+    // Reading counts what is downloaded, as the reader's own progress does; On disk below says how
+    // many are wanted, and the reader's tooltip how many are in the series.
+    const haveCount = progress.have
+    // A chapter read whose file has since gone is still read, but not among the downloaded ones.
+    const readCount = Math.min(readChapters ?? 0, haveCount)
     const { highest = 0, total: listed = 0, missing = 0 } = sourceGap ?? {}
     // Named as the Chapters tab names it, so both lines share one translated message.
     const fileMissingFilterCount = noFileCount
@@ -429,7 +421,6 @@ export function SeriesHero({
                                         readCount: readTracking ? readChapters : null,
                                         readUpTo: readTracking ? readUpTo : null,
                                         nextChapter,
-                                        specialsCounted: scoped ? (series.specialsCounted ?? true) : undefined,
                                     }}
                                 />
                             )}
@@ -459,11 +450,6 @@ export function SeriesHero({
                                     >
                                         <div className="hero-bar-fill" data-read style={{ width: `${Math.min(100, (readCount / haveCount) * 100)}%` }} />
                                     </div>
-                                    {extrasIncluded > 0 && (
-                                        <span className="hero-bar-subline tnum">
-                                            <Plural value={extrasIncluded} one="# extra included" other="# extras included" />
-                                        </span>
-                                    )}
                                 </div>
                             )}
                             <div className="hero-bar-row">

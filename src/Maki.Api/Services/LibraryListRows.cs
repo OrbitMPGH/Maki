@@ -40,8 +40,6 @@ internal static class LibraryListRows
             .ToDictionaryAsync(x => x.SeriesId, ct);
 
         var readCounts = await ReadChapterCountsBySeriesAsync(db, ids, ct);
-        var readSpecialCounts = await ReadSpecialCountsBySeriesAsync(db, ids, ct);
-        var unmonitorSpecials = await UnmonitorSpecialsAsync(appSettings, ct);
 
         // Flat join-table read; the SeriesTag query filter keeps it to series the caller can see.
         var tagIdsBySeries = (await ForSeries(db.SeriesTags, ids, x => x.SeriesId)
@@ -134,7 +132,7 @@ internal static class LibraryListRows
             int? readCount = readCounts.TryGetValue(s.Id, out var read) ? read : null;
             var mappings = mappingsBySeries.GetValueOrDefault(s.Id) ?? [];
             var userState = userStates.GetValueOrDefault(s.Id);
-            var progress = ProgressTotals(s, counts, readCount, readSpecialCounts.GetValueOrDefault(s.Id), unmonitorSpecials);
+            var progress = ProgressTotals(counts, readCount);
             return SeriesDto.FromEntity(
                 s, counts?.Wanted ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0,
                 queue?.Queued ?? 0, queue?.Downloading ?? 0, readCount,
@@ -152,9 +150,7 @@ internal static class LibraryListRows
                 ProgressTotal = progress.Total,
                 ProgressHave = progress.Have,
                 ProgressRead = progress.Read,
-                SpecialsCounted = progress.SpecialsCounted,
                 ListedSpecials = progress.ListedSpecials,
-                IncludedSpecials = progress.IncludedSpecials,
                 ProgressSkipped = progress.Skipped,
                 ProvisionalRating = userState?.ProvisionalRating,
                 ProvisionalAtChapter = userState?.ProvisionalAtChapter,
@@ -460,20 +456,14 @@ internal static class LibraryListRows
         return tallies;
     }
 
-    /// <summary>
-    /// Per series, how many of the read chapters <see cref="ReadChapterCountsBySeriesAsync"/> counts
-    /// are specials, so <see cref="SeriesProgressScope"/> can leave them out when specials are skipped.
-    /// </summary>
-    internal static async Task<Dictionary<int, int>> ReadSpecialCountsBySeriesAsync(
-        MakiDbContext db, int[]? ids, CancellationToken ct) =>
-        await ForSeries(ReadCounts.Read(db), ids, p => p.SeriesId)
-            .Where(p => db.Chapters.Any(c => c.Id == p.ChapterId && c.Number != null &&
-                                             c.Number != (decimal)(long)c.Number))
-            .GroupBy(p => p.SeriesId)
-            .Select(g => new { SeriesId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.SeriesId, x => x.Count, ct);
+    /// <summary>What Reading and Downloads count against (<see cref="SeriesProgressScope.Wanted"/>).</summary>
+    internal static SeriesProgressScope.Totals ProgressTotals(ChapterTallies? counts, int? read) =>
+        SeriesProgressScope.Wanted(
+            counts?.Wanted ?? 0, (counts?.WithFile ?? 0) + (counts?.Removed ?? 0), read,
+            counts?.Specials ?? 0, counts?.SwitchedOff ?? 0, counts?.SwitchedOffSpecials ?? 0);
 
-    internal static SeriesProgressScope.Totals ProgressTotals(
+    /// <summary>How long the series is (<see cref="SeriesProgressScope.Compute"/>), for the automatic Completed only.</summary>
+    internal static SeriesProgressScope.Totals SeriesLength(
         Series series, ChapterTallies? counts, int? read, int readSpecials, bool unmonitorSpecials) =>
         SeriesProgressScope.Compute(
             series, counts?.Known ?? 0, (counts?.WithFile ?? 0) + (counts?.Removed ?? 0),

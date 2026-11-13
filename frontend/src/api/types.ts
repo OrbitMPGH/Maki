@@ -93,21 +93,17 @@ export interface SeriesDto {
   /** Chapters whose file Maki deleted on purpose. Counted in `wantedChapterCount`, never missing. */
   removedChapterCount: number
   /**
-   * The one total Reading and Downloads count against: the locked or MangaBaka total (raised to the
-   * highest whole chapter listed), plus listed specials only while `specialsCounted`. Zero on
-   * responses that carry no counts, which fall back to the wanted total.
+   * The total Reading and Downloads count against: the chapters you want, plus any you have, had or
+   * read. MangaBaka's total never sets it. Zero when nothing is wanted, and on responses that carry
+   * no counts; both fall back to the wanted total, then every listed chapter.
    */
   progressTotal?: number
-  /** Chapters had (on disk or removed on purpose) within `progressTotal`'s scope. */
+  /** Chapters had (on disk or removed on purpose). */
   progressHave?: number
-  /** `readChapterCount` within `progressTotal`'s scope; null when nothing has been read. */
+  /** `readChapterCount` clamped to `progressTotal`; null when nothing has been read. */
   progressRead?: number | null
-  /** Specials count: neither the global "unmonitor specials" setting nor Main only mode is on. */
-  specialsCounted?: boolean
   /** Listed chapters with a decimal number. */
   listedSpecials?: number
-  /** Specials inside `progressTotal`: listed and not switched off; 0 while specials are left out. */
-  includedSpecials?: number
   /** Listed chapters `progressTotal` leaves out because Wanted was switched off. */
   progressSkipped?: number
   /** "Default" | "On" | "Off": this series' choice about deleting read chapter files. */

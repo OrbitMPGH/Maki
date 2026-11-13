@@ -80,12 +80,11 @@ public sealed class ChapterFileRemovedTests : IDisposable
         }
 
         using var scoped = _db.NewContext(Owner);
-        var series = scoped.Series.Single(s => s.Id == seriesId);
         var tallies = await LibraryListRows.ChapterTalliesAsync(
             scoped.Chapters.Where(c => c.SeriesId == seriesId), ReadCounts.Read(scoped), CancellationToken.None);
         var counts = tallies[seriesId];
         var readCount = ReadCounts.Read(scoped).Count(p => p.SeriesId == seriesId);
-        var totals = LibraryListRows.ProgressTotals(series, counts, readCount, 0, unmonitorSpecials: false);
+        var totals = LibraryListRows.ProgressTotals(counts, readCount);
 
         Assert.Equal(3, counts.Wanted);
         Assert.Equal(1, counts.SwitchedOff);

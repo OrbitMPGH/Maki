@@ -1790,14 +1790,8 @@ function SeriesDetailBody() {
   const { total: chaptersCounted } = progress
   // The server counts a chapter whose file vanished from disk as obtained; the heading sits next to
   // the "no file on disk" count, so it leaves those out.
-  // Skipped specials were never in the total, so their missing files don't come off it either.
-  const specialsOut = series?.specialsCounted === false && (series.progressTotal ?? 0) > 0
-  const fileMissingInTotal = specialsOut
-      ? (chapters ?? []).filter((c) => chapterFilters.fileMissing(c) && (c.number === null || Number.isInteger(c.number))).length
-      : fileMissingFilterCount
-  const chaptersHave = Math.max(0, progress.have - fileMissingInTotal)
-  // The header sits beside the Progress panel's numbers, so it reads the same scoped count.
-  const readInTotal = specialsOut && series.progressRead != null ? series.progressRead : readFilterCount
+  const chaptersHave = Math.max(0, progress.have - fileMissingFilterCount)
+  const readInTotal = readFilterCount
   const wantedColumnTip = t`Switch on for chapters you want. They count toward the series total and can be downloaded. Chapters you already have count either way.`
   const chapterFilterTips: Record<string, string> = {
     wanted: t`Chapters with Wanted switched on, downloaded or not.`,

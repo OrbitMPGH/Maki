@@ -1383,10 +1383,6 @@ msgstr "{expiringSoon, plural, one {# goes within {SOON_DAYS} days} other {# go 
 msgid "{exposed} read or watched elsewhere"
 msgstr "{exposed} read or watched elsewhere"
 
-#: src/components/series/SeriesHero.tsx
-msgid "{extrasIncluded, plural, one {# extra included} other {# extras included}}"
-msgstr "{extrasIncluded, plural, one {# extra included} other {# extras included}}"
-
 #: src/components/SourceMappingsSection.tsx
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
 msgstr "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
@@ -1978,10 +1974,6 @@ msgstr "{newCount, plural, one {# new} other {# new}}"
 #: src/components/series/SeriesHero.tsx
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 msgstr "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
-
-#: src/components/series/ChapterCountsInfo.tsx
-msgid "{notWanted, plural, one {Reading and Downloads leave out # chapter you switched off.} other {Reading and Downloads leave out # chapters you switched off.}}"
-msgstr "{notWanted, plural, one {Reading and Downloads leave out # chapter you switched off.} other {Reading and Downloads leave out # chapters you switched off.}}"
 
 #: src/components/series/ChapterCountsInfo.tsx
 msgid "{offNumbering, plural, one {# of them has a decimal number or none, like an extra or a special.} other {# of them have a decimal number or none, like extras or specials.}}"
@@ -16365,14 +16357,6 @@ msgstr "Readers without a display name appear under their login name on shared n
 #: src/pages/stats/sectionList.ts
 msgid "Reading"
 msgstr "Reading"
-
-#: src/components/series/ChapterCountsInfo.tsx
-msgid "Reading and Downloads count extras, since you keep specials."
-msgstr "Reading and Downloads count extras, since you keep specials."
-
-#: src/components/series/ChapterCountsInfo.tsx
-msgid "Reading and Downloads leave extras out, since specials are unmonitored."
-msgstr "Reading and Downloads leave extras out, since specials are unmonitored."
 
 #: src/components/settings/UsersSection.tsx
 msgid "Reading and sharing"

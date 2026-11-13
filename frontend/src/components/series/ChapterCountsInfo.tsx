@@ -23,18 +23,12 @@ export interface ChapterCounts {
     readCount: number | null
     readUpTo: number | null
     nextChapter: string | null
-    /**
-     * Set when the panel counts against the series total (SeriesDto.progressTotal) rather than the
-     * wanted chapters: whether specials are part of that total.
-     */
-    specialsCounted?: boolean
 }
 
 /** Why the series page shows several chapter counts that disagree, one plain sentence each. */
 export function ChapterCountsInfo({ counts }: { counts: ChapterCounts }) {
     const { t } = useLingui()
-    const { listed, wanted, notWanted, offNumbering, fileMissing, totalChapters, readCount, nextChapter, specialsCounted } = counts
-    const scoped = specialsCounted !== undefined
+    const { listed, wanted, notWanted, offNumbering, fileMissing, totalChapters, readCount, nextChapter } = counts
     const highest = counts.highestListed != null ? formatDecimal(counts.highestListed) : null
     const readUpTo = counts.readUpTo != null ? formatDecimal(counts.readUpTo) : null
     const label = t`How these chapter counts add up`
@@ -65,28 +59,7 @@ export function ChapterCountsInfo({ counts }: { counts: ChapterCounts }) {
                             />
                         </Text>
                     )}
-                    {scoped ? (
-                        <>
-                            {offNumbering > 0 && (
-                                <Text size="sm">
-                                    {specialsCounted ? (
-                                        <Trans>Reading and Downloads count extras, since you keep specials.</Trans>
-                                    ) : (
-                                        <Trans>Reading and Downloads leave extras out, since specials are unmonitored.</Trans>
-                                    )}
-                                </Text>
-                            )}
-                            {notWanted > 0 && (
-                                <Text size="sm">
-                                    <Plural
-                                        value={notWanted}
-                                        one="Reading and Downloads leave out # chapter you switched off."
-                                        other="Reading and Downloads leave out # chapters you switched off."
-                                    />
-                                </Text>
-                            )}
-                        </>
-                    ) : counts.nothingWanted ? (
+                    {counts.nothingWanted ? (
                         <Text size="sm">
                             <Trans>Nothing is wanted, so Downloads counts against every listed chapter.</Trans>
                         </Text>

@@ -1609,10 +1609,6 @@ msgstr ""
 msgid "{exposed} read or watched elsewhere"
 msgstr "Przeczytane lub obejrzane gdzie indziej: {exposed}"
 
-#: src/components/series/SeriesHero.tsx
-msgid "{extrasIncluded, plural, one {# extra included} other {# extras included}}"
-msgstr ""
-
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "{failedCount, plural, one {# could not be deleted} other {# could not be deleted}}"
@@ -2314,10 +2310,6 @@ msgstr ""
 #, fuzzy
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
 msgstr "{notWanted, plural, one {# więcej na liście, nieoznaczone jako poszukiwane} few {# więcej na liście, nieoznaczone jako poszukiwane} many {# więcej na liście, nieoznaczone jako poszukiwane} other {# więcej na liście, nieoznaczone jako poszukiwane}}"
-
-#: src/components/series/ChapterCountsInfo.tsx
-msgid "{notWanted, plural, one {Reading and Downloads leave out # chapter you switched off.} other {Reading and Downloads leave out # chapters you switched off.}}"
-msgstr ""
 
 #: src/components/series/ChapterCountsInfo.tsx
 #, fuzzy
@@ -19552,14 +19544,6 @@ msgstr "Czytelnicy bez nazwy wyświetlanej pojawiają się pod nazwą logowania 
 #, fuzzy
 msgid "Reading"
 msgstr "Czytane"
-
-#: src/components/series/ChapterCountsInfo.tsx
-msgid "Reading and Downloads count extras, since you keep specials."
-msgstr ""
-
-#: src/components/series/ChapterCountsInfo.tsx
-msgid "Reading and Downloads leave extras out, since specials are unmonitored."
-msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 msgid "Reading and sharing"

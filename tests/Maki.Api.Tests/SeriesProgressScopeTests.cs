@@ -22,6 +22,35 @@ public sealed class SeriesProgressScopeTests : IDisposable
         LockedFields = locked ? SeriesMetadataField.TotalChapters : default,
     };
 
+    // ---- what Reading and Downloads count against ----
+
+    [Fact]
+    public void Reading_and_Downloads_count_the_chapters_wanted()
+    {
+        // 45 listed, 2 switched off, MangaBaka says 56: the switches decide.
+        var t = SeriesProgressScope.Wanted(wanted: 43, had: 43, read: 43, listedSpecials: 0, switchedOff: 2, switchedOffSpecials: 0);
+
+        Assert.Equal((43, 43, 43, 2), (t.Total, t.Have, t.Read, t.Skipped));
+    }
+
+    [Fact]
+    public void Smart_mode_reading_the_few_on_disk_is_far_from_done()
+    {
+        var t = SeriesProgressScope.Wanted(wanted: 207, had: 10, read: 10, listedSpecials: 0, switchedOff: 0, switchedOffSpecials: 0);
+
+        Assert.Equal((207, 10, 10), (t.Total, t.Have, t.Read));
+    }
+
+    [Fact]
+    public void Switched_off_specials_are_counted_as_left_out_and_not_as_included()
+    {
+        var t = SeriesProgressScope.Wanted(wanted: 125, had: 125, read: null, listedSpecials: 60, switchedOff: 54, switchedOffSpecials: 54);
+
+        Assert.Equal((125, 54, 6, (int?)null), (t.Total, t.Skipped, t.IncludedSpecials, t.Read));
+    }
+
+    // ---- how long the series is, for the automatic Completed ----
+
     [Fact]
     public void Kept_specials_are_added_on_top_of_the_MangaBaka_total()
     {
@@ -217,7 +246,7 @@ public sealed class SeriesProgressScopeTests : IDisposable
     }
 
     [Fact]
-    public async Task List_counts_specials_in_sql_and_drops_them_when_unmonitored()
+    public async Task List_counts_against_the_chapters_wanted_whatever_MangaBaka_says()
     {
         var user = _db.SeedUser("reader");
         var id = _db.SeedSeries("Counted", configure: s => s.TotalChapters = 4);
@@ -243,11 +272,9 @@ public sealed class SeriesProgressScopeTests : IDisposable
             db.SaveChanges();
         }
 
-        var kept = await Row(user, id, new FakeAppSettings());
-        Assert.Equal((6, 5, 3, true, 2), (kept.ProgressTotal, kept.ProgressHave, kept.ProgressRead, kept.SpecialsCounted, kept.ListedSpecials));
-
-        var skipped = await Row(user, id, new FakeAppSettings().Set(SettingKeys.MonitoringUnmonitorSpecials, "true"));
-        Assert.Equal((4, 3, 2, false), (skipped.ProgressTotal, skipped.ProgressHave, skipped.ProgressRead, skipped.SpecialsCounted));
+        // Five chapters on disk, two of them specials, against a MangaBaka total of 4.
+        var row = await Row(user, id, new FakeAppSettings());
+        Assert.Equal((5, 5, 3, 2), (row.ProgressTotal, row.ProgressHave, row.ProgressRead, row.ListedSpecials));
     }
 
     private async Task<SeriesDto> Row(int user, int id, FakeAppSettings settings)

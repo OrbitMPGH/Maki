@@ -315,28 +315,19 @@ public record SeriesDto(
     public int RemovedChapterCount { get; init; }
 
     /// <summary>
-    /// The total Reading and Downloads count against (<see cref="SeriesProgressScope"/>):
-    /// the locked or MangaBaka total, specials added only while the reader keeps them.
+    /// The total Reading and Downloads count against (<see cref="SeriesProgressScope.Wanted"/>): the
+    /// chapters the reader wants, plus any they have, had or read. 0 when nothing is wanted.
     /// </summary>
     public int ProgressTotal { get; init; }
 
     /// <summary>Chapters had (on disk or removed on purpose) within <see cref="ProgressTotal"/>'s scope.</summary>
     public int ProgressHave { get; init; }
 
-    /// <summary>
-    /// <see cref="ReadChapterCount"/> within <see cref="ProgressTotal"/>'s scope: read specials left
-    /// out while specials are skipped. Null when nothing has been read.
-    /// </summary>
+    /// <summary><see cref="ReadChapterCount"/> clamped to <see cref="ProgressTotal"/>. Null when nothing has been read.</summary>
     public int? ProgressRead { get; init; }
-
-    /// <summary>Specials count towards the progress totals: not unmonitored globally, not Main only.</summary>
-    public bool SpecialsCounted { get; init; }
 
     /// <summary>Listed chapters with a decimal number (<see cref="Chapter.IsSpecial"/>).</summary>
     public int ListedSpecials { get; init; }
-
-    /// <summary>Specials inside <see cref="ProgressTotal"/>: the listed ones not switched off, 0 when specials are left out.</summary>
-    public int IncludedSpecials { get; init; }
 
     /// <summary>Listed chapters <see cref="ProgressTotal"/> leaves out because the user switched Wanted off.</summary>
     public int ProgressSkipped { get; init; }

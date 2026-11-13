@@ -199,22 +199,22 @@ export const ChapterCountsExplained: Story = {
   },
 }
 
-/** The server's series total: Reading counts against it too, and skipped specials leave every count. */
-export const ProgressAgainstSeriesTotal: Story = {
+/** On disk counts the chapters wanted: 43 of the 45 listed, whatever MangaBaka's 56 says. */
+export const ProgressAgainstWantedChapters: Story = {
   args: {
     series: seriesDto(1, {
-      knownChapterCount: 42,
-      wantedChapterCount: 5,
-      chapterFileCount: 12,
-      readChapterCount: 10,
-      totalChapters: 45,
-      progressTotal: 45,
-      progressHave: 11,
-      progressRead: 9,
-      specialsCounted: false,
+      knownChapterCount: 45,
+      wantedChapterCount: 43,
+      chapterFileCount: 43,
+      readChapterCount: 43,
+      totalChapters: 56,
+      progressTotal: 43,
+      progressHave: 43,
+      progressRead: 43,
+      progressSkipped: 2,
       listedSpecials: 2,
     }),
-    readUpTo: 9,
+    readUpTo: 43,
   },
   parameters: {
     msw: seriesMsw(
@@ -224,45 +224,37 @@ export const ProgressAgainstSeriesTotal: Story = {
     ),
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await canvas.findByText('9 / 45 chapters')
-    await canvas.findByText('11 / 45 chapters')
-    expect(canvas.queryByText(/not wanted/)).toBeNull()
-    expect(canvas.queryByText(/extras included/)).toBeNull()
+    await waitFor(() => expect(canvas.getAllByText('43 / 43 chapters')).toHaveLength(2))
+    expect(canvas.queryByText('43 / 56 chapters')).toBeNull()
     const button = await canvas.findByRole('button', { name: 'How these chapter counts add up' })
     await userEvent.click(button)
     const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'How these chapter counts add up' })
     await waitFor(() =>
-      expect(within(dialog).getByText('Reading and Downloads leave extras out, since specials are unmonitored.')).toBeVisible(),
+      expect(within(dialog).getByText('Downloads counts the 43 chapters you want or already have. 2 more are listed but not wanted.')).toBeVisible(),
     )
-    expect(within(dialog).queryByText(/you want or already have/)).toBeNull()
+    await waitFor(() => expect(within(dialog).getByText('MangaBaka lists 56 chapters.')).toBeVisible())
   },
 }
 
-export const ProgressWithKeptSpecials: Story = {
+/** Smart mode keeps a few chapters on disk: Read counts those ten, On disk says 207 are wanted. */
+export const SmartModeReadsWhatIsDownloaded: Story = {
   args: {
     series: seriesDto(1, {
-      knownChapterCount: 42,
-      wantedChapterCount: 42,
-      chapterFileCount: 12,
+      knownChapterCount: 207,
+      wantedChapterCount: 207,
+      chapterFileCount: 10,
       readChapterCount: 10,
-      totalChapters: 40,
-      progressTotal: 42,
-      progressHave: 12,
+      progressTotal: 207,
+      progressHave: 10,
       progressRead: 10,
-      specialsCounted: true,
-      listedSpecials: 2,
     }),
   },
   parameters: {
-    msw: seriesMsw(
-      http.get(api('/chapter'), () =>
-        HttpResponse.json(chaptersFor(1, { limit: 40, specials: [10.5, 20.5], trailingMissing: 0 })),
-      ),
-    ),
+    msw: seriesMsw(http.get(api('/chapter'), () => HttpResponse.json(chaptersFor(1, { limit: 40, trailingMissing: 0 })))),
   },
   play: async ({ canvas }) => {
-    await canvas.findByText('10 / 42 chapters')
-    await canvas.findByText('2 extras included')
+    await canvas.findByText('10 / 10 chapters')
+    await canvas.findByText('10 / 207 chapters')
   },
 }
 
