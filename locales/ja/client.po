@@ -1049,11 +1049,13 @@ msgid "{chapters, plural, one {# chapter held, {used} of {limit}} other {# chapt
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/discover/DiscoverHero.tsx
 #: src/components/ScanlationGroupsModal.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/discover/DiscoverHero.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}} in {volumes, plural, one {# volume} other {# volumes}}"
 msgstr ""
 
@@ -1668,11 +1670,6 @@ msgstr "{fileName}が{filesText}を置き換えました"
 #, fuzzy
 msgid "{files, plural, one {{used} of {limit}, # page} other {{used} of {limit}, # pages}}"
 msgstr "{files, plural, other {{used}/{limit}、#ページ}}"
-
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "{finalVolume} vol."
-msgstr "{finalVolume}巻"
 
 #: src/pages/rewind/slides.tsx
 #, fuzzy
@@ -3233,7 +3230,6 @@ msgstr "{totalChapters, plural, other {MangaBakaには#章が掲載されてい�
 msgid "{totalChapters, plural, one {You set the total to # chapter.} other {You set the total to # chapters.}}"
 msgstr "{totalChapters, plural, other {総数を#章に設定しています。}}"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
@@ -3436,6 +3432,7 @@ msgid "{visibleCount} of {totalCount}"
 msgstr "{totalCount}件中{visibleCount}件"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/discover/DiscoverHero.tsx
 msgid "{volumes, plural, one {# volume} other {# volumes}}"
 msgstr ""
 
@@ -5727,11 +5724,6 @@ msgstr "収集内容に基づく"
 msgid "Because you read"
 msgstr "読んだ作品に基づく"
 
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Because you read {becauseOfTitle}"
-msgstr "{becauseOfTitle}を読んだから"
-
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Because: {reasonList}"
@@ -6672,7 +6664,6 @@ msgid "chapters"
 msgstr "章"
 
 #: src/components/discover/DiscoverGlance.tsx
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/home/ReadingWeeks.tsx
 #: src/components/import/ManualImport.tsx
 #: src/components/library/libraryColumns.ts
@@ -7239,11 +7230,6 @@ msgstr "プレビューを閉じる"
 #, fuzzy
 msgid "Close Rewind"
 msgstr "Rewindを閉じる"
-
-#: src/components/discover/DiscoverHero.tsx
-#, fuzzy
-msgid "Close to what you read"
-msgstr "読んだ内容に近い"
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -19522,13 +19508,11 @@ msgstr "リーダーは、チェックを入れたモデルから選べます。
 msgid "Readers like you"
 msgstr "あなたと好みが似た読者"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Readers like you also finished this"
 msgstr "あなたと同じ読者もこれを読了しています"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Readers like you also recommended this"
@@ -20062,7 +20046,6 @@ msgstr "リリースノート"
 msgid "Release number may be a sequel, not a chapter"
 msgstr "リリース番号は章ではなく続編の可能性があります"
 
-#: src/components/discover/DiscoverHero.tsx
 #: src/components/series/ChapterViewMenu.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -27556,7 +27539,6 @@ msgid "volume, volume packs, volume search, auto-grab, proposals, torrent, missi
 msgstr ""
 
 #: src/components/discover/DiscoverGlance.tsx
-#: src/components/discover/DiscoverHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
 msgid "Volumes"
