@@ -16284,6 +16284,11 @@ button.settings-row-head:hover,
 .series-cell-text {
   min-width: 0;
 }
+/* Titles that lead a card, next to the large thumbnail, sit one step up from a table row. */
+.requests-row,
+.cover-panel {
+  --series-title-size: var(--type-body);
+}
 .series-title {
   min-width: 0;
   overflow: hidden;
