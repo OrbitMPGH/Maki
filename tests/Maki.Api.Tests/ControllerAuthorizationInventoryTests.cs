@@ -210,6 +210,7 @@ public sealed class ControllerAuthorizationInventoryTests
         "ReaderController.SetSeriesState",
         "ReaderController.StartKavitaImport",
         "ReaderController.ToggleBookmark",
+        "ReaderController.WarmCredits",
         "ReadingProfilesController.Create",
         "ReadingProfilesController.Delete",
         "ReadingProfilesController.Update",

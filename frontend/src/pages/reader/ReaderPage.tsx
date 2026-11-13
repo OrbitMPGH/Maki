@@ -243,9 +243,12 @@ export default function ReaderPage() {
     pageCount >= CREDITS_MIN_PAGES &&
     !offline &&
     !manifestServedOffline(chapterId)
+  // An answer the server already stored comes with the manifest, so nothing waits for a search.
+  const storedCredits = manifest?.chapterId === chapterId ? manifest.credits : null
   const { data: creditsFound, isError: creditsFailed } = useQuery({
     ...readerCreditsQuery(chapterId, manifest?.pageVersion),
     enabled: creditsWanted,
+    initialData: storedCredits && manifest ? { ...storedCredits, pageVersion: manifest.pageVersion } : undefined,
   })
   const creditsPending = creditsWanted && creditsFound === undefined && !creditsFailed
   const creditsHeld = creditsPending && creditsWaited !== chapterId

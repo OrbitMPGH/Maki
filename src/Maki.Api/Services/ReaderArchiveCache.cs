@@ -41,11 +41,13 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
 
     /// <summary>
     /// Page names in reading order plus, in that same order, the zero-based page index at
-    /// which each embedded chapter marker first appears.
+    /// which each embedded chapter marker first appears. <c>Entries</c> carries each page's checksum
+    /// and size in the same order; null for a PDF, whose pages are rendered rather than stored.
     /// </summary>
     public record ArchiveInfo(
         IReadOnlyList<string> Pages,
-        IReadOnlyList<(decimal Chapter, int PageIndex)> Boundaries);
+        IReadOnlyList<(decimal Chapter, int PageIndex)> Boundaries,
+        IReadOnlyList<PageEntry>? Entries = null);
 
     private sealed record Entry(long Size, string Path, ArchiveInfo Info, long StoredAt)
     {
@@ -121,6 +123,16 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
     public async Task<Stream?> OpenPageAsync(string absolutePath, string entryName, CancellationToken ct)
     {
         MarkRead(absolutePath);
+        return await OpenPageUnmarkedAsync(absolutePath, entryName, ct);
+    }
+
+    /// <summary>
+    /// <see cref="OpenPageAsync"/> for work no reader is waiting on (the credit page search), so the
+    /// file is not taken for one being read: that would hold its page conversion for
+    /// <see cref="PageConversionService.ReadingQuiet"/> and make background work pause for itself.
+    /// </summary>
+    public async Task<Stream?> OpenPageUnmarkedAsync(string absolutePath, string entryName, CancellationToken ct)
+    {
         if (ComicFile.IsPdf(absolutePath))
         {
             return await CbzReader.OpenPageAsync(absolutePath, entryName, ct);
@@ -136,12 +148,20 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
     public bool ReadWithin(string absolutePath, TimeSpan window) =>
         _lastRead.TryGetValue(Path.GetFullPath(absolutePath), out var at) && Clock.GetElapsedTime(at) < window;
 
+    /// <summary>When any reader was last served a page of any file, so background work can keep out of the way.</summary>
+    public TimeSpan SinceLastServed =>
+        Interlocked.Read(ref _lastServed) is var at and > 0 ? Clock.GetElapsedTime(at) : TimeSpan.MaxValue;
+
+    private long _lastServed;
+
     private const int MaxReadMarks = 512;
     private static readonly TimeSpan ReadMarkLifetime = TimeSpan.FromHours(1);
 
     private void MarkRead(string absolutePath)
     {
-        _lastRead[Path.GetFullPath(absolutePath)] = Clock.GetTimestamp();
+        var now = Clock.GetTimestamp();
+        Interlocked.Exchange(ref _lastServed, now);
+        _lastRead[Path.GetFullPath(absolutePath)] = now;
         if (_lastRead.Count <= MaxReadMarks)
         {
             return;
@@ -195,6 +215,7 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
     {
         Interlocked.Increment(ref _loads);
         List<string> pages;
+        List<PageEntry>? entries = null;
         if (ComicFile.IsPdf(absolutePath))
         {
             pages = CbzReader.PageNames(absolutePath);
@@ -203,7 +224,8 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
         {
             try
             {
-                pages = await _handles.PageNamesAsync(absolutePath, CancellationToken.None) ?? [];
+                entries = await _handles.PageEntriesAsync(absolutePath, CancellationToken.None) ?? [];
+                pages = entries.Select(e => e.Name).ToList();
             }
             catch (Exception e)
             {
@@ -227,7 +249,7 @@ public class ReaderArchiveCache(ILogger<ReaderArchiveCache> logger, TimeProvider
             }
         }
 
-        return new ArchiveInfo(pages, VolumeChapterScanner.BoundariesInNames(pages));
+        return new ArchiveInfo(pages, VolumeChapterScanner.BoundariesInNames(pages), entries);
     }
 
     /// <summary>Evicts the least recently used entries once over capacity.</summary>

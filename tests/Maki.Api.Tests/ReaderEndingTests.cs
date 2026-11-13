@@ -124,7 +124,9 @@ public sealed class ReaderEndingTests : IDisposable
     {
         using var db = _db.NewContext(UserId);
         var result = await Controller(db).Manifest(
-            chapterId, new EnhanceAvailability(new FakeAppSettings(), null!), new ReadingTimeEstimateService(db), default);
+            chapterId, new EnhanceAvailability(new FakeAppSettings(), null!),
+            new CreditStore(_db.ScopeFactory(), new Maki.Api.Services.Ocr.PageTextReader(NullLogger<Maki.Api.Services.Ocr.PageTextReader>.Instance, "missing"), NullLogger<CreditStore>.Instance),
+            new ReadingTimeEstimateService(db), default);
         return JsonSerializer.SerializeToElement(Assert.IsType<OkObjectResult>(result).Value, Web);
     }
 

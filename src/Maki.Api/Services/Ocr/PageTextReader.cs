@@ -42,6 +42,9 @@ public interface IPageTextReader
 public sealed class PageTextReader : IPageTextReader, IDisposable
 {
     public const string FolderName = "OcrModels";
+
+    /// <summary>Bumped whenever the models or the reading steps change what text comes out; stored text below it is read again.</summary>
+    public const int Version = 1;
     public const string DetectionFile = "ch_PP-OCRv3_det_infer.onnx";
     public const string RecognitionFile = "ch_PP-OCRv3_rec_infer.onnx";
 
