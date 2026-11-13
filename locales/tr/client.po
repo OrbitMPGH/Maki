@@ -22018,6 +22018,10 @@ msgstr "{0} için puan"
 msgid "Score: {score}"
 msgstr "Puan: {score}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Scores and links"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Scores are set inside each profile."

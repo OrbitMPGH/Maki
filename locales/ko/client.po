@@ -22018,6 +22018,10 @@ msgstr "{0}의 점수"
 msgid "Score: {score}"
 msgstr "점수: {score}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Scores and links"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Scores are set inside each profile."

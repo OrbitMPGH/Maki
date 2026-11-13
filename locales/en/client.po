@@ -18395,6 +18395,10 @@ msgstr "Score for {0}"
 msgid "Score: {score}"
 msgstr "Score: {score}"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Scores and links"
+msgstr "Scores and links"
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Scores are set inside each profile."
 msgstr "Scores are set inside each profile."
