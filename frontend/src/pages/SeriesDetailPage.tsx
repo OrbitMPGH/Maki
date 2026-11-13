@@ -2551,15 +2551,6 @@ function SeriesDetailBody() {
                     }
                     onRemoveOffline={() => void removeSeriesOffline(seriesId)}
                 />
-                {/* A state, not a control: nothing here could enable a download button, so it stops posing as one. */}
-                {fileMissingFilterCount === 0 && canDownload && allWantedOnDisk && chapters.length > 0 && (
-                    <Tooltip label={t`Every wanted chapter is already on disk`} withArrow>
-                      <Text component="span" size="sm" c="var(--ink-3)" className="series-actions-done">
-                        <IconCircleCheck size={16} />
-                        <Trans>Nothing left to download</Trans>
-                      </Text>
-                    </Tooltip>
-                )}
               </>
             }
             tabs={

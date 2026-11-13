@@ -405,7 +405,7 @@ export function DiscoverDetailModal({
 
                     {/* One line, truncated. Every other alternative title is under At a glance. */}
                     {(detail?.nativeTitle || detail?.romanizedTitle) && (
-                      <Text component="div" size="sm" mt={8} c="var(--ink-3)" className="discover-alt-line">
+                      <Text component="div" className="discover-alt-line hero-meta">
                         <MetaList inline items={[detail?.romanizedTitle, detail?.nativeTitle]} />
                       </Text>
                     )}

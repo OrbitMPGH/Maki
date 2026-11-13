@@ -12,7 +12,7 @@ import {
     Tooltip,
     VisuallyHidden,
 } from '@mantine/core'
-import { IconAlertTriangle, IconArrowLeft, IconBook, IconChartHistogram, IconCheck, IconDownload, IconX } from '../../lib/icons'
+import { IconAlertTriangle, IconArrowLeft, IconBook, IconChartHistogram, IconCheck, IconCircleCheck, IconDownload, IconX } from '../../lib/icons'
 import { Link } from 'react-router-dom'
 import { otherTitles, readableTitles } from '../../api/titles'
 import type { SeriesDto } from '../../api/types'
@@ -285,10 +285,7 @@ export function SeriesHero({
                                 // Metadata card, not wrapped across six lines under the heading.
                                 <Text
                                     component="div"
-                                    size="sm"
-                                    pt="xs"
-                                    c="var(--ink-2)"
-                                    className="series-hero-alt"
+                                    className="series-hero-alt hero-meta"
                                     title={altTitles.map((a) => a.title).join(', ')}
                                 >
                                     <MetaList
@@ -336,6 +333,7 @@ export function SeriesHero({
                                 hasAnime={series.hasAnime}
                                 animeName={series.animeName}
                             >
+                                <span className="hero-chips-break" aria-hidden />
                                 <div className="hero-yours">
                                     <Group gap={8} wrap="nowrap" className="hero-rating">
                                         <Rating
@@ -391,14 +389,11 @@ export function SeriesHero({
                                         )}
                                     </Group>
                                     {onSetReadingStatus && (
-                                        <>
-                                            <span className="hero-yours-divider" aria-hidden />
-                                            <ReadingStatusMenu
-                                                status={series.readingStatus}
-                                                auto={series.readingStatusAuto}
-                                                onChange={onSetReadingStatus}
-                                            />
-                                        </>
+                                        <ReadingStatusMenu
+                                            status={series.readingStatus}
+                                            auto={series.readingStatusAuto}
+                                            onChange={onSetReadingStatus}
+                                        />
                                     )}
                                 </div>
                             </HeroChips>
@@ -471,6 +466,13 @@ export function SeriesHero({
                                     <Trans>On disk</Trans>
                                 </span>
                                 <span className="hero-bar-figures">
+                                    {downloads.complete && series.knownChapterCount > 0 && (
+                                        <Tooltip label={t`Every wanted chapter is already on disk`} withArrow>
+                                            <span className="hero-bar-done" role="img" aria-label={t`Every wanted chapter is already on disk`} tabIndex={0}>
+                                                <IconCircleCheck size={15} />
+                                            </span>
+                                        </Tooltip>
+                                    )}
                                     <span className="hero-bar-value tnum">
                                         <DownloadsCount
                                             haveCount={downloads.have}

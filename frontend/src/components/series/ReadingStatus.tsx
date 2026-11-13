@@ -45,9 +45,9 @@ export function ReadingStatusMenu({
           events={{ hover: true, focus: true, touch: false }}
         >
           <Button
-            variant="subtle"
-            size="sm"
-            color="var(--neutral)"
+            variant="default"
+            size="compact-sm"
+            radius="md"
             className="hero-reading-status"
             leftSection={<current.Icon size={16} color={`var(--${tone})`} />}
             rightSection={<IconChevronDown size={14} />}

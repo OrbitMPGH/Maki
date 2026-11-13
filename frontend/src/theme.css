@@ -4304,20 +4304,6 @@ button.site-chip:hover {
   outline-offset: 2px;
   border-radius: var(--radius-2xs);
 }
-/* The quiet stand-in for the download button once every wanted chapter is on disk. Button height,
-   so the action row keeps its line. */
-.series-actions-done {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 42px;
-  padding-inline: 4px;
-  color: var(--ink-3);
-}
-.series-actions-done svg {
-  flex-shrink: 0;
-  color: var(--ok);
-}
 /* On a phone the hero buttons share each row they land on, so the row ends on one edge instead
    of a ragged line of button widths. The overflow menu keeps its square. */
 @media (max-width: 47.9375em) {
@@ -6260,19 +6246,24 @@ button.site-chip:hover {
 [data-theme='light'] .series-hero-status:not([data-quiet]) {
   box-shadow: inset 0 0 0 100px color-mix(in srgb, currentColor 10%, var(--surface));
 }
+/* Every pill in the band is one formula: a tint of its own colour, an edge in the same colour, an
+   icon, a label. Only the colour changes. The edge is what the buttons, chips and cards around them
+   have too, and what keeps a pill legible where the backdrop art runs light behind it. The type has
+   no colour to speak of, so it is neutral. */
+.series-hero-status:not([data-you]) {
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
+}
 .series-hero-status[data-quiet] {
-  color: var(--ink-3);
+  color: var(--ink-2);
   background: color-mix(in srgb, var(--app-bg) 45%, transparent);
   border-color: var(--border-strong);
 }
-/* Content rating beside the status chip: outlined in the rating's own colour, so it reads as a
-   second fact and never as the filled status. Safe has nothing to report; the rest rise in heat on
-   their own scale, so none of them reads as a warning or an error. */
+/* Content rating on a scale of its own, so none of them reads as a status, a warning or an error.
+   Safe is the cool end and the rest rise in heat. */
 .series-hero-status[data-content-rating] {
   --tone: var(--ink-3);
   color: var(--tone);
   background: color-mix(in srgb, var(--tone) 10%, color-mix(in srgb, var(--app-bg) 45%, transparent));
-  border-color: color-mix(in srgb, var(--tone) 45%, transparent);
 }
 .series-hero-status[data-content-rating='safe'] {
   --tone: var(--cr-safe);
@@ -6417,13 +6408,15 @@ button.site-chip:hover {
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
 }
+/* The lines under the title are one block of secondary text: same size, same ink. */
 .hero-meta {
   margin-top: 10px;
   color: var(--ink-3);
   font-size: var(--type-body, 0.9375rem);
+  line-height: 1.45;
 }
-.series-hero-alt + .hero-meta {
-  margin-top: 6px;
+.hero-meta + .hero-meta {
+  margin-top: 4px;
 }
 /* The site chips always sit under the score. Beside it they only fitted when the score had no
    word, so the header changed shape from one series to the next. */
@@ -6451,24 +6444,34 @@ button.site-chip:hover {
 .series-hero-status[data-you] svg {
   color: var(--brand-fg-on-art);
 }
-.hero-rating {
-  margin-inline-start: 6px;
+/* Your own things about the series, rating and status, as one bordered object on a line of its
+   own under the facts: the stars, a hairline, then the status menu as its second half. */
+.hero-chips-break {
+  flex-basis: 100%;
+  height: 0;
 }
-/* Your own things about the series, rating and status, on a line of their own under the facts. */
 .hero-yours {
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  flex-basis: 100%;
-  gap: 4px 12px;
+  max-width: 100%;
+  min-height: 32px;
+  padding-inline-start: 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--app-bg) 45%, transparent);
 }
-.hero-yours-divider {
-  width: 1px;
-  height: 18px;
-  background: var(--hairline);
+.hero-yours .hero-rating {
+  padding-inline-end: 10px;
 }
 .hero-reading-status {
-  color: var(--ink-2);
+  height: 30px;
+  padding-inline: 10px;
+  border: 0;
+  border-inline-start: 1px solid var(--border-strong);
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+  background: transparent;
+  font-size: var(--type-meta);
 }
 /* The Progress card on the band's right: what you have read and what is on disk, each a label
    and its count over a bar, then one line for anything wrong and one for your reading. */
@@ -6523,6 +6526,10 @@ button.site-chip:hover {
 }
 .hero-bar-fill[data-complete] {
   background: var(--ok);
+}
+.hero-bar-done {
+  display: inline-flex;
+  color: var(--ok);
 }
 .hero-bar-value {
   color: var(--ink-hi);
