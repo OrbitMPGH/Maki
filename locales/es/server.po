@@ -5832,6 +5832,11 @@ msgstr "El contenido del archivo cambió, o no se escaneó por completo. Vuelve 
 msgid "error.health.operationActive"
 msgstr "Hay otra operación en curso sobre este archivo."
 
+#. English: This job is already running.
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.jobRunning"
+msgstr ""
+
 #. English: Downloads or imports for this series are in progress.
 #: src/Maki.Api/Services/HealthOperationService.cs
 #, fuzzy

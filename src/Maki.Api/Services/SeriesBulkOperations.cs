@@ -188,6 +188,21 @@ public sealed class SeriesBulkOperations
     public bool HasActiveFileOperation() =>
         _operations.Values.Any(o => (IsFileOperation(o.Action) || o.Action == SeriesBulkAction.Rescan) && !o.IsFinished);
 
+    /// <summary>Cancels anyone's operation, for an admin on the Health page. False when there is no such operation.</summary>
+    public bool TryCancelAny(Guid id)
+    {
+        if (!_operations.TryGetValue(id, out var operation) || operation.IsFinished)
+        {
+            return false;
+        }
+
+        operation.Cancel.Cancel();
+        return true;
+    }
+
+    /// <summary>Every operation still queued or running, whoever started it.</summary>
+    public IReadOnlyList<SeriesBulkOperation> Active() => [.. _operations.Values.Where(o => !o.IsFinished)];
+
     public ValueTask<SeriesBulkOperation> ReadAsync(bool files, CancellationToken ct) =>
         (files ? _files : _work).Reader.ReadAsync(ct);
 

@@ -23,6 +23,7 @@ public class HealthJobListener(
     {
         try
         {
+            JobOutcome.Forget(context);
             if (JobOutcome.WasInterrupted(context)) return;
             var failed = JobOutcome.Failed(context, jobException);
             var id = $"job:{context.JobDetail.Key}";

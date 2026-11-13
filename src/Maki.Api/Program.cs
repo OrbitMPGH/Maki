@@ -365,6 +365,8 @@ try
     // Reads the GC, the process and the kernel's cgroup accounting for GET system/memory. Holds
     // no state of its own; a singleton only because everything it inspects is one.
     builder.Services.AddSingleton<MemoryDiagnostics>();
+    builder.Services.AddSingleton<ProcessCpuSampler>();
+    builder.Services.AddScoped<HealthRunningWork>();
     builder.Services.AddSingleton<Maki.Api.Jobs.ArtifactBuildGate>();
     // Channel weights and floors live in one record so distribution/eval-search.cs can sweep them
     // against the labelled query set; nothing changes them at runtime.

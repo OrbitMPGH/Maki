@@ -53,6 +53,22 @@ public class UpscaleQueueTests
     }
 
     [Fact]
+    public void The_snapshot_tells_a_running_prepared_page_from_a_reader_page()
+    {
+        _queue.SetBackground([Ahead(50), Ahead(51)]);
+        _queue.TryDequeue();
+
+        var prepared = _queue.Snapshot();
+        Assert.Equal((1, 1, 1), (prepared.Working, prepared.BackgroundWorking, prepared.Background));
+
+        _queue.Replace(1, 1, "span-s", [Item(0)]);
+        Assert.Equal(0, _queue.TryDequeue()!.Key.AbsIndex);
+
+        var both = _queue.Snapshot();
+        Assert.Equal((2, 1), (both.Working, both.BackgroundWorking));
+    }
+
+    [Fact]
     public void A_prepared_page_runs_with_nobody_told()
     {
         _queue.SetBackground([Ahead(50)]);

@@ -5832,6 +5832,11 @@ msgstr "文件内容已更改，或未完整扫描。请先重新扫描。"
 msgid "error.health.operationActive"
 msgstr "此文件上已有另一项操作正在进行。"
 
+#. English: This job is already running.
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.jobRunning"
+msgstr ""
+
 #. English: Downloads or imports for this series are in progress.
 #: src/Maki.Api/Services/HealthOperationService.cs
 #, fuzzy

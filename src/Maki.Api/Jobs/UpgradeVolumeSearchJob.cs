@@ -115,8 +115,8 @@ public class UpgradeVolumeSearchJob(
         finally
         {
             Gate.Release();
-            // Shutdown mid-search leaves the day open so the next boot runs it.
-            if (daily && !ct.IsCancellationRequested)
+            // Shutdown mid-search leaves the day open so the next boot runs it; an admin's Stop closes it.
+            if (daily && (!ct.IsCancellationRequested || JobOutcome.StoppedByAdmin(context)))
             {
                 await settings.SetAsync(SettingKeys.UpgradesLastVolumeSearchDate, date, CancellationToken.None);
             }

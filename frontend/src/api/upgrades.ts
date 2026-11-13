@@ -633,7 +633,7 @@ export interface ScoutSourceProgress {
 
 /** The latest scan of one series asked for since the server started. */
 export interface SeriesScanStatus {
-  state: 'queued' | 'running' | 'done' | 'busy' | 'failed'
+  state: 'queued' | 'running' | 'done' | 'busy' | 'failed' | 'cancelled'
   queuedAtUtc: string
   finishedAtUtc: string | null
   chaptersChecked: number

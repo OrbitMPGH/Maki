@@ -841,9 +841,18 @@ msgid "{active, plural, one {# download in progress} other {# downloads in progr
 msgstr "{active, plural, other {# 个下载正在进行中}}"
 
 #: src/components/ActivityButton.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{active, plural, one {# in progress} other {# in progress}}"
 msgstr "{active, plural, other {# 个进行中}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{active, plural, one {# page in progress} other {# pages in progress}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{active, plural, one {# series} other {# series}}"
+msgstr ""
 
 #: src/components/ActivityButton.tsx
 #, fuzzy
@@ -1186,6 +1195,10 @@ msgstr "{convertedFiles, plural, other {目前已转换 # 个文件，节省 {sa
 msgid "{copyCount, plural, one {# copy} other {# copies}}"
 msgstr "{copyCount, plural, other {# 个副本}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{cores, plural, one {of # core} other {of # cores}}"
+msgstr ""
+
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
 msgid "{count, plural, =2 {Both trackers} other {All # trackers}}"
@@ -1446,6 +1459,10 @@ msgstr "{damagedCount, plural, other {获取 # 个新副本}}"
 msgid "{days, plural, one {Deleted files wait here for # day, then they're gone for good.} other {Deleted files wait here for # days, then they're gone for good.}}"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "{days, plural, one {Every day} other {Every # days}}"
+msgstr ""
+
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "{days, plural, one {The originals ({trash}) wait in the upgrade trash for # day, then are deleted.} other {The originals ({trash}) wait in the upgrade trash for # days, then are deleted.}}"
@@ -1500,6 +1517,10 @@ msgstr "{deletingSeriesCount, plural, other {将从 # 个系列中移除。此�
 msgid "{diff, plural, other {# behind}}"
 msgstr "{diff, plural, other {落后 #}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{done, plural, one {# file done this pass} other {# files done this pass}}"
+msgstr ""
+
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "{done} of {probes} chapter samples. The order below updates once it finishes."
@@ -1514,6 +1535,14 @@ msgstr "{done} / {total}"
 #, fuzzy
 msgid "{done} of {total} matched before this stopped. Retry to carry on, or review what matched so far. The rest will show as not found, and you can match them by hand."
 msgstr "停止前已匹配 {done}/{total}。可以重试以继续，也可以先检查已匹配的结果。未完成的项目会显示为未找到，你可以手动匹配。"
+
+#: src/pages/HealthPage.tsx
+msgid "{doneText} of {totalText}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{doneText} of {totalText} series"
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -1788,6 +1817,10 @@ msgstr "{hours, plural, other {# 小时}}"
 #, fuzzy
 msgid "{hours, plural, one {about # hr left} other {about # hr left}}"
 msgstr "{hours, plural, other {还剩约 # 小时}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{hours, plural, one {Every hour} other {Every # hours}}"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -2080,6 +2113,10 @@ msgstr ""
 #, fuzzy
 msgid "{minutes, plural, one {about # min left} other {about # min left}}"
 msgstr "{minutes, plural, other {还剩约 # 分钟}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{minutes, plural, one {Every minute} other {Every # minutes}}"
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -2661,6 +2698,10 @@ msgstr "{sampleChapters, plural, other {基于 # 次相似的阅读}}"
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, other {根据你资料库中 {series} 个系列的 # 个章节测得：每像素 {bpp} 位，按 JPG 折算。}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{seconds, plural, one {Every second} other {Every # seconds}}"
+msgstr ""
+
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "{seconds} s per sample page"
@@ -3147,6 +3188,10 @@ msgstr "{total, plural, other {正在采样 {done}/# 个文件}}"
 msgid "{total, plural, one {Search # source} other {Search # sources}}"
 msgstr "{total, plural, other {搜索 # 个来源}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{total, plural, one {Show all # job} other {Show all # jobs}}"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "{total, plural, one {Show all #} other {Show all #}}"
@@ -3398,8 +3443,24 @@ msgstr "{volumesText} + {chaptersText}"
 msgid "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
 msgstr "{waited, plural, other {# 个标题已等待超过六个月。}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# file left} other {# files left}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# page left} other {# pages left}}"
+msgstr ""
+
 #: src/pages/settings/UpscalingSection.tsx
 msgid "{waiting, plural, one {# page still to make} other {# pages still to make}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# page waiting} other {# pages waiting}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# queued} other {# queued}}"
 msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
@@ -5890,6 +5951,10 @@ msgstr "正在建立元数据搜索索引"
 msgid "Built in"
 msgstr "内置"
 
+#: src/pages/HealthPage.tsx
+msgid "Bulk series edit"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "Busiest day"
@@ -7607,6 +7672,10 @@ msgstr "转换后的页面"
 msgid "Converted with {list}."
 msgstr "已使用 {list} 转换。"
 
+#: src/pages/HealthPage.tsx
+msgid "Converting pages"
+msgstr ""
+
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "Converting would not make this page at least 5% smaller, so the pass keeps it as it is."
@@ -9176,6 +9245,10 @@ msgstr ""
 msgid "Downloading {outstanding}"
 msgstr "正在下载 {outstanding}"
 
+#: src/pages/HealthPage.tsx
+msgid "Downloading chapters"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Downloading cover"
@@ -9665,6 +9738,10 @@ msgstr ""
 msgid "Enhance: Off"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Enhancing pages for readers"
+msgstr ""
+
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Enter one of your recovery codes"
@@ -10069,6 +10146,11 @@ msgstr "导出"
 #, fuzzy
 msgid "Failed"
 msgstr "失败"
+
+#. placeholder {0}: formatDateTime(job.lastRunUtc)
+#: src/pages/HealthPage.tsx
+msgid "Failed at {0}"
+msgstr ""
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -12143,6 +12225,10 @@ msgstr "在资料库中"
 msgid "in the reader"
 msgstr "在阅读器中"
 
+#: src/pages/HealthPage.tsx
+msgid "in under a minute"
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "In your library"
@@ -12893,6 +12979,10 @@ msgstr "上次阅读 {lastRead}"
 
 #: src/pages/settings/SystemCards.tsx
 msgid "Last rebuild"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Last run"
 msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
@@ -14094,6 +14184,10 @@ msgstr "按含义、描述和氛围匹配。在没有推荐索引的实例上会
 msgid "Matches your naming formats. Only the highlighted parts change."
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Matching series to their sources"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Matching the remaining sources…"
@@ -14209,6 +14303,10 @@ msgstr "中等"
 #, fuzzy
 msgid "Medium confidence"
 msgstr "中等置信度"
+
+#: src/pages/HealthPage.tsx
+msgid "Memory"
+msgstr ""
 
 #: src/App.tsx
 #, fuzzy
@@ -14712,6 +14810,10 @@ msgstr "移至卷文件"
 msgid "Moving covers"
 msgstr "封面动效"
 
+#: src/pages/HealthPage.tsx
+msgid "Moving series"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
 msgid "Multi-user mode is on because more than one account is enabled. Disable or delete the others to switch back."
@@ -15185,6 +15287,10 @@ msgstr ""
 #, fuzzy
 msgid "Next page"
 msgstr "下一页"
+
+#: src/pages/HealthPage.tsx
+msgid "Next run"
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -16380,6 +16486,10 @@ msgstr "尚未校验。替换或删除此文件前需要先校验。"
 msgid "Not working"
 msgstr "无法工作"
 
+#: src/pages/HealthPage.tsx
+msgid "Not yet"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "not yet synced"
@@ -16593,6 +16703,10 @@ msgstr "你的资料库中暂无内容"
 #, fuzzy
 msgid "Nothing is renamed and everything stays in the folder you had."
 msgstr "不会重命名任何内容，所有文件仍留在原文件夹中。"
+
+#: src/pages/HealthPage.tsx
+msgid "Nothing is running in the background."
+msgstr ""
 
 #: src/components/home/OfflineHome.tsx
 #, fuzzy
@@ -17090,6 +17204,10 @@ msgstr "开启"
 msgid "On another file"
 msgstr "在另一个文件中"
 
+#: src/pages/HealthPage.tsx
+msgid "On demand"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -17337,6 +17455,10 @@ msgstr "打开章节后，它会显示在这里，随时可以继续阅读。"
 
 #: src/components/import/ManualImport.tsx
 msgid "Open a folder, or click a file in it, then choose the series the comics belong to."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Open activity"
 msgstr ""
 
 #: src/components/ActivityButton.tsx
@@ -17964,6 +18086,7 @@ msgid "Pause"
 msgstr "暂停"
 
 #: src/components/QueuePause.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Pause downloads"
 msgstr "暂停下载"
@@ -17971,6 +18094,10 @@ msgstr "暂停下载"
 #: src/components/series/SeriesQueuePause.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Pause downloads for this series"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Pause pass"
 msgstr ""
 
 #: src/pages/rewind/RewindIntro.tsx
@@ -18000,6 +18127,7 @@ msgstr ""
 #: src/components/ActivityButton.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Paused"
@@ -18384,6 +18512,10 @@ msgstr ""
 msgid "Prepared pages are kept until read, apart from the cache size."
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Preparing chapters ahead"
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Preparing model…"
@@ -18482,6 +18614,10 @@ msgstr ""
 #, fuzzy
 msgid "Private"
 msgstr "私密"
+
+#: src/pages/HealthPage.tsx
+msgid "Processor"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -19605,6 +19741,14 @@ msgstr "正在刷新"
 msgid "Refreshing {done} of {total}"
 msgstr "正在刷新 {done}/{total}"
 
+#: src/pages/HealthPage.tsx
+msgid "Refreshing series"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Refreshing series metadata"
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Regenerate"
@@ -20215,6 +20359,10 @@ msgid "Renaming folder"
 msgstr "正在重命名文件夹"
 
 #: src/pages/HealthPage.tsx
+msgid "Renaming series"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Reopen"
 msgstr "重新打开"
@@ -20238,6 +20386,10 @@ msgstr "修复"
 #, fuzzy
 msgid "Repairs"
 msgstr "修复"
+
+#: src/pages/HealthPage.tsx
+msgid "Repeats"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -20436,6 +20588,10 @@ msgstr "重新扫描文件"
 #, fuzzy
 msgid "Rescanned: {newFiles} new, {relinked} relinked, {removed} removed"
 msgstr "重新扫描完成：新增 {newFiles} 个，重新关联 {relinked} 个，移除 {removed} 个"
+
+#: src/pages/HealthPage.tsx
+msgid "Rescanning series files"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -20720,6 +20876,7 @@ msgid "Resume at"
 msgstr "恢复于"
 
 #: src/components/series/SeriesQueuePause.tsx
+#: src/pages/HealthPage.tsx
 msgid "Resume downloads"
 msgstr ""
 
@@ -21080,6 +21237,7 @@ msgid "Rules are checked from the top, and the first one a file matches decides 
 msgstr "规则从上到下依次检查，文件匹配的第一条规则决定其处理方式。在菜单中设为「从不」或固定质量的系列会忽略这些规则。"
 
 #: src/components/ImportListsSection.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Run now"
 msgstr "立即运行"
@@ -21104,6 +21262,10 @@ msgstr "正在运行"
 #, fuzzy
 msgid "Running late"
 msgstr "已延迟"
+
+#: src/pages/HealthPage.tsx
+msgid "Running now"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -21955,6 +22117,10 @@ msgstr ""
 msgid "Searching"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Searching for missing chapters"
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
 msgid "Searching indexers…"
@@ -22540,6 +22706,7 @@ msgid "Set up trackers"
 msgstr "配置跟踪器"
 
 #: src/nav.ts
+#: src/pages/HealthPage.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Settings"
@@ -23575,6 +23742,10 @@ msgstr "开始"
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr "开始阅读 {seriesTitle}，{chapterLabel}"
 
+#: src/pages/HealthPage.tsx
+msgid "Start building"
+msgstr ""
+
 #: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "Start chapter"
@@ -23610,6 +23781,14 @@ msgstr "从第 {startReadingAt} 章开始阅读。"
 #, fuzzy
 msgid "Started"
 msgstr "已开始"
+
+#: src/pages/HealthPage.tsx
+msgid "Started {label}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Started {time}"
+msgstr ""
 
 #: src/components/pageconversion/ReviewStep.tsx
 #, fuzzy
@@ -23737,6 +23916,7 @@ msgstr "仍在阅读"
 msgid "Still shown in Discover rails"
 msgstr "仍显示在发现的推荐栏中"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Stop"
@@ -23776,6 +23956,7 @@ msgstr "不再在“首页”和“发现”中显示其新作品"
 msgid "Stopped before finishing"
 msgstr "读完前停下"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Stopping"
@@ -24069,6 +24250,10 @@ msgstr ""
 #, fuzzy
 msgid "Tap zones"
 msgstr "点击区域"
+
+#: src/pages/HealthPage.tsx
+msgid "Tasks"
+msgstr ""
 
 #: src/pages/stats/sectionList.ts
 #, fuzzy
@@ -24960,6 +25145,10 @@ msgstr "更新已下载。安装期间 Maki 将离线约一分钟。"
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "升级扫描无法运行。详情请查看服务器日志。"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "The upgrade scan was stopped."
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Their folders have comics that are not linked yet. Importing links them into the existing series."
@@ -25104,6 +25293,10 @@ msgstr "这份备份没有分类。"
 #, fuzzy
 msgid "This browser does not support push notifications."
 msgstr "此浏览器不支持推送通知。"
+
+#: src/pages/HealthPage.tsx
+msgid "This builds the search index on this server and can keep the processor busy for an hour or more."
+msgstr ""
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy

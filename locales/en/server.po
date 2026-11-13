@@ -4146,6 +4146,10 @@ msgstr "The file's contents changed, or it was not fully scanned. Rescan first."
 msgid "error.health.operationActive"
 msgstr "Another operation on this file is in progress."
 
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.jobRunning"
+msgstr "This job is already running."
+
 #: src/Maki.Api/Services/HealthOperationService.cs
 msgid "error.health.downloadsActive"
 msgstr "Downloads or imports for this series are in progress."
