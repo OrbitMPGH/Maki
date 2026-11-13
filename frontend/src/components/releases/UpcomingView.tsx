@@ -240,7 +240,7 @@ function UpcomingName({ item }: { item: UpcomingSeriesDto }) {
   return (
     <Link to={`/series/${seriesId}`} className="upcoming-name-cell upcoming-name">
       <Thumb src={coverUrl} size="sm" aria-hidden />
-      <span className="upcoming-title series-title">{title}</span>
+      <span className="upcoming-title series-title" data-lines="1">{title}</span>
       {showsWindow && (
         <span className="upcoming-confidence tnum" data-level={confidenceLevel(outlook.confidence)}>
           {formatPercent(outlook.confidence)}

@@ -510,6 +510,7 @@ export default function HealthPage() {
       {error && (
         <Note
           tone="danger"
+          role="alert"
           mb
           closeLabel={queryError ? undefined : t`Dismiss`}
           onClose={() => {
@@ -821,7 +822,7 @@ export default function HealthPage() {
             )}
 
             {report && (
-              <Note tone="danger" closeLabel={t`Dismiss`} onClose={() => setReport(null)}>
+              <Note tone="danger" role="alert" closeLabel={t`Dismiss`} onClose={() => setReport(null)}>
                 <Text size="sm" mb="xs">
                   {report.summary}
                 </Text>
@@ -1987,7 +1988,7 @@ function FileReview({
       size="min(1060px, 94vw)"
     >
       <Stack gap="lg">
-        {(error ?? action.error) && <Note tone="danger">{(error ?? action.error)?.message}</Note>}
+        {(error ?? action.error) && <Note tone="danger" role="alert">{(error ?? action.error)?.message}</Note>}
         {!data ? (
           <ReviewSkeleton />
         ) : (
@@ -2462,7 +2463,7 @@ function MissingPanel({
         </Text>
       )}
       {action.error && (
-        <Note tone="danger" mt>
+        <Note tone="danger" role="alert" mt>
           {action.error.message}
         </Note>
       )}
@@ -2560,7 +2561,7 @@ function DamagedPanel({ detail, openOperation }: { detail: FileDetail; openOpera
         </>
       )}
       {action.error && (
-        <Note tone="danger" mt>
+        <Note tone="danger" role="alert" mt>
           {action.error.message}
         </Note>
       )}
@@ -2601,7 +2602,7 @@ function SizePanel({ detail }: { detail: FileDetail }) {
         <Trans>Update the record</Trans>
       </Button>
       {action.error && (
-        <Note tone="danger" mt>
+        <Note tone="danger" role="alert" mt>
           {action.error.message}
         </Note>
       )}
@@ -2640,7 +2641,7 @@ function UnreadablePanel({ detail }: { detail: FileDetail }) {
         <Trans>Rescan</Trans>
       </Button>
       {action.error && (
-        <Note tone="danger" mt>
+        <Note tone="danger" role="alert" mt>
           {action.error.message}
         </Note>
       )}
@@ -2785,7 +2786,7 @@ function DuplicatePanel({ detail, openFile, close }: { detail: FileDetail; openF
       </ul>
 
       {failures.length > 0 && (
-        <Note tone="danger" mt>
+        <Note tone="danger" role="alert" mt>
           {failures.map((failure) => (
             <Text key={failure.id} size="xs" style={{ overflowWrap: 'anywhere' }}>
               {failure.relativePath}: {failure.message}
@@ -2874,7 +2875,7 @@ function DuplicatePanel({ detail, openFile, close }: { detail: FileDetail; openF
       )}
 
       {action.error && (
-        <Note tone="danger" mt>
+        <Note tone="danger" role="alert" mt>
           {action.error.message}
         </Note>
       )}
@@ -3342,17 +3343,20 @@ function OperationReview({ id, close, open }: { id: number; close: () => void; o
       size="min(1060px, 94vw)"
     >
       <Stack gap="lg">
-        {(error ?? action.error) && <Note tone="danger">{(error ?? action.error)?.message}</Note>}
+        {(error ?? action.error) && <Note tone="danger" role="alert">{(error ?? action.error)?.message}</Note>}
         {!data ? (
           <ReviewSkeleton />
         ) : (
           <div className="health-review">
             <div className="health-review-column">
-              {data.operation.error && <Note tone="danger">{data.operation.error}</Note>}
+              {data.operation.error && <Note tone="danger" role="alert">{data.operation.error}</Note>}
               {finished ? (
                 <OperationOutcome detail={data} />
               ) : data.operation.kind === 'delete' ? (
-                <Note tone={data.file.size < 0 || data.relinkTo || chaptersCount === 0 ? 'warn' : 'danger'}>
+                <Note
+                  tone={data.file.size < 0 || data.relinkTo || chaptersCount === 0 ? 'warn' : 'danger'}
+                  role={data.file.size < 0 || data.relinkTo || chaptersCount === 0 ? undefined : 'alert'}
+                >
                   {data.file.size < 0 ? (
                     <Trans>
                       This file is already gone from disk, so nothing is deleted. It drops the record that
@@ -3803,7 +3807,7 @@ function RunningPanel() {
           ))}
         </div>
         {running.error ? (
-          <Note tone="danger" mt>
+          <Note tone="danger" role="alert" mt>
             {running.error.message}
           </Note>
         ) : running.data && items.length === 0 ? (
@@ -3957,7 +3961,7 @@ function ScheduledPanel() {
         }
       />
       {scheduled.error ? (
-        <Note tone="danger">{scheduled.error.message}</Note>
+        <Note tone="danger" role="alert">{scheduled.error.message}</Note>
       ) : scheduled.isPending ? (
         <TableSkeleton columns={5} rows={6} />
       ) : (
@@ -4099,7 +4103,7 @@ function CachePanel() {
         </Group>
       </Group>
       {(cache.error ?? rebuild.error) && (
-        <Note tone="danger" mt>
+        <Note tone="danger" role="alert" mt>
           {(cache.error ?? rebuild.error)?.message}
         </Note>
       )}

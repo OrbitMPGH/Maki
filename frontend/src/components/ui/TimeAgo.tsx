@@ -1,4 +1,4 @@
-import { Tooltip } from '@mantine/core'
+import { Tooltip, VisuallyHidden } from '@mantine/core'
 import { formatDateTime, formatRecentDate } from '../../format'
 import { relativeTime } from './time'
 
@@ -11,13 +11,15 @@ function shortWhen(iso: string): string {
   return relativeTime(iso, 'narrow')
 }
 
-/** A row's timestamp: "3m ago", "yesterday", then a short date, with the full date and time on hover. */
+/** A row's timestamp: "3m ago", "yesterday", then a short date, with the full date and time on hover and as hidden text for screen readers. */
 export function TimeAgo({ value, className }: { value: string | null | undefined; className?: string }) {
   if (!value || Number.isNaN(new Date(value).getTime())) return null
+  const full = formatDateTime(value)
   return (
-    <Tooltip label={formatDateTime(value)} withArrow openDelay={300}>
+    <Tooltip label={full} withArrow openDelay={300}>
       <time dateTime={value} className={className}>
         {shortWhen(value)}
+        <VisuallyHidden>, {full}</VisuallyHidden>
       </time>
     </Tooltip>
   )

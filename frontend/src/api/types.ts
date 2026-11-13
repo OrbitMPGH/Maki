@@ -186,7 +186,7 @@ export interface SeriesDto {
   lastDownloadedAt?: string | null
   /**
    * Your unread files in the series' latest batch of added files, the "N new" Home's Recently
-   * added rail shows. 0 with nothing new. Library list and detail endpoints.
+   * added rail shows. 0 with nothing new. Library list endpoint only.
    */
   newChapterCount?: number
   /** The newest release date among the series' known chapters, or null with none dated. Library list endpoint only. */

@@ -210,6 +210,8 @@ export const NewSeriesDefaults: Story = {
     await waitFor(() => expect(within(pornographic).getByRole('radio', { name: 'Full' })).toBeChecked())
     const safe = canvas.getByRole('radiogroup', { name: 'Incognito for Safe' })
     await waitFor(() => expect(within(safe).getByRole('radio', { name: 'Off' })).toBeChecked())
+    const monitoring = canvas.getByRole('radiogroup', { name: 'Monitoring' })
+    await waitFor(() => expect(within(monitoring).getByRole('radio', { name: 'Smart' })).toBeChecked())
   },
 }
 

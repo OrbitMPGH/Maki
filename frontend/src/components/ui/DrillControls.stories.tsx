@@ -43,8 +43,10 @@ function Demo() {
       </DrillGroup>
       <DrillMultiChoices label="Don't enhance" value={tiers} options={TIERS} onChange={setTiers} />
       <DrillSearch label="Search genres" placeholder="Search" value={query} onChange={setQuery} />
+      <div id="genres-help">Tap once to include, again to leave out, a third time to clear.</div>
       <DrillTriChoices
         label="Genres"
+        describedBy="genres-help"
         include={include}
         exclude={exclude}
         options={genres}
@@ -104,12 +106,14 @@ export const MultiPick: Story = {
 export const IncludeAndLeaveOut: Story = {
   play: async ({ canvas, userEvent }) => {
     await expect(await canvas.findByRole('checkbox', { name: 'Action Included' })).toHaveAttribute('aria-checked', 'true')
-    await expect(await canvas.findByRole('checkbox', { name: 'Horror Left out' })).toHaveAttribute('aria-checked', 'mixed')
+    await expect(await canvas.findByRole('checkbox', { name: 'Horror Left out' })).toHaveAttribute('aria-checked', 'false')
+    await expect(await canvas.findByRole('group', { name: 'Genres' })).toHaveAccessibleDescription(/Tap once to include/)
     const comedy = await canvas.findByRole('checkbox', { name: 'Comedy' })
     await userEvent.click(comedy)
     await waitFor(() => expect(comedy).toHaveAttribute('aria-checked', 'true'))
     await userEvent.click(comedy)
-    await waitFor(() => expect(comedy).toHaveAttribute('aria-checked', 'mixed'))
+    await waitFor(() => expect(comedy).toHaveAttribute('aria-checked', 'false'))
+    await expect(comedy).toHaveAccessibleName('Comedy Left out')
     await userEvent.click(comedy)
     await waitFor(() => expect(comedy).toHaveAttribute('aria-checked', 'false'))
   },

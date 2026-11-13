@@ -315,7 +315,7 @@ export const RecommendationRow = memo(function RecommendationRow({
 
       <div className="row-body">
         <div className="row-header">
-          <span className="row-title series-title" title={item.title}>
+          <span className="row-title series-title" data-lines="1" title={item.title}>
             {item.title}
           </span>
           {item.year && <span className="row-year">{item.year}</span>}

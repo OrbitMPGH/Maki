@@ -423,7 +423,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
                   )}
                   <Stack gap={0} style={{ minWidth: 0 }}>
                     <Text
-                      {...(r.kind === 'series' ? { className: 'series-title' } : { size: 'sm', fw: 600, truncate: true })}
+                      {...(r.kind === 'series' ? { className: 'series-title', 'data-lines': 1 } : { size: 'sm', fw: 600, truncate: true })}
                     >
                       {/* The fallback's label is the query itself, so marking it would mark all of it. */}
                       {r.kind === 'search' ? r.label : markMatches(r.label, highlightTerms)}

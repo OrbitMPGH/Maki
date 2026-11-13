@@ -22,6 +22,7 @@ export function Note({
   action,
   closeLabel,
   onClose,
+  role,
   mt,
   mb,
   children,
@@ -32,6 +33,8 @@ export function Note({
   action?: ReactNode
   closeLabel?: string
   onClose?: () => void
+  /** Static notes announce politely; pass `alert` for one that appears in response to an action. */
+  role?: 'alert' | 'status'
   /** Margin above, for a note that follows content in a panel. */
   mt?: boolean
   /** Margin below, for a note that sits above the page body. */
@@ -50,7 +53,7 @@ export function Note({
     <div
       className="note"
       data-tone={tone}
-      role={tone === 'danger' ? 'alert' : tone === 'warn' ? 'status' : undefined}
+      role={role ?? (tone === 'danger' || tone === 'warn' ? 'status' : undefined)}
       style={style}
     >
       <NoteIcon size={16} className="note-icon" aria-hidden />

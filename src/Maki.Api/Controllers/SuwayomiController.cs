@@ -164,17 +164,10 @@ public partial class SuwayomiController(
             request.Username ?? stored?.Username,
             request.Password ?? (sameServer ? stored!.Password : null));
         var fingerprint = ConnectionTestStore.SuwayomiFingerprint(connection);
+        SuwayomiTestResult result;
         try
         {
-            var result = await tester.TestAsync(connection, ct);
-            await RecordTestAsync(fingerprint, true, null, null, ct);
-            return Ok(new
-            {
-                success = true,
-                version = result.About.Version,
-                buildType = result.About.BuildType,
-                sourceCount = result.SourceCount
-            });
+            result = await tester.TestAsync(connection, ct);
         }
         catch (SuwayomiVersionException ex)
         {
@@ -188,10 +181,33 @@ public partial class SuwayomiController(
             await RecordTestAsync(fingerprint, false, UnreachableKey(ex), null, ct);
             return FailedToReach(ex);
         }
+
+        await RecordTestAsync(fingerprint, true, null, null, ct);
+        return Ok(new
+        {
+            success = true,
+            version = result.About.Version,
+            buildType = result.About.BuildType,
+            sourceCount = result.SourceCount
+        });
     }
 
-    private Task RecordTestAsync(string fingerprint, bool ok, string? code, object? args, CancellationToken ct) =>
-        connectionTests?.RecordAsync(ConnectionTestStore.Suwayomi, fingerprint, ok, code, args, ct) ?? Task.CompletedTask;
+    private async Task RecordTestAsync(string fingerprint, bool ok, string? code, object? args, CancellationToken ct)
+    {
+        if (connectionTests is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await connectionTests.RecordAsync(ConnectionTestStore.Suwayomi, fingerprint, ok, code, args, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not record the Suwayomi connection test result");
+        }
+    }
 
     /// <summary>
     /// Reads Suwayomi's installed sources into the stored snapshot, so a newly installed extension

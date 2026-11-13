@@ -1022,7 +1022,6 @@ public class SeriesController(
                 : null,
             ReadFileCleanupActive = ReadFileCleanupService.AppliesTo(series.ReadFileCleanup, await readFileCleanup.OptionsAsync(ct)),
             PendingProposalId = pendingProposalId,
-            NewChapterCount = (await LibraryListRows.NewChapterCountsAsync(db, [id], ct)).GetValueOrDefault(id),
             VolumeHold = await VolumeHoldAsync(id, ct),
             ArchiveHintEligible = currentUser.Has(MakiPermission.ArchiveSeries) &&
                                   await SeriesArchiveService.FinishedHintAsync(db, series, ct),

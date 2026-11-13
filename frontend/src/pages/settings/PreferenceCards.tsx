@@ -72,6 +72,7 @@ function StartPageSelect() {
     <Input.Wrapper label={t`Start page`} mb="md">
       <SegmentedControl
         mt={4}
+        aria-label={t`Start page`}
         data={[
           // Disabled rather than hidden, mirroring how the nav drops these tabs: offering a
           // choice that silently degrades to somewhere else is worse than saying why it's out.

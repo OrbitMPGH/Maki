@@ -83,8 +83,9 @@ export function DrillMultiChoices({
 
 /**
  * Choices that can be included or left out. One tap includes, a second leaves out, a third clears.
- * Left out is a hollow box with a minus, the label struck through and "Left out" under it; a
- * screen reader hears "mixed" plus the word.
+ * Left out is a hollow box with a minus, the label struck through and "Left out" under it. Each
+ * box is a plain checkbox, checked only while included, with the state spelled out in its name.
+ * `describedBy` links the sentence that explains the cycle.
  */
 export function DrillTriChoices({
   label,
@@ -93,6 +94,7 @@ export function DrillTriChoices({
   options,
   onChange,
   disabled,
+  describedBy,
 }: {
   label: string
   include: string[]
@@ -100,10 +102,11 @@ export function DrillTriChoices({
   options: DrillChoice[]
   onChange: (include: string[], exclude: string[]) => void
   disabled?: boolean
+  describedBy?: string
 }) {
   const { t } = useLingui()
   return (
-    <div role="group" aria-label={label} className="drill-choices">
+    <div role="group" aria-label={label} aria-describedby={describedBy} className="drill-choices">
       {options.map((o) => {
         const state = include.includes(o.value) ? 'in' : exclude.includes(o.value) ? 'out' : 'off'
         const cycle = () => {
@@ -115,7 +118,7 @@ export function DrillTriChoices({
           <UnstyledButton
             key={o.value}
             role="checkbox"
-            aria-checked={state === 'in' ? true : state === 'out' ? 'mixed' : false}
+            aria-checked={state === 'in'}
             data-checked={state === 'in' || undefined}
             data-state={state}
             disabled={disabled || o.disabled}
@@ -128,12 +131,12 @@ export function DrillTriChoices({
             </span>
             <span className="drill-choice-text">
               <span className="drill-choice-label">{o.label}</span>
-              {state === 'in' && <VisuallyHidden>{t`Included`}</VisuallyHidden>}
               {state === 'out' ? (
                 <span className="drill-choice-hint">{t`Left out`}</span>
               ) : (
                 o.hint && <span className="drill-choice-hint">{o.hint}</span>
               )}
+              {state === 'in' && <VisuallyHidden>{t`Included`}</VisuallyHidden>}
             </span>
           </UnstyledButton>
         )

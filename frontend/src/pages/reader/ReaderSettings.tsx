@@ -62,6 +62,7 @@ import { BACKGROUNDS, backgroundChoice, enhanceFor, toneFilter, type BackgroundC
 import { useEnhanceEngine } from './enhanceRuntime'
 import TapZoneSettings from './TapZoneSettings'
 import { TAP_LAYOUTS } from './tapZones'
+import { formatList } from '../../lib/listFormat'
 
 /**
  * The reader renders above Mantine's popover layer, so anything that portals to <body> has to
@@ -353,9 +354,9 @@ export default function ReaderSettings({
         ? t`${levelName}, ${methodName}`
         : levelName
   const skipSummary = prefs.enhanceSkipTiers.length
-    ? ENHANCE_SKIP_TIERS.filter((tier) => prefs.enhanceSkipTiers.includes(tier.value))
-        .map((tier) => renderLabel(tier.label))
-        .join(', ')
+    ? formatList(
+        ENHANCE_SKIP_TIERS.filter((tier) => prefs.enhanceSkipTiers.includes(tier.value)).map((tier) => renderLabel(tier.label)),
+      )
     : t`Every quality is enhanced`
   const hiddenCount = prefs.hideCredits ? (hiddenCredits?.count ?? 0) : 0
   const onSummary = (toggles: ToggleRow[]) => {

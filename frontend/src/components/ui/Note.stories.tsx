@@ -22,6 +22,14 @@ export const Warn: Story = {
 export const Danger: Story = {
   args: { tone: 'danger' },
   play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('status')).toHaveAttribute('data-tone', 'danger')
+    await expect(canvas.queryByRole('alert')).toBeNull()
+  },
+}
+
+export const DangerAsAlert: Story = {
+  args: { tone: 'danger', role: 'alert' },
+  play: async ({ canvas }) => {
     await expect(await canvas.findByRole('alert')).toBeVisible()
   },
 }

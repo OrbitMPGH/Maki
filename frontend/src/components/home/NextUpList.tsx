@@ -89,7 +89,7 @@ const NextUpRow = memo(function NextUpRow({ item }: { item: HomeReadingItem }) {
       <VisuallyHidden>{started ? <Trans>Resume</Trans> : <Trans>Start</Trans>} </VisuallyHidden>
       <Thumb src={item.coverUrl} size="sm" />
       <span className="next-up-copy">
-        <span className="next-up-name series-title">{seriesTitle}</span>
+        <span className="next-up-name series-title" data-lines="1">{seriesTitle}</span>
         <span className="next-up-meta">
           <span>{chapterLabel}</span>
           {lastRead && <span>{lastRead}</span>}

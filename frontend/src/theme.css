@@ -14901,7 +14901,7 @@ button.settings-row-head:hover,
   overflow-y: auto;
   padding-block: 4px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--radius-surface);
   background-color: var(--surface-sunken);
 }
 .confirm-file {
@@ -16297,6 +16297,12 @@ button.settings-row-head:hover,
   line-height: 1.3;
   text-decoration: none;
   overflow-wrap: anywhere;
+}
+.series-title[data-lines='1'] {
+  display: block;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
 }
 a.series-title:hover,
 button.series-title:hover {

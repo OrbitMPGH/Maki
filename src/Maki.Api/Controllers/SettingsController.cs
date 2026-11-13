@@ -1921,8 +1921,6 @@ public class SettingsController(
         try
         {
             await torrentClients.For(kind).PingAsync(client, ct);
-            await RecordTestAsync(ConnectionTestStore.DownloadClient, fingerprint, true, null, null, ct);
-            return Ok(new { success = true });
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
         {
@@ -1933,6 +1931,9 @@ public class SettingsController(
             await RecordTestAsync(ConnectionTestStore.DownloadClient, fingerprint, false, code, null, ct);
             return StatusCode(StatusCodes.Status502BadGateway, new { success = false, code, error = localizer.Get(code) });
         }
+
+        await RecordTestAsync(ConnectionTestStore.DownloadClient, fingerprint, true, null, null, ct);
+        return Ok(new { success = true });
     }
 
     /// <summary>The drivers this build has, for the kind select: what each is called and whether it takes a username.</summary>
@@ -2094,8 +2095,22 @@ public class SettingsController(
     public async Task<IActionResult> GetConnectionTests(CancellationToken ct) =>
         Ok(connectionTests is null ? [] : await connectionTests.CurrentAsync(ct));
 
-    private Task RecordTestAsync(string key, string fingerprint, bool ok, string? code, object? args, CancellationToken ct) =>
-        connectionTests?.RecordAsync(key, fingerprint, ok, code, args, ct) ?? Task.CompletedTask;
+    private async Task RecordTestAsync(string key, string fingerprint, bool ok, string? code, object? args, CancellationToken ct)
+    {
+        if (connectionTests is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await connectionTests.RecordAsync(key, fingerprint, ok, code, args, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not record the {Key} connection test result", key);
+        }
+    }
 
     [HttpGet("metadata")]
     public async Task<IActionResult> GetMetadata(CancellationToken ct)

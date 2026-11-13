@@ -8,6 +8,7 @@ using Maki.Core.Download;
 using Maki.Core.Http;
 using Maki.Sources.Suwayomi;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -27,7 +28,7 @@ public sealed class ConnectionTestResultTests : IDisposable
     private ConnectionTestStore Store() =>
         new(_db.NewContext(), _settings, new SuwayomiSettings(_settings), new TestLocalizer());
 
-    private SettingsController Controller() => new(
+    private SettingsController Controller(ConnectionTestStore? store = null) => new(
         localizer: new TestLocalizer(), userLocales: new TestUserLocaleResolver(),
         settings: _settings, naming: null!, flareSolverr: new FlareSolverrClient(new Answers(() => _flareAnswers)),
         indexers: null!, torrentClients: new TorrentClientRegistry([new FakeTorrentClient()]),
@@ -43,7 +44,7 @@ public sealed class ConnectionTestResultTests : IDisposable
             NullLogger<KavitaLiveReadSync>.Instance),
         schedulerFactory: null!, scopeFactory: null!,
         logger: NullLogger<SettingsController>.Instance,
-        connectionTests: Store());
+        connectionTests: store ?? Store());
 
     private async Task<List<ConnectionTestStatus>> Results() =>
         Assert.IsAssignableFrom<IEnumerable<ConnectionTestStatus>>(
@@ -69,6 +70,22 @@ public sealed class ConnectionTestResultTests : IDisposable
         Assert.True(status.Ok);
         Assert.Null(status.Message);
         Assert.True(DateTime.UtcNow - status.TestedAt < TimeSpan.FromMinutes(1));
+    }
+
+    [Fact]
+    public async Task A_store_that_cannot_save_does_not_change_the_test_response()
+    {
+        await _settings.SetAsync(SettingKeys.FlareSolverrUrl, "http://flare:8191");
+        var broken = _db.NewContext();
+        var store = new ConnectionTestStore(broken, _settings, new SuwayomiSettings(_settings), new TestLocalizer());
+        await broken.DisposeAsync();
+
+        var ok = await Controller(store).TestFlareSolverr(new(null), default);
+        Assert.IsType<OkObjectResult>(ok);
+
+        _flareAnswers = HttpStatusCode.InternalServerError;
+        var failed = await Controller(store).TestFlareSolverr(new(null), default);
+        Assert.Equal(StatusCodes.Status502BadGateway, Assert.IsType<ObjectResult>(failed).StatusCode);
     }
 
     [Fact]

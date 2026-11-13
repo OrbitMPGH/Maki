@@ -14,6 +14,7 @@ import { useAnimeSignals, useSetAnimeSignalsEnabled, useSetAnimeSignalsStrength 
 import { useMutateSignalOverride, useSignalOverrides } from '../../api/recommendationFeedback'
 import { formatDateTime, formatDecimal, formatFixedDecimal } from '../../format'
 import { SeriesThumb } from '../stats/SeriesLink'
+import { Callout } from '../../components/ui/Callout'
 import { MetaList } from '../../components/ui/MetaList'
 import { Panel } from '../../components/ui/Panel'
 import { PanelTitle } from '../../components/ui/PanelTitle'
@@ -391,5 +392,3 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
     </div>
   )
 }
-
-import { Callout } from '../../components/ui/Callout'

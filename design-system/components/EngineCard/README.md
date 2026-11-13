@@ -11,6 +11,6 @@ The poster card for rows the recommender produced (`EngineRailRow` of `EngineCar
 - `users`: the crowd ("Readers like you also finished this")
 - `heart`: taste match ("Close to your taste")
 
-Then up to two matched tags as `engine-chip`s (`surface-2`, `ink-3`, `badge-text` size). Tags go before genres: "Time Loop" says what a pick is, "Action" says what a third of the catalogue is. Two, because three truncate at this width. The tags are already spoiler-filtered.
+Then up to two matched tags as `TagChip`s at size `sm` (`.tag-chip`, `surface-2`, bordered). Tags go before genres: "Time Loop" says what a pick is, "Action" says what a third of the catalogue is. Two, because three truncate at this width. The tags are already spoiler-filtered.
 
 **The consumer provides:** `items`, `seriesIdFor(item)`, `onOpen(item)`. Use it for Discover's "based on your recent activity", the series page's "more like this" and Home's "you might like". Catalogue rankings stay on `DiscoverRail`.

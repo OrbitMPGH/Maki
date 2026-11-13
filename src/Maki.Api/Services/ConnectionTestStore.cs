@@ -46,18 +46,35 @@ public sealed class ConnectionTestStore(MakiDbContext db, IAppSettings settings,
         CancellationToken ct = default)
     {
         var row = await db.ConnectionTestResults.FirstOrDefaultAsync(r => r.Key == key, ct);
+        var isNew = row is null;
         if (row is null)
         {
             row = new ConnectionTestResult { Key = key };
             db.ConnectionTestResults.Add(row);
         }
 
+        Fill(row, fingerprint, ok, messageKey, args);
+        try
+        {
+            await db.SaveChangesAsync(ct);
+        }
+        catch (DbUpdateException) when (isNew)
+        {
+            // A concurrent first test of the same key inserted the row between the read and the save.
+            db.Entry(row).State = EntityState.Detached;
+            var existing = await db.ConnectionTestResults.FirstAsync(r => r.Key == key, ct);
+            Fill(existing, fingerprint, ok, messageKey, args);
+            await db.SaveChangesAsync(ct);
+        }
+    }
+
+    private static void Fill(ConnectionTestResult row, string fingerprint, bool ok, string? messageKey, object? args)
+    {
         row.Ok = ok;
         row.MessageKey = ok ? null : messageKey;
         row.ParamsJson = ok || args is null ? null : JsonSerializer.Serialize(args);
         row.Fingerprint = fingerprint;
         row.TestedAt = DateTime.UtcNow;
-        await db.SaveChangesAsync(ct);
     }
 
     /// <summary>The results that still describe the stored settings; a connection missing here is not tested.</summary>

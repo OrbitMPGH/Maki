@@ -339,6 +339,8 @@ export function NewSeriesDefaultsSection() {
       <Input.Wrapper label={t`Monitoring`} mb="md">
         <SegmentedControl
           mt={4}
+          aria-label={t`Monitoring`}
+          aria-describedby="monitoring-default-help"
           data={MONITOR_OPTIONS.filter((o) => o.value !== 'None').map((o) => ({
             value: o.value,
             label: renderLabel(MONITOR_SHORT[o.value]),
@@ -346,7 +348,7 @@ export function NewSeriesDefaultsSection() {
           value={monitoring?.defaultMode ?? 'All'}
           onChange={(value) => saveMonitoring.mutate({ defaultMode: value })}
         />
-        <SettingsHelp mb={0}>{renderLabel(MONITOR_HELP[monitoring?.defaultMode ?? 'All'])}</SettingsHelp>
+        <SettingsHelp id="monitoring-default-help" mb={0}>{renderLabel(MONITOR_HELP[monitoring?.defaultMode ?? 'All'])}</SettingsHelp>
       </Input.Wrapper>
       <Switch
         mb="lg"

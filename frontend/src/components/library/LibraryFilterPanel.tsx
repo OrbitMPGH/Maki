@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { Drawer, NumberInput, SegmentedControl } from '@mantine/core'
 import { Plural, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -44,6 +44,7 @@ import {
   DrillTriChoices,
 } from '../ui/DrillControls'
 import { TagChip, TagChips } from '../ui/TagChip'
+import { formatList } from '../../lib/listFormat'
 
 /** A choice in one of the filter lists. `name` is the bare name when `label` carries a count. */
 export interface FilterOption {
@@ -254,12 +255,12 @@ export function LibraryFilterPanel({
   const any = t`Any`
   const selected = (count: number) => plural(count, { one: '# selected', other: '# selected' })
   const listValue = (opts: FilterOption[], picked: string[]) =>
-    picked.length === 0 ? null : picked.length <= 2 ? picked.map((x) => nameOf(opts, x)).join(', ') : selected(picked.length)
+    picked.length === 0 ? null : picked.length <= 2 ? formatList(picked.map((x) => nameOf(opts, x))) : selected(picked.length)
   const triValue = (opts: FilterOption[], inc: string[], exc: string[]) => {
     if (inc.length === 0 && exc.length === 0) return null
     if (inc.length + exc.length <= 2) {
-      const included = inc.map((x) => nameOf(opts, x)).join(', ')
-      const excluded = exc.map((x) => nameOf(opts, x)).join(', ')
+      const included = formatList(inc.map((x) => nameOf(opts, x)))
+      const excluded = formatList(exc.map((x) => nameOf(opts, x)))
       if (exc.length === 0) return included
       if (inc.length === 0) return t`Not ${excluded}`
       return t`${included}, not ${excluded}`
@@ -809,6 +810,7 @@ function ListPage({
   after?: ReactNode
 }) {
   const { t } = useLingui()
+  const helpId = useId()
   const [query, setQuery] = useState('')
   const picked = [...value, ...(exclude ?? [])]
   const all = withPicked(options, picked)
@@ -826,6 +828,7 @@ function ListPage({
         options={choices}
         onChange={onTriChange}
         disabled={disabled}
+        describedBy={helpId}
       />
     ) : (
       <DrillMultiChoices label={title} value={value} options={choices} onChange={onChange ?? (() => {})} disabled={disabled} />
@@ -839,6 +842,6 @@ function ListPage({
       {list}
       {after}
     </>,
-    help,
+    onTriChange && help ? <span id={helpId}>{help}</span> : help,
   )
 }

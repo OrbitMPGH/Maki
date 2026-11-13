@@ -84,7 +84,7 @@ export const SeriesRow = memo(function SeriesRow({
       <div className="row-body">
         <div className="row-header">
           {/* Tooltip keeps the canonical title, as on the poster card. */}
-          <span className="row-title series-title" title={series.title}>
+          <span className="row-title series-title" data-lines="1" title={series.title}>
             {series.displayTitle}
           </span>
           {series.year && <span className="row-year">{series.year}</span>}
