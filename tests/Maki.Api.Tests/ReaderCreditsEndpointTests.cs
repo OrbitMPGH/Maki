@@ -4,7 +4,9 @@ using Maki.Api.Configuration;
 using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Api.Services.Ocr;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Reading;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -127,18 +129,25 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
     private static IEnumerable<byte[]> Story(int seed, int count) =>
         Enumerable.Range(0, count).Select(n => Grey(Noise(seed * 100 + n, 90)));
 
+    private ReaderController Controller(Maki.Data.MakiDbContext db) => new(
+        new TestLocalizer(), db,
+        new ReaderService(db, _archives, null!, null!, new ReadingSessionService(db), NullLogger<ReaderService>.Instance),
+        null!, null!, new ReadingProfileService(db, new UserSettingsService(db, new TestCurrentUser(1))), null!, null!,
+        new AppPaths(_configDir), new TestCurrentUser(1), null!, new FakeAppSettings())
+    {
+        ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+    };
+
     private async Task<IActionResult> CreditsAsync(int chapterId)
     {
         using var db = _db.NewContext(1);
-        var controller = new ReaderController(
-            new TestLocalizer(), db,
-            new ReaderService(db, _archives, null!, null!, new ReadingSessionService(db), NullLogger<ReaderService>.Instance),
-            null!, null!, null!, null!, null!, new AppPaths(_configDir),
-            new TestCurrentUser(1), null!, new FakeAppSettings())
-        {
-            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
-        };
-        return await controller.Credits(chapterId, _credits, default);
+        return await Controller(db).Credits(chapterId, _credits, default);
+    }
+
+    private async Task<IActionResult> WarmAsync(int chapterId)
+    {
+        using var db = _db.NewContext(1);
+        return await Controller(db).WarmCredits(chapterId, _credits, default);
     }
 
     private async Task<JsonElement> FoundAsync(int chapterId) =>
@@ -224,5 +233,26 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         var found = await FoundAsync(chapters[1]);
         Assert.Equal(0, found.GetProperty("headPages").GetInt32());
         Assert.Equal(0, found.GetProperty("headOffset").GetDouble());
+    }
+
+    [Fact]
+    public async Task Warming_searches_nothing_while_the_setting_is_off()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+
+        Assert.IsType<NoContentResult>(await WarmAsync(chapters[1]));
+    }
+
+    [Fact]
+    public async Task Warming_starts_the_search_the_reader_then_finds()
+    {
+        _db.SetUserConfig(1, (SettingKeys.ReaderPrefs, ReaderPrefsSpec.Serialize(new ReaderPrefsSpec(HideCredits: true))));
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+
+        Assert.IsType<AcceptedResult>(await WarmAsync(chapters[1]));
+
+        Assert.Equal(1, (await FoundAsync(chapters[1])).GetProperty("headPages").GetInt32());
     }
 }

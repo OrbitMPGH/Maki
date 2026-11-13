@@ -1,10 +1,11 @@
-import { memo, type CSSProperties, type ReactNode } from 'react'
+import { memo, useEffect, type CSSProperties, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Skeleton } from '@mantine/core'
 import { IconBook, IconPlayerTrackNext } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { HomeReadingItem } from '../../api/hooks'
+import { warmReaderCredits } from '../../api/reader'
 import { useCoverTint } from '../../lib/coverTint'
 import { HeroBackdrop } from '../series/HeroBackdrop'
 import { RailSkeleton } from '../ui/RailSkeleton'
@@ -107,6 +108,8 @@ const ContinueHeroCard = memo(function ContinueHeroCard({
   glance?: ReactNode
 }) {
   const { t } = useLingui()
+  // The lead is the likeliest next read, so its credit page search starts now.
+  useEffect(() => warmReaderCredits(item.chapterId), [item.chapterId])
   // Kavita-imported rows carry no slice length, so there is no honest fraction to draw.
   const hasProgress = item.pageCount > 0
   const resumePct = hasProgress ? Math.min(100, (item.page / item.pageCount) * 100) : 0

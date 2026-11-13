@@ -715,6 +715,27 @@ public class ReaderController(
         });
     }
 
+    /// <summary>
+    /// Starts the credit page search for a chapter the reader is likely to open next (the series
+    /// page's and Home's Continue), when the series' resolved settings hide credit pages, and returns
+    /// at once. The reader's own <see cref="Credits"/> request then finds the answer ready or joins the
+    /// run. The settings are resolved here because the client only learns them from the manifest.
+    /// </summary>
+    [HttpPost("chapter/{id:int}/credits/warm")]
+    public async Task<IActionResult> WarmCredits(int id, [FromServices] ReaderCreditsCache credits, CancellationToken ct)
+    {
+        var slice = await reader.SliceAsync(id, ct);
+        if (slice is null || !ReaderCreditsCache.Applies(slice) || !(await profiles.ResolveAsync(slice.Series.Id, ct)).Prefs.HideCredits)
+        {
+            return NoContent();
+        }
+
+        var (before, after) = await reader.NearbySlicesAsync(
+            slice.Chapter, CreditDetector.References, ReaderCreditsCache.Usable, ct);
+        credits.Warm(slice, [.. before, .. after]);
+        return Accepted();
+    }
+
     [HttpPut("chapter/{id:int}/progress")]
     public async Task<IActionResult> SaveProgress(int id, [FromBody] SaveProgressRequest request,
         CancellationToken ct)

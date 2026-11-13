@@ -298,10 +298,23 @@ export const readerCreditsQuery = (chapterId: number, pageVersion: string | unde
   })
 
 /**
- * Asks ahead for the next chapter's credit pages while this one ends, since the first search decodes
- * the edges of up to seven chapters. Its file version is not known yet, so the answer is stored under
- * the version it carries.
+ * Asks ahead for the next chapter's credit pages once this one's are known, since the first search
+ * decodes the edges of up to seven chapters. Its file version is not known yet, so the answer is
+ * stored under the version it carries.
  */
+const warmed = new Set<number>()
+
+/**
+ * Has the server start a chapter's credit page search before the reader asks, from where the next
+ * chapter to read is shown (the series page, Home's Continue). The server checks the series' settings
+ * and does nothing when credit pages are not hidden. Once per chapter per page load.
+ */
+export function warmReaderCredits(chapterId: number): void {
+  if (warmed.has(chapterId)) return
+  warmed.add(chapterId)
+  api(`${readerCreditsUrl(chapterId)}/warm`, { method: 'POST' }).catch(() => warmed.delete(chapterId))
+}
+
 export async function prefetchReaderCredits(queryClient: QueryClient, chapterId: number): Promise<void> {
   try {
     const found = await api<ReaderCredits>(readerCreditsUrl(chapterId))

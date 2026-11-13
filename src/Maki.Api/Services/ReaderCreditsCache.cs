@@ -76,10 +76,19 @@ public sealed class ReaderCreditsCache(
         }
     }
 
+    /// <summary>
+    /// Starts the search for <paramref name="chapter"/> without waiting for it, so the reader finds the
+    /// answer ready (or the run under way) when it asks. A failure is dropped as <see cref="FindAsync"/> drops it.
+    /// </summary>
+    public void Warm(ReaderService.ChapterSlice chapter, IReadOnlyList<ReaderService.ChapterSlice> references) =>
+        _ = Task.Run(() => FindAsync(chapter, references, CancellationToken.None));
+
     private async Task<CreditPages> RunAsync(
         ReaderService.ChapterSlice chapter, IReadOnlyList<ReaderService.ChapterSlice> references)
     {
         var watch = Stopwatch.StartNew();
+        // The models take a few hundred milliseconds to load; that happens while the edges decode.
+        _ = Task.Run(text.PrepareAsync);
         var edges = await Task.WhenAll(references.Prepend(chapter).Select(EdgesAsync));
         var candidates = CreditDetector.Candidates(chapter.PageCount, edges[0], edges[1..]);
         var head = await AcceptedAsync(chapter, candidates.Head, tail: false);

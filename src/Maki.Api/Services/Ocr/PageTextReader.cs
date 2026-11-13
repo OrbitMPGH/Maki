@@ -19,6 +19,9 @@ public interface IPageTextReader
     /// Never throws for either.
     /// </summary>
     Task<string?> ReadAsync(byte[] image, double share, CancellationToken ct);
+
+    /// <summary>Loads the models now, so a read that follows does not wait for them. Never throws.</summary>
+    Task PrepareAsync();
 }
 
 /// <summary>
@@ -93,6 +96,25 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
     }
 
     public bool Available => !_failed;
+
+    public async Task PrepareAsync()
+    {
+        if (_failed || _models is not null)
+        {
+            return;
+        }
+
+        await _gate.WaitAsync();
+        try
+        {
+            _models ??= Load();
+            _lastUsedUtc = DateTime.UtcNow;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
 
     public async Task<string?> ReadAsync(byte[] image, double share, CancellationToken ct)
     {
