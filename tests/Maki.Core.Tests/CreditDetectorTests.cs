@@ -115,6 +115,74 @@ public class CreditDetectorTests
         CreditDetector.Find(chapter.Length, Chapter(chapter), [.. references.Select(Chapter)]);
 
     [Fact]
+    public void Stored_strips_read_back_to_the_same_answer()
+    {
+        var credit = Credit(7);
+        var chapters = new[] { Pages(1, [credit], [credit]), Pages(2, [credit], [credit]), Pages(3, [credit], [credit]) };
+
+        CreditDetector.Edges RoundTrip(CreditDetector.Edges edges)
+        {
+            using var stream = new MemoryStream();
+            using (var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, leaveOpen: true))
+            {
+                edges.Write(writer);
+            }
+
+            stream.Position = 0;
+            using var reader = new BinaryReader(stream);
+            return CreditDetector.Edges.Read(reader);
+        }
+
+        var stored = chapters.Select(c => RoundTrip(Chapter(c))).ToList();
+
+        Assert.Equal(
+            CreditDetector.Find(chapters[0].Length, Chapter(chapters[0]), [.. chapters.Skip(1).Select(Chapter)]),
+            CreditDetector.Find(chapters[0].Length, stored[0], stored[1..]));
+        Assert.Equal(new CreditPages(1, 0, 1), CreditDetector.Find(chapters[0].Length, stored[0], stored[1..]));
+    }
+
+    [Fact]
+    public void A_credit_page_seen_in_another_chapter_is_a_bank_candidate()
+    {
+        var credit = Credit(7);
+        var source = Chapter(Pages(1, [credit], []));
+        var lone = Pages(2, [credit], []);
+
+        var found = CreditDetector.BankCandidates(lone.Length, Chapter(lone), source.Head, tail: false);
+
+        Assert.Equal(0, Assert.Single(found).Page);
+        Assert.Empty(CreditDetector.BankCandidates(lone.Length, Chapter(Pages(3, [], [])), source.Head, tail: false));
+    }
+
+    [Fact]
+    public void Signatures_of_one_page_are_alike_and_of_different_pages_are_not()
+    {
+        var credit = CreditDetector.SignatureOf(Chapter(Pages(1, [Credit(7)], [])).Head);
+        var again = CreditDetector.SignatureOf(Chapter(Pages(2, [Credit(7)], [])).Head);
+        var other = CreditDetector.SignatureOf(Chapter(Pages(3, [Credit(8)], [])).Head);
+
+        Assert.NotNull(credit);
+        Assert.True(CreditDetector.Alike(credit, again!));
+        Assert.False(CreditDetector.Alike(credit, other!));
+    }
+
+    [Fact]
+    public void A_blank_edge_has_no_signature()
+    {
+        var blank = new CreditPage(new GreyPage(Enumerable.Repeat((byte)255, W * 40).ToArray(), 40), new byte[40], new byte[40]);
+
+        Assert.Null(CreditDetector.SignatureOf(CreditDetector.Edge.Of([blank], tail: false)));
+    }
+
+    [Fact]
+    public void A_stream_that_holds_no_strip_is_refused()
+    {
+        using var reader = new BinaryReader(new MemoryStream([9, 0, 0, 0]));
+
+        Assert.Throws<InvalidDataException>(() => CreditDetector.Edge.Read(reader));
+    }
+
+    [Fact]
     public void A_credit_page_shared_by_three_chapters_is_hidden_whole()
     {
         var credit = Credit(7);

@@ -134,7 +134,8 @@ public sealed class HealthRunningWork(
     DownloadPauseService pauses,
     ProcessCpuSampler cpu,
     MakiDbContext db,
-    ILocalizer localizer)
+    ILocalizer localizer,
+    CreditScanWorker creditScan)
 {
     private static readonly QueueStatus[] InFlight =
     [
@@ -244,6 +245,7 @@ public sealed class HealthRunningWork(
         await AddJobsAsync(items, ct);
         AddEnhance(items);
         await AddConversionAsync(items, ct);
+        await AddCreditScanAsync(items, ct);
         await AddDownloadsAsync(items, ct);
         AddBulk(items);
         if (matches.Matching is > 0 and var matching)
@@ -294,6 +296,32 @@ public sealed class HealthRunningWork(
         {
             items.Add(new RunningItem("prepareAhead", Active: snapshot.BackgroundWorking, Waiting: snapshot.Background));
         }
+    }
+
+    /// <summary>
+    /// The background credit page scan, while it is on and has chapters left, or is searching one.
+    /// Paused, it keeps its row so Resume stays reachable.
+    /// </summary>
+    private async Task AddCreditScanAsync(List<RunningItem> items, CancellationToken ct)
+    {
+        var scan = creditScan.Current;
+        if (!scan.Wanted)
+        {
+            return;
+        }
+
+        var waiting = await creditScan.WaitingAsync(ct);
+        if (waiting == 0 && scan.Working is null)
+        {
+            return;
+        }
+
+        items.Add(new RunningItem("creditScan",
+            Active: scan.Working is null || scan.Paused ? 0 : 1,
+            Done: scan.Done,
+            Waiting: waiting,
+            Detail: scan.Paused ? null : scan.Working,
+            Control: scan.Paused ? "resume" : "pause"));
     }
 
     private async Task AddConversionAsync(List<RunningItem> items, CancellationToken ct)

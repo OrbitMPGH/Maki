@@ -1512,6 +1512,10 @@ msgid "{diff, plural, other {# behind}}"
 msgstr "{diff, plural, other {#챕터 뒤처짐}}"
 
 #: src/pages/HealthPage.tsx
+msgid "{done, plural, one {# chapter searched} other {# chapters searched}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 msgid "{done, plural, one {# file done this pass} other {# files done this pass}}"
 msgstr ""
 
@@ -1990,6 +1994,11 @@ msgstr "{left, plural, other {#개 남음}}"
 #, fuzzy
 msgid "{left, plural, one {# left} other {# left}}, about {eta}"
 msgstr "{left, plural, other {#개 남음}}, 약 {eta}"
+
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{leftOut, plural, one {You've read every chapter you kept. # chapter was left out. Done with this series?} other {You've read every chapter you kept. # chapters were left out. Done with this series?}}"
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -3439,6 +3448,10 @@ msgstr "{volumesText} + {chaptersText}"
 #, fuzzy
 msgid "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
 msgstr "{waited, plural, other {6개월 넘게 기다린 작품이 #개 있습니다.}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# chapter left} other {# chapters left}}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "{waiting, plural, one {# file left} other {# files left}}"
@@ -10655,6 +10668,10 @@ msgstr "찾기 검색"
 msgid "Finding a source…"
 msgstr "소스를 찾는 중…"
 
+#: src/pages/HealthPage.tsx
+msgid "Finding credit pages"
+msgstr ""
+
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -14138,6 +14155,11 @@ msgstr "Mihon에서 읽은 챕터를 읽음으로 표시"
 msgid "Mark chapters watched"
 msgstr "챕터를 시청 완료로 표시"
 
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Mark completed"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -16590,7 +16612,9 @@ msgstr "아직 확인되지 않았습니다. 이 파일을 교체하거나 삭�
 msgid "Not working"
 msgstr "작동하지 않음"
 
+#: src/components/series/CompleteHint.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 msgid "Not yet"
 msgstr ""
 
@@ -18195,6 +18219,7 @@ msgid "Path mapping, Maki side"
 msgstr "경로 매핑, Maki 쪽"
 
 #: src/components/QueuePause.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Pause"
@@ -20995,6 +21020,7 @@ msgstr "결과"
 #: src/components/home/NextUpList.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -21944,6 +21970,10 @@ msgstr "{0}의 점수"
 #, fuzzy
 msgid "Score: {score}"
 msgstr "점수: {score}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Scores and links"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -28300,6 +28330,11 @@ msgstr "다 읽었어요. 보관할까요?"
 #, fuzzy
 msgid "You've finished this. How was it?"
 msgstr "다 읽었어요. 어땠나요?"
+
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You've read every chapter. Done with this series?"
+msgstr ""
 
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy

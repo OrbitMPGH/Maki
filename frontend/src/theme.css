@@ -11353,6 +11353,11 @@ body.reader-open {
   font-size: 0.875rem;
   color: var(--reader-ink-3);
 }
+.reader-end-complete {
+  display: flex;
+  flex-direction: column;
+  margin-top: 14px;
+}
 .reader-end-quiet {
   --button-color: var(--reader-ink-2);
   --button-hover: var(--reader-border);

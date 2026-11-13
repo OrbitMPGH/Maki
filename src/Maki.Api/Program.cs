@@ -1028,6 +1028,8 @@ try
     builder.Services.AddSingleton<PageConversionEstimateService>();
     builder.Services.AddSingleton<PageConversionWorker>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<PageConversionWorker>());
+    builder.Services.AddSingleton<CreditScanWorker>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<CreditScanWorker>());
     builder.Services.AddScoped<UpgradeEvaluationService>();
     builder.Services.AddScoped<UpgradeProfileSeeder>();
     builder.Services.AddScoped<SourceQualitySeeder>();
@@ -1076,6 +1078,7 @@ try
     builder.Services.AddScoped<StatsStandingService>();
     builder.Services.AddScoped<ReadingSessionService>();
     builder.Services.AddScoped<ReadingSessionBackfillService>();
+    builder.Services.AddScoped<SeriesCompletionBackfillService>();
     // Backs UserMetricsService's short-lived snapshot cache. The metrics are recomputed from the
     // event log rather than incremented, so an entry going stale costs a badge appearing a minute
     // late and nothing else.
@@ -1102,6 +1105,9 @@ try
     builder.Services.AddScoped<ReaderThumbnailCache>();
     builder.Services.AddSingleton<ReaderRecapCache>();
     builder.Services.AddSingleton<ReaderCreditsCache>();
+    builder.Services.AddSingleton<CreditStore>();
+    builder.Services.AddSingleton<CreditStrips>();
+    builder.Services.AddSingleton<CreditBank>();
     builder.Services.AddSingleton(sp => new Maki.Api.Services.Ocr.PageTextReader(
         sp.GetRequiredService<ILogger<Maki.Api.Services.Ocr.PageTextReader>>()));
     builder.Services.AddSingleton<Maki.Api.Services.Ocr.IPageTextReader>(sp =>
@@ -1715,6 +1721,10 @@ try
         // Stitches historical ReadingTime events into ReadingSessions once, so sittings exist
         // on the stats page from the first release rather than only for reads after upgrade.
         scope.ServiceProvider.GetRequiredService<ReadingSessionBackfillService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // Series finished before the Completed reading status existed get it, so the trackers hear.
+        scope.ServiceProvider.GetRequiredService<SeriesCompletionBackfillService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         // After the backfill, so rows it just seeded are already keyed and this pass has nothing

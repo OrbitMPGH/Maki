@@ -27,15 +27,14 @@ import {
   useRecommendationDetail,
   type RecommendationItem,
 } from '../../api/hooks'
-import type { MetadataLink, RootFolder } from '../../api/types'
+import type { RootFolder } from '../../api/types'
 import { formatFixedDecimal } from '../../format'
 import { AnimeCoverageBar } from '../AnimeCoverageBar'
 import { AnimeResumeCallout } from '../series/AnimeResumeCallout'
 import { HeroBackdrop } from '../series/HeroBackdrop'
 import { HeroChips } from '../series/HeroChips'
 import { engineReason } from '../ui/DiscoverRail'
-import { MetadataLinks } from '../MetadataLinks'
-import { MetadataSiteIcon } from '../MetadataSiteIcon'
+import { ScoredSiteChips } from '../ScoredSiteChips'
 import {
   seriesStatusVisual,
   statusToken,
@@ -222,19 +221,8 @@ export function DiscoverDetailModal({
   const typeLabel = detail?.type ? renderLabel(TYPE_LABELS[detail.type] ?? detail.type) : null
   const titleLength = title.length > 70 ? 'long' : title.length > 36 ? 'medium' : undefined
 
-  // Each site's score rides on its own link mark, so the ratings and the places they come from
-  // are one row. A rated site with no id in the dump keeps a plain mark.
-  const ratingBySite = new Map((detail?.sourceRatings ?? []).map((r) => [r.source.toLowerCase(), r.rating]))
-  // Scored sites first: a bare mark leading the row read as a rating that failed to load.
-  const links: MetadataLink[] = (detail?.links ?? [])
-    .map((link) => {
-      const rating = ratingBySite.get(link.site)
-      return rating != null && link.score == null ? { ...link, score: formatFixedDecimal(rating / 10, 1) } : link
-    })
-    .sort((a, b) => Number(b.score != null) - Number(a.score != null))
-  const unlinkedRatings = (detail?.sourceRatings ?? []).filter(
-    (r) => !links.some((link) => link.site === r.source.toLowerCase()),
-  )
+  const links = detail?.links ?? []
+  const sourceRatings = detail?.sourceRatings ?? []
 
   // Named locals for the tooltip sentence below: Lingui only names a placeholder after the
   // expression when it is a plain identifier, so a member access or a formatter call would
@@ -502,27 +490,10 @@ export function DiscoverDetailModal({
                     </HeroChips>
 
                     {/* The score where it stands, and the sites with their own scores on them. */}
-                    {(score != null || links.length > 0 || unlinkedRatings.length > 0) && (
+                    {(score != null || links.length > 0 || sourceRatings.length > 0) && (
                       <div className="hero-scoreline">
                         {score != null && <ScoreFigure score={score} standing={detail?.scoreStanding} />}
-                        {(links.length > 0 || unlinkedRatings.length > 0) && (
-                          <MetadataLinks
-                            links={links}
-                            chips
-                            extra={unlinkedRatings.map((r) => (
-                              <Tooltip key={r.source} label={r.source} withArrow zIndex={1001}>
-                                <span className="site-chip" data-static tabIndex={0}>
-                                  <MetadataSiteIcon
-                                    site={r.source.toLowerCase()}
-                                    monogram={r.source.slice(0, 2).toUpperCase()}
-                                    size={15}
-                                  />
-                                  <span className="tnum">{formatFixedDecimal(r.rating / 10, 1)}</span>
-                                </span>
-                              </Tooltip>
-                            ))}
-                          />
-                        )}
+                        <ScoredSiteChips links={links} sourceRatings={sourceRatings} />
                       </div>
                     )}
                   </div>

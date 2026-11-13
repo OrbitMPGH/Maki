@@ -9,8 +9,10 @@ namespace Maki.Api.Services;
 /// The total is the locked total, else the largest of MangaBaka's total, the highest whole chapter
 /// listed and the number of main chapters listed. Specials (decimal chapter numbers) count on every
 /// side only while the reader keeps them: neither the global "unmonitor specials" setting nor the
-/// series' Main only mode is on. MangaBaka's total counts main chapters, so kept specials are added on
-/// top of it.
+/// series' Main only mode is on. MangaBaka's total usually counts main chapters, so kept specials are
+/// added on top of it. Some entries count the extras too (26 chapters and 3 specials listed against
+/// 29): when the main chapters fall short of the total and the specials make up exactly the
+/// difference, the specials come off MangaBaka's number.
 /// </para>
 /// <para>
 /// A chapter the user switched off (Wanted off, no file, never had one) is left out of the listed
@@ -41,9 +43,10 @@ public static class SeriesProgressScope
             ? new SwitchedOff(0, 0, highestMain)
             : switchedOff;
         var offMain = Math.Max(0, off.Chapters - off.Specials);
-        var main = MainTotal(series, Math.Max(0, known - specials - offMain), off.HighestKeptMain);
+        var mangaBaka = MangaBakaMain(series.TotalChapters, Math.Max(0, known - specials), highestMain, specials);
+        var main = MainTotal(series, mangaBaka, Math.Max(0, known - specials - offMain), off.HighestKeptMain);
         // What the switches actually took off: a MangaBaka total above the rows keeps its floor.
-        var mainOff = MainTotal(series, Math.Max(0, known - specials), highestMain) - main;
+        var mainOff = MainTotal(series, mangaBaka, Math.Max(0, known - specials), highestMain) - main;
         var includedSpecials = countSpecials ? Math.Max(0, specials - off.Specials) : 0;
 
         return new Totals(
@@ -58,7 +61,7 @@ public static class SeriesProgressScope
 
     // Every main chapter listed is a floor too: a chapter 0, a one-shot or a volume entry is
     // counted as had, and a total below the rows would read "100 of 99".
-    private static int MainTotal(Series series, int listedMain, double? highestMain)
+    private static int MainTotal(Series series, int mangaBaka, int listedMain, double? highestMain)
     {
         if (series.IsLocked(SeriesMetadataField.TotalChapters) && series.TotalChapters is { } locked)
         {
@@ -66,6 +69,17 @@ public static class SeriesProgressScope
         }
 
         var highest = highestMain is { } h ? (int)Math.Floor(h) : 0;
-        return Math.Max(Math.Max(series.TotalChapters ?? 0, highest), listedMain);
+        return Math.Max(Math.Max(mangaBaka, highest), listedMain);
+    }
+
+    private static int MangaBakaMain(int? total, int listedMain, double? highestMain, int specials)
+    {
+        if (total is not { } t)
+        {
+            return 0;
+        }
+
+        var main = Math.Max(listedMain, highestMain is { } h ? (int)Math.Floor(h) : 0);
+        return specials > 0 && main < t && main + specials == t ? main : t;
     }
 }

@@ -1109,6 +1109,21 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
             _ => NoContent(),
         };
 
+    /// <summary>Holds the background credit page scan after the chapter in hand, until resumed or a restart.</summary>
+    [HttpPost("running/creditscan/pause")]
+    public IActionResult PauseCreditScan([FromServices] CreditScanWorker creditScan)
+    {
+        creditScan.Pause();
+        return NoContent();
+    }
+
+    [HttpPost("running/creditscan/resume")]
+    public IActionResult ResumeCreditScan([FromServices] CreditScanWorker creditScan)
+    {
+        creditScan.Resume();
+        return NoContent();
+    }
+
     /// <summary>Cancels a bulk series edit whoever started it. Series already done stay done.</summary>
     [HttpPost("running/bulk/{operationId:guid}/stop")]
     public IActionResult StopBulk(Guid operationId, [FromServices] SeriesBulkOperations bulk) =>

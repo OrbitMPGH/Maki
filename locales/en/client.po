@@ -1300,6 +1300,10 @@ msgid "{diff, plural, other {# behind}}"
 msgstr "{diff, plural, other {# behind}}"
 
 #: src/pages/HealthPage.tsx
+msgid "{done, plural, one {# chapter searched} other {# chapters searched}}"
+msgstr "{done, plural, one {# chapter searched} other {# chapters searched}}"
+
+#: src/pages/HealthPage.tsx
 msgid "{done, plural, one {# file done this pass} other {# files done this pass}}"
 msgstr "{done, plural, one {# file done this pass} other {# files done this pass}}"
 
@@ -1703,6 +1707,11 @@ msgstr "{left, plural, one {# left} other {# left}}"
 #: src/pages/stats/MidwayList.tsx
 msgid "{left, plural, one {# left} other {# left}}, about {eta}"
 msgstr "{left, plural, one {# left} other {# left}}, about {eta}"
+
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{leftOut, plural, one {You've read every chapter you kept. # chapter was left out. Done with this series?} other {You've read every chapter you kept. # chapters were left out. Done with this series?}}"
+msgstr "{leftOut, plural, one {You've read every chapter you kept. # chapter was left out. Done with this series?} other {You've read every chapter you kept. # chapters were left out. Done with this series?}}"
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "{levelName}, {methodName}"
@@ -2903,6 +2912,10 @@ msgstr "{volumesText} + {chaptersText}"
 #: src/pages/discover/ShortlistTab.tsx
 msgid "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
 msgstr "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# chapter left} other {# chapters left}}"
+msgstr "{waiting, plural, one {# chapter left} other {# chapters left}}"
 
 #: src/pages/HealthPage.tsx
 msgid "{waiting, plural, one {# file left} other {# files left}}"
@@ -8927,6 +8940,10 @@ msgstr "Find search"
 msgid "Finding a source…"
 msgstr "Finding a source…"
 
+#: src/pages/HealthPage.tsx
+msgid "Finding credit pages"
+msgstr "Finding credit pages"
+
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
 msgid "Finding source"
@@ -11830,6 +11847,11 @@ msgstr "Mark chapters read in Mihon as read"
 msgid "Mark chapters watched"
 msgstr "Mark chapters watched"
 
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Mark completed"
+msgstr "Mark completed"
+
 #: src/components/series/ChapterTableRows.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -13879,7 +13901,9 @@ msgstr "Not verified yet. Replacing or deleting this file needs a verify first."
 msgid "Not working"
 msgstr "Not working"
 
+#: src/components/series/CompleteHint.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 msgid "Not yet"
 msgstr "Not yet"
 
@@ -15214,6 +15238,7 @@ msgid "Path mapping, Maki side"
 msgstr "Path mapping, Maki side"
 
 #: src/components/QueuePause.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
 msgid "Pause"
 msgstr "Pause"
@@ -17552,6 +17577,7 @@ msgstr "Result"
 #: src/components/home/NextUpList.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Resume"
@@ -18351,6 +18377,10 @@ msgstr "Score for {0}"
 #: src/components/series/FileQualityBadge.tsx
 msgid "Score: {score}"
 msgstr "Score: {score}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Scores and links"
+msgstr "Scores and links"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Scores are set inside each profile."
@@ -23635,6 +23665,11 @@ msgstr "You've finished this. Archive it?"
 #: src/components/series/RateHint.tsx
 msgid "You've finished this. How was it?"
 msgstr "You've finished this. How was it?"
+
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You've read every chapter. Done with this series?"
+msgstr "You've read every chapter. Done with this series?"
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "your {detail} list"

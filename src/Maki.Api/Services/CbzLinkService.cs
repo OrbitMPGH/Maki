@@ -254,6 +254,8 @@ public class CbzLinkService(
             {
                 PageConversionWorker.Signal();
             }
+
+            CreditScanWorker.Signal();
         }
 
         return (existing, created);

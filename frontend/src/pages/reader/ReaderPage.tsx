@@ -243,9 +243,12 @@ export default function ReaderPage() {
     pageCount >= CREDITS_MIN_PAGES &&
     !offline &&
     !manifestServedOffline(chapterId)
+  // An answer the server already stored comes with the manifest, so nothing waits for a search.
+  const storedCredits = manifest?.chapterId === chapterId ? manifest.credits : null
   const { data: creditsFound, isError: creditsFailed } = useQuery({
     ...readerCreditsQuery(chapterId, manifest?.pageVersion),
     enabled: creditsWanted,
+    initialData: storedCredits && manifest ? { ...storedCredits, pageVersion: manifest.pageVersion } : undefined,
   })
   const creditsPending = creditsWanted && creditsFound === undefined && !creditsFailed
   const creditsHeld = creditsPending && creditsWaited !== chapterId
@@ -503,9 +506,12 @@ export default function ReaderPage() {
   useEffect(() => {
     if (recapAhead != null) void queryClient.prefetchQuery(readerRecapQuery(recapAhead))
   }, [recapAhead, queryClient])
-  // The next chapter's credit pages are asked for while this one ends, so it opens without waiting.
+  // The next chapter's credit pages are asked for once this one's are known, so it opens without
+  // waiting: on a cold server the search takes longer than reading a short chapter.
   const creditsAhead =
-    prefs.hideCredits && !offline && resumedFor === manifest?.chapterId && nearEnd ? (manifest?.nextChapterId ?? null) : null
+    prefs.hideCredits && !offline && resumedFor === manifest?.chapterId && !creditsPending
+      ? (manifest?.nextChapterId ?? null)
+      : null
   useEffect(() => {
     if (creditsAhead != null) void prefetchReaderCredits(queryClient, creditsAhead)
   }, [creditsAhead, queryClient])

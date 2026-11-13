@@ -16,6 +16,52 @@ public class ScrobblePlannerTests
     }
 
     [Fact]
+    public void ACompletedSeriesCompletesAnEntryWhoseTotalCountsTheSkippedSpecials()
+    {
+        // 26 main chapters read, the three specials skipped, and the tracker counts all 29.
+        var entry = new RemoteEntry(ProgressChapter: 26, Status: ScrobbleStatus.Reading, TotalChapters: 29);
+        var plan = ScrobblePlanner.Decide(entry, chapter: 26, volume: 0, held: ScrobbleStatus.Completed);
+
+        Assert.Equal((true, 29, ScrobbleStatus.Completed), (plan.Write, plan.Chapter, plan.PushStatus));
+    }
+
+    [Fact]
+    public void ACompletedSeriesWithNoTrackerTotalKeepsTheMark()
+    {
+        var entry = new RemoteEntry(ProgressChapter: 20, Status: ScrobbleStatus.Reading);
+        var plan = ScrobblePlanner.Decide(entry, chapter: 26, volume: 3, held: ScrobbleStatus.Completed);
+
+        Assert.Equal((true, 26, 3, ScrobbleStatus.Completed), (plan.Write, plan.Chapter, plan.Volume, plan.PushStatus));
+    }
+
+    [Fact]
+    public void ACompletedSeriesWithNoNewProgressStillCompletesTheEntry()
+    {
+        var entry = new RemoteEntry(ProgressChapter: 26, ProgressVolume: 3, Status: ScrobbleStatus.Paused,
+            TotalChapters: 29, TotalVolumes: 4);
+        var plan = ScrobblePlanner.Decide(entry, chapter: 0, volume: 0, held: ScrobbleStatus.Completed);
+
+        Assert.Equal((true, 29, 4, ScrobbleStatus.Completed), (plan.Write, plan.Chapter, plan.Volume, plan.PushStatus));
+    }
+
+    [Fact]
+    public void AnAlreadyCompletedEntryKeepsItsOwnProgressShape()
+    {
+        var entry = new RemoteEntry(ProgressChapter: 20, Status: ScrobbleStatus.Completed, TotalChapters: 29);
+        var plan = ScrobblePlanner.Decide(entry, chapter: 26, volume: 0, held: ScrobbleStatus.Completed);
+
+        Assert.Equal((26, ScrobbleStatus.Completed), (plan.Chapter, plan.PushStatus));
+    }
+
+    [Fact]
+    public void AnAlreadyCompletedEntryIsLeftAlone()
+    {
+        var entry = new RemoteEntry(ProgressChapter: 29, Status: ScrobbleStatus.Completed, TotalChapters: 29);
+
+        Assert.False(ScrobblePlanner.Decide(entry, chapter: 26, volume: 0, held: ScrobbleStatus.Completed).Write);
+    }
+
+    [Fact]
     public void AFinishedOneShotPushesCompletedAtChapterOne()
     {
         // A one-shot never raises the chapter mark, so without the finished signal it stays at 0

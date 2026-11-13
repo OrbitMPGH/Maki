@@ -107,6 +107,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<PageConversionRule> PageConversionRules => Set<PageConversionRule>();
     public DbSet<PageConversionHistory> PageConversionHistory => Set<PageConversionHistory>();
     public DbSet<RecycleBinEntry> RecycleBin => Set<RecycleBinEntry>();
+    public DbSet<ChapterCredits> ChapterCredits => Set<ChapterCredits>();
+    public DbSet<CreditBankEntry> CreditBank => Set<CreditBankEntry>();
     public DbSet<TorrentProposal> TorrentProposals => Set<TorrentProposal>();
     public DbSet<SeriesMetadataChange> SeriesMetadataChanges => Set<SeriesMetadataChange>();
 
@@ -152,6 +154,25 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             "Status" = 1, "StatusChangedAt" = excluded."StatusChangedAt", "StatusAuto" = 0,
             "UpdatedAt" = excluded."UpdatedAt"
         WHERE "Status" <> 1
+        """;
+
+    /// <summary>
+    /// Moves a series to <see cref="ReadingStatus.Completed"/> for its reader, the same upsert as the
+    /// Reading promotion. Run after the save that recorded the read, so it lands after that promotion.
+    /// Only from Plan to read or Reading: a watched tick or an import is not a read and does not undo
+    /// a series the reader put on hold or dropped.
+    /// </summary>
+    public Task PromoteToCompletedAsync(int userId, int seriesId, CancellationToken ct) =>
+        Database.ExecuteSqlRawAsync(PromoteToCompletedSql, [userId, seriesId, DateTime.UtcNow], ct);
+
+    private const string PromoteToCompletedSql = """
+        INSERT INTO "UserSeriesStates" ("UserId", "SeriesId", "Status", "StatusChangedAt", "StatusAuto", "UpdatedAt",
+            "NotificationMode", "PendingRatingCheckpoint", "RatingCheckpointsSeen", "RatingPromptDismissals")
+        VALUES ({0}, {1}, 4, {2}, 0, {2}, 0, 0, 0, 0)
+        ON CONFLICT ("UserId", "SeriesId") DO UPDATE SET
+            "Status" = 4, "StatusChangedAt" = excluded."StatusChangedAt", "StatusAuto" = 0,
+            "UpdatedAt" = excluded."UpdatedAt"
+        WHERE "Status" IN (0, 1)
         """;
 
     /// <summary>
@@ -766,6 +787,26 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne<Series>().WithMany().HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
             // The history outlives the account that made an edit; it then reads as an unknown user.
             e.HasOne<MakiUser>().WithMany().HasForeignKey(c => c.UserId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<ChapterCredits>(e =>
+        {
+            e.HasKey(c => c.ChapterId);
+            e.HasQueryFilter(c => _scope.Unrestricted || Series.Any(s => s.Id == c.SeriesId));
+            e.HasIndex(c => c.SeriesId);
+            e.Property(c => c.EdgeKey).HasMaxLength(32);
+            e.Property(c => c.ReferencesKey).HasMaxLength(32);
+            e.HasOne<Chapter>().WithOne().HasForeignKey<ChapterCredits>(c => c.ChapterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Series>().WithMany().HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<CreditBankEntry>(e =>
+        {
+            e.ToTable("CreditBank");
+            // The search reads it whole with filters off; never served to a reader as rows.
+            e.HasQueryFilter(b => _scope.Unrestricted || Series.Any(s => s.Id == b.SeriesId));
+            e.HasOne<Series>().WithMany().HasForeignKey(b => b.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Chapter>().WithMany().HasForeignKey(b => b.SourceChapterId).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<RecycleBinEntry>(e =>

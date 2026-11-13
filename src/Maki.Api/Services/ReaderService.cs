@@ -31,9 +31,35 @@ public class ReaderService(
         IReadOnlyList<string> Pages,
         int StartPage,
         int PageCount,
-        long ArchiveStamp = 0)
+        long ArchiveStamp = 0,
+        string? EdgeKey = null)
     {
         public string ArchiveVersion => ArchiveVersionOf(ArchiveSize, ArchiveStamp);
+    }
+
+    /// <summary>
+    /// What the credit page search's answer for a slice is keyed on: the page count and the checksum and
+    /// size of every page an edge strip can take (<see cref="Maki.Core.Images.CreditDetector.EdgePages"/>
+    /// from each end), as the zip directory records them. Unlike <see cref="ChapterSlice.ArchiveVersion"/>
+    /// it survives a ComicInfo rewrite, which copies every page unchanged. Null for a PDF.
+    /// </summary>
+    internal static string? EdgeKeyOf(ReaderArchiveCache.ArchiveInfo info, int start, int count)
+    {
+        if (info.Entries is not { } entries || count <= 0 || start < 0 || start + count > entries.Count)
+        {
+            return null;
+        }
+
+        var edge = Math.Min(Maki.Core.Images.CreditDetector.EdgePages, count);
+        var text = new System.Text.StringBuilder().Append(count);
+        foreach (var index in Enumerable.Range(0, edge).Concat(Enumerable.Range(count - edge, edge)).Distinct())
+        {
+            var entry = entries[start + index];
+            text.Append('|').Append(entry.Crc.ToString("x8")).Append(':').Append(entry.Length);
+        }
+
+        var hash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text.ToString()));
+        return Convert.ToHexStringLower(hash.AsSpan(0, 10));
     }
 
     /// <summary>
@@ -92,7 +118,7 @@ public class ReaderService(
         var (start, count) = SliceBounds(info, row.Chapter.Number, row.SharesFile);
 
         return new ChapterSlice(
-            row.Chapter, row.Series, file.Id, absolute, file.Size, info.Pages, start, count, stamp);
+            row.Chapter, row.Series, file.Id, absolute, file.Size, info.Pages, start, count, stamp, EdgeKeyOf(info, start, count));
     }
 
     /// <summary>Just what serving one page or thumbnail needs: no Chapter or Series entity.</summary>
@@ -210,7 +236,8 @@ public class ReaderService(
 
             var (start, count) = SliceBounds(info, row.Chapter.Number, row.SharesFile);
             slices[row.Chapter.Id] = new ChapterSlice(
-                row.Chapter, row.Series, row.File.Id, absolute, row.File.Size, info.Pages, start, count, stamp);
+                row.Chapter, row.Series, row.File.Id, absolute, row.File.Size, info.Pages, start, count, stamp,
+                EdgeKeyOf(info, start, count));
         }
 
         return slices;
@@ -372,12 +399,46 @@ public class ReaderService(
         return found;
     }
 
+    /// <summary>
+    /// What <see cref="NearbySlicesAsync"/> answers, worked out over slices already resolved in reading
+    /// order (null where a chapter cannot be read), for a caller that holds a whole series. The two
+    /// must agree, or the background credit scan and the reader compare against different chapters.
+    /// </summary>
+    internal static (List<ChapterSlice> Before, List<ChapterSlice> After) NearbyOf(
+        IReadOnlyList<ChapterSlice?> ordered, int at, int each, Func<ChapterSlice, bool> usable)
+    {
+        var reach = each * NearbyScanFactor;
+        var before = new List<ChapterSlice>();
+        for (var i = at - 1; i >= Math.Max(0, at - reach) && before.Count < each; i--)
+        {
+            if (ordered[i] is { } slice && usable(slice))
+            {
+                before.Add(slice);
+            }
+        }
+
+        var after = new List<ChapterSlice>();
+        for (var i = at + 1; i < Math.Min(ordered.Count, at + 1 + reach) && after.Count < each; i++)
+        {
+            if (ordered[i] is { } slice && usable(slice))
+            {
+                after.Add(slice);
+            }
+        }
+
+        return (before, after);
+    }
+
     /// <summary>The downloaded chapters of the chapter's series and language, in reading order.</summary>
-    private async Task<List<int>> ReadingOrderAsync(Chapter chapter, CancellationToken ct)
+    private Task<List<int>> ReadingOrderAsync(Chapter chapter, CancellationToken ct) =>
+        ReadingOrderAsync(chapter.SeriesId, chapter.Language, ct);
+
+    /// <summary>The downloaded chapters of a series in one language, in reading order.</summary>
+    public async Task<List<int>> ReadingOrderAsync(int seriesId, string language, CancellationToken ct)
     {
         var siblings = await db.Chapters
             .AsNoTracking()
-            .Where(c => c.SeriesId == chapter.SeriesId && c.Language == chapter.Language && c.ChapterFileId != null)
+            .Where(c => c.SeriesId == seriesId && c.Language == language && c.ChapterFileId != null)
             .Select(c => new { c.Id, c.Number, c.Volume })
             .ToListAsync(ct);
 

@@ -1886,6 +1886,17 @@ export function useDismissArchiveHint() {
   })
 }
 
+export function useDismissCompleteHint() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/series/${id}/complete-hint/dismiss`, { method: 'POST' }),
+    onSuccess: (_, id) => {
+      void queryClient.invalidateQueries({ queryKey: ['series', id] })
+      void queryClient.invalidateQueries({ queryKey: ['reader-ending', id] })
+    },
+  })
+}
+
 export function useDismissRateHint() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -2897,6 +2908,7 @@ export function useSetReadingStatus() {
     onSuccess: (_data, { seriesId }) => {
       void queryClient.invalidateQueries({ queryKey: ['series', seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series'] })
+      void queryClient.invalidateQueries({ queryKey: ['reader-ending', seriesId] })
     },
   })
 }

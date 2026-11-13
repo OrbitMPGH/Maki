@@ -119,6 +119,33 @@ public sealed class SeriesProgressScopeTests : IDisposable
         Assert.Equal((11, 2, 1), (t.Total, t.Skipped, t.IncludedSpecials));
     }
 
+    // Chapters 1 to 26 plus specials 7.1, 7.5 and 13.5, against a MangaBaka total of 29 that counts them.
+    [Fact]
+    public void A_MangaBaka_total_that_counts_the_specials_loses_them_when_they_are_switched_off()
+    {
+        var t = SeriesProgressScope.Compute(Series(29), known: 29, had: 26, specials: 3, specialsHad: 0,
+            highestMain: 26, read: 26, readSpecials: 0, unmonitorSpecials: false,
+            new SeriesProgressScope.SwitchedOff(3, 3, 26));
+
+        Assert.Equal((26, 26, 3), (t.Total, t.Read, t.Skipped));
+    }
+
+    [Fact]
+    public void A_MangaBaka_total_that_counts_the_specials_is_not_raised_by_them_again()
+    {
+        Assert.Equal(29, SeriesProgressScope.Compute(Series(29), 29, 29, 3, 3, 26, 29, 3, false).Total);
+        Assert.Equal(26, SeriesProgressScope.Compute(Series(29), 29, 29, 3, 3, 26, 29, 3, true).Total);
+    }
+
+    [Fact]
+    public void A_listing_short_of_the_MangaBaka_total_keeps_it_whole()
+    {
+        var t = SeriesProgressScope.Compute(Series(100), known: 60, had: 60, specials: 5, specialsHad: 5,
+            highestMain: 55, read: null, readSpecials: 0, unmonitorSpecials: true);
+
+        Assert.Equal(100, t.Total);
+    }
+
     [Fact]
     public void A_None_series_ignores_the_switches_it_stamped_off_itself()
     {

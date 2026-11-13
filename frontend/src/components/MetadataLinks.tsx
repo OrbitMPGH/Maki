@@ -23,7 +23,7 @@ export function MetadataLinks({
 }) {
   const { t } = useLingui()
 
-  if (links.length === 0) return null
+  if (links.length === 0 && !extra) return null
 
   const open = (e: MouseEvent, url: string) => {
     e.preventDefault()

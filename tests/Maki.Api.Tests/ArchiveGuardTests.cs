@@ -801,11 +801,22 @@ public sealed class ArchiveGuardTests : IDisposable
     }
 
     [Fact]
-    public async Task SourceMappingQuality_refuses_archived_series()
+    public async Task SourceMappingQuality_answers_for_archived_series()
     {
         var (_, archived) = Pair();
+        var db = _db.NewContext();
 
-        AssertArchived(await Mappings(_db.NewContext()).Quality(archived, null!, default));
+        var registry = new SourceRegistry([new FakeSource { Name = "fake" }]);
+        var controller = new SourceMappingController(
+            new TestLocalizer(), db, registry, new FakeAppSettings(), Sources.AllEnabled, new SourceMatchQueue(),
+            null!, null!, null!, new SourceOrderService(registry, TestQuality.Create(registry)),
+            new SourceScoutService(_db.ScopeFactory(), registry, Sources.AllEnabled, null!, null!,
+                NullLogger<SourceScoutService>.Instance),
+            new TestCurrentUser(1), NullLogger<SourceMappingController>.Instance);
+
+        var result = await controller.Quality(archived, new UpgradeEvaluationService(db, TestQuality.Create(registry)), default);
+
+        Assert.IsType<OkObjectResult>(result);
     }
 
     [Fact]

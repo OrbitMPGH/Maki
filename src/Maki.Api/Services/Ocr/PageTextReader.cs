@@ -19,6 +19,9 @@ public interface IPageTextReader
     /// Never throws for either.
     /// </summary>
     Task<string?> ReadAsync(byte[] image, double share, CancellationToken ct);
+
+    /// <summary>Loads the models now, so a read that follows does not wait for them. Never throws.</summary>
+    Task PrepareAsync();
 }
 
 /// <summary>
@@ -39,6 +42,9 @@ public interface IPageTextReader
 public sealed class PageTextReader : IPageTextReader, IDisposable
 {
     public const string FolderName = "OcrModels";
+
+    /// <summary>Bumped whenever the models or the reading steps change what text comes out; stored text below it is read again.</summary>
+    public const int Version = 1;
     public const string DetectionFile = "ch_PP-OCRv3_det_infer.onnx";
     public const string RecognitionFile = "ch_PP-OCRv3_rec_infer.onnx";
 
@@ -93,6 +99,25 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
     }
 
     public bool Available => !_failed;
+
+    public async Task PrepareAsync()
+    {
+        if (_failed || _models is not null)
+        {
+            return;
+        }
+
+        await _gate.WaitAsync();
+        try
+        {
+            _models ??= Load();
+            _lastUsedUtc = DateTime.UtcNow;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
 
     public async Task<string?> ReadAsync(byte[] image, double share, CancellationToken ct)
     {

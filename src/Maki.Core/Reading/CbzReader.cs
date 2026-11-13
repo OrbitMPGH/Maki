@@ -43,6 +43,17 @@ public static class CbzReader
                segments.Any(s => s.Equals("__MACOSX", StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>
+    /// Image entries of an open archive, in reading order, with the checksum and size the zip's own
+    /// directory records for each. Rewriting ComicInfo.xml copies every page and keeps these.
+    /// </summary>
+    public static List<PageEntry> PageEntries(ZipArchive archive) =>
+        archive.Entries
+            .Where(e => IsImage(e.FullName))
+            .Select(e => new PageEntry(e.FullName, e.Crc32, e.Length))
+            .OrderBy(e => e.Name, NaturalFileNameComparer.Instance)
+            .ToList();
+
     /// <summary>Image entries of an open archive, in reading order.</summary>
     public static List<string> PageNames(ZipArchive archive) =>
         archive.Entries
@@ -287,3 +298,6 @@ public static class CbzReader
         }
     }
 }
+
+/// <summary>One page entry of a CBZ: its name, and the CRC-32 and uncompressed size its directory records.</summary>
+public readonly record struct PageEntry(string Name, uint Crc, long Length);
