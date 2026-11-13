@@ -1654,14 +1654,10 @@ msgstr "{fileCount, plural, other {단일 챕터 파일 #개}}"
 msgid "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
 msgstr "{fileMissing, plural, other {파일이 없는 다운로드 챕터 #개는 다운로드 집계에서 제외됩니다.}}"
 
+#: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk.} other {# chapters have no file on disk.}}"
 msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk} other {# chapters have no file on disk}}"
-msgstr "{fileMissingFilterCount, plural, other {디스크에 파일이 없는 챕터 #개}}"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -6241,7 +6237,6 @@ msgid "Categories"
 msgstr "카테고리"
 
 #: src/components/discover/DiscoverSeedStrip.tsx
-#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Caught up"
 msgstr "따라잡음"
@@ -9456,7 +9451,6 @@ msgstr ""
 msgid "drop folder, watch folder, auto import, incoming, blackhole, move, copy, poll"
 msgstr ""
 
-#: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/stats/ActivityFeed.tsx
@@ -10742,7 +10736,6 @@ msgstr "완독률"
 msgid "Finish setup"
 msgstr "설정 완료"
 
-#: src/components/series/SeriesHero.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -17389,7 +17382,6 @@ msgstr "이 시리즈에서는 켬"
 msgid "On hiatus since you saved it"
 msgstr "저장한 뒤 휴재 중"
 
-#: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -18825,6 +18817,7 @@ msgid "Profile created"
 msgstr "프로필 생성됨"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/stats/sectionList.ts
@@ -19568,7 +19561,6 @@ msgstr "표시 이름이 없는 독자는 공유 노트, 순위표, 편집 기�
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesActionsMenu.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/AchievementGrid.tsx

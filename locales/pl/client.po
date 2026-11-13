@@ -1654,14 +1654,10 @@ msgstr "{fileCount, plural, one {# pojedynczy plik} few {# pojedyncze pliki} man
 msgid "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
 msgstr "{fileMissing, plural, one {# pobrany rozdział nie ma pliku, więc Pobrania go pomijają.} few {# pobrane rozdziały nie mają plików, więc Pobrania je pomijają.} many {# pobranych rozdziałów nie ma plików, więc Pobrania je pomijają.} other {# pobranego rozdziału nie ma pliku, więc Pobrania go pomijają.}}"
 
+#: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk.} other {# chapters have no file on disk.}}"
 msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk} other {# chapters have no file on disk}}"
-msgstr "{fileMissingFilterCount, plural, one {# rozdział nie ma pliku na dysku} few {# rozdziały nie mają pliku na dysku} many {# rozdziałów nie ma pliku na dysku} other {# rozdziału nie ma pliku na dysku}}"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -6241,7 +6237,6 @@ msgid "Categories"
 msgstr "Kategorie"
 
 #: src/components/discover/DiscoverSeedStrip.tsx
-#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Caught up"
 msgstr "Na bieżąco"
@@ -9456,7 +9451,6 @@ msgstr ""
 msgid "drop folder, watch folder, auto import, incoming, blackhole, move, copy, poll"
 msgstr ""
 
-#: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/stats/ActivityFeed.tsx
@@ -10742,7 +10736,6 @@ msgstr "Odsetek ukończonych serii"
 msgid "Finish setup"
 msgstr "Zakończ konfigurację"
 
-#: src/components/series/SeriesHero.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -17389,7 +17382,6 @@ msgstr "Włączone dla tej serii"
 msgid "On hiatus since you saved it"
 msgstr "Wstrzymane od zapisania"
 
-#: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -18825,6 +18817,7 @@ msgid "Profile created"
 msgstr "Utworzono profil"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/stats/sectionList.ts
@@ -19568,7 +19561,6 @@ msgstr "Czytelnicy bez nazwy wyświetlanej pojawiają się pod nazwą logowania 
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesActionsMenu.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/AchievementGrid.tsx

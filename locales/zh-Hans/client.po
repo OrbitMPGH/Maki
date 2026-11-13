@@ -1654,14 +1654,10 @@ msgstr "{fileCount, plural, other {# 个单独的文件}}"
 msgid "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
 msgstr "{fileMissing, plural, other {# 个已下载章节缺少文件，因此下载页面不会列出它们。}}"
 
+#: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk.} other {# chapters have no file on disk.}}"
 msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk} other {# chapters have no file on disk}}"
-msgstr "{fileMissingFilterCount, plural, other {# 个章节在磁盘上没有文件}}"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -6241,7 +6237,6 @@ msgid "Categories"
 msgstr "类别"
 
 #: src/components/discover/DiscoverSeedStrip.tsx
-#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Caught up"
 msgstr "已追上进度"
@@ -9456,7 +9451,6 @@ msgstr ""
 msgid "drop folder, watch folder, auto import, incoming, blackhole, move, copy, poll"
 msgstr ""
 
-#: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/stats/ActivityFeed.tsx
@@ -10742,7 +10736,6 @@ msgstr "完读率"
 msgid "Finish setup"
 msgstr "完成设置"
 
-#: src/components/series/SeriesHero.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -17389,7 +17382,6 @@ msgstr "此系列开启"
 msgid "On hiatus since you saved it"
 msgstr "自你保存后已暂停连载"
 
-#: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -18825,6 +18817,7 @@ msgid "Profile created"
 msgstr "配置文件已创建"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/stats/sectionList.ts
@@ -19568,7 +19561,6 @@ msgstr "没有显示名称的读者，在共享笔记、排行榜和编辑历史
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesActionsMenu.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/AchievementGrid.tsx

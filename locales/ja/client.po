@@ -1654,14 +1654,10 @@ msgstr "{fileCount, plural, other {#件の単一ファイル}}"
 msgid "{fileMissing, plural, one {# downloaded chapter is missing its file, so Downloads leaves it out.} other {# downloaded chapters are missing their files, so Downloads leaves them out.}}"
 msgstr "{fileMissing, plural, other {ファイルが見つからないダウンロード済みの#章は、ダウンロード画面の対象から外れます。}}"
 
+#: src/components/series/SeriesHero.tsx
 #: src/pages/SeriesDetailPage.tsx
 msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk.} other {# chapters have no file on disk.}}"
 msgstr ""
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "{fileMissingFilterCount, plural, one {# chapter has no file on disk} other {# chapters have no file on disk}}"
-msgstr "{fileMissingFilterCount, plural, other {ディスク上にファイルがない#章}}"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -6241,7 +6237,6 @@ msgid "Categories"
 msgstr "カテゴリ"
 
 #: src/components/discover/DiscoverSeedStrip.tsx
-#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Caught up"
 msgstr "追いついています"
@@ -9456,7 +9451,6 @@ msgstr ""
 msgid "drop folder, watch folder, auto import, incoming, blackhole, move, copy, poll"
 msgstr ""
 
-#: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/stats/ActivityFeed.tsx
@@ -10742,7 +10736,6 @@ msgstr "完読率"
 msgid "Finish setup"
 msgstr "セットアップを完了"
 
-#: src/components/series/SeriesHero.tsx
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/stats/ActivityFeed.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
@@ -17389,7 +17382,6 @@ msgstr "このシリーズではオン"
 msgid "On hiatus since you saved it"
 msgstr "保存後に休載になりました"
 
-#: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
@@ -18825,6 +18817,7 @@ msgid "Profile created"
 msgstr "プロファイルを作成しました"
 
 #: src/api/inbox.ts
+#: src/components/series/SeriesHero.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/stats/sectionList.ts
@@ -19568,7 +19561,6 @@ msgstr "表示名のない読者は、「別の読者」の代わりにログイ
 #: src/components/ImportListsSection.tsx
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/series/SeriesActionsMenu.tsx
-#: src/components/series/SeriesHero.tsx
 #: src/components/ui/status.tsx
 #: src/pages/settings/registry.ts
 #: src/pages/stats/AchievementGrid.tsx
