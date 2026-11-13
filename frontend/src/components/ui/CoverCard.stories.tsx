@@ -27,7 +27,20 @@ type Story = StoryObj<typeof meta>
 export const PartlyRead: Story = {
   play: async ({ canvas }) => {
     await waitFor(() => expect(canvas.getByRole('link')).toHaveAttribute('href', '/series/1'))
-    await expect(await canvas.findByText('11 new')).toBeVisible()
+    // The latest batch's unread files, as on Home's Recently added rail, not every unread chapter.
+    const pill = await canvas.findByText('3 new')
+    await expect(pill).toBeVisible()
+    await expect(pill).toHaveAttribute('data-tip', '3 recent chapter files')
+  },
+}
+
+/** Unread chapters but nothing new: the ring says what is left, and the count keeps its long form. */
+export const UnreadButNothingNew: Story = {
+  args: { series: { ...lanterns, newChapterCount: 0 } },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByText(/new$/)).toBeNull()
+    await expect(await canvas.findByText(/^\d+ of \d+$/)).toBeVisible()
+    await expect(await canvas.findByRole('img', { name: /downloaded read$/ })).toHaveAttribute('data-read', 'part')
   },
 }
 
@@ -73,10 +86,12 @@ export const Muted: Story = {
   },
 }
 
+/** No read ring without read tracking, but new files are still new. */
 export const ReadTrackingOff: Story = {
   args: { series: lanterns, readTracking: false },
   play: async ({ canvas }) => {
-    await expect(canvas.queryByText('11 new')).toBeNull()
+    await expect(await canvas.findByText('3 new')).toBeVisible()
+    await expect(canvas.queryByRole('img', { name: /downloaded read$/ })).toBeNull()
   },
 }
 
@@ -133,7 +148,7 @@ export const UnavailableOffline: Story = {
   args: { offline: 'unavailable' },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Not available offline')).toBeVisible()
-    await expect(canvas.queryByText('11 new')).toBeNull()
+    await expect(canvas.queryByText('3 new')).toBeNull()
     await waitFor(() => expect(canvas.getByRole('link')).toHaveAttribute('data-offline', 'unavailable'))
   },
 }

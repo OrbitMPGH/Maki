@@ -1,10 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { SettingsGroupTitle } from '../../components/settings/SettingsGroupTitle'
 import { useQueryClient } from '@tanstack/react-query'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
   ActionIcon,
-  Alert,
   Button,
   Code,
   Group,
@@ -26,8 +26,10 @@ import {
   useReaderUsed,
   useSaveReaderSettings,
 } from '../../api/reader'
+import { ModalFooter, ModalHeading } from '../../components/ui/ModalShell'
 import { useCopyText } from '../../components/ui/useCopyText'
 import { MintPasswordField, RecentSignInNotice, useMintConfirmation } from '../../components/settings/MintConfirmation'
+import { Callout } from '../../components/ui/Callout'
 
 /**
  * Keeping Maki's reader and Kavita in step. The reader's own settings live on the Reader card
@@ -241,9 +243,9 @@ export function OpdsSection() {
 
         {enabled && (
           <div>
-            <Text size="sm" fw={500} mb={4}>
+            <SettingsGroupTitle mb={4}>
               <Trans>Feed URL</Trans>
-            </Text>
+            </SettingsGroupTitle>
             {feedUrl ? (
               <>
                 <Group gap="xs" wrap="nowrap">
@@ -258,11 +260,11 @@ export function OpdsSection() {
                     </ActionIcon>
                   </Tooltip>
                 </Group>
-                <Alert color="var(--warn)" variant="light" mt="xs">
+                <Callout tone="warn" role="alert" mt="xs">
                   <Trans>
                     Copy this now. It can't be shown again; if you lose it, regenerate.
                   </Trans>
-                </Alert>
+                </Callout>
                 <Text size="xs" c="var(--ink-3)" mt={4}>
                   <Trans>From outside your network, replace the host with the address you use there.</Trans>
                 </Text>
@@ -310,9 +312,9 @@ export function OpdsSection() {
             {komga && (
               <Stack gap={6} mt="xs">
                 <Group gap="xs" wrap="nowrap">
-                  <Text size="sm" fw={500}>
+                  <SettingsGroupTitle>
                     <Trans>Server address</Trans>
-                  </Text>
+                  </SettingsGroupTitle>
                   <Code style={{ overflowWrap: 'anywhere' }}>{komgaAddress}</Code>
                   <Tooltip label={t`Copy server address`}>
                     <ActionIcon
@@ -326,9 +328,9 @@ export function OpdsSection() {
                 </Group>
                 {token && (
                   <Group gap="xs" wrap="nowrap">
-                    <Text size="sm" fw={500}>
+                    <SettingsGroupTitle>
                       <Trans>API key</Trans>
-                    </Text>
+                    </SettingsGroupTitle>
                     <Code style={{ overflowWrap: 'anywhere' }}>{token}</Code>
                     <Tooltip label={t`Copy API key`}>
                       <ActionIcon
@@ -359,7 +361,22 @@ export function OpdsSection() {
         )}
       </Stack>
 
-      <Modal opened={enableModalOpen} onClose={closePasswordModals} title={t`Enable the OPDS catalogue`} centered>
+      <Modal
+        opened={enableModalOpen}
+        onClose={closePasswordModals}
+        title={
+          <ModalHeading
+            title={t`Enable the OPDS catalogue`}
+            description={
+              mint.needsPassword ? (
+                <Trans>Enabling it creates the feed URL. Confirm your password to continue.</Trans>
+              ) : (
+                <Trans>Enabling it creates the feed URL.</Trans>
+              )
+            }
+          />
+        }
+      >
         <Stack
           component="form"
           onSubmit={(e: FormEvent) => {
@@ -368,27 +385,34 @@ export function OpdsSection() {
             saveWith({ enabled: true }, password)
           }}
         >
-          <Text size="sm">
-            {mint.needsPassword ? (
-              <Trans>Enabling it creates the feed URL. Confirm your password to continue.</Trans>
-            ) : (
-              <Trans>Enabling it creates the feed URL.</Trans>
-            )}
-          </Text>
           {mint.needsPassword && <MintPasswordField value={password} onChange={setPassword} />}
           {mint.signInStale && <RecentSignInNotice canSignInAgain={mint.canSignInAgain} anchor="opds" />}
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={closePasswordModals}>
               <Trans>Cancel</Trans>
             </Button>
             <Button type="submit" loading={save.isPending} disabled={!mint.ready(password)}>
               <Trans>Enable</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 
-      <Modal opened={rotateModalOpen} onClose={closePasswordModals} title={t`Regenerate OPDS token`} centered>
+      <Modal
+        opened={rotateModalOpen}
+        onClose={closePasswordModals}
+        title={
+          <ModalHeading
+            title={t`Regenerate OPDS token`}
+            description={
+              <Trans>
+                The current feed URL stops working immediately. Every app using it needs the new
+                one.
+              </Trans>
+            }
+          />
+        }
+      >
         <Stack
           component="form"
           onSubmit={(e: FormEvent) => {
@@ -404,15 +428,9 @@ export function OpdsSection() {
             })
           }}
         >
-          <Text size="sm">
-            <Trans>
-              The current feed URL stops working immediately. Every app using it needs the new
-              one.
-            </Trans>
-          </Text>
           {mint.needsPassword && <MintPasswordField value={password} onChange={setPassword} />}
           {mint.signInStale && <RecentSignInNotice canSignInAgain={mint.canSignInAgain} anchor="opds" />}
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={closePasswordModals}>
               <Trans>Cancel</Trans>
             </Button>
@@ -424,7 +442,7 @@ export function OpdsSection() {
             >
               <Trans>Regenerate</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
     </SettingsSection>
@@ -460,9 +478,9 @@ export function KoreaderSyncSection() {
       ) : (
         <Stack gap="md">
           <div>
-            <Text size="sm" fw={500} mb={4}>
+            <SettingsGroupTitle mb={4}>
               <Trans>Sync server</Trans>
-            </Text>
+            </SettingsGroupTitle>
             <Group gap="xs" wrap="nowrap">
               <Code style={{ overflowWrap: 'anywhere' }}>{serverUrl}</Code>
               <Tooltip label={t`Copy sync server address`}>
@@ -562,9 +580,9 @@ function KavitaReadImportControl() {
 
   return (
     <div>
-      <Text fw={500} size="sm" mb={4}>
+      <SettingsGroupTitle mb={4}>
         <Trans>Import read status from Kavita</Trans>
-      </Text>
+      </SettingsGroupTitle>
       <Text size="xs" c="var(--ink-3)" mb="sm">
         <Trans>Safe to rerun, it never unmarks anything.</Trans>
       </Text>

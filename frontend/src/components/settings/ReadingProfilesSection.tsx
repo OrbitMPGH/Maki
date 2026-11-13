@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Button, Group, MultiSelect, Select, Stack, Switch, TextInput } from '@mantine/core'
+import { useState, type ReactNode } from 'react'
+import { Button, Group, Input, MultiSelect, SegmentedControl, Select, Stack, Switch, TextInput, VisuallyHidden } from '@mantine/core'
 import { notifications } from '../../lib/toast'
 import { IconPlus, IconTrash } from '../../lib/icons'
 import {
@@ -243,6 +243,26 @@ function ProfileRow({ profile, all }: { profile: ReadingProfile; all: ReadingPro
   )
 }
 
+function Choice({
+  label,
+  description,
+  value,
+  onChange,
+  data,
+}: {
+  label: string
+  description?: string
+  value: string
+  onChange: (value: string) => void
+  data: { value: string; label: ReactNode }[]
+}) {
+  return (
+    <Input.Wrapper label={label} description={description}>
+      <SegmentedControl aria-label={label} fullWidth mt={4} value={value} onChange={onChange} data={data} />
+    </Input.Wrapper>
+  )
+}
+
 function ProfileEditor({
   fixed = false,
   initial,
@@ -308,40 +328,60 @@ function ProfileEditor({
       )}
 
       <Group grow align="flex-start">
-        <Select
+        <Choice
           label={t`Layout`}
-          allowDeselect={false}
           value={prefs.mode}
-          onChange={(value) => value && set({ mode: value as ReaderPrefs['mode'] })}
+          onChange={(value) => set({ mode: value as ReaderPrefs['mode'] })}
           data={[
-            { value: 'paged', label: t`Single page` },
-            { value: 'double', label: t`Two pages side by side` },
-            { value: 'vertical', label: t`Continuous vertical (webtoon)` },
+            { value: 'paged', label: t`Single` },
+            { value: 'double', label: t`Double` },
+            { value: 'vertical', label: t`Continuous` },
           ]}
         />
-        <Select
+        <Choice
           label={t`Direction`}
-          allowDeselect={false}
           value={prefs.direction}
-          onChange={(value) => value && set({ direction: value as ReaderPrefs['direction'] })}
+          onChange={(value) => set({ direction: value as ReaderPrefs['direction'] })}
           data={[
-            { value: 'rtl', label: t`Right to left (manga)` },
-            { value: 'ltr', label: t`Left to right` },
+            {
+              value: 'rtl',
+              label: (
+                <>
+                  <VisuallyHidden>{t`Right to left`}</VisuallyHidden>
+                  <span aria-hidden>
+                    {'← '}
+                    {t({ message: 'RTL', comment: 'Short for "right to left", the reading direction' })}
+                  </span>
+                </>
+              ),
+            },
+            {
+              value: 'ltr',
+              label: (
+                <>
+                  <VisuallyHidden>{t`Left to right`}</VisuallyHidden>
+                  <span aria-hidden>
+                    {t({ message: 'LTR', comment: 'Short for "left to right", the reading direction' })}
+                    {' →'}
+                  </span>
+                </>
+              ),
+            },
           ]}
         />
-        <Select
-          label={t`Page fit`}
-          allowDeselect={false}
-          value={prefs.fit}
-          onChange={(value) => value && set({ fit: value as ReaderPrefs['fit'] })}
-          data={[
-            { value: 'height', label: t`Fit height` },
-            { value: 'width', label: t`Fit width` },
-            { value: 'screen', label: t`Fit screen` },
-            { value: 'original', label: t`Original size (1:1)` },
-          ]}
-        />
-        {prefs.fit === 'original' && (
+      </Group>
+      <Choice
+        label={t`Page fit`}
+        value={prefs.fit}
+        onChange={(value) => set({ fit: value as ReaderPrefs['fit'] })}
+        data={[
+          { value: 'height', label: t`Fit height` },
+          { value: 'width', label: t`Fit width` },
+          { value: 'screen', label: t`Fit screen` },
+          { value: 'original', label: t`Original size (1:1)` },
+        ]}
+      />
+      {prefs.fit === 'original' && (
           <SettingsNumberInput
             label={t`Scale`}
             suffix="%"
@@ -352,7 +392,6 @@ function ProfileEditor({
             onChange={(value) => set({ scale: value })}
           />
         )}
-      </Group>
 
       <Group grow align="flex-start">
         <Select
@@ -377,18 +416,21 @@ function ProfileEditor({
           value={prefs.dim}
           onChange={(value) => set({ dim: value })}
         />
-        <Select
-          label={t`Colour filter`}
-          allowDeselect={false}
-          value={prefs.filter}
-          onChange={(value) => value && set({ filter: value as ReaderPrefs['filter'] })}
-          data={[
-            { value: 'none', label: t`None` },
-            { value: 'grayscale', label: t`Grayscale` },
-            { value: 'sepia', label: t`Sepia` },
-            { value: 'invert', label: t`Invert` },
-          ]}
-        />
+      </Group>
+
+      <Choice
+        label={t`Colour filter`}
+        value={prefs.filter}
+        onChange={(value) => set({ filter: value as ReaderPrefs['filter'] })}
+        data={[
+          { value: 'none', label: t`None` },
+          { value: 'grayscale', label: t`Gray` },
+          { value: 'sepia', label: t`Sepia` },
+          { value: 'invert', label: t`Invert` },
+        ]}
+      />
+
+      <Group grow align="flex-start">
         <SettingsNumberInput
           label={t`Page gap`}
           description={t`Continuous layout only.`}
@@ -408,27 +450,25 @@ function ProfileEditor({
       </Group>
 
       <Group grow align="flex-start">
-        <Select
+        <Choice
           label={t`Wide pages`}
           description={t`Single page layout only.`}
-          allowDeselect={false}
           value={prefs.splitWide}
-          onChange={(value) => value && set({ splitWide: value as ReaderPrefs['splitWide'] })}
+          onChange={(value) => set({ splitWide: value as ReaderPrefs['splitWide'] })}
           data={[
-            { value: 'off', label: t`Show whole` },
-            { value: 'split', label: t`Split into two pages` },
-            { value: 'rotate', label: t`Rotate to fit` },
+            { value: 'off', label: t`Whole` },
+            { value: 'split', label: t`Split` },
+            { value: 'rotate', label: t`Rotate` },
           ]}
         />
       </Group>
 
       <Group grow align="flex-start">
-        <Select
+        <Choice
           label={t`Enhance`}
           description={t`Sharpen soft pages. Auto does it only when a page is shown larger than its source or looks blurry.`}
-          allowDeselect={false}
           value={prefs.enhance}
-          onChange={(value) => value && set({ enhance: value as ReaderPrefs['enhance'] })}
+          onChange={(value) => set({ enhance: value as ReaderPrefs['enhance'] })}
           data={ENHANCE_LEVELS.map((level) => ({ value: level.value, label: renderLabel(level.label) }))}
         />
         {prefs.enhance !== 'off' && (
@@ -460,22 +500,20 @@ function ProfileEditor({
         />
       )}
       {prefs.enhance !== 'off' && isServerMethod(prefs.enhanceMethod) && (
-        <Select
+        <Choice
           label={t`Fallback`}
           description={t`Shown on this device until the server's page is ready, and whenever the server can't be used.`}
-          allowDeselect={false}
           value={prefs.enhanceFallback}
-          onChange={(value) => value && set({ enhanceFallback: value as ReaderPrefs['enhanceFallback'] })}
+          onChange={(value) => set({ enhanceFallback: value as ReaderPrefs['enhanceFallback'] })}
           data={ENHANCE_FALLBACKS.map((f) => ({ value: f.value, label: renderLabel(f.label) }))}
         />
       )}
       {prefs.enhance !== 'off' && isServerMethod(prefs.enhanceMethod) && (
-        <Select
+        <Choice
           label={t`Upscale progress`}
           description={t`How a page waiting for the server shows it while the reader's bars are hidden.`}
-          allowDeselect={false}
           value={prefs.enhanceProgress}
-          onChange={(value) => value && set({ enhanceProgress: value as ReaderPrefs['enhanceProgress'] })}
+          onChange={(value) => set({ enhanceProgress: value as ReaderPrefs['enhanceProgress'] })}
           data={ENHANCE_PROGRESS_STYLES.map((style) => ({ value: style.value, label: renderLabel(style.label) }))}
         />
       )}

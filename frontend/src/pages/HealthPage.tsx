@@ -1,3 +1,4 @@
+import { SearchInput } from '../components/ui/SearchInput'
 import {
   ActionIcon,
   Anchor,
@@ -19,7 +20,7 @@ import {
   Table,
   Tabs,
   Text,
-  TextInput,
+  
   Title,
   Tooltip,
   VisuallyHidden,
@@ -32,8 +33,6 @@ import {
   IconCircleCheck,
   IconChevronDown,
   IconCloudOff,
-  IconInfoCircle,
-  IconX,
   IconClock,
   IconClockPlay,
   IconDatabase,
@@ -92,6 +91,7 @@ import { SectionHeader } from '../components/ui/SectionHeader'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
 import { ModalFooter, ModalHeading, ModalNote } from '../components/ui/ModalShell'
+import { Note } from '../components/ui/Note'
 import { TableSkeleton } from '../components/ui/TableSkeleton'
 import { FigureStrip } from '../components/ui/FigureStrip'
 import { IconBrandMark } from '../components/IconBrandMark'
@@ -106,6 +106,8 @@ import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { relativeTime } from '../components/ui/time'
+import { TimeAgo } from '../components/ui/TimeAgo'
+import { MODAL_SIZE } from '../components/ui/modalSizes'
 
 /** Select value standing for "no pinned source": let the series' priority order decide. */
 const AUTOMATIC = 'automatic'
@@ -508,6 +510,7 @@ export default function HealthPage() {
       {error && (
         <Note
           tone="danger"
+          role="alert"
           mb
           closeLabel={queryError ? undefined : t`Dismiss`}
           onClose={() => {
@@ -604,10 +607,11 @@ export default function HealthPage() {
         <Tabs.Panel value="files">
           <Stack>
             <Group className="health-filter-rail">
-              <TextInput
+              <SearchInput
                 placeholder={t`Search file paths`}
                 aria-label={t`Search file paths`}
                 value={search}
+                onClear={() => refilter(() => setSearch(''))}
                 onChange={(e) => refilter(() => setSearch(e.currentTarget.value))}
               />
               <Select
@@ -818,7 +822,7 @@ export default function HealthPage() {
             )}
 
             {report && (
-              <Note tone="danger" closeLabel={t`Dismiss`} onClose={() => setReport(null)}>
+              <Note tone="danger" role="alert" closeLabel={t`Dismiss`} onClose={() => setReport(null)}>
                 <Text size="sm" mb="xs">
                   {report.summary}
                 </Text>
@@ -831,7 +835,7 @@ export default function HealthPage() {
             )}
 
             {files.isPending ? (
-              <TableSkeleton columns={5} />
+              <TableSkeleton columns={6} />
             ) : (
               <>
                 <Panel p={0} className="table-panel">
@@ -920,7 +924,7 @@ export default function HealthPage() {
                                 </ul>
                               ) : (
                                 <Text size="xs" c="var(--ink-3)">
-                                  {file.analyzedAt ? formatDateTime(file.analyzedAt) : <Trans>Not analyzed</Trans>}
+                                  {file.analyzedAt ? <TimeAgo value={file.analyzedAt} /> : <Trans>Not analyzed</Trans>}
                                 </Text>
                               )}
                               {foundAt && (
@@ -1394,8 +1398,7 @@ function BulkDeleteModal({
     <Modal
       opened={opened}
       onClose={dismiss}
-      centered
-      size="lg"
+      size={MODAL_SIZE.default}
       title={
         <span className="confirm-title">
           <span className="confirm-tile" aria-hidden>
@@ -1900,7 +1903,7 @@ function CheckRow({
     <div className="health-source-series">
       {affected.map((m) => (
         <div key={m.id}>
-          <Anchor component={Link} to={`/series/${m.seriesId}`} size="sm">
+          <Anchor component={Link} to={`/series/${m.seriesId}`} className="series-title">
             {m.title}
           </Anchor>
           <Text size="xs" c="var(--ink-4)" lineClamp={2}>
@@ -1939,55 +1942,6 @@ function ReviewSkeleton() {
       <Skeleton h={10} w="80%" />
       <Skeleton h={120} />
     </Stack>
-  )
-}
-
-type NoteTone = 'danger' | 'warn' | 'info' | 'neutral'
-
-const NOTE_ICON: Record<NoteTone, Icon> = {
-  danger: IconAlertOctagon,
-  warn: IconAlertTriangle,
-  info: IconInfoCircle,
-  neutral: IconInfoCircle,
-}
-
-/** A short statement with an icon in the tone's colour, in place of a filled alert block. */
-function Note({
-  tone: noteTone = 'warn',
-  mt,
-  mb,
-  closeLabel,
-  onClose,
-  children,
-}: {
-  tone?: NoteTone
-  /** Margin above, for notes that follow content in a panel. */
-  mt?: boolean
-  /** Margin below, for notes that sit above the page body. */
-  mb?: boolean
-  closeLabel?: string
-  onClose?: () => void
-  children: ReactNode
-}) {
-  const NoteIcon = NOTE_ICON[noteTone]
-  return (
-    <div
-      className="settings-note health-note"
-      data-tone={noteTone}
-      role={noteTone === 'danger' ? 'alert' : undefined}
-      style={{
-        marginTop: mt ? 'var(--mantine-spacing-md)' : undefined,
-        marginBottom: mb ? 'var(--mantine-spacing-lg)' : undefined,
-      }}
-    >
-      <NoteIcon size={16} aria-hidden />
-      <div className="health-note-body">{children}</div>
-      {closeLabel && onClose && (
-        <ActionIcon variant="subtle" color="var(--ink-3)" size="sm" aria-label={closeLabel} onClick={onClose}>
-          <IconX size={14} />
-        </ActionIcon>
-      )}
-    </div>
   )
 }
 
@@ -2032,10 +1986,9 @@ function FileReview({
       onClose={close}
       title={t`Review archive`}
       size="min(1060px, 94vw)"
-      centered
     >
       <Stack gap="lg">
-        {(error ?? action.error) && <Note tone="danger">{(error ?? action.error)?.message}</Note>}
+        {(error ?? action.error) && <Note tone="danger" role="alert">{(error ?? action.error)?.message}</Note>}
         {!data ? (
           <ReviewSkeleton />
         ) : (
@@ -2510,7 +2463,7 @@ function MissingPanel({
         </Text>
       )}
       {action.error && (
-        <Note tone="danger" mt>
+        <Note tone="danger" role="alert" mt>
           {action.error.message}
         </Note>
       )}
@@ -2608,7 +2561,7 @@ function DamagedPanel({ detail, openOperation }: { detail: FileDetail; openOpera
         </>
       )}
       {action.error && (
-        <Note tone="danger" mt>
+        <Note tone="danger" role="alert" mt>
           {action.error.message}
         </Note>
       )}
@@ -2649,7 +2602,7 @@ function SizePanel({ detail }: { detail: FileDetail }) {
         <Trans>Update the record</Trans>
       </Button>
       {action.error && (
-        <Note tone="danger" mt>
+        <Note tone="danger" role="alert" mt>
           {action.error.message}
         </Note>
       )}
@@ -2688,7 +2641,7 @@ function UnreadablePanel({ detail }: { detail: FileDetail }) {
         <Trans>Rescan</Trans>
       </Button>
       {action.error && (
-        <Note tone="danger" mt>
+        <Note tone="danger" role="alert" mt>
           {action.error.message}
         </Note>
       )}
@@ -2833,7 +2786,7 @@ function DuplicatePanel({ detail, openFile, close }: { detail: FileDetail; openF
       </ul>
 
       {failures.length > 0 && (
-        <Note tone="danger" mt>
+        <Note tone="danger" role="alert" mt>
           {failures.map((failure) => (
             <Text key={failure.id} size="xs" style={{ overflowWrap: 'anywhere' }}>
               {failure.relativePath}: {failure.message}
@@ -2922,7 +2875,7 @@ function DuplicatePanel({ detail, openFile, close }: { detail: FileDetail; openF
       )}
 
       {action.error && (
-        <Note tone="danger" mt>
+        <Note tone="danger" role="alert" mt>
           {action.error.message}
         </Note>
       )}
@@ -3334,7 +3287,7 @@ function OperationGroup({ group, onReview }: { group: OperationGroupData; onRevi
                 small
               />
               <Text size="xs" c="var(--ink-3)" className="health-op-when">
-                {formatDateTime(op.createdAt)}
+                <TimeAgo value={op.createdAt} />
               </Text>
               <Button size="compact-sm" variant="default" onClick={() => onReview(op.id)}>
                 {op.status === 'review' ? <Trans>Review</Trans> : <Trans>Details</Trans>}
@@ -3388,20 +3341,22 @@ function OperationReview({ id, close, open }: { id: number; close: () => void; o
       onClose={close}
       title={finished ? t`Operation details` : t`Review operation`}
       size="min(1060px, 94vw)"
-      centered
     >
       <Stack gap="lg">
-        {(error ?? action.error) && <Note tone="danger">{(error ?? action.error)?.message}</Note>}
+        {(error ?? action.error) && <Note tone="danger" role="alert">{(error ?? action.error)?.message}</Note>}
         {!data ? (
           <ReviewSkeleton />
         ) : (
           <div className="health-review">
             <div className="health-review-column">
-              {data.operation.error && <Note tone="danger">{data.operation.error}</Note>}
+              {data.operation.error && <Note tone="danger" role="alert">{data.operation.error}</Note>}
               {finished ? (
                 <OperationOutcome detail={data} />
               ) : data.operation.kind === 'delete' ? (
-                <Note tone={data.file.size < 0 || data.relinkTo || chaptersCount === 0 ? 'warn' : 'danger'}>
+                <Note
+                  tone={data.file.size < 0 || data.relinkTo || chaptersCount === 0 ? 'warn' : 'danger'}
+                  role={data.file.size < 0 || data.relinkTo || chaptersCount === 0 ? undefined : 'alert'}
+                >
                   {data.file.size < 0 ? (
                     <Trans>
                       This file is already gone from disk, so nothing is deleted. It drops the record that
@@ -3872,7 +3827,7 @@ function RunningPanel() {
           ))}
         </div>
         {running.error ? (
-          <Note tone="danger" mt>
+          <Note tone="danger" role="alert" mt>
             {running.error.message}
           </Note>
         ) : running.data && items.length === 0 ? (
@@ -3917,7 +3872,7 @@ function NextRun({ at }: { at: string }) {
   const soon = new Date(at).getTime() - Date.now() < 60_000
   return (
     <Tooltip label={formatDateTime(at)} withArrow>
-      <span>{soon ? t`in under a minute` : relativeTime(at)}</span>
+      <span>{soon ? t`in under a minute` : relativeTime(at, 'narrow')}</span>
     </Tooltip>
   )
 }
@@ -4026,7 +3981,7 @@ function ScheduledPanel() {
         }
       />
       {scheduled.error ? (
-        <Note tone="danger">{scheduled.error.message}</Note>
+        <Note tone="danger" role="alert">{scheduled.error.message}</Note>
       ) : scheduled.isPending ? (
         <TableSkeleton columns={5} rows={6} />
       ) : (
@@ -4080,7 +4035,7 @@ function ScheduledPanel() {
                               }
                               withArrow
                             >
-                              <span>{relativeTime(job.lastRunUtc)}</span>
+                              <span>{relativeTime(job.lastRunUtc, 'narrow')}</span>
                             </Tooltip>
                           ) : (
                             <Trans>Not yet</Trans>
@@ -4168,7 +4123,7 @@ function CachePanel() {
         </Group>
       </Group>
       {(cache.error ?? rebuild.error) && (
-        <Note tone="danger" mt>
+        <Note tone="danger" role="alert" mt>
           {(cache.error ?? rebuild.error)?.message}
         </Note>
       )}

@@ -1,3 +1,4 @@
+import { SearchInput } from '../components/ui/SearchInput'
 import { errorText } from '../api/errorText'
 import { type FormEvent, Fragment, type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { hasPageState, usePageState } from '../lib/pageState'
@@ -13,20 +14,16 @@ import {
   Button,
   Checkbox,
   Divider,
-  Drawer,
   Group,
   Indicator,
   Menu,
   Modal,
   MultiSelect,
-  NumberInput,
   Radio,
-  RangeSlider,
   SegmentedControl,
   Select,
   SimpleGrid,
   Stack,
-  Switch,
   Text,
   TextInput,
   Tooltip,
@@ -65,7 +62,6 @@ import {
   IconChevronLeft,
   IconChevronRight,
   IconColumns,
-  IconDots,
   IconArrowUp,
   IconArrowDown,
   IconStar,
@@ -75,6 +71,7 @@ import {
   IconWand,
   IconX,
 } from '../lib/icons'
+import { OverflowButton } from '../components/ui/OverflowButton'
 import { useIncognitoOptions } from '../components/ui/incognito'
 import { INCOGNITO_HELP } from '../components/series/SeriesActionsMenu'
 import { PAGE_CONVERSION_STOPS } from '../api/pageConversion'
@@ -130,10 +127,16 @@ import type { LibraryFilterSpec, RestoreSeriesResponse, SavedFilterDto, SeriesDt
 import { PosterSkeletons } from '../components/CatalogueBrowser'
 import { TYPE_LABELS, TYPE_OPTIONS } from '../components/CatalogueFilters'
 import { CoverCard, type OfflineAvailability } from '../components/ui/CoverCard'
+import { ModalFooter, ModalHeading } from '../components/ui/ModalShell'
 import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
-import { Disclosure } from '../components/ui/Disclosure'
 import { DrillChoices } from '../components/ui/DrillPanel'
+import {
+  LibraryFilterPanel,
+  type LibraryFilterOptions,
+  type LibraryFilterSetters,
+  type LibraryFilterValues,
+} from '../components/library/LibraryFilterPanel'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { FigureStrip } from '../components/ui/FigureStrip'
@@ -191,7 +194,6 @@ import {
 import { formatNumber } from '../format'
 import { useOfflineAvailableSeriesIds, useOfflineSeriesIds } from '../pwa/offlineChapters'
 import { useConnectivity } from '../lib/connectivity'
-import { MetaList } from '../components/ui/MetaList'
 
 const SORT_VALUES = [
   'added',
@@ -382,15 +384,6 @@ function readPercent(s: SeriesDto, readTracking: boolean): number {
 }
 
 /**
- * An empty (or half-typed, e.g. a lone "-") NumberInput means "unbounded", not zero: the boxes
- * default to empty, and a 0 lower bound would silently filter nothing while looking like a bound.
- */
-function toBound(v: string | number): number | null {
-  const n = typeof v === 'number' ? v : Number(v)
-  return v === '' || Number.isNaN(n) ? null : n
-}
-
-/**
  * The number the chapter-count filter compares against: what's on disk, or the same total the
  * cards show (wanted chapters, falling back to every known chapter when nothing is wanted).
  */
@@ -420,7 +413,7 @@ function facetOptions(
   }
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([value, count]) => ({ value, label: `${label(value)} (${count})` }))
+    .map(([value, count]) => ({ value, name: label(value), label: `${label(value)} (${count})` }))
 }
 
 const DEFAULT_SPEC: LibraryFilterSpec = {
@@ -472,7 +465,7 @@ const DEFAULT_SPEC: LibraryFilterSpec = {
   groupBy: 'none',
 }
 
-/** The filter drawer's groups, in the order they appear. */
+/** The areas the active filters are counted in; their sum is what the Filters button badges. */
 type FilterGroup = 'series' | 'tags' | 'ratings' | 'monitoring'
 
 /** Quality profile filter value for series with no pin of their own. */
@@ -720,7 +713,6 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const defaultApplied = useRef(false)
   const [filterName, setFilterName] = useState('')
   const [filtersOpen, setFiltersOpen] = usePageState(`${MEM}:filters-open`, false)
-  const [openGroups, setOpenGroups] = usePageState<FilterGroup[]>(`${MEM}:filter-groups`, ['series'])
   // Local to this device, so it is not part of a saved filter.
   const [onDeviceOnly, setOnDeviceOnly] = usePageState(`${MEM}:on-device`, false)
   const offlineSeries = useOfflineSeriesIds()
@@ -923,7 +915,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   }, [series, renderLabel, i18n.locale])
 
   const tagOptions = useMemo(
-    () => (tags ?? []).map((t) => ({ value: String(t.id), label: `${t.label} (${t.seriesCount})` })),
+    () => (tags ?? []).map((t) => ({ value: String(t.id), name: t.label, label: `${t.label} (${t.seriesCount})` })),
     [tags],
   )
 
@@ -1008,6 +1000,115 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     () => MATCH_MODE_VALUES.map((value) => ({ value, label: _(MATCH_MODE_LABELS[value]) })),
     [_, i18n.locale],
   )
+
+  const filterValues: LibraryFilterValues = {
+    status: statusFilter,
+    types: typeFilter,
+    contentRatings: contentRatingFilter,
+    readingStatuses: readingStatusFilter,
+    chapterMode,
+    chapterMin,
+    chapterMax,
+    yearMin,
+    yearMax,
+    addedWithin,
+    credits: creditFilter,
+    publishers: publisherFilter,
+    anime: animeFilter,
+    clash: clashFilter,
+    tags: tagFilter,
+    tagMatch,
+    excludeTags: excludeTagFilter,
+    untaggedOnly,
+    genres: genreFilter,
+    genreMatch,
+    excludeGenres: excludeGenreFilter,
+    metaTags: metaTagFilter,
+    metaTagMatch,
+    ratingState,
+    ratingRange,
+    communityRange,
+    readRange,
+    monitored: monitoredFilter,
+    qualityProfile: qualityProfileFilter,
+    completeness,
+    sourceState,
+    sources: sourceFilter,
+    sourceMatch,
+    fileSources: fileSourceFilter,
+    fileSourceMatch,
+    rootFolders: rootFolderFilter,
+    incognito: incognitoFilter,
+    muted: mutedFilter,
+    overrides: overrideFilter,
+  }
+  const filterSetters: LibraryFilterSetters = {
+    status: setStatusFilter,
+    types: setTypeFilter,
+    contentRatings: setContentRatingFilter,
+    readingStatuses: setReadingStatusFilter,
+    chapterMode: setChapterMode,
+    chapterMin: setChapterMin,
+    chapterMax: setChapterMax,
+    yearMin: setYearMin,
+    yearMax: setYearMax,
+    addedWithin: setAddedWithin,
+    credits: setCreditFilter,
+    publishers: setPublisherFilter,
+    anime: setAnimeFilter,
+    clash: setClashFilter,
+    tags: setTagFilter,
+    tagMatch: setTagMatch,
+    excludeTags: setExcludeTagFilter,
+    untaggedOnly: setUntaggedOnly,
+    genres: setGenreFilter,
+    genreMatch: setGenreMatch,
+    excludeGenres: setExcludeGenreFilter,
+    metaTags: setMetaTagFilter,
+    metaTagMatch: setMetaTagMatch,
+    ratingState: setRatingState,
+    ratingRange: setRatingRange,
+    communityRange: setCommunityRange,
+    readRange: setReadRange,
+    monitored: setMonitoredFilter,
+    qualityProfile: setQualityProfileFilter,
+    completeness: setCompleteness,
+    sourceState: setSourceState,
+    sources: setSourceFilter,
+    sourceMatch: setSourceMatch,
+    fileSources: setFileSourceFilter,
+    fileSourceMatch: setFileSourceMatch,
+    rootFolders: setRootFolderFilter,
+    incognito: setIncognitoFilter,
+    muted: setMutedFilter,
+    overrides: setOverrideFilter,
+  }
+  const filterOptions: LibraryFilterOptions = {
+    statuses: statusOptions
+      .filter((s) => s !== 'all')
+      .map((s) => ({ value: s, label: renderLabel(seriesStatusVisual(s).label) })),
+    types: typeOptions,
+    contentRatings: contentRatingOptions,
+    readingStatuses: readingStatusOptions,
+    credits: creditOptions,
+    publishers: publisherOptions,
+    tags: tagOptions,
+    genres: genreOptions,
+    metaTags: metaTagOptions,
+    sources: sourceOptions,
+    fileSources: fileSourceOptions,
+    rootFolders: rootFolderOptions,
+    overrides: overrideOptions,
+    qualityProfiles: [
+      { value: 'all', label: t`Any` },
+      { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
+      ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
+    ],
+    sourceStates: sourceStateOptions,
+    chapterModes: chapterModeOptions,
+    ratingStates: ratingStateOptions,
+    matchModes: matchModeOptions,
+  }
 
   const currentSpec = (): LibraryFilterSpec => ({
     query,
@@ -1148,84 +1249,6 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       (overrideFilter.length > 0 ? 1 : 0),
   }
   const activeFilterCount = Object.values(groupCounts).reduce((a, b) => a + b, 0)
-  const toggleGroup = (group: FilterGroup) =>
-    setOpenGroups((open) => (open.includes(group) ? open.filter((g) => g !== group) : [...open, group]))
-  /** What a closed group is doing: its active values, or failing that, what it holds. */
-  const groupSummary = (group: FilterGroup): ReactNode => {
-    const label = (options: { value: string; label: string }[], values: string[]) =>
-      values.map((v) => options.find((o) => o.value === v)?.label ?? v).join(', ')
-    const tagNames = (ids: string[]) => ids.map((id) => tags?.find((tag) => String(tag.id) === id)?.label ?? id).join(', ')
-    const range = (lo: number, hi: number) => `${formatNumber(lo)}–${formatNumber(hi)}`
-    const parts: string[] = []
-    if (group === 'series') {
-      if (statusFilter !== 'all') parts.push(renderLabel(seriesStatusVisual(statusFilter).label))
-      if (typeFilter.length > 0) parts.push(label(typeOptions, typeFilter))
-      if (contentRatingFilter.length > 0) parts.push(label(contentRatingOptions, contentRatingFilter))
-      if (readingStatusFilter.length > 0) parts.push(label(readingStatusOptions, readingStatusFilter))
-      const chapters = range(chapterMin ?? 0, chapterMax ?? 0)
-      if (chapterMin != null && chapterMax != null) parts.push(t`${chapters} chapters`)
-      else if (chapterMin != null) parts.push(plural(chapterMin, { one: 'At least # chapter', other: 'At least # chapters' }))
-      else if (chapterMax != null) parts.push(plural(chapterMax, { one: 'At most # chapter', other: 'At most # chapters' }))
-      const years = `${yearMin ?? ''}–${yearMax ?? ''}`
-      if (yearMin != null || yearMax != null) parts.push(t`Year ${years}`)
-      if (creditFilter.length > 0) parts.push(creditFilter.join(', '))
-      if (publisherFilter.length > 0) parts.push(publisherFilter.join(', '))
-      if (animeFilter !== 'all') parts.push(animeFilter === 'has' ? t`Has anime` : t`No anime`)
-      if (clashFilter !== 'all') parts.push(clashFilter === 'clash' ? t`Numbering clash` : t`No numbering clash`)
-      if (addedWithin != null) parts.push(plural(addedWithin, { one: 'Added in the last # day', other: 'Added in the last # days' }))
-    } else if (group === 'tags') {
-      if (untaggedOnly) parts.push(t`Untagged only`)
-      else {
-        if (tagFilter.length > 0) parts.push(tagNames(tagFilter))
-        const excluded = tagNames(excludeTagFilter)
-        if (excludeTagFilter.length > 0) parts.push(t`Not ${excluded}`)
-      }
-      if (genreFilter.length > 0) parts.push(genreFilter.join(', '))
-      const excluded = excludeGenreFilter.join(', ')
-      if (excludeGenreFilter.length > 0) parts.push(t`Not ${excluded}`)
-      if (metaTagFilter.length > 0) parts.push(metaTagFilter.join(', '))
-    } else if (group === 'ratings') {
-      const rated = range(ratingRange[0], ratingRange[1])
-      const score = range(communityRange[0], communityRange[1])
-      const read = range(readRange[0], readRange[1])
-      if (ratingState === 'rated') parts.push(t`Rated ${rated}`)
-      else if (ratingState !== 'all') parts.push(label(ratingStateOptions, [ratingState]))
-      if (communityRange[0] > 0 || communityRange[1] < 10) parts.push(t`Score ${score}`)
-      if (readRange[0] > 0 || readRange[1] < 100) parts.push(t`${read}% read`)
-    } else {
-      if (monitoredFilter !== 'all') parts.push(monitoredFilter === 'monitored' ? t`Monitored` : t`Unmonitored`)
-      if (completeness !== 'all') parts.push(completeness === 'behind' ? t`Behind (missing chapters)` : t`Complete`)
-      if (qualityProfileFilter !== 'all')
-        parts.push(
-          qualityProfileFilter === DEFAULT_PROFILE_FILTER
-            ? t`Instance default`
-            : (upgradeProfiles?.find((p) => String(p.id) === qualityProfileFilter)?.name ?? qualityProfileFilter),
-        )
-      if (sourceState !== 'all') parts.push(label(sourceStateOptions, [sourceState]))
-      if (sourceFilter.length > 0) parts.push(label(sourceOptions, sourceFilter))
-      const origins = label(fileSourceOptions, fileSourceFilter)
-      if (fileSourceFilter.length > 0) parts.push(t`From ${origins}`)
-      if (rootFolderFilter.length > 0) parts.push(label(rootFolderOptions, rootFolderFilter))
-      if (incognitoFilter !== 'all') parts.push(incognitoFilter === 'on' ? t`Incognito` : t`Not incognito`)
-      if (mutedFilter !== 'all') parts.push(mutedFilter === 'muted' ? t`Muted` : t`Not muted`)
-      if (overrideFilter.length > 0) parts.push(label(overrideOptions, overrideFilter))
-    }
-    if (parts.length > 0) return <MetaList inline className="disclosure-summary-active" items={parts} />
-    return {
-      series: t`Status, type, year, credits, chapters`,
-      tags: t`Your tags, genres, provider tags`,
-      ratings: t`Your rating, score, how much you've read`,
-      monitoring: t`Monitoring, quality profile, completeness, sources, folder`,
-    }[group]
-  }
-  const groupProps = (group: FilterGroup) => ({
-    opened: openGroups.includes(group),
-    onToggle: () => toggleGroup(group),
-    count: groupCounts[group],
-    countLabel: plural(groupCounts[group], { one: '# filter active', other: '# filters active' }),
-    summary: groupSummary(group),
-  })
-
   const specActive = query.trim() !== '' || activeFilterCount > 0
 
   const defaultFilter = (savedFilters ?? []).find((f) => f.isDefault)
@@ -1639,88 +1662,6 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
     )
   }
 
-  /**
-   * A multi-value facet plus its AND/OR switch. The switch only appears once two values are
-   * picked: with one selected, "any" and "all" mean the same thing and it's just noise.
-   */
-  const excludeFilter = ({
-    label,
-    data,
-    value,
-    onChange,
-    disabled,
-  }: {
-    label: string
-    data: { value: string; label: string }[]
-    value: string[]
-    onChange: (v: string[]) => void
-    disabled?: boolean
-  }) => (
-    <MultiSelect
-      label={label}
-      data={data}
-      value={value}
-      onChange={onChange}
-      className="field-default-value"
-      placeholder={value.length === 0 ? t`None` : undefined}
-      disabled={disabled || data.length === 0}
-      searchable
-      clearable
-      limit={100}
-      comboboxProps={{ withinPortal: true }}
-    />
-  )
-
-  const facetFilter = ({
-    label,
-    description,
-    data,
-    value,
-    onChange,
-    mode,
-    onModeChange,
-    disabled,
-  }: {
-    label: string
-    description?: string
-    data: { value: string; label: string }[]
-    value: string[]
-    onChange: (v: string[]) => void
-    mode: string
-    onModeChange: (v: string) => void
-    disabled?: boolean
-  }) => (
-    <div>
-      <Group justify="space-between" align="center" mb={4} wrap="nowrap">
-        <Text size="sm" fw={500}>
-          {label}
-        </Text>
-        {value.length > 1 && (
-          <SegmentedControl aria-label={t`Match mode for ${label}`} size="xs" value={mode} onChange={onModeChange} data={matchModeOptions} />
-        )}
-      </Group>
-      {description && (
-        <Text size="xs" c="var(--ink-3)" mb={4}>
-          {description}
-        </Text>
-      )}
-      <MultiSelect
-        aria-label={label}
-        data={data}
-        value={value}
-        onChange={onChange}
-        className="field-default-value"
-        placeholder={value.length === 0 ? (data.length > 0 ? t`Any` : t`None available`) : undefined}
-        disabled={disabled || data.length === 0}
-        searchable
-        clearable
-        // The metadata-tag list runs to a few thousand entries on a big library; rendering them
-        // all makes opening the dropdown visibly janky, and search narrows it anyway.
-        limit={100}
-        comboboxProps={{ withinPortal: true }}
-      />
-    </div>
-  )
 
   const openSetting = (setting: BulkSetting) => {
     setSettingValue(BULK_SETTING_FIRST[setting])
@@ -1958,7 +1899,6 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
   const totalCount = formatNumber(series?.length ?? 0)
   const totalSeries = series?.length ?? 0
   const shownCount = visible.length
-  const totalSeriesShown = series?.length ?? 0
   const loadErrorMessage = error ? (error instanceof Error ? error.message : String(error)) : null
   // Kept mounted through loading and error too, so the grid lands where it will stay and an error isn't a dead end.
   const showChrome = isLoading || error != null || (series != null && series.length > 0)
@@ -2374,12 +2314,12 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           ) : (
             <Stack className="library-toolbar" gap="sm">
               <Group className="library-toolbar-row" gap="sm" wrap="wrap">
-                <TextInput
+                <SearchInput
                   aria-label={t`Filter library…`}
                   className="library-search"
                   placeholder={t`Filter library…`}
-                  leftSection={<IconSearch size={16} />}
                   value={query}
+                  onClear={() => setQuery('')}
                   onChange={(e) => setQuery(e.currentTarget.value)}
                 />
                 <Button
@@ -2587,9 +2527,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
                 </TagChip>
                 <Menu position="bottom-end" withinPortal>
                   <Menu.Target>
-                    <ActionIcon size={24} variant="subtle" color="var(--ink-4)" aria-label={t`Options for ${name}`}>
-                      <IconDots size={14} />
-                    </ActionIcon>
+                    <OverflowButton size={24} aria-label={t`Options for ${name}`} />
                   </Menu.Target>
                   <Menu.Dropdown>
                     <Menu.Item
@@ -2661,478 +2599,40 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         </Group>
       )}
 
-      <Drawer
+      <LibraryFilterPanel
         opened={filtersOpen}
         onClose={() => setFiltersOpen(false)}
-        position="right"
-        size="sm"
-        title={t`Filters`}
-        classNames={{ content: 'library-filter-drawer' }}
-      >
-        <Stack gap="sm" className="library-filter-drawer-body">
-          {/* On a phone the drawer covers the grid, so the count moves to the footer instead. */}
-          <Text size="sm" c="var(--ink-3)" visibleFrom="sm">
-            {plural(totalSeriesShown, {
-              one: `${shownCount} of # series shown.`,
-              other: `${shownCount} of # series shown.`,
-            })}{' '}
-            <Trans>Changes apply straight to the grid behind this panel.</Trans>
-          </Text>
-          <div>
-            <Disclosure title={t`Series`} {...groupProps('series')}>
-              <Select
-                label={t`Status`}
-                data={statusOptions.map((s) => ({
-                  value: s,
-                  label: s === 'all' ? t`All statuses` : renderLabel(seriesStatusVisual(s).label),
-                }))}
-                value={statusFilter}
-                onChange={(v) => setStatusFilter(v ?? 'all')}
-                comboboxProps={{ withinPortal: true }}
-              />
-              <MultiSelect
-                label={t`Type`}
-                className="field-default-value"
-                placeholder={typeFilter.length ? undefined : typeOptions.length > 0 ? t`Any` : t`None available`}
-                data={typeOptions}
-                value={typeFilter}
-                onChange={setTypeFilter}
-                disabled={typeOptions.length === 0}
-                clearable
-                comboboxProps={{ withinPortal: true }}
-              />
-              <MultiSelect
-                label={t`Content rating`}
-                className="field-default-value"
-                placeholder={contentRatingFilter.length ? undefined : t`Any`}
-                data={contentRatingOptions}
-                value={contentRatingFilter}
-                onChange={setContentRatingFilter}
-                clearable
-                comboboxProps={{ withinPortal: true }}
-              />
-              <MultiSelect
-                label={t`Reading status`}
-                className="field-default-value"
-                placeholder={readingStatusFilter.length ? undefined : t`Any`}
-                data={readingStatusOptions}
-                value={readingStatusFilter}
-                onChange={setReadingStatusFilter}
-                clearable
-                comboboxProps={{ withinPortal: true }}
-              />
-              <div>
-                <Text size="sm" fw={500} mb={2}>
-                  <Trans>Chapters</Trans>
-                </Text>
-                <Text size="xs" c="var(--ink-3)" mb="xs">
-                  <Trans>Leave both boxes empty to ignore.</Trans>
-                </Text>
-                <SegmentedControl
-                  aria-label={t`Chapters`}
-                  size="xs"
-                  fullWidth
-                  value={chapterMode}
-                  onChange={setChapterMode}
-                  data={chapterModeOptions}
-                  mb="xs"
-                />
-                <Group grow gap="xs" align="flex-start">
-                  <NumberInput
-                    aria-label={t`Minimum chapters`}
-                    className="field-default-value"
-                        placeholder={t`Min`}
-                    min={0}
-                    allowDecimal={false}
-                    value={chapterMin ?? ''}
-                    onChange={(v) => setChapterMin(toBound(v))}
-                  />
-                  <NumberInput
-                    aria-label={t`Maximum chapters`}
-                    className="field-default-value"
-                        placeholder={t`Max`}
-                    min={0}
-                    allowDecimal={false}
-                    value={chapterMax ?? ''}
-                    onChange={(v) => setChapterMax(toBound(v))}
-                  />
-                </Group>
-              </div>
-              <div>
-                <Text size="sm" fw={500} mb={2}>
-                  <Trans>Year</Trans>
-                </Text>
-                <Text size="xs" c="var(--ink-3)" mb="xs">
-                  <Trans>Leave both boxes empty to ignore. Series without a year drop out once one is set.</Trans>
-                </Text>
-                <Group grow gap="xs" align="flex-start">
-                  <NumberInput
-                    aria-label={t`Earliest year`}
-                    className="field-default-value"
-                    placeholder={t`From`}
-                    min={0}
-                    max={9999}
-                    allowDecimal={false}
-                    allowNegative={false}
-                    thousandSeparator={false}
-                    value={yearMin ?? ''}
-                    onChange={(v) => setYearMin(toBound(v))}
-                  />
-                  <NumberInput
-                    aria-label={t`Latest year`}
-                    className="field-default-value"
-                    placeholder={t`To`}
-                    min={0}
-                    max={9999}
-                    allowDecimal={false}
-                    allowNegative={false}
-                    thousandSeparator={false}
-                    value={yearMax ?? ''}
-                    onChange={(v) => setYearMax(toBound(v))}
-                  />
-                </Group>
-              </div>
-              <NumberInput
-                label={t`Added within (days)`}
-                className="field-default-value"
-                placeholder={t`Any time`}
-                min={1}
-                allowDecimal={false}
-                allowNegative={false}
-                value={addedWithin ?? ''}
-                onChange={(v) => setAddedWithin(toBound(v))}
-              />
-              <MultiSelect
-                label={t`Author or artist`}
-                className="field-default-value"
-                placeholder={creditFilter.length ? undefined : creditOptions.length > 0 ? t`Any` : t`None available`}
-                data={creditOptions}
-                value={creditFilter}
-                onChange={setCreditFilter}
-                disabled={creditOptions.length === 0}
-                searchable
-                clearable
-                limit={100}
-                comboboxProps={{ withinPortal: true }}
-              />
-              <MultiSelect
-                label={t`Publisher`}
-                className="field-default-value"
-                placeholder={publisherFilter.length ? undefined : publisherOptions.length > 0 ? t`Any` : t`None available`}
-                data={publisherOptions}
-                value={publisherFilter}
-                onChange={setPublisherFilter}
-                disabled={publisherOptions.length === 0}
-                searchable
-                clearable
-                limit={100}
-                comboboxProps={{ withinPortal: true }}
-              />
-              <Select
-                label={t`Anime adaptation`}
-                data={[
-                  { value: 'all', label: t`Any` },
-                  { value: 'has', label: t`Has anime` },
-                  { value: 'none', label: t`No anime` },
-                ]}
-                value={animeFilter}
-                onChange={(v) => setAnimeFilter(v ?? 'all')}
-                comboboxProps={{ withinPortal: true }}
-              />
-              <Select
-                label={t`Chapter numbering`}
-                description={t`Sources that number the same chapters differently`}
-                data={[
-                  { value: 'all', label: t`Any` },
-                  { value: 'clash', label: t`Numbering clash` },
-                  { value: 'none', label: t`No numbering clash` },
-                ]}
-                value={clashFilter}
-                onChange={(v) => setClashFilter(v ?? 'all')}
-                comboboxProps={{ withinPortal: true }}
-              />
-            </Disclosure>
-            <Disclosure title={t`Tags and genres`} {...groupProps('tags')}>
-              {facetFilter({
-                label: t`Your tags`,
-                data: tagOptions,
-                value: tagFilter,
-                onChange: setTagFilter,
-                mode: tagMatch,
-                onModeChange: setTagMatch,
-                disabled: untaggedOnly,
-              })}
-              {excludeFilter({
-                label: t`Exclude your tags`,
-                data: tagOptions,
-                value: excludeTagFilter,
-                onChange: setExcludeTagFilter,
-                disabled: untaggedOnly,
-              })}
-              <Switch
-                label={t`Untagged only`}
-                description={t`Series with none of your tags`}
-                checked={untaggedOnly}
-                onChange={(e) => setUntaggedOnly(e.currentTarget.checked)}
-              />
-              <Button
-                variant="subtle"
-                size="compact-sm"
-                color="var(--neutral)"
-                leftSection={<IconSettings size={16} />}
-                style={{ alignSelf: 'flex-start' }}
-                onClick={() => {
-                  setFiltersOpen(false)
-                  setTagManagerOpen(true)
-                }}
-              >
-                <Trans>Manage tags</Trans>
-              </Button>
-              {facetFilter({
-                label: t`Genres`,
-                data: genreOptions,
-                value: genreFilter,
-                onChange: setGenreFilter,
-                mode: genreMatch,
-                onModeChange: setGenreMatch,
-              })}
-              {excludeFilter({
-                label: t`Exclude genres`,
-                data: genreOptions,
-                value: excludeGenreFilter,
-                onChange: setExcludeGenreFilter,
-              })}
-              {facetFilter({
-                label: t`Tags`,
-                description: t`From the metadata provider, not your own tags`,
-                data: metaTagOptions,
-                value: metaTagFilter,
-                onChange: setMetaTagFilter,
-                mode: metaTagMatch,
-                onModeChange: setMetaTagMatch,
-              })}
-            </Disclosure>
-            <Disclosure title={t`Ratings and reading`} {...groupProps('ratings')}>
-              <div>
-                <Text size="sm" fw={500} mb="xs">
-                  <Trans>My rating</Trans>
-                </Text>
-                <SegmentedControl
-                  aria-label={t`My rating`}
-                  size="xs"
-                  fullWidth
-                  value={ratingState}
-                  onChange={setRatingState}
-                  data={ratingStateOptions}
-                  mb={ratingState === 'rated' ? 'md' : undefined}
-                />
-                {ratingState === 'rated' && (
-                  <RangeSlider
-                    thumbFromLabel={t`My rating from`}
-                    thumbToLabel={t`My rating to`}
-                    min={1}
-                    max={10}
-                    step={1}
-                    minRange={0}
-                    value={ratingRange}
-                    onChange={setRatingRange}
-                    marks={[
-                      { value: 1, label: '1' },
-                      { value: 5, label: '5' },
-                      { value: 10, label: '10' },
-                    ]}
-                    mb="lg"
-                  />
-                )}
-              </div>
-              {hasCommunityRatings && (
-                <div>
-                  <Text size="sm" fw={500} mb={2}>
-                    <Trans context="MangaBaka score filter">Rating</Trans>
-                  </Text>
-                  <Text size="xs" c="var(--ink-3)" mb="md">
-                    <Trans>Leave at 0–10 to ignore. Narrowing it hides series without a score.</Trans>
-                  </Text>
-                  <RangeSlider
-                    thumbFromLabel={t`Rating from`}
-                    thumbToLabel={t`Rating to`}
-                    min={0}
-                    max={10}
-                    step={0.5}
-                    minRange={0}
-                    value={communityRange}
-                    onChange={setCommunityRange}
-                    marks={[
-                      { value: 0, label: '0' },
-                      { value: 5, label: '5' },
-                      { value: 10, label: '10' },
-                    ]}
-                    mb="lg"
-                  />
-                </div>
-              )}
-              {readTracking && (
-                <div>
-                  <Text size="sm" fw={500} mb={2}>
-                    <Trans>Read</Trans>
-                  </Text>
-                  <Text size="xs" c="var(--ink-3)" mb="md">
-                    <Trans>Share of the series you've read.</Trans> <Trans>Leave at 0–100% to ignore.</Trans>
-                  </Text>
-                  <RangeSlider
-                    thumbFromLabel={t`Read from`} thumbToLabel={t`Read to`}
-                    min={0}
-                    max={100}
-                    step={5}
-                    minRange={0}
-                    value={readRange}
-                    onChange={setReadRange}
-                    marks={[
-                      { value: 0, label: '0%' },
-                      { value: 50, label: '50%' },
-                      { value: 100, label: '100%' },
-                    ]}
-                    mb="lg"
-                  />
-                </div>
-              )}
-            </Disclosure>
-            <Disclosure title={t`Monitoring and sources`} {...groupProps('monitoring')}>
-              <Select
-                label={t`Monitoring`}
-                data={[
-                  { value: 'all', label: t`Any` },
-                  { value: 'monitored', label: t`Monitored` },
-                  { value: 'unmonitored', label: t`Unmonitored` },
-                ]}
-                value={monitoredFilter}
-                onChange={(v) => setMonitoredFilter(v ?? 'all')}
-                comboboxProps={{ withinPortal: true }}
-              />
-              <Select
-                label={t`Quality profile`}
-                data={[
-                  { value: 'all', label: t`Any` },
-                  { value: DEFAULT_PROFILE_FILTER, label: t`Instance default` },
-                  ...(upgradeProfiles ?? []).map((p) => ({ value: String(p.id), label: p.name })),
-                ]}
-                value={qualityProfileFilter}
-                onChange={(v) => setQualityProfileFilter(v ?? 'all')}
-                comboboxProps={{ withinPortal: true }}
-              />
-              <Select
-                label={t`Completeness`}
-                data={[
-                  { value: 'all', label: t`Any` },
-                  { value: 'behind', label: t`Behind (missing chapters)` },
-                  { value: 'complete', label: t`Complete` },
-                ]}
-                value={completeness}
-                onChange={(v) => setCompleteness(v ?? 'all')}
-                comboboxProps={{ withinPortal: true }}
-              />
-              <Select
-                label={t`Source state`}
-                description={t`Counts both switches: the per-series link and the global source toggle`}
-                data={sourceStateOptions}
-                value={sourceState}
-                onChange={(v) => setSourceState(v ?? 'all')}
-                comboboxProps={{ withinPortal: true }}
-              />
-              {facetFilter({
-                label: t`Sources`,
-                description: t`Linked to the series, enabled or not`,
-                data: sourceOptions,
-                value: sourceFilter,
-                onChange: setSourceFilter,
-                mode: sourceMatch,
-                onModeChange: setSourceMatch,
-              })}
-              {facetFilter({
-                label: t`Downloaded from`,
-                description: t`Where the files on disk came from, which can outlive the link`,
-                data: fileSourceOptions,
-                value: fileSourceFilter,
-                onChange: setFileSourceFilter,
-                mode: fileSourceMatch,
-                onModeChange: setFileSourceMatch,
-              })}
-              {showRootFolderFilter && (
-                <MultiSelect
-                  label={t`Root folder`}
-                  className="field-default-value"
-                  placeholder={rootFolderFilter.length ? undefined : t`Any`}
-                  data={rootFolderOptions}
-                  value={rootFolderFilter}
-                  onChange={setRootFolderFilter}
-                  clearable
-                  comboboxProps={{ withinPortal: true }}
-                />
-              )}
-              <Select
-                label={t`Incognito`}
-                data={[
-                  { value: 'all', label: t`Any` },
-                  { value: 'on', label: t`Incognito` },
-                  { value: 'off', label: t`Not incognito` },
-                ]}
-                value={incognitoFilter}
-                onChange={(v) => setIncognitoFilter(v ?? 'all')}
-                comboboxProps={{ withinPortal: true }}
-              />
-              <Select
-                label={t`Notifications`}
-                data={[
-                  { value: 'all', label: t`Any` },
-                  { value: 'muted', label: t`Muted` },
-                  { value: 'unmuted', label: t`Not muted` },
-                ]}
-                value={mutedFilter}
-                onChange={(v) => setMutedFilter(v ?? 'all')}
-                comboboxProps={{ withinPortal: true }}
-              />
-              <MultiSelect
-                label={t`Own settings`}
-                description={t`Series that override the default for this`}
-                className="field-default-value"
-                placeholder={overrideFilter.length ? undefined : t`Any`}
-                data={overrideOptions}
-                value={overrideFilter}
-                onChange={setOverrideFilter}
-                clearable
-                comboboxProps={{ withinPortal: true }}
-              />
-            </Disclosure>
-          </div>
-          {activeFilterCount > 0 && (
-            <Button
-              visibleFrom="sm"
-              variant="default"
-              leftSection={<IconX size={16} />}
-              onClick={() => applySpec(DEFAULT_SPEC, null)}
-            >
-              <Trans>Clear all filters</Trans>
-            </Button>
-          )}
-          <Group className="library-filter-footer" hiddenFrom="sm" gap="sm" wrap="nowrap">
-            {activeFilterCount > 0 && (
-              <Button variant="default" onClick={() => applySpec(DEFAULT_SPEC, null)}>
-                <Trans>Clear all</Trans>
-              </Button>
-            )}
-            <Button className="library-filter-show" onClick={() => setFiltersOpen(false)}>
-              <Plural value={shownCount} one="Show # series" other="Show # series" />
-            </Button>
-          </Group>
-        </Stack>
-      </Drawer>
+        values={filterValues}
+        set={filterSetters}
+        options={filterOptions}
+        hasCommunityRatings={hasCommunityRatings}
+        readTracking={readTracking}
+        showRootFolder={showRootFolderFilter}
+        shownCount={shownCount}
+        activeCount={activeFilterCount}
+        onReset={() => applySpec(DEFAULT_SPEC, null)}
+        onManageTags={() => {
+          setFiltersOpen(false)
+          setTagManagerOpen(true)
+        }}
+      />
 
       <TagManagerModal opened={tagManagerOpen} onClose={() => setTagManagerOpen(false)} />
 
       <Modal
         opened={saveFilterOpen}
         onClose={() => setSaveFilterOpen(false)}
-        title={t`Save this filter`}
+        title={
+          <ModalHeading
+            title={t`Save this filter`}
+            description={
+              <>
+                <Trans>Saves the current search, sort and every filter in the panel as a named preset.</Trans>{' '}
+                <Trans>Reusing the name of the active preset overwrites it.</Trans>
+              </>
+            }
+          />
+        }
       >
         <Stack
           component="form"
@@ -3157,10 +2657,6 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             )
           }}
         >
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>Saves the current search, sort and every filter in the panel as a named preset.</Trans>{' '}
-            <Trans>Reusing the name of the active preset overwrites it.</Trans>
-          </Text>
           <TextInput
             label={t`Name`}
             placeholder={t`e.g. Ongoing & behind`}
@@ -3168,14 +2664,14 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             onChange={(e) => setFilterName(e.currentTarget.value)}
             data-autofocus
           />
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setSaveFilterOpen(false)}>
               <Trans>Cancel</Trans>
             </Button>
             <Button type="submit" disabled={!filterName.trim()} loading={saveFilter.isPending}>
               <Trans>Save</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 
@@ -3206,27 +2702,33 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             onChange={(e) => setRenameValue(e.currentTarget.value)}
             data-autofocus
           />
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setRenameTarget(null)}>
               <Trans>Cancel</Trans>
             </Button>
             <Button type="submit" disabled={!renameValue.trim()} loading={saveFilter.isPending}>
               <Trans>Save</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 
       <Modal
         opened={tagModalOpen}
         onClose={() => setTagModalOpen(false)}
-        title={plural(selectedCount, { one: 'Tag # series', other: 'Tag # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Tag # series', other: 'Tag # series' })}
+            description={
+              <>
+                <Trans>Adds and removes run in one pass over the selection.</Trans>{' '}
+                <Trans>Create new tags from "Manage tags".</Trans>
+              </>
+            }
+          />
+        }
       >
         <Stack gap="md">
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>Adds and removes run in one pass over the selection.</Trans>{' '}
-            <Trans>Create new tags from "Manage tags".</Trans>
-          </Text>
           <MultiSelect
             label={t`Add`}
             data={tagOptions}
@@ -3245,7 +2747,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             clearable
             comboboxProps={{ withinPortal: true }}
           />
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setTagModalOpen(false)}>
               <Trans>Cancel</Trans>
             </Button>
@@ -3277,22 +2779,24 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             >
               <Trans>Apply</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 
       <Modal
         opened={autoMatchModalOpen}
         onClose={() => setAutoMatchModalOpen(false)}
-        title={plural(selectedCount, { one: 'Auto-match sources for # series', other: 'Auto-match sources for # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Auto-match sources for # series', other: 'Auto-match sources for # series' })}
+            description={<Trans>Searches every source that isn't linked yet. Linked sources stay as they are.</Trans>}
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>Searches every source that isn't linked yet. Linked sources stay as they are.</Trans>
-        </Text>
         <Text size="sm" c="var(--ink-3)" mb="lg">
           <Trans>A large selection can take a while.</Trans>
         </Text>
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setAutoMatchModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -3320,26 +2824,28 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Auto-match</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={renameModalOpen}
         onClose={() => setRenameModalOpen(false)}
-        title={plural(selectedCount, { one: 'Rename files of # series', other: 'Rename files of # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Rename files of # series', other: 'Rename files of # series' })}
+            description={
+              <Trans>Renames each series folder and its chapter files to match the naming formats in Settings.</Trans>
+            }
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>
-            Renames each series folder and its chapter files to match the naming formats in Settings.
-          </Trans>
-        </Text>
         <Text size="sm" c="var(--ink-3)" mb="lg">
           <Trans>
             A series with a download in progress, or with two chapters that would get the same name, is
             skipped.
           </Trans>
         </Text>
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setRenameModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -3352,24 +2858,28 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Rename</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={readStateModalOpen}
         onClose={() => setReadStateModalOpen(false)}
-        title={plural(selectedCount, { one: 'Mark # series read or unread', other: 'Mark # series read or unread' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Mark # series read or unread', other: 'Mark # series read or unread' })}
+            description={
+              <Trans>
+                Read marks every chapter that has a file. It isn't logged as reading, so Rewind and your reading
+                days stay as they are.
+              </Trans>
+            }
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>
-            Read marks every chapter that has a file. It isn't logged as reading, so Rewind and your reading
-            days stay as they are.
-          </Trans>
-        </Text>
         <Text size="sm" c="var(--ink-3)" mb="lg">
           <Trans>Unread clears your progress and resume position in every chapter.</Trans>
         </Text>
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setReadStateModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -3379,19 +2889,23 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           <Button leftSection={<IconCheck size={16} />} onClick={() => runReadState('read')}>
             <Trans>Mark read</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={settingModal != null}
         onClose={() => setSettingModal(null)}
-        title={settingModal ? settingTitles[settingModal] : undefined}
+        title={
+          settingModal ? (
+            <ModalHeading
+              title={settingTitles[settingModal]}
+              description={
+                settingModal === 'Page conversion' ? <Trans>Files already converted stay as they are.</Trans> : undefined
+              }
+            />
+          ) : undefined
+        }
       >
-        {settingModal === 'Page conversion' && (
-          <Text size="sm" mb="md">
-            <Trans>Files already converted stay as they are.</Trans>
-          </Text>
-        )}
         <Radio.Group
           value={settingValue}
           onChange={setSettingValue}
@@ -3405,7 +2919,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
               ))}
           </Stack>
         </Radio.Group>
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setSettingModal(null)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -3425,7 +2939,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Apply</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <RemoveSeriesDialog
@@ -3510,16 +3024,22 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       <Modal
         opened={monitorModalOpen}
         onClose={() => setMonitorModalOpen(false)}
-        title={plural(selectedCount, { one: 'Set monitoring for # series', other: 'Set monitoring for # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Set monitoring for # series', other: 'Set monitoring for # series' })}
+            description={
+              <>
+                <Trans>Applies to chapters released later.</Trans>{' '}
+                <Trans>Chapters already listed keep whatever you set on them.</Trans>{' '}
+                <Trans>
+                  "Main" skips specials (decimal chapters like 10.5); "Smart" downloads a few at a time as you
+                  read.
+                </Trans>
+              </>
+            }
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>Applies to chapters released later.</Trans>{' '}
-          <Trans>Chapters already listed keep whatever you set on them.</Trans>{' '}
-          <Trans>
-            "Main" skips specials (decimal chapters like 10.5); "Smart" downloads a few at a time as you
-            read.
-          </Trans>
-        </Text>
         <SegmentedControl
           aria-label={t`Monitoring`}
           fullWidth
@@ -3533,7 +3053,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           ]}
           mb="lg"
         />
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setMonitorModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -3545,17 +3065,19 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Apply</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={profileModalOpen}
         onClose={() => setProfileModalOpen(false)}
-        title={plural(selectedCount, { one: 'Set quality profile for # series', other: 'Set quality profile for # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Set quality profile for # series', other: 'Set quality profile for # series' })}
+            description={<Trans>Instance default clears each series' own choice.</Trans>}
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>Instance default clears each series' own choice.</Trans>
-        </Text>
         <div className="library-profile-choices">
           <DrillChoices
             label={t`Quality profile`}
@@ -3575,7 +3097,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             onPick={setBulkProfile}
           />
         </div>
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setProfileModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -3611,17 +3133,19 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Apply</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={readingStatusModalOpen}
         onClose={() => setReadingStatusModalOpen(false)}
-        title={plural(selectedCount, { one: 'Set reading status for # series', other: 'Set reading status for # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Set reading status for # series', other: 'Set reading status for # series' })}
+            description={<Trans>Yours alone. Trackers you have connected are updated too.</Trans>}
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>Yours alone. Trackers you have connected are updated too.</Trans>
-        </Text>
         <SegmentedControl
           aria-label={t`Reading status`}
           fullWidth
@@ -3631,7 +3155,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           data={readingStatusOptions}
           mb="lg"
         />
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setReadingStatusModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -3664,17 +3188,19 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Apply</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={notifyModalOpen}
         onClose={() => setNotifyModalOpen(false)}
-        title={plural(selectedCount, { one: 'Set notifications for # series', other: 'Set notifications for # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Set notifications for # series', other: 'Set notifications for # series' })}
+            description={<Trans>Yours alone. This changes what lands in your bell, not anybody else's.</Trans>}
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>Yours alone. This changes what lands in your bell, not anybody else's.</Trans>
-        </Text>
         <SegmentedControl
           aria-label={t`Notifications`}
           fullWidth
@@ -3686,7 +3212,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         <Text size="xs" c="var(--ink-3)" mb="lg">
           {notificationHelp}
         </Text>
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setNotifyModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -3719,20 +3245,26 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Apply</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={moveModalOpen}
         onClose={() => setMoveModalOpen(false)}
-        title={plural(selectedCount, { one: 'Move # series', other: 'Move # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Move # series', other: 'Move # series' })}
+            description={
+              <>
+                <Trans>Re-triggers a Kavita scan of both locations either way.</Trans>{' '}
+                <Trans>Series already in the destination root folder are skipped.</Trans>{' '}
+                <Trans>A file move is blocked for any series with an active download.</Trans>
+              </>
+            }
+          />
+        }
       >
         <Stack gap="md">
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>Re-triggers a Kavita scan of both locations either way.</Trans>{' '}
-            <Trans>Series already in the destination root folder are skipped.</Trans>{' '}
-            <Trans>A file move is blocked for any series with an active download.</Trans>
-          </Text>
           <Select
             label={t`Destination root folder`}
             placeholder={t`Pick a root folder`}
@@ -3754,7 +3286,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
               />
             </Stack>
           </Radio.Group>
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setMoveModalOpen(false)}>
               <Trans>Cancel</Trans>
             </Button>
@@ -3771,7 +3303,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             >
               <Trans>Move</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 
@@ -3882,11 +3414,18 @@ function LibraryColumnsModal({
     onChange(next)
   }
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Columns`} closeButtonProps={{ 'aria-label': t`Close` }}>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={
+        <ModalHeading
+          title={t`Columns`}
+          description={<Trans>The cover and title always show. Your choice is kept in this browser.</Trans>}
+        />
+      }
+      closeButtonProps={{ 'aria-label': t`Close` }}
+    >
       <Stack gap="xs">
-        <Text size="sm" c="var(--ink-3)">
-          <Trans>The cover and title always show. Your choice is kept in this browser.</Trans>
-        </Text>
         {[...columns, ...hidden].map((column) => {
           const shown = columns.includes(column)
           const index = columns.indexOf(column)
@@ -3923,11 +3462,11 @@ function LibraryColumnsModal({
             </Group>
           )
         })}
-        <Group justify="flex-end" mt="xs">
+        <ModalFooter>
           <Button variant="subtle" onClick={() => onChange([...DEFAULT_LIBRARY_COLUMNS])}>
             <Trans>Reset to default</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Stack>
     </Modal>
   )

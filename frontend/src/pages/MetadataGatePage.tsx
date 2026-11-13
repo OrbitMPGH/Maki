@@ -11,6 +11,7 @@ import { StatusDot } from '../components/ui/StatusDot'
 import { IconClock } from '../lib/icons'
 import { formatBytes, formatPercent, formatReadingTime } from '../format'
 import { useLabel } from '../i18n-context'
+import { Thumb } from '../components/ui/Thumb'
 import MetadataDumpProgress, { MetadataDumpStatus, dumpPercent, dumpPhaseLabel } from '../components/MetadataDumpProgress'
 
 /**
@@ -119,9 +120,7 @@ function GateProgress({
       <Progress
         value={percent ?? 100}
         animated={percent === null}
-        color="var(--info)"
         size="md"
-        radius="xl"
         aria-label={phaseLabel}
       />
       {downloading && (
@@ -198,11 +197,9 @@ function GateReadingList() {
       </div>
       {items.map(({ chapterId, coverUrl, seriesTitle, chapterLabel }) => (
         <Link key={chapterId} to={`/read/${chapterId}`} className="next-up-row">
-          <span className="next-up-thumb">
-            {coverUrl && <img src={coverUrl} alt="" loading="lazy" decoding="async" />}
-          </span>
+          <Thumb src={coverUrl} size="sm" />
           <span className="next-up-copy">
-            <span className="next-up-name">{seriesTitle}</span>
+            <span className="next-up-name series-title" data-lines="1">{seriesTitle}</span>
             <span className="next-up-meta tnum">{chapterLabel}</span>
           </span>
         </Link>

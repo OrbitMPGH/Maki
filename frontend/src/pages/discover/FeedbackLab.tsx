@@ -2,7 +2,7 @@ import { errorText } from '../../api/errorText'
 import { useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import {
-  ActionIcon, Alert, Badge, Button, Collapse, Group, Skeleton, Stack, Text, Tooltip,
+  ActionIcon, Button, Collapse, Group, Skeleton, Stack, Text, Tooltip,
 } from '@mantine/core'
 import {
   IconAdjustmentsHorizontal, IconArrowBackUp, IconBook, IconBookmark, IconChevronRight, IconClockPause, IconCompass,
@@ -19,10 +19,12 @@ import { formatDate, formatDecimal, formatRecentDate, formatTime } from '../../f
 import { ManageSignalsModal } from './ManageSignalsModal'
 import { AnimeSignalsSection } from './AnimeSignalsSection'
 import { PanelTitle } from '../../components/ui/PanelTitle'
+import { TagChip } from '../../components/ui/TagChip'
 import { Panel } from '../../components/ui/Panel'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { SignalStatus, type SignalStatusInfo } from './SignalStatus'
+import { Callout } from '../../components/ui/Callout'
 
 /** Actions the undo endpoint can reverse: it replays the event's stored previous state. */
 const UNDOABLE = ['hide', 'dismiss', 'mark-exposed', 'clear-suppression', 'clear-exposure']
@@ -224,14 +226,14 @@ export function SignalsCard() {
         </Collapse>
 
         {error && (
-          <Alert color="var(--danger)" variant="light" title={t`Could not load your signals`}>
+          <Callout tone="danger" role="alert" title={t`Could not load your signals`}>
             <ErrorMessage error={error} />
-          </Alert>
+          </Callout>
         )}
         {actionError && (
-          <Alert color="var(--danger)" variant="light">
+          <Callout tone="danger" role="alert">
             <Trans>{actionError} Refresh the page and try again.</Trans>
-          </Alert>
+          </Callout>
         )}
 
         {isLoading && <SignalsSkeleton />}
@@ -408,7 +410,7 @@ function SignalsSkeleton() {
         </PanelTitle>
         {Array.from({ length: 4 }, (_, i) => (
           <div key={i} className="signals-feed-row">
-            <Skeleton className="stats-thumb stats-thumb-lg" />
+            <Skeleton w={36} h={54} radius="sm" />
             <div className="signals-feed-main">
               <Skeleton h={14} w={`${50 + (i % 3) * 12}%`} />
               <Skeleton h={12} w="40%" mt={8} />
@@ -457,9 +459,11 @@ function AvoidRow({ avoids }: { avoids: AvoidanceLabel[] }) {
             multiline
             w={260}
           >
-            <Badge size="sm" variant="light" color="var(--danger)">
-              {avoid.label} (<Plural value={count} one="# title" other="# titles" />)
-            </Badge>
+            <span>
+              <TagChip>
+                {avoid.label} (<Plural value={count} one="# title" other="# titles" />)
+              </TagChip>
+            </span>
           </Tooltip>
         )
       })}

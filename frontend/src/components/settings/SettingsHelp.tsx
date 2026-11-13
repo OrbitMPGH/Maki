@@ -3,9 +3,9 @@ import { Text } from '@mantine/core'
 import type { MantineSpacing } from '@mantine/core'
 
 /** The explanation under a settings card title or above a group of fields, always in full. */
-export function SettingsHelp({ children, mb }: { children: ReactNode; mb?: MantineSpacing }) {
+export function SettingsHelp({ children, mb, id }: { children: ReactNode; mb?: MantineSpacing; id?: string }) {
   return (
-    <Text size="sm" c="var(--ink-3)" mb={mb}>
+    <Text id={id} size="sm" c="var(--ink-3)" mb={mb}>
       {children}
     </Text>
   )

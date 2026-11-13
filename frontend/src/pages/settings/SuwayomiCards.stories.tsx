@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
 import { http, HttpResponse } from 'msw'
 import { settingsMsw } from '../../../.storybook/mocks/settings'
-import { api, failWith } from '../../../.storybook/mocks/api'
+import { api, failWith, hoursAgo } from '../../../.storybook/mocks/api'
 import { sources, suwayomiConnection } from '../../../.storybook/mocks/settings/data'
 import { SuwayomiCard } from './SuwayomiCards'
 
@@ -29,6 +29,22 @@ export const Connected: Story = {
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Username' })).toHaveValue('maki'))
     await expect(await canvas.findByText('3 Suwayomi sources, 1 switched on.')).toBeVisible()
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Manage sources' })).toBeEnabled())
+    await waitFor(() => expect(canvas.getByRole('status')).toHaveTextContent('Connected'))
+  },
+}
+
+export const LastTestFailed: Story = {
+  parameters: {
+    msw: settingsMsw(
+      http.get(api('/settings/connection-tests'), () =>
+        HttpResponse.json([{ key: 'suwayomi', ok: false, message: 'Suwayomi refused the username or password.', testedAt: hoursAgo(3) }]),
+      ),
+    ),
+  },
+  play: async ({ canvas }) => {
+    const line = await canvas.findByRole('status')
+    await waitFor(() => expect(line).toHaveTextContent('Failed'))
+    await expect(within(line).getByText('Suwayomi refused the username or password.')).toBeVisible()
   },
 }
 
@@ -44,6 +60,7 @@ export const NotConnected: Story = {
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Test' })).toBeDisabled())
     await waitFor(() => expect(canvas.getByRole('button', { name: 'Manage sources' })).toBeDisabled())
     await expect(canvas.queryByRole('textbox', { name: 'Username' })).toBeNull()
+    await expect(canvas.queryByRole('status')).toBeNull()
   },
 }
 
@@ -64,8 +81,7 @@ export const AuthModeShowsCredentials: Story = {
   },
   play: async ({ canvas, userEvent }) => {
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'URL' })).toHaveValue('http://suwayomi:4567'))
-    await userEvent.click(await canvas.findByLabelText('Sign-in'))
-    await userEvent.click(await within(document.body).findByRole('option', { name: 'Basic auth' }))
+    await userEvent.click(await canvas.findByRole('radio', { name: 'Basic auth' }))
     await expect(await canvas.findByRole('textbox', { name: 'Username' })).toBeVisible()
     await expect(await canvas.findByText('Unsaved')).toBeVisible()
   },

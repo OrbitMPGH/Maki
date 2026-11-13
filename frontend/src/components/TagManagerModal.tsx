@@ -17,6 +17,7 @@ import { useCreateTag, useDeleteTag, useTags, useUpdateTag } from '../api/hooks'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { EmptyState } from './ui/EmptyState'
 import { ModalHeading } from './ui/ModalShell'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 const COLORS = ['blue', 'grape', 'teal', 'orange', 'violet', 'cyan', 'pink', 'lime', 'indigo', 'red', 'gray']
 
@@ -50,7 +51,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
     <Modal
       opened={opened}
       onClose={onClose}
-      size="md"
+      size={MODAL_SIZE.narrow}
       title={
         <ModalHeading
           title={<Trans>Manage tags</Trans>}
@@ -116,6 +117,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
                       <Popover position="bottom-start" withArrow>
                         <Popover.Target>
                           <Badge
+                            size="sm"
                             color={color}
                             variant="light"
                             style={{ cursor: 'pointer' }}
@@ -164,7 +166,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
                         </ActionIcon>
                         <ActionIcon
                           variant="subtle"
-                          color="var(--ink-3)"
+                          color="var(--danger)"
                           className="tag-manager-delete"
                           onClick={() => setDeleting({ id, label, seriesCount })}
                           aria-label={t`Delete ${label}`}

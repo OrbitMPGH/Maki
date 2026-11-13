@@ -16,12 +16,16 @@ import type { Icon } from '../../lib/icons'
 import { useLibraryCoverLookup, type RecommendationItem } from '../../api/hooks'
 import { formatFixedDecimal } from '../../format'
 import { Rail } from './Rail'
+import { ScoreInline } from './ScoreInline'
+import { LightBadge } from '../series/lightMantine'
 import { seriesStatusGlyph, seriesStatusVisual, statusColor, statusOnColor } from './status'
 import { useLabel } from '../../i18n-context'
 import type { ShortlistSource } from '../../api/shortlist'
 import { useShortlistToggle } from '../discover/shortlistActions'
 import { t as now } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { Thumb } from './Thumb'
+import { TagChip } from './TagChip'
 
 /**
  * Poster cards for catalogue (MangaBaka) items, and the horizontal rail that lays them out.
@@ -94,7 +98,7 @@ function RatingChip({ rating }: { rating: number }) {
   return (
     <span className="cover-badge discover-rating">
       <IconStarFilled size={12} style={{ color: 'var(--rating)' }} />
-      {formatFixedDecimal(rating / 10)}
+      {formatFixedDecimal(rating / 10, 1)}
     </span>
   )
 }
@@ -286,6 +290,7 @@ export const RecommendationRow = memo(function RecommendationRow({
   const label = useLabel()
   const owned = inLibrarySeriesId != null
   const reason = reasonOverride !== undefined ? reasonOverride : reasonFor(item)
+  const status = seriesStatusVisual(item.status)
   const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
   const { totalChapters, title } = item
   const { saved, usable, toggle } = useShortlistToggle(item.providerId, title, savedFrom)
@@ -300,28 +305,23 @@ export const RecommendationRow = memo(function RecommendationRow({
         aria-label={cardLabel(title, owned, saved)}
         onClick={() => (owned ? navigate(`/series/${inLibrarySeriesId}`) : openWith(onOpen, item, savedFrom))}
       />
-      <div className="row-cover" data-series-cover={inLibrarySeriesId ?? undefined} style={{ width: thumbSize, height: thumbSize * 1.5, flexShrink: 0 }}>
-        {posterUrl(item) ? (
-          <img
-            src={posterUrl(item) ?? undefined}
-            alt=""
-            loading="lazy"
-            decoding="async"
-          />
-        ) : (
-          <div className="row-cover-placeholder" aria-hidden>{item.title}</div>
-        )}
-      </div>
+      <Thumb
+        className="row-cover"
+        src={posterUrl(item)}
+        size="lg"
+        width={thumbSize}
+        data-series-cover={inLibrarySeriesId ?? undefined}
+      />
 
       <div className="row-body">
         <div className="row-header">
-          <span className="row-title" title={item.title}>
+          <span className="row-title series-title" data-lines="1" title={item.title}>
             {item.title}
           </span>
           {item.year && <span className="row-year">{item.year}</span>}
-          <span className="cover-badge" style={{ flexShrink: 0 }}>
-            {label(seriesStatusVisual(item.status).label)}
-          </span>
+          <LightBadge color={statusColor(status.color)} leftSection={<status.Icon size={12} />}>
+            {label(status.label)}
+          </LightBadge>
           {owned && (
             <span className="cover-badge cover-badge-circle" data-tip={t`In library`} style={{ flexShrink: 0 }}>
               <IconCheck size={12} />
@@ -333,10 +333,7 @@ export const RecommendationRow = memo(function RecommendationRow({
 
         <div className="row-progress">
           {item.rating != null && (
-            <span className="cover-badge" style={{ flexShrink: 0 }}>
-              <IconStarFilled size={11} style={{ color: 'var(--rating)' }} />
-              {formatFixedDecimal(item.rating / 10, 1)}
-            </span>
+            <ScoreInline score={item.rating} />
           )}
           {totalChapters != null && (
             <span className="cover-count tnum">
@@ -578,9 +575,9 @@ export const EngineCard = memo(function EngineCard({
           <div className="engine-why">
             <span className="engine-why-chips">
               {chips.map((c) => (
-                <span key={c} className="engine-chip" title={c}>
+                <TagChip key={c} size="sm" title={c}>
                   {c}
-                </span>
+                </TagChip>
               ))}
             </span>
           </div>
@@ -609,9 +606,9 @@ export const EngineCard = memo(function EngineCard({
           {!seed && chips.length > 0 && (
             <span className="engine-why-chips">
               {chips.map((c) => (
-                <span key={c} className="engine-chip" title={c}>
+                <TagChip key={c} size="sm" title={c}>
                   {c}
-                </span>
+                </TagChip>
               ))}
             </span>
           )}

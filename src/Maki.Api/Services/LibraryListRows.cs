@@ -1,4 +1,4 @@
-﻿using Maki.Core.Configuration;
+using Maki.Core.Configuration;
 using System.Linq.Expressions;
 using Maki.Api.Dtos;
 using Maki.Api.Jobs;
@@ -120,6 +120,8 @@ internal static class LibraryListRows
             .Select(s => s.Id)
             .ToListAsync(ct)).ToHashSet();
 
+        var newChapterCounts = await NewChapterCountsAsync(db, ids, ct);
+
         var communityRatings = await CommunityRatingsAsync(mangaBakaStore, logger, series, ct);
 
         return [.. series.Select(s =>
@@ -171,6 +173,7 @@ internal static class LibraryListRows
                 FileSources = fileSourcesBySeries.GetValueOrDefault(s.Id) ?? [],
                 LastReadAt = lastReadBySeries.TryGetValue(s.Id, out var lastRead) ? lastRead : null,
                 LastDownloadedAt = lastDownloadBySeries.TryGetValue(s.Id, out var lastDownload) ? lastDownload : null,
+                NewChapterCount = newChapterCounts.GetValueOrDefault(s.Id),
                 LatestChapterAt = latestReleaseBySeries.GetValueOrDefault(s.Id),
                 CommunityRating = s.MangaBakaId is int bakaId && communityRatings.TryGetValue(bakaId, out var score)
                     ? Math.Round(score / 10.0, 1)
@@ -222,6 +225,150 @@ internal static class LibraryListRows
             return new Dictionary<long, double>();
         }
     }
+
+    /// <summary>
+    /// Per series, the caller's <see cref="NewChapterBatch"/> count, the same "N new" Home's
+    /// Recently added rail shows. Series with nothing new are absent.
+    /// <para>
+    /// Decides unread for the batch chapters only, by the rule
+    /// <see cref="ContinueReadingService.NextForAsync(IReadOnlyCollection{int}, CancellationToken)"/>
+    /// applies (completed, or another chapter of the series in the same
+    /// <see cref="ContinueReadingService.SlotOf"/> completed), rather than resolving "what's next"
+    /// over every chapter of every series.
+    /// </para>
+    /// </summary>
+    internal static async Task<Dictionary<int, int>> NewChapterCountsAsync(
+        MakiDbContext db, int[]? ids, CancellationToken ct)
+    {
+        var (batches, rows) = await LatestBatchesAsync(db, ids, ct);
+        if (batches.Count == 0)
+        {
+            return [];
+        }
+
+        var inBatch = batches.Values.SelectMany(b => b).ToHashSet();
+        var batchChapters = rows
+            .Where(r => r.ChapterId != null && r.ChapterSeriesId == r.SeriesId && inBatch.Contains(r.FileId))
+            .Select(r => (Id: r.ChapterId!.Value, r.SeriesId, r.FileId, r.Number, r.Volume))
+            .ToList();
+        if (batchChapters.Count == 0)
+        {
+            return [];
+        }
+
+        // The caller's completed rows that can decide a batch chapter: the chapter itself, or another
+        // of the series with its number (another language's copy). The slot is checked below. This
+        // lookup only narrows the progress read, which keeps every filter, so it may skip them: the
+        // visibility filter on the joined chapters stops SQLite from using the (SeriesId, Number) index.
+        // Id lists go as one JSON array parameter, since a batch can be the whole library after an import.
+        var batchChapterIds = batchChapters.Select(c => c.Id).ToArray();
+        var deciders = batchChapterIds.Concat(await (
+                from b in db.Chapters.IgnoreQueryFilters()
+                where EF.Parameter(batchChapterIds).Contains(b.Id) && b.Number != null
+                join c in db.Chapters.IgnoreQueryFilters() on b.SeriesId equals c.SeriesId
+                where c.Number != null && c.Number == b.Number && c.Id != b.Id
+                select c.Id)
+            .ToListAsync(ct)).Distinct().ToArray();
+        var reads = (await db.ChapterProgress.AsNoTracking()
+                .Where(p => p.Completed && EF.Parameter(deciders).Contains(p.ChapterId))
+                .Join(db.Chapters, p => p.ChapterId, c => c.Id,
+                    (p, c) => new { ProgressSeriesId = p.SeriesId, c.Id, c.SeriesId, c.Number, c.Volume })
+                .ToListAsync(ct))
+            .Where(r => batches.ContainsKey(r.ProgressSeriesId))
+            .ToList();
+        var completed = reads.Select(r => r.Id).ToHashSet();
+        var readSlots = reads
+            .Select(r => (r.SeriesId, Slot: ContinueReadingService.SlotOf(r.Number, r.Volume)))
+            .Where(r => r.Slot is not null)
+            .Select(r => (r.SeriesId, r.Slot!.Value))
+            .ToHashSet();
+
+        var chapterIdsByFile = batchChapters.ToLookup(c => c.FileId, c => c.Id);
+        var unreadBySeries = batchChapters
+            .Where(c => !completed.Contains(c.Id) &&
+                        !(ContinueReadingService.SlotOf(c.Number, c.Volume) is { } slot && readSlots.Contains((c.SeriesId, slot))))
+            .GroupBy(c => c.SeriesId)
+            .ToDictionary(g => g.Key, g => (IReadOnlySet<int>)g.Select(c => c.Id).ToHashSet());
+
+        var counts = new Dictionary<int, int>();
+        foreach (var (seriesId, unread) in unreadBySeries)
+        {
+            var count = NewChapterBatch.UnreadFiles(batches[seriesId], id => chapterIdsByFile[id], unread).Count;
+            if (count > 0)
+            {
+                counts[seriesId] = count;
+            }
+        }
+
+        return counts;
+    }
+
+    private const int BatchWindowDays = 7;
+
+    /// <summary>
+    /// Each series' <see cref="NewChapterBatch.Latest"/>, reading only its last
+    /// <see cref="BatchWindowDays"/> of files first. A batch that starts within one gap of that
+    /// window's edge might run on past it, so only those series are read whole. Each file comes with
+    /// the chapters it backs, one row per chapter, or one row with no chapter.
+    /// </summary>
+    private static async Task<(Dictionary<int, List<int>> Batches, List<FileChapterRow> Rows)> LatestBatchesAsync(
+        MakiDbContext db, int[]? ids, CancellationToken ct)
+    {
+        var files = ForSeries(db.ChapterFiles.AsNoTracking(), ids, f => f.SeriesId).Where(ChapterFile.IsNewContent);
+        var cutoffs = files
+            .GroupBy(f => f.SeriesId)
+            .Select(g => new { SeriesId = g.Key, From = g.Max(f => f.DateAdded).AddDays(-BatchWindowDays) });
+        var rows = await WithChapters(db, files
+                .Join(cutoffs, f => f.SeriesId, n => n.SeriesId, (f, n) => new { File = f, n.From })
+                .Where(x => x.File.DateAdded >= x.From)
+                .Select(x => x.File))
+            .ToListAsync(ct);
+
+        var batches = new Dictionary<int, List<int>>();
+        var unbounded = new HashSet<int>();
+        foreach (var group in rows.GroupBy(r => r.SeriesId))
+        {
+            var batch = Latest(group);
+            var oldest = group.First(f => f.FileId == batch[^1]).DateAdded;
+            var newest = group.Max(f => f.DateAdded);
+            // A second of slack for SQLite rounding the cutoff to milliseconds.
+            if (newest > DateTime.MinValue.AddDays(BatchWindowDays + 1) &&
+                oldest >= newest.AddDays(-BatchWindowDays).AddSeconds(1) + NewChapterBatch.BatchGap)
+            {
+                batches[group.Key] = batch;
+            }
+            else
+            {
+                unbounded.Add(group.Key);
+            }
+        }
+
+        if (unbounded.Count > 0)
+        {
+            var seriesIds = unbounded.ToArray();
+            var whole = await WithChapters(db, files.Where(f => EF.Parameter(seriesIds).Contains(f.SeriesId))).ToListAsync(ct);
+            foreach (var group in whole.GroupBy(r => r.SeriesId))
+            {
+                batches[group.Key] = Latest(group);
+            }
+
+            rows = [.. rows.Where(r => !unbounded.Contains(r.SeriesId)), .. whole];
+        }
+
+        return (batches, rows);
+
+        static List<int> Latest(IEnumerable<FileChapterRow> rows) =>
+            NewChapterBatch.Latest(rows.DistinctBy(r => r.FileId).Select(r => new NewChapterBatch.File(r.FileId, r.DateAdded)));
+    }
+
+    private sealed record FileChapterRow(
+        int FileId, int SeriesId, DateTime DateAdded, int? ChapterId, int? ChapterSeriesId, decimal? Number, int? Volume);
+
+    private static IQueryable<FileChapterRow> WithChapters(MakiDbContext db, IQueryable<ChapterFile> files) =>
+        from f in files
+        join c in db.Chapters on (int?)f.Id equals c.ChapterFileId into backed
+        from c in backed.DefaultIfEmpty()
+        select new FileChapterRow(f.Id, f.SeriesId, f.DateAdded, (int?)c!.Id, (int?)c.SeriesId, c.Number, c.Volume);
 
     internal sealed record ChapterTallies(
         int SeriesId, int Wanted, int WithFile, int Known, int Removed, int Specials, int SpecialsHad, double? HighestMain,

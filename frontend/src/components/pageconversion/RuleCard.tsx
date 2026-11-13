@@ -2,7 +2,6 @@ import { useState } from 'react'
 import {
   ActionIcon,
   Button,
-  Card,
   Group,
   Input,
   Menu,
@@ -14,7 +13,9 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
-import { IconAlertTriangle, IconArrowDown, IconArrowUp, IconPlus, IconX } from '../../lib/icons'
+import { Note } from '../ui/Note'
+import { Panel } from '../ui/Panel'
+import { IconArrowDown, IconArrowUp, IconPlus, IconX } from '../../lib/icons'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -278,7 +279,8 @@ export function RuleCard({
   }
 
   return (
-    <Card withBorder radius="md" padding="sm" component="li" style={{ listStyle: 'none' }}>
+    <li style={{ listStyle: 'none' }}>
+    <Panel p="sm">
       <Stack gap="sm">
         <Group gap="xs" wrap="nowrap" align="center">
           <Text fw={600} size="sm" style={{ flexShrink: 0 }}>
@@ -295,7 +297,7 @@ export function RuleCard({
           />
           <ActionIcon
             variant="subtle"
-            color="gray"
+            color="var(--neutral)"
             aria-label={t`Move rule ${number} up`}
             disabled={index === 0}
             onClick={() => onMove(-1)}
@@ -304,7 +306,7 @@ export function RuleCard({
           </ActionIcon>
           <ActionIcon
             variant="subtle"
-            color="gray"
+            color="var(--neutral)"
             aria-label={t`Move rule ${number} down`}
             disabled={index === total - 1}
             onClick={() => onMove(1)}
@@ -325,7 +327,7 @@ export function RuleCard({
                   {editor(kind)}
                   <ActionIcon
                     variant="subtle"
-                    color="gray"
+                    color="var(--neutral)"
                     mb={2}
                     aria-label={t`Remove condition: ${conditionLabel}`}
                     onClick={() => removeCondition(kind)}
@@ -360,12 +362,9 @@ export function RuleCard({
             </Menu.Dropdown>
           </Menu>
           {!hasConditions(c) && (
-            <Group gap={6} wrap="nowrap" c="var(--warn)">
-              <IconAlertTriangle size={16} />
-              <Text size="xs" c="var(--warn)">
-                <Trans>No conditions, so this rule matches every file that reaches it.</Trans>
-              </Text>
-            </Group>
+            <Note tone="warn">
+              <Trans>No conditions, so this rule matches every file that reaches it.</Trans>
+            </Note>
           )}
         </Group>
 
@@ -386,7 +385,8 @@ export function RuleCard({
           <CountLine bucket={bucket} stale={stale} />
         </Group>
       </Stack>
-    </Card>
+    </Panel>
+    </li>
   )
 }
 

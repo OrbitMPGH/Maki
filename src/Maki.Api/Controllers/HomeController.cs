@@ -75,12 +75,6 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     private const int MinRecentChunk = 10;
 
     /// <summary>
-    /// Files of one series count as one batch while each arrived within this long of the next.
-    /// A backlog download lands minutes apart; weekly or daily releases fall outside it.
-    /// </summary>
-    private static readonly TimeSpan BatchGap = TimeSpan.FromHours(12);
-
-    /// <summary>
     /// How many of the most recently touched <c>ChapterProgress</c> rows to consider for the
     /// reading rails. Same shape as <see cref="RecentFileScan"/> and for the same reason: an
     /// index-ordered LIMIT off IX_ChapterProgress_UpdatedAt, walked backwards and stopped. A
@@ -328,7 +322,7 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
     /// (<see cref="ChapterFile.IsNewContent"/>).
     /// </para>
     /// <para>
-    /// Only a series' latest batch counts (see <see cref="BatchGap"/>), and only the files in it the
+    /// Only a series' latest batch counts (see <see cref="NewChapterBatch"/>), and only the files in it the
     /// user has not read. A series whose latest batch is all read drops off the rail.
     /// </para>
     /// </summary>
@@ -347,19 +341,13 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
             .Select(f => new { f.Id, f.SeriesId, f.DateAdded })
             .ToListAsync(ct);
 
-        // Newest first within a series, cut at the first gap longer than BatchGap.
         var candidates = recentFiles
             .GroupBy(f => f.SeriesId)
-            .Select(g =>
+            .Select(g => new
             {
-                var files = g.OrderByDescending(f => f.DateAdded).ThenByDescending(f => f.Id).ToList();
-                var batch = files.Take(1)
-                    .Concat(files.Zip(files.Skip(1))
-                        .TakeWhile(p => p.First.DateAdded - p.Second.DateAdded <= BatchGap)
-                        .Select(p => p.Second))
-                    .Select(f => f.Id)
-                    .ToList();
-                return new { SeriesId = g.Key, AddedAt = files[0].DateAdded, Batch = batch };
+                SeriesId = g.Key,
+                AddedAt = g.Max(f => f.DateAdded),
+                Batch = NewChapterBatch.Latest(g.Select(f => new NewChapterBatch.File(f.Id, f.DateAdded))),
             })
             .OrderByDescending(g => g.AddedAt)
             .ToList();
@@ -404,9 +392,8 @@ public class HomeController(MakiDbContext db, ContinueReadingService continueRea
                     continue;
                 }
 
-                var unreadFiles = candidate.Batch
-                    .Where(id => chaptersByFile[id].Any(c => upNext.UnreadChapterIds.Contains(c.Id)))
-                    .ToList();
+                var unreadFiles = NewChapterBatch.UnreadFiles(
+                    candidate.Batch, id => chaptersByFile[id].Select(c => c.Id), upNext.UnreadChapterIds);
                 if (unreadFiles.Count == 0)
                 {
                     continue;

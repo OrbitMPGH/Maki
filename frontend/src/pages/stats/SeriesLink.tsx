@@ -1,6 +1,7 @@
 import { Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { useLingui } from '@lingui/react/macro'
+import { Thumb } from '../../components/ui/Thumb'
 
 /** A series by name, linked to the library or opened in Discover when it has been removed. */
 export function SeriesLink({
@@ -53,9 +54,14 @@ export function SeriesThumb({
   large?: boolean
   seriesId?: number | null
 }) {
-  const className = large ? 'stats-thumb stats-thumb-lg' : 'stats-thumb'
-  if (!url) {
-    return <div className={`${className} stats-thumb-empty`} aria-hidden />
-  }
-  return <img className={className} src={url} alt={alt} loading="lazy" data-series-cover={seriesId ?? undefined} />
+  return (
+    <Thumb
+      className="stats-thumb"
+      src={url}
+      alt={alt}
+      size={large ? 'md' : 'sm'}
+      aria-hidden={url ? undefined : true}
+      data-series-cover={seriesId ?? undefined}
+    />
+  )
 }

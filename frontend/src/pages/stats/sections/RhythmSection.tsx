@@ -4,7 +4,9 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useActivityStats, useProgressSummary, useReadingHeatmap } from '../../../api/hooks'
 import { useStatsInsights, useStatsStanding } from '../../../api/stats'
 import { EmptyState } from '../../../components/ui/EmptyState'
+import { FigureStrip } from '../../../components/ui/FigureStrip'
 import { Panel } from '../../../components/ui/Panel'
+import { PanelTitle } from '../../../components/ui/PanelTitle'
 import { formatDecimal, formatHour, formatNumber, formatPercent, formatTimeSpent, weekdayName } from '../../../format'
 import { ReadTrackingEmpty } from '../ReadTrackingEmpty'
 import { ChartSkeleton } from '../ChartSkeleton'
@@ -77,11 +79,11 @@ export default function RhythmSection({ userId, range, windowLabel }: StatsSecti
     return (
       <div className="stats-grid-main" aria-hidden>
         <Panel p="md">
-          <p className="stats-panel-title">{t`Hour of day and weekday`}</p>
+          <PanelTitle>{t`Hour of day and weekday`}</PanelTitle>
           <ChartSkeleton h={200} />
         </Panel>
         <Panel p="md">
-          <p className="stats-panel-title">{t`Habits in numbers`}</p>
+          <PanelTitle>{t`Habits in numbers`}</PanelTitle>
           <Skeleton h={160} />
         </Panel>
       </div>
@@ -119,9 +121,9 @@ export default function RhythmSection({ userId, range, windowLabel }: StatsSecti
 
   const bookmarksPanel = (
     <Panel p="md">
-      <p className="stats-panel-title">{t`Bookmarks`}</p>
+      <PanelTitle>{t`Bookmarks`}</PanelTitle>
       <p className="stats-panel-sub">{t`Added in ${windowLabel}`}</p>
-      <span className="stats-fact-value" style={{ fontSize: '2rem' }}>
+      <span className="figure" style={{ fontSize: '2rem', color: 'var(--ink-hi)' }}>
         {formatNumber(bookmarksAdded)}
       </span>
     </Panel>
@@ -133,75 +135,57 @@ export default function RhythmSection({ userId, range, windowLabel }: StatsSecti
 
       <div className="stats-grid-main">
         <Panel p="md">
-          <p className="stats-panel-title">{t`Hour of day and weekday`}</p>
+          <PanelTitle>{t`Hour of day and weekday`}</PanelTitle>
           <HourMatrix secondsByWeekdayHour={rhythm.secondsByWeekdayHour} />
         </Panel>
 
         <Panel p="md">
-          <p className="stats-panel-title">{t`Habits in numbers`}</p>
-          <div className="stats-facts">
-            <div className="stats-fact">
-              <span className="stats-fact-label">{t`Prime time`}</span>
-              <span className="stats-fact-value">
-                {primeStart !== null && primeEnd !== null ? (
-                  <Trans>
-                    {primeStart} to {primeEnd}
-                  </Trans>
-                ) : (
-                  '-'
-                )}
-              </span>
-              <span className="stats-fact-hint">
-                {primeShare !== null ? t`${primeShare} of minutes` : '-'}
-              </span>
-            </div>
-
-            <div className="stats-fact">
-              <span className="stats-fact-label">{t`Busiest day`}</span>
-              <span className="stats-fact-value">
-                {rhythm.busiestWeekday !== null ? weekdayName(rhythm.busiestWeekday, 'long') : '-'}
-              </span>
-              <span className="stats-fact-hint">
-                {busiestShareLabel !== null ? t`${busiestShareLabel} of your time` : '-'}
-              </span>
-            </div>
-
-            <div className="stats-fact">
-              <span className="stats-fact-label">{t`Typical sitting`}</span>
-              <span className="stats-fact-value">
-                {sittings ? formatTimeSpent(sittings.medianSeconds) : '-'}
-              </span>
-              <span className="stats-fact-hint">
-                {longestSitting !== null ? t`longest ${longestSitting}` : '-'}
-              </span>
-            </div>
-
-            <div className="stats-fact">
-              <span className="stats-fact-label">{t`Pace`}</span>
-              <span className="stats-fact-value">
-                {minutesPerChapter !== null ? t`${minutesPerChapter} min / ch.` : '-'}
-              </span>
-              <span className="stats-fact-hint">{medianSecondsPerChapter !== null ? t`median` : '-'}</span>
-            </div>
-
-            <div className="stats-fact">
-              <span className="stats-fact-label">{t`Weekend share`}</span>
-              <span className="stats-fact-value">
-                {rhythm.weekendShare !== null ? formatPercent(rhythm.weekendShare) : '-'}
-              </span>
-              <span className="stats-fact-hint">{t`of reading time`}</span>
-            </div>
-
-            <div className="stats-fact">
-              <span className="stats-fact-label">{t`Sittings per week`}</span>
-              <span className="stats-fact-value">
-                {sittings ? formatDecimal(sittings.perWeek) : '-'}
-              </span>
-              {perSittingMedian !== null && perSittingMedian > 0 && (
-                <span className="stats-fact-hint">{t`${perSitting} ch. per sitting`}</span>
-              )}
-            </div>
-          </div>
+          <PanelTitle>{t`Habits in numbers`}</PanelTitle>
+          <FigureStrip
+            flush
+            figures={[
+              {
+                label: t`Prime time`,
+                value:
+                  primeStart !== null && primeEnd !== null ? (
+                    <Trans>
+                      {primeStart} to {primeEnd}
+                    </Trans>
+                  ) : (
+                    '-'
+                  ),
+                hint: primeShare !== null ? t`${primeShare} of minutes` : '-',
+              },
+              {
+                label: t`Busiest day`,
+                value: rhythm.busiestWeekday !== null ? weekdayName(rhythm.busiestWeekday, 'long') : '-',
+                hint: busiestShareLabel !== null ? t`${busiestShareLabel} of your time` : '-',
+              },
+              {
+                label: t`Typical sitting`,
+                value: sittings ? formatTimeSpent(sittings.medianSeconds) : '-',
+                hint: longestSitting !== null ? t`longest ${longestSitting}` : '-',
+              },
+              {
+                label: t`Pace`,
+                value: minutesPerChapter !== null ? t`${minutesPerChapter} min / ch.` : '-',
+                hint: medianSecondsPerChapter !== null ? t`median` : '-',
+              },
+              {
+                label: t`Weekend share`,
+                value: rhythm.weekendShare !== null ? formatPercent(rhythm.weekendShare) : '-',
+                hint: t`of reading time`,
+              },
+              {
+                label: t`Sittings per week`,
+                value: sittings ? formatDecimal(sittings.perWeek) : '-',
+                hint:
+                  perSittingMedian !== null && perSittingMedian > 0
+                    ? t`${perSitting} ch. per sitting`
+                    : undefined,
+              },
+            ]}
+          />
         </Panel>
       </div>
 

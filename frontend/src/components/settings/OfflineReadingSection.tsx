@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ActionIcon, Alert, Anchor, Badge, Button, Group, Progress, Select, Stack, Text, Tooltip } from '@mantine/core'
+import { SettingsGroupTitle } from './SettingsGroupTitle'
+import { ActionIcon, Anchor, Badge, Button, Group, Progress, Select, Stack, Text, Tooltip } from '@mantine/core'
 import { IconDeviceMobileOff, IconRefresh, IconTrash } from '../../lib/icons'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { plural } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { EmptyState } from '../ui/EmptyState'
 import { api } from '../../api/client'
 import type { ChapterDto, SeriesDto } from '../../api/types'
 import { useAuth } from '../../auth/AuthProvider'
@@ -30,6 +32,7 @@ import { queuedProgressCount, replayProgress } from '../../pwa/progressQueue'
 import { chapterLabel } from '../series/chapterTable'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { SecureContextNote } from './SecureContextNote'
+import { Callout } from '../ui/Callout'
 
 export function OfflineReadingSection() {
   return (
@@ -117,23 +120,22 @@ function OfflineControls() {
   return (
     <Stack gap="lg">
       {iosNeedsInstall() && (
-        <Alert color="var(--info)" variant="light">
+        <Callout tone="info" role="alert">
           <Trans>
             Safari clears what a website saved after seven days without a visit. Add Maki to your home
             screen and save chapters from there to keep them.
           </Trans>
-        </Alert>
+        </Callout>
       )}
 
       <Stack gap={6}>
-        <Text fw={500} size="sm">
+        <SettingsGroupTitle>
           <Trans>Storage on this device</Trans>
-        </Text>
+        </SettingsGroupTitle>
         {usage && usage.quota > 0 && (
           <Progress
             value={Math.min(100, (usage.usage / usage.quota) * 100)}
-            size="sm"
-            radius="xl"
+            color="var(--neutral)"
             aria-label={t`Storage used`}
           />
         )}
@@ -180,13 +182,15 @@ function OfflineControls() {
       />
 
       <Stack gap="xs">
-        <Text fw={500} size="sm">
+        <SettingsGroupTitle>
           <Trans>Saved chapters</Trans>
-        </Text>
+        </SettingsGroupTitle>
         {groups.length === 0 ? (
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>Nothing is saved on this device yet. Use Save for offline on a chapter or a series.</Trans>
-          </Text>
+          <EmptyState
+            compact
+            title={t`Nothing is saved on this device yet`}
+            description={t`Use Save for offline on a chapter or a series.`}
+          />
         ) : (
           groups.map(([seriesId, list]) => (
             <SavedSeriesGroup
@@ -281,7 +285,7 @@ function SavedSeriesGroup({
     <Stack gap={4}>
       <Group justify="space-between" wrap="nowrap" gap="xs">
         <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
-          <Anchor component={Link} to={`/series/${seriesId}`} size="sm" fw={600} truncate>
+          <Anchor component={Link} to={`/series/${seriesId}`} className="series-title">
             {seriesTitle}
           </Anchor>
           <Text size="xs" c="var(--ink-3)" className="tnum" style={{ flexShrink: 0 }}>
@@ -332,7 +336,7 @@ function SavedSeriesGroup({
               )}
               <ActionIcon
                 variant="subtle"
-                color="var(--neutral)"
+                color="var(--danger)"
                 onClick={() => void removeChaptersOffline([record.chapterId])}
                 aria-label={t`Remove ${label} from this device`}
               >

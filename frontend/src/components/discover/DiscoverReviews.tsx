@@ -1,5 +1,5 @@
-import { Anchor, Badge, Group, Skeleton, Spoiler, Stack, Text, Tooltip } from '@mantine/core'
-import { IconExternalLink, IconMessage2, IconStarFilled, IconThumbUp } from '../../lib/icons'
+import { Anchor, Group, Skeleton, Spoiler, Stack, Text, Tooltip } from '@mantine/core'
+import { IconExternalLink, IconMessage2, IconThumbUp } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import {
@@ -9,11 +9,13 @@ import {
   type ReviewIds,
   type SeriesReviews,
 } from '../../api/hooks'
-import { formatDecimal, formatNumber } from '../../format'
+import { formatNumber } from '../../format'
 import { siteInfo } from '../../lib/metadataSites'
 import { MetadataSiteIcon } from '../MetadataSiteIcon'
 import { Panel } from '../ui/Panel'
+import { ScoreInline } from '../ui/ScoreInline'
 import { PanelTitle } from '../ui/PanelTitle'
+import { TagChip } from '../ui/TagChip'
 
 // The detail modal sits at 1000; its tooltips have to clear it.
 const TOOLTIP_Z = 1001
@@ -146,18 +148,15 @@ function ReviewByline({ review }: { review: MangaReview }) {
       <Group gap="xs" wrap="wrap" style={{ minWidth: 0 }}>
         <SourceMark site={review.source} />
         {review.score != null && (
-          <span className="review-score tnum">
-            <IconStarFilled size={12} color="var(--rating)" aria-hidden />
-            {formatDecimal(review.score)}
-          </span>
+          <ScoreInline score={review.score * 10} />
         )}
         <Text size="sm" fw={600} c="var(--ink-hi)">
           {review.author}
         </Text>
         {review.tags.map((tag) => (
-          <Badge key={tag} size="xs" variant="light" color="var(--neutral)">
+          <TagChip key={tag} size="sm">
             {tag}
-          </Badge>
+          </TagChip>
         ))}
         {likes > 0 && (
           <Tooltip label={helpful} withArrow zIndex={TOOLTIP_Z}>

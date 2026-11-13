@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Group, Paper, Progress, Stack, Text } from '@mantine/core'
+import { Button, Group, Progress, Stack, Text } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { QueueItemDto } from '../../api/types'
@@ -7,6 +7,7 @@ import { queueErrorMessage } from '../../api/queue'
 import { useLabel } from '../../i18n-context'
 import { IconDownload } from '../../lib/icons'
 import { ImportReviewModal } from '../ImportReviewModal'
+import { Callout, type CalloutTone } from '../ui/Callout'
 import { StatusDot } from '../ui/StatusDot'
 import { isQueueActive, needsImportReview, queueStatusVisual, statusToken } from '../ui/status'
 
@@ -36,21 +37,24 @@ export function SeriesTorrentDownloads({
         const percent = q.pagesTotal > 0 ? Math.round((q.pagesDone / q.pagesTotal) * 100) : null
         const showProgress = q.status === 'Downloading' && percent != null
         return (
-          <Paper
+          <Callout
             key={q.id}
-            className="series-torrent-banner"
-            withBorder
-            p="xs"
-            radius="lg"
-            style={{
-              borderColor: `color-mix(in srgb, var(--${toneStem}) 35%, var(--border))`,
-              background: `color-mix(in srgb, var(--${toneStem}) 7%, var(--surface-2))`,
-            }}
+            tone={toneStem as CalloutTone}
+            icon={IconDownload}
+            actions={
+              <>
+                {needsImportReview(q.status) && canReview && (
+                  <Button size="xs" variant="light" color="var(--warn)" onClick={() => setReviewing(q.id)}>
+                    <Trans>Review</Trans>
+                  </Button>
+                )}
+                <Button size="xs" variant="subtle" color="var(--neutral)" component={Link} to="/activity">
+                  <Trans>Open Activity</Trans>
+                </Button>
+              </>
+            }
           >
-            <Group justify="space-between" wrap="wrap" gap="xs">
-              <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: 1, minWidth: 240 }}>
-                <IconDownload size={16} style={{ flexShrink: 0, marginTop: 3, color: `var(--${toneStem})` }} />
-                <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+                <Stack gap={4} style={{ minWidth: 0 }}>
                   <Text size="sm" fw={600} lineClamp={2} style={{ wordBreak: 'break-word' }}>
                     {q.releaseTitle}
                   </Text>
@@ -62,9 +66,7 @@ export function SeriesTorrentDownloads({
                       <>
                         <Progress
                           value={percent}
-                          radius="xl"
                           animated
-                          color="brand"
                           style={{ flex: 1, maxWidth: 240 }}
                           aria-label={t`Download progress`}
                         />
@@ -80,19 +82,7 @@ export function SeriesTorrentDownloads({
                     </Text>
                   )}
                 </Stack>
-              </Group>
-              <Group gap="xs">
-                {needsImportReview(q.status) && canReview && (
-                  <Button size="xs" variant="light" color="var(--warn)" onClick={() => setReviewing(q.id)}>
-                    <Trans>Review</Trans>
-                  </Button>
-                )}
-                <Button size="xs" variant="subtle" color="var(--neutral)" component={Link} to="/activity">
-                  <Trans>Open Activity</Trans>
-                </Button>
-              </Group>
-            </Group>
-          </Paper>
+          </Callout>
         )
       })}
       <ImportReviewModal queueItemId={reviewing} onClose={() => setReviewing(null)} />

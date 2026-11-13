@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { plural, t as staticT } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { ActionIcon, Badge, Box, Group, Loader, Menu, Popover, Progress, Skeleton, Switch, Table, Text, Tooltip } from '@mantine/core'
+import { ActionIcon, Box, Group, Loader, Menu, Popover, Progress, Skeleton, Switch, Table, Text, Tooltip } from '@mantine/core'
 import {
   IconBook,
   IconChevronDown,
@@ -15,7 +15,6 @@ import {
   IconDeviceMobileOff,
   IconDeviceMobileX,
   IconDeviceTv,
-  IconDotsVertical,
   IconDownload,
   IconEye,
   IconEyeCheck,
@@ -34,6 +33,7 @@ import {
   IconTrashX,
   IconUsers,
 } from '../../lib/icons'
+import { OverflowButton } from '../ui/OverflowButton'
 import type { NoteCountDto } from '../../api/notes'
 import { ChapterNotesDropdown } from '../notes/NotesDropdown'
 import { usePhoneSheet } from '../notes/phone'
@@ -290,7 +290,7 @@ export const ChapterRow = memo(function ChapterRow({
                 return (
                     <LightGroup gap={4} wrap="wrap">
                       <HoverTooltip label={origin.hint} withArrow disabled={!origin.hint}>
-                        <LightBadge variant={origin.scraped ? 'light' : 'outline'} color="var(--neutral)">
+                        <LightBadge color="var(--neutral)">
                           {origin.label}
                         </LightBadge>
                       </HoverTooltip>
@@ -319,23 +319,20 @@ export const ChapterRow = memo(function ChapterRow({
                               <Progress
                                   value={(queueItem.pagesDone / queueItem.pagesTotal) * 100}
                                   w={72}
-                                  radius="xl"
                                   animated={queueItem.status === 'Downloading'}
                                   color={queueTone}
                                   aria-label={t`Download progress`}
                               />
                           )}
-                          <Badge
-                              size="sm"
+                          <LightBadge
                               color={queueTone}
-                              variant="light"
                               leftSection={<visual.Icon size={12} />}
                               className="tnum"
                           >
                             {queueItem.pagesTotal > 0
                                 ? `${renderLabel(visual.label)} ${queueItem.pagesDone}/${queueItem.pagesTotal}`
                                 : renderLabel(visual.label)}
-                          </Badge>
+                          </LightBadge>
                         </Group>
                       </Tooltip>
                   )
@@ -440,7 +437,6 @@ export const ChapterRow = memo(function ChapterRow({
                 >
                   <LightBadge
                       color={watched ? 'var(--anime)' : 'var(--brand)'}
-                      variant={watched || external ? 'light' : 'filled'}
                       leftSection={
                         watched ? <IconDeviceTv size={12} /> : <IconEyeCheck size={12} />
                       }
@@ -479,7 +475,7 @@ export const ChapterRow = memo(function ChapterRow({
                 <HoverTooltip label={read ? t`Mark unread` : t`Mark read`} withArrow>
                   <LightActionIcon
                       variant={read ? 'light' : 'subtle'}
-                      color={read ? 'var(--brand)' : 'gray'}
+                      color={read ? 'var(--brand)' : 'var(--neutral)'}
                       data-row-action={read ? undefined : ''}
                       loading={readPending}
                       onClick={() => actions.setRead(c.id, !read)}
@@ -545,14 +541,7 @@ export const ChapterRow = memo(function ChapterRow({
             {(canDownload || canDelete || canSaveOffline) && c.hasFile && (
                 <Menu shadow="md" position="bottom-end" withinPortal>
                   <Menu.Target>
-                    <ActionIcon
-                        variant="subtle"
-                        color="var(--neutral)"
-                        data-row-action=""
-                        aria-label={t`More actions for ${chapterLbl}`}
-                    >
-                      <IconDotsVertical size={19} />
-                    </ActionIcon>
+                    <OverflowButton data-row-action="" aria-label={t`More actions for ${chapterLbl}`} />
                   </Menu.Target>
                   <Menu.Dropdown>
                     {canSaveOffline && (!offline || offline.state === 'error') && (
@@ -669,7 +658,7 @@ function OfflineBadge({ record, saving }: { record: OfflineChapter; saving: Save
   }
   return (
       <HoverTooltip label={t`Saved on this device for offline reading`} withArrow>
-        <LightBadge color="var(--info)" leftSection={<IconDeviceMobileCheck size={12} />}>
+        <LightBadge color="var(--ok)" leftSection={<IconDeviceMobileCheck size={12} />}>
           <Trans>On this device</Trans>
         </LightBadge>
       </HoverTooltip>
@@ -756,17 +745,15 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
         <Table.Td className={hasAnimeMarkers ? 'chapter-cell' : undefined}>
           <Group gap={6} wrap="nowrap">
             <span className="chapter-lead-slot">
-              <Badge
-                  size="sm"
+              <LightBadge
                   color="var(--anime)"
-                  variant="light"
                   leftSection={<IconDeviceTv size={12} />}
                   className="chapter-span-badge"
                   data-span-fold={span.key}
                   {...pressable(() => actions.toggleSpanFold(span.key))}
               >
                 {span.label}
-              </Badge>
+              </LightBadge>
             </span>
             <Text size="sm" fw={600} className="tnum chapter-label chapter-number">
               {spanRangeLabel(span)}
@@ -803,8 +790,6 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
                 <Progress
                     value={(done / downloaded.length) * 100}
                     color={watchedCount > readCount ? 'var(--anime)' : 'var(--brand)'}
-                    size="sm"
-                    radius="xl"
                     aria-label={t`Reading progress`}
                 />
               </div>
@@ -827,9 +812,7 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
             {readTracking ? (
                 <Menu shadow="md" position="bottom-end" withinPortal>
                   <Menu.Target>
-                    <ActionIcon variant="subtle" color="var(--neutral)" data-row-action="" aria-label={t`Actions for ${spanLabel}`}>
-                      <IconDotsVertical size={19} />
-                    </ActionIcon>
+                    <OverflowButton data-row-action="" aria-label={t`Actions for ${spanLabel}`} />
                   </Menu.Target>
                   <Menu.Dropdown>
                     <Menu.Item
@@ -959,7 +942,7 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
             {volume === null ? (
                 <Text size="sm" fw={600} className="chapter-label">{name}</Text>
             ) : (
-                <Badge size="sm" color="var(--volume)" variant="light" className="tnum chapter-label">{name}</Badge>
+                <LightBadge color="var(--volume)" className="tnum chapter-label">{name}</LightBadge>
             )}
           </Group>
         </Table.Td>
@@ -983,8 +966,6 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
               <Progress
                   value={(readCount / downloaded.length) * 100}
                   color="var(--brand)"
-                  size="sm"
-                  radius="xl"
                   aria-label={t`Reading progress`}
               />
           )}
@@ -1010,9 +991,7 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
             )}
             <Menu shadow="md" position="bottom-end" withinPortal>
               <Menu.Target>
-                <ActionIcon variant="subtle" color="var(--neutral)" data-row-action="" aria-label={t`Actions for ${name}`}>
-                  <IconDotsVertical size={19} />
-                </ActionIcon>
+                <OverflowButton data-row-action="" aria-label={t`Actions for ${name}`} />
               </Menu.Target>
               <Menu.Dropdown>
                 {readTracking && (

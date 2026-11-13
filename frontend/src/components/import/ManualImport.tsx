@@ -206,11 +206,11 @@ export function ManualImport({ initialPath = null }: { initialPath?: string | nu
                   </Group>
                   <Group gap="xs" wrap="nowrap">
                     {fileLabel(f) ? (
-                      <Badge size="xs" variant="light">
+                      <Badge size="sm" variant="light">
                         {fileLabel(f)}
                       </Badge>
                     ) : (
-                      <Badge size="xs" variant="light" color="var(--warn)">
+                      <Badge size="sm" variant="light" color="var(--warn)">
                         <Trans>unrecognized</Trans>
                       </Badge>
                     )}
@@ -327,18 +327,18 @@ export function ManualImport({ initialPath = null }: { initialPath?: string | nu
                           </Table.Td>
                           <Table.Td>
                             {f.chapters.length === 0 ? (
-                              <Badge size="xs" variant="light" color="var(--warn)">
+                              <Badge size="sm" variant="light" color="var(--warn)">
                                 <Trans>no matching chapter</Trans>
                               </Badge>
                             ) : (
                               <Group gap={4}>
                                 {newCount > 0 && (
-                                  <Badge size="xs" variant="light" color="var(--ok)">
+                                  <Badge size="sm" variant="light" color="var(--ok)">
                                     <Plural value={newCount} one="# new" other="# new" />
                                   </Badge>
                                 )}
                                 {replaceCount > 0 && (
-                                  <Badge size="xs" variant="light" color="var(--warn)">
+                                  <Badge size="sm" variant="light" color="var(--warn)">
                                     <Plural value={replaceCount} one="replaces # file" other="replaces # files" />
                                   </Badge>
                                 )}

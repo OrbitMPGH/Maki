@@ -9,15 +9,16 @@ import {
   IconDeviceMobileCheck,
   IconSortAscending,
   IconSortDescending,
-  IconStarFilled,
 } from '../../lib/icons'
 import type { SeriesDto, TagDto } from '../../api/types'
 import type { OfflineAvailability } from '../ui/CoverCard'
 import { TagChip } from '../ui/TagChip'
-import { badgeFill, seriesProgressVisual, seriesStatusVisual } from '../ui/status'
+import { ScoreInline, YourScoreInline } from '../ui/ScoreInline'
+import { seriesProgressVisual, seriesStatusVisual, statusColor } from '../ui/status'
+import { LightBadge } from '../series/lightMantine'
 import { relativeTime } from '../ui/time'
 import { useLabel } from '../../i18n-context'
-import { formatBytes, formatCalendarDate, formatDecimal, formatRecentDate } from '../../format'
+import { formatBytes, formatCalendarDate, formatRecentDate } from '../../format'
 import { shownRating, isProvisional } from '../../lib/rating'
 import {
   LIBRARY_COLUMN_LABELS,
@@ -26,6 +27,7 @@ import {
   type LibraryColumn,
 } from './libraryColumns'
 import { type ColumnSpec, useColumnWidths } from '../../lib/useColumnWidths'
+import { Thumb } from '../ui/Thumb'
 
 const TITLE_MIN = 240
 const CHECK_TRACK = '36px'
@@ -207,10 +209,9 @@ export const LibraryTableRow = memo(function LibraryTableRow({
       case 'status': {
         const status = seriesStatusVisual(series.status)
         return (
-          <span className="cover-badge" style={badgeFill(status.color)}>
-            <status.Icon size={11} />
+          <LightBadge color={statusColor(status.color)} leftSection={<status.Icon size={12} />}>
             {renderLabel(status.label)}
-          </span>
+          </LightBadge>
         )
       }
       case 'chapters': {
@@ -229,10 +230,13 @@ export const LibraryTableRow = memo(function LibraryTableRow({
         if (unread === null) return <Empty />
         if (unread === 0) {
           return (
-            <span className="cover-badge cover-badge-read" data-tip={t`All downloaded chapters read`}>
-              <IconCircleCheckFilled size={11} />
+            <LightBadge
+              color="var(--brand)"
+              leftSection={<IconCircleCheckFilled size={12} />}
+              data-tip={t`All downloaded chapters read`}
+            >
               <Trans>Read</Trans>
-            </span>
+            </LightBadge>
           )
         }
         const tip = plural(unread, { one: '# unread', other: '# unread' })
@@ -295,9 +299,9 @@ export const LibraryTableRow = memo(function LibraryTableRow({
         if (!at) return <Empty />
         const due = new Date(at).getTime() <= Date.now()
         return due ? (
-          <span className="cover-badge" style={badgeFill('var(--info)')}>
+          <LightBadge color="var(--info)">
             <Trans>Due</Trans>
-          </span>
+          </LightBadge>
         ) : (
           <span className="tnum" title={formatCalendarDate(at)}>
             {relativeTime(at, 'narrow')}
@@ -312,10 +316,7 @@ export const LibraryTableRow = memo(function LibraryTableRow({
       }
       case 'score':
         return series.communityRating != null ? (
-          <span className="library-table-score">
-            <IconStarFilled size={12} aria-hidden />
-            <span className="tnum">{formatDecimal(series.communityRating)}</span>
-          </span>
+          <ScoreInline score={series.communityRating * 10} />
         ) : (
           <Empty />
         )
@@ -324,10 +325,7 @@ export const LibraryTableRow = memo(function LibraryTableRow({
         if (rating == null) return <Empty />
         const soFar = isProvisional(series)
         return (
-          <span className="library-table-score" data-provisional={soFar || undefined} title={soFar ? t`So far` : undefined}>
-            <IconStarFilled size={12} aria-hidden />
-            <span className="tnum">{rating}</span>
-          </span>
+          <YourScoreInline rating={rating} data-provisional={soFar || undefined} title={soFar ? t`So far` : undefined} />
         )
       }
       case 'tags': {
@@ -375,21 +373,19 @@ export const LibraryTableRow = memo(function LibraryTableRow({
             }
           }}
         >
-          <span className="library-table-thumb row-cover">
-            {series.coverUrl ? <img src={series.coverUrl} alt="" loading="lazy" decoding="async" /> : null}
-          </span>
-          <span className="library-table-name" title={series.title}>
+          <Thumb className="library-table-thumb" src={series.coverUrl} size="sm" />
+          <span className="library-table-name series-title" data-lines="1" title={series.title}>
             {series.displayTitle}
           </span>
           {offline === 'saved' && (
-            <span className="cover-badge" data-offline-badge="saved" data-tip={t`Saved on this device`}>
-              <IconDeviceMobileCheck size={11} />
-            </span>
+            <LightBadge color="var(--ok)" data-offline-badge="saved" data-tip={t`Saved on this device`}>
+              <IconDeviceMobileCheck size={12} />
+            </LightBadge>
           )}
           {offline === 'unavailable' && (
-            <span className="cover-badge" data-offline-badge="unavailable" data-tip={t`Not available offline`}>
-              <IconCloudOff size={11} />
-            </span>
+            <LightBadge color="var(--neutral)" data-offline-badge="unavailable" data-tip={t`Not available offline`}>
+              <IconCloudOff size={12} />
+            </LightBadge>
           )}
         </Link>
       </div>

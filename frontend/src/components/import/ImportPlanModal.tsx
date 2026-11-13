@@ -9,10 +9,11 @@ import {
   Skeleton,
   Stack,
   Text,
-  TextInput,
+  
   UnstyledButton,
 } from '@mantine/core'
-import { IconArrowRight, IconChevronDown, IconSearch } from '../../lib/icons'
+import { SearchInput } from '../ui/SearchInput'
+import { IconArrowRight, IconChevronDown } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -29,6 +30,7 @@ import { useLabel } from '../../i18n-context'
 import { FigureStrip } from '../ui/FigureStrip'
 import { MetaList } from '../ui/MetaList'
 import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 /** What the import builds a CBZ from (`ComicSourceKind`). */
 const KIND_LABELS: Record<string, MessageDescriptor> = {
@@ -288,7 +290,7 @@ function FolderHead({ plan }: { plan: ImportPlan }) {
         </>
       )}
       {plan.kind === 'restore' ? (
-        <Badge size="xs" variant="light">
+        <Badge size="sm" variant="light">
           {t({ message: `Restore ${title}`, context: 'series' })}
         </Badge>
       ) : (
@@ -465,12 +467,11 @@ function PlanList({ plans }: { plans: ImportPlan[] }) {
             { value: 'all', label: t`All (${total})` },
           ]}
         />
-        <TextInput
-          size="xs"
+        <SearchInput
           aria-label={t`Find a folder`}
           placeholder={t`Find a folder`}
-          leftSection={<IconSearch size={16} />}
           value={query}
+          onClear={() => setQuery('')}
           onChange={(e) => setQuery(e.currentTarget.value)}
           style={{ flex: '1 1 180px', maxWidth: 280 }}
         />
@@ -529,7 +530,7 @@ export function ImportPlanModal({
           description={<Trans>Nothing has been changed. This is what importing would do.</Trans>}
         />
       }
-      size="xl"
+      size={MODAL_SIZE.wide}
       attributes={{ body: { tabIndex: 0 } }}
     >
       <Stack gap="sm">

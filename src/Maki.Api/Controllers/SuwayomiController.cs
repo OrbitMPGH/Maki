@@ -38,7 +38,8 @@ public partial class SuwayomiController(
     SourceAvailability sourceAvailability,
     MakiDbContext db,
     IHttpClientFactory httpClientFactory,
-    ILogger<SuwayomiController> logger) : ControllerBase
+    ILogger<SuwayomiController> logger,
+    ConnectionTestStore? connectionTests = null) : ControllerBase
 {
     /// <param name="Password">
     /// Never returned. On PUT, null keeps the stored one for the same URL (and clears it for a new
@@ -162,25 +163,49 @@ public partial class SuwayomiController(
             baseUri, mode.Value,
             request.Username ?? stored?.Username,
             request.Password ?? (sameServer ? stored!.Password : null));
+        var fingerprint = ConnectionTestStore.SuwayomiFingerprint(connection);
+        SuwayomiTestResult result;
         try
         {
-            var result = await tester.TestAsync(connection, ct);
-            return Ok(new
-            {
-                success = true,
-                version = result.About.Version,
-                buildType = result.About.BuildType,
-                sourceCount = result.SourceCount
-            });
+            result = await tester.TestAsync(connection, ct);
         }
         catch (SuwayomiVersionException ex)
         {
-            return this.Fail(localizer, "error.suwayomi.versionUnsupported", new { version = ex.Version, minimum = ex.Minimum });
+            var args = new { version = ex.Version, minimum = ex.Minimum };
+            await RecordTestAsync(fingerprint, false, "error.suwayomi.versionUnsupported", args, ct);
+            return this.Fail(localizer, "error.suwayomi.versionUnsupported", args);
         }
         catch (Exception ex) when (IsUnreachable(ex, ct))
         {
             logger.LogInformation(ex, "Suwayomi connection test against {Url} failed", baseUri);
+            await RecordTestAsync(fingerprint, false, UnreachableKey(ex), null, ct);
             return FailedToReach(ex);
+        }
+
+        await RecordTestAsync(fingerprint, true, null, null, ct);
+        return Ok(new
+        {
+            success = true,
+            version = result.About.Version,
+            buildType = result.About.BuildType,
+            sourceCount = result.SourceCount
+        });
+    }
+
+    private async Task RecordTestAsync(string fingerprint, bool ok, string? code, object? args, CancellationToken ct)
+    {
+        if (connectionTests is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await connectionTests.RecordAsync(ConnectionTestStore.Suwayomi, fingerprint, ok, code, args, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not record the Suwayomi connection test result");
         }
     }
 

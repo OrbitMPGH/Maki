@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useSearchParams } from 'react-router-dom'
 import { useLabel } from '../i18n-context'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
-import { Button, Group, Modal, Stack, Tabs, Text } from '@mantine/core'
+import { Button, Stack, Tabs } from '@mantine/core'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { useAuth } from '../auth/AuthProvider'
@@ -65,6 +65,7 @@ import { ImportListSettingsSection, KavitaCard, ScrobbleSection } from './settin
 import { SuwayomiCard } from './settings/SuwayomiCards'
 import { BackupSection, HealthSettingsSection, ImageCacheSection, UpdatesSection } from './settings/SystemCards'
 import { scrollBehavior } from '../lib/scrollBehavior'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 
 /**
  * Every card, keyed by its registry id. The registry decides order, tab and who may see it; this
@@ -311,37 +312,25 @@ export default function SettingsPage() {
         </UnsavedSettingsContext>
       </Tabs>
 
-      <Modal
+      <ConfirmDialog
         opened={pendingLeave !== null}
         onClose={() => setPendingLeave(null)}
         title={t`Discard unsaved changes?`}
-        size="sm"
-      >
-        <Stack gap="md">
-          <Text size="sm">
-            <Plural
-              value={unsavedCount}
-              one="A card on this page has changes that are not saved. Leaving drops them."
-              other="# cards on this page have changes that are not saved. Leaving drops them."
-            />
-          </Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setPendingLeave(null)}>
-              <Trans>Keep editing</Trans>
-            </Button>
-            <Button
-              color="var(--danger-fill)"
-              onClick={() => {
-                const proceed = pendingLeave
-                setPendingLeave(null)
-                proceed?.()
-              }}
-            >
-              <Trans>Discard changes</Trans>
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+        description={
+          <Plural
+            value={unsavedCount}
+            one="A card on this page has changes that are not saved. Leaving drops them."
+            other="# cards on this page have changes that are not saved. Leaving drops them."
+          />
+        }
+        confirmLabel={<Trans>Discard changes</Trans>}
+        cancelLabel={<Trans>Keep editing</Trans>}
+        onConfirm={() => {
+          const proceed = pendingLeave
+          setPendingLeave(null)
+          proceed?.()
+        }}
+      />
     </SurfaceFrame>
   )
 }

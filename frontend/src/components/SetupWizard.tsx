@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   ActionIcon,
-  Anchor,
   Button,
   Collapse,
   Group,
@@ -65,6 +64,7 @@ import { ContentRatingCards } from './ContentRatingCards'
 import { IconBrandMark } from './IconBrandMark'
 import { MetadataDumpStatus } from './MetadataDumpProgress'
 import { StatusDot } from './ui/StatusDot'
+import { StepStrip } from './ui/StepStrip'
 import { PriorityList } from './PriorityList'
 import { RecommendationModelSwitch } from './RecommendationModelSwitch'
 import { UnsavedSettingsContext } from './settings/SaveButton'
@@ -213,7 +213,7 @@ function LibraryStep() {
                 </StatusDot>
                 <ActionIcon
                   variant="subtle"
-                  className="quiet-danger"
+                  color="var(--danger)"
                   onClick={() => setDeleting({ id: f.id, path: f.path })}
                   aria-label={t`Remove root folder`}
                 >
@@ -621,9 +621,9 @@ function FinishStep({
           <SummaryLine
             tone="warn"
             action={
-              <Anchor component="button" type="button" size="sm" onClick={() => goTo('library')}>
+              <Button variant="subtle" size="compact-sm" onClick={() => goTo('library')}>
                 <Trans>Add one</Trans>
-              </Anchor>
+              </Button>
             }
           >
             <Trans>No library folder yet. Series need one to download into.</Trans>
@@ -637,9 +637,9 @@ function FinishStep({
           <SummaryLine
             tone="warn"
             action={
-              <Anchor component="button" type="button" size="sm" onClick={() => goTo('discovery')}>
+              <Button variant="subtle" size="compact-sm" onClick={() => goTo('discovery')}>
                 <Trans>See progress</Trans>
-              </Anchor>
+              </Button>
             }
           >
             <Trans>The local MangaBaka database is still downloading. Setup finishes once it is in.</Trans>
@@ -817,33 +817,17 @@ function GuideRail({
       </div>
 
       <nav aria-label={t`Setup steps`}>
-        <ol className="setup-steps">
-          {steps.map((step, i) => {
-            const current = i === active
-            const done = !current && visited.has(i)
-            return (
-              <li key={step.id}>
-                <UnstyledButton
-                  className="setup-step"
-                  data-current={current || undefined}
-                  data-done={done || undefined}
-                  aria-current={current ? 'step' : undefined}
-                  onClick={() => onSelect(i)}
-                >
-                  <span className="setup-step-index">{done ? <IconCheck size={13} /> : i + 1}</span>
-                  <span className="setup-step-text">
-                    <span className="setup-step-label">{step.label}</span>
-                    {step.hint && (
-                      <span className="setup-step-hint" data-tone={step.tone}>
-                        {step.hint}
-                      </span>
-                    )}
-                  </span>
-                </UnstyledButton>
-              </li>
-            )
-          })}
-        </ol>
+        <StepStrip
+          layout="rail"
+          label={t`Setup steps`}
+          steps={steps.map((step, i) => ({
+            label: step.label,
+            hint: step.hint,
+            tone: step.tone === 'warn' ? 'warn' : undefined,
+            state: i === active ? 'current' : visited.has(i) ? 'done' : 'todo',
+          }))}
+          onSelect={onSelect}
+        />
       </nav>
 
     </aside>

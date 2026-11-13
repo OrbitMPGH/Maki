@@ -61,12 +61,6 @@ public class ContinueReadingService(MakiDbContext db)
         var result = new Dictionary<int, NextChapter>();
         foreach (var group in chapters.GroupBy(c => c.SeriesId))
         {
-            // A chapter read in one language is read: another language's copy of the same number is
-            // not something left to read, or a series with two languages downloaded would never
-            // drop off the rail. Sources can disagree on the volume, so the number alone identifies
-            // it; only a volume's chapter 0 repeats across volumes and keeps the volume in its key.
-            static (decimal Number, int? Volume)? SlotOf(decimal? number, int? volume) =>
-                number is { } n ? (n, n > 0 ? null : volume) : null;
             var readSlots = group
                 .Where(c => completed.Contains(c.Id) && SlotOf(c.Number, c.Volume) is not null)
                 .Select(c => SlotOf(c.Number, c.Volume)!.Value)
@@ -149,6 +143,15 @@ public class ContinueReadingService(MakiDbContext db)
 
         return result;
     }
+
+    /// <summary>
+    /// A chapter read in one language is read: another language's copy of the same number is not
+    /// something left to read, or a series with two languages downloaded would never drop off the
+    /// rail. Sources can disagree on the volume, so the number alone identifies it; only a volume's
+    /// chapter 0 repeats across volumes and keeps the volume in its key.
+    /// </summary>
+    internal static (decimal Number, int? Volume)? SlotOf(decimal? number, int? volume) =>
+        number is { } n ? (n, n > 0 ? null : volume) : null;
 
     /// <summary>Convenience wrapper for the single-series reader endpoint.</summary>
     public async Task<NextChapter?> NextForAsync(int seriesId, CancellationToken ct) =>

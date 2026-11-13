@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import {
-  Alert,
   Badge,
   Button,
   Collapse,
@@ -50,6 +49,7 @@ import { useLabel } from '../i18n-context'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { FigureStrip, type Figure } from '../components/ui/FigureStrip'
 import { formatFixedDecimal } from '../format'
+import { Callout } from '../components/ui/Callout'
 
 const PAGE_SIZE = 60
 // Creator links come from Discover's detail card, so a page opened cold walks back there.
@@ -362,14 +362,14 @@ export default function CreatorPage() {
       )}
 
       {appliedCount > 0 && data && items.length > 0 && items.length < data.workCount && !canLoadMore && (
-        <Alert variant="light" color="var(--neutral)" mt="md">
+        <Callout tone="neutral" role="alert" mt="md">
           <Text size="sm">
             {plural(workCount, {
               one: `Showing ${shownCount} of # title. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable.`,
               other: `Showing ${shownCount} of # titles. Filters and the catalogue's own coverage both narrow this: only rated, non-novel entries are searchable.`,
             })}
           </Text>
-        </Alert>
+        </Callout>
       )}
 
       <DiscoverDetailModal

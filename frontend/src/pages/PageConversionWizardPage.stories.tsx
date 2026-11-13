@@ -73,10 +73,10 @@ export const FormatSplitTallPages: Story = {
     await userEvent.type(height, '13000')
     await expect(await canvas.findByText('Becomes 2 pages. Each dashed line is a cut.')).toBeVisible()
 
-    await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
-    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
-    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
-    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Continue' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Continue' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Continue' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Continue' }))
     await expect(await canvas.findByText('Split above 13,000 px')).toBeVisible()
   },
 }
@@ -87,7 +87,7 @@ export const FormatOffThenCompare: Story = {
     await waitFor(() => expect(canvas.getByRole('radio', { name: /WebP/ })).toBeChecked())
     await expect(canvas.getByRole('checkbox', { name: 'Keep PNG pages lossless' })).not.toBeChecked()
     await userEvent.click(canvas.getByRole('radio', { name: /Off/ }))
-    await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Continue' }))
     await expect(await canvas.findByText(/Conversion is off, so there is nothing to compare/)).toBeVisible()
   },
 }
@@ -356,8 +356,8 @@ export const ScopeWithConversionOff: Story = {
   parameters: atStep(1),
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('radio', { name: /Off/ }))
-    await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
-    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Continue' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Continue' }))
     await expect(await canvas.findByText(/Conversion is off, so there is nothing to choose/)).toBeVisible()
     await expect(canvas.queryByRole('button', { name: 'Add rule' })).toBeNull()
   },
@@ -380,9 +380,9 @@ export const StartSavesOnePlan: Story = {
     saves.length = 0
     savedRules = []
     await userEvent.click(await canvas.findByRole('button', { name: 'Keep scanlator releases exact' }))
-    await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Continue' }))
     await expect(await canvas.findByRole('button', { name: 'Re-estimate' })).toBeVisible()
-    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Continue' }))
     await expect(await canvas.findByText('3 rules, then everything else at the quality above')).toBeVisible()
 
     await userEvent.click(canvas.getByRole('button', { name: 'Save only' }))
@@ -489,7 +489,7 @@ export const ReviewRunning: Story = {
     await expect(await canvas.findByText('Sampling 14 of 36 files')).toBeVisible()
     await expect(canvas.getByRole('progressbar', { name: 'Estimate progress' })).toBeVisible()
     await expect(canvas.queryByRole('columnheader', { name: 'Expected' })).toBeNull()
-    await expect(canvas.getByRole('button', { name: 'Next' })).toBeEnabled()
+    await expect(canvas.getByRole('button', { name: 'Continue' })).toBeEnabled()
   },
 }
 
@@ -574,7 +574,7 @@ export const ReviewKeepsResultWhenRevisited: Story = {
   play: async ({ canvas, userEvent }) => {
     await expect(await canvas.findByRole('columnheader', { name: 'Expected' })).toBeVisible()
     await userEvent.click(canvas.getByRole('button', { name: 'Back' }))
-    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Continue' }))
     await expect(await canvas.findByRole('columnheader', { name: 'Expected' })).toBeVisible()
     expect(posts).toBe(1)
   },
@@ -603,11 +603,11 @@ export const ReviewRevisitedWithSlowRefetchShowsNewEstimate: Story = {
     gets = 0
   },
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Continue' }))
     await expect(await canvas.findByRole('columnheader', { name: 'Expected' })).toBeVisible()
     await userEvent.click(canvas.getByRole('button', { name: 'Back' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Keep scanlator releases exact' }))
-    await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Continue' }))
 
     await expect(await canvas.findByText('Sampling 5 of 20 files')).toBeVisible()
     await waitFor(() => expect(gets).toBeGreaterThanOrEqual(2))
@@ -689,12 +689,12 @@ export const StartWithConversionOff: Story = {
   parameters: atStep(1),
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('radio', { name: /Off/ }))
-    await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
-    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Continue' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Continue' }))
     await expect(await canvas.findByText(/Conversion is off, so there is nothing to choose/)).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Continue' }))
     await expect(await canvas.findByText(/Conversion is off, so there is nothing to estimate/)).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Continue' }))
     await expect(await canvas.findByRole('button', { name: 'Save only' })).toBeEnabled()
     await expect(canvas.queryByRole('button', { name: 'Save and start' })).toBeNull()
   },
@@ -708,10 +708,10 @@ export const StartWhilePassRuns: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
     await waitFor(() => expect(canvas.getByRole('radio', { name: /AVIF/ })).toBeChecked())
     await userEvent.click(canvas.getByRole('radio', { name: /WebP/ }))
-    await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
-    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
-    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
-    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Continue' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Continue' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Continue' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Continue' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Save and start' }))
 
     const dialog = await body(canvasElement).findByRole('dialog')
@@ -736,10 +736,10 @@ export const SaveOnlyWhilePassRunsThenRestart: Story = {
     starts = 0
     await waitFor(() => expect(canvas.getByRole('radio', { name: /AVIF/ })).toBeChecked())
     await userEvent.click(canvas.getByRole('radio', { name: /WebP/ }))
-    await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
-    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
-    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
-    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Continue' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Continue' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Continue' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Continue' }))
     await userEvent.click(await canvas.findByRole('button', { name: 'Save only' }))
 
     const dialog = await body(canvasElement).findByRole('dialog')

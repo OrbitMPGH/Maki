@@ -9,14 +9,15 @@ import {
   Stack,
   Tabs,
   Text,
-  TextInput,
+  
   Tooltip,
   UnstyledButton,
 } from '@mantine/core'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { IconChevronDown, IconRestore, IconSearch, IconTrash } from '../../lib/icons'
+import { SearchInput } from '../ui/SearchInput'
+import { IconChevronDown, IconRestore, IconTrash } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import {
   useDeleteManyFromRecycleBin,
@@ -34,7 +35,9 @@ import { formatBytes, formatDate, formatNumber } from '../../format'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { EmptyState } from '../ui/EmptyState'
 import { MetaList } from '../ui/MetaList'
+import { Thumb } from '../ui/Thumb'
 import { ModalFooter, ModalHeading } from '../ui/ModalShell'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 const REASON_ORDER: RecycleReason[] = ['deleteFile', 'removeChapter', 'seriesDelete', 'seriesArchive']
 
@@ -190,7 +193,7 @@ export function RecycleBinModal({ opened, onClose }: { opened: boolean; onClose:
     <Modal
       opened={opened}
       onClose={onClose}
-      size="xl"
+      size={MODAL_SIZE.wide}
       title={
         <ModalHeading
           title={t`Recycle bin`}
@@ -237,13 +240,12 @@ export function RecycleBinModal({ opened, onClose }: { opened: boolean; onClose:
                 ))}
               </Tabs.List>
             </Tabs>
-            <TextInput
+            <SearchInput
               className="recycle-bin-search"
-              size="sm"
-              leftSection={<IconSearch size={16} />}
               placeholder={t`Filter by series or file`}
               aria-label={t`Filter by series or file`}
               value={query}
+              onClear={() => setQuery('')}
               onChange={(e) => setQuery(e.currentTarget.value)}
             />
           </div>
@@ -301,7 +303,7 @@ export function RecycleBinModal({ opened, onClose }: { opened: boolean; onClose:
         }
       >
         <Button
-          variant="default"
+          variant="light"
           color="var(--danger)"
           leftSection={<IconTrash size={16} />}
           disabled={total === 0}
@@ -427,9 +429,7 @@ function BinGroupSection({
           aria-controls={bodyId}
           onClick={onToggle}
         >
-          <span className="recycle-bin-cover" aria-hidden>
-            {coverUrl ? <img src={coverUrl} alt="" loading="lazy" decoding="async" /> : <IconTrash size={16} />}
-          </span>
+          <Thumb src={coverUrl} size="sm" aria-hidden />
           <span className="recycle-bin-group-text">
             <Text component="span" className="recycle-bin-group-title" fw={600} size="sm">
               {group.seriesTitle}

@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom'
 import { randomUUID } from '../../lib/uuid'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Alert, Badge, Button, Group, SegmentedControl, Stack, Switch, Text, Title, Tooltip } from '@mantine/core'
+import { Badge, Button, Group, SegmentedControl, Stack, Switch, Text, Tooltip } from '@mantine/core'
 import { notifications } from '../../lib/toast'
-import { IconArrowRight, IconCheck, IconEye, IconEyeOff, IconFolder, IconPlus, IconRanking } from '../../lib/icons'
+import { IconArrowRight, IconClock, IconEye, IconEyeOff, IconFolder, IconPlus, IconRanking } from '../../lib/icons'
 import {
   useAddSeries,
   useLibrarySettings,
@@ -24,10 +24,12 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useIncognitoOptions, type IncognitoMode } from '../ui/incognito'
 import { useLabel } from '../../i18n-context'
 import { INCOGNITO_HELP, MONITOR_HELP, MONITOR_OPTIONS, MONITOR_SHORT } from '../series/SeriesActionsMenu'
+import { PanelTitle } from '../ui/PanelTitle'
 import { DrillPanes } from '../ui/DrillPanes'
 import { DrillBack, DrillChoices, DrillField, DrillRow, useDrillPages } from '../ui/DrillPanel'
 import { formatBytes } from '../../format'
 import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
+import { Callout } from '../ui/Callout'
 
 /** The add card's pages: Folder, Incognito and Automation open from the first; Quality from Automation. */
 type AddPage = 'main' | 'folder' | 'incognito' | 'automation' | 'quality'
@@ -301,9 +303,9 @@ export function DiscoverLibraryRail({
       {seriesId != null && archived ? (
         <>
           <Group gap="sm" justify="space-between" wrap="nowrap">
-            <Title order={2} size="h3" fz="var(--type-subhead)">
+            <PanelTitle order={2}>
               <Trans>In your library</Trans>
-            </Title>
+            </PanelTitle>
             <Badge color="gray" variant="light">
               <Trans context="series">Archived</Trans>
             </Badge>
@@ -322,9 +324,9 @@ export function DiscoverLibraryRail({
         </>
       ) : seriesId != null ? (
         <>
-          <Title order={2} size="h3" fz="var(--type-subhead)">
+          <PanelTitle order={2}>
             <Trans>In your library</Trans>
-          </Title>
+          </PanelTitle>
           <Button
             mt="md"
             fullWidth
@@ -340,15 +342,15 @@ export function DiscoverLibraryRail({
         // under Settings, Users. With no grant there is nothing to point the add at. Say so rather
         // than leaving a dead Select and a disabled button.
         <>
-          <Title order={2} size="h3" fz="var(--type-subhead)">
+          <PanelTitle order={2}>
             <Trans>Add to library</Trans>
-          </Title>
-          <Alert color="var(--warn)" variant="light" mt="md">
+          </PanelTitle>
+          <Callout tone="warn" role="alert" mt="md">
             <Trans>
               You can add series, but no root folder has been granted to you yet. Ask an admin to
               grant you one, or to add this title.
             </Trans>
-          </Alert>
+          </Callout>
         </>
       ) : canAdd ? (
         // A drill panel like the series menu's: the settings people check on every add (where it
@@ -513,18 +515,18 @@ export function DiscoverLibraryRail({
         </Stack>
       ) : myRequest && (myRequest.status === 'Pending' || myRequest.status === 'Processing') ? (
         <>
-          <Title order={2} size="h3" fz="var(--type-subhead)">
+          <PanelTitle order={2}>
             <Trans>Requested</Trans>
-          </Title>
-          <Alert color="var(--ok)" variant="light" icon={<IconCheck size={16} />} mt="md">
+          </PanelTitle>
+          <Callout tone="warn" role="alert" icon={IconClock} mt="md">
             <Trans>An admin decides where it lands and what gets downloaded.</Trans>
-          </Alert>
+          </Callout>
         </>
       ) : (
         <>
-          <Title order={2} size="h3" fz="var(--type-subhead)">
+          <PanelTitle order={2}>
             <Trans>Ask for this</Trans>
-          </Title>
+          </PanelTitle>
           <Text size="xs" c="var(--ink-4)" mt={6} style={{ lineHeight: 1.55 }}>
             <Trans>
               You can't add series yourself. An admin decides where it lands and what gets
@@ -532,13 +534,13 @@ export function DiscoverLibraryRail({
             </Trans>
           </Text>
           {myRequest?.status === 'Rejected' && (
-            <Alert color="var(--warn)" variant="light" mt="sm">
+            <Callout tone="warn" role="alert" mt="sm">
               {resolutionNote ? (
                 <Trans>Your last request was rejected: {resolutionNote}</Trans>
               ) : (
                 <Trans>Your last request was rejected.</Trans>
               )}
-            </Alert>
+            </Callout>
           )}
           <RequestForm
             dense

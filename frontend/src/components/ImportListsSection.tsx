@@ -10,7 +10,7 @@ import {
   Switch,
   Text,
 } from '@mantine/core'
-import { IconDownload, IconInfoCircle, IconRefresh } from '../lib/icons'
+import { IconDownload, IconRefresh } from '../lib/icons'
 import { notifications } from '../lib/toast'
 import { msg } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -19,6 +19,7 @@ import { useNavigate } from 'react-router-dom'
 import { SettingsRow, SettingsRows, SettingsRowsBlock } from './settings/SettingsRow'
 import { TagChip } from './ui/TagChip'
 import { ConfirmDialog } from './ui/ConfirmDialog'
+import { Note } from './ui/Note'
 import { relativeTime } from './ui/time'
 import { useLabel } from '../i18n-context'
 import { useAuth } from '../auth/AuthProvider'
@@ -339,10 +340,9 @@ export function ImportListsSection() {
     <>
       {data.enabled === false && (
         <SettingsRowsBlock>
-          <div className="settings-note">
-            <IconInfoCircle size={16} aria-hidden />
+          <Note tone="info">
             <Trans>Import lists are turned off for this instance.</Trans>
-          </div>
+          </Note>
         </SettingsRowsBlock>
       )}
       <SettingsRows>

@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { ActionIcon, Badge, Button, Checkbox, Group, Paper, Skeleton, Stack, Table, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core'
+import { ActionIcon, Badge, Button, Checkbox, Group, Paper, Skeleton, Stack, Table, Text, Tooltip, VisuallyHidden } from '@mantine/core'
 import {
   IconFileTypePdf,
   IconFileUnknown,
   IconFileZip,
+  IconFolder,
   IconLink,
   IconLock,
   IconLockOpen,
@@ -27,11 +28,13 @@ import { useLabel } from '../i18n-context'
 import { isPdfFile } from '../lib/files'
 import { fileStatusVisual } from './ui/status'
 import { MonoValue, sharedPrefixLength, splitForTruncation } from './ui/MonoValue'
+import { Callout } from './ui/Callout'
 import { Panel } from './ui/Panel'
 import { useAuth } from '../auth/AuthProvider'
 import { LinkFileToChaptersModal } from './LinkFileToChaptersModal'
 import { RelinkFilesModal } from './RelinkFilesModal'
-import { MetaList } from './ui/MetaList'
+import { SectionHeader } from './ui/SectionHeader'
+import { EmptyState } from './ui/EmptyState'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 
 /** ["1", ..., "8", "8.5", "10"] → "1–8, 8.5, 10": whole-number runs collapse, so a long list never cuts mid-number. */
@@ -166,23 +169,12 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
 
   return (
     <div>
-      <Group justify="space-between" wrap="wrap" gap="sm">
-        <Group gap="xs" align="baseline">
-          <Title order={2} size="h3">
-            <Trans>Files</Trans>
-          </Title>
-          {files && (
-            <Text component="div" size="sm" c="var(--ink-3)" className="tnum">
-              <MetaList
-                items={[
-                  files.length,
-                  problems > 0 && <Plural key="problems" value={problems} one="# needs attention" other="# need attention" />,
-                ]}
-              />
-            </Text>
-          )}
-        </Group>
-        <Group gap="xs">
+      <SectionHeader
+        icon={IconFolder}
+        title={t`Files`}
+        count={files?.length}
+        action={
+          <Group gap="xs">
             <Button
               size="xs"
               variant="default"
@@ -216,7 +208,13 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
               </Button>
             )}
           </Group>
-      </Group>
+        }
+      />
+      {files && problems > 0 && (
+        <Text size="sm" c="var(--ink-3)" className="tnum">
+          <Plural value={problems} one="# needs attention" other="# need attention" />
+        </Text>
+      )}
 
       {(isLoading ? (
           <Panel p={0} className="table-panel" mt="sm">
@@ -233,32 +231,16 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             </Table.ScrollContainer>
           </Panel>
         ) : !files || files.length === 0 ? (
-          <Text c="var(--ink-3)" size="sm" py="sm">
-            <Trans>No files in the series folder.</Trans>
-          </Text>
+          <EmptyState compact framed mood="asleep" title={t`No files in the series folder.`} />
         ) : (
         <>
           {mostlyMissing && !selectMode && (
-            <Paper className="series-files-hint" withBorder p="xs" radius="lg" mt="sm" role="status">
-              <Group gap="sm" wrap="wrap" justify="space-between">
-                <Group gap="xs" wrap="nowrap" align="flex-start" style={{ flex: '1 1 20rem', minWidth: 0 }}>
-                  <IconFileUnknown size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} />
-                  <Text size="sm" c="var(--ink-2)">
-                    {missingCount === fileCount ? (
-                      <Plural
-                        value={missingCount}
-                        one="The file listed for this series is missing from disk."
-                        other="All # files listed for this series are missing from disk."
-                      />
-                    ) : (
-                      <Trans>{missingCount} of {fileCount} files listed for this series are missing from disk.</Trans>
-                    )}{' '}
-                    {canLink && (
-                      <Trans>If they are in the folder under other names, Relink files finds them.</Trans>
-                    )}
-                  </Text>
-                </Group>
-                {canLink && (
+            <Callout
+              icon={IconFileUnknown}
+              role="status"
+              style={{ marginTop: 'var(--mantine-spacing-sm)' }}
+              actions={
+                canLink && (
                   <Button
                     size="xs"
                     variant="default"
@@ -267,28 +249,40 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                   >
                     <Trans>Relink files</Trans>
                   </Button>
+                )
+              }
+            >
+              <Text size="sm" c="var(--ink-2)">
+                {missingCount === fileCount ? (
+                  <Plural
+                    value={missingCount}
+                    one="The file listed for this series is missing from disk."
+                    other="All # files listed for this series are missing from disk."
+                  />
+                ) : (
+                  <Trans>{missingCount} of {fileCount} files listed for this series are missing from disk.</Trans>
+                )}{' '}
+                {canLink && (
+                  <Trans>If they are in the folder under other names, Relink files finds them.</Trans>
                 )}
-              </Group>
-            </Paper>
+              </Text>
+            </Callout>
           )}
           {unlinkedOnDisk > 0 && canLink && !selectMode && (
-            <Paper className="series-files-hint" withBorder p="xs" radius="lg" mt="sm">
-              <Group gap="xs" wrap="nowrap" align="flex-start">
-                <IconLink size={16} style={{ flexShrink: 0, marginTop: 2, color: 'var(--warn)' }} />
-                <Text size="sm" c="var(--ink-2)">
-                  <Plural
-                    value={unlinkedOnDisk}
-                    one="# file in this folder isn't linked to any chapter, so it can't be read yet."
-                    other="# files in this folder aren't linked to any chapter, so they can't be read yet."
-                  />{' '}
-                  <Trans>
-                    That happens with omnibus volumes and names the matcher can't parse. Try Relink files
-                    first, which reads each volume to find the chapters inside it; use the link button on
-                    a row for anything it can't place.
-                  </Trans>
-                </Text>
-              </Group>
-            </Paper>
+            <Callout icon={IconLink} style={{ marginTop: 'var(--mantine-spacing-sm)' }}>
+              <Text size="sm" c="var(--ink-2)">
+                <Plural
+                  value={unlinkedOnDisk}
+                  one="# file in this folder isn't linked to any chapter, so it can't be read yet."
+                  other="# files in this folder aren't linked to any chapter, so they can't be read yet."
+                />{' '}
+                <Trans>
+                  That happens with omnibus volumes and names the matcher can't parse. Try Relink files
+                  first, which reads each volume to find the chapters inside it; use the link button on
+                  a row for anything it can't place.
+                </Trans>
+              </Text>
+            </Callout>
           )}
           {selectMode && (
             <Paper bg="var(--surface-sunken)" px="sm" py="xs" mt="sm" style={{ borderRadius: 'var(--radius-control)' }}>
@@ -451,7 +445,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
                               >
                                 <ActionIcon
                                   variant="subtle"
-                                  color={hasLinks(f) ? 'gray' : 'brand'}
+                                  color={hasLinks(f) ? 'var(--neutral)' : 'brand'}
                                   data-row-action={hasLinks(f) ? '' : undefined}
                                   disabled={!f.onDisk}
                                   onClick={() => setLinkFile(f)}

@@ -44,12 +44,14 @@ public sealed class SuwayomiControllerTests : IDisposable
 
     public void Dispose() => _db.Dispose();
 
-    private SuwayomiController Controller()
+    private ConnectionTestStore Tests() => new(_db.NewContext(), _settings, _suwayomiSettings, new TestLocalizer());
+
+    private SuwayomiController Controller(ConnectionTestStore? tests = null)
     {
         var controller = new SuwayomiController(
             new TestLocalizer(), _settings, _suwayomiSettings, _client, _tokens, _cache,
             new SuwayomiConnectionTester(() => _server), _registry, new SourceAvailability(_settings, _registry), _db.NewContext(), new SuwayomiChainFactory(_suwayomiSettings, () => _tokens, _server),
-            NullLogger<SuwayomiController>.Instance)
+            NullLogger<SuwayomiController>.Instance, tests)
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
         };
@@ -173,6 +175,35 @@ public sealed class SuwayomiControllerTests : IDisposable
         Assert.Equal("error.suwayomi.versionUnsupported", Error(result));
         Assert.Equal(0, _server.Count("Login"));
         Assert.IsType<OkObjectResult>(await Controller().TestConnection(new(Base, "none", null), default));
+    }
+
+    [Fact]
+    public async Task A_test_of_the_saved_connection_is_kept_for_the_card()
+    {
+        Configure();
+
+        await Controller(Tests()).TestConnection(new(null, null, null), default);
+
+        var status = Assert.Single(await Tests().CurrentAsync());
+        Assert.Equal(ConnectionTestStore.Suwayomi, status.Key);
+        Assert.True(status.Ok);
+        Assert.Null(status.Message);
+    }
+
+    [Fact]
+    public async Task A_failed_test_keeps_its_reason_and_a_new_url_reads_as_not_tested()
+    {
+        Configure("uilogin", "maki", "wrong");
+        _server.Ops["Login"] = _ => FakeSuwayomiServer.Errors(FakeSuwayomiServer.LoginRefused);
+
+        await Controller(Tests()).TestConnection(new(null, null, null), default);
+
+        var status = Assert.Single(await Tests().CurrentAsync());
+        Assert.False(status.Ok);
+        Assert.Equal("error.suwayomi.loginFailed", status.Message);
+
+        _settings.Set(SettingKeys.SuwayomiUrl, "http://192.168.1.99:4567");
+        Assert.Empty(await Tests().CurrentAsync());
     }
 
     [Fact]

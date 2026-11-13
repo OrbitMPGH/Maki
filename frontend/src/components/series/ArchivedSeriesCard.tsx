@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react'
 import { ActionIcon, Badge, Group, Menu, Rating, Stack, Text, Tooltip } from '@mantine/core'
-import { IconArchiveOff, IconArrowRight, IconDots, IconFileOff, IconTrash, IconX } from '../../lib/icons'
+import { IconArchiveOff, IconArrowRight, IconFileOff, IconTrash, IconX } from '../../lib/icons'
+import { OverflowButton } from '../ui/OverflowButton'
 import { Link } from 'react-router-dom'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useChapters } from '../../api/hooks'
@@ -69,9 +70,7 @@ export const ArchivedSeriesCard = memo(function ArchivedSeriesCard({
   const menu = !selectMode && (
     <Menu withinPortal position="bottom-end" shadow="md">
       <Menu.Target>
-        <ActionIcon variant="subtle" color="var(--neutral)" size="sm" aria-label={t`Actions for ${displayTitle}`}>
-          <IconDots size={16} />
-        </ActionIcon>
+        <OverflowButton size="sm" aria-label={t`Actions for ${displayTitle}`} />
       </Menu.Target>
       <Menu.Dropdown>
         <Menu.Item component={Link} to={`/series/${series.id}`} leftSection={<IconArrowRight size={16} />}>

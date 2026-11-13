@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ActionIcon,
+  
   Badge,
   Button,
   Checkbox,
@@ -9,13 +9,15 @@ import {
   ScrollArea,
   Stack,
   Text,
-  TextInput,
+  
   Skeleton,
   UnstyledButton,
 } from '@mantine/core'
-import { IconCheck, IconFileZip, IconSearch, IconX } from '../lib/icons'
+import { SearchInput } from './ui/SearchInput'
+import { IconCheck, IconFileZip } from '../lib/icons'
 import { ModalFooter, ModalHeading } from './ui/ModalShell'
 import { Panel } from './ui/Panel'
+import { EmptyState } from './ui/EmptyState'
 import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -23,6 +25,7 @@ import { chapterLabel as houseChapterLabel, serverChapterLabel } from '../format
 import { useChapters, useLinkChapters, useUnlinkChapters } from '../api/hooks'
 import type { ChapterDto, SeriesFileDto } from '../api/types'
 import { displayChapterTitle } from '../lib/chapterTitle'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 function chapterLabel(c: ChapterDto): string {
   if (!c.isOneShot && c.number === null && c.volume !== null) return serverChapterLabel(`Vol.${c.volume}`)
@@ -166,7 +169,7 @@ export function LinkFileToChaptersModal({
           }
         />
       }
-      size="lg"
+      size={MODAL_SIZE.default}
     >
       <Stack gap="sm">
         {file && (
@@ -199,31 +202,19 @@ export function LinkFileToChaptersModal({
             ))}
           </div>
         ) : sorted.length === 0 ? (
-          <Text c="var(--ink-3)" size="sm" py="sm">
-            <Trans>This series has no chapters yet. Add a source mapping first so Maki knows what to link.</Trans>
-          </Text>
+          <EmptyState
+            compact
+            mood="asking"
+            title={t`This series has no chapters yet. Add a source mapping first so Maki knows what to link.`}
+          />
         ) : (
           <>
             <Group gap="xs" wrap="wrap">
-              <TextInput
-                size="xs"
+              <SearchInput
                 style={{ flex: 1, minWidth: 160 }}
                 value={query}
                 onChange={(e) => setQuery(e.currentTarget.value)}
-                leftSection={<IconSearch size={16} />}
-                rightSection={
-                  query ? (
-                    <ActionIcon
-                      size={24}
-                      variant="subtle"
-                      color="var(--neutral)"
-                      aria-label={t`Clear search`}
-                      onClick={() => setQuery('')}
-                    >
-                      <IconX size={12} />
-                    </ActionIcon>
-                  ) : null
-                }
+                onClear={() => setQuery('')}
                 placeholder={t`Filter by chapter number or title`}
                 aria-label={t`Filter chapters`}
               />
@@ -307,9 +298,7 @@ export function LinkFileToChaptersModal({
                   )
                 })}
                 {visible.length === 0 && (
-                  <Text size="sm" c="var(--ink-3)" py="sm" ta="center">
-                    <Trans>No chapters match that filter.</Trans>
-                  </Text>
+                  <EmptyState compact mood="asleep" title={t`No chapters match that filter.`} />
                 )}
               </div>
             </ScrollArea.Autosize>

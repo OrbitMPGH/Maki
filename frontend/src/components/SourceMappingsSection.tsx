@@ -2,7 +2,6 @@ import { errorText } from '../api/errorText'
 import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   ActionIcon,
-  Alert,
   Badge,
   Box,
   Button,
@@ -80,6 +79,8 @@ import { formatDateTime, formatRecentDate } from '../format'
 import { SourceCompareModal } from './SourceCompareModal'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { EmptyState } from './ui/EmptyState'
+import { ConfirmDialog } from './ui/ConfirmDialog'
+import { ModalNote } from './ui/ModalShell'
 import { StatusDot } from './ui/StatusDot'
 import { useLingui as useLinguiReact } from '@lingui/react'
 import { msg, t as now, plural } from '@lingui/core/macro'
@@ -92,6 +93,8 @@ import { ManageSourcesModal, type WizardRequest } from '../pages/settings/Manage
 import { useSourceLabel } from '../sourceLabels'
 import { MonoValue } from './ui/MonoValue'
 import { PanelTitle } from './ui/PanelTitle'
+import { MODAL_SIZE } from './ui/modalSizes'
+import { Callout } from './ui/Callout'
 
 const ORIGIN_LABELS: Record<string, MessageDescriptor> = {
   TitleSearch: msg`Title search`,
@@ -447,21 +450,12 @@ export function SourceMappingsSection({
       )}
 
       {!matching && failedSources.length > 0 && (
-        <Alert
-          color="var(--warn)"
-          variant="light"
-          mb="sm"
-          icon={<IconAlertTriangle size={16} />}
-          title={t`Some sources could not be searched`}
-          withCloseButton
-          closeButtonLabel={t`Dismiss`}
-          onClose={() => queryClient.setQueryData(['sourcematch-failed', seriesId], [])}
-        >
+        <Callout tone="warn" role="alert" mb="sm" icon={IconAlertTriangle} title={t`Some sources could not be searched`} closeLabel={t`Dismiss`} onClose={() => queryClient.setQueryData(['sourcematch-failed', seriesId], [])}>
           <Trans>
             {failedNames} did not answer, so they may still carry this
             series. Run Auto-match again once they are back.
           </Trans>
-        </Alert>
+        </Callout>
       )}
 
       {(mappings?.length ?? 0) === 0 && pendingRows.length === 0 ? (
@@ -535,7 +529,7 @@ export function SourceMappingsSection({
                           </StatusDot>
                         )}
                         {m.origin && m.origin != "Unknown" && <Tooltip label={m.origin == "CrossId" ? t`Resolved using ID. High accuracy` : m.origin == "TitleSearch" ? t`Resolved using fuzzy title search. Medium accuracy` : t`Added manually`}>
-                          <Badge size="xs" color={ORIGIN_COLORS[m.origin] ?? 'var(--neutral)'} variant="light" style={{ flexShrink: 0 }}>
+                          <Badge size="sm" color={ORIGIN_COLORS[m.origin] ?? 'var(--neutral)'} variant="light" style={{ flexShrink: 0 }}>
                             {renderLabel(ORIGIN_LABELS[m.origin] ?? m.origin)}
                           </Badge>
                         </Tooltip>}
@@ -807,11 +801,56 @@ export function SourceMappingsSection({
         </Stack>
       )}
 
-      <Modal
+      <ConfirmDialog
         opened={removing !== null && !fallbackOpen}
         onClose={() => setRemoving(null)}
         title={removing ? t`Remove ${removingSourceName}?` : t`Remove source?`}
-        centered
+        confirmLabel={<Trans>Remove and clean up</Trans>}
+        confirmDisabled={missingSnapshots.length > 0 || !removing}
+        loading={removeMapping.isPending}
+        onConfirm={() =>
+          removing &&
+          removeMapping.mutate(
+            { id: removing.id, seriesId, deleteFiles },
+            {
+              onSuccess: (result) => {
+                const kept = result.detachedFiles - result.deletedFiles
+                const failedCount = result.failedFileDeletions
+                const chaptersMsg = plural(result.removedChapters, {
+                  one: 'Removed # unsupported chapter',
+                  other: 'Removed # unsupported chapters',
+                })
+                const filesMsg = plural(kept, {
+                  one: '# file left unlinked',
+                  other: '# files left unlinked',
+                })
+                const failuresMsg =
+                  failedCount > 0
+                    ? plural(failedCount, {
+                        one: '# could not be deleted',
+                        other: '# could not be deleted',
+                      })
+                    : null
+                notifications.show({
+                  message: failuresMsg
+                    ? `${chaptersMsg}; ${filesMsg}; ${failuresMsg}`
+                    : `${chaptersMsg}; ${filesMsg}`,
+                  color: failedCount > 0 ? 'var(--warn)' : 'var(--ok)',
+                })
+                setRemoving(null)
+              },
+            },
+          )
+        }
+        status={
+          <Button
+            variant="subtle"
+            color="var(--danger)"
+            onClick={() => setFallbackOpen(true)}
+          >
+            <Trans>Remove without cleanup</Trans>
+          </Button>
+        }
       >
         <Stack gap="md">
           <Text size="sm" c="var(--ink-3)">
@@ -825,8 +864,11 @@ export function SourceMappingsSection({
           </Text>
 
           {missingSnapshots.length > 0 && (
-            <Alert color="var(--warn)" title={t`One refresh required`}>
-              <Stack gap="xs">
+            <ModalNote tone="warn">
+              <Stack gap="xs" align="flex-start">
+                <Text size="sm" fw={600}>
+                  <Trans>One refresh required</Trans>
+                </Text>
                 <Text size="sm">
                   <Trans>
                     {missingSnapshotNames} must record a chapter snapshot before Maki can safely
@@ -853,7 +895,7 @@ export function SourceMappingsSection({
                   <Trans>Refresh chapters</Trans>
                 </Button>
               </Stack>
-            </Alert>
+            </ModalNote>
           )}
 
           {can('DeleteSeries') && (
@@ -867,70 +909,31 @@ export function SourceMappingsSection({
           <Text size="sm" c="var(--danger)">
             <Trans>Reading progress and bookmarks for removed chapter rows will also be deleted.</Trans>
           </Text>
-          <Group justify="space-between">
-            <Button
-              variant="subtle"
-              color="var(--danger)"
-              onClick={() => setFallbackOpen(true)}
-            >
-              <Trans>Remove without cleanup</Trans>
-            </Button>
-            <Group gap="xs">
-              <Button variant="default" onClick={() => setRemoving(null)}>
-                <Trans>Cancel</Trans>
-              </Button>
-              <Button
-                color="var(--danger-fill)"
-                leftSection={<IconTrash size={16} />}
-                disabled={missingSnapshots.length > 0 || !removing}
-                loading={removeMapping.isPending}
-                onClick={() =>
-                  removing &&
-                  removeMapping.mutate(
-                    { id: removing.id, seriesId, deleteFiles },
-                    {
-                      onSuccess: (result) => {
-                        const kept = result.detachedFiles - result.deletedFiles
-                        const failedCount = result.failedFileDeletions
-                        const chaptersMsg = plural(result.removedChapters, {
-                          one: 'Removed # unsupported chapter',
-                          other: 'Removed # unsupported chapters',
-                        })
-                        const filesMsg = plural(kept, {
-                          one: '# file left unlinked',
-                          other: '# files left unlinked',
-                        })
-                        const failuresMsg =
-                          failedCount > 0
-                            ? plural(failedCount, {
-                                one: '# could not be deleted',
-                                other: '# could not be deleted',
-                              })
-                            : null
-                        notifications.show({
-                          message: failuresMsg
-                            ? `${chaptersMsg}; ${filesMsg}; ${failuresMsg}`
-                            : `${chaptersMsg}; ${filesMsg}`,
-                          color: failedCount > 0 ? 'var(--warn)' : 'var(--ok)',
-                        })
-                        setRemoving(null)
-                      },
-                    },
-                  )
-                }
-              >
-                <Trans>Remove and clean up</Trans>
-              </Button>
-            </Group>
-          </Group>
         </Stack>
-      </Modal>
+      </ConfirmDialog>
 
-      <Modal
+      <ConfirmDialog
         opened={fallbackOpen}
         onClose={() => setFallbackOpen(false)}
         title={t`Remove source without cleanup?`}
-        centered
+        confirmLabel={<Trans>Remove source only</Trans>}
+        loading={deleteMapping.isPending}
+        onConfirm={() =>
+          removing &&
+          deleteMapping.mutate(
+            { id: removing.id, seriesId },
+            {
+              onSuccess: () => {
+                notifications.show({
+                  message: now`Source removed without cleanup`,
+                  color: 'var(--warn)',
+                })
+                setFallbackOpen(false)
+                setRemoving(null)
+              },
+            },
+          )
+        }
       >
         <Stack gap="md">
           <Text size="sm" c="var(--ink-3)">
@@ -942,41 +945,14 @@ export function SourceMappingsSection({
           <Text size="sm" c="var(--danger)">
             <Trans>This action cannot be undone.</Trans>
           </Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setFallbackOpen(false)}>
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button
-              color="var(--danger-fill)"
-              loading={deleteMapping.isPending}
-              onClick={() =>
-                removing &&
-                deleteMapping.mutate(
-                  { id: removing.id, seriesId },
-                  {
-                    onSuccess: () => {
-                      notifications.show({
-                        message: now`Source removed without cleanup`,
-                        color: 'var(--warn)',
-                      })
-                      setFallbackOpen(false)
-                      setRemoving(null)
-                    },
-                  },
-                )
-              }
-            >
-              <Trans>Remove source only</Trans>
-            </Button>
-          </Group>
         </Stack>
-      </Modal>
+      </ConfirmDialog>
 
       <Modal
         opened={modalOpen}
         onClose={() => setModalOpen(false)}
         title={t`Link a source`}
-        size="lg"
+        size={MODAL_SIZE.default}
       >
         <Stack>
           <Group grow>
@@ -1031,7 +1007,7 @@ export function SourceMappingsSection({
                       <Text fw={600} size="sm">
                         {resolved.title}
                       </Text>
-                      <Badge size="xs" variant="light">
+                      <Badge size="sm" variant="light">
                         {resolved.displayName}
                       </Badge>
                     </Group>
@@ -1108,9 +1084,7 @@ export function SourceMappingsSection({
               </Card>
             ))}
             {sourceName && debounced.trim().length > 1 && results?.length === 0 && !isFetching && (
-              <Text c="var(--ink-3)" size="sm">
-                <Trans>No results.</Trans>
-              </Text>
+              <EmptyState compact mood="asleep" title={t`No results.`} />
             )}
           </Stack>
         </Stack>

@@ -1,11 +1,12 @@
 import { useMemo } from 'react'
-import { Badge, SimpleGrid, Text } from '@mantine/core'
+import { SimpleGrid } from '@mantine/core'
 import { Select, Trans, useLingui } from '@lingui/react/macro'
 import { useActivityStats } from '../../../api/hooks'
 import { useStatsInsights, useStatsStanding } from '../../../api/stats'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { Panel } from '../../../components/ui/Panel'
-import { TagChips } from '../../../components/ui/TagChip'
+import { PanelTitle } from '../../../components/ui/PanelTitle'
+import { TagChip, TagChips } from '../../../components/ui/TagChip'
 import { formatDecimal, formatPercent } from '../../../format'
 import { ReadTrackingEmpty } from '../ReadTrackingEmpty'
 import { ChartSkeleton } from '../ChartSkeleton'
@@ -194,9 +195,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
 
       <div className="stats-grid-main">
         <Panel p="md">
-          <div className="stats-panel-title">
-            <Trans>Lean</Trans>
-          </div>
+          <PanelTitle><Trans>Lean</Trans></PanelTitle>
           <p className="stats-panel-sub">
             <Trans>
               Share of chapters read minus share of the library. Right means you read more of it
@@ -225,9 +224,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
         </Panel>
 
         <Panel p="md">
-          <div className="stats-panel-title">
-            <Trans>You vs the crowd</Trans>
-          </div>
+          <PanelTitle><Trans>You vs the crowd</Trans></PanelTitle>
           {ratings && (
             <p className="stats-panel-sub">
               {meanGapKind === 'same' ? (
@@ -272,9 +269,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
           <Panel p="md">
             {showTypes && (
               <>
-                <div className="stats-panel-title">
-                  <Trans>Type mix</Trans>
-                </div>
+                <PanelTitle><Trans>Type mix</Trans></PanelTitle>
                 {!taste ? (
                   <ChartSkeleton h={120} />
                 ) : typeItems.length === 0 ? (
@@ -287,13 +282,13 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
             {showDemographics && (
               <>
                 {showTypes ? (
-                  <Text size="sm" fw={650} mt="md" mb={4}>
-                    <Trans>Demographic</Trans>
-                  </Text>
-                ) : (
-                  <div className="stats-panel-title">
-                    <Trans>Demographic</Trans>
+                  <div style={{ marginTop: 16, marginBottom: 4 }}>
+                    <PanelTitle order={4}>
+                      <Trans>Demographic</Trans>
+                    </PanelTitle>
                   </div>
+                ) : (
+                  <PanelTitle><Trans>Demographic</Trans></PanelTitle>
                 )}
                 {!taste ? (
                   <ChartSkeleton h={120} />
@@ -309,9 +304,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
 
         {showEra && (
           <Panel p="md">
-            <div className="stats-panel-title">
-              <Trans>Era</Trans>
-            </div>
+            <PanelTitle><Trans>Era</Trans></PanelTitle>
             {!taste ? (
               <ChartSkeleton h={140} />
             ) : eraTotal === 0 ? (
@@ -331,9 +324,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
         )}
 
         <Panel p="md">
-          <div className="stats-panel-title">
-            <Trans>Creators you return to</Trans>
-          </div>
+          <PanelTitle><Trans>Creators you return to</Trans></PanelTitle>
           {standing === undefined ? (
             <ChartSkeleton h={140} />
           ) : (standing.creators ?? []).length === 0 ? (
@@ -345,9 +336,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
       </SimpleGrid>
 
       <Panel p="md">
-        <div className="stats-panel-title">
-          <Trans>Tags that keep showing up</Trans>
-        </div>
+        <PanelTitle><Trans>Tags that keep showing up</Trans></PanelTitle>
         {!activity ? (
           <ChartSkeleton h={80} />
         ) : activity.topTags.length === 0 ? (
@@ -355,13 +344,9 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
         ) : (
           <TagChips>
             {activity.topTags.map((tag) => (
-              <Badge
-                key={tag.name}
-                variant={tagTiers.get(tag.name) ?? 'light'}
-                color="var(--brand)"
-              >
+              <TagChip key={tag.name} active={tagTiers.get(tag.name) === 'filled'}>
                 {tag.name}
-              </Badge>
+              </TagChip>
             ))}
           </TagChips>
         )}

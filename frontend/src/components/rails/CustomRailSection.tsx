@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trans, useLingui } from '@lingui/react/macro'
 import {
-  ActionIcon,
   Button,
   Group,
   Menu,
@@ -13,7 +12,6 @@ import {
 } from '@mantine/core'
 import {
   IconCopy,
-  IconDots,
   IconFilter,
   IconLibrary,
   IconPencil,
@@ -21,6 +19,7 @@ import {
   IconCompass,
   IconTrash,
 } from '../../lib/icons'
+import { OverflowButton } from '../ui/OverflowButton'
 import {
   useSeries,
   useSeriesIdLookup,
@@ -140,9 +139,7 @@ export function CustomRailSection({
             )}
             <Menu position="bottom-end" withinPortal shadow="md">
               <Menu.Target>
-                <ActionIcon variant="subtle" color="var(--neutral)" aria-label={t`Rail options`}>
-                  <IconDots size={16} />
-                </ActionIcon>
+                <OverflowButton aria-label={t`Rail options`} />
               </Menu.Target>
               <Menu.Dropdown>
                 <Menu.Item leftSection={<IconPencil size={16} />} onClick={() => setEditing({ rail })}>
@@ -297,7 +294,7 @@ export function AddRailButton({
   }
   return (
     <>
-      <Button variant="subtle" color="gray" leftSection={<IconPlus size={16} />} onClick={() => setOpen(true)}>
+      <Button variant="subtle" color="var(--neutral)" leftSection={<IconPlus size={16} />} onClick={() => setOpen(true)}>
         {label ?? <Trans>Add a rail</Trans>}
       </Button>
       {open && <CustomRailEditor draft={draft} onSaved={onCreated} onClose={() => setOpen(false)} />}

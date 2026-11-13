@@ -14,8 +14,10 @@ import { Trans, useLingui as useLinguiMacro } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import { useLabel } from '../i18n-context'
 import { seriesStatusVisual } from './ui/status'
+import { Thumb } from './ui/Thumb'
 import type { SettingsTabKey } from '../pages/settings/registry'
 import type { NavItem } from '../nav'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 const LIST_MAX_HEIGHT = 360
 
@@ -343,9 +345,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
         onClose={close}
         withCloseButton={false}
         padding={0}
-        radius="md"
-        size="lg"
-        centered
+        size={MODAL_SIZE.default}
         transitionProps={{ transition: 'pop', duration: pacedMs(DUR.fast), timingFunction: EASE_CSS }}
         zIndex={1100}
         attributes={{ content: { 'aria-label': t`Search` } }}
@@ -417,18 +417,14 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
                       <IconSend size={18} />
                     )
                   ) : r.coverUrl ? (
-                    <img
-                      src={r.coverUrl}
-                      alt=""
-                      width={24}
-                      height={32}
-                      style={{ objectFit: 'cover', borderRadius: 'var(--mantine-radius-xs)', flexShrink: 0 }}
-                    />
+                    <Thumb src={r.coverUrl} size="sm" aria-hidden />
                   ) : (
                     <IconBooks size={18} />
                   )}
                   <Stack gap={0} style={{ minWidth: 0 }}>
-                    <Text size="sm" fw={600} truncate>
+                    <Text
+                      {...(r.kind === 'series' ? { className: 'series-title', 'data-lines': 1 } : { size: 'sm', fw: 600, truncate: true })}
+                    >
                       {/* The fallback's label is the query itself, so marking it would mark all of it. */}
                       {r.kind === 'search' ? r.label : markMatches(r.label, highlightTerms)}
                     </Text>

@@ -1,16 +1,18 @@
+import { SearchInput } from '../../components/ui/SearchInput'
 import { errorText } from '../../api/errorText'
 import { useEffect, useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import { fuzzyFilter, titleIndex } from '../../lib/fuzzySearch'
 import { useQueryClient } from '@tanstack/react-query'
 import {
-  ActionIcon, Alert, Button, Chip, Group, Menu, Modal, Select, Stack, Tabs, Text,
-  TextInput,
+  Button, Chip, Group, Menu, Modal, Select, Stack, Tabs, Text,
+  
 } from '@mantine/core'
 import {
-  IconBan, IconBook, IconBooks, IconClockPause, IconCompass, IconDots, IconEyeCheck, IconEyeOff, IconRestore,
-  IconSearch, IconStarFilled, IconThumbDown, IconThumbUp, IconX, type Icon,
+  IconBan, IconBook, IconBooks, IconClockPause, IconCompass, IconEyeCheck, IconEyeOff, IconRestore,
+  IconStarFilled, IconThumbDown, IconThumbUp, IconX, type Icon,
 } from '../../lib/icons'
+import { OverflowButton } from '../../components/ui/OverflowButton'
 import { SignalStatus, type SignalStatusInfo } from './SignalStatus'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
@@ -25,6 +27,8 @@ import type { RoleFilter } from './AnimeSignalsSection'
 import { SeriesThumb } from '../stats/SeriesLink'
 import { formatRecentDate } from '../../format'
 import { useLabel } from '../../i18n-context'
+import { MODAL_SIZE } from '../../components/ui/modalSizes'
+import { Callout } from '../../components/ui/Callout'
 
 /** Wire values of a feedback state's `exposure` field, labeled for display. */
 const EXPOSURE_LABELS: Record<string, MessageDescriptor> = {
@@ -205,7 +209,7 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
 
   return (
     <Modal
-      opened={opened} onClose={onClose} size="xl" radius="lg"
+      opened={opened} onClose={onClose} size={MODAL_SIZE.wide} radius="lg"
       closeButtonProps={{ 'aria-label': t`Close` }}
       title={
         <div>
@@ -232,9 +236,9 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
         <Tabs.Panel value="titles">
           <Stack gap="sm">
             <Group gap="sm" align="center" wrap="wrap">
-              <TextInput
-                value={search} onChange={(event) => setSearch(event.currentTarget.value)}
-                placeholder={t`Search titles`} leftSection={<IconSearch size={16} />}
+              <SearchInput
+                value={search} onChange={(event) => setSearch(event.currentTarget.value)} onClear={() => setSearch('')}
+                placeholder={t`Search titles`}
                 w={240} aria-label={t`Search titles`}
               />
               <Select
@@ -249,9 +253,9 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
             <SegmentFilters value={filter} onChange={(value) => setFilter(value as Filter)} items={filters} />
 
             {actionError && (
-              <Alert color="var(--danger)">
+              <Callout tone="danger" role="alert">
                 <Trans>{actionError} Refresh the page and try again.</Trans>
-              </Alert>
+              </Callout>
             )}
 
             {visible.length === 0 && (
@@ -338,7 +342,7 @@ function AnimeSignalsPanel() {
   if (isLoading || !data) {
     const reason = error ? errorText(error) : ''
     return error ? (
-      <Alert color="var(--danger)"><Trans>Could not load anime signals: {reason}</Trans></Alert>
+      <Callout tone="danger" role="alert"><Trans>Could not load anime signals: {reason}</Trans></Callout>
     ) : null
   }
 
@@ -367,11 +371,11 @@ function AnimeSignalsPanel() {
         </Button>
       </Group>
 
-      {syncError && <Alert color="var(--danger)">{syncError}</Alert>}
+      {syncError && <Callout tone="danger" role="alert">{syncError}</Callout>}
 
-      <TextInput
-        value={search} onChange={(event) => setSearch(event.currentTarget.value)}
-        placeholder={t`Search shows`} leftSection={<IconSearch size={16} />}
+      <SearchInput
+        value={search} onChange={(event) => setSearch(event.currentTarget.value)} onClear={() => setSearch('')}
+        placeholder={t`Search shows`}
         aria-label={t`Search shows`}
       />
 
@@ -510,9 +514,7 @@ function SignalRow({ row, busy, onClear, onExclude, onHide }: {
         {actions.length > 0 && (
           <Menu position="bottom-end" width={240} withinPortal>
             <Menu.Target>
-              <ActionIcon variant="subtle" color="var(--ink-3)" loading={busy} aria-label={t`Actions for ${title}`}>
-                <IconDots size={16} />
-              </ActionIcon>
+              <OverflowButton loading={busy} aria-label={t`Actions for ${title}`} />
             </Menu.Target>
             <Menu.Dropdown>
               {actions.map((action) => {

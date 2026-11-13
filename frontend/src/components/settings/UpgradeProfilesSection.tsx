@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SettingsGroupTitle } from './SettingsGroupTitle'
 import {
   ActionIcon,
   Button,
@@ -448,9 +449,9 @@ function ProfileEditor({
       />
 
       <div>
-        <Text size="sm" fw={500} mb={4}>
+        <SettingsGroupTitle mb={4}>
           <Trans>Tier order</Trans>
-        </Text>
+        </SettingsGroupTitle>
         <SettingsHelp mb="xs">
           <Trans>Highest priority first. Grouped tiers rank the same.</Trans>
         </SettingsHelp>
@@ -531,9 +532,9 @@ function ProfileEditor({
       </Group>
 
       <div>
-        <Text size="sm" fw={500} mb={4}>
+        <SettingsGroupTitle mb={4}>
           <Trans>Measured quality</Trans>
-        </Text>
+        </SettingsGroupTitle>
         <SettingsHelp mb="xs">
           <Trans>Points for doubling each measurement. 0 turns it off.</Trans>
         </SettingsHelp>
@@ -562,9 +563,9 @@ function ProfileEditor({
       />
 
       <div>
-        <Text size="sm" fw={500} mb={4}>
+        <SettingsGroupTitle mb={4}>
           <Trans>Format scores</Trans>
-        </Text>
+        </SettingsGroupTitle>
         <SettingsHelp mb="xs">
           <Trans>0 means the format isn't scored.</Trans>
         </SettingsHelp>
@@ -842,9 +843,9 @@ function FormatEditor({
       />
 
       <div>
-        <Text size="sm" fw={500} mb={4}>
+        <SettingsGroupTitle mb={4}>
           <Trans>Conditions</Trans>
-        </Text>
+        </SettingsGroupTitle>
         <Stack gap="xs">
           {conditions.map((condition, index) => (
             <div key={index} className="condition-row">
@@ -932,7 +933,7 @@ function FormatEditor({
 
                 <ActionIcon
                   variant="subtle"
-                  className="quiet-danger"
+                  color="var(--danger)"
                   onClick={() => removeCondition(index)}
                   disabled={conditions.length <= 1}
                   aria-label={t`Remove condition`}

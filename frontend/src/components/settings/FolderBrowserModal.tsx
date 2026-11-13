@@ -16,6 +16,7 @@ import { useBrowseFolders } from '../../api/hooks'
 import { EmptyState } from '../ui/EmptyState'
 import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
 import { StatusDot } from '../ui/StatusDot'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 /**
  * Walks the server's filesystem (not the browser's) so an admin can pick a root folder instead of
@@ -70,7 +71,7 @@ export function FolderBrowserModal({
           description={<Trans>Browse the server to pick a root folder.</Trans>}
         />
       }
-      size="lg"
+      size={MODAL_SIZE.default}
     >
       <Stack gap="sm">
         <Group gap="xs" wrap="nowrap">

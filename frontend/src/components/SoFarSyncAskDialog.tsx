@@ -1,7 +1,8 @@
-import { Button, Group, Modal, Stack, Text } from '@mantine/core'
+import { Button, Modal, Stack } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useSetSoFarSync } from '../api/hooks'
 import { closeSoFarSyncAsk, useSoFarSyncAsk } from '../lib/soFarSyncAsk'
+import { ModalFooter, ModalHeading } from './ui/ModalShell'
 
 /**
  * The one-time question after a reader's first "so far" score with a rating-syncing tracker signed in:
@@ -27,24 +28,27 @@ export function SoFarSyncAskDialog() {
     <Modal
       opened={ask != null}
       onClose={() => closeSoFarSyncAsk(false)}
-      title={t`Send "so far" scores to ${trackers} too?`}
-      centered
+      title={
+        <ModalHeading
+          title={t`Send "so far" scores to ${trackers} too?`}
+          description={
+            <Trans>
+              Right now a "so far" score stays in Maki, and only your final rating goes to your trackers. You can
+              change this for each tracker in Settings.
+            </Trans>
+          }
+        />
+      }
     >
       <Stack gap="sm">
-        <Text size="sm">
-          <Trans>
-            Right now a "so far" score stays in Maki, and only your final rating goes to your trackers. You can
-            change this for each tracker in Settings.
-          </Trans>
-        </Text>
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" disabled={save.isPending} onClick={() => answer(false)}>
             <Trans>Keep them in Maki</Trans>
           </Button>
           <Button loading={save.isPending} onClick={() => answer(true)}>
             <Trans>Send them</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Stack>
     </Modal>
   )

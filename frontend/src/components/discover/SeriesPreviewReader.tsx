@@ -168,7 +168,7 @@ export function SeriesPreviewReader({
     body = (
       <Center h="100%">
         <Stack align="center" gap="sm" maw={420} px="md">
-          <Text c="rgba(255,255,255,0.72)" ta="center">
+          <Text c="var(--reader-ink-2)" ta="center">
             {failure}
           </Text>
           <Button variant="light" onClick={onClose} leftSection={<IconArrowLeft size={16} />}>
@@ -215,7 +215,7 @@ export function SeriesPreviewReader({
       <Center h="100%">
         <Stack align="center" gap="md">
           <div className="reader-page-skeleton" aria-hidden />
-          <Text fz="sm" c="rgba(255,255,255,0.6)" className="tnum">
+          <Text fz="sm" c="var(--reader-ink-3)" className="tnum">
             {!source ? (
               <Trans>Looking for a source…</Trans>
             ) : pageCount > 0 ? (

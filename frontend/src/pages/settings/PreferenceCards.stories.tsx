@@ -85,6 +85,8 @@ export const HomeAndStartPage: Story = {
   play: async ({ canvas }) => {
     await waitFor(() => expect(canvas.getByRole('link', { name: /Edit Home layout/ })).toHaveAttribute('href', '/home?edit=1'))
     await waitFor(() => expect(canvas.getByRole('link', { name: /Edit Discover layout/ })).toHaveAttribute('href', '/discover?edit=1'))
+    const startPage = await canvas.findByRole('radiogroup', { name: 'Start page' })
+    await waitFor(() => expect(within(startPage).getByRole('radio', { name: 'Home' })).toBeChecked())
   },
 }
 

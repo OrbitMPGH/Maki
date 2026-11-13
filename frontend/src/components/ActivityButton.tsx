@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react'
+import { Thumb } from './ui/Thumb'
 import { ActionIcon, Box, Button, Group, Popover, Progress, ScrollArea, Stack, Text, Tooltip, UnstyledButton } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { IconDownload } from '../lib/icons'
@@ -192,11 +193,9 @@ function ActivityRow({
   return (
     <UnstyledButton onClick={onOpen} px="sm" py={8} className="inbox-row">
       <Group gap="xs" wrap="nowrap" align="flex-start">
-        <Box className="inbox-cover" data-series-cover={item.seriesId} mt={2} style={{ width: 26, height: 38 }}>
-          {item.seriesCoverUrl && <img src={item.seriesCoverUrl} alt="" loading="lazy" decoding="async" />}
-        </Box>
+        <Thumb src={item.seriesCoverUrl} size="sm" data-series-cover={item.seriesId} style={{ marginTop: 2 }} />
         <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
-          <Text size="xs" fw={650} lineClamp={1}>
+          <Text className="series-title">
             {item.seriesTitle}
           </Text>
           <Text size="xs" c="var(--ink-3)" lineClamp={1}>
@@ -207,8 +206,6 @@ function ActivityRow({
               <Progress
                 value={(item.pagesDone / item.pagesTotal) * 100}
                 style={{ flex: 1 }}
-                size="sm"
-                radius="xl"
                 animated={item.status === 'Downloading'}
                 aria-label={t`Download progress`}
               />

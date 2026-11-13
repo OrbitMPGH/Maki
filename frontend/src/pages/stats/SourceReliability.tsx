@@ -71,14 +71,14 @@ export function SourceReliability({
 
   return (
     <Table.ScrollContainer minWidth={showSuccess || showWait ? 520 : 0}>
-      <Table verticalSpacing={6} withRowBorders={false} style={{ whiteSpace: 'nowrap' }}>
+      <Table className="panel-table ops-table" style={{ whiteSpace: 'nowrap' }}>
         <Table.Thead>
           <Table.Tr>
             <Table.Th>{t`Source`}</Table.Th>
-            <Table.Th style={{ textAlign: 'right' }}>{t`Files`}</Table.Th>
-            <Table.Th style={{ textAlign: 'right' }}>{t`Size`}</Table.Th>
-            {showSuccess && <Table.Th style={{ textAlign: 'right' }}>{t`Success`}</Table.Th>}
-            {showWait && <Table.Th style={{ textAlign: 'right' }}>{t`Median wait`}</Table.Th>}
+            <Table.Th ta="right">{t`Files`}</Table.Th>
+            <Table.Th ta="right">{t`Size`}</Table.Th>
+            {showSuccess && <Table.Th ta="right">{t`Success`}</Table.Th>}
+            {showWait && <Table.Th ta="right">{t`Median wait`}</Table.Th>}
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -91,18 +91,18 @@ export function SourceReliability({
                 <Table.Td>
                   <Text size="sm">{nameLabel(PROTOCOL_LABELS, r.name)}</Text>
                 </Table.Td>
-                <Table.Td style={{ textAlign: 'right' }}>
+                <Table.Td ta="right">
                   <Text size="sm" c="var(--ink-3)" className="tnum">
                     {formatNumber(r.files)}
                   </Text>
                 </Table.Td>
-                <Table.Td style={{ textAlign: 'right' }}>
+                <Table.Td ta="right">
                   <Text size="sm" fw={600} className="tnum">
                     {formatBytes(r.bytes)}
                   </Text>
                 </Table.Td>
                 {showSuccess && (
-                  <Table.Td style={{ textAlign: 'right' }}>
+                  <Table.Td ta="right">
                     {successRate === null ? (
                       <Text size="sm" c="var(--ink-3)">
                         {t`n/a`}
@@ -115,8 +115,7 @@ export function SourceReliability({
                         <Progress
                           value={successRate * 100}
                           size={4}
-                          radius="xl"
-                          color={low ? 'var(--warn)' : 'var(--brand)'}
+                          color={low ? 'var(--warn)' : 'var(--ok)'}
                           mt={4}
                           aria-label={t`Success rate`}
                         />
@@ -125,7 +124,7 @@ export function SourceReliability({
                   </Table.Td>
                 )}
                 {showWait && (
-                  <Table.Td style={{ textAlign: 'right' }}>
+                  <Table.Td ta="right">
                     <Text size="sm" c="var(--ink-3)" className="tnum">
                       {r.medianSecondsToComplete == null
                         ? t`n/a`

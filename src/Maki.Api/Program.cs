@@ -966,6 +966,7 @@ try
     builder.Services.AddSingleton<HealthState>();
     builder.Services.AddScoped<HealthCheckService>();
     builder.Services.AddScoped<HealthMonitor>();
+    builder.Services.AddScoped<ConnectionTestStore>();
     builder.Services.AddSingleton<HealthSourceRecovery>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<HealthSourceRecovery>());
     builder.Services.AddScoped<HealthScanService>();

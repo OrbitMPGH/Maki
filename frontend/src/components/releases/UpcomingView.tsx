@@ -1,12 +1,15 @@
 import { useMemo, type CSSProperties, type ReactNode } from 'react'
-import { Box, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
+import { Box, Group, Stack, Text, Tooltip } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Link } from 'react-router-dom'
 import { confidenceLevel, useUpcoming, type UpcomingSeriesDto } from '../../api/releases'
 import { formatDayRange, formatPercent, formatRecentDate, formatWeekdayDate, formatWeekdayDateTime } from '../../format'
 import { useLabel } from '../../i18n-context'
+import { IconCalendarEvent, IconClock, type Icon } from '../../lib/icons'
 import { EmptyState } from '../ui/EmptyState'
+import { Thumb } from '../ui/Thumb'
 import { Panel } from '../ui/Panel'
+import { SectionHeader } from '../ui/SectionHeader'
 import { TableSkeleton } from '../ui/TableSkeleton'
 import { CONFIDENCE_LABEL } from './outlookText'
 
@@ -116,7 +119,7 @@ export function UpcomingContent({ items, now }: { items: UpcomingSeriesDto[]; no
       )}
 
       {late.length > 0 && (
-        <UpcomingGroup title={t`Running late`}>
+        <UpcomingGroup title={t`Running late`} icon={IconClock}>
           {late.map((item) => (
             <UpcomingLine key={item.seriesId} item={item} late />
           ))}
@@ -236,8 +239,8 @@ function UpcomingName({ item }: { item: UpcomingSeriesDto }) {
   const showsWindow = outlook.state === 'Expected' || outlook.state === 'Late'
   return (
     <Link to={`/series/${seriesId}`} className="upcoming-name-cell upcoming-name">
-      {coverUrl ? <img src={coverUrl} alt="" className="upcoming-cover" loading="lazy" /> : <span className="upcoming-cover" />}
-      <span className="upcoming-title">{title}</span>
+      <Thumb src={coverUrl} size="sm" aria-hidden />
+      <span className="upcoming-title series-title" data-lines="1">{title}</span>
       {showsWindow && (
         <span className="upcoming-confidence tnum" data-level={confidenceLevel(outlook.confidence)}>
           {formatPercent(outlook.confidence)}
@@ -269,7 +272,7 @@ function UpcomingLine({ item, late = false }: { item: UpcomingSeriesDto; late?: 
         )}
         {range && (
           <Text size="sm" c={late ? 'var(--warn)' : undefined}>
-            {late ? <Trans>Later than expected. We guessed {range}.</Trans> : <Trans>Likely {range}</Trans>}
+            {late ? <Trans>Later than expected. Maki guessed {range}.</Trans> : <Trans>Likely {range}</Trans>}
           </Text>
         )}
         {range && (
@@ -282,12 +285,10 @@ function UpcomingLine({ item, late = false }: { item: UpcomingSeriesDto; late?: 
   )
 }
 
-function UpcomingGroup({ title, children }: { title: string; children: ReactNode }) {
+function UpcomingGroup({ title, icon = IconCalendarEvent, children }: { title: string; icon?: Icon; children: ReactNode }) {
   return (
     <div>
-      <Title order={2} size="h4" fz="var(--type-body)" mb="xs">
-        {title}
-      </Title>
+      <SectionHeader icon={icon} title={title} />
       <Stack gap="xs">{children}</Stack>
     </div>
   )

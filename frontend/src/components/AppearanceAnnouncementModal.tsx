@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Button, Group, Modal, Stack, Text, ThemeIcon } from '@mantine/core'
-import { IconPalette } from '../lib/icons'
+import { Button, Modal, Stack } from '@mantine/core'
+import { ModalFooter, ModalHeading } from './ui/ModalShell'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useAnnouncements, useSeenAppearanceAnnouncement } from '../api/hooks'
 import { useThemeChoice } from '../theme-context'
 import { AppearancePicker } from './AppearancePicker'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 /**
  * Tells someone who was already using Maki that background and accent are separate choices now, and
@@ -40,24 +41,21 @@ export default function AppearanceAnnouncementModal() {
     <Modal
       opened={open}
       onClose={close}
-      title={t`More ways to make Maki yours`}
-      centered
-      size="lg"
-    >
-      <Stack gap="lg">
-        <Group gap="sm" wrap="nowrap" align="flex-start">
-          <ThemeIcon variant="light" color="brand" size="lg" radius="md">
-            <IconPalette size={20} />
-          </ThemeIcon>
-          <Text size="sm">
+      title={
+        <ModalHeading
+          title={t`More ways to make Maki yours`}
+          description={
             <Trans>
               Background and accent colour are now picked separately, with new backgrounds to choose
               from. Tinted black is the new default. To keep the old look, pick Night. You can
               change this any time under Settings, Appearance.
             </Trans>
-          </Text>
-        </Group>
-
+          }
+        />
+      }
+      size={MODAL_SIZE.default}
+    >
+      <Stack gap="lg">
         <AppearancePicker
           backgroundHints={{
             tinted: { label: t`New default` },
@@ -65,11 +63,11 @@ export default function AppearanceAnnouncementModal() {
           }}
         />
 
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button onClick={close}>
             <Trans>Done</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Stack>
     </Modal>
   )

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { randomUUID } from '../../lib/uuid'
 import {
-  Alert, Button, Group, SegmentedControl, Stack, Switch, Text, Tooltip,
+  Button, Group, SegmentedControl, Stack, Switch, Text, Tooltip,
 } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -14,11 +14,13 @@ import { useAnimeSignals, useSetAnimeSignalsEnabled, useSetAnimeSignalsStrength 
 import { useMutateSignalOverride, useSignalOverrides } from '../../api/recommendationFeedback'
 import { formatDateTime, formatDecimal, formatFixedDecimal } from '../../format'
 import { SeriesThumb } from '../stats/SeriesLink'
+import { Callout } from '../../components/ui/Callout'
 import { MetaList } from '../../components/ui/MetaList'
 import { Panel } from '../../components/ui/Panel'
 import { PanelTitle } from '../../components/ui/PanelTitle'
-import { IconBan, IconBooks, IconDeviceTv, IconMinus, IconQuestionMark, IconStarFilled, IconThumbDown, IconThumbUp } from '../../lib/icons'
+import { IconBan, IconBooks, IconDeviceTv, IconMinus, IconQuestionMark, IconThumbDown, IconThumbUp } from '../../lib/icons'
 import { SignalStatus, type SignalStatusInfo } from './SignalStatus'
+import { ScoreInlineMark } from '../../components/ui/ScoreInline'
 
 export type RoleFilter = AnimeSignalRole | 'all'
 
@@ -136,7 +138,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
   if (isLoading || !data) {
     const reason = error ? errorText(error) : ''
     return error ? (
-      <Alert color="var(--danger)"><Trans>Could not load anime signals: {reason}</Trans></Alert>
+      <Callout tone="danger" role="alert"><Trans>Could not load anime signals: {reason}</Trans></Callout>
     ) : null
   }
 
@@ -165,7 +167,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
           />
         </Group>
 
-        {toggleError && <Alert color="var(--danger)">{toggleError}</Alert>}
+        {toggleError && <Callout tone="danger" role="alert">{toggleError}</Callout>}
 
         {noTracker && (
           <Text size="sm" c="var(--ink-3)">
@@ -365,10 +367,7 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
       </div>
       <Text size="sm" c="var(--ink-2)" className="tnum signals-col signals-col-score">
         {score !== null ? (
-          <span className="signal-status">
-            <IconStarFilled size={16} aria-hidden style={{ color: 'var(--rating)' }} />
-            {score}
-          </span>
+          <ScoreInlineMark text={score} />
         ) : statusLabel}
       </Text>
       <div className="signals-col signals-col-role">
