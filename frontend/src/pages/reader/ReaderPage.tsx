@@ -11,6 +11,7 @@ import { settleQueuedProgress } from '../../pwa/progressQueue'
 import {
   flushProgress,
   manifestServedOffline,
+  prefetchReaderCredits,
   readerCreditsQuery,
   readerRecapQuery,
   useBookmarks,
@@ -242,7 +243,10 @@ export default function ReaderPage() {
     pageCount >= CREDITS_MIN_PAGES &&
     !offline &&
     !manifestServedOffline(chapterId)
-  const { data: creditsFound, isError: creditsFailed } = useQuery({ ...readerCreditsQuery(chapterId), enabled: creditsWanted })
+  const { data: creditsFound, isError: creditsFailed } = useQuery({
+    ...readerCreditsQuery(chapterId, manifest?.pageVersion),
+    enabled: creditsWanted,
+  })
   const creditsPending = creditsWanted && creditsFound === undefined && !creditsFailed
   const creditsHeld = creditsPending && creditsWaited !== chapterId
   const visit = creditsVisit?.chapterId === chapterId ? creditsVisit : null
@@ -503,7 +507,7 @@ export default function ReaderPage() {
   const creditsAhead =
     prefs.hideCredits && !offline && resumedFor === manifest?.chapterId && nearEnd ? (manifest?.nextChapterId ?? null) : null
   useEffect(() => {
-    if (creditsAhead != null) void queryClient.prefetchQuery(readerCreditsQuery(creditsAhead))
+    if (creditsAhead != null) void prefetchReaderCredits(queryClient, creditsAhead)
   }, [creditsAhead, queryClient])
   const recapPhase = recap?.chapterId === chapterId ? recap.phase : null
   const skipRecap = useCallback(

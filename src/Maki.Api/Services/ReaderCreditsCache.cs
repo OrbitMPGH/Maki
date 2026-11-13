@@ -28,7 +28,8 @@ public sealed class ReaderCreditsCache(
 
     private readonly ConcurrentDictionary<string, Lazy<Task<CreditPages>>> _results = new();
     private readonly ConcurrentDictionary<string, Lazy<Task<CreditDetector.Edges>>> _strips = new();
-    private readonly ConcurrentQueue<string> _stripOrder = new();
+    /// <summary>Strips in the order they were added, each with the entry it added, so a stale key never evicts a newer entry.</summary>
+    private readonly ConcurrentQueue<KeyValuePair<string, Lazy<Task<CreditDetector.Edges>>>> _stripOrder = new();
 
     /// <summary>Whether a chapter can have credits hidden at all; PDFs and short chapters cannot.</summary>
     public static bool Applies(ReaderService.ChapterSlice slice) =>
@@ -130,8 +131,7 @@ public sealed class ReaderCreditsCache(
             bytes = copy.ToArray();
         }
 
-        var read = await ImageWorkGate.RunAsync(
-            () => text.ReadAsync(bytes, candidate.Share, CancellationToken.None), ImageWorkGate.Weigh(bytes));
+        var read = await text.ReadAsync(bytes, candidate.Share, CancellationToken.None);
         return read is null ? candidate.Colour : CreditText.IsScanlator(read, candidate.Colour);
     }
 
@@ -144,10 +144,10 @@ public sealed class ReaderCreditsCache(
             strip = _strips.GetOrAdd(key, fresh);
             if (ReferenceEquals(strip, fresh))
             {
-                _stripOrder.Enqueue(key);
+                _stripOrder.Enqueue(new(key, fresh));
                 while (_strips.Count > MaxStrips && _stripOrder.TryDequeue(out var oldest))
                 {
-                    _strips.TryRemove(oldest, out _);
+                    _strips.TryRemove(oldest);
                 }
             }
         }

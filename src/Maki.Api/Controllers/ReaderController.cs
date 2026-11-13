@@ -688,7 +688,8 @@ public class ReaderController(
     /// The credit, recruitment and notice pages the reader leaves out of the chapter: whole pages at
     /// its start and end, and how far down the first page it shows a banner fused into that page ends.
     /// All zero when nothing repeats at the chapter's edges. The first search decodes the edges of up
-    /// to seven chapters, so the reader asks ahead while the previous chapter ends.
+    /// to seven chapters, so the reader asks ahead while the previous chapter ends. The manifest's
+    /// <c>pageVersion</c> comes back too: the answer belongs to that file, and a replaced file needs its own.
     /// </summary>
     [HttpGet("chapter/{id:int}/credits")]
     public async Task<IActionResult> Credits(int id, [FromServices] ReaderCreditsCache credits, CancellationToken ct)
@@ -707,7 +708,11 @@ public class ReaderController(
             found = await credits.FindAsync(slice, [.. before, .. after], ct);
         }
 
-        return Ok(new { headPages = found.HeadPages, headOffset = found.HeadOffset, tailPages = found.TailPages });
+        return Ok(new
+        {
+            headPages = found.HeadPages, headOffset = found.HeadOffset, tailPages = found.TailPages,
+            pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion),
+        });
     }
 
     [HttpPut("chapter/{id:int}/progress")]

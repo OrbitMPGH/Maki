@@ -336,8 +336,12 @@ public class ReaderService(
     /// Up to <paramref name="each"/> readable chapters on each side of <paramref name="chapter"/> in
     /// reading order, nearest first, leaving out any <paramref name="usable"/> turns down. The nearest
     /// candidates on both sides resolve in one <see cref="SlicesAsync"/>; a side only asks again when
-    /// some of them could not be read or used.
+    /// some of them could not be read or used. Only the nearest <see cref="NearbyScanFactor"/> times
+    /// <paramref name="each"/> chapters on a side are tried, so a series whose older files are gone
+    /// does not cost a query and an archive open per chapter.
     /// </summary>
+    private const int NearbyScanFactor = 4;
+
     public async Task<(List<ChapterSlice> Before, List<ChapterSlice> After)> NearbySlicesAsync(
         Chapter chapter, int each, Func<ChapterSlice, bool> usable, CancellationToken ct)
     {
@@ -348,9 +352,10 @@ public class ReaderService(
             return ([], []);
         }
 
-        var before = ordered[..at];
+        var reach = each * NearbyScanFactor;
+        var before = ordered[Math.Max(0, at - reach)..at];
         before.Reverse();
-        var after = ordered[(at + 1)..];
+        var after = ordered[(at + 1)..Math.Min(ordered.Count, at + 1 + reach)];
         var found = (Before: new List<ChapterSlice>(), After: new List<ChapterSlice>());
         var (b, a) = (0, 0);
         while ((found.Before.Count < each && b < before.Count) || (found.After.Count < each && a < after.Count))

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { api, failWith, neverResolve } from '../../../.storybook/mocks/api'
 import { chapters } from '../../../.storybook/mocks/entry/fixtures'
 import type { ReaderCredits, ReaderManifest, ServerPageState } from '../../api/reader'
@@ -222,10 +222,21 @@ export const ContinuousRecapSkippedAutomatically: Story = {
   },
 }
 
-const creditsAt = (found: ReaderCredits) => http.get(api('/reader/chapter/:id/credits'), () => HttpResponse.json(found))
+const creditsAt = (found: Omit<ReaderCredits, 'pageVersion'>, wait = 0) =>
+  http.get(api('/reader/chapter/:id/credits'), async () => {
+    if (wait) await delay(wait)
+    return HttpResponse.json({ ...found, pageVersion: 'v1' } satisfies ReaderCredits)
+  })
 const hidingCredits = (chapterId: number) =>
   withManifest({ ...chapters[chapterId], resumePage: 0, prefs: { ...chapters[chapterId].prefs, hideCredits: true } })
 const creditPages = [creditsAt({ headPages: 1, headOffset: 0, tailPages: 2 }), hidingCredits(1132)]
+
+// Each write keeps its chapter id: the previous story's flush on unmount can land after this one's reset.
+const creditWrites: { chapterId: number; pageIndex: number; completed?: boolean }[] = []
+const recordCreditWrites = http.put(api('/reader/chapter/:id/progress'), async ({ params, request }) => {
+  creditWrites.push({ chapterId: Number(params.id), ...((await request.json()) as { pageIndex: number; completed?: boolean }) })
+  return new HttpResponse(null, { status: 204 })
+})
 
 /** A credit page at the start and two notices at the end are left out: the chapter opens on its second page and counts 15. */
 export const CreditPagesHidden: Story = {
@@ -236,6 +247,48 @@ export const CreditPagesHidden: Story = {
     await userEvent.keyboard('{End}')
     await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 16' })).toBeVisible()
     await expect(await canvas.findByText('Page 15 of 15')).toBeInTheDocument()
+  },
+}
+
+/** The last page shown records the chapter's real last page, so it completes as the real last page would. */
+export const LastShownPageCompletesTheChapter: Story = {
+  parameters: { ...open(1132), msw: [...creditPages, recordCreditWrites] },
+  beforeEach: () => {
+    creditWrites.length = 0
+  },
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 2' })
+    await userEvent.keyboard('{End}')
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 16' })).toBeVisible()
+    await waitFor(() => expect(creditWrites.some((write) => write.chapterId === 1132 && write.pageIndex === 17)).toBe(true))
+  },
+}
+
+/** Opening on the first page shown, past a hidden credit page, is still opening at the start: nothing is written. */
+export const OpeningPastHiddenPagesWritesNothing: Story = {
+  parameters: {
+    ...open(7710),
+    msw: [
+      creditsAt({ headPages: 1, headOffset: 0, tailPages: 2 }),
+      withManifest({ ...chapters[1132], chapterId: 7710, resumePage: 0, prefs: { ...chapters[1132].prefs, hideCredits: true } }),
+      recordCreditWrites,
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 2' })).toBeVisible()
+    await new Promise((resolve) => setTimeout(resolve, 2500))
+    await expect(creditWrites.filter((write) => write.chapterId === 7710)).toHaveLength(0)
+  },
+}
+
+/** An answer that comes after the reader stopped waiting trims only the end, so the page on screen never moves. */
+export const LateCreditAnswerTrimsOnlyTheEnd: Story = {
+  parameters: { ...open(1132), msw: [creditsAt({ headPages: 1, headOffset: 0, tailPages: 2 }, 2500), hidingCredits(1132)] },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 1' })).toBeVisible()
+    await expect(await canvas.findByText('Page 1 of 18')).toBeInTheDocument()
+    await expect(await canvas.findByText('Page 1 of 16')).toBeInTheDocument()
+    await expect(canvas.getByRole('img', { name: 'Chapter 132 - page 1' })).toBeVisible()
   },
 }
 

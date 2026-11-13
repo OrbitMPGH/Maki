@@ -1,3 +1,4 @@
+using Maki.Core.Images;
 using Maki.Metadata.Embedding;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
@@ -31,7 +32,8 @@ public interface IPageTextReader
 /// </para>
 /// <para>
 /// Both sessions load on the first read and go after <see cref="IdleWindow"/> without one
-/// (<see cref="ReleaseIfIdle"/>, from <c>UpscalerIdleUnloadJob</c>). One read runs at a time.
+/// (<see cref="ReleaseIfIdle"/>, from <c>UpscalerIdleUnloadJob</c>). One read runs at a time, and
+/// only its decode runs under <see cref="ImageWorkGate"/>, taken after the reader's own lock.
 /// </para>
 /// </summary>
 public sealed class PageTextReader : IPageTextReader, IDisposable
@@ -111,7 +113,10 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
             _lastUsedUtc = DateTime.UtcNow;
             try
             {
-                return Read(models, Decode(image, share));
+                // Only the decode holds an image permit; inference runs outside the gate.
+                var page = await ImageWorkGate.RunAsync(
+                    () => Task.FromResult(Decode(image, share)), ImageWorkGate.Weigh(image), ct);
+                return Read(models, page);
             }
             catch (Exception e) when (e is not OperationCanceledException)
             {

@@ -42,7 +42,7 @@ const readerHandlers: HttpHandler[] = [
   http.post(api('/series/:id/rate-hint/dismiss'), () => new HttpResponse(null, { status: 204 })),
   http.get(api('/reader/chapter/:id/recap'), () => HttpResponse.json({ page: null, offset: null })),
   http.get(api('/reader/chapter/:id/credits'), () =>
-    HttpResponse.json({ headPages: 0, headOffset: 0, tailPages: 0 } satisfies ReaderCredits)),
+    HttpResponse.json({ headPages: 0, headOffset: 0, tailPages: 0, pageVersion: 'v1' } satisfies ReaderCredits)),
   http.get(api('/series/:id/rating-checkpoint'), () => HttpResponse.json({ checkpoint: null, provisionalRating: null })),
   http.post(api('/series/:id/rating-checkpoint/dismiss'), () => new HttpResponse(null, { status: 204 })),
   http.put(api('/series/:id/rating/provisional'), async ({ request }) =>
