@@ -11,11 +11,12 @@ import { Link } from 'react-router-dom'
 import type { SeriesDto } from '../../api/types'
 import type { OfflineAvailability } from './CoverCard'
 import {
-  badgeFill,
   seriesDownloadStateVisual,
   seriesProgressVisual,
   seriesStatusVisual,
+  statusColor,
 } from './status'
+import { LightBadge } from '../series/lightMantine'
 import { useLabel } from '../../i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
@@ -54,11 +55,11 @@ export const SeriesRow = memo(function SeriesRow({
     series,
     readTracking,
   )
-  const { readChapterCount } = series
+  const { readChapterCount, newChapterCount = 0 } = series
   const readTip = t`${readChapterCount} of ${have} downloaded read`
   const monitoredTip = series.monitored ? t`Monitored` : t`Not monitored`
   const mutedTip = t`Notifications muted`
-  const unreadTip = unread ? plural(unread, { one: '# unread', other: '# unread' }) : ''
+  const newTip = plural(newChapterCount, { one: '# recent chapter file', other: '# recent chapter files' })
 
   const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
   const thumbH = thumbSize * 1.5
@@ -97,34 +98,28 @@ export const SeriesRow = memo(function SeriesRow({
           </span>
           {series.year && <span className="row-year">{series.year}</span>}
           {offline === 'saved' && (
-            <span
-              className="cover-badge"
+            <LightBadge
+              color="var(--ok)"
               data-offline-badge="saved"
               data-tip={t`Saved on this device`}
-              style={{ flexShrink: 0 }}
+              leftSection={<IconDeviceMobileCheck size={12} />}
             >
-              <IconDeviceMobileCheck size={11} />
               <span className="offline-badge-label">{t`Saved on this device`}</span>
-            </span>
+            </LightBadge>
           )}
           {offline === 'unavailable' && (
-            <span
-              className="cover-badge"
+            <LightBadge
+              color="var(--neutral)"
               data-offline-badge="unavailable"
               data-tip={t`Not available offline`}
-              style={{ flexShrink: 0 }}
+              leftSection={<IconCloudOff size={12} />}
             >
-              <IconCloudOff size={11} />
               <span className="offline-badge-label">{t`Not available offline`}</span>
-            </span>
+            </LightBadge>
           )}
-          <span
-            className="cover-badge"
-            style={{ ...badgeFill(status.color), flexShrink: 0 }}
-          >
-            <status.Icon size={11} />
+          <LightBadge color={statusColor(status.color)} leftSection={<status.Icon size={12} />}>
             {renderLabel(status.label)}
-          </span>
+          </LightBadge>
           {/* Monitor state, same as the grid card: a subtle eye when watched, a clear eye-off
               when not. Icon-only, so the tooltip is the only thing that names it. */}
           <span
@@ -156,10 +151,9 @@ export const SeriesRow = memo(function SeriesRow({
 
         <div className="row-progress">
           {download && (
-            <span className="cover-badge" style={{ ...badgeFill(download.color), flexShrink: 0 }}>
-              <download.Icon size={11} />
+            <LightBadge color={statusColor(download.color)} leftSection={<download.Icon size={12} />}>
               {renderLabel(download.label)}
-            </span>
+            </LightBadge>
           )}
           {readPct !== null && (
             <span
@@ -170,28 +164,21 @@ export const SeriesRow = memo(function SeriesRow({
               style={{ '--ring-pct': `${readPct}%` } as React.CSSProperties}
             />
           )}
-          {/* Same pair the grid card shows: the outstanding count, or a plain "Read" once none
-              are left. The ring is easy to miss at either density. */}
-          {unread !== null && unread > 0 && (
-            <span
-              className="cover-badge cover-badge-unread"
-              data-tip={unreadTip}
-              role="img"
-              aria-label={unreadTip}
-              style={{ flexShrink: 0 }}
-            >
-              {unread}
-            </span>
+          {/* The grid card's "N new" pill, or a plain "Read" once nothing downloaded is left. The
+              ring is easy to miss at either density. */}
+          {offline !== 'unavailable' && newChapterCount > 0 && (
+            <LightBadge color="var(--neutral)" data-tip={newTip}>
+              {plural(newChapterCount, { one: '# new', other: '# new' })}
+            </LightBadge>
           )}
           {unread === 0 && (
-            <span
-              className="cover-badge cover-badge-read"
+            <LightBadge
+              color="var(--brand)"
+              leftSection={<IconCircleCheckFilled size={12} />}
               data-tip={t`All downloaded chapters read`}
-              style={{ flexShrink: 0 }}
             >
-              <IconCircleCheckFilled size={11} />
               <Trans>Read</Trans>
-            </span>
+            </LightBadge>
           )}
           <div className="row-bar">
             <div

@@ -14,7 +14,8 @@ import {
 import type { SeriesDto, TagDto } from '../../api/types'
 import type { OfflineAvailability } from '../ui/CoverCard'
 import { TagChip } from '../ui/TagChip'
-import { badgeFill, seriesProgressVisual, seriesStatusVisual } from '../ui/status'
+import { seriesProgressVisual, seriesStatusVisual, statusColor } from '../ui/status'
+import { LightBadge } from '../series/lightMantine'
 import { relativeTime } from '../ui/time'
 import { useLabel } from '../../i18n-context'
 import { formatBytes, formatCalendarDate, formatDecimal, formatRecentDate } from '../../format'
@@ -207,10 +208,9 @@ export const LibraryTableRow = memo(function LibraryTableRow({
       case 'status': {
         const status = seriesStatusVisual(series.status)
         return (
-          <span className="cover-badge" style={badgeFill(status.color)}>
-            <status.Icon size={11} />
+          <LightBadge color={statusColor(status.color)} leftSection={<status.Icon size={12} />}>
             {renderLabel(status.label)}
-          </span>
+          </LightBadge>
         )
       }
       case 'chapters': {
@@ -229,10 +229,13 @@ export const LibraryTableRow = memo(function LibraryTableRow({
         if (unread === null) return <Empty />
         if (unread === 0) {
           return (
-            <span className="cover-badge cover-badge-read" data-tip={t`All downloaded chapters read`}>
-              <IconCircleCheckFilled size={11} />
+            <LightBadge
+              color="var(--brand)"
+              leftSection={<IconCircleCheckFilled size={12} />}
+              data-tip={t`All downloaded chapters read`}
+            >
               <Trans>Read</Trans>
-            </span>
+            </LightBadge>
           )
         }
         const tip = plural(unread, { one: '# unread', other: '# unread' })
@@ -295,9 +298,9 @@ export const LibraryTableRow = memo(function LibraryTableRow({
         if (!at) return <Empty />
         const due = new Date(at).getTime() <= Date.now()
         return due ? (
-          <span className="cover-badge" style={badgeFill('var(--info)')}>
+          <LightBadge color="var(--info)">
             <Trans>Due</Trans>
-          </span>
+          </LightBadge>
         ) : (
           <span className="tnum" title={formatCalendarDate(at)}>
             {relativeTime(at, 'narrow')}
@@ -382,14 +385,14 @@ export const LibraryTableRow = memo(function LibraryTableRow({
             {series.displayTitle}
           </span>
           {offline === 'saved' && (
-            <span className="cover-badge" data-offline-badge="saved" data-tip={t`Saved on this device`}>
-              <IconDeviceMobileCheck size={11} />
-            </span>
+            <LightBadge color="var(--ok)" data-offline-badge="saved" data-tip={t`Saved on this device`}>
+              <IconDeviceMobileCheck size={12} />
+            </LightBadge>
           )}
           {offline === 'unavailable' && (
-            <span className="cover-badge" data-offline-badge="unavailable" data-tip={t`Not available offline`}>
-              <IconCloudOff size={11} />
-            </span>
+            <LightBadge color="var(--neutral)" data-offline-badge="unavailable" data-tip={t`Not available offline`}>
+              <IconCloudOff size={12} />
+            </LightBadge>
           )}
         </Link>
       </div>

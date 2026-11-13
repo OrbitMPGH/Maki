@@ -79,6 +79,7 @@
   --q-aggregator-on: #24140a;
   --neutral: #a6adbb;
   --neutral-on: #11141c;
+  --brand-soft: color-mix(in srgb, var(--brand) 15%, transparent);
   --ok-soft: color-mix(in srgb, var(--ok) 15%, transparent);
   --warn-soft: color-mix(in srgb, var(--warn) 15%, transparent);
   --info-soft: color-mix(in srgb, var(--info) 15%, transparent);
@@ -1829,6 +1830,12 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   text-transform: none;
   letter-spacing: 0;
 }
+/* One pill formula: a tint plus a 1px edge in the pill's own colour. Mantine's light variant draws
+   no border, so the edge is added here for every light badge, LightBadge included (same root class).
+   The badge height is border-box and its line-height already reserves the 2px. */
+.mantine-Badge-root[data-variant='light'] {
+  border: 1px solid color-mix(in srgb, var(--badge-color) 45%, transparent);
+}
 .mantine-Pill-root {
   --pill-fz-xs: var(--type-badge);
   --pill-fz-sm: var(--type-badge);
@@ -2133,9 +2140,9 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .cover-card[data-offline='unavailable'] .cover-corners {
   filter: grayscale(1);
 }
-.series-row [data-offline-badge='saved'] {
-  background: color-mix(in srgb, var(--brand) 16%, transparent);
-  color: var(--brand-fg);
+.series-row .row-header > .mantine-Badge-root,
+.series-row .row-progress > .mantine-Badge-root {
+  flex-shrink: 0;
 }
 /* The row header never wraps, so on a phone the offline badge shrinks to its icon (the tooltip
    keeps the words) rather than crush the title beside the status badge and the eye. */
@@ -2144,6 +2151,9 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
     width: 20px;
     padding: 0;
     justify-content: center;
+  }
+  .series-row [data-offline-badge] .mantine-Badge-section {
+    margin: 0;
   }
   .series-row .offline-badge-label {
     position: absolute;
@@ -3621,22 +3631,6 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--anime);
   border-radius: 2px;
 }
-/* The score on a line of its own and the other figures under it: side by side they needed more
-   room than the column has, and the figures stacked one per line beside the score. */
-.hero-figures.discover-figures {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 14px;
-  margin-top: 16px;
-}
-/* "19 ch", "~2 h": the unit is set down a step so the number stays the figure. */
-.hero-stat-unit {
-  margin-inline-start: 3px;
-  color: var(--ink-3);
-  font-size: 0.68em;
-  font-weight: var(--fw-semibold);
-  letter-spacing: 0;
-}
 /* The score and its word in gold, then where it stands in quiet ink: one line, read left to right. */
 .score-figure {
   display: inline-flex;
@@ -3674,7 +3668,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   height: 28px;
   padding: 0 10px 0 7px;
   border: 1px solid var(--border-strong);
-  border-radius: 7px;
+  border-radius: var(--radius-chip);
   background: color-mix(in srgb, var(--surface-2) 82%, transparent);
   color: var(--ink);
   font: inherit;
@@ -4056,7 +4050,8 @@ button.site-chip:hover {
 .engine-chip {
   flex: none;
   max-width: 100%;
-  padding: 2px 6px;
+  padding: 1px 5px;
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-control);
   background: var(--surface-2);
   color: var(--ink-3);
@@ -5108,9 +5103,6 @@ button.site-chip:hover {
   line-height: 1.2;
   color: var(--ink-hi);
 }
-.auth-panel-body {
-  margin-top: var(--mantine-spacing-md);
-}
 /* Advice sitting under the panel, not in it: it is worth reading, but it is not part of the form. */
 .auth-note {
   padding: 14px 16px;
@@ -5433,18 +5425,6 @@ button.site-chip:hover {
 }
 .setup-step-hint[data-tone='warn'] {
   color: var(--warn);
-}
-.setup-rail-foot {
-  display: grid;
-  justify-items: start;
-  gap: 4px;
-  margin-top: auto;
-}
-.setup-rail-note {
-  padding-inline: 10px;
-  font-size: var(--type-micro);
-  line-height: 1.5;
-  color: var(--ink-4);
 }
 
 .setup-main {
@@ -5831,7 +5811,8 @@ button.site-chip:hover {
   color: var(--brand-fg, var(--brand));
 }
 .setup-service-state {
-  padding: 3px 9px;
+  padding: 2px 8px;
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-pill);
   background: var(--neutral-soft);
   font-size: var(--type-micro);
@@ -5841,6 +5822,7 @@ button.site-chip:hover {
 }
 .setup-service-state[data-connected] {
   background: var(--ok-soft);
+  border-color: color-mix(in srgb, var(--ok) 45%, transparent);
   color: var(--ok);
 }
 .setup-service-chevron {
@@ -6546,7 +6528,8 @@ button.site-chip:hover {
   flex: none;
   align-items: center;
   height: 22px;
-  padding: 0 8px;
+  padding: 0 7px;
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
   border-radius: var(--radius-control);
   background: var(--warn-soft);
   color: var(--warn);
@@ -7026,9 +7009,6 @@ button.site-chip:hover {
 .tag-browser-spacer {
   flex-shrink: 0;
   width: 20px;
-}
-.tag-browser-footer {
-  border-top: 1px solid var(--border);
 }
 .spoiler-tag > .spoiler-tag-glyph {
   flex-shrink: 0;
@@ -8764,14 +8744,6 @@ body.column-resizing * {
 }
 
 /* --- Misc ---------------------------------------------------------------- */
-.hover-raise {
-  transition: transform var(--dur-base) var(--ease), border-color var(--dur-base) var(--ease), background-color var(--dur-base) var(--ease);
-}
-.hover-raise:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
-}
-
 .pulse-dot {
   width: 8px;
   height: 8px;
@@ -12131,11 +12103,10 @@ body.reader-open {
   font-size: var(--type-subhead);
 }
 
-/* The row reuses `.cover-badge`/`.cover-ring`/`.cover-count` so both views stay identical, but
-   those are styled for a poster: they ride on cover art behind a dark scrim, which is why the
-   count is a hard-coded light grey. On a row that grey sits on `--surface` (#ffffff in the light
-   theme, about 1.4:1), so the count has to follow the colour scheme instead. The badges paint
-   their own opaque background and, through `badgeFill`, their own `-on` foreground. */
+/* The row reuses `.cover-ring`/`.cover-count` so both views stay identical, but those are styled
+   for a poster: they ride on cover art behind a dark scrim, which is why the count is a hard-coded
+   light grey. On a row that grey sits on `--surface` (#ffffff in the light theme, about 1.4:1), so
+   the count has to follow the colour scheme instead. */
 .series-row .cover-count {
   color: var(--mantine-color-dimmed);
 }
@@ -12335,16 +12306,19 @@ body.reader-open {
 .health-copy-role {
   font-size: var(--type-meta);
   font-weight: 600;
-  padding: 1px 8px;
+  padding: 0 7px;
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-pill);
   color: var(--ink-2);
   background: color-mix(in srgb, var(--neutral) 16%, transparent);
 }
 .health-copy-role[data-role='keep'] {
+  border-color: color-mix(in srgb, var(--ok) 45%, transparent);
   color: var(--ok);
   background: color-mix(in srgb, var(--ok) 14%, transparent);
 }
 .health-copy-role[data-role='spare'] {
+  border-color: color-mix(in srgb, var(--warn) 45%, transparent);
   color: var(--warn);
   background: color-mix(in srgb, var(--warn) 14%, transparent);
 }
@@ -13547,7 +13521,7 @@ button.import-plan-folder-head:hover {
   border-radius: 5px;
   object-fit: cover;
   background: var(--surface-2);
-  box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 2.5px rgba(255, 255, 255, 0.16);
+  box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 2.5px var(--cover-rim);
 }
 .taste-theme-covers > :first-child {
   margin-left: 0;
@@ -15134,24 +15108,6 @@ button.settings-row-head:hover,
   background-color: var(--surface-hover);
 }
 
-/* A destructive confirm carries a rule along its top in the state colour. */
-.utility-modal-content[data-edge] {
-  --panel-edge: var(--border-strong);
-  border-top: 2px solid var(--panel-edge);
-}
-.utility-modal-content[data-edge='brand'] {
-  --panel-edge: var(--brand);
-}
-.utility-modal-content[data-edge='info'] {
-  --panel-edge: var(--info);
-}
-.utility-modal-content[data-edge='warn'] {
-  --panel-edge: var(--warn);
-}
-.utility-modal-content[data-edge='danger'] {
-  --panel-edge: var(--danger);
-}
-
 /* Confirm dialogs: a danger tile before the heading, no coloured edge. */
 .confirm-title {
   display: flex;
@@ -15173,8 +15129,9 @@ button.settings-row-head:hover,
 }
 .modal-role-chip {
   flex: none;
-  padding: 2px 8px;
-  border-radius: 6px;
+  padding: 1px 7px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
   background-color: color-mix(in srgb, var(--neutral) 14%, transparent);
   font-size: var(--type-meta);
   color: var(--ink-2);
@@ -15525,13 +15482,16 @@ button.settings-row-head:hover,
 .modal-rows {
   display: flex;
   flex-direction: column;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
 }
 .modal-row {
   display: flex;
-  align-items: center;
+  align-items: baseline;
+  justify-content: space-between;
   gap: var(--mantine-spacing-sm);
   min-height: 40px;
-  padding: 6px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--hairline);
   font-size: var(--type-body);
 }
@@ -15735,22 +15695,6 @@ button.settings-row-head:hover,
   border-bottom: 1px solid var(--hairline);
 }
 .modal-choice-list .mantine-Radio-root:last-child {
-  border-bottom: 0;
-}
-.modal-rows {
-  border-top: 1px solid var(--hairline);
-  border-bottom: 1px solid var(--hairline);
-}
-.modal-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--mantine-spacing-sm);
-  min-height: 40px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--hairline);
-}
-.modal-row:last-child {
   border-bottom: 0;
 }
 @media (max-width: 30em) {
@@ -16145,11 +16089,6 @@ button.settings-row-head:hover,
 .settings-section .settings-field-row:not(:has(.mantine-InputWrapper-description)) {
   align-items: flex-end;
 }
-.panel-table .sticky-end-cell {
-  position: sticky;
-  right: 0;
-  background: var(--surface);
-}
 /* One width for every settings number field; the label and hint keep the full column. */
 .settings-number-field {
   max-width: 12rem;
@@ -16293,8 +16232,9 @@ button.settings-row-head:hover,
 }
 /* The status a change ended in, as a tinted pill so it outweighs the muted "from" beside it. */
 .health-history-status {
-  padding: 0 7px;
-  border-radius: 999px;
+  padding: 0 6px;
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+  border-radius: var(--radius-pill);
   color: var(--tone);
   background: color-mix(in srgb, var(--tone) 14%, transparent);
   font-weight: var(--fw-semibold);
@@ -16888,7 +16828,7 @@ button.settings-row-head:hover,
   overflow: hidden;
   border-radius: var(--radius-thumb);
   background: var(--surface-2);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+  box-shadow: 0 0 0 1px var(--cover-rim);
 }
 .archived-row-cover img {
   display: block;
@@ -17492,6 +17432,7 @@ button.settings-row-head:hover,
   font-weight: var(--fw-medium);
   white-space: nowrap;
   background: var(--neutral-soft);
+  border: 1px solid var(--border-strong);
   color: var(--ink-2);
 }
 .source-tag[data-tone='kind'] {
@@ -17516,25 +17457,30 @@ button.settings-row-head:hover,
 }
 .source-tag[data-tone='adult'] {
   background: var(--cr-explicit-soft);
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
   color: var(--cr-explicit);
   font-weight: var(--fw-semibold);
 }
 .source-tag[data-tone='mature'] {
   background: var(--cr-erotica-soft);
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
   color: var(--cr-erotica);
   font-weight: var(--fw-semibold);
 }
 .source-tag[data-tone='broken'] {
   background: var(--danger-soft);
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
   color: var(--danger-fg);
   font-weight: var(--fw-semibold);
 }
 .source-tag[data-tone='flare'] {
   background: var(--warn-soft);
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
   color: var(--warn);
 }
 .source-tag[data-tone='quality-high'] {
   background: var(--ok-soft);
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
   color: var(--ok);
   font-weight: var(--fw-semibold);
 }
@@ -17550,10 +17496,12 @@ button.settings-row-head:hover,
 }
 .source-tag[data-tone='quality-low'] {
   background: var(--danger-soft);
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
   color: var(--danger);
 }
 .source-tag[data-tone='filter'] {
   background: var(--info-soft);
+  border-color: color-mix(in srgb, currentColor 45%, transparent);
   color: var(--info);
 }
 .source-tag[data-tone='setup'] {
@@ -17760,7 +17708,7 @@ button.settings-row-head:hover,
   top: 8px;
   padding: 2px 8px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--surface) 88%, transparent);
   font-size: var(--type-micro);
   font-weight: var(--fw-strong);
@@ -17904,7 +17852,8 @@ button.shortlist-title:hover {
   align-items: center;
   gap: 5px;
   height: 24px;
-  padding: 0 9px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
   border-radius: var(--radius-chip);
   font-size: var(--type-micro);
   font-weight: var(--fw-semibold);
@@ -18260,9 +18209,6 @@ button.shortlist-title:hover {
   font-weight: var(--fw-bold);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.chapter-notes-anchor {
-  display: inline-flex;
 }
 
 /* The margin sits on the reader's own background, which is dark in every theme, so its loose text

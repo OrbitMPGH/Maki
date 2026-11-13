@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { plural, t as staticT } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { ActionIcon, Badge, Box, Group, Loader, Menu, Popover, Progress, Skeleton, Switch, Table, Text, Tooltip } from '@mantine/core'
+import { ActionIcon, Box, Group, Loader, Menu, Popover, Progress, Skeleton, Switch, Table, Text, Tooltip } from '@mantine/core'
 import {
   IconBook,
   IconChevronDown,
@@ -290,7 +290,7 @@ export const ChapterRow = memo(function ChapterRow({
                 return (
                     <LightGroup gap={4} wrap="wrap">
                       <HoverTooltip label={origin.hint} withArrow disabled={!origin.hint}>
-                        <LightBadge variant={origin.scraped ? 'light' : 'outline'} color="var(--neutral)">
+                        <LightBadge color="var(--neutral)">
                           {origin.label}
                         </LightBadge>
                       </HoverTooltip>
@@ -325,17 +325,15 @@ export const ChapterRow = memo(function ChapterRow({
                                   aria-label={t`Download progress`}
                               />
                           )}
-                          <Badge
-                              size="sm"
+                          <LightBadge
                               color={queueTone}
-                              variant="light"
                               leftSection={<visual.Icon size={12} />}
                               className="tnum"
                           >
                             {queueItem.pagesTotal > 0
                                 ? `${renderLabel(visual.label)} ${queueItem.pagesDone}/${queueItem.pagesTotal}`
                                 : renderLabel(visual.label)}
-                          </Badge>
+                          </LightBadge>
                         </Group>
                       </Tooltip>
                   )
@@ -440,7 +438,6 @@ export const ChapterRow = memo(function ChapterRow({
                 >
                   <LightBadge
                       color={watched ? 'var(--anime)' : 'var(--brand)'}
-                      variant={watched || external ? 'light' : 'filled'}
                       leftSection={
                         watched ? <IconDeviceTv size={12} /> : <IconEyeCheck size={12} />
                       }
@@ -669,7 +666,7 @@ function OfflineBadge({ record, saving }: { record: OfflineChapter; saving: Save
   }
   return (
       <HoverTooltip label={t`Saved on this device for offline reading`} withArrow>
-        <LightBadge color="var(--info)" leftSection={<IconDeviceMobileCheck size={12} />}>
+        <LightBadge color="var(--ok)" leftSection={<IconDeviceMobileCheck size={12} />}>
           <Trans>On this device</Trans>
         </LightBadge>
       </HoverTooltip>
@@ -756,17 +753,15 @@ export const ChapterSpanRow = memo(function ChapterSpanRow({
         <Table.Td className={hasAnimeMarkers ? 'chapter-cell' : undefined}>
           <Group gap={6} wrap="nowrap">
             <span className="chapter-lead-slot">
-              <Badge
-                  size="sm"
+              <LightBadge
                   color="var(--anime)"
-                  variant="light"
                   leftSection={<IconDeviceTv size={12} />}
                   className="chapter-span-badge"
                   data-span-fold={span.key}
                   {...pressable(() => actions.toggleSpanFold(span.key))}
               >
                 {span.label}
-              </Badge>
+              </LightBadge>
             </span>
             <Text size="sm" fw={600} className="tnum chapter-label chapter-number">
               {spanRangeLabel(span)}
@@ -959,7 +954,7 @@ export const ChapterVolumeRow = memo(function ChapterVolumeRow({
             {volume === null ? (
                 <Text size="sm" fw={600} className="chapter-label">{name}</Text>
             ) : (
-                <Badge size="sm" color="var(--volume)" variant="light" className="tnum chapter-label">{name}</Badge>
+                <LightBadge color="var(--volume)" className="tnum chapter-label">{name}</LightBadge>
             )}
           </Group>
         </Table.Td>

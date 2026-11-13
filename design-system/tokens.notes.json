@@ -60,6 +60,7 @@
     "q-scanlator": "Quality tier Scanlator, silver on the medal scale. Same places as q-official.",
     "q-aggregator": "Quality tier Aggregator, bronze on the medal scale. Same places as q-official. Unknown is neutral and Volume is volume.",
     "neutral": "Unknown or idle status; the fallback for any unmapped state. As text or a dot on surface and surface-2.",
+    "brand-soft": "Tinted fill behind a selected or current item: accent at 15%. Selection is the accent, never a state hue.",
     "ok-soft": "Tinted fill behind ok text: ok at 15%. Pair with ok as the foreground.",
     "warn-soft": "Tinted fill behind warn text: warn at 15%. Pair with warn as the foreground.",
     "info-soft": "Tinted fill behind info text: info at 15%. Pair with info as the foreground.",

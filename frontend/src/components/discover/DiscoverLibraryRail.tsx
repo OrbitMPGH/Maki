@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Alert, Badge, Button, Group, SegmentedControl, Stack, Switch, Text, Title, Tooltip } from '@mantine/core'
 import { notifications } from '../../lib/toast'
-import { IconArrowRight, IconCheck, IconEye, IconEyeOff, IconFolder, IconPlus, IconRanking } from '../../lib/icons'
+import { IconArrowRight, IconClock, IconEye, IconEyeOff, IconFolder, IconPlus, IconRanking } from '../../lib/icons'
 import {
   useAddSeries,
   useLibrarySettings,
@@ -516,7 +516,7 @@ export function DiscoverLibraryRail({
           <Title order={2} size="h3" fz="var(--type-subhead)">
             <Trans>Requested</Trans>
           </Title>
-          <Alert color="var(--ok)" variant="light" icon={<IconCheck size={16} />} mt="md">
+          <Alert color="var(--warn)" variant="light" icon={<IconClock size={16} />} mt="md">
             <Trans>An admin decides where it lands and what gets downloaded.</Trans>
           </Alert>
         </>

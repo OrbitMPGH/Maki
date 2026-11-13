@@ -30,6 +30,24 @@ export const BehindAndQueued: Story = {
   },
 }
 
+/** The grid card's pill: unread files in the latest batch, not every unread chapter. */
+export const NewChapters: Story = {
+  args: { series: { ...byId(1), newChapterCount: 2 } },
+  play: async ({ canvas }) => {
+    const pill = await canvas.findByText('2 new')
+    await expect(pill).toBeVisible()
+    await expect(pill.closest('[data-tip]')).toHaveAttribute('data-tip', '2 recent chapter files')
+  },
+}
+
+export const NothingNew: Story = {
+  args: { series: { ...byId(1), newChapterCount: 0 } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('140/142')).toBeVisible()
+    await expect(canvas.queryByText(/new$/)).toBeNull()
+  },
+}
+
 export const Completed: Story = {
   args: { series: byId(10) },
   play: async ({ canvas }) => {
