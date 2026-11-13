@@ -30,6 +30,10 @@ public class UpgradeScanJob(
             {
                 tracker?.Finished(seriesId, await scans.ScanSeriesAsync(seriesId, ct));
             }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                tracker?.Ended(seriesId, "cancelled");
+            }
             catch (UpgradeScanBusyException)
             {
                 tracker?.Ended(seriesId, "busy");
@@ -66,10 +70,14 @@ public class UpgradeScanJob(
             logger.LogDebug("Upgrade scan skipped; one is already running");
             return;
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested && !JobOutcome.StoppedByAdmin(context))
+        {
+            // Shutdown mid-scan: leave the day open so the next boot runs it. An admin's Stop falls
+            // through and closes the day, or the next 15-minute tick would start the scan again.
+            return;
+        }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            // Shutdown mid-scan: leave the day open so the next boot runs it.
-            return;
         }
         catch (Exception ex)
         {

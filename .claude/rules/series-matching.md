@@ -39,6 +39,7 @@ paths:
   - "src/Maki.Core/Scrobbling/ScrobbleMatching.cs"
   - "src/Maki.Core/Sources/SourceExternalIds.cs"
   - "src/Maki.Core/Entities/SeriesIdentity.cs"
+  - "src/Maki.Core/Entities/SourceNearMiss.cs"
   - "src/Maki.Core/Entities/SeriesMetadataField.cs"
   - "src/Maki.Api/Controllers/MediaCoverController.cs"
   - "src/Maki.Api/Jobs/ImageCacheRebuildJob.cs"

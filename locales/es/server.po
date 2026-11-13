@@ -1034,6 +1034,11 @@ msgstr "La plantilla de URL de capítulo no reconstruye los enlaces que muestra 
 msgid "error.customSource.test.sampleChapterNotListed"
 msgstr "La URL del capítulo de muestra no está en la lista de capítulos."
 
+#. English: The sample chapter is listed as locked. Pick a free chapter as the sample.
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleChapterLocked"
+msgstr ""
+
 #. English: The first page did not come back as an image.
 #: src/Maki.Api/Services/CustomSourceTester.cs
 #, fuzzy
@@ -1929,6 +1934,12 @@ msgstr "La ubicación original está fuera de la carpeta raíz o detrás de un e
 msgid "error.release.grabFailed"
 msgstr "No se pudo enviar la versión a qBittorrent. Los detalles están en el registro del servidor."
 
+#. A torrent grab refused because the series' root folder has less free space than its threshold.
+#. English: The library folder for this series is low on free space, so new downloads into it are on hold. Free some space or lower the threshold in Settings → Library.
+#: src/Maki.Api/Services/DownloadDiskHold.cs
+msgid "error.release.diskLow"
+msgstr ""
+
 #. English: This release has no download link
 #: src/Maki.Api/Services/ReleaseService.cs
 #, fuzzy
@@ -2106,6 +2117,12 @@ msgstr "Usuario desconocido"
 #, fuzzy
 msgid "error.requests.unknownKind"
 msgstr "Tipo de solicitud desconocido"
+
+#. A root folder's free-space threshold for holding downloads was below zero.
+#. English: The free space to keep must be zero or more
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.minFreeNegative"
+msgstr ""
 
 #. English: Root folder already exists
 #: src/Maki.Api/Controllers/RootFolderController.cs
@@ -3348,6 +3365,24 @@ msgstr "El tiempo de espera de descarga debe ser 0, sin límite, o estar entre {
 msgid "error.settings.bulkHoldRange"
 msgstr "El umbral de retención debe estar entre 0 (desactivado) y {max} capítulos"
 
+#. The stall limit for torrents, in hours. 0 turns stall handling off.
+#. English: The stall limit must be between 0 (off) and {max} hours
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.stallHoursRange"
+msgstr ""
+
+#. The seed ratio a torrent must reach before Maki removes it from the download client.
+#. English: The seed ratio must be between 0 and {max}
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.seedRatioRange"
+msgstr ""
+
+#. The seeding time a torrent must reach before Maki removes it from the download client, in minutes.
+#. English: The seeding time must be between 0 and {max} minutes
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.seedMinutesRange"
+msgstr ""
+
 #. {mode} is the value that was sent and is never translated.
 #. English: Unknown torrent removal mode: {mode}
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -3421,6 +3456,11 @@ msgstr "Las búsquedas de volúmenes por ejecución deben estar entre {min} y {m
 #, fuzzy
 msgid "error.settings.upgradesProposalExpiryDaysRange"
 msgstr "La caducidad de las propuestas debe estar entre {min} y {max} días"
+
+#. English: Minimum seeders must be between {min} and {max}
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.upgradesTorrentMinSeedersRange"
+msgstr ""
 
 #. English: Backups to keep must be between {min} and {max}
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -5141,11 +5181,19 @@ msgstr "El torrent está en el cliente de descargas, pero otra descarga de {seri
 msgid "error.download.torrentRemoved"
 msgstr "El torrent ya no está en qBittorrent"
 
-#. The download client was downloading this torrent but it made no progress for an hour, usually because
-#. nobody is seeding it. Maki takes a torrent it added out of the client and leaves the release out of later searches.
-#. English: The torrent made no progress for an hour
+#. The download client was downloading this torrent but it made no progress for as long as the stall limit in the
+#. download client settings allows (an hour unless changed). Maki takes a torrent it added out of the client, leaves
+#. the release out of later searches and looks for another one.
+#. English: The torrent made no progress within the stall limit
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
 msgid "error.download.torrentStalled"
+msgstr ""
+
+#. The download client was downloading this torrent but no seed or peer was connected to it for as long as the
+#. stall limit allows. Handled like a torrent that made no progress.
+#. English: No seeds or peers connected to the torrent within the stall limit
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "error.download.torrentNoPeers"
 msgstr ""
 
 #. The download client has held this torrent in an error state for half an hour. The client's own message follows.
@@ -5832,6 +5880,11 @@ msgstr "El contenido del archivo cambió, o no se escaneó por completo. Vuelve 
 #, fuzzy
 msgid "error.health.operationActive"
 msgstr "Hay otra operación en curso sobre este archivo."
+
+#. English: This job is already running.
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.jobRunning"
+msgstr ""
 
 #. English: Downloads or imports for this series are in progress.
 #: src/Maki.Api/Services/HealthOperationService.cs

@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    [Migration("20261112233439_LibraryOutputLanes")]
-    partial class LibraryOutputLanes
+    [Migration("20261113001712_SourceLanes")]
+    partial class SourceLanes
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -282,9 +282,6 @@ namespace Maki.Data.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
-                    b.Property<int?>("SplitPageCount")
-                        .HasColumnType("INTEGER");
-
                     b.Property<int>("Tier")
                         .HasColumnType("INTEGER");
 
@@ -468,9 +465,6 @@ namespace Maki.Data.Migrations
                     b.Property<string>("Title")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("Url")
-                        .HasColumnType("TEXT");
-
                     b.Property<int?>("Volume")
                         .HasColumnType("INTEGER");
 
@@ -525,6 +519,12 @@ namespace Maki.Data.Migrations
                     b.Property<int?>("HealthOperationId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("LastPeerSeenAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastProgressAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("NextAttempt")
                         .HasColumnType("TEXT");
 
@@ -538,6 +538,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("PreferredMappingId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Priority")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Protocol")
@@ -566,6 +569,9 @@ namespace Maki.Data.Migrations
 
                     b.Property<int?>("SourceMappingId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
@@ -596,10 +602,10 @@ namespace Maki.Data.Migrations
 
                     b.HasIndex("Status");
 
-                    b.HasIndex("SortOrder", "QueuedAt")
+                    b.HasIndex("Priority", "SortOrder", "QueuedAt")
                         .HasFilter("\"Status\" NOT IN (6, 8)");
 
-                    b.HasIndex("Protocol", "Status", "SortOrder", "QueuedAt");
+                    b.HasIndex("Protocol", "Status", "Priority", "SortOrder", "QueuedAt");
 
                     b.ToTable("DownloadQueue");
                 });
@@ -1253,9 +1259,6 @@ namespace Maki.Data.Migrations
                     b.Property<string>("SourceFormat")
                         .HasColumnType("TEXT");
 
-                    b.Property<string>("SplitPages")
-                        .HasColumnType("TEXT");
-
                     b.Property<long?>("TrashBytes")
                         .HasColumnType("INTEGER");
 
@@ -1838,6 +1841,9 @@ namespace Maki.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<long?>("MinFreeBytes")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Path")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -1845,35 +1851,6 @@ namespace Maki.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("RootFolders");
-                });
-
-            modelBuilder.Entity("Maki.Core.Entities.RootFolderRule", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("ConditionsJson")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("Enabled")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("Position")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<int>("RootFolderId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RootFolderId");
-
-                    b.ToTable("RootFolderRules");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.SavedFilter", b =>
@@ -2142,6 +2119,10 @@ namespace Maki.Data.Migrations
                     b.Property<string>("AuthorStory")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("BlockedGroups")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ContentRating")
                         .HasColumnType("TEXT");
 
@@ -2224,6 +2205,10 @@ namespace Maki.Data.Migrations
 
                     b.Property<int>("PendingImportLink")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("PreferredGroups")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<int?>("PrepareChapters")
                         .HasColumnType("INTEGER");
@@ -2603,6 +2588,60 @@ namespace Maki.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("SourceMappings");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.SourceNearMiss", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Author")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CoverUrl")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DismissedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Language")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Score")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SourceName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceSeriesId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeriesId", "SourceName", "SourceSeriesId")
+                        .IsUnique();
+
+                    b.ToTable("SourceNearMisses");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.SourceQualitySample", b =>
@@ -3802,17 +3841,6 @@ namespace Maki.Data.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Maki.Core.Entities.RootFolderRule", b =>
-                {
-                    b.HasOne("Maki.Core.Entities.RootFolder", "RootFolder")
-                        .WithMany()
-                        .HasForeignKey("RootFolderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("RootFolder");
-                });
-
             modelBuilder.Entity("Maki.Core.Entities.SavedFilter", b =>
                 {
                     b.HasOne("Maki.Data.Identity.MakiUser", null)
@@ -3989,6 +4017,15 @@ namespace Maki.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Series");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.SourceNearMiss", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.SourceQualitySample", b =>

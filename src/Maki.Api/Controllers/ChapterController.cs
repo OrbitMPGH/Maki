@@ -829,7 +829,7 @@ public class ChapterController(
             {
                 var replaceInfo = await ReplaceInfoAsync(chapter.Id, request.SourceName, evaluator, ct);
                 if (await queue.EnqueueChapterAsync(chapter.Id, ct, DownloadOrigin.Manual, currentUser.UserId,
-                        replaceInfo: replaceInfo) is { } item)
+                        replaceInfo: replaceInfo, priority: QueuePriorities.For(DownloadOrigin.Manual, candidates.Count > 1)) is { } item)
                 {
                     queued++;
                     queuedItemIds.Add(item.Id);

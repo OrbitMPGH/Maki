@@ -22,7 +22,8 @@ public partial class DelugeClient : ITorrentClient
     private static readonly string[] ListKeys =
     [
         "hash", "name", "progress", "state", "is_finished", "download_location",
-        "move_completed", "move_completed_path", "time_added", "message",
+        "move_completed", "move_completed_path", "time_added", "message", "num_seeds", "num_peers", "ratio",
+        "seeding_time",
     ];
 
     private readonly SemaphoreSlim _loginLock = new(1, 1);
@@ -233,7 +234,39 @@ public partial class DelugeClient : ITorrentClient
             string.IsNullOrWhiteSpace(message) ? null : message,
             (settling && !errored)
             || state.Equals("Queued", StringComparison.OrdinalIgnoreCase)
-            || state.Equals("Paused", StringComparison.OrdinalIgnoreCase));
+            || state.Equals("Paused", StringComparison.OrdinalIgnoreCase),
+            Has(t, "num_seeds") || Has(t, "num_peers") ? (int)(Number(t, "num_seeds") + Number(t, "num_peers")) : null,
+            Has(t, "ratio") && Number(t, "ratio") >= 0 ? Number(t, "ratio") : null,
+            Has(t, "seeding_time") ? TimeSpan.FromSeconds(Math.Max(0, Number(t, "seeding_time"))) : null);
+    }
+
+    private static bool Has(JsonElement e, string name) =>
+        e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number;
+
+    /// <summary>
+    /// The "share ratio reached" stop from the Queue preferences when it is on. Deluge's seed time settings
+    /// only rotate the seeding queue and never stop a torrent, so no time is read.
+    /// </summary>
+    public async Task<TorrentSeedLimits> GetSeedLimitsAsync(TorrentClientSettings settings, CancellationToken ct = default)
+    {
+        await EnsureConnectedAsync(settings, ct);
+        JsonElement config;
+        try
+        {
+            config = await CallAsync(settings, "core.get_config_values", ct, (object)new[] { "stop_seed_at_ratio", "stop_seed_ratio" });
+        }
+        catch (DelugeRpcException ex)
+        {
+            throw new TorrentClientException(TorrentClientFailure.Unreachable, "Deluge could not read its settings: " + ex.Message, ex);
+        }
+
+        if (config.ValueKind != JsonValueKind.Object || !Bool(config, "stop_seed_at_ratio") || !Has(config, "stop_seed_ratio"))
+        {
+            return TorrentSeedLimits.None;
+        }
+
+        var ratio = Number(config, "stop_seed_ratio");
+        return new TorrentSeedLimits(ratio >= 0 ? Math.Round(ratio, 3) : null, null);
     }
 
     private static string ContentPath(JsonElement t, bool finished)

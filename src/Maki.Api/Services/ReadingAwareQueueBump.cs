@@ -145,7 +145,8 @@ public class ReadingAwareQueueBump(
         var front = await db.DownloadQueue
             .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
                         (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited))
-            .OrderBy(q => q.SortOrder)
+            .OrderBy(q => q.Priority)
+            .ThenBy(q => q.SortOrder)
             .ThenBy(q => q.QueuedAt)
             .Select(q => new { q.Id, q.SortOrder })
             .Take(next.Count)
@@ -155,9 +156,13 @@ public class ReadingAwareQueueBump(
             return 0;
         }
 
-        // Below the lowest SortOrder in the queue, so nobody else is renumbered. A row a worker
+        // Below the lowest SortOrder in the queue, so nobody else is renumbered, and into the High
+        // class, so a backlog row the reader is about to reach passes new releases too. A row a worker
         // claimed since the read no longer matches the status filter and keeps its place.
-        var floor = front.Count == 0 ? 0 : front[0].SortOrder;
+        var floor = await db.DownloadQueue
+            .Where(q => q.Protocol == AcquisitionProtocol.Scraper &&
+                        (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited))
+            .MinAsync(q => (int?)q.SortOrder, ct) ?? 0;
         var moved = 0;
         for (var i = 0; i < next.Count; i++)
         {
@@ -166,7 +171,9 @@ public class ReadingAwareQueueBump(
             moved += await db.DownloadQueue
                 .Where(q => q.Id == id &&
                             (q.Status == QueueStatus.Queued || q.Status == QueueStatus.RateLimited))
-                .ExecuteUpdateAsync(s => s.SetProperty(q => q.SortOrder, order), ct);
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(q => q.SortOrder, order)
+                    .SetProperty(q => q.Priority, QueuePriority.High), ct);
         }
 
         if (moved > 0)

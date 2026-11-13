@@ -522,6 +522,12 @@ namespace Maki.Data.Migrations
                     b.Property<int?>("HealthOperationId")
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("LastPeerSeenAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastProgressAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("NextAttempt")
                         .HasColumnType("TEXT");
 
@@ -535,6 +541,9 @@ namespace Maki.Data.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<int?>("PreferredMappingId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Priority")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Protocol")
@@ -563,6 +572,9 @@ namespace Maki.Data.Migrations
 
                     b.Property<int?>("SourceMappingId")
                         .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("TEXT");
 
                     b.Property<int>("Status")
                         .HasColumnType("INTEGER");
@@ -593,10 +605,10 @@ namespace Maki.Data.Migrations
 
                     b.HasIndex("Status");
 
-                    b.HasIndex("SortOrder", "QueuedAt")
+                    b.HasIndex("Priority", "SortOrder", "QueuedAt")
                         .HasFilter("\"Status\" NOT IN (6, 8)");
 
-                    b.HasIndex("Protocol", "Status", "SortOrder", "QueuedAt");
+                    b.HasIndex("Protocol", "Status", "Priority", "SortOrder", "QueuedAt");
 
                     b.ToTable("DownloadQueue");
                 });
@@ -1835,6 +1847,9 @@ namespace Maki.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<long?>("MinFreeBytes")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Path")
                         .IsRequired()
                         .HasColumnType("TEXT");
@@ -2139,6 +2154,10 @@ namespace Maki.Data.Migrations
                     b.Property<string>("AuthorStory")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("BlockedGroups")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("ContentRating")
                         .HasColumnType("TEXT");
 
@@ -2221,6 +2240,10 @@ namespace Maki.Data.Migrations
 
                     b.Property<int>("PendingImportLink")
                         .HasColumnType("INTEGER");
+
+                    b.Property<string>("PreferredGroups")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
                     b.Property<int?>("PrepareChapters")
                         .HasColumnType("INTEGER");
@@ -2600,6 +2623,60 @@ namespace Maki.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("SourceMappings");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.SourceNearMiss", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Author")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("CoverUrl")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("DismissedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Language")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("Score")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("SourceName")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("SourceSeriesId")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeriesId", "SourceName", "SourceSeriesId")
+                        .IsUnique();
+
+                    b.ToTable("SourceNearMisses");
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.SourceQualitySample", b =>
@@ -3986,6 +4063,15 @@ namespace Maki.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Series");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.SourceNearMiss", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.SourceQualitySample", b =>

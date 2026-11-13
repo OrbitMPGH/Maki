@@ -52,7 +52,10 @@ public record ReleaseResultDto(
 }
 
 /// <summary><see cref="Tried"/> lists every query sent, in order, so the dialog can say what an empty search covered.</summary>
-public record ReleaseSearchResponse(string Query, IReadOnlyList<string> Tried, IReadOnlyList<ReleaseResultDto> Releases);
+/// <param name="MinSeeders">The fewest seeders Maki takes a release with on its own, so the dialog can mark the ones below it.</param>
+public record ReleaseSearchResponse(
+    string Query, IReadOnlyList<string> Tried, IReadOnlyList<ReleaseResultDto> Releases,
+    int MinSeeders = UpgradeOptions.DefaultMinSeeders);
 
 /// <summary>
 /// Payload persisted on torrent queue items (DownloadQueueItem.ReleaseInfoJson). <see cref="ContentPath"/>
@@ -96,7 +99,8 @@ public class ReleaseService(
     TorrentClientRegistry torrentClients,
     SettingsService settings,
     ILogger<ReleaseService> logger,
-    TorrentPollState? pollState = null)
+    TorrentPollState? pollState = null,
+    DownloadDiskHold? diskHold = null)
 {
     public virtual async Task<ReleaseSearchResult> SearchAsync(int seriesId, string? query = null, CancellationToken ct = default)
     {
@@ -199,6 +203,8 @@ public class ReleaseService(
         {
             throw new ReleaseRefusedException(ReleaseRefusedException.SeriesArchived, "Series is archived");
         }
+
+        if (diskHold is not null) await diskHold.ThrowIfGrabHeldAsync(db, seriesId, ct);
 
         var client = await GetClientSettingsAsync(ct);
         if (release.MagnetUrl is null && release.DownloadUrl is null)

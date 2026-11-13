@@ -57,7 +57,10 @@ public sealed record TorrentClientSettings(
 /// file of a single-file torrent or the root folder of a multi-file one, in the client's own view
 /// of the filesystem (the caller applies the path map). <see cref="Hash"/> is lowercase hex.
 /// <see cref="IsHeld"/> means the client itself is not downloading it right now (queued, paused,
-/// checking, moving), so a lack of progress says nothing about its peers.
+/// checking, moving), so a lack of progress says nothing about its peers. <see cref="Peers"/> counts
+/// the seeds and peers connected right now, <see cref="Ratio"/> is uploaded over downloaded
+/// (infinity when nothing was downloaded but something was uploaded) and <see cref="SeedingTime"/>
+/// how long it has seeded; each is null when the client does not report it.
 /// </summary>
 public sealed record ClientTorrent(
     string Hash,
@@ -68,7 +71,19 @@ public sealed record ClientTorrent(
     DateTimeOffset AddedAt,
     bool IsErrored,
     string? Message,
-    bool IsHeld = false);
+    bool IsHeld = false,
+    int? Peers = null,
+    double? Ratio = null,
+    TimeSpan? SeedingTime = null);
+
+/// <summary>
+/// The limits a client applies to seeding by default, as Maki's targets for the after-seeding removal.
+/// Null where the client has no such limit or has it switched off.
+/// </summary>
+public sealed record TorrentSeedLimits(double? Ratio, int? SeedingMinutes)
+{
+    public static readonly TorrentSeedLimits None = new(null, null);
+}
 
 public enum TorrentClientFailure
 {
@@ -144,6 +159,9 @@ public interface ITorrentClient
     /// </summary>
     Task<TorrentRemoval> RemoveAsync(
         TorrentClientSettings settings, string hash, bool deleteData, CancellationToken ct = default);
+
+    /// <summary>The client's own default seed limits, read when a client is added or on request.</summary>
+    Task<TorrentSeedLimits> GetSeedLimitsAsync(TorrentClientSettings settings, CancellationToken ct = default);
 }
 
 /// <summary>The one place that reads the stored download client settings and applies their defaults.</summary>
@@ -174,13 +192,57 @@ public static class TorrentRemovalModes
     public const string Never = "never";
     public const string AfterImport = "afterimport";
 
+    /// <summary>After the import, once the torrent reaches the seed ratio or seed time target, whichever comes first.</summary>
+    public const string AfterSeeding = "afterseeding";
+
     /// <summary>Unset reads as <see cref="Never"/>; null for anything else, which a write refuses.</summary>
     public static string? Parse(string? value) => value?.Trim().ToLowerInvariant() switch
     {
         null or "" or Never => Never,
         AfterImport => AfterImport,
+        AfterSeeding => AfterSeeding,
         _ => null,
     };
+
+    public static bool Removes(string? mode) => mode is AfterImport or AfterSeeding;
+}
+
+/// <summary>
+/// The seed targets stored with the download client (<see cref="SettingKeys.DownloadClientSeedRatio"/>,
+/// <see cref="SettingKeys.DownloadClientSeedMinutes"/>). A torrent has seeded enough once either is met.
+/// </summary>
+public sealed record TorrentSeedTargets(double? Ratio, int? Minutes)
+{
+    public bool IsEmpty => Ratio is null && Minutes is null;
+
+    /// <summary>Whether the torrent met either target. False with no targets, which keeps it seeding.</summary>
+    public bool MetBy(ClientTorrent torrent) =>
+        (Ratio is { } ratio && torrent.Ratio is { } has && has >= ratio) ||
+        (Minutes is { } minutes && torrent.SeedingTime is { } seeded && seeded >= TimeSpan.FromMinutes(minutes));
+
+    public static async Task<TorrentSeedTargets> LoadAsync(IAppSettings settings, CancellationToken ct = default) => new(
+        ParseRatio(await settings.GetAsync(SettingKeys.DownloadClientSeedRatio, ct)),
+        ParseMinutes(await settings.GetAsync(SettingKeys.DownloadClientSeedMinutes, ct)));
+
+    public static async Task SaveAsync(IAppSettings settings, TorrentSeedTargets targets, CancellationToken ct = default)
+    {
+        await settings.SetAsync(SettingKeys.DownloadClientSeedRatio,
+            targets.Ratio?.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture), ct);
+        await settings.SetAsync(SettingKeys.DownloadClientSeedMinutes,
+            targets.Minutes?.ToString(System.Globalization.CultureInfo.InvariantCulture), ct);
+    }
+
+    public static double? ParseRatio(string? value) =>
+        double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture,
+            out var ratio) && ratio >= 0 && double.IsFinite(ratio)
+            ? ratio
+            : null;
+
+    public static int? ParseMinutes(string? value) =>
+        int.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture,
+            out var minutes) && minutes >= 0
+            ? minutes
+            : null;
 }
 
 /// <summary>Resolves the configured kind to its driver. One instance per kind is registered in DI.</summary>

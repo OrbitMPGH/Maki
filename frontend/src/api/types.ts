@@ -369,6 +369,9 @@ export interface RootFolder {
   path: string
   freeSpace: number | null
   accessible: boolean
+  /** Downloads into this folder wait while free space is below this. Null is the default, 0 never holds. */
+  minFreeBytes?: number | null
+  defaultMinFreeBytes?: number
 }
 
 /** A file's release tier and archive stats, as the quality backfill measures it. */
@@ -528,7 +531,13 @@ export interface QueueItemDto {
   /** Set only when `origin` is 'upgrade'. */
   upgrade: UpgradeQueueInfoDto | null
   seriesCoverUrl: string | null
+  /** Claim class: every 'high' row is taken before any 'normal' one, and those before 'low'. */
+  priority?: QueuePriority
+  /** The series' root folder, which a low disk space hold is keyed by. */
+  rootFolderId?: number
 }
+
+export type QueuePriority = 'high' | 'normal' | 'low'
 
 export interface QueueHistoryDto {
   items: QueueItemDto[]
@@ -576,6 +585,24 @@ export interface QueuePauseEntry {
 export interface QueuePauseDto {
   all: QueuePauseEntry | null
   sources: { sourceName: string; until: string | null }[]
+  /** Series paused on their own. Missing from a server older than series pauses. */
+  series?: { seriesId: number; title: string; until: string | null }[]
+  /** Root folders below their free space threshold. These lift by themselves when space returns. */
+  diskHolds?: QueueDiskHold[]
+}
+
+export interface QueueDiskHold {
+  rootFolderId: number
+  path: string
+  freeBytes: number
+  minFreeBytes: number
+}
+
+/** Rough time left, in seconds. Null wherever there is too little download history to say. */
+export interface QueueEtaDto {
+  queueSeconds: number | null
+  series: { seriesId: number; seconds: number | null; held: boolean }[]
+  held: boolean
 }
 
 /** `source` unset pauses every scraper download; `resumeAt` unset pauses until resumed. */
@@ -668,6 +695,20 @@ export interface SourceMappingDto {
   /** Null on upgraded or newly linked mappings until their first successful chapter refresh. */
   chapterSnapshotAt: string | null
   origin: 'Unknown' | 'TitleSearch' | 'CrossId' | 'Manual'
+}
+
+/** The best result a source search returned that fell just short of an automatic match. */
+export interface SourceNearMissDto {
+  id: number
+  sourceName: string
+  sourceSeriesId: string
+  title: string
+  url: string
+  coverUrl: string | null
+  author: string | null
+  language: string | null
+  description: string | null
+  score: number
 }
 
 export interface ComparePage {

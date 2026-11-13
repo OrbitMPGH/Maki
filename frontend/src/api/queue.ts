@@ -1,6 +1,6 @@
 import { msg } from '@lingui/core/macro'
 import { t as now } from '@lingui/core/macro'
-import { chapterLabel } from '../format'
+import { chapterLabel, formatTimeSpent } from '../format'
 import type { MessageDescriptor } from '@lingui/core'
 import type { QueueItemDto, QueueOrigin, QueuePauseDto } from './types'
 import { upgradeReasonLabel } from './upgrades'
@@ -15,10 +15,55 @@ const QUEUE_ORIGINS: QueueOrigin[] = [
   'upgrade',
 ]
 
-/** True when a scraper row waiting in the queue is held back by the pause rather than by anything wrong with it. */
-export function isHeldByPause(pause: QueuePauseDto | undefined, sourceName: string): boolean {
-  if (!pause || sourceName === 'torrent') return false
-  return pause.all !== null || pause.sources.some((s) => s.sourceName === sourceName)
+/**
+ * Why a scraper row waiting in the queue is held back, when it is held rather than wrong: `paused`
+ * for a pause on everything, its source or its series, `disk` while its root folder is low on space.
+ */
+export function queueHold(
+  pause: QueuePauseDto | undefined,
+  item: Pick<QueueItemDto, 'sourceName' | 'seriesId' | 'rootFolderId'>,
+): 'paused' | 'disk' | null {
+  if (!pause || item.sourceName === 'torrent') return null
+  if (
+    pause.all !== null ||
+    pause.sources.some((s) => s.sourceName === item.sourceName) ||
+    (pause.series ?? []).some((s) => s.seriesId === item.seriesId)
+  ) {
+    return 'paused'
+  }
+  if ((pause.diskHolds ?? []).some((h) => h.rootFolderId === item.rootFolderId)) return 'disk'
+  return null
+}
+
+/** True when a scraper row waiting in the queue is held back by a pause or a low disk rather than by anything wrong with it. */
+export function isHeldByPause(
+  pause: QueuePauseDto | undefined,
+  item: Pick<QueueItemDto, 'sourceName' | 'seriesId' | 'rootFolderId'>,
+): boolean {
+  return queueHold(pause, item) !== null
+}
+
+/** Whether this series' own pause is on, as opposed to one on everything or on a source. */
+export function isSeriesPaused(pause: QueuePauseDto | undefined, seriesId: number): boolean {
+  return (pause?.series ?? []).some((s) => s.seriesId === seriesId)
+}
+
+/**
+ * "About 40m left". Rounded harder the further out it is, because the estimate is rough and a
+ * figure to the minute two hours out would claim more than it knows.
+ */
+export function queueEtaText(seconds: number): string {
+  if (seconds < 60) return now`Less than a minute left`
+  const span = queueEtaSpan(seconds)
+  return now`About ${span} left`
+}
+
+/** The rounded span alone, "40m" or "2h 15m", for a figure that is already labelled as time left. */
+export function queueEtaSpan(seconds: number): string {
+  if (seconds < 60) return formatTimeSpent(seconds)
+  const minutes = seconds / 60
+  const step = minutes < 10 ? 1 : minutes < 60 ? 5 : 15
+  return formatTimeSpent(Math.max(step, Math.round(minutes / step) * step) * 60)
 }
 
 /** A newer server can send an origin this build has no case for; treat it as 'unknown' rather than crash. */
@@ -76,7 +121,8 @@ const ERROR_LABELS: Record<string, MessageDescriptor> = {
   'error.download.pickedSourceUnavailable': msg`The source you picked could not provide this chapter`,
   'error.download.rootFolderUnavailable': msg`The library folder is not available, check that its drive or share is mounted`,
   'error.download.torrentRemoved': msg`The torrent is no longer in the download client`,
-  'error.download.torrentStalled': msg`The torrent made no progress for an hour`,
+  'error.download.torrentStalled': msg`The torrent made no progress within the stall limit`,
+  'error.download.torrentNoPeers': msg`No seeds or peers connected to the torrent within the stall limit`,
   'error.download.torrentClientError': msg`The download client reports an error on this torrent`,
   'error.download.noEnabledMapping': msg`This series has no enabled sources`,
   'error.download.healthReviewActive': msg`A health review is active for this series`,

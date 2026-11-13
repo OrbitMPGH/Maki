@@ -12136,6 +12136,19 @@ body.reader-open {
   gap: var(--mantine-spacing-md);
 }
 
+/* Background work in progress: a live dot, what it is with its counts underneath, a link out. */
+.health-running-list {
+  margin-top: var(--mantine-spacing-md);
+}
+.health-running-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 9px 0;
+  border-top: 1px solid var(--hairline);
+}
+
 /* One check: state, what it says, what you can do about it. Baseline-aligned so the badge sits on
    the first line of a message that wraps, and hairline-separated rather than boxed - a panel of
    forty bordered rows reads as noise. */
@@ -15435,6 +15448,42 @@ button.settings-row-head:hover,
 }
 .report-row-error {
   color: var(--danger);
+}
+.group-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--mantine-radius-sm);
+}
+.group-list-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 2px 6px 2px 10px;
+}
+.group-list-row + .group-list-row {
+  border-top: 1px solid var(--border);
+}
+.group-list-rank {
+  width: 1.5em;
+  color: var(--ink-3);
+  font-size: var(--type-micro);
+}
+.group-list-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.report-row-extra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--ink-3);
+  font-size: var(--type-micro);
 }
 @media (max-width: 36em) {
   .wizard-step[data-state='todo'] .wizard-step-label,

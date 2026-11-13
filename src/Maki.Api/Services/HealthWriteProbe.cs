@@ -43,9 +43,13 @@ public sealed class HealthWriteProbe
         else _staging.TryRemove(rootId, out _);
     }
 
+    /// <summary>Raised by <see cref="Expire"/>; <see cref="DownloadDiskHold"/> re-reads free space on it.</summary>
+    public event Action? Expired;
+
     public void Expire()
     {
         _passed.Clear();
         _staging.Clear();
+        Expired?.Invoke();
     }
 }

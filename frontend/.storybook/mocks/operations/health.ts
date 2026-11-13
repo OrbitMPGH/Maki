@@ -16,9 +16,11 @@ import type {
   HealthScan,
   OperationDetail,
   OperationGroup,
+  RunningWork,
+  ScheduledJob,
   SourceFailures,
 } from '../../../src/api/health'
-import { api, cover, daysAgo, hoursAgo, minutesAgo } from '../api'
+import { api, cover, daysAgo, hoursAgo, minutesAgo, NOW } from '../api'
 
 const check = (id: string, category: string, status: string, message: string, over: Partial<HealthCheck> = {}): HealthCheck => ({
   id,
@@ -650,10 +652,61 @@ export const imageCache: ImageCacheInfo = {
   },
 }
 
+/** A job mid-run, a page conversion and downloads, with the controls each gets. */
+export const runningWork = {
+  process: { cpuPercent: 46.5, memoryBytes: 1_180_000_000, cores: 8 },
+  items: [
+    { kind: 'job', label: 'Refresh metadata', startedAtUtc: minutesAgo(4), control: 'stop', stopId: '6393012' },
+    { kind: 'prepareAhead', active: 1, waiting: 184 },
+    {
+      kind: 'pageConversion',
+      startedAtUtc: minutesAgo(52),
+      done: 312,
+      waiting: 1840,
+      detail: 'Lighthouse Keeper/Lighthouse Keeper v03.cbz',
+      control: 'pause',
+    },
+    { kind: 'downloads', active: 2, waiting: 14, control: 'pause' },
+  ],
+} satisfies RunningWork
+
+export const idleWork = { process: { cpuPercent: 0.4, memoryBytes: 240_000_000, cores: 8 }, items: [] } satisfies RunningWork
+
+const job = (name: string, label: string, intervalSeconds: number | null, over: Partial<ScheduledJob> = {}): ScheduledJob => ({
+  group: 'DEFAULT',
+  name,
+  label,
+  intervalSeconds,
+  lastRunUtc: intervalSeconds ? new Date(NOW.getTime() - intervalSeconds * 500).toISOString() : null,
+  nextRunUtc: intervalSeconds ? new Date(NOW.getTime() + intervalSeconds * 500).toISOString() : null,
+  running: false,
+  paused: false,
+  lastFailed: false,
+  heavy: false,
+  ...over,
+})
+
+export const scheduledJobs: ScheduledJob[] = [
+  job('metadata-refresh', 'Refresh metadata', 86_400, { running: true, lastRunUtc: minutesAgo(4) }),
+  job('health-check', 'Health checks', 900),
+  job('refresh-monitored', 'Check monitored series for new chapters', 900),
+  job('scheduled-backup', 'Scheduled backup', 3600, { lastFailed: true }),
+  job('housekeeping', 'Housekeeping', 86_400),
+  job('mangabaka-dump', 'Update the MangaBaka database', 21_600),
+  job('completed-downloads', 'Import completed downloads', 15),
+  job('scrobble', 'Scrobble sync', 60),
+  job('embedding-index', 'Build the search index', null, { heavy: true }),
+]
+
 /** Page images are served per archive; the shared generated page stands in for them. */
 const pageRedirect = (seed: string, n: string) => HttpResponse.redirect(`/mock/page/${encodeURIComponent(seed)}/${n}.svg`)
 
 export const healthHandlers = [
+  http.get(api('/health/running'), () => HttpResponse.json(idleWork)),
+  http.post(api('/health/running/jobs/:id/stop'), () => new HttpResponse(null, { status: 204 })),
+  http.post(api('/health/running/bulk/:id/stop'), () => new HttpResponse(null, { status: 204 })),
+  http.get(api('/health/scheduled'), () => HttpResponse.json(scheduledJobs)),
+  http.post(api('/health/scheduled/:group/:name/run'), () => new HttpResponse(null, { status: 204 })),
   http.get(api('/health'), () => HttpResponse.json(overview())),
   http.get(api('/health/files'), ({ request }) => {
     const params = new URL(request.url).searchParams

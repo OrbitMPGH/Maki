@@ -54,8 +54,17 @@ public static class SettingKeys
     public const string DownloadClientPathMapFrom = "downloadclient.pathmapfrom";
     /// <summary>...the path Maki can actually read (e.g. @"Z:\downloads"). Empty = no rewrite.</summary>
     public const string DownloadClientPathMapTo = "downloadclient.pathmapto";
-    /// <summary>When Maki removes a torrent from the client: <c>never</c> (unset) or <c>afterimport</c>.</summary>
+    /// <summary>When Maki removes a torrent from the client: <c>never</c> (unset), <c>afterimport</c> or <c>afterseeding</c>.</summary>
     public const string DownloadClientRemoveCompleted = "downloadclient.removecompleted";
+    /// <summary>Seed ratio target for <c>afterseeding</c>, invariant decimal; unset means no ratio target.</summary>
+    public const string DownloadClientSeedRatio = "downloadclient.seedratio";
+    /// <summary>Seed time target in minutes for <c>afterseeding</c>; unset means no time target.</summary>
+    public const string DownloadClientSeedMinutes = "downloadclient.seedminutes";
+    /// <summary>
+    /// Hours a downloading torrent may go without progress, or without a connected seed or peer, before
+    /// its row fails as stalled. Unset is <c>CompletedDownloadJob.DefaultStallHours</c>, 0 turns it off.
+    /// </summary>
+    public const string DownloadClientStallHours = "downloadclient.stallhours";
     /// <summary>"false" keeps the downloaded files when a torrent is removed; unset or "true" deletes them.</summary>
     public const string DownloadClientRemoveData = "downloadclient.removedata";
     public const string KavitaUrl = "kavita.url";
@@ -611,6 +620,18 @@ public static class SettingKeys
     public const string UpgradesLastVolumeSearchDate = "upgrades.lastVolumeSearchDate";
 
     /// <summary>
+    /// "false" turns off the torrent search for wanted chapters no source lists (licensed titles a
+    /// scraper delisted, series with no source at all). Default on; independent of the upgrade switches.
+    /// </summary>
+    public const string UpgradesMissingSearch = "upgrades.missingSearch";
+
+    /// <summary>
+    /// Fewest seeders a release needs before Maki grabs or approves it on its own (1..10000, default 1).
+    /// A release whose indexer reports no count passes. Grabs from the release search are never held back.
+    /// </summary>
+    public const string UpgradesTorrentMinSeeders = "upgrades.torrentMinSeeders";
+
+    /// <summary>
     /// Id of the <see cref="Entities.UpgradeProfile"/> a series without its own pin resolves to.
     /// Absent means no default, and such a series has no profile at all.
     /// </summary>
@@ -936,6 +957,13 @@ public static class SettingKeys
     /// stays inside the order while off, so it keeps its rank across an off/on cycle.
     /// </summary>
     public const string SourceLanguagesDisabled = "sources.languagesdisabled";
+
+    /// <summary>
+    /// JSON <c>{"preferred": [...], "blocked": [...]}</c>: the scanlation groups every series prefers, in
+    /// order, and never takes, on a source that lists several uploads of a chapter (MangaDex). A series'
+    /// own lists combine with these (<c>ScanlationGroupPreference.Combine</c>). Unset means none.
+    /// </summary>
+    public const string ScanlationGroups = "sources.scanlationgroups";
 
     /// <summary>"false" → the automatic sweep that re-queues Failed scraper downloads is disabled. Default on.</summary>
     public const string DownloadRetryEnabled = "download.retryenabled";

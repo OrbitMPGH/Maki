@@ -49,12 +49,14 @@ import {
   useAutoMatchSources,
   useCreateMapping,
   useDeleteMapping,
+  useDismissNearMiss,
   useRefreshSourceSnapshots,
   useRemoveMapping,
   useResolveSourceUrl,
   useSourceMappings,
   useSourceMatchFailures,
   useSourceMatchProgress,
+  useSourceNearMisses,
   useSources,
   useSourceSearch,
   useReorderMappings,
@@ -164,6 +166,8 @@ export function SourceMappingsSection({
   const { data: sources } = useSources()
   const { data: progress } = useSourceMatchProgress(seriesId)
   const { data: failedSources } = useSourceMatchFailures(seriesId)
+  const { data: nearMisses } = useSourceNearMisses(seriesId)
+  const dismissNearMiss = useDismissNearMiss(seriesId)
   const queryClient = useQueryClient()
   const updateMapping = useUpdateMapping()
   const deleteMapping = useDeleteMapping()
@@ -217,6 +221,9 @@ export function SourceMappingsSection({
   const sourceDisabled = (name: string) =>
     sources?.some((s) => s.name === name && !s.enabled) ?? false
   const nothingLeftToMatch = !unmappedSources || unmappedSources.length === 0
+  const suggestions = (nearMisses ?? []).filter((n) =>
+    unmappedSources?.some((s) => s.name === n.sourceName),
+  )
 
   // Sources whose row has finished fading out. Kept here rather than derived, because "the exit
   // animation has played" is a fact about this table and nothing else knows it.
@@ -724,6 +731,80 @@ export function SourceMappingsSection({
             </Table.Tbody>
           </Table>
         </Table.ScrollContainer>
+      )}
+
+      {!matching && suggestions.length > 0 && (
+        <Stack gap="xs" mt="sm">
+          <Text fw={600} size="sm">
+            <Trans>Is this it?</Trans>
+          </Text>
+          {suggestions.map((n) => {
+            const label = sourceLabel(n.sourceName)
+            return (
+              <Card key={n.id} withBorder padding="xs">
+                <Group wrap="nowrap" align="flex-start">
+                  {n.coverUrl && (
+                    <Image src={n.coverUrl} w={40} h={60} radius="sm" fit="cover" alt="" />
+                  )}
+                  <Stack gap={2} miw={0} style={{ flex: 1 }}>
+                    <Group gap={6} wrap="nowrap">
+                      {SOURCE_ICONS[n.sourceName] && (
+                        <Image src={SOURCE_ICONS[n.sourceName]} alt="" w={16} h={16} fit="contain" style={{ flex: '0 0 auto' }} />
+                      )}
+                      <Text size="xs" c="var(--ink-3)" fw={600} truncate>
+                        {label}
+                      </Text>
+                      <StatusDot tone="neutral" style={{ flexShrink: 0 }}>
+                        <Trans>No match</Trans>
+                      </StatusDot>
+                    </Group>
+                    <Text
+                      fw={600}
+                      size="sm"
+                      lineClamp={2}
+                      {...(n.url
+                        ? { component: 'a', href: n.url, target: '_blank', rel: 'noreferrer', className: 'source-name-link' }
+                        : {})}
+                    >
+                      {n.title}
+                    </Text>
+                    {(n.author || n.language) && (
+                      <Text size="xs" c="var(--ink-3)" truncate>
+                        {[n.author, n.language?.toUpperCase()].filter(Boolean).join(' · ')}
+                      </Text>
+                    )}
+                    {n.description && (
+                      <Text size="xs" c="var(--ink-3)" lineClamp={2}>
+                        {n.description}
+                      </Text>
+                    )}
+                  </Stack>
+                  <Group gap={6} wrap="nowrap" style={{ flexShrink: 0 }}>
+                    <Button
+                      size="xs"
+                      variant="light"
+                      leftSection={<IconLink size={16} />}
+                      disabled={createMapping.isPending}
+                      aria-label={t`Link ${n.title} on ${label}`}
+                      onClick={() => link(n.sourceName, n.sourceSeriesId, n.url)}
+                    >
+                      <Trans>Link</Trans>
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="default"
+                      disabled={dismissNearMiss.isPending}
+                      aria-label={t`Dismiss ${n.title} on ${label}`}
+                      onClick={() => dismissNearMiss.mutate(n.id)}
+                    >
+                      <Trans>Dismiss</Trans>
+                    </Button>
+                  </Group>
+                </Group>
+              </Card>
+            )
+          })}
+        </Stack>
       )}
 
       <Modal

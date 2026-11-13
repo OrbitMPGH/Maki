@@ -17,6 +17,7 @@ import {
   Table,
   Text,
   TextInput,
+  Tooltip,
   VisuallyHidden,
 } from '@mantine/core'
 import { IconPencil, IconRoute, IconTrash, IconWand } from '../../lib/icons'
@@ -54,6 +55,7 @@ import {
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { FolderBrowserModal } from '../../components/settings/FolderBrowserModal'
 import { RootFolderPathModal } from '../../components/settings/RootFolderPathModal'
+import { RootFolderMinFreeInput } from '../../components/settings/RootFolderMinFreeInput'
 import type { RootFolder } from '../../api/types'
 import { SUPPORTED_LOCALES } from '../../i18n'
 import { MONITOR_OPTIONS } from '../../components/series/SeriesActionsMenu'
@@ -98,6 +100,16 @@ export function RootFoldersSection() {
                 <Table.Tr>
                   <Table.Th><Trans>Path</Trans></Table.Th>
                   <Table.Th><Trans>Free space</Trans></Table.Th>
+                  <Table.Th>
+                    <Tooltip
+                      label={t`Downloads into the folder wait while its drive has less free space than this, and carry on by themselves once there is room. 0 never waits.`}
+                      withArrow
+                      multiline
+                      w={280}
+                    >
+                      <span><Trans>Keep free</Trans></span>
+                    </Tooltip>
+                  </Table.Th>
                   <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
                 </Table.Tr>
               </Table.Thead>
@@ -113,6 +125,9 @@ export function RootFoldersSection() {
                       )}
                     </Table.Td>
                     <Table.Td>{formatBytes(f.freeSpace)}</Table.Td>
+                    <Table.Td>
+                      <RootFolderMinFreeInput folder={f} />
+                    </Table.Td>
                     <Table.Td>
                       <Group gap={4} wrap="nowrap" justify="flex-end">
                         <ActionIcon

@@ -57,6 +57,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<HealthOperation> HealthOperations => Set<HealthOperation>();
     public DbSet<HealthHistory> HealthHistory => Set<HealthHistory>();
     public DbSet<SourceMapping> SourceMappings => Set<SourceMapping>();
+    public DbSet<SourceNearMiss> SourceNearMisses => Set<SourceNearMiss>();
     public DbSet<ChapterSourceLink> ChapterSourceLinks => Set<ChapterSourceLink>();
     public DbSet<DownloadQueueItem> DownloadQueue => Set<DownloadQueueItem>();
     public DbSet<RootFolder> RootFolders => Set<RootFolder>();
@@ -506,6 +507,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasOne<MakiUser>().WithMany().HasForeignKey(s => s.ArchivedByUserId).OnDelete(DeleteBehavior.SetNull);
             e.Property(s => s.Genres).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
             e.Property(s => s.Tags).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
+            e.Property(s => s.PreferredGroups).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
+            e.Property(s => s.BlockedGroups).HasConversion(StringListConverter.Instance, StringListComparer.Instance);
             e.Property(s => s.AltTitles).HasConversion(LocalizedTitleListConverter.Instance, LocalizedTitleListComparer.Instance);
             e.HasMany(s => s.Chapters).WithOne(c => c.Series!).HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasMany(s => s.SourceMappings).WithOne(m => m.Series!).HasForeignKey(m => m.SeriesId).OnDelete(DeleteBehavior.Cascade);
@@ -653,6 +656,13 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasIndex(m => new { m.SeriesId, m.SourceName }).IsUnique();
         });
 
+        modelBuilder.Entity<SourceNearMiss>(e =>
+        {
+            e.HasQueryFilter(m => _scope.Unrestricted || Series.Any(s => s.Id == m.SeriesId));
+            e.HasOne<Series>().WithMany().HasForeignKey(m => m.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(m => new { m.SeriesId, m.SourceName, m.SourceSeriesId }).IsUnique();
+        });
+
         modelBuilder.Entity<ChapterSourceLink>(e =>
         {
             e.HasKey(l => new { l.ChapterId, l.SourceMappingId });
@@ -676,13 +686,13 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
 
             e.HasIndex(q => q.Status);
 
-            // Covers ClaimNextAsync's filter and sort (Protocol, Status, SortOrder, QueuedAt) plus CompletedDownloadJob's Protocol filter, so neither scans the whole table.
-            e.HasIndex(q => new { q.Protocol, q.Status, q.SortOrder, q.QueuedAt });
+            // Covers ClaimNextAsync's filter and sort (Protocol, Status, Priority, SortOrder, QueuedAt) plus CompletedDownloadJob's Protocol filter, so neither scans the whole table.
+            e.HasIndex(q => new { q.Protocol, q.Status, q.Priority, q.SortOrder, q.QueuedAt });
 
-            // The active queue page, ORDER BY SortOrder, QueuedAt. SQLite only uses a partial index
-            // when the query repeats its filter term, and EF renders that page's two != checks as
+            // The active queue page, ORDER BY Priority, SortOrder, QueuedAt. SQLite only uses a partial
+            // index when the query repeats its filter term, and EF renders that page's two != checks as
             // exactly this NOT IN, in this order.
-            e.HasIndex(q => new { q.SortOrder, q.QueuedAt })
+            e.HasIndex(q => new { q.Priority, q.SortOrder, q.QueuedAt })
                 .HasFilter($"\"Status\" NOT IN ({(int)QueueStatus.Completed}, {(int)QueueStatus.Cancelled})");
             // MAX(SortOrder) on every enqueue spans settled rows too, which the partial index omits.
             e.HasIndex(q => q.SortOrder);

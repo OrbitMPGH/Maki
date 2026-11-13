@@ -40,14 +40,15 @@ public class ReleaseController(
         {
             var result = await releaseService.SearchAsync(seriesId, query, ct);
             searches.Remember(seriesId, result.Backend, result.Releases);
-            var views = await torrents.EvaluateAsync(seriesId, result.Releases, ct,
-                judgeAdditions: await torrents.VolumeFirstOnAsync(ct));
+            var (judgeAdditions, missing) = await torrents.AdditionsAsync(seriesId, volumeFirst: false, ct);
+            var views = await torrents.EvaluateAsync(seriesId, result.Releases, ct, judgeAdditions, missing);
+            var minSeeders = await torrents.MinSeedersAsync(ct);
             var byGuid = views
                 .Where(v => !v.Verdict.Reasons.Contains(SpanVerdictReasons.NoProfile))
                 .GroupBy(v => v.Release.Guid)
                 .ToDictionary(g => g.Key, g => g.First());
             return Ok(new ReleaseSearchResponse(result.Query, result.Tried, [.. result.Releases.Select(r =>
-                ReleaseResultDto.From(r, byGuid.TryGetValue(r.Guid, out var v) ? Parsed(v) : null))]));
+                ReleaseResultDto.From(r, byGuid.TryGetValue(r.Guid, out var v) ? Parsed(v) : null))], minSeeders));
         }
         catch (ReleaseRefusedException ex)
         {
