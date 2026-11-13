@@ -244,6 +244,7 @@ import { useSeriesNotificationOptions } from '../components/ui/seriesNotificatio
 import { scrollBehavior } from '../lib/scrollBehavior'
 import { offersPermanentDelete, useRecycleBinDays } from '../api/recycleBin'
 import { PermanentDeleteFallback } from '../components/PermanentDeleteFallback'
+import { SeriesScanlationGroupsModal } from '../components/ScanlationGroupsModal'
 import { pwaSupported } from '../lib/pwa/serviceWorker'
 import {
   removeChaptersOffline,
@@ -876,6 +877,10 @@ function SeriesDetailBody() {
   const canManageSources = can('ManageSources')
   const { data: sourceMappings } = useSourceMappings(seriesId, canManageSources)
   const enabledMappings = (sourceMappings ?? []).filter((m) => m.enabled).length
+  const [groupsOpen, setGroupsOpen] = useState(false)
+  const hasGroupSource = (sourceMappings ?? []).some(
+    (m) => m.enabled && sources?.some((s) => s.name === m.sourceName && s.scanlationGroups),
+  )
   /**
    * Read-aware filters, kept separate from `chapterFilters` because they need the progress map.
    * `unread` and `read` only consider downloaded chapters, plus read ones whose file was removed: a
@@ -2529,6 +2534,7 @@ function SeriesDetailBody() {
                       setDeleteSeriesFiles(false)
                       setDeleteSeriesModalOpen(true)
                     }}
+                    onScanlationGroups={hasGroupSource && !archived ? () => setGroupsOpen(true) : undefined}
                     offlineSaved={canSaveOffline ? offlineSaved : undefined}
                     onSaveUnreadOffline={() =>
                         void saveUnreadOffline(seriesId).then(
@@ -3873,6 +3879,18 @@ function SeriesDetailBody() {
         >
           <Trans>This removes "{seriesTitle}" and its chapters from Maki.</Trans>
         </RemoveSeriesDialog>
+
+        {hasGroupSource && (
+          <SeriesScanlationGroupsModal
+            seriesId={seriesId}
+            opened={groupsOpen}
+            onClose={() => setGroupsOpen(false)}
+            onSaved={() => {
+              notify.ok(staticT`Saved. Refreshing chapters to pick up the change.`)
+              refresh.mutate(seriesId)
+            }}
+          />
+        )}
 
         {conversionHistory && (
           <UndoConversionModal

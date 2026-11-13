@@ -1,3 +1,4 @@
+import type { GlobalScanlationGroups } from '../../../src/api/scanlationGroups'
 import type { TorrentLifecycleSettings } from '../../../src/api/torrentLifecycle'
 import type { TorrentProposalDto } from '../../../src/api/upgrades'
 import type {
@@ -161,6 +162,7 @@ export const sources: SourceInfo[] = [
     displayName: 'MangaDex',
     baseUrl: 'https://mangadex.example',
     supportsLanguageFilter: true,
+    scanlationGroups: true,
     supportedLanguages: ['en', 'es', 'pt-br', 'fr', 'ja'],
     kind: 'aggregator',
     content: ['manga', 'manhwa', 'manhua'],
@@ -1230,6 +1232,14 @@ export const pushPrefs = {
   types: ['newChapterAvailable', 'downloadFailed', 'requestApproved'],
 }
 
+export const scanlationGroups = {
+  preferred: ['Tidewater Scans'],
+  blocked: [],
+  seen: [
+    { name: 'Tidewater Scans', chapters: 412 },
+    { name: 'Night Owl TL', chapters: 188 },
+  ],
+} satisfies GlobalScanlationGroups
 export const torrentLifecycle: TorrentLifecycleSettings = { stallHours: 1, seedRatio: 2, seedMinutes: 4320 }
 
 const declinedRelease = (id: number, seriesId: number, seriesTitle: string, title: string, resolvedAtUtc: string): TorrentProposalDto => ({

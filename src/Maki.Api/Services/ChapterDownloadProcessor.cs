@@ -63,7 +63,7 @@ public class ChapterDownloadProcessor(
     public const string EarlyAccessKey = "error.download.earlyAccess";
 
     public Task<DownloadOutcome> ProcessAsync(int queueItemId, CancellationToken ct) =>
-        ProcessAsync(queueItemId, [], ct);
+        ProcessAsync(queueItemId, [], ct, null);
 
     /// <param name="triedMappingIds">
     /// Mappings this item has already 404'd on during this dispatch. The fallback below re-enters
@@ -75,7 +75,12 @@ public class ChapterDownloadProcessor(
     /// pick is not enough, since the resolver falls back through the priority order whenever the
     /// preferred mapping doesn't list the chapter and would hand back a mapping just ruled out.
     /// </param>
-    private async Task<DownloadOutcome> ProcessAsync(int queueItemId, List<int> triedMappingIds, CancellationToken ct)
+    /// <param name="hold">
+    /// Where the item waits if it has to: the first mapping that said the chapter is early access in this
+    /// dispatch, and the soonest unlock any of them gave. Set once a lock moved the item to another source.
+    /// </param>
+    private async Task<DownloadOutcome> ProcessAsync(
+        int queueItemId, List<int> triedMappingIds, CancellationToken ct, EarlyAccessHold? hold)
     {
         var item = await db.DownloadQueue
             .Include(q => q.SourceMapping)
@@ -124,6 +129,7 @@ public class ChapterDownloadProcessor(
         // the cooldown to the right source instead of guessing from item.SourceMapping (which EF
         // won't have refreshed if the mapping just changed).
         SourceMapping? usedMapping = null;
+        string? usedSourceChapterId = null;
 
         // The packaged archive inside the library share. Moved on success; anything else that ends the
         // attempt (a failure, a Clear, the item timeout) must not leave a full chapter behind.
@@ -198,6 +204,14 @@ public class ChapterDownloadProcessor(
             }
 
             usedMapping = mapping;
+            usedSourceChapterId = sourceChapterId;
+
+            // A site that marks locked chapters in its list may still serve the chapter page, just
+            // without the images, so the listing is asked first.
+            if (await sourceResolver.ListedAsLockedAsync(db, source, mapping, sourceChapterId, ct))
+            {
+                throw new ChapterLockedException($"{source.DisplayName} lists this chapter as locked");
+            }
 
             var sourceChapter = new SourceChapter(
                 mapping.SourceName, mapping.SourceSeriesId, sourceChapterId,
@@ -463,7 +477,22 @@ public class ChapterDownloadProcessor(
         catch (ChapterLockedException ex)
         {
             logger.LogInformation("Queue item {Id} still early-access locked: {Message}", item.Id, ex.Message);
-            await LockedAsync(item, chapter, series, usedMapping?.SourceName ?? "?", ex.UnlockAt, ct);
+            var next = NextLockedAttempt(ex.UnlockAt);
+            hold = hold is null
+                ? new EarlyAccessHold(usedMapping?.Id ?? item.SourceMappingId, usedSourceChapterId ?? item.SourceChapterId,
+                    usedMapping?.SourceName ?? "?", next)
+                : hold with { NextAttempt = next < hold.NextAttempt ? next : hold.NextAttempt };
+
+            // A lock says nothing about the source's health, so nothing is blamed and no attempt is spent.
+            if (item.PreferredMappingId == null && item.HealthOperationId == null && item.UpgradeInfoJson == null &&
+                await LockedFailOverAsync(item, chapter, usedMapping, triedMappingIds, workingDir, ct) is { } other)
+            {
+                logger.LogInformation("Queue item {Id} is early access on {Locked}, trying {Source} instead",
+                    item.Id, usedMapping?.SourceName ?? "?", other.SourceName);
+                return await ProcessAsync(item.Id, triedMappingIds, ct, hold);
+            }
+
+            await LockedAsync(item, chapter, series, hold, ct);
             return DownloadOutcome.Settled;
         }
         catch (HttpRequestException hre) when (hre.StatusCode is HttpStatusCode.NotFound)
@@ -483,11 +512,17 @@ public class ChapterDownloadProcessor(
 
             if (await FailOverAsync(item, chapter, usedMapping, triedMappingIds, workingDir, ct) is null)
             {
+                if (hold is not null)
+                {
+                    await LockedAsync(item, chapter, series, hold, ct);
+                    return DownloadOutcome.Settled;
+                }
+
                 await FailAsync(item, "error.download.noMoreSources", ct, detail: hre.Message);
                 return DownloadOutcome.Settled;
             }
 
-            return await ProcessAsync(item.Id, triedMappingIds, ct);
+            return await ProcessAsync(item.Id, triedMappingIds, ct, hold);
         }
         catch (ChapterRequiresPurchaseException ex)
         {
@@ -497,7 +532,13 @@ public class ChapterDownloadProcessor(
             if (item.HealthOperationId == null && item.PreferredMappingId == null && item.UpgradeInfoJson == null &&
                 await FailOverAsync(item, chapter, usedMapping, triedMappingIds, workingDir, ct) is not null)
             {
-                return await ProcessAsync(item.Id, triedMappingIds, ct);
+                return await ProcessAsync(item.Id, triedMappingIds, ct, hold);
+            }
+
+            if (hold is not null)
+            {
+                await LockedAsync(item, chapter, series, hold, ct);
+                return DownloadOutcome.Settled;
             }
 
             await FailAsync(item, DownloadFailureReason.NeedsPurchase, ct, permanent: true, detail: ex.Message);
@@ -520,7 +561,15 @@ public class ChapterDownloadProcessor(
                     item.Id, item.RetryCount + 1, failedOverTo.SourceName);
                 item.RetryCount++;
                 await db.SaveChangesAsync(ct);
-                return await ProcessAsync(item.Id, triedMappingIds, ct);
+                return await ProcessAsync(item.Id, triedMappingIds, ct, hold);
+            }
+
+            // The row only came here because its own source said early access, so it goes back to wait
+            // for that unlock rather than failing on the fallback's trouble.
+            if (hold is not null)
+            {
+                await LockedAsync(item, chapter, series, hold, ct);
+                return DownloadOutcome.Settled;
             }
 
             await FailAsync(item, key, ct, detail: detail);
@@ -1134,29 +1183,89 @@ public class ChapterDownloadProcessor(
     private static readonly TimeSpan LockedRecheckInterval = TimeSpan.FromHours(4);
     private static readonly TimeSpan LockedUnlockBuffer = TimeSpan.FromMinutes(5);
 
+    /// <summary>Where a locked chapter waits and until when; see <c>ProcessAsync</c>'s <c>hold</c>.</summary>
+    private sealed record EarlyAccessHold(int? MappingId, string? SourceChapterId, string SourceName, DateTime NextAttempt);
+
     /// <summary>
-    /// Parks a still-early-access-locked chapter in <see cref="QueueStatus.Waiting"/> until it unlocks.
-    /// It is claimed again at <see cref="DownloadQueueItem.NextAttempt"/>, spends no attempt and raises
-    /// no failure notification. When the source told us exactly when early access ends, the next try is
-    /// a few minutes after that instead of the blind interval.
+    /// A few minutes after the unlock time when the source told us one, else the blind recheck interval.
     /// </summary>
-    private async Task LockedAsync(
-        DownloadQueueItem item, Chapter chapter, Series series, string sourceName, DateTimeOffset? unlockAt, CancellationToken ct)
+    private static DateTime NextLockedAttempt(DateTimeOffset? unlockAt)
     {
         var now = DateTime.UtcNow;
         var next = unlockAt is { } at ? at.UtcDateTime.Add(LockedUnlockBuffer) : now.Add(LockedRecheckInterval);
-        if (next < now)
+        // An unlock time already passed (clock skew, or the source's own timer running behind) must not
+        // schedule a retry in the past.
+        return next < now ? now.Add(LockedRecheckInterval) : next;
+    }
+
+    /// <summary>
+    /// Moves an early-access chapter to another enabled mapping that lists it unlocked, leaving the row in
+    /// flight for the caller. Null when no such mapping is left; paused or cooling-down sources are not
+    /// tried, since parking on them would hide the lock. Nothing here counts against the locked source.
+    /// </summary>
+    private async Task<SourceMapping?> LockedFailOverAsync(
+        DownloadQueueItem item, Chapter chapter, SourceMapping? usedMapping, List<int> triedMappingIds,
+        string workingDir, CancellationToken ct)
+    {
+        if ((usedMapping?.Id ?? item.SourceMappingId) is not { } lockedMappingId)
         {
-            // Unlock time already passed (clock skew, or the source's own timer running behind) —
-            // don't schedule a retry in the past, just fall back to the normal recheck cadence.
-            next = now.Add(LockedRecheckInterval);
+            return null;
         }
 
-        item.Status = QueueStatus.Waiting;
-        item.NextAttempt = next;
-        item.SetError(EarlyAccessKey, new { source = sourceName });
+        triedMappingIds.Add(lockedMappingId);
+        var held = await queue.HeldSourcesAsync(ct);
+        var heldMappingIds = held.Count == 0
+            ? []
+            : await db.SourceMappings
+                .Where(m => m.SeriesId == chapter.SeriesId && held.Contains(m.SourceName))
+                .Select(m => m.Id)
+                .ToListAsync(ct);
+
+        ResolvedChapterSource resolved;
+        try
+        {
+            resolved = await sourceResolver.ResolveAsync(db, chapter, null, ct, [.. triedMappingIds, .. heldMappingIds]);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            logger.LogDebug(ex, "No other source has queue item {Id} unlocked", item.Id);
+            return null;
+        }
+
+        if (resolved.Locked)
+        {
+            return null;
+        }
+
+        item.SourceMappingId = resolved.Mapping.Id;
+        item.SourceChapterId = null;
+        item.Status = QueueStatus.FetchingPages;
+        item.PagesDone = 0;
         await db.SaveChangesAsync(ct);
-        await BroadcastAsync(item, chapter, series, sourceName);
+        TryDeleteDirectory(workingDir);
+        return resolved.Mapping;
+    }
+
+    /// <summary>
+    /// Parks a still-early-access-locked chapter in <see cref="QueueStatus.Waiting"/> until it unlocks,
+    /// on the first mapping that said so. It is claimed again at <see cref="DownloadQueueItem.NextAttempt"/>,
+    /// spends no attempt and raises no failure notification.
+    /// </summary>
+    private async Task LockedAsync(
+        DownloadQueueItem item, Chapter chapter, Series series, EarlyAccessHold hold, CancellationToken ct)
+    {
+        if (hold.MappingId is { } mappingId)
+        {
+            item.SourceMappingId = mappingId;
+            item.SourceChapterId = hold.SourceChapterId;
+        }
+
+        item.PagesDone = 0;
+        item.Status = QueueStatus.Waiting;
+        item.NextAttempt = hold.NextAttempt;
+        item.SetError(EarlyAccessKey, new { source = hold.SourceName });
+        await db.SaveChangesAsync(ct);
+        await BroadcastAsync(item, chapter, series, hold.SourceName);
 
         // Parked until the unlock, which can be days away. The batch would otherwise wait on an item
         // that reports nothing until the stale sweep closes it with a "went quiet" warning.

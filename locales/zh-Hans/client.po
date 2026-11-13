@@ -1045,6 +1045,7 @@ msgid "{chapters, plural, one {# chapter held, {used} of {limit}} other {# chapt
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/ScanlationGroupsModal.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr ""
 
@@ -1411,17 +1412,17 @@ msgstr "{count, plural, other {接下来 # 个未读章节}}"
 msgid "{count, plural, one {Undo the import of # folder?} other {Undo the import of # folders?}}"
 msgstr "{count, plural, other {要撤销 # 个文件夹的导入吗？}}"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "{count} chapters"
 msgstr "{count} 个章节"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "{count} pages"
 msgstr "{count} 页"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "{count} results"
 msgstr "{count} 个结果"
@@ -1857,7 +1858,7 @@ msgstr "距离等级 {nextLevel} 还需 {intoLevel} / {levelSpan} XP"
 msgid "{inTrash, plural, one {# of them still has its original in the trash. Undo it from the series page.} other {# of them still have their original in the trash. Undo them from the series page.}}"
 msgstr "{inTrash, plural, other {其中 # 个仍在回收站中保留原件。请在系列页面中撤销这些操作。}}"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "{kb} KB"
 msgstr "{kb} KB"
@@ -2024,6 +2025,10 @@ msgstr "{linkingTotal, plural, other {已为 # 个系列找到来源并关联文
 
 #: src/components/series/ChapterCountsInfo.tsx
 msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
+msgstr ""
+
+#: src/pages/settings/CustomSourceReport.tsx
+msgid "{locked, plural, one {# chapter listed as locked} other {# chapters listed as locked}}"
 msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
@@ -3764,6 +3769,10 @@ msgstr "评分为 10/10 的动画以 {topSeed} 作为基准值，而书架上未
 msgid "A bulk move, rename or rescan is running."
 msgstr ""
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "A chapter is taken from the first group on this list that uploaded it. With none of them, the earliest upload is taken."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "A connection has unsaved changes."
@@ -4214,6 +4223,10 @@ msgstr ""
 #, fuzzy
 msgid "Add a note"
 msgstr "添加笔记"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Add a preferred group"
+msgstr ""
 
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
@@ -4714,6 +4727,10 @@ msgstr "已经拥有"
 msgid "Also ask at the end of each volume"
 msgstr "也在每卷结束时询问"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Also blocked everywhere: {inheritedBlocked}"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Also delete detached files from disk"
@@ -5057,6 +5074,10 @@ msgstr ""
 #, fuzzy
 msgid "Applies automatically to"
 msgstr "自动应用于"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Applies to {sources}."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -5784,10 +5805,18 @@ msgstr "每像素位数，高于"
 msgid "Bits per pixel, under"
 msgstr "每像素位数，低于"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Block a group"
+msgstr ""
+
 #: src/components/settings/PushNotificationsSection.tsx
 #, fuzzy
 msgid "Blocked for Maki in your browser settings. Allow notifications there, then come back."
 msgstr "在浏览器设置中已为 Maki 屏蔽。请在那里允许通知，然后返回此页。"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Blocked groups"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -6071,6 +6100,7 @@ msgstr "无法使用已保存的信息登录。"
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/components/RenameSeriesModal.tsx
+#: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/RestoreSeriesDialog.tsx
 #: src/components/series/UndoConversionModal.tsx
@@ -6561,7 +6591,7 @@ msgstr "{label} 的章节语言"
 msgid "Chapter languages"
 msgstr "章节语言"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Chapter list"
 msgstr "章节列表"
@@ -6590,7 +6620,7 @@ msgstr ""
 msgid "Chapter page"
 msgstr "章节页面"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Chapter pages"
 msgstr "章节页面"
@@ -7144,6 +7174,7 @@ msgstr "客户端密钥"
 #: src/components/LuckyButton.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/RenameSeriesModal.tsx
+#: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/series/SeriesReviews.tsx
 #: src/components/series/UpgradeNowResultModal.tsx
@@ -7879,6 +7910,10 @@ msgstr "无法读取 {seriesFailed, plural, other {# 个系列}} 的阅读进度
 #, fuzzy
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
 msgstr "无法读取 {seriesFailed, plural, other {# 个系列}} 的阅读进度：{titles}"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Could not read the groups on {unreachable} just now. You can still type a name."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -8942,6 +8977,11 @@ msgstr "不喜欢"
 msgid "Dismiss"
 msgstr "忽略"
 
+#. placeholder {0}: n.title
+#: src/components/SourceMappingsSection.tsx
+msgid "Dismiss {0} on {label}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Dismiss all"
@@ -9848,7 +9888,7 @@ msgstr ""
 msgid "Every chapter released from now on is wanted."
 msgstr "从现在起发布的每个章节都会被标记为想要。"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Every check passed"
 msgstr "所有检查均已通过"
@@ -10707,7 +10747,7 @@ msgstr "你能看到的第一个文件夹"
 msgid "First page"
 msgstr "第一页"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "First page image"
 msgstr "第一页图片"
@@ -10904,6 +10944,10 @@ msgstr ""
 #, fuzzy
 msgid "For reading apps like Panels, KOReader and Mihon."
 msgstr "适用于 Panels、KOReader 和 Mihon 等阅读应用。"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "For this series only. Its preferred list replaces the global one; blocked groups add to it."
+msgstr ""
 
 #: src/components/pageconversion/FormatStep.tsx
 #: src/components/pageconversion/StartStep.tsx
@@ -11337,6 +11381,10 @@ msgstr "与上一层级合并"
 
 #: src/components/series/ChapterViewMenu.tsx
 msgid "Grouping is off while anime seasons are marked in the table."
+msgstr ""
+
+#: src/pages/settings/CustomSourceReport.tsx
+msgid "Groups credited: {groupList}"
 msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
@@ -12432,6 +12480,10 @@ msgstr "邀请用户"
 msgid "iPhone and iPad only deliver push notifications to apps added to the home screen. Add Maki to your home screen, open it from there, and come back to this card."
 msgstr "iPhone 和 iPad 只会向添加到主屏幕的应用推送通知。请将 Maki 添加到主屏幕，从那里打开，然后回到此卡片。"
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Is this it?"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Isekai"
@@ -13337,9 +13389,15 @@ msgstr "线条"
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesScrobbleSection.tsx
+#: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Link"
 msgstr "关联"
+
+#. placeholder {0}: n.title
+#: src/components/SourceMappingsSection.tsx
+msgid "Link {0} on {label}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -14718,6 +14776,14 @@ msgstr "将 {label} 下移"
 msgid "Move {label} up"
 msgstr "将 {label} 上移"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Move {name} down"
+msgstr ""
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Move {name} up"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Move {tierLabel} down"
@@ -15069,6 +15135,10 @@ msgstr "从未扫描过升级"
 msgid "Never shows which series you read."
 msgstr "从不显示你阅读了哪些系列。"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Never taken. A chapter only these groups uploaded comes from another source, or waits until one has it."
+msgstr ""
+
 #: src/components/pageconversion/ruleTemplates.ts
 #, fuzzy
 msgid "Never touch tagged series"
@@ -15356,6 +15426,10 @@ msgstr ""
 #, fuzzy
 msgid "No better copy found"
 msgstr "未找到更好的副本"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "No blocked groups."
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -15759,6 +15833,10 @@ msgstr "没有页面"
 msgid "No pending requests"
 msgstr "没有待处理的请求"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "No preferred groups."
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "No quality formats defined yet. Add one below to score files by it."
@@ -16086,6 +16164,10 @@ msgstr "无"
 #, fuzzy
 msgid "None available"
 msgstr "无可用项"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "None for this series, so the global order applies: {inheritedPreferred}"
+msgstr ""
 
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -18487,6 +18569,10 @@ msgstr "发布到论坛群组的某个主题中。"
 msgid "Preferences"
 msgstr "偏好设置"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Preferred groups"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Preload"
@@ -19974,6 +20060,10 @@ msgstr "移除 {label}"
 msgid "Remove {label} from this device"
 msgstr "从此设备移除 {label}"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Remove {name} from the preferred groups"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Remove {removingSourceName}?"
@@ -21348,6 +21438,7 @@ msgstr "从每个已关联的来源抽取几页作为样本。"
 #: src/components/notes/NoteThread.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailEditor.tsx
+#: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
@@ -21577,6 +21668,10 @@ msgstr "无法加载已保存的规则；保存时将替换它们。"
 msgid "Saved. Leave empty to keep it."
 msgstr "已保存。留空则保留当前值。"
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Saved. Refreshing chapters to pick up the change."
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Saved. Restart Maki to apply it."
@@ -21688,6 +21783,19 @@ msgstr "扫描, API 密钥, 路径映射, 封面, 资料库服务器, 阅读归�
 #, fuzzy
 msgid "Scanlation group"
 msgstr "扫描组"
+
+#: src/components/ScanlationGroupsModal.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Scanlation groups"
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Scanlation groups for {label}"
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Scanlation groups..."
+msgstr ""
 
 #: src/api/upgrades.ts
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -21889,6 +21997,7 @@ msgstr "滚动条漫章节"
 #: src/components/CommandPalette.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Search"
@@ -22473,6 +22582,7 @@ msgstr "系列已移动"
 msgid "Series not found"
 msgstr "未找到系列"
 
+#: src/pages/settings/CustomSourceReport.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
@@ -23287,7 +23397,7 @@ msgstr "跳到内容"
 msgid "skipped"
 msgstr "已跳过"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Skipped"
 msgstr "已跳过"
@@ -23399,7 +23509,7 @@ msgstr ""
 msgid "so far, at ch. {soFarChapter}"
 msgstr "截至第 {soFarChapter} 章"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Some checks failed"
 msgstr "部分检查失败"
@@ -24226,6 +24336,10 @@ msgstr "要排除的标签"
 #, fuzzy
 msgid "Tags to include"
 msgstr "要包含的标签"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Takes effect at each series' next chapter refresh."
+msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Takes the colour of the page's edge."
@@ -26224,6 +26338,10 @@ msgstr "未授权"
 msgid "Unavailable"
 msgstr "不可用"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Unblock {name}"
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -27634,6 +27752,10 @@ msgstr "漫画存放位置"
 #, fuzzy
 msgid "Where your taste has moved"
 msgstr "你的品味发生了怎样的变化"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Which group's upload Maki takes when a source has several. Applies to every series."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy

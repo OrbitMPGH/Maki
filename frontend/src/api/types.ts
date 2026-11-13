@@ -697,6 +697,20 @@ export interface SourceMappingDto {
   origin: 'Unknown' | 'TitleSearch' | 'CrossId' | 'Manual'
 }
 
+/** The best result a source search returned that fell just short of an automatic match. */
+export interface SourceNearMissDto {
+  id: number
+  sourceName: string
+  sourceSeriesId: string
+  title: string
+  url: string
+  coverUrl: string | null
+  author: string | null
+  language: string | null
+  description: string | null
+  score: number
+}
+
 export interface ComparePage {
   url: string
   /** Null when the format couldn't be measured (AVIF); the image still displays. */

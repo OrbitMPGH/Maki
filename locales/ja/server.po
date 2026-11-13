@@ -1034,6 +1034,11 @@ msgstr "章のURLテンプレートから、章一覧に表示されるリンク
 msgid "error.customSource.test.sampleChapterNotListed"
 msgstr "サンプルの章のURLが章一覧にありません。"
 
+#. English: The sample chapter is listed as locked. Pick a free chapter as the sample.
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleChapterLocked"
+msgstr ""
+
 #. English: The first page did not come back as an image.
 #: src/Maki.Api/Services/CustomSourceTester.cs
 #, fuzzy

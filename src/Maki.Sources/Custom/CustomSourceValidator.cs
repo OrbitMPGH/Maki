@@ -155,8 +155,14 @@ public static partial class CustomSourceValidator
             Template(baseUri, d.Chapters.Url, "chapters.url", [CustomTemplate.ChapterId], Add);
             List(d.Chapters.Item, "chapters.item", Add);
             Fields(d.Chapters.Item, Add, ("chapters.id", d.Chapters.Id), ("chapters.number", d.Chapters.Number),
-                ("chapters.title", d.Chapters.Title), ("chapters.volume", d.Chapters.Volume), ("chapters.date", d.Chapters.Date));
+                ("chapters.title", d.Chapters.Title), ("chapters.volume", d.Chapters.Volume), ("chapters.date", d.Chapters.Date),
+                ("chapters.locked", d.Chapters.Locked), ("chapters.group", d.Chapters.Group));
             PageFields(Add, ("chapters.nextPage", d.Chapters.NextPage));
+            // A literal or an empty extractor would mark every chapter locked.
+            if (d.Chapters.Locked is { Value: not null } or { Css: null, Attr: null, Regex: null, Json: null })
+            {
+                Add("error.customSource.fieldInvalid", new { field = "chapters.locked" });
+            }
             if (d.Chapters.Date is { Format: not ("relative" or "iso") and { Length: 0 } })
             {
                 Add("error.customSource.fieldInvalid", new { field = "chapters.date.format" });

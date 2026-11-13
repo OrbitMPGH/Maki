@@ -183,6 +183,8 @@ export const settingsHandlers: HttpHandler[] = [
   http.get(api('/settings/sources/languages'), () => HttpResponse.json(d.sourceLanguages)),
   putEcho('/settings/sources/languages'),
   http.get(api('/search/sources'), () => HttpResponse.json(d.sources)),
+  http.get(api('/scanlationgroups'), () => HttpResponse.json(d.scanlationGroups)),
+  putEcho('/scanlationgroups'),
   http.get(api('/custom-sources'), () => HttpResponse.json([])),
   http.get(api('/custom-sources/repositories'), () => HttpResponse.json(d.customRepositories)),
   http.post(api('/custom-sources/repositories'), () => HttpResponse.json(d.customRepositories[0])),

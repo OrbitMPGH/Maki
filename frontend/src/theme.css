@@ -15449,6 +15449,42 @@ button.settings-row-head:hover,
 .report-row-error {
   color: var(--danger);
 }
+.group-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--mantine-radius-sm);
+}
+.group-list-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 2px 6px 2px 10px;
+}
+.group-list-row + .group-list-row {
+  border-top: 1px solid var(--border);
+}
+.group-list-rank {
+  width: 1.5em;
+  color: var(--ink-3);
+  font-size: var(--type-micro);
+}
+.group-list-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.report-row-extra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--ink-3);
+  font-size: var(--type-micro);
+}
 @media (max-width: 36em) {
   .wizard-step[data-state='todo'] .wizard-step-label,
   .wizard-step[data-state='done'] .wizard-step-label {

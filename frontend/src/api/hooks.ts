@@ -64,6 +64,7 @@ import type {
   SeriesFilesSummaryDto,
   SeriesScrobbleDto,
   SourceMappingDto,
+  SourceNearMissDto,
   TagDto,
   UpdateSettingsDto,
   UpdateStatusDto,
@@ -2672,6 +2673,23 @@ export function useSourceMappings(seriesId: number, enabled = true) {
   })
 }
 
+/** Suggestions auto-matching left for sources it could not match: "Is this it?" candidates. */
+export function useSourceNearMisses(seriesId: number, enabled = true) {
+  return useQuery({
+    queryKey: ['sourcenearmisses', seriesId],
+    queryFn: () => api<SourceNearMissDto[]>(`/sourcemapping/nearmisses?seriesId=${seriesId}`),
+    enabled,
+  })
+}
+
+export function useDismissNearMiss(seriesId: number) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/sourcemapping/nearmisses/${id}/dismiss`, { method: 'POST' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sourcenearmisses', seriesId] }),
+  })
+}
+
 export interface MonitorModeResult {
   mode: string
 }
@@ -3487,6 +3505,8 @@ export interface SourceInfo {
    * answers false, because each is a separate series id rather than a filter over one list.
    */
   supportsLanguageFilter: boolean
+  /** Lists several scanlation groups' uploads of a chapter, so the preferred and blocked groups apply to it. */
+  scanlationGroups?: boolean
   /** Language codes this source publishes content in (`ISource.SupportedLanguages`). */
   supportedLanguages: string[]
   /** Global switch. False = can't be linked, and none of its existing mappings run. */
@@ -3651,6 +3671,7 @@ export function useCreateMapping() {
     // The server lists the new source's chapters before it answers.
     onSuccess: (_d, v) => {
       void queryClient.invalidateQueries({ queryKey: ['sourcemappings', v.seriesId] })
+      void queryClient.invalidateQueries({ queryKey: ['sourcenearmisses', v.seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['source-order', v.seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['chapters', v.seriesId] })
       void queryClient.invalidateQueries({ queryKey: ['series', v.seriesId] })

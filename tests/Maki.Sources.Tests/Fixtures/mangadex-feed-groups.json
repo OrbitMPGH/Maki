@@ -1,0 +1,131 @@
+{
+  "result": "ok",
+  "response": "collection",
+  "data": [
+    {
+      "id": "c1-early",
+      "type": "chapter",
+      "attributes": {
+        "chapter": "1",
+        "volume": "1",
+        "title": null,
+        "translatedLanguage": "en",
+        "externalUrl": null,
+        "isUnavailable": false,
+        "pages": 20,
+        "publishAt": "2024-01-01T00:00:00+00:00"
+      },
+      "relationships": [
+        {
+          "id": "g-Early Birds",
+          "type": "scanlation_group",
+          "attributes": {
+            "name": "Early Birds"
+          }
+        }
+      ]
+    },
+    {
+      "id": "c1-moon",
+      "type": "chapter",
+      "attributes": {
+        "chapter": "1",
+        "volume": "1",
+        "title": null,
+        "translatedLanguage": "en",
+        "externalUrl": null,
+        "isUnavailable": false,
+        "pages": 20,
+        "publishAt": "2024-01-05T00:00:00+00:00"
+      },
+      "relationships": [
+        {
+          "id": "g-Moonlit TL",
+          "type": "scanlation_group",
+          "attributes": {
+            "name": "Moonlit TL"
+          }
+        }
+      ]
+    },
+    {
+      "id": "c2-early",
+      "type": "chapter",
+      "attributes": {
+        "chapter": "2",
+        "volume": "1",
+        "title": null,
+        "translatedLanguage": "en",
+        "externalUrl": null,
+        "isUnavailable": false,
+        "pages": 20,
+        "publishAt": "2024-02-01T00:00:00+00:00"
+      },
+      "relationships": [
+        {
+          "id": "g-Early Birds",
+          "type": "scanlation_group",
+          "attributes": {
+            "name": "Early Birds"
+          }
+        }
+      ]
+    },
+    {
+      "id": "c3-early",
+      "type": "chapter",
+      "attributes": {
+        "chapter": "3",
+        "volume": "1",
+        "title": null,
+        "translatedLanguage": "en",
+        "externalUrl": null,
+        "isUnavailable": false,
+        "pages": 20,
+        "publishAt": "2024-03-01T00:00:00+00:00"
+      },
+      "relationships": [
+        {
+          "id": "g-Early Birds",
+          "type": "scanlation_group",
+          "attributes": {
+            "name": "Early Birds"
+          }
+        }
+      ]
+    },
+    {
+      "id": "c3-joint",
+      "type": "chapter",
+      "attributes": {
+        "chapter": "3",
+        "volume": "1",
+        "title": null,
+        "translatedLanguage": "en",
+        "externalUrl": null,
+        "isUnavailable": false,
+        "pages": 20,
+        "publishAt": "2024-03-04T00:00:00+00:00"
+      },
+      "relationships": [
+        {
+          "id": "g-Moonlit TL",
+          "type": "scanlation_group",
+          "attributes": {
+            "name": "Moonlit TL"
+          }
+        },
+        {
+          "id": "g-Paper Lantern",
+          "type": "scanlation_group",
+          "attributes": {
+            "name": "Paper Lantern"
+          }
+        }
+      ]
+    }
+  ],
+  "limit": 500,
+  "offset": 0,
+  "total": 5
+}

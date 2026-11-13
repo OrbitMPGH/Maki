@@ -186,6 +186,8 @@ const seriesMutations: HttpHandler[] = [
   http.post(api('/mediacover/:id/cover/from-page'), () => HttpResponse.json({ coverUrl: '/mock/cover/1.svg', lockedFields: ['cover'] })),
   http.post(api('/mediacover/:id/cover/from-source'), () => HttpResponse.json({ coverUrl: '/mock/cover/1.svg', lockedFields: ['cover'] })),
   http.post(api('/mediacover/:id/cover/from-url'), () => HttpResponse.json({ coverUrl: '/mock/cover/1.svg', lockedFields: ['cover'] })),
+  http.get(api('/sourcemapping/nearmisses'), () => HttpResponse.json([])),
+  http.post(api('/sourcemapping/nearmisses/:id/dismiss'), () => noContent()),
   http.post(api('/sourcemapping'), async ({ request }) =>
     HttpResponse.json({ ...mappingsFor(1)[0], ...(await bodyOf(request)), id: 99, enabled: true, origin: 'Manual' }),
   ),

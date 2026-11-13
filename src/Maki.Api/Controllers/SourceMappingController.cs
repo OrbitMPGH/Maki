@@ -53,6 +53,45 @@ public class SourceMappingController(
         return Ok(mappings);
     }
 
+    public record NearMissDto(
+        int Id, string SourceName, string SourceSeriesId, string Title, string Url,
+        string? CoverUrl, string? Author, string? Language, string? Description, double Score);
+
+    /// <summary>
+    /// The suggestions auto-matching left for sources it could not match: the best result that fell
+    /// just under the match threshold, one per source, none the user already turned down.
+    /// </summary>
+    [HttpGet("nearmisses")]
+    public async Task<IActionResult> NearMisses([FromQuery] int seriesId, CancellationToken ct)
+    {
+        var mapped = await db.SourceMappings.AsNoTracking()
+            .Where(m => m.SeriesId == seriesId).Select(m => m.SourceName).ToListAsync(ct);
+        var rows = await db.SourceNearMisses.AsNoTracking()
+            .Where(n => n.SeriesId == seriesId && n.DismissedAt == null)
+            .OrderByDescending(n => n.Score)
+            .ToListAsync(ct);
+        return Ok(rows
+            .Where(n => !mapped.Contains(n.SourceName, StringComparer.OrdinalIgnoreCase))
+            .Select(n => new NearMissDto(
+                n.Id, n.SourceName, n.SourceSeriesId, n.Title, n.Url,
+                n.CoverUrl, n.Author, n.Language, n.Description, n.Score)));
+    }
+
+    /// <summary>Turns a suggestion down for good. A later re-match can still offer a different result.</summary>
+    [HttpPost("nearmisses/{id:int}/dismiss")]
+    public async Task<IActionResult> DismissNearMiss(int id, CancellationToken ct)
+    {
+        var row = await db.SourceNearMisses.FirstOrDefaultAsync(n => n.Id == id, ct);
+        if (row is null)
+        {
+            return NotFound();
+        }
+
+        row.DismissedAt ??= DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateMappingRequest request, CancellationToken ct)
     {
@@ -101,6 +140,8 @@ public class SourceMappingController(
             Origin = SourceMappingOrigin.Manual
         };
         db.SourceMappings.Add(mapping);
+        db.SourceNearMisses.RemoveRange(
+            await db.SourceNearMisses.Where(n => n.SeriesId == request.SeriesId && n.SourceName == sourceName && n.DismissedAt == null).ToListAsync(ct));
         await db.SaveChangesAsync(ct);
 
         // Only the new mapping: the others keep their own schedule. An archived series does not

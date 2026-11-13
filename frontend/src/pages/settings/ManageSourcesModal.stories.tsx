@@ -276,3 +276,14 @@ export const ReaderSeesNoAddButton: Story = {
 export const Closed: Story = {
   args: { opened: false },
 }
+
+export const ScanlationGroupsFromTheMangaDexRow: Story = {
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = await openDialog(canvasElement)
+    await userEvent.click(await dialog.findByRole('button', { name: 'Scanlation groups for MangaDex' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByText('Preferred groups')).toBeVisible()
+    await expect(await body.findByText('Tidewater Scans')).toBeVisible()
+    await expect(dialog.queryByRole('button', { name: 'Scanlation groups for Comick' })).toBeNull()
+  },
+}

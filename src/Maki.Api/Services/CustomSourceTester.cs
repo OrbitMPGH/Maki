@@ -68,6 +68,8 @@ public static class CustomSourceTester
             {
                 count = chapters.Count,
                 unnumbered = chapters.Count(c => c.Number is null),
+                locked = chapters.Count(c => c.Locked),
+                groups = chapters.Select(c => c.Group).OfType<string>().Distinct(StringComparer.OrdinalIgnoreCase).Take(10).ToList(),
                 first = chapters.Take(5).Select(Summary).ToList(),
                 last = chapters.Count > 5 ? chapters.TakeLast(5).Select(Summary).ToList() : [],
                 mismatched
@@ -83,6 +85,13 @@ public static class CustomSourceTester
             steps.Add(listed.Count == 0
                 ? new Step("pages", "skipped")
                 : new Step("pages", "failed", "error.customSource.test.sampleChapterNotListed"));
+            steps.Add(new Step("image", "skipped"));
+            return new Report(false, steps);
+        }
+
+        if (sample.Locked)
+        {
+            steps.Add(new Step("pages", "failed", "error.customSource.test.sampleChapterLocked", Detail: new { chapter = Summary(sample) }));
             steps.Add(new Step("image", "skipped"));
             return new Report(false, steps);
         }
@@ -115,7 +124,8 @@ public static class CustomSourceTester
         return new Report(steps.All(s => s.Status != "failed"), steps);
     }
 
-    private static object Summary(SourceChapter c) => new { c.SourceChapterId, c.NumberRaw, c.Number, c.Volume, c.Title, c.ReleaseDate, c.Url };
+    private static object Summary(SourceChapter c) =>
+        new { c.SourceChapterId, c.NumberRaw, c.Number, c.Volume, c.Title, c.ReleaseDate, c.Url, c.Group, c.Locked };
 
     private static async Task<Step> RunStep(
         string name, CancellationToken ct, Func<Task<(string? ErrorKey, object? Detail)>> run)

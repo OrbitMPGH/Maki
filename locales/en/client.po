@@ -902,6 +902,7 @@ msgid "{chapters, plural, one {# chapter held, {used} of {limit}} other {# chapt
 msgstr "{chapters, plural, one {# chapter held, {used} of {limit}} other {# chapters held, {used} of {limit}}}"
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/ScanlationGroupsModal.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapters, plural, one {# chapter} other {# chapters}}"
 
@@ -1213,15 +1214,15 @@ msgstr "{count, plural, one {The next unread chapter} other {The next # unread c
 msgid "{count, plural, one {Undo the import of # folder?} other {Undo the import of # folders?}}"
 msgstr "{count, plural, one {Undo the import of # folder?} other {Undo the import of # folders?}}"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 msgid "{count} chapters"
 msgstr "{count} chapters"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 msgid "{count} pages"
 msgstr "{count} pages"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 msgid "{count} results"
 msgstr "{count} results"
 
@@ -1586,7 +1587,7 @@ msgstr "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgid "{inTrash, plural, one {# of them still has its original in the trash. Undo it from the series page.} other {# of them still have their original in the trash. Undo them from the series page.}}"
 msgstr "{inTrash, plural, one {# of them still has its original in the trash. Undo it from the series page.} other {# of them still have their original in the trash. Undo them from the series page.}}"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 msgid "{kb} KB"
 msgstr "{kb} KB"
 
@@ -1727,6 +1728,10 @@ msgstr "{linkingTotal, plural, one {Sources found and files linked for # series}
 #: src/components/series/ChapterCountsInfo.tsx
 msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
 msgstr "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
+
+#: src/pages/settings/CustomSourceReport.tsx
+msgid "{locked, plural, one {# chapter listed as locked} other {# chapters listed as locked}}"
+msgstr "{locked, plural, one {# chapter listed as locked} other {# chapters listed as locked}}"
 
 #: src/components/import/ImportPlanModal.tsx
 msgid "{lone, plural, one {# file with no number} other {# files with no number}}"
@@ -3161,6 +3166,10 @@ msgstr "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on yo
 msgid "A bulk move, rename or rescan is running."
 msgstr "A bulk move, rename or rescan is running."
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "A chapter is taken from the first group on this list that uploaded it. With none of them, the earliest upload is taken."
+msgstr "A chapter is taken from the first group on this list that uploaded it. With none of them, the earliest upload is taken."
+
 #: src/components/SetupWizard.tsx
 msgid "A connection has unsaved changes."
 msgstr "A connection has unsaved changes."
@@ -3542,6 +3551,10 @@ msgstr "Add {chapterLanguageToken} to the chapter format to tell them apart."
 #: src/pages/reader/ChapterEnd.tsx
 msgid "Add a note"
 msgstr "Add a note"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Add a preferred group"
+msgstr "Add a preferred group"
 
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
@@ -3958,6 +3971,10 @@ msgstr "Already yours"
 msgid "Also ask at the end of each volume"
 msgstr "Also ask at the end of each volume"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Also blocked everywhere: {inheritedBlocked}"
+msgstr "Also blocked everywhere: {inheritedBlocked}"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Also delete detached files from disk"
 msgstr "Also delete detached files from disk"
@@ -4243,6 +4260,10 @@ msgstr "Applies after Maki restarts"
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Applies automatically to"
 msgstr "Applies automatically to"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Applies to {sources}."
+msgstr "Applies to {sources}."
 
 #: src/pages/LibraryPage.tsx
 msgid "Applies to chapters released later."
@@ -4846,9 +4867,17 @@ msgstr "Bits per pixel, over"
 msgid "Bits per pixel, under"
 msgstr "Bits per pixel, under"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Block a group"
+msgstr "Block a group"
+
 #: src/components/settings/PushNotificationsSection.tsx
 msgid "Blocked for Maki in your browser settings. Allow notifications there, then come back."
 msgstr "Blocked for Maki in your browser settings. Allow notifications there, then come back."
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Blocked groups"
+msgstr "Blocked groups"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Blocked while a download for this series is in flight, unless Maki isn't touching the files itself."
@@ -5091,6 +5120,7 @@ msgstr "Can't sign in with the saved details."
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/components/RenameSeriesModal.tsx
+#: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/RestoreSeriesDialog.tsx
 #: src/components/series/UndoConversionModal.tsx
@@ -5496,7 +5526,7 @@ msgstr "Chapter language for {label}"
 msgid "Chapter languages"
 msgstr "Chapter languages"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 msgid "Chapter list"
 msgstr "Chapter list"
 
@@ -5521,7 +5551,7 @@ msgstr "Chapter numbering"
 msgid "Chapter page"
 msgstr "Chapter page"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 msgid "Chapter pages"
 msgstr "Chapter pages"
 
@@ -5983,6 +6013,7 @@ msgstr "Client secret"
 #: src/components/LuckyButton.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/RenameSeriesModal.tsx
+#: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/series/SeriesReviews.tsx
 #: src/components/series/UpgradeNowResultModal.tsx
@@ -6592,6 +6623,10 @@ msgstr "Could not read progress for {seriesFailed, plural, one {# series} other 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
 msgstr "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Could not read the groups on {unreachable} just now. You can still type a name."
+msgstr "Could not read the groups on {unreachable} just now. You can still type a name."
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Could not read your profile"
@@ -7473,6 +7508,11 @@ msgstr "Disliked it"
 msgid "Dismiss"
 msgstr "Dismiss"
 
+#. placeholder {0}: n.title
+#: src/components/SourceMappingsSection.tsx
+msgid "Dismiss {0} on {label}"
+msgstr "Dismiss {0} on {label}"
+
 #: src/pages/HealthPage.tsx
 msgid "Dismiss all"
 msgstr "Dismiss all"
@@ -8235,7 +8275,7 @@ msgstr "Every chapter is already on the best file available. Nothing to change."
 msgid "Every chapter released from now on is wanted."
 msgstr "Every chapter released from now on is wanted."
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 msgid "Every check passed"
 msgstr "Every check passed"
 
@@ -8945,7 +8985,7 @@ msgstr "First folder you can see"
 msgid "First page"
 msgstr "First page"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 msgid "First page image"
 msgstr "First page image"
 
@@ -9110,6 +9150,10 @@ msgstr "For monitored series with wanted chapters that none of their sources lis
 #: src/pages/settings/ReadingCards.tsx
 msgid "For reading apps like Panels, KOReader and Mihon."
 msgstr "For reading apps like Panels, KOReader and Mihon."
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "For this series only. Its preferred list replaces the global one; blocked groups add to it."
+msgstr "For this series only. Its preferred list replaces the global one; blocked groups add to it."
 
 #: src/components/pageconversion/FormatStep.tsx
 #: src/components/pageconversion/StartStep.tsx
@@ -9476,6 +9520,10 @@ msgstr "Group with the tier above"
 #: src/components/series/ChapterViewMenu.tsx
 msgid "Grouping is off while anime seasons are marked in the table."
 msgstr "Grouping is off while anime seasons are marked in the table."
+
+#: src/pages/settings/CustomSourceReport.tsx
+msgid "Groups credited: {groupList}"
+msgstr "Groups credited: {groupList}"
 
 #: src/pages/discover/TasteTab.tsx
 msgid "Groups overlap on purpose, so one series can belong to several of them."
@@ -10379,6 +10427,10 @@ msgstr "Invite people"
 msgid "iPhone and iPad only deliver push notifications to apps added to the home screen. Add Maki to your home screen, open it from there, and come back to this card."
 msgstr "iPhone and iPad only deliver push notifications to apps added to the home screen. Add Maki to your home screen, open it from there, and come back to this card."
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Is this it?"
+msgstr "Is this it?"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Isekai"
 msgstr "Isekai"
@@ -11130,8 +11182,14 @@ msgstr "Line"
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesScrobbleSection.tsx
+#: src/components/SourceMappingsSection.tsx
 msgid "Link"
 msgstr "Link"
+
+#. placeholder {0}: n.title
+#: src/components/SourceMappingsSection.tsx
+msgid "Link {0} on {label}"
+msgstr "Link {0} on {label}"
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Link {chapterLbl} to a file"
@@ -12276,6 +12334,14 @@ msgstr "Move {label} down"
 msgid "Move {label} up"
 msgstr "Move {label} up"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Move {name} down"
+msgstr "Move {name} down"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Move {name} up"
+msgstr "Move {name} up"
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Move {tierLabel} down"
 msgstr "Move {tierLabel} down"
@@ -12568,6 +12634,10 @@ msgstr "Never scanned for upgrades"
 msgid "Never shows which series you read."
 msgstr "Never shows which series you read."
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Never taken. A chapter only these groups uploaded comes from another source, or waits until one has it."
+msgstr "Never taken. A chapter only these groups uploaded comes from another source, or waits until one has it."
+
 #: src/components/pageconversion/ruleTemplates.ts
 msgid "Never touch tagged series"
 msgstr "Never touch tagged series"
@@ -12808,6 +12878,10 @@ msgstr "No anime"
 #: src/components/series/UpgradeNowResultModal.tsx
 msgid "No better copy found"
 msgstr "No better copy found"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "No blocked groups."
+msgstr "No blocked groups."
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "No change: the whole franchise was already hidden."
@@ -13145,6 +13219,10 @@ msgstr "No pages"
 msgid "No pending requests"
 msgstr "No pending requests"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "No preferred groups."
+msgstr "No preferred groups."
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "No quality formats defined yet. Add one below to score files by it."
 msgstr "No quality formats defined yet. Add one below to score files by it."
@@ -13419,6 +13497,10 @@ msgstr "None"
 #: src/pages/LibraryPage.tsx
 msgid "None available"
 msgstr "None available"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "None for this series, so the global order applies: {inheritedPreferred}"
+msgstr "None for this series, so the global order applies: {inheritedPreferred}"
 
 #: src/pages/NotificationsPage.tsx
 msgid "None in the latest notifications"
@@ -15411,6 +15493,10 @@ msgstr "Posts into one topic of a forum group."
 msgid "Preferences"
 msgstr "Preferences"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Preferred groups"
+msgstr "Preferred groups"
+
 #: src/components/settings/ReadingProfilesSection.tsx
 msgid "Preload"
 msgstr "Preload"
@@ -16658,6 +16744,10 @@ msgstr "Remove {label}"
 msgid "Remove {label} from this device"
 msgstr "Remove {label} from this device"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Remove {name} from the preferred groups"
+msgstr "Remove {name} from the preferred groups"
+
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove {removingSourceName}?"
 msgstr "Remove {removingSourceName}?"
@@ -17797,6 +17887,7 @@ msgstr "Samples a few pages from every linked source."
 #: src/components/notes/NoteThread.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailEditor.tsx
+#: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
@@ -17990,6 +18081,10 @@ msgstr "Saved rules could not be loaded; saving will replace them."
 msgid "Saved. Leave empty to keep it."
 msgstr "Saved. Leave empty to keep it."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Saved. Refreshing chapters to pick up the change."
+msgstr "Saved. Refreshing chapters to pick up the change."
+
 #: src/components/settings/SecuritySection.tsx
 msgid "Saved. Restart Maki to apply it."
 msgstr "Saved. Restart Maki to apply it."
@@ -18080,6 +18175,19 @@ msgstr "scan, api key, path mapping, covers, library server, attribute reading, 
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Scanlation group"
 msgstr "Scanlation group"
+
+#: src/components/ScanlationGroupsModal.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Scanlation groups"
+msgstr "Scanlation groups"
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Scanlation groups for {label}"
+msgstr "Scanlation groups for {label}"
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Scanlation groups..."
+msgstr "Scanlation groups..."
 
 #: src/api/upgrades.ts
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -18245,6 +18353,7 @@ msgstr "Scroll webtoon chapters"
 #: src/components/CommandPalette.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Search"
 msgstr "Search"
@@ -18731,6 +18840,7 @@ msgstr "Series moved"
 msgid "Series not found"
 msgstr "Series not found"
 
+#: src/pages/settings/CustomSourceReport.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
@@ -19404,7 +19514,7 @@ msgstr "Skip to content"
 msgid "skipped"
 msgstr "skipped"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 msgid "Skipped"
 msgstr "Skipped"
 
@@ -19496,7 +19606,7 @@ msgstr "So far"
 msgid "so far, at ch. {soFarChapter}"
 msgstr "so far, at ch. {soFarChapter}"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 msgid "Some checks failed"
 msgstr "Some checks failed"
 
@@ -20190,6 +20300,10 @@ msgstr "Tags to exclude"
 #: src/components/CatalogueRules.tsx
 msgid "Tags to include"
 msgstr "Tags to include"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Takes effect at each series' next chapter refresh."
+msgstr "Takes effect at each series' next chapter refresh."
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Takes the colour of the page's edge."
@@ -21845,6 +21959,10 @@ msgstr "Unauthorized"
 msgid "Unavailable"
 msgstr "Unavailable"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Unblock {name}"
+msgstr "Unblock {name}"
+
 #: src/components/ImportReviewModal.tsx
 #: src/components/RelinkFilesModal.tsx
 msgid "unchanged"
@@ -23012,6 +23130,10 @@ msgstr "Where your manga lives"
 #: src/pages/discover/TasteTab.tsx
 msgid "Where your taste has moved"
 msgstr "Where your taste has moved"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Which group's upload Maki takes when a source has several. Applies to every series."
+msgstr "Which group's upload Maki takes when a source has several. Applies to every series."
 
 #: src/components/SetupWizard.tsx
 msgid "Which languages Maki looks for, and which chapters it leaves alone."

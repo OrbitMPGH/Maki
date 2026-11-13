@@ -103,6 +103,59 @@ public static class CustomExtractor
         return Narrow(raw, field.Regex);
     }
 
+    /// <summary>
+    /// Whether a flag field holds for one item, for <see cref="CustomChapters.Locked"/>. On an element the
+    /// <see cref="FieldExtractor.Css"/> descendant has to exist; with an <see cref="FieldExtractor.Attr"/> the
+    /// attribute has to be there and not say false; with a <see cref="FieldExtractor.Regex"/> it has to match
+    /// the text or attribute. On a JSON item the value has to be there and not false, 0 or empty.
+    /// </summary>
+    public static bool Matches(FieldExtractor? field, CustomItem item)
+    {
+        if (field is null)
+        {
+            return false;
+        }
+
+        if (field.Value is not null)
+        {
+            return Truthy(field.Value);
+        }
+
+        string? raw;
+        if (item.Element is { } element)
+        {
+            var target = field.Css is { } css ? element.QuerySelector(css) : element;
+            if (target is null)
+            {
+                return false;
+            }
+
+            raw = field.Attr is { } attr ? target.GetAttribute(attr) : target.TextContent;
+            if (field.Regex is null)
+            {
+                return field.Attr is null || (raw is not null && (raw.Trim().Length == 0 || Truthy(raw)));
+            }
+        }
+        else if (item.Json is { } json)
+        {
+            raw = field.Json is { } path ? Walk(json, path).Select(Scalar).FirstOrDefault(v => v is not null) : Scalar(json);
+            if (field.Regex is null)
+            {
+                return Truthy(raw);
+            }
+        }
+        else
+        {
+            raw = item.Text;
+        }
+
+        return raw is not null && (field.Regex is null ? Truthy(raw) : Compile(field.Regex).IsMatch(raw));
+    }
+
+    private static bool Truthy(string? value) =>
+        !string.IsNullOrWhiteSpace(value) &&
+        value.Trim().ToLowerInvariant() is not ("false" or "0" or "no" or "null");
+
     /// <summary>A field read from the whole page rather than one item (series title, next page link).</summary>
     public static string? PageField(FieldExtractor? field, CustomPage page)
     {
