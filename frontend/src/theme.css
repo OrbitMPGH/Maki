@@ -106,7 +106,6 @@
   --radius-2xs: 2px;
   --radius-chip: 7px;
   --radius-thumb: 8px;
-  --radius-card: 10px;
   --radius-cover: 7px;
   --radius-hero: 12px;
   /* Bars, badges and anything whose ends should be fully round, whatever its height. */
@@ -5051,7 +5050,7 @@ button.site-chip:hover {
 .auth-card {
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   box-shadow: var(--shadow-card);
 }
 .auth-card-head {
@@ -5149,7 +5148,7 @@ button.site-chip:hover {
   margin-bottom: var(--mantine-spacing-md);
   padding: 8px 16px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   background: var(--surface);
   color: var(--ink-hi);
 }
@@ -5326,7 +5325,7 @@ button.site-chip:hover {
   margin-bottom: 20px;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   background: var(--surface);
   box-shadow: var(--shadow-card);
 }
@@ -5460,7 +5459,7 @@ button.site-chip:hover {
   align-items: flex-start;
   gap: 7px;
   min-width: 0;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
 }
 .ground-tiles .ground-tile:focus-visible {
   outline-offset: 7px;
@@ -5470,7 +5469,7 @@ button.site-chip:hover {
   align-self: stretch;
   height: 84px;
   overflow: hidden;
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   box-shadow: 0 0 0 1px var(--border-strong);
   transition: box-shadow var(--dur-base) var(--ease);
 }
@@ -5724,7 +5723,7 @@ button.site-chip:hover {
 .setup-next-card {
   padding: 14px 16px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   background: var(--surface);
   box-shadow: var(--shadow-card);
   transition: border-color var(--dur-base) var(--ease), background var(--dur-base) var(--ease);
@@ -7399,7 +7398,7 @@ button.site-chip:hover {
 /* Holds the place of the table it stands in for: the dashed outline the app uses for an empty slot. */
 .empty-state[data-framed] {
   border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
 }
 
 /* The whole page is empty: centred in what's left of the viewport, over a picture of covers. */
@@ -16317,7 +16316,7 @@ button.settings-row-head:hover,
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   background: var(--surface);
 }
 .upcoming-line .upcoming-name {
@@ -17515,7 +17514,7 @@ button.shortlist-title:hover {
   gap: 8px 16px;
   padding: 12px 16px;
   border: 1px dashed var(--border-strong);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
 }
 .shortlist-empty {
   display: flex;
@@ -17620,7 +17619,7 @@ button.shortlist-title:hover {
 .note-thread {
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   background: var(--surface);
 }
 .note-thread[data-highlight] {
@@ -17782,7 +17781,7 @@ button.shortlist-title:hover {
   width: min(460px, calc(100vw - 24px));
   max-height: min(720px, calc(100dvh - 76px - var(--safe-top)));
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   background: var(--surface);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
 }
@@ -17902,7 +17901,7 @@ button.shortlist-title:hover {
   gap: 4px;
   padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   background: var(--surface);
   color: var(--ink);
   cursor: pointer;
@@ -17974,7 +17973,7 @@ button.shortlist-title:hover {
 .notes-margin-compose {
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--brand) 55%, var(--border));
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-overlay);
   background: var(--surface);
   color: var(--ink);
 }

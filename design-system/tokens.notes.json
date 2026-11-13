@@ -206,7 +206,6 @@
     "radius-control": "Small inline controls and counters.",
     "radius-chip": "Tag chips and the Discover rank badge: deliberately squarer than a pill.",
     "radius-thumb": "Cover thumbnails in rows and lists (SeriesRow, requests, the hero strip), and the scrollbar thumb.",
-    "radius-card": "Cards built like covers that are not posters: the Upcoming list lines.",
     "radius-cover": "Poster covers (library, rails, catalogue): the most repeated object on the page gets the tightest corner, close to a book's.",
     "radius-surface": "Strips and inline surfaces (FigureStrip), Rewind cover art.",
     "radius-hero": "Hero posters and hero panels, the score pill, the brand-mark tile, the reader chapter banner.",
