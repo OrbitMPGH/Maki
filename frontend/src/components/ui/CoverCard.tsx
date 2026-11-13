@@ -70,10 +70,10 @@ export const CoverCard = memo(function CoverCard({
     series,
     readTracking,
   )
-  const { readChapterCount } = series
+  const { readChapterCount, newChapterCount = 0 } = series
   // No total at all means no source has listed a chapter yet; "0 of ?" left that to be guessed.
   // With the "N new" pill beside it the long form ran out of room ("30 of ..."), so it goes compact.
-  const showsNew = offline !== 'unavailable' && unread !== null && unread > 0
+  const showsNew = offline !== 'unavailable' && newChapterCount > 0
   const countLabel =
     total > 0
       ? showsNew
@@ -87,6 +87,7 @@ export const CoverCard = memo(function CoverCard({
       : have > 0
         ? plural(have, { one: '# chapter', other: '# chapters' })
         : t`No chapters`
+  const newTip = plural(newChapterCount, { one: '# recent chapter file', other: '# recent chapter files' })
   const savedTip = t`Saved on this device`
   const countTip = nothingWanted
     ? plural(total, {
@@ -171,7 +172,9 @@ export const CoverCard = memo(function CoverCard({
               </span>
             )}
             {showsNew && (
-              <span className="cover-new">{plural(unread, { one: '# new', other: '# new' })}</span>
+              <span className="cover-new" data-tip={newTip}>
+                {plural(newChapterCount, { one: '# new', other: '# new' })}
+              </span>
             )}
           </div>
         </div>
