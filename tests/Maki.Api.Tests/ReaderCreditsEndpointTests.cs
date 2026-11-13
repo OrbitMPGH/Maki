@@ -37,12 +37,16 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
     /// <summary>A search with its own OCR reader, storing into this test's database and strips folder.</summary>
     private ReaderCreditsCache Credits(string ocrFolder) => Credits(new PageTextReader(NullLogger<PageTextReader>.Instance, ocrFolder));
 
+    private CreditBank _bank = null!;
+    private CreditStrips _strips = null!;
+
     private ReaderCreditsCache Credits(IPageTextReader text)
     {
         _store = new CreditStore(_db.ScopeFactory(), text, NullLogger<CreditStore>.Instance);
+        _bank = new CreditBank(_db.ScopeFactory(), NullLogger<CreditBank>.Instance);
+        _strips = new CreditStrips(new AppPaths(_configDir), NullLogger<CreditStrips>.Instance);
         return new ReaderCreditsCache(
-            new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), text, _store,
-            new CreditStrips(new AppPaths(_configDir), NullLogger<CreditStrips>.Instance),
+            new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), text, _store, _strips, _bank,
             NullLogger<ReaderCreditsCache>.Instance);
     }
 
@@ -107,10 +111,10 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
             return image.PngsaveBuffer();
         }));
 
-    private int AddEncodedChapter(int number, IEnumerable<byte[]> pages, int? volume = null)
+    private int AddEncodedChapter(int number, IEnumerable<byte[]> pages, int? volume = null, int? seriesId = null, string folder = "S")
     {
         var name = $"c{number}.cbz";
-        var path = Path.Combine(_root, "S", name);
+        var path = Path.Combine(_root, folder, name);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         using (var zip = ZipFile.Open(path, ZipArchiveMode.Create))
         {
@@ -125,14 +129,14 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         using var db = _db.NewContext();
         var file = new ChapterFile
         {
-            SeriesId = _seriesId, RelativePath = $"S/{name}", Size = new FileInfo(path).Length,
+            SeriesId = seriesId ?? _seriesId, RelativePath = $"{folder}/{name}", Size = new FileInfo(path).Length,
             SourceName = "test", DateAdded = DateTime.UtcNow
         };
         db.ChapterFiles.Add(file);
         db.SaveChanges();
         var chapter = volume is null
-            ? new Chapter { SeriesId = _seriesId, Number = number, ChapterFileId = file.Id }
-            : new Chapter { SeriesId = _seriesId, Volume = volume, ChapterFileId = file.Id };
+            ? new Chapter { SeriesId = seriesId ?? _seriesId, Number = number, ChapterFileId = file.Id }
+            : new Chapter { SeriesId = seriesId ?? _seriesId, Volume = volume, ChapterFileId = file.Id };
         db.Chapters.Add(chapter);
         db.SaveChanges();
         return chapter.Id;
@@ -426,7 +430,7 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         var scopes = services.BuildServiceProvider().GetRequiredService<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>();
         var settings = new FakeAppSettings();
         return new CreditScanWorker(scopes, settings, _credits, _store, _archives,
-            new PageConversionWorker(scopes, settings, NullLogger<PageConversionWorker>.Instance),
+            new PageConversionWorker(scopes, settings, NullLogger<PageConversionWorker>.Instance), _bank, _strips,
             NullLogger<CreditScanWorker>.Instance);
     }
 
@@ -528,5 +532,128 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         }
 
         Assert.Null(await Worker().NextSeriesAsync(default));
+    }
+
+    /// <summary>Another series in the same root folder, with one chapter opening with <paramref name="png"/>.</summary>
+    private int AddSeries(string name)
+    {
+        using var db = _db.NewContext();
+        var folder = db.RootFolders.First();
+        var series = new Series { Title = name, SortTitle = name.ToLowerInvariant(), FolderName = name, RootFolderId = folder.Id };
+        db.Series.Add(series);
+        db.SaveChanges();
+        return series.Id;
+    }
+
+    private static IEnumerable<byte[]> StoryPngs(int seed, int count) => Story(seed, count).Select(pixels =>
+    {
+        using var image = NetVips.Image.NewFromMemory(pixels, W, pixels.Length / (W * 3), 3, NetVips.Enums.BandFormat.Uchar);
+        return image.PngsaveBuffer();
+    });
+
+    private (int SeriesId, int ChapterId) LoneChapterOpeningWith(byte[] png, string name = "T")
+    {
+        var seriesId = AddSeries(name);
+        return (seriesId, AddEncodedChapter(1, [png, .. StoryPngs(30, 8)], seriesId: seriesId, folder: name));
+    }
+
+    /// <summary>The credit fixture under a band of colour art of its own width: another group's notice, whose first rows differ.</summary>
+    private static byte[] OtherNotice(byte[] credit)
+    {
+        using var page = NetVips.Image.NewFromBuffer(credit);
+        using var noise = NetVips.Image.NewFromMemory(Tinted(Noise(41, 60)), W, 60, 3, NetVips.Enums.BandFormat.Uchar);
+        using var band = noise.Resize((double)page.Width / W);
+        using var flat = page.Bands == 4 ? page.Flatten() : page.Copy();
+        using var joined = NetVips.Image.Arrayjoin([band.Cast(NetVips.Enums.BandFormat.Uchar), flat.Cast(NetVips.Enums.BandFormat.Uchar)], across: 1);
+        return joined.PngsaveBuffer();
+    }
+
+    private int BankCount()
+    {
+        using var db = _db.NewContext();
+        return db.CreditBank.Count();
+    }
+
+    [Fact]
+    public async Task A_credit_seen_in_one_series_is_caught_in_a_lone_chapter_of_another()
+    {
+        _credits = Credits(Path.Combine(AppContext.BaseDirectory, PageTextReader.FolderName));
+        var png = await File.ReadAllBytesAsync(Fixture("ocr-credit-page.png"));
+        var chapters = ChaptersOpeningWith(png);
+        Assert.True(HidesTheHead(await FoundAsync(chapters[1])));
+        Assert.Equal(1, BankCount());
+
+        // The other chapters of the series find the same notice: a hit, not a second entry.
+        Assert.True(HidesTheHead(await FoundAsync(chapters[2])));
+        Assert.Equal(1, BankCount());
+
+        var (_, lone) = LoneChapterOpeningWith(png);
+        Assert.True(HidesTheHead(await FoundAsync(lone)));
+    }
+
+    [Fact]
+    public async Task Nothing_is_learned_from_what_the_colour_rule_judged_alone()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+
+        Assert.Equal(1, (await FoundAsync(chapters[1])).GetProperty("headPages").GetInt32());
+        Assert.Equal(0, BankCount());
+    }
+
+    [Fact]
+    public async Task A_chapter_searched_before_the_bank_knew_a_notice_is_searched_again_once_it_does()
+    {
+        _credits = Credits(Path.Combine(AppContext.BaseDirectory, PageTextReader.FolderName));
+        var png = await File.ReadAllBytesAsync(Fixture("ocr-credit-page.png"));
+        var (loneSeries, lone) = LoneChapterOpeningWith(png);
+        var worker = Worker();
+        await worker.ScanSeriesAsync(loneSeries, "en", default);
+        Assert.False(HidesTheHead(await FoundAsync(lone)));
+
+        var chapters = ChaptersOpeningWith(png);
+        await worker.ScanSeriesAsync(_seriesId, "en", default);
+        Assert.Equal(1, BankCount());
+
+        Assert.True(await worker.RecheckBankAsync(default) > 0);
+        Assert.Equal(0, (await RowAsync(lone))!.DetectorVersion);
+        await worker.ScanSeriesAsync(loneSeries, "en", default);
+
+        Assert.True(HidesTheHead(await FoundAsync(lone)));
+        Assert.Equal(0, await worker.RecheckBankAsync(default));
+    }
+
+    [Fact]
+    public async Task A_chapter_requeued_for_a_new_entry_is_searched_against_it_and_settles()
+    {
+        _credits = Credits(Path.Combine(AppContext.BaseDirectory, PageTextReader.FolderName));
+        var credit = await File.ReadAllBytesAsync(Fixture("ocr-credit-page.png"));
+        var other = OtherNotice(credit);
+        var worker = Worker();
+
+        // The bank knows one notice; a lone chapter carrying another is searched, matches nothing, and
+        // its run stays in the in-memory results.
+        ChaptersOpeningWith(credit);
+        await worker.ScanSeriesAsync(_seriesId, "en", default);
+        Assert.Equal(1, BankCount());
+        var (loneSeries, lone) = LoneChapterOpeningWith(other);
+        await worker.ScanSeriesAsync(loneSeries, "en", default);
+        Assert.False(HidesTheHead(await FoundAsync(lone)));
+
+        // Another series teaches the second notice.
+        var teacher = AddSeries("U");
+        foreach (var n in Enumerable.Range(1, 4))
+        {
+            AddEncodedChapter(n, [other, .. StoryPngs(50 + n, 8)], seriesId: teacher, folder: "U");
+        }
+
+        await worker.ScanSeriesAsync(teacher, "en", default);
+        Assert.Equal(2, BankCount());
+
+        Assert.True(await worker.RecheckBankAsync(default) > 0);
+        await worker.ScanSeriesAsync(loneSeries, "en", default);
+
+        Assert.True(HidesTheHead(await FoundAsync(lone)));
+        Assert.Equal(0, await worker.RecheckBankAsync(default));
     }
 }

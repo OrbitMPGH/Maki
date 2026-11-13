@@ -26,7 +26,7 @@ namespace Maki.Api.Services;
 /// </para>
 /// </summary>
 public sealed class ReaderCreditsCache(
-    ReaderArchiveCache archives, IPageTextReader text, CreditStore store, CreditStrips strips,
+    ReaderArchiveCache archives, IPageTextReader text, CreditStore store, CreditStrips strips, CreditBank bank,
     ILogger<ReaderCreditsCache> logger)
 {
     private const int MaxResults = 512;
@@ -36,6 +36,9 @@ public sealed class ReaderCreditsCache(
 
     /// <summary>Pages from each end of a volume file whose text decides whether its series is a scanlation pack.</summary>
     private const int ProbePages = 2;
+
+    /// <summary>Bank proposals judged at one edge before it gives up.</summary>
+    private const int MaxBankTries = 4;
 
     private readonly ConcurrentDictionary<string, Lazy<Task<CreditPages>>> _results = new();
     private readonly ConcurrentDictionary<string, Lazy<Task<CreditDetector.Edges>>> _strips = new();
@@ -71,13 +74,16 @@ public sealed class ReaderCreditsCache(
             return (CreditPages.None, false);
         }
 
+        // With no neighbours only the bank can find anything.
         var usable = references.Where(Usable).ToList();
-        if (usable.Count == 0)
+        var entries = await bank.EntriesAsync(ct);
+        if (usable.Count == 0 && entries.Count == 0)
         {
             return (CreditPages.None, false);
         }
 
-        var key = string.Join('|', usable.Select(Key).Prepend(Key(chapter)));
+        // The bank's newest entry is part of the key: a run from before an entry arrived never answered for it.
+        var key = string.Join('|', usable.Select(Key).Prepend(Key(chapter))) + $"|bank{CreditBank.NewestId(entries)}";
         if (_results.Count >= MaxResults)
         {
             _results.Clear();
@@ -178,18 +184,86 @@ public sealed class ReaderCreditsCache(
         // The models take a few hundred milliseconds to load; that happens while the edges decode.
         _ = Task.Run(text.PrepareAsync);
         var edges = await Task.WhenAll(references.Prepend(chapter).Select(s => EdgesAsync(s, parallelism)));
-        var candidates = CreditDetector.Candidates(chapter.PageCount, edges[0], edges[1..]);
+        var repeated = CreditDetector.Candidates(chapter.PageCount, edges[0], edges[1..]);
+
+        // An edge nothing nearby repeats is offered to the bank: an entry from this chapter or one of
+        // the neighbours it was just compared with would only find what repetition already ruled on.
+        var entries = await bank.EntriesAsync(CancellationToken.None);
+        var nearby = references.Select(r => r.Chapter.Id).Append(chapter.Chapter.Id).ToHashSet();
+        bool Eligible(CreditBank.Entry e) => e.SourceChapterId is not { } source || !nearby.Contains(source);
         var judged = new List<JudgedCandidate>();
-        var head = await AcceptedAsync(chapter, candidates.Head, tail: false, judged);
-        var tail = await AcceptedAsync(chapter, candidates.Tail, tail: true, judged);
+
+        async Task<(IReadOnlyList<CreditCandidate> Candidates, int Accepted, CreditBank.Match? Bank)> JudgeEdgeAsync(
+            bool tail, IReadOnlyList<CreditCandidate> fromRepetition)
+        {
+            if (fromRepetition.Count > 0)
+            {
+                return (fromRepetition, await AcceptedAsync(chapter, fromRepetition, tail, judged, fromBank: false), null);
+            }
+
+            // Most proposals are margins the judge turns down, so a few are tried in turn.
+            var tried = 0;
+            await foreach (var match in bank.MatchesAsync(chapter.PageCount, edges[0], tail, entries, Eligible))
+            {
+                var accepted = await AcceptedAsync(chapter, match.Candidates, tail, judged, fromBank: true);
+                if (accepted > 0)
+                {
+                    return (match.Candidates, accepted, match);
+                }
+
+                if (++tried >= MaxBankTries)
+                {
+                    break;
+                }
+            }
+
+            return ([], 0, null);
+        }
+
+        var (headCandidates, head, headBank) = await JudgeEdgeAsync(tail: false, repeated.Head);
+        var (tailCandidates, tail, tailBank) = await JudgeEdgeAsync(tail: true, repeated.Tail);
+        var candidates = new CreditCandidates(chapter.PageCount, headCandidates, tailCandidates);
         // Read after judging: the models are only known to be missing once a read tried them.
         var judge = text.Available ? CreditJudge.Ocr : CreditJudge.Colour;
         var found = CreditDetector.Settle(candidates, head, tail);
         logger.LogDebug("Credit page search for chapter {ChapterId} took {Ms} ms: {Found}",
             chapter.Chapter.Id, watch.ElapsedMilliseconds, found);
         await TryAsync(() => store.SaveAsync(chapter, CreditStore.ReferencesKey(references), found, judge, judged,
-            CancellationToken.None), chapter);
+            CancellationToken.None, bankSeen: CreditBank.NewestId(entries)), chapter);
+        await TryAsync(() => LearnAsync(chapter, edges[0], candidates, judged, (headBank, head), (tailBank, tail)), chapter);
         return found;
+    }
+
+    /// <summary>
+    /// Keeps what this search accepted for the bank: a region repetition found at an edge whose first
+    /// candidate the text judge read and accepted. A region the bank proposed counts a hit for its entry
+    /// instead. Nothing is kept without the OCR models: the colour rule is too loose to teach the bank.
+    /// </summary>
+    private async Task LearnAsync(ReaderService.ChapterSlice chapter, CreditDetector.Edges edges, CreditCandidates candidates,
+        List<JudgedCandidate> judged, params (CreditBank.Match? Bank, int Accepted)[] sides)
+    {
+        for (var side = 0; side < sides.Length; side++)
+        {
+            var tail = side == 1;
+            var (match, accepted) = sides[side];
+            if (accepted == 0)
+            {
+                continue;
+            }
+
+            if (match is not null)
+            {
+                await bank.CountHitAsync(match.EntryId, CancellationToken.None);
+                continue;
+            }
+
+            var first = (tail ? candidates.Tail : candidates.Head)[0];
+            var read = judged.FirstOrDefault(j => j.Tail == tail && j.Page == first.Page);
+            if (first.Page == 0 && read is { Accepted: true, Text: not null })
+            {
+                await bank.SeedAsync(chapter, edges, tail, CancellationToken.None);
+            }
+        }
     }
 
     private async Task TryAsync(Func<Task> write, ReaderService.ChapterSlice chapter)
@@ -206,13 +280,19 @@ public sealed class ReaderCreditsCache(
     }
 
     /// <summary>How many candidates from the edge are a scanlator's before the first that is not.</summary>
+    /// <param name="fromBank">
+    /// Candidates the bank proposed: only a page OCR read and accepted counts, because without the text
+    /// a bank match is as likely a blank margin as a credit.
+    /// </param>
     private async Task<int> AcceptedAsync(
-        ReaderService.ChapterSlice slice, IReadOnlyList<CreditCandidate> edge, bool tail, List<JudgedCandidate> judged)
+        ReaderService.ChapterSlice slice, IReadOnlyList<CreditCandidate> edge, bool tail, List<JudgedCandidate> judged,
+        bool fromBank)
     {
         for (var c = 0; c < edge.Count; c++)
         {
             var (accepted, read) = await IsScanlatorAsync(slice, edge[c], tail);
-            judged.Add(new JudgedCandidate(tail, edge[c].Page, edge[c].Share, edge[c].Colour, read, accepted));
+            accepted &= !fromBank || read is not null;
+            judged.Add(new JudgedCandidate(tail, edge[c].Page, edge[c].Share, edge[c].Colour, read, accepted, fromBank));
             if (!accepted)
             {
                 return c;

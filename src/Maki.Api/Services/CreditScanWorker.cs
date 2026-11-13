@@ -34,8 +34,12 @@ namespace Maki.Api.Services;
 /// </summary>
 public sealed class CreditScanWorker(
     IServiceScopeFactory scopes, IAppSettings settings, ReaderCreditsCache credits, CreditStore store,
-    ReaderArchiveCache archives, PageConversionWorker conversion, ILogger<CreditScanWorker> logger) : BackgroundService
+    ReaderArchiveCache archives, PageConversionWorker conversion, CreditBank bank, CreditStrips strips,
+    ILogger<CreditScanWorker> logger) : BackgroundService
 {
+    /// <summary>Chapters one bank recheck looks at before the worker looks for due series again.</summary>
+    private const int BankBatch = 200;
+
     /// <summary>The longest the worker sleeps with nothing due; downloads, imports and the first request signal it.</summary>
     internal static readonly TimeSpan IdleFallback = TimeSpan.FromMinutes(30);
 
@@ -175,6 +179,11 @@ public sealed class CreditScanWorker(
                 if (_wanted && !Paused && await NextSeriesAsync(stoppingToken) is { } next)
                 {
                     await ScanSeriesAsync(next.SeriesId, next.Language, stoppingToken);
+                    continue;
+                }
+
+                if (_wanted && !Paused && await RecheckBankAsync(stoppingToken) > 0)
+                {
                     continue;
                 }
 
@@ -429,9 +438,7 @@ public sealed class CreditScanWorker(
             }
 
             await QuietAsync(ct);
-            var (found, failed) = references.Count == 0
-                ? (CreditPages.None, false)
-                : await credits.SearchAsync(slice, references, ct, parallelism: 1);
+            var (found, failed) = await credits.SearchAsync(slice, references, ct, parallelism: 1);
             var probe = volume ? probes.GetValueOrDefault(slice.ChapterFileId) : null;
             if (!failed)
             {
@@ -455,6 +462,72 @@ public sealed class CreditScanWorker(
 
             await Task.Delay(BetweenChapters, ct);
         }
+    }
+
+    /// <summary>
+    /// Compares chapters already searched with the bank entries added since (<see cref="ChapterCredits.BankSeen"/>),
+    /// at the edges the bank would be asked about (nothing hidden, nothing repetition proposed), from their
+    /// stored strips, so a new entry reaches the whole library without searching it again. A chapter an
+    /// entry matches goes back for a full search, where the nearby-chapter rule and the text judge decide.
+    /// Returns how many chapters it looked at.
+    /// </summary>
+    internal async Task<int> RecheckBankAsync(CancellationToken ct)
+    {
+        var entries = await bank.EntriesAsync(ct);
+        var newest = CreditBank.NewestId(entries);
+        if (newest == 0)
+        {
+            return 0;
+        }
+
+        List<ChapterCredits> rows;
+        using (var scope = scopes.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+            rows = await db.ChapterCredits.AsNoTracking().IgnoreQueryFilters()
+                .Where(r => r.BankSeen < newest && !r.Skipped && !r.Failed && r.EdgeKey != "" &&
+                            r.DetectorVersion == CreditDetector.Version && (r.HeadPages == 0 && r.HeadOffset == 0 || r.TailPages == 0))
+                .OrderBy(r => r.ChapterId)
+                .Take(BankBatch)
+                .ToListAsync(ct);
+        }
+
+        foreach (var row in rows)
+        {
+            if (Paused)
+            {
+                break;
+            }
+
+            await QuietAsync(ct);
+            if (strips.Read(row.EdgeKey) is not { } edges)
+            {
+                // No strips to compare: a full search decodes them, and checks the bank on the way.
+                await store.RequeueAsync(row.ChapterId, ct);
+                continue;
+            }
+
+            // Only edges the bank would be asked about: nothing hidden and nothing repetition proposed. An
+            // entry from the chapter's own neighbours may match here; the full search leaves those out.
+            var pageCount = row.PageCount > 0 ? row.PageCount : CreditDetector.MinPages * 3;
+            var repeated = CreditStore.Candidates(row).Where(c => !c.FromBank).ToList();
+            bool Open(bool tail) => !repeated.Any(c => c.Tail == tail) && (tail ? row.TailPages == 0 : row is { HeadPages: 0, HeadOffset: 0 });
+            bool Eligible(CreditBank.Entry e) => e.SourceChapterId != row.ChapterId;
+            var matched =
+                (Open(false) && await bank.FindAsync(pageCount, edges, tail: false, entries, Eligible, row.BankSeen, ct) is not null) ||
+                (Open(true) && await bank.FindAsync(pageCount, edges, tail: true, entries, Eligible, row.BankSeen, ct) is not null);
+            if (matched)
+            {
+                await store.RequeueAsync(row.ChapterId, ct);
+                Signal();
+            }
+            else
+            {
+                await store.MarkBankSeenAsync(row.ChapterId, newest, ct);
+            }
+        }
+
+        return rows.Count;
     }
 
     private async Task<bool?> ProbeAsync(ReaderService.ChapterSlice slice, CancellationToken ct)

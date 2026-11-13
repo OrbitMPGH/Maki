@@ -30,6 +30,15 @@ public class ChapterCredits
     /// <summary>The nearby chapters compared against, as their edge keys hashed in order; empty when there were none.</summary>
     public string ReferencesKey { get; set; } = string.Empty;
 
+    /// <summary>The slice's page count when the row was written; 0 on rows written before it was kept.</summary>
+    public int PageCount { get; set; }
+
+    /// <summary>
+    /// The newest <see cref="CreditBankEntry"/> this chapter was compared against, so an entry added
+    /// later is checked against it once (<c>CreditScanWorker</c>), without searching it again.
+    /// </summary>
+    public int BankSeen { get; set; }
+
     public int HeadPages { get; set; }
     public double HeadOffset { get; set; }
     public int TailPages { get; set; }
