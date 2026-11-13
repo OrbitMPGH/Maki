@@ -119,6 +119,7 @@ import {
   useSeriesReadProgress,
   useSetChapterRead,
   useSetChaptersState,
+  warmReaderCredits,
   type ChapterReadState,
 } from '../api/reader'
 import { useSeriesNoteCounts } from '../api/notes'
@@ -149,7 +150,8 @@ import { AnimeCoverageBar } from '../components/AnimeCoverageBar'
 import { TYPE_LABELS } from '../components/CatalogueFilters'
 import { LinkChaptersModal } from '../components/LinkChaptersModal'
 import { RelinkFilesModal } from '../components/RelinkFilesModal'
-import { MetadataLinks } from '../components/MetadataLinks'
+import { ScoreFigure } from '../components/discover/ScoreFigure'
+import { ScoredSiteChips } from '../components/ScoredSiteChips'
 import { RelatedSeriesSection } from '../components/RelatedSeriesSection'
 import { TagBuckets } from '../components/TagBuckets'
 import { SimilarSeriesSection } from '../components/SimilarSeriesSection'
@@ -517,6 +519,8 @@ function SeriesDetailBody() {
       series?.mangaBakaId != null ? String(series.mangaBakaId) : null,
   )
   const providerTags = providerDetail?.tags ?? []
+  const communityScore = providerDetail?.rating ?? null
+  const sourceRatings = providerDetail?.sourceRatings ?? []
 
   // Registered sources are cached with staleTime Infinity, so this is a lookup, not a fetch per row.
   const { data: sources } = useSources()
@@ -572,6 +576,10 @@ function SeriesDetailBody() {
   const { data: readingStats } = useSeriesReadingStats(seriesId, readTracking)
   const { data: progressRows } = useSeriesReadProgress(seriesId)
   const { data: continueAt } = useContinueReading(seriesId)
+  // Read opens this chapter, so its credit page search starts while the page is looked at.
+  useEffect(() => {
+    if (continueAt?.chapterId != null) warmReaderCredits(continueAt.chapterId)
+  }, [continueAt?.chapterId])
   const { data: filesSummary } = useSeriesFilesSummary(seriesId)
   const setRead = useSetChapterRead(seriesId)
   // Only worth asking once there is an anime to have finished, and only meaningful with read
@@ -2740,16 +2748,26 @@ function SeriesDetailBody() {
                   )}
                   <Divider mt="sm" color="var(--hairline)" />
                   <SeriesTagsEditor seriesId={series.id} tagIds={series.tagIds} />
-                  {series.links && series.links.length > 0 && (
+                  {((series.links?.length ?? 0) > 0 || communityScore != null || sourceRatings.length > 0) && (
                       <div>
                         <Divider mb="sm" color="var(--hairline)" />
                         <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
-                          <Trans>Open on</Trans>
+                          {communityScore != null || sourceRatings.length > 0 ? (
+                              <Trans>Scores and links</Trans>
+                          ) : (
+                              <Trans>Open on</Trans>
+                          )}
                         </Title>
-                        <Group gap="xs" wrap="wrap">
-                          <MetadataLinks links={series.links} />
-                          {hasReviewIds(series) && <SeriesReviews ids={series} />}
-                        </Group>
+                        <Stack gap="sm" align="flex-start">
+                          {communityScore != null && (
+                              <ScoreFigure score={communityScore} standing={providerDetail?.scoreStanding} />
+                          )}
+                          <ScoredSiteChips
+                              links={series.links ?? []}
+                              sourceRatings={sourceRatings}
+                              extra={hasReviewIds(series) && <SeriesReviews ids={series} />}
+                          />
+                        </Stack>
                       </div>
                   )}
                 </Stack>

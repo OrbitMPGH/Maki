@@ -211,6 +211,79 @@ namespace Maki.Data.Migrations
                     b.ToTable("Chapters");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.ChapterCredits", b =>
+                {
+                    b.Property<int>("ChapterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("BankSeen")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CandidatesJson")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("ChapterFileId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DetectorVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("EdgeKey")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("Failed")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("HeadOffset")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("HeadPages")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Judge")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("OcrVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("PageCount")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool?>("ProbeHit")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ReferencesKey")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("ScannedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Skipped")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TailPages")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TextVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("ChapterId");
+
+                    b.HasIndex("SeriesId");
+
+                    b.ToTable("ChapterCredits");
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.ChapterFile", b =>
                 {
                     b.Property<int>("Id")
@@ -476,6 +549,47 @@ namespace Maki.Data.Migrations
                     b.HasIndex("SourceMappingId");
 
                     b.ToTable("ChapterSourceLinks");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.CreditBankEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Hits")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("SeriesId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("Signature")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<int>("SignatureFirst")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("SourceChapterId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<byte[]>("Strip")
+                        .IsRequired()
+                        .HasColumnType("BLOB");
+
+                    b.Property<bool>("Tail")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SeriesId");
+
+                    b.HasIndex("SourceChapterId");
+
+                    b.ToTable("CreditBank", (string)null);
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.DownloadQueueItem", b =>
@@ -3584,6 +3698,21 @@ namespace Maki.Data.Migrations
                     b.Navigation("Series");
                 });
 
+            modelBuilder.Entity("Maki.Core.Entities.ChapterCredits", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Chapter", null)
+                        .WithOne()
+                        .HasForeignKey("Maki.Core.Entities.ChapterCredits", "ChapterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Maki.Core.Entities.ChapterFile", b =>
                 {
                     b.HasOne("Maki.Core.Entities.Series", null)
@@ -3656,6 +3785,20 @@ namespace Maki.Data.Migrations
                     b.Navigation("Chapter");
 
                     b.Navigation("SourceMapping");
+                });
+
+            modelBuilder.Entity("Maki.Core.Entities.CreditBankEntry", b =>
+                {
+                    b.HasOne("Maki.Core.Entities.Series", null)
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Maki.Core.Entities.Chapter", null)
+                        .WithMany()
+                        .HasForeignKey("SourceChapterId")
+                        .OnDelete(DeleteBehavior.SetNull);
                 });
 
             modelBuilder.Entity("Maki.Core.Entities.DownloadQueueItem", b =>

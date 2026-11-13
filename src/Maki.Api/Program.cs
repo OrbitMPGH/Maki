@@ -1027,6 +1027,8 @@ try
     builder.Services.AddSingleton<PageConversionEstimateService>();
     builder.Services.AddSingleton<PageConversionWorker>();
     builder.Services.AddHostedService(sp => sp.GetRequiredService<PageConversionWorker>());
+    builder.Services.AddSingleton<CreditScanWorker>();
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<CreditScanWorker>());
     builder.Services.AddScoped<UpgradeEvaluationService>();
     builder.Services.AddScoped<UpgradeProfileSeeder>();
     builder.Services.AddScoped<SourceQualitySeeder>();
@@ -1102,6 +1104,9 @@ try
     builder.Services.AddScoped<ReaderThumbnailCache>();
     builder.Services.AddSingleton<ReaderRecapCache>();
     builder.Services.AddSingleton<ReaderCreditsCache>();
+    builder.Services.AddSingleton<CreditStore>();
+    builder.Services.AddSingleton<CreditStrips>();
+    builder.Services.AddSingleton<CreditBank>();
     builder.Services.AddSingleton(sp => new Maki.Api.Services.Ocr.PageTextReader(
         sp.GetRequiredService<ILogger<Maki.Api.Services.Ocr.PageTextReader>>()));
     builder.Services.AddSingleton<Maki.Api.Services.Ocr.IPageTextReader>(sp =>

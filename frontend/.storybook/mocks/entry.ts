@@ -43,6 +43,8 @@ const readerHandlers: HttpHandler[] = [
   http.get(api('/reader/chapter/:id/recap'), () => HttpResponse.json({ page: null, offset: null })),
   http.get(api('/reader/chapter/:id/credits'), () =>
     HttpResponse.json({ headPages: 0, headOffset: 0, tailPages: 0, pageVersion: 'v1' } satisfies ReaderCredits)),
+  // The series page and Home's Continue cards start the search ahead; the answer is the reader's to ask for.
+  http.post(api('/reader/chapter/:id/credits/warm'), () => new HttpResponse(null, { status: 204 })),
   http.get(api('/series/:id/rating-checkpoint'), () => HttpResponse.json({ checkpoint: null, provisionalRating: null })),
   http.post(api('/series/:id/rating-checkpoint/dismiss'), () => new HttpResponse(null, { status: 204 })),
   http.put(api('/series/:id/rating/provisional'), async ({ request }) =>

@@ -1523,6 +1523,10 @@ msgid "{diff, plural, other {# behind}}"
 msgstr "{diff, plural, one {Za o #} few {Za o #} many {Za o #} other {Za o #}}"
 
 #: src/pages/HealthPage.tsx
+msgid "{done, plural, one {# chapter searched} other {# chapters searched}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 msgid "{done, plural, one {# file done this pass} other {# files done this pass}}"
 msgstr ""
 
@@ -3464,6 +3468,10 @@ msgstr "{volumesText} + {chaptersText}"
 #, fuzzy
 msgid "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
 msgstr "{waited, plural, one {# tytuł czeka dłużej niż sześć miesięcy.} few {# tytuły czekają dłużej niż sześć miesięcy.} many {# tytułów czeka dłużej niż sześć miesięcy.} other {# tytułu czeka dłużej niż sześć miesięcy.}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# chapter left} other {# chapters left}}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "{waiting, plural, one {# file left} other {# files left}}"
@@ -10708,6 +10716,10 @@ msgstr "Znajdź wyszukiwarkę"
 #, fuzzy
 msgid "Finding a source…"
 msgstr "Szukanie źródła…"
+
+#: src/pages/HealthPage.tsx
+msgid "Finding credit pages"
+msgstr ""
 
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
@@ -18259,6 +18271,7 @@ msgid "Path mapping, Maki side"
 msgstr "Mapowanie ścieżek, strona Maki"
 
 #: src/components/QueuePause.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Pause"
@@ -21068,6 +21081,7 @@ msgstr "Wynik"
 #: src/components/home/NextUpList.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -22029,6 +22043,10 @@ msgstr "Punktacja dla {0}"
 #, fuzzy
 msgid "Score: {score}"
 msgstr "Wynik: {score}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Scores and links"
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy

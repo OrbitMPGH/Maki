@@ -3666,6 +3666,12 @@ function RunningRow({ item }: { item: RunningItem }) {
         facts.push(<Plural key="done" value={done} one="# file done this pass" other="# files done this pass" />)
       if (waiting > 0) facts.push(<Plural key="waiting" value={waiting} one="# file left" other="# files left" />)
       break
+    case 'creditScan':
+      title = t`Finding credit pages`
+      if (done > 0) facts.push(<Plural key="done" value={done} one="# chapter searched" other="# chapters searched" />)
+      if (waiting > 0) facts.push(<Plural key="waiting" value={waiting} one="# chapter left" other="# chapters left" />)
+      if (item.control === 'resume') facts.push(<Trans key="paused">Paused</Trans>)
+      break
     case 'downloads':
       title = t`Downloading chapters`
       facts.push(<Plural key="active" value={active} one="# in progress" other="# in progress" />)
@@ -3699,7 +3705,7 @@ function RunningRow({ item }: { item: RunningItem }) {
         <Text size="sm" c="var(--ink-hi)" fw={600}>
           {title}
         </Text>
-        {item.kind === 'pageConversion' && item.detail && (
+        {(item.kind === 'pageConversion' || item.kind === 'creditScan') && item.detail && (
           <Text size="xs" c="var(--ink-3)" mt={2} truncate="start" title={item.detail}>
             {item.detail}
           </Text>
@@ -3774,6 +3780,20 @@ function RunningControl({ item }: { item: RunningItem }) {
         onClick={() => pauseConversion.mutate(undefined, settled)}
       >
         <Trans>Pause pass</Trans>
+      </Button>
+    )
+  }
+  if (item.kind === 'creditScan' && (item.control === 'pause' || item.control === 'resume')) {
+    const pausing = item.control === 'pause'
+    return (
+      <Button
+        size="compact-xs"
+        variant="default"
+        leftSection={pausing ? <IconPlayerPause size={16} /> : <IconPlayerPlay size={16} />}
+        loading={stop.isPending}
+        onClick={() => stop.mutate({ path: `/running/creditscan/${pausing ? 'pause' : 'resume'}` }, settled)}
+      >
+        {pausing ? <Trans>Pause</Trans> : <Trans>Resume</Trans>}
       </Button>
     )
   }

@@ -53,6 +53,11 @@ export interface ReaderManifest {
   autoProfileId: number | null
   /** Identifies the file behind the pages; page URLs carry it so they can be cached until a re-download. */
   pageVersion: string
+  /**
+   * The credit pages to leave out, when credit pages are hidden and the background scan already found
+   * them for this file, so the first paint needs no search. Null or absent: ask `GET credits`.
+   */
+  credits?: Omit<ReaderCredits, 'pageVersion'> | null
   /** The quality tier of the file behind the pages. Absent on a manifest saved offline before it existed. */
   tier?: QualityTierName
   /** Whether the admin turned on server upscaling, and which of its models this reader can pick. Absent on a manifest saved offline before it existed. */
@@ -299,10 +304,23 @@ export const readerCreditsQuery = (chapterId: number, pageVersion: string | unde
     meta: { silent: true },
   })
 
+const warmed = new Set<number>()
+
 /**
- * Asks ahead for the next chapter's credit pages while this one ends, since the first search decodes
- * the edges of up to seven chapters. Its file version is not known yet, so the answer is stored under
- * the version it carries.
+ * Has the server start a chapter's credit page search before the reader asks, from where the next
+ * chapter to read is shown (the series page, Home's Continue). The server checks the series' settings
+ * and does nothing when credit pages are not hidden. Once per chapter per page load.
+ */
+export function warmReaderCredits(chapterId: number): void {
+  if (warmed.has(chapterId)) return
+  warmed.add(chapterId)
+  api(`${readerCreditsUrl(chapterId)}/warm`, { method: 'POST' }).catch(() => warmed.delete(chapterId))
+}
+
+/**
+ * Asks ahead for the next chapter's credit pages once this one's are known, since a search that is
+ * not stored yet decodes the edges of up to seven chapters. Its file version is not known yet, so the
+ * answer is stored under the version it carries.
  */
 export async function prefetchReaderCredits(queryClient: QueryClient, chapterId: number): Promise<void> {
   try {

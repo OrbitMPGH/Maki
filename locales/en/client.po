@@ -1307,6 +1307,10 @@ msgid "{diff, plural, other {# behind}}"
 msgstr "{diff, plural, other {# behind}}"
 
 #: src/pages/HealthPage.tsx
+msgid "{done, plural, one {# chapter searched} other {# chapters searched}}"
+msgstr "{done, plural, one {# chapter searched} other {# chapters searched}}"
+
+#: src/pages/HealthPage.tsx
 msgid "{done, plural, one {# file done this pass} other {# files done this pass}}"
 msgstr "{done, plural, one {# file done this pass} other {# files done this pass}}"
 
@@ -2919,6 +2923,10 @@ msgstr "{volumesText} + {chaptersText}"
 #: src/pages/discover/ShortlistTab.tsx
 msgid "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
 msgstr "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# chapter left} other {# chapters left}}"
+msgstr "{waiting, plural, one {# chapter left} other {# chapters left}}"
 
 #: src/pages/HealthPage.tsx
 msgid "{waiting, plural, one {# file left} other {# files left}}"
@@ -8963,6 +8971,10 @@ msgstr "Find search"
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "Finding a source…"
 msgstr "Finding a source…"
+
+#: src/pages/HealthPage.tsx
+msgid "Finding credit pages"
+msgstr "Finding credit pages"
 
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
@@ -15253,6 +15265,7 @@ msgid "Path mapping, Maki side"
 msgstr "Path mapping, Maki side"
 
 #: src/components/QueuePause.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
 msgid "Pause"
 msgstr "Pause"
@@ -17598,6 +17611,7 @@ msgstr "Result"
 #: src/components/home/NextUpList.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 msgid "Resume"
@@ -18406,6 +18420,10 @@ msgstr "Score for {0}"
 #: src/components/series/FileQualityBadge.tsx
 msgid "Score: {score}"
 msgstr "Score: {score}"
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "Scores and links"
+msgstr "Scores and links"
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Scores are set inside each profile."

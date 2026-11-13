@@ -300,9 +300,9 @@ public class SourceMappingController(
     public async Task<IActionResult> Quality(
         [FromQuery] int seriesId, [FromServices] UpgradeEvaluationService upgrades, CancellationToken ct)
     {
-        if (await MissingOrArchivedAsync(seriesId, ct) is { } blocked)
+        if (!await db.Series.AnyAsync(s => s.Id == seriesId, ct))
         {
-            return blocked;
+            return NotFound();
         }
 
         var estimates = await SourceQualitySamples.EstimatesAsync(db, seriesId, ct);

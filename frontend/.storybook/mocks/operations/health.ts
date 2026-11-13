@@ -666,6 +666,7 @@ export const runningWork = {
       detail: 'Lighthouse Keeper/Lighthouse Keeper v03.cbz',
       control: 'pause',
     },
+    { kind: 'creditScan', active: 1, done: 48, waiting: 2210, detail: 'Lighthouse Keeper', control: 'pause' },
     { kind: 'downloads', active: 2, waiting: 14, control: 'pause' },
   ],
 } satisfies RunningWork

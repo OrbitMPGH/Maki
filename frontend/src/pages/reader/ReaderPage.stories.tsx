@@ -301,6 +301,39 @@ export const LateCreditAnswerSkipsTheStart: Story = {
   },
 }
 
+let creditSearches = 0
+const countCreditSearches = http.get(api('/reader/chapter/:id/credits'), async ({ params }) => {
+  // The next chapter is asked for ahead as soon as this one's answer is known; only this chapter counts.
+  if (Number(params.id) === 1132) creditSearches++
+  await delay(10_000)
+  return HttpResponse.json({ headPages: 0, headOffset: 0, tailPages: 0, pageVersion: 'v1' } satisfies ReaderCredits)
+})
+
+/** An answer the background scan already stored comes with the manifest: the chapter opens trimmed and never asks for a search. */
+export const StoredCreditsOpenTrimmed: Story = {
+  parameters: {
+    ...open(1132),
+    msw: [
+      countCreditSearches,
+      withManifest({
+        ...chapters[1132],
+        resumePage: 0,
+        prefs: { ...chapters[1132].prefs, hideCredits: true },
+        credits: { headPages: 1, headOffset: 0, tailPages: 2 },
+      }),
+    ],
+  },
+  beforeEach: () => {
+    creditSearches = 0
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 2' })).toBeVisible()
+    await expect(await canvas.findByText('Page 1 of 15')).toBeInTheDocument()
+    await expect(canvas.queryByRole('img', { name: 'Chapter 132 - page 1' })).toBeNull()
+    await expect(creditSearches).toBe(0)
+  },
+}
+
 /** A late answer after the reader has moved past the credit page trims only the end, so the page on screen never moves. */
 export const LateCreditAnswerAfterMovingOnTrimsOnlyTheEnd: Story = {
   parameters: { ...open(1132), msw: [creditsAt({ headPages: 1, headOffset: 0, tailPages: 2 }, 2500), hidingCredits(1132)] },

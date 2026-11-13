@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { IconBookFilled } from '../../lib/icons'
 import { coverChapterLabel } from '../../lib/chapterLabel'
 import type { HomeReadingItem } from '../../api/hooks'
+import { warmReaderCredits } from '../../api/reader'
 import { useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { Rail } from '../ui/Rail'
@@ -45,7 +46,12 @@ export const ReadingCard = memo(function ReadingCard({ item, note }: { item: Hom
   const pageNumber = item.page + 1
 
   return (
-    <Link to={`/read/${item.chapterId}`} className="cover-card">
+    <Link
+      to={`/read/${item.chapterId}`}
+      className="cover-card"
+      onPointerEnter={() => warmReaderCredits(item.chapterId)}
+      onFocus={() => warmReaderCredits(item.chapterId)}
+    >
       <div className="cover-poster">
         {item.coverUrl ? (
           <img src={item.coverUrl} alt="" loading="lazy" decoding="async" />

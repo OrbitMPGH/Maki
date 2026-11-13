@@ -126,7 +126,7 @@ export interface HealthScan {
 
 /** One piece of background work in progress (`GET health/running`). `label` is set only for a scheduled job. */
 export interface RunningItem {
-  kind: 'job' | 'enhance' | 'prepareAhead' | 'pageConversion' | 'downloads' | 'bulk' | 'sourceMatch'
+  kind: 'job' | 'enhance' | 'prepareAhead' | 'pageConversion' | 'creditScan' | 'downloads' | 'bulk' | 'sourceMatch'
   label?: string | null
   startedAtUtc?: string | null
   active?: number | null
