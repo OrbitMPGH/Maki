@@ -156,6 +156,8 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     /// <summary>
     /// Moves a series to <see cref="ReadingStatus.Completed"/> for its reader, the same upsert as the
     /// Reading promotion. Run after the save that recorded the read, so it lands after that promotion.
+    /// Only from Plan to read or Reading: a watched tick or an import is not a read and does not undo
+    /// a series the reader put on hold or dropped.
     /// </summary>
     public Task PromoteToCompletedAsync(int userId, int seriesId, CancellationToken ct) =>
         Database.ExecuteSqlRawAsync(PromoteToCompletedSql, [userId, seriesId, DateTime.UtcNow], ct);
@@ -167,7 +169,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         ON CONFLICT ("UserId", "SeriesId") DO UPDATE SET
             "Status" = 4, "StatusChangedAt" = excluded."StatusChangedAt", "StatusAuto" = 0,
             "UpdatedAt" = excluded."UpdatedAt"
-        WHERE "Status" <> 4
+        WHERE "Status" IN (0, 1)
         """;
 
     /// <summary>

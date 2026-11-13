@@ -322,7 +322,8 @@ public class ReaderController(
             leftOutToComplete = next is null && row.Completed
                 ? await SeriesCompletion.AskAsync(
                     db, currentUser.UserId, await db.Series.AsNoTracking().FirstAsync(s => s.Id == chapter.SeriesId, ct),
-                    outlooks is not null && ReleaseOutlookService.ExpectsMore(await outlooks.ForSeriesAsync(chapter.SeriesId, ct)),
+                    async () => outlooks is not null &&
+                                ReleaseOutlookService.ExpectsMore(await outlooks.ForSeriesAsync(chapter.SeriesId, ct)),
                     await LibraryListRows.UnmonitorSpecialsAsync(appSettings, ct), ct, chapter)
                 : null,
         });

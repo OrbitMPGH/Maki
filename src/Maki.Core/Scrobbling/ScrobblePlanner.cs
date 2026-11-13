@@ -46,7 +46,8 @@ public static class ScrobblePlanner
     /// entry already on the list is moved to it even with no new progress. Completed still wins.
     /// <see cref="ScrobbleStatus.Completed"/> when the series is Completed in Maki: the entry is
     /// completed whatever the tracker's total, with its progress filled to that total, because the
-    /// reader's mark can fall short of it for chapters the tracker counts and the reader skipped.
+    /// reader's mark can fall short of it for chapters the tracker counts and the reader skipped. An
+    /// entry already completed keeps the progress it has.
     /// </param>
     public static ScrobblePlan Decide(
         RemoteEntry entry, int chapter, int volume, ScrobbleStatus? fallbackStatus = null, bool finished = false,
@@ -88,7 +89,7 @@ public static class ScrobblePlanner
 
         var newCh = Math.Max(chapter, entry.ProgressChapter);
         var newVol = Math.Max(volume, entry.ProgressVolume);
-        if (done)
+        if (done && entry.Status != ScrobbleStatus.Completed)
         {
             newCh = Math.Max(newCh, entry.TotalChapters ?? 0);
             newVol = Math.Max(newVol, entry.TotalVolumes ?? 0);

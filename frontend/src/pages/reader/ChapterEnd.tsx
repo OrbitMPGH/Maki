@@ -27,8 +27,10 @@ function skipped(current: number | null, next: number | null): [number, number] 
 }
 
 /**
- * Every chapter the reader kept is read and the series has ended, but some chapters were switched off,
- * or one was still expected when the last was read. The server never asks while one is expected.
+ * Every chapter the reader kept is read and the series has ended, and only chapters the reader switched
+ * off are unread. Shown under "That's the whole series." too: the read mark can reach the last chapter
+ * while a switched-off one below it keeps the series from completing. The server never asks while
+ * another chapter is expected.
  */
 function ChapterEndComplete({ seriesId, leftOut }: { seriesId: number; leftOut: number }) {
   const changeStatus = useChangeReadingStatus()
@@ -294,7 +296,7 @@ export default function ChapterEnd({
             {!finished && !downloading && unread === 0 && pending === 0 && (
               <ChapterEndOutlook seriesId={manifest.seriesId} />
             )}
-            {!finished && !downloading && unread === 0 && pending === 0 && ending?.leftOutToComplete != null && (
+            {!downloading && unread === 0 && pending === 0 && ending?.leftOutToComplete != null && (
               <ChapterEndComplete seriesId={manifest.seriesId} leftOut={ending.leftOutToComplete} />
             )}
             <Group gap="xs" mt="md">

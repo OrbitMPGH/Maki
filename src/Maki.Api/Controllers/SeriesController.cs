@@ -1030,7 +1030,8 @@ public class SeriesController(
             RateHintEligible = await RateHintAsync(db, id, ct),
             CompleteHintLeftOut = series.Status == SeriesStatus.Completed
                 ? await SeriesCompletion.AskAsync(db, currentUser.UserId, series,
-                    outlooks is not null && ReleaseOutlookService.ExpectsMore(await outlooks.ForSeriesAsync(id, ct)),
+                    async () => outlooks is not null &&
+                                ReleaseOutlookService.ExpectsMore(await outlooks.ForSeriesAsync(id, ct)),
                     unmonitorSpecials, ct)
                 : null,
             ReadTimeEstimate = estimate is null

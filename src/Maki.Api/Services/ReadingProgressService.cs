@@ -240,8 +240,9 @@ public class ReadingProgressService(
             state.UpdatedAt = now;
             await db.SaveChangesAsync(ct);
 
-            // Every caller is a one-off the reader started (mark read, an import, an anime tick), so
-            // filling in the chapters before the mark completes the series too.
+            // Every caller runs once per change, never on a timer (mark read or watched, an import, an
+            // anime tick, a volume handed over to its chapters), so filling in the chapters before the
+            // mark completes the series too.
             await CompleteIfReadThroughAsync(userId, state, ct);
             return true;
         }, ct);

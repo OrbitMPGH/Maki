@@ -45,6 +45,15 @@ public class ScrobblePlannerTests
     }
 
     [Fact]
+    public void AnAlreadyCompletedEntryKeepsItsOwnProgressShape()
+    {
+        var entry = new RemoteEntry(ProgressChapter: 20, Status: ScrobbleStatus.Completed, TotalChapters: 29);
+        var plan = ScrobblePlanner.Decide(entry, chapter: 26, volume: 0, held: ScrobbleStatus.Completed);
+
+        Assert.Equal((26, ScrobbleStatus.Completed), (plan.Chapter, plan.PushStatus));
+    }
+
+    [Fact]
     public void AnAlreadyCompletedEntryIsLeftAlone()
     {
         var entry = new RemoteEntry(ProgressChapter: 29, Status: ScrobbleStatus.Completed, TotalChapters: 29);

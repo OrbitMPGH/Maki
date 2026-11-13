@@ -69,7 +69,8 @@ public sealed class SeriesCompletionTests : IDisposable
     {
         var db = _db.NewContext();
         return SeriesCompletion.AskAsync(
-            db, _user, db.Series.Single(s => s.Id == seriesId), expectsMore, unmonitorSpecials: false, default);
+            db, _user, db.Series.Single(s => s.Id == seriesId), () => Task.FromResult(expectsMore),
+            unmonitorSpecials: false, default);
     }
 
     [Fact]
@@ -183,6 +184,70 @@ public sealed class SeriesCompletionTests : IDisposable
     }
 
     [Fact]
+    public async Task A_main_chapter_switched_off_mid_series_keeps_it_open_and_asks()
+    {
+        var series = SeedSeries(26);
+        var kept = SeedChapters(series, Enumerable.Range(1, 26).Where(n => n != 20).Select(n => (decimal)n), downloaded: true);
+        SeedChapters(series, [20m], downloaded: false);
+        Read(series, kept);
+
+        await NewService().TrackNativeAsync(_user, series, "Siren", 26, 0, default);
+
+        Assert.Equal(ReadingStatus.Reading, Status(series));
+        Assert.Equal(1, await AskAsync(series));
+    }
+
+    [Fact]
+    public async Task A_None_series_does_not_count_its_own_switches_as_left_out()
+    {
+        var series = _db.SeedSeries("Manual", NewChapterMonitorMode.None, configure: s =>
+        {
+            s.Status = SeriesStatus.Completed;
+            s.TotalChapters = 100;
+        });
+        Read(series, SeedChapters(series, Enumerable.Range(1, 5).Select(n => (decimal)n), downloaded: true));
+        SeedChapters(series, Enumerable.Range(6, 95).Select(n => (decimal)n), downloaded: false);
+
+        Assert.Null(await AskAsync(series));
+    }
+
+    [Fact]
+    public async Task A_series_that_ends_after_the_last_read_is_asked_about()
+    {
+        var series = _db.SeedSeries("Late", configure: s => s.Status = SeriesStatus.Ongoing);
+        Read(series, SeedChapters(series, [1m, 2m, 3m], downloaded: true));
+        await NewService().TrackNativeAsync(_user, series, "Late", 3, 0, default);
+        using (var db = _db.NewContext())
+        {
+            db.Series.Single(s => s.Id == series).Status = SeriesStatus.Completed;
+            db.SaveChanges();
+        }
+
+        Assert.Equal(0, await AskAsync(series));
+    }
+
+    [Fact]
+    public async Task Ticking_off_the_rest_of_a_dropped_series_leaves_it_dropped()
+    {
+        var series = SeedSeries(3);
+        var chapters = SeedChapters(series, [1m, 2m, 3m], downloaded: true);
+        Read(series, chapters[..2]);
+        using (var db = _db.NewContext())
+        {
+            db.UserSeriesStates.IgnoreQueryFilters().Single(s => s.SeriesId == series).Status = ReadingStatus.Dropped;
+            db.ChapterProgress.Add(new ChapterProgress
+            {
+                UserId = _user, SeriesId = series, ChapterId = chapters[2], Completed = true, Watched = true,
+            });
+            db.SaveChanges();
+        }
+
+        await NewService().ImportSilentAsync(_user, series, null, "Siren", 3, 0, default);
+
+        Assert.Equal(ReadingStatus.Dropped, Status(series));
+    }
+
+    [Fact]
     public async Task The_end_screen_counts_the_chapter_it_is_on_as_read()
     {
         var series = SeedSeries(null);
@@ -192,7 +257,7 @@ public sealed class SeriesCompletionTests : IDisposable
 
         var db = _db.NewContext();
         var left = await SeriesCompletion.AskAsync(
-            db, _user, db.Series.Single(s => s.Id == series), false, false, default,
+            db, _user, db.Series.Single(s => s.Id == series), () => Task.FromResult(false), false, default,
             db.Chapters.Single(c => c.Id == kept[1]));
 
         Assert.Equal(1, left);
