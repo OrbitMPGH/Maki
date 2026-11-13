@@ -108,7 +108,12 @@ public record ReaderPrefsSpec(
     /// <summary>The side zones' share of the page in percent, 15 to 45.</summary>
     int TapWidth = ReaderPrefsSpec.TapWidthDefault,
     /// <summary>Swap the back and forward tap zones.</summary>
-    bool TapInvert = false)
+    bool TapInvert = false,
+    /// <summary>
+    /// Leave out the credit, recruitment and notice pages that repeat at the start or end of a
+    /// series' chapters. Display only: the files and the page indexes progress records are untouched.
+    /// </summary>
+    bool HideCredits = false)
 {
     public const string ModePaged = "paged";
     public const string ModeDouble = "double";

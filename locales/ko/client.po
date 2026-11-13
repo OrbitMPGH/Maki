@@ -1808,6 +1808,10 @@ msgstr "{haveCount} / {totalCount, plural, other {# 챕터}} 목록에 있지만
 msgid "{haveCount} / {totalCount, plural, one {# wanted} other {# wanted}}"
 msgstr "{haveCount} / {totalCount, plural, other {원함 #개}}"
 
+#: src/pages/reader/ReaderSettings.tsx
+msgid "{hiddenCount, plural, one {# page hidden in this chapter} other {# pages hidden in this chapter}}"
+msgstr ""
+
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #, fuzzy
 msgid "{hits} of the last {checked} chapters came out inside the window drawn for them."
@@ -6681,6 +6685,7 @@ msgstr "챕터"
 #: src/components/library/libraryColumns.ts
 #: src/components/RequestForm.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #: src/pages/RequestsPage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
@@ -11655,6 +11660,11 @@ msgstr "영향을 받는 시리즈 숨기기"
 msgid "Hide chapters"
 msgstr ""
 
+#: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Hide credit pages"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -13246,6 +13256,14 @@ msgstr "모든 기기에 전송하려면 비워 두세요."
 #, fuzzy
 msgid "Leave empty to use this profile only on series you pin it to."
 msgstr "비워 두면 고정한 시리즈에만 이 프로필을 사용합니다."
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "Leave out credit and recruitment pages that repeat at the start or end of chapters"
+msgstr ""
+
+#: src/components/settings/ReadingProfilesSection.tsx
+msgid "Leave out credit and recruitment pages that repeat at the start or end of chapters."
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -17336,6 +17354,7 @@ msgstr "OLED 블랙"
 #: src/components/settings/SecuritySection.tsx
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "On"
 msgstr "켬"
@@ -23053,6 +23072,7 @@ msgstr "소년"
 
 #: src/pages/HealthPage.tsx
 #: src/pages/reader/NotesMargin.tsx
+#: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Show"
 msgstr "보기"

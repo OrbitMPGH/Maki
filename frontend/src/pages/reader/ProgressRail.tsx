@@ -4,7 +4,10 @@ import { useStripPlace, type StripTracker } from './stripPosition'
 
 export interface ProgressRailProps {
   tracker: StripTracker
+  /** Pages in the strip, from `first` on. */
   count: number
+  /** The chapter index of the strip's first page, past any credit pages left out. */
+  first?: number
   /** The reader's bars are up: the rail widens, shows its handle and takes input everywhere. */
   active: boolean
   /** The thumbnail strip is open above the bottom bar, so the rail ends above it. */
@@ -23,7 +26,7 @@ function clamp01(value: number): number {
  * hidden it is a hairline that takes no touches (a mouse can still hover it open); with them up it
  * can be dragged, and the strip follows the drag.
  */
-export default function ProgressRail({ tracker, count, active, strip, onHold }: ProgressRailProps) {
+export default function ProgressRail({ tracker, count, first = 0, active, strip, onHold }: ProgressRailProps) {
   const { t } = useLingui()
   const place = useStripPlace(tracker)
   const track = useRef<HTMLDivElement>(null)
@@ -31,7 +34,7 @@ export default function ProgressRail({ tracker, count, active, strip, onHold }: 
   const [hover, setHover] = useState(false)
 
   const progress = drag ?? place?.progress ?? 0
-  const page = place?.page ?? 0
+  const page = place ? place.page - first : 0
   const shownPage = drag !== null ? Math.min(count - 1, Math.floor(drag * count)) : page
 
   const at = (clientY: number) => {

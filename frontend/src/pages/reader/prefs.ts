@@ -74,6 +74,8 @@ export interface ReaderPrefs {
   tapWidth: number
   /** Swap the back and forward zones. */
   tapInvert: boolean
+  /** Leave out the credit and notice pages that repeat at the start or end of a series' chapters. */
+  hideCredits: boolean
 }
 
 /**
@@ -133,6 +135,7 @@ export const DEFAULT_PREFS: ReaderPrefs = {
   tapLayout: 'sides',
   tapWidth: 33,
   tapInvert: false,
+  hideCredits: false,
 }
 
 /** The enhance level a chapter actually gets: off when its file's tier is one the prefs skip. */

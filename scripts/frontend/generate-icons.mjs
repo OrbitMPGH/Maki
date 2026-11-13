@@ -117,6 +117,7 @@ const ICONS = {
   IconGauge: 'gauge',
   IconGhost: 'ghost',
   IconGripVertical: 'dots-six-vertical',
+  IconHandTap: 'hand-tap',
   IconHeart: 'heart',
   IconHeartFilled: 'heart:fill',
   IconHeartbeat: 'heartbeat',

@@ -1,4 +1,4 @@
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { queryOptions, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import type { ReaderPrefs } from '../pages/reader/prefs'
 import type { QualityTierName } from './upgrades'
@@ -269,6 +269,47 @@ export const readerRecapQuery = (chapterId: number) =>
     retry: false,
     meta: { silent: true },
   })
+
+/**
+ * The credit, recruitment and notice pages the reader leaves out: whole pages at the chapter's start
+ * and end, and how far down the first page shown (0 to 1) a banner fused into it ends. All zero when
+ * nothing repeats. `pageVersion` is the manifest's for the file the answer was found in.
+ */
+export interface ReaderCredits {
+  headPages: number
+  headOffset: number
+  tailPages: number
+  pageVersion: string
+}
+
+const readerCreditsUrl = (chapterId: number) => `/reader/chapter/${chapterId}/credits`
+
+/**
+ * Cached per file version, so a chapter whose file was replaced (an upgrade, a page conversion) is
+ * searched again instead of hiding pages by the old file's answer.
+ */
+export const readerCreditsQuery = (chapterId: number, pageVersion: string | undefined) =>
+  queryOptions({
+    queryKey: ['reader-credits', chapterId, pageVersion],
+    queryFn: () => api<ReaderCredits>(readerCreditsUrl(chapterId)),
+    staleTime: Infinity,
+    retry: false,
+    meta: { silent: true },
+  })
+
+/**
+ * Asks ahead for the next chapter's credit pages while this one ends, since the first search decodes
+ * the edges of up to seven chapters. Its file version is not known yet, so the answer is stored under
+ * the version it carries.
+ */
+export async function prefetchReaderCredits(queryClient: QueryClient, chapterId: number): Promise<void> {
+  try {
+    const found = await api<ReaderCredits>(readerCreditsUrl(chapterId))
+    queryClient.setQueryData(readerCreditsQuery(chapterId, found.pageVersion).queryKey, found)
+  } catch {
+    // The chapter's own search runs when it opens.
+  }
+}
 
 /**
  * Whether the built-in reader has ever been used, and whether Kavita is connected. Kavita's state

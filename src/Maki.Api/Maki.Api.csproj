@@ -23,6 +23,12 @@
     <None Update="UpscaleModels\maki-2x.onnx" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <!-- PP-OCRv3 text detection and recognition for telling credit pages apart (PageTextReader). -->
+  <ItemGroup>
+    <None Update="OcrModels\*.onnx" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="OcrModels\LICENSE-Apache-2.0.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <Import Project="..\..\distribution\libjxl\LibJxl.targets" />
 
   <ItemGroup>

@@ -126,6 +126,8 @@ const WHEEL_LINE_PX = 40
 
 interface StripPageProps {
   index: number
+  /** The page's index in the chapter, which names its server upscale. */
+  chapterPage: number
   src: string
   label: string
   fit: ReaderFit
@@ -148,6 +150,7 @@ interface StripPageProps {
  */
 const StripPage = memo(function StripPage({
   index,
+  chapterPage,
   src,
   label,
   fit,
@@ -166,7 +169,7 @@ const StripPage = memo(function StripPage({
   const [loaded, setLoaded] = useState<HTMLImageElement | null>(null)
   const [covered, setCovered] = useState(false)
   const [attempt, setAttempt] = useState(0)
-  const pageNumber = index + 1
+  const pageNumber = chapterPage + 1
   const url = attempt === 0 ? src : `${src}${src.includes('?') ? '&' : '?'}retry=${attempt}`
 
   const setRef = useCallback(
@@ -227,7 +230,7 @@ const StripPage = memo(function StripPage({
           alt={alt}
           tone={tone}
           enhance={enhance}
-          page={index}
+          page={chapterPage}
           server={server}
           priority={priority}
           box={loaded}
@@ -256,8 +259,9 @@ const StripPage = memo(function StripPage({
  */
 export default function ContinuousView({
   urls,
-  page,
-  onPageChange,
+  first = 0,
+  page: chapterPage,
+  onPageChange: onChapterPageChange,
   seekVersion,
   seekOffset = 0,
   seekSmooth = false,
@@ -278,7 +282,10 @@ export default function ContinuousView({
   onEnhanceRange,
   tracker,
 }: {
+  /** The pages shown: the chapter's from `first` on, past any credit pages left out. */
   urls: string[]
+  /** The chapter index of `urls[0]`. Every page index this view takes or reports is the chapter's. */
+  first?: number
   page: number
   onPageChange: (page: number) => void
   /** Bumped by the parent on every *explicit* navigation (resume, toolbar scrub, page-strip
@@ -324,6 +331,9 @@ export default function ContinuousView({
   /** Receives where the strip is scrolled to, and lends it a way to scroll there. */
   tracker?: StripTracker
 }) {
+  // Inside, pages count from the first one shown.
+  const page = chapterPage - first
+  const onPageChange = useCallback((index: number) => onChapterPageChange(first + index), [onChapterPageChange, first])
   const container = useRef<HTMLDivElement>(null)
   const pages = useRef<(HTMLImageElement | null)[]>([])
   const sentinel = useRef<HTMLDivElement>(null)
@@ -394,8 +404,9 @@ export default function ContinuousView({
   const rangeRef = useRef(onEnhanceRange)
   rangeRef.current = onEnhanceRange
   useEffect(() => {
-    rangeRef.current?.(range, beyond, serverRange)
-  }, [range, beyond, serverRange])
+    const toChapter = (list: number[]) => (first === 0 ? list : list.map((index) => first + index))
+    rangeRef.current?.(toChapter(range), beyond, toChapter(serverRange))
+  }, [range, beyond, serverRange, first])
 
   // Set by the sentinel effect below; image load handlers re-run it once a page settles.
   const reportEnd = useRef<() => void>(() => {})
@@ -591,7 +602,8 @@ export default function ContinuousView({
     let frame = 0
     const measure = () => {
       frame = 0
-      tracker.set(measureStrip(scroller, pages.current, Math.min(pageRef.current, urls.length - 1), urls.length))
+      const place = measureStrip(scroller, pages.current, Math.min(pageRef.current, urls.length - 1), urls.length)
+      tracker.set(place && first > 0 ? { ...place, page: first + place.page } : place)
     }
     const schedule = () => {
       if (frame === 0) frame = requestAnimationFrame(measure)
@@ -613,7 +625,7 @@ export default function ContinuousView({
       tracker.seek = null
       tracker.set(null)
     }
-  }, [tracker, urls])
+  }, [tracker, urls, first])
   // The band tracker moves the page a moment after the scroll that moved it.
   useEffect(() => remeasure.current(), [page])
 
@@ -816,6 +828,7 @@ export default function ContinuousView({
           <StripPage
             key={src}
             index={index}
+            chapterPage={first + index}
             src={src}
             label={label}
             fit={fit}
