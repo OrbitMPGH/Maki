@@ -10933,6 +10933,104 @@ body.reader-open {
   font-size: var(--type-meta);
   line-height: 1.45;
 }
+.drill-row-value[data-active] {
+  color: var(--brand-fg);
+  font-weight: var(--fw-semibold);
+}
+.drill-group + .drill-group {
+  margin-top: 6px;
+}
+/* Multi-pick and include/leave-out lists (DrillControls.tsx) draw a box in the check slot. */
+.drill-box {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-control);
+  border-radius: 4px;
+}
+.drill-choice[data-checked] .drill-box {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--brand-on);
+}
+.drill-choice[data-state='out'] .drill-box {
+  border-color: var(--ink-3);
+  color: var(--ink-hi);
+}
+.drill-choice[data-state='out'] .drill-choice-label {
+  color: var(--ink-3);
+  text-decoration: line-through;
+}
+.drill-choice:disabled .drill-box {
+  opacity: 0.5;
+}
+.drill-search {
+  padding: 4px 10px 6px;
+}
+.drill-range {
+  display: flex;
+  gap: 8px;
+}
+.drill-range > * {
+  flex: 1;
+  min-width: 0;
+}
+.drill-slider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 32px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.drill-slider-name {
+  min-width: 2.5rem;
+}
+.drill-slider-track {
+  flex: 1;
+}
+.drill-slider-value {
+  min-width: 3.2rem;
+  color: var(--ink-hi);
+  font-weight: var(--fw-semibold);
+  text-align: end;
+}
+.drill-sliders {
+  margin-top: 6px;
+}
+.drill-switch {
+  padding: 8px 10px;
+}
+.drill-switch-body {
+  justify-content: space-between;
+  gap: 12px;
+}
+.drill-switch-text {
+  flex: 1;
+}
+/* Pinned under the panes of a drill panel that fills a drawer. */
+.drill-footer {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px var(--mantine-spacing-md) max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+.drill-footer-reset:disabled {
+  background: transparent;
+}
+.drill-footer-end {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.drill-footer-status {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  white-space: nowrap;
+}
 .reader-settings-back {
   width: calc(100% + 12px);
   min-height: 36px;
@@ -13790,38 +13888,49 @@ button.settings-row-head:hover,
     display: none;
   }
 }
-/* On a phone the drawer covers the grid it filters, so the count and the way back to the grid sit
-   in a footer that stays on screen however far the groups run. */
-.library-filter-footer {
+/* The filter drawer (LibraryFilterPanel): the drill pages scroll between the drawer's header and a
+   footer that stays put, and each page's back header sticks to the top while its list scrolls. */
+.library-filter-drawer {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.library-filter-drawer-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+}
+.library-filter-frame {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+.library-filter-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 6px var(--mantine-spacing-md);
+}
+.library-filter-scroll .drill-panel-back {
   position: sticky;
-  bottom: 0;
-  z-index: 2;
-  margin: auto calc(var(--mantine-spacing-md) * -1) 0;
-  padding: 12px var(--mantine-spacing-md) max(12px, env(safe-area-inset-bottom));
-  border-top: 1px solid var(--border);
+  top: 0;
+  z-index: 1;
   background: var(--surface-raised);
 }
-.library-filter-show {
-  flex: 1;
+.library-filter-help {
+  margin: 0 0 6px;
+  padding: 0 10px;
+}
+.library-filter-chips {
+  padding: 4px 10px 8px;
 }
 @media (max-width: 47.9375em) {
   .library-filter-drawer {
-    display: flex;
-    flex-direction: column;
-  }
-  .library-filter-drawer > .mantine-Drawer-body {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    padding-bottom: 0;
-  }
-  .library-filter-drawer-body {
-    flex: 1;
-  }
-}
-@media (min-width: 48em) {
-  .library-filter-drawer-body {
-    padding-bottom: var(--mantine-spacing-xl);
+    --drawer-size: 100%;
   }
 }
 @media (max-width: 47.9375em) {
