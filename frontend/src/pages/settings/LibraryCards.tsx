@@ -50,6 +50,8 @@ import {
   CONTENT_RATING_LABELS,
   type FolderNamingMode,
   type LibrarySettings,
+  useCreditScanSettings,
+  useSaveCreditScanSettings,
 } from '../../api/hooks'
 import { SettingsRow, SettingsRows, SettingsRowsBlock } from '../../components/settings/SettingsRow'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
@@ -416,6 +418,35 @@ export function LibraryFilesSection() {
         label={t`Save a cover.jpg into each series' library folder`}
         checked={settings?.writeCoverToFolder ?? false}
         onChange={(e) => patch({ writeCoverToFolder: e.currentTarget.checked })}
+      />
+    </SettingsSection>
+  )
+}
+
+/** The background credit page scan: an admin's on or off for the whole instance. */
+export function CreditScanSection() {
+  const { t } = useLingui()
+  const { data } = useCreditScanSettings()
+  const save = useSaveCreditScanSettings()
+
+  return (
+    <SettingsSection
+      id="credit-scan"
+      title={<Trans>Credit pages</Trans>}
+      description={
+        <Trans>
+          Readers turn on Hide credit pages in their reading settings. With this on, Maki finds every chapter's credit
+          pages in the background, series being read and new downloads first, so chapters open with them already left
+          out. It never holds up a download or an import and pauses while anyone reads.
+        </Trans>
+      }
+    >
+      <Switch
+        label={t`Find credit pages in the background`}
+        description={t`Off, credit pages are still found when a chapter is opened, which can take a few seconds.`}
+        checked={data?.enabled ?? false}
+        disabled={data == null}
+        onChange={(e) => save.mutate({ enabled: e.currentTarget.checked })}
       />
     </SettingsSection>
   )

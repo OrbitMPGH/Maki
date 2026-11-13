@@ -783,6 +783,24 @@ public class SettingsController(
         return NoContent();
     }
 
+    /// <summary>The background credit page scan: off unless an admin turns it on.</summary>
+    public record CreditScanSettings(bool Enabled);
+
+    [HttpGet("creditscan")]
+    [Authorize(Policy = Policies.Admin)]
+    public async Task<IActionResult> GetCreditScan(CancellationToken ct) =>
+        Ok(new CreditScanSettings(await settings.GetAsync(SettingKeys.CreditScanEnabled, ct) == "true"));
+
+    [HttpPut("creditscan")]
+    [Authorize(Policy = Policies.Admin)]
+    public async Task<IActionResult> SetCreditScan([FromBody] CreditScanSettings request,
+        [FromServices] CreditScanWorker creditScan, CancellationToken ct)
+    {
+        await settings.SetAsync(SettingKeys.CreditScanEnabled, request.Enabled ? "true" : "false", ct);
+        creditScan.SetEnabled(request.Enabled);
+        return Ok(request);
+    }
+
     [HttpGet("library")]
     public async Task<IActionResult> GetLibrary(CancellationToken ct)
     {

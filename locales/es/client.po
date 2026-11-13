@@ -8229,6 +8229,16 @@ msgstr "Autores a los que vuelves"
 msgid "Creators, type, status, content rating"
 msgstr "Autores, tipo, estado, clasificación de contenido"
 
+#: src/pages/settings/LibraryCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Credit pages"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "credit pages, hide credits, scanlator, credits, ads, recruitment, background scan, ocr"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -10651,6 +10661,10 @@ msgstr "Buscar otra coincidencia para {folderName}"
 #, fuzzy
 msgid "Find better copy"
 msgstr "Buscar una copia mejor"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Find credit pages in the background"
+msgstr ""
 
 #: src/components/import/MihonReview.tsx
 #: src/pages/ImportPage.tsx
@@ -17243,6 +17257,10 @@ msgstr "Desactivado para esta serie"
 msgid "Off skips series set to No scrobble or Full incognito."
 msgstr "Desactivado omite las series con Sin scrobble o Incógnito completo."
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Off, credit pages are still found when a chapter is opened, which can take a few seconds."
+msgstr ""
+
 #: src/api/upgrades.ts
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -19502,6 +19520,10 @@ msgstr "Lectores como tú también terminaron esto"
 #, fuzzy
 msgid "Readers like you also recommended this"
 msgstr "Lectores como tú también recomendaron esto"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Readers turn on Hide credit pages in their reading settings. With this on, Maki finds every chapter's credit pages in the background, series being read and new downloads first, so chapters open with them already left out. It never holds up a download or an import and pauses while anyone reads."
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy

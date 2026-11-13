@@ -8229,6 +8229,16 @@ msgstr "다시 찾는 작가"
 msgid "Creators, type, status, content rating"
 msgstr "작가, 유형, 연재 상태, 콘텐츠 등급"
 
+#: src/pages/settings/LibraryCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Credit pages"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "credit pages, hide credits, scanlator, credits, ads, recruitment, background scan, ocr"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -10651,6 +10661,10 @@ msgstr "{folderName}의 다른 일치 항목 찾기"
 #, fuzzy
 msgid "Find better copy"
 msgstr "더 나은 파일 찾기"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Find credit pages in the background"
+msgstr ""
 
 #: src/components/import/MihonReview.tsx
 #: src/pages/ImportPage.tsx
@@ -17243,6 +17257,10 @@ msgstr "이 시리즈에서는 끔"
 msgid "Off skips series set to No scrobble or Full incognito."
 msgstr "끄면 Scrobble 안 함 또는 완전 시크릿으로 설정한 시리즈를 건너뜁니다."
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Off, credit pages are still found when a chapter is opened, which can take a few seconds."
+msgstr ""
+
 #: src/api/upgrades.ts
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -19502,6 +19520,10 @@ msgstr "나와 비슷한 독자도 이 항목을 완료함"
 #, fuzzy
 msgid "Readers like you also recommended this"
 msgstr "나와 비슷한 독자도 이 항목을 추천함"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Readers turn on Hide credit pages in their reading settings. With this on, Maki finds every chapter's credit pages in the background, series being read and new downloads first, so chapters open with them already left out. It never holds up a download or an import and pauses while anyone reads."
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy

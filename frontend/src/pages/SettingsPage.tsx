@@ -36,6 +36,7 @@ import {
 import { KavitaSyncSection, KoreaderSyncSection, OpdsSection } from './settings/ReadingCards'
 import {
   LibraryFilesSection,
+  CreditScanSection,
   MetadataSection,
   NameParsingSection,
   NamingSection,
@@ -108,6 +109,7 @@ function useSectionNodes(): Record<string, ReactNode> {
       'library-files': <LibraryFilesSection />,
       'page-conversion': <PageConversionSection />,
       upscaling: <UpscalingSection />,
+      'credit-scan': <CreditScanSection />,
       'recycle-bin': <RecycleBinSection />,
       'auto-tag-rules': <AutoTagRulesSection />,
       monitoring: <NewSeriesDefaultsSection />,

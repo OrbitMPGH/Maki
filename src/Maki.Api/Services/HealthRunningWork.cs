@@ -305,7 +305,7 @@ public sealed class HealthRunningWork(
     private async Task AddCreditScanAsync(List<RunningItem> items, CancellationToken ct)
     {
         var scan = creditScan.Current;
-        if (!scan.Wanted)
+        if (!scan.Enabled)
         {
             return;
         }

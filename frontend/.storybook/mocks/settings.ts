@@ -121,6 +121,8 @@ export const settingsHandlers: HttpHandler[] = [
   http.delete(api('/rootfolder/:id'), ok),
   http.get(api('/settings/library'), () => HttpResponse.json(d.libraryDefaults)),
   putEcho('/settings/library'),
+  http.get(api('/settings/creditscan'), () => HttpResponse.json({ enabled: false })),
+  putEcho('/settings/creditscan'),
   http.get(api('/settings/monitoring'), () => HttpResponse.json(d.monitoring)),
   putEcho('/settings/monitoring'),
   http.get(api('/settings/nameparsing'), () => HttpResponse.json(d.nameParsing)),

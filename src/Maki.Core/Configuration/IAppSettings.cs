@@ -254,10 +254,12 @@ public static class SettingKeys
     public const string ReaderPullFromKavita = "reader.pullfromkavita";
 
     /// <summary>
-    /// "true" once anyone on the instance has asked for a chapter's credit pages, which the reader only
-    /// does with "Hide credit pages" on. Until then the background credit scan does nothing. Never cleared.
+    /// "true" turns on the background credit page scan (Settings > Library > Credit pages, admin only):
+    /// every chapter's credit pages are found ahead of time, and the series page and Home start the
+    /// search early. Anything else is off: readers who hide credit pages get them found when a chapter
+    /// opens. The key name is from when the first reader request turned it on by itself.
     /// </summary>
-    public const string CreditScanWanted = "reader.creditscan.wanted";
+    public const string CreditScanEnabled = "reader.creditscan.wanted";
 
     /// <summary>
     /// Which page "/" lands on: one of <see cref="StartPage"/>'s values. Applied client-side as a

@@ -163,13 +163,18 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
     private async Task<IActionResult> CreditsAsync(int chapterId)
     {
         using var db = _db.NewContext(1);
-        return await Controller(db).Credits(chapterId, _credits, _store, new FakeAppSettings(), default);
+        return await Controller(db).Credits(chapterId, _credits, _store, default);
     }
+
+    /// <summary>The admin's background credit scan switch, which the warm-up follows. On unless a test turns it off.</summary>
+    private bool _scanOn = true;
 
     private async Task<IActionResult> WarmAsync(int chapterId)
     {
         using var db = _db.NewContext(1);
-        return await Controller(db).WarmCredits(chapterId, _credits, _store, new FakeAppSettings(), default);
+        var scan = Worker();
+        scan.SetEnabled(_scanOn);
+        return await Controller(db).WarmCredits(chapterId, _credits, _store, scan, default);
     }
 
     private async Task<JsonElement> FoundAsync(int chapterId) =>
@@ -264,6 +269,18 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
 
         Assert.IsType<NoContentResult>(await WarmAsync(chapters[1]));
+    }
+
+    [Fact]
+    public async Task Warming_searches_nothing_while_the_background_scan_is_off()
+    {
+        _db.SetUserConfig(1, (SettingKeys.ReaderPrefs, ReaderPrefsSpec.Serialize(new ReaderPrefsSpec(HideCredits: true))));
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        _scanOn = false;
+
+        Assert.IsType<NoContentResult>(await WarmAsync(chapters[1]));
+        Assert.Null(await RowAsync(chapters[1]));
     }
 
     [Fact]

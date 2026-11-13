@@ -28,8 +28,7 @@ namespace Maki.Api.Services;
 /// a volume download is where most of the work would be.
 /// </para>
 /// <para>
-/// Off until someone asks for credit pages (<see cref="SettingKeys.CreditScanWanted"/>): an instance
-/// where nobody hides them spends nothing.
+/// Off unless an admin turns it on (<see cref="SettingKeys.CreditScanEnabled"/>, <see cref="SetEnabled"/>).
 /// </para>
 /// </summary>
 public sealed class CreditScanWorker(
@@ -56,7 +55,7 @@ public sealed class CreditScanWorker(
     private static readonly TimeSpan Backoff = TimeSpan.FromHours(1);
 
     private static readonly SemaphoreSlim Wake = new(0, 1);
-    private static volatile bool _wanted;
+    private volatile bool _enabled;
 
     private readonly Lock _sync = new();
     private readonly Dictionary<string, DateTime> _backoff = [];
@@ -66,7 +65,7 @@ public sealed class CreditScanWorker(
     private (DateTime At, int Count)? _waiting;
 
     /// <summary>What the Health page shows: whether the scan is on and paused, chapters searched since start, the series being searched.</summary>
-    public sealed record Snapshot(bool Wanted, bool Paused, int Done, string? Working);
+    public sealed record Snapshot(bool Enabled, bool Paused, int Done, string? Working);
 
     public Snapshot Current
     {
@@ -74,7 +73,7 @@ public sealed class CreditScanWorker(
         {
             lock (_sync)
             {
-                return new Snapshot(_wanted, _paused, _done, _working);
+                return new Snapshot(_enabled, _paused, _done, _working);
             }
         }
     }
@@ -91,21 +90,17 @@ public sealed class CreditScanWorker(
         }
     }
 
-    /// <summary>Turns the scan on for good, the first time a reader asks for credit pages.</summary>
-    public static async Task WantAsync(IAppSettings settings, CancellationToken ct)
+    /// <summary>Whether the admin turned the scan on. The warm-up follows it too.</summary>
+    public bool Enabled => _enabled;
+
+    /// <summary>Applies the admin's switch at once; the caller stores it (<see cref="SettingKeys.CreditScanEnabled"/>).</summary>
+    public void SetEnabled(bool enabled)
     {
-        if (_wanted)
+        _enabled = enabled;
+        if (enabled)
         {
-            return;
+            Signal();
         }
-
-        if (await settings.GetAsync(SettingKeys.CreditScanWanted, ct) != "true")
-        {
-            await settings.SetAsync(SettingKeys.CreditScanWanted, "true", ct);
-        }
-
-        _wanted = true;
-        Signal();
     }
 
     /// <summary>Holds the scan after the chapter in hand, until <see cref="Resume"/> or a restart.</summary>
@@ -164,7 +159,7 @@ public sealed class CreditScanWorker(
     {
         try
         {
-            _wanted = _wanted || await settings.GetAsync(SettingKeys.CreditScanWanted, stoppingToken) == "true";
+            _enabled = await settings.GetAsync(SettingKeys.CreditScanEnabled, stoppingToken) == "true";
             await Task.Delay(StartDelay, stoppingToken);
         }
         catch (OperationCanceledException)
@@ -176,13 +171,13 @@ public sealed class CreditScanWorker(
         {
             try
             {
-                if (_wanted && !Paused && await NextSeriesAsync(stoppingToken) is { } next)
+                if (_enabled && !Paused && await NextSeriesAsync(stoppingToken) is { } next)
                 {
                     await ScanSeriesAsync(next.SeriesId, next.Language, stoppingToken);
                     continue;
                 }
 
-                if (_wanted && !Paused && await RecheckBankAsync(stoppingToken) > 0)
+                if (_enabled && !Paused && await RecheckBankAsync(stoppingToken) > 0)
                 {
                     continue;
                 }

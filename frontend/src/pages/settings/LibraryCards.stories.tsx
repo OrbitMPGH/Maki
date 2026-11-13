@@ -11,6 +11,7 @@ import {
 } from '../../../.storybook/mocks/settings/data'
 import {
   LibraryFilesSection,
+  CreditScanSection,
   MetadataSection,
   NameParsingSection,
   NamingSection,
@@ -233,6 +234,17 @@ export const LibraryFiles: Story = {
     await waitFor(() => expect(cover).not.toBeChecked())
     await userEvent.click(cover)
     await waitFor(() => expect(cover).toBeChecked())
+  },
+}
+
+export const CreditScan: Story = {
+  render: () => <CreditScanSection />,
+  play: async ({ canvas, userEvent }) => {
+    const scan = await canvas.findByRole('switch', { name: /^Find credit pages in the background/ })
+    await waitFor(() => expect(scan).toBeEnabled())
+    await waitFor(() => expect(scan).not.toBeChecked())
+    await userEvent.click(scan)
+    await waitFor(() => expect(scan).toBeChecked())
   },
 }
 

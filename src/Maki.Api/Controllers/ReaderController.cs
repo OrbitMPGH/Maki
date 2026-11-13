@@ -712,7 +712,7 @@ public class ReaderController(
     /// </summary>
     [HttpGet("chapter/{id:int}/credits")]
     public async Task<IActionResult> Credits(int id, [FromServices] ReaderCreditsCache credits,
-        [FromServices] CreditStore store, [FromServices] IAppSettings settings, CancellationToken ct)
+        [FromServices] CreditStore store, CancellationToken ct)
     {
         var slice = await reader.SliceAsync(id, ct);
         if (slice is null)
@@ -720,8 +720,6 @@ public class ReaderController(
             return this.NotFoundMessage(localizer, "error.reader.chapterNotReadable");
         }
 
-        // Only a reader hiding credit pages asks, so this is what turns the background scan on.
-        await CreditScanWorker.WantAsync(settings, ct);
         var found = CreditPages.None;
         if (ReaderCreditsCache.Applies(slice))
         {
@@ -744,22 +742,27 @@ public class ReaderController(
 
     /// <summary>
     /// Starts the credit page search for a chapter the reader is likely to open next (the series
-    /// page's and Home's Continue), when the series' resolved settings hide credit pages, no answer is
-    /// stored yet and no other warm-up is running, and returns at once (202 when one started). The reader's own <see cref="Credits"/> request then finds
+    /// page's and Home's Continue), when the admin turned the background credit scan on, the series'
+    /// resolved settings hide credit pages, no answer is stored yet and no other warm-up is running, and
+    /// returns at once (202 when one started). The reader's own <see cref="Credits"/> request then finds
     /// the answer ready or joins the run. The settings are resolved here because the client only
     /// learns them from the manifest.
     /// </summary>
     [HttpPost("chapter/{id:int}/credits/warm")]
     public async Task<IActionResult> WarmCredits(int id, [FromServices] ReaderCreditsCache credits,
-        [FromServices] CreditStore store, [FromServices] IAppSettings settings, CancellationToken ct)
+        [FromServices] CreditStore store, [FromServices] CreditScanWorker scan, CancellationToken ct)
     {
+        if (!scan.Enabled)
+        {
+            return NoContent();
+        }
+
         var slice = await reader.SliceAsync(id, ct);
         if (slice is null || !ReaderCreditsCache.Applies(slice) || !(await profiles.ResolveAsync(slice.Series.Id, ct)).Prefs.HideCredits)
         {
             return NoContent();
         }
 
-        await CreditScanWorker.WantAsync(settings, ct);
         if (await store.GetAsync(slice, ct) is not null)
         {
             return NoContent();

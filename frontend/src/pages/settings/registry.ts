@@ -347,6 +347,16 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
     }),
   },
   {
+    id: 'credit-scan',
+    tab: 'library',
+    title: msg`Credit pages`,
+    admin: true,
+    keywords: msg({
+      message: `credit pages, hide credits, scanlator, credits, ads, recruitment, background scan, ocr`,
+      comment: `Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.`,
+    }),
+  },
+  {
     id: 'recycle-bin',
     tab: 'library',
     title: msg`Recycle bin`,

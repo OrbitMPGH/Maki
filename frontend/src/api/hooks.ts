@@ -4297,6 +4297,41 @@ export function useSaveLibrarySettings() {
   })
 }
 
+/** The background credit page scan, off unless an admin turns it on. */
+export interface CreditScanSettings {
+  enabled: boolean
+}
+
+export function useCreditScanSettings() {
+  return useQuery({
+    queryKey: ['settings', 'creditscan'],
+    queryFn: () => api<CreditScanSettings>('/settings/creditscan'),
+  })
+}
+
+export function useSaveCreditScanSettings() {
+  const queryClient = useQueryClient()
+  const key = ['settings', 'creditscan']
+  return useMutation({
+    mutationFn: (settings: CreditScanSettings) =>
+      api<CreditScanSettings>('/settings/creditscan', { method: 'PUT', body: JSON.stringify(settings) }),
+    onMutate: async (settings) => {
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<CreditScanSettings>(key)
+      queryClient.setQueryData<CreditScanSettings>(key, settings)
+      return { previous }
+    },
+    onError: (_err, _settings, context) => {
+      if (context) queryClient.setQueryData(key, context.previous)
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: key })
+      // The Health page's Running now row comes and goes with it.
+      void queryClient.invalidateQueries({ queryKey: ['health-workspace', '/running'] })
+    },
+  })
+}
+
 /** One language whose volume and chapter words the parsers can read besides English. */
 export interface NameParsingLanguage {
   code: string
