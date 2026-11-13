@@ -3747,6 +3747,18 @@ button.site-chip:hover {
   color: var(--ink-3);
   font-size: var(--type-meta);
 }
+.discover-card-preview {
+  padding: 0 16px 12px;
+}
+.discover-add-panel:has(+ .discover-card-preview) {
+  padding-bottom: 8px;
+}
+.discover-card-preview .mantine-Text-root:empty {
+  display: none;
+}
+.discover-modal-root[data-card-deep] .discover-card-preview {
+  display: none;
+}
 .discover-card-footer {
   display: flex;
   flex-wrap: wrap;
@@ -4278,6 +4290,8 @@ button.site-chip:hover {
   width: fit-content;
   margin-top: var(--mantine-spacing-sm);
   color: var(--ink-2);
+}
+.series-source-gap-why {
   cursor: help;
 }
 .series-source-gap > svg {
@@ -4285,7 +4299,7 @@ button.site-chip:hover {
   margin-top: 1px;
   color: var(--warn);
 }
-.series-source-gap:focus-visible {
+.series-source-gap-why:focus-visible {
   outline: 2px solid var(--mantine-primary-color-filled);
   outline-offset: 2px;
   border-radius: var(--radius-2xs);
@@ -4303,9 +4317,6 @@ button.site-chip:hover {
 .series-actions-done svg {
   flex-shrink: 0;
   color: var(--ok);
-}
-.series-actions-done--warn svg {
-  color: currentColor;
 }
 /* On a phone the hero buttons share each row they land on, so the row ends on one edge instead
    of a ragged line of button widths. The overflow menu keeps its square. */
@@ -6208,6 +6219,15 @@ button.site-chip:hover {
 .series-hero:not([data-compact]) .series-hero-title {
   font-size: clamp(2rem, calc(600cqi / var(--title-chars, 1)), var(--type-display));
 }
+/* The column is the container those units measure. Without one they fell back to the viewport,
+   nearly twice the column, and a 200-character title set at 41px over eight lines instead of 32px
+   over five. Not on a phone: there the title wraps around the floated poster, which a container
+   would end. */
+@media (min-width: 48em) {
+  .series-hero:not([data-compact]) .hero-column {
+    container-type: inline-size;
+  }
+}
 .series-hero:not([data-compact]) .series-hero-title[data-length='long'] {
   line-height: 0.98;
 }
@@ -6380,9 +6400,10 @@ button.site-chip:hover {
 }
 
 /* --- The Continue header ---------------------------------------------------- */
-/* Both heroes in Home's Continue grammar: an accent kicker, the title, one meta line, then the
-   facts as a row of chips and, on the series page, two bars and the actions. The column starts on
-   the poster's top line, the same line the add card and Your reading start on. */
+/* Both heroes in Home's Continue grammar: the title, one meta line, then the facts as a row of
+   chips and, on the series page, the actions. The Discover modal leads with the card's reason as an
+   accent kicker. The column starts on the poster's top line, the same line the add card and the
+   Progress card start on. */
 .hero-continue {
   display: flex;
   flex-direction: column;
@@ -6418,10 +6439,15 @@ button.site-chip:hover {
   gap: 8px;
   margin-top: 16px;
 }
-/* Accent is "you": the catch-up time is the reader's own pace. */
+/* Accent is "you": the catch-up time is the reader's own pace. An estimate, not a property of the
+   series, so it is a plain line with an accent mark and never a filled pill beside the status. */
 .series-hero-status[data-you] {
+  padding-inline: 4px;
+  color: var(--ink-2);
+  font-weight: var(--fw-medium);
+}
+.series-hero-status[data-you] svg {
   color: var(--brand-fg-on-art);
-  background: color-mix(in srgb, var(--brand) 16%, transparent);
 }
 .hero-rating {
   margin-inline-start: 6px;
@@ -6442,32 +6468,45 @@ button.site-chip:hover {
 .hero-reading-status {
   color: var(--ink-2);
 }
+/* The Progress card on the band's right: what you have read and what is on disk, each a label
+   and its count over a bar, then one line for anything wrong and one for your reading. */
+.series-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-xs);
+}
 .hero-bars {
   display: grid;
-  gap: 9px;
-  width: min(480px, 100%);
+  gap: 16px;
   margin-top: 18px;
 }
 .hero-bar-row {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 6px 12px;
+  gap: 8px 12px;
   color: var(--ink-3);
   font-size: var(--type-meta);
 }
 .hero-bar-label {
   display: inline-flex;
-  flex: none;
   align-items: center;
   gap: 6px;
-  width: 80px;
   color: var(--ink-2);
   font-weight: var(--fw-semibold);
 }
+.hero-bar-figures {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px 8px;
+  min-width: 0;
+}
 .hero-bar {
-  flex: 1 1 120px;
-  height: 5px;
+  grid-column: 1 / -1;
+  height: 6px;
   overflow: hidden;
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--ink-3) 30%, transparent);
@@ -6484,21 +6523,11 @@ button.site-chip:hover {
   background: var(--ok);
 }
 .hero-bar-value {
-  flex: none;
   color: var(--ink-hi);
   font-weight: var(--fw-semibold);
 }
-.hero-bar-value small {
-  color: var(--ink-4);
-  font-size: inherit;
-  font-weight: var(--fw-medium);
-}
-.hero-bar-note {
-  flex: none;
-  color: var(--ink-4);
-}
 .hero-bar-subline {
-  padding-inline-start: 92px;
+  grid-column: 1 / -1;
   color: var(--ink-4);
   font-size: var(--type-meta);
 }
@@ -6515,8 +6544,8 @@ button.site-chip:hover {
   font-size: var(--type-micro, 0.75rem);
   font-weight: var(--fw-semibold);
 }
-.hero-bars .series-source-gap {
-  margin-top: 2px;
+.series-progress .series-source-gap {
+  margin-top: 14px;
 }
 .hero-actions {
   display: flex;
@@ -6524,7 +6553,6 @@ button.site-chip:hover {
   gap: 8px;
   margin-top: 20px;
 }
-/* Your reading takes the Progress panel's place on the band's right. */
 .series-hero-aside {
   min-width: 0;
   margin-top: var(--mantine-spacing-md);
@@ -6537,16 +6565,13 @@ button.site-chip:hover {
     margin-top: 0;
   }
 }
-.series-reading-compact .series-reading-figures {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.series-reading-compact-foot {
+.series-progress-foot {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 4px 12px;
-  margin-top: 12px;
-  padding-top: 10px;
+  margin-top: 16px;
+  padding-top: 12px;
   border-top: 1px solid var(--hairline);
   color: var(--ink-3);
   font-size: var(--type-meta);
@@ -7926,7 +7951,7 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-/* Your reading gets its own line before it starts squeezing the title and actions: beside them
+/* The Progress card gets its own line before it starts squeezing the title and actions: beside them
    under ~1100px it was a 150px column, and the title broke inside its words.
    `:not([data-compact])` keeps this off the modal band, which has its own narrower collapse
    breakpoint below. */
@@ -7937,19 +7962,11 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   .series-hero:not([data-compact]) .series-hero-aside {
     margin-top: var(--mantine-spacing-lg);
   }
-  /* Stacked under the band, the panel lies on its side: figures, then the weeks beside them. */
-  .series-hero-aside .series-reading-compact {
-    display: grid;
-    grid-template-columns: minmax(14rem, auto) minmax(0, 1fr);
+  /* Stacked under the band, the card lies on its side: the two bars next to each other. */
+  .series-progress .hero-bars {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: var(--mantine-spacing-xl);
-  }
-  .series-hero-aside .series-reading-compact > :first-child,
-  .series-hero-aside .series-reading-compact-foot {
-    grid-column: 1 / -1;
-  }
-  .series-hero-aside .series-reading-compact .series-reading-figures {
-    align-self: start;
-    border-bottom: 0;
+    align-items: start;
   }
   .series-hero:not([data-compact]) .series-hero-poster {
     width: 176px;
@@ -7992,8 +8009,8 @@ a.empty-shelf-slot:hover .empty-shelf-cover {
   .series-hero:not([data-compact]) .series-hero-row > .hero-column {
     display: block;
   }
-  .series-hero-aside .series-reading-compact {
-    display: block;
+  .series-progress .hero-bars {
+    grid-template-columns: minmax(0, 1fr);
   }
   .series-hero:not([data-compact]) .hero-chips {
     clear: both;

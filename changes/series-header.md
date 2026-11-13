@@ -2,10 +2,10 @@
 type: improvement
 section: Series page
 ---
-The series page header is laid out like Home's Continue reading hero:
+The series page header is tidier:
 
-- A line above the title says where you are with the series: Reading, Caught up or Finished.
 - Under the title, one line holds the author, the year, the chapter count and the volume count.
-- Status, content rating and type sit together as pills, with your rating beside them.
-- The Progress card is gone. Reading and downloads are now two bars under the pills, Read and On disk, with how many chapters are wanted but not fetched yet and the same explanation of the counts.
-- The Read, Download and Search buttons sit under the bars at full size, and the Your reading panel takes the top right of the header.
+- Status, content rating and type sit together as pills, with your rating and reading status under them.
+- The Progress card shows Read and On disk as two bars with their counts, and how many chapters are wanted but not fetched yet.
+- Warnings about missing files and about sources that stop short of the listed total are one line inside the Progress card, not separate lines above and below the buttons.
+- The Progress card ends with when you started reading and about how long is left.

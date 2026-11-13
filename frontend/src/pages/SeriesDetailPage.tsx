@@ -208,7 +208,7 @@ import { UpgradeNowResultModal } from '../components/series/UpgradeNowResultModa
 import { SeriesHero, SeriesHeroSkeleton } from '../components/series/SeriesHero'
 import { SeriesReviews } from '../components/series/SeriesReviews'
 import { useChangeReadingStatus } from '../components/series/ReadingStatus'
-import { SeriesReadingPanel } from '../components/series/SeriesReadingPanel'
+import { ReadingFootLine, SeriesReadingPanel } from '../components/series/SeriesReadingPanel'
 import { useSeriesReadingStats } from '../api/seriesReadingStats'
 import { SeriesFilesSection } from '../components/SeriesFilesSection'
 import { SeriesTagsEditor } from '../components/SeriesTagsEditor'
@@ -2258,10 +2258,9 @@ function SeriesDetailBody() {
             onFinalize={keepRating}
             readUpTo={highestReadChapter}
             nextChapter={nextChapter}
-            aside={
-              readingStats ? (
-                <SeriesReadingPanel compact stats={readingStats} estimate={series.readTimeEstimate ?? null} />
-              ) : null
+            noFileCount={tab === 'chapters' ? 0 : fileMissingFilterCount}
+            progressFoot={
+              <ReadingFootLine firstReadAt={readingStats?.firstReadAt ?? null} estimate={series.readTimeEstimate ?? null} />
             }
             actions={
               <>
@@ -2553,16 +2552,7 @@ function SeriesDetailBody() {
                     onRemoveOffline={() => void removeSeriesOffline(seriesId)}
                 />
                 {/* A state, not a control: nothing here could enable a download button, so it stops posing as one. */}
-                {fileMissingFilterCount > 0 ? (tab !== 'chapters' && (
-                    <Text component="span" size="sm" c="var(--warn)" className="series-actions-done series-actions-done--warn tnum">
-                      <IconAlertTriangle size={16} />
-                      <Plural
-                          value={fileMissingFilterCount}
-                          one="# chapter has no file on disk"
-                          other="# chapters have no file on disk"
-                      />
-                    </Text>
-                )) : canDownload && allWantedOnDisk && chapters.length > 0 && (
+                {fileMissingFilterCount === 0 && canDownload && allWantedOnDisk && chapters.length > 0 && (
                     <Tooltip label={t`Every wanted chapter is already on disk`} withArrow>
                       <Text component="span" size="sm" c="var(--ink-3)" className="series-actions-done">
                         <IconCircleCheck size={16} />
@@ -2904,6 +2894,9 @@ function SeriesDetailBody() {
                     )}
                   </Text>
                 </Panel>
+                {readingStats && (
+                    <SeriesReadingPanel stats={readingStats} estimate={series.readTimeEstimate ?? null} />
+                )}
                 <Panel className="series-detail-metadata-panel series-machine">
                   <Group justify="space-between" align="baseline" mb="sm" wrap="nowrap">
                     <PanelTitle order={2} icon={IconDatabase}>

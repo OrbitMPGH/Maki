@@ -225,10 +225,13 @@ export function DiscoverDetailModal({
   // Each site's score rides on its own link mark, so the ratings and the places they come from
   // are one row. A rated site with no id in the dump keeps a plain mark.
   const ratingBySite = new Map((detail?.sourceRatings ?? []).map((r) => [r.source.toLowerCase(), r.rating]))
-  const links: MetadataLink[] = (detail?.links ?? []).map((link) => {
-    const rating = ratingBySite.get(link.site)
-    return rating != null && link.score == null ? { ...link, score: formatFixedDecimal(rating / 10, 1) } : link
-  })
+  // Scored sites first: a bare mark leading the row read as a rating that failed to load.
+  const links: MetadataLink[] = (detail?.links ?? [])
+    .map((link) => {
+      const rating = ratingBySite.get(link.site)
+      return rating != null && link.score == null ? { ...link, score: formatFixedDecimal(rating / 10, 1) } : link
+    })
+    .sort((a, b) => Number(b.score != null) - Number(a.score != null))
   const unlinkedRatings = (detail?.sourceRatings ?? []).filter(
     (r) => !links.some((link) => link.site === r.source.toLowerCase()),
   )
@@ -544,24 +547,27 @@ export function DiscoverDetailModal({
                         barSlot={barSlot}
                         onDeepChange={onCardDeep}
                       />
+                      {/* Second only to the add: reading a chapter is how most people decide. Hidden
+                          with CSS on a settings sub-page, since unmounting it drops the preview job. */}
+                      {inLibrarySeriesId == null && (
+                        <div className="discover-card-preview">
+                          <PreviewChapterButton
+                            key={`preview-${item.providerId}`}
+                            providerId={item.providerId}
+                            title={title}
+                            onRead={() => setPreviewFor(item.providerId)}
+                          />
+                        </div>
+                      )}
                       <div className="discover-card-footer">
                         {inLibrarySeriesId == null && (
-                          <>
-                            <PreviewChapterButton
-                              key={`preview-${item.providerId}`}
-                              compact
-                              providerId={item.providerId}
-                              title={title}
-                              onRead={() => setPreviewFor(item.providerId)}
-                            />
-                            <ShortlistButton
-                              key={`shortlist-${item.providerId}`}
-                              compact
-                              providerId={item.providerId}
-                              title={title}
-                              source={savedFrom}
-                            />
-                          </>
+                          <ShortlistButton
+                            key={`shortlist-${item.providerId}`}
+                            compact
+                            providerId={item.providerId}
+                            title={title}
+                            source={savedFrom}
+                          />
                         )}
                         <RecommendationFeedbackMenu providerId={item.providerId} compact />
                       </div>

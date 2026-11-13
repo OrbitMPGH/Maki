@@ -232,7 +232,7 @@ export const InLibrary: Story = {
   play: async ({ canvasElement }) => {
     const dialog = await dialogOf(canvasElement)
     await expect(await within(dialog).findByRole('button', { name: 'View in library' })).toBeVisible()
-    await expect(within(dialog).queryByRole('button', { name: 'Preview' })).toBeNull()
+    await expect(within(dialog).queryByRole('button', { name: 'Preview first chapter' })).toBeNull()
   },
 }
 
@@ -305,7 +305,7 @@ export const ReaderAsksForTitle: Story = {
 export const OpenPreviewReader: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await dialogOf(canvasElement)
-    await userEvent.click(await within(dialog).findByRole('button', { name: 'Preview' }))
+    await userEvent.click(await within(dialog).findByRole('button', { name: 'Preview first chapter' }))
     await expect(await within(canvasElement.ownerDocument.body).findByRole('button', { name: 'Close preview' })).toBeVisible()
   },
 }

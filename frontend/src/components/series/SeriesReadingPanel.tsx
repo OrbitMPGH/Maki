@@ -25,14 +25,10 @@ export interface ReadTimeEstimate {
 export function SeriesReadingPanel({
   stats,
   estimate,
-  compact = false,
 }: {
   stats: SeriesReadingStats
   estimate: ReadTimeEstimate | null
-  /** The series band's version: two figures and the bars, with the rest as one footer line. */
-  compact?: boolean
 }) {
-  if (compact) return <CompactReadingPanel stats={stats} estimate={estimate} />
   const figures: Figure[] = [
     {
       label: t`Time read`,
@@ -79,26 +75,20 @@ export function SeriesReadingPanel({
   )
 }
 
-function CompactReadingPanel({ stats, estimate }: { stats: SeriesReadingStats; estimate: ReadTimeEstimate | null }) {
-  const figures: Figure[] = [{ label: t`Time read`, value: formatTimeSpent(stats.seconds) }]
-  if (stats.chapterMedianSeconds != null) {
-    figures.push({ label: t`Per chapter`, value: formatReadingTime(stats.chapterMedianSeconds) })
-  }
-  const since = formatRecentDate(stats.firstReadAt)
+/**
+ * The last line of the series band's Progress card. Nothing at all for a series with no reading
+ * recorded and no pace to estimate from, so the card ends on its bars.
+ */
+export function ReadingFootLine({ firstReadAt, estimate }: { firstReadAt: string | null; estimate: ReadTimeEstimate | null }) {
+  if (!firstReadAt && !estimate) return null
+  const since = firstReadAt ? formatRecentDate(firstReadAt) : null
   const toFinish = estimate ? formatReadingTime(estimate.seconds) : null
 
   return (
-    <Panel className="series-reading-compact">
-      <PanelTitle order={2} icon={IconClock}>
-        {t`Your reading`}
-      </PanelTitle>
-      <FigureStrip figures={figures} flush className="series-reading-figures" />
-      {stats.timeline.length > 0 && <ReadingTimeline stats={stats} />}
-      <div className="series-reading-compact-foot tnum">
-        <span>{t`Reading since ${since}`}</span>
-        {toFinish && <span>{t`About ${toFinish} to finish`}</span>}
-      </div>
-    </Panel>
+    <div className="series-progress-foot tnum">
+      {since && <span>{t`Reading since ${since}`}</span>}
+      {toFinish && <span>{t`About ${toFinish} to finish`}</span>}
+    </div>
   )
 }
 
