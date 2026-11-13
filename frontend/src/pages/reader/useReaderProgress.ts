@@ -174,5 +174,10 @@ export function useReaderProgress(
     return inflight.current
   }, [])
 
-  return { settle }
+  /** Takes the next position as where the chapter opened: the reader moved there itself, before anything was written. */
+  const rebase = useCallback(() => {
+    if (opened.current && !opened.current.written) opened.current = undefined
+  }, [])
+
+  return { settle, rebase }
 }

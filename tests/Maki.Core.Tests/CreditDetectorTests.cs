@@ -163,6 +163,54 @@ public class CreditDetectorTests
         Assert.Equal(0, found.TailPages);
     }
 
+    /// <summary>
+    /// A notice of thin bright text lines on a dark ground, drawn <paramref name="down"/> rows lower and
+    /// <paramref name="across"/> of a column further right, the way an aggregator pastes the same notice
+    /// a few pixels off from one chapter to the next.
+    /// </summary>
+    private static CreditPage Notice(int rows, int down, double across)
+    {
+        var random = new Random(11);
+        var sharp = new byte[(rows + 2) * W];
+        Array.Fill(sharp, (byte)20);
+        for (var line = 4; line + 2 < rows; line += 7)
+        {
+            for (var x = 4; x < W - 4;)
+            {
+                var (lit, run) = (random.Next(2) == 0 ? (byte)230 : (byte)20, random.Next(2, 5));
+                for (var end = Math.Min(W - 4, x + run); x < end; x++)
+                {
+                    sharp[line * W + x] = lit;
+                    sharp[(line + 1) * W + x] = lit;
+                }
+            }
+        }
+
+        var grey = new byte[rows * W];
+        for (var r = 0; r < rows; r++)
+        {
+            var source = Math.Clamp(r - down, 0, rows + 1) * W;
+            for (var x = 0; x < W; x++)
+            {
+                grey[r * W + x] = (byte)Math.Round(sharp[source + x] * (1 - across) + sharp[source + Math.Max(0, x - 1)] * across);
+            }
+        }
+
+        return Page(grey, colour: true);
+    }
+
+    [Fact]
+    public void A_notice_pasted_a_few_pixels_off_in_each_chapter_is_still_found()
+    {
+        CreditPage[] Webtoon(int seed, int down, double across) =>
+            [Join(Notice(100, down, across), Story(seed, 500, colour: true)), .. Enumerable.Range(1, 8).Select(n => Story(seed * 100 + n, 600, colour: true))];
+
+        var found = Find(Webtoon(1, 0, 0), Webtoon(2, 1, 0), Webtoon(3, 0, 0.2), Webtoon(4, 1, 0.2));
+
+        Assert.Equal(0, found.HeadPages);
+        Assert.InRange(found.HeadOffset, 100 / 600.0 - 0.03, 100 / 600.0 + 0.005);
+    }
+
     [Fact]
     public void The_same_chapter_in_the_library_again_proves_nothing()
     {
