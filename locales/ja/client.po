@@ -2287,10 +2287,14 @@ msgid "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
 msgstr "{name}：停止しました。{ok}/{total}件成功、最初のエラー：{firstError}"
 
 #: src/components/home/RecentlyAddedRail.tsx
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
 msgid "{newChapterCount, plural, one {# new} other {# new}}"
 msgstr "{newChapterCount, plural, other {新着#件}}"
 
 #: src/components/home/RecentlyAddedRail.tsx
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
 #, fuzzy
 msgid "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
 msgstr "{newChapterCount, plural, other {最近の章ファイル#件}}"
@@ -3326,13 +3330,7 @@ msgstr "{unread, plural, other {前の章が # 件まだ未読です。}}"
 msgid "{unread, plural, one {# left} other {# left}}"
 msgstr "{unread, plural, other {残り # 件}}"
 
-#: src/components/ui/CoverCard.tsx
-#, fuzzy
-msgid "{unread, plural, one {# new} other {# new}}"
-msgstr "{unread, plural, other {新着#件}}"
-
 #: src/components/library/LibraryTable.tsx
-#: src/components/ui/SeriesRow.tsx
 #, fuzzy
 msgid "{unread, plural, one {# unread} other {# unread}}"
 msgstr "{unread, plural, other {#件未読}}"
@@ -13139,9 +13137,8 @@ msgstr "前回の巻検索：{lastVolumeSearchText}"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx
-#, fuzzy
-msgid "Later than expected. We guessed {range}."
-msgstr "予想より遅れています。推定は{range}としていました。"
+msgid "Later than expected. Maki guessed {range}."
+msgstr ""
 
 #: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx

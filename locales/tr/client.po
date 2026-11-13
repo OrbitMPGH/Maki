@@ -2287,10 +2287,14 @@ msgid "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
 msgstr "{name}: durduruldu, {ok}/{total} başarılı, ilk hata: {firstError}"
 
 #: src/components/home/RecentlyAddedRail.tsx
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
 msgid "{newChapterCount, plural, one {# new} other {# new}}"
 msgstr "{newChapterCount, plural, one {# yeni} other {# yeni}}"
 
 #: src/components/home/RecentlyAddedRail.tsx
+#: src/components/ui/CoverCard.tsx
+#: src/components/ui/SeriesRow.tsx
 #, fuzzy
 msgid "{newChapterCount, plural, one {# recent chapter file} other {# recent chapter files}}"
 msgstr "{newChapterCount, plural, one {# yeni bölüm dosyası} other {# yeni bölüm dosyası}}"
@@ -3326,13 +3330,7 @@ msgstr "{unread, plural, one {# önceki bölüm hâlâ okunmadı.} other {# önc
 msgid "{unread, plural, one {# left} other {# left}}"
 msgstr "{unread, plural, one {# kaldı} other {# kaldı}}"
 
-#: src/components/ui/CoverCard.tsx
-#, fuzzy
-msgid "{unread, plural, one {# new} other {# new}}"
-msgstr "{unread, plural, one {# yeni} other {# yeni}}"
-
 #: src/components/library/LibraryTable.tsx
-#: src/components/ui/SeriesRow.tsx
 #, fuzzy
 msgid "{unread, plural, one {# unread} other {# unread}}"
 msgstr "{unread, plural, one {# okunmamış} other {# okunmamış}}"
@@ -13139,9 +13137,8 @@ msgstr "Son cilt araması: {lastVolumeSearchText}"
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx
-#, fuzzy
-msgid "Later than expected. We guessed {range}."
-msgstr "Beklenenden geç. Tahminimiz {range}."
+msgid "Later than expected. Maki guessed {range}."
+msgstr ""
 
 #: src/components/RequestForm.tsx
 #: src/pages/RequestsPage.tsx
