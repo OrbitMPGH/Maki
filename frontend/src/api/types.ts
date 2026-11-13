@@ -106,6 +106,10 @@ export interface SeriesDto {
   specialsCounted?: boolean
   /** Listed chapters with a decimal number. */
   listedSpecials?: number
+  /** Specials inside `progressTotal`: listed and not switched off; 0 while specials are left out. */
+  includedSpecials?: number
+  /** Listed chapters `progressTotal` leaves out because Wanted was switched off. */
+  progressSkipped?: number
   /** "Default" | "On" | "Off": this series' choice about deleting read chapter files. */
   readFileCleanup: string
   /** Whether read files are actually being deleted, the choice and the instance switch combined. Detail endpoint only. */

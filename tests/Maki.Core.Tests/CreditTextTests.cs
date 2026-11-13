@@ -45,6 +45,16 @@ public class CreditTextTests
     }
 
     [Fact]
+    public void An_official_title_page_with_its_staff_list_is_a_publishers()
+    {
+        const string title = "LANTERN | HUNTER | ORIGINAL NOVEL BY + EXAMPLE AUTHOR | ART BY + EXAMPLE ARTIST | "
+            + "TRANSLATION BY + JANE ROE | TYPESETTING BY + SAM POE | PRIMARY QC BY + ALEX DOE";
+
+        Assert.False(CreditText.IsScanlator(title, colour: true));
+        Assert.True(CreditText.IsScanlator("Original novel by Example Author | Join our Discord", colour: false));
+    }
+
+    [Fact]
     public void A_bare_web_address_counts_only_with_the_colour_rule_behind_it()
     {
         Assert.True(CreditText.IsScanlator("visit example.com", colour: true));

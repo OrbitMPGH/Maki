@@ -31,7 +31,7 @@ export function HeroChips({
   const label = useLabel()
   const state = seriesStatusVisual(status)
   const tone = statusToken(state.color)
-  const animeLabel = animeName ?? t`Has an anime adaptation`
+  const animeLabel = animeName?.trim() || t`Has an anime adaptation`
 
   return (
     <div className="hero-chips">

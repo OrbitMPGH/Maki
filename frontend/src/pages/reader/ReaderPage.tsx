@@ -175,9 +175,9 @@ export default function ReaderPage() {
    */
   const [queued, setQueued] = useState<{ chapterId: number; resumePage: number; resumeOffset: number; finished: boolean } | null>(null)
   /**
-   * Which edges this visit leaves credit pages out of. The start only when they were known before
-   * the first render, so the page under the reader never moves; the end once known (null until then),
-   * unless the reader is already past where it begins.
+   * Which edges this visit leaves credit pages out of. The start when they were known before the
+   * first render, or arrived while the reader was still on the part they leave out; the end once
+   * known (null until then), unless the reader is already past where it begins.
    */
   const [creditsVisit, setCreditsVisit] = useState<{ chapterId: number; head: boolean; tail: boolean | null } | null>(null)
   /** The chapter whose first render stopped waiting for its credit pages. */
@@ -541,7 +541,7 @@ export default function ReaderPage() {
   // On a phone the notes sheet covers the page, so nothing is being read while it is up.
   const clock = useReadingClock(tracking, notesOpen && phoneSheet)
   const stripOffset = useStripOffset(stripTracker, mode === 'vertical' && tracking && !finished, chapterId, recordedTo, resumedAt)
-  const { settle: settleProgress } = useReaderProgress(
+  const { settle: settleProgress, rebase: rebaseProgress } = useReaderProgress(
     manifest?.chapterId,
     manifest?.seriesId,
     finished ? pageCount - 1 : recordedTo,
@@ -645,14 +645,25 @@ export default function ReaderPage() {
     seekToPage(page, half, offset > 0 ? { offset, smooth: false } : PLAIN_SEEK)
   }, [stripTracker, mode, page, half, seekToPage])
 
-  // Credit pages that arrive after the chapter opened trim only its end, and not at all once the
-  // reader is already past where they begin.
+  // Credit pages that arrive after the chapter opened still skip the start while the reader is on
+  // the part it leaves out, landing where an answer known on opening would have. The end is trimmed
+  // unless the reader is already past where it begins.
   useEffect(() => {
     if (!visit || visit.tail !== null || !credits) return
-    const tail = shownTo <= creditWindow(pageCount, credits, visit.head, true).last
-    setCreditsVisit({ ...visit, tail })
-    if (tail) holdPlace()
-  }, [visit, credits, shownTo, pageCount, holdPlace])
+    const fromStart = startedFor === chapterId
+    const place = stripTracker.get()
+    const above = place?.page === page ? place.offset : 0
+    const inBanner = fromStart && mode === 'vertical' && page === credits.headPages && above < credits.headOffset
+    const head = visit.head || page < credits.headPages || inBanner
+    const tail = shownTo <= creditWindow(pageCount, credits, head, true).last
+    setCreditsVisit({ ...visit, head, tail })
+    if (head && !visit.head) {
+      const offset = fromStart ? credits.headOffset : 0
+      rebaseProgress()
+      setResumedAt({ chapterId, page: credits.headPages, offset })
+      seekToPage(credits.headPages, 0, offset > 0 ? { offset, smooth: false } : PLAIN_SEEK)
+    } else if (tail) holdPlace()
+  }, [visit, credits, shownTo, pageCount, holdPlace, startedFor, chapterId, stripTracker, page, mode, rebaseProgress, seekToPage])
 
   // Turning the setting back on mid-chapter can leave the reader on a page no longer shown.
   useEffect(() => {

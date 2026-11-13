@@ -154,6 +154,8 @@ internal static class LibraryListRows
                 ProgressRead = progress.Read,
                 SpecialsCounted = progress.SpecialsCounted,
                 ListedSpecials = progress.ListedSpecials,
+                IncludedSpecials = progress.IncludedSpecials,
+                ProgressSkipped = progress.Skipped,
                 ProvisionalRating = userState?.ProvisionalRating,
                 ProvisionalAtChapter = userState?.ProvisionalAtChapter,
                 Finished = finishedIds.Contains(s.Id),
@@ -369,7 +371,8 @@ internal static class LibraryListRows
         select new FileChapterRow(f.Id, f.SeriesId, f.DateAdded, (int?)c!.Id, (int?)c.SeriesId, c.Number, c.Volume);
 
     internal sealed record ChapterTallies(
-        int SeriesId, int Wanted, int WithFile, int Known, int Removed, int Specials, int SpecialsHad, double? HighestMain);
+        int SeriesId, int Wanted, int WithFile, int Known, int Removed, int Specials, int SpecialsHad, double? HighestMain,
+        double? HighestKeptMain = null, int SwitchedOff = 0, int SwitchedOffSpecials = 0);
 
     /// <summary>
     /// The chapter counts every series surface reports, keyed by series id. The list and detail
@@ -380,6 +383,11 @@ internal static class LibraryListRows
     /// 39/39 rather than 39/40, while one they don't want but already have still counts on both
     /// sides. Chapters merely waiting to download are wanted, so deferring never shrinks this. A
     /// chapter whose file was removed on purpose counts too, so clearing read files never shrinks it.
+    /// </para>
+    /// <para>
+    /// <c>SwitchedOff</c> is the complement: Wanted off, no file, never had one.
+    /// <c>HighestKeptMain</c> leaves those out, so switching off the last chapter lowers the
+    /// progress total too.
     /// </para>
     /// </summary>
     internal static async Task<Dictionary<int, ChapterTallies>> ChapterTalliesAsync(
@@ -397,7 +405,13 @@ internal static class LibraryListRows
                 g.Count(c => c.Number != null && c.Number != (decimal)(long)c.Number),
                 g.Count(c => c.Number != null && c.Number != (decimal)(long)c.Number &&
                              (c.ChapterFileId != null || c.FileRemovedAt != null)),
-                g.Where(c => c.Number != null && c.Number == (decimal)(long)c.Number).Max(c => (double?)(long)c.Number!.Value)))
+                g.Where(c => c.Number != null && c.Number == (decimal)(long)c.Number).Max(c => (double?)(long)c.Number!.Value),
+                g.Where(c => c.Number != null && c.Number == (decimal)(long)c.Number &&
+                             (c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null))
+                    .Max(c => (double?)(long)c.Number!.Value),
+                g.Count(c => !c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null),
+                g.Count(c => !c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null &&
+                             c.Number != null && c.Number != (decimal)(long)c.Number)))
             .ToDictionaryAsync(x => x.SeriesId, ct);
 
     /// <summary>
@@ -418,7 +432,9 @@ internal static class LibraryListRows
         SeriesProgressScope.Compute(
             series, counts?.Known ?? 0, (counts?.WithFile ?? 0) + (counts?.Removed ?? 0),
             counts?.Specials ?? 0, counts?.SpecialsHad ?? 0, counts?.HighestMain,
-            read, readSpecials, unmonitorSpecials);
+            read, readSpecials, unmonitorSpecials,
+            new SeriesProgressScope.SwitchedOff(
+                counts?.SwitchedOff ?? 0, counts?.SwitchedOffSpecials ?? 0, counts?.HighestKeptMain));
 
     internal static async Task<bool> UnmonitorSpecialsAsync(IAppSettings appSettings, CancellationToken ct) =>
         await appSettings.GetAsync(SettingKeys.MonitoringUnmonitorSpecials, ct) == "true";

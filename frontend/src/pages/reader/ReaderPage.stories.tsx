@@ -281,14 +281,36 @@ export const OpeningPastHiddenPagesWritesNothing: Story = {
   },
 }
 
-/** An answer that comes after the reader stopped waiting trims only the end, so the page on screen never moves. */
-export const LateCreditAnswerTrimsOnlyTheEnd: Story = {
-  parameters: { ...open(1132), msw: [creditsAt({ headPages: 1, headOffset: 0, tailPages: 2 }, 2500), hidingCredits(1132)] },
+/** An answer that comes after the reader stopped waiting, while it is still on the credit page, skips it then, and writes nothing. */
+export const LateCreditAnswerSkipsTheStart: Story = {
+  parameters: {
+    ...open(7711),
+    msw: [
+      creditsAt({ headPages: 1, headOffset: 0, tailPages: 2 }, 2500),
+      withManifest({ ...chapters[1132], chapterId: 7711, resumePage: 0, prefs: { ...chapters[1132].prefs, hideCredits: true } }),
+      recordCreditWrites,
+    ],
+  },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 1' })).toBeVisible()
     await expect(await canvas.findByText('Page 1 of 18')).toBeInTheDocument()
-    await expect(await canvas.findByText('Page 1 of 16')).toBeInTheDocument()
-    await expect(canvas.getByRole('img', { name: 'Chapter 132 - page 1' })).toBeVisible()
+    await expect(await canvas.findByText('Page 1 of 15')).toBeInTheDocument()
+    await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 2' })).toBeVisible()
+    await new Promise((resolve) => setTimeout(resolve, 2500))
+    await expect(creditWrites.filter((write) => write.chapterId === 7711)).toHaveLength(0)
+  },
+}
+
+/** A late answer after the reader has moved past the credit page trims only the end, so the page on screen never moves. */
+export const LateCreditAnswerAfterMovingOnTrimsOnlyTheEnd: Story = {
+  parameters: { ...open(1132), msw: [creditsAt({ headPages: 1, headOffset: 0, tailPages: 2 }, 2500), hidingCredits(1132)] },
+  play: async ({ canvas, userEvent }) => {
+    await canvas.findByRole('img', { name: 'Chapter 132 - page 1' })
+    await expect(await canvas.findByText('Page 1 of 18')).toBeInTheDocument()
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect(await canvas.findByText('Page 2 of 18')).toBeInTheDocument()
+    await expect(await canvas.findByText('Page 2 of 16')).toBeInTheDocument()
+    await expect(canvas.getByRole('img', { name: 'Chapter 132 - page 2' })).toBeVisible()
   },
 }
 

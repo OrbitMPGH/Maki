@@ -382,7 +382,24 @@ public static class CreditDetector
 
     /// <summary>Rows of the edge, before pairing, that are repeated at the same edge of the references; 0 for none.</summary>
     private static int Covered(Edge edge, IEnumerable<Edge> references) =>
-        Region(Strip.Of(edge), references.Select(Strip.Of)) * 2;
+        Region(Strip.Of(edge, 0, 0), references.Select(Placements)) * 2;
+
+    /// <summary>
+    /// A reference's strip at each <see cref="Down"/> and <see cref="Across"/> step, the unshifted one
+    /// first. Aggregators paste the same notice a few pixels off from one chapter to the next
+    /// (Thunderscans' on Shadow Slave moves 2 px across and 18 px down), and after shrinking that puts
+    /// thin text lines part way between two paired rows or columns, where they match on no diagonal.
+    /// Only the reference is shifted: the chapter's own rows stay sharp, so unrelated rows of thin
+    /// line art come no closer.
+    /// </summary>
+    private static List<Strip> Placements(Edge reference) =>
+        [.. Enumerable.Range(0, Down).SelectMany(down => Across.Select(across => Strip.Of(reference, down, across)))];
+
+    /// <summary>Steps of half a source row a reference is moved down by, so a quarter of a paired row at most is left over.</summary>
+    private const int Down = 4;
+
+    /// <summary>Shares of a column a reference is moved across by.</summary>
+    private static readonly float[] Across = [0, -0.25f, 0.25f, -0.5f, 0.5f];
 
     /// <summary>
     /// Whether the chapter is black and white, judged on the rows beyond each edge's repeated region:
@@ -462,37 +479,73 @@ public static class CreditDetector
         return found;
     }
 
-    /// <summary>Paired rows from the edge that are repeated at the same edge of other chapters, or 0 for none.</summary>
-    private static int Region(Strip a, IEnumerable<Strip> references)
+    /// <summary>
+    /// Paired rows from the edge that are repeated at the same edge of other chapters, or 0 for none.
+    /// A row is repeated in a reference when it lies on a run against any of its placements. The
+    /// region starts where <see cref="Support"/> references repeat it, and runs on as far as any one
+    /// of them still does: a notice pasted a pixel off in each chapter matches its neighbours to
+    /// different depths, and the closest one shows where it ends.
+    /// </summary>
+    private static int Region(Strip a, IEnumerable<List<Strip>> references)
     {
         var support = new int[a.Count];
-        foreach (var b in references)
+        var repeats = new List<bool[]>();
+        foreach (var placements in references)
         {
-            var (cover, duplicate) = Runs(a, b);
+            var covered = new bool[a.Count];
+            var duplicate = false;
+            foreach (var b in placements)
+            {
+                var (cover, same) = Runs(a, b);
+                if (same)
+                {
+                    duplicate = true;
+                    break;
+                }
+
+                for (var i = 0; i < a.Count; i++)
+                {
+                    covered[i] |= cover[i];
+                }
+            }
+
             if (duplicate)
             {
                 continue;
             }
 
+            repeats.Add(covered);
             for (var i = 0; i < a.Count; i++)
             {
-                if (cover[i])
+                if (covered[i])
                 {
                     support[i]++;
                 }
             }
         }
 
-        var end = 0;
+        var end = Reach(a, 0, i => support[i] >= Support);
+        if (end > 0)
+        {
+            end = repeats.Max(covered => Reach(a, end, i => covered[i]));
+        }
+
+        return end == 0 || end >= a.Count - EndSlack ? 0 : end;
+    }
+
+    /// <summary>Where a run of <paramref name="repeated"/> rows from <paramref name="from"/> ends, allowing <see cref="MaxGap"/> informative rows that are not.</summary>
+    private static int Reach(Strip a, int from, Func<int, bool> repeated)
+    {
+        var end = from;
         var gap = 0;
-        for (var i = 0; i < Math.Min(a.Count, MaxRows); i++)
+        for (var i = from; i < Math.Min(a.Count, MaxRows); i++)
         {
             if (!a.Informative(i))
             {
                 continue;
             }
 
-            if (support[i] >= Support)
+            if (repeated(i))
             {
                 end = i + 1;
                 gap = 0;
@@ -503,7 +556,7 @@ public static class CreditDetector
             }
         }
 
-        return end == 0 || end >= a.Count - EndSlack ? 0 : end;
+        return end;
     }
 
     /// <summary>
@@ -610,20 +663,34 @@ public static class CreditDetector
 
         public bool Informative(int i) => _informative[i];
 
-        public static Strip Of(Edge edge)
+        /// <summary>
+        /// The edge's rows paired from <paramref name="down"/> half rows in, each moved
+        /// <paramref name="across"/> of a column to the right (both interpolated).
+        /// </summary>
+        public static Strip Of(Edge edge, int down, float across)
         {
             var full = edge.Rows;
-            var count = full.Length / Width / 2;
+            var (skip, half) = (down / 2, down % 2 == 1);
+            var count = Math.Max(0, full.Length / Width - skip - (half ? 1 : 0)) / 2;
             var rows = new float[count * Width];
             var informative = new bool[count];
+            var paired = new float[Width];
+            var (step, keep) = (across < 0 ? 1 : -1, 1 - MathF.Abs(across));
             for (var i = 0; i < count; i++)
             {
-                var top = 2 * i * Width;
+                var top = (2 * i + skip) * Width;
+                for (var x = 0; x < Width; x++)
+                {
+                    paired[x] = half
+                        ? (full[top + x] / 2f + full[top + Width + x] + full[top + 2 * Width + x] / 2f) / 2f
+                        : (full[top + x] + full[top + Width + x]) / 2f;
+                }
+
                 var sum = 0f;
                 var squares = 0f;
                 for (var x = 0; x < Width; x++)
                 {
-                    var value = (full[top + x] + full[top + Width + x]) / 2f;
+                    var value = paired[x] * keep + paired[Math.Clamp(x + step, 0, Width - 1)] * (1 - keep);
                     rows[i * Width + x] = value;
                     sum += value;
                     squares += value * value;

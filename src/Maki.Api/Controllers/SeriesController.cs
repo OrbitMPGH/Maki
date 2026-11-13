@@ -1007,6 +1007,8 @@ public class SeriesController(
             ProgressRead = progress.Read,
             SpecialsCounted = progress.SpecialsCounted,
             ListedSpecials = progress.ListedSpecials,
+            IncludedSpecials = progress.IncludedSpecials,
+            ProgressSkipped = progress.Skipped,
             ProvisionalRating = userState?.ProvisionalRating,
             ProvisionalAtChapter = userState?.ProvisionalAtChapter,
             Finished = finished,

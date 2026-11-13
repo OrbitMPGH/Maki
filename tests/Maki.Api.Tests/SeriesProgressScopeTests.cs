@@ -28,7 +28,7 @@ public sealed class SeriesProgressScopeTests : IDisposable
         var t = SeriesProgressScope.Compute(Series(203), known: 221, had: 220, specials: 19, specialsHad: 19,
             highestMain: 201, read: 105, readSpecials: 8, unmonitorSpecials: false);
 
-        Assert.Equal(new SeriesProgressScope.Totals(222, 220, 105, true, 19), t);
+        Assert.Equal(new SeriesProgressScope.Totals(222, 220, 105, true, 19, 0, 19), t);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public sealed class SeriesProgressScopeTests : IDisposable
     {
         var t = SeriesProgressScope.Compute(Series(203), 221, 220, 19, 19, 201, 105, 8, unmonitorSpecials: true);
 
-        Assert.Equal(new SeriesProgressScope.Totals(203, 201, 97, false, 19), t);
+        Assert.Equal(new SeriesProgressScope.Totals(203, 201, 97, false, 19, 0, 0), t);
     }
 
     [Fact]
@@ -74,6 +74,91 @@ public sealed class SeriesProgressScopeTests : IDisposable
 
         Assert.Equal(10, t.Total);
         Assert.Null(t.Read);
+    }
+
+    [Theory]
+    [InlineData(NewChapterMonitorMode.All)]
+    [InlineData(NewChapterMonitorMode.Smart)]
+    public void A_switched_off_prelude_leaves_the_total(NewChapterMonitorMode mode)
+    {
+        // Chapters 0 to 17, chapter 0 switched off and never downloaded; MangaBaka says 13.
+        var t = SeriesProgressScope.Compute(Series(13, mode: mode), known: 18, had: 17, specials: 0, specialsHad: 0,
+            highestMain: 17, read: 17, readSpecials: 0, unmonitorSpecials: false,
+            new SeriesProgressScope.SwitchedOff(1, 0, 17));
+
+        Assert.Equal((17, 17, 17, 1), (t.Total, t.Have, t.Read, t.Skipped));
+    }
+
+    [Fact]
+    public void Switching_off_the_last_chapters_lowers_the_highest_floor()
+    {
+        var t = SeriesProgressScope.Compute(Series(), known: 20, had: 10, specials: 0, specialsHad: 0,
+            highestMain: 20, read: null, readSpecials: 0, unmonitorSpecials: false,
+            new SeriesProgressScope.SwitchedOff(3, 0, 17));
+
+        Assert.Equal((17, 3), (t.Total, t.Skipped));
+    }
+
+    [Fact]
+    public void A_higher_MangaBaka_total_keeps_its_floor_and_reports_nothing_skipped()
+    {
+        var t = SeriesProgressScope.Compute(Series(30), known: 18, had: 17, specials: 0, specialsHad: 0,
+            highestMain: 17, read: null, readSpecials: 0, unmonitorSpecials: false,
+            new SeriesProgressScope.SwitchedOff(1, 0, 17));
+
+        Assert.Equal((30, 0), (t.Total, t.Skipped));
+    }
+
+    [Fact]
+    public void Switched_off_specials_leave_the_kept_specials()
+    {
+        var t = SeriesProgressScope.Compute(Series(10), known: 13, had: 11, specials: 3, specialsHad: 1,
+            highestMain: 10, read: null, readSpecials: 0, unmonitorSpecials: false,
+            new SeriesProgressScope.SwitchedOff(2, 2, 10));
+
+        Assert.Equal((11, 2, 1), (t.Total, t.Skipped, t.IncludedSpecials));
+    }
+
+    [Fact]
+    public void A_None_series_ignores_the_switches_it_stamped_off_itself()
+    {
+        var t = SeriesProgressScope.Compute(Series(mode: NewChapterMonitorMode.None), known: 50, had: 5, specials: 0,
+            specialsHad: 0, highestMain: 50, read: null, readSpecials: 0, unmonitorSpecials: false,
+            new SeriesProgressScope.SwitchedOff(45, 0, 5));
+
+        Assert.Equal((50, 0), (t.Total, t.Skipped));
+    }
+
+    [Fact]
+    public void A_locked_total_stays_and_reports_no_main_chapter_skipped()
+    {
+        var t = SeriesProgressScope.Compute(Series(18, locked: true), known: 18, had: 17, specials: 0, specialsHad: 0,
+            highestMain: 17, read: null, readSpecials: 0, unmonitorSpecials: false,
+            new SeriesProgressScope.SwitchedOff(1, 0, 17));
+
+        Assert.Equal((18, 0), (t.Total, t.Skipped));
+    }
+
+    [Fact]
+    public async Task List_leaves_switched_off_chapters_out_but_keeps_removed_ones()
+    {
+        var user = _db.SeedUser("reader");
+        var id = _db.SeedSeries("Prelude", configure: s => s.TotalChapters = 2);
+        using (var db = _db.NewContext())
+        {
+            var file = new ChapterFile { SeriesId = id, RelativePath = "c.cbz" };
+            db.ChapterFiles.Add(file);
+            db.SaveChanges();
+            db.Chapters.Add(new Chapter { SeriesId = id, Number = 0m, Wanted = false });
+            db.Chapters.Add(new Chapter { SeriesId = id, Number = 1m, ChapterFileId = file.Id });
+            db.Chapters.Add(new Chapter { SeriesId = id, Number = 2m, Wanted = false, FileRemovedAt = DateTime.UtcNow });
+            db.Chapters.Add(new Chapter { SeriesId = id, Number = 3m, Wanted = false });
+            db.SaveChanges();
+        }
+
+        var row = await Row(user, id, new FakeAppSettings());
+
+        Assert.Equal((2, 2, 2), (row.ProgressTotal, row.ProgressHave, row.ProgressSkipped));
     }
 
     [Fact]
