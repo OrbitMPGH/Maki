@@ -322,6 +322,12 @@ public record SeriesDto(
     /// <summary>Listed chapters with a decimal number (<see cref="Chapter.IsSpecial"/>).</summary>
     public int ListedSpecials { get; init; }
 
+    /// <summary>Specials inside <see cref="ProgressTotal"/>: the listed ones not switched off, 0 when specials are left out.</summary>
+    public int IncludedSpecials { get; init; }
+
+    /// <summary>Listed chapters <see cref="ProgressTotal"/> leaves out because the user switched Wanted off.</summary>
+    public int ProgressSkipped { get; init; }
+
     /// <summary>The series' pending torrent volume proposal, filled only by the detail endpoint.</summary>
     public int? PendingProposalId { get; init; }
 
@@ -427,7 +433,7 @@ public record SeriesDto(
         queuedCount,
         downloadingCount,
         s.HasAnime,
-        s.AnimeName,
+        string.IsNullOrWhiteSpace(s.AnimeName) ? null : s.AnimeName,
         s.AnimeStart,
         s.AnimeEnd,
         readChapterCount,

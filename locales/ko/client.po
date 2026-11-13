@@ -2310,6 +2310,10 @@ msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed,
 msgstr "{notWanted, plural, other {목록에 #개 더, 원하지 않음}}"
 
 #: src/components/series/ChapterCountsInfo.tsx
+msgid "{notWanted, plural, one {Reading and Downloads leave out # chapter you switched off.} other {Reading and Downloads leave out # chapters you switched off.}}"
+msgstr ""
+
+#: src/components/series/ChapterCountsInfo.tsx
 #, fuzzy
 msgid "{offNumbering, plural, one {# of them has a decimal number or none, like an extra or a special.} other {# of them have a decimal number or none, like extras or specials.}}"
 msgstr "{offNumbering, plural, other {그중 #개는 소수 번호가 있거나 번호가 없습니다. 외전이나 스페셜 같은 항목입니다.}}"

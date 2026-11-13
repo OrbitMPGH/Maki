@@ -9,6 +9,7 @@ export interface ChapterCounts {
     /** The Downloads total: wanted or already obtained, or `listed` when nothing is wanted. */
     wanted: number
     nothingWanted: boolean
+    /** Listed chapters the Downloads total leaves out because Wanted is off. */
     notWanted: number
     /** Listed chapters with a decimal number or none. */
     offNumbering: number
@@ -65,15 +66,26 @@ export function ChapterCountsInfo({ counts }: { counts: ChapterCounts }) {
                         </Text>
                     )}
                     {scoped ? (
-                        offNumbering > 0 && (
-                            <Text size="sm">
-                                {specialsCounted ? (
-                                    <Trans>Reading and Downloads count extras, since you keep specials.</Trans>
-                                ) : (
-                                    <Trans>Reading and Downloads leave extras out, since specials are unmonitored.</Trans>
-                                )}
-                            </Text>
-                        )
+                        <>
+                            {offNumbering > 0 && (
+                                <Text size="sm">
+                                    {specialsCounted ? (
+                                        <Trans>Reading and Downloads count extras, since you keep specials.</Trans>
+                                    ) : (
+                                        <Trans>Reading and Downloads leave extras out, since specials are unmonitored.</Trans>
+                                    )}
+                                </Text>
+                            )}
+                            {notWanted > 0 && (
+                                <Text size="sm">
+                                    <Plural
+                                        value={notWanted}
+                                        one="Reading and Downloads leave out # chapter you switched off."
+                                        other="Reading and Downloads leave out # chapters you switched off."
+                                    />
+                                </Text>
+                            )}
+                        </>
                     ) : counts.nothingWanted ? (
                         <Text size="sm">
                             <Trans>Nothing is wanted, so Downloads counts against every listed chapter.</Trans>

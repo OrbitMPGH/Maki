@@ -11,7 +11,8 @@ namespace Maki.Core.Images;
 /// The lists were tuned on 225 hand-labelled repeated pages (2026-11-13, git-ignored
 /// <c>research/credit-pages</c>): 115 of 116 scanlator pages, 0 of 53 publisher pages and 1 of 44
 /// title pages (a cover carrying the scanlator's credit) came out as scanlator. Change them only
-/// against that set.
+/// against that set and the OCR verdicts of the library scan in <c>2026-11-13-lone-credits</c>
+/// (<c>analyse textcheck</c>); "originalnovelby" was added there to keep an official webtoon title page.
 /// </para>
 /// </summary>
 public static partial class CreditText
@@ -39,7 +40,7 @@ public static partial class CreditText
     private static readonly string[] OfficialPhrases =
     [
         "allrightsreserved", "publishedby", "firstpublished", "printedin", "vizmedia", "kodansha", "sevenseas", "squareenix", "yenpress", "copyright", "©",
-        "translationrights", "localizationproduced", "authorizedforpublishing", "libraryofcongress", "readingdirections", "digitaledition", "ghostship",
+        "translationrights", "localizationproduced", "authorizedforpublishing", "originalnovelby", "libraryofcongress", "readingdirections", "digitaledition", "ghostship",
     ];
 
     private static readonly Regex[] OfficialWords = [Words(@"\bisbn\b")];
