@@ -365,6 +365,8 @@ try
     // Reads the GC, the process and the kernel's cgroup accounting for GET system/memory. Holds
     // no state of its own; a singleton only because everything it inspects is one.
     builder.Services.AddSingleton<MemoryDiagnostics>();
+    builder.Services.AddSingleton<ProcessCpuSampler>();
+    builder.Services.AddScoped<HealthRunningWork>();
     builder.Services.AddSingleton<Maki.Api.Jobs.ArtifactBuildGate>();
     // Channel weights and floors live in one record so distribution/eval-search.cs can sweep them
     // against the labelled query set; nothing changes them at runtime.
@@ -986,6 +988,10 @@ try
     builder.Services.AddSingleton<UpgradeScanTracker>();
     builder.Services.AddSingleton<ChapterSourceResolver>();
     builder.Services.AddSingleton<DownloadPauseService>();
+    builder.Services.AddSingleton(sp => new DownloadDiskHold(
+        sp.GetRequiredService<IServiceScopeFactory>(), sp.GetRequiredService<TimeProvider>(),
+        sp.GetRequiredService<ILogger<DownloadDiskHold>>()));
+    builder.Services.AddSingleton<DownloadQueueEta>();
     builder.Services.AddSingleton<DownloadQueueService>();
     builder.Services.AddSingleton<IDownloadQueueLiveness, DownloadQueueLiveness>();
     builder.Services.AddSingleton<DownloadBatchNotifier>();
@@ -1052,6 +1058,7 @@ try
     builder.Services.AddSingleton<ImageCacheRebuildStatus>();
     builder.Services.AddScoped<ReleaseService>();
     builder.Services.AddSingleton<TorrentPollState>();
+    builder.Services.AddSingleton<IStalledDownloadResearch, StalledDownloadResearch>();
     builder.Services.AddSingleton<ReleaseSearchCache>();
     builder.Services.AddScoped<StatsEventService>();
     builder.Services.AddScoped<StatsBackfillService>();

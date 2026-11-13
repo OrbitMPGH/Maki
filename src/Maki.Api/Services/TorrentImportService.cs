@@ -696,7 +696,7 @@ public class TorrentImportService(
         DownloadQueueItem item, TorrentImportOutcome outcome, bool settledByUser, CancellationToken ct)
     {
         var mode = TorrentRemovalModes.Parse(await settings.GetAsync(SettingKeys.DownloadClientRemoveCompleted, ct));
-        if (mode != TorrentRemovalModes.AfterImport || ReleaseInfoOf(item) is not { TorrentHash: not null, AddedBeforeGrab: false } ||
+        if (!TorrentRemovalModes.Removes(mode) || ReleaseInfoOf(item) is not { TorrentHash: not null, AddedBeforeGrab: false } ||
             (!settledByUser && outcome.Imported == 0))
         {
             return;

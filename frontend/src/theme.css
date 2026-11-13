@@ -12136,6 +12136,19 @@ body.reader-open {
   gap: var(--mantine-spacing-md);
 }
 
+/* Background work in progress: a live dot, what it is with its counts underneath, a link out. */
+.health-running-list {
+  margin-top: var(--mantine-spacing-md);
+}
+.health-running-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  gap: 4px 12px;
+  align-items: baseline;
+  padding: 9px 0;
+  border-top: 1px solid var(--hairline);
+}
+
 /* One check: state, what it says, what you can do about it. Baseline-aligned so the badge sits on
    the first line of a message that wraps, and hairline-separated rather than boxed - a panel of
    forty bordered rows reads as noise. */

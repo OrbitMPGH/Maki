@@ -77,7 +77,7 @@ public class TransmissionClient : ITorrentClient
             ["fields"] = new[]
             {
                 "hashString", "name", "percentDone", "isFinished", "status", "error",
-                "errorString", "downloadDir", "labels", "addedDate",
+                "errorString", "downloadDir", "labels", "addedDate", "peersConnected", "uploadRatio", "secondsSeeding",
             },
         };
         var result = await CallAsync(settings, session, "torrent-get", args, TorrentClientFailure.Unreachable, ct);
@@ -118,7 +118,10 @@ public class TransmissionClient : ITorrentClient
                 added > 0 ? DateTimeOffset.FromUnixTimeSeconds(added) : DateTimeOffset.MinValue,
                 error == 3,
                 error != 0 && message.Length > 0 ? message : null,
-                status is 0 or 1 or 2 or 3));
+                status is 0 or 1 or 2 or 3,
+                t.TryGetProperty("peersConnected", out _) ? ReadInt(t, "peersConnected") : null,
+                Ratio(t),
+                t.TryGetProperty("secondsSeeding", out _) ? TimeSpan.FromSeconds(Math.Max(0, ReadLong(t, "secondsSeeding"))) : null));
         }
 
         return list;
@@ -148,6 +151,36 @@ public class TransmissionClient : ITorrentClient
         var remove = new Dictionary<string, object?> { ["ids"] = new[] { hash }, ["delete-local-data"] = deleteData };
         await CallAsync(settings, session, "torrent-remove", remove, TorrentClientFailure.Rejected, ct);
         return TorrentRemoval.Removed;
+    }
+
+    /// <summary>
+    /// The session's seed ratio limit when it is on. Transmission has no seeding time limit, only an idle limit
+    /// (minutes without uploading), which says nothing about how long a torrent has seeded, so no time is read.
+    /// </summary>
+    public async Task<TorrentSeedLimits> GetSeedLimitsAsync(TorrentClientSettings settings, CancellationToken ct = default)
+    {
+        var session = await EnsureAsync(settings, ct);
+        var args = new Dictionary<string, object?> { ["fields"] = new[] { "seedRatioLimit", "seedRatioLimited" } };
+        var result = await CallAsync(settings, session, "session-get", args, TorrentClientFailure.Unreachable, ct);
+        var ratio = ReadDouble(result, "seedRatioLimit");
+        return new TorrentSeedLimits(ReadBool(result, "seedRatioLimited") && ratio >= 0 ? Math.Round(ratio, 3) : null, null);
+    }
+
+    /// <summary>-2 is Transmission's "infinite" (uploaded with nothing downloaded), -1 "not available".</summary>
+    private static double? Ratio(JsonElement t)
+    {
+        if (!t.TryGetProperty("uploadRatio", out var v) || v.ValueKind != JsonValueKind.Number)
+        {
+            return null;
+        }
+
+        var ratio = v.GetDouble();
+        return ratio switch
+        {
+            -2 => double.PositiveInfinity,
+            < 0 => null,
+            _ => ratio,
+        };
     }
 
     private async Task<string?> AddCoreAsync(

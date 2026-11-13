@@ -49,6 +49,7 @@ import type {
   ImportDecisionResultDto,
   QueueFailedAction,
   QueuePauseDto,
+  QueueEtaDto,
   QueuePauseRequest,
   QueueFailureGroupDto,
   QueueHistoryDto,
@@ -2582,6 +2583,44 @@ export function useResumeQueue() {
   })
 }
 
+/** Holds one series' queued rows; `resumeAt` unset holds them until resumed. */
+export function usePauseSeriesQueue() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ seriesId, resumeAt }: { seriesId: number; resumeAt?: string }) =>
+      api<QueuePauseDto>('/queue/pause/series', { method: 'PUT', body: JSON.stringify({ seriesId, resumeAt }) }),
+    onSuccess: (pause) => {
+      queryClient.setQueryData(['queue-pause'], pause)
+      void queryClient.invalidateQueries({ queryKey: ['queue-eta'] })
+    },
+  })
+}
+
+export function useResumeSeriesQueue() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (seriesId: number) => api<QueuePauseDto>(`/queue/pause/series/${seriesId}`, { method: 'DELETE' }),
+    onSuccess: (pause) => {
+      queryClient.setQueryData(['queue-pause'], pause)
+      void queryClient.invalidateQueries({ queryKey: ['queue-eta'] })
+    },
+  })
+}
+
+/**
+ * The queue's rough time left, per series and overall. Polled rather than pushed: it moves with every
+ * page downloaded, and nobody needs it to the second.
+ */
+export function useQueueEta(enabled = true) {
+  return useQuery({
+    queryKey: ['queue-eta'],
+    queryFn: ({ signal }) => api<QueueEtaDto>('/queue/eta', { signal }),
+    enabled,
+    refetchInterval: 30_000,
+    meta: { silent: true },
+  })
+}
+
 export function useClearQueue() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -2602,9 +2641,10 @@ export function useReorderQueue() {
   // the ['queue'] prefix and has no `items`.
   const isQueuePage = (q: { queryKey: readonly unknown[] }) => typeof q.queryKey[1] === 'number'
   return useMutation({
-    mutationFn: (orderedIds: number[]) =>
-      api<void>('/queue/reorder', { method: 'PUT', body: JSON.stringify({ orderedIds }) }),
-    onMutate: async (orderedIds) => {
+    // `movedId` is the row the person moved; it takes the claim class of its new neighbour.
+    mutationFn: ({ orderedIds, movedId }: { orderedIds: number[]; movedId?: number }) =>
+      api<void>('/queue/reorder', { method: 'PUT', body: JSON.stringify({ orderedIds, movedId }) }),
+    onMutate: async ({ orderedIds }) => {
       await queryClient.cancelQueries({ queryKey: ['queue'] })
       const previous = queryClient.getQueriesData<QueueHistoryDto>({ queryKey: ['queue'], predicate: isQueuePage })
       const rank = new Map(orderedIds.map((id, index) => [id, index]))
@@ -3967,6 +4007,8 @@ export interface ReleaseSearchResult {
   /** Every query the search sent, in order. */
   tried?: string[]
   releases: ReleaseRowDto[]
+  /** Fewest seeders Maki takes a release with on its own; a manual grab ignores it. */
+  minSeeders?: number
 }
 
 export function useReleaseSearch(seriesId: number, enabled: boolean, query?: string) {
@@ -4396,7 +4438,7 @@ export interface DownloadSettings {
   volumeFirst: boolean
 }
 
-export type TorrentRemovalMode = 'never' | 'afterimport'
+export type TorrentRemovalMode = 'never' | 'afterimport' | 'afterseeding'
 
 /** `manual` follows each mapping's priority; `quality` ranks sources by the series' upgrade profile. */
 export type SourceOrderMode = 'manual' | 'quality'
@@ -4513,6 +4555,19 @@ export function useRootFolders() {
     // Mounted by some twenty components, often several per page. Edits invalidate it; only the
     // free space and the reachable flag move on their own, and a couple of minutes is fine for those.
     staleTime: 2 * 60 * 1000,
+  })
+}
+
+/** Sets the free space below which downloads into a root folder wait: null for the default, 0 for never. */
+export function useSetRootFolderMinFree() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, minFreeBytes }: { id: number; minFreeBytes: number | null }) =>
+      api<RootFolder>(`/rootfolder/${id}/minfree`, { method: 'PUT', body: JSON.stringify({ minFreeBytes }) }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['rootfolders'] })
+      void queryClient.invalidateQueries({ queryKey: ['queue-pause'] })
+    },
   })
 }
 

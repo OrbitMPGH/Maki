@@ -8,7 +8,7 @@ import { inboxPrefsQuery, type InboxPush } from './inbox'
 import { refreshNotes } from './notes'
 import type { SourceMatchProgress, SourceMatchState } from './hooks'
 import { createSeriesListRefresher } from './seriesListPatch'
-import type { ChapterDto, QueueHistoryDto, QueueItemDto, QueuePauseDto } from './types'
+import type { ChapterDto, QueueHistoryDto, QueueItemDto } from './types'
 
 let connection: HubConnection | null = null
 let connectionPromise: Promise<HubConnection> | null = null
@@ -362,8 +362,11 @@ export function useLiveEvents() {
         }
       })
 
-      listen(conn, 'queuePauseChanged', (pause: QueuePauseDto) => {
-        queryClient.setQueryData<QueuePauseDto>(['queue-pause'], pause)
+      // Refetched rather than taken from the push: the paused series' titles are filtered to what this
+      // viewer may see, and the push is one payload for every manager.
+      listen(conn, 'queuePauseChanged', () => {
+        void queryClient.invalidateQueries({ queryKey: ['queue-pause'] })
+        void queryClient.invalidateQueries({ queryKey: ['queue-eta'] })
       })
 
       // Rows moved to the front for a reader nearing the end of a series. No row changed state, so

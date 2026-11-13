@@ -1069,6 +1069,51 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         }
         finally { HealthOperationService.MutationGate.Release(); }
     }
+    /// <summary>Background work in progress and what the process costs right now.</summary>
+    [HttpGet("running")]
+    public async Task<IActionResult> Running([FromServices] HealthRunningWork running, CancellationToken ct) =>
+        Ok(await running.ReadAsync(ct));
+
+    /// <summary>
+    /// Interrupts one run of a scheduled job, the same cancellation a shutdown sends. The job stops at
+    /// its next check of the token and runs again on its own schedule.
+    /// </summary>
+    [HttpPost("running/jobs/{fireInstanceId}/stop")]
+    public async Task<IActionResult> StopJob(string fireInstanceId, [FromServices] Quartz.ISchedulerFactory schedulers,
+        CancellationToken ct)
+    {
+        var scheduler = await schedulers.GetScheduler(ct);
+        JobOutcome.MarkStopped(fireInstanceId);
+        if (await scheduler.Interrupt(fireInstanceId, ct))
+        {
+            return NoContent();
+        }
+
+        JobOutcome.Unmark(fireInstanceId);
+        return NotFound();
+    }
+
+    /// <summary>Every scheduled job with its last and next run.</summary>
+    [HttpGet("scheduled")]
+    public async Task<IActionResult> Scheduled([FromServices] HealthRunningWork running, CancellationToken ct) =>
+        Ok(await running.ScheduledAsync(ct));
+
+    /// <summary>Starts a scheduled job now. Its schedule carries on unchanged.</summary>
+    [HttpPost("scheduled/{group}/{name}/run")]
+    public async Task<IActionResult> RunJob(string group, string name, [FromServices] HealthRunningWork running,
+        CancellationToken ct) =>
+        await running.RunNowAsync(group, name, ct) switch
+        {
+            ManualRunResult.NotFound => NotFound(),
+            ManualRunResult.AlreadyRunning => this.Conflict(localizer, "error.health.jobRunning"),
+            _ => NoContent(),
+        };
+
+    /// <summary>Cancels a bulk series edit whoever started it. Series already done stay done.</summary>
+    [HttpPost("running/bulk/{operationId:guid}/stop")]
+    public IActionResult StopBulk(Guid operationId, [FromServices] SeriesBulkOperations bulk) =>
+        bulk.TryCancelAny(operationId) ? NoContent() : NotFound();
+
     [HttpGet("history")]
     public async Task<IActionResult> History([FromQuery] int page = 1, CancellationToken ct = default)
     {

@@ -208,6 +208,13 @@ export const settingsHandlers: HttpHandler[] = [
   http.get(api('/settings/downloadclient'), () => HttpResponse.json(d.downloadClient)),
   putEcho('/settings/downloadclient'),
   http.post(api('/settings/downloadclient/test'), success),
+  http.get(api('/settings/downloadclient/lifecycle'), () => HttpResponse.json(d.torrentLifecycle)),
+  putEcho('/settings/downloadclient/lifecycle'),
+  http.post(api('/settings/downloadclient/lifecycle/import'), () =>
+    HttpResponse.json({ seedRatio: 2, seedMinutes: 4320, found: true })),
+  http.get(api('/upgrades/proposals'), ({ request }) =>
+    HttpResponse.json(new URL(request.url).searchParams.get('status') === 'dismissed' ? d.declinedReleases : [])),
+  http.post(api('/upgrades/proposals/:id/unblock'), ok),
   http.get(api('/settings/indexer'), ({ request }) => {
     const backend = new URL(request.url).searchParams.get('backend')
     return HttpResponse.json(backend === 'jackett' ? d.indexerJackett : d.indexerProwlarr)

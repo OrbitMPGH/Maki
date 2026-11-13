@@ -36,7 +36,7 @@ public class TransmissionClientTests
             }
 
             var args = method == "session-get"
-                ? new JsonObject { ["rpc-version"] = rpcVersion, ["version"] = "test" }
+                ? respond?.Invoke(method, root["arguments"]!.AsObject()) ?? new JsonObject { ["rpc-version"] = rpcVersion, ["version"] = "test" }
                 : respond?.Invoke(method, root["arguments"]!.AsObject()) ?? new JsonObject();
             var body = new JsonObject { ["result"] = "success", ["arguments"] = args };
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body.ToJsonString()) };
@@ -361,5 +361,62 @@ public class TransmissionClientTests
                 : """{"result":"invalid or corrupt torrent file","arguments":{}}""";
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(body) };
         }
+    }
+
+    [Fact]
+    public async Task Listed_torrents_carry_connected_peers_ratio_and_seeding_time()
+    {
+        var handler = new RpcHandler(17, (method, _) => method switch
+        {
+            "torrent-get" => new JsonObject
+            {
+                ["torrents"] = new JsonArray(
+                    new JsonObject
+                    {
+                        ["hashString"] = "AAA", ["name"] = "a", ["percentDone"] = 1.0, ["isFinished"] = true, ["status"] = 6,
+                        ["labels"] = new JsonArray("maki"), ["peersConnected"] = 3, ["uploadRatio"] = 0.75, ["secondsSeeding"] = 600,
+                    },
+                    new JsonObject
+                    {
+                        ["hashString"] = "bbb", ["name"] = "b", ["percentDone"] = 1.0, ["status"] = 6,
+                        ["labels"] = new JsonArray("maki"), ["peersConnected"] = 0, ["uploadRatio"] = -2, ["secondsSeeding"] = 0,
+                    },
+                    new JsonObject
+                    {
+                        ["hashString"] = "ccc", ["name"] = "c", ["percentDone"] = 0.0, ["status"] = 4,
+                        ["labels"] = new JsonArray("maki"), ["uploadRatio"] = -1,
+                    }),
+            },
+            _ => null,
+        });
+
+        var torrents = await new TransmissionClient(handler).ListAsync(Settings);
+
+        var a = torrents.Single(t => t.Hash == "aaa");
+        Assert.Equal(3, a.Peers);
+        Assert.Equal(0.75, a.Ratio);
+        Assert.Equal(TimeSpan.FromMinutes(10), a.SeedingTime);
+        Assert.Equal(double.PositiveInfinity, torrents.Single(t => t.Hash == "bbb").Ratio);
+        var c = torrents.Single(t => t.Hash == "ccc");
+        Assert.Null(c.Ratio);
+        Assert.Null(c.Peers);
+        Assert.Null(c.SeedingTime);
+        Assert.False(c.IsHeld);
+    }
+
+    [Theory]
+    [InlineData(true, 1.5, 1.5)]
+    [InlineData(false, 1.5, null)]
+    public async Task The_seed_ratio_limit_is_read_only_when_switched_on_and_there_is_no_time_limit(
+        bool limited, double ratio, double? expected)
+    {
+        var handler = new RpcHandler(17, (method, args) =>
+            method == "session-get" && args["fields"]!.AsArray().Any(f => f!.GetValue<string>() == "seedRatioLimit")
+                ? new JsonObject { ["seedRatioLimit"] = ratio, ["seedRatioLimited"] = limited }
+                : null);
+
+        var limits = await new TransmissionClient(handler).GetSeedLimitsAsync(Settings);
+
+        Assert.Equal(new TorrentSeedLimits(expected, null), limits);
     }
 }

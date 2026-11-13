@@ -150,20 +150,37 @@ public static class TorrentUpgradeRules
     private static bool Intersect(NumberRange x, NumberRange y) => x.Start <= y.End && y.Start <= x.End;
 
     /// <summary>
+    /// Whether a release has seeders enough to be taken unattended (<c>upgrades.torrentMinSeeders</c>).
+    /// A release whose indexer reports no count passes; one with none never does, whatever the setting.
+    /// </summary>
+    public static bool EnoughSeeders(int? seeders, int minSeeders) => seeders is not { } count || count >= Math.Max(1, minSeeders);
+
+    /// <summary>
     /// The release the volume search may take unattended: the first auto-grab in ranking order that has
-    /// seeders (or does not say) and does not overlap a torrent still in flight for the series.
+    /// enough seeders (or does not say) and does not overlap a torrent still in flight for the series.
     /// </summary>
     public static TorrentCandidateView? AutoGrabPick(
-        IEnumerable<TorrentCandidateView> ranked, IReadOnlyList<ReleaseSpan> inFlight) =>
+        IEnumerable<TorrentCandidateView> ranked, IReadOnlyList<ReleaseSpan> inFlight,
+        int minSeeders = UpgradeOptions.DefaultMinSeeders) =>
         ranked.FirstOrDefault(v => v.Verdict.Outcome == SpanOutcome.AutoGrab &&
-                                   v.Release.Seeders is not 0 &&
+                                   EnoughSeeders(v.Release.Seeders, minSeeders) &&
                                    !inFlight.Any(span => Overlaps(span, v.Parsed.Span)));
 }
 
 /// <summary>
+/// The chapters without a file a search may count as missing: the wanted ones no source lists, so a
+/// chapter a scraper can fetch stays with the scrapers. Empty for a series that knows no chapters and
+/// has no source to list them. <see cref="Upgrades"/> false keeps every file from reading as an
+/// upgrade, for a search that runs while the upgrade switches are off.
+/// </summary>
+public sealed record MissingScope(IReadOnlySet<int> ChapterIds, bool Upgrades = true);
+
+/// <summary>
 /// Finds torrent volume releases that would replace a series' below-cutoff files, and grabs them or
 /// proposes them. Chapters without a file are only ever counted: a volume that would add chapters the
-/// user does not have becomes a proposal, and <see cref="Chapter.Wanted"/> is never written.
+/// user does not have becomes a proposal, and <see cref="Chapter.Wanted"/> is never written. The
+/// missing search (<c>upgrades.missingSearch</c>) runs the same search for wanted chapters no source
+/// lists, which nothing else would ever fetch.
 /// </summary>
 public class TorrentUpgradeService(
     MakiDbContext db,
@@ -186,10 +203,13 @@ public class TorrentUpgradeService(
     /// <param name="judgeAdditions">
     /// Judge a release that only adds chapters, and propose a volume release whose volumes cannot be
     /// placed, instead of ignoring both. A new series' volume-first search does, and with "volume first"
-    /// on so do the searches someone runs by hand; the daily search never does.
+    /// on so do the searches someone runs by hand. Otherwise only the missing search judges additions,
+    /// and only of the chapters no source lists (<paramref name="missing"/>).
     /// </param>
+    /// <param name="missing">Narrows what counts as missing to the chapters no source lists; null counts every one.</param>
     public async Task<IReadOnlyList<TorrentCandidateView>> EvaluateAsync(
-        int seriesId, IReadOnlyList<ReleaseDto> found, CancellationToken ct, bool judgeAdditions = false)
+        int seriesId, IReadOnlyList<ReleaseDto> found, CancellationToken ct, bool judgeAdditions = false,
+        MissingScope? missing = null)
     {
         var series = await db.Series.AsNoTracking().Include(s => s.RootFolder).FirstOrDefaultAsync(s => s.Id == seriesId, ct);
         if (series is null || found.Count == 0)
@@ -199,7 +219,7 @@ public class TorrentUpgradeService(
 
         var evaluator = await evaluation.ForSeriesAsync(seriesId, ct);
         var options = await UpgradeOptions.LoadAsync(settings, ct);
-        var library = evaluator is null ? null : await LibraryAsync(series, ct);
+        var library = evaluator is null ? null : await LibraryAsync(series, ct, missing);
         var fileLanguages = await db.Chapters.AsNoTracking()
             .Where(c => c.SeriesId == seriesId && c.ChapterFileId != null)
             .Select(c => c.Language)
@@ -384,9 +404,14 @@ public class TorrentUpgradeService(
     /// (instance switches ignored, so with them off it only proposes), and what it leaves holds source
     /// downloads back (<see cref="VolumeFirstGate"/>).
     /// </param>
+    /// <param name="missing">
+    /// With <c>upgrades.missingSearch</c> on, also look for the wanted chapters no source lists
+    /// (<see cref="MissingScopeAsync"/>). That part ignores the upgrade switches, which then only decide
+    /// whether files count as upgrades.
+    /// </param>
     public async Task<SeriesVolumeSearchResult> SearchSeriesAsync(
         int seriesId, CancellationToken ct, bool respectInterval = false, bool ignoreGlobalSwitch = false,
-        VolumeSearchSettings? run = null, bool volumeFirst = false)
+        VolumeSearchSettings? run = null, bool volumeFirst = false, bool missing = false)
     {
         var series = await db.Series.FirstOrDefaultAsync(s => s.Id == seriesId, ct);
         if (series is null)
@@ -398,9 +423,13 @@ public class TorrentUpgradeService(
         var options = run.Options;
         var evaluator = await evaluation.ForSeriesAsync(seriesId, ct);
         // Someone searching by hand with volume first on also wants releases that only add chapters.
-        var judgeAdditions = volumeFirst || (ignoreGlobalSwitch && await VolumeFirstOnAsync(ct));
+        var judgeAll = volumeFirst || (ignoreGlobalSwitch && await VolumeFirstOnAsync(ct));
+        var scope = missing && options.MissingSearch && !judgeAll
+            ? await MissingScopeAsync(series, run, evaluator, ignoreGlobalSwitch, ct)
+            : null;
+        var judgeAdditions = judgeAll || scope is not null;
         var eligible = await EligibilityAsync(series, run, evaluator, respectInterval,
-            ignoreGlobalSwitch || volumeFirst, judgeAdditions, ct);
+            ignoreGlobalSwitch || volumeFirst, judgeAdditions, scope, ct);
         if (eligible is not null)
         {
             // The weekly job would otherwise walk every such series again each day. A change that makes
@@ -416,7 +445,8 @@ public class TorrentUpgradeService(
         }
 
         // A manual search with the instance switches off may look and propose, never grab on its own.
-        var switchesOff = !options.Enabled || !options.VolumeSearch;
+        // The missing search has its own switch: with the upgrade ones off it counts no upgrades instead.
+        var switchesOff = (scope is null || ignoreGlobalSwitch) && (!options.Enabled || !options.VolumeSearch);
 
         var failed = false;
         try
@@ -435,14 +465,14 @@ public class TorrentUpgradeService(
             }
 
             var blocked = await BlockedGuidsAsync(seriesId, ct);
-            var views = (await EvaluateAsync(seriesId, result.Releases, ct, judgeAdditions))
+            var views = (await EvaluateAsync(seriesId, result.Releases, ct, judgeAdditions, scope))
                 .Where(v => !blocked.Contains(v.Release.Guid))
                 .Select(v => switchesOff ? v with { Verdict = v.Verdict.AtMostProposal(SpanVerdictReasons.UpgradesDisabled) } : v)
                 .OrderByDescending(v => v.Score)
                 .ThenByDescending(v => v.Release.Seeders ?? 0)
                 .ToList();
 
-            if (TorrentUpgradeRules.AutoGrabPick(views, await InFlightSpansAsync(seriesId, ct)) is { } grab)
+            if (TorrentUpgradeRules.AutoGrabPick(views, await InFlightSpansAsync(seriesId, ct), options.TorrentMinSeeders) is { } grab)
             {
                 try
                 {
@@ -478,6 +508,7 @@ public class TorrentUpgradeService(
                     if (options.AutoApprove &&
                         ProposalAutoApproval.Allows(proposal.Verdict.Reasons, proposal.Release.Size, proposal.Parsed.IsDigital,
                             options.AutoApproveMaxBytes) &&
+                        TorrentUpgradeRules.EnoughSeeders(proposal.Release.Seeders, options.TorrentMinSeeders) &&
                         await TryAutoApproveAsync(row, series.Title, ct) is { } approvedItem)
                     {
                         return new SeriesVolumeSearchResult(true, result.Releases.Count, approvedItem, null, null);
@@ -542,8 +573,8 @@ public class TorrentUpgradeService(
 
         var release = JsonSerializer.Deserialize<ReleaseDto>(row.ReleaseInfoJson, QualitySnapshot.Json)!;
         var evaluator = await evaluation.ForSeriesAsync(row.SeriesId, ct);
-        var view = (await EvaluateAsync(row.SeriesId, [release], ct,
-            row.VolumeFirst || await VolumeFirstOnAsync(ct))).FirstOrDefault();
+        var (judgeAdditions, missing) = await AdditionsAsync(row.SeriesId, row.VolumeFirst, ct);
+        var view = (await EvaluateAsync(row.SeriesId, [release], ct, judgeAdditions, missing)).FirstOrDefault();
         var info = evaluator is not null && view is not null
             ? InfoFor(evaluator, view, row.Id)
             : new TorrentUpgradeInfo { ProposalId = row.Id, Reasons = [SpanVerdictReasons.NoProfile] };
@@ -611,7 +642,8 @@ public class TorrentUpgradeService(
 
             var reasons = JsonSerializer.Deserialize<string[]>(row.ReasonsJson) ?? [];
             if (!ProposalAutoApproval.Allows(reasons, row.SizeBytes, ReleaseTitleParser.Parse(row.Title).IsDigital,
-                    options.AutoApproveMaxBytes))
+                    options.AutoApproveMaxBytes) ||
+                !TorrentUpgradeRules.EnoughSeeders(StoredSeeders(row.ReleaseInfoJson), options.TorrentMinSeeders))
             {
                 continue;
             }
@@ -702,11 +734,16 @@ public class TorrentUpgradeService(
     /// The part of the eligibility that the instance, the series and its profile decide, before any file
     /// or chapter is looked at: no indexer, incognito, no profile, upgrades off or a cutoff below Volume.
     /// </summary>
+    /// <param name="forMissing">
+    /// For the missing search, which has its own switch and is no upgrade: only a profile that refuses
+    /// volumes outright stops it.
+    /// </param>
     private static string? SettingsRefusal(
-        Series series, VolumeSearchSettings run, UpgradeEvaluator? evaluator, bool ignoreGlobalSwitch)
+        Series series, VolumeSearchSettings run, UpgradeEvaluator? evaluator, bool ignoreGlobalSwitch,
+        bool forMissing = false)
     {
         var options = run.Options;
-        if (!ignoreGlobalSwitch && (!options.Enabled || !options.VolumeSearch))
+        if (!ignoreGlobalSwitch && !forMissing && (!options.Enabled || !options.VolumeSearch))
         {
             return VolumeSearchReasons.Disabled;
         }
@@ -724,6 +761,11 @@ public class TorrentUpgradeService(
         if (evaluator is null)
         {
             return VolumeSearchReasons.NoProfile;
+        }
+
+        if (forMissing)
+        {
+            return QualityScorer.Allows(evaluator.Profile, QualityTier.Volume) ? null : VolumeSearchReasons.Cutoff;
         }
 
         if (!evaluator.Profile.UpgradesEnabled)
@@ -758,9 +800,9 @@ public class TorrentUpgradeService(
 
     private async Task<string?> EligibilityAsync(
         Series series, VolumeSearchSettings run, UpgradeEvaluator? evaluator, bool respectInterval,
-        bool ignoreGlobalSwitch, bool judgeAdditions, CancellationToken ct)
+        bool ignoreGlobalSwitch, bool judgeAdditions, MissingScope? missing, CancellationToken ct)
     {
-        if (SettingsRefusal(series, run, evaluator, ignoreGlobalSwitch) is { } refused)
+        if (SettingsRefusal(series, run, evaluator, ignoreGlobalSwitch, forMissing: missing is not null) is { } refused)
         {
             return refused;
         }
@@ -773,6 +815,11 @@ public class TorrentUpgradeService(
         if (respectInterval && series.LastVolumeSearchUtc is { } last && last > time.GetUtcNow().UtcDateTime - SearchInterval)
         {
             return VolumeSearchReasons.Recent;
+        }
+
+        if (missing is not null)
+        {
+            return null;
         }
 
         // The best any volume release could score, put through the same rule the verdict uses.
@@ -800,6 +847,127 @@ public class TorrentUpgradeService(
 
     public async Task<bool> VolumeFirstOnAsync(CancellationToken ct) =>
         await settings.GetAsync(SettingKeys.DownloadsVolumeFirst, ct) == "true";
+
+    public async Task<int> MinSeedersAsync(CancellationToken ct) => (await UpgradeOptions.LoadAsync(settings, ct)).TorrentMinSeeders;
+
+    /// <summary>The most series one tick of the missing search queries, on top of the weekly interval per series.</summary>
+    public const int MissingSearchesPerRun = 3;
+
+    /// <summary>
+    /// The additions a judgement of the series' releases weighs, for a search that did not run one:
+    /// every missing chapter with volume first, else the ones no source lists with the missing search on.
+    /// </summary>
+    public async Task<(bool JudgeAdditions, MissingScope? Missing)> AdditionsAsync(
+        int seriesId, bool volumeFirst, CancellationToken ct)
+    {
+        if (volumeFirst || await VolumeFirstOnAsync(ct))
+        {
+            return (true, null);
+        }
+
+        if (await settings.GetAsync(SettingKeys.UpgradesMissingSearch, ct) == "false" ||
+            await db.Series.AsNoTracking().FirstOrDefaultAsync(s => s.Id == seriesId, ct) is not { } series)
+        {
+            return (false, null);
+        }
+
+        var scope = await UnlistedScopeAsync(series, upgrades: true, ct);
+        return (scope is not null, scope);
+    }
+
+    /// <summary>
+    /// What the missing search may count for the series, or null when it has nothing to look for: a
+    /// series that monitors nothing, or whose wanted chapters a source can fetch.
+    /// </summary>
+    private async Task<MissingScope?> MissingScopeAsync(
+        Series series, VolumeSearchSettings run, UpgradeEvaluator? evaluator, bool ignoreGlobalSwitch, CancellationToken ct) =>
+        await UnlistedScopeAsync(series, SettingsRefusal(series, run, evaluator, ignoreGlobalSwitch) is null, ct);
+
+    private async Task<MissingScope?> UnlistedScopeAsync(Series series, bool upgrades, CancellationToken ct)
+    {
+        if (series.MonitorNewItems == NewChapterMonitorMode.None || series.ArchivedAt is not null)
+        {
+            return null;
+        }
+
+        var unavailable = await UnavailableSourcesAsync(ct);
+        var ids = await UnlistedMissing(db.Chapters, unavailable)
+            .Where(c => c.SeriesId == series.Id)
+            .Select(c => c.Id)
+            .ToListAsync(ct);
+        var nothingKnown = ids.Count == 0 &&
+                           !await db.Chapters.AnyAsync(c => c.SeriesId == series.Id, ct) &&
+                           !await db.SourceMappings.AnyAsync(m => m.SeriesId == series.Id && m.Enabled &&
+                                                                  !unavailable.Contains(m.SourceName), ct);
+        return ids.Count > 0 || nothingKnown ? new MissingScope(ids.ToHashSet(), upgrades) : null;
+    }
+
+    /// <summary>Wanted chapters without a file that no enabled mapping on an available source lists.</summary>
+    private static IQueryable<Chapter> UnlistedMissing(IQueryable<Chapter> chapters, List<string> unavailable) =>
+        chapters.Where(c => c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null &&
+                            !c.SourceLinks.Any(l => l.SourceMapping!.Enabled &&
+                                                    !unavailable.Contains(l.SourceMapping.SourceName)));
+
+    /// <summary>Series ids with no chapter rows and no source that could list any: nothing to wait for but a release.</summary>
+    private IQueryable<int> NothingKnown(List<string> unavailable) =>
+        db.Series.IgnoreQueryFilters()
+            .Where(s => !db.Chapters.IgnoreQueryFilters().Any(c => c.SeriesId == s.Id) &&
+                        !db.SourceMappings.IgnoreQueryFilters()
+                            .Any(m => m.SeriesId == s.Id && m.Enabled && !unavailable.Contains(m.SourceName)))
+            .Select(s => s.Id);
+
+    /// <summary>Sources a mapping cannot list from: switched off, or no longer registered.</summary>
+    private async Task<List<string>> UnavailableSourcesAsync(CancellationToken ct)
+    {
+        List<string> unavailable = availability is null ? [] : [.. await availability.DisabledAsync(ct)];
+        if (sources is not null)
+        {
+            var mapped = await db.SourceMappings.IgnoreQueryFilters().AsNoTracking()
+                .Where(m => m.Enabled)
+                .Select(m => m.SourceName)
+                .Distinct()
+                .ToListAsync(ct);
+            unavailable.AddRange(mapped.Where(name => sources.Find(name) is null));
+        }
+
+        return unavailable;
+    }
+
+    /// <summary>
+    /// Monitored series the missing search may query, least recently searched first: outside the weekly
+    /// interval, no pending proposal, no source match or volume-first search still to come, and either
+    /// a wanted chapter no source lists or no chapters and no source at all.
+    /// </summary>
+    public async Task<List<int>> MissingCandidatesAsync(CancellationToken ct)
+    {
+        var cutoff = time.GetUtcNow().UtcDateTime - SearchInterval;
+        var unavailable = await UnavailableSourcesAsync(ct);
+        var unlisted = UnlistedMissing(db.Chapters.IgnoreQueryFilters(), unavailable);
+        var nothingKnown = NothingKnown(unavailable);
+        var rows = await db.Series.IgnoreQueryFilters()
+            .Active()
+            .Where(s => s.MonitorNewItems != NewChapterMonitorMode.None && !s.SourceMatchPending &&
+                        s.VolumeFirstPendingAt == null)
+            .Where(s => s.LastVolumeSearchUtc == null || s.LastVolumeSearchUtc < cutoff)
+            .Where(s => !db.TorrentProposals.IgnoreQueryFilters()
+                .Any(p => p.SeriesId == s.Id && p.Status == TorrentProposalStatus.Pending))
+            .Where(s => unlisted.Any(c => c.SeriesId == s.Id) || nothingKnown.Contains(s.Id))
+            .Select(s => new { s.Id, s.LastVolumeSearchUtc })
+            .ToListAsync(ct);
+        return [.. rows.OrderBy(r => r.LastVolumeSearchUtc is not null).ThenBy(r => r.LastVolumeSearchUtc).ThenBy(r => r.Id).Select(r => r.Id)];
+    }
+
+    private static int? StoredSeeders(string releaseInfoJson)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<ReleaseDto>(releaseInfoJson, QualitySnapshot.Json)?.Seeders;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
 
     /// <summary>
     /// Bulk-added series waiting for their volume-first search (<see cref="Series.VolumeFirstPendingAt"/>),
@@ -955,7 +1123,7 @@ public class TorrentUpgradeService(
         }
     }
 
-    private async Task<LibraryState> LibraryAsync(Series series, CancellationToken ct)
+    private async Task<LibraryState> LibraryAsync(Series series, CancellationToken ct, MissingScope? missing = null)
     {
         var (language, chapters) = TorrentUpgradeRules.PrimaryLanguage(await db.Chapters.AsNoTracking()
             .Where(c => c.SeriesId == series.Id)
@@ -1009,7 +1177,7 @@ public class TorrentUpgradeService(
             }
         }
 
-        return new LibraryState(language, chapters, inferred, removing.Keys.ToHashSet());
+        return new LibraryState(language, chapters, inferred, removing.Keys.ToHashSet(), missing);
     }
 
     private static readonly TimeSpan VolumeMapLifetime = TimeSpan.FromHours(12);
@@ -1059,16 +1227,25 @@ public class TorrentUpgradeService(
     }
 
     private sealed class LibraryState(
-        string? language, List<Chapter> chapters, Dictionary<int, int> inferred, HashSet<int> removing)
+        string? language, List<Chapter> chapters, Dictionary<int, int> inferred, HashSet<int> removing,
+        MissingScope? missing)
     {
         public string? Language => language;
 
         private int? VolumeOf(Chapter chapter) => chapter.Volume ?? (inferred.TryGetValue(chapter.Id, out var v) ? v : null);
 
+        private ChapterSpanState StateOf(Chapter chapter, UpgradeEvaluator evaluator, QualityScore score) =>
+            TorrentUpgradeRules.StateOf(evaluator, chapter, chapter.ChapterFile, score, removing.Contains(chapter.Id)) switch
+            {
+                ChapterSpanState.Missing when missing is not null && !missing.ChapterIds.Contains(chapter.Id) =>
+                    ChapterSpanState.Skipped,
+                ChapterSpanState.Upgrade when missing is { Upgrades: false } => ChapterSpanState.AlreadyMet,
+                var state => state
+            };
+
         public List<SpanChapter> All(UpgradeEvaluator evaluator, QualityScore score) =>
         [
-            .. chapters.Select(c => new SpanChapter(c.Number ?? 0, VolumeOf(c),
-                TorrentUpgradeRules.StateOf(evaluator, c, c.ChapterFile, score, removing.Contains(c.Id)), c.ChapterFileId))
+            .. chapters.Select(c => new SpanChapter(c.Number ?? 0, VolumeOf(c), StateOf(c, evaluator, score), c.ChapterFileId))
         ];
 
         public decimal? Through(ReleaseSpan span)
@@ -1105,8 +1282,7 @@ public class TorrentUpgradeService(
                     continue;
                 }
 
-                result.Add(new SpanChapter(chapter.Number ?? 0, volume,
-                    TorrentUpgradeRules.StateOf(evaluator, chapter, chapter.ChapterFile, score, removing.Contains(chapter.Id)),
+                result.Add(new SpanChapter(chapter.Number ?? 0, volume, StateOf(chapter, evaluator, score),
                     chapter.ChapterFileId));
             }
 

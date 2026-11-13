@@ -680,13 +680,13 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
 
             e.HasIndex(q => q.Status);
 
-            // Covers ClaimNextAsync's filter and sort (Protocol, Status, SortOrder, QueuedAt) plus CompletedDownloadJob's Protocol filter, so neither scans the whole table.
-            e.HasIndex(q => new { q.Protocol, q.Status, q.SortOrder, q.QueuedAt });
+            // Covers ClaimNextAsync's filter and sort (Protocol, Status, Priority, SortOrder, QueuedAt) plus CompletedDownloadJob's Protocol filter, so neither scans the whole table.
+            e.HasIndex(q => new { q.Protocol, q.Status, q.Priority, q.SortOrder, q.QueuedAt });
 
-            // The active queue page, ORDER BY SortOrder, QueuedAt. SQLite only uses a partial index
-            // when the query repeats its filter term, and EF renders that page's two != checks as
+            // The active queue page, ORDER BY Priority, SortOrder, QueuedAt. SQLite only uses a partial
+            // index when the query repeats its filter term, and EF renders that page's two != checks as
             // exactly this NOT IN, in this order.
-            e.HasIndex(q => new { q.SortOrder, q.QueuedAt })
+            e.HasIndex(q => new { q.Priority, q.SortOrder, q.QueuedAt })
                 .HasFilter($"\"Status\" NOT IN ({(int)QueueStatus.Completed}, {(int)QueueStatus.Cancelled})");
             // MAX(SortOrder) on every enqueue spans settled rows too, which the partial index omits.
             e.HasIndex(q => q.SortOrder);
