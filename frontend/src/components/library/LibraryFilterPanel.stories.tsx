@@ -168,12 +168,12 @@ export const Root: Story = {
   args: { initial: { status: 'Ongoing', readingStatuses: ['Reading'], yearMin: 2010, yearMax: 2024 } },
   play: async ({ canvasElement, userEvent }) => {
     const drawer = await drawerOf(canvasElement)
-    await expect(await drawer.findByRole('group', { name: 'Status' })).toBeVisible()
-    await expect(await drawer.findByRole('button', { name: 'Ongoing', pressed: true })).toBeVisible()
-    await expect(await drawer.findByRole('button', { name: /^Year 2010 to 2024/ })).toBeVisible()
-    await expect(await drawer.findByRole('button', { name: /^Content rating Any/ })).toBeVisible()
+    await waitFor(async () => expect(await drawer.findByRole('group', { name: 'Status' })).toBeVisible())
+    await waitFor(async () => expect(await drawer.findByRole('button', { name: 'Ongoing', pressed: true })).toBeVisible())
+    await waitFor(async () => expect(await drawer.findByRole('button', { name: /^Year 2010 to 2024/ })).toBeVisible())
+    await waitFor(async () => expect(await drawer.findByRole('button', { name: /^Content rating Any/ })).toBeVisible())
     await userEvent.click(await drawer.findByRole('button', { name: 'Fantasy', pressed: false }))
-    await expect(await drawer.findByRole('button', { name: /^Genres Fantasy/ })).toBeVisible()
+    await waitFor(async () => expect(await drawer.findByRole('button', { name: /^Genres Fantasy/ })).toBeVisible())
     await userEvent.click(await drawer.findByRole('button', { name: 'Done' }))
     await waitFor(() => expect(onClose).toHaveBeenCalled())
   },
@@ -183,7 +183,7 @@ export const SinglePickPage: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const drawer = await drawerOf(canvasElement)
     await userEvent.click(await drawer.findByRole('button', { name: /^Completeness/ }))
-    await expect(await drawer.findByRole('radiogroup', { name: 'Completeness' })).toBeVisible()
+    await waitFor(async () => expect(await drawer.findByRole('radiogroup', { name: 'Completeness' })).toBeVisible())
     await userEvent.click(await drawer.findByRole('radio', { name: 'Complete' }))
     await waitFor(() => expect(drawer.getByRole('button', { name: /^Completeness Complete/ })).toHaveFocus())
   },
@@ -193,20 +193,22 @@ export const GenresIncludeAndLeaveOut: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const drawer = await drawerOf(canvasElement)
     await userEvent.click(await drawer.findByRole('button', { name: /^Genres/ }))
-    await expect(await drawer.findByRole('textbox', { name: 'Search Genres' })).toBeVisible()
-    const horror = await drawer.findByRole('checkbox', { name: /^Horror/ })
-    await userEvent.click(horror)
-    await waitFor(() => expect(horror).toHaveAttribute('aria-checked', 'true'))
-    await userEvent.click(horror)
-    await waitFor(() => expect(horror).toHaveAttribute('aria-checked', 'mixed'))
-    await expect(horror).toHaveAccessibleName(/Left out/)
-    await userEvent.click(await drawer.findByRole('checkbox', { name: /^Action/ }))
-    await userEvent.click(await drawer.findByRole('checkbox', { name: /^Drama/ }))
+    await waitFor(async () => expect(await drawer.findByRole('textbox', { name: 'Search Genres' })).toBeVisible())
+    const box = (name: RegExp) => drawer.getByRole('checkbox', { name })
+    await userEvent.click(await drawer.findByRole('checkbox', { name: /^Horror/ }))
+    await waitFor(() => expect(box(/^Horror/)).toHaveAttribute('aria-checked', 'true'))
+    await userEvent.click(box(/^Horror/))
+    await waitFor(() => expect(box(/^Horror/)).toHaveAttribute('aria-checked', 'mixed'))
+    await expect(box(/^Horror/)).toHaveAccessibleName(/Left out/)
+    await userEvent.click(box(/^Action/))
+    await waitFor(() => expect(box(/^Action/)).toHaveAttribute('aria-checked', 'true'))
+    await userEvent.click(box(/^Drama/))
+    await waitFor(() => expect(box(/^Drama/)).toHaveAttribute('aria-checked', 'true'))
     await expect(await drawer.findByRole('radio', { name: 'All' })).toBeInTheDocument()
     await userEvent.type(await drawer.findByRole('textbox', { name: 'Search Genres' }), 'sci')
     await waitFor(() => expect(drawer.getAllByRole('checkbox')).toHaveLength(1))
     await userEvent.click(await drawer.findByRole('button', { name: 'Back Genres' }))
-    await expect(await drawer.findByRole('button', { name: /^Genres 2 in, 1 out/ })).toBeVisible()
+    await waitFor(async () => expect(await drawer.findByRole('button', { name: /^Genres 2 in, 1 out/ })).toBeVisible())
   },
 }
 
@@ -216,10 +218,10 @@ export const RangePage: Story = {
     await userEvent.click(await drawer.findByRole('button', { name: /^Year/ }))
     await userEvent.type(await drawer.findByRole('textbox', { name: 'Earliest year' }), '2015')
     await userEvent.click(await drawer.findByRole('button', { name: 'Back Year' }))
-    await expect(await drawer.findByRole('button', { name: /^Year From 2015/ })).toBeVisible()
+    await waitFor(async () => expect(await drawer.findByRole('button', { name: /^Year From 2015/ })).toBeVisible())
     await userEvent.click(await drawer.findByRole('button', { name: /^Read Any/ }))
-    await expect(await drawer.findByRole('slider', { name: 'Read from' })).toBeVisible()
-    await expect(await drawer.findByRole('slider', { name: 'Read to' })).toBeVisible()
+    await waitFor(async () => expect(await drawer.findByRole('slider', { name: 'Read from' })).toBeVisible())
+    await waitFor(async () => expect(await drawer.findByRole('slider', { name: 'Read to' })).toBeVisible())
   },
 }
 
@@ -243,6 +245,6 @@ export const PhoneWidth: Story = {
     const content = dialog.closest('.library-filter-drawer') ?? dialog
     await waitFor(() => expect(Math.round(content.getBoundingClientRect().width)).toBe(doc.documentElement.clientWidth))
     await expect(doc.documentElement.scrollWidth).toBeLessThanOrEqual(doc.documentElement.clientWidth)
-    await expect(await within(dialog).findByRole('button', { name: 'Done' })).toBeVisible()
+    await waitFor(async () => expect(await within(dialog).findByRole('button', { name: 'Done' })).toBeVisible())
   },
 }

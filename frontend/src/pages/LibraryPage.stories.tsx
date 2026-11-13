@@ -423,9 +423,9 @@ export const FilterDrawer: Story = {
   beforeEach: () => seedLibraryPrefs({ page: { 'filters-open': true } }),
   play: async ({ canvasElement, userEvent }) => {
     const drawer = await body(canvasElement).findByRole('dialog', { name: 'Filters' })
-    await expect(await within(drawer).findByText('14 series')).toBeVisible()
+    await waitFor(async () => expect(await within(drawer).findByText('14 series')).toBeVisible())
     await userEvent.click(await within(drawer).findByRole('button', { name: /^Chapters/ }))
-    await expect(await within(drawer).findByRole('textbox', { name: 'Minimum chapters' })).toBeVisible()
+    await waitFor(async () => expect(await within(drawer).findByRole('textbox', { name: 'Minimum chapters' })).toBeVisible())
     await userEvent.click(await within(drawer).findByRole('button', { name: 'Back Chapters' }))
     await userEvent.click(await within(drawer).findByRole('button', { name: /^Your tags/ }))
     await expect(await within(drawer).findByRole('switch', { name: /Untagged only/ })).toBeInTheDocument()
@@ -445,7 +445,7 @@ export const FilterDrawerWithActiveFilters: Story = {
     }),
   play: async ({ canvasElement }) => {
     const drawer = await body(canvasElement).findByRole('dialog', { name: 'Filters' })
-    await expect(await within(drawer).findByText('1 series')).toBeVisible()
+    await waitFor(async () => expect(await within(drawer).findByText('1 series')).toBeVisible())
     await waitFor(() => expect(within(drawer).getByRole('button', { name: 'Reset' })).toBeEnabled())
     await waitFor(() => expect(within(drawer).getByRole('button', { name: 'Ongoing', pressed: true })).toBeVisible())
   },
@@ -455,9 +455,9 @@ export const FilterDrawerClearAll: Story = {
   beforeEach: () => seedLibraryPrefs({ page: { 'filters-open': true, status: 'Completed', monitored: 'unmonitored' } }),
   play: async ({ canvasElement, userEvent }) => {
     const drawer = await body(canvasElement).findByRole('dialog', { name: 'Filters' })
-    await expect(await within(drawer).findByText(/^[0-9] series$/)).toBeVisible()
+    await waitFor(async () => expect(await within(drawer).findByText(/^[0-9] series$/)).toBeVisible())
     await userEvent.click(await within(drawer).findByRole('button', { name: 'Reset' }))
-    await expect(await within(drawer).findByText('14 series')).toBeVisible()
+    await waitFor(async () => expect(await within(drawer).findByText('14 series')).toBeVisible())
   },
 }
 
