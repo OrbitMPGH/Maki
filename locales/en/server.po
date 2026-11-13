@@ -1075,6 +1075,9 @@ msgstr "One of the rules is not valid. Check its conditions and what it does."
 msgid "error.pageConversion.stopInvalid"
 msgstr "Choose Smallest, Compact, Balanced, High or Lossless"
 
+msgid "error.pageConversion.splitHeightInvalid"
+msgstr "Choose a split height from {min} to {max} pixels"
+
 #. {max} is the server's core count.
 #: src/Maki.Api/Controllers/PageConversionController.cs
 msgid "error.pageConversion.parallelInvalid"
@@ -1513,6 +1516,14 @@ msgstr "Maki can't read this folder: {path}"
 #: src/Maki.Api/Controllers/RootFolderController.cs
 msgid "error.rootFolder.pathRequired"
 msgstr "Path is required"
+
+#: src/Maki.Api/Controllers/RootFolderRulesController.cs
+msgid "error.rootFolderRules.invalidConditions"
+msgstr "A rule needs at least one condition in every group, at most 10 groups and 20 conditions, each with a known field and a valid value"
+
+#: src/Maki.Api/Controllers/RootFolderRulesController.cs
+msgid "error.rootFolderRules.unknownRootFolder"
+msgstr "That root folder no longer exists"
 
 #: src/Maki.Api/Controllers/ScrobbleController.cs
 msgid "error.scrobble.aniListNotConfigured"
@@ -2595,8 +2606,16 @@ msgid "naming.token.anilistid.description"
 msgstr "AniList id; blank when unmatched"
 
 #: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.chapterreleasedate.description"
+msgstr "Release date as 2024-05-17; blank when the source gives none"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
 msgid "naming.token.chaptergroup.description"
 msgstr "Scanlation group, e.g. Group Name. Blank when the file has none"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.chaptersource.description"
+msgstr "The source the file was downloaded from, e.g. MangaDex. Blank for an imported file"
 
 #: src/Maki.Core/Naming/NamingTokens.cs
 msgid "naming.token.chapterlanguage.description"
@@ -2631,6 +2650,10 @@ msgid "naming.token.malid.description"
 msgstr "MyAnimeList id; blank when unmatched"
 
 #: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.qualitytier.description"
+msgstr "Official, Scanlator, Aggregator or Volume; blank when unknown"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
 msgid "naming.token.mangabakaid.description"
 msgstr "MangaBaka id; blank when unmatched"
 
@@ -2643,6 +2666,10 @@ msgid "naming.token.mangaupdatesid.description"
 msgstr "MangaUpdates id; blank when unmatched"
 
 #: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriesauthor.description"
+msgstr "The story author, or the artist when no author is known. Several are joined with a comma"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
 msgid "naming.token.seriescleantitle.description"
 msgstr "Title with punctuation removed: letters, digits and spaces only"
 
@@ -2651,8 +2678,16 @@ msgid "naming.token.seriesoriginaltitle.description"
 msgstr "The native-language title; blank when the provider has none"
 
 #: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriespublisher.description"
+msgstr "The original publisher, the first one listed; blank when unknown"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
 msgid "naming.token.seriessorttitle.description"
 msgstr "The sort title, e.g. leading article moved to the end"
+
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriesstatus.description"
+msgstr "Ongoing, Completed, Hiatus or Cancelled; blank when unknown"
 
 #: src/Maki.Core/Naming/NamingTokens.cs
 msgid "naming.token.seriestitle.description"

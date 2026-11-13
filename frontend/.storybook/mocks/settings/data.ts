@@ -51,7 +51,8 @@ import type { InboxPrefs } from '../../../src/api/inbox'
 import type { ReaderSettings } from '../../../src/api/reader'
 import type { ReadingProfile } from '../../../src/api/readingProfiles'
 import type { RecycleBin } from '../../../src/api/recycleBin'
-import type { AutoTagRule } from '../../../src/api/autoTagRules'
+import type { AutoTagCondition, AutoTagRule } from '../../../src/api/autoTagRules'
+import type { RootFolderRule } from '../../../src/api/rootFolderRules'
 import type { PageConversionStatus } from '../../../src/api/pageConversion'
 import type { UpscaleCatalogEntry, UpscalingState } from '../../../src/api/upscaling'
 import type { SuwayomiConnection } from '../../../src/api/suwayomi'
@@ -134,18 +135,38 @@ export const tags = [
   { id: 3, label: 'Re-read', color: 'orange', seriesCount: 2 },
 ] satisfies TagDto[]
 
+const weekendRead = [
+  { field: 'type', value: 'manhwa' },
+  { field: 'addedVia', value: 'importList' },
+] satisfies AutoTagCondition[]
+
 export const autoTagRules = [
+  { id: 1, tagId: 2, enabled: true, conditions: weekendRead, groups: [weekendRead] },
+  {
+    id: 2,
+    tagId: 3,
+    enabled: false,
+    conditions: [{ field: 'contentRating', value: 'suggestive' }],
+    groups: [[{ field: 'contentRating', value: 'suggestive' }], [{ field: 'genre', value: 'Romance' }]],
+  },
+] satisfies AutoTagRule[]
+
+export const rootFolderRules = [
   {
     id: 1,
-    tagId: 2,
+    rootFolderId: 2,
+    position: 0,
     enabled: true,
-    conditions: [
-      { field: 'type', value: 'manhwa' },
-      { field: 'addedVia', value: 'importList' },
-    ],
+    groups: [[{ field: 'type', value: 'manhwa' }], [{ field: 'type', value: 'manhua' }]],
   },
-  { id: 2, tagId: 3, enabled: false, conditions: [{ field: 'contentRating', value: 'suggestive' }] },
-] satisfies AutoTagRule[]
+  {
+    id: 2,
+    rootFolderId: 3,
+    position: 1,
+    enabled: false,
+    groups: [[{ field: 'contentRating', value: 'pornographic' }]],
+  },
+] satisfies RootFolderRule[]
 
 const sourceBase = {
   needsFlareSolverr: false,

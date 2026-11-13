@@ -102,19 +102,30 @@ public class AutoTagRulesController(ILocalizer localizer, MakiDbContext db, Auto
             return this.Fail(localizer, "error.tags.unknownTagIds");
         }
 
-        var conditions = AutoTagRules.Normalize(request.Conditions?.Select(c => new AutoTagCondition(c.Field, c.Value)));
-        if (conditions is null)
+        var submitted = RuleConditionDtos.Groups(request.Groups, request.Conditions);
+        // A client from before groups sends only the first one; it may change that group, but the
+        // alternatives it cannot see stay.
+        if (request.Groups is null && request.Conditions is not null &&
+            ConditionGroups.Parse(rule.ConditionsJson) is { Count: > 1 } stored)
+        {
+            submitted = submitted!.Concat(stored.Skip(1));
+        }
+
+        var groups = ConditionGroups.Normalize(submitted, AutoTagFields.All);
+        if (groups is null)
         {
             return this.Fail(localizer, "error.autoTagRules.invalidConditions");
         }
 
         rule.TagId = request.TagId;
         rule.Enabled = request.Enabled;
-        rule.ConditionsJson = AutoTagRules.Serialize(conditions);
+        rule.ConditionsJson = ConditionGroups.Serialize(groups);
         return null;
     }
 
-    private static AutoTagRuleDto ToDto(AutoTagRule rule) => new(
-        rule.Id, rule.TagId, rule.Enabled,
-        AutoTagRules.Parse(rule.ConditionsJson).Select(c => new AutoTagConditionDto(c.Field, c.Value)).ToList());
+    private static AutoTagRuleDto ToDto(AutoTagRule rule)
+    {
+        var groups = RuleConditionDtos.From(ConditionGroups.Parse(rule.ConditionsJson));
+        return new AutoTagRuleDto(rule.Id, rule.TagId, rule.Enabled, groups.FirstOrDefault() ?? [], groups);
+    }
 }

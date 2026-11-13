@@ -43,6 +43,7 @@ import {
   RecommendationIndexSection,
   RecycleBinSection,
   RootFoldersSection,
+  RootFolderRulesSection,
   AutoTagRulesSection,
 } from './settings/LibraryCards'
 import { DropFolderSection } from './settings/DropFolderSection'
@@ -99,6 +100,7 @@ function useSectionNodes(): Record<string, ReactNode> {
       'kavita-sync': <KavitaSyncSection />,
 
       'root-folders': <RootFoldersSection />,
+      'root-folder-rules': <RootFolderRulesSection />,
       naming: <NamingSection />,
       'name-parsing': <NameParsingSection />,
       'drop-folder': <DropFolderSection />,

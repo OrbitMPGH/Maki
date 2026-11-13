@@ -293,6 +293,16 @@ export const settingsHandlers: HttpHandler[] = [
     HttpResponse.json({ id: Number(params.id), ...((await request.json()) as object) }),
   ),
   http.delete(api('/tags/rules/:id'), ok),
+  http.get(api('/rootfolder/rules'), () => HttpResponse.json(d.rootFolderRules)),
+  http.post(api('/rootfolder/rules'), async ({ request }) =>
+    HttpResponse.json({ id: 9, position: 2, ...((await request.json()) as object) }),
+  ),
+  http.put(api('/rootfolder/rules/order'), () => HttpResponse.json(d.rootFolderRules)),
+  http.put(api('/rootfolder/rules/:id'), async ({ request, params }) =>
+    HttpResponse.json({ id: Number(params.id), position: 0, ...((await request.json()) as object) }),
+  ),
+  http.delete(api('/rootfolder/rules/:id'), ok),
+  http.get(api('/rootfolder/rules/test'), () => HttpResponse.json({ rootFolderId: 2, ruleId: 1 })),
   http.get(api('/dropfolder/settings'), () =>
     HttpResponse.json({ enabled: false, path: null, intervalMinutes: 5, placement: 'copy' } satisfies DropFolderSettings),
   ),

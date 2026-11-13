@@ -11,6 +11,7 @@ import {
   type PageConversionSettings,
   type PageConversionStatus,
 } from '../../api/pageConversion'
+import { formatNumber } from '../../format'
 import { FORMAT_LABELS, STOP_HINTS, STOP_LABELS } from './labels'
 import { sameRules, toRuleDtos } from './ruleTemplates'
 
@@ -41,6 +42,7 @@ export function StartStep({
     value.format !== saved.format ||
     value.stop !== saved.stop ||
     value.pngLossless !== saved.pngLossless ||
+    (value.splitHeight ?? null) !== (saved.splitHeight ?? null) ||
     rulesChanged
   const running = status.pass.state === 'running'
   const busy = save.isPending || start.isPending || pause.isPending
@@ -124,6 +126,7 @@ function Summary({ value, ruleCount }: { value: PageConversionSettings; ruleCoun
   const stop = t(STOP_LABELS[value.stop])
   const hint = t(STOP_HINTS[value.stop])
   const quality = t`${stop}. ${hint}`
+  const splitHeight = formatNumber(value.splitHeight ?? 0)
   return (
     <Stack gap="xs" component="dl" m={0}>
       <Row label={<Trans>Format</Trans>} value={value.format ? t(FORMAT_LABELS[value.format]) : t`Off`} />
@@ -133,6 +136,10 @@ function Summary({ value, ruleCount }: { value: PageConversionSettings; ruleCoun
           <Row
             label={<Trans>PNG pages</Trans>}
             value={value.pngLossless || value.stop === 'lossless' ? t`Kept lossless` : t`Follow the quality`}
+          />
+          <Row
+            label={<Trans>Tall pages</Trans>}
+            value={value.splitHeight ? t`Split above ${splitHeight} px` : t`Kept whole`}
           />
           <Row
             label={<Trans>Rules</Trans>}

@@ -539,6 +539,12 @@ public static class SettingKeys
     public const string PageConversionPngLossless = "library.pageconversion.pnglossless";
 
     /// <summary>
+    /// A height in pixels: strips taller than it are cut into several pages while conversion is on
+    /// (<c>TallPageSplitter</c>, <c>MinHeight</c> to <c>MaxHeight</c>). Unset leaves them whole.
+    /// </summary>
+    public const string PageConversionSplitHeight = "library.pageconversion.splitheight";
+
+    /// <summary>
     /// Pages converted at once, 1 to the core count, across the library pass and downloads
     /// (<c>ImageWorkGate.ConversionLimit</c>). Unset is <c>ImageWorkGate.Parallelism</c>.
     /// </summary>

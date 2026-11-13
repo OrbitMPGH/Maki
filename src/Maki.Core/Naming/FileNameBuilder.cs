@@ -1,4 +1,5 @@
 ﻿using Maki.Core.Entities;
+using Maki.Core.Quality;
 
 namespace Maki.Core.Naming;
 
@@ -37,10 +38,12 @@ public static class FileNameBuilder
     /// Same as the four-argument overload, but with the extension an existing file already has
     /// (e.g. renaming a placed PDF), rather than the default <c>.cbz</c> every format assumes.
     /// </summary>
+    /// <param name="source">Display name for <c>{Chapter Source}</c>; null renders it empty.</param>
+    /// <param name="tier">Fills <c>{Quality Tier}</c>.</param>
     public static string BuildChapterFileName(
         Series series, Chapter chapter, Chapter? through, bool wholeVolumes, string format,
-        string extension, string? group = null) =>
-        NamingFormatter.Format(format, new NamingContext(series, chapter, through, wholeVolumes, group))
+        string extension, string? group = null, string? source = null, QualityTier tier = QualityTier.Unknown) =>
+        NamingFormatter.Format(format, new NamingContext(series, chapter, through, wholeVolumes, group, source, tier))
         + LanguageSuffix(chapter, format)
         + extension;
 
@@ -87,8 +90,11 @@ public static class FileNameBuilder
     /// series already lives in is a fact, and re-deriving it here would send a download into a
     /// folder that doesn't exist whenever the format changed after the series was added.
     /// </summary>
-    public static string BuildRelativePath(Series series, Chapter chapter, string format, string? group = null) =>
-        Path.Combine(series.FolderName, BuildChapterFileName(series, chapter, format, group));
+    public static string BuildRelativePath(
+        Series series, Chapter chapter, string format, string? group = null, string? source = null,
+        QualityTier tier = QualityTier.Unknown) =>
+        Path.Combine(series.FolderName, BuildChapterFileName(
+            series, chapter, null, false, format, NamingDefaults.ChapterExtension, group, source, tier));
 
     public static string BuildSeriesFolderName(Series series) =>
         BuildSeriesFolderName(series, NamingDefaults.SeriesFolderFormat);

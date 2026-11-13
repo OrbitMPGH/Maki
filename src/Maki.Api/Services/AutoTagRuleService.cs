@@ -28,7 +28,7 @@ public class AutoTagRuleService(MakiDbContext db, TagService tags, ILogger<AutoT
 
             var subject = AutoTagSubject.For(series, addedVia, addedBy is > 0 ? addedBy : null);
             var tagIds = rules
-                .Where(r => AutoTagRules.Matches(AutoTagRules.Parse(r.ConditionsJson), subject))
+                .Where(r => ConditionGroups.Matches(ConditionGroups.Parse(r.ConditionsJson), subject))
                 .Select(r => r.TagId)
                 .ToList();
             if (tagIds.Count > 0)
@@ -45,8 +45,8 @@ public class AutoTagRuleService(MakiDbContext db, TagService tags, ILogger<AutoT
     /// <summary>The visible series the rule matches that do not carry its tag yet.</summary>
     public async Task<IReadOnlyList<int>> MatchingExistingAsync(AutoTagRule rule, CancellationToken ct)
     {
-        var conditions = AutoTagRules.Parse(rule.ConditionsJson);
-        if (conditions.Count == 0)
+        var groups = ConditionGroups.Parse(rule.ConditionsJson);
+        if (groups.Count == 0)
         {
             return [];
         }
@@ -63,15 +63,15 @@ public class AutoTagRuleService(MakiDbContext db, TagService tags, ILogger<AutoT
             return [];
         }
 
-        var provenance = conditions.Any(c => c.Field is AutoTagFields.AddedVia or AutoTagFields.AddedBy)
-            ? await ProvenanceAsync(ct)
+        var provenance = groups.SelectMany(g => g).Any(c => c.Field is AutoTagFields.AddedVia or AutoTagFields.AddedBy)
+            ? await ProvenanceAsync(db, null, ct)
             : [];
 
         return series
             .Where(s =>
             {
                 var (via, by) = provenance.GetValueOrDefault(s.Id);
-                return AutoTagRules.Matches(conditions,
+                return ConditionGroups.Matches(groups,
                     new AutoTagSubject(s.Genres, s.Type, s.ContentRating, s.RootFolderId, via, by));
             })
             .Select(s => s.Id)
@@ -117,13 +117,15 @@ public class AutoTagRuleService(MakiDbContext db, TagService tags, ILogger<AutoT
     /// incognito), then the import batch record for a library import. A series with neither matches
     /// no "added via" or "added by" condition.
     /// </summary>
-    private async Task<Dictionary<int, (string? Via, int? By)>> ProvenanceAsync(CancellationToken ct)
+    /// <param name="seriesId">One series, or null for every series.</param>
+    public static async Task<Dictionary<int, (string? Via, int? By)>> ProvenanceAsync(
+        MakiDbContext db, int? seriesId, CancellationToken ct)
     {
         var result = new Dictionary<int, (string? Via, int? By)>();
         var imported = await db.ImportBatchFolders
             .IgnoreQueryFilters()
             .AsNoTracking()
-            .Where(f => f.CreatedSeries && f.SeriesId != null)
+            .Where(f => f.CreatedSeries && f.SeriesId != null && (seriesId == null || f.SeriesId == seriesId))
             .Select(f => new { SeriesId = f.SeriesId!.Value, f.UserId })
             .ToListAsync(ct);
         foreach (var row in imported)
@@ -134,7 +136,7 @@ public class AutoTagRuleService(MakiDbContext db, TagService tags, ILogger<AutoT
         var added = await db.UserSeriesStates
             .IgnoreQueryFilters()
             .AsNoTracking()
-            .Where(s => s.AddedToLibraryAtUtc != null)
+            .Where(s => s.AddedToLibraryAtUtc != null && (seriesId == null || s.SeriesId == seriesId))
             .OrderBy(s => s.AddedToLibraryAtUtc)
             .Select(s => new { s.SeriesId, s.UserId, s.AddedFrom })
             .ToListAsync(ct);

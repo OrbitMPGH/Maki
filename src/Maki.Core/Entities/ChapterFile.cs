@@ -42,6 +42,13 @@ public class ChapterFile
     public string? Group { get; set; }
 
     public int? PageCount { get; set; }
+
+    /// <summary>
+    /// Pages in the archive after page conversion split tall strips, when it did. <see cref="PageCount"/>
+    /// stays the count the copy was acquired with, which upgrade scoring compares against; whatever
+    /// counts the pages a reader sees (Komga, mark read) takes this one first.
+    /// </summary>
+    public int? SplitPageCount { get; set; }
     public int? MedianWidth { get; set; }
     public int? MedianHeight { get; set; }
     public string? ImageFormat { get; set; }
@@ -103,5 +110,6 @@ public class ChapterFile
         CheckedWith = null;
         ConversionSavedBytes = 0;
         OriginalImageFormat = null;
+        SplitPageCount = null;
     }
 }

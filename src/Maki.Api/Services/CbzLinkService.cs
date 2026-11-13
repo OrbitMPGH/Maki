@@ -505,6 +505,12 @@ public class CbzLinkService(
             .Where(c => c.SeriesId == series.Id && c.ChapterFileId != null)
             .ToListAsync(ct);
         var userTags = await TagService.LabelsForSeriesAsync(db, series.Id, ct);
+        var urls = (await db.ChapterSourceLinks
+                .Where(l => l.Chapter!.SeriesId == series.Id)
+                .Select(l => new { l.ChapterId, l.SourceMapping!.SourceName, Url = l.Url ?? l.SourceMapping.Url })
+                .ToListAsync(ct))
+            .GroupBy(l => (l.ChapterId, l.SourceName))
+            .ToDictionary(g => g.Key, g => (string?)g.First().Url);
 
         var updated = 0;
         foreach (var chapterFile in files)
@@ -521,7 +527,7 @@ public class CbzLinkService(
 
             var parsed = ReleaseNameParser.ParseFileName(chapterFile.RelativePath);
             var linked = chapters.Where(c => c.ChapterFileId == chapterFile.Id).ToList();
-            if (StandardizeComicInfo(path, series, parsed, linked.Count == 1 ? linked[0] : null, chapterFile, userTags))
+            if (StandardizeComicInfo(path, series, parsed, linked.Count == 1 ? linked[0] : null, chapterFile, userTags, urls))
             {
                 updated++;
             }
@@ -698,13 +704,20 @@ public class CbzLinkService(
     /// groups it with downloaded chapters. Failures are logged, never fatal — the
     /// file stays linked either way.
     /// </summary>
+    /// <param name="urls">Each linked chapter's page per source name, for Notes; null leaves the URL out.</param>
     private bool StandardizeComicInfo(
         string file, Series series, ParsedReleaseFile parsed, Chapter? chapter, ChapterFile chapterFile,
-        IReadOnlyList<string> userTags)
+        IReadOnlyList<string> userTags, IReadOnlyDictionary<(int, string), string?>? urls = null)
     {
         try
         {
-            if (ComicInfoUpdater.UpdateFile(file, series, parsed, chapter, chapterFile.Group, userTags))
+            var source = sources.Find(chapterFile.SourceName);
+            var url = source is not null && chapter is not null
+                ? urls?.GetValueOrDefault((chapter.Id, chapterFile.SourceName))
+                : null;
+            var provenance = new ComicInfoProvenance(source?.DisplayName, string.IsNullOrWhiteSpace(url) ? null : url,
+                chapterFile.Tier);
+            if (ComicInfoUpdater.UpdateFile(file, series, parsed, chapter, chapterFile.Group, userTags, provenance))
             {
                 chapterFile.Size = new FileInfo(file).Length; // rewrite changed the archive size
                 // Belt and braces: the new size already invalidates the cache entry, but a

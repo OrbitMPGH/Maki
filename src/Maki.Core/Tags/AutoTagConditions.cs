@@ -17,6 +17,9 @@ public static class AutoTagFields
     public const string RootFolder = "rootFolder";
 
     public static readonly string[] All = [Genre, Type, ContentRating, AddedVia, AddedBy, RootFolder];
+
+    /// <summary>What a root folder rule may test: everything but the root folder, which it decides.</summary>
+    public static readonly string[] ForRootFolderRules = [Genre, Type, ContentRating, AddedVia, AddedBy];
 }
 
 /// <summary>How a series came into the library, as a rule names it. Persisted; append only.</summary>
@@ -93,42 +96,55 @@ public static class AutoTagRules
     /// Trims and validates a submitted list. Null when it is empty (a rule with no condition would tag
     /// every series) or names a field or value outside the closed sets.
     /// </summary>
-    public static IReadOnlyList<AutoTagCondition>? Normalize(IEnumerable<AutoTagCondition>? conditions)
+    public static IReadOnlyList<AutoTagCondition>? Normalize(IEnumerable<AutoTagCondition>? conditions) =>
+        Normalize(conditions, AutoTagFields.All);
+
+    /// <summary>The same, accepting only <paramref name="fields"/>.</summary>
+    public static IReadOnlyList<AutoTagCondition>? Normalize(
+        IEnumerable<AutoTagCondition>? conditions, IReadOnlyCollection<string> fields)
     {
         var result = new List<AutoTagCondition>();
         foreach (var c in conditions ?? [])
         {
-            var field = c.Field?.Trim() ?? "";
-            var value = c.Value?.Trim() ?? "";
-            if (!AutoTagFields.All.Contains(field) || value.Length == 0)
+            if (NormalizeOne(c, fields) is not { } normalized)
             {
                 return null;
             }
 
-            var valid = field switch
-            {
-                AutoTagFields.Type => SeriesTypes.All.Contains(value),
-                AutoTagFields.AddedVia => AutoTagAddedVia.All.Contains(value),
-                AutoTagFields.ContentRating => ContentRatings.Contains(value),
-                AutoTagFields.AddedBy or AutoTagFields.RootFolder => int.TryParse(value, out var id) && id > 0,
-                _ => value.Length <= 100,
-            };
-            if (!valid)
-            {
-                return null;
-            }
-
-            result.Add(new AutoTagCondition(field, value));
+            result.Add(normalized);
         }
 
-        return result.Count == 0 || result.Count > 20 ? null : result.Distinct().ToList();
+        return result.Count == 0 || result.Count > MaxConditions ? null : result.Distinct().ToList();
+    }
+
+    /// <summary>The most conditions one rule may hold, across all its groups.</summary>
+    public const int MaxConditions = 20;
+
+    internal static AutoTagCondition? NormalizeOne(AutoTagCondition c, IReadOnlyCollection<string> fields)
+    {
+        var field = c.Field?.Trim() ?? "";
+        var value = c.Value?.Trim() ?? "";
+        if (!fields.Contains(field) || value.Length == 0)
+        {
+            return null;
+        }
+
+        var valid = field switch
+        {
+            AutoTagFields.Type => SeriesTypes.All.Contains(value),
+            AutoTagFields.AddedVia => AutoTagAddedVia.All.Contains(value),
+            AutoTagFields.ContentRating => ContentRatings.Contains(value),
+            AutoTagFields.AddedBy or AutoTagFields.RootFolder => int.TryParse(value, out var id) && id > 0,
+            _ => value.Length <= 100,
+        };
+        return valid ? new AutoTagCondition(field, value) : null;
     }
 
     /// <summary>Every condition must hold. An empty list matches nothing.</summary>
     public static bool Matches(IReadOnlyList<AutoTagCondition> conditions, AutoTagSubject subject) =>
         conditions.Count > 0 && conditions.All(c => Holds(c, subject));
 
-    private static bool Holds(AutoTagCondition c, AutoTagSubject s) => c.Field switch
+    internal static bool Holds(AutoTagCondition c, AutoTagSubject s) => c.Field switch
     {
         AutoTagFields.Genre => s.Genres.Any(g => string.Equals(g.Trim(), c.Value, StringComparison.OrdinalIgnoreCase)),
         AutoTagFields.Type => string.Equals(s.Type, c.Value, StringComparison.OrdinalIgnoreCase),
