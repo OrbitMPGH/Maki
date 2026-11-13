@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Alert, Button, Group, Progress, Skeleton, Stack, Text } from '@mantine/core'
+import { Button, Group, Progress, Skeleton, Stack, Text } from '@mantine/core'
+import { Callout } from '../ui/Callout'
 import { IconRefresh } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import {
@@ -74,7 +75,7 @@ export function ReviewStep({ value, rules }: { value: PageConversionSettings; ru
       </Text>
 
       {startFailed && !running && (
-        <Alert color="var(--danger)" role="alert" title={<Trans>The estimate could not be started</Trans>}>
+        <Callout tone="danger" role="alert" title={<Trans>The estimate could not be started</Trans>}>
           <Button
             variant="default"
             size="xs"
@@ -83,12 +84,12 @@ export function ReviewStep({ value, rules }: { value: PageConversionSettings; ru
           >
             <Trans>Try again</Trans>
           </Button>
-        </Alert>
+        </Callout>
       )}
 
       {!startFailed && broken && !running && (
-        <Alert
-          color="var(--danger)"
+        <Callout
+          tone="danger"
           role="alert"
           title={
             estimate?.state === 'cancelled' ? <Trans>The estimate was cancelled</Trans> : <Trans>The estimate failed</Trans>
@@ -104,7 +105,7 @@ export function ReviewStep({ value, rules }: { value: PageConversionSettings; ru
               <Trans>Try again</Trans>
             </Button>
           </Stack>
-        </Alert>
+        </Callout>
       )}
 
       {running && <Sampling estimate={estimate} starting={start.isPending} />}

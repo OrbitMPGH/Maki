@@ -29,7 +29,7 @@ import {
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { ImportListsSection } from '../../components/ImportListsSection'
 import { TrackerSyncControls } from '../../components/TrackerSyncControls'
-import { ConnectionSettingsCard } from '../../components/ConnectionSettingsCard'
+import { ConnectionSettingsCard, type SaveGroup } from '../../components/ConnectionSettingsCard'
 import { savedToast } from './sharedRecord'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 
@@ -301,16 +301,24 @@ function useTrackerText() {
   return { trackerStatus, trackerSummary }
 }
 
+const splitLibraryIds = (ids: string | null | undefined) =>
+  (ids ?? '').split(',').map((id) => id.trim()).filter(Boolean)
+
 /**
  * The Kavita library filter for scrobbling, shown inside the Kavita card. Part of the scrobble
- * settings record, saved on change over the latest server copy. Stored as a comma-separated id list.
+ * settings record, saved with the card's Save over the latest server copy. Stored as a comma-separated id list.
  * Ids Kavita no longer reports stay selectable, so a library that is briefly missing isn't dropped
  * from the filter by the next save.
  */
-function KavitaLibrariesField() {
+function KavitaLibrariesField({
+  value,
+  onChange,
+}: {
+  value: string[] | null
+  onChange: (ids: string[]) => void
+}) {
   const { t } = useLingui()
   const { data } = useScrobbleSettings()
-  const save = useSaveScrobbleSettings()
   const { data: kavitaConnection, isSuccess: kavitaConnectionLoaded } = useConnectionSettings<{
     url: string | null
     apiKey: string | null
@@ -319,8 +327,7 @@ function KavitaLibrariesField() {
   const { data: kavitaLibraries, error: kavitaLibrariesError } = useKavitaLibraries(
     kavitaConnectionLoaded && !kavitaNotSetUp,
   )
-  const libraryIds = save.isPending && save.variables ? save.variables.libraryIds : (data?.libraryIds ?? null)
-  const selectedLibraries = (libraryIds ?? '').split(',').map((id) => id.trim()).filter(Boolean)
+  const selectedLibraries = value ?? splitLibraryIds(data?.libraryIds)
   const libraryOptions = [
     ...(kavitaLibraries ?? []).map((l) => ({ value: String(l.id), label: l.name ?? `#${l.id}` })),
     ...selectedLibraries
@@ -339,9 +346,7 @@ function KavitaLibrariesField() {
       data={libraryOptions}
       value={selectedLibraries}
       disabled={!data}
-      onChange={(ids) =>
-        save.mutate({ libraryIds: ids.length > 0 ? ids.join(',') : null }, { onSuccess: savedToast })
-      }
+      onChange={onChange}
       error={
         kavitaLibrariesErrorMessage != null
           ? t`Could not load libraries from Kavita: ${kavitaLibrariesErrorMessage}`
@@ -354,9 +359,39 @@ function KavitaLibrariesField() {
 
 export function KavitaCard() {
   const { t } = useLingui()
+  const { data: scrobble } = useScrobbleSettings()
+  const saveScrobble = useSaveScrobbleSettings()
+  const { data: bound } = useKavitaUser()
+  const saveOwner = useSetKavitaUser()
+  const [owner, setOwner] = useState<string | null | undefined>(undefined)
+  const [libraries, setLibraries] = useState<string[] | undefined>(undefined)
+
+  const savedLibraries = splitLibraryIds(scrobble?.libraryIds)
+  const ownerDirty = owner !== undefined && owner !== (bound?.userId != null ? String(bound.userId) : null)
+  const librariesDirty = libraries !== undefined && libraries.join(',') !== savedLibraries.join(',')
+
+  const extra: SaveGroup = {
+    dirty: ownerDirty || librariesDirty,
+    saving: saveOwner.isPending || saveScrobble.isPending,
+    commit: async () => {
+      if (ownerDirty) await saveOwner.mutateAsync(owner === null ? null : Number(owner))
+      if (librariesDirty) {
+        const ids = libraries ?? []
+        await saveScrobble.mutateAsync({ libraryIds: ids.length > 0 ? ids.join(',') : null })
+      }
+      setOwner(undefined)
+      setLibraries(undefined)
+    },
+    reset: () => {
+      setOwner(undefined)
+      setLibraries(undefined)
+    },
+  }
+
   return (
     <ConnectionSettingsCard
       name="kavita"
+      extra={extra}
       title="Kavita"
       description={t`The API key is under User Settings, 3rd Party Clients in Kavita.`}
       fields={[
@@ -371,8 +406,8 @@ export function KavitaCard() {
         { key: 'pathMapTo', label: t`Path as Kavita sees it`, placeholder: t`/manga (optional)` },
       ]}
     >
-      <KavitaOwnerField />
-      <KavitaLibrariesField />
+      <KavitaOwnerField value={owner} onChange={setOwner} />
+      <KavitaLibrariesField value={libraries ?? null} onChange={setLibraries} />
     </ConnectionSettingsCard>
   )
 }
@@ -481,12 +516,17 @@ function ImportListInstanceControls({ form: { data, form, set } }: { form: Retur
  * chain intact: the recurring pass, the read-status import, the per-chapter sync and the push-back
  * all act as the same user, so a chapter read in Maki and re-reported by Kavita counts once.
  */
-function KavitaOwnerField() {
+function KavitaOwnerField({
+  value,
+  onChange,
+}: {
+  value: string | null | undefined
+  onChange: (userId: string | null) => void
+}) {
   const { t } = useLingui()
   const { me, singleUser } = useAuth()
   const { data: bound } = useKavitaUser()
   const { data: users } = useUsers()
-  const save = useSetKavitaUser()
 
   // With one account there is nobody else to attribute the reading to. Still shown when it points
   // at some other, now disabled, account, since that is a setting worth being able to clear.
@@ -505,12 +545,8 @@ function KavitaOwnerField() {
       placeholder={t`Lowest-numbered admin`}
       clearable
       data={options}
-      value={bound?.userId != null ? String(bound.userId) : null}
-      onChange={(value) =>
-        save.mutate(value === null ? null : Number(value), {
-          onSuccess: () => notifications.show({ message: now`Saved`, color: 'var(--ok)' }),
-        })
-      }
+      value={value !== undefined ? value : bound?.userId != null ? String(bound.userId) : null}
+      onChange={onChange}
     />
   )
 }

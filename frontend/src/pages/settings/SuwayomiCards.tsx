@@ -1,9 +1,10 @@
 import { useEffect, useReducer, useState } from 'react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
-import { Button, Group, PasswordInput, Select, Stack, Text, TextInput } from '@mantine/core'
+import { Button, Group, Input, PasswordInput, SegmentedControl, Stack, Text, TextInput } from '@mantine/core'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
+import { FieldAction } from '../../components/settings/FieldAction'
 import { savedToast } from './sharedRecord'
 import { ManageSourcesModal } from './ManageSourcesModal'
 import { useSources } from '../../api/hooks'
@@ -81,20 +82,45 @@ export function SuwayomiCard() {
             onChange={(e) => setUrl(e.currentTarget.value)}
             style={{ flex: 2, minWidth: 220 }}
           />
-          <Select
+          <Input.Wrapper
             label={t`Sign-in`}
             description={t`Match Suwayomi's own auth mode setting.`}
-            value={authMode}
-            onChange={(value) => setAuthMode((value as SuwayomiAuthMode | null) ?? 'none')}
-            allowDeselect={false}
-            data={[
-              { value: 'none', label: t`None` },
-              { value: 'basic', label: t`Basic auth` },
-              { value: 'uilogin', label: t`UI login (v2.2 or later)` },
-            ]}
-            style={{ flex: 1, minWidth: 180 }}
-          />
-        </Group>
+            style={{ flex: '1 1 340px' }}
+          >
+            <SegmentedControl
+              mt={4}
+              aria-label={t`Sign-in`}
+              value={authMode}
+              onChange={(value) => setAuthMode(value as SuwayomiAuthMode)}
+              data={[
+                { value: 'none', label: t`None` },
+                { value: 'basic', label: t`Basic auth` },
+                { value: 'uilogin', label: t`UI login (v2.2 or later)` },
+              ]}
+            />
+          </Input.Wrapper>
+          <FieldAction>
+            <Button
+              variant="default"
+              loading={test.isPending}
+              disabled={!url.trim()}
+              onClick={() =>
+                test.mutate(input(), {
+                  onSuccess: ({ version, sourceCount }) =>
+                    notifications.show({
+                      color: 'var(--ok)',
+                      message: plural(sourceCount, {
+                        one: `Suwayomi ${version} answered with # source installed.`,
+                        other: `Suwayomi ${version} answered with # sources installed.`,
+                      }),
+                    }),
+                })
+              }
+            >
+              <Trans>Test</Trans>
+            </Button>
+          </FieldAction>
+       </Group>
         {authMode !== 'none' && (
           <Group align="flex-end" wrap="wrap" className="settings-field-row">
             <TextInput
@@ -118,7 +144,7 @@ export function SuwayomiCard() {
           </Group>
         )}
         <Group justify="space-between" wrap="wrap">
-          <Text size="sm" c="dimmed">
+          <Text size="sm" c="var(--ink-3)">
             {connected ? (
               <Plural
                 value={installed}
@@ -130,30 +156,9 @@ export function SuwayomiCard() {
               <Trans>Not connected.</Trans>
             )}
           </Text>
-          <Group gap="xs">
-            <Button
-              variant="default"
-              loading={test.isPending}
-              disabled={!url.trim()}
-              onClick={() =>
-                test.mutate(input(), {
-                  onSuccess: ({ version, sourceCount }) =>
-                    notifications.show({
-                      color: 'var(--ok)',
-                      message: plural(sourceCount, {
-                        one: `Suwayomi ${version} answered with # source installed.`,
-                        other: `Suwayomi ${version} answered with # sources installed.`,
-                      }),
-                    }),
-                })
-              }
-            >
-              <Trans>Test</Trans>
-            </Button>
-            <Button disabled={!connected || dirty} onClick={() => setManaging(true)}>
-              <Trans>Manage sources</Trans>
-            </Button>
-          </Group>
+          <Button variant="default" disabled={!connected || dirty} onClick={() => setManaging(true)}>
+            <Trans>Manage sources</Trans>
+          </Button>
         </Group>
       </Stack>
       <ManageSourcesModal opened={managing} onClose={() => setManaging(false)} initialProvider="suwayomi" />

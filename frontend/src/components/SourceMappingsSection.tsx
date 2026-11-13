@@ -537,7 +537,7 @@ export function SourceMappingsSection({
                           </StatusDot>
                         )}
                         {m.origin && m.origin != "Unknown" && <Tooltip label={m.origin == "CrossId" ? t`Resolved using ID. High accuracy` : m.origin == "TitleSearch" ? t`Resolved using fuzzy title search. Medium accuracy` : t`Added manually`}>
-                          <Badge size="xs" color={ORIGIN_COLORS[m.origin] ?? 'var(--neutral)'} variant="light" style={{ flexShrink: 0 }}>
+                          <Badge size="sm" color={ORIGIN_COLORS[m.origin] ?? 'var(--neutral)'} variant="light" style={{ flexShrink: 0 }}>
                             {renderLabel(ORIGIN_LABELS[m.origin] ?? m.origin)}
                           </Badge>
                         </Tooltip>}
@@ -1015,7 +1015,7 @@ export function SourceMappingsSection({
                       <Text fw={600} size="sm">
                         {resolved.title}
                       </Text>
-                      <Badge size="xs" variant="light">
+                      <Badge size="sm" variant="light">
                         {resolved.displayName}
                       </Badge>
                     </Group>

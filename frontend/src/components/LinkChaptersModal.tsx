@@ -8,10 +8,11 @@ import {
   Skeleton,
   Stack,
   Text,
-  TextInput,
+  
   UnstyledButton,
 } from '@mantine/core'
-import { IconLinkOff, IconSearch } from '../lib/icons'
+import { SearchInput } from './ui/SearchInput'
+import { IconLinkOff } from '../lib/icons'
 import { ModalFooter, ModalHeading } from './ui/ModalShell'
 import { EmptyState } from './ui/EmptyState'
 import { notifications } from '../lib/toast'
@@ -102,11 +103,10 @@ export function LinkChaptersModal({
           <EmptyState compact mood="asleep" title={t`No files found in the series folder.`} />
         ) : (
           <>
-            <TextInput
-              size="xs"
+            <SearchInput
               value={query}
               onChange={(e) => setQuery(e.currentTarget.value)}
-              leftSection={<IconSearch size={16} />}
+              onClear={() => setQuery('')}
               placeholder={t`Find a file in the folder`}
               aria-label={t`Find a file`}
             />

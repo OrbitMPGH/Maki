@@ -6,18 +6,19 @@ import {
   Breadcrumbs,
   Button,
   Checkbox,
-  CloseButton,
+  
   Group,
   Modal,
   ScrollArea,
   Skeleton,
   Stack,
   Text,
-  TextInput,
+  
   UnstyledButton,
 } from '@mantine/core'
 import { useDebouncedValue } from '@mantine/hooks'
-import { IconChevronRight, IconSearch } from '../lib/icons'
+import { SearchInput } from './ui/SearchInput'
+import { IconChevronRight } from '../lib/icons'
 import { useRecommendationTags, type CatalogueTerm } from '../api/hooks'
 import { buildTagTree, PATH_SEPARATOR, rankTagMatches, tagKey, type TagNode } from '../lib/tagTree'
 import { useGenreOptions } from './CatalogueFilters'
@@ -207,9 +208,8 @@ export function TagBrowserModal({
       }}
     >
       <Stack gap="sm">
-        <TextInput
+        <SearchInput
           data-autofocus
-          leftSection={<IconSearch size={16} />}
           placeholder={withGenres ? t`Search genres, tags or groups like Character Traits` : t`Search tags or groups like Character Traits`}
           value={search}
           onChange={(e) => setSearch(e.currentTarget.value)}
@@ -223,10 +223,7 @@ export function TagBrowserModal({
               setSearch('')
             }
           }}
-          rightSectionPointerEvents="all"
-          rightSection={
-            search ? <CloseButton size="sm" aria-label={t`Clear search`} onClick={() => setSearch('')} /> : undefined
-          }
+          onClear={() => setSearch('')}
         />
 
         <Checkbox

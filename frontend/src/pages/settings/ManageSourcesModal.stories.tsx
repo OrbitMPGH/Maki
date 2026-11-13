@@ -49,7 +49,7 @@ export const SearchNarrowsTheList: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await openDialog(canvasElement)
     await dialog.findByRole('switch', { name: 'Enable MangaDex' })
-    await userEvent.type(await dialog.findByRole('searchbox', { name: 'Search sources' }), 'comick')
+    await userEvent.type(await dialog.findByRole('textbox', { name: 'Search sources' }), 'comick')
     await waitFor(() => expect(dialog.queryByRole('switch', { name: 'Enable MangaDex' })).toBeNull())
     await expect(await dialog.findByRole('switch', { name: 'Enable Comick' })).toBeInTheDocument()
   },
@@ -59,7 +59,7 @@ export const SearchWithNoMatches: Story = {
   play: async ({ canvasElement, userEvent }) => {
     const dialog = await openDialog(canvasElement)
     await dialog.findByRole('switch', { name: 'Enable MangaDex' })
-    await userEvent.type(await dialog.findByRole('searchbox', { name: 'Search sources' }), 'zzzz')
+    await userEvent.type(await dialog.findByRole('textbox', { name: 'Search sources' }), 'zzzz')
     await expect(await dialog.findByText('No sources match. Clear a filter or try another name.')).toBeVisible()
   },
 }
@@ -232,14 +232,14 @@ export const SetUpASite: Story = {
     await userEvent.type(body.getByRole('textbox', { name: /Chapter page/ }), 'https://quietpen.example/blue-chapter-2/')
     await userEvent.click(body.getByRole('button', { name: 'Read the site' }))
     await expect(await body.findByText('Read Blue Hour directly.')).toBeVisible()
-    await userEvent.click(body.getByRole('button', { name: 'Next' }))
+    await userEvent.click(body.getByRole('button', { name: 'Continue' }))
     await expect(await body.findByText('Ch. 2')).toBeVisible()
-    await userEvent.click(body.getByRole('button', { name: 'Next' }))
+    await userEvent.click(body.getByRole('button', { name: 'Continue' }))
     await expect(await body.findByText('40 pages on the sample chapter.')).toBeVisible()
-    await userEvent.click(body.getByRole('button', { name: 'Next' }))
+    await userEvent.click(body.getByRole('button', { name: 'Continue' }))
     await userEvent.click(await body.findByRole('button', { name: 'Find search' }))
     await expect(await body.findByRole('radio', { name: /Use the site's search/ })).toBeChecked()
-    await userEvent.click(body.getByRole('button', { name: 'Next' }))
+    await userEvent.click(body.getByRole('button', { name: 'Continue' }))
     await waitFor(() => expect(body.getByRole('button', { name: 'Save' })).toBeDisabled())
     await userEvent.click(body.getByRole('button', { name: 'Test' }))
     await expect(await body.findByText('Every check passed')).toBeVisible()

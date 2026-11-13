@@ -3,6 +3,7 @@ import { Button, Group, List, Modal, Stack, Switch, Text, TextInput, Tooltip } f
 import { IconRefresh, IconTrash } from '../../lib/icons'
 import { ModalFooter, ModalHeading, ModalNote } from '../../components/ui/ModalShell'
 import { Panel } from '../../components/ui/Panel'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { errorText } from '../../api/errorText'
 import { languageName } from '../../api/titles'
@@ -336,7 +337,7 @@ export function CustomRepositoriesPanel({ opened, onClose }: { opened: boolean; 
         {add.error && <ModalNote tone="danger">{errorText(add.error)}</ModalNote>}
         {error && <ModalNote tone="danger">{errorText(error)}</ModalNote>}
         {repositories?.length === 0 && (
-          <Text size="sm" c="var(--ink-3)"><Trans>No repositories yet.</Trans></Text>
+          <EmptyState compact title={t`No repositories yet`} />
         )}
         {repositories?.map((repository) => (
           <RepositoryCard key={repository.url} repository={repository} onUpdate={setUpdating} />

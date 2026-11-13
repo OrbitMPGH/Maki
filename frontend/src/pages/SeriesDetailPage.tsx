@@ -1,3 +1,4 @@
+import { SearchInput } from '../components/ui/SearchInput'
 import { errorText } from '../api/errorText'
 import { Fragment, useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent, ReactNode, RefObject } from 'react'
@@ -26,7 +27,7 @@ import {
   Table,
   Tabs,
   Text,
-  TextInput,
+  
   Tooltip,
   VisuallyHidden,
 } from '@mantine/core'
@@ -1470,25 +1471,11 @@ function SeriesDetailBody() {
   // On a phone only the toolbar stays pinned; the search scrolls away with the page, or the two
   // together cover a third of the screen.
   const chapterSearchInput = chapters && chapters.length > 0 && (
-      <TextInput
-          size="sm"
+      <SearchInput
           mt={isMobile ? -8 : undefined}
           value={chapterSearch}
           onChange={(event) => setChapterSearch(event.currentTarget.value)}
-          leftSection={<IconSearch size={16} />}
-          rightSection={
-            chapterSearch ? (
-                <ActionIcon
-                    size="sm"
-                    variant="subtle"
-                    color="var(--neutral)"
-                    aria-label={t`Clear chapter search`}
-                    onClick={() => setChapterSearch('')}
-                >
-                  <IconX size={16} />
-                </ActionIcon>
-            ) : null
-          }
+          onClear={() => setChapterSearch('')}
           placeholder={t`Search by chapter number or title`}
           aria-label={t`Search chapters`}
       />

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SettingsGroupTitle } from '../../components/settings/SettingsGroupTitle'
 import { Anchor, Badge, Button, Checkbox, Divider, Group, Stack, Switch, Text } from '@mantine/core'
 import { IconDownload, IconGauge, IconTrash } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
@@ -93,9 +94,9 @@ export function UpscalingSection() {
             <>
               <Divider />
               <Stack gap="xs">
-                <Text fw={500} size="sm">
+                <SettingsGroupTitle>
                   <Trans>Models</Trans>
-                </Text>
+                </SettingsGroupTitle>
                 <Text size="sm" c="var(--ink-3)">
                   <Trans>
                     Readers can pick the ticked models. Saving a ticked model that isn't downloaded yet starts its

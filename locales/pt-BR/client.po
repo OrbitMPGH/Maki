@@ -49,11 +49,6 @@ msgstr "(em branco quando não definido)"
 msgid "(cannot be undone)"
 msgstr "(não pode ser desfeito)"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "(inaccessible)"
-msgstr "(inacessível)"
-
 #. placeholder {0}: history.convertedFiles
 #. placeholder {1}: history.restorableFiles
 #. placeholder {2}: history.restorableFiles
@@ -782,6 +777,11 @@ msgstr "{0} já lê este site."
 #. placeholder {0}: formatDate(entry.deletedAt)
 #: src/components/settings/RecycleBinModal.tsx
 msgid "{0} by {deletedBy}"
+msgstr ""
+
+#. placeholder {0}: formatBytes(f.freeSpace)
+#: src/pages/settings/LibraryCards.tsx
+msgid "{0} free"
 msgstr ""
 
 #. placeholder {0}: percent(item.measure)
@@ -4163,7 +4163,6 @@ msgstr "Ação para a regra {number}"
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Actions"
@@ -7066,11 +7065,6 @@ msgstr "Limpar todas as notificações?"
 msgid "Clear cache"
 msgstr "Limpar cache"
 
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Clear chapter search"
-msgstr "Limpar pesquisa de capítulos"
-
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Clear default"
@@ -7116,9 +7110,7 @@ msgstr "Limpar progresso de leitura de {chapterLbl}"
 msgid "Clear records"
 msgstr "Limpar registros"
 
-#: src/components/CatalogueBrowser.tsx
-#: src/components/LinkFileToChaptersModal.tsx
-#: src/components/TagBrowserModal.tsx
+#: src/components/ui/SearchInput.tsx
 #, fuzzy
 msgid "Clear search"
 msgstr "Limpar pesquisa"
@@ -7602,6 +7594,8 @@ msgid "contents read"
 msgstr "conteúdo lido"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/PageConversionWizardPage.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Continue"
 msgstr "Continuar"
@@ -11004,11 +10998,6 @@ msgstr ""
 msgid "Found"
 msgstr "Encontrado"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Free space"
-msgstr "Espaço livre"
-
 #: src/components/settings/RootFolderMinFreeInput.tsx
 msgid "Free space to keep on {path}"
 msgstr ""
@@ -12304,6 +12293,10 @@ msgstr ""
 msgid "In your library"
 msgstr "Na sua biblioteca"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Inaccessible"
+msgstr ""
+
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Incidental"
@@ -12683,10 +12676,6 @@ msgstr "Manter o último capítulo lido de cada leitor"
 #, fuzzy
 msgid "Keep editing"
 msgstr "Continuar editando"
-
-#: src/pages/settings/LibraryCards.tsx
-msgid "Keep free"
-msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -15257,6 +15246,10 @@ msgstr "Novidades de criadores que você segue"
 msgid "New key"
 msgstr ""
 
+#: src/components/settings/AccountSection.tsx
+msgid "New key makes one for a script or an app."
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "New OPDS feed URL generated"
@@ -15356,12 +15349,6 @@ msgstr ""
 #, fuzzy
 msgid "Newly enabled sources join at the bottom."
 msgstr "As fontes recém-ativadas entram no final da lista."
-
-#: src/pages/PageConversionWizardPage.tsx
-#: src/pages/settings/CustomSourceWizard.tsx
-#, fuzzy
-msgid "Next"
-msgstr "Próximo"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -15706,7 +15693,7 @@ msgid "No indexers configured in {backendName}."
 msgstr "Nenhum indexador configurado em {backendName}."
 
 #: src/components/settings/AccountSection.tsx
-msgid "No keys yet. New key makes one for a script or an app."
+msgid "No keys yet"
 msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -15939,9 +15926,8 @@ msgid "No repeat creators yet"
 msgstr "Ainda não há autores recorrentes"
 
 #: src/pages/settings/CustomRepositoriesPanel.tsx
-#, fuzzy
-msgid "No repositories yet."
-msgstr "Nenhum repositório ainda."
+msgid "No repositories yet"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -16839,15 +16825,14 @@ msgstr "Nada será renomeado e tudo continuará na pasta atual."
 msgid "Nothing is running in the background."
 msgstr ""
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Nothing is saved on this device yet"
+msgstr ""
+
 #: src/components/home/OfflineHome.tsx
 #, fuzzy
 msgid "Nothing is saved on this device yet. Once you're back online, save chapters from a series page and they'll be here to read without a connection."
 msgstr "Nada está salvo neste dispositivo ainda. Quando você voltar a ficar online, salve capítulos na página de uma série e eles aparecerão aqui para ler sem conexão."
-
-#: src/components/settings/OfflineReadingSection.tsx
-#, fuzzy
-msgid "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
-msgstr "Nada está salvo neste dispositivo ainda. Use Salvar para offline em um capítulo ou em uma série."
 
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
@@ -27102,6 +27087,10 @@ msgstr ""
 msgid "Use OPDS"
 msgstr "Usar OPDS"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Use Save for offline on a chapter or a series."
+msgstr ""
+
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Use the bookmark on any cover in Discover, or Shortlist on its card, to keep a title here without adding it."
@@ -27851,6 +27840,10 @@ msgstr ""
 #, fuzzy
 msgid "Where the files on disk came from, which can outlive the link"
 msgstr "De onde vieram os arquivos do disco, o que pode sobreviver ao vínculo"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Where the library lives on disk. Each series is stored in one of these."
+msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
 msgid "Where the series sits in a list sorted by title"

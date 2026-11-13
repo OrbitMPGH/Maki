@@ -49,11 +49,6 @@ msgstr "（未设置时留空）"
 msgid "(cannot be undone)"
 msgstr "（无法撤销）"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "(inaccessible)"
-msgstr "（无法访问）"
-
 #. placeholder {0}: history.convertedFiles
 #. placeholder {1}: history.restorableFiles
 #. placeholder {2}: history.restorableFiles
@@ -782,6 +777,11 @@ msgstr "已有 {0} 读取此站点。"
 #. placeholder {0}: formatDate(entry.deletedAt)
 #: src/components/settings/RecycleBinModal.tsx
 msgid "{0} by {deletedBy}"
+msgstr ""
+
+#. placeholder {0}: formatBytes(f.freeSpace)
+#: src/pages/settings/LibraryCards.tsx
+msgid "{0} free"
 msgstr ""
 
 #. placeholder {0}: percent(item.measure)
@@ -4163,7 +4163,6 @@ msgstr "规则 {number} 的操作"
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Actions"
@@ -7066,11 +7065,6 @@ msgstr "清除所有通知？"
 msgid "Clear cache"
 msgstr "清除缓存"
 
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Clear chapter search"
-msgstr "清除章节搜索"
-
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Clear default"
@@ -7116,9 +7110,7 @@ msgstr "清除 {chapterLbl} 的阅读进度"
 msgid "Clear records"
 msgstr "清除记录"
 
-#: src/components/CatalogueBrowser.tsx
-#: src/components/LinkFileToChaptersModal.tsx
-#: src/components/TagBrowserModal.tsx
+#: src/components/ui/SearchInput.tsx
 #, fuzzy
 msgid "Clear search"
 msgstr "清除搜索"
@@ -7602,6 +7594,8 @@ msgid "contents read"
 msgstr "已读内容"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/PageConversionWizardPage.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Continue"
 msgstr "继续"
@@ -11004,11 +10998,6 @@ msgstr ""
 msgid "Found"
 msgstr "已找到"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Free space"
-msgstr "可用空间"
-
 #: src/components/settings/RootFolderMinFreeInput.tsx
 msgid "Free space to keep on {path}"
 msgstr ""
@@ -12304,6 +12293,10 @@ msgstr ""
 msgid "In your library"
 msgstr "已在你的资料库中"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Inaccessible"
+msgstr ""
+
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Incidental"
@@ -12683,10 +12676,6 @@ msgstr "保留每位读者最后阅读的章节"
 #, fuzzy
 msgid "Keep editing"
 msgstr "继续编辑"
-
-#: src/pages/settings/LibraryCards.tsx
-msgid "Keep free"
-msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -15257,6 +15246,10 @@ msgstr "关注创作者的新作"
 msgid "New key"
 msgstr ""
 
+#: src/components/settings/AccountSection.tsx
+msgid "New key makes one for a script or an app."
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "New OPDS feed URL generated"
@@ -15356,12 +15349,6 @@ msgstr ""
 #, fuzzy
 msgid "Newly enabled sources join at the bottom."
 msgstr "新启用的来源会排在列表末尾。"
-
-#: src/pages/PageConversionWizardPage.tsx
-#: src/pages/settings/CustomSourceWizard.tsx
-#, fuzzy
-msgid "Next"
-msgstr "下一步"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -15706,7 +15693,7 @@ msgid "No indexers configured in {backendName}."
 msgstr "{backendName} 中未配置索引器。"
 
 #: src/components/settings/AccountSection.tsx
-msgid "No keys yet. New key makes one for a script or an app."
+msgid "No keys yet"
 msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -15939,9 +15926,8 @@ msgid "No repeat creators yet"
 msgstr "尚无常看的创作者"
 
 #: src/pages/settings/CustomRepositoriesPanel.tsx
-#, fuzzy
-msgid "No repositories yet."
-msgstr "还没有仓库。"
+msgid "No repositories yet"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -16839,15 +16825,14 @@ msgstr "不会重命名任何内容，所有文件仍留在原文件夹中。"
 msgid "Nothing is running in the background."
 msgstr ""
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Nothing is saved on this device yet"
+msgstr ""
+
 #: src/components/home/OfflineHome.tsx
 #, fuzzy
 msgid "Nothing is saved on this device yet. Once you're back online, save chapters from a series page and they'll be here to read without a connection."
 msgstr "此设备上尚未保存任何内容。恢复联网后，从系列页面保存章节，它们就会出现在这里，无需连接即可阅读。"
-
-#: src/components/settings/OfflineReadingSection.tsx
-#, fuzzy
-msgid "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
-msgstr "此设备上尚未保存任何内容。可在章节或系列上使用「保存以供离线阅读」。"
 
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
@@ -27102,6 +27087,10 @@ msgstr ""
 msgid "Use OPDS"
 msgstr "使用 OPDS"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Use Save for offline on a chapter or a series."
+msgstr ""
+
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Use the bookmark on any cover in Discover, or Shortlist on its card, to keep a title here without adding it."
@@ -27851,6 +27840,10 @@ msgstr ""
 #, fuzzy
 msgid "Where the files on disk came from, which can outlive the link"
 msgstr "磁盘上文件的来源，可能会比关联本身存在得更久"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Where the library lives on disk. Each series is stored in one of these."
+msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
 msgid "Where the series sits in a list sorted by title"

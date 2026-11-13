@@ -27,7 +27,7 @@ export function EstimateTable({
 
   return (
     <Table.ScrollContainer minWidth={560}>
-      <Table verticalSpacing="xs" style={{ opacity: stale ? 0.55 : 1 }}>
+      <Table className="panel-table ops-table" style={{ opacity: stale ? 0.55 : 1 }}>
         <Table.Thead>
           <Table.Tr>
             <Table.Th>

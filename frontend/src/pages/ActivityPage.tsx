@@ -1,3 +1,4 @@
+import { SearchInput } from '../components/ui/SearchInput'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import {
   ActionIcon,
@@ -14,7 +15,7 @@ import {
   Table,
   Tabs,
   Text,
-  TextInput,
+  
   Tooltip,
   VisuallyHidden,
 } from '@mantine/core'
@@ -534,7 +535,7 @@ export default function ActivityPage() {
                 {sourceLabel(q.sourceName)}
               </Text>
               {q.upgrade && (isUpgradeOrigin || q.upgrade.force) && (
-                <Badge size="xs" variant="light" color="var(--brand-fg)">
+                <Badge size="sm" variant="light" color="var(--brand-fg)">
                   {isUpgradeOrigin ? <Trans>Upgrade</Trans> : <Trans>Replace</Trans>}
                 </Badge>
               )}
@@ -848,7 +849,7 @@ export default function ActivityPage() {
                                 {sourceLabel(q.sourceName)}
                               </Text>
                               {q.upgrade && (isUpgradeOrigin || q.upgrade.force) && (
-                                <Badge size="xs" variant="light" color="var(--brand-fg)">
+                                <Badge size="sm" variant="light" color="var(--brand-fg)">
                                   {isUpgradeOrigin ? <Trans>Upgrade</Trans> : <Trans>Replace</Trans>}
                                 </Badge>
                               )}
@@ -1079,14 +1080,15 @@ export default function ActivityPage() {
                 checked={groupHistory}
                 onChange={(event) => changeGroupHistory(event.currentTarget.checked)}
               />
-              <TextInput
-                size="sm"
+              <SearchInput
                 w={220}
-                type="search"
-                leftSection={<IconSearch size={16} />}
                 placeholder={t`Filter by series`}
                 aria-label={t`Filter by series`}
                 value={historySearch}
+                onClear={() => {
+                  setHistorySearch('')
+                  setHistoryPage(1)
+                }}
                 onChange={(event) => {
                   setHistorySearch(event.currentTarget.value)
                   setHistoryPage(1)
@@ -1178,7 +1180,7 @@ export default function ActivityPage() {
                                 detail={
                                   <Group component="span" gap={8} wrap="nowrap">
                                     <span>{historyRunRange(entry.items)}</span>
-                                    <Badge size="xs" variant="light" color="var(--neutral)" className="tnum">
+                                    <Badge size="sm" variant="light" color="var(--neutral)" className="tnum">
                                       {plural(count, { one: '# chapter', other: '# chapters' })}
                                     </Badge>
                                   </Group>
@@ -1192,7 +1194,7 @@ export default function ActivityPage() {
                                     {sourceLabel(mainSource)}
                                   </Text>
                                   {first.upgrade && (
-                                    <Badge size="xs" variant="light" color="var(--brand-fg)">
+                                    <Badge size="sm" variant="light" color="var(--brand-fg)">
                                       <Trans>Upgrade</Trans>
                                     </Badge>
                                   )}

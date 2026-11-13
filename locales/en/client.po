@@ -42,10 +42,6 @@ msgstr "(blank when unset)"
 msgid "(cannot be undone)"
 msgstr "(cannot be undone)"
 
-#: src/pages/settings/LibraryCards.tsx
-msgid "(inaccessible)"
-msgstr "(inaccessible)"
-
 #. placeholder {0}: history.convertedFiles
 #. placeholder {1}: history.restorableFiles
 #. placeholder {2}: history.restorableFiles
@@ -683,6 +679,11 @@ msgstr "{0} already reads this site."
 #: src/components/settings/RecycleBinModal.tsx
 msgid "{0} by {deletedBy}"
 msgstr "{0} by {deletedBy}"
+
+#. placeholder {0}: formatBytes(f.freeSpace)
+#: src/pages/settings/LibraryCards.tsx
+msgid "{0} free"
+msgstr "{0} free"
 
 #. placeholder {0}: percent(item.measure)
 #: src/pages/discover/TasteTab.tsx
@@ -3504,7 +3505,6 @@ msgstr "Action for rule {number}"
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SystemCards.tsx
 msgid "Actions"
 msgstr "Actions"
@@ -5931,10 +5931,6 @@ msgstr "Clear all notifications?"
 msgid "Clear cache"
 msgstr "Clear cache"
 
-#: src/pages/SeriesDetailPage.tsx
-msgid "Clear chapter search"
-msgstr "Clear chapter search"
-
 #: src/pages/DiscoverPage.tsx
 msgid "Clear default"
 msgstr "Clear default"
@@ -5972,9 +5968,7 @@ msgstr "Clear reading progress of {chapterLbl}"
 msgid "Clear records"
 msgstr "Clear records"
 
-#: src/components/CatalogueBrowser.tsx
-#: src/components/LinkFileToChaptersModal.tsx
-#: src/components/TagBrowserModal.tsx
+#: src/components/ui/SearchInput.tsx
 msgid "Clear search"
 msgstr "Clear search"
 
@@ -6378,6 +6372,8 @@ msgid "contents read"
 msgstr "contents read"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/PageConversionWizardPage.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 msgid "Continue"
 msgstr "Continue"
 
@@ -9210,10 +9206,6 @@ msgstr "Forward"
 msgid "Found"
 msgstr "Found"
 
-#: src/pages/settings/LibraryCards.tsx
-msgid "Free space"
-msgstr "Free space"
-
 #: src/components/settings/RootFolderMinFreeInput.tsx
 msgid "Free space to keep on {path}"
 msgstr "Free space to keep on {path}"
@@ -10292,6 +10284,10 @@ msgstr "in under a minute"
 msgid "In your library"
 msgstr "In your library"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Inaccessible"
+msgstr "Inaccessible"
+
 #: src/components/TagBuckets.tsx
 msgid "Incidental"
 msgstr "Incidental"
@@ -10602,10 +10598,6 @@ msgstr "Keep each reader's last read chapter"
 #: src/pages/SettingsPage.tsx
 msgid "Keep editing"
 msgstr "Keep editing"
-
-#: src/pages/settings/LibraryCards.tsx
-msgid "Keep free"
-msgstr "Keep free"
 
 #: src/components/SourceMeasurePanel.tsx
 msgid "Keep manual priority, but renumber it to follow the measured order."
@@ -12748,6 +12740,10 @@ msgstr "New from creators you follow"
 msgid "New key"
 msgstr "New key"
 
+#: src/components/settings/AccountSection.tsx
+msgid "New key makes one for a script or an app."
+msgstr "New key makes one for a script or an app."
+
 #: src/pages/settings/ReadingCards.tsx
 msgid "New OPDS feed URL generated"
 msgstr "New OPDS feed URL generated"
@@ -12832,11 +12828,6 @@ msgstr "Newest release first"
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "Newly enabled sources join at the bottom."
 msgstr "Newly enabled sources join at the bottom."
-
-#: src/pages/PageConversionWizardPage.tsx
-#: src/pages/settings/CustomSourceWizard.tsx
-msgid "Next"
-msgstr "Next"
 
 #: src/pages/ScrobblePage.tsx
 msgid "Next {nextSync}"
@@ -13126,8 +13117,8 @@ msgid "No indexers configured in {backendName}."
 msgstr "No indexers configured in {backendName}."
 
 #: src/components/settings/AccountSection.tsx
-msgid "No keys yet. New key makes one for a script or an app."
-msgstr "No keys yet. New key makes one for a script or an app."
+msgid "No keys yet"
+msgstr "No keys yet"
 
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "No language matches"
@@ -13320,8 +13311,8 @@ msgid "No repeat creators yet"
 msgstr "No repeat creators yet"
 
 #: src/pages/settings/CustomRepositoriesPanel.tsx
-msgid "No repositories yet."
-msgstr "No repositories yet."
+msgid "No repositories yet"
+msgstr "No repositories yet"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "No results."
@@ -14069,13 +14060,13 @@ msgstr "Nothing is renamed and everything stays in the folder you had."
 msgid "Nothing is running in the background."
 msgstr "Nothing is running in the background."
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Nothing is saved on this device yet"
+msgstr "Nothing is saved on this device yet"
+
 #: src/components/home/OfflineHome.tsx
 msgid "Nothing is saved on this device yet. Once you're back online, save chapters from a series page and they'll be here to read without a connection."
 msgstr "Nothing is saved on this device yet. Once you're back online, save chapters from a series page and they'll be here to read without a connection."
-
-#: src/components/settings/OfflineReadingSection.tsx
-msgid "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
-msgstr "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
 
 #: src/components/pageconversion/StartStep.tsx
 msgid "Nothing is saved until you press the button below. Files converted earlier stay as they are."
@@ -22624,6 +22615,10 @@ msgstr "Use its cover"
 msgid "Use OPDS"
 msgstr "Use OPDS"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Use Save for offline on a chapter or a series."
+msgstr "Use Save for offline on a chapter or a series."
+
 #: src/pages/discover/ShortlistTab.tsx
 msgid "Use the bookmark on any cover in Discover, or Shortlist on its card, to keep a title here without adding it."
 msgstr "Use the bookmark on any cover in Discover, or Shortlist on its card, to keep a title here without adding it."
@@ -23245,6 +23240,10 @@ msgstr "When to remove"
 #: src/pages/LibraryPage.tsx
 msgid "Where the files on disk came from, which can outlive the link"
 msgstr "Where the files on disk came from, which can outlive the link"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Where the library lives on disk. Each series is stored in one of these."
+msgstr "Where the library lives on disk. Each series is stored in one of these."
 
 #: src/components/series/EditMetadataModal.tsx
 msgid "Where the series sits in a list sorted by title"

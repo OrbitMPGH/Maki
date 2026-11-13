@@ -1,7 +1,8 @@
+import { SearchInput } from '../../components/ui/SearchInput'
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import {
   ActionIcon, Alert, Button, Chip, Group, Kbd, Loader, Menu, Modal, MultiSelect, Popover, SegmentedControl, Select, Stack,
-  Switch, Tabs, Text, TextInput, Tooltip,
+  Switch, Tabs, Text, Tooltip,
 } from '@mantine/core'
 import { useHotkeys, useMediaQuery } from '@mantine/hooks'
 import { notifications } from '../../lib/toast'
@@ -18,7 +19,7 @@ import {
   IconPencil,
   IconPlus,
   IconPuzzle,
-  IconSearch,
+  
   IconShield,
   IconTool,
   IconTrash,
@@ -1022,15 +1023,14 @@ export function ManageSourcesModal({
   const catalogue = (
     <section className="source-manager-catalogue">
       <div className="source-manager-tools">
-        <TextInput
+        <SearchInput
           ref={searchRef}
-          type="search"
           value={search}
           onChange={(e) => setSearch(e.currentTarget.value)}
           placeholder={plural(total, { one: 'Search # source', other: 'Search # sources' })}
           aria-label={t`Search sources`}
-          leftSection={<IconSearch size={16} />}
-          rightSection={narrow ? undefined : <Kbd size="xs">/</Kbd>}
+          onClear={() => setSearch('')}
+          idleSection={narrow ? undefined : <Kbd size="xs">/</Kbd>}
           style={{ flex: '1 1 200px', minWidth: 160 }}
         />
         <SegmentedControl

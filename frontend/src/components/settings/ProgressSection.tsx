@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { SettingsGroupTitle } from './SettingsGroupTitle'
 import {
   ActionIcon,
   Button,
@@ -167,9 +168,9 @@ export function ProgressSection() {
         />
 
         <Stack gap="xs">
-          <Text fw={500} size="sm">
+          <SettingsGroupTitle>
             <Trans>Reading goals</Trans>
-          </Text>
+          </SettingsGroupTitle>
           {(summary?.goals ?? []).map((goal) => (
             <Group key={goal.id} justify="space-between" wrap="nowrap">
               <Text size="sm">

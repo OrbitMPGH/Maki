@@ -9,14 +9,15 @@ import {
   Stack,
   Tabs,
   Text,
-  TextInput,
+  
   Tooltip,
   UnstyledButton,
 } from '@mantine/core'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural, t as now } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
-import { IconChevronDown, IconRestore, IconSearch, IconTrash } from '../../lib/icons'
+import { SearchInput } from '../ui/SearchInput'
+import { IconChevronDown, IconRestore, IconTrash } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import {
   useDeleteManyFromRecycleBin,
@@ -238,13 +239,12 @@ export function RecycleBinModal({ opened, onClose }: { opened: boolean; onClose:
                 ))}
               </Tabs.List>
             </Tabs>
-            <TextInput
+            <SearchInput
               className="recycle-bin-search"
-              size="sm"
-              leftSection={<IconSearch size={16} />}
               placeholder={t`Filter by series or file`}
               aria-label={t`Filter by series or file`}
               value={query}
+              onClear={() => setQuery('')}
               onChange={(e) => setQuery(e.currentTarget.value)}
             />
           </div>

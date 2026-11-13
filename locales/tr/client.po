@@ -49,11 +49,6 @@ msgstr "(ayarlanmadığında boş)"
 msgid "(cannot be undone)"
 msgstr "(geri alınamaz)"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "(inaccessible)"
-msgstr "(erişilemiyor)"
-
 #. placeholder {0}: history.convertedFiles
 #. placeholder {1}: history.restorableFiles
 #. placeholder {2}: history.restorableFiles
@@ -782,6 +777,11 @@ msgstr "{0} bu site için zaten kullanılıyor."
 #. placeholder {0}: formatDate(entry.deletedAt)
 #: src/components/settings/RecycleBinModal.tsx
 msgid "{0} by {deletedBy}"
+msgstr ""
+
+#. placeholder {0}: formatBytes(f.freeSpace)
+#: src/pages/settings/LibraryCards.tsx
+msgid "{0} free"
 msgstr ""
 
 #. placeholder {0}: percent(item.measure)
@@ -4163,7 +4163,6 @@ msgstr "Kural {number} için işlem"
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Actions"
@@ -7066,11 +7065,6 @@ msgstr "Tüm bildirimler temizlensin mi?"
 msgid "Clear cache"
 msgstr "Önbelleği temizle"
 
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Clear chapter search"
-msgstr "Bölüm aramasını temizle"
-
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Clear default"
@@ -7116,9 +7110,7 @@ msgstr "{chapterLbl} bölümünün okuma ilerlemesini temizle"
 msgid "Clear records"
 msgstr "Kayıtları temizle"
 
-#: src/components/CatalogueBrowser.tsx
-#: src/components/LinkFileToChaptersModal.tsx
-#: src/components/TagBrowserModal.tsx
+#: src/components/ui/SearchInput.tsx
 #, fuzzy
 msgid "Clear search"
 msgstr "Aramayı temizle"
@@ -7602,6 +7594,8 @@ msgid "contents read"
 msgstr "içerik okundu"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/PageConversionWizardPage.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Continue"
 msgstr "Devam et"
@@ -11004,11 +10998,6 @@ msgstr ""
 msgid "Found"
 msgstr "Bulundu"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Free space"
-msgstr "Boş alan"
-
 #: src/components/settings/RootFolderMinFreeInput.tsx
 msgid "Free space to keep on {path}"
 msgstr ""
@@ -12304,6 +12293,10 @@ msgstr ""
 msgid "In your library"
 msgstr "Kitaplığınızda"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Inaccessible"
+msgstr ""
+
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Incidental"
@@ -12683,10 +12676,6 @@ msgstr "Her okurun son okuduğu bölümü koru"
 #, fuzzy
 msgid "Keep editing"
 msgstr "Düzenlemeye devam et"
-
-#: src/pages/settings/LibraryCards.tsx
-msgid "Keep free"
-msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -15257,6 +15246,10 @@ msgstr "Takip ettiğiniz yaratıcılardan yeni"
 msgid "New key"
 msgstr ""
 
+#: src/components/settings/AccountSection.tsx
+msgid "New key makes one for a script or an app."
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "New OPDS feed URL generated"
@@ -15356,12 +15349,6 @@ msgstr ""
 #, fuzzy
 msgid "Newly enabled sources join at the bottom."
 msgstr "Yeni etkinleştirilen kaynaklar listenin sonuna eklenir."
-
-#: src/pages/PageConversionWizardPage.tsx
-#: src/pages/settings/CustomSourceWizard.tsx
-#, fuzzy
-msgid "Next"
-msgstr "İleri"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -15706,7 +15693,7 @@ msgid "No indexers configured in {backendName}."
 msgstr "{backendName} içinde yapılandırılmış dizinleyici yok."
 
 #: src/components/settings/AccountSection.tsx
-msgid "No keys yet. New key makes one for a script or an app."
+msgid "No keys yet"
 msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -15939,9 +15926,8 @@ msgid "No repeat creators yet"
 msgstr "Henüz tekrar okuduğun içerik üreticisi yok"
 
 #: src/pages/settings/CustomRepositoriesPanel.tsx
-#, fuzzy
-msgid "No repositories yet."
-msgstr "Henüz depo yok."
+msgid "No repositories yet"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -16839,15 +16825,14 @@ msgstr "Hiçbir şeyin adı değiştirilmez ve her şey mevcut klasörünüzde k
 msgid "Nothing is running in the background."
 msgstr ""
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Nothing is saved on this device yet"
+msgstr ""
+
 #: src/components/home/OfflineHome.tsx
 #, fuzzy
 msgid "Nothing is saved on this device yet. Once you're back online, save chapters from a series page and they'll be here to read without a connection."
 msgstr "Bu cihazda henüz hiçbir şey kaydedilmedi. Yeniden çevrimiçi olduğunuzda, bir seri sayfasından bölümleri kaydedin; bağlantı olmadan okumak için burada olacaklar."
-
-#: src/components/settings/OfflineReadingSection.tsx
-#, fuzzy
-msgid "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
-msgstr "Bu cihazda henüz hiçbir şey kaydedilmedi. Bir bölüm veya seri için Çevrimdışı için kaydet seçeneğini kullanın."
 
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
@@ -27102,6 +27087,10 @@ msgstr ""
 msgid "Use OPDS"
 msgstr "OPDS kullanır"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Use Save for offline on a chapter or a series."
+msgstr ""
+
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Use the bookmark on any cover in Discover, or Shortlist on its card, to keep a title here without adding it."
@@ -27851,6 +27840,10 @@ msgstr ""
 #, fuzzy
 msgid "Where the files on disk came from, which can outlive the link"
 msgstr "Diskteki dosyaların nereden geldiği, bu bağlantıdan daha uzun ömürlü olabilir"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Where the library lives on disk. Each series is stored in one of these."
+msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
 msgid "Where the series sits in a list sorted by title"

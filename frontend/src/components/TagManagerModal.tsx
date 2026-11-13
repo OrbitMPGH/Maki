@@ -116,6 +116,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
                       <Popover position="bottom-start" withArrow>
                         <Popover.Target>
                           <Badge
+                            size="sm"
                             color={color}
                             variant="light"
                             style={{ cursor: 'pointer' }}

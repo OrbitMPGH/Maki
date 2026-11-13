@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
+import { SettingsGroupTitle } from './SettingsGroupTitle'
 import { ActionIcon, Alert, Anchor, Badge, Button, Group, Progress, Select, Stack, Text, Tooltip } from '@mantine/core'
 import { IconDeviceMobileOff, IconRefresh, IconTrash } from '../../lib/icons'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { plural } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import { EmptyState } from '../ui/EmptyState'
 import { api } from '../../api/client'
 import type { ChapterDto, SeriesDto } from '../../api/types'
 import { useAuth } from '../../auth/AuthProvider'
@@ -126,9 +128,9 @@ function OfflineControls() {
       )}
 
       <Stack gap={6}>
-        <Text fw={500} size="sm">
+        <SettingsGroupTitle>
           <Trans>Storage on this device</Trans>
-        </Text>
+        </SettingsGroupTitle>
         {usage && usage.quota > 0 && (
           <Progress
             value={Math.min(100, (usage.usage / usage.quota) * 100)}
@@ -179,13 +181,15 @@ function OfflineControls() {
       />
 
       <Stack gap="xs">
-        <Text fw={500} size="sm">
+        <SettingsGroupTitle>
           <Trans>Saved chapters</Trans>
-        </Text>
+        </SettingsGroupTitle>
         {groups.length === 0 ? (
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>Nothing is saved on this device yet. Use Save for offline on a chapter or a series.</Trans>
-          </Text>
+          <EmptyState
+            compact
+            title={t`Nothing is saved on this device yet`}
+            description={t`Use Save for offline on a chapter or a series.`}
+          />
         ) : (
           groups.map(([seriesId, list]) => (
             <SavedSeriesGroup

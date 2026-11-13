@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
+import { SettingsGroupTitle } from '../../components/settings/SettingsGroupTitle'
 import { useQueryClient } from '@tanstack/react-query'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -242,9 +243,9 @@ export function OpdsSection() {
 
         {enabled && (
           <div>
-            <Text size="sm" fw={500} mb={4}>
+            <SettingsGroupTitle mb={4}>
               <Trans>Feed URL</Trans>
-            </Text>
+            </SettingsGroupTitle>
             {feedUrl ? (
               <>
                 <Group gap="xs" wrap="nowrap">
@@ -311,9 +312,9 @@ export function OpdsSection() {
             {komga && (
               <Stack gap={6} mt="xs">
                 <Group gap="xs" wrap="nowrap">
-                  <Text size="sm" fw={500}>
+                  <SettingsGroupTitle>
                     <Trans>Server address</Trans>
-                  </Text>
+                  </SettingsGroupTitle>
                   <Code style={{ overflowWrap: 'anywhere' }}>{komgaAddress}</Code>
                   <Tooltip label={t`Copy server address`}>
                     <ActionIcon
@@ -327,9 +328,9 @@ export function OpdsSection() {
                 </Group>
                 {token && (
                   <Group gap="xs" wrap="nowrap">
-                    <Text size="sm" fw={500}>
+                    <SettingsGroupTitle>
                       <Trans>API key</Trans>
-                    </Text>
+                    </SettingsGroupTitle>
                     <Code style={{ overflowWrap: 'anywhere' }}>{token}</Code>
                     <Tooltip label={t`Copy API key`}>
                       <ActionIcon
@@ -477,9 +478,9 @@ export function KoreaderSyncSection() {
       ) : (
         <Stack gap="md">
           <div>
-            <Text size="sm" fw={500} mb={4}>
+            <SettingsGroupTitle mb={4}>
               <Trans>Sync server</Trans>
-            </Text>
+            </SettingsGroupTitle>
             <Group gap="xs" wrap="nowrap">
               <Code style={{ overflowWrap: 'anywhere' }}>{serverUrl}</Code>
               <Tooltip label={t`Copy sync server address`}>
@@ -579,9 +580,9 @@ function KavitaReadImportControl() {
 
   return (
     <div>
-      <Text fw={500} size="sm" mb={4}>
+      <SettingsGroupTitle mb={4}>
         <Trans>Import read status from Kavita</Trans>
-      </Text>
+      </SettingsGroupTitle>
       <Text size="xs" c="var(--ink-3)" mb="sm">
         <Trans>Safe to rerun, it never unmarks anything.</Trans>
       </Text>

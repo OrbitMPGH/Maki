@@ -64,6 +64,7 @@ import { ContentRatingCards } from './ContentRatingCards'
 import { IconBrandMark } from './IconBrandMark'
 import { MetadataDumpStatus } from './MetadataDumpProgress'
 import { StatusDot } from './ui/StatusDot'
+import { StepStrip } from './ui/StepStrip'
 import { PriorityList } from './PriorityList'
 import { RecommendationModelSwitch } from './RecommendationModelSwitch'
 import { UnsavedSettingsContext } from './settings/SaveButton'
@@ -816,33 +817,17 @@ function GuideRail({
       </div>
 
       <nav aria-label={t`Setup steps`}>
-        <ol className="setup-steps">
-          {steps.map((step, i) => {
-            const current = i === active
-            const done = !current && visited.has(i)
-            return (
-              <li key={step.id}>
-                <UnstyledButton
-                  className="setup-step"
-                  data-current={current || undefined}
-                  data-done={done || undefined}
-                  aria-current={current ? 'step' : undefined}
-                  onClick={() => onSelect(i)}
-                >
-                  <span className="setup-step-index">{done ? <IconCheck size={13} /> : i + 1}</span>
-                  <span className="setup-step-text">
-                    <span className="setup-step-label">{step.label}</span>
-                    {step.hint && (
-                      <span className="setup-step-hint" data-tone={step.tone}>
-                        {step.hint}
-                      </span>
-                    )}
-                  </span>
-                </UnstyledButton>
-              </li>
-            )
-          })}
-        </ol>
+        <StepStrip
+          layout="rail"
+          label={t`Setup steps`}
+          steps={steps.map((step, i) => ({
+            label: step.label,
+            hint: step.hint,
+            tone: step.tone === 'warn' ? 'warn' : undefined,
+            state: i === active ? 'current' : visited.has(i) ? 'done' : 'todo',
+          }))}
+          onSelect={onSelect}
+        />
       </nav>
 
     </aside>

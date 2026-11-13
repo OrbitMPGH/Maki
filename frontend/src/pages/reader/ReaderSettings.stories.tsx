@@ -319,9 +319,10 @@ export const EnhanceSkippedForVolume: Story = {
     const b = body(canvasElement)
     await userEvent.click(await b.findByRole('button', { name: /^Enhance\s*Off for this chapter$/ }))
     await waitFor(() => expect(b.getByText('Off for this chapter because of its quality.')).toBeVisible())
-    await userEvent.click(await b.findByLabelText("Don't enhance", { selector: 'input' }))
-    await userEvent.click(await b.findByRole('option', { name: 'Volume' }))
+    await userEvent.click(await b.findByRole('button', { name: /^Don't enhance/ }))
+    await userEvent.click(await b.findByRole('checkbox', { name: 'Volume' }))
     await waitFor(() => expect(args.onPrefs).toHaveBeenCalledWith({ enhanceSkipTiers: [] }))
+    await userEvent.click(b.getByRole('button', { name: /^Back/ }))
     await waitFor(() => expect(b.queryByText('Off for this chapter because of its quality.')).toBeNull())
   },
 }

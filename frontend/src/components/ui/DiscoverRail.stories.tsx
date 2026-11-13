@@ -272,6 +272,6 @@ export const EngineRailSharedReason: Story = {
   play: async ({ canvas, canvasElement }) => {
     await expect(await canvas.findByText('Readers who finished Lanterns Over Kasumi also finished these')).toBeVisible()
     await expect(canvas.queryByText('Fans of')).toBeNull()
-    await waitFor(() => expect(canvasElement.querySelectorAll('.engine-chip').length).toBeGreaterThan(0))
+    await waitFor(() => expect(canvasElement.querySelectorAll('.engine-why-chips .tag-chip').length).toBeGreaterThan(0))
   },
 }

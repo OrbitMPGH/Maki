@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  ActionIcon,
+  
   Badge,
   Button,
   Checkbox,
@@ -9,11 +9,12 @@ import {
   ScrollArea,
   Stack,
   Text,
-  TextInput,
+  
   Skeleton,
   UnstyledButton,
 } from '@mantine/core'
-import { IconCheck, IconFileZip, IconSearch, IconX } from '../lib/icons'
+import { SearchInput } from './ui/SearchInput'
+import { IconCheck, IconFileZip } from '../lib/icons'
 import { ModalFooter, ModalHeading } from './ui/ModalShell'
 import { Panel } from './ui/Panel'
 import { EmptyState } from './ui/EmptyState'
@@ -208,25 +209,11 @@ export function LinkFileToChaptersModal({
         ) : (
           <>
             <Group gap="xs" wrap="wrap">
-              <TextInput
-                size="xs"
+              <SearchInput
                 style={{ flex: 1, minWidth: 160 }}
                 value={query}
                 onChange={(e) => setQuery(e.currentTarget.value)}
-                leftSection={<IconSearch size={16} />}
-                rightSection={
-                  query ? (
-                    <ActionIcon
-                      size={24}
-                      variant="subtle"
-                      color="var(--neutral)"
-                      aria-label={t`Clear search`}
-                      onClick={() => setQuery('')}
-                    >
-                      <IconX size={12} />
-                    </ActionIcon>
-                  ) : null
-                }
+                onClear={() => setQuery('')}
                 placeholder={t`Filter by chapter number or title`}
                 aria-label={t`Filter chapters`}
               />

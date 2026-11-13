@@ -1,6 +1,9 @@
-import { Group, SegmentedControl, Slider, Stack, Switch, Text } from '@mantine/core'
+import type { ComponentProps } from 'react'
+import { Group, SegmentedControl, Slider, Stack, Switch } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useLabel } from '../../i18n-context'
+import { DrillField } from '../../components/ui/DrillPanel'
+import { IconHandTap, IconRuler } from '../../lib/icons'
 import type { ReaderPrefs } from './prefs'
 import { TAP_LAYOUTS, TAP_WIDTH_MAX, TAP_WIDTH_MIN, tapZoneCells, type TapLayout } from './tapZones'
 
@@ -62,12 +65,15 @@ export default function TapZoneSettings({
   vertical,
   preview = false,
   hintClassName,
+  bleed = false,
 }: {
   prefs: TapPrefs
   onPrefs: (patch: Partial<ReaderPrefs>) => void
   vertical: boolean
   preview?: boolean
   hintClassName?: string
+  /** Pull the fields out to the edges of a drill panel, as its rows are. */
+  bleed?: boolean
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -76,44 +82,49 @@ export default function TapZoneSettings({
   const hint = vertical
     ? t`In Continuous a band at the top goes back and one at the bottom goes forward. The layouts apply to Single and Double.`
     : renderLabel(layout.hint)
+  const field = (props: ComponentProps<typeof DrillField>) => (
+    <div className={bleed ? 'reader-settings-inline-row' : undefined}>
+      <DrillField {...props} />
+    </div>
+  )
   return (
     <Stack gap={10}>
-      <div>
-        <Text fz="xs" fw={600} c="var(--ink-3)" mb={6}>
-          <Trans>Tap zone layout</Trans>
-        </Text>
-        <SegmentedControl
-          aria-label={t`Tap zone layout`}
-          fullWidth
-          size="xs"
-          disabled={vertical}
-          value={prefs.tapLayout}
-          onChange={(value) => onPrefs({ tapLayout: value as TapLayout })}
-          data={TAP_LAYOUTS.map((entry) => ({ value: entry.value, label: renderLabel(entry.label) }))}
-        />
-      </div>
+      {field({
+        icon: IconHandTap,
+        title: <Trans>Tap zone layout</Trans>,
+        help: hint,
+        children: (
+          <SegmentedControl
+            aria-label={t`Tap zone layout`}
+            fullWidth
+            size="xs"
+            disabled={vertical}
+            value={prefs.tapLayout}
+            onChange={(value) => onPrefs({ tapLayout: value as TapLayout })}
+            data={TAP_LAYOUTS.map((entry) => ({ value: entry.value, label: renderLabel(entry.label) }))}
+          />
+        ),
+      })}
       <Group gap="md" wrap="nowrap" align="flex-start">
         {preview && <TapZonePreview prefs={prefs} vertical={vertical} />}
-        <Stack gap={8} style={{ flex: 1, minWidth: 0 }}>
-          <Text fz="xs" c="var(--ink-3)" className={hintClassName}>
-            {hint}
-          </Text>
-          <div>
-            <Text fz="xs" fw={600} c="var(--ink-3)" mb={4}>
-              <Trans>Zone size ({width}%)</Trans>
-            </Text>
-            <Slider
-              thumbLabel={t`Zone size`}
-              size="xs"
-              min={TAP_WIDTH_MIN}
-              max={TAP_WIDTH_MAX}
-              step={1}
-              label={(value) => `${value}%`}
-              value={prefs.tapWidth}
-              onChange={(value) => onPrefs({ tapWidth: value })}
-            />
-          </div>
-        </Stack>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {field({
+            icon: IconRuler,
+            title: <Trans>Zone size ({width}%)</Trans>,
+            children: (
+              <Slider
+                thumbLabel={t`Zone size`}
+                size="xs"
+                min={TAP_WIDTH_MIN}
+                max={TAP_WIDTH_MAX}
+                step={1}
+                label={(value) => `${value}%`}
+                value={prefs.tapWidth}
+                onChange={(value) => onPrefs({ tapWidth: value })}
+              />
+            ),
+          })}
+        </div>
       </Group>
       <Switch
         size="xs"

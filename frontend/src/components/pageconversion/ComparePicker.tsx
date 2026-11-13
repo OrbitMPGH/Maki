@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react'
 import { fuzzyFilter, titleIndex } from '../../lib/fuzzySearch'
-import { Alert, Button, Group, Loader, Modal, NumberInput, Stack, Text, TextInput } from '@mantine/core'
-import { IconArrowLeft, IconSearch } from '../../lib/icons'
+import { Button, Group, Loader, Modal, NumberInput, Stack, Text } from '@mantine/core'
+import { Callout } from '../ui/Callout'
+import { SearchInput } from '../ui/SearchInput'
+import { IconArrowLeft } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useChapters, useSeries } from '../../api/hooks'
 import type { SeriesDto } from '../../api/types'
@@ -69,13 +71,13 @@ function SeriesStage({ onPick }: { onPick: (series: SeriesDto) => void }) {
 
   return (
     <Stack gap="sm">
-      <TextInput
+      <SearchInput
         autoFocus
         data-autofocus
         aria-label={t`Search your series`}
         placeholder={t`Search your series`}
-        leftSection={<IconSearch size={16} />}
         value={query}
+        onClear={() => setQuery('')}
         onChange={(event) => setQuery(event.currentTarget.value)}
       />
       {isLoading && <Loader size="sm" />}
@@ -205,9 +207,9 @@ function PageStage({
       </Group>
       {isLoading && <Loader size="sm" />}
       {isError && (
-        <Alert color="var(--danger)" variant="light">
+        <Callout tone="danger" role="alert">
           <Trans>Maki can only preview pages from CBZ and ZIP files, and could not open this one.</Trans>
-        </Alert>
+        </Callout>
       )}
       {sample && (
         <>

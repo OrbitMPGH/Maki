@@ -1,3 +1,4 @@
+import { SearchInput } from '../../components/ui/SearchInput'
 import { errorText } from '../../api/errorText'
 import { useEffect, useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
@@ -5,11 +6,11 @@ import { fuzzyFilter, titleIndex } from '../../lib/fuzzySearch'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   Alert, Button, Chip, Group, Menu, Modal, Select, Stack, Tabs, Text,
-  TextInput,
+  
 } from '@mantine/core'
 import {
   IconBan, IconBook, IconBooks, IconClockPause, IconCompass, IconEyeCheck, IconEyeOff, IconRestore,
-  IconSearch, IconStarFilled, IconThumbDown, IconThumbUp, IconX, type Icon,
+  IconStarFilled, IconThumbDown, IconThumbUp, IconX, type Icon,
 } from '../../lib/icons'
 import { OverflowButton } from '../../components/ui/OverflowButton'
 import { SignalStatus, type SignalStatusInfo } from './SignalStatus'
@@ -233,9 +234,9 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
         <Tabs.Panel value="titles">
           <Stack gap="sm">
             <Group gap="sm" align="center" wrap="wrap">
-              <TextInput
-                value={search} onChange={(event) => setSearch(event.currentTarget.value)}
-                placeholder={t`Search titles`} leftSection={<IconSearch size={16} />}
+              <SearchInput
+                value={search} onChange={(event) => setSearch(event.currentTarget.value)} onClear={() => setSearch('')}
+                placeholder={t`Search titles`}
                 w={240} aria-label={t`Search titles`}
               />
               <Select
@@ -370,9 +371,9 @@ function AnimeSignalsPanel() {
 
       {syncError && <Alert color="var(--danger)">{syncError}</Alert>}
 
-      <TextInput
-        value={search} onChange={(event) => setSearch(event.currentTarget.value)}
-        placeholder={t`Search shows`} leftSection={<IconSearch size={16} />}
+      <SearchInput
+        value={search} onChange={(event) => setSearch(event.currentTarget.value)} onClear={() => setSearch('')}
+        placeholder={t`Search shows`}
         aria-label={t`Search shows`}
       />
 

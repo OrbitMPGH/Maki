@@ -5,7 +5,7 @@ import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
 import {
-  ActionIcon,
+  
   Alert,
   Anchor,
   Badge,
@@ -19,7 +19,7 @@ import {
   Skeleton,
   Stack,
   Text,
-  TextInput,
+  
   Tooltip,
   useMatches,
 } from '@mantine/core'
@@ -27,7 +27,8 @@ import { useDebouncedValue } from '@mantine/hooks'
 import { notifications } from '../lib/toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthProvider'
-import { IconFilter, IconSearch, IconUser, IconX } from '../lib/icons'
+import { SearchInput } from './ui/SearchInput'
+import { IconFilter, IconUser } from '../lib/icons'
 import { Panel } from './ui/Panel'
 import { TagChip } from './ui/TagChip'
 import {
@@ -315,24 +316,12 @@ export function CatalogueBrowser({
       {!hideSearch && (
         <>
           <Group align="flex-start" gap="sm" mb="md" wrap="wrap">
-            <TextInput
+            <SearchInput
               aria-label={t`Search the catalogue`}
               value={query}
               onChange={(e) => setQuery(e.currentTarget.value)}
               placeholder={placeholder ?? t`Search by title, description, or author:"Junji Ito"`}
-              leftSection={<IconSearch size={16} />}
-              rightSection={
-                query ? (
-                  <ActionIcon
-                    variant="subtle"
-                    color="var(--neutral)"
-                    aria-label={t`Clear search`}
-                    onClick={() => setQuery('')}
-                  >
-                    <IconX size={16} />
-                  </ActionIcon>
-                ) : null
-              }
+              onClear={() => setQuery('')}
               size="md"
               style={{ flex: 1, minWidth: 260 }}
             />

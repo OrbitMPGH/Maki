@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SettingsGroupTitle } from './SettingsGroupTitle'
 import { Box, Button, Group, NumberInput, SegmentedControl, Stack, Switch, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { notifications } from '../../lib/toast'
@@ -138,9 +139,9 @@ export function TorrentLifecycleFields({ form }: { form: TorrentLifecycleForm })
   return (
     <>
       <Stack gap={0} mt="lg">
-        <Text fw={500} size="sm" mb={4}>
+        <SettingsGroupTitle mb={4}>
           <Trans>Finished torrents</Trans>
-        </Text>
+        </SettingsGroupTitle>
         <SettingsHelp mb="xs">
           <Trans>Needs the download folder and library on one filesystem, otherwise Maki copies.</Trans>
         </SettingsHelp>
@@ -191,9 +192,9 @@ export function TorrentLifecycleFields({ form }: { form: TorrentLifecycleForm })
       </Stack>
 
       <Stack gap={0} mt="lg">
-        <Text fw={500} size="sm" mb={4}>
+        <SettingsGroupTitle mb={4}>
           <Trans>Stalled torrents</Trans>
-        </Text>
+        </SettingsGroupTitle>
         <SettingsHelp mb="xs">
           <Trans>
             A torrent that makes no progress, or has no seeds or peers connected, for this long is failed, taken out of

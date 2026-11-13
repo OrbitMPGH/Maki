@@ -64,8 +64,7 @@ export const AuthModeShowsCredentials: Story = {
   },
   play: async ({ canvas, userEvent }) => {
     await waitFor(() => expect(canvas.getByRole('textbox', { name: 'URL' })).toHaveValue('http://suwayomi:4567'))
-    await userEvent.click(await canvas.findByLabelText('Sign-in'))
-    await userEvent.click(await within(document.body).findByRole('option', { name: 'Basic auth' }))
+    await userEvent.click(await canvas.findByRole('radio', { name: 'Basic auth' }))
     await expect(await canvas.findByRole('textbox', { name: 'Username' })).toBeVisible()
     await expect(await canvas.findByText('Unsaved')).toBeVisible()
   },

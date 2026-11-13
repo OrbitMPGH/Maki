@@ -1,5 +1,6 @@
 import { Skeleton, SegmentedControl, SimpleGrid, Stack, Group } from '@mantine/core'
 import { BarChart } from '@mantine/charts'
+import { statsChartProps, statsGridProps, statsSeriesColor, statsXAxisProps } from '../chartTheme'
 import {
   IconBook2,
   IconBookmark,
@@ -367,13 +368,14 @@ export default function ReadingSection({ userId, range, previous, windowLabel }:
                 h={240}
                 data={timelineData}
                 dataKey="bucket"
-                tickLine="none"
-                gridAxis="y"
+                {...statsChartProps}
+                gridProps={statsGridProps}
+                xAxisProps={statsXAxisProps(timelineData.length)}
                 unit={metric === 'time' ? t`h` : undefined}
                 series={
                   metric === 'chapters'
-                    ? [{ name: 'Chapters', label: t`Chapters`, color: 'var(--brand)' }]
-                    : [{ name: 'Hours', label: t`Hours`, color: 'var(--brand)' }]
+                    ? [{ name: 'Chapters', label: t`Chapters`, color: statsSeriesColor.you }]
+                    : [{ name: 'Hours', label: t`Hours`, color: statsSeriesColor.you }]
                 }
               />
             )}

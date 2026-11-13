@@ -4,8 +4,8 @@ import {
   Switch, Text, TextInput, Textarea,
 } from '@mantine/core'
 import { ModalFooter, ModalHeading, ModalNote } from '../../components/ui/ModalShell'
+import { StepStrip } from '../../components/ui/StepStrip'
 import {
-  IconCheck,
   IconChevronDown,
   IconChevronRight,
   IconFileImport,
@@ -738,25 +738,15 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
       title={<ModalHeading title={title} description={description} />}
     >
       <Stack gap="md">
-        <ol className="wizard-steps" aria-label={t`Steps`}>
-          {STEPS.map((name, i) => (
-            <li key={name} data-current={i === step || undefined}>
-              <button
-                type="button"
-                className="wizard-step"
-                data-state={stepsDone(i)}
-                aria-current={i === step ? 'step' : undefined}
-                disabled={!reachable(i) || (mode === 'setup' && i > step)}
-                onClick={() => setStep(i)}
-              >
-                <span className="wizard-step-mark" aria-hidden>
-                  {i < step ? <IconCheck size={12} /> : i + 1}
-                </span>
-                <span className="wizard-step-label">{stepLabels[name]}</span>
-              </button>
-            </li>
-          ))}
-        </ol>
+        <StepStrip
+          label={t`Steps`}
+          steps={STEPS.map((name, i) => ({
+            label: stepLabels[name],
+            state: stepsDone(i),
+            disabled: !reachable(i) || (mode === 'setup' && i > step),
+          }))}
+          onSelect={setStep}
+        />
         {stepBody[STEPS[step]]}
       </Stack>
       <CustomSourceUpdateDialog
@@ -778,7 +768,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
         <Button variant="default" onClick={onClose}><Trans>Cancel</Trans></Button>
         {step < DETAILS ? (
           <Button onClick={nextStep} disabled={!definition || (mode === 'setup' && step === 0 && !site)}>
-            <Trans>Next</Trans>
+            <Trans>Continue</Trans>
           </Button>
         ) : (
           <>

@@ -25,6 +25,7 @@ import { useShortlistToggle } from '../discover/shortlistActions'
 import { t as now } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { Thumb } from './Thumb'
+import { TagChip } from './TagChip'
 
 /**
  * Poster cards for catalogue (MangaBaka) items, and the horizontal rail that lays them out.
@@ -574,9 +575,9 @@ export const EngineCard = memo(function EngineCard({
           <div className="engine-why">
             <span className="engine-why-chips">
               {chips.map((c) => (
-                <span key={c} className="engine-chip" title={c}>
+                <TagChip key={c} size="sm" title={c}>
                   {c}
-                </span>
+                </TagChip>
               ))}
             </span>
           </div>
@@ -605,9 +606,9 @@ export const EngineCard = memo(function EngineCard({
           {!seed && chips.length > 0 && (
             <span className="engine-why-chips">
               {chips.map((c) => (
-                <span key={c} className="engine-chip" title={c}>
+                <TagChip key={c} size="sm" title={c}>
                   {c}
-                </span>
+                </TagChip>
               ))}
             </span>
           )}

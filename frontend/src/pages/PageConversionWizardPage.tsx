@@ -5,7 +5,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { plural } from '@lingui/core/macro'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { usePageConversion, usePageConversionRules, type PageConversionSettings } from '../api/pageConversion'
-import { StepStrip, type Step } from '../components/StepStrip'
+import { StepStrip, type Step } from '../components/ui/StepStrip'
 import { CompareStep } from '../components/pageconversion/CompareStep'
 import { emptyCompareChoice, type CompareChoice } from '../components/pageconversion/compareChoice'
 import { FormatStep } from '../components/pageconversion/FormatStep'
@@ -122,7 +122,7 @@ export default function PageConversionWizardPage() {
               )}
               {index < STEP_IDS.length - 1 && (
                 <Button rightSection={<IconArrowRight size={16} />} onClick={() => goTo(index + 1)}>
-                  <Trans>Next</Trans>
+                  <Trans>Continue</Trans>
                 </Button>
               )}
             </Group>

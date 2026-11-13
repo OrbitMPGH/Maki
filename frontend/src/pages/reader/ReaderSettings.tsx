@@ -3,7 +3,6 @@ import {
   Button,
   Group,
   Menu,
-  MultiSelect,
   Popover,
   SegmentedControl,
   Slider,
@@ -17,8 +16,10 @@ import {
 import {
   IconArrowAutofitHeight,
   IconArrowAutofitWidth,
+  IconArrowRight,
   IconArrowsMaximize,
   IconBooks,
+  IconCheck,
   IconChevronDown,
   IconEyeOff,
   IconHandTap,
@@ -26,21 +27,26 @@ import {
   IconMoon,
   IconPalette,
   IconSettings,
+  IconAdjustmentsHorizontal,
   IconAperture,
+  IconBan,
+  IconGauge,
+  IconServer,
   IconSquare,
   IconSun,
   IconUserCircle,
   IconViewportWide,
   IconWand,
+  IconZoomIn,
 } from '../../lib/icons'
-import { Fragment, useEffect, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useState, type ComponentProps, type ReactNode } from 'react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import type { PrefsSource, ReaderManifest } from '../../api/reader'
 import type { ReadingProfile } from '../../api/readingProfiles'
 import { wakeLockSupported } from '../../lib/wakeLock'
 import { useLabel } from '../../i18n-context'
 import { DrillPanes } from '../../components/ui/DrillPanes'
-import { DrillBack, DrillChoices, DrillRow, useDrillPages, type DrillChoice } from '../../components/ui/DrillPanel'
+import { DrillBack, DrillChoices, DrillField, DrillRow, useDrillPages, type DrillChoice } from '../../components/ui/DrillPanel'
 import {
   BROWSER_ENHANCE_METHODS,
   ENHANCE_FALLBACKS,
@@ -69,7 +75,7 @@ export const OVERLAY_Z = 500
 // both, so it could never be scrolled. Rendered in place, fixed so the popover does not clip it.
 const NESTED_COMBOBOX = { zIndex: OVERLAY_Z + 1, withinPortal: false, floatingStrategy: 'fixed' } as const
 
-type View = 'main' | 'wide' | 'look' | 'enhance' | 'method' | 'chapters' | 'reading' | 'taps'
+type View = 'main' | 'wide' | 'look' | 'enhance' | 'method' | 'skip' | 'chapters' | 'reading' | 'taps'
 
 const PARENTS: Record<View, View> = {
   main: 'main',
@@ -77,6 +83,7 @@ const PARENTS: Record<View, View> = {
   look: 'main',
   enhance: 'main',
   method: 'enhance',
+  skip: 'enhance',
   chapters: 'main',
   reading: 'main',
   taps: 'reading',
@@ -135,11 +142,12 @@ function SubPage({
   )
 }
 
-function FieldLabel({ children }: { children: ReactNode }) {
+/** A drill field, pulled out to the panel's edges the way its rows are. */
+function Field(props: ComponentProps<typeof DrillField>) {
   return (
-    <Text fz="xs" fw={600} c="var(--ink-3)" mb={6}>
-      {children}
-    </Text>
+    <div className="reader-settings-inline-row">
+      <DrillField {...props} />
+    </div>
   )
 }
 
@@ -345,6 +353,11 @@ export default function ReaderSettings({
       : methodName
         ? t`${levelName}, ${methodName}`
         : levelName
+  const skipSummary = prefs.enhanceSkipTiers.length
+    ? ENHANCE_SKIP_TIERS.filter((tier) => prefs.enhanceSkipTiers.includes(tier.value))
+        .map((tier) => renderLabel(tier.label))
+        .join(', ')
+    : t`Every quality is enhanced`
   const hiddenCount = prefs.hideCredits ? (hiddenCredits?.count ?? 0) : 0
   const onSummary = (toggles: ToggleRow[]) => {
     const togglesOn = toggles.filter((toggle) => prefs[toggle.key]).length
@@ -498,72 +511,65 @@ export default function ReaderSettings({
                   )}
                 </div>
 
-                <div>
-                  <div className="reader-settings-pair">
-                    <div>
-                      <FieldLabel>
-                        <Trans>Direction</Trans>
-                      </FieldLabel>
-                      <SegmentedControl
-                        aria-label={t`Direction`}
-                        size="xs"
-                        value={prefs.direction}
-                        onChange={(value) => onPrefs({ direction: value as ReaderPrefs['direction'] })}
-                        data={[
-                          {
-                            value: 'rtl',
-                            label: (
-                              <>
-                                <VisuallyHidden>{t`Right to left`}</VisuallyHidden>
-                                <span aria-hidden>
-                                  {'← '}
-                                  {t({ message: 'RTL', comment: 'Short for "right to left", the reading direction' })}
-                                </span>
-                              </>
-                            ),
-                          },
-                          {
-                            value: 'ltr',
-                            label: (
-                              <>
-                                <VisuallyHidden>{t`Left to right`}</VisuallyHidden>
-                                <span aria-hidden>
-                                  {t({ message: 'LTR', comment: 'Short for "left to right", the reading direction' })}
-                                  {' →'}
-                                </span>
-                              </>
-                            ),
-                          },
-                        ]}
-                      />
-                    </div>
-                    <div>
-                      {/* The segments are icons; naming the current one here is the label a touch screen never gets from the tooltips. */}
-                      <FieldLabel>{fitName}</FieldLabel>
-                      <SegmentedControl
-                        aria-label={t`Fit`}
-                        size="xs"
-                        value={prefs.fit}
-                        onChange={(value) => onPrefs({ fit: value as ReaderPrefs['fit'] })}
-                        data={fits.map((fit) => ({
-                          value: fit.value,
+                <Stack gap={0}>
+                  <Field icon={IconArrowRight} title={t`Direction`}>
+                    <SegmentedControl
+                      aria-label={t`Direction`}
+                      fullWidth
+                      size="xs"
+                      value={prefs.direction}
+                      onChange={(value) => onPrefs({ direction: value as ReaderPrefs['direction'] })}
+                      data={[
+                        {
+                          value: 'rtl',
                           label: (
-                            <Tooltip label={fit.label} withArrow zIndex={OVERLAY_Z + 1}>
-                              <span className="reader-settings-fit">
-                                <fit.icon size={16} aria-hidden />
-                                <VisuallyHidden>{fit.label}</VisuallyHidden>
+                            <>
+                              <VisuallyHidden>{t`Right to left`}</VisuallyHidden>
+                              <span aria-hidden>
+                                {'← '}
+                                {t({ message: 'RTL', comment: 'Short for "right to left", the reading direction' })}
                               </span>
-                            </Tooltip>
+                            </>
                           ),
-                        }))}
-                      />
-                    </div>
-                  </div>
+                        },
+                        {
+                          value: 'ltr',
+                          label: (
+                            <>
+                              <VisuallyHidden>{t`Left to right`}</VisuallyHidden>
+                              <span aria-hidden>
+                                {t({ message: 'LTR', comment: 'Short for "left to right", the reading direction' })}
+                                {' →'}
+                              </span>
+                            </>
+                          ),
+                        },
+                      ]}
+                    />
+                  </Field>
+                  {/* The segments are icons; naming the current one here is the label a touch screen never gets from the tooltips. */}
+                  <Field icon={IconArrowsMaximize} title={fitName}>
+                    <SegmentedControl
+                      aria-label={t`Fit`}
+                      fullWidth
+                      size="xs"
+                      value={prefs.fit}
+                      onChange={(value) => onPrefs({ fit: value as ReaderPrefs['fit'] })}
+                      data={fits.map((fit) => ({
+                        value: fit.value,
+                        label: (
+                          <Tooltip label={fit.label} withArrow zIndex={OVERLAY_Z + 1}>
+                            <span className="reader-settings-fit">
+                              <fit.icon size={16} aria-hidden />
+                              <VisuallyHidden>{fit.label}</VisuallyHidden>
+                            </span>
+                          </Tooltip>
+                        ),
+                      }))}
+                    />
+                  </Field>
                   {prefs.fit === 'original' && (
-                    <div style={{ marginTop: 10 }}>
-                      <FieldLabel>
-                        <Trans>Scale ({scale}%)</Trans>
-                      </FieldLabel>
+                    <Field icon={IconZoomIn} title={<Trans>Scale ({scale}%)</Trans>}>
                       <Slider
                         thumbLabel={t`Scale`}
                         size="xs"
@@ -573,15 +579,12 @@ export default function ReaderSettings({
                         value={prefs.scale}
                         onChange={(value) => onPrefs({ scale: value })}
                       />
-                    </div>
+                    </Field>
                   )}
-                </div>
+                </Stack>
 
-                <div>
-                  <Group justify="space-between" wrap="nowrap" mb={8}>
-                    <Text fz="xs" fw={600} c="var(--ink-3)">
-                      <Trans>Brightness and tint</Trans>
-                    </Text>
+                <Field icon={IconAdjustmentsHorizontal} title={<Trans>Brightness and tint</Trans>}>
+                  <Group justify="flex-end" wrap="nowrap" mb={8}>
                     <div role="radiogroup" aria-label={t`Colour filter`} className="reader-settings-swatches">
                       {filters.map((filter) => (
                         <Tooltip key={filter.value} label={filter.label} withArrow zIndex={OVERLAY_Z + 1}>
@@ -623,7 +626,7 @@ export default function ReaderSettings({
                     />
                     <IconSun size={16} color="var(--ink-3)" aria-hidden />
                   </Group>
-                </div>
+                </Field>
 
                 <Stack gap={0} className="reader-settings-rows">
                   {prefs.mode === 'paged' && row('wide', IconViewportWide, t`Wide pages`, wideLabel)}
@@ -638,31 +641,33 @@ export default function ReaderSettings({
 
             {view === 'wide' && (
               <SubPage title={t`Wide pages`} onBack={back} backRef={backRef}>
-                <SegmentedControl
-                  aria-label={t`Wide pages`}
-                  fullWidth
-                  size="xs"
-                  value={prefs.splitWide}
-                  onChange={(value) => onPrefs({ splitWide: value as ReaderPrefs['splitWide'] })}
-                  data={[
-                    { label: t`Whole`, value: 'off' },
-                    { label: t`Split`, value: 'split' },
-                    { label: t`Rotate`, value: 'rotate' },
-                  ]}
-                />
-                <Text fz="xs" c="var(--ink-3)" mt={8}>
-                  <Trans>How a two-page spread shows in the Single layout.</Trans>
-                </Text>
+                <Field icon={IconViewportWide} title={t`Wide pages`} help={<Trans>How a two-page spread shows in the Single layout.</Trans>}>
+                  <SegmentedControl
+                    aria-label={t`Wide pages`}
+                    fullWidth
+                    size="xs"
+                    value={prefs.splitWide}
+                    onChange={(value) => onPrefs({ splitWide: value as ReaderPrefs['splitWide'] })}
+                    data={[
+                      { label: t`Whole`, value: 'off' },
+                      { label: t`Split`, value: 'split' },
+                      { label: t`Rotate`, value: 'rotate' },
+                    ]}
+                  />
+                </Field>
               </SubPage>
             )}
 
             {view === 'look' && (
               <SubPage title={t`Page look`} onBack={back} backRef={backRef}>
                 <Stack gap="md">
-                  <div>
-                    <FieldLabel>
-                      <Trans>Background</Trans>
-                    </FieldLabel>
+                  <Field
+                    icon={IconPalette}
+                    title={<Trans>Background</Trans>}
+                    help={
+                      prefs.background === BACKGROUNDS.auto ? <Trans>Takes the colour of the page's edge.</Trans> : undefined
+                    }
+                  >
                     <SegmentedControl
                       aria-label={t`Background`}
                       fullWidth
@@ -677,12 +682,7 @@ export default function ReaderSettings({
                         { label: t`Auto`, value: 'auto' },
                       ]}
                     />
-                    {prefs.background === BACKGROUNDS.auto && (
-                      <Text className="reader-settings-hint" mt={6}>
-                        <Trans>Takes the colour of the page's edge.</Trans>
-                      </Text>
-                    )}
-                  </div>
+                  </Field>
                   <Switch
                     size="xs"
                     labelPosition="left"
@@ -699,7 +699,11 @@ export default function ReaderSettings({
             {view === 'enhance' && (
               <SubPage title={t`Enhance`} onBack={back} backRef={backRef}>
                 <Stack gap="sm">
-                  <div>
+                  <Field
+                    icon={IconAperture}
+                    title={<Trans>Enhance</Trans>}
+                    help={skippedHere ? <Trans>Off for this chapter because of its quality.</Trans> : undefined}
+                  >
                     <SegmentedControl
                       aria-label={t`Enhance`}
                       fullWidth
@@ -708,20 +712,12 @@ export default function ReaderSettings({
                       onChange={(value) => onPrefs({ enhance: value as ReaderPrefs['enhance'] })}
                       data={ENHANCE_LEVELS.map((level) => ({ label: renderLabel(level.label), value: level.value }))}
                     />
-                    {skippedHere && (
-                      <Text fz="xs" c="var(--ink-3)" mt={4}>
-                        <Trans>Off for this chapter because of its quality.</Trans>
-                      </Text>
-                    )}
-                  </div>
+                  </Field>
                   {enhanceOn && (
                     <div className="reader-settings-inline-row">{row('method', IconWand, t`Method`, methodName)}</div>
                   )}
                   {enhanceOn && isServerMethod(method) && (
-                    <div>
-                      <FieldLabel>
-                        <Trans>While the server works</Trans>
-                      </FieldLabel>
+                    <Field icon={IconServer} title={<Trans>While the server works</Trans>}>
                       <SegmentedControl
                         aria-label={t`While the server works`}
                         fullWidth
@@ -734,13 +730,14 @@ export default function ReaderSettings({
                           disabled: browserUnsupported && f.value !== 'off',
                         }))}
                       />
-                    </div>
+                    </Field>
                   )}
                   {enhanceOn && isServerMethod(method) && (
-                    <div>
-                      <FieldLabel>
-                        <Trans>Upscale progress</Trans>
-                      </FieldLabel>
+                    <Field
+                      icon={IconGauge}
+                      title={<Trans>Upscale progress</Trans>}
+                      help={<Trans>While the bars are hidden. The toolbar always shows it.</Trans>}
+                    >
                       <SegmentedControl
                         aria-label={t`Upscale progress`}
                         fullWidth
@@ -749,10 +746,7 @@ export default function ReaderSettings({
                         onChange={(value) => onPrefs({ enhanceProgress: value as ReaderPrefs['enhanceProgress'] })}
                         data={ENHANCE_PROGRESS_STYLES.map((style) => ({ label: renderLabel(style.label), value: style.value }))}
                       />
-                      <Text fz="xs" c="var(--ink-3)" mt={4}>
-                        <Trans>While the bars are hidden. The toolbar always shows it.</Trans>
-                      </Text>
-                    </div>
+                    </Field>
                   )}
                   {enhanceOn && isServerMethod(method) && (
                     <Switch
@@ -766,24 +760,42 @@ export default function ReaderSettings({
                     />
                   )}
                   {enhanceOn && (
-                    <div>
-                      <FieldLabel>
-                        <Trans>Don't enhance</Trans>
-                      </FieldLabel>
-                      <MultiSelect
-                        aria-label={t`Don't enhance`}
-                        size="xs"
-                        comboboxProps={NESTED_COMBOBOX}
-                        placeholder={t`Every quality is enhanced`}
-                        // Hidden rather than dropped once a pill is in: without one Mantine stops the field taking a click.
-                        classNames={{ inputField: prefs.enhanceSkipTiers.length ? 'reader-settings-filled' : undefined }}
-                        value={prefs.enhanceSkipTiers}
-                        onChange={(value) => onPrefs({ enhanceSkipTiers: value as ReaderPrefs['enhanceSkipTiers'] })}
-                        data={ENHANCE_SKIP_TIERS.map((tier) => ({ value: tier.value, label: renderLabel(tier.label) }))}
-                      />
-                    </div>
+                    <div className="reader-settings-inline-row">{row('skip', IconBan, t`Don't enhance`, skipSummary)}</div>
                   )}
                 </Stack>
+              </SubPage>
+            )}
+
+            {view === 'skip' && (
+              <SubPage title={t`Don't enhance`} onBack={back} backRef={backRef}>
+                <div className="reader-settings-choices" role="group" aria-label={t`Don't enhance`}>
+                  {ENHANCE_SKIP_TIERS.map((tier) => {
+                    const checked = prefs.enhanceSkipTiers.includes(tier.value)
+                    return (
+                      <UnstyledButton
+                        key={tier.value}
+                        role="checkbox"
+                        aria-checked={checked}
+                        data-checked={checked || undefined}
+                        className="drill-choice"
+                        onClick={() =>
+                          onPrefs({
+                            enhanceSkipTiers: checked
+                              ? prefs.enhanceSkipTiers.filter((value) => value !== tier.value)
+                              : [...prefs.enhanceSkipTiers, tier.value],
+                          })
+                        }
+                      >
+                        <span className="drill-choice-check" aria-hidden>
+                          {checked && <IconCheck size={16} />}
+                        </span>
+                        <span className="drill-choice-text">
+                          <span className="drill-choice-label">{renderLabel(tier.label)}</span>
+                        </span>
+                      </UnstyledButton>
+                    )
+                  })}
+                </div>
               </SubPage>
             )}
 
@@ -835,6 +847,7 @@ export default function ReaderSettings({
                       onPrefs={onPrefs}
                       vertical={prefs.mode === 'vertical'}
                       hintClassName="reader-settings-hint"
+                      bleed
                     />
                   )}
                 </Stack>

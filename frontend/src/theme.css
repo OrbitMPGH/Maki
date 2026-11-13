@@ -4006,7 +4006,12 @@ button.site-chip:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  height: 22px;
+  height: 26px;
+  overflow: hidden;
+}
+.engine-why-chips > .tag-chip {
+  flex: none;
+  max-width: 100%;
   overflow: hidden;
 }
 /* The reason every card in a rail shares, said once above it instead of on each card. */
@@ -4036,21 +4041,6 @@ button.site-chip:hover {
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.engine-chip {
-  flex: none;
-  max-width: 100%;
-  padding: 1px 5px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-control);
-  background: var(--surface-2);
-  color: var(--ink-3);
-  font-size: var(--type-micro);
-  font-weight: var(--fw-medium);
-  line-height: 18px;
-  white-space: nowrap;
-  overflow: hidden;
   text-overflow: ellipsis;
 }
 
@@ -5277,99 +5267,6 @@ button.site-chip:hover {
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
   color: var(--ink-3);
-}
-.setup-steps {
-  display: grid;
-  gap: 2px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.setup-steps li {
-  position: relative;
-}
-/* The thread between step numbers: from under one circle to above the next. */
-.setup-steps li:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  left: 23px;
-  top: 40px;
-  bottom: -8px;
-  width: 1px;
-  background: var(--border);
-}
-.setup-step {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  width: 100%;
-  padding: 10px;
-  border-radius: var(--radius-surface);
-  color: var(--ink-3);
-  transition: background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
-}
-.setup-step:hover {
-  background: color-mix(in srgb, var(--surface-hover) 70%, transparent);
-  color: var(--ink-2);
-}
-.setup-step[data-current] {
-  background: var(--brand-soft);
-  color: var(--ink-hi);
-}
-.setup-step[data-current]::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 2px;
-  border-radius: 2px;
-  background: var(--brand);
-}
-.setup-step-index {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--border-strong);
-  border-radius: 50%;
-  background: var(--surface);
-  font-size: var(--type-micro);
-  font-weight: var(--fw-strong);
-  font-variant-numeric: tabular-nums;
-}
-.setup-step[data-done] .setup-step-index {
-  border-color: transparent;
-  background: var(--ok-soft);
-  color: var(--ok);
-}
-.setup-step[data-current] .setup-step-index {
-  border-color: var(--brand);
-  background: var(--mantine-primary-color-filled);
-  color: var(--mantine-primary-color-contrast);
-}
-.setup-step-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  padding-top: 3px;
-}
-.setup-step-label {
-  font-size: var(--type-body);
-  font-weight: var(--fw-semibold);
-}
-.setup-step-hint {
-  overflow: hidden;
-  font-size: var(--type-micro);
-  color: var(--ink-3);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.setup-step-hint[data-tone='warn'] {
-  color: var(--warn);
 }
 
 .setup-main {
@@ -9055,6 +8952,31 @@ body.column-resizing * {
   font-size: var(--type-meta);
 }
 
+.stats-chart .recharts-cartesian-axis-tick text {
+  font-size: var(--type-micro);
+}
+/* The chart tooltip is a popover surface like Menu and Popover, not Mantine's stock paper. */
+[data-mantine-color-scheme] .mantine-ChartTooltip-tooltip {
+  padding: 8px 10px;
+  border: 1px solid var(--border-raised);
+  border-radius: var(--mantine-radius-default);
+  background-color: var(--surface-raised);
+  box-shadow: var(--shadow-raised);
+  color: var(--ink);
+  font-size: var(--type-meta);
+}
+.mantine-ChartTooltip-tooltipLabel {
+  margin-bottom: 4px;
+  color: var(--ink-hi);
+  font-weight: var(--fw-semibold);
+}
+.mantine-ChartTooltip-tooltipItemName {
+  color: var(--ink-2);
+}
+.mantine-ChartTooltip-tooltipItemData {
+  color: var(--ink-hi);
+  font-variant-numeric: tabular-nums;
+}
 .stats-legend {
   display: flex;
   flex-wrap: wrap;
@@ -9692,12 +9614,42 @@ body.reader-open {
   overscroll-behavior: none;
 }
 
+/* The stage is dark in every theme, so these never change with the app theme. */
+:root {
+  --reader-surface: #0a0a0b;
+  --reader-surface-2: #121215;
+  --reader-border: rgba(255, 255, 255, 0.1);
+  --reader-border-strong: rgba(255, 255, 255, 0.16);
+  --reader-ink: #fff;
+  --reader-ink-2: rgba(255, 255, 255, 0.72);
+  --reader-ink-3: rgba(255, 255, 255, 0.58);
+  --reader-ink-4: rgba(255, 255, 255, 0.4);
+  --reader-chip: rgba(10, 10, 11, 0.7);
+  --reader-scrim: rgba(0, 0, 0, 0.7);
+}
+/* App inks and Mantine's gray and light variants flip with the app theme; on the dark stage they
+   are pinned to the reader's own. Notes keep the app surface on purpose, so they are left out. */
+:is(.reader-bar, .reader-end, .reader-message) {
+  --ink-2: var(--reader-ink-2);
+  --ink-3: var(--reader-ink-3);
+  --mantine-color-dimmed: var(--reader-ink-3);
+  --mantine-color-gray-light: var(--reader-border);
+  --mantine-color-gray-light-hover: rgba(255, 255, 255, 0.14);
+  --mantine-color-gray-light-color: var(--reader-ink-2);
+  --mantine-primary-color-light: color-mix(in srgb, var(--brand) 18%, transparent);
+  --mantine-primary-color-light-hover: color-mix(in srgb, var(--brand) 26%, transparent);
+  --mantine-primary-color-light-color: var(--brand-fg-on-art);
+}
+.reader-end .mantine-Rating-starSymbol:not([data-filled]) {
+  fill: rgba(255, 255, 255, 0.3);
+  stroke: rgba(255, 255, 255, 0.3);
+}
 .reader-root {
   position: fixed;
   inset: 0;
   z-index: 401;
-  color: #fff;
-  background: #0a0a0b;
+  color: var(--reader-ink);
+  background: var(--reader-surface);
 }
 /* Auto follows each page's edge colour, so a turn eases between them rather than cutting. */
 .reader-root[data-auto-ground] {
@@ -9726,7 +9678,7 @@ body.reader-open {
   color: #2b2b30;
 }
 .reader-root[data-ground='light'] .reader-end {
-  background: #0a0a0b;
+  background: var(--reader-surface);
 }
 /* The Discover preview opens over the detail modal (z-index 1000), and keeps its top bar up, so
    the pages sit below it rather than under it. */
@@ -10042,9 +9994,9 @@ body.reader-open {
   gap: 4px;
   padding: 4px;
   border-radius: var(--mantine-radius-md);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #0a0a0b;
-  color: #fff;
+  border: 1px solid var(--reader-border);
+  background: var(--reader-surface);
+  color: var(--reader-ink);
   font-size: var(--type-meta);
   font-variant-numeric: tabular-nums;
   pointer-events: none;
@@ -10106,7 +10058,7 @@ body.reader-open {
   width: 2px;
   height: 100%;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--reader-border);
   opacity: 0.7;
   transition: width var(--dur-fast) var(--ease), opacity var(--dur-fast) var(--ease);
 }
@@ -10136,7 +10088,7 @@ body.reader-open {
   height: 14px;
   border-radius: 50%;
   background: var(--brand);
-  box-shadow: 0 0 0 2px #0a0a0b;
+  box-shadow: 0 0 0 2px var(--reader-surface);
   transform: translate(-50%, -50%) scale(0);
   transition: transform var(--dur-fast) var(--ease);
 }
@@ -10150,9 +10102,9 @@ body.reader-open {
   transform: translateY(-50%);
   padding: 2px 8px;
   border-radius: var(--radius-pill);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(10, 10, 11, 0.88);
-  color: #fff;
+  border: 1px solid var(--reader-border);
+  background: var(--reader-surface);
+  color: var(--reader-ink);
   font-size: var(--type-meta);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -10175,20 +10127,13 @@ body.reader-open {
   margin-inline: auto;
   padding: calc(var(--rc) * 10) calc(var(--rc) * 16) calc(var(--rc) * 10) calc(var(--rc) * 10);
   border-radius: var(--radius-hero);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(10, 10, 11, 0.88);
-  backdrop-filter: blur(12px) saturate(1.2);
-  -webkit-backdrop-filter: blur(12px) saturate(1.2);
-  color: #fff;
+  border: 1px solid var(--reader-border);
+  background: var(--reader-surface-2);
+  color: var(--reader-ink);
   pointer-events: none;
 }
 .reader-card:not(:has(> .reader-card-cover, > .reader-ring)) {
   padding-inline-start: calc(var(--rc) * 14);
-}
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .reader-card {
-    background: #0a0a0b;
-  }
 }
 .reader-card-cover {
   width: calc(var(--rc) * 40);
@@ -10196,7 +10141,7 @@ body.reader-open {
   flex-shrink: 0;
   object-fit: cover;
   border-radius: calc(var(--rc) * 5);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
+  box-shadow: 0 0 0 1px var(--reader-border-strong);
 }
 .reader-card-text {
   display: grid;
@@ -10231,7 +10176,7 @@ body.reader-open {
 .reader-card-meta {
   font-size: calc(var(--rc) * 12);
   font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--reader-ink-3);
 }
 
 /* Bottom-of-strip meter (NextChapterHint). The ring is the toolbar's upscale ring at a larger
@@ -10285,10 +10230,10 @@ body.reader-open {
   display: none;
 }
 .reader-next-chapter-hint[data-state='end'] .reader-ring {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--reader-ink-4);
 }
 .reader-next-chapter-hint[data-state='end'] .reader-card-title {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--reader-ink-2);
 }
 /* The meter and the upscale pill share the bottom slot; a pull in progress wins it. */
 .reader-root:has(.reader-next-chapter-hint) .reader-enhance-status {
@@ -10311,7 +10256,7 @@ body.reader-open {
   cursor: pointer;
 }
 .reader-recap-skip[data-state='offer']:hover {
-  border-color: rgba(255, 255, 255, 0.28);
+  border-color: var(--reader-border-strong);
 }
 .reader-recap-skip:focus-visible {
   outline: 2px solid var(--brand);
@@ -10343,9 +10288,9 @@ body.reader-open {
   gap: 8px;
   padding: 10px 18px;
   border-radius: var(--radius-pill);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #0a0a0b;
-  color: #fff;
+  border: 1px solid var(--reader-border);
+  background: var(--reader-surface-2);
+  color: var(--reader-ink);
   font-size: var(--type-meta);
   pointer-events: none;
   animation: reader-enhance-status-in var(--dur-medium) var(--ease);
@@ -10359,7 +10304,7 @@ body.reader-open {
 }
 .reader-enhance-status-method {
   margin-right: 8px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--reader-ink-3);
 }
 .reader-enhance-status-fill {
   width: 100%;
@@ -10381,7 +10326,7 @@ body.reader-open {
   width: 85%;
 }
 .reader-enhance-status[data-phase='failed'] {
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--reader-ink-2);
 }
 @keyframes reader-enhance-sweep {
   from {
@@ -10468,7 +10413,7 @@ body.reader-open {
   transition: border-color var(--dur-base) var(--ease);
 }
 .reader-compare-button[data-busy]::after {
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--reader-border);
   border-top-color: var(--brand);
   animation: reader-enhance-spin var(--dur-spin) linear infinite;
 }
@@ -10521,8 +10466,8 @@ body.reader-open {
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--dur-base) var(--ease);
-  background: #0a0a0b;
-  color: #fff;
+  background: var(--reader-surface);
+  color: var(--reader-ink);
 }
 .reader-bar[data-visible='true'] {
   opacity: 1;
@@ -10536,16 +10481,16 @@ body.reader-open {
   top: 0;
   height: calc(56px + var(--safe-top));
   padding-top: var(--safe-top);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--reader-border);
 }
 .reader-bar-bottom {
   bottom: 0;
   height: calc(56px + env(safe-area-inset-bottom, 0px));
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--reader-border);
 }
 .reader-bar .mantine-Text-root {
-  color: #fff;
+  color: var(--reader-ink);
 }
 .reader-bar {
   --reader-bar-gap: var(--mantine-spacing-xs);
@@ -10657,7 +10602,7 @@ body.reader-open {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  color: #fff;
+  color: var(--reader-ink);
   transition:
     left var(--dur-fast) var(--ease),
     top var(--dur-fast) var(--ease),
@@ -10679,7 +10624,7 @@ body.reader-open {
 .reader-tap-zone-name {
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(0, 0, 0, 0.55);
+  background: var(--reader-chip);
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
   white-space: nowrap;
@@ -11104,8 +11049,8 @@ body.reader-open {
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--dur-base) var(--ease);
-  background: rgba(10, 10, 11, 0.9);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--reader-surface);
+  border-top: 1px solid var(--reader-border);
 }
 .reader-strip-wrap[data-visible='true'] {
   opacity: 1;
@@ -11155,8 +11100,8 @@ body.reader-open {
   border-radius: var(--mantine-radius-xs);
   font-size: var(--type-micro);
   line-height: 1.4;
-  color: rgba(255, 255, 255, 0.85);
-  background: rgba(0, 0, 0, 0.65);
+  color: var(--reader-ink-2);
+  background: var(--reader-chip);
 }
 
 /* Chapter-change flash (a .reader-card). Sits below the top bar, safe area included, so it doesn't
@@ -11207,7 +11152,7 @@ body.reader-open {
   flex-shrink: 0;
   object-fit: cover;
   border-radius: var(--radius-thumb);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--reader-border-strong);
   box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.85);
 }
 .reader-end-heading {
@@ -11219,7 +11164,7 @@ body.reader-open {
 .reader-end-eyebrow {
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--reader-ink-3);
 }
 .reader-end-title {
   margin: 0;
@@ -11228,12 +11173,12 @@ body.reader-open {
   font-weight: var(--fw-bold);
   line-height: 1;
   letter-spacing: -0.02em;
-  color: #fff;
+  color: var(--reader-ink);
   overflow-wrap: anywhere;
 }
 .reader-end-series {
   overflow: hidden;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--reader-ink-3);
   font-size: 0.95rem;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -11244,14 +11189,14 @@ body.reader-open {
   gap: 10px;
   margin-top: 10px;
   font-size: var(--type-micro);
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--reader-ink-3);
 }
 .reader-end-meter-track {
   flex: 1;
   max-width: 220px;
   height: 4px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--reader-border);
   overflow: hidden;
 }
 .reader-end-meter-fill {
@@ -11261,35 +11206,35 @@ body.reader-open {
 }
 .reader-end-timeleft {
   font-size: var(--type-micro);
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--reader-ink-3);
 }
 .reader-end-next {
   display: grid;
   justify-items: start;
   gap: 4px;
   padding-top: 22px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid var(--reader-border);
 }
 .reader-end-next-label {
   font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: var(--fw-strong);
   letter-spacing: -0.01em;
-  color: #fff;
+  color: var(--reader-ink);
 }
 .reader-end-note {
   max-width: 46ch;
   font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--reader-ink-3);
 }
 .reader-end-quiet {
-  --button-color: rgba(255, 255, 255, 0.72);
-  --button-hover: rgba(255, 255, 255, 0.08);
+  --button-color: var(--reader-ink-2);
+  --button-hover: var(--reader-border);
 }
 .reader-end-hint {
   margin-top: 10px;
   font-size: var(--type-micro);
-  color: rgba(255, 255, 255, 0.38);
+  color: var(--reader-ink-4);
 }
 @media (hover: none) {
   .reader-end-hint {
@@ -11331,18 +11276,19 @@ body.reader-open {
   display: grid;
   place-items: center;
   padding: 16px;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--reader-scrim);
+  animation: reader-enhance-status-in var(--dur-medium) var(--ease);
 }
+/* The surface, border and radius of .reader-card. */
 .reader-shortcuts-panel {
   width: min(800px, 100%);
   max-height: calc(100dvh - 32px);
   overflow-y: auto;
   padding: 20px 24px 24px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: var(--radius-overlay);
-  background: #121215;
-  box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.9);
-  color: #fff;
+  border: 1px solid var(--reader-border);
+  border-radius: var(--radius-hero);
+  background: var(--reader-surface-2);
+  color: var(--reader-ink);
   outline: none;
 }
 .reader-shortcuts-head {
@@ -11367,7 +11313,7 @@ body.reader-open {
   margin: 0 0 8px;
   font-size: var(--type-meta);
   font-weight: var(--fw-semibold);
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--reader-ink-3);
 }
 .reader-shortcuts-groups dl {
   margin: 0;
@@ -11381,7 +11327,7 @@ body.reader-open {
   font-size: 0.875rem;
 }
 .reader-shortcuts-row dt {
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--reader-ink-2);
 }
 .reader-shortcuts-row dd {
   display: flex;
@@ -11392,7 +11338,7 @@ body.reader-open {
 .reader-shortcuts-row kbd {
   min-width: 24px;
   padding: 1px 7px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--reader-border-strong);
   border-bottom-width: 2px;
   border-radius: var(--radius-control);
   background: rgba(255, 255, 255, 0.06);
@@ -11401,7 +11347,7 @@ body.reader-open {
   font-weight: var(--fw-semibold);
   line-height: 1.6;
   text-align: center;
-  color: #fff;
+  color: var(--reader-ink);
 }
 @media (hover: none) {
   .reader-shortcuts-button {
@@ -11418,9 +11364,10 @@ body.reader-open {
   border-radius: var(--radius-pill);
   font-size: var(--type-micro);
   font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.75);
-  background: rgba(10, 10, 11, 0.7);
+  color: var(--reader-ink-2);
+  background: var(--reader-chip);
   pointer-events: none;
+  animation: reader-enhance-status-in var(--dur-medium) var(--ease);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -12733,9 +12680,9 @@ tr:hover .mono-value-copy {
 }
 
 /* --- Import page --- */
-/* The import's three steps across the top of its toolbar, drawn like the setup wizard's rail: a
-   numbered circle that becomes a check, the current step tinted, a thread joining them. */
-.import-steps {
+/* StepStrip: numbered steps, the current one in the accent, finished ones green with a check. The
+   strip lays them across a toolbar with a thread between; the rail stacks them down a side column. */
+.step-strip {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
@@ -12744,34 +12691,79 @@ tr:hover .mono-value-copy {
   border-bottom: 1px solid var(--hairline);
   list-style: none;
 }
-.import-step {
+.step-strip > li {
+  position: relative;
+  min-width: 0;
+}
+.step-strip[data-layout='rail'] {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  border-bottom: 0;
+}
+.step-strip[data-layout='rail'] > li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  left: 23px;
+  top: 40px;
+  bottom: -8px;
+  width: 1px;
+  background: var(--border);
+}
+.step-strip-item {
   position: relative;
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  width: 100%;
   min-width: 0;
   padding: 10px 12px;
   border-radius: var(--radius-surface);
   color: var(--ink-3);
+  text-align: left;
+  transition: background var(--dur-base) var(--ease), color var(--dur-base) var(--ease);
 }
-.import-step-thread {
+button.step-strip-item:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--surface-hover) 70%, transparent);
+  color: var(--ink-2);
+}
+button.step-strip-item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+button.step-strip-item:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.step-strip-item[data-state='current'] {
+  background: var(--brand-soft);
+  color: var(--ink-hi);
+}
+.step-strip[data-layout='rail'] .step-strip-item[data-state='current']::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--brand);
+}
+.step-strip-item[data-state='done'] {
+  color: var(--ink-2);
+}
+.step-strip-thread {
   flex: 1 1 auto;
   min-width: 12px;
   height: 1px;
   margin-top: 13px;
   background: var(--border);
 }
-.import-step[data-state='done'] .import-step-thread {
-  background: color-mix(in srgb, var(--brand) 45%, var(--border));
+.step-strip-item[data-state='done'] .step-strip-thread {
+  background: color-mix(in srgb, var(--ok) 45%, var(--border));
 }
-.import-step[data-state='current'] {
-  background: color-mix(in srgb, var(--brand) 12%, transparent);
-  color: var(--ink-hi);
-}
-.import-step[data-state='done'] {
-  color: var(--ink-2);
-}
-.import-step-index {
+.step-strip-index {
   display: grid;
   place-items: center;
   flex-shrink: 0;
@@ -12784,37 +12776,39 @@ tr:hover .mono-value-copy {
   font-weight: var(--fw-strong);
   font-variant-numeric: tabular-nums;
 }
-.import-step[data-state='done'] .import-step-index {
-  border-color: color-mix(in srgb, var(--brand) 60%, transparent);
-  background: color-mix(in srgb, var(--brand) 14%, var(--surface));
-  color: var(--brand-fg, var(--brand));
+.step-strip-item[data-state='done'] .step-strip-index {
+  border-color: transparent;
+  background: var(--ok-soft);
+  color: var(--ok);
 }
-.import-step[data-state='current'] .import-step-index {
+.step-strip-item[data-state='current'] .step-strip-index {
   border-color: var(--brand);
   background: var(--mantine-primary-color-filled);
   color: var(--mantine-primary-color-contrast);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 22%, transparent);
 }
-.import-step-text {
+.step-strip-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
   padding-top: 3px;
 }
-.import-step-label {
+.step-strip-label {
   font-size: var(--type-body);
   font-weight: var(--fw-semibold);
 }
-.import-step-hint {
+.step-strip-hint {
   overflow: hidden;
   font-size: var(--type-micro);
   color: var(--ink-4);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.import-step[data-state='current'] .import-step-hint {
+.step-strip-item[data-state='current'] .step-strip-hint {
   color: var(--ink-3);
+}
+.step-strip-hint[data-tone='warn'] {
+  color: var(--warn);
 }
 .import-root-select {
   flex: 1 1 20rem;
@@ -12848,26 +12842,26 @@ tr:hover .mono-value-copy {
   min-width: 22rem;
 }
 @media (max-width: 47.9375em) {
-  .import-step {
+  .step-strip-item {
     flex-direction: column;
     align-items: center;
     gap: 6px;
     padding: 8px 4px;
     text-align: center;
   }
-  .import-step-thread {
+  .step-strip-thread {
     display: none;
   }
-  .import-step-text {
+  .step-strip-text {
     align-items: center;
     padding-top: 0;
   }
-  .import-step-hint {
+  .step-strip-hint {
     display: none;
   }
   /* Five steps in a phone row left each label about 60px, and "What to convert" broke over three
      lines. Past three steps only the current one is named; the rest keep their number. */
-  .import-steps[data-many] .import-step:not([data-state='current']) .import-step-label {
+  .step-strip[data-many] .step-strip-item:not([data-state='current']) .step-strip-label {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -12875,22 +12869,23 @@ tr:hover .mono-value-copy {
     clip-path: inset(50%);
     white-space: nowrap;
   }
-  .import-steps[data-many] {
+  .step-strip[data-many] {
     display: flex;
     gap: 4px;
   }
-  .import-steps[data-many] .import-step {
+  .step-strip[data-many] > li {
     flex: none;
+  }
+  .step-strip[data-many] > li:has([data-state='current']) {
+    flex: 1 1 auto;
+  }
+  .step-strip[data-many] .step-strip-item {
     padding: 6px;
   }
-  .import-steps[data-many] .import-step[data-state='current'] {
-    flex: 1 1 auto;
+  .step-strip[data-many] .step-strip-item[data-state='current'] {
     flex-direction: row;
     justify-content: center;
     gap: 8px;
-  }
-  .import-steps[data-many] .import-step[data-state='current'] .import-step-text {
-    min-width: 0;
   }
   .import-root-select {
     min-width: 100%;
@@ -13500,12 +13495,6 @@ button.settings-row-head:hover,
   padding-top: var(--mantine-spacing-md);
   border-top: 1px solid var(--hairline);
 }
-.sso-group-title {
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-}
-
 /* Delete stays quiet in a row of actions and only turns red when the pointer is on it. */
 .quiet-danger.mantine-ActionIcon-root {
   color: var(--ink-3);
@@ -14787,15 +14776,6 @@ button.settings-row-head:hover,
 .confirm-title-text {
   min-width: 0;
 }
-.modal-role-chip {
-  flex: none;
-  padding: 1px 7px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-control);
-  background-color: color-mix(in srgb, var(--neutral) 14%, transparent);
-  font-size: var(--type-meta);
-  color: var(--ink-2);
-}
 .confirm-files {
   max-height: 14rem;
   overflow-y: auto;
@@ -15040,68 +15020,6 @@ button.settings-row-head:hover,
 .hair-table-wrap {
   overflow-x: auto;
 }
-.wizard-steps {
-  display: flex;
-  gap: 4px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  border-bottom: 1px solid var(--hairline);
-}
-.wizard-steps li {
-  flex: 1;
-  min-width: 0;
-}
-.wizard-step {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 8px 4px 10px;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-  text-align: left;
-}
-.wizard-step:disabled {
-  cursor: default;
-  opacity: 0.6;
-}
-.wizard-step[data-state='current'] {
-  border-bottom-color: var(--brand);
-  color: var(--ink-hi);
-  font-weight: var(--fw-semibold);
-}
-.wizard-step:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: -2px;
-}
-.wizard-step-mark {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  border: 1px solid var(--border-strong);
-  border-radius: 50%;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
-}
-.wizard-step[data-state='current'] .wizard-step-mark {
-  border-color: var(--brand);
-  color: var(--brand-fg);
-}
-.wizard-step[data-state='done'] .wizard-step-mark {
-  border-color: var(--ok);
-  color: var(--ok);
-}
-.wizard-step-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .condition-row {
   padding: 10px 0;
   border-bottom: 1px solid var(--hairline);
@@ -15178,15 +15096,6 @@ button.settings-row-head:hover,
   gap: 4px 12px;
   color: var(--ink-3);
   font-size: var(--type-micro);
-}
-@media (max-width: 36em) {
-  .wizard-step[data-state='todo'] .wizard-step-label,
-  .wizard-step[data-state='done'] .wizard-step-label {
-    display: none;
-  }
-  .wizard-steps li[data-current] {
-    flex: 3;
-  }
 }
 
 /* Hairline rows and token table inside utility modals (naming tokens, rating import, ignored folders). */

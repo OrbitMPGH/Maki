@@ -1,3 +1,4 @@
+import { SearchInput } from '../components/ui/SearchInput'
 import {
   ActionIcon,
   Anchor,
@@ -19,7 +20,7 @@ import {
   Table,
   Tabs,
   Text,
-  TextInput,
+  
   Title,
   Tooltip,
   VisuallyHidden,
@@ -604,10 +605,11 @@ export default function HealthPage() {
         <Tabs.Panel value="files">
           <Stack>
             <Group className="health-filter-rail">
-              <TextInput
+              <SearchInput
                 placeholder={t`Search file paths`}
                 aria-label={t`Search file paths`}
                 value={search}
+                onClear={() => refilter(() => setSearch(''))}
                 onChange={(e) => refilter(() => setSearch(e.currentTarget.value))}
               />
               <Select

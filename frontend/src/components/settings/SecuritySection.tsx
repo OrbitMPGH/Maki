@@ -1,4 +1,5 @@
 import { useEffect, useReducer, useState, type ReactNode } from 'react'
+import { SettingsGroupTitle } from './SettingsGroupTitle'
 import {
   Button,
   Code,
@@ -345,7 +346,7 @@ export function NetworkSection() {
 function SsoGroup({ title, children }: { title: ReactNode; children: ReactNode }) {
   return (
     <Stack gap="md" className="sso-group">
-      <div className="sso-group-title">{title}</div>
+      <SettingsGroupTitle>{title}</SettingsGroupTitle>
       {children}
     </Stack>
   )

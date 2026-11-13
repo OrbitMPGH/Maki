@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { SettingsGroupTitle } from '../../components/settings/SettingsGroupTitle'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLabel } from '../../i18n-context'
 import { useDebouncedValue } from '@mantine/hooks'
@@ -9,15 +10,14 @@ import {
   Button,
   Checkbox,
   Group,
+  Input,
   Radio,
-  Select,
+  SegmentedControl,
   Stack,
   Switch,
-  Table,
   Text,
   TextInput,
   Tooltip,
-  VisuallyHidden,
 } from '@mantine/core'
 import { IconPencil, IconRoute, IconTrash, IconWand } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
@@ -51,13 +51,14 @@ import {
   type FolderNamingMode,
   type LibrarySettings,
 } from '../../api/hooks'
+import { SettingsRow, SettingsRows, SettingsRowsBlock } from '../../components/settings/SettingsRow'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { FolderBrowserModal } from '../../components/settings/FolderBrowserModal'
 import { RootFolderPathModal } from '../../components/settings/RootFolderPathModal'
 import { RootFolderMinFreeInput } from '../../components/settings/RootFolderMinFreeInput'
 import type { RootFolder } from '../../api/types'
 import { SUPPORTED_LOCALES } from '../../i18n'
-import { MONITOR_OPTIONS } from '../../components/series/SeriesActionsMenu'
+import { MONITOR_HELP, MONITOR_OPTIONS, MONITOR_SHORT } from '../../components/series/SeriesActionsMenu'
 import { DumpProgressBar } from '../../components/MetadataDumpProgress'
 import { formatBytes, formatDateTime, formatNumber } from '../../format'
 import { useAuth } from '../../auth/AuthProvider'
@@ -90,68 +91,51 @@ export function RootFoldersSection() {
     <SettingsSection
       id="root-folders"
       title={<Trans>Root folders</Trans>}
+      description={<Trans>Where the library lives on disk. Each series is stored in one of these.</Trans>}
+      panelProps={{ p: 0 }}
     >
-      <Stack>
-        {rootFolders && rootFolders.length > 0 && (
-          <Table.ScrollContainer minWidth={420}>
-            <Table className="panel-table ops-table">
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th><Trans>Path</Trans></Table.Th>
-                  <Table.Th><Trans>Free space</Trans></Table.Th>
-                  <Table.Th>
-                    <Tooltip
-                      label={t`Downloads into the folder wait while its drive has less free space than this, and carry on by themselves once there is room. 0 never waits.`}
-                      withArrow
-                      multiline
-                      w={280}
-                    >
-                      <span><Trans>Keep free</Trans></span>
-                    </Tooltip>
-                  </Table.Th>
-                  <Table.Th><VisuallyHidden><Trans>Actions</Trans></VisuallyHidden></Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {rootFolders.map((f) => (
-                  <Table.Tr key={f.id}>
-                    <Table.Td>
-                      <MonoValue value={f.path} copy minWidth="10rem" />
-                      {!f.accessible && (
-                        <Text span c="var(--danger)" size="xs" ml="xs">
-                          <Trans>(inaccessible)</Trans>
-                        </Text>
-                      )}
-                    </Table.Td>
-                    <Table.Td>{formatBytes(f.freeSpace)}</Table.Td>
-                    <Table.Td>
+      {rootFolders && rootFolders.length > 0 && (
+        <SettingsRows>
+          {rootFolders.map((f) => (
+            <SettingsRow
+              key={f.id}
+              title={<MonoValue value={f.path} copy minWidth="10rem" />}
+              status={f.accessible ? null : { tone: 'danger', label: t`Inaccessible` }}
+              summary={<Trans>{formatBytes(f.freeSpace)} free</Trans>}
+              aside={
+                <Group gap="xs" wrap="nowrap">
+                  <Tooltip
+                    label={t`Downloads into the folder wait while its drive has less free space than this, and carry on by themselves once there is room. 0 never waits.`}
+                    withArrow
+                    multiline
+                    w={280}
+                  >
+                    <span>
                       <RootFolderMinFreeInput folder={f} />
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap={4} wrap="nowrap" justify="flex-end">
-                        <ActionIcon
-                          variant="subtle"
-                          onClick={() => setEditing(f)}
-                          aria-label={t`Change root folder path`}
-                        >
-                          <IconPencil size={16} />
-                        </ActionIcon>
-                        <ActionIcon
-                          variant="subtle"
-                          color="var(--danger)"
-                          onClick={() => setDeleting({ id: f.id, path: f.path })}
-                          aria-label={t`Remove root folder`}
-                        >
-                          <IconTrash size={16} />
-                        </ActionIcon>
-                      </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </Table.ScrollContainer>
-        )}
+                    </span>
+                  </Tooltip>
+                  <ActionIcon
+                    variant="subtle"
+                    onClick={() => setEditing(f)}
+                    aria-label={t`Change root folder path`}
+                  >
+                    <IconPencil size={16} />
+                  </ActionIcon>
+                  <ActionIcon
+                    variant="subtle"
+                    color="var(--danger)"
+                    onClick={() => setDeleting({ id: f.id, path: f.path })}
+                    aria-label={t`Remove root folder`}
+                  >
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </Group>
+              }
+            />
+          ))}
+        </SettingsRows>
+      )}
+      <SettingsRowsBlock>
         <Group
           component="form"
           align="flex-end"
@@ -174,7 +158,7 @@ export function RootFoldersSection() {
             <Trans>Add</Trans>
           </Button>
         </Group>
-      </Stack>
+      </SettingsRowsBlock>
 
       <FolderBrowserModal
         opened={browsing}
@@ -352,19 +336,18 @@ export function NewSeriesDefaultsSection() {
       id="monitoring"
       title={<Trans>New series defaults</Trans>}
     >
-      <Select
-        mb="md"
-        styles={{ wrapper: { maxWidth: 320 } }}
-        label={t`Monitoring`}
-        data={MONITOR_OPTIONS.filter((o) => o.value !== 'None').map((o) => ({
-          value: o.value,
-          label: renderLabel(o.label),
-        }))}
-        value={monitoring?.defaultMode ?? 'All'}
-        onChange={(value) => value && saveMonitoring.mutate({ defaultMode: value })}
-        allowDeselect={false}
-      />
-
+      <Input.Wrapper label={t`Monitoring`} mb="md">
+        <SegmentedControl
+          mt={4}
+          data={MONITOR_OPTIONS.filter((o) => o.value !== 'None').map((o) => ({
+            value: o.value,
+            label: renderLabel(MONITOR_SHORT[o.value]),
+          }))}
+          value={monitoring?.defaultMode ?? 'All'}
+          onChange={(value) => saveMonitoring.mutate({ defaultMode: value })}
+        />
+        <SettingsHelp mb={0}>{renderLabel(MONITOR_HELP[monitoring?.defaultMode ?? 'All'])}</SettingsHelp>
+      </Input.Wrapper>
       <Switch
         mb="lg"
         label={t`Skip specials`}
@@ -373,9 +356,9 @@ export function NewSeriesDefaultsSection() {
         onChange={(e) => saveMonitoring.mutate({ unmonitorSpecials: e.currentTarget.checked })}
       />
 
-      <Text fw={500} size="sm" mb={4}>
+      <SettingsGroupTitle mb={4}>
         <Trans>Incognito by content rating</Trans>
-      </Text>
+      </SettingsGroupTitle>
       <SettingsHelp mb="sm">
         <Trans>"No scrobble" keeps a series off your trackers. "Full" also keeps it out of stats and history.</Trans>
       </SettingsHelp>
@@ -387,22 +370,22 @@ export function NewSeriesDefaultsSection() {
               <Text size="sm" w={110} style={{ flexShrink: 0 }}>
                 {ratingLabel}
               </Text>
-              <Select
+              <SegmentedControl
                 aria-label={t`Incognito for ${ratingLabel}`}
+                size="xs"
                 data={incognitoOptions}
                 value={settings?.incognitoByRating?.[rating] ?? 'Off'}
                 disabled={!settings}
-                size="xs"
-                w={170}
                 onChange={(value) =>
                   patch({
                     incognitoByRating: {
                       ...(settings?.incognitoByRating ?? {}),
-                      [rating]: (value as IncognitoMode | null) ?? 'Off',
+                      [rating]: value as IncognitoMode,
                     },
                   })
                 }
               />
+
             </Group>
           )
         })}
@@ -550,9 +533,9 @@ export function NamingSection() {
             }
       />
 
-      <Text fw={500} size="sm" mb={4}>
+      <SettingsGroupTitle mb={4}>
         <Trans>Folder naming on import</Trans>
-      </Text>
+      </SettingsGroupTitle>
       <Radio.Group
         aria-label={t`Folder naming on import`}
         value={settings?.folderNamingMode ?? 'rename'}
@@ -568,9 +551,9 @@ export function NamingSection() {
         </Stack>
       </Radio.Group>
 
-      <Text fw={500} size="sm" mt="lg" mb={4}>
+      <SettingsGroupTitle mt="lg" mb={4}>
         <Trans>File naming on import</Trans>
-      </Text>
+      </SettingsGroupTitle>
       <Switch
         label={t`Rename imported files to the chapter file format`}
         checked={settings?.renameImportedFiles ?? true}

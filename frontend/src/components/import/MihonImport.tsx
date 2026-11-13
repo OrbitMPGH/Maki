@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Alert, Button, FileInput, Group, Progress, Stack, Text } from '@mantine/core'
+import { Button, FileInput, Group, Progress, Stack, Text } from '@mantine/core'
 import { IconFileZip } from '../../lib/icons'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -15,7 +15,9 @@ import {
   type MihonResolveResult,
 } from '../../api/mihonImport'
 import { randomUUID } from '../../lib/uuid'
+import { Callout } from '../ui/Callout'
 import { Panel } from '../ui/Panel'
+import { PanelTitle } from '../ui/PanelTitle'
 import { MihonReview, type MihonImportOptions } from './MihonReview'
 import { MihonSummary, type MihonOutcomeRow } from './MihonSummary'
 import type { MihonGroup, MihonRow } from './mihonRows'
@@ -226,9 +228,9 @@ export function MihonImport() {
     return (
       <Panel>
         <Stack gap="sm">
-          <Alert color="var(--danger)" variant="light">
+          <Callout tone="danger" role="alert">
             {message}
-          </Alert>
+          </Callout>
           <Text size="sm" c="var(--ink-2)">
             <Trans>
               {done} of {total} matched before this stopped. Retry to carry on, or review what matched so far. The
@@ -256,9 +258,9 @@ export function MihonImport() {
     return (
       <Panel>
         <Stack gap="sm">
-          <Text fw={600}>
+          <PanelTitle>
             {phase.kind === 'resolving' ? <Trans>Matching your library to MangaBaka</Trans> : <Trans>Importing</Trans>}
-          </Text>
+          </PanelTitle>
           <Progress value={total === 0 ? 0 : (100 * done) / total} animated />
           <Text size="sm" c="var(--ink-3)">
             <Trans>
@@ -299,9 +301,9 @@ export function MihonImport() {
           clearable
         />
         {error && (
-          <Alert color="var(--danger)" variant="light">
+          <Callout tone="danger" role="alert">
             {error}
-          </Alert>
+          </Callout>
         )}
         {parsed && parsed.manga.length === 0 && (
           <Text size="sm" c="var(--ink-2)">

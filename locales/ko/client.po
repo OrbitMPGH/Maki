@@ -49,11 +49,6 @@ msgstr "(설정되지 않으면 비어 있음)"
 msgid "(cannot be undone)"
 msgstr "(되돌릴 수 없음)"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "(inaccessible)"
-msgstr "(접근할 수 없음)"
-
 #. placeholder {0}: history.convertedFiles
 #. placeholder {1}: history.restorableFiles
 #. placeholder {2}: history.restorableFiles
@@ -782,6 +777,11 @@ msgstr "{0}이(가) 이미 이 사이트를 읽고 있습니다."
 #. placeholder {0}: formatDate(entry.deletedAt)
 #: src/components/settings/RecycleBinModal.tsx
 msgid "{0} by {deletedBy}"
+msgstr ""
+
+#. placeholder {0}: formatBytes(f.freeSpace)
+#: src/pages/settings/LibraryCards.tsx
+msgid "{0} free"
 msgstr ""
 
 #. placeholder {0}: percent(item.measure)
@@ -4163,7 +4163,6 @@ msgstr "규칙 {number}의 동작"
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
-#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
 msgid "Actions"
@@ -7066,11 +7065,6 @@ msgstr "모든 알림을 지울까요?"
 msgid "Clear cache"
 msgstr "캐시 비우기"
 
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Clear chapter search"
-msgstr "챕터 검색 지우기"
-
 #: src/pages/DiscoverPage.tsx
 #, fuzzy
 msgid "Clear default"
@@ -7116,9 +7110,7 @@ msgstr "{chapterLbl}의 읽기 진행 상황 지우기"
 msgid "Clear records"
 msgstr "기록 지우기"
 
-#: src/components/CatalogueBrowser.tsx
-#: src/components/LinkFileToChaptersModal.tsx
-#: src/components/TagBrowserModal.tsx
+#: src/components/ui/SearchInput.tsx
 #, fuzzy
 msgid "Clear search"
 msgstr "검색 지우기"
@@ -7602,6 +7594,8 @@ msgid "contents read"
 msgstr "읽은 내용"
 
 #: src/components/SetupWizard.tsx
+#: src/pages/PageConversionWizardPage.tsx
+#: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Continue"
 msgstr "계속"
@@ -11004,11 +10998,6 @@ msgstr ""
 msgid "Found"
 msgstr "발견됨"
 
-#: src/pages/settings/LibraryCards.tsx
-#, fuzzy
-msgid "Free space"
-msgstr "여유 공간"
-
 #: src/components/settings/RootFolderMinFreeInput.tsx
 msgid "Free space to keep on {path}"
 msgstr ""
@@ -12304,6 +12293,10 @@ msgstr ""
 msgid "In your library"
 msgstr "라이브러리에 있음"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Inaccessible"
+msgstr ""
+
 #: src/components/TagBuckets.tsx
 #, fuzzy
 msgid "Incidental"
@@ -12683,10 +12676,6 @@ msgstr "각 독자의 마지막으로 읽은 챕터 유지"
 #, fuzzy
 msgid "Keep editing"
 msgstr "계속 편집"
-
-#: src/pages/settings/LibraryCards.tsx
-msgid "Keep free"
-msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -15257,6 +15246,10 @@ msgstr "팔로우 중인 창작자의 신작"
 msgid "New key"
 msgstr ""
 
+#: src/components/settings/AccountSection.tsx
+msgid "New key makes one for a script or an app."
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "New OPDS feed URL generated"
@@ -15356,12 +15349,6 @@ msgstr ""
 #, fuzzy
 msgid "Newly enabled sources join at the bottom."
 msgstr "새로 활성화된 소스는 맨 아래에 추가됩니다."
-
-#: src/pages/PageConversionWizardPage.tsx
-#: src/pages/settings/CustomSourceWizard.tsx
-#, fuzzy
-msgid "Next"
-msgstr "다음"
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -15706,7 +15693,7 @@ msgid "No indexers configured in {backendName}."
 msgstr "{backendName}에 설정된 인덱서가 없습니다."
 
 #: src/components/settings/AccountSection.tsx
-msgid "No keys yet. New key makes one for a script or an app."
+msgid "No keys yet"
 msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -15939,9 +15926,8 @@ msgid "No repeat creators yet"
 msgstr "아직 반복해서 찾은 작가가 없습니다"
 
 #: src/pages/settings/CustomRepositoriesPanel.tsx
-#, fuzzy
-msgid "No repositories yet."
-msgstr "아직 저장소가 없습니다."
+msgid "No repositories yet"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -16839,15 +16825,14 @@ msgstr "이름을 변경하지 않고 모든 항목을 기존 폴더에 둡니�
 msgid "Nothing is running in the background."
 msgstr ""
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Nothing is saved on this device yet"
+msgstr ""
+
 #: src/components/home/OfflineHome.tsx
 #, fuzzy
 msgid "Nothing is saved on this device yet. Once you're back online, save chapters from a series page and they'll be here to read without a connection."
 msgstr "이 기기에는 아직 저장된 항목이 없습니다. 온라인으로 돌아오면 시리즈 페이지에서 챕터를 저장하세요. 저장한 챕터는 연결 없이 여기서 읽을 수 있습니다."
-
-#: src/components/settings/OfflineReadingSection.tsx
-#, fuzzy
-msgid "Nothing is saved on this device yet. Use Save for offline on a chapter or a series."
-msgstr "이 기기에는 아직 저장된 항목이 없습니다. 챕터나 시리즈의 “오프라인용 저장”을 사용하세요."
 
 #: src/components/pageconversion/StartStep.tsx
 #, fuzzy
@@ -27102,6 +27087,10 @@ msgstr ""
 msgid "Use OPDS"
 msgstr "OPDS 사용"
 
+#: src/components/settings/OfflineReadingSection.tsx
+msgid "Use Save for offline on a chapter or a series."
+msgstr ""
+
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "Use the bookmark on any cover in Discover, or Shortlist on its card, to keep a title here without adding it."
@@ -27851,6 +27840,10 @@ msgstr ""
 #, fuzzy
 msgid "Where the files on disk came from, which can outlive the link"
 msgstr "디스크의 파일 출처이며, 연결보다 오래 유지될 수 있습니다"
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Where the library lives on disk. Each series is stored in one of these."
+msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
 msgid "Where the series sits in a list sorted by title"

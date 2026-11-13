@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Group, SegmentedControl, SimpleGrid, Skeleton, Stack, Text } from '@mantine/core'
 import { AreaChart, BarChart } from '@mantine/charts'
+import { statsChartProps, statsGridProps, statsSeriesColor, statsXAxisProps } from '../chartTheme'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { useLibraryComposition, useLibraryGrowth } from '../../../api/hooks'
@@ -76,8 +77,7 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
   )
   // Both charts on one band axis with the same ticks, so a step in Total sits over the bar that
   // made it and the gridlines line up. syncWithTicks drops the extra lines at the plot edges.
-  const growthXAxis = { scale: 'band' as const, interval: Math.max(0, Math.ceil(growthData.length / 8) - 1) }
-  const growthGrid = { syncWithTicks: true }
+  const growthXAxis = statsXAxisProps(growthData.length)
 
   const topSource = useMemo(() => {
     if (!stats?.sourceReliability.length) return null
@@ -223,13 +223,11 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
                   curveType="monotone"
                   withGradient
                   withXAxis={false}
-                  tickLine="none"
-                  gridAxis="y"
-                  gridProps={growthGrid}
+                  {...statsChartProps}
+                  gridProps={statsGridProps}
                   xAxisProps={growthXAxis}
-                  yAxisProps={{ width: 64 }}
                   valueFormatter={growthMetric === 'size' ? formatBytes : undefined}
-                  series={[{ name: 'Total', label: t`Total`, color: 'var(--brand)' }]}
+                  series={[{ name: 'Total', label: t`Total`, color: statsSeriesColor.you }]}
                 />
                 <Text size="xs" fw={600} c="var(--ink-3)" mt="xs" mb={4}>
                   {t`Added`}
@@ -238,13 +236,11 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
                   h={110}
                   data={growthData}
                   dataKey="bucket"
-                  tickLine="none"
-                  gridAxis="y"
-                  gridProps={growthGrid}
+                  {...statsChartProps}
+                  gridProps={statsGridProps}
                   xAxisProps={growthXAxis}
-                  yAxisProps={{ width: 64 }}
                   valueFormatter={growthMetric === 'size' ? formatBytes : undefined}
-                  series={[{ name: 'Added', label: t`Added`, color: 'var(--neutral)' }]}
+                  series={[{ name: 'Added', label: t`Added`, color: statsSeriesColor.you }]}
                 />
               </>
             ) : (

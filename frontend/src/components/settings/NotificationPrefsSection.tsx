@@ -1,4 +1,5 @@
 import { Checkbox, Divider, SegmentedControl, Switch, Text } from '@mantine/core'
+import { SettingsGroupTitle } from './SettingsGroupTitle'
 import { IconBell, IconDeviceMobile } from '../../lib/icons'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import {
@@ -65,9 +66,9 @@ export function NotificationPrefsSection() {
 
       <Divider my="md" />
 
-      <Text size="sm" fw={500}>
+      <SettingsGroupTitle>
         <Trans>Which series notify me</Trans>
-      </Text>
+      </SettingsGroupTitle>
       <Text size="xs" c="var(--ink-3)" mb="xs">
         <Trans>Any series can be set differently from its own page.</Trans>
       </Text>

@@ -9,10 +9,11 @@ import {
   Skeleton,
   Stack,
   Text,
-  TextInput,
+  
   UnstyledButton,
 } from '@mantine/core'
-import { IconArrowRight, IconChevronDown, IconSearch } from '../../lib/icons'
+import { SearchInput } from '../ui/SearchInput'
+import { IconArrowRight, IconChevronDown } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -288,7 +289,7 @@ function FolderHead({ plan }: { plan: ImportPlan }) {
         </>
       )}
       {plan.kind === 'restore' ? (
-        <Badge size="xs" variant="light">
+        <Badge size="sm" variant="light">
           {t({ message: `Restore ${title}`, context: 'series' })}
         </Badge>
       ) : (
@@ -465,12 +466,11 @@ function PlanList({ plans }: { plans: ImportPlan[] }) {
             { value: 'all', label: t`All (${total})` },
           ]}
         />
-        <TextInput
-          size="xs"
+        <SearchInput
           aria-label={t`Find a folder`}
           placeholder={t`Find a folder`}
-          leftSection={<IconSearch size={16} />}
           value={query}
+          onClear={() => setQuery('')}
           onChange={(e) => setQuery(e.currentTarget.value)}
           style={{ flex: '1 1 180px', maxWidth: 280 }}
         />

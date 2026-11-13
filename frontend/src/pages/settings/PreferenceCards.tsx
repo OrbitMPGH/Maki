@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { Trans, useLingui } from '@lingui/react/macro'
-import { Button, Group, Select, Stack, Switch, Text } from '@mantine/core'
+import { Button, Group, Input, SegmentedControl, Select, Stack, Switch, Text } from '@mantine/core'
 import { IconLayoutDashboard } from '../../lib/icons'
 import { SettingsSection } from './SettingsSection'
 import { ContentRatingCards } from '../../components/ContentRatingCards'
@@ -69,22 +69,21 @@ function StartPageSelect() {
   const homeEnabled = ui?.homeLayout.enabled ?? true
 
   return (
-    <Select
-      label={t`Start page`}
-      data={[
-        // Disabled rather than hidden, mirroring how the nav drops these tabs: offering a
-        // choice that silently degrades to somewhere else is worse than saying why it's out.
-        { value: 'home', label: t`Home`, disabled: !homeEnabled },
-        { value: 'library', label: t`Library` },
-        { value: 'discover', label: t`Discover`, disabled: !discoverAvailable },
-      ]}
-      value={ui?.startPage ?? 'home'}
-      onChange={(value) => value && patch?.({ startPage: value as UiSettings['startPage'] })}
-      disabled={!patch}
-      allowDeselect={false}
-      maw={260}
-      mb="md"
-    />
+    <Input.Wrapper label={t`Start page`} mb="md">
+      <SegmentedControl
+        mt={4}
+        data={[
+          // Disabled rather than hidden, mirroring how the nav drops these tabs: offering a
+          // choice that silently degrades to somewhere else is worse than saying why it's out.
+          { value: 'home', label: t`Home`, disabled: !homeEnabled },
+          { value: 'library', label: t`Library` },
+          { value: 'discover', label: t`Discover`, disabled: !discoverAvailable },
+        ]}
+        value={ui?.startPage ?? 'home'}
+        onChange={(value) => patch?.({ startPage: value as UiSettings['startPage'] })}
+        disabled={!patch}
+      />
+    </Input.Wrapper>
   )
 }
 

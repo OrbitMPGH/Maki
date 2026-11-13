@@ -1,11 +1,9 @@
 import { useRef, useState } from 'react'
 import {
   ActionIcon,
-  Badge,
   Button,
   Checkbox,
   Group,
-  Image,
   Modal,
   Progress,
   Select,
@@ -52,12 +50,14 @@ import { ImportPlanModal } from '../components/import/ImportPlanModal'
 import { ManualImport } from '../components/import/ManualImport'
 import { MihonImport } from '../components/import/MihonImport'
 import { RecentImports, UndoBatchButton } from '../components/import/RecentImports'
-import { StepStrip, type Step } from '../components/StepStrip'
+import { StepStrip, type Step } from '../components/ui/StepStrip'
 import { ModalFooter, ModalHeading } from '../components/ui/ModalShell'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { Panel } from '../components/ui/Panel'
+import { Thumb } from '../components/ui/Thumb'
+import { LightBadge } from '../components/series/lightMantine'
 import { okButtonVars } from '../components/ui/status'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 
@@ -743,7 +743,7 @@ function FolderImport() {
       {visibleCandidates.length > 0 && (
         <Panel p={0} className="table-panel">
           <Table.ScrollContainer minWidth={720}>
-            <Table className="panel-table import-table">
+            <Table className="panel-table ops-table import-table">
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th w={40}><VisuallyHidden><Trans>Select</Trans></VisuallyHidden></Table.Th>
@@ -856,13 +856,13 @@ function FolderImport() {
                           </Tooltip>
                         )}
                         {restoreLabel ? (
-                          <Badge size="xs" variant="light">
+                          <LightBadge color="var(--neutral)">
                             {restoreLabel}
-                          </Badge>
+                          </LightBadge>
                         ) : c.existingSeriesId !== null ? (
-                          <Badge size="xs" variant="light">
+                          <LightBadge color="var(--ok)">
                             <Trans>In library</Trans>
-                          </Badge>
+                          </LightBadge>
                         ) : (
                           <MatchSourceNote candidate={c} />
                         )}
@@ -872,15 +872,15 @@ function FolderImport() {
                           <Plural value={comicCount} one="# comic" other="# comics" />
                         </Text>
                         {recognizedCount < comicCount && (
-                          <Badge size="xs" color="var(--warn)" variant="light">
+                          <LightBadge color="var(--warn)">
                             <Plural value={unrecognizedCount} one="# unrecognized" other="# unrecognized" />
-                          </Badge>
+                          </LightBadge>
                         )}
                       </Table.Td>
                       <Table.Td>
                         <Group wrap="nowrap" gap="xs">
                           {match?.coverUrl && (
-                            <Image src={match.coverUrl} w={32} h={48} radius="sm" fit="cover" alt="" />
+                            <Thumb src={match.coverUrl} width={32} />
                           )}
                           {rowProgress ? (
                             <Stack gap={4} style={{ flex: 1 }}>

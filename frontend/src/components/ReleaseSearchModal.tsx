@@ -1,5 +1,5 @@
 import { errorText } from '../api/errorText'
-import { Badge, Button, Group, Modal, Stack, Table, Text, TextInput, Tooltip, VisuallyHidden } from '@mantine/core'
+import { Badge, Button, Group, Modal, Stack, Table, Text, Tooltip, VisuallyHidden } from '@mantine/core'
 import { notifications } from '../lib/toast'
 import { useEffect, useRef, useState } from 'react'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -19,7 +19,8 @@ import {
 } from '../api/upgrades'
 import { useLabel } from '../i18n-context'
 import { formatBytes } from '../format'
-import { IconArrowUp, IconSearch } from '../lib/icons'
+import { SearchInput } from './ui/SearchInput'
+import { IconArrowUp } from '../lib/icons'
 import { EmptyState } from './ui/EmptyState'
 import { ModalFooter, ModalHeading, ModalNote } from './ui/ModalShell'
 import { Panel } from './ui/Panel'
@@ -114,13 +115,13 @@ export function ReleaseSearchModal({
       ) : (
         <Stack gap="md">
           <Group gap="xs" wrap="nowrap">
-            <TextInput
+            <SearchInput
               ref={inputRef}
               style={{ flex: 1 }}
               aria-label={t`Search query`}
               placeholder={t`Search query`}
-              leftSection={<IconSearch size={16} />}
               value={input}
+              onClear={() => setInput('')}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {

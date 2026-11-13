@@ -1184,7 +1184,7 @@ export default function ReaderPage() {
     const unreadable = !isError || (error instanceof ApiError && error.status === 404)
     return (
       <div className="reader-root">
-        <Center h="100dvh">
+        <Center h="100dvh" className="reader-message">
           <Stack align="center" gap="sm">
             {isOfflineUnavailable(error) ? (
               <Stack align="center" gap={4}>
@@ -1367,7 +1367,7 @@ export default function ReaderPage() {
               seekSmooth={seekAt.smooth}
               onPastEnd={continuousPastEnd}
               hasNext={manifest.nextChapterId != null}
-              nextLabel={manifest.nextChapterLabel}
+              nextLabel={manifest.nextChapterLabel ? serverChapterLabel(manifest.nextChapterLabel) : manifest.nextChapterLabel}
               fit={fit}
               scale={prefs.scale}
               tone={tone}

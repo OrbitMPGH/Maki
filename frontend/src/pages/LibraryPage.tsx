@@ -1,3 +1,4 @@
+import { SearchInput } from '../components/ui/SearchInput'
 import { errorText } from '../api/errorText'
 import { type FormEvent, Fragment, type ReactNode, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { hasPageState, usePageState } from '../lib/pageState'
@@ -2375,12 +2376,12 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           ) : (
             <Stack className="library-toolbar" gap="sm">
               <Group className="library-toolbar-row" gap="sm" wrap="wrap">
-                <TextInput
+                <SearchInput
                   aria-label={t`Filter library…`}
                   className="library-search"
                   placeholder={t`Filter library…`}
-                  leftSection={<IconSearch size={16} />}
                   value={query}
+                  onClear={() => setQuery('')}
                   onChange={(e) => setQuery(e.currentTarget.value)}
                 />
                 <Button

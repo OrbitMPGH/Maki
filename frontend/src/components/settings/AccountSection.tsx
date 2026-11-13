@@ -6,6 +6,7 @@ import { Badge, Button, Code, Group, Modal, PasswordInput, Stack, Text, TextInpu
 import { notifications } from '../../lib/toast'
 import { IconCheck, IconCopy, IconPlus } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
+import { EmptyState } from '../ui/EmptyState'
 import { plural, t as now } from '@lingui/core/macro'
 import {
   useApiKeys,
@@ -763,9 +764,11 @@ function ApiKeysCard({ creating, onCloseCreate }: { creating: boolean; onCloseCr
       ) : (
         !creating && (
           <SettingsRowsBlock>
-            <Text size="sm" c="var(--ink-3)">
-              <Trans>No keys yet. New key makes one for a script or an app.</Trans>
-            </Text>
+            <EmptyState
+              compact
+              title={t`No keys yet`}
+              description={t`New key makes one for a script or an app.`}
+            />
           </SettingsRowsBlock>
         )
       )}
