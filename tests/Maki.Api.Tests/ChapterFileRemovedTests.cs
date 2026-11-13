@@ -52,9 +52,46 @@ public sealed class ChapterFileRemovedTests : IDisposable
         }
 
         using var scoped = _db.NewContext(Owner);
-        // The missing chapter's read is a Kavita report for something never downloaded: not counted.
-        Assert.Equal(2, ReadCounts.Read(scoped).Count(p => p.SeriesId == seriesId));
+        // The UI count takes a read whatever the file state; progression only counts chapters it had.
+        Assert.Equal(3, ReadCounts.Read(scoped).Count(p => p.SeriesId == seriesId));
         Assert.Equal(2, ReadCounts.ReadFor(scoped, Owner).Count(p => p.SeriesId == seriesId));
+    }
+
+    /// <summary>
+    /// Turning Wanted on for a removed chapter clears its stamp and turning it off again leaves it
+    /// cleared, which is the state below. The reads must survive that round trip, and a read chapter
+    /// switched off is not "left out" of the total, so read never passes it.
+    /// </summary>
+    [Fact]
+    public async Task Read_chapters_switched_off_without_a_file_still_count_inside_the_total()
+    {
+        var seriesId = _db.SeedSeries();
+        int[] read;
+        using (var db = _db.NewContext())
+        {
+            var chapters = Enumerable.Range(1, 4)
+                .Select(n => new Chapter { SeriesId = seriesId, Number = n, Wanted = false })
+                .ToList();
+            db.Chapters.AddRange(chapters);
+            db.SaveChanges();
+            read = [.. chapters.Take(3).Select(c => c.Id)];
+            db.ChapterProgress.AddRange(read.Select(id => Completed(seriesId, id)));
+            db.SaveChanges();
+        }
+
+        using var scoped = _db.NewContext(Owner);
+        var series = scoped.Series.Single(s => s.Id == seriesId);
+        var tallies = await LibraryListRows.ChapterTalliesAsync(
+            scoped.Chapters.Where(c => c.SeriesId == seriesId), ReadCounts.Read(scoped), CancellationToken.None);
+        var counts = tallies[seriesId];
+        var readCount = ReadCounts.Read(scoped).Count(p => p.SeriesId == seriesId);
+        var totals = LibraryListRows.ProgressTotals(series, counts, readCount, 0, unmonitorSpecials: false);
+
+        Assert.Equal(3, counts.Wanted);
+        Assert.Equal(1, counts.SwitchedOff);
+        Assert.Equal(3, totals.Read);
+        Assert.Equal(3, totals.Total);
+        Assert.Equal(1, totals.Skipped);
     }
 
     [Fact]

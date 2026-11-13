@@ -99,8 +99,9 @@ public static class RatingCheckpointService
             return RatingCheckpoints.None;
         }
 
+        var reads = ReadCounts.Read(db);
         var wanted = await db.Chapters.CountAsync(c => c.SeriesId == series.Id &&
-            (c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null), ct);
+            (c.Wanted || c.ChapterFileId != null || c.FileRemovedAt != null || reads.Any(p => p.ChapterId == c.Id)), ct);
         if (wanted == 0)
         {
             return RatingCheckpoints.None;
@@ -111,7 +112,7 @@ public static class RatingCheckpointService
         {
             // Position, not evidence: ReadCounts.Read includes watched chapters, the same count the
             // reader's end screen shows, so a reader who watched the anime first can still catch up.
-            var read = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == series.Id, ct);
+            var read = await reads.CountAsync(p => p.SeriesId == series.Id, ct);
             if (read >= wanted)
             {
                 candidate = RatingCheckpoints.CaughtUp;

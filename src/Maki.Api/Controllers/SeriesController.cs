@@ -954,7 +954,8 @@ public class SeriesController(
             return NotFound();
         }
 
-        var tallies = await LibraryListRows.ChapterTalliesAsync(db.Chapters.Where(c => c.SeriesId == id), ct);
+        var tallies = await LibraryListRows.ChapterTalliesAsync(
+            db.Chapters.Where(c => c.SeriesId == id), ReadCounts.Read(db), ct);
         tallies.TryGetValue(id, out var counts);
         var (total, withFile, known) = (counts?.Wanted ?? 0, counts?.WithFile ?? 0, counts?.Known ?? 0);
         var active = await db.DownloadQueue

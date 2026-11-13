@@ -24,7 +24,7 @@ internal static class LibraryListRows
         IAppSettings appSettings, string? titleLanguage, ILogger logger, int[]? ids, CancellationToken ct)
     {
         var series = await ForSeries(db.Series.AsNoTracking(), ids, s => s.Id).OrderBy(s => s.SortTitle).ToListAsync(ct);
-        var chapterCounts = await ChapterTalliesAsync(ForSeries(db.Chapters, ids, c => c.SeriesId), ct);
+        var chapterCounts = await ChapterTalliesAsync(ForSeries(db.Chapters, ids, c => c.SeriesId), ReadCounts.Read(db), ct);
 
         // Active download work per series, so cards can show "queued"/"downloading" at a glance.
         var queueCounts = await ForSeries(db.DownloadQueue, ids, q => q.SeriesId)
@@ -242,10 +242,15 @@ internal static class LibraryListRows
     /// <c>HighestKeptMain</c> leaves those out, so switching off the last chapter lowers the
     /// progress total too.
     /// </para>
+    /// <para>
+    /// A chapter in <paramref name="reads"/> is never switched off: it moves to <c>Wanted</c>, so a
+    /// read count taken from the same rows cannot pass the total.
+    /// </para>
     /// </summary>
     internal static async Task<Dictionary<int, ChapterTallies>> ChapterTalliesAsync(
-        IQueryable<Chapter> chapters, CancellationToken ct) =>
-        await chapters
+        IQueryable<Chapter> chapters, IQueryable<ChapterProgress> reads, CancellationToken ct)
+    {
+        var tallies = await chapters
             .GroupBy(c => c.SeriesId)
             .Select(g => new ChapterTallies(
                 g.Key,
@@ -266,6 +271,34 @@ internal static class LibraryListRows
                 g.Count(c => !c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null &&
                              c.Number != null && c.Number != (decimal)(long)c.Number)))
             .ToDictionaryAsync(x => x.SeriesId, ct);
+
+        var readOff = await chapters
+            .Where(c => !c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null &&
+                        reads.Any(p => p.ChapterId == c.Id))
+            .Select(c => new { c.SeriesId, c.Number })
+            .ToListAsync(ct);
+        foreach (var group in readOff.GroupBy(c => c.SeriesId))
+        {
+            if (!tallies.TryGetValue(group.Key, out var t))
+            {
+                continue;
+            }
+
+            var count = group.Count();
+            var whole = group.Where(c => c.Number is { } n && !Chapter.IsSpecial(n))
+                .Select(c => (double?)(long)c.Number!.Value)
+                .Max();
+            tallies[group.Key] = t with
+            {
+                Wanted = t.Wanted + count,
+                SwitchedOff = t.SwitchedOff - count,
+                SwitchedOffSpecials = t.SwitchedOffSpecials - group.Count(c => Chapter.IsSpecial(c.Number)),
+                HighestKeptMain = new[] { t.HighestKeptMain, whole }.Max(),
+            };
+        }
+
+        return tallies;
+    }
 
     /// <summary>
     /// Per series, how many of the read chapters <see cref="ReadChapterCountsBySeriesAsync"/> counts

@@ -67,13 +67,16 @@ public static class SeriesCompletion
         }
 
         var chapters = db.Chapters.IgnoreQueryFilters().Where(c => c.SeriesId == series.Id);
+        var seen = ReadCounts.SeenFor(db, userId);
         var counts = await chapters
             .GroupBy(_ => 1)
             .Select(g => new
             {
                 Kept = g.Count(c => c.ChapterFileId != null || c.FileRemovedAt != null),
-                Waiting = g.Count(c => c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null),
-                LeftOut = g.Count(c => !c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null),
+                Waiting = g.Count(c => c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null &&
+                                       !seen.Any(p => p.ChapterId == c.Id)),
+                LeftOut = g.Count(c => !c.Wanted && c.ChapterFileId == null && c.FileRemovedAt == null &&
+                                       !seen.Any(p => p.ChapterId == c.Id)),
             })
             .FirstOrDefaultAsync(ct);
         if (counts is not { Kept: > 0, Waiting: 0 })
@@ -81,7 +84,6 @@ public static class SeriesCompletion
             return null;
         }
 
-        var seen = ReadCounts.SeenFor(db, userId);
         var readingId = reading?.Id;
         if (await chapters.AnyAsync(c => (c.ChapterFileId != null || c.FileRemovedAt != null) &&
                                          c.Id != readingId && !seen.Any(p => p.ChapterId == c.Id), ct))
@@ -127,7 +129,7 @@ public static class SeriesCompletion
         }
 
         var tallies = await LibraryListRows.ChapterTalliesAsync(
-            db.Chapters.IgnoreQueryFilters().Where(c => c.SeriesId == series.Id), ct);
+            db.Chapters.IgnoreQueryFilters().Where(c => c.SeriesId == series.Id), ReadCounts.SeenFor(db, userId), ct);
         return LibraryListRows.ProgressTotals(
             series, tallies.GetValueOrDefault(series.Id), read, readSpecials, unmonitorSpecials);
     }

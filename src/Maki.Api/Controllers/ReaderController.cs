@@ -342,7 +342,10 @@ public class ReaderController(
 
     private async Task<EndingState> EndingAsync(int seriesId, int? next, CancellationToken ct)
     {
-        var readCount = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == seriesId, ct);
+        // Out of the chapters on disk, which is what ChapterCount counts: this screen's unread figure is
+        // what is left to read here, so a chapter read without a file stays out of it.
+        var readCount = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == seriesId &&
+            db.Chapters.Any(c => c.Id == p.ChapterId && (c.ChapterFileId != null || c.FileRemovedAt != null)), ct);
 
         // WantedCount is how long the series actually is, which the downloaded count can't say.
         // Same rule the series page's denominator uses.

@@ -48,11 +48,12 @@ public static class SeriesProgressScope
         // What the switches actually took off: a MangaBaka total above the rows keeps its floor.
         var mainOff = MainTotal(series, mangaBaka, Math.Max(0, known - specials), highestMain) - main;
         var includedSpecials = countSpecials ? Math.Max(0, specials - off.Specials) : 0;
+        var total = main + includedSpecials;
 
         return new Totals(
-            main + includedSpecials,
+            total,
             Math.Max(0, had - (countSpecials ? 0 : specialsHad)),
-            read is { } r ? Math.Max(0, r - (countSpecials ? 0 : readSpecials)) : null,
+            read is { } r ? Math.Clamp(r - (countSpecials ? 0 : readSpecials), 0, total) : null,
             countSpecials,
             specials,
             Math.Max(0, mainOff) + (countSpecials ? off.Specials : 0),
