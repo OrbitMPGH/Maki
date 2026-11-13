@@ -6425,11 +6425,13 @@ button.site-chip:hover {
 .series-hero-alt + .hero-meta {
   margin-top: 6px;
 }
+/* The site chips always sit under the score. Beside it they only fitted when the score had no
+   word, so the header changed shape from one series to the next. */
 .hero-scoreline {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 22px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
   margin-top: 16px;
 }
 .hero-chips {
