@@ -315,6 +315,48 @@ export const VolumeReleasesOff: Story = {
   },
 }
 
+export const VolumeReleasesMissingSearchWithVolumeSearchOff: Story = {
+  render: () => <VolumeReleasesSection />,
+  parameters: {
+    msw: settingsMsw(http.get(api('/settings/upgrades'), () => HttpResponse.json({ ...upgradeSettings, volumeSearch: false }))),
+  },
+  play: async ({ canvas }) => {
+    const missing = await canvas.findByRole('switch', { name: /^Search torrents for chapters no source has/ })
+    await waitFor(() => expect(missing).toBeChecked())
+    await expect(missing).toBeEnabled()
+    await expect(canvas.getByRole('textbox', { name: 'Minimum seeders' })).toBeEnabled()
+  },
+}
+
+const onUpgradeSave = fn()
+
+export const VolumeReleasesSaveMinimumSeeders: Story = {
+  render: () => <VolumeReleasesSection />,
+  parameters: {
+    msw: settingsMsw(
+      http.put(api('/settings/upgrades'), async ({ request }) => {
+        const body = await request.json()
+        onUpgradeSave(body)
+        return HttpResponse.json(body)
+      }),
+    ),
+  },
+  beforeEach: () => onUpgradeSave.mockClear(),
+  play: async ({ canvas, userEvent }) => {
+    const field = await canvas.findByRole('textbox', { name: 'Minimum seeders' })
+    await waitFor(() => expect(field).toHaveValue('1'))
+    await userEvent.clear(field)
+    await userEvent.type(field, '5')
+    await userEvent.click(await canvas.findByRole('switch', { name: /^Search torrents for chapters no source has/ }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Save' }))
+    await waitFor(() =>
+      expect(onUpgradeSave).toHaveBeenCalledWith(
+        expect.objectContaining({ torrentMinSeeders: 5, missingSearch: false }),
+      ),
+    )
+  },
+}
+
 export const Indexer: Story = {
   render: () => <IndexerSection />,
   play: async ({ canvas }) => {
@@ -360,5 +402,104 @@ export const IndexerSwitchBackend: Story = {
     await userEvent.click(await canvas.findByLabelText('Indexer', { selector: 'input' }))
     await userEvent.click(await within(document.body).findByRole('option', { name: 'Jackett' }))
     await expect(await canvas.findByText(/Save to switch to Jackett/)).toBeVisible()
+  },
+}
+
+const afterSeeding = (...overrides: Parameters<typeof settingsMsw>) =>
+  settingsMsw(
+    ...overrides,
+    http.get(api('/settings/download'), () => HttpResponse.json({ ...downloadSettings, removeCompleted: 'afterseeding' })),
+  )
+
+export const DownloadClientRemovesAfterSeeding: Story = {
+  render: () => <DownloadClientCard />,
+  parameters: { msw: afterSeeding() },
+  play: async ({ canvas }) => {
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Seed ratio' })).toHaveValue('2'))
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Seeding time (minutes)' })).toHaveValue('4320'))
+    await expect(canvas.getByRole('radio', { name: 'After seeding' })).toBeChecked()
+    await expect(canvas.getByRole('textbox', { name: 'Give up after (hours)' })).toHaveValue('1')
+  },
+}
+
+export const DownloadClientRemovesRightAfterImport: Story = {
+  render: () => <DownloadClientCard />,
+  parameters: {
+    msw: settingsMsw(
+      http.get(api('/settings/download'), () => HttpResponse.json({ ...downloadSettings, removeCompleted: 'afterimport' })),
+    ),
+  },
+  play: async ({ canvas }) => {
+    await waitFor(() => expect(canvas.getByRole('radio', { name: 'Right after import' })).toBeChecked())
+    await expect(canvas.queryByRole('textbox', { name: 'Seed ratio' })).toBeNull()
+  },
+}
+
+const onLifecycleSave = fn()
+
+export const DownloadClientSeedTargetSaves: Story = {
+  render: () => <DownloadClientCard />,
+  parameters: {
+    msw: afterSeeding(
+      http.put(api('/settings/downloadclient/lifecycle'), async ({ request }) => {
+        const body = await request.json()
+        onLifecycleSave(body)
+        return HttpResponse.json(body)
+      }),
+    ),
+  },
+  beforeEach: () => onLifecycleSave.mockClear(),
+  play: async ({ canvas, userEvent }) => {
+    const ratio = await canvas.findByRole('textbox', { name: 'Seed ratio' })
+    await waitFor(() => expect(ratio).toHaveValue('2'))
+    await userEvent.clear(ratio)
+    await userEvent.type(ratio, '1.5')
+    await expect(await canvas.findByText('Unsaved')).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(onLifecycleSave).toHaveBeenCalledWith({ stallHours: 1, seedRatio: 1.5, seedMinutes: 4320 }))
+  },
+}
+
+export const DownloadClientWithoutSeedTargets: Story = {
+  render: () => <DownloadClientCard />,
+  parameters: {
+    msw: afterSeeding(
+      http.get(api('/settings/downloadclient/lifecycle'), () =>
+        HttpResponse.json({ stallHours: 0, seedRatio: null, seedMinutes: null })),
+      http.post(api('/settings/downloadclient/lifecycle/import'), () =>
+        HttpResponse.json({ seedRatio: null, seedMinutes: null, found: false })),
+    ),
+  },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByText('With no target, torrents stay in the client after import.')).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('textbox', { name: 'Give up after (hours)' })).toHaveValue('0'))
+    await userEvent.click(canvas.getByRole('button', { name: 'Read from qBittorrent' }))
+    await expect(
+      await within(document.body).findByText('qBittorrent has no seed limits set, so there are no targets'),
+    ).toBeVisible()
+  },
+}
+
+export const DownloadClientTransmissionHasNoSeedTime: Story = {
+  render: () => <DownloadClientCard />,
+  parameters: {
+    msw: afterSeeding(
+      http.get(api('/settings/downloadclient'), () =>
+        HttpResponse.json({ kind: 'transmission', url: 'http://192.168.1.20:9091', username: null, password: null, label: null, pathMapFrom: null, pathMapTo: null }),
+      ),
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Transmission has no seeding time limit to read.')).toBeVisible()
+    await expect(canvas.getByRole('button', { name: 'Read from Transmission' })).toBeVisible()
+  },
+}
+
+export const DownloadClientOpensDeclinedReleases: Story = {
+  render: () => <DownloadClientCard />,
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Declined releases' }))
+    const modal = within(await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'Declined releases' }))
+    await expect(await modal.findByText('Lanterns Over Kasumi v01-10 (2023) (Digital) (Paperlamp)')).toBeVisible()
   },
 }

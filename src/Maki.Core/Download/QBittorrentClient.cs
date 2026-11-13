@@ -20,7 +20,17 @@ public class QBittorrentClient : ITorrentClient
         [property: JsonPropertyName("progress")] double Progress,
         [property: JsonPropertyName("content_path")] string ContentPath,
         [property: JsonPropertyName("added_on")] long AddedOn,
-        [property: JsonPropertyName("category")] string? Category = null);
+        [property: JsonPropertyName("category")] string? Category = null,
+        [property: JsonPropertyName("ratio")] double? Ratio = null,
+        [property: JsonPropertyName("seeding_time")] long? SeedingTime = null,
+        [property: JsonPropertyName("num_seeds")] int? Seeds = null,
+        [property: JsonPropertyName("num_leechs")] int? Leechers = null);
+
+    private sealed record QbtPreferences(
+        [property: JsonPropertyName("max_ratio_enabled")] bool MaxRatioEnabled = false,
+        [property: JsonPropertyName("max_ratio")] double MaxRatio = -1,
+        [property: JsonPropertyName("max_seeding_time_enabled")] bool MaxSeedingTimeEnabled = false,
+        [property: JsonPropertyName("max_seeding_time")] int MaxSeedingTime = -1);
 
     private readonly SemaphoreSlim _loginLock = new(1, 1);
     private (string BaseUrl, string Username)? _authenticatedFor;
@@ -164,6 +174,24 @@ public class QBittorrentClient : ITorrentClient
             return TorrentRemoval.Removed;
         }, ct);
 
+    /// <summary>
+    /// The "when ratio reaches" and "when total seeding time reaches" limits from the BitTorrent options. A limit
+    /// that is switched off, or set to -1 (unlimited), is no limit.
+    /// </summary>
+    public Task<TorrentSeedLimits> GetSeedLimitsAsync(TorrentClientSettings settings, CancellationToken ct = default) =>
+        GuardAsync(async () =>
+        {
+            await EnsureLoginAsync(settings, force: false, ct);
+            using var response = await SendAuthenticatedAsync(settings, HttpMethod.Get, "app/preferences", null, ct);
+            response.EnsureSuccessStatusCode();
+            var prefs = await response.Content.ReadFromJsonAsync<QbtPreferences>(cancellationToken: ct);
+            return prefs is null
+                ? TorrentSeedLimits.None
+                : new TorrentSeedLimits(
+                    prefs.MaxRatioEnabled && prefs.MaxRatio >= 0 ? Math.Round(prefs.MaxRatio, 3) : null,
+                    prefs.MaxSeedingTimeEnabled && prefs.MaxSeedingTime >= 0 ? prefs.MaxSeedingTime : null);
+        }, ct);
+
     private async Task<QbtTorrent?> FindTorrentAsync(TorrentClientSettings settings, string infoHash, CancellationToken ct)
     {
         using var response = await SendAuthenticatedAsync(
@@ -200,7 +228,10 @@ public class QBittorrentClient : ITorrentClient
             DateTimeOffset.FromUnixTimeSeconds(t.AddedOn),
             errored,
             null,
-            checking || moving || t.State is "queuedDL" or "pausedDL" or "stoppedDL" or "allocating");
+            checking || moving || t.State is "queuedDL" or "pausedDL" or "stoppedDL" or "allocating",
+            t.Seeds is null && t.Leechers is null ? null : (t.Seeds ?? 0) + (t.Leechers ?? 0),
+            t.Ratio is { } ratio && ratio >= 0 ? ratio : null,
+            t.SeedingTime is { } seconds && seconds >= 0 ? TimeSpan.FromSeconds(seconds) : null);
     }
 
     /// <summary>A transport failure, or a reply that is not qBittorrent's API, becomes <see cref="TorrentClientFailure.Unreachable"/>.</summary>

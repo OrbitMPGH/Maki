@@ -8,6 +8,7 @@ import {
   failedItems,
   longTitleItem,
   pausedAll,
+  pausedSeriesAndDisk,
   pausedSources,
   proposals,
   queueItems,
@@ -134,6 +135,33 @@ export const SourcesPaused: Story = {
   parameters: { msw: [http.get(api('/queue/pause'), () => HttpResponse.json(pausedSources))] },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('Asura Scans paused')).toBeVisible()
+  },
+}
+
+export const SeriesPausedAndDiskLow: Story = {
+  parameters: { msw: [http.get(api('/queue/pause'), () => HttpResponse.json(pausedSeriesAndDisk))] },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText(/^Downloads for .+ paused$/)).toBeVisible()
+    await expect(await canvas.findByText(/Downloads into \/mnt\/ssd\/manga wait for disk space/)).toBeVisible()
+    await waitFor(() => expect(canvas.getAllByText('Waiting for disk space').length).toBeGreaterThan(0))
+    await waitFor(() => expect(canvas.getAllByRole('button', { name: 'Resume downloads for this series' }).length).toBeGreaterThan(0))
+  },
+}
+
+export const TimeLeft: Story = {
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Time left')).toBeVisible()
+    await expect(await canvas.findByText('About 10m left')).toBeVisible()
+  },
+}
+
+export const TimeLeftHiddenWithoutHistory: Story = {
+  parameters: {
+    msw: [http.get(api('/queue/eta'), () => HttpResponse.json({ queueSeconds: null, series: [], held: false }))],
+  },
+  play: async ({ canvas }) => {
+    await waitFor(() => expect(canvas.getAllByText('Lanterns Over Kasumi').length).toBeGreaterThan(0))
+    await expect(canvas.queryByText('Time left')).not.toBeInTheDocument()
   },
 }
 

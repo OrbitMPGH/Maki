@@ -37,7 +37,8 @@ import { ConnectionSettingsCard } from '../../components/ConnectionSettingsCard'
 import { IndexerFieldRow } from '../../components/settings/IndexerForm'
 import { indexerBackendName, useIndexerForm } from '../../components/settings/useIndexerForm'
 import { useDownloadClientFields } from '../../components/settings/downloadClientFields'
-import { SettingsHelp } from '../../components/settings/SettingsHelp'
+import { TorrentLifecycleFields } from '../../components/settings/TorrentLifecycleFields'
+import { useTorrentLifecycleForm } from '../../components/settings/useTorrentLifecycleForm'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 import { languageName } from '../../api/titles'
 
@@ -466,70 +467,6 @@ export function ReadFileCleanupSection() {
   )
 }
 
-/** The finished-torrent switches inside the download client card. Part of the download settings record, saved on change. */
-function FinishedTorrentFields() {
-  const { t } = useLingui()
-  const { data: settings } = useDownloadSettings()
-  const save = useSaveDownloadSettings()
-  const pending = save.isPending ? save.variables : undefined
-  const useHardlinks = pending?.useHardlinks ?? settings?.useHardlinks ?? true
-  const removeCompleted = (pending?.removeCompleted ?? settings?.removeCompleted ?? 'never') === 'afterimport'
-  const removeData = pending?.removeData ?? settings?.removeData ?? true
-
-  return (
-    <Stack gap={0} mt="lg">
-      <Text fw={500} size="sm" mb={4}>
-        <Trans>Finished torrents</Trans>
-      </Text>
-      <SettingsHelp mb="xs">
-        <Trans>Needs the download folder and library on one filesystem, otherwise Maki copies.</Trans>
-      </SettingsHelp>
-      <Switch
-        label={t`Hardlink imported torrents when possible`}
-        checked={useHardlinks}
-        disabled={!settings}
-        onChange={(e) => {
-          save.mutate({ useHardlinks: e.currentTarget.checked }, { onSuccess: savedToast })
-        }}
-      />
-      <Switch
-        mt="md"
-        label={t`Remove torrents from the download client after import`}
-        checked={removeCompleted}
-        disabled={!settings}
-        onChange={(e) => {
-          save.mutate(
-            { removeCompleted: e.currentTarget.checked ? 'afterimport' : 'never' },
-            { onSuccess: savedToast },
-          )
-        }}
-      />
-      <Group gap={8} wrap="nowrap" align="flex-start">
-        <Box
-          aria-hidden
-          w={10}
-          h={22}
-          ml={18}
-          style={{
-            borderInlineStart: '2px solid var(--border-strong)',
-            borderBottom: '2px solid var(--border-strong)',
-            borderEndStartRadius: 4,
-          }}
-        />
-        <Switch
-          mt={10}
-          label={t`Also delete the downloaded files`}
-          checked={removeData}
-          disabled={!settings || !removeCompleted}
-          onChange={(e) => {
-            save.mutate({ removeData: e.currentTarget.checked }, { onSuccess: savedToast })
-          }}
-        />
-      </Group>
-    </Stack>
-  )
-}
-
 export function FlareSolverrCard() {
   const { t } = useLingui()
   return (
@@ -545,13 +482,15 @@ export function FlareSolverrCard() {
 export function DownloadClientCard() {
   const { t } = useLingui()
   const fields = useDownloadClientFields()
+  const lifecycle = useTorrentLifecycleForm()
   return (
     <ConnectionSettingsCard
       name="downloadclient"
       title={t`Download client`}
       fields={fields}
+      extra={lifecycle.group}
     >
-      <FinishedTorrentFields />
+      <TorrentLifecycleFields form={lifecycle} />
     </ConnectionSettingsCard>
   )
 }
@@ -743,10 +682,14 @@ export function VolumeReleasesSection() {
   const [proposalExpiryDays, setProposalExpiryDays] = useState<number>(30)
   const [autoApprove, setAutoApprove] = useState(false)
   const [autoApproveMb, setAutoApproveMb] = useState<number>(12288)
+  const [missingSearch, setMissingSearch] = useState(true)
+  const [minSeeders, setMinSeeders] = useState<number>(1)
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useSliceSync(
     settings && {
+      missingSearch: settings.missingSearch,
+      torrentMinSeeders: settings.torrentMinSeeders,
       autoApprove: settings.autoApprove,
       autoApproveMaxBytes: settings.autoApproveMaxBytes,
       volumeSearch: settings.volumeSearch,
@@ -763,6 +706,8 @@ export function VolumeReleasesSection() {
       setProposalExpiryDays(slice.proposalExpiryDays)
       setAutoApprove(slice.autoApprove)
       setAutoApproveMb(slice.autoApproveMaxBytes / BYTES_PER_MB)
+      setMissingSearch(slice.missingSearch)
+      setMinSeeders(slice.torrentMinSeeders)
     },
     discarded,
   )
@@ -778,7 +723,9 @@ export function VolumeReleasesSection() {
       Number(volumeSearchesPerRun) !== settings.volumeSearchesPerRun ||
       Number(proposalExpiryDays) !== settings.proposalExpiryDays ||
       autoApprove !== settings.autoApprove ||
-      autoApproveBytes !== settings.autoApproveMaxBytes)
+      autoApproveBytes !== settings.autoApproveMaxBytes ||
+      missingSearch !== settings.missingSearch ||
+      Number(minSeeders) !== settings.torrentMinSeeders)
 
   return (
     <SettingsSection
@@ -798,6 +745,8 @@ export function VolumeReleasesSection() {
             proposalExpiryDays: Number(proposalExpiryDays),
             autoApprove,
             autoApproveMaxBytes: autoApproveBytes,
+            missingSearch,
+            torrentMinSeeders: Number(minSeeders),
           },
           { onSuccess: savedToast },
         )
@@ -808,6 +757,23 @@ export function VolumeReleasesSection() {
         description={t`Also needs the daily scan on.`}
         checked={volumeSearch}
         onChange={(e) => setVolumeSearch(e.currentTarget.checked)}
+        mb="md"
+      />
+      <Switch
+        label={t`Search torrents for chapters no source has`}
+        description={t`For monitored series with wanted chapters that none of their sources list, such as licensed titles a site took down, or series with no source at all. Each series is searched at most once a week, a few series at a time. Works with the daily scan off. Chapters a source lists keep downloading from it.`}
+        checked={missingSearch}
+        onChange={(e) => setMissingSearch(e.currentTarget.checked)}
+        mb="md"
+      />
+      <SettingsNumberInput
+        label={t`Minimum seeders`}
+        description={t`Releases with fewer seeders are never grabbed or approved on their own. You can still grab them from the release search.`}
+        min={1}
+        max={10000}
+        decimalScale={0}
+        value={minSeeders}
+        onChange={setMinSeeders}
         mb="md"
       />
       <Group grow mb="md" align="flex-start">

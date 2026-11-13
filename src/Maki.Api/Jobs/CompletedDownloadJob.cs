@@ -43,7 +43,8 @@ public class CompletedDownloadJob(
     IUserLocaleResolver locales,
     ILogger<CompletedDownloadJob> logger,
     TorrentPollState? pollState = null,
-    IAppSettings? settings = null) : IJob
+    IAppSettings? settings = null,
+    IStalledDownloadResearch? research = null) : IJob
 {
     /// <summary>How long a torrent whose hash is known may be missing from the client before its row fails.</summary>
     internal static readonly TimeSpan MissingTorrentGrace = TimeSpan.FromHours(6);
@@ -56,10 +57,20 @@ public class CompletedDownloadJob(
 
     internal const string ClientErrorKey = "error.download.torrentClientError";
 
-    /// <summary>How long a torrent the client is actively downloading may go without progress before its row fails.</summary>
-    internal static readonly TimeSpan StallTimeout = TimeSpan.FromHours(1);
+    /// <summary>
+    /// Hours a torrent the client is downloading may go without progress, or without a connected seed or
+    /// peer, before its row fails, while <see cref="SettingKeys.DownloadClientStallHours"/> is unset.
+    /// </summary>
+    public const int DefaultStallHours = 1;
+
+    public const int MaxStallHours = 168;
+
+    /// <summary>How often a running stall clock is written back while the torrent keeps moving.</summary>
+    internal static readonly TimeSpan StallClockWriteEvery = TimeSpan.FromMinutes(5);
 
     internal const string StalledKey = "error.download.torrentStalled";
+
+    internal const string NoPeersKey = "error.download.torrentNoPeers";
 
     internal const string HeldElsewhereKey = "error.download.torrentHeldElsewhere";
 
@@ -75,10 +86,10 @@ public class CompletedDownloadJob(
     internal static readonly ConcurrentDictionary<int, byte> ErrorLogged = new();
 
     /// <summary>
-    /// Per row, the furthest progress seen and when it was first reached. In memory like
-    /// <see cref="MissingSince"/>, so a restart gives every torrent a fresh hour.
+    /// Per row, the furthest progress seen in this process. The clock itself is on the row
+    /// (<see cref="DownloadQueueItem.LastProgressAt"/>), so a restart does not give a dead torrent a fresh start.
     /// </summary>
-    internal static readonly ConcurrentDictionary<int, (double Progress, DateTime Since)> ProgressSince = new();
+    internal static readonly ConcurrentDictionary<int, double> ProgressSeen = new();
 
     public async Task Execute(IJobExecutionContext context)
     {
@@ -149,10 +160,12 @@ public class CompletedDownloadJob(
             ErrorLogged.TryRemove(gone, out _);
         }
 
-        foreach (var gone in ProgressSince.Keys.Where(id => pending.All(q => q.Id != id)).ToList())
+        foreach (var gone in ProgressSeen.Keys.Where(id => pending.All(q => q.Id != id)).ToList())
         {
-            ProgressSince.TryRemove(gone, out _);
+            ProgressSeen.TryRemove(gone, out _);
         }
+
+        var stallTimeout = await StallTimeoutAsync(settings, ct);
 
         // Hashes already tied to any torrent item — including completed and failed ones,
         // whose torrents keep seeding in the client. Excluding only pending items let a
@@ -339,12 +352,14 @@ public class CompletedDownloadJob(
             item.PagesTotal = 100;
             item.PagesDone = (int)(torrent.Progress * 100);
 
-            if (IsStalled(item, torrent, DateTime.UtcNow))
+            if (StallOf(item, torrent, previousPagesDone, DateTime.UtcNow, stallTimeout) is { } stall)
             {
-                logger.LogWarning("Torrent '{Title}' made no progress in {Client} for {Minutes} min; failing it",
-                    item.Title, clientName, (int)StallTimeout.TotalMinutes);
+                logger.LogWarning(stall == NoPeersKey
+                        ? "Torrent '{Title}' had no seed or peer connected in {Client} for {Hours} h; failing it"
+                        : "Torrent '{Title}' made no progress in {Client} for {Hours} h; failing it",
+                    item.Title, clientName, (int)stallTimeout!.Value.TotalHours);
                 item.Status = QueueStatus.Failed;
-                item.SetError(StalledKey);
+                item.SetError(stall);
                 stalled.Add((item, torrent));
                 await BroadcastAsync(item);
                 announcements.Add((item, false));
@@ -390,6 +405,12 @@ public class CompletedDownloadJob(
             await RemoveStalledAsync(item, torrent, client, pathMap, ct);
         }
 
+        // Declined and saved above, so the search passes over the release that just stalled.
+        foreach (var seriesId in stalled.Select(s => s.Item.SeriesId).Distinct())
+        {
+            research?.Request(seriesId);
+        }
+
         foreach (var (announced, parked) in announcements)
         {
             try
@@ -411,32 +432,70 @@ public class CompletedDownloadJob(
     /// one would only hide it after the fix. An allow-list, so a key added later blocks nothing.
     /// </summary>
     internal static bool BlamesRelease(string? errorKey) =>
-        errorKey is "error.download.torrentMissing" or "error.download.torrentRemoved" or StalledKey
+        errorKey is "error.download.torrentMissing" or "error.download.torrentRemoved" or StalledKey or NoPeersKey
             or "error.torrentImport.noComicsEmpty" or "error.torrentImport.noComicsOfType";
 
-    /// <summary>
-    /// Whether the client has been downloading the torrent for <see cref="StallTimeout"/> without it
-    /// getting any further. A torrent the client holds (queued, paused, checking), one in error, a
-    /// finished one and one parked for an import decision restart the clock instead.
-    /// </summary>
-    internal static bool IsStalled(DownloadQueueItem item, ClientTorrent torrent, DateTime now)
+    /// <summary><see cref="SettingKeys.DownloadClientStallHours"/>; unset or unreadable is the default, 0 is off.</summary>
+    public static int StallHours(string? value) =>
+        int.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture,
+            out var hours) && hours >= 0
+            ? Math.Min(hours, MaxStallHours)
+            : DefaultStallHours;
+
+    /// <summary>Null when stall handling is off.</summary>
+    internal static async Task<TimeSpan?> StallTimeoutAsync(IAppSettings? settings, CancellationToken ct)
     {
-        if (torrent.IsComplete || torrent.IsErrored || torrent.IsHeld || item.Status == QueueStatus.AwaitingImport)
-        {
-            ProgressSince.TryRemove(item.Id, out _);
-            return false;
-        }
-
-        var seen = ProgressSince.AddOrUpdate(item.Id, (torrent.Progress, now),
-            (_, previous) => torrent.Progress > previous.Progress ? (torrent.Progress, now) : previous);
-        if (now - seen.Since < StallTimeout)
-        {
-            return false;
-        }
-
-        ProgressSince.TryRemove(item.Id, out _);
-        return true;
+        var hours = settings is null
+            ? DefaultStallHours
+            : StallHours(await settings.GetAsync(SettingKeys.DownloadClientStallHours, ct));
+        return hours > 0 ? TimeSpan.FromHours(hours) : null;
     }
+
+    /// <summary>
+    /// The error key a torrent stalled with, or null. Stalled means the client has been downloading it for
+    /// <paramref name="timeout"/> with no seed or peer connected (a magnet still fetching its metadata
+    /// included), or without getting any further. A torrent the client holds (queued, paused, checking), one
+    /// in error, a finished one and one parked for an import decision stop the clock, and it starts again
+    /// from the next poll that sees the torrent downloading. The first look in a process compares against
+    /// the percentage on the row, so a torrent that moved while Maki was down is not failed for it.
+    /// </summary>
+    internal static string? StallOf(DownloadQueueItem item, ClientTorrent torrent, int previousPercent, DateTime now,
+        TimeSpan? timeout)
+    {
+        if (timeout is not { } limit || torrent.IsComplete || torrent.IsErrored || torrent.IsHeld ||
+            item.Status == QueueStatus.AwaitingImport)
+        {
+            ProgressSeen.TryRemove(item.Id, out _);
+            item.LastProgressAt = null;
+            item.LastPeerSeenAt = null;
+            return null;
+        }
+
+        var progressed = ProgressSeen.TryGetValue(item.Id, out var seen)
+            ? torrent.Progress > seen
+            : (int)(torrent.Progress * 100) > previousPercent;
+        ProgressSeen.AddOrUpdate(item.Id, torrent.Progress, (_, previous) => Math.Max(previous, torrent.Progress));
+        item.LastProgressAt = StallClock(item.LastProgressAt, progressed, now);
+        // Progress is proof of peers, including progress made while Maki was down, when a first look
+        // after a restart may still catch the client reconnecting with nobody connected.
+        item.LastPeerSeenAt = torrent.Peers is { } peers
+            ? StallClock(item.LastPeerSeenAt, peers > 0 || progressed, now)
+            : null;
+
+        var stall = torrent.Peers == 0 && now - item.LastPeerSeenAt >= limit ? NoPeersKey
+            : now - item.LastProgressAt >= limit ? StalledKey
+            : null;
+        if (stall is not null)
+        {
+            ProgressSeen.TryRemove(item.Id, out _);
+        }
+
+        return stall;
+    }
+
+    /// <summary>Starts a stopped clock, and moves a running one to now on activity, at most every few minutes.</summary>
+    private static DateTime StallClock(DateTime? since, bool active, DateTime now) =>
+        since is not { } at || (active && now - at >= StallClockWriteEvery) ? now : at;
 
     /// <summary>
     /// Takes a stalled torrent out of the client so it does not finish unseen behind a Failed row. Only one

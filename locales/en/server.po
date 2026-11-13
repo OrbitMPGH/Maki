@@ -1349,6 +1349,11 @@ msgstr "The original location is outside the root folder or behind a link, so th
 msgid "error.release.grabFailed"
 msgstr "Could not send the release to the download client. Details are in the server log."
 
+#. A torrent grab refused because the series' root folder has less free space than its threshold.
+#: src/Maki.Api/Services/DownloadDiskHold.cs
+msgid "error.release.diskLow"
+msgstr "The library folder for this series is low on free space, so new downloads into it are on hold. Free some space or lower the threshold in Settings → Library."
+
 #: src/Maki.Api/Services/ReleaseService.cs
 msgid "error.release.noDownloadLink"
 msgstr "This release has no download link"
@@ -1472,6 +1477,11 @@ msgstr "Unknown user"
 #: src/Maki.Api/Controllers/SeriesRequestsController.cs
 msgid "error.requests.unknownKind"
 msgstr "Unknown request kind"
+
+#. A root folder's free-space threshold for holding downloads was below zero.
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.minFreeNegative"
+msgstr "The free space to keep must be zero or more"
 
 #: src/Maki.Api/Controllers/RootFolderController.cs
 msgid "error.rootFolder.alreadyExists"
@@ -2332,6 +2342,21 @@ msgstr "Download timeout must be 0 (no limit) or between {min} and {max} minutes
 msgid "error.settings.bulkHoldRange"
 msgstr "Bulk hold must be between 0 (off) and {max} chapters"
 
+#. The stall limit for torrents, in hours. 0 turns stall handling off.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.stallHoursRange"
+msgstr "The stall limit must be between 0 (off) and {max} hours"
+
+#. The seed ratio a torrent must reach before Maki removes it from the download client.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.seedRatioRange"
+msgstr "The seed ratio must be between 0 and {max}"
+
+#. The seeding time a torrent must reach before Maki removes it from the download client, in minutes.
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.seedMinutesRange"
+msgstr "The seeding time must be between 0 and {max} minutes"
+
 #. {mode} is the value that was sent and is never translated.
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.torrentRemovalModeInvalid"
@@ -2381,6 +2406,10 @@ msgstr "Volume searches per run must be between {min} and {max}"
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.upgradesProposalExpiryDaysRange"
 msgstr "Proposal expiry must be between {min} and {max} days"
+
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.upgradesTorrentMinSeedersRange"
+msgstr "Minimum seeders must be between {min} and {max}"
 
 #: src/Maki.Api/Controllers/SettingsController.cs
 msgid "error.settings.backupsToKeepRange"
@@ -3605,11 +3634,18 @@ msgstr "The torrent is in the download client, but another download for {series}
 msgid "error.download.torrentRemoved"
 msgstr "The torrent is no longer in the download client"
 
-#. The download client was downloading this torrent but it made no progress for an hour, usually because
-#. nobody is seeding it. Maki takes a torrent it added out of the client and leaves the release out of later searches.
+#. The download client was downloading this torrent but it made no progress for as long as the stall limit in the
+#. download client settings allows (an hour unless changed). Maki takes a torrent it added out of the client, leaves
+#. the release out of later searches and looks for another one.
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
 msgid "error.download.torrentStalled"
-msgstr "The torrent made no progress for an hour"
+msgstr "The torrent made no progress within the stall limit"
+
+#. The download client was downloading this torrent but no seed or peer was connected to it for as long as the
+#. stall limit allows. Handled like a torrent that made no progress.
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "error.download.torrentNoPeers"
+msgstr "No seeds or peers connected to the torrent within the stall limit"
 
 #. The download client has held this torrent in an error state for half an hour. The client's own message follows.
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs

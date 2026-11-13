@@ -111,8 +111,10 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
     /// The download pause changed, by a person or because a resume time passed. Goes to everyone
     /// who may pause and resume (<see cref="MakiPermission.ManageDownloadQueue"/>), not just admins,
     /// so their pause controls do not wait for the poll. Rare enough to resolve the audience each time.
+    /// It carries nothing: the state names series and root folders each manager may or may not see,
+    /// so every client refetches <c>GET queue/pause</c> under its own scope.
     /// </summary>
-    public async Task QueuePauseChanged(object pause)
+    public async Task QueuePauseChanged()
     {
         using var scope = scopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
@@ -129,7 +131,7 @@ public class EventBroadcaster(IHubContext<EventsHub> hubContext, IServiceScopeFa
             return;
         }
 
-        await hubContext.Clients.Groups(groups).SendAsync("queuePauseChanged", pause);
+        await hubContext.Clients.Groups(groups).SendAsync("queuePauseChanged", new { });
     }
 
     /// <summary>
