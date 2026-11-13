@@ -72,6 +72,19 @@ public class QueueControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task List_puts_a_parked_import_on_the_first_page()
+    {
+        for (var i = 0; i < 3; i++) SeedItem(QueueStatus.Failed);
+        var parked = SeedItem(QueueStatus.AwaitingImport);
+
+        var dto = Assert.IsType<QueueHistoryDto>(Assert.IsType<OkObjectResult>(
+            await Controller().List(pageSize: 2, ct: CancellationToken.None)).Value);
+
+        Assert.Equal(4, dto.Total);
+        Assert.Equal(parked, dto.Items[0].Id);
+    }
+
+    [Fact]
     public async Task List_narrows_to_one_series()
     {
         SeedItem(QueueStatus.Queued);

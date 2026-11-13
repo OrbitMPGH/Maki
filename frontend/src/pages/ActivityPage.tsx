@@ -50,6 +50,7 @@ import {
   useQueueEta,
   useQueuePause,
   usePauseSeriesQueue,
+  useQueueSummary,
   useRemoveQueueItem,
   useReorderQueue,
   useResumeSeriesQueue,
@@ -684,14 +685,16 @@ export default function ActivityPage() {
     else pauseSeries.mutate({ seriesId }, { onError })
   }
 
+  // The list is one page; the summary counts the whole queue, the same numbers the sidebar badge shows.
+  const { data: summary } = useQueueSummary()
   const stats = useMemo(
     () => ({
       active: queueItems.filter((q) => isQueueActive(q.status)).length,
       queued: queueItems.filter((q) => q.status === 'Queued').length,
-      review: queueItems.filter((q) => needsImportReview(q.status)).length,
-      failed: queueItems.filter((q) => q.status === 'Failed').length,
+      review: summary?.awaitingImport ?? queueItems.filter((q) => needsImportReview(q.status)).length,
+      failed: summary?.failed ?? queueItems.filter((q) => q.status === 'Failed').length,
     }),
-    [queueItems],
+    [queueItems, summary],
   )
   const stripShown = stats.active + stats.queued + stats.review + stats.failed > 0
 
