@@ -12,6 +12,7 @@ import {
   type ScanlationGroupLists,
   type SeenScanlationGroup,
 } from '../api/scanlationGroups'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 const same = (a: string, b: string) => a.trim().toLocaleLowerCase() === b.trim().toLocaleLowerCase()
 const has = (list: string[], name: string) => list.some((n) => same(n, name))
@@ -209,7 +210,7 @@ function Shell({ opened, onClose, description, children, footer }: {
     <Modal
       opened={opened}
       onClose={onClose}
-      size={520}
+      size={MODAL_SIZE.default}
       closeButtonProps={{ 'aria-label': t`Close` }}
       title={<ModalHeading title={<Trans>Scanlation groups</Trans>} description={description} />}
     >

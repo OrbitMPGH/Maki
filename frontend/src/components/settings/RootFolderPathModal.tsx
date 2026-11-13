@@ -12,6 +12,7 @@ import { MonoValue } from '../ui/MonoValue'
 import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
 import { FolderBrowserModal } from './FolderBrowserModal'
 import { formatNumber } from '../../format'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 function BusyNote({ code }: { code: RootFolderPathCheck['busy'][number] }) {
   switch (code) {
@@ -117,7 +118,7 @@ export function RootFolderPathModal({ folder, onClose }: { folder: RootFolder | 
       <Modal
         opened={folder !== null && !browsing}
         onClose={close}
-        size="lg"
+        size={MODAL_SIZE.default}
         title={
           <ModalHeading
             title={<Trans>Change root folder path</Trans>}

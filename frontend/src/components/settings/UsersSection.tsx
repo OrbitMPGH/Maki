@@ -5,10 +5,11 @@ import {
   Button,
   Checkbox,
   Group,
+  Input,
   Modal,
   MultiSelect,
   PasswordInput,
-  Select,
+  SegmentedControl,
   SimpleGrid,
   Stack,
   Switch,
@@ -55,6 +56,7 @@ import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
 import { contentRatingVisual } from '../ui/status'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
 import { TimeAgo } from '../ui/TimeAgo'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 /**
  * Grantable permissions, in the order they read best. `Admin` is deliberately not in this list: it is
@@ -421,7 +423,7 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
           }
         />
       }
-      size="lg"
+      size={MODAL_SIZE.default}
     >
       <Stack
         component="form"
@@ -516,13 +518,16 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
           <div className="user-form-title">
             <Trans>Library access</Trans>
           </div>
-          <Select
-            label={t`Maximum content rating`}
-            data={CONTENT_RATINGS.map((r) => ({ value: r, label: renderLabel(CONTENT_RATING_LABELS[r]) }))}
-            value={rating}
-            onChange={(v) => setRating(v ?? 'safe')}
-            allowDeselect={false}
-          />
+          <Input.Wrapper label={t`Maximum content rating`}>
+            <SegmentedControl
+              fullWidth
+              mt={4}
+              aria-label={t`Maximum content rating`}
+              data={CONTENT_RATINGS.map((r) => ({ value: r, label: renderLabel(CONTENT_RATING_LABELS[r]) }))}
+              value={rating}
+              onChange={setRating}
+            />
+          </Input.Wrapper>
           <Switch
             label={t`Access all root folders`}
             description={t`Including root folders added later.`}

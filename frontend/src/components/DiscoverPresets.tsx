@@ -35,6 +35,7 @@ import { filtersFromSpec } from './CatalogueFilters'
 import { TermPicker } from './CatalogueRules'
 import { ModalFooter, ModalHeading } from './ui/ModalShell'
 import { CustomRailEditor } from './rails/CustomRailEditor'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 /**
  * Saved filters for a catalogue filter panel: load one, save the panel as a new one, or turn the
@@ -185,7 +186,7 @@ function SavePresetModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Save filters`} size="sm">
+    <Modal opened={opened} onClose={onClose} title={t`Save filters`} size={MODAL_SIZE.narrow}>
       <Stack gap="sm">
         <TextInput
           label={t`Name`}
@@ -262,7 +263,7 @@ function HiddenContentModal({ onClose }: { onClose: () => void }) {
           }
         />
       }
-      size="lg"
+      size={MODAL_SIZE.default}
     >
       <Stack gap="sm">
         {isLoading ? (

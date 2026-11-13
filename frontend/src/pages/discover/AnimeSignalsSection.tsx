@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { randomUUID } from '../../lib/uuid'
 import {
-  Alert, Button, Group, SegmentedControl, Stack, Switch, Text, Tooltip,
+  Button, Group, SegmentedControl, Stack, Switch, Text, Tooltip,
 } from '@mantine/core'
 import { Link } from 'react-router-dom'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -137,7 +137,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
   if (isLoading || !data) {
     const reason = error ? errorText(error) : ''
     return error ? (
-      <Alert color="var(--danger)"><Trans>Could not load anime signals: {reason}</Trans></Alert>
+      <Callout tone="danger" role="alert"><Trans>Could not load anime signals: {reason}</Trans></Callout>
     ) : null
   }
 
@@ -166,7 +166,7 @@ export function AnimeSignalsSection({ onOpenList }: { onOpenList: () => void }) 
           />
         </Group>
 
-        {toggleError && <Alert color="var(--danger)">{toggleError}</Alert>}
+        {toggleError && <Callout tone="danger" role="alert">{toggleError}</Callout>}
 
         {noTracker && (
           <Text size="sm" c="var(--ink-3)">
@@ -391,3 +391,5 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
     </div>
   )
 }
+
+import { Callout } from '../../components/ui/Callout'

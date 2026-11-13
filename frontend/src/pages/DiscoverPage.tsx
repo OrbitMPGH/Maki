@@ -6,7 +6,6 @@ import { createPortal } from 'react-dom'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ActionIcon,
-  Alert,
   Button,
   Collapse,
   Group,
@@ -142,6 +141,7 @@ import {
 } from '../components/ui/viewPrefs'
 import { formatFixedDecimal } from '../format'
 import { useModalHistory } from '../lib/useModalHistory'
+import { Callout } from '../components/ui/Callout'
 
 const DENSITY_VALUES: readonly Density[] = ['compact', 'default', 'comfortable']
 
@@ -785,9 +785,9 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
       )}
 
       {error && (
-        <Alert color="var(--warn)" variant="light">
+        <Callout tone="warn" role="alert">
           {errorText(error)}
-        </Alert>
+        </Callout>
       )}
       {isFetching && !data && (
         <>
@@ -1062,9 +1062,9 @@ function FeedExpandModal({
       </Panel>
 
       {error && (
-        <Alert color="var(--warn)" variant="light">
+        <Callout tone="warn" role="alert">
           {errorText(error)}
-        </Alert>
+        </Callout>
       )}
 
       {isFetching && !items && <PosterSkeletons density={density} />}
@@ -1338,12 +1338,7 @@ function DiscoverBrowseTab({
   // than at the top of the page, since the hero and the personalised rows come from other endpoints
   // and survive this one being down; with that section off they move to Trending instead.
   const catalogueStatus = error ? (
-    <Alert
-      color="var(--warn)"
-      variant="light"
-      icon={<IconAlertTriangle size={18} />}
-      title={t`Catalogue unavailable`}
-    >
+    <Callout tone="warn" role="alert" icon={IconAlertTriangle} title={t`Catalogue unavailable`}>
       <Stack gap="sm" align="flex-start">
         <Text size="sm">{errorText(error)}</Text>
         <Button
@@ -1356,7 +1351,7 @@ function DiscoverBrowseTab({
           <Trans>Try again</Trans>
         </Button>
       </Stack>
-    </Alert>
+    </Callout>
   ) : null
 
   const sections: Record<DiscoverSectionKey, React.ReactNode> = {

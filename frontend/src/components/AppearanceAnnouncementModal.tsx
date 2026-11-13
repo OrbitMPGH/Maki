@@ -5,6 +5,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useAnnouncements, useSeenAppearanceAnnouncement } from '../api/hooks'
 import { useThemeChoice } from '../theme-context'
 import { AppearancePicker } from './AppearancePicker'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 /**
  * Tells someone who was already using Maki that background and accent are separate choices now, and
@@ -52,7 +53,7 @@ export default function AppearanceAnnouncementModal() {
           }
         />
       }
-      size="lg"
+      size={MODAL_SIZE.default}
     >
       <Stack gap="lg">
         <AppearancePicker

@@ -9,6 +9,7 @@ import { useChapters, useSeries } from '../../api/hooks'
 import type { SeriesDto } from '../../api/types'
 import { usePageConversionSample, type PageConversionSample } from '../../api/pageConversion'
 import { chapterLabel } from '../series/chapterTable'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 const MAX_SERIES_ROWS = 40
 
@@ -41,7 +42,7 @@ export function ComparePicker({
   }
 
   return (
-    <Modal opened={opened} onClose={close} title={t`Pick another page`} size="lg" centered>
+    <Modal opened={opened} onClose={close} title={t`Pick another page`} size={MODAL_SIZE.default} centered>
       {!series && <SeriesStage onPick={setSeries} />}
       {series && !file && <ChapterStage series={series} onBack={() => setSeries(null)} onPick={setFile} />}
       {series && file && (

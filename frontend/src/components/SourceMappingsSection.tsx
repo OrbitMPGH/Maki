@@ -2,7 +2,6 @@ import { errorText } from '../api/errorText'
 import { Fragment, useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   ActionIcon,
-  Alert,
   Badge,
   Box,
   Button,
@@ -94,6 +93,8 @@ import { ManageSourcesModal, type WizardRequest } from '../pages/settings/Manage
 import { useSourceLabel } from '../sourceLabels'
 import { MonoValue } from './ui/MonoValue'
 import { PanelTitle } from './ui/PanelTitle'
+import { MODAL_SIZE } from './ui/modalSizes'
+import { Callout } from './ui/Callout'
 
 const ORIGIN_LABELS: Record<string, MessageDescriptor> = {
   TitleSearch: msg`Title search`,
@@ -449,21 +450,12 @@ export function SourceMappingsSection({
       )}
 
       {!matching && failedSources.length > 0 && (
-        <Alert
-          color="var(--warn)"
-          variant="light"
-          mb="sm"
-          icon={<IconAlertTriangle size={16} />}
-          title={t`Some sources could not be searched`}
-          withCloseButton
-          closeButtonLabel={t`Dismiss`}
-          onClose={() => queryClient.setQueryData(['sourcematch-failed', seriesId], [])}
-        >
+        <Callout tone="warn" role="alert" mb="sm" icon={IconAlertTriangle} title={t`Some sources could not be searched`} closeLabel={t`Dismiss`} onClose={() => queryClient.setQueryData(['sourcematch-failed', seriesId], [])}>
           <Trans>
             {failedNames} did not answer, so they may still carry this
             series. Run Auto-match again once they are back.
           </Trans>
-        </Alert>
+        </Callout>
       )}
 
       {(mappings?.length ?? 0) === 0 && pendingRows.length === 0 ? (
@@ -960,7 +952,7 @@ export function SourceMappingsSection({
         opened={modalOpen}
         onClose={() => setModalOpen(false)}
         title={t`Link a source`}
-        size="lg"
+        size={MODAL_SIZE.default}
       >
         <Stack>
           <Group grow>

@@ -107,6 +107,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { relativeTime } from '../components/ui/time'
 import { TimeAgo } from '../components/ui/TimeAgo'
+import { MODAL_SIZE } from '../components/ui/modalSizes'
 
 /** Select value standing for "no pinned source": let the series' priority order decide. */
 const AUTOMATIC = 'automatic'
@@ -1396,7 +1397,7 @@ function BulkDeleteModal({
     <Modal
       opened={opened}
       onClose={dismiss}
-      size="lg"
+      size={MODAL_SIZE.default}
       title={
         <span className="confirm-title">
           <span className="confirm-tile" aria-hidden>
@@ -1901,7 +1902,7 @@ function CheckRow({
     <div className="health-source-series">
       {affected.map((m) => (
         <div key={m.id}>
-          <Anchor component={Link} to={`/series/${m.seriesId}`} size="sm">
+          <Anchor component={Link} to={`/series/${m.seriesId}`} className="series-title">
             {m.title}
           </Anchor>
           <Text size="xs" c="var(--ink-4)" lineClamp={2}>

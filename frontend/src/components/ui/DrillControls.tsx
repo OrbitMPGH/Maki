@@ -282,14 +282,18 @@ export function DrillSwitch({
   hint,
   checked,
   onChange,
+  size,
 }: {
   label: ReactNode
   hint?: ReactNode
   checked: boolean
   onChange: (checked: boolean) => void
+  /** `xs` for a panel set in small type, like the reader's. */
+  size?: 'xs' | 'sm' | 'md'
 }) {
   return (
     <Switch
+      size={size}
       className="drill-switch"
       classNames={{ body: 'drill-switch-body', labelWrapper: 'drill-switch-text' }}
       labelPosition="left"

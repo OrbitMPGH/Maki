@@ -5,6 +5,7 @@ import {
   useMutation,
   useQuery,
   useQueryClient,
+  type QueryClient,
 } from '@tanstack/react-query'
 import { msg, t } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
@@ -3865,6 +3866,34 @@ export function useDownloadClientKinds() {
 
 export type ConnectionName = 'indexer' | 'downloadclient' | 'kavita' | 'flaresolverr'
 
+/** `kavita`, `flaresolverr`, `downloadclient`, `suwayomi`, or `indexer:{backend}`. */
+export type ConnectionTestKey = Exclude<ConnectionName, 'indexer'> | 'suwayomi' | `indexer:${IndexerBackend}`
+
+/** The last Test of a connection, present only while the saved settings are the ones it tested. */
+export interface ConnectionTestStatus {
+  key: ConnectionTestKey
+  ok: boolean
+  message: string | null
+  testedAt: string
+}
+
+export const CONNECTION_TESTS_KEY = ['settings', 'connection-tests'] as const
+
+export function useConnectionTests() {
+  return useQuery({
+    queryKey: CONNECTION_TESTS_KEY,
+    queryFn: () => api<ConnectionTestStatus[]>('/settings/connection-tests'),
+  })
+}
+
+export function useConnectionTest(key: ConnectionTestKey | undefined) {
+  const { data, isSuccess } = useConnectionTests()
+  return { status: data?.find((s) => s.key === key) ?? null, loaded: isSuccess }
+}
+
+export const invalidateConnectionTests = (queryClient: QueryClient) =>
+  void queryClient.invalidateQueries({ queryKey: CONNECTION_TESTS_KEY })
+
 export function useConnectionSettings<T>(name: ConnectionName) {
   return useQuery({
     queryKey: ['settings', name],
@@ -3879,6 +3908,7 @@ export function useSaveConnectionSettings<T>(name: ConnectionName) {
       api<T>(`/settings/${name}`, { method: 'PUT', body: JSON.stringify(value) }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['settings', name] })
+      invalidateConnectionTests(queryClient)
       // The scrobble card's library picker lists Kavita's libraries through this connection.
       if (name === 'kavita') {
         void queryClient.invalidateQueries({ queryKey: ['kavita-libraries'] })
@@ -3889,12 +3919,14 @@ export function useSaveConnectionSettings<T>(name: ConnectionName) {
 }
 
 export function useTestConnectionSettings<T>(name: ConnectionName) {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (value: T) =>
       api<{ success: boolean }>(`/settings/${name}/test`, {
         method: 'POST',
         body: JSON.stringify(value),
       }),
+    onSettled: () => invalidateConnectionTests(queryClient),
   })
 }
 
@@ -3929,14 +3961,17 @@ export function useSaveIndexerSettings() {
       void queryClient.invalidateQueries({ queryKey: ['settings', 'indexer'] })
       void queryClient.invalidateQueries({ queryKey: ['settings', 'indexer-options'] })
       void queryClient.invalidateQueries({ queryKey: ['indexer-indexers'] })
+      invalidateConnectionTests(queryClient)
     },
   })
 }
 
 export function useTestIndexerSettings() {
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (value: Partial<IndexerSettings>) =>
       api<{ success: boolean }>('/settings/indexer/test', { method: 'POST', body: JSON.stringify(value) }),
+    onSettled: () => invalidateConnectionTests(queryClient),
   })
 }
 

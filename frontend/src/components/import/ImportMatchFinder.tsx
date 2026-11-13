@@ -22,6 +22,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { ModalFooter, ModalHeading } from '../ui/ModalShell'
 import { StatusDot } from '../ui/StatusDot'
 import { Thumb } from '../ui/Thumb'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 /**
  * Picks the match for one import folder by hand: a title search (the same endpoint the Add dialog
@@ -64,7 +65,7 @@ export function ImportMatchFinder({
           description={<Trans>Search by title, or paste an id or link.</Trans>}
         />
       }
-      size="lg"
+      size={MODAL_SIZE.default}
     >
       <Stack gap="sm">
         <TextInput

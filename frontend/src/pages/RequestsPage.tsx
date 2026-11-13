@@ -4,7 +4,6 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ActionIcon,
-  Alert,
   Badge,
   Button,
   Group,
@@ -56,6 +55,7 @@ import { useLabel } from '../i18n-context'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { Thumb } from '../components/ui/Thumb'
 import { TimeAgo } from '../components/ui/TimeAgo'
+import { Callout } from '../components/ui/Callout'
 
 const STATUS_COLOR: Record<SeriesRequest['status'], string> = {
   Pending: 'var(--warn)',
@@ -239,9 +239,9 @@ export default function RequestsPage() {
       </Tabs>
 
       {(shownApproveError || reject.isError || remove.isError || edit.isError) && (
-        <Alert color="var(--danger)" variant="light" mb="md">
+        <Callout tone="danger" role="alert" mb="md">
           {errorText(shownApproveError ?? reject.error ?? remove.error ?? edit.error)}
-        </Alert>
+        </Callout>
       )}
 
       {isPending ? (
@@ -284,7 +284,7 @@ export default function RequestsPage() {
 
                   <div className="requests-row-main">
                     <Group gap="xs">
-                      <Text fw={650} lineClamp={1}>
+                      <Text className="series-title">
                         {r.title}
                       </Text>
                       {r.year && (
@@ -462,12 +462,12 @@ export default function RequestsPage() {
           )}
 
           {archivedSeriesId != null && (
-            <Alert color="var(--warn)" variant="light">
+            <Callout tone="warn" role="alert">
               <Stack gap="xs" align="flex-start">
                 <Text size="sm">{errorText(approve.error)}</Text>
                 <RestoreArchivedButton seriesId={archivedSeriesId} size="xs" onRestored={() => approve.reset()} />
               </Stack>
-            </Alert>
+            </Callout>
           )}
 
           <Textarea

@@ -21,6 +21,7 @@ import { plural, t as now } from '@lingui/core/macro'
 import { useLinkChapters, useSeriesFiles } from '../api/hooks'
 import type { SeriesFileDto } from '../api/types'
 import { formatBytes } from '../format'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 export function LinkChaptersModal({
   seriesId,
@@ -86,7 +87,7 @@ export function LinkChaptersModal({
           description={<Trans>Pick the file in the series folder these chapters are contained in.</Trans>}
         />
       }
-      size="lg"
+      size={MODAL_SIZE.default}
     >
       <Stack gap="sm">
         {isLoading ? (

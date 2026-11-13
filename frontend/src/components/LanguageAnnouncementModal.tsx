@@ -4,6 +4,7 @@ import { ModalFooter, ModalHeading } from './ui/ModalShell'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useAnnouncements, useSeenLanguageAnnouncement, useUiSettings } from '../api/hooks'
 import { useApplyLanguage, useLanguageOptions } from './ui/language'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 /**
  * Tells someone who was already using Maki that it speaks other languages now, and lets them pick
@@ -58,7 +59,7 @@ export default function LanguageAnnouncementModal() {
           }
         />
       }
-      size="md"
+      size={MODAL_SIZE.narrow}
     >
       <Stack gap="lg">
         <Select

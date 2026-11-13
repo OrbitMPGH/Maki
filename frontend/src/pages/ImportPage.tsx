@@ -60,6 +60,7 @@ import { Thumb } from '../components/ui/Thumb'
 import { LightBadge } from '../components/series/lightMantine'
 import { okButtonVars } from '../components/ui/status'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { MODAL_SIZE } from '../components/ui/modalSizes'
 
 /**
  * Words the import stage keys the server sends (`Maki.Api.Services.ImportStage`). The broadcast
@@ -527,7 +528,7 @@ function FolderImport() {
             description={<Trans>Folders are renamed to the English title.</Trans>}
           />
         }
-        size="lg"
+        size={MODAL_SIZE.default}
       >
         <Checkbox
           label={t`Standardize ComicInfo.xml inside the imported files (recommended)`}

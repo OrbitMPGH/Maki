@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import {
-  Button, Collapse, FileButton, Group, List, Modal, MultiSelect, NumberInput, Radio, Select, Stack,
+  Button, Collapse, FileButton, Group, Input, List, Modal, MultiSelect, NumberInput, Radio, SegmentedControl, Select, Stack,
   Switch, Text, TextInput, Textarea,
 } from '@mantine/core'
 import { ModalFooter, ModalHeading, ModalNote } from '../../components/ui/ModalShell'
@@ -22,6 +22,7 @@ import {
   type ProbeSearchResult, type ProbeSiteResult, type Section,
 } from '../../api/customSources'
 import { COMMON_LANGUAGES } from './sourceLanguages'
+import { MODAL_SIZE } from '../../components/ui/modalSizes'
 
 export type WizardMode = 'setup' | 'import' | 'edit'
 
@@ -603,17 +604,20 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
                 searchable
                 allowDeselect={false}
               />
-              <Select
-                label={t`Kind`}
-                data={[
-                  { value: 'scanlator', label: t`Scanlation group` },
-                  { value: 'aggregator', label: t`Aggregator` },
-                  { value: 'official', label: t`Official publisher` },
-                ]}
-                value={definition?.kind ?? 'scanlator'}
-                onChange={(v) => v && update({ kind: v })}
-                allowDeselect={false}
-              />
+              <Input.Wrapper label={t`Kind`}>
+                <SegmentedControl
+                  fullWidth
+                  mt={4}
+                  aria-label={t`Kind`}
+                  data={[
+                    { value: 'scanlator', label: t`Scanlation group` },
+                    { value: 'aggregator', label: t`Aggregator` },
+                    { value: 'official', label: t`Official publisher` },
+                  ]}
+                  value={definition?.kind ?? 'scanlator'}
+                  onChange={(v) => update({ kind: v })}
+                />
+              </Input.Wrapper>
             </Group>
             {languageOff && (
               <Text size="xs" c="var(--warn)">
@@ -633,17 +637,20 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
                 value={definition?.content ?? ['manga']}
                 onChange={(v) => update({ content: v })}
               />
-              <Select
-                label={t`Rating`}
-                data={[
-                  { value: 'general', label: t`General` },
-                  { value: 'mature', label: t`Mature` },
-                  { value: 'adult', label: t`Adult` },
-                ]}
-                value={definition?.rating ?? 'general'}
-                onChange={(v) => v && update({ rating: v })}
-                allowDeselect={false}
-              />
+              <Input.Wrapper label={t`Rating`}>
+                <SegmentedControl
+                  fullWidth
+                  mt={4}
+                  aria-label={t`Rating`}
+                  data={[
+                    { value: 'general', label: t`General` },
+                    { value: 'mature', label: t`Mature` },
+                    { value: 'adult', label: t`Adult` },
+                  ]}
+                  value={definition?.rating ?? 'general'}
+                  onChange={(v) => update({ rating: v })}
+                />
+              </Input.Wrapper>
             </Group>
             <Group grow align="flex-end">
               <NumberInput
@@ -733,7 +740,7 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
     <Modal
       opened={opened}
       onClose={onClose}
-      size={760}
+      size={MODAL_SIZE.wide}
       closeButtonProps={{ 'aria-label': t`Close` }}
       title={<ModalHeading title={title} description={description} />}
     >

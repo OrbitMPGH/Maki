@@ -33,11 +33,11 @@ export function SeriesCell({
       )}
       <div className="series-cell-text">
         {href ? (
-          <Text component={Link} to={href} className="series-cell-title" lineClamp={2}>
+          <Text component={Link} to={href} className="series-title" lineClamp={2}>
             {title}
           </Text>
         ) : (
-          <Text className="series-cell-title" lineClamp={2}>
+          <Text className="series-title" lineClamp={2}>
             {title}
           </Text>
         )}

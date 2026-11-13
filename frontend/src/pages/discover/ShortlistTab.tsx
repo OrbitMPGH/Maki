@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   ActionIcon,
-  Alert,
   Button,
   Group,
   Menu,
@@ -65,6 +64,7 @@ import { useLabel } from '../../i18n-context'
 import { usePageState } from '../../lib/pageState'
 import { notifications } from '../../lib/toast'
 import { randomUUID } from '../../lib/uuid'
+import { Callout } from '../../components/ui/Callout'
 
 type Filter = 'all' | 'changed' | 'completed' | 'anime'
 type Sort = 'recent' | 'oldest' | 'score' | 'title'
@@ -581,23 +581,23 @@ export function ShortlistTab() {
   if (isError) {
     const reason = errorText(error)
     return (
-      <Alert color="var(--danger)" variant="light" icon={<IconAlertCircle size={16} />} title={t`Could not load your shortlist`}>
+      <Callout tone="danger" role="alert" icon={IconAlertCircle} title={t`Could not load your shortlist`}>
         <Group gap="sm">
           <Text size="sm">{reason}</Text>
           <Button size="xs" variant="default" onClick={() => void refetch()}>
             <Trans>Retry</Trans>
           </Button>
         </Group>
-      </Alert>
+      </Callout>
     )
   }
   if (data?.catalogueAvailable === false) {
     return (
-      <Alert color="var(--warn)" variant="light" icon={<IconAlertCircle size={16} />} title={t`Discover's catalogue is not downloaded yet`}>
+      <Callout tone="warn" role="alert" icon={IconAlertCircle} title={t`Discover's catalogue is not downloaded yet`}>
         <Text size="sm">
           <Trans>Anything you saved is kept and shows up here once the catalogue is installed.</Trans>
         </Text>
-      </Alert>
+      </Callout>
     )
   }
   if (all.length === 0) return <EmptyShortlist />

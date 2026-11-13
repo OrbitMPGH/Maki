@@ -5,7 +5,7 @@ import { randomUUID } from '../../lib/uuid'
 import { fuzzyFilter, titleIndex } from '../../lib/fuzzySearch'
 import { useQueryClient } from '@tanstack/react-query'
 import {
-  Alert, Button, Chip, Group, Menu, Modal, Select, Stack, Tabs, Text,
+  Button, Chip, Group, Menu, Modal, Select, Stack, Tabs, Text,
   
 } from '@mantine/core'
 import {
@@ -27,6 +27,8 @@ import type { RoleFilter } from './AnimeSignalsSection'
 import { SeriesThumb } from '../stats/SeriesLink'
 import { formatRecentDate } from '../../format'
 import { useLabel } from '../../i18n-context'
+import { MODAL_SIZE } from '../../components/ui/modalSizes'
+import { Callout } from '../../components/ui/Callout'
 
 /** Wire values of a feedback state's `exposure` field, labeled for display. */
 const EXPOSURE_LABELS: Record<string, MessageDescriptor> = {
@@ -207,7 +209,7 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
 
   return (
     <Modal
-      opened={opened} onClose={onClose} size="xl" radius="lg"
+      opened={opened} onClose={onClose} size={MODAL_SIZE.wide} radius="lg"
       closeButtonProps={{ 'aria-label': t`Close` }}
       title={
         <div>
@@ -251,9 +253,9 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
             <SegmentFilters value={filter} onChange={(value) => setFilter(value as Filter)} items={filters} />
 
             {actionError && (
-              <Alert color="var(--danger)">
+              <Callout tone="danger" role="alert">
                 <Trans>{actionError} Refresh the page and try again.</Trans>
-              </Alert>
+              </Callout>
             )}
 
             {visible.length === 0 && (
@@ -340,7 +342,7 @@ function AnimeSignalsPanel() {
   if (isLoading || !data) {
     const reason = error ? errorText(error) : ''
     return error ? (
-      <Alert color="var(--danger)"><Trans>Could not load anime signals: {reason}</Trans></Alert>
+      <Callout tone="danger" role="alert"><Trans>Could not load anime signals: {reason}</Trans></Callout>
     ) : null
   }
 
@@ -369,7 +371,7 @@ function AnimeSignalsPanel() {
         </Button>
       </Group>
 
-      {syncError && <Alert color="var(--danger)">{syncError}</Alert>}
+      {syncError && <Callout tone="danger" role="alert">{syncError}</Callout>}
 
       <SearchInput
         value={search} onChange={(event) => setSearch(event.currentTarget.value)} onClear={() => setSearch('')}

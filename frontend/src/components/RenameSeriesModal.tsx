@@ -7,6 +7,7 @@ import { t as now } from '@lingui/core/macro'
 import { useRenameSeries, useSeriesRenamePreview } from '../api/hooks'
 import { ApiError } from '../api/client'
 import { ModalFooter, ModalHeading, ModalNote } from './ui/ModalShell'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 const NAMING_SETTINGS = '/settings?tab=library&s=naming'
 
@@ -70,7 +71,7 @@ export function RenameSeriesModal({
           description={<Trans>Matches your naming formats. Only the highlighted parts change.</Trans>}
         />
       }
-      size="lg"
+      size={MODAL_SIZE.default}
     >
       <Stack gap="md">
         {isLoading && (

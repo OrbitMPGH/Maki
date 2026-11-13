@@ -6,7 +6,6 @@ import { t as now } from '@lingui/core/macro'
 import { usePageState, useUnchangedSinceMount } from '../lib/pageState'
 import {
   
-  Alert,
   Anchor,
   Badge,
   Button,
@@ -74,6 +73,7 @@ import {
   type ViewPrefs,
 } from './ui/viewPrefs'
 import { ErrorMessage } from './ErrorMessage'
+import { Callout } from './ui/Callout'
 
 /**
  * Smart matches on meaning and falls back to the title index; Title is the plain FTS5 title search.
@@ -469,9 +469,9 @@ export function CatalogueBrowser({
           </Group>
 
           {error && (
-            <Alert color="var(--warn)" variant="light" mb="md">
+            <Callout tone="warn" role="alert" mb="md">
               <ErrorMessage error={error} />
-            </Alert>
+            </Callout>
           )}
 
           {loading && (

@@ -1,5 +1,4 @@
 import {
-  Alert,
   Badge,
   Button,
   Card,
@@ -27,6 +26,7 @@ import {
 } from '@mantine/core'
 import type { ReactNode } from 'react'
 import { DUR, EASE_CSS, pacedMs } from './lib/motion'
+import { MODAL_SIZE } from './components/ui/modalSizes'
 
 const ModalPassthrough = ({ children }: { children?: ReactNode }) => children
 
@@ -399,6 +399,7 @@ const modalDefaults = () => ({
   attributes: dialogHeaderAttributes,
   radius: 'lg',
   padding: 'lg',
+  size: MODAL_SIZE.narrow,
   centered: true,
   scrollAreaComponent: ModalPassthrough,
   overlayProps: { backgroundOpacity: 0.6 },
@@ -466,9 +467,6 @@ const themeBase: MantineThemeOverride = {
     }),
     Button: Button.extend({
       defaultProps: { radius: 'md' },
-    }),
-    Alert: Alert.extend({
-      defaultProps: { variant: 'light', radius: 'lg' },
     }),
     Badge: Badge.extend({
       defaultProps: { radius: 'sm', fw: 600 },

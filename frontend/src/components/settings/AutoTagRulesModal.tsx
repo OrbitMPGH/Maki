@@ -22,6 +22,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { ModalFooter, ModalHeading } from '../ui/ModalShell'
 import { ConditionFieldPage, ConditionGroupRows } from './RuleConditions'
 import { conditionParents, groupsOf, savedGroups, useGroupsSummary } from './conditionGroups'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 /** Library-wide auto-tag rules: a list, and an editor for one rule in the drill panel grammar. */
 export function AutoTagRulesModal({ opened, onClose }: { opened: boolean; onClose: () => void }) {
@@ -37,7 +38,7 @@ export function AutoTagRulesModal({ opened, onClose }: { opened: boolean; onClos
     <Modal
       opened={opened}
       onClose={close}
-      size="md"
+      size={MODAL_SIZE.narrow}
       title={
         <ModalHeading
           title={

@@ -5,7 +5,6 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
   ActionIcon,
-  Alert,
   Button,
   Code,
   Collapse,
@@ -60,6 +59,7 @@ import { formatBytes, formatDateTime, formatNumber } from '../../format'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 import { useHealthAction, useHealthData, type HealthOptions } from '../../api/health'
 import { TimeAgo } from '../../components/ui/TimeAgo'
+import { Callout } from '../../components/ui/Callout'
 
 type RestoreTarget = { kind: 'existing'; name: string } | { kind: 'upload'; file: File }
 
@@ -683,9 +683,9 @@ export function HealthSettingsSection() {
       }
     >
       {save.error && (
-        <Alert color="var(--danger)" mb="md">
+        <Callout tone="danger" role="alert" mb="md">
           {save.error.message}
-        </Alert>
+        </Callout>
       )}
       {value && (
         <Stack gap="lg">

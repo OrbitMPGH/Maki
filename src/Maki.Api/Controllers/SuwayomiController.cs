@@ -38,7 +38,8 @@ public partial class SuwayomiController(
     SourceAvailability sourceAvailability,
     MakiDbContext db,
     IHttpClientFactory httpClientFactory,
-    ILogger<SuwayomiController> logger) : ControllerBase
+    ILogger<SuwayomiController> logger,
+    ConnectionTestStore? connectionTests = null) : ControllerBase
 {
     /// <param name="Password">
     /// Never returned. On PUT, null keeps the stored one for the same URL (and clears it for a new
@@ -162,9 +163,11 @@ public partial class SuwayomiController(
             baseUri, mode.Value,
             request.Username ?? stored?.Username,
             request.Password ?? (sameServer ? stored!.Password : null));
+        var fingerprint = ConnectionTestStore.SuwayomiFingerprint(connection);
         try
         {
             var result = await tester.TestAsync(connection, ct);
+            await RecordTestAsync(fingerprint, true, null, null, ct);
             return Ok(new
             {
                 success = true,
@@ -175,14 +178,20 @@ public partial class SuwayomiController(
         }
         catch (SuwayomiVersionException ex)
         {
-            return this.Fail(localizer, "error.suwayomi.versionUnsupported", new { version = ex.Version, minimum = ex.Minimum });
+            var args = new { version = ex.Version, minimum = ex.Minimum };
+            await RecordTestAsync(fingerprint, false, "error.suwayomi.versionUnsupported", args, ct);
+            return this.Fail(localizer, "error.suwayomi.versionUnsupported", args);
         }
         catch (Exception ex) when (IsUnreachable(ex, ct))
         {
             logger.LogInformation(ex, "Suwayomi connection test against {Url} failed", baseUri);
+            await RecordTestAsync(fingerprint, false, UnreachableKey(ex), null, ct);
             return FailedToReach(ex);
         }
     }
+
+    private Task RecordTestAsync(string fingerprint, bool ok, string? code, object? args, CancellationToken ct) =>
+        connectionTests?.RecordAsync(ConnectionTestStore.Suwayomi, fingerprint, ok, code, args, ct) ?? Task.CompletedTask;
 
     /// <summary>
     /// Reads Suwayomi's installed sources into the stored snapshot, so a newly installed extension

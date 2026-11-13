@@ -15,6 +15,7 @@ import {
   useSetRepositoryAutoUpdate, type CustomRepository, type CustomRepositoryEntry, type IdentityReason,
 } from '../../api/customSources'
 import { MetaList } from '../../components/ui/MetaList'
+import { MODAL_SIZE } from '../../components/ui/modalSizes'
 
 function useReasonLabels(): Record<IdentityReason, string> {
   const { t } = useLingui()
@@ -82,7 +83,7 @@ export function CustomSourceUpdateDialog({ id, opened, onClose, onApplied }: {
     <Modal
       opened={opened}
       onClose={onClose}
-      size={640}
+      size={MODAL_SIZE.default}
       title={<ModalHeading title={<Trans>Update {id}</Trans>} description={<Trans>Review what changes before it is applied.</Trans>} />}
       closeButtonProps={{ 'aria-label': t`Close` }}
     >
@@ -306,7 +307,7 @@ export function CustomRepositoriesPanel({ opened, onClose }: { opened: boolean; 
     <Modal
       opened={opened}
       onClose={onClose}
-      size={760}
+      size={MODAL_SIZE.wide}
       title={
         <ModalHeading
           title={<Trans>Repositories</Trans>}

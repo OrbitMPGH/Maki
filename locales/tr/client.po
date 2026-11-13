@@ -7502,6 +7502,7 @@ msgstr ""
 msgid "Connect your trackers"
 msgstr "İzleme servislerinizi bağlayın"
 
+#: src/components/ConnectionSettingsCardStatus.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ScrobblePage.tsx
@@ -7859,6 +7860,10 @@ msgstr "Notlar yüklenemedi."
 #, fuzzy
 msgid "Could not load this chapter."
 msgstr "Bu bölüm yüklenemedi."
+
+#: src/pages/stats/sections/HabitsSection.tsx
+msgid "Could not load your habits. The server logs will say why."
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -10159,6 +10164,7 @@ msgstr "<0/> olarak bağlanması bekleniyor"
 msgid "Export"
 msgstr "Dışa aktar"
 
+#: src/components/ConnectionSettingsCardStatus.tsx
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
@@ -16549,6 +16555,10 @@ msgstr "Bu cihazda desteklenmiyor"
 #, fuzzy
 msgid "Not synced yet"
 msgstr "Henüz senkronize edilmedi"
+
+#: src/components/ConnectionSettingsCardStatus.tsx
+msgid "Not tested"
+msgstr ""
 
 #: src/components/series/AnimeResumeCallout.tsx
 #, fuzzy
@@ -26254,6 +26264,7 @@ msgstr "Daha kısa veya alternatif bir sorgu deneyin."
 #: src/pages/reader/PagedView.tsx
 #: src/pages/reader/ReaderPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
+#: src/pages/stats/sections/HabitsSection.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy

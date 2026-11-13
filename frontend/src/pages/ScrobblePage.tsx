@@ -1,7 +1,6 @@
 import { errorText } from '../api/errorText'
 import { useEffect, useId, useState } from 'react'
 import {
-  Alert,
   Box,
   Button,
   Group,
@@ -49,6 +48,7 @@ import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { Thumb } from '../components/ui/Thumb'
 import { MetadataSiteIcon } from '../components/MetadataSiteIcon'
 import { TimeAgo } from '../components/ui/TimeAgo'
+import { Callout } from '../components/ui/Callout'
 
 const TRACKER_SETTINGS = '/settings?tab=integrations&s=scrobbling'
 const KAVITA_SETTINGS = '/settings?tab=integrations&s=kavita'
@@ -487,11 +487,11 @@ function UnmatchedCard({ item }: { item: ScrobbleUnmatchedItem }) {
           <Group gap="xs">
             <StatusDot tone="warn" aria-hidden />
             {href ? (
-              <Text component={Link} to={href} className="series-cell-title">
+              <Text component={Link} to={href} className="series-title">
                 {item.title}
               </Text>
             ) : (
-              <Text className="series-cell-title">{item.title}</Text>
+              <Text className="series-title">{item.title}</Text>
             )}
             <TagChip size="sm">{serviceLabel(data?.connections, item.service)}</TagChip>
           </Group>
@@ -655,9 +655,9 @@ export default function ScrobblePage() {
       {header}
 
       {error && (
-        <Alert color="var(--danger)" variant="light" mb="md">
+        <Callout tone="danger" role="alert" mb="md">
           {errorText(error)}
-        </Alert>
+        </Callout>
       )}
 
       <div className="scrobble-connections" role="group" aria-label={t`Connections`}>

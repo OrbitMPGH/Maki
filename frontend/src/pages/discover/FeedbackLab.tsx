@@ -2,7 +2,7 @@ import { errorText } from '../../api/errorText'
 import { useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import {
-  ActionIcon, Alert, Button, Collapse, Group, Skeleton, Stack, Text, Tooltip,
+  ActionIcon, Button, Collapse, Group, Skeleton, Stack, Text, Tooltip,
 } from '@mantine/core'
 import {
   IconAdjustmentsHorizontal, IconArrowBackUp, IconBook, IconBookmark, IconChevronRight, IconClockPause, IconCompass,
@@ -24,6 +24,7 @@ import { Panel } from '../../components/ui/Panel'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
 import { SignalStatus, type SignalStatusInfo } from './SignalStatus'
+import { Callout } from '../../components/ui/Callout'
 
 /** Actions the undo endpoint can reverse: it replays the event's stored previous state. */
 const UNDOABLE = ['hide', 'dismiss', 'mark-exposed', 'clear-suppression', 'clear-exposure']
@@ -225,14 +226,14 @@ export function SignalsCard() {
         </Collapse>
 
         {error && (
-          <Alert color="var(--danger)" variant="light" title={t`Could not load your signals`}>
+          <Callout tone="danger" role="alert" title={t`Could not load your signals`}>
             <ErrorMessage error={error} />
-          </Alert>
+          </Callout>
         )}
         {actionError && (
-          <Alert color="var(--danger)" variant="light">
+          <Callout tone="danger" role="alert">
             <Trans>{actionError} Refresh the page and try again.</Trans>
-          </Alert>
+          </Callout>
         )}
 
         {isLoading && <SignalsSkeleton />}

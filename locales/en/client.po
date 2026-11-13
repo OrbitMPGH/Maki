@@ -6299,6 +6299,7 @@ msgstr "Connect your account on the Scrobble page."
 msgid "Connect your trackers"
 msgstr "Connect your trackers"
 
+#: src/components/ConnectionSettingsCardStatus.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ScrobblePage.tsx
@@ -6595,6 +6596,10 @@ msgstr "Could not load the notes."
 #: src/pages/reader/ReaderPage.tsx
 msgid "Could not load this chapter."
 msgstr "Could not load this chapter."
+
+#: src/pages/stats/sections/HabitsSection.tsx
+msgid "Could not load your habits. The server logs will say why."
+msgstr "Could not load your habits. The server logs will say why."
 
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "Could not load your progress. The server logs will say why."
@@ -8512,6 +8517,7 @@ msgstr "expected to link as <0/>"
 msgid "Export"
 msgstr "Export"
 
+#: src/components/ConnectionSettingsCardStatus.tsx
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
@@ -13844,6 +13850,10 @@ msgstr "Not supported on this device"
 #: src/pages/discover/AnimeSignalsSection.tsx
 msgid "Not synced yet"
 msgstr "Not synced yet"
+
+#: src/components/ConnectionSettingsCardStatus.tsx
+msgid "Not tested"
+msgstr "Not tested"
 
 #: src/components/series/AnimeResumeCallout.tsx
 msgid "Not this anime?"
@@ -21939,6 +21949,7 @@ msgstr "Try a shorter or alternative query."
 #: src/pages/reader/PagedView.tsx
 #: src/pages/reader/ReaderPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
+#: src/pages/stats/sections/HabitsSection.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 msgid "Try again"

@@ -7502,6 +7502,7 @@ msgstr ""
 msgid "Connect your trackers"
 msgstr "트래커 연결"
 
+#: src/components/ConnectionSettingsCardStatus.tsx
 #: src/components/SeriesScrobbleSection.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ScrobblePage.tsx
@@ -7859,6 +7860,10 @@ msgstr "노트를 불러오지 못했습니다."
 #, fuzzy
 msgid "Could not load this chapter."
 msgstr "이 챕터를 불러오지 못했습니다."
+
+#: src/pages/stats/sections/HabitsSection.tsx
+msgid "Could not load your habits. The server logs will say why."
+msgstr ""
 
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy
@@ -10159,6 +10164,7 @@ msgstr "<0/>(으)로 연결될 것으로 예상됨"
 msgid "Export"
 msgstr "내보내기"
 
+#: src/components/ConnectionSettingsCardStatus.tsx
 #: src/components/SourceCompareModal.tsx
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
@@ -16549,6 +16555,10 @@ msgstr "이 기기에서는 지원되지 않습니다"
 #, fuzzy
 msgid "Not synced yet"
 msgstr "아직 동기화되지 않음"
+
+#: src/components/ConnectionSettingsCardStatus.tsx
+msgid "Not tested"
+msgstr ""
 
 #: src/components/series/AnimeResumeCallout.tsx
 #, fuzzy
@@ -26254,6 +26264,7 @@ msgstr "더 짧거나 다른 검색어를 사용해 보세요."
 #: src/pages/reader/PagedView.tsx
 #: src/pages/reader/ReaderPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
+#: src/pages/stats/sections/HabitsSection.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
 #: src/pages/stats/sections/ProgressSection.tsx
 #, fuzzy

@@ -13,6 +13,7 @@ import {
   useRatingImport,
   useStartRatingImport,
 } from '../api/hooks'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 /**
  * Preview-then-confirm import of a tracker's ratings into local series ratings. Opening the modal
@@ -181,7 +182,7 @@ export function RatingImportModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      size="lg"
+      size={MODAL_SIZE.default}
       title={
         <ModalHeading
           title={t`Import ratings from ${label}`}

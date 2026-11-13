@@ -7,6 +7,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import { useNamingTokens, type NamingToken } from '../api/hooks'
 import { IconPlus } from '../lib/icons'
 import { ModalFooter, ModalHeading, ModalNote } from './ui/ModalShell'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 /**
  * The separator and case pickers rewrite the token text itself rather than setting anything
@@ -104,7 +105,7 @@ export function NamingTokenModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      size="xl"
+      size={MODAL_SIZE.wide}
       title={
         <ModalHeading
           title={t`Naming tokens`}

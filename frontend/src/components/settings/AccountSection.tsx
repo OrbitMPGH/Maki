@@ -34,6 +34,7 @@ import { useCopyText } from '../ui/useCopyText'
 import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
 import { SettingsRow, SettingsRows, SettingsRowsBlock } from './SettingsRow'
 import { MintPasswordField, RecentSignInNotice, useMintConfirmation } from './MintConfirmation'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 /**
  * Self-service account management: password, two-factor, single sign-on, sessions.
@@ -777,7 +778,7 @@ function ApiKeysCard({ creating, onCloseCreate }: { creating: boolean; onCloseCr
         opened={created !== null}
         onClose={() => setCreated(null)}
         title={<ModalHeading title={<Trans>Your new API key</Trans>} description={created?.key.name} />}
-        size="lg"
+        size={MODAL_SIZE.default}
         closeOnClickOutside={false}
         closeOnEscape={false}
       >

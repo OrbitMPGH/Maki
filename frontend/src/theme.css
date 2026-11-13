@@ -242,7 +242,6 @@ span[lang]:is(:lang(ja), :lang(ko)):not(:lang(ja-Latn), :lang(ko-Latn)) {
 }
 
 .cover-title,
-.row-title,
 .utility-modal-title {
   font-family: var(--font-display);
 }
@@ -3126,13 +3125,7 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   gap: 2px;
 }
 .next-up-name {
-  overflow: hidden;
-  color: var(--ink-hi);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-strong);
-  line-height: 1.3;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
 }
 .next-up-meta {
   display: flex;
@@ -11647,12 +11640,7 @@ body.reader-open {
   flex-wrap: nowrap;
 }
 .row-title {
-  font-weight: var(--fw-strong);
-  font-size: var(--type-body);
-  line-height: 1.3;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  --series-title-size: var(--type-body);
 }
 .row-year {
   font-size: var(--type-meta);
@@ -11794,12 +11782,7 @@ body.reader-open {
   border-radius: var(--radius-2xs);
 }
 .library-table-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: var(--font-display);
-  font-weight: var(--fw-strong);
-  font-size: var(--type-body);
+  --series-title-size: var(--type-body);
 }
 .library-table-title:hover .library-table-name {
   text-decoration: underline;
@@ -11922,7 +11905,7 @@ body.reader-open {
   -webkit-line-clamp: 3;
 }
 .series-row.comfortable .row-title {
-  font-size: var(--type-subhead);
+  --series-title-size: var(--type-subhead);
 }
 
 /* The row reuses `.cover-ring`/`.cover-count` so both views stay identical, but those are styled
@@ -15061,11 +15044,6 @@ button.settings-row-head:hover,
   gap: var(--mantine-spacing-xs);
   margin-inline-start: auto;
 }
-/* Mantine Alert takes the same tint and edge, so the ones left in place match Callout. */
-.mantine-Alert-root[data-variant='light'] {
-  border: 1px solid color-mix(in srgb, var(--alert-color) 35%, var(--border));
-  background: color-mix(in srgb, var(--alert-color) 7%, var(--surface-2));
-}
 
 /* Hairline lists in the link, relink and import dialogs: mono file names, tabular figures. */
 .modal-list {
@@ -16299,13 +16277,22 @@ button.settings-row-head:hover,
 .series-cell-text {
   min-width: 0;
 }
-.series-cell-title {
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
+.series-title {
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
   color: var(--ink-hi);
+  font-size: var(--series-title-size, var(--type-meta));
+  font-weight: var(--fw-semibold);
+  line-height: 1.3;
   text-decoration: none;
+  overflow-wrap: anywhere;
 }
-.series-cell-title:hover {
+a.series-title:hover,
+button.series-title:hover {
   color: var(--brand-fg);
 }
 
@@ -16425,12 +16412,6 @@ button.settings-row-head:hover,
 }
 .upcoming-title {
   flex: 1;
-  min-width: 0;
-  font-size: var(--type-meta);
-  font-weight: var(--fw-medium);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .upcoming-confidence {
   flex: none;
@@ -16571,11 +16552,7 @@ button.settings-row-head:hover,
   min-width: 0;
 }
 .archived-row-title {
-  overflow: hidden;
-  color: var(--ink-hi);
-  font-weight: var(--fw-semibold);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
 }
 .archived-row-meta {
   color: var(--ink-3);

@@ -5,7 +5,6 @@ import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
 import {
   ActionIcon,
-  Alert,
   Button,
   Code,
   Group,
@@ -30,6 +29,7 @@ import {
 import { ModalFooter, ModalHeading } from '../../components/ui/ModalShell'
 import { useCopyText } from '../../components/ui/useCopyText'
 import { MintPasswordField, RecentSignInNotice, useMintConfirmation } from '../../components/settings/MintConfirmation'
+import { Callout } from '../../components/ui/Callout'
 
 /**
  * Keeping Maki's reader and Kavita in step. The reader's own settings live on the Reader card
@@ -260,11 +260,11 @@ export function OpdsSection() {
                     </ActionIcon>
                   </Tooltip>
                 </Group>
-                <Alert color="var(--warn)" variant="light" mt="xs">
+                <Callout tone="warn" role="alert" mt="xs">
                   <Trans>
                     Copy this now. It can't be shown again; if you lose it, regenerate.
                   </Trans>
-                </Alert>
+                </Callout>
                 <Text size="xs" c="var(--ink-3)" mt={4}>
                   <Trans>From outside your network, replace the host with the address you use there.</Trans>
                 </Text>

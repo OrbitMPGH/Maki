@@ -1,16 +1,42 @@
-import type { ReactNode } from 'react'
+import { useId, useLayoutEffect, useRef, type ReactNode } from 'react'
 
 /**
  * A utility modal's title with one line under it saying what the dialog is for. Pass as the Modal's
- * `title`. The line is a visual lead-in, kept out of the heading's accessible name so the dialog is
- * still announced by its title alone; Mantine describes the dialog by its body.
+ * `title`. Mantine names the dialog by the whole title element, so the dialog's `aria-labelledby`
+ * is pointed at the title text alone and the line is added to `aria-describedby`.
  */
 export function ModalHeading({ title, description }: { title: ReactNode; description?: ReactNode }) {
+  const titleId = useId()
+  const descriptionId = useId()
+  const ref = useRef<HTMLSpanElement>(null)
+  const hasDescription = Boolean(description)
+
+  useLayoutEffect(() => {
+    const dialog = ref.current?.closest<HTMLElement>('[role="dialog"]')
+    if (!dialog || !hasDescription) return
+    const apply = () => {
+      if (dialog.getAttribute('aria-labelledby') !== titleId) dialog.setAttribute('aria-labelledby', titleId)
+      const ids = (dialog.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean)
+      if (!ids.includes(descriptionId)) dialog.setAttribute('aria-describedby', [...ids, descriptionId].join(' '))
+    }
+    apply()
+    const observer = new MutationObserver(apply)
+    observer.observe(dialog, { attributes: true, attributeFilter: ['aria-labelledby', 'aria-describedby'] })
+    return () => {
+      observer.disconnect()
+      const ids = (dialog.getAttribute('aria-describedby') ?? '').split(/\s+/).filter((id) => id && id !== descriptionId)
+      if (ids.length) dialog.setAttribute('aria-describedby', ids.join(' '))
+      else dialog.removeAttribute('aria-describedby')
+    }
+  }, [hasDescription, titleId, descriptionId])
+
   return (
     <>
-      <span className="modal-heading-title">{title}</span>
+      <span ref={ref} id={titleId} className="modal-heading-title">
+        {title}
+      </span>
       {description && (
-        <span className="modal-heading-description" aria-hidden>
+        <span id={descriptionId} className="modal-heading-description">
           {description}
         </span>
       )}

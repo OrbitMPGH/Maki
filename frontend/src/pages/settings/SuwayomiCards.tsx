@@ -7,6 +7,7 @@ import { SettingsSection } from './SettingsSection'
 import { FieldAction } from '../../components/settings/FieldAction'
 import { savedToast } from './sharedRecord'
 import { ManageSourcesModal } from './ManageSourcesModal'
+import { ConnectionTestLine } from '../../components/ConnectionSettingsCardStatus'
 import { useSources } from '../../api/hooks'
 import {
   useSaveSuwayomiConnection, useSuwayomiConnection, useTestSuwayomiConnection,
@@ -120,7 +121,7 @@ export function SuwayomiCard() {
               <Trans>Test</Trans>
             </Button>
           </FieldAction>
-       </Group>
+        </Group>
         {authMode !== 'none' && (
           <Group align="flex-end" wrap="wrap" className="settings-field-row">
             <TextInput
@@ -143,6 +144,7 @@ export function SuwayomiCard() {
             />
           </Group>
         )}
+        {connected && <ConnectionTestLine testKey="suwayomi" mt={0} />}
         <Group justify="space-between" wrap="wrap">
           <Text size="sm" c="var(--ink-3)">
             {connected ? (

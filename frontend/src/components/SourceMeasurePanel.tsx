@@ -1,9 +1,10 @@
-import { Alert, Button, Group, Loader, Progress, Text, Tooltip } from '@mantine/core'
+import { Button, Group, Loader, Progress, Text, Tooltip } from '@mantine/core'
 import { IconCheck, IconRuler } from '../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import type { ScoutSourceProgress, SourceOrderDto } from '../api/upgrades'
 import { StatusDot } from './ui/StatusDot'
+import { Callout } from './ui/Callout'
 
 /** Why a source could not be sampled, in words. */
 function useProblemText() {
@@ -57,7 +58,7 @@ export function MeasureProgress({ order }: { order: SourceOrderDto }) {
   const done = scout.done
   const probes = scout.probes
   return (
-    <Alert color="var(--info)" variant="light" icon={<Loader size={16} />} mt="sm" mb="sm">
+    <Callout tone="info" role="alert" icon={IconRuler} mt="sm" mb="sm">
       <Text size="sm" fw={500}>
         {plural(sources, {
           one: `Measuring # source on chapters ${chapters}`,
@@ -70,7 +71,7 @@ export function MeasureProgress({ order }: { order: SourceOrderDto }) {
           {done} of {probes} chapter samples. The order below updates once it finishes.
         </Trans>
       </Text>
-    </Alert>
+    </Callout>
   )
 }
 
@@ -109,12 +110,11 @@ export function MeasureResult({
   const differs = order.mode === 'manual' && best != null && current != null && best !== current
 
   return (
-    <Alert
-      color={measured > 0 ? 'var(--ok)' : 'var(--warn)'}
-      variant="light"
-      icon={measured > 0 ? <IconCheck size={16} /> : <IconRuler size={16} />}
-      withCloseButton
-      closeButtonLabel={t`Dismiss`}
+    <Callout
+      tone={measured > 0 ? 'ok' : 'warn'}
+      role="alert"
+      icon={measured > 0 ? IconCheck : IconRuler}
+      closeLabel={t`Dismiss`}
       onClose={onDismiss}
       mt="sm"
       mb="sm"
@@ -177,6 +177,6 @@ export function MeasureResult({
           </Button>
         </Group>
       )}
-    </Alert>
+    </Callout>
   )
 }

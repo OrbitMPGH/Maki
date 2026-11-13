@@ -37,6 +37,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { MetaList } from '../ui/MetaList'
 import { Thumb } from '../ui/Thumb'
 import { ModalFooter, ModalHeading } from '../ui/ModalShell'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 const REASON_ORDER: RecycleReason[] = ['deleteFile', 'removeChapter', 'seriesDelete', 'seriesArchive']
 
@@ -192,7 +193,7 @@ export function RecycleBinModal({ opened, onClose }: { opened: boolean; onClose:
     <Modal
       opened={opened}
       onClose={onClose}
-      size="xl"
+      size={MODAL_SIZE.wide}
       title={
         <ModalHeading
           title={t`Recycle bin`}

@@ -77,7 +77,7 @@ const ArchivedRow = memo(function ArchivedRow({
       )}
       <Thumb src={series.coverUrl} size="md" aria-hidden data-series-cover={series.id} />
       <div className="archived-row-main">
-        <div className="archived-row-title">
+        <div className="archived-row-title series-title">
           {selectMode ? (
             displayTitle
           ) : (

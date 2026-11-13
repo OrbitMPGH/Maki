@@ -32,6 +32,7 @@ import { EmptyState } from '../ui/EmptyState'
 import { ModalFooter, ModalHeading } from '../ui/ModalShell'
 import { ConditionFieldPage, ConditionGroupRows } from './RuleConditions'
 import { conditionParents, savedGroups, useGroupsSummary } from './conditionGroups'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 type View = { kind: 'list' } | { kind: 'edit'; id: number | null; draft: SaveRootFolderRule } | { kind: 'check' }
 
@@ -58,7 +59,7 @@ export function RootFolderRulesModal({ opened, onClose }: { opened: boolean; onC
     <Modal
       opened={opened}
       onClose={close}
-      size="md"
+      size={MODAL_SIZE.narrow}
       title={
         <ModalHeading
           title={title}

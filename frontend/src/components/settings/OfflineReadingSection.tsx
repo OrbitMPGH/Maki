@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { SettingsGroupTitle } from './SettingsGroupTitle'
-import { ActionIcon, Alert, Anchor, Badge, Button, Group, Progress, Select, Stack, Text, Tooltip } from '@mantine/core'
+import { ActionIcon, Anchor, Badge, Button, Group, Progress, Select, Stack, Text, Tooltip } from '@mantine/core'
 import { IconDeviceMobileOff, IconRefresh, IconTrash } from '../../lib/icons'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
@@ -32,6 +32,7 @@ import { queuedProgressCount, replayProgress } from '../../pwa/progressQueue'
 import { chapterLabel } from '../series/chapterTable'
 import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { SecureContextNote } from './SecureContextNote'
+import { Callout } from '../ui/Callout'
 
 export function OfflineReadingSection() {
   return (
@@ -119,12 +120,12 @@ function OfflineControls() {
   return (
     <Stack gap="lg">
       {iosNeedsInstall() && (
-        <Alert color="var(--info)" variant="light">
+        <Callout tone="info" role="alert">
           <Trans>
             Safari clears what a website saved after seven days without a visit. Add Maki to your home
             screen and save chapters from there to keep them.
           </Trans>
-        </Alert>
+        </Callout>
       )}
 
       <Stack gap={6}>
@@ -284,7 +285,7 @@ function SavedSeriesGroup({
     <Stack gap={4}>
       <Group justify="space-between" wrap="nowrap" gap="xs">
         <Group gap="xs" wrap="nowrap" style={{ minWidth: 0 }}>
-          <Anchor component={Link} to={`/series/${seriesId}`} size="sm" fw={600} truncate>
+          <Anchor component={Link} to={`/series/${seriesId}`} className="series-title">
             {seriesTitle}
           </Anchor>
           <Text size="xs" c="var(--ink-3)" className="tnum" style={{ flexShrink: 0 }}>

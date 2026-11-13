@@ -65,7 +65,7 @@ export function TorrentProposalCard({
     <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
       <Stack gap={6} style={{ flex: 1, minWidth: 240 }}>
         {!banner && (
-          <Text component={Link} to={`/series/${seriesId}?tab=chapters`} className="series-cell-title" lineClamp={1}>
+          <Text component={Link} to={`/series/${seriesId}?tab=chapters`} className="series-title" lineClamp={1}>
             {seriesTitle}
           </Text>
         )}

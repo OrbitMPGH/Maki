@@ -7,6 +7,7 @@ import { useLabel } from '../../i18n-context'
 import { useSourceLabel } from '../../sourceLabels'
 import { EmptyState } from '../ui/EmptyState'
 import { ModalFooter, ModalHeading } from '../ui/ModalShell'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 /**
  * Skip codes a chapter scan can record for the chapter itself rather than any one candidate, which
@@ -73,7 +74,7 @@ export function UpgradeNowResultModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      size="sm"
+      size={MODAL_SIZE.narrow}
       title={
         <ModalHeading
           title={<Trans>Upgrade now</Trans>}

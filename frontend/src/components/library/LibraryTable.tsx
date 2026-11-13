@@ -374,7 +374,7 @@ export const LibraryTableRow = memo(function LibraryTableRow({
           }}
         >
           <Thumb className="library-table-thumb" src={series.coverUrl} size="sm" />
-          <span className="library-table-name" title={series.title}>
+          <span className="library-table-name series-title" title={series.title}>
             {series.displayTitle}
           </span>
           {offline === 'saved' && (

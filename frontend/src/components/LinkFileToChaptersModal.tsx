@@ -25,6 +25,7 @@ import { chapterLabel as houseChapterLabel, serverChapterLabel } from '../format
 import { useChapters, useLinkChapters, useUnlinkChapters } from '../api/hooks'
 import type { ChapterDto, SeriesFileDto } from '../api/types'
 import { displayChapterTitle } from '../lib/chapterTitle'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 function chapterLabel(c: ChapterDto): string {
   if (!c.isOneShot && c.number === null && c.volume !== null) return serverChapterLabel(`Vol.${c.volume}`)
@@ -168,7 +169,7 @@ export function LinkFileToChaptersModal({
           }
         />
       }
-      size="lg"
+      size={MODAL_SIZE.default}
     >
       <Stack gap="sm">
         {file && (

@@ -195,7 +195,7 @@ function ActivityRow({
       <Group gap="xs" wrap="nowrap" align="flex-start">
         <Thumb src={item.seriesCoverUrl} size="sm" data-series-cover={item.seriesId} style={{ marginTop: 2 }} />
         <Stack gap={2} style={{ minWidth: 0, flex: 1 }}>
-          <Text size="xs" fw={650} lineClamp={1}>
+          <Text className="series-title">
             {item.seriesTitle}
           </Text>
           <Text size="xs" c="var(--ink-3)" lineClamp={1}>

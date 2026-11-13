@@ -201,6 +201,7 @@ export const settingsHandlers: HttpHandler[] = [
   http.get(api('/custom-sources/:id'), () => HttpResponse.json(d.customSourcesList[0].definition)),
   http.put(api('/custom-sources/:id'), () => HttpResponse.json({ created: true, sourceName: 'custom-quietpen' })),
   http.delete(api('/custom-sources/:id'), ok),
+  http.get(api('/settings/connection-tests'), () => HttpResponse.json(d.connectionTests)),
   http.get(api('/settings/flaresolverr'), () => HttpResponse.json(d.flaresolverr)),
   putEcho('/settings/flaresolverr'),
   http.post(api('/settings/flaresolverr/test'), success),

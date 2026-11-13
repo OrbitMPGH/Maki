@@ -1,7 +1,7 @@
 import { SearchInput } from '../../components/ui/SearchInput'
 import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import {
-  ActionIcon, Alert, Button, Chip, Group, Kbd, Loader, Menu, Modal, MultiSelect, Popover, SegmentedControl, Select, Stack,
+  ActionIcon, Button, Chip, Group, Kbd, Loader, Menu, Modal, MultiSelect, Popover, SegmentedControl, Select, Stack,
   Switch, Tabs, Text, Tooltip,
 } from '@mantine/core'
 import { useHotkeys, useMediaQuery } from '@mantine/hooks'
@@ -46,6 +46,7 @@ import { CustomRepositoriesPanel } from './CustomRepositoriesPanel'
 import { COMMON_LANGUAGES, LANGUAGE_CODE, MIXED_LANGUAGE } from './sourceLanguages'
 import { MetaList } from '../../components/ui/MetaList'
 import { GlobalScanlationGroupsModal } from '../../components/ScanlationGroupsModal'
+import { Callout } from '../../components/ui/Callout'
 
 type StateFilter = 'all' | 'on' | 'off'
 export type ProviderFilter = 'builtin' | 'suwayomi' | 'custom'
@@ -1157,10 +1158,10 @@ export function ManageSourcesModal({
       </div>
       <div className="source-manager-list">
         {refresh.data && !refresh.data.reachable && (
-          <Alert color="var(--warn)" variant="light" mb="xs">
+          <Callout tone="warn" role="alert" mb="xs">
             {refresh.data.error}{' '}
             <Trans>The Suwayomi sources below are the ones it listed last time.</Trans>
-          </Alert>
+          </Callout>
         )}
         {!ready && (
           <Group justify="center" p="xl">

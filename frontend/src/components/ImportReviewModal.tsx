@@ -26,6 +26,7 @@ import { PendingLabel } from './ui/PendingLabel'
 import { AllNone, useRangeText } from './ChapterMapParts'
 import { MetaList } from './ui/MetaList'
 import { ModalFooter, ModalHeading, ModalNote } from './ui/ModalShell'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 type Mode = Exclude<ImportDecision, 'Reject'>
 type CellState = 'moves' | 'readable' | 'keepsFile' | 'leftOut' | 'unchanged' | 'missing'
@@ -167,7 +168,7 @@ export function ImportReviewModal({ queueItemId, onClose }: { queueItemId: numbe
           }
         />
       }
-      size={720}
+      size={MODAL_SIZE.wide}
     >
       {isError ? (
         <>

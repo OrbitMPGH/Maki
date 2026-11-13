@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { randomUUID } from '../../lib/uuid'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Alert, Badge, Button, Group, SegmentedControl, Stack, Switch, Text, Tooltip } from '@mantine/core'
+import { Badge, Button, Group, SegmentedControl, Stack, Switch, Text, Tooltip } from '@mantine/core'
 import { notifications } from '../../lib/toast'
 import { IconArrowRight, IconClock, IconEye, IconEyeOff, IconFolder, IconPlus, IconRanking } from '../../lib/icons'
 import {
@@ -29,6 +29,7 @@ import { DrillPanes } from '../ui/DrillPanes'
 import { DrillBack, DrillChoices, DrillField, DrillRow, useDrillPages } from '../ui/DrillPanel'
 import { formatBytes } from '../../format'
 import { RestoreArchivedButton, useIsArchivedSeries } from './ArchivedRestore'
+import { Callout } from '../ui/Callout'
 
 /** The add card's pages: Folder, Incognito and Automation open from the first; Quality from Automation. */
 type AddPage = 'main' | 'folder' | 'incognito' | 'automation' | 'quality'
@@ -344,12 +345,12 @@ export function DiscoverLibraryRail({
           <PanelTitle order={2}>
             <Trans>Add to library</Trans>
           </PanelTitle>
-          <Alert color="var(--warn)" variant="light" mt="md">
+          <Callout tone="warn" role="alert" mt="md">
             <Trans>
               You can add series, but no root folder has been granted to you yet. Ask an admin to
               grant you one, or to add this title.
             </Trans>
-          </Alert>
+          </Callout>
         </>
       ) : canAdd ? (
         // A drill panel like the series menu's: the settings people check on every add (where it
@@ -517,9 +518,9 @@ export function DiscoverLibraryRail({
           <PanelTitle order={2}>
             <Trans>Requested</Trans>
           </PanelTitle>
-          <Alert color="var(--warn)" variant="light" icon={<IconClock size={16} />} mt="md">
+          <Callout tone="warn" role="alert" icon={IconClock} mt="md">
             <Trans>An admin decides where it lands and what gets downloaded.</Trans>
-          </Alert>
+          </Callout>
         </>
       ) : (
         <>
@@ -533,13 +534,13 @@ export function DiscoverLibraryRail({
             </Trans>
           </Text>
           {myRequest?.status === 'Rejected' && (
-            <Alert color="var(--warn)" variant="light" mt="sm">
+            <Callout tone="warn" role="alert" mt="sm">
               {resolutionNote ? (
                 <Trans>Your last request was rejected: {resolutionNote}</Trans>
               ) : (
                 <Trans>Your last request was rejected.</Trans>
               )}
-            </Alert>
+            </Callout>
           )}
           <RequestForm
             dense

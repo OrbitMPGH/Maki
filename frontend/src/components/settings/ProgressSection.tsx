@@ -5,6 +5,7 @@ import {
   Button,
   Group,
   NumberInput,
+  SegmentedControl,
   Select,
   Stack,
   Switch,
@@ -188,11 +189,10 @@ export function ProgressSection() {
           ))}
 
           <Group gap="xs" align="flex-end" wrap="wrap">
-            <Select
+            <SegmentedControl
               data={periods}
               value={period}
-              onChange={(v) => v && setPeriod(v as ReadingGoal['period'])}
-              w={140}
+              onChange={(v) => setPeriod(v as ReadingGoal['period'])}
               aria-label={t`Goal period`}
               disabled={!settings.enabled}
             />
@@ -204,11 +204,10 @@ export function ProgressSection() {
               aria-label={t`Goal target`}
               disabled={!settings.enabled}
             />
-            <Select
+            <SegmentedControl
               data={metrics}
               value={metric}
-              onChange={(v) => v && setMetric(v as ReadingGoal['metric'])}
-              w={160}
+              onChange={(v) => setMetric(v as ReadingGoal['metric'])}
               aria-label={t`Goal metric`}
               disabled={!settings.enabled}
             />

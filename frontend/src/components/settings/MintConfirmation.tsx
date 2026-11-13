@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Alert, Button, PasswordInput, Stack, Text } from '@mantine/core'
+import { Button, PasswordInput, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useMintProof } from '../../api/auth'
+import { Callout } from '../ui/Callout'
 
 /**
  * What creating an API key or OPDS token asks for. Accounts that sign in with a password type it;
@@ -57,7 +58,7 @@ export function RecentSignInNotice({ canSignInAgain, anchor }: { canSignInAgain:
   const returnUrl = `${pathname}${search}#${anchor}`
 
   return (
-    <Alert color="var(--warn)" variant="light">
+    <Callout tone="warn" role="alert">
       <Stack gap="xs" align="flex-start">
         <Text size="sm">
           {canSignInAgain ? (
@@ -79,6 +80,6 @@ export function RecentSignInNotice({ canSignInAgain, anchor }: { canSignInAgain:
           </Button>
         )}
       </Stack>
-    </Alert>
+    </Callout>
   )
 }

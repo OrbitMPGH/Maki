@@ -64,9 +64,24 @@ function BehaviourRow({
 
 export default function HabitsSection({ userId, range }: StatsSectionProps) {
   const { t } = useLingui()
-  const { data: activity } = useActivityStats(range.from, range.to, userId)
-  const { data: standing } = useStatsStanding(userId, !!activity?.readTrackingAvailable)
+  const { data: activity, isError: activityError, refetch: refetchActivity } = useActivityStats(range.from, range.to, userId)
+  const {
+    data: standing,
+    isError: standingError,
+    refetch: refetchStanding,
+  } = useStatsStanding(userId, !!activity?.readTrackingAvailable)
   const { data: library } = useLibraryComposition(!!activity?.readTrackingAvailable)
+
+  if (activityError || standingError) {
+    return (
+      <EmptyState
+        compact
+        title={t`Could not load your habits. The server logs will say why.`}
+        actionLabel={t`Try again`}
+        onAction={() => void (activityError ? refetchActivity() : refetchStanding())}
+      />
+    )
+  }
 
   if (!activity) {
     return <HabitsSkeleton />

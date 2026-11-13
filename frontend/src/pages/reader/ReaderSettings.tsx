@@ -7,7 +7,6 @@ import {
   SegmentedControl,
   Slider,
   Stack,
-  Switch,
   Text,
   Tooltip,
   UnstyledButton,
@@ -19,7 +18,6 @@ import {
   IconArrowRight,
   IconArrowsMaximize,
   IconBooks,
-  IconCheck,
   IconChevronDown,
   IconEyeOff,
   IconHandTap,
@@ -46,6 +44,7 @@ import type { ReadingProfile } from '../../api/readingProfiles'
 import { wakeLockSupported } from '../../lib/wakeLock'
 import { useLabel } from '../../i18n-context'
 import { DrillPanes } from '../../components/ui/DrillPanes'
+import { DrillMultiChoices, DrillSwitch } from '../../components/ui/DrillControls'
 import { DrillBack, DrillChoices, DrillField, DrillRow, useDrillPages, type DrillChoice } from '../../components/ui/DrillPanel'
 import {
   BROWSER_ENHANCE_METHODS,
@@ -369,15 +368,15 @@ export default function ReaderSettings({
   const renderToggles = (toggles: ToggleRow[]) =>
     toggles.map((toggle) => (
       <Fragment key={toggle.key}>
-        <Switch
-          size="xs"
-          labelPosition="left"
-          label={toggle.label}
-          description={toggle.hint}
-          checked={prefs[toggle.key]}
-          onChange={(event) => onPrefs({ [toggle.key]: event.currentTarget.checked })}
-          classNames={{ body: 'reader-settings-switch', description: 'reader-settings-hint' }}
-        />
+        <div className="reader-settings-inline-row">
+          <DrillSwitch
+            size="xs"
+            label={toggle.label}
+            hint={toggle.hint}
+            checked={prefs[toggle.key]}
+            onChange={(checked) => onPrefs({ [toggle.key]: checked })}
+          />
+        </div>
         {toggle.key === 'hideCredits' && hiddenCredits && hiddenCount > 0 && (
           <Group gap={8} wrap="nowrap" justify="space-between" mt={-6}>
             <Text className="reader-settings-hint" fz="xs">
@@ -683,15 +682,15 @@ export default function ReaderSettings({
                       ]}
                     />
                   </Field>
-                  <Switch
-                    size="xs"
-                    labelPosition="left"
-                    label={t`Crop borders`}
-                    description={t`Trims plain white or black margins. Single and Double only.`}
-                    checked={prefs.cropBorders}
-                    onChange={(event) => onPrefs({ cropBorders: event.currentTarget.checked })}
-                    classNames={{ body: 'reader-settings-switch', description: 'reader-settings-hint' }}
-                  />
+                  <div className="reader-settings-inline-row">
+                    <DrillSwitch
+                      size="xs"
+                      label={t`Crop borders`}
+                      hint={t`Trims plain white or black margins. Single and Double only.`}
+                      checked={prefs.cropBorders}
+                      onChange={(checked) => onPrefs({ cropBorders: checked })}
+                    />
+                  </div>
                 </Stack>
               </SubPage>
             )}
@@ -749,15 +748,15 @@ export default function ReaderSettings({
                     </Field>
                   )}
                   {enhanceOn && isServerMethod(method) && (
-                    <Switch
-                      size="xs"
-                      labelPosition="left"
-                      label={t`Whole chapter`}
-                      description={t`Keep upscaling every page while the chapter is open. Leaving cancels the rest.`}
-                      checked={prefs.enhanceWholeChapter}
-                      onChange={(event) => onPrefs({ enhanceWholeChapter: event.currentTarget.checked })}
-                      classNames={{ body: 'reader-settings-switch', description: 'reader-settings-hint' }}
-                    />
+                    <div className="reader-settings-inline-row">
+                      <DrillSwitch
+                        size="xs"
+                        label={t`Whole chapter`}
+                        hint={t`Keep upscaling every page while the chapter is open. Leaving cancels the rest.`}
+                        checked={prefs.enhanceWholeChapter}
+                        onChange={(checked) => onPrefs({ enhanceWholeChapter: checked })}
+                      />
+                    </div>
                   )}
                   {enhanceOn && (
                     <div className="reader-settings-inline-row">{row('skip', IconBan, t`Don't enhance`, skipSummary)}</div>
@@ -768,33 +767,13 @@ export default function ReaderSettings({
 
             {view === 'skip' && (
               <SubPage title={t`Don't enhance`} onBack={back} backRef={backRef}>
-                <div className="reader-settings-choices" role="group" aria-label={t`Don't enhance`}>
-                  {ENHANCE_SKIP_TIERS.map((tier) => {
-                    const checked = prefs.enhanceSkipTiers.includes(tier.value)
-                    return (
-                      <UnstyledButton
-                        key={tier.value}
-                        role="checkbox"
-                        aria-checked={checked}
-                        data-checked={checked || undefined}
-                        className="drill-choice"
-                        onClick={() =>
-                          onPrefs({
-                            enhanceSkipTiers: checked
-                              ? prefs.enhanceSkipTiers.filter((value) => value !== tier.value)
-                              : [...prefs.enhanceSkipTiers, tier.value],
-                          })
-                        }
-                      >
-                        <span className="drill-choice-check" aria-hidden>
-                          {checked && <IconCheck size={16} />}
-                        </span>
-                        <span className="drill-choice-text">
-                          <span className="drill-choice-label">{renderLabel(tier.label)}</span>
-                        </span>
-                      </UnstyledButton>
-                    )
-                  })}
+                <div className="reader-settings-choices">
+                  <DrillMultiChoices
+                    label={t`Don't enhance`}
+                    value={prefs.enhanceSkipTiers}
+                    options={ENHANCE_SKIP_TIERS.map((tier) => ({ value: tier.value, label: renderLabel(tier.label) }))}
+                    onChange={(enhanceSkipTiers) => onPrefs({ enhanceSkipTiers: enhanceSkipTiers as ReaderPrefs['enhanceSkipTiers'] })}
+                  />
                 </div>
               </SubPage>
             )}

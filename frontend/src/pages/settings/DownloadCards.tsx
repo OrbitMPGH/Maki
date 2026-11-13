@@ -3,7 +3,7 @@ import { useEffect, useReducer, useState } from 'react'
 import { ApiError } from '../../api/client'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
-import { Box, Button, Checkbox, Group, MultiSelect, Select, Stack, Switch, Text } from '@mantine/core'
+import { Box, Button, Checkbox, Group, Input, MultiSelect, SegmentedControl, Select, Stack, Switch, Text } from '@mantine/core'
 import { IconAdjustments } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
@@ -34,6 +34,7 @@ import {
   useSources,
 } from '../../api/hooks'
 import { ConnectionSettingsCard } from '../../components/ConnectionSettingsCard'
+import { ConnectionTestLine } from '../../components/ConnectionSettingsCardStatus'
 import { IndexerFieldRow } from '../../components/settings/IndexerForm'
 import { indexerBackendName, useIndexerForm } from '../../components/settings/useIndexerForm'
 import { useDownloadClientFields } from '../../components/settings/downloadClientFields'
@@ -184,17 +185,18 @@ export function SourcePrioritySection() {
       onDiscard={discard}
       onSave={() => save.mutate({ sourceOrder, scoutOnMatch, volumeFirst }, { onSuccess: savedToast })}
     >
-      <Select
-        label={t`Pick a source by`}
-        data={[
-          { value: 'manual', label: t`Your priority order` },
-          { value: 'quality', label: t`Best measured quality` },
-        ]}
-        value={sourceOrder}
-        onChange={(value) => value && setSourceOrder(value as SourceOrderMode)}
-        allowDeselect={false}
-        mb="sm"
-      />
+      <Input.Wrapper label={t`Pick a source by`} mb="sm">
+        <SegmentedControl
+          mt={4}
+          aria-label={t`Pick a source by`}
+          data={[
+            { value: 'manual', label: t`Your priority order` },
+            { value: 'quality', label: t`Best measured quality` },
+          ]}
+          value={sourceOrder}
+          onChange={(value) => setSourceOrder(value as SourceOrderMode)}
+        />
+      </Input.Wrapper>
       <Switch
         label={t`Measure sources when a series is added`}
         description={t`Samples a few pages from every linked source.`}
@@ -905,7 +907,10 @@ export function IndexerSection() {
         options.reset()
       }}
     >
-      <IndexerFieldRow form={form} />
+      <IndexerFieldRow
+        form={form}
+        status={<ConnectionTestLine testKey={form.selected ? `indexer:${form.selected}` : undefined} />}
+      />
       {form.switching ? (
         <Text size="sm" c="var(--ink-3)" mt="md">
           <Trans>Save to switch to {selectedName}.</Trans>

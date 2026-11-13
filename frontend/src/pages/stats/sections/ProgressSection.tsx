@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import {
-  Alert,
   Group,
   RingProgress,
   SimpleGrid,
@@ -28,6 +27,7 @@ import {
 } from '../AchievementGrid'
 import { StatsInsight } from '../StatsSection'
 import type { StatsSectionProps } from './types'
+import { Callout } from '../../../components/ui/Callout'
 
 export const GOAL_LABELS: Record<ReadingGoal['period'], MessageDescriptor> = {
   Day: msg`Today`,
@@ -174,13 +174,13 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
 
   if (!summary.enabled) {
     return (
-      <Alert icon={<IconInfoCircle size={16} />} color="var(--neutral)" variant="light">
+      <Callout tone="neutral" role="alert" icon={IconInfoCircle}>
         <Trans>
           Progress tracking is switched off. Turn it back on under Settings to see levels,
           achievements and streaks. Nothing was lost while it was off: all of it is worked out from
           your reading history whenever it is asked for.
         </Trans>
-      </Alert>
+      </Callout>
     )
   }
 

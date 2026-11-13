@@ -17,6 +17,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { formatBytes } from '../format'
 import { useLabel } from '../i18n-context'
 import { AllNone, MapLegend, useRangeText } from './ChapterMapParts'
+import { MODAL_SIZE } from './ui/modalSizes'
 
 const BASIS_LABELS: Record<string, MessageDescriptor> = {
   pageMarkers: msg`From its pages`,
@@ -265,7 +266,7 @@ export function RelinkFilesModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Relink files`} size={720}>
+    <Modal opened={opened} onClose={onClose} title={t`Relink files`} size={MODAL_SIZE.wide}>
       <Stack gap="md">
         {isLoading ? (
           <Group py="md" gap="xs">

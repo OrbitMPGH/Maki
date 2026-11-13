@@ -30,6 +30,7 @@ import { useLabel } from '../../i18n-context'
 import { FigureStrip } from '../ui/FigureStrip'
 import { MetaList } from '../ui/MetaList'
 import { ModalFooter, ModalHeading, ModalNote } from '../ui/ModalShell'
+import { MODAL_SIZE } from '../ui/modalSizes'
 
 /** What the import builds a CBZ from (`ComicSourceKind`). */
 const KIND_LABELS: Record<string, MessageDescriptor> = {
@@ -529,7 +530,7 @@ export function ImportPlanModal({
           description={<Trans>Nothing has been changed. This is what importing would do.</Trans>}
         />
       }
-      size="xl"
+      size={MODAL_SIZE.wide}
       attributes={{ body: { tabIndex: 0 } }}
     >
       <Stack gap="sm">

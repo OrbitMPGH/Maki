@@ -199,7 +199,7 @@ function GateReadingList() {
         <Link key={chapterId} to={`/read/${chapterId}`} className="next-up-row">
           <Thumb src={coverUrl} size="sm" />
           <span className="next-up-copy">
-            <span className="next-up-name">{seriesTitle}</span>
+            <span className="next-up-name series-title">{seriesTitle}</span>
             <span className="next-up-meta tnum">{chapterLabel}</span>
           </span>
         </Link>

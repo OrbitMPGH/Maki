@@ -82,7 +82,8 @@ public class SettingsController(
     AccountSecurityAlerts? alerts = null,
     IScrobbleTokenStore? scrobbleTokens = null,
     MangaUpdatesTracker? mangaUpdates = null,
-    KitsuTracker? kitsu = null) : ControllerBase
+    KitsuTracker? kitsu = null,
+    ConnectionTestStore? connectionTests = null) : ControllerBase
 {
     public record FlareSolverrSettings(string? Url);
     public record IndexerConnection(string? Backend, string? Url, string? ApiKey);
@@ -1708,14 +1709,18 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.urlAndApiKeyRequired");
         }
 
-        if (await indexers.For(candidate.Backend).PingAsync(candidate, ct))
+        const string code = "error.settings.indexerNoResponse";
+        var service = new { service = candidate.Backend.DisplayName() };
+        var ok = await indexers.For(candidate.Backend).PingAsync(candidate, ct);
+        await RecordTestAsync(ConnectionTestStore.IndexerKey(candidate.Backend),
+            ConnectionTestStore.IndexerFingerprint(candidate), ok, code, service, ct);
+        if (ok)
         {
             return Ok(new { success = true });
         }
 
-        const string code = "error.settings.indexerNoResponse";
         return StatusCode(StatusCodes.Status502BadGateway,
-            new { success = false, code, error = localizer.Get(code, new { service = candidate.Backend.DisplayName() }) });
+            new { success = false, code, error = localizer.Get(code, service) });
     }
 
     [Authorize(Policy = Policies.Admin)]
@@ -1912,9 +1917,11 @@ public class SettingsController(
             request.Password ?? stored.Password,
             request.Label is null ? stored.Label : DownloadClientSettingsStore.LabelOrDefault(request.Label));
 
+        var fingerprint = ConnectionTestStore.DownloadClientFingerprint(client);
         try
         {
             await torrentClients.For(kind).PingAsync(client, ct);
+            await RecordTestAsync(ConnectionTestStore.DownloadClient, fingerprint, true, null, null, ct);
             return Ok(new { success = true });
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
@@ -1923,6 +1930,7 @@ public class SettingsController(
             var code = ex is TorrentClientException { Failure: TorrentClientFailure.LoginFailed }
                 ? "error.settings.downloadClientLoginFailed"
                 : "error.settings.downloadClientNoResponse";
+            await RecordTestAsync(ConnectionTestStore.DownloadClient, fingerprint, false, code, null, ct);
             return StatusCode(StatusCodes.Status502BadGateway, new { success = false, code, error = localizer.Get(code) });
         }
     }
@@ -2031,7 +2039,10 @@ public class SettingsController(
             return this.Fail(localizer, "error.settings.urlAndApiKeyRequired");
         }
 
-        return await kavita.PingAsync(url, apiKey, ct)
+        var reachable = await kavita.PingAsync(url, apiKey, ct);
+        await RecordTestAsync(ConnectionTestStore.Kavita, ConnectionTestStore.KavitaFingerprint(url, apiKey),
+            reachable, "error.settings.kavitaNoResponse", null, ct);
+        return reachable
             ? Ok(new { success = true })
             : StatusCode(StatusCodes.Status502BadGateway,
                 new { success = false, code = "error.settings.kavitaNoResponse", error = localizer.Get("error.settings.kavitaNoResponse") });
@@ -2069,11 +2080,22 @@ public class SettingsController(
         }
 
         var ok = await flareSolverr.PingAsync(url, ct);
+        await RecordTestAsync(ConnectionTestStore.FlareSolverr, ConnectionTestStore.FlareSolverrFingerprint(url),
+            ok, "error.settings.flaresolverrNoResponse", null, ct);
         return ok
             ? Ok(new { success = true })
             : StatusCode(StatusCodes.Status502BadGateway,
                 new { success = false, code = "error.settings.flaresolverrNoResponse", error = localizer.Get("error.settings.flaresolverrNoResponse") });
     }
+
+    /// <summary>The last Test result of each connection, only where the stored settings are still the ones tested.</summary>
+    [Authorize(Policy = Policies.Admin)]
+    [HttpGet("connection-tests")]
+    public async Task<IActionResult> GetConnectionTests(CancellationToken ct) =>
+        Ok(connectionTests is null ? [] : await connectionTests.CurrentAsync(ct));
+
+    private Task RecordTestAsync(string key, string fingerprint, bool ok, string? code, object? args, CancellationToken ct) =>
+        connectionTests?.RecordAsync(key, fingerprint, ok, code, args, ct) ?? Task.CompletedTask;
 
     [HttpGet("metadata")]
     public async Task<IActionResult> GetMetadata(CancellationToken ct)
