@@ -1077,6 +1077,7 @@ try
     builder.Services.AddScoped<StatsStandingService>();
     builder.Services.AddScoped<ReadingSessionService>();
     builder.Services.AddScoped<ReadingSessionBackfillService>();
+    builder.Services.AddScoped<SeriesCompletionBackfillService>();
     // Backs UserMetricsService's short-lived snapshot cache. The metrics are recomputed from the
     // event log rather than incremented, so an entry going stale costs a badge appearing a minute
     // late and nothing else.
@@ -1719,6 +1720,10 @@ try
         // Stitches historical ReadingTime events into ReadingSessions once, so sittings exist
         // on the stats page from the first release rather than only for reads after upgrade.
         scope.ServiceProvider.GetRequiredService<ReadingSessionBackfillService>()
+            .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+        // Series finished before the Completed reading status existed get it, so the trackers hear.
+        scope.ServiceProvider.GetRequiredService<SeriesCompletionBackfillService>()
             .RunOnceAsync(CancellationToken.None).GetAwaiter().GetResult();
 
         // After the backfill, so rows it just seeded are already keyed and this pass has nothing

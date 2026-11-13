@@ -231,6 +231,7 @@ public sealed class ControllerAuthorizationInventoryTests
         "RecommendationFeedbackController.Undo",
         "SeriesController.CancelBulk",
         "SeriesController.DismissArchiveHint",
+        "SeriesController.DismissCompleteHint",
         "SeriesController.DismissRateHint",
         "SeriesController.DismissRatingCheckpoint",
         "SeriesController.FinalizeRating",

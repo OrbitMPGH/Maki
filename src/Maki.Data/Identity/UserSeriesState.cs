@@ -111,9 +111,16 @@ public class UserSeriesState : IUserOwned
     public DateTime? RateHintDismissedAt { get; set; }
 
     /// <summary>
+    /// When this reader answered "not yet" to marking a finished series Completed after reading every
+    /// chapter they kept while leaving some out.
+    /// </summary>
+    public DateTime? CompleteHintDismissedAt { get; set; }
+
+    /// <summary>
     /// This reader's status for the series. No row reads as <see cref="ReadingStatus.PlanToRead"/>.
     /// A read moves anything else to <see cref="ReadingStatus.Reading"/> in <c>MakiDbContext</c>'s
-    /// save hook, so no read path has to remember it.
+    /// save hook, so no read path has to remember it. A read that reaches the end then moves it on to
+    /// <see cref="ReadingStatus.Completed"/> (<c>ReadingProgressService</c>, after the save).
     /// </summary>
     public ReadingStatus Status { get; set; }
 

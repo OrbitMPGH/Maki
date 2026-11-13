@@ -3500,6 +3500,9 @@ namespace Maki.Data.Migrations
                     b.Property<DateTime?>("ArchiveHintDismissedAt")
                         .HasColumnType("TEXT");
 
+                    b.Property<DateTime?>("CompleteHintDismissedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime?>("HiddenFromHomeAt")
                         .HasColumnType("TEXT");
 

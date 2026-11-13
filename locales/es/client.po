@@ -2002,6 +2002,11 @@ msgstr "{left, plural, one {# restante} many {# restantes} other {# restantes}}"
 msgid "{left, plural, one {# left} other {# left}}, about {eta}"
 msgstr "{left, plural, one {# restante} many {# restantes} other {# restantes}}, unos {eta}"
 
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{leftOut, plural, one {You've read every chapter you kept. # chapter was left out. Done with this series?} other {You've read every chapter you kept. # chapters were left out. Done with this series?}}"
+msgstr ""
+
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "{levelName}, {methodName}"
@@ -14199,6 +14204,11 @@ msgstr "Marcar como leídos los capítulos leídos en Mihon"
 msgid "Mark chapters watched"
 msgstr "Marcar capítulos como vistos"
 
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Mark completed"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -16654,7 +16664,9 @@ msgstr "Sin verificar todavía. Para sustituir o eliminar este archivo primero h
 msgid "Not working"
 msgstr "No funciona"
 
+#: src/components/series/CompleteHint.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 msgid "Not yet"
 msgstr ""
 
@@ -28386,6 +28398,11 @@ msgstr "Has terminado esta serie. ¿La archivas?"
 #, fuzzy
 msgid "You've finished this. How was it?"
 msgstr "Has terminado esta serie. ¿Qué tal ha sido?"
+
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You've read every chapter. Done with this series?"
+msgstr ""
 
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy

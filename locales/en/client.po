@@ -1710,6 +1710,11 @@ msgstr "{left, plural, one {# left} other {# left}}"
 msgid "{left, plural, one {# left} other {# left}}, about {eta}"
 msgstr "{left, plural, one {# left} other {# left}}, about {eta}"
 
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{leftOut, plural, one {You've read every chapter you kept. # chapter was left out. Done with this series?} other {You've read every chapter you kept. # chapters were left out. Done with this series?}}"
+msgstr "{leftOut, plural, one {You've read every chapter you kept. # chapter was left out. Done with this series?} other {You've read every chapter you kept. # chapters were left out. Done with this series?}}"
+
 #: src/pages/reader/ReaderSettings.tsx
 msgid "{levelName}, {methodName}"
 msgstr "{levelName}, {methodName}"
@@ -11870,6 +11875,11 @@ msgstr "Mark chapters read in Mihon as read"
 msgid "Mark chapters watched"
 msgstr "Mark chapters watched"
 
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Mark completed"
+msgstr "Mark completed"
+
 #: src/components/series/ChapterTableRows.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -13919,7 +13929,9 @@ msgstr "Not verified yet. Replacing or deleting this file needs a verify first."
 msgid "Not working"
 msgstr "Not working"
 
+#: src/components/series/CompleteHint.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 msgid "Not yet"
 msgstr "Not yet"
 
@@ -23688,6 +23700,11 @@ msgstr "You've finished this. Archive it?"
 #: src/components/series/RateHint.tsx
 msgid "You've finished this. How was it?"
 msgstr "You've finished this. How was it?"
+
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You've read every chapter. Done with this series?"
+msgstr "You've read every chapter. Done with this series?"
 
 #: src/pages/discover/ShortlistTab.tsx
 msgid "your {detail} list"

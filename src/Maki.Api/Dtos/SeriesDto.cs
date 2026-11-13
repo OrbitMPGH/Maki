@@ -249,6 +249,13 @@ public record SeriesDto(
     public bool ArchiveHintEligible { get; init; }
 
     /// <summary>
+    /// Set when the series page should ask the caller whether they are done with a finished series
+    /// (<see cref="Services.SeriesCompletion.AskAsync"/>): how many chapters they switched off, 0 when
+    /// none. Null means no ask. Detail endpoint only.
+    /// </summary>
+    public int? CompleteHintLeftOut { get; init; }
+
+    /// <summary>
     /// The series page should ask this caller to rate it: they finished it, have not rated it and
     /// have not dismissed the ask. Detail endpoint only.
     /// </summary>

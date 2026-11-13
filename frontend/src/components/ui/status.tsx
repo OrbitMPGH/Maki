@@ -247,7 +247,7 @@ export function isQueueActive(status: string): boolean {
   )
 }
 
-export const READING_STATUSES = ['PlanToRead', 'Reading', 'OnHold', 'Dropped'] as const
+export const READING_STATUSES = ['PlanToRead', 'Reading', 'Completed', 'OnHold', 'Dropped'] as const
 export type ReadingStatus = (typeof READING_STATUSES)[number]
 
 /** The signed-in user's own reading status on a series. */
@@ -257,6 +257,8 @@ export function readingStatusVisual(status: string): StatusVisual {
       return { color: tone('neutral'), label: msg`Plan to read`, Icon: IconBookmark }
     case 'Reading':
       return { color: tone('info'), label: msg`Reading`, Icon: IconBook }
+    case 'Completed':
+      return { color: tone('ok'), label: msg`Completed`, Icon: IconCircleCheck }
     case 'OnHold':
       return { color: tone('warn'), label: msg`On hold`, Icon: IconPlayerPause }
     case 'Dropped':

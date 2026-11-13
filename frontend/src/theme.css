@@ -11519,6 +11519,11 @@ body.reader-open {
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.62);
 }
+.reader-end-complete {
+  display: flex;
+  flex-direction: column;
+  margin-top: 14px;
+}
 .reader-end-quiet {
   --button-color: rgba(255, 255, 255, 0.72);
   --button-hover: rgba(255, 255, 255, 0.08);

@@ -943,8 +943,8 @@ public class ScrobbleService(
     }
 
     /// <summary>
-    /// The series this reader holds at On hold or Dropped in Maki, as the tracker status each one is
-    /// pushed as. Everything else is pushed from reading progress alone.
+    /// The series this reader holds at On hold, Dropped or Completed in Maki, as the tracker status each
+    /// one is pushed as. Everything else is pushed from reading progress alone.
     /// </summary>
     private async Task<Dictionary<int, ScrobbleStatus?>> HeldStatusesAsync(int userId, CancellationToken ct)
     {
@@ -952,7 +952,8 @@ public class ScrobbleService(
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         return await db.UserSeriesStates.IgnoreQueryFilters()
             .Where(s => s.UserId == userId &&
-                        (s.Status == ReadingStatus.OnHold || s.Status == ReadingStatus.Dropped))
+                        (s.Status == ReadingStatus.OnHold || s.Status == ReadingStatus.Dropped ||
+                         s.Status == ReadingStatus.Completed))
             .ToDictionaryAsync(s => s.SeriesId, s => HeldAs(s.Status), ct);
     }
 
@@ -961,6 +962,7 @@ public class ScrobbleService(
     {
         ReadingStatus.OnHold => ScrobbleStatus.Paused,
         ReadingStatus.Dropped => ScrobbleStatus.Dropped,
+        ReadingStatus.Completed => ScrobbleStatus.Completed,
         _ => null,
     };
 
@@ -1284,7 +1286,8 @@ public class ScrobbleService(
     /// Best-effort push of a reading status the reader set in Maki to every connected tracker that
     /// already lists the series. On hold and Dropped move the entry to paused and dropped; Reading
     /// moves a paused or dropped entry back. Progress is left as the tracker has it (the scrobble
-    /// tick pushes reading on its own), Completed entries are never touched, and a series not on
+    /// tick pushes reading on its own), except that Completed fills it to the tracker's own total,
+    /// as <see cref="ScrobblePlanner"/> does. Completed entries are never touched, and a series not on
     /// the list is not added. Returns the labels of the trackers that accepted the write.
     /// </summary>
     public async Task<IReadOnlyList<string>> PushStatusAsync(
@@ -1335,7 +1338,8 @@ public class ScrobbleService(
                     await Task.Delay(AniListPace, ct);
                 }
 
-                await tracker.UpdateAsync(userId, remoteId, entry.ProgressChapter, entry.ProgressVolume, next, ct);
+                var plan = ScrobblePlanner.Decide(entry, 0, 0, held: next);
+                await tracker.UpdateAsync(userId, remoteId, plan.Chapter, plan.Volume, next, ct);
                 await RecordStatusAsync(userId, series.Id, tracker.Name, StatusName(next), ct);
                 synced.Add(tracker.Label);
                 await AddKeyedLogAsync(userId, "info", tracker.Name, series.Title,

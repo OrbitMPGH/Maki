@@ -48,4 +48,13 @@ public static class ReadCounts
             !p.Watched &&
             db.Chapters.IgnoreQueryFilters().Any(c => c.Id == p.ChapterId &&
                 (c.ChapterFileId != null || c.FileRemovedAt != null)));
+
+    /// <summary>
+    /// <see cref="Read"/> for a named user, watched chapters included: the position count, for
+    /// background code deciding whether a reader got to the end of a series.
+    /// </summary>
+    public static IQueryable<ChapterProgress> SeenFor(MakiDbContext db, int userId) =>
+        db.ChapterProgress.IgnoreQueryFilters().Where(p => p.UserId == userId && p.Completed &&
+            db.Chapters.IgnoreQueryFilters().Any(c => c.Id == p.ChapterId &&
+                (c.ChapterFileId != null || c.FileRemovedAt != null)));
 }

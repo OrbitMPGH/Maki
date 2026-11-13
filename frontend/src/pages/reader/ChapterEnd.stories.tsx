@@ -4,7 +4,7 @@ import { http, HttpResponse } from 'msw'
 import { api } from '../../../.storybook/mocks/api'
 import { chapters, makeManifest } from '../../../.storybook/mocks/entry/fixtures'
 import { downloadingItem, queuedItems, queuePage } from '../../../.storybook/mocks/operations/queue'
-import { lateOutlook } from '../../../.storybook/mocks/operations/upcoming'
+import { finishedOutlook, lateOutlook } from '../../../.storybook/mocks/operations/upcoming'
 import type { ReaderEnding } from '../../api/reader'
 import ChapterEnd from './ChapterEnd'
 import { RatingCheckpointPrompt } from '../../components/series/RatingCheckpointPrompt'
@@ -21,6 +21,7 @@ const ending = (over: Partial<ReaderEnding> = {}): ReaderEnding => ({
   rating: null,
   provisionalRating: null,
   rateHintDismissed: false,
+  leftOutToComplete: null,
   ...over,
 })
 
@@ -124,6 +125,33 @@ export const EveryChapterRead: Story = {
   args: { manifest: chapters[2096] },
   play: async ({ canvas }) => {
     await expect(await canvas.findByText("That's every chapter on disk.")).toBeVisible()
+  },
+}
+
+// The server only asks once no further chapter is expected, so the outlook here has nothing to say.
+const keptChaptersRead = [
+  withEnding(ending({ seriesChapterCount: 96, seriesReadCount: 96, seriesWantedCount: 96, completed: true, leftOutToComplete: 3 })),
+  http.get(api('/series/:id/outlook'), () => HttpResponse.json(finishedOutlook)),
+  http.put(api('/series/:id/reading-status'), () => HttpResponse.json({ readingStatus: 'Completed' })),
+]
+
+export const EveryKeptChapterReadAsksIfDone: Story = {
+  args: { manifest: chapters[2096] },
+  parameters: { msw: keptChaptersRead },
+  play: async ({ canvas }) => {
+    await expect(
+      await canvas.findByText("You've read every chapter you kept. 3 chapters were left out. Done with this series?"),
+    ).toBeVisible()
+    await expect(await canvas.findByRole('button', { name: 'Not yet' })).toBeVisible()
+  },
+}
+
+export const MarkCompletedFromTheEndScreen: Story = {
+  args: { manifest: chapters[2096] },
+  parameters: { msw: keptChaptersRead },
+  play: async ({ canvas, userEvent }) => {
+    await userEvent.click(await canvas.findByRole('button', { name: 'Mark completed' }))
+    await waitFor(() => expect(canvas.queryByRole('button', { name: 'Mark completed' })).toBeNull())
   },
 }
 

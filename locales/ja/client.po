@@ -2002,6 +2002,11 @@ msgstr "{left, plural, other {残り # 件}}"
 msgid "{left, plural, one {# left} other {# left}}, about {eta}"
 msgstr "{left, plural, other {残り#章}}、約{eta}"
 
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{leftOut, plural, one {You've read every chapter you kept. # chapter was left out. Done with this series?} other {You've read every chapter you kept. # chapters were left out. Done with this series?}}"
+msgstr ""
+
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "{levelName}, {methodName}"
@@ -14199,6 +14204,11 @@ msgstr "Mihonで既読にした章をこちらでも既読にする"
 msgid "Mark chapters watched"
 msgstr "章を視聴済みにする"
 
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Mark completed"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -16654,7 +16664,9 @@ msgstr "まだ検証されていません。このファイルを置き換えた
 msgid "Not working"
 msgstr "動作しません"
 
+#: src/components/series/CompleteHint.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 msgid "Not yet"
 msgstr ""
 
@@ -28386,6 +28398,11 @@ msgstr "読了しました。アーカイブしますか？"
 #, fuzzy
 msgid "You've finished this. How was it?"
 msgstr "読了しました。どうでしたか？"
+
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You've read every chapter. Done with this series?"
+msgstr ""
 
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy

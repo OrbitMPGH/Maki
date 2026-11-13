@@ -263,4 +263,10 @@ public enum ReadingStatus
 
     /// <summary>Off Home's reading rail until the next read. Pushed to trackers as dropped.</summary>
     Dropped = 3,
+
+    /// <summary>
+    /// Read to the end. Set when a read reaches the last chapter of a finished series and every chapter
+    /// its progress total counts is read, or by hand. Pushed to trackers as completed.
+    /// </summary>
+    Completed = 4,
 }

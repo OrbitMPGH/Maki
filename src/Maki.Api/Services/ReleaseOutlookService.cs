@@ -48,11 +48,15 @@ public class ReleaseOutlookService(
 
         return series
             .Select(s => (Series: s, Outlook: outlooks[s.Id]))
-            .Where(x => x.Outlook.AnnouncedAt is not null ||
-                        x.Outlook.State is CadenceState.Expected or CadenceState.Late)
+            .Where(x => ExpectsMore(x.Outlook))
             .OrderBy(x => x.Outlook.AnnouncedAt ?? x.Outlook.WindowStart)
             .ToList();
     }
+
+    /// <summary>A next chapter is announced, or its window is open or recently closed.</summary>
+    public static bool ExpectsMore(ReleaseOutlookDto? outlook) =>
+        outlook is not null &&
+        (outlook.AnnouncedAt is not null || outlook.State is CadenceState.Expected or CadenceState.Late);
 
     private async Task<Dictionary<int, ReleaseOutlookDto>> BuildAsync(
         List<Series> series, HashSet<int> refreshable, List<string> disabled, CancellationToken ct)

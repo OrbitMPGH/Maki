@@ -151,7 +151,7 @@ export interface SeriesDto {
    */
   notificationMode: string
   /** The signed-in user's own status on this series. */
-  readingStatus: 'PlanToRead' | 'Reading' | 'OnHold' | 'Dropped'
+  readingStatus: 'PlanToRead' | 'Reading' | 'Completed' | 'OnHold' | 'Dropped'
   /** True when `readingStatus` was set by one of the auto rules rather than by the user. */
   readingStatusAuto: boolean
   /** Your "Prepare chapters ahead" choice for this series; null while the instance has it off. Detail endpoint only. */
@@ -163,6 +163,11 @@ export interface SeriesDto {
   archiveHintEligible?: boolean
   /** You finished this series and have not rated it or dismissed the ask. Detail endpoint only. */
   rateHintEligible?: boolean
+  /**
+   * Set when the series page asks whether you're done with a finished series: how many chapters you
+   * switched off, 0 when none. Null means no ask. Detail endpoint only.
+   */
+  completeHintLeftOut?: number | null
   /** Personal time left from comparable timed chapters in the built-in reader. Detail endpoint only. */
   readTimeEstimate?: {
     seconds: number
