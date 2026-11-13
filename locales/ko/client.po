@@ -1998,6 +1998,11 @@ msgstr "{left, plural, other {#개 남음}}"
 msgid "{left, plural, one {# left} other {# left}}, about {eta}"
 msgstr "{left, plural, other {#개 남음}}, 약 {eta}"
 
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{leftOut, plural, one {You've read every chapter you kept. # chapter was left out. Done with this series?} other {You've read every chapter you kept. # chapters were left out. Done with this series?}}"
+msgstr ""
+
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "{levelName}, {methodName}"
@@ -14187,6 +14192,11 @@ msgstr "Mihon에서 읽은 챕터를 읽음으로 표시"
 msgid "Mark chapters watched"
 msgstr "챕터를 시청 완료로 표시"
 
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Mark completed"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -16642,7 +16652,9 @@ msgstr "아직 확인되지 않았습니다. 이 파일을 교체하거나 삭�
 msgid "Not working"
 msgstr "작동하지 않음"
 
+#: src/components/series/CompleteHint.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 msgid "Not yet"
 msgstr ""
 
@@ -28368,6 +28380,11 @@ msgstr "다 읽었어요. 보관할까요?"
 #, fuzzy
 msgid "You've finished this. How was it?"
 msgstr "다 읽었어요. 어땠나요?"
+
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You've read every chapter. Done with this series?"
+msgstr ""
 
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy

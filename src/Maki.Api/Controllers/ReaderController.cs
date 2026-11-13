@@ -287,7 +287,8 @@ public class ReaderController(
     /// the reader's position and remounts pages.
     /// </summary>
     [HttpGet("chapter/{id:int}/ending")]
-    public async Task<IActionResult> Ending(int id, CancellationToken ct)
+    public async Task<IActionResult> Ending(
+        int id, CancellationToken ct, [FromServices] ReleaseOutlookService? outlooks = null)
     {
         var row = await db.Chapters.AsNoTracking()
             .Where(c => c.Id == id)
@@ -318,6 +319,12 @@ public class ReaderController(
             rating = state?.Rating,
             provisionalRating = state?.ProvisionalRating,
             rateHintDismissed = state?.RateHintDismissedAt != null,
+            leftOutToComplete = next is null && row.Completed
+                ? await SeriesCompletion.AskAsync(
+                    db, currentUser.UserId, await db.Series.AsNoTracking().FirstAsync(s => s.Id == chapter.SeriesId, ct),
+                    outlooks is not null && ReleaseOutlookService.ExpectsMore(await outlooks.ForSeriesAsync(chapter.SeriesId, ct)),
+                    await LibraryListRows.UnmonitorSpecialsAsync(appSettings, ct), ct, chapter)
+                : null,
         });
     }
 

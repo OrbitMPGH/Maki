@@ -154,6 +154,23 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         """;
 
     /// <summary>
+    /// Moves a series to <see cref="ReadingStatus.Completed"/> for its reader, the same upsert as the
+    /// Reading promotion. Run after the save that recorded the read, so it lands after that promotion.
+    /// </summary>
+    public Task PromoteToCompletedAsync(int userId, int seriesId, CancellationToken ct) =>
+        Database.ExecuteSqlRawAsync(PromoteToCompletedSql, [userId, seriesId, DateTime.UtcNow], ct);
+
+    private const string PromoteToCompletedSql = """
+        INSERT INTO "UserSeriesStates" ("UserId", "SeriesId", "Status", "StatusChangedAt", "StatusAuto", "UpdatedAt",
+            "NotificationMode", "PendingRatingCheckpoint", "RatingCheckpointsSeen", "RatingPromptDismissals")
+        VALUES ({0}, {1}, 4, {2}, 0, {2}, 0, 0, 0, 0)
+        ON CONFLICT ("UserId", "SeriesId") DO UPDATE SET
+            "Status" = 4, "StatusChangedAt" = excluded."StatusChangedAt", "StatusAuto" = 0,
+            "UpdatedAt" = excluded."UpdatedAt"
+        WHERE "Status" <> 4
+        """;
+
+    /// <summary>
     /// The readers and series a pending <see cref="ChapterProgress"/> write counts as reading for: a new
     /// row that is completed or past its first page, a completion, a watched tick turned into a real
     /// read, or a page turn. Watched ticks and mark-unread are not reading. Here rather than at each of

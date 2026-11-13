@@ -1998,6 +1998,11 @@ msgstr "{left, plural, other {还剩 # 个}}"
 msgid "{left, plural, one {# left} other {# left}}, about {eta}"
 msgstr "{left, plural, other {剩余 #}}，约 {eta}"
 
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "{leftOut, plural, one {You've read every chapter you kept. # chapter was left out. Done with this series?} other {You've read every chapter you kept. # chapters were left out. Done with this series?}}"
+msgstr ""
+
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "{levelName}, {methodName}"
@@ -14187,6 +14192,11 @@ msgstr "将 Mihon 中已读的章节标记为已读"
 msgid "Mark chapters watched"
 msgstr "将章节标记为已看过"
 
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "Mark completed"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/SeriesDetailPage.tsx
@@ -16642,7 +16652,9 @@ msgstr "尚未校验。替换或删除此文件前需要先校验。"
 msgid "Not working"
 msgstr "无法工作"
 
+#: src/components/series/CompleteHint.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/reader/ChapterEnd.tsx
 msgid "Not yet"
 msgstr ""
 
@@ -28368,6 +28380,11 @@ msgstr "你已读完此作品。要归档吗？"
 #, fuzzy
 msgid "You've finished this. How was it?"
 msgstr "你已读完此作品。感觉如何？"
+
+#: src/components/series/CompleteHint.tsx
+#: src/pages/reader/ChapterEnd.tsx
+msgid "You've read every chapter. Done with this series?"
+msgstr ""
 
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy

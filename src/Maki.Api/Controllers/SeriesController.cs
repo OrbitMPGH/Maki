@@ -943,7 +943,9 @@ public class SeriesController(
     }
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> Get(int id, [FromServices] ReadFileCleanupService readFileCleanup, CancellationToken ct)
+    public async Task<IActionResult> Get(
+        int id, [FromServices] ReadFileCleanupService readFileCleanup, CancellationToken ct,
+        [FromServices] ReleaseOutlookService? outlooks = null)
     {
         var series = await db.Series.AsNoTracking().Include(s => s.UserTags).Include(s => s.RootFolder)
             .FirstOrDefaultAsync(s => s.Id == id, ct);
@@ -968,8 +970,8 @@ public class SeriesController(
         var readRows = await ReadCounts.Read(db).CountAsync(p => p.SeriesId == id, ct);
         int? readCount = readRows > 0 ? readRows : null;
         var readSpecials = (await LibraryListRows.ReadSpecialCountsBySeriesAsync(db, [id], ct)).GetValueOrDefault(id);
-        var progress = LibraryListRows.ProgressTotals(
-            series, counts, readCount, readSpecials, await LibraryListRows.UnmonitorSpecialsAsync(appSettings, ct));
+        var unmonitorSpecials = await LibraryListRows.UnmonitorSpecialsAsync(appSettings, ct);
+        var progress = LibraryListRows.ProgressTotals(series, counts, readCount, readSpecials, unmonitorSpecials);
 
         var userState = await db.UserSeriesStates
             .Where(x => x.SeriesId == id)
@@ -1026,6 +1028,11 @@ public class SeriesController(
             ArchiveHintEligible = currentUser.Has(MakiPermission.ArchiveSeries) &&
                                   await SeriesArchiveService.FinishedHintAsync(db, series, ct),
             RateHintEligible = await RateHintAsync(db, id, ct),
+            CompleteHintLeftOut = series.Status == SeriesStatus.Completed
+                ? await SeriesCompletion.AskAsync(db, currentUser.UserId, series,
+                    outlooks is not null && ReleaseOutlookService.ExpectsMore(await outlooks.ForSeriesAsync(id, ct)),
+                    unmonitorSpecials, ct)
+                : null,
             ReadTimeEstimate = estimate is null
                 ? null
                 : new ReadingTimeEstimateDto(
@@ -2117,6 +2124,22 @@ public class SeriesController(
         }
 
         await UpsertUserStateAsync(id, s => s.ArchiveHintDismissedAt = DateTime.UtcNow, ct);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Answers "not yet" to marking the series Completed after reading every chapter the caller kept.
+    /// Marking it Completed goes through <see cref="SetReadingStatus"/>.
+    /// </summary>
+    [HttpPost("{id:int}/complete-hint/dismiss")]
+    public async Task<IActionResult> DismissCompleteHint(int id, CancellationToken ct)
+    {
+        if (!await db.Series.AnyAsync(s => s.Id == id, ct))
+        {
+            return NotFound();
+        }
+
+        await UpsertUserStateAsync(id, s => s.CompleteHintDismissedAt = DateTime.UtcNow, ct);
         return NoContent();
     }
 

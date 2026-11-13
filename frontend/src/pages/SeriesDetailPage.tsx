@@ -75,6 +75,7 @@ import {
   useSources,
   useArchiveSeries,
   useDismissArchiveHint,
+  useDismissCompleteHint,
   useDismissRateHint,
   useDeleteSeries,
   useRemoveArchivedFiles,
@@ -191,6 +192,7 @@ import {
 import { ArchivedBanner } from '../components/series/ArchivedBanner'
 import { SeriesTorrentDownloads } from '../components/series/SeriesTorrentDownloads'
 import { ArchiveHint } from '../components/series/ArchiveHint'
+import { CompleteHint } from '../components/series/CompleteHint'
 import { RateHint } from '../components/series/RateHint'
 import { RatingCheckpointPrompt } from '../components/series/RatingCheckpointPrompt'
 import { ratesProvisionally } from '../lib/rating'
@@ -612,6 +614,7 @@ function SeriesDetailBody() {
   const deleteSeries = useDeleteSeries()
   const archiveSeries = useArchiveSeries()
   const dismissArchiveHint = useDismissArchiveHint()
+  const dismissCompleteHint = useDismissCompleteHint()
   const dismissRateHint = useDismissRateHint()
   const restoreSeries = useRestoreSeries()
   const removeArchivedFiles = useRemoveArchivedFiles()
@@ -2568,7 +2571,7 @@ function SeriesDetailBody() {
             }
         />
 
-        {/* One hint at a time: rating comes first, the archive offer follows once it is settled. */}
+        {/* One hint at a time: rating comes first, then "done with it?", then the archive offer. */}
         {series.rateHintEligible ? (
           <RateHint
             soFar={series.provisionalRating ?? null}
@@ -2587,6 +2590,12 @@ function SeriesDetailBody() {
               )
             }
             onDismiss={() => dismissCheckpoint.mutate(series.id)}
+          />
+        ) : series.completeHintLeftOut != null ? (
+          <CompleteHint
+            leftOut={series.completeHintLeftOut}
+            onComplete={() => changeReadingStatus(series.id, 'Completed')}
+            onDismiss={() => dismissCompleteHint.mutate(series.id)}
           />
         ) : series.archiveHintEligible && series.archivedAt == null && canArchive && (
           <ArchiveHint

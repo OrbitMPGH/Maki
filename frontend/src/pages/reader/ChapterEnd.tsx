@@ -1,10 +1,11 @@
 import { Button, Group } from '@mantine/core'
-import { IconArrowLeft, IconArrowRight, IconNote } from '../../lib/icons'
-import { type ReactNode, useEffect, useRef } from 'react'
+import { IconArrowLeft, IconArrowRight, IconCircleCheck, IconNote } from '../../lib/icons'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Plural, Trans } from '@lingui/react/macro'
 import { useReaderEnding, type ReaderManifest } from '../../api/reader'
-import { useSeriesQueue } from '../../api/hooks'
+import { useDismissCompleteHint, useSeriesQueue } from '../../api/hooks'
+import { useChangeReadingStatus } from '../../components/series/ReadingStatus'
 import { useChapterNotes } from '../../api/notes'
 import NoteBody from '../../components/notes/NoteBody'
 import { useAuthorLabel } from '../../components/notes/useAuthorLabel'
@@ -23,6 +24,57 @@ function skipped(current: number | null, next: number | null): [number, number] 
   const from = Math.floor(current) + 1
   const to = Math.floor(next) - 1
   return to >= from ? [from, to] : null
+}
+
+/**
+ * Every chapter the reader kept is read and the series has ended, but some chapters were switched off,
+ * or one was still expected when the last was read. The server never asks while one is expected.
+ */
+function ChapterEndComplete({ seriesId, leftOut }: { seriesId: number; leftOut: number }) {
+  const changeStatus = useChangeReadingStatus()
+  const dismiss = useDismissCompleteHint()
+  const [answered, setAnswered] = useState(false)
+  if (answered) return null
+  return (
+    <div className="reader-end-complete">
+      <span className="reader-end-note">
+        {leftOut > 0 ? (
+          <Plural
+            value={leftOut}
+            one="You've read every chapter you kept. # chapter was left out. Done with this series?"
+            other="You've read every chapter you kept. # chapters were left out. Done with this series?"
+          />
+        ) : (
+          <Trans>You've read every chapter. Done with this series?</Trans>
+        )}
+      </span>
+      <Group gap="xs" mt="xs">
+        <Button
+          size="compact-sm"
+          variant="light"
+          leftSection={<IconCircleCheck size={16} />}
+          onClick={() => {
+            setAnswered(true)
+            changeStatus(seriesId, 'Completed')
+          }}
+        >
+          <Trans>Mark completed</Trans>
+        </Button>
+        <Button
+          size="compact-sm"
+          variant="subtle"
+          color="gray"
+          className="reader-end-quiet"
+          onClick={() => {
+            setAnswered(true)
+            dismiss.mutate(seriesId)
+          }}
+        >
+          <Trans>Not yet</Trans>
+        </Button>
+      </Group>
+    </div>
+  )
 }
 
 /** The newest two shared notes, or a way to leave the first one. Nothing while the list is unavailable. */
@@ -241,6 +293,9 @@ export default function ChapterEnd({
             )}
             {!finished && !downloading && unread === 0 && pending === 0 && (
               <ChapterEndOutlook seriesId={manifest.seriesId} />
+            )}
+            {!finished && !downloading && unread === 0 && pending === 0 && ending?.leftOutToComplete != null && (
+              <ChapterEndComplete seriesId={manifest.seriesId} leftOut={ending.leftOutToComplete} />
             )}
             <Group gap="xs" mt="md">
               <Button component={Link} to={`/series/${manifest.seriesId}`} leftSection={<IconArrowLeft size={16} />}>

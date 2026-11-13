@@ -84,6 +84,8 @@ export interface ReaderEnding {
   rating: number | null
   provisionalRating: number | null
   rateHintDismissed: boolean
+  /** Set when the end screen asks whether you're done with a finished series: chapters you switched off, 0 when none. Null means no ask. */
+  leftOutToComplete: number | null
 }
 
 export interface EnhanceServer {

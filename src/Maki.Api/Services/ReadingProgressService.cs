@@ -1,3 +1,4 @@
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
@@ -30,7 +31,9 @@ public sealed class ReadingProgressGate
 public class ReadingProgressService(
     MakiDbContext db,
     ReadingProgressGate gate,
-    ILogger<ReadingProgressService> logger)
+    ILogger<ReadingProgressService> logger,
+    IAppSettings? appSettings = null,
+    ReleaseOutlookService? outlooks = null)
 {
     private static readonly TimeSpan GateTimeout = TimeSpan.FromSeconds(10);
 
@@ -75,6 +78,7 @@ public class ReadingProgressService(
                     state.Finished |= await IsSeriesFinishedAsync(seriesId, state.MaxChapter, ct);
                     state.UpdatedAt = now;
                     await db.SaveChangesAsync(ct);
+                    await CompleteIfReadThroughAsync(userId, state, ct);
                     logger.LogInformation(
                         "Adopted native reading state for '{Title}' into Kavita series {KavitaId} at chapter {Chapter}",
                         title, kavitaSeriesId, state.MaxChapter);
@@ -99,6 +103,7 @@ public class ReadingProgressService(
                     UpdatedAt = now
                 });
                 await db.SaveChangesAsync(ct);
+                await CompleteIfDoneAsync(userId, seriesId, maxChapter, ct);
                 return new Marks(maxChapter, maxVolume);
             }
 
@@ -217,6 +222,7 @@ public class ReadingProgressService(
                     UpdatedAt = now
                 });
                 await db.SaveChangesAsync(ct);
+                await CompleteIfDoneAsync(userId, seriesId, maxChapter, ct);
                 return true;
             }
 
@@ -233,6 +239,10 @@ public class ReadingProgressService(
             state.Finished |= await IsSeriesFinishedAsync(state.SeriesId, state.MaxChapter, ct);
             state.UpdatedAt = now;
             await db.SaveChangesAsync(ct);
+
+            // Every caller is a one-off the reader started (mark read, an import, an anime tick), so
+            // filling in the chapters before the mark completes the series too.
+            await CompleteIfReadThroughAsync(userId, state, ct);
             return true;
         }, ct);
 
@@ -352,6 +362,7 @@ public class ReadingProgressService(
             }
         }
 
+        var moved = maxChapter > state.MaxChapter;
         if (maxChapter > state.MaxChapter || maxVolume > state.MaxVolume)
         {
             state.MaxChapter = Math.Max(state.MaxChapter, maxChapter);
@@ -398,7 +409,51 @@ public class ReadingProgressService(
         state.Title = title;
         state.UpdatedAt = now;
         await db.SaveChangesAsync(ct);
+
+        // Every native completion asks, since the chapters before the mark may be the last ones
+        // filled in. Kavita reports the same series every tick, so its path asks only when the mark
+        // moved, or a reader who set a finished series back to Reading would be overruled each tick.
+        if (nativeCompletions is not null || moved || firstFinish)
+        {
+            await CompleteIfReadThroughAsync(userId, state, ct);
+        }
+
         return new Marks(state.MaxChapter, state.MaxVolume);
+    }
+
+    private Task CompleteIfReadThroughAsync(int userId, ReadingState state, CancellationToken ct) =>
+        state.Finished ? CompleteIfDoneAsync(userId, state.SeriesId, state.MaxChapter, ct) : Task.CompletedTask;
+
+    /// <summary>
+    /// Moves a finished series to <see cref="ReadingStatus.Completed"/> once every chapter its progress
+    /// total counts is read (<see cref="SeriesCompletion.ReadThroughAsync"/>) and no further chapter is
+    /// expected; the series page asks later when one was. Runs after the save, so
+    /// the save hook's Reading promotion for the same read is already in. A failure only logs: the
+    /// status must never cost the progress write.
+    /// </summary>
+    private async Task CompleteIfDoneAsync(int userId, int? seriesId, double mark, CancellationToken ct)
+    {
+        if (seriesId is not int sid || !await IsSeriesFinishedAsync(sid, mark, ct))
+        {
+            return;
+        }
+
+        try
+        {
+            var series = await db.Series.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(s => s.Id == sid, ct);
+            var unmonitorSpecials = appSettings is not null &&
+                                    await LibraryListRows.UnmonitorSpecialsAsync(appSettings, ct);
+            if (series is not null &&
+                await SeriesCompletion.ReadThroughAsync(db, userId, series, unmonitorSpecials, ct) &&
+                !(outlooks is not null && ReleaseOutlookService.ExpectsMore(await outlooks.ForSeriesAsync(sid, ct))))
+            {
+                await db.PromoteToCompletedAsync(userId, sid, ct);
+            }
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            logger.LogWarning(e, "Could not mark series {SeriesId} completed for user {UserId}", sid, userId);
+        }
     }
 
     /// <summary>
