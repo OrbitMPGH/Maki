@@ -17,8 +17,9 @@ import { SeriesThumb } from '../stats/SeriesLink'
 import { MetaList } from '../../components/ui/MetaList'
 import { Panel } from '../../components/ui/Panel'
 import { PanelTitle } from '../../components/ui/PanelTitle'
-import { IconBan, IconBooks, IconDeviceTv, IconMinus, IconQuestionMark, IconStarFilled, IconThumbDown, IconThumbUp } from '../../lib/icons'
+import { IconBan, IconBooks, IconDeviceTv, IconMinus, IconQuestionMark, IconThumbDown, IconThumbUp } from '../../lib/icons'
 import { SignalStatus, type SignalStatusInfo } from './SignalStatus'
+import { ScoreInlineMark } from '../../components/ui/ScoreInline'
 
 export type RoleFilter = AnimeSignalRole | 'all'
 
@@ -365,10 +366,7 @@ export function AnimeSignalRow({ entry }: { entry: AnimeSignalEntry }) {
       </div>
       <Text size="sm" c="var(--ink-2)" className="tnum signals-col signals-col-score">
         {score !== null ? (
-          <span className="signal-status">
-            <IconStarFilled size={16} aria-hidden style={{ color: 'var(--rating)' }} />
-            {score}
-          </span>
+          <ScoreInlineMark text={score} />
         ) : statusLabel}
       </Text>
       <div className="signals-col signals-col-role">

@@ -15,6 +15,7 @@ import {
   Pagination,
   Paper,
   type PopoverProps,
+  Rating,
   type SegmentedControlProps,
   Table,
   type TooltipProps,
@@ -461,6 +462,9 @@ const themeBase: MantineThemeOverride = {
     }),
     Badge: Badge.extend({
       defaultProps: { radius: 'sm', fw: 600 },
+    }),
+    Rating: Rating.extend({
+      defaultProps: { color: 'var(--rating)' },
     }),
     /**
      * The utility tier: every ordinary dialog gets the raised card, the sectioned header over a

@@ -771,10 +771,9 @@ body {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum';
 }
-/* Headline numbers: figure strips, stat tiles, the hero figures, the level. Sizes stay per call site. */
+/* Headline numbers: figure strips, stat tiles, the level. Sizes stay per call site. */
 .figure,
 .figure-strip-n,
-.hero-stat-n,
 .stats-fact-value {
   font-family: var(--font-display);
   font-weight: var(--fw-bold);
@@ -3659,6 +3658,26 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
   color: var(--ink-3);
   font-size: var(--type-body);
 }
+/* A score inline off cover art: one star size and gap, the number in strong ink. */
+.score-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-hi);
+  font-weight: var(--fw-strong);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.score-inline svg {
+  flex: none;
+  color: var(--rating);
+}
+.score-inline[data-tone='yours'] svg {
+  color: var(--brand);
+}
+.score-inline[data-provisional] {
+  color: var(--ink-3);
+}
 /* A site and its score as one control: the logo, then the number, in a quiet chip. A rated site with
    no link (data-static) looks the same but is not a button. */
 .site-chip {
@@ -4169,12 +4188,6 @@ button.site-chip:hover {
     align-self: flex-start;
   }
 }
-.discover-hero-eyebrow {
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-  color: var(--ink-3);
-  margin-bottom: 8px;
-}
 /* Poster and title are the click target, so they are buttons, but they must not look like one. */
 .discover-hero-poster,
 .discover-hero-title {
@@ -4215,52 +4228,53 @@ button.site-chip:hover {
   font-size: 0.58em;
   line-height: 1.07;
 }
-/* The feature's rows. Spacing lives here rather than on the elements so the short-viewport block
-   at the bottom can tune the whole stack in one place. */
-.discover-hero-pills {
-  margin-top: 14px;
+/* The modal's header rows, each held at one line even when empty: the meta, the score and the site
+   chips arrive with the detail request, and a row appearing from nothing moves the buttons. */
+.discover-hero .hero-kicker {
+  display: flex;
+  min-width: 0;
+  min-height: 18px;
+  white-space: nowrap;
 }
-/* Reserved, because the source scores arrive with the detail request and a row that appears from
-   nothing shoves the buttons down while somebody is reading them. */
-.discover-hero-sources .mantine-Badge-root {
-  --badge-fz-sm: var(--type-meta);
-  --badge-height-sm: 22px;
+.discover-hero .hero-kicker > svg {
+  flex: none;
 }
-.discover-hero-sources {
-  min-height: 22px;
-  margin-top: 14px;
+/* The compact band stays light behind the text in Light, so the on-art pink washed out there. */
+[data-theme='light'] .series-hero[data-compact] .hero-kicker {
+  color: var(--brand-fg);
 }
-/* One row, held even when empty. Reasons that wrap land on a second row the box cuts off whole, so
-   the band shows as many reasons as fit rather than growing to show all three. They are labels, not
-   buttons, so plain text between hairlines. */
-.discover-hero-reasons {
-  box-sizing: border-box;
-  height: 28px;
-  margin-top: 12px;
-  padding-top: 5px;
+.hero-kicker-text {
+  min-width: 0;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
-.discover-hero-reasons > .meta-list {
-  row-gap: 28px;
+.discover-hero .hero-meta {
+  min-height: 1.45em;
 }
-.discover-hero-reasons li {
+/* One line at every width, so a longer score word cannot make one pick a line taller than the
+   next. The standing gives way first; the modal shows it whole. */
+.discover-hero-score {
+  display: flex;
+  align-items: center;
+  min-width: 0;
   max-width: 100%;
+  min-height: 24px;
+}
+.discover-hero .score-figure {
+  flex-wrap: nowrap;
+  min-width: 0;
+  white-space: nowrap;
+}
+.discover-hero .score-figure-standing {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.discover-hero-sites {
+  min-height: 28px;
 }
 .discover-hero-actions {
   margin-top: 20px;
-}
-.discover-hero-facts {
-  display: none;
-}
-.discover-hero-reason {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  line-height: 18px;
-  font-size: var(--type-label);
-  font-weight: var(--fw-medium);
-  color: var(--ink-2);
 }
 
 .discover-hero-strip {
@@ -4423,11 +4437,6 @@ button.site-chip:hover {
   vertical-align: -0.1em;
   background: currentColor;
   opacity: 0.35;
-}
-.discover-hero-strip-rating {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
 }
 /* One line of whole tags: a tag that does not fit wraps below and the clip hides it. */
 .discover-hero-strip-match {
@@ -4834,8 +4843,6 @@ button.site-chip:hover {
   .discover-loading-hero {
     min-height: 480px;
   }
-  /* The buttons belong on the first screen, so the score, figures and source scores fold into one
-     line under them. The source scores stay in the detail view. */
   .discover-hero.series-hero[data-compact] .series-hero-poster {
     width: 104px;
     height: 156px;
@@ -4844,39 +4851,8 @@ button.site-chip:hover {
   .discover-hero .discover-hero-strip {
     display: none;
   }
-  .discover-hero .hero-figures,
-  .discover-hero .discover-hero-sources {
-    display: none;
-  }
   .discover-hero .discover-hero-actions {
     margin-top: 16px;
-  }
-  .discover-hero .discover-hero-reasons {
-    order: 1;
-  }
-  .discover-hero .discover-hero-facts {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 14px;
-    margin-top: 16px;
-    font-size: var(--type-body);
-    font-weight: var(--fw-medium);
-    color: var(--ink-2);
-  }
-  .discover-hero-facts-score {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: var(--radius-control);
-    font-weight: var(--fw-bold);
-    color: var(--ink-hi);
-    background: color-mix(in srgb, var(--rating) 15%, transparent);
-    border: 1px solid color-mix(in srgb, var(--rating) 34%, transparent);
-  }
-  .discover-hero-facts-score svg {
-    color: var(--rating);
   }
 }
 
@@ -4892,25 +4868,22 @@ button.site-chip:hover {
   .discover-hero.series-hero[data-compact] .series-hero-title {
     font-size: clamp(1.6rem, 2.6vw, 2.35rem);
   }
-  .discover-hero .hero-figures {
-    margin-top: 10px;
-    gap: 12px;
-  }
   .discover-hero.series-hero[data-compact] .series-hero-body {
     padding-top: 22px;
     padding-bottom: 22px;
   }
-  .discover-hero-eyebrow {
+  .discover-hero .hero-kicker {
     margin-bottom: 4px;
   }
-  .discover-hero-pills {
+  .discover-hero .hero-meta {
+    margin-top: 6px;
+  }
+  .discover-hero .hero-chips,
+  .discover-hero .hero-scoreline {
     margin-top: 10px;
   }
-  .discover-hero-sources {
-    margin-top: 8px;
-  }
-  .discover-hero-reasons {
-    margin-top: 8px;
+  .discover-hero .hero-scoreline {
+    gap: 8px;
   }
   .discover-hero-actions {
     margin-top: 14px;
@@ -6302,76 +6275,6 @@ button.site-chip:hover {
   line-height: 0.94;
 }
 
-/* --- The figures line ------------------------------------------------------ */
-/* The score and the three numbers a Discover card is opened to check. Set at display size rather
-   than folded into a dimmed facts line, where 236 chapters reads with the same weight as the
-   genre list beside it. */
-.hero-figures {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px;
-  margin-top: 16px;
-}
-/* A score is not a state, so every score is the same gold: the star carries the colour and the
-   number stays ink-hi, which gold cannot hold as text in Light. */
-.hero-score {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 42px;
-  padding: 0 14px;
-  border-radius: var(--radius-hero);
-  color: var(--ink-hi);
-  background: color-mix(in srgb, var(--rating) 15%, transparent);
-  border: 1px solid color-mix(in srgb, var(--rating) 34%, transparent);
-}
-.hero-score svg {
-  color: var(--rating);
-}
-.hero-score-n {
-  font-size: var(--type-figure);
-  font-weight: var(--fw-bold);
-  line-height: 1;
-}
-.hero-figure-rule {
-  width: 1px;
-  height: 30px;
-  background: var(--border-strong);
-}
-/* Hairlines rather than a wider gap: three numbers in a row read as one number until something
-   divides them, and the same rule already separates the score from the set.
-   The hairline is a shadow on the left of every figure, and the row is pulled left by one padding
-   and clipped. Whichever figure starts a line, including a wrapped one, has its hairline in the
-   clipped strip, so a line never opens with a rule and every line starts flush. A border on
-   `+ .hero-stat` could not know which figure a wrap had moved to the front. */
-.hero-stats {
-  --hero-stat-pad: 20px;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  row-gap: 10px;
-  margin-left: calc(-1 * var(--hero-stat-pad));
-  overflow: hidden;
-}
-.hero-stat {
-  display: grid;
-  gap: 2px;
-  padding: 2px var(--hero-stat-pad);
-  box-shadow: -1px 0 0 var(--border-strong);
-}
-.hero-stat-n {
-  color: var(--ink-hi);
-  font-size: var(--type-figure);
-  font-weight: var(--fw-bold);
-  line-height: 1.05;
-}
-.hero-stat-l {
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-}
-
 /* --- The Continue header ---------------------------------------------------- */
 /* Both heroes in Home's Continue grammar: the title, one meta line, then the facts as a row of
    chips and, on the series page, the actions. The Discover modal leads with the card's reason as an
@@ -6807,19 +6710,6 @@ button.site-chip:hover {
 }
 .review-row:last-child {
   padding-bottom: 0;
-}
-.review-score {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  height: 22px;
-  padding: 0 7px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-control);
-  background: var(--surface-2);
-  color: var(--ink-hi);
-  font-size: var(--type-micro);
-  font-weight: var(--fw-semibold);
 }
 .review-likes {
   display: inline-flex;
@@ -11989,18 +11879,6 @@ body.reader-open {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.library-table-score {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: var(--ink-hi);
-}
-.library-table-score > svg {
-  color: var(--rating);
-}
-.library-table-score[data-provisional] {
-  color: var(--ink-3);
-}
 .library-table-progress {
   display: flex;
   align-items: center;
@@ -13791,28 +13669,6 @@ button.settings-row-head:hover,
   font-weight: var(--fw-semibold);
 }
 
-/* External site marks: a small square in the neutral surface, the site's score beside it in gold.
-   The site's own colour stays out of it; the tooltip carries the name. */
-.site-mark-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-}
-.site-mark.mantine-ActionIcon-root {
-  border-radius: 6px;
-  border-color: var(--border-strong);
-  background: var(--surface-2);
-  color: var(--ink-2);
-}
-.site-mark.mantine-ActionIcon-root:hover {
-  color: var(--ink-hi);
-  background: var(--surface-hover);
-}
-.site-mark-score {
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-  color: var(--rating);
-}
 /* Delete stays quiet in a row of actions and only turns red when the pointer is on it. */
 .quiet-danger.mantine-ActionIcon-root {
   color: var(--ink-3);
@@ -17838,14 +17694,6 @@ button.shortlist-title {
 }
 button.shortlist-title:hover {
   text-decoration: underline;
-}
-.shortlist-score {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  color: var(--ink-2);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
 }
 .shortlist-pill {
   display: inline-flex;

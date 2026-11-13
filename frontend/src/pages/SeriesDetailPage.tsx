@@ -2738,7 +2738,7 @@ function SeriesDetailBody() {
                           <Trans>Open on</Trans>
                         </Title>
                         <Group gap="xs" wrap="wrap">
-                          <MetadataLinks links={series.links} />
+                          <MetadataLinks links={series.links} chips />
                           {hasReviewIds(series) && <SeriesReviews ids={series} />}
                         </Group>
                       </div>

@@ -9,16 +9,16 @@ import {
   IconDeviceMobileCheck,
   IconSortAscending,
   IconSortDescending,
-  IconStarFilled,
 } from '../../lib/icons'
 import type { SeriesDto, TagDto } from '../../api/types'
 import type { OfflineAvailability } from '../ui/CoverCard'
 import { TagChip } from '../ui/TagChip'
+import { ScoreInline, YourScoreInline } from '../ui/ScoreInline'
 import { seriesProgressVisual, seriesStatusVisual, statusColor } from '../ui/status'
 import { LightBadge } from '../series/lightMantine'
 import { relativeTime } from '../ui/time'
 import { useLabel } from '../../i18n-context'
-import { formatBytes, formatCalendarDate, formatDecimal, formatRecentDate } from '../../format'
+import { formatBytes, formatCalendarDate, formatRecentDate } from '../../format'
 import { shownRating, isProvisional } from '../../lib/rating'
 import {
   LIBRARY_COLUMN_LABELS,
@@ -315,10 +315,7 @@ export const LibraryTableRow = memo(function LibraryTableRow({
       }
       case 'score':
         return series.communityRating != null ? (
-          <span className="library-table-score">
-            <IconStarFilled size={12} aria-hidden />
-            <span className="tnum">{formatDecimal(series.communityRating)}</span>
-          </span>
+          <ScoreInline score={series.communityRating * 10} />
         ) : (
           <Empty />
         )
@@ -327,10 +324,7 @@ export const LibraryTableRow = memo(function LibraryTableRow({
         if (rating == null) return <Empty />
         const soFar = isProvisional(series)
         return (
-          <span className="library-table-score" data-provisional={soFar || undefined} title={soFar ? t`So far` : undefined}>
-            <IconStarFilled size={12} aria-hidden />
-            <span className="tnum">{rating}</span>
-          </span>
+          <YourScoreInline rating={rating} data-provisional={soFar || undefined} title={soFar ? t`So far` : undefined} />
         )
       }
       case 'tags': {

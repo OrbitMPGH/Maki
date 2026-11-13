@@ -16,6 +16,8 @@ import type { Icon } from '../../lib/icons'
 import { useLibraryCoverLookup, type RecommendationItem } from '../../api/hooks'
 import { formatFixedDecimal } from '../../format'
 import { Rail } from './Rail'
+import { ScoreInline } from './ScoreInline'
+import { LightBadge } from '../series/lightMantine'
 import { seriesStatusGlyph, seriesStatusVisual, statusColor, statusOnColor } from './status'
 import { useLabel } from '../../i18n-context'
 import type { ShortlistSource } from '../../api/shortlist'
@@ -94,7 +96,7 @@ function RatingChip({ rating }: { rating: number }) {
   return (
     <span className="cover-badge discover-rating">
       <IconStarFilled size={12} style={{ color: 'var(--rating)' }} />
-      {formatFixedDecimal(rating / 10)}
+      {formatFixedDecimal(rating / 10, 1)}
     </span>
   )
 }
@@ -286,6 +288,7 @@ export const RecommendationRow = memo(function RecommendationRow({
   const label = useLabel()
   const owned = inLibrarySeriesId != null
   const reason = reasonOverride !== undefined ? reasonOverride : reasonFor(item)
+  const status = seriesStatusVisual(item.status)
   const thumbSize = density === 'compact' ? 48 : density === 'comfortable' ? 72 : 56
   const { totalChapters, title } = item
   const { saved, usable, toggle } = useShortlistToggle(item.providerId, title, savedFrom)
@@ -319,9 +322,9 @@ export const RecommendationRow = memo(function RecommendationRow({
             {item.title}
           </span>
           {item.year && <span className="row-year">{item.year}</span>}
-          <span className="cover-badge" style={{ flexShrink: 0 }}>
-            {label(seriesStatusVisual(item.status).label)}
-          </span>
+          <LightBadge color={statusColor(status.color)} leftSection={<status.Icon size={12} />}>
+            {label(status.label)}
+          </LightBadge>
           {owned && (
             <span className="cover-badge cover-badge-circle" data-tip={t`In library`} style={{ flexShrink: 0 }}>
               <IconCheck size={12} />
@@ -333,10 +336,7 @@ export const RecommendationRow = memo(function RecommendationRow({
 
         <div className="row-progress">
           {item.rating != null && (
-            <span className="cover-badge" style={{ flexShrink: 0 }}>
-              <IconStarFilled size={11} style={{ color: 'var(--rating)' }} />
-              {formatFixedDecimal(item.rating / 10, 1)}
-            </span>
+            <ScoreInline score={item.rating} />
           )}
           {totalChapters != null && (
             <span className="cover-count tnum">

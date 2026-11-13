@@ -25,7 +25,6 @@ import {
   IconHistory,
   IconPencil,
   IconPlus,
-  IconStarFilled,
   IconThumbDown,
 } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
@@ -58,9 +57,10 @@ import { MetaList } from '../../components/ui/MetaList'
 import { Panel } from '../../components/ui/Panel'
 import { SectionHeader } from '../../components/ui/SectionHeader'
 import { seriesStatusVisual, statusToken } from '../../components/ui/status'
+import { ScoreInline } from '../../components/ui/ScoreInline'
 import { TagChip, TagChips } from '../../components/ui/TagChip'
 import { relativeTime } from '../../components/ui/time'
-import { formatFixedDecimal, formatNumber } from '../../format'
+import { formatNumber } from '../../format'
 import { useLabel } from '../../i18n-context'
 import { usePageState } from '../../lib/pageState'
 import { notifications } from '../../lib/toast'
@@ -236,10 +236,7 @@ function ShortlistRow({
             <span className="shortlist-title">{shown}</span>
           )}
           {item?.rating != null && (
-            <span className="shortlist-score tnum">
-              <IconStarFilled size={16} style={{ color: 'var(--rating)' }} />
-              {formatFixedDecimal(item.rating / 10, 1)}
-            </span>
+            <ScoreInline score={item.rating} size="md" />
           )}
         </div>
 
