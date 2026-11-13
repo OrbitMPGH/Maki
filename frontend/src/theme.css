@@ -16286,6 +16286,7 @@ button.settings-row-head:hover,
 }
 /* Titles that lead a card, next to the large thumbnail, sit one step up from a table row. */
 .requests-row,
+.archived-row,
 .cover-panel {
   --series-title-size: var(--type-body);
 }
