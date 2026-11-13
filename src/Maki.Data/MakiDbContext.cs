@@ -785,7 +785,6 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.ToTable("CreditBank");
             // The search reads it whole with filters off; never served to a reader as rows.
             e.HasQueryFilter(b => _scope.Unrestricted || Series.Any(s => s.Id == b.SeriesId));
-            e.HasIndex(b => b.Tail);
             e.HasOne<Series>().WithMany().HasForeignKey(b => b.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<Chapter>().WithMany().HasForeignKey(b => b.SourceChapterId).OnDelete(DeleteBehavior.SetNull);
         });

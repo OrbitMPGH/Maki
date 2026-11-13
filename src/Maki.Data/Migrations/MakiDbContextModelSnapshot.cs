@@ -589,8 +589,6 @@ namespace Maki.Data.Migrations
 
                     b.HasIndex("SourceChapterId");
 
-                    b.HasIndex("Tail");
-
                     b.ToTable("CreditBank", (string)null);
                 });
 

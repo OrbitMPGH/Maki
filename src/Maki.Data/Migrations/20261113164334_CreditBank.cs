@@ -66,11 +66,6 @@ namespace Maki.Data.Migrations
                 name: "IX_CreditBank_SourceChapterId",
                 table: "CreditBank",
                 column: "SourceChapterId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_CreditBank_Tail",
-                table: "CreditBank",
-                column: "Tail");
         }
 
         /// <inheritdoc />

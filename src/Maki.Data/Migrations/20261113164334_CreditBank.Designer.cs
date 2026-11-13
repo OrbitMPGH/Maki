@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    [Migration("20261113163219_CreditBank")]
+    [Migration("20261113164334_CreditBank")]
     partial class CreditBank
     {
         /// <inheritdoc />
@@ -591,8 +591,6 @@ namespace Maki.Data.Migrations
                     b.HasIndex("SeriesId");
 
                     b.HasIndex("SourceChapterId");
-
-                    b.HasIndex("Tail");
 
                     b.ToTable("CreditBank", (string)null);
                 });

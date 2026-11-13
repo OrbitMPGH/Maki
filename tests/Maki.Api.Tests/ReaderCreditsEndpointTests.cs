@@ -535,24 +535,37 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
     }
 
     /// <summary>Another series in the same root folder, with one chapter opening with <paramref name="png"/>.</summary>
-    private (int SeriesId, int ChapterId) LoneChapterOpeningWith(byte[] png)
+    private int AddSeries(string name)
     {
-        int seriesId;
-        using (var db = _db.NewContext())
-        {
-            var folder = db.RootFolders.First();
-            var series = new Series { Title = "T", SortTitle = "t", FolderName = "T", RootFolderId = folder.Id };
-            db.Series.Add(series);
-            db.SaveChanges();
-            seriesId = series.Id;
-        }
+        using var db = _db.NewContext();
+        var folder = db.RootFolders.First();
+        var series = new Series { Title = name, SortTitle = name.ToLowerInvariant(), FolderName = name, RootFolderId = folder.Id };
+        db.Series.Add(series);
+        db.SaveChanges();
+        return series.Id;
+    }
 
-        var chapter = AddEncodedChapter(1, [png, .. Story(30, 8).Select(pixels =>
-        {
-            using var image = NetVips.Image.NewFromMemory(pixels, W, pixels.Length / (W * 3), 3, NetVips.Enums.BandFormat.Uchar);
-            return image.PngsaveBuffer();
-        })], seriesId: seriesId, folder: "T");
-        return (seriesId, chapter);
+    private static IEnumerable<byte[]> StoryPngs(int seed, int count) => Story(seed, count).Select(pixels =>
+    {
+        using var image = NetVips.Image.NewFromMemory(pixels, W, pixels.Length / (W * 3), 3, NetVips.Enums.BandFormat.Uchar);
+        return image.PngsaveBuffer();
+    });
+
+    private (int SeriesId, int ChapterId) LoneChapterOpeningWith(byte[] png, string name = "T")
+    {
+        var seriesId = AddSeries(name);
+        return (seriesId, AddEncodedChapter(1, [png, .. StoryPngs(30, 8)], seriesId: seriesId, folder: name));
+    }
+
+    /// <summary>The credit fixture under a band of colour art of its own width: another group's notice, whose first rows differ.</summary>
+    private static byte[] OtherNotice(byte[] credit)
+    {
+        using var page = NetVips.Image.NewFromBuffer(credit);
+        using var noise = NetVips.Image.NewFromMemory(Tinted(Noise(41, 60)), W, 60, 3, NetVips.Enums.BandFormat.Uchar);
+        using var band = noise.Resize((double)page.Width / W);
+        using var flat = page.Bands == 4 ? page.Flatten() : page.Copy();
+        using var joined = NetVips.Image.Arrayjoin([band.Cast(NetVips.Enums.BandFormat.Uchar), flat.Cast(NetVips.Enums.BandFormat.Uchar)], across: 1);
+        return joined.PngsaveBuffer();
     }
 
     private int BankCount()
@@ -604,6 +617,40 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
 
         Assert.True(await worker.RecheckBankAsync(default) > 0);
         Assert.Equal(0, (await RowAsync(lone))!.DetectorVersion);
+        await worker.ScanSeriesAsync(loneSeries, "en", default);
+
+        Assert.True(HidesTheHead(await FoundAsync(lone)));
+        Assert.Equal(0, await worker.RecheckBankAsync(default));
+    }
+
+    [Fact]
+    public async Task A_chapter_requeued_for_a_new_entry_is_searched_against_it_and_settles()
+    {
+        _credits = Credits(Path.Combine(AppContext.BaseDirectory, PageTextReader.FolderName));
+        var credit = await File.ReadAllBytesAsync(Fixture("ocr-credit-page.png"));
+        var other = OtherNotice(credit);
+        var worker = Worker();
+
+        // The bank knows one notice; a lone chapter carrying another is searched, matches nothing, and
+        // its run stays in the in-memory results.
+        ChaptersOpeningWith(credit);
+        await worker.ScanSeriesAsync(_seriesId, "en", default);
+        Assert.Equal(1, BankCount());
+        var (loneSeries, lone) = LoneChapterOpeningWith(other);
+        await worker.ScanSeriesAsync(loneSeries, "en", default);
+        Assert.False(HidesTheHead(await FoundAsync(lone)));
+
+        // Another series teaches the second notice.
+        var teacher = AddSeries("U");
+        foreach (var n in Enumerable.Range(1, 4))
+        {
+            AddEncodedChapter(n, [other, .. StoryPngs(50 + n, 8)], seriesId: teacher, folder: "U");
+        }
+
+        await worker.ScanSeriesAsync(teacher, "en", default);
+        Assert.Equal(2, BankCount());
+
+        Assert.True(await worker.RecheckBankAsync(default) > 0);
         await worker.ScanSeriesAsync(loneSeries, "en", default);
 
         Assert.True(HidesTheHead(await FoundAsync(lone)));

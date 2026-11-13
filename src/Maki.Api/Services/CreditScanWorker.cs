@@ -466,10 +466,10 @@ public sealed class CreditScanWorker(
 
     /// <summary>
     /// Compares chapters already searched with the bank entries added since (<see cref="ChapterCredits.BankSeen"/>),
-    /// at the edges where nothing was hidden, from their stored strips, so a new entry reaches the whole
-    /// library without searching it again. A chapter an entry matches goes back for a full search, where
-    /// the text judge decides. Only entries from other series: within a series the next search compares
-    /// its own chapters' entries with the neighbours in view. Returns how many chapters it looked at.
+    /// at the edges the bank would be asked about (nothing hidden, nothing repetition proposed), from their
+    /// stored strips, so a new entry reaches the whole library without searching it again. A chapter an
+    /// entry matches goes back for a full search, where the nearby-chapter rule and the text judge decide.
+    /// Returns how many chapters it looked at.
     /// </summary>
     internal async Task<int> RecheckBankAsync(CancellationToken ct)
     {
@@ -507,13 +507,15 @@ public sealed class CreditScanWorker(
                 continue;
             }
 
+            // Only edges the bank would be asked about: nothing hidden and nothing repetition proposed. An
+            // entry from the chapter's own neighbours may match here; the full search leaves those out.
             var pageCount = row.PageCount > 0 ? row.PageCount : CreditDetector.MinPages * 3;
-            bool Eligible(CreditBank.Entry e) => e.SeriesId != row.SeriesId;
+            var repeated = CreditStore.Candidates(row).Where(c => !c.FromBank).ToList();
+            bool Open(bool tail) => !repeated.Any(c => c.Tail == tail) && (tail ? row.TailPages == 0 : row is { HeadPages: 0, HeadOffset: 0 });
+            bool Eligible(CreditBank.Entry e) => e.SourceChapterId != row.ChapterId;
             var matched =
-                (row.HeadPages == 0 && row.HeadOffset == 0 &&
-                 CreditBank.Find(pageCount, edges, tail: false, entries, Eligible, row.BankSeen) is not null) ||
-                (row.TailPages == 0 &&
-                 CreditBank.Find(pageCount, edges, tail: true, entries, Eligible, row.BankSeen) is not null);
+                (Open(false) && await bank.FindAsync(pageCount, edges, tail: false, entries, Eligible, row.BankSeen, ct) is not null) ||
+                (Open(true) && await bank.FindAsync(pageCount, edges, tail: true, entries, Eligible, row.BankSeen, ct) is not null);
             if (matched)
             {
                 await store.RequeueAsync(row.ChapterId, ct);
