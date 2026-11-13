@@ -44,7 +44,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : IScanlationG
     {
         var response = await Client.GetFromJsonAsync<MdCollectionResponse<MdManga>>(
             $"manga?title={Uri.EscapeDataString(title)}&limit=10&includes[]=cover_art" +
-            "&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica",
+            "&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic",
             ct);
 
         return response?.Data.Select(m => new SourceSeriesResult(
@@ -98,7 +98,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : IScanlationG
             var response = await Client.GetFromJsonAsync<MdCollectionResponse<MdChapter>>(
                 $"manga/{sourceSeriesId}/feed?limit=500&offset={offset}" +
                 languageQuery +
-                "&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica" +
+                "&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic" +
                 "&includes[]=scanlation_group",
                 ct);
 
@@ -196,7 +196,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : IScanlationG
             var response = await Client.GetFromJsonAsync<MdCollectionResponse<MdChapter>>(
                 $"manga/{sourceSeriesId}/feed?limit={FeedPageSize}&offset={offset}&includeUnavailable=1" +
                 languageQuery +
-                "&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica",
+                "&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic",
                 ct);
 
             if (response is null)
