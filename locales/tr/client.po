@@ -10024,7 +10024,7 @@ msgstr "Bunları listeleyen her kaynak durdu; bu, bir kaynağın bunları yanlı
 msgid "Every unread chapter is already on this device"
 msgstr "Okunmamış her bölüm zaten bu cihazda"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Every wanted chapter is already on disk"
 msgstr "İstenen tüm bölümler diskte zaten var"
@@ -16884,11 +16884,6 @@ msgstr "Artık ona hiçbir şey gönderilmez. Bu geri alınamaz."
 #, fuzzy
 msgid "Nothing is wanted, so Downloads counts against every listed chapter."
 msgstr "Hiçbir şey istenmiyor, bu yüzden İndirmeler listelenen her bölüme göre sayar."
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Nothing left to download"
-msgstr "İndirilecek bir şey kalmadı"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

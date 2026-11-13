@@ -10024,7 +10024,7 @@ msgstr "Toutes les sources qui les listaient se sont arrêtées, ce qui peut sig
 msgid "Every unread chapter is already on this device"
 msgstr "Chaque chapitre non lu est déjà sur cet appareil"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Every wanted chapter is already on disk"
 msgstr "Tous les chapitres demandés sont déjà sur le disque"
@@ -16884,11 +16884,6 @@ msgstr "Plus rien n'y est envoyé. Cette action est irréversible."
 #, fuzzy
 msgid "Nothing is wanted, so Downloads counts against every listed chapter."
 msgstr "Aucun chapitre n'est souhaité, donc Téléchargements compte tous les chapitres listés."
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Nothing left to download"
-msgstr "Rien de plus à télécharger"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

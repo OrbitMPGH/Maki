@@ -10024,7 +10024,7 @@ msgstr "이 챕터들을 나열하던 소스가 모두 중단되었습니다. �
 msgid "Every unread chapter is already on this device"
 msgstr "읽지 않은 챕터가 모두 이 기기에 이미 있습니다"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Every wanted chapter is already on disk"
 msgstr "원하는 모든 챕터가 이미 디스크에 있습니다"
@@ -16884,11 +16884,6 @@ msgstr "더 이상 아무것도 보내지 않습니다. 되돌릴 수 없습니�
 #, fuzzy
 msgid "Nothing is wanted, so Downloads counts against every listed chapter."
 msgstr "원하는 항목이 없으므로 다운로드는 나열된 모든 챕터를 기준으로 집계합니다."
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Nothing left to download"
-msgstr "받을 항목이 남아 있지 않음"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

@@ -10024,7 +10024,7 @@ msgstr "Keine Quelle listet sie mehr. Das kann bedeuten, dass eine Quelle sie hi
 msgid "Every unread chapter is already on this device"
 msgstr "Jedes ungelesene Kapitel ist bereits auf diesem Gerät"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Every wanted chapter is already on disk"
 msgstr "Alle gewünschten Kapitel liegen bereits auf der Festplatte"
@@ -16884,11 +16884,6 @@ msgstr "Es wird nichts mehr dorthin gesendet. Das lässt sich nicht rückgängig
 #, fuzzy
 msgid "Nothing is wanted, so Downloads counts against every listed chapter."
 msgstr "Nichts ist gewünscht, daher zählt Downloads gegen jedes gelistete Kapitel."
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Nothing left to download"
-msgstr "Nichts mehr zum Herunterladen"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

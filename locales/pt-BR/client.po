@@ -10024,7 +10024,7 @@ msgstr "Todas as fontes que os listavam pararam, o que pode significar que uma f
 msgid "Every unread chapter is already on this device"
 msgstr "Todos os capítulos não lidos já estão neste dispositivo"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Every wanted chapter is already on disk"
 msgstr "Todos os capítulos desejados já estão no disco"
@@ -16884,11 +16884,6 @@ msgstr "Nada mais é enviado para ele. Isso não pode ser desfeito."
 #, fuzzy
 msgid "Nothing is wanted, so Downloads counts against every listed chapter."
 msgstr "Nada é desejado, então Downloads conta contra todos os capítulos listados."
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Nothing left to download"
-msgstr "Nada restante para baixar"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

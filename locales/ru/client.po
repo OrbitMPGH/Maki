@@ -10024,7 +10024,7 @@ msgstr "Все источники, которые их указывали, пе�
 msgid "Every unread chapter is already on this device"
 msgstr "Все непрочитанные главы уже на этом устройстве"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Every wanted chapter is already on disk"
 msgstr "Все нужные главы уже на диске"
@@ -16884,11 +16884,6 @@ msgstr "Больше ничего не отправляется. Это нель
 #, fuzzy
 msgid "Nothing is wanted, so Downloads counts against every listed chapter."
 msgstr "Ничего не запрошено, поэтому «Загрузки» считают по каждой указанной главе."
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Nothing left to download"
-msgstr "Нечего загружать"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

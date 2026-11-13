@@ -10024,7 +10024,7 @@ msgstr "列出它们的所有来源都已停止，这可能意味着某个来源
 msgid "Every unread chapter is already on this device"
 msgstr "所有未读章节已在此设备上"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Every wanted chapter is already on disk"
 msgstr "所有需要的章节都已下载到磁盘"
@@ -16884,11 +16884,6 @@ msgstr "不再向它发送任何内容。此操作无法撤销。"
 #, fuzzy
 msgid "Nothing is wanted, so Downloads counts against every listed chapter."
 msgstr "没有任何章节被标记为想要，因此下载页面按所有已列出的章节计数。"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Nothing left to download"
-msgstr "没有需要下载的内容了"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

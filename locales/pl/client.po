@@ -10024,7 +10024,7 @@ msgstr "Wszystkie źródła, które je wymieniały, przestały, co może oznacza
 msgid "Every unread chapter is already on this device"
 msgstr "Każdy nieprzeczytany rozdział jest już na tym urządzeniu."
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Every wanted chapter is already on disk"
 msgstr "Wszystkie żądane rozdziały są już na dysku"
@@ -16884,11 +16884,6 @@ msgstr "Nic do niego nie jest już wysyłane. Tej operacji nie można cofnąć."
 #, fuzzy
 msgid "Nothing is wanted, so Downloads counts against every listed chapter."
 msgstr "Nic nie jest chciane, więc Pobrania liczą wszystkie wymienione rozdziały."
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Nothing left to download"
-msgstr "Nic więcej do pobrania"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

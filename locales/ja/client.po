@@ -10024,7 +10024,7 @@ msgstr "それらを掲載していたソースはすべて停止しています
 msgid "Every unread chapter is already on this device"
 msgstr "未読の章はすべてこの端末にあります。"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/SeriesHero.tsx
 #, fuzzy
 msgid "Every wanted chapter is already on disk"
 msgstr "必要な章はすべてディスク上にあります"
@@ -16884,11 +16884,6 @@ msgstr "それ以降は何も送信されません。この操作は元に戻せ
 #, fuzzy
 msgid "Nothing is wanted, so Downloads counts against every listed chapter."
 msgstr "希望しているものがないため、ダウンロードは掲載されているすべての章を対象に数えます。"
-
-#: src/pages/SeriesDetailPage.tsx
-#, fuzzy
-msgid "Nothing left to download"
-msgstr "ダウンロードするものはありません"
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy

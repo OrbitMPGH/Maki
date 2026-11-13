@@ -8394,7 +8394,7 @@ msgstr "Every source that listed them has stopped, which can mean a source filed
 msgid "Every unread chapter is already on this device"
 msgstr "Every unread chapter is already on this device"
 
-#: src/pages/SeriesDetailPage.tsx
+#: src/components/series/SeriesHero.tsx
 msgid "Every wanted chapter is already on disk"
 msgstr "Every wanted chapter is already on disk"
 
@@ -14104,10 +14104,6 @@ msgstr "Nothing is sent to it any more. This can't be undone."
 #: src/components/series/ChapterCountsInfo.tsx
 msgid "Nothing is wanted, so Downloads counts against every listed chapter."
 msgstr "Nothing is wanted, so Downloads counts against every listed chapter."
-
-#: src/pages/SeriesDetailPage.tsx
-msgid "Nothing left to download"
-msgstr "Nothing left to download"
 
 #: src/pages/SeriesDetailPage.tsx
 msgid "Nothing left to queue. Every wanted chapter is on disk or already queued."
