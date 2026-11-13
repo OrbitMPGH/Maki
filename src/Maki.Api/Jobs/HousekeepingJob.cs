@@ -201,6 +201,42 @@ public class HousekeepingJob(
             }
         }
 
+        // Credit edge strips: a file whose edge key no stored answer names, a week after it was written,
+        // and any strip of an older strip version.
+        var creditStrips = CreditStrips.RootOf(paths);
+        if (Directory.Exists(creditStrips))
+        {
+            try
+            {
+                var named = (await db.ChapterCredits.IgnoreQueryFilters().Select(c => c.EdgeKey).ToListAsync(ct)).ToHashSet();
+                var stripCutoff = DateTime.UtcNow - CreditStrips.UnnamedLifetime;
+                var writing = DateTime.UtcNow - TimeSpan.FromHours(1);
+                foreach (var file in Directory.EnumerateFiles(creditStrips, "*", SearchOption.AllDirectories))
+                {
+                    try
+                    {
+                        var written = File.GetLastWriteTimeUtc(file);
+                        var key = CreditStrips.KeyOf(Path.GetFileName(file));
+                        var stale = key is null
+                            ? written < writing
+                            : !named.Contains(key) && written < stripCutoff;
+                        if (stale)
+                        {
+                            File.Delete(file);
+                        }
+                    }
+                    catch (IOException ex)
+                    {
+                        logger.LogDebug(ex, "Could not delete the credit strip {File}", file);
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogDebug(ex, "Could not clean the credit strips");
+            }
+        }
+
         // Server upscales, under their own root. Same two kinds of garbage as the reader cache above,
         // then the size cap.
         if (Directory.Exists(upscaleCache.Root))

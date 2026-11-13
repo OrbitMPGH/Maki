@@ -115,6 +115,41 @@ public class CreditDetectorTests
         CreditDetector.Find(chapter.Length, Chapter(chapter), [.. references.Select(Chapter)]);
 
     [Fact]
+    public void Stored_strips_read_back_to_the_same_answer()
+    {
+        var credit = Credit(7);
+        var chapters = new[] { Pages(1, [credit], [credit]), Pages(2, [credit], [credit]), Pages(3, [credit], [credit]) };
+
+        CreditDetector.Edges RoundTrip(CreditDetector.Edges edges)
+        {
+            using var stream = new MemoryStream();
+            using (var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, leaveOpen: true))
+            {
+                edges.Write(writer);
+            }
+
+            stream.Position = 0;
+            using var reader = new BinaryReader(stream);
+            return CreditDetector.Edges.Read(reader);
+        }
+
+        var stored = chapters.Select(c => RoundTrip(Chapter(c))).ToList();
+
+        Assert.Equal(
+            CreditDetector.Find(chapters[0].Length, Chapter(chapters[0]), [.. chapters.Skip(1).Select(Chapter)]),
+            CreditDetector.Find(chapters[0].Length, stored[0], stored[1..]));
+        Assert.Equal(new CreditPages(1, 0, 1), CreditDetector.Find(chapters[0].Length, stored[0], stored[1..]));
+    }
+
+    [Fact]
+    public void A_stream_that_holds_no_strip_is_refused()
+    {
+        using var reader = new BinaryReader(new MemoryStream([9, 0, 0, 0]));
+
+        Assert.Throws<InvalidDataException>(() => CreditDetector.Edge.Read(reader));
+    }
+
+    [Fact]
     public void A_credit_page_shared_by_three_chapters_is_hidden_whole()
     {
         var credit = Credit(7);

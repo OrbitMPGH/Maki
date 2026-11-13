@@ -37,9 +37,9 @@ public sealed class ReaderArchiveHandles(TimeProvider? time = null)
     public Task<MemoryStream?> ReadPageAsync(string path, string entryName, CancellationToken ct) =>
         WithArchiveAsync(path, archive => CbzReader.ReadEntry(archive, entryName), ct);
 
-    /// <summary>Page names in reading order, or null when the file is not a readable zip.</summary>
-    public Task<List<string>?> PageNamesAsync(string path, CancellationToken ct) =>
-        WithArchiveAsync(path, CbzReader.PageNames, ct);
+    /// <summary>Page entries with their checksums in reading order, or null when the file is not a readable zip.</summary>
+    public Task<List<PageEntry>?> PageEntriesAsync(string path, CancellationToken ct) =>
+        WithArchiveAsync(path, CbzReader.PageEntries, ct);
 
     public void Invalidate(string path) => _handles.TryRemove(path, out _);
 

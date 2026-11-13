@@ -463,6 +463,8 @@ public class ChapterDownloadProcessor(
                 PageConversionWorker.Signal();
             }
 
+            CreditScanWorker.Signal();
+
             await AnnounceImportAsync(item, chapter, series, rootFolder, mapping, ct);
 
             TryDeleteDirectory(workingDir);
@@ -955,6 +957,7 @@ public class ChapterDownloadProcessor(
             PageConversionWorker.Signal();
         }
 
+        CreditScanWorker.Signal();
         queue.ClearRateLimitBackoff(mapping.SourceName);
         await events.QueueUpdated(QueueItemDto.FromEntity(item, chapter, series, mapping.SourceName,
             new UpgradeHistoryState(Reverted: false, TrashAvailable: true)));

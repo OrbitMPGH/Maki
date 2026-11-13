@@ -193,6 +193,7 @@ public class ReaderController(
     public async Task<IActionResult> Manifest(
         int id,
         [FromServices] EnhanceAvailability enhanceAvailability,
+        [FromServices] CreditStore creditStore,
         [FromServices] ReadingTimeEstimateService estimates,
         CancellationToken ct)
     {
@@ -243,6 +244,10 @@ public class ReaderController(
             .Where(n => n.ChapterId == id && n.ParentId == null && n.DeletedAt == null)
             .Select(n => n.PageIndex)
             .ToListAsync(ct);
+        // A stored answer rides along, so the first paint is already trimmed and nothing waits for it.
+        var credits = resolved.Prefs.HideCredits && ReaderCreditsCache.Applies(slice)
+            ? await creditStore.GetAsync(slice, ct)
+            : null;
 
         return Ok(new
         {
@@ -274,6 +279,9 @@ public class ReaderController(
             pinnedProfileId = resolved.PinnedProfileId,
             autoProfileId = resolved.AutoProfileId,
             pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion),
+            credits = credits is null
+                ? null
+                : new { headPages = credits.HeadPages, headOffset = credits.HeadOffset, tailPages = credits.TailPages },
             tier = QualitySnapshot.TierName(tier),
             enhanceServer,
             noteCount = notePages.Count,
@@ -692,7 +700,8 @@ public class ReaderController(
     /// <c>pageVersion</c> comes back too: the answer belongs to that file, and a replaced file needs its own.
     /// </summary>
     [HttpGet("chapter/{id:int}/credits")]
-    public async Task<IActionResult> Credits(int id, [FromServices] ReaderCreditsCache credits, CancellationToken ct)
+    public async Task<IActionResult> Credits(int id, [FromServices] ReaderCreditsCache credits,
+        [FromServices] CreditStore store, [FromServices] IAppSettings settings, CancellationToken ct)
     {
         var slice = await reader.SliceAsync(id, ct);
         if (slice is null)
@@ -700,12 +709,12 @@ public class ReaderController(
             return this.NotFoundMessage(localizer, "error.reader.chapterNotReadable");
         }
 
+        // Only a reader hiding credit pages asks, so this is what turns the background scan on.
+        await CreditScanWorker.WantAsync(settings, ct);
         var found = CreditPages.None;
         if (ReaderCreditsCache.Applies(slice))
         {
-            var (before, after) = await reader.NearbySlicesAsync(
-                slice.Chapter, CreditDetector.References, ReaderCreditsCache.Usable, ct);
-            found = await credits.FindAsync(slice, [.. before, .. after], ct);
+            found = await store.GetAsync(slice, ct) ?? await SearchCreditsAsync(slice, credits, ct);
         }
 
         return Ok(new
@@ -713,6 +722,41 @@ public class ReaderController(
             headPages = found.HeadPages, headOffset = found.HeadOffset, tailPages = found.TailPages,
             pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion),
         });
+    }
+
+    private async Task<CreditPages> SearchCreditsAsync(ReaderService.ChapterSlice slice, ReaderCreditsCache credits, CancellationToken ct)
+    {
+        var (before, after) = await reader.NearbySlicesAsync(
+            slice.Chapter, CreditDetector.References, ReaderCreditsCache.Usable, ct);
+        return await credits.FindAsync(slice, [.. before, .. after], ct);
+    }
+
+    /// <summary>
+    /// Starts the credit page search for a chapter the reader is likely to open next (the series
+    /// page's and Home's Continue), when the series' resolved settings hide credit pages, no answer is
+    /// stored yet and no other warm-up is running, and returns at once (202 when one started). The reader's own <see cref="Credits"/> request then finds
+    /// the answer ready or joins the run. The settings are resolved here because the client only
+    /// learns them from the manifest.
+    /// </summary>
+    [HttpPost("chapter/{id:int}/credits/warm")]
+    public async Task<IActionResult> WarmCredits(int id, [FromServices] ReaderCreditsCache credits,
+        [FromServices] CreditStore store, [FromServices] IAppSettings settings, CancellationToken ct)
+    {
+        var slice = await reader.SliceAsync(id, ct);
+        if (slice is null || !ReaderCreditsCache.Applies(slice) || !(await profiles.ResolveAsync(slice.Series.Id, ct)).Prefs.HideCredits)
+        {
+            return NoContent();
+        }
+
+        await CreditScanWorker.WantAsync(settings, ct);
+        if (await store.GetAsync(slice, ct) is not null)
+        {
+            return NoContent();
+        }
+
+        var (before, after) = await reader.NearbySlicesAsync(
+            slice.Chapter, CreditDetector.References, ReaderCreditsCache.Usable, ct);
+        return credits.Warm(slice, [.. before, .. after]) ? Accepted() : NoContent();
     }
 
     [HttpPut("chapter/{id:int}/progress")]

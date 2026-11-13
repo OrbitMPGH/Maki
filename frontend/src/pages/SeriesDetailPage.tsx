@@ -118,6 +118,7 @@ import {
   useSeriesReadProgress,
   useSetChapterRead,
   useSetChaptersState,
+  warmReaderCredits,
   type ChapterReadState,
 } from '../api/reader'
 import { useSeriesNoteCounts } from '../api/notes'
@@ -573,6 +574,10 @@ function SeriesDetailBody() {
   const { data: readingStats } = useSeriesReadingStats(seriesId, readTracking)
   const { data: progressRows } = useSeriesReadProgress(seriesId)
   const { data: continueAt } = useContinueReading(seriesId)
+  // Read opens this chapter, so its credit page search starts while the page is looked at.
+  useEffect(() => {
+    if (continueAt?.chapterId != null) warmReaderCredits(continueAt.chapterId)
+  }, [continueAt?.chapterId])
   const { data: filesSummary } = useSeriesFilesSummary(seriesId)
   const setRead = useSetChapterRead(seriesId)
   // Only worth asking once there is an anime to have finished, and only meaningful with read

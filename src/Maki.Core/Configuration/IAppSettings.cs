@@ -254,6 +254,12 @@ public static class SettingKeys
     public const string ReaderPullFromKavita = "reader.pullfromkavita";
 
     /// <summary>
+    /// "true" once anyone on the instance has asked for a chapter's credit pages, which the reader only
+    /// does with "Hide credit pages" on. Until then the background credit scan does nothing. Never cleared.
+    /// </summary>
+    public const string CreditScanWanted = "reader.creditscan.wanted";
+
+    /// <summary>
     /// Which page "/" lands on: one of <see cref="StartPage"/>'s values. Applied client-side as a
     /// <em>replacing</em> redirect, so "/" stays a valid bookmark and the nav highlight and page
     /// title work off the real path with no special cases. Unset = <see cref="StartPage.Default"/>.

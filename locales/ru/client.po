@@ -1523,6 +1523,10 @@ msgid "{diff, plural, other {# behind}}"
 msgstr "{diff, plural, one {# позади} few {# позади} many {# позади} other {# позади}}"
 
 #: src/pages/HealthPage.tsx
+msgid "{done, plural, one {# chapter searched} other {# chapters searched}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 msgid "{done, plural, one {# file done this pass} other {# files done this pass}}"
 msgstr ""
 
@@ -3459,6 +3463,10 @@ msgstr "{volumesText} + {chaptersText}"
 #, fuzzy
 msgid "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
 msgstr "{waited, plural, one {# тайтл ждёт больше полугода.} few {# тайтла ждут больше полугода.} many {# тайтлов ждут больше полугода.} other {# тайтла ждут больше полугода.}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# chapter left} other {# chapters left}}"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "{waiting, plural, one {# file left} other {# files left}}"
@@ -10703,6 +10711,10 @@ msgstr "Поиск по названию"
 #, fuzzy
 msgid "Finding a source…"
 msgstr "Поиск источника…"
+
+#: src/pages/HealthPage.tsx
+msgid "Finding credit pages"
+msgstr ""
 
 #: src/components/ui/status.tsx
 #: src/pages/ActivityPage.tsx
@@ -18247,6 +18259,7 @@ msgid "Path mapping, Maki side"
 msgstr "Сопоставление путей, сторона Maki"
 
 #: src/components/QueuePause.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Pause"
@@ -21056,6 +21069,7 @@ msgstr "Результат"
 #: src/components/home/NextUpList.tsx
 #: src/components/home/ReadingRail.tsx
 #: src/components/QueuePause.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy

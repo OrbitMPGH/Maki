@@ -17,6 +17,9 @@ namespace Maki.Core.Images;
 /// </summary>
 public static partial class CreditText
 {
+    /// <summary>Bumped with every change to the lists; stored verdicts below it are judged again from their stored text.</summary>
+    public const int Version = 2;
+
     private static readonly string[] StrongPhrases =
     [
         "discord", "patreon", "ko-fi", "kofi", "paypal", "recruit", "scanlat", "mangadex", "bato.to", "repost", "reupload", "re-upload", "uploadover",

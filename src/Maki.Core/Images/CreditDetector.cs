@@ -72,6 +72,12 @@ public static class CreditDetector
 {
     public const int Width = RecapDetector.Width;
 
+    /// <summary>Bumped whenever a change to matching or settling could change an answer; stored answers below it are found again.</summary>
+    public const int Version = 1;
+
+    /// <summary>Bumped whenever <see cref="Shrink"/> or <see cref="Edge.Of"/> would produce different strips; stored strips below it are decoded again.</summary>
+    public const int StripVersion = 1;
+
     /// <summary>Pages an edge strip may take from the chapter's edge inward.</summary>
     public const int EdgePages = 4;
 
@@ -152,6 +158,14 @@ public static class CreditDetector
     public sealed record Edges(Edge Head, Edge Tail)
     {
         public int Bytes => Head.Bytes + Tail.Bytes;
+
+        public void Write(BinaryWriter writer)
+        {
+            Head.Write(writer);
+            Tail.Write(writer);
+        }
+
+        public static Edges Read(BinaryReader reader) => new(Edge.Read(reader), Edge.Read(reader));
     }
 
     /// <summary>
@@ -186,6 +200,56 @@ public static class CreditDetector
         internal int Full(int page) => _full[page];
 
         internal ReadOnlySpan<byte> Rows => _rows;
+
+        /// <summary>The strip as <see cref="Read"/> takes it back.</summary>
+        public void Write(BinaryWriter writer)
+        {
+            writer.Write(_kept.Length);
+            for (var p = 0; p < _kept.Length; p++)
+            {
+                writer.Write(_kept[p]);
+                writer.Write(_full[p]);
+            }
+
+            writer.Write(_colour.Length);
+            writer.Write(_rows);
+            writer.Write(_colour);
+            writer.Write(_white);
+        }
+
+        /// <summary>A strip <see cref="Write"/> stored. Throws on a stream that does not hold one.</summary>
+        public static Edge Read(BinaryReader reader)
+        {
+            var pages = reader.ReadInt32();
+            if (pages is < 0 or > EdgePages)
+            {
+                throw new InvalidDataException("Not a credit edge strip.");
+            }
+
+            var kept = new int[pages];
+            var full = new int[pages];
+            for (var p = 0; p < pages; p++)
+            {
+                kept[p] = reader.ReadInt32();
+                full[p] = reader.ReadInt32();
+            }
+
+            var count = reader.ReadInt32();
+            if (count < 0 || count > EdgeRows || kept.Sum() != count)
+            {
+                throw new InvalidDataException("Not a credit edge strip.");
+            }
+
+            var rows = reader.ReadBytes(count * Width);
+            var colour = reader.ReadBytes(count);
+            var white = reader.ReadBytes(count);
+            if (rows.Length != count * Width || colour.Length != count || white.Length != count)
+            {
+                throw new EndOfStreamException();
+            }
+
+            return new Edge(rows, colour, white, kept, full);
+        }
 
         /// <summary>The share of the pixels in <paramref name="count"/> rows from <paramref name="from"/> that are in colour, and that are white.</summary>
         internal (double Colour, double White) Shares(int from, int count)

@@ -4,9 +4,14 @@ using Maki.Api.Configuration;
 using Maki.Api.Controllers;
 using Maki.Api.Services;
 using Maki.Api.Services.Ocr;
+using Maki.Api.Services.Upscaling;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Reading;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
@@ -23,12 +28,23 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
     private readonly ReaderArchiveCache _archives = new(NullLogger<ReaderArchiveCache>.Instance);
 
     /// <summary>The colour rule alone: no OCR models where this reader looks, as on an install without them.</summary>
-    private ReaderCreditsCache _credits = Credits(Path.Combine(Path.GetTempPath(), "maki-no-ocr-" + Guid.NewGuid().ToString("N")));
+    private ReaderCreditsCache _credits;
 
-    private static ReaderCreditsCache Credits(string ocrFolder) => new(
-        new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance),
-        new PageTextReader(NullLogger<PageTextReader>.Instance, ocrFolder),
-        NullLogger<ReaderCreditsCache>.Instance);
+    private CreditStore _store;
+
+    private static readonly string NoOcr = Path.Combine(Path.GetTempPath(), "maki-no-ocr-" + Guid.NewGuid().ToString("N"));
+
+    /// <summary>A search with its own OCR reader, storing into this test's database and strips folder.</summary>
+    private ReaderCreditsCache Credits(string ocrFolder) => Credits(new PageTextReader(NullLogger<PageTextReader>.Instance, ocrFolder));
+
+    private ReaderCreditsCache Credits(IPageTextReader text)
+    {
+        _store = new CreditStore(_db.ScopeFactory(), text, NullLogger<CreditStore>.Instance);
+        return new ReaderCreditsCache(
+            new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), text, _store,
+            new CreditStrips(new AppPaths(_configDir), NullLogger<CreditStrips>.Instance),
+            NullLogger<ReaderCreditsCache>.Instance);
+    }
 
     private static string Fixture(string name) => Path.Combine(AppContext.BaseDirectory, "Fixtures", "ocr", name);
 
@@ -43,6 +59,8 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         db.Series.Add(series);
         db.SaveChanges();
         _seriesId = series.Id;
+        _credits = Credits(NoOcr);
+        _store ??= null!;
     }
 
     public void Dispose()
@@ -89,7 +107,7 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
             return image.PngsaveBuffer();
         }));
 
-    private int AddEncodedChapter(int number, IEnumerable<byte[]> pages)
+    private int AddEncodedChapter(int number, IEnumerable<byte[]> pages, int? volume = null)
     {
         var name = $"c{number}.cbz";
         var path = Path.Combine(_root, "S", name);
@@ -112,7 +130,9 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         };
         db.ChapterFiles.Add(file);
         db.SaveChanges();
-        var chapter = new Chapter { SeriesId = _seriesId, Number = number, ChapterFileId = file.Id };
+        var chapter = volume is null
+            ? new Chapter { SeriesId = _seriesId, Number = number, ChapterFileId = file.Id }
+            : new Chapter { SeriesId = _seriesId, Volume = volume, ChapterFileId = file.Id };
         db.Chapters.Add(chapter);
         db.SaveChanges();
         return chapter.Id;
@@ -127,18 +147,25 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
     private static IEnumerable<byte[]> Story(int seed, int count) =>
         Enumerable.Range(0, count).Select(n => Grey(Noise(seed * 100 + n, 90)));
 
+    private ReaderController Controller(Maki.Data.MakiDbContext db) => new(
+        new TestLocalizer(), db,
+        new ReaderService(db, _archives, null!, null!, new ReadingSessionService(db), NullLogger<ReaderService>.Instance),
+        null!, null!, new ReadingProfileService(db, new UserSettingsService(db, new TestCurrentUser(1))), null!, null!,
+        new AppPaths(_configDir), new TestCurrentUser(1), null!, new FakeAppSettings())
+    {
+        ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
+    };
+
     private async Task<IActionResult> CreditsAsync(int chapterId)
     {
         using var db = _db.NewContext(1);
-        var controller = new ReaderController(
-            new TestLocalizer(), db,
-            new ReaderService(db, _archives, null!, null!, new ReadingSessionService(db), NullLogger<ReaderService>.Instance),
-            null!, null!, null!, null!, null!, new AppPaths(_configDir),
-            new TestCurrentUser(1), null!, new FakeAppSettings())
-        {
-            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
-        };
-        return await controller.Credits(chapterId, _credits, default);
+        return await Controller(db).Credits(chapterId, _credits, _store, new FakeAppSettings(), default);
+    }
+
+    private async Task<IActionResult> WarmAsync(int chapterId)
+    {
+        using var db = _db.NewContext(1);
+        return await Controller(db).WarmCredits(chapterId, _credits, _store, new FakeAppSettings(), default);
     }
 
     private async Task<JsonElement> FoundAsync(int chapterId) =>
@@ -224,5 +251,282 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         var found = await FoundAsync(chapters[1]);
         Assert.Equal(0, found.GetProperty("headPages").GetInt32());
         Assert.Equal(0, found.GetProperty("headOffset").GetDouble());
+    }
+
+    [Fact]
+    public async Task Warming_searches_nothing_while_the_setting_is_off()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+
+        Assert.IsType<NoContentResult>(await WarmAsync(chapters[1]));
+    }
+
+    [Fact]
+    public async Task Warming_starts_the_search_the_reader_then_finds()
+    {
+        _db.SetUserConfig(1, (SettingKeys.ReaderPrefs, ReaderPrefsSpec.Serialize(new ReaderPrefsSpec(HideCredits: true))));
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+
+        Assert.IsType<AcceptedResult>(await WarmAsync(chapters[1]));
+
+        Assert.Equal(1, (await FoundAsync(chapters[1])).GetProperty("headPages").GetInt32());
+    }
+
+    private async Task<Maki.Core.Entities.ChapterCredits?> RowAsync(int chapterId)
+    {
+        using var db = _db.NewContext();
+        return await db.ChapterCredits.AsNoTracking().FirstOrDefaultAsync(c => c.ChapterId == chapterId);
+    }
+
+    private async Task SetStoredHeadAsync(int chapterId, int headPages)
+    {
+        using var db = _db.NewContext();
+        await db.ChapterCredits.Where(c => c.ChapterId == chapterId)
+            .ExecuteUpdateAsync(u => u.SetProperty(c => c.HeadPages, headPages));
+    }
+
+    private string PathOf(int number) => Path.Combine(_root, "S", $"c{number}.cbz");
+
+    /// <summary>Rewrites a chapter's ComicInfo.xml the way <c>ComicInfoUpdater</c> does: every page copied, the file's size and stamp new.</summary>
+    private void RewriteComicInfo(int number, int chapterId)
+    {
+        var path = PathOf(number);
+        using (var zip = ZipFile.Open(path, ZipArchiveMode.Update))
+        {
+            zip.GetEntry("ComicInfo.xml")?.Delete();
+            using var writer = new StreamWriter(zip.CreateEntry("ComicInfo.xml").Open());
+            writer.Write($"<ComicInfo><Number>{number}</Number><Notes>{Guid.NewGuid()}</Notes></ComicInfo>");
+        }
+
+        File.SetLastWriteTimeUtc(path, DateTime.UtcNow.AddMinutes(5));
+        using var db = _db.NewContext();
+        var fileId = db.Chapters.Where(c => c.Id == chapterId).Select(c => c.ChapterFileId).First();
+        db.ChapterFiles.Where(f => f.Id == fileId).ExecuteUpdate(u => u.SetProperty(f => f.Size, new FileInfo(path).Length));
+        _archives.Invalidate(fileId!.Value);
+    }
+
+    [Fact]
+    public async Task A_search_stores_its_answer_and_the_next_request_reads_it()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+
+        Assert.Equal(1, (await FoundAsync(chapters[1])).GetProperty("headPages").GetInt32());
+        var row = await RowAsync(chapters[1]);
+        Assert.NotNull(row);
+        Assert.Equal(1, row.HeadPages);
+        Assert.False(string.IsNullOrEmpty(row.ReferencesKey));
+
+        // Served from the row, not searched again.
+        await SetStoredHeadAsync(chapters[1], 2);
+        Assert.Equal(2, (await FoundAsync(chapters[1])).GetProperty("headPages").GetInt32());
+    }
+
+    [Fact]
+    public async Task A_ComicInfo_rewrite_keeps_the_stored_answer()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        await FoundAsync(chapters[1]);
+        await SetStoredHeadAsync(chapters[1], 2);
+
+        RewriteComicInfo(2, chapters[1]);
+
+        Assert.Equal(2, (await FoundAsync(chapters[1])).GetProperty("headPages").GetInt32());
+    }
+
+    [Fact]
+    public async Task New_pages_are_searched_again_instead_of_served_the_old_answer()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        await FoundAsync(chapters[1]);
+        await SetStoredHeadAsync(chapters[1], 2);
+
+        // The same chapter row, its file replaced by one whose first page is a story page.
+        var path = PathOf(2);
+        File.Delete(path);
+        using (var zip = ZipFile.Open(path, ZipArchiveMode.Create))
+        {
+            var index = 1;
+            foreach (var pixels in Story(20, 9))
+            {
+                using var image = NetVips.Image.NewFromMemory(pixels, W, pixels.Length / (W * 3), 3, NetVips.Enums.BandFormat.Uchar);
+                using var entry = zip.CreateEntry($"{index++:000}.png").Open();
+                entry.Write(image.PngsaveBuffer());
+            }
+        }
+
+        using (var db = _db.NewContext())
+        {
+            var fileId = db.Chapters.Where(c => c.Id == chapters[1]).Select(c => c.ChapterFileId).First()!.Value;
+            db.ChapterFiles.Where(f => f.Id == fileId).ExecuteUpdate(u => u.SetProperty(f => f.Size, new FileInfo(path).Length));
+            _archives.Invalidate(fileId);
+        }
+
+        Assert.Equal(0, (await FoundAsync(chapters[1])).GetProperty("headPages").GetInt32());
+    }
+
+    [Fact]
+    public async Task An_answer_the_colour_rule_gave_alone_is_found_again_once_OCR_can_read()
+    {
+        using var colophon = NetVips.Image.NewFromFile(Fixture("ocr-colophon.png"));
+        using var tinted = colophon.Linear([1.0, 0.6, 0.8], [0.0, 0.0, 0.0]).Cast(NetVips.Enums.BandFormat.Uchar);
+        var chapters = ChaptersOpeningWith(tinted.PngsaveBuffer());
+        Assert.True(HidesTheHead(await FoundAsync(chapters[1])));
+        Assert.Equal(CreditJudge.Colour, (await RowAsync(chapters[1]))!.Judge);
+
+        _credits = Credits(Path.Combine(AppContext.BaseDirectory, PageTextReader.FolderName));
+
+        Assert.False(HidesTheHead(await FoundAsync(chapters[1])));
+        Assert.Equal(CreditJudge.Ocr, (await RowAsync(chapters[1]))!.Judge);
+    }
+
+    [Fact]
+    public async Task Warming_starts_nothing_for_a_chapter_with_a_stored_answer()
+    {
+        _db.SetUserConfig(1, (SettingKeys.ReaderPrefs, ReaderPrefsSpec.Serialize(new ReaderPrefsSpec(HideCredits: true))));
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        await FoundAsync(chapters[1]);
+
+        Assert.IsType<NoContentResult>(await WarmAsync(chapters[1]));
+    }
+
+    [Fact]
+    public async Task The_manifest_carries_a_stored_answer_while_credit_pages_are_hidden()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        await FoundAsync(chapters[1]);
+
+        Assert.Equal(JsonValueKind.Null, (await ManifestAsync(chapters[1])).GetProperty("credits").ValueKind);
+
+        _db.SetUserConfig(1, (SettingKeys.ReaderPrefs, ReaderPrefsSpec.Serialize(new ReaderPrefsSpec(HideCredits: true))));
+        Assert.Equal(1, (await ManifestAsync(chapters[1])).GetProperty("credits").GetProperty("headPages").GetInt32());
+        Assert.Equal(JsonValueKind.Null, (await ManifestAsync(chapters[2])).GetProperty("credits").ValueKind);
+    }
+
+    private async Task<JsonElement> ManifestAsync(int chapterId)
+    {
+        using var db = _db.NewContext(1);
+        var result = await Controller(db).Manifest(
+            chapterId, new EnhanceAvailability(new FakeAppSettings(), null!), _store, new ReadingTimeEstimateService(db), default);
+        return JsonSerializer.SerializeToElement(Assert.IsType<OkObjectResult>(result).Value, Web);
+    }
+
+    private CreditScanWorker Worker()
+    {
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        services.AddScoped(_ => _db.NewContext());
+        services.AddScoped(sp => new ReaderService(sp.GetRequiredService<Maki.Data.MakiDbContext>(), _archives, null!, null!,
+            new ReadingSessionService(sp.GetRequiredService<Maki.Data.MakiDbContext>()), NullLogger<ReaderService>.Instance));
+        var scopes = services.BuildServiceProvider().GetRequiredService<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>();
+        var settings = new FakeAppSettings();
+        return new CreditScanWorker(scopes, settings, _credits, _store, _archives,
+            new PageConversionWorker(scopes, settings, NullLogger<PageConversionWorker>.Instance),
+            NullLogger<CreditScanWorker>.Instance);
+    }
+
+    [Fact]
+    public async Task The_scan_stores_an_answer_for_every_chapter_of_a_series()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 5).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        var worker = Worker();
+
+        Assert.Equal((_seriesId, "en"), await worker.NextSeriesAsync(default));
+        await worker.ScanSeriesAsync(_seriesId, "en", default);
+
+        foreach (var chapter in chapters)
+        {
+            Assert.Equal(1, (await RowAsync(chapter))!.HeadPages);
+        }
+
+        Assert.Null(await worker.NextSeriesAsync(default));
+    }
+
+    [Fact]
+    public async Task The_scan_leaves_volumes_out_when_their_edges_read_as_no_scanlators()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var volumes = Enumerable.Range(1, 4)
+            .Select(n => AddEncodedChapter(n, Story(n, 8).Prepend(credit).Select(pixels =>
+            {
+                using var image = NetVips.Image.NewFromMemory(pixels, W, pixels.Length / (W * 3), 3, NetVips.Enums.BandFormat.Uchar);
+                return image.PngsaveBuffer();
+            }), volume: n))
+            .ToList();
+
+        await Worker().ScanSeriesAsync(_seriesId, "en", default);
+
+        foreach (var volume in volumes)
+        {
+            var row = (await RowAsync(volume))!;
+            Assert.True(row.Skipped);
+            Assert.Equal(0, row.HeadPages);
+        }
+    }
+
+    [Fact]
+    public async Task A_neighbour_arriving_searches_the_chapters_beside_it_again()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 3).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        var worker = Worker();
+        await worker.ScanSeriesAsync(_seriesId, "en", default);
+        var before = (await RowAsync(chapters[2]))!.ReferencesKey;
+
+        AddChapter(4, [credit, .. Story(4, 8)]);
+        await worker.ScanSeriesAsync(_seriesId, "en", default);
+
+        Assert.NotEqual(before, (await RowAsync(chapters[2]))!.ReferencesKey);
+    }
+
+    /// <summary>A reader whose every read throws, as a share dropping mid-search would.</summary>
+    private sealed class ThrowingTextReader : IPageTextReader
+    {
+        public bool Available => true;
+
+        public Task<string?> ReadAsync(byte[] image, double share, CancellationToken ct) => throw new IOException("share went away");
+
+        public Task PrepareAsync() => Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task A_search_that_fails_is_stored_as_failed_and_not_as_no_credits()
+    {
+        _credits = Credits(new ThrowingTextReader());
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        var worker = Worker();
+
+        await worker.ScanSeriesAsync(_seriesId, "en", default);
+
+        foreach (var chapter in chapters)
+        {
+            Assert.True((await RowAsync(chapter))!.Failed);
+        }
+
+        // Not served, and not picked again before its retry.
+        Assert.Equal(0, (await FoundAsync(chapters[1])).GetProperty("headPages").GetInt32());
+        Assert.Null(await worker.NextSeriesAsync(default));
+    }
+
+    [Fact]
+    public async Task A_series_waits_while_any_of_its_files_is_queued_for_conversion()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        using (var db = _db.NewContext())
+        {
+            var fileId = db.Chapters.Where(c => c.Id == chapters[2]).Select(c => c.ChapterFileId).First();
+            db.ChapterFiles.Where(f => f.Id == fileId)
+                .ExecuteUpdate(u => u.SetProperty(f => f.ConversionQueuedAtUtc, DateTime.UtcNow));
+        }
+
+        Assert.Null(await Worker().NextSeriesAsync(default));
     }
 }
