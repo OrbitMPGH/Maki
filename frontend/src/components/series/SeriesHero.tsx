@@ -37,6 +37,7 @@ import { TYPE_LABELS } from '../CatalogueFilters'
 import { MetaList } from '../ui/MetaList'
 import { Panel } from '../ui/Panel'
 import { PanelTitle } from '../ui/PanelTitle'
+import { OfflineBanner } from '../OfflineBanner'
 
 /** Where the back link points for a series nobody navigated to: a bookmark, or a pasted link. */
 const LIBRARY_FALLBACK = { to: '/library', label: msg`Library` }
@@ -241,6 +242,7 @@ export function SeriesHero({
             <HeroBackdrop coverUrl={series.coverUrl} />
 
             <div className="series-hero-body">
+                <OfflineBanner />
                 {/* Arrow inside the link, not beside it: the arrow is the part of this people aim at. */}
                 <Text
                     component={Link}
@@ -606,6 +608,7 @@ export function SeriesHeroSkeleton() {
         <div aria-hidden>
         <Box className="series-hero" data-loading>
             <div className="series-hero-body">
+                <OfflineBanner />
                 <Skeleton h={14} w={84} mb="md" />
                 <Group className="series-hero-content">
                     <Group align="stretch" gap={32} wrap="nowrap" className="series-hero-row">

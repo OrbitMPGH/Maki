@@ -302,6 +302,7 @@ function usePageTitleAway(active: boolean, pathname: string) {
 function AppShellRoutes() {
   const location = useLocation()
   const navigate = useNavigate()
+  const heroPage = /^\/series\/\d+(?:\/|$)/.test(location.pathname)
   usePrefetchSeriesOnHover()
   useEffect(() => preloadRoutes(), [])
   const [pinned, { open: openPinned, close: closePinned }] = useDisclosure()
@@ -639,11 +640,12 @@ function AppShellRoutes() {
 
       {/* Zeroes the shell padding on the series page, whose hero band bleeds to the window edges. */}
       <AppShell.Main
-        className={/^\/series\/\d+(?:\/|$)/.test(location.pathname) ? 'app-main-hero' : undefined}
+        className={heroPage ? 'app-main-hero' : undefined}
         id="main"
         tabIndex={-1}
       >
-        <OfflineBanner />
+        {/* The series hero carries its own copy inside the band, so the art still reaches the top. */}
+        {!heroPage && <OfflineBanner />}
         {/* One boundary around the whole switch rather than one per lazy route: only a single
             route is ever resolving, and a shared fallback keeps the loader identical everywhere.
             The error boundary sits inside the shell on purpose, so a page that throws leaves the
