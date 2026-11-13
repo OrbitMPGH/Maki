@@ -34,6 +34,7 @@ import {
 } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
+import { ModalFooter, ModalHeading } from '../../components/ui/ModalShell'
 import { FigureStrip } from '../../components/ui/FigureStrip'
 import { TagChip } from '../../components/ui/TagChip'
 import { relativeTime } from '../../components/ui/time'
@@ -245,33 +246,28 @@ export function BackupSection() {
         />
       </Stack>
 
-      <Modal opened={target !== null} onClose={() => setTarget(null)} title={t`Restore backup`} centered>
-        <Stack>
-          <Text size="sm">
-            <Trans>
-              This replaces your current library and settings with <b>{backupName}</b>, then restarts
-              Maki. The current database is kept for 7 days as maki.db.pre-restore in the config folder,
-              but putting it back is done by hand, so take a backup first if you want an easy way back.
-              Docker and systemd bring Maki back up on their own; otherwise start it again yourself.
-            </Trans>
-          </Text>
-          <Text size="sm">
-            <Trans>
-              Accounts are restored too, exactly as they were in that backup. A password you changed or a
-              single sign-on link you removed since then comes back, so redo those afterwards. API keys you
-              revoked since the backup stay revoked.
-            </Trans>
-          </Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setTarget(null)}>
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button color="var(--danger-fill)" loading={restore.isPending || upload.isPending} onClick={confirmRestore}>
-              <Trans>Restore &amp; restart</Trans>
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+      <ConfirmDialog
+        opened={target !== null}
+        onClose={() => setTarget(null)}
+        title={t`Restore backup`}
+        description={
+          <Trans>
+            This replaces your current library and settings with <b>{backupName}</b>, then restarts
+            Maki. The current database is kept for 7 days as maki.db.pre-restore in the config folder,
+            but putting it back is done by hand, so take a backup first if you want an easy way back.
+            Docker and systemd bring Maki back up on their own; otherwise start it again yourself.
+          </Trans>
+        }
+        confirmLabel={<Trans>Restore &amp; restart</Trans>}
+        loading={restore.isPending || upload.isPending}
+        onConfirm={confirmRestore}
+      >
+        <Trans>
+          Accounts are restored too, exactly as they were in that backup. A password you changed or a
+          single sign-on link you removed since then comes back, so redo those afterwards. API keys you
+          revoked since the backup stay revoked.
+        </Trans>
+      </ConfirmDialog>
 
       <ConfirmDialog
         opened={deleting !== null}
@@ -624,17 +620,18 @@ export function ImageCacheSection() {
       <Modal
         opened={confirmForce}
         onClose={() => setConfirmForce(false)}
-        title={t`Rebuild every poster`}
-        centered
-      >
-        <Stack>
-          <Text size="sm">
-            {plural(seriesTotalCount, {
+        title={
+          <ModalHeading
+            title={t`Rebuild every poster`}
+            description={plural(seriesTotalCount, {
               one: 'This re-downloads the poster for the # series, one metadata lookup and one image each. Use "Rebuild missing" instead if you are only fixing covers that fail to load.',
               other: 'This re-downloads the poster for all # series, one metadata lookup and one image each. On a large library it runs for several minutes. Use "Rebuild missing" instead if you are only fixing covers that fail to load.',
             })}
-          </Text>
-          <Group justify="flex-end">
+          />
+        }
+      >
+        <Stack>
+          <ModalFooter>
             <Button variant="default" onClick={() => setConfirmForce(false)}>
               <Trans>Cancel</Trans>
             </Button>
@@ -646,7 +643,7 @@ export function ImageCacheSection() {
             >
               <Trans>Rebuild all</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
     </SettingsSection>

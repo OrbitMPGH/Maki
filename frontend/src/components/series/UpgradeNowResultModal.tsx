@@ -74,7 +74,6 @@ export function UpgradeNowResultModal({
       opened={opened}
       onClose={onClose}
       size="sm"
-      centered
       title={
         <ModalHeading
           title={<Trans>Upgrade now</Trans>}

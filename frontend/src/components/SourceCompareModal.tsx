@@ -800,7 +800,6 @@ export function SourceCompareModal({
         size="auto"
         withCloseButton={false}
         padding={0}
-        centered
         styles={{ content: { overflow: 'hidden' } }}
       >
         {zoomPage && zoomPanel && (

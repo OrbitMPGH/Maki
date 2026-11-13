@@ -2,7 +2,7 @@ import { errorText } from '../../api/errorText'
 import { useMemo, useState } from 'react'
 import { randomUUID } from '../../lib/uuid'
 import {
-  ActionIcon, Alert, Badge, Button, Collapse, Group, Skeleton, Stack, Text, Tooltip,
+  ActionIcon, Alert, Button, Collapse, Group, Skeleton, Stack, Text, Tooltip,
 } from '@mantine/core'
 import {
   IconAdjustmentsHorizontal, IconArrowBackUp, IconBook, IconBookmark, IconChevronRight, IconClockPause, IconCompass,
@@ -19,6 +19,7 @@ import { formatDate, formatDecimal, formatRecentDate, formatTime } from '../../f
 import { ManageSignalsModal } from './ManageSignalsModal'
 import { AnimeSignalsSection } from './AnimeSignalsSection'
 import { PanelTitle } from '../../components/ui/PanelTitle'
+import { TagChip } from '../../components/ui/TagChip'
 import { Panel } from '../../components/ui/Panel'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { ErrorMessage } from '../../components/ErrorMessage'
@@ -457,9 +458,11 @@ function AvoidRow({ avoids }: { avoids: AvoidanceLabel[] }) {
             multiline
             w={260}
           >
-            <Badge size="sm" variant="light" color="var(--danger)">
-              {avoid.label} (<Plural value={count} one="# title" other="# titles" />)
-            </Badge>
+            <span>
+              <TagChip>
+                {avoid.label} (<Plural value={count} one="# title" other="# titles" />)
+              </TagChip>
+            </span>
           </Tooltip>
         )
       })}

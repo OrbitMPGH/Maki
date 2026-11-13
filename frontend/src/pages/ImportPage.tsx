@@ -53,6 +53,7 @@ import { ManualImport } from '../components/import/ManualImport'
 import { MihonImport } from '../components/import/MihonImport'
 import { RecentImports, UndoBatchButton } from '../components/import/RecentImports'
 import { StepStrip, type Step } from '../components/StepStrip'
+import { ModalFooter, ModalHeading } from '../components/ui/ModalShell'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SectionHeader } from '../components/ui/SectionHeader'
@@ -520,12 +521,14 @@ function FolderImport() {
       <Modal
         opened={confirmOpen}
         onClose={() => setConfirmOpen(false)}
-        title={<Plural value={selectedCount} one="Import # folder?" other="Import # folders?" />}
+        title={
+          <ModalHeading
+            title={<Plural value={selectedCount} one="Import # folder?" other="Import # folders?" />}
+            description={<Trans>Folders are renamed to the English title.</Trans>}
+          />
+        }
         size="lg"
       >
-        <Text size="sm" mb="xs">
-          <Trans>Folders are renamed to the English title.</Trans>
-        </Text>
         <Checkbox
           label={t`Standardize ComicInfo.xml inside the imported files (recommended)`}
           checked={updateComicInfo}
@@ -535,7 +538,7 @@ function FolderImport() {
         <Text size="xs" c="var(--ink-3)" mb="lg">
           <Trans>Helps Kavita group these files with later downloads.</Trans>
         </Text>
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setConfirmOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -558,7 +561,7 @@ function FolderImport() {
           >
             {restoresOnly ? <Trans context="series">Restore</Trans> : <Trans>Import</Trans>}
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       {results && results.length > 0 && (

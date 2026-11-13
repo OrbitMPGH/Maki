@@ -343,9 +343,7 @@ export function CommandPaletteModal({ navItems, opened, onOpen: open, onClose: c
         onClose={close}
         withCloseButton={false}
         padding={0}
-        radius="md"
         size="lg"
-        centered
         transitionProps={{ transition: 'pop', duration: pacedMs(DUR.fast), timingFunction: EASE_CSS }}
         zIndex={1100}
         attributes={{ content: { 'aria-label': t`Search` } }}

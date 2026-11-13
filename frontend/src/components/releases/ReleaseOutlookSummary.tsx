@@ -1,10 +1,11 @@
-import { Badge, Divider, Group, Stack, Text, Title, Tooltip } from '@mantine/core'
+import { Badge, Divider, Group, Stack, Text, Tooltip } from '@mantine/core'
 import { IconCalendarEvent } from '../../lib/icons'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { confidenceLevel, useSeriesOutlook, type ReleaseOutlookDto } from '../../api/releases'
 import { formatDayRange, formatWeekdayDateTime } from '../../format'
 import { useLabel } from '../../i18n-context'
+import { PanelTitle } from '../ui/PanelTitle'
 import { relativeTime } from '../ui/time'
 import { CONFIDENCE_LABEL, REFRESH_TIER_TEXT } from './outlookText'
 
@@ -48,9 +49,9 @@ export function ReleaseOutlookView({ outlook, idleReason }: { outlook: ReleaseOu
   return (
     <Stack gap={6} className="release-outlook">
       <Group justify="space-between" align="baseline" wrap="nowrap">
-        <Title order={3} size="h4" fz="var(--type-body)">
+        <PanelTitle>
           <Trans>Next chapter</Trans>
-        </Title>
+        </PanelTitle>
         {showsWindow && (
           <Tooltip
             withArrow

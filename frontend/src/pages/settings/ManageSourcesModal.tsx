@@ -1232,7 +1232,7 @@ export function ManageSourcesModal({
         content: narrow ? undefined : { height: 'min(860px, 92dvh)' },
         body: { padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' },
       }}
-      title={<Text fw={600}><Trans>Manage sources</Trans></Text>}
+      title={<Trans>Manage sources</Trans>}
     >
       <div className="source-manager" data-narrow={narrow || undefined}>
         {narrow && (

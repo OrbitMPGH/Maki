@@ -48,6 +48,7 @@ import {
 import { useAuth } from '../auth/AuthProvider'
 import { RestoreArchivedButton } from '../components/discover/ArchivedRestore'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { ModalFooter, ModalHeading } from '../components/ui/ModalShell'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
@@ -424,12 +425,21 @@ export default function RequestsPage() {
         </Stack>
       )}
 
-      <Modal opened={approving !== null} onClose={() => setApproving(null)} title={t`Approve request`}>
+      <Modal
+        opened={approving !== null}
+        onClose={() => setApproving(null)}
+        title={
+          <ModalHeading
+            title={t`Approve request`}
+            description={
+              <>
+                {approving?.title}: {chapterRangeLabel(approving?.chapterStart ?? null, approving?.chapterEnd ?? null)}
+              </>
+            }
+          />
+        }
+      >
         <Stack gap="sm">
-          <Text size="sm">
-            {approving?.title}: {chapterRangeLabel(approving?.chapterStart ?? null, approving?.chapterEnd ?? null)}
-          </Text>
-
           {needsRootFolder && (
             <Select
               label={t`Root folder`}
@@ -471,7 +481,7 @@ export default function RequestsPage() {
             minRows={2}
           />
 
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setApproving(null)}>
               <Trans>Cancel</Trans>
             </Button>
@@ -484,11 +494,24 @@ export default function RequestsPage() {
             >
               <Trans>Approve and queue</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 
-      <Modal opened={editing !== null} onClose={() => setEditing(null)} title={t`Edit request`}>
+      <Modal
+        opened={editing !== null}
+        onClose={() => setEditing(null)}
+        title={
+          <ModalHeading
+            title={t`Edit request`}
+            description={
+              <Trans>
+                {editingTitle}, asked for {editingAskedFor}
+              </Trans>
+            }
+          />
+        }
+      >
         <Stack
           component="form"
           gap="sm"
@@ -497,12 +520,6 @@ export default function RequestsPage() {
             submitEdit()
           }}
         >
-          <Text size="sm">
-            <Trans>
-              {editingTitle}, asked for {editingAskedFor}
-            </Trans>
-          </Text>
-
           <Group gap="sm" align="flex-end" className="requests-form-range">
             <NumberInput
               className="requests-form-field"
@@ -529,20 +546,23 @@ export default function RequestsPage() {
             <Trans>Leave a field blank for no bound. Approving queues exactly this range.</Trans>
           </Text>
 
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setEditing(null)}>
               <Trans>Cancel</Trans>
             </Button>
             <Button type="submit" loading={edit.isPending}>
               <Trans>Save range</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 
-      <Modal opened={rejecting !== null} onClose={() => setRejecting(null)} title={t`Reject request`}>
+      <Modal
+        opened={rejecting !== null}
+        onClose={() => setRejecting(null)}
+        title={<ModalHeading title={t`Reject request`} description={rejecting?.title} />}
+      >
         <Stack gap="sm">
-          <Text size="sm">{rejecting?.title}</Text>
           <Textarea
             label={t`Reason (optional)`}
             placeholder={t`Shown to whoever asked`}
@@ -551,14 +571,14 @@ export default function RequestsPage() {
             autosize
             minRows={2}
           />
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setRejecting(null)}>
               <Trans>Cancel</Trans>
             </Button>
             <Button color="var(--danger-fill)" onClick={submitReject} loading={reject.isPending}>
               <Trans>Reject</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 

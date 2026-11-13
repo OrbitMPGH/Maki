@@ -71,7 +71,6 @@ export function RenameSeriesModal({
         />
       }
       size="lg"
-      centered
     >
       <Stack gap="md">
         {isLoading && (

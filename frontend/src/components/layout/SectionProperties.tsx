@@ -59,7 +59,7 @@ export function SectionProperties({
         onClose={onClose}
         position="right"
         size={rail ? 'xl' : 'sm'}
-        title={<Text fw={600}>{label}</Text>}
+        title={label}
       >
         {section && (
           <Stack gap="md">

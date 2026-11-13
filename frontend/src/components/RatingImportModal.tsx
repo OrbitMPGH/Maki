@@ -182,7 +182,6 @@ export function RatingImportModal({
       opened={opened}
       onClose={onClose}
       size="lg"
-      centered
       title={
         <ModalHeading
           title={t`Import ratings from ${label}`}

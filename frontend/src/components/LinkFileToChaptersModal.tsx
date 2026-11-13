@@ -16,6 +16,7 @@ import {
 import { IconCheck, IconFileZip, IconSearch, IconX } from '../lib/icons'
 import { ModalFooter, ModalHeading } from './ui/ModalShell'
 import { Panel } from './ui/Panel'
+import { EmptyState } from './ui/EmptyState'
 import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -199,9 +200,11 @@ export function LinkFileToChaptersModal({
             ))}
           </div>
         ) : sorted.length === 0 ? (
-          <Text c="var(--ink-3)" size="sm" py="sm">
-            <Trans>This series has no chapters yet. Add a source mapping first so Maki knows what to link.</Trans>
-          </Text>
+          <EmptyState
+            compact
+            mood="asking"
+            title={t`This series has no chapters yet. Add a source mapping first so Maki knows what to link.`}
+          />
         ) : (
           <>
             <Group gap="xs" wrap="wrap">
@@ -307,9 +310,7 @@ export function LinkFileToChaptersModal({
                   )
                 })}
                 {visible.length === 0 && (
-                  <Text size="sm" c="var(--ink-3)" py="sm" ta="center">
-                    <Trans>No chapters match that filter.</Trans>
-                  </Text>
+                  <EmptyState compact mood="asleep" title={t`No chapters match that filter.`} />
                 )}
               </div>
             </ScrollArea.Autosize>

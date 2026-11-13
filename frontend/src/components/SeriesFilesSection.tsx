@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { ActionIcon, Badge, Button, Checkbox, Group, Paper, Skeleton, Stack, Table, Text, Title, Tooltip, VisuallyHidden } from '@mantine/core'
+import { ActionIcon, Badge, Button, Checkbox, Group, Paper, Skeleton, Stack, Table, Text, Tooltip, VisuallyHidden } from '@mantine/core'
 import {
   IconFileTypePdf,
   IconFileUnknown,
   IconFileZip,
+  IconFolder,
   IconLink,
   IconLock,
   IconLockOpen,
@@ -31,7 +32,8 @@ import { Panel } from './ui/Panel'
 import { useAuth } from '../auth/AuthProvider'
 import { LinkFileToChaptersModal } from './LinkFileToChaptersModal'
 import { RelinkFilesModal } from './RelinkFilesModal'
-import { MetaList } from './ui/MetaList'
+import { SectionHeader } from './ui/SectionHeader'
+import { EmptyState } from './ui/EmptyState'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 
 /** ["1", ..., "8", "8.5", "10"] → "1–8, 8.5, 10": whole-number runs collapse, so a long list never cuts mid-number. */
@@ -166,23 +168,12 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
 
   return (
     <div>
-      <Group justify="space-between" wrap="wrap" gap="sm">
-        <Group gap="xs" align="baseline">
-          <Title order={2} size="h3">
-            <Trans>Files</Trans>
-          </Title>
-          {files && (
-            <Text component="div" size="sm" c="var(--ink-3)" className="tnum">
-              <MetaList
-                items={[
-                  files.length,
-                  problems > 0 && <Plural key="problems" value={problems} one="# needs attention" other="# need attention" />,
-                ]}
-              />
-            </Text>
-          )}
-        </Group>
-        <Group gap="xs">
+      <SectionHeader
+        icon={IconFolder}
+        title={t`Files`}
+        count={files?.length}
+        action={
+          <Group gap="xs">
             <Button
               size="xs"
               variant="default"
@@ -216,7 +207,13 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
               </Button>
             )}
           </Group>
-      </Group>
+        }
+      />
+      {files && problems > 0 && (
+        <Text size="sm" c="var(--ink-3)" className="tnum">
+          <Plural value={problems} one="# needs attention" other="# need attention" />
+        </Text>
+      )}
 
       {(isLoading ? (
           <Panel p={0} className="table-panel" mt="sm">
@@ -233,9 +230,7 @@ export function SeriesFilesSection({ seriesId }: { seriesId: number }) {
             </Table.ScrollContainer>
           </Panel>
         ) : !files || files.length === 0 ? (
-          <Text c="var(--ink-3)" size="sm" py="sm">
-            <Trans>No files in the series folder.</Trans>
-          </Text>
+          <EmptyState compact framed mood="asleep" title={t`No files in the series folder.`} />
         ) : (
         <>
           {mostlyMissing && !selectMode && (

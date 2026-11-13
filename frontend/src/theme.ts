@@ -348,6 +348,11 @@ export function createAppTheme(
       ...themeBase.components,
       Modal: { defaultProps: (): Partial<ModalProps> => ({ ...modalDefaults(), closeButtonProps }) },
       Drawer: {
+        classNames: {
+          header: 'utility-modal-header',
+          title: 'utility-modal-title',
+          close: 'utility-modal-close',
+        },
         defaultProps: (): Partial<DrawerProps> => ({
           closeButtonProps,
           attributes: dialogHeaderAttributes,

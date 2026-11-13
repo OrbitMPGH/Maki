@@ -117,7 +117,6 @@ export function RootFolderPathModal({ folder, onClose }: { folder: RootFolder | 
       <Modal
         opened={folder !== null && !browsing}
         onClose={close}
-        centered
         size="lg"
         title={
           <ModalHeading

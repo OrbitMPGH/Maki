@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { randomUUID } from '../../lib/uuid'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Alert, Badge, Button, Group, SegmentedControl, Stack, Switch, Text, Title, Tooltip } from '@mantine/core'
+import { Alert, Badge, Button, Group, SegmentedControl, Stack, Switch, Text, Tooltip } from '@mantine/core'
 import { notifications } from '../../lib/toast'
 import { IconArrowRight, IconClock, IconEye, IconEyeOff, IconFolder, IconPlus, IconRanking } from '../../lib/icons'
 import {
@@ -24,6 +24,7 @@ import { Trans, useLingui } from '@lingui/react/macro'
 import { useIncognitoOptions, type IncognitoMode } from '../ui/incognito'
 import { useLabel } from '../../i18n-context'
 import { INCOGNITO_HELP, MONITOR_HELP, MONITOR_OPTIONS, MONITOR_SHORT } from '../series/SeriesActionsMenu'
+import { PanelTitle } from '../ui/PanelTitle'
 import { DrillPanes } from '../ui/DrillPanes'
 import { DrillBack, DrillChoices, DrillField, DrillRow, useDrillPages } from '../ui/DrillPanel'
 import { formatBytes } from '../../format'
@@ -301,9 +302,9 @@ export function DiscoverLibraryRail({
       {seriesId != null && archived ? (
         <>
           <Group gap="sm" justify="space-between" wrap="nowrap">
-            <Title order={2} size="h3" fz="var(--type-subhead)">
+            <PanelTitle order={2}>
               <Trans>In your library</Trans>
-            </Title>
+            </PanelTitle>
             <Badge color="gray" variant="light">
               <Trans context="series">Archived</Trans>
             </Badge>
@@ -322,9 +323,9 @@ export function DiscoverLibraryRail({
         </>
       ) : seriesId != null ? (
         <>
-          <Title order={2} size="h3" fz="var(--type-subhead)">
+          <PanelTitle order={2}>
             <Trans>In your library</Trans>
-          </Title>
+          </PanelTitle>
           <Button
             mt="md"
             fullWidth
@@ -340,9 +341,9 @@ export function DiscoverLibraryRail({
         // under Settings, Users. With no grant there is nothing to point the add at. Say so rather
         // than leaving a dead Select and a disabled button.
         <>
-          <Title order={2} size="h3" fz="var(--type-subhead)">
+          <PanelTitle order={2}>
             <Trans>Add to library</Trans>
-          </Title>
+          </PanelTitle>
           <Alert color="var(--warn)" variant="light" mt="md">
             <Trans>
               You can add series, but no root folder has been granted to you yet. Ask an admin to
@@ -513,18 +514,18 @@ export function DiscoverLibraryRail({
         </Stack>
       ) : myRequest && (myRequest.status === 'Pending' || myRequest.status === 'Processing') ? (
         <>
-          <Title order={2} size="h3" fz="var(--type-subhead)">
+          <PanelTitle order={2}>
             <Trans>Requested</Trans>
-          </Title>
+          </PanelTitle>
           <Alert color="var(--warn)" variant="light" icon={<IconClock size={16} />} mt="md">
             <Trans>An admin decides where it lands and what gets downloaded.</Trans>
           </Alert>
         </>
       ) : (
         <>
-          <Title order={2} size="h3" fz="var(--type-subhead)">
+          <PanelTitle order={2}>
             <Trans>Ask for this</Trans>
-          </Title>
+          </PanelTitle>
           <Text size="xs" c="var(--ink-4)" mt={6} style={{ lineHeight: 1.55 }}>
             <Trans>
               You can't add series yourself. An admin decides where it lands and what gets

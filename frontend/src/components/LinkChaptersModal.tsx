@@ -13,6 +13,7 @@ import {
 } from '@mantine/core'
 import { IconLinkOff, IconSearch } from '../lib/icons'
 import { ModalFooter, ModalHeading } from './ui/ModalShell'
+import { EmptyState } from './ui/EmptyState'
 import { notifications } from '../lib/toast'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { plural, t as now } from '@lingui/core/macro'
@@ -98,9 +99,7 @@ export function LinkChaptersModal({
             ))}
           </div>
         ) : !files || files.length === 0 ? (
-          <Text c="var(--ink-3)" size="sm" py="sm">
-            <Trans>No files found in the series folder.</Trans>
-          </Text>
+          <EmptyState compact mood="asleep" title={t`No files found in the series folder.`} />
         ) : (
           <>
             <TextInput
@@ -146,9 +145,7 @@ export function LinkChaptersModal({
                   </UnstyledButton>
                 ))}
                 {shown.length === 0 && (
-                  <Text size="sm" c="var(--ink-3)" py="sm" ta="center">
-                    <Trans>No file matches that.</Trans>
-                  </Text>
+                  <EmptyState compact mood="asleep" title={t`No file matches that.`} />
                 )}
               </div>
             </ScrollArea.Autosize>

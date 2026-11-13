@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Badge, Button, Checkbox, Group, Loader, Modal, Radio, ScrollArea, Stack, Text, Tooltip } from '@mantine/core'
 import { IconTrash } from '../lib/icons'
+import { ModalFooter, ModalNote } from './ui/ModalShell'
 import { notifications } from '../lib/toast'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
@@ -274,9 +275,9 @@ export function RelinkFilesModal({
             </Text>
           </Group>
         ) : isError || !plan ? (
-          <Text size="sm" c="var(--danger)" py="sm">
+          <ModalNote tone="danger">
             <Trans>Could not build a plan for this series.</Trans>
-          </Text>
+          </ModalNote>
         ) : nothingToDo ? (
           <Text size="sm" c="var(--ink-3)" py="sm">
             <Trans>Every chapter is already on the best file available. Nothing to change.</Trans>
@@ -487,7 +488,7 @@ export function RelinkFilesModal({
           </>
         )}
 
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={onClose} disabled={apply.isPending}>
             <Trans>Cancel</Trans>
           </Button>
@@ -508,7 +509,7 @@ export function RelinkFilesModal({
               <Plural value={total} one="Relink # chapter" other="Relink # chapters" />
             )}
           </Button>
-        </Group>
+        </ModalFooter>
       </Stack>
     </Modal>
   )

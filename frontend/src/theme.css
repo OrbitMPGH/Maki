@@ -773,8 +773,7 @@ body {
 }
 /* Headline numbers: figure strips, stat tiles, the level. Sizes stay per call site. */
 .figure,
-.figure-strip-n,
-.stats-fact-value {
+.figure-strip-n {
   font-family: var(--font-display);
   font-weight: var(--fw-bold);
   letter-spacing: -0.02em;
@@ -7488,9 +7487,8 @@ button.site-chip:hover {
 }
 
 /* --- Panel titles ---------------------------------------------------------- */
-/* One tier under a section header (PanelTitle). Stats' panel titles share it. */
-.panel-title,
-.stats-panel-title {
+/* One tier under a section header (PanelTitle). */
+.panel-title {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -8694,17 +8692,14 @@ body.column-resizing * {
   border-top: 1px solid var(--border);
 }
 
-.stats-rank-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 5px 0;
-  min-width: 0;
+.stats-row.stats-row-ranked {
+  grid-template-columns: 18px auto minmax(0, 1fr) auto;
 }
-.stats-rank-num {
-  width: 18px;
-  text-align: right;
-  flex-shrink: 0;
+.stats-row-rank {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  font-weight: var(--fw-bold);
+  text-align: end;
 }
 .stats-rank-empty {
   display: flex;
@@ -8767,15 +8762,11 @@ body.column-resizing * {
   .page-tabs {
     gap: 22px;
   }
-  .stats-rank-row {
-    flex-wrap: wrap;
-    gap: 4px 10px;
+  .stats-row.stats-row-ranked {
+    grid-template-columns: 18px minmax(0, 1fr) auto;
   }
-  .stats-rank-row .stats-thumb {
+  .stats-row-ranked .stats-thumb {
     display: none;
-  }
-  .stats-rank-row > :last-child {
-    margin-inline-start: auto;
   }
   /* Mid-way: the count goes under the meter, so the title gets the row's full width. */
   .stats-row.stats-row-midway {
@@ -9097,10 +9088,7 @@ body.column-resizing * {
   grid-template-columns: minmax(0, 1fr);
 }
 
-/* A panel's own title and the one line under it that says what is being counted. */
-.stats-panel-title {
-  margin: 0 0 2px;
-}
+/* The one line under a panel's title that says what is being counted. */
 .stats-panel-sub {
   margin: 0 0 var(--mantine-spacing-sm);
   color: var(--ink-3);
@@ -9117,6 +9105,10 @@ body.column-resizing * {
   color: var(--ink-3);
   font-size: var(--type-meta);
 }
+.stats-legend b {
+  color: var(--ink-hi);
+  font-weight: var(--fw-bold);
+}
 .stats-legend-swatch {
   display: inline-block;
   width: 9px;
@@ -9124,40 +9116,6 @@ body.column-resizing * {
   margin-inline-end: 6px;
   border-radius: var(--radius-2xs);
   vertical-align: -1px;
-}
-
-/* Label, figure, hint: the facts grid beside a chart. */
-.stats-facts {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 18px;
-}
-.stats-fact {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-.stats-fact-label {
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-}
-.stats-fact-value {
-  color: var(--ink-hi);
-  font-size: 1.25rem;
-  font-weight: var(--fw-heavy);
-  line-height: 1.2;
-  font-variant-numeric: tabular-nums;
-}
-.stats-fact-value small {
-  margin-inline-start: 3px;
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-}
-.stats-fact-hint {
-  color: var(--ink-3);
-  font-size: var(--type-meta);
 }
 
 /* Cover, title with a sub line or meter, value on the right. Covers use .stats-thumb. */
@@ -9241,20 +9199,6 @@ body.column-resizing * {
 .stats-split-seg {
   min-width: 3px;
   height: 100%;
-}
-.stats-split-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-  margin: 8px 0 0;
-  padding: 0;
-  list-style: none;
-  color: var(--ink-3);
-  font-size: var(--type-meta);
-}
-.stats-split-legend b {
-  color: var(--ink-hi);
-  font-weight: var(--fw-bold);
 }
 
 /* Weekday by hour. Cells take their intensity inline as a color-mix of --brand into
@@ -9508,9 +9452,6 @@ body.column-resizing * {
   }
 }
 @media (max-width: 47.9375em) {
-  .stats-facts {
-    gap: 10px 14px;
-  }
   .stats-lean {
     grid-template-columns: minmax(0, 6rem) minmax(0, 1fr) 3rem;
   }
@@ -14095,6 +14036,18 @@ button.settings-row-head:hover,
 .series-detail-chapter-toolbar {
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
+}
+/* The tab row already spaces the panel, so a header that opens a tab takes no rail-scale margin. */
+.series-detail-chapter-toolbar > .section-header {
+  margin-block: 0;
+}
+.series-detail-files > div > .section-header:first-child {
+  margin-top: 0;
+}
+/* Sub-labels inside the synopsis panel (Genres, Tags, Open on). */
+.series-detail-synopsis h3.panel-title {
+  margin-bottom: 10px;
+  font-size: var(--type-body);
 }
 /* Sized to its longest option in the active language ("100 / page", "100 / Seite"). The wrapper takes
    the field's font size so `ch` measures the text the field shows; the 44px is the field's start

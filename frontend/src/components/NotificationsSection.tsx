@@ -55,6 +55,7 @@ import type { MessageDescriptor } from '@lingui/core'
 import { SettingsSection } from '../pages/settings/SettingsSection'
 import { EmptyState } from './ui/EmptyState'
 import { ConfirmDialog } from './ui/ConfirmDialog'
+import { ModalFooter } from './ui/ModalShell'
 import { useLabel } from '../i18n-context'
 import { useAuth } from '../auth/AuthProvider'
 import { formatDateTime } from '../format'
@@ -563,7 +564,6 @@ export function NotificationsSection() {
         opened={editing !== null}
         onClose={close}
         title={editing?.id === null ? t`Add connection` : t`Edit connection`}
-        centered
       >
         {form && (
           <Stack>
@@ -639,19 +639,20 @@ export function NotificationsSection() {
               </Stack>
             ))}
 
-            <Group justify="space-between" mt="sm">
-              <Button variant="default" loading={test.isPending} disabled={missingRequired} onClick={runTest}>
-                <Trans>Test</Trans>
+            <ModalFooter
+              status={
+                <Button variant="default" loading={test.isPending} disabled={missingRequired} onClick={runTest}>
+                  <Trans>Test</Trans>
+                </Button>
+              }
+            >
+              <Button variant="default" onClick={close}>
+                <Trans>Cancel</Trans>
               </Button>
-              <Group>
-                <Button variant="subtle" onClick={close}>
-                  <Trans>Cancel</Trans>
-                </Button>
-                <Button loading={create.isPending || update.isPending} disabled={missingRequired} onClick={save}>
-                  <Trans>Save</Trans>
-                </Button>
-              </Group>
-            </Group>
+              <Button loading={create.isPending || update.isPending} disabled={missingRequired} onClick={save}>
+                <Trans>Save</Trans>
+              </Button>
+            </ModalFooter>
           </Stack>
         )}
       </Modal>

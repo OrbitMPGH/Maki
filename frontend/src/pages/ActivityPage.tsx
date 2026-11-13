@@ -7,7 +7,6 @@ import {
   Checkbox,
   Group,
   Loader,
-  Modal,
   Pagination,
   Progress,
   Stack,
@@ -83,6 +82,7 @@ import { ImportReviewModal } from '../components/ImportReviewModal'
 import { QueuePauseBanner, QueuePauseButton } from '../components/QueuePause'
 import { FileQualityBadge } from '../components/series/FileQualityBadge'
 import { TorrentProposalCard } from '../components/upgrades/TorrentProposalCard'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { EmptyState } from '../components/ui/EmptyState'
 import { SectionHeader } from '../components/ui/SectionHeader'
 import { SeriesCell } from '../components/SeriesCell'
@@ -1018,37 +1018,25 @@ export default function ActivityPage() {
 
       <ImportReviewModal queueItemId={reviewing} onClose={() => setReviewing(null)} />
 
-      <Modal
+      <ConfirmDialog
         opened={removingRelease !== null}
         onClose={() => setRemovingRelease(null)}
         title={<Trans>Remove this torrent?</Trans>}
-        centered
+        confirmLabel={<Trans>Remove</Trans>}
+        loading={remove.isPending}
+        onConfirm={() => {
+          if (removingRelease === null) return
+          remove.mutate({ id: removingRelease, blockRelease }, { onSuccess: () => setRemovingRelease(null) })
+        }}
       >
-        <Stack gap="sm">
-          <Checkbox
-            checked={blockRelease}
-            onChange={(e) => setBlockRelease(e.currentTarget.checked)}
-            label={t`Don't grab this release again`}
-          />
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setRemovingRelease(null)}>
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button
-              color="var(--danger-fill)"
-              loading={remove.isPending}
-              onClick={() => {
-                if (removingRelease === null) return
-                remove.mutate({ id: removingRelease, blockRelease }, { onSuccess: () => setRemovingRelease(null) })
-              }}
-            >
-              <Trans>Remove</Trans>
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+        <Checkbox
+          checked={blockRelease}
+          onChange={(e) => setBlockRelease(e.currentTarget.checked)}
+          label={t`Don't grab this release again`}
+        />
+      </ConfirmDialog>
 
-      <Modal
+      <ConfirmDialog
         opened={clearConfirmOpen}
         onClose={() => setClearConfirmOpen(false)}
         title={
@@ -1058,28 +1046,13 @@ export default function ActivityPage() {
             other="Clear # queued downloads?"
           />
         }
-        centered
-      >
-        <Stack gap="sm">
-          <Text size="sm">
-            <Trans>Pending downloads will be removed. Downloads already in progress will be cancelled.</Trans>
-          </Text>
-          <Group justify="flex-end">
-            <Button variant="default" onClick={() => setClearConfirmOpen(false)}>
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button
-              color="var(--danger-fill)"
-              loading={clear.isPending}
-              onClick={() => {
-                clear.mutate(undefined, { onSuccess: () => setClearConfirmOpen(false) })
-              }}
-            >
-              <Trans>Clear queue</Trans>
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+        description={<Trans>Pending downloads will be removed. Downloads already in progress will be cancelled.</Trans>}
+        confirmLabel={<Trans>Clear queue</Trans>}
+        loading={clear.isPending}
+        onConfirm={() => {
+          clear.mutate(undefined, { onSuccess: () => setClearConfirmOpen(false) })
+        }}
+      />
 
       <Stack gap="sm" mt="xl">
         <SectionHeader icon={IconHistory} title={t`History`} count={history?.itemTotal} />

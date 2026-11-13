@@ -67,7 +67,6 @@ export function MetadataHistoryModal({
     <Modal
       opened={opened}
       onClose={onClose}
-      centered
       title={
         <ModalHeading
           title={t`Metadata history`}

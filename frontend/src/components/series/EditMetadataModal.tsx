@@ -226,7 +226,6 @@ export function EditMetadataModal({
       opened={opened}
       onClose={close}
       size="lg"
-      centered
       title={
         <ModalHeading
           title={<Trans>Edit metadata</Trans>}

@@ -612,7 +612,6 @@ function TwoFactorRow() {
             description={<Trans>Each code works once if you lose your authenticator.</Trans>}
           />
         }
-        centered
         closeOnClickOutside={false}
         closeOnEscape={false}
       >
@@ -777,7 +776,6 @@ function ApiKeysCard({ creating, onCloseCreate }: { creating: boolean; onCloseCr
         opened={created !== null}
         onClose={() => setCreated(null)}
         title={<ModalHeading title={<Trans>Your new API key</Trans>} description={created?.key.name} />}
-        centered
         size="lg"
         closeOnClickOutside={false}
         closeOnEscape={false}

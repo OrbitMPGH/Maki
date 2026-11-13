@@ -9,7 +9,6 @@ import {
   Button,
   Checkbox,
   Group,
-  Modal,
   Radio,
   Select,
   Stack,
@@ -513,26 +512,20 @@ export function NamingSection() {
         <Trans>Rename every series to current format</Trans>
       </Button>
 
-      <Modal
+      <ConfirmDialog
         opened={confirmRenameAll}
         onClose={() => setConfirmRenameAll(false)}
         title={t`Rename every series`}
-      >
-        <Text size="sm" mb="md">
+        description={
           <Trans>
             Renames the folders and files of all{' '}
             <Plural value={seriesCount} one="# series" other="# series" /> on disk to match the formats
             above. This can take a while.
           </Trans>
-        </Text>
-        <Group justify="flex-end">
-          <Button variant="default" onClick={() => setConfirmRenameAll(false)}>
-            <Trans>Cancel</Trans>
-          </Button>
-          <Button
-            color="var(--danger-fill)"
-            loading={renameMany.isPending}
-            onClick={() =>
+        }
+        confirmLabel={<Trans>Rename all</Trans>}
+        loading={renameMany.isPending}
+        onConfirm={() =>
               renameMany.mutate(allSeries.map((s) => s.id), {
                 onSuccess: (results) => {
                   const renamed = results.filter((r) => r.applied).length
@@ -555,11 +548,7 @@ export function NamingSection() {
                 },
               })
             }
-          >
-            <Trans>Rename all</Trans>
-          </Button>
-        </Group>
-      </Modal>
+      />
 
       <Text fw={500} size="sm" mb={4}>
         <Trans>Folder naming on import</Trans>

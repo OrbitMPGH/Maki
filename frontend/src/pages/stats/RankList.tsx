@@ -1,6 +1,7 @@
-import { Group, Stack, Text } from '@mantine/core'
+import { Text } from '@mantine/core'
 import type { Icon } from '../../lib/icons'
 import { Panel } from '../../components/ui/Panel'
+import { PanelTitle } from '../../components/ui/PanelTitle'
 import { SeriesLink, SeriesThumb } from './SeriesLink'
 
 export interface RankItem {
@@ -34,34 +35,26 @@ export function RankList({
   if (items.length === 0) {
     return (
       <Panel p="sm" px="md" className="stats-rank-empty">
-        <RankIcon size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
-        <Text fw={650} style={{ flexShrink: 0 }}>{title}</Text>
+        <PanelTitle icon={RankIcon}>{title}</PanelTitle>
         <Text size="sm" c="var(--ink-3)" className="stats-rank-empty-text">{emptyText}</Text>
       </Panel>
     )
   }
   return (
     <Panel p="md">
-      <Group gap={8} mb="xs" wrap="nowrap">
-        <RankIcon size={16} style={{ color: 'var(--brand)', flexShrink: 0 }} />
-        <Text fw={650}>{title}</Text>
-      </Group>
-      <Stack gap={0}>
+      <PanelTitle icon={RankIcon}>{title}</PanelTitle>
+      <ul className="stats-rows" style={{ marginTop: 8 }}>
         {items.map((item, i) => (
-          <div className="stats-rank-row" key={`${item.seriesId ?? item.title}-${i}`}>
-            <Text c="var(--ink-3)" fw={700} size="sm" className="tnum stats-rank-num">
-              {i + 1}
-            </Text>
+          <li className="stats-row stats-row-ranked" key={`${item.seriesId ?? item.title}-${i}`}>
+            <span className="tnum stats-row-rank">{i + 1}</span>
             <SeriesThumb url={item.coverUrl} alt={item.title} seriesId={item.seriesId} />
-            <Text size="sm" truncate style={{ flex: 1, minWidth: 0 }}>
+            <span className="stats-row-title">
               <SeriesLink id={item.seriesId} title={item.title} />
-            </Text>
-            <Text size="sm" fw={600} className="tnum" style={{ flexShrink: 0 }}>
-              {item.value}
-            </Text>
-          </div>
+            </span>
+            <span className="stats-row-value">{item.value}</span>
+          </li>
         ))}
-      </Stack>
+      </ul>
     </Panel>
   )
 }

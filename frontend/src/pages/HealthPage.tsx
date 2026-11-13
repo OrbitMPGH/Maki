@@ -1394,7 +1394,6 @@ function BulkDeleteModal({
     <Modal
       opened={opened}
       onClose={dismiss}
-      centered
       size="lg"
       title={
         <span className="confirm-title">
@@ -2032,7 +2031,6 @@ function FileReview({
       onClose={close}
       title={t`Review archive`}
       size="min(1060px, 94vw)"
-      centered
     >
       <Stack gap="lg">
         {(error ?? action.error) && <Note tone="danger">{(error ?? action.error)?.message}</Note>}
@@ -3388,7 +3386,6 @@ function OperationReview({ id, close, open }: { id: number; close: () => void; o
       onClose={close}
       title={finished ? t`Operation details` : t`Review operation`}
       size="min(1060px, 94vw)"
-      centered
     >
       <Stack gap="lg">
         {(error ?? action.error) && <Note tone="danger">{(error ?? action.error)?.message}</Note>}

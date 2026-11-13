@@ -26,6 +26,7 @@ import {
   useReaderUsed,
   useSaveReaderSettings,
 } from '../../api/reader'
+import { ModalFooter, ModalHeading } from '../../components/ui/ModalShell'
 import { useCopyText } from '../../components/ui/useCopyText'
 import { MintPasswordField, RecentSignInNotice, useMintConfirmation } from '../../components/settings/MintConfirmation'
 
@@ -359,7 +360,22 @@ export function OpdsSection() {
         )}
       </Stack>
 
-      <Modal opened={enableModalOpen} onClose={closePasswordModals} title={t`Enable the OPDS catalogue`} centered>
+      <Modal
+        opened={enableModalOpen}
+        onClose={closePasswordModals}
+        title={
+          <ModalHeading
+            title={t`Enable the OPDS catalogue`}
+            description={
+              mint.needsPassword ? (
+                <Trans>Enabling it creates the feed URL. Confirm your password to continue.</Trans>
+              ) : (
+                <Trans>Enabling it creates the feed URL.</Trans>
+              )
+            }
+          />
+        }
+      >
         <Stack
           component="form"
           onSubmit={(e: FormEvent) => {
@@ -368,27 +384,34 @@ export function OpdsSection() {
             saveWith({ enabled: true }, password)
           }}
         >
-          <Text size="sm">
-            {mint.needsPassword ? (
-              <Trans>Enabling it creates the feed URL. Confirm your password to continue.</Trans>
-            ) : (
-              <Trans>Enabling it creates the feed URL.</Trans>
-            )}
-          </Text>
           {mint.needsPassword && <MintPasswordField value={password} onChange={setPassword} />}
           {mint.signInStale && <RecentSignInNotice canSignInAgain={mint.canSignInAgain} anchor="opds" />}
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={closePasswordModals}>
               <Trans>Cancel</Trans>
             </Button>
             <Button type="submit" loading={save.isPending} disabled={!mint.ready(password)}>
               <Trans>Enable</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 
-      <Modal opened={rotateModalOpen} onClose={closePasswordModals} title={t`Regenerate OPDS token`} centered>
+      <Modal
+        opened={rotateModalOpen}
+        onClose={closePasswordModals}
+        title={
+          <ModalHeading
+            title={t`Regenerate OPDS token`}
+            description={
+              <Trans>
+                The current feed URL stops working immediately. Every app using it needs the new
+                one.
+              </Trans>
+            }
+          />
+        }
+      >
         <Stack
           component="form"
           onSubmit={(e: FormEvent) => {
@@ -404,15 +427,9 @@ export function OpdsSection() {
             })
           }}
         >
-          <Text size="sm">
-            <Trans>
-              The current feed URL stops working immediately. Every app using it needs the new
-              one.
-            </Trans>
-          </Text>
           {mint.needsPassword && <MintPasswordField value={password} onChange={setPassword} />}
           {mint.signInStale && <RecentSignInNotice canSignInAgain={mint.canSignInAgain} anchor="opds" />}
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={closePasswordModals}>
               <Trans>Cancel</Trans>
             </Button>
@@ -424,7 +441,7 @@ export function OpdsSection() {
             >
               <Trans>Regenerate</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
     </SettingsSection>

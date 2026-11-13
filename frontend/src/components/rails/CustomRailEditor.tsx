@@ -199,7 +199,7 @@ export function CustomRailForm({
 
   const matchCount = count != null && <Plural value={count} one="# title matches" other="# titles match" />
   const cancelButton = onCancel && (
-    <Button variant="subtle" onClick={onCancel}>
+    <Button variant="default" onClick={onCancel}>
       <Trans>Cancel</Trans>
     </Button>
   )

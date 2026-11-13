@@ -19,7 +19,6 @@ import {
   Stack,
   Tabs,
   Text,
-  ThemeIcon,
   Tooltip,
 } from '@mantine/core'
 import {
@@ -117,6 +116,7 @@ import { CUSTOM_RAIL_PREFIX, customRailAsDiscoverRail, useCustomRails } from '..
 import { FOLLOWING_RAIL_KEY } from '../api/following'
 import { OTHER_SOURCE, railSource, sectionSource, useShortlistCount, type ShortlistSource } from '../api/shortlist'
 import { CountIndicator } from '../components/ui/CountIndicator'
+import { ModalHeading } from '../components/ui/ModalShell'
 import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
@@ -1030,20 +1030,7 @@ function FeedExpandModal({
       opened={rail != null}
       onClose={onClose}
       fullScreen
-      title={
-        <Group gap="xs">
-          <ThemeIcon variant="light" color="brand" size="md" radius="md">
-            <IconCompass size={16} />
-          </ThemeIcon>
-          <Text
-            span
-            fz="var(--mantine-h4-font-size)"
-            fw="var(--mantine-h4-font-weight)"
-            lh="var(--mantine-h4-line-height)"
-            ff="var(--mantine-font-family-headings)"
-          >{rail?.title}</Text>
-        </Group>
-      }
+      title={<ModalHeading title={rail?.title} />}
     >
       <Panel p="md" mb="md">
         <Stack gap="md">

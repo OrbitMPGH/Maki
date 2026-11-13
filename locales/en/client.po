@@ -5126,7 +5126,6 @@ msgstr "Can't sign in with the saved details."
 #: src/components/DiscoverPresets.tsx
 #: src/components/import/ImportMatchFinder.tsx
 #: src/components/import/MihonImport.tsx
-#: src/components/import/RecentImports.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
@@ -5151,10 +5150,8 @@ msgstr "Can't sign in with the saved details."
 #: src/components/settings/RootFolderRulesModal.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
-#: src/components/SourceMappingsSection.tsx
 #: src/components/TagManagerModal.tsx
 #: src/components/ui/ConfirmDialog.tsx
-#: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -5162,7 +5159,6 @@ msgstr "Can't sign in with the saved details."
 #: src/pages/SeriesDetailPage.tsx
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
-#: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
 #: src/pages/settings/ReadingCards.tsx
 #: src/pages/settings/SystemCards.tsx
@@ -21973,6 +21969,7 @@ msgstr "Try a shorter or alternative query."
 #: src/pages/reader/ReaderPage.tsx
 #: src/pages/settings/UpscalingSection.tsx
 #: src/pages/stats/sections/LibrarySection.tsx
+#: src/pages/stats/sections/ProgressSection.tsx
 msgid "Try again"
 msgstr "Try again"
 

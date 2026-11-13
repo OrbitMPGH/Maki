@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Button, Group, Modal, Select, Stack, Text, ThemeIcon } from '@mantine/core'
-import { IconLanguage } from '../lib/icons'
+import { Button, Modal, Select, Stack, Text } from '@mantine/core'
+import { ModalFooter, ModalHeading } from './ui/ModalShell'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { useAnnouncements, useSeenLanguageAnnouncement, useUiSettings } from '../api/hooks'
 import { useApplyLanguage, useLanguageOptions } from './ui/language'
@@ -47,23 +47,20 @@ export default function LanguageAnnouncementModal() {
     <Modal
       opened={open}
       onClose={close}
-      title={t`Maki speaks your language`}
-      centered
-      size="md"
-    >
-      <Stack gap="lg">
-        <Group gap="sm" wrap="nowrap" align="flex-start">
-          <ThemeIcon variant="light" color="brand" size="lg" radius="md">
-            <IconLanguage size={20} />
-          </ThemeIcon>
-          <Text size="sm">
+      title={
+        <ModalHeading
+          title={t`Maki speaks your language`}
+          description={
             <Trans>
               Maki's interface is now translated into {languageCount} languages. Pick yours here, or
               change it any time under Settings, Language.
             </Trans>
-          </Text>
-        </Group>
-
+          }
+        />
+      }
+      size="md"
+    >
+      <Stack gap="lg">
         <Select
           label={t`Language`}
           data={options}
@@ -85,11 +82,11 @@ export default function LanguageAnnouncementModal() {
           </Trans>
         </Text>
 
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button onClick={close}>
             <Trans>Done</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Stack>
     </Modal>
   )

@@ -33,6 +33,7 @@ import {
 import type { CustomRailSpec } from '../api/customRails'
 import { filtersFromSpec } from './CatalogueFilters'
 import { TermPicker } from './CatalogueRules'
+import { ModalFooter, ModalHeading } from './ui/ModalShell'
 import { CustomRailEditor } from './rails/CustomRailEditor'
 
 /**
@@ -200,14 +201,14 @@ function SavePresetModal({
             if (e.key === 'Enter') submit()
           }}
         />
-        <Group justify="flex-end">
-          <Button variant="subtle" onClick={onClose}>
+        <ModalFooter>
+          <Button variant="default" onClick={onClose}>
             <Trans>Cancel</Trans>
           </Button>
           <Button loading={create.isPending} onClick={submit}>
             <Trans>Save</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Stack>
     </Modal>
   )
@@ -247,14 +248,23 @@ function HiddenContentModal({ onClose }: { onClose: () => void }) {
   }, [data])
 
   return (
-    <Modal opened onClose={onClose} title={t`Hidden everywhere`} size="lg">
+    <Modal
+      opened
+      onClose={onClose}
+      title={
+        <ModalHeading
+          title={t`Hidden everywhere`}
+          description={
+            <Trans>
+              Series with any of these never show up on Discover: not in rails, search, recommendations,
+              or creator pages. Only you see this list.
+            </Trans>
+          }
+        />
+      }
+      size="lg"
+    >
       <Stack gap="sm">
-        <Text size="sm" c="var(--ink-3)">
-          <Trans>
-            Series with any of these never show up on Discover: not in rails, search, recommendations,
-            or creator pages. Only you see this list.
-          </Trans>
-        </Text>
         {isLoading ? (
           <Text size="sm" c="var(--ink-3)">
             <Trans>Loading…</Trans>
@@ -271,8 +281,8 @@ function HiddenContentModal({ onClose }: { onClose: () => void }) {
             allowHide={false}
           />
         )}
-        <Group justify="flex-end">
-          <Button variant="subtle" onClick={onClose}>
+        <ModalFooter>
+          <Button variant="default" onClick={onClose}>
             <Trans>Cancel</Trans>
           </Button>
           <Button
@@ -292,7 +302,7 @@ function HiddenContentModal({ onClose }: { onClose: () => void }) {
           >
             <Trans>Save</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Stack>
     </Modal>
   )

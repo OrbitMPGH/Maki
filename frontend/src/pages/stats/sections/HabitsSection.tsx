@@ -6,7 +6,9 @@ import { useActivityStats, useLibraryComposition } from '../../../api/hooks'
 import type { BehaviourSeries } from '../../../api/hooks'
 import { useStatsStanding } from '../../../api/stats'
 import { EmptyState } from '../../../components/ui/EmptyState'
+import { FigureStrip } from '../../../components/ui/FigureStrip'
 import { Panel } from '../../../components/ui/Panel'
+import { PanelTitle } from '../../../components/ui/PanelTitle'
 import { formatNumber, formatPercent, formatReadingTime } from '../../../format'
 import { BacklogBars } from '../charts/BacklogBars'
 import { StopHistogram } from '../charts/StopHistogram'
@@ -125,10 +127,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
       <Stack gap="lg">
         <div className="stats-grid-side">
           <Panel p="md">
-            <p className="stats-panel-title">
-              <IconFlame size={16} style={{ color: 'var(--brand)' }} />
-              {t`Finish rate`}
-            </p>
+            <PanelTitle icon={IconFlame}>{t`Finish rate`}</PanelTitle>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 12 }}>
               <RingProgress
                 size={92}
@@ -142,35 +141,25 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
                 }
               />
             </div>
-            <div className="stats-facts">
-              <div className="stats-fact">
-                <span className="stats-fact-label">{t`Finished`}</span>
-                <span className="stats-fact-value tnum">{formatNumber(seriesFinished)}</span>
-              </div>
-              <div className="stats-fact">
-                <span className="stats-fact-label">{t`Still going`}</span>
-                <span className="stats-fact-value tnum">{formatNumber(stillGoing)}</span>
-              </div>
-              <div className="stats-fact">
-                <span className="stats-fact-label">{t`Abandoned`}</span>
-                <span className="stats-fact-value tnum">{formatNumber(abandonedCount)}</span>
-                <span className="stats-fact-hint">{t`Stalled without finishing`}</span>
-              </div>
-              <div className="stats-fact">
-                <span className="stats-fact-label">{t`Fully read owned`}</span>
-                <span className="stats-fact-value tnum">
-                  {formatNumber(seriesFullyRead)}
-                  {library && <small>{`/${formatNumber(library.totals.seriesCount)}`}</small>}
-                </span>
-              </div>
-            </div>
+            <FigureStrip
+              flush
+              figures={[
+                { label: t`Finished`, value: seriesFinished },
+                { label: t`Still going`, value: stillGoing },
+                { label: t`Abandoned`, value: abandonedCount, hint: t`Stalled without finishing` },
+                {
+                  label: t`Fully read owned`,
+                  value: library
+                    ? `${formatNumber(seriesFullyRead)}/${formatNumber(library.totals.seriesCount)}`
+                    : seriesFullyRead,
+                  zero: seriesFullyRead === 0,
+                },
+              ]}
+            />
           </Panel>
 
           <Panel p="md">
-            <p className="stats-panel-title">
-              <IconChartHistogram size={16} style={{ color: 'var(--brand)' }} />
-              {t`Where you stop`}
-            </p>
+            <PanelTitle icon={IconChartHistogram}>{t`Where you stop`}</PanelTitle>
             <p className="stats-panel-sub">
               {stopPointPct
                 ? t`How far through a series you were when it stalled. Median ${stopPointPct}.`
@@ -187,7 +176,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
         {!emptyLists && (
           <SimpleGrid cols={{ base: 1, md: 3 }} spacing="lg">
             <Panel p="md">
-              <p className="stats-panel-title">{t`Savoured`}</p>
+              <PanelTitle>{t`Savoured`}</PanelTitle>
               <p className="stats-panel-sub">{t`Read slowly over a long span`}</p>
               {behaviour.savoured.length === 0 ? (
                 <EmptyState compact mood="asleep" title={t`Nothing slow enough to call savoured yet.`} />
@@ -210,7 +199,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
             </Panel>
 
             <Panel p="md">
-              <p className="stats-panel-title">{t`Devoured`}</p>
+              <PanelTitle>{t`Devoured`}</PanelTitle>
               <p className="stats-panel-sub">{t`Finished in a rush`}</p>
               {behaviour.devoured.length === 0 ? (
                 <EmptyState compact mood="asleep" title={t`Nothing fast enough to call a rush yet.`} />
@@ -233,10 +222,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
             </Panel>
 
             <Panel p="md">
-              <p className="stats-panel-title">
-                <IconArchive size={16} style={{ color: 'var(--brand)' }} />
-                {t`Abandoned`}
-              </p>
+              <PanelTitle icon={IconArchive}>{t`Abandoned`}</PanelTitle>
               <p className="stats-panel-sub">{t`Stopped before finishing`}</p>
               {behaviour.abandoned.length === 0 ? (
                 <Text c="var(--ink-3)" size="sm">
@@ -266,10 +252,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
 
         {backlog.unreadChapters > 0 && (
           <Panel p="md">
-            <p className="stats-panel-title">
-              <IconBooks size={16} style={{ color: 'var(--brand)' }} />
-              {t`Backlog`}
-            </p>
+            <PanelTitle icon={IconBooks}>{t`Backlog`}</PanelTitle>
             <p className="stats-panel-sub">
               {backlogDuration ? (
                 <Trans>

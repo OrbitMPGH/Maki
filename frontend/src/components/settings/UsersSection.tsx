@@ -421,7 +421,6 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
           }
         />
       }
-      centered
       size="lg"
     >
       <Stack

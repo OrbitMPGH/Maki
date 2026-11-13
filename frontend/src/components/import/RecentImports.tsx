@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Badge, Button, Card, Group, Modal, Stack, Text } from '@mantine/core'
+import { Badge, Button, Card, Group, Stack, Text } from '@mantine/core'
 import { IconArrowBackUp, IconArrowRight, IconHistory } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { plural } from '@lingui/core/macro'
 import { formatDateTime } from '../../format'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { SectionHeader } from '../ui/SectionHeader'
 import {
   useImportBatches,
@@ -60,7 +61,7 @@ function UndoConfirm({
   }
 
   return (
-    <Modal
+    <ConfirmDialog
       opened={target !== null}
       onClose={onClose}
       title={
@@ -70,31 +71,22 @@ function UndoConfirm({
           <Plural value={count} one="Undo the import of # folder?" other="Undo the import of # folders?" />
         )
       }
+      description={
+        <Trans>
+          Undo removes the series the import added and the files it registered, deletes the CBZs Maki
+          built from other formats, and moves each folder back to its old name. Every file you had before
+          the import stays where it was.
+        </Trans>
+      }
+      confirmLabel={<Trans>Undo import</Trans>}
+      loading={undo.isPending}
+      onConfirm={run}
     >
-      <Stack gap="sm">
-        <Text size="sm">
-          <Trans>
-            Undo removes the series the import added and the files it registered, deletes the CBZs Maki
-            built from other formats, and moves each folder back to its old name. Every file you had before
-            the import stays where it was.
-          </Trans>
-        </Text>
-        <Text size="xs" c="var(--ink-3)">
-          <Trans>
-            A series that has been downloaded into or read since cannot be undone. ComicInfo.xml changes
-            Maki wrote inside your own CBZs are not reverted.
-          </Trans>
-        </Text>
-        <Group justify="flex-end">
-          <Button variant="default" onClick={onClose}>
-            <Trans>Cancel</Trans>
-          </Button>
-          <Button color="var(--danger-fill)" loading={undo.isPending} onClick={run}>
-            <Trans>Undo import</Trans>
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
+      <Trans>
+        A series that has been downloaded into or read since cannot be undone. ComicInfo.xml changes
+        Maki wrote inside your own CBZs are not reverted.
+      </Trans>
+    </ConfirmDialog>
   )
 }
 

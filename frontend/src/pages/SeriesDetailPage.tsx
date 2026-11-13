@@ -10,7 +10,6 @@ import {
   ActionIcon,
   Alert,
   Anchor,
-  Badge,
   Box,
   Button,
   Divider,
@@ -29,7 +28,6 @@ import {
   Tabs,
   Text,
   TextInput,
-  Title,
   Tooltip,
   VisuallyHidden,
 } from '@mantine/core'
@@ -226,6 +224,9 @@ import {
 import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { MonoValue } from '../components/ui/MonoValue'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { ModalFooter, ModalHeading } from '../components/ui/ModalShell'
+import { MetaList } from '../components/ui/MetaList'
+import { SectionHeader } from '../components/ui/SectionHeader'
 import { useColumnWidths, type ColumnSpec } from '../lib/useColumnWidths'
 import { useStableActions } from '../lib/useStableActions'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
@@ -2671,9 +2672,9 @@ function SeriesDetailBody() {
                 {(series.animeStart || series.animeEnd) && (
                     <>
                       <Divider my="md" color="var(--hairline)" />
-                      <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
+                      <PanelTitle>
                         <Trans>Anime coverage</Trans>
-                      </Title>
+                      </PanelTitle>
                       <AnimeCoverageBar
                           start={series.animeStart}
                           end={series.animeEnd}
@@ -2689,10 +2690,10 @@ function SeriesDetailBody() {
                 <Stack gap="md">
                   {series.genres.length > 0 && (
                       <div>
-                        <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
+                        <PanelTitle>
                           <Trans>Genres</Trans>
-                          {series.lockedFields.includes('genres') && <>{' '}<MetadataLock /></>}
-                        </Title>
+                          {series.lockedFields.includes('genres') && <MetadataLock />}
+                        </PanelTitle>
                         {/* Genres carry no relevance weight, so they are one flat row rather than
                             buckets, on their own dot colour to read apart from the tags below. */}
                         <div className="tag-chips" style={{ '--bucket': 'var(--neutral)' } as CSSProperties}>
@@ -2708,9 +2709,9 @@ function SeriesDetailBody() {
                   {(providerTags.length > 0 || series.metadataTags.length > 0) && (
                       <div>
                         <Divider my="md" color="var(--hairline)" />
-                        <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
+                        <PanelTitle>
                           <Trans>Tags</Trans>
-                        </Title>
+                        </PanelTitle>
                         <div ref={tagListRef}>
                           {providerTags.length > 0 ? (
                               <TagBuckets tags={providerTags} />
@@ -2734,9 +2735,9 @@ function SeriesDetailBody() {
                   {series.links && series.links.length > 0 && (
                       <div>
                         <Divider mb="sm" color="var(--hairline)" />
-                        <Title order={3} size="h4" fz="var(--type-body)" mb={10}>
+                        <PanelTitle>
                           <Trans>Open on</Trans>
-                        </Title>
+                        </PanelTitle>
                         <Group gap="xs" wrap="wrap">
                           <MetadataLinks links={series.links} chips />
                           {hasReviewIds(series) && <SeriesReviews ids={series} />}
@@ -2981,19 +2982,20 @@ function SeriesDetailBody() {
         <Modal
             opened={downloadAllConfirmOpen}
             onClose={() => setDownloadAllConfirmOpen(false)}
-            title={plural(missingWanted, {
-              one: 'Download # wanted chapter?',
-              other: 'Download # wanted chapters?',
-            })}
-            centered
+            title={
+              <ModalHeading
+                  title={plural(missingWanted, {
+                    one: 'Download # wanted chapter?',
+                    other: 'Download # wanted chapters?',
+                  })}
+                  description={plural(missingWanted, {
+                    one: 'This will add # chapter to the download queue.',
+                    other: 'This will add # chapters to the download queue.',
+                  })}
+              />
+            }
         >
           <Stack gap="sm">
-            <Text mt="sm" size="sm">
-              {plural(missingWanted, {
-                one: 'This will add # chapter to the download queue.',
-                other: 'This will add # chapters to the download queue.',
-              })}
-            </Text>
             {canDownload && pendingProposal && (
                 <>
                   <Text size="sm" c="var(--ink-3)">
@@ -3002,7 +3004,7 @@ function SeriesDetailBody() {
                   <TorrentProposalCard proposal={pendingProposal} banner />
                 </>
             )}
-            <Group justify="flex-end">
+            <ModalFooter>
               <Button variant="default" onClick={() => setDownloadAllConfirmOpen(false)}>
                 <Trans>Cancel</Trans>
               </Button>
@@ -3015,7 +3017,7 @@ function SeriesDetailBody() {
               >
                 {plural(missingWanted, { one: 'Download # chapter', other: 'Download # chapters' })}
               </Button>
-            </Group>
+            </ModalFooter>
           </Stack>
         </Modal>
 
@@ -3023,7 +3025,6 @@ function SeriesDetailBody() {
             opened={nextCountOpen}
             onClose={() => setNextCountOpen(false)}
             title={t`Download next chapters`}
-            centered
         >
           <Stack
               component="form"
@@ -3043,14 +3044,14 @@ function SeriesDetailBody() {
                 onChange={setNextCount}
                 data-autofocus
             />
-            <Group justify="flex-end">
+            <ModalFooter>
               <Button variant="default" onClick={() => setNextCountOpen(false)}>
                 <Trans>Cancel</Trans>
               </Button>
               <Button type="submit" loading={downloadNext.isPending}>
                 <Trans>Download</Trans>
               </Button>
-            </Group>
+            </ModalFooter>
           </Stack>
         </Modal>
 
@@ -3081,13 +3082,23 @@ function SeriesDetailBody() {
             />
         )}
 
-        <Modal opened={moveModalOpen} onClose={() => setMoveModalOpen(false)} title={t`Move series`} centered>
+        <Modal
+            opened={moveModalOpen}
+            onClose={() => setMoveModalOpen(false)}
+            title={
+              <ModalHeading
+                  title={t`Move series`}
+                  description={
+                    <>
+                      <Trans>Re-triggers a Kavita scan of both locations either way.</Trans>{' '}
+                      <Trans>Blocked while a download for this series is in flight, unless Maki isn't touching the files
+                        itself.</Trans>
+                    </>
+                  }
+              />
+            }
+        >
           <Stack gap="md">
-            <Text size="sm" c="var(--ink-3)">
-              <Trans>Re-triggers a Kavita scan of both locations either way.</Trans>{' '}
-              <Trans>Blocked while a download for this series is in flight, unless Maki isn't touching the files
-                itself.</Trans>
-            </Text>
             <Select
                 label={t`Destination root folder`}
                 placeholder={t`Pick a root folder`}
@@ -3111,7 +3122,7 @@ function SeriesDetailBody() {
                 />
               </Stack>
             </Radio.Group>
-            <Group justify="flex-end">
+            <ModalFooter>
               <Button variant="default" onClick={() => setMoveModalOpen(false)}>
                 <Trans>Cancel</Trans>
               </Button>
@@ -3133,7 +3144,7 @@ function SeriesDetailBody() {
               >
                 <Trans>Move</Trans>
               </Button>
-            </Group>
+            </ModalFooter>
           </Stack>
         </Modal>
 
@@ -3142,21 +3153,11 @@ function SeriesDetailBody() {
           <Stack className="series-detail-chapters" gap="lg">
             <div className="series-detail-chapter-head" data-sticky={selectMode ? undefined : true}>
               <Stack className="series-detail-chapter-toolbar" gap="sm">
-                <Group justify="space-between" wrap="nowrap" align="flex-start" gap="sm">
-                  <Group gap="xs" align="baseline" style={{ flex: 1, minWidth: 0 }}>
-                    <Title order={2} size="h3"><Trans>Chapters</Trans></Title>
-                    {chapters && (
-                        <Text size="sm" c="var(--ink-3)" className="tnum">
-                          <Trans>{chaptersHave}/{chaptersCounted} downloaded</Trans>
-                        </Text>
-                    )}
-                    {chapters && readTracking && progress.have > 0 && (
-                        <Badge size="sm" variant="light" color="var(--brand)" className="tnum">
-                          <Trans>{readInTotal} read</Trans>
-                        </Badge>
-                    )}
-                  </Group>
-                  {chapters && chapters.length > 0 && !selectMode && (
+                <SectionHeader
+                    icon={IconBook}
+                    title={t`Chapters`}
+                    count={chapters ? chaptersCounted : undefined}
+                    action={chapters && chapters.length > 0 && !selectMode && (
                       isMobile ? (
                           <ActionIcon
                               size="input-xs"
@@ -3176,8 +3177,18 @@ function SeriesDetailBody() {
                             <Trans>Select</Trans>
                           </Button>
                       )
-                  )}
-                </Group>
+                    )}
+                />
+                {chapters && (
+                    <Text component="div" size="sm" c="var(--ink-3)" className="tnum">
+                      <MetaList
+                          items={[
+                            <Trans key="have">{chaptersHave}/{chaptersCounted} downloaded</Trans>,
+                            readTracking && progress.have > 0 && <Trans key="read">{readInTotal} read</Trans>,
+                          ]}
+                      />
+                    </Text>
+                )}
                 {chapters && chapters.length > 0 && (
                     // One row on a phone: the filter takes what the fixed-width controls leave.
                     <Group gap="xs" wrap={isMobile ? 'nowrap' : 'wrap'}>
@@ -3442,13 +3453,15 @@ function SeriesDetailBody() {
             />
 
             {(chapters === undefined && chaptersFailed) || chapters?.length === 0 ? (
-                <Text c="var(--ink-3)" size="sm">
-                  <Trans>No chapters known.</Trans> <Trans>Link a source and refresh.</Trans>
-                </Text>
+                <EmptyState
+                    compact
+                    framed
+                    mood="asking"
+                    title={t`No chapters known.`}
+                    description={t`Link a source and refresh.`}
+                />
             ) : chapters !== undefined && renderedRows.rows.length === 0 ? (
-                <Text c="var(--ink-3)" size="sm">
-                  <Trans>No chapters match this search and filter.</Trans>
-                </Text>
+                <EmptyState compact framed mood="asleep" title={t`No chapters match this search and filter.`} />
             ) : (
                 <Stack gap="sm">
                   <Paper

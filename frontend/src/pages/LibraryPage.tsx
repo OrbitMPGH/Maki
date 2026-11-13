@@ -130,6 +130,7 @@ import type { LibraryFilterSpec, RestoreSeriesResponse, SavedFilterDto, SeriesDt
 import { PosterSkeletons } from '../components/CatalogueBrowser'
 import { TYPE_LABELS, TYPE_OPTIONS } from '../components/CatalogueFilters'
 import { CoverCard, type OfflineAvailability } from '../components/ui/CoverCard'
+import { ModalFooter, ModalHeading } from '../components/ui/ModalShell'
 import { SeriesRow } from '../components/ui/SeriesRow'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Disclosure } from '../components/ui/Disclosure'
@@ -3132,7 +3133,17 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       <Modal
         opened={saveFilterOpen}
         onClose={() => setSaveFilterOpen(false)}
-        title={t`Save this filter`}
+        title={
+          <ModalHeading
+            title={t`Save this filter`}
+            description={
+              <>
+                <Trans>Saves the current search, sort and every filter in the panel as a named preset.</Trans>{' '}
+                <Trans>Reusing the name of the active preset overwrites it.</Trans>
+              </>
+            }
+          />
+        }
       >
         <Stack
           component="form"
@@ -3157,10 +3168,6 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             )
           }}
         >
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>Saves the current search, sort and every filter in the panel as a named preset.</Trans>{' '}
-            <Trans>Reusing the name of the active preset overwrites it.</Trans>
-          </Text>
           <TextInput
             label={t`Name`}
             placeholder={t`e.g. Ongoing & behind`}
@@ -3168,14 +3175,14 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             onChange={(e) => setFilterName(e.currentTarget.value)}
             data-autofocus
           />
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setSaveFilterOpen(false)}>
               <Trans>Cancel</Trans>
             </Button>
             <Button type="submit" disabled={!filterName.trim()} loading={saveFilter.isPending}>
               <Trans>Save</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 
@@ -3206,27 +3213,33 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             onChange={(e) => setRenameValue(e.currentTarget.value)}
             data-autofocus
           />
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setRenameTarget(null)}>
               <Trans>Cancel</Trans>
             </Button>
             <Button type="submit" disabled={!renameValue.trim()} loading={saveFilter.isPending}>
               <Trans>Save</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 
       <Modal
         opened={tagModalOpen}
         onClose={() => setTagModalOpen(false)}
-        title={plural(selectedCount, { one: 'Tag # series', other: 'Tag # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Tag # series', other: 'Tag # series' })}
+            description={
+              <>
+                <Trans>Adds and removes run in one pass over the selection.</Trans>{' '}
+                <Trans>Create new tags from "Manage tags".</Trans>
+              </>
+            }
+          />
+        }
       >
         <Stack gap="md">
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>Adds and removes run in one pass over the selection.</Trans>{' '}
-            <Trans>Create new tags from "Manage tags".</Trans>
-          </Text>
           <MultiSelect
             label={t`Add`}
             data={tagOptions}
@@ -3245,7 +3258,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             clearable
             comboboxProps={{ withinPortal: true }}
           />
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setTagModalOpen(false)}>
               <Trans>Cancel</Trans>
             </Button>
@@ -3277,22 +3290,24 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             >
               <Trans>Apply</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 
       <Modal
         opened={autoMatchModalOpen}
         onClose={() => setAutoMatchModalOpen(false)}
-        title={plural(selectedCount, { one: 'Auto-match sources for # series', other: 'Auto-match sources for # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Auto-match sources for # series', other: 'Auto-match sources for # series' })}
+            description={<Trans>Searches every source that isn't linked yet. Linked sources stay as they are.</Trans>}
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>Searches every source that isn't linked yet. Linked sources stay as they are.</Trans>
-        </Text>
         <Text size="sm" c="var(--ink-3)" mb="lg">
           <Trans>A large selection can take a while.</Trans>
         </Text>
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setAutoMatchModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -3320,26 +3335,28 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Auto-match</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={renameModalOpen}
         onClose={() => setRenameModalOpen(false)}
-        title={plural(selectedCount, { one: 'Rename files of # series', other: 'Rename files of # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Rename files of # series', other: 'Rename files of # series' })}
+            description={
+              <Trans>Renames each series folder and its chapter files to match the naming formats in Settings.</Trans>
+            }
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>
-            Renames each series folder and its chapter files to match the naming formats in Settings.
-          </Trans>
-        </Text>
         <Text size="sm" c="var(--ink-3)" mb="lg">
           <Trans>
             A series with a download in progress, or with two chapters that would get the same name, is
             skipped.
           </Trans>
         </Text>
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setRenameModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -3352,24 +3369,28 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Rename</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={readStateModalOpen}
         onClose={() => setReadStateModalOpen(false)}
-        title={plural(selectedCount, { one: 'Mark # series read or unread', other: 'Mark # series read or unread' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Mark # series read or unread', other: 'Mark # series read or unread' })}
+            description={
+              <Trans>
+                Read marks every chapter that has a file. It isn't logged as reading, so Rewind and your reading
+                days stay as they are.
+              </Trans>
+            }
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>
-            Read marks every chapter that has a file. It isn't logged as reading, so Rewind and your reading
-            days stay as they are.
-          </Trans>
-        </Text>
         <Text size="sm" c="var(--ink-3)" mb="lg">
           <Trans>Unread clears your progress and resume position in every chapter.</Trans>
         </Text>
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setReadStateModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -3379,19 +3400,23 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           <Button leftSection={<IconCheck size={16} />} onClick={() => runReadState('read')}>
             <Trans>Mark read</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={settingModal != null}
         onClose={() => setSettingModal(null)}
-        title={settingModal ? settingTitles[settingModal] : undefined}
+        title={
+          settingModal ? (
+            <ModalHeading
+              title={settingTitles[settingModal]}
+              description={
+                settingModal === 'Page conversion' ? <Trans>Files already converted stay as they are.</Trans> : undefined
+              }
+            />
+          ) : undefined
+        }
       >
-        {settingModal === 'Page conversion' && (
-          <Text size="sm" mb="md">
-            <Trans>Files already converted stay as they are.</Trans>
-          </Text>
-        )}
         <Radio.Group
           value={settingValue}
           onChange={setSettingValue}
@@ -3405,7 +3430,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
               ))}
           </Stack>
         </Radio.Group>
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setSettingModal(null)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -3425,7 +3450,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Apply</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <RemoveSeriesDialog
@@ -3510,16 +3535,22 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       <Modal
         opened={monitorModalOpen}
         onClose={() => setMonitorModalOpen(false)}
-        title={plural(selectedCount, { one: 'Set monitoring for # series', other: 'Set monitoring for # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Set monitoring for # series', other: 'Set monitoring for # series' })}
+            description={
+              <>
+                <Trans>Applies to chapters released later.</Trans>{' '}
+                <Trans>Chapters already listed keep whatever you set on them.</Trans>{' '}
+                <Trans>
+                  "Main" skips specials (decimal chapters like 10.5); "Smart" downloads a few at a time as you
+                  read.
+                </Trans>
+              </>
+            }
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>Applies to chapters released later.</Trans>{' '}
-          <Trans>Chapters already listed keep whatever you set on them.</Trans>{' '}
-          <Trans>
-            "Main" skips specials (decimal chapters like 10.5); "Smart" downloads a few at a time as you
-            read.
-          </Trans>
-        </Text>
         <SegmentedControl
           aria-label={t`Monitoring`}
           fullWidth
@@ -3533,7 +3564,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           ]}
           mb="lg"
         />
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setMonitorModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -3545,17 +3576,19 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Apply</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={profileModalOpen}
         onClose={() => setProfileModalOpen(false)}
-        title={plural(selectedCount, { one: 'Set quality profile for # series', other: 'Set quality profile for # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Set quality profile for # series', other: 'Set quality profile for # series' })}
+            description={<Trans>Instance default clears each series' own choice.</Trans>}
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>Instance default clears each series' own choice.</Trans>
-        </Text>
         <div className="library-profile-choices">
           <DrillChoices
             label={t`Quality profile`}
@@ -3575,7 +3608,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             onPick={setBulkProfile}
           />
         </div>
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setProfileModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -3611,17 +3644,19 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Apply</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={readingStatusModalOpen}
         onClose={() => setReadingStatusModalOpen(false)}
-        title={plural(selectedCount, { one: 'Set reading status for # series', other: 'Set reading status for # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Set reading status for # series', other: 'Set reading status for # series' })}
+            description={<Trans>Yours alone. Trackers you have connected are updated too.</Trans>}
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>Yours alone. Trackers you have connected are updated too.</Trans>
-        </Text>
         <SegmentedControl
           aria-label={t`Reading status`}
           fullWidth
@@ -3631,7 +3666,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           data={readingStatusOptions}
           mb="lg"
         />
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setReadingStatusModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -3664,17 +3699,19 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Apply</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={notifyModalOpen}
         onClose={() => setNotifyModalOpen(false)}
-        title={plural(selectedCount, { one: 'Set notifications for # series', other: 'Set notifications for # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Set notifications for # series', other: 'Set notifications for # series' })}
+            description={<Trans>Yours alone. This changes what lands in your bell, not anybody else's.</Trans>}
+          />
+        }
       >
-        <Text size="sm" mb="md">
-          <Trans>Yours alone. This changes what lands in your bell, not anybody else's.</Trans>
-        </Text>
         <SegmentedControl
           aria-label={t`Notifications`}
           fullWidth
@@ -3686,7 +3723,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         <Text size="xs" c="var(--ink-3)" mb="lg">
           {notificationHelp}
         </Text>
-        <Group justify="flex-end">
+        <ModalFooter>
           <Button variant="default" onClick={() => setNotifyModalOpen(false)}>
             <Trans>Cancel</Trans>
           </Button>
@@ -3719,20 +3756,26 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
           >
             <Trans>Apply</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Modal>
 
       <Modal
         opened={moveModalOpen}
         onClose={() => setMoveModalOpen(false)}
-        title={plural(selectedCount, { one: 'Move # series', other: 'Move # series' })}
+        title={
+          <ModalHeading
+            title={plural(selectedCount, { one: 'Move # series', other: 'Move # series' })}
+            description={
+              <>
+                <Trans>Re-triggers a Kavita scan of both locations either way.</Trans>{' '}
+                <Trans>Series already in the destination root folder are skipped.</Trans>{' '}
+                <Trans>A file move is blocked for any series with an active download.</Trans>
+              </>
+            }
+          />
+        }
       >
         <Stack gap="md">
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>Re-triggers a Kavita scan of both locations either way.</Trans>{' '}
-            <Trans>Series already in the destination root folder are skipped.</Trans>{' '}
-            <Trans>A file move is blocked for any series with an active download.</Trans>
-          </Text>
           <Select
             label={t`Destination root folder`}
             placeholder={t`Pick a root folder`}
@@ -3754,7 +3797,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
               />
             </Stack>
           </Radio.Group>
-          <Group justify="flex-end">
+          <ModalFooter>
             <Button variant="default" onClick={() => setMoveModalOpen(false)}>
               <Trans>Cancel</Trans>
             </Button>
@@ -3771,7 +3814,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             >
               <Trans>Move</Trans>
             </Button>
-          </Group>
+          </ModalFooter>
         </Stack>
       </Modal>
 
@@ -3882,11 +3925,18 @@ function LibraryColumnsModal({
     onChange(next)
   }
   return (
-    <Modal opened={opened} onClose={onClose} title={t`Columns`} closeButtonProps={{ 'aria-label': t`Close` }}>
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={
+        <ModalHeading
+          title={t`Columns`}
+          description={<Trans>The cover and title always show. Your choice is kept in this browser.</Trans>}
+        />
+      }
+      closeButtonProps={{ 'aria-label': t`Close` }}
+    >
       <Stack gap="xs">
-        <Text size="sm" c="var(--ink-3)">
-          <Trans>The cover and title always show. Your choice is kept in this browser.</Trans>
-        </Text>
         {[...columns, ...hidden].map((column) => {
           const shown = columns.includes(column)
           const index = columns.indexOf(column)
@@ -3923,11 +3973,11 @@ function LibraryColumnsModal({
             </Group>
           )
         })}
-        <Group justify="flex-end" mt="xs">
+        <ModalFooter>
           <Button variant="subtle" onClick={() => onChange([...DEFAULT_LIBRARY_COLUMNS])}>
             <Trans>Reset to default</Trans>
           </Button>
-        </Group>
+        </ModalFooter>
       </Stack>
     </Modal>
   )
