@@ -1,6 +1,6 @@
 import { errorText } from '../api/errorText'
 import { archivedExistsSeriesId } from '../api/client'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ActionIcon,
@@ -32,6 +32,7 @@ import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { t as now, plural, msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { useLibrarySettings, useRootFolders } from '../api/hooks'
+import { useRootFolderRoute } from '../api/rootFolderRules'
 import { MONITOR_OPTIONS } from '../components/series/SeriesActionsMenu'
 import {
   chapterRangeInline,
@@ -89,6 +90,8 @@ export default function RequestsPage() {
   /** The request an admin is approving; the root folder is only asked for when one is needed. */
   const [approving, setApproving] = useState<SeriesRequest | null>(null)
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
+  /** Set once the admin picks a folder, so the rule's answer arriving late can't undo it. */
+  const [rootFolderPinned, setRootFolderPinned] = useState(false)
   const [approveNote, setApproveNote] = useState('')
   const [monitorNewItems, setMonitorNewItems] = useState<string | null>(null)
 
@@ -134,10 +137,24 @@ export default function RequestsPage() {
     setApproveNote('')
     setMonitorNewItems(null)
     setRootFolderId(rootFolders && rootFolders.length > 0 ? String(rootFolders[0].id) : null)
+    setRootFolderPinned(false)
   }
 
   // A new-series request has to land somewhere; a chapter request already has its series.
   const needsRootFolder = approving?.kind === 'NewSeries' && approving.seriesId == null
+
+  // A root folder rule that matches the requested series preselects its folder.
+  const { data: route } = useRootFolderRoute(
+    needsRootFolder ? approving?.metadataProviderId : null,
+    'request',
+    approving?.userId,
+  )
+  const routedFolderId = route?.rootFolderId
+  useEffect(() => {
+    if (!rootFolderPinned && routedFolderId != null && rootFolders?.some((f) => f.id === routedFolderId)) {
+      setRootFolderId(String(routedFolderId))
+    }
+  }, [routedFolderId, rootFolders, rootFolderPinned])
 
   // The modal offers Restore for this one, so the page-level alert would only repeat it.
   const archivedSeriesId = archivedExistsSeriesId(approve.error)
@@ -419,7 +436,10 @@ export default function RequestsPage() {
               description={t`Where the series will live. The requester doesn't choose this.`}
               data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
               value={rootFolderId}
-              onChange={setRootFolderId}
+              onChange={(value) => {
+                setRootFolderId(value)
+                setRootFolderPinned(true)
+              }}
             />
           )}
 

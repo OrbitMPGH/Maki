@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text.Json;
 using Maki.Core.Entities;
+using Maki.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Maki.Api.Dtos;
 
@@ -29,6 +31,8 @@ namespace Maki.Api.Dtos;
 /// Text from outside Maki, or English written before the queue was keyed. Shown as-is when
 /// <paramref name="ErrorKey"/> is null.
 /// </param>
+/// <param name="Priority">The claim class: <c>high</c>, <c>normal</c> or <c>low</c>.</param>
+/// <param name="RootFolderId">The series' root folder, which a disk hold is keyed by.</param>
 public record QueueItemDto(
     int Id,
     int ChapterId,
@@ -51,7 +55,9 @@ public record QueueItemDto(
     DateTime? CompletedAt,
     string Origin,
     UpgradeQueueInfoDto? Upgrade,
-    string? SeriesCoverUrl)
+    string? SeriesCoverUrl,
+    string Priority = "normal",
+    int RootFolderId = 0)
 {
     /// <param name="upgradeHistory">The applied upgrade's history state, when the caller looked it up.</param>
     public static QueueItemDto FromEntity(DownloadQueueItem item, Chapter? chapter, Series series, string sourceName,
@@ -86,7 +92,9 @@ public record QueueItemDto(
             item.CompletedAt,
             item.Origin.ToString().ToLowerInvariant(),
             UpgradeQueueInfoDto.From(item.UpgradeInfoJson, upgradeHistory),
-            SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.LastMetadataRefresh));
+            SeriesDto.CoverUrlFor(series.Id, series.CoverPath, series.LastMetadataRefresh),
+            item.Priority.ToString().ToLowerInvariant(),
+            series.RootFolderId);
     }
 
     /// <summary>
@@ -160,23 +168,65 @@ public record QueueFailedActionDto(string? Reason = null, string? Source = null,
 
 public record QueueBulkResultDto(int Affected);
 
-public record ReorderQueueDto(IReadOnlyList<int> OrderedIds);
+/// <param name="MovedId">The row the person moved, which takes the claim class of its new neighbour.</param>
+public record ReorderQueueDto(IReadOnlyList<int> OrderedIds, int? MovedId = null);
+
+/// <param name="SeriesId">The series whose queued rows to hold.</param>
+/// <param name="ResumeAt">When to resume by itself; null pauses until somebody resumes.</param>
+public record QueueSeriesPauseRequestDto(int SeriesId, DateTime? ResumeAt = null);
 
 /// <param name="Until">When the pause lifts by itself, in UTC; null means until somebody resumes.</param>
 public record QueuePauseEntryDto(DateTime? Until);
 
 public record QueueSourcePauseDto(string SourceName, DateTime? Until);
 
+public record QueueSeriesPauseDto(int SeriesId, string Title, DateTime? Until);
+
+/// <summary>A root folder whose downloads wait for free space. Lifts by itself, so it has no Resume.</summary>
+public record QueueDiskHoldDto(int RootFolderId, string Path, long FreeBytes, long MinFreeBytes);
+
 /// <param name="All">Set while every scraper download is paused.</param>
 /// <param name="Sources">Sources paused on their own, whether or not everything is.</param>
-public record QueuePauseDto(QueuePauseEntryDto? All, IReadOnlyList<QueueSourcePauseDto> Sources)
+/// <param name="Series">Series paused on their own, leaving out any the caller cannot see.</param>
+/// <param name="DiskHolds">Root folders below their free-space threshold.</param>
+public record QueuePauseDto(
+    QueuePauseEntryDto? All,
+    IReadOnlyList<QueueSourcePauseDto> Sources,
+    IReadOnlyList<QueueSeriesPauseDto> Series,
+    IReadOnlyList<QueueDiskHoldDto> DiskHolds)
 {
-    public static QueuePauseDto From(Services.DownloadPauseState state) => new(
+    public static QueuePauseDto From(
+        Services.DownloadPauseState state,
+        IReadOnlyDictionary<int, string>? seriesTitles = null,
+        IReadOnlyList<Services.DiskHold>? diskHolds = null) => new(
         state.All is { } all ? new QueuePauseEntryDto(all.Until) : null,
         state.Sources
             .OrderBy(pair => pair.Key, StringComparer.Ordinal)
             .Select(pair => new QueueSourcePauseDto(pair.Key, pair.Value.Until))
+            .ToList(),
+        state.PausedSeries
+            .Where(pair => seriesTitles?.ContainsKey(pair.Key) == true)
+            .Select(pair => new QueueSeriesPauseDto(pair.Key, seriesTitles![pair.Key], pair.Value.Until))
+            .OrderBy(p => p.Title, StringComparer.CurrentCultureIgnoreCase)
+            .ToList(),
+        (diskHolds ?? [])
+            .Select(h => new QueueDiskHoldDto(h.RootFolderId, h.Path, h.FreeBytes, h.MinFreeBytes))
             .ToList());
+
+    /// <summary>
+    /// The full pause, with the paused series' titles read through <paramref name="db"/>, so a caller
+    /// limited to some root folders sees only their own series.
+    /// </summary>
+    public static async Task<QueuePauseDto> CreateAsync(
+        Services.DownloadPauseState state, IReadOnlyList<Services.DiskHold>? diskHolds,
+        MakiDbContext db, CancellationToken ct)
+    {
+        var ids = state.PausedSeries.Keys.ToList();
+        var titles = ids.Count == 0
+            ? new Dictionary<int, string>()
+            : await db.Series.Where(s => ids.Contains(s.Id)).ToDictionaryAsync(s => s.Id, s => s.Title, ct);
+        return From(state, titles, diskHolds);
+    }
 }
 
 /// <param name="Source">The source to pause, or null for every scraper download.</param>

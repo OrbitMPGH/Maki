@@ -1,5 +1,6 @@
 using Maki.Api.Services;
 using Maki.Core.Configuration;
+using Maki.Core.Download;
 using Quartz;
 
 namespace Maki.Api.Jobs;
@@ -10,6 +11,8 @@ namespace Maki.Api.Jobs;
 /// searched at most weekly. Also expires pending proposals past <c>upgrades.proposalExpiryDays</c>.
 /// <c>force=true</c> skips the hour and the marker, for the admin's "Search now". With "volume first" on,
 /// every tick also searches a few bulk-added series that wait for it (<see cref="VolumeFirstPassAsync"/>).
+/// With <c>upgrades.missingSearch</c> on, every tick also searches a few series whose wanted chapters no
+/// source lists (<see cref="MissingPassAsync"/>), whatever the upgrade switches say.
 /// </summary>
 [DisallowConcurrentExecution]
 public class UpgradeVolumeSearchJob(
@@ -38,7 +41,7 @@ public class UpgradeVolumeSearchJob(
         var daily = force || (options.Enabled && options.VolumeSearch && local.Hour >= Math.Min(options.ScanHour + 1, 23) &&
                               await settings.GetAsync(SettingKeys.UpgradesLastVolumeSearchDate, ct) != date);
         var volumeFirst = await torrents.VolumeFirstOnAsync(ct);
-        if (!daily && !volumeFirst)
+        if (!daily && !volumeFirst && !options.MissingSearch)
         {
             return;
         }
@@ -54,6 +57,11 @@ public class UpgradeVolumeSearchJob(
             if (volumeFirst)
             {
                 await VolumeFirstPassAsync(ct);
+            }
+
+            if (options.MissingSearch)
+            {
+                await MissingPassAsync(ct);
             }
 
             if (!daily)
@@ -83,7 +91,8 @@ public class UpgradeVolumeSearchJob(
 
                 try
                 {
-                    var result = await torrents.SearchSeriesAsync(seriesId, ct, respectInterval: true, run: run);
+                    var result = await torrents.SearchSeriesAsync(seriesId, ct, respectInterval: true, run: run,
+                        missing: true);
                     if (result.Searched)
                     {
                         searched++;
@@ -106,8 +115,8 @@ public class UpgradeVolumeSearchJob(
         finally
         {
             Gate.Release();
-            // Shutdown mid-search leaves the day open so the next boot runs it.
-            if (daily && !ct.IsCancellationRequested)
+            // Shutdown mid-search leaves the day open so the next boot runs it; an admin's Stop closes it.
+            if (daily && (!ct.IsCancellationRequested || JobOutcome.StoppedByAdmin(context)))
             {
                 await settings.SetAsync(SettingKeys.UpgradesLastVolumeSearchDate, date, CancellationToken.None);
             }
@@ -130,6 +139,48 @@ public class UpgradeVolumeSearchJob(
             {
                 logger.LogWarning(ex, "Volume-first search failed for series {SeriesId}", seriesId);
             }
+        }
+    }
+
+    /// <summary>
+    /// The missing search: monitored series with wanted chapters no source lists, or with no chapters and
+    /// no source at all, at most <see cref="TorrentUpgradeService.MissingSearchesPerRun"/> per tick and each
+    /// at most weekly. Needs an indexer and a download client, since what it finds is grabbed.
+    /// </summary>
+    private async Task MissingPassAsync(CancellationToken ct)
+    {
+        var run = await torrents.LoadSettingsAsync(ct);
+        if (!run.IndexerConfigured ||
+            string.IsNullOrWhiteSpace((await DownloadClientSettingsStore.LoadAsync(settings, ct)).Url))
+        {
+            return;
+        }
+
+        var searched = 0;
+        foreach (var seriesId in await torrents.MissingCandidatesAsync(ct))
+        {
+            if (searched >= TorrentUpgradeService.MissingSearchesPerRun)
+            {
+                break;
+            }
+
+            try
+            {
+                if ((await torrents.SearchSeriesAsync(seriesId, ct, respectInterval: true, run: run, missing: true)).Searched)
+                {
+                    searched++;
+                }
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogWarning(ex, "Missing chapter search failed for series {SeriesId}", seriesId);
+                searched++;
+            }
+        }
+
+        if (searched > 0)
+        {
+            logger.LogInformation("Missing chapter search ran for {Count} series", searched);
         }
     }
 

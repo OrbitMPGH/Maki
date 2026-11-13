@@ -841,9 +841,18 @@ msgid "{active, plural, one {# download in progress} other {# downloads in progr
 msgstr "{active, plural, one {# Download läuft} other {# Downloads laufen}}"
 
 #: src/components/ActivityButton.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{active, plural, one {# in progress} other {# in progress}}"
 msgstr "{active, plural, one {# läuft} other {# laufen}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{active, plural, one {# page in progress} other {# pages in progress}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{active, plural, one {# series} other {# series}}"
+msgstr ""
 
 #: src/components/ActivityButton.tsx
 #, fuzzy
@@ -1006,6 +1015,10 @@ msgstr "{chapter}, {reason}"
 msgid "{chapterCount, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapterCount, plural, one {# Kapitel} other {# Kapitel}}"
 
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "{chapterLabel}, page {pageNumber}, {pageHeight} px tall"
+msgstr ""
+
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "{chapterMax, plural, one {At most # chapter} other {At most # chapters}}"
@@ -1036,6 +1049,7 @@ msgid "{chapters, plural, one {# chapter held, {used} of {limit}} other {# chapt
 msgstr ""
 
 #: src/components/discover/DiscoverDetailModal.tsx
+#: src/components/ScanlationGroupsModal.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr ""
 
@@ -1138,6 +1152,14 @@ msgstr ""
 msgid "{chapterTotal, plural, one {# chapter} other {# chapters}} in {volumeTotal, plural, one {# volume} other {# volumes}}"
 msgstr ""
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "{clientName} has no seed limits set, so there are no targets"
+msgstr ""
+
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "{clientName} has no seeding time limit to read."
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{comicCount, plural, one {# comic} other {# comics}}"
@@ -1177,6 +1199,10 @@ msgstr "{convertedFiles, plural, one {# Datei bisher konvertiert, {saved} einges
 #, fuzzy
 msgid "{copyCount, plural, one {# copy} other {# copies}}"
 msgstr "{copyCount, plural, one {# Kopie} other {# Kopien}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{cores, plural, one {of # core} other {of # cores}}"
+msgstr ""
 
 #: src/pages/ScrobblePage.tsx
 #, fuzzy
@@ -1390,17 +1416,17 @@ msgstr "{count, plural, one {Das nächste ungelesene Kapitel} other {Die nächst
 msgid "{count, plural, one {Undo the import of # folder?} other {Undo the import of # folders?}}"
 msgstr "{count, plural, one {Import von # Ordner rückgängig machen?} other {Import von # Ordnern rückgängig machen?}}"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "{count} chapters"
 msgstr "{count} Kapitel"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "{count} pages"
 msgstr "{count} Seiten"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "{count} results"
 msgstr "{count} Ergebnisse"
@@ -1436,6 +1462,10 @@ msgstr "{damagedCount, plural, one {Neue Kopie holen} other {# neue Kopien holen
 
 #: src/components/settings/RecycleBinModal.tsx
 msgid "{days, plural, one {Deleted files wait here for # day, then they're gone for good.} other {Deleted files wait here for # days, then they're gone for good.}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{days, plural, one {Every day} other {Every # days}}"
 msgstr ""
 
 #: src/pages/settings/PageConversionSection.tsx
@@ -1492,6 +1522,10 @@ msgstr "{deletingSeriesCount, plural, one {Er wird aus # Serie entfernt. Das lä
 msgid "{diff, plural, other {# behind}}"
 msgstr "{diff, plural, one {# zurück} other {# zurück}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{done, plural, one {# file done this pass} other {# files done this pass}}"
+msgstr ""
+
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "{done} of {probes} chapter samples. The order below updates once it finishes."
@@ -1506,6 +1540,14 @@ msgstr "{done} von {total}"
 #, fuzzy
 msgid "{done} of {total} matched before this stopped. Retry to carry on, or review what matched so far. The rest will show as not found, and you can match them by hand."
 msgstr "{done} von {total} wurden zugeordnet, bevor es stoppte. Versuche es erneut, um fortzufahren, oder prüfe, was bisher zugeordnet wurde. Der Rest wird als nicht gefunden angezeigt, und du kannst ihn von Hand zuordnen."
+
+#: src/pages/HealthPage.tsx
+msgid "{doneText} of {totalText}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{doneText} of {totalText} series"
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -1785,6 +1827,10 @@ msgstr "{hours, plural, one {# Std.} other {# Std.}}"
 msgid "{hours, plural, one {about # hr left} other {about # hr left}}"
 msgstr "{hours, plural, one {noch etwa # Std.} other {noch etwa # Std.}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{hours, plural, one {Every hour} other {Every # hours}}"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "{importedCount, plural, one {# imported} other {# imported}}"
@@ -1820,7 +1866,7 @@ msgstr "{intoLevel} / {levelSpan} XP bis Level {nextLevel}"
 msgid "{inTrash, plural, one {# of them still has its original in the trash. Undo it from the series page.} other {# of them still have their original in the trash. Undo them from the series page.}}"
 msgstr "{inTrash, plural, one {# davon hat noch sein Original im Papierkorb. Das machst du auf der Serienseite rückgängig.} other {# davon haben noch ihr Original im Papierkorb. Das machst du auf der Serienseite rückgängig.}}"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "{kb} KB"
 msgstr "{kb} KB"
@@ -1989,6 +2035,10 @@ msgstr "{linkingTotal, plural, one {Quellen gefunden und Dateien für # Serie ve
 msgid "{listed, plural, one {# chapter is listed} other {# chapters are listed}}, the count on the Chapters tab and under Listed."
 msgstr ""
 
+#: src/pages/settings/CustomSourceReport.tsx
+msgid "{locked, plural, one {# chapter listed as locked} other {# chapters listed as locked}}"
+msgstr ""
+
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
 msgid "{lone, plural, one {# file with no number} other {# files with no number}}"
@@ -2076,6 +2126,10 @@ msgstr ""
 #, fuzzy
 msgid "{minutes, plural, one {about # min left} other {about # min left}}"
 msgstr "{minutes, plural, one {noch etwa # Min.} other {noch etwa # Min.}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{minutes, plural, one {Every minute} other {Every # minutes}}"
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -2321,6 +2375,10 @@ msgstr "{pages, plural, one {# Seite} other {# Seiten}}"
 msgid "{panelsOn} of {panelsTotal} panels"
 msgstr "{panelsOn} von {panelsTotal} Bereichen"
 
+#: src/pages/ActivityPage.tsx
+msgid "{path} has {free} free, less than it keeps for downloads"
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "{pending, plural, one {# more chapter is wanted. It shows up here once it downloads.} other {# more chapters are wanted. They show up here once they download.}}"
@@ -2354,6 +2412,10 @@ msgstr "{pendingFiles, plural, one {Konvertierung läuft, # Datei noch zu prüfe
 #, fuzzy
 msgid "{perSitting} ch. per sitting"
 msgstr "{perSitting} Kap. pro Sitzung"
+
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "{pieces, plural, one {Becomes # page.} other {Becomes # pages. Each dashed line is a cut.}}"
+msgstr ""
 
 #: src/components/settings/AutoTagRulesModal.tsx
 msgid "{previewCount, plural, =0 {No series in the library match this rule without already carrying {applyingTag}.} one {# series matches this rule and will be tagged {applyingTag}.} other {# series match this rule and will be tagged {applyingTag}.}}"
@@ -2652,6 +2714,10 @@ msgstr "{sampleChapters, plural, one {basiert auf # ähnlicher Lektüre} other {
 #, fuzzy
 msgid "{samples, plural, one {Measured from # chapter across {series} series in your library: {bpp} bits per pixel, JPG equivalent.} other {Measured from # chapters across {series} series in your library: {bpp} bits per pixel, JPG equivalent.}}"
 msgstr "{samples, plural, one {Gemessen an # Kapitel aus {series} Serien in deiner Bibliothek: {bpp} Bit pro Pixel, JPG-Äquivalent.} other {Gemessen an # Kapiteln aus {series} Serien in deiner Bibliothek: {bpp} Bit pro Pixel, JPG-Äquivalent.}}"
+
+#: src/pages/HealthPage.tsx
+msgid "{seconds, plural, one {Every second} other {Every # seconds}}"
+msgstr ""
 
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
@@ -3139,6 +3205,10 @@ msgstr "{total, plural, one {Stichprobe {done} von # Datei} other {Stichprobe {d
 msgid "{total, plural, one {Search # source} other {Search # sources}}"
 msgstr "{total, plural, one {# Quelle durchsuchen} other {# Quellen durchsuchen}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{total, plural, one {Show all # job} other {Show all # jobs}}"
+msgstr ""
+
 #: src/pages/discover/AnimeSignalsSection.tsx
 #, fuzzy
 msgid "{total, plural, one {Show all #} other {Show all #}}"
@@ -3390,8 +3460,24 @@ msgstr "{volumesText} + {chaptersText}"
 msgid "{waited, plural, one {# title has waited more than six months.} other {# titles have waited more than six months.}}"
 msgstr "{waited, plural, one {# Titel wartet seit mehr als sechs Monaten.} other {# Titel warten seit mehr als sechs Monaten.}}"
 
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# file left} other {# files left}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# page left} other {# pages left}}"
+msgstr ""
+
 #: src/pages/settings/UpscalingSection.tsx
 msgid "{waiting, plural, one {# page still to make} other {# pages still to make}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# page waiting} other {# pages waiting}}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "{waiting, plural, one {# queued} other {# queued}}"
 msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
@@ -3695,6 +3781,10 @@ msgstr "Ein Anime mit 10/10 startet bei {topSeed}, gegenüber 1,00 für ein unbe
 msgid "A bulk move, rename or rescan is running."
 msgstr ""
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "A chapter is taken from the first group on this list that uploaded it. With none of them, the earliest upload is taken."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "A connection has unsaved changes."
@@ -3825,6 +3915,10 @@ msgstr "Eine Aktualisierung läuft bereits"
 msgid "A repository is a list of custom source definitions someone publishes. Maki installs from it, and can keep what it installed up to date. Only add repositories you trust: a definition decides which site Maki reads."
 msgstr "Ein Repository ist eine Liste eigener Quelldefinitionen, die jemand veröffentlicht. Maki installiert daraus und kann das Installierte auf dem neuesten Stand halten. Füge nur Repositories hinzu, denen du vertraust: Eine Definition legt fest, welche Seite Maki liest."
 
+#: src/pages/ActivityPage.tsx
+msgid "A rough guess from how fast each source has been downloading lately. Paused and held downloads are left out."
+msgstr ""
+
 #: src/components/discover/discoverSectionDefs.ts
 #, fuzzy
 msgid "A row for each smaller theme on your shelf."
@@ -3850,6 +3944,10 @@ msgstr "eine Suche"
 #, fuzzy
 msgid "a second copy of another comic in the folder, which is used instead"
 msgstr "eine zweite Kopie eines anderen Comics im Ordner, die stattdessen verwendet wird"
+
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "A series added without a chosen folder goes to the first rule it matches. With no match it goes to the first root folder, as before."
+msgstr ""
 
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
@@ -3893,6 +3991,10 @@ msgstr "Daumen runter blendet diesen Titel aus und stuft Titel herab, die ihm n�
 #, fuzzy
 msgid "A token with no value for a given series renders as nothing, and the surrounding spaces and empty brackets are cleaned up, so {yearExampleToken} on a series with no year is just its title."
 msgstr "Ein Token ohne Wert für eine bestimmte Serie wird als nichts ausgegeben. Umgebende Leerzeichen und leere Klammern werden bereinigt, sodass {yearExampleToken} bei einer Serie ohne Jahr einfach deren Titel ergibt."
+
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "A torrent that makes no progress, or has no seeds or peers connected, for this long is failed, taken out of the client and declined, and the automatic search looks for another release. 0 turns this off."
+msgstr ""
 
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
@@ -3948,6 +4050,10 @@ msgstr "Über {readingTime}"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "About {seriesLeft} left in the series"
+msgstr ""
+
+#: src/api/queue.ts
+msgid "About {span} left"
 msgstr ""
 
 #: src/pages/reader/ChapterEnd.tsx
@@ -4059,6 +4165,7 @@ msgstr "Aktion für Regel {number}"
 #: src/components/NotificationsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
+#: src/components/settings/DeclinedReleasesModal.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/ActivityPage.tsx
@@ -4133,11 +4240,19 @@ msgstr ""
 msgid "Add a note"
 msgstr "Notiz hinzufügen"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Add a preferred group"
+msgstr ""
+
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/rails/CustomRailSection.tsx
 #, fuzzy
 msgid "Add a rail"
 msgstr "Rail hinzufügen"
+
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Add a root folder first"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -4194,6 +4309,7 @@ msgstr "Rail hinzufügen"
 #: src/components/CatalogueRules.tsx
 #: src/components/pageconversion/ScopeStep.tsx
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #, fuzzy
 msgid "Add rule"
 msgstr "Regel hinzufügen"
@@ -4385,6 +4501,10 @@ msgstr "Abenteuer"
 msgid "Affected chapters:"
 msgstr "Betroffene Kapitel:"
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "After seeding"
+msgstr ""
+
 #: src/api/upgrades.ts
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -4543,6 +4663,15 @@ msgstr "Gesamter Zeitraum"
 msgid "All: every chapter. Smart: only the next few ahead of your reading. Main only: skips specials."
 msgstr "Alle: jedes Kapitel. Smart: nur die nächsten paar vor deinem Lesefortschritt. Nur Main: überspringt Specials."
 
+#. placeholder {0}: row.title
+#: src/components/settings/DeclinedReleasesModal.tsx
+msgid "Allow {0} again"
+msgstr ""
+
+#: src/components/settings/DeclinedReleasesModal.tsx
+msgid "Allow again"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Allow other devices on your network"
@@ -4619,6 +4748,10 @@ msgstr "Bereits deins"
 msgid "Also ask at the end of each volume"
 msgstr "Auch am Ende jedes Bandes fragen"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Also blocked everywhere: {inheritedBlocked}"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Also delete detached files from disk"
@@ -4629,7 +4762,7 @@ msgstr "Auch abgetrennte Dateien von der Festplatte löschen"
 msgid "Also delete files on disk"
 msgstr "Auch Dateien auf der Festplatte löschen"
 
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
 msgid "Also delete the downloaded files"
 msgstr "Auch die heruntergeladenen Dateien löschen"
@@ -4682,6 +4815,10 @@ msgstr "Auch vorläufige Bewertungen synchronisieren"
 #, fuzzy
 msgid "Alt titles"
 msgstr "Alternative Titel"
+
+#: src/components/settings/RuleConditions.tsx
+msgid "Alternative {number}"
+msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
 msgid "Alternative title"
@@ -4850,7 +4987,7 @@ msgstr "beliebig"
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/CatalogueRules.tsx
-#: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RuleConditions.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -4962,6 +5099,10 @@ msgstr ""
 #, fuzzy
 msgid "Applies automatically to"
 msgstr "Gilt automatisch für"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Applies to {sources}."
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -5433,6 +5574,10 @@ msgstr "Zurück zu Entdecken"
 msgid "Back to library"
 msgstr "Zurück zur Bibliothek"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Back to rules"
+msgstr ""
+
 #: src/pages/reader/ChapterEnd.tsx
 #: src/pages/reader/useReaderBack.ts
 #, fuzzy
@@ -5689,10 +5834,18 @@ msgstr "Bit pro Pixel, über"
 msgid "Bits per pixel, under"
 msgstr "Bit pro Pixel, unter"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Block a group"
+msgstr ""
+
 #: src/components/settings/PushNotificationsSection.tsx
 #, fuzzy
 msgid "Blocked for Maki in your browser settings. Allow notifications there, then come back."
 msgstr "In deinen Browser-Einstellungen für Maki blockiert. Erlaube Benachrichtigungen dort und komm dann hierher zurück."
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Blocked groups"
+msgstr ""
 
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -5856,6 +6009,10 @@ msgstr "Metadaten-Suchindizes werden erstellt"
 msgid "Built in"
 msgstr "Integriert"
 
+#: src/pages/HealthPage.tsx
+msgid "Bulk series edit"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "Busiest day"
@@ -5972,6 +6129,7 @@ msgstr "Anmeldung mit den gespeicherten Daten nicht möglich."
 #: src/components/RatingImportModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #: src/components/RenameSeriesModal.tsx
+#: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/series/RestoreSeriesDialog.tsx
 #: src/components/series/UndoConversionModal.tsx
@@ -5980,6 +6138,7 @@ msgstr "Anmeldung mit den gespeicherten Daten nicht möglich."
 #: src/components/settings/FolderBrowserModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/RootFolderPathModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/components/SourceMappingsSection.tsx
@@ -6462,7 +6621,7 @@ msgstr "Kapitelsprache für {label}"
 msgid "Chapter languages"
 msgstr "Kapitelsprachen"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Chapter list"
 msgstr "Kapitelliste"
@@ -6491,7 +6650,7 @@ msgstr ""
 msgid "Chapter page"
 msgstr "Kapitelseite"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Chapter pages"
 msgstr "Kapitelseiten"
@@ -6719,6 +6878,10 @@ msgstr "Chat-ID"
 msgid "Check"
 msgstr ""
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Check a series"
+msgstr ""
+
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Check against the site"
@@ -6818,6 +6981,10 @@ msgstr ""
 msgid "Checking for a new metadata snapshot"
 msgstr "Suche nach einem neuen Metadaten-Schnappschuss"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Checking the rules…"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Checks on the server and the library, and the repairs they found."
@@ -6830,6 +6997,7 @@ msgid "Chinese"
 msgstr "Chinesisch"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Choose"
 msgstr ""
 
@@ -7046,9 +7214,11 @@ msgstr "Client-Secret"
 #: src/components/LuckyButton.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/RenameSeriesModal.tsx
+#: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/MetadataHistoryModal.tsx
 #: src/components/series/SeriesReviews.tsx
 #: src/components/series/UpgradeNowResultModal.tsx
+#: src/components/settings/DeclinedReleasesModal.tsx
 #: src/components/SourceCompareModal.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
@@ -7292,6 +7462,7 @@ msgstr "Gleichzeitige Kapitel-Downloads"
 msgid "concurrent, workers, retry, max attempts, backoff"
 msgstr "gleichzeitig, worker, wiederholen, maximale Versuche, Wartezeit"
 
+#: src/components/settings/RuleConditions.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Conditions"
@@ -7573,6 +7744,10 @@ msgstr "Konvertierte Seite"
 msgid "Converted with {list}."
 msgstr "Konvertiert mit {list}."
 
+#: src/pages/HealthPage.tsx
+msgid "Converting pages"
+msgstr ""
+
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "Converting would not make this page at least 5% smaller, so the pass keeps it as it is."
@@ -7777,6 +7952,10 @@ msgstr "Lesefortschritt für {seriesFailed, plural, one {# Serie} other {# Serie
 msgid "Could not read progress for {seriesFailed, plural, one {# series} other {# series}}: {titles}"
 msgstr "Lesefortschritt für {seriesFailed, plural, one {# Serie} other {# Serien}} konnte nicht gelesen werden: {titles}"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Could not read the groups on {unreachable} just now. You can still type a name."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Could not read your profile"
@@ -7887,6 +8066,8 @@ msgid "Couldn't load your reading progress"
 msgstr "Dein Lesefortschritt konnte nicht geladen werden"
 
 #: src/components/QueuePause.tsx
+#: src/components/series/SeriesQueuePause.tsx
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Couldn't pause the downloads"
 msgstr "Downloads konnten nicht pausiert werden"
@@ -7902,6 +8083,8 @@ msgid "Couldn't remove the failed downloads"
 msgstr "Die fehlgeschlagenen Downloads konnten nicht entfernt werden"
 
 #: src/components/QueuePause.tsx
+#: src/components/series/SeriesQueuePause.tsx
+#: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Couldn't resume the downloads"
 msgstr "Downloads konnten nicht fortgesetzt werden"
@@ -7921,7 +8104,12 @@ msgstr "Der Scan konnte nicht ausgeführt werden"
 msgid "Couldn't sample"
 msgstr "Stichprobe nicht möglich"
 
+#: src/components/settings/RootFolderMinFreeInput.tsx
+msgid "Couldn't save the free space to keep"
+msgstr ""
+
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Couldn't save the rule"
 msgstr ""
 
@@ -8298,6 +8486,15 @@ msgstr "Legt fest, wann dein Lesetag endet."
 msgid "Decimal chapters like 10.5 stay listed but are never downloaded."
 msgstr "Dezimalkapitel wie 10.5 bleiben aufgeführt, werden aber nie heruntergeladen."
 
+#: src/components/settings/DeclinedReleasesModal.tsx
+msgid "Declined"
+msgstr ""
+
+#: src/components/settings/DeclinedReleasesModal.tsx
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Declined releases"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -8353,6 +8550,7 @@ msgstr "Definition"
 #: src/components/rails/DeleteRailDialog.tsx
 #: src/components/series/ArchivedSeriesCard.tsx
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/components/settings/UsersSection.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -8476,6 +8674,7 @@ msgid "Delete request"
 msgstr "Anfrage löschen"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Delete rule"
 msgstr ""
 
@@ -8822,6 +9021,11 @@ msgstr "Hat mir nicht gefallen"
 msgid "Dismiss"
 msgstr "Ausblenden"
 
+#. placeholder {0}: n.title
+#: src/components/SourceMappingsSection.tsx
+msgid "Dismiss {0} on {label}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Dismiss all"
@@ -8983,9 +9187,8 @@ msgstr "Download-Client"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping"
-msgstr "download-client, torrent-client, qbittorrent, transmission, deluge, label, kategorie, pfadzuordnung"
+msgid "download client, torrent client, qBittorrent, Transmission, Deluge, label, category, path mapping, seeding, seed ratio, stalled, declined releases"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -9126,6 +9329,10 @@ msgstr ""
 msgid "Downloading {outstanding}"
 msgstr "Wird heruntergeladen: {outstanding}"
 
+#: src/pages/HealthPage.tsx
+msgid "Downloading chapters"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Downloading cover"
@@ -9165,6 +9372,26 @@ msgstr "Downloads und Torrent-Importe werden im Hintergrund konvertiert, sobald 
 #, fuzzy
 msgid "Downloads counts the {wanted, plural, one {# chapter} other {# chapters}} you want or already have. {notWanted, plural, one {# more is listed but not wanted.} other {# more are listed but not wanted.}}"
 msgstr "Downloads zählt die {wanted, plural, one {# Kapitel} other {# Kapitel}}, die du willst oder schon hast. {notWanted, plural, one {# weiteres ist gelistet, aber nicht gewünscht.} other {# weitere sind gelistet, aber nicht gewünscht.}}"
+
+#: src/components/QueuePause.tsx
+msgid "Downloads for {title} paused"
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Downloads for {title} paused until {time}"
+msgstr ""
+
+#: src/components/series/SeriesQueuePause.tsx
+msgid "Downloads for this series are paused. Queued chapters wait until you resume; other series keep downloading."
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Downloads into {path} wait for disk space: {free} free, {needed} wanted"
+msgstr ""
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "Downloads into the folder wait while its drive has less free space than this, and carry on by themselves once there is room. 0 never waits."
+msgstr ""
 
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
@@ -9408,6 +9635,7 @@ msgid "Edit request for {title}"
 msgstr "Anfrage für {title} bearbeiten"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Edit rule"
 msgstr ""
 
@@ -9595,6 +9823,10 @@ msgstr ""
 msgid "Enhance: Off"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Enhancing pages for readers"
+msgstr ""
+
 #: src/pages/LoginPage.tsx
 #, fuzzy
 msgid "Enter one of your recovery codes"
@@ -9701,7 +9933,7 @@ msgstr ""
 msgid "Every chapter released from now on is wanted."
 msgstr "Jedes ab jetzt erscheinende Kapitel ist gewünscht."
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Every check passed"
 msgstr "Alle Prüfungen bestanden"
@@ -10000,6 +10232,11 @@ msgstr "Exportieren"
 msgid "Failed"
 msgstr "Fehlgeschlagen"
 
+#. placeholder {0}: formatDateTime(job.lastRunUtc)
+#: src/pages/HealthPage.tsx
+msgid "Failed at {0}"
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Failed sign-ins before lockout"
@@ -10194,6 +10431,10 @@ msgstr "Metadaten werden abgerufen"
 #, fuzzy
 msgid "Fetching pages…"
 msgstr "Seiten werden abgerufen…"
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "Fewer than {minSeeders} seeders, so Maki won't grab it on its own. You can still grab it here."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -10515,7 +10756,7 @@ msgstr "Abgeschlossen"
 msgid "Finished in a rush"
 msgstr "Im Eiltempo beendet"
 
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
 msgid "Finished torrents"
 msgstr "Abgeschlossene Torrents"
@@ -10540,18 +10781,13 @@ msgstr "Erstes Kapitel bereit"
 msgid "First download in progress"
 msgstr "Erster Download läuft"
 
-#: src/components/ImportListsSection.tsx
-#, fuzzy
-msgid "First folder you can see"
-msgstr "Erster sichtbarer Ordner"
-
 #: src/pages/reader/ShortcutSheet.tsx
 #: src/theme-context.tsx
 #, fuzzy
 msgid "First page"
 msgstr "Erste Seite"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "First page image"
 msgstr "Bild der ersten Seite"
@@ -10740,10 +10976,22 @@ msgstr ""
 msgid "For apps that only connect to Komga, like Tachimanga."
 msgstr "Für Apps, die nur mit Komga verbunden werden, etwa Tachimanga."
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "For example, send every manhwa and manhua to a webtoon folder."
+msgstr ""
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "For monitored series with wanted chapters that none of their sources list, such as licensed titles a site took down, or series with no source at all. Each series is searched at most once a week, a few series at a time. Works with the daily scan off. Chapters a source lists keep downloading from it."
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "For reading apps like Panels, KOReader and Mihon."
 msgstr "Für Lese-Apps wie Panels, KOReader und Mihon."
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "For this series only. Its preferred list replaces the global one; blocked groups add to it."
+msgstr ""
 
 #: src/components/pageconversion/FormatStep.tsx
 #: src/components/pageconversion/StartStep.tsx
@@ -10787,6 +11035,10 @@ msgstr "Gefunden"
 #, fuzzy
 msgid "Free space"
 msgstr "Freier Speicher"
+
+#: src/components/settings/RootFolderMinFreeInput.tsx
+msgid "Free space to keep on {path}"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -10985,6 +11237,10 @@ msgstr "Namen eingeben"
 msgid "Give others their own account, library access and reading history."
 msgstr "Gib anderen ein eigenes Konto, Bibliothekszugriff und eine eigene Lesehistorie."
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Give up after (hours)"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here."
@@ -11171,6 +11427,10 @@ msgstr "Mit der Stufe darüber gruppieren"
 msgid "Grouping is off while anime seasons are marked in the table."
 msgstr ""
 
+#: src/pages/settings/CustomSourceReport.tsx
+msgid "Groups credited: {groupList}"
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Groups overlap on purpose, so one series can belong to several of them."
@@ -11206,7 +11466,7 @@ msgstr "Lesegewohnheiten in Zahlen"
 msgid "Half of what rating the manga would carry. A show you loved lends its genres and tags to your profile without out-voting a book you actually read."
 msgstr "Die Hälfte des Gewichts, das der Manga hätte. Eine geliebte Serie gibt ihre Genres und Tags an dein Profil weiter, ohne ein tatsächlich gelesenes Buch zu überstimmen."
 
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
 msgid "Hardlink imported torrents when possible"
 msgstr "Importierte Torrents nach Möglichkeit per Hardlink verknüpfen"
@@ -11302,6 +11562,10 @@ msgstr "Zur Prüfung zurückgehalten"
 #, fuzzy
 msgid "Held back for review, {file}: {reason}"
 msgstr "Zur Prüfung zurückgehalten, {file}: {reason}"
+
+#: src/components/QueuePause.tsx
+msgid "Held folders resume by themselves once there is room again. The threshold is set per root folder in Settings, Library."
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -12058,6 +12322,10 @@ msgstr "In der Bibliothek"
 msgid "in the reader"
 msgstr "im Reader"
 
+#: src/pages/HealthPage.tsx
+msgid "in under a minute"
+msgstr ""
+
 #: src/components/discover/DiscoverLibraryRail.tsx
 #, fuzzy
 msgid "In your library"
@@ -12261,6 +12529,10 @@ msgstr "Personen einladen"
 msgid "iPhone and iPad only deliver push notifications to apps added to the home screen. Add Maki to your home screen, open it from there, and come back to this card."
 msgstr "iPhone und iPad liefern Push-Benachrichtigungen nur an Apps auf dem Home-Bildschirm. Füge Maki zu deinem Home-Bildschirm hinzu, öffne es von dort und komm zu dieser Karte zurück."
 
+#: src/components/SourceMappingsSection.tsx
+msgid "Is this it?"
+msgstr ""
+
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
 msgid "Isekai"
@@ -12439,6 +12711,10 @@ msgstr "Das zuletzt gelesene Kapitel jedes Lesers behalten"
 msgid "Keep editing"
 msgstr "Weiter bearbeiten"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Keep free"
+msgstr ""
+
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Keep manual priority, but renumber it to follow the measured order."
@@ -12561,6 +12837,10 @@ msgstr "Bleibt aus deinen Trackern, Rewind, Statistiken und dem Leseverlauf hera
 #, fuzzy
 msgid "kept where it is"
 msgstr "am bisherigen Ort behalten"
+
+#: src/components/pageconversion/StartStep.tsx
+msgid "Kept whole"
+msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
@@ -12806,6 +13086,10 @@ msgstr "Zuletzt gelesen {lastRead}"
 msgid "Last rebuild"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Last run"
+msgstr ""
+
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "Last run {finishedDate}."
@@ -13022,6 +13306,10 @@ msgstr "Länge, Jahr und Bewertung"
 msgid "Less"
 msgstr "Weniger"
 
+#: src/api/queue.ts
+msgid "Less than a minute left"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Let the daily scan upgrade this profile's series"
@@ -13162,9 +13450,15 @@ msgstr "Linie"
 #: src/components/LinkChaptersModal.tsx
 #: src/components/LinkFileToChaptersModal.tsx
 #: src/components/SeriesScrobbleSection.tsx
+#: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Link"
 msgstr "Verknüpfen"
+
+#. placeholder {0}: n.title
+#: src/components/SourceMappingsSection.tsx
+msgid "Link {0} on {label}"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
@@ -13690,6 +13984,10 @@ msgstr "Maki belegt hier {used} von {quota}. Entferne einige gespeicherte Kapite
 msgid "Maki loaded the first page ({0})."
 msgstr "Maki hat die erste Seite geladen ({0})."
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Maki removes a torrent once it reaches either target, whichever comes first. Leave a field empty for no target."
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 msgid "Maki searches releases through Prowlarr or Jackett."
 msgstr ""
@@ -14005,6 +14303,10 @@ msgstr "Übereinstimmungen nach Bedeutung, Beschreibung und Stimmung. Ohne Empfe
 msgid "Matches your naming formats. Only the highlighted parts change."
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Matching series to their sources"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Matching the remaining sources…"
@@ -14120,6 +14422,10 @@ msgstr "Mittel"
 #, fuzzy
 msgid "Medium confidence"
 msgstr "Mittlere Zuverlässigkeit"
+
+#: src/pages/HealthPage.tsx
+msgid "Memory"
+msgstr ""
 
 #: src/App.tsx
 #, fuzzy
@@ -14249,6 +14555,10 @@ msgstr "Mindestbewertung: {ratingLabel}"
 #, fuzzy
 msgid "Minimum score gain"
 msgstr "Mindestzuwachs der Punktzahl"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Minimum seeders"
+msgstr ""
 
 #: src/api/upgrades.ts
 #, fuzzy
@@ -14527,6 +14837,14 @@ msgstr "{label} nach unten verschieben"
 msgid "Move {label} up"
 msgstr "{label} nach oben verschieben"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Move {name} down"
+msgstr ""
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Move {name} up"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Move {tierLabel} down"
@@ -14537,6 +14855,7 @@ msgstr "{tierLabel} nach unten verschieben"
 msgid "Move {tierLabel} up"
 msgstr "{tierLabel} nach oben verschieben"
 
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move down"
@@ -14595,6 +14914,7 @@ msgstr "An den Anfang verschieben"
 msgid "Move to top of queue"
 msgstr "An den Anfang der Warteschlange verschieben"
 
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "Move up"
@@ -14618,6 +14938,10 @@ msgstr "wird einem Band zugeordnet"
 #, fuzzy
 msgid "Moving covers"
 msgstr "Bewegte Cover"
+
+#: src/pages/HealthPage.tsx
+msgid "Moving series"
+msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 #, fuzzy
@@ -14793,7 +15117,7 @@ msgstr "Überprüfung erforderlich"
 msgid "Needs semantic search."
 msgstr "Braucht die semantische Suche."
 
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
 msgid "Needs the download folder and library on one filesystem, otherwise Maki copies."
 msgstr "Download-Ordner und Bibliothek müssen auf demselben Dateisystem liegen, sonst kopiert Maki."
@@ -14873,6 +15197,10 @@ msgstr "Nie auf Upgrades gescannt"
 #, fuzzy
 msgid "Never shows which series you read."
 msgstr "Zeigt nie, welche Serien du liest."
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Never taken. A chapter only these groups uploaded comes from another source, or waits until one has it."
+msgstr ""
 
 #: src/components/pageconversion/ruleTemplates.ts
 #, fuzzy
@@ -14993,6 +15321,7 @@ msgid "New recovery codes"
 msgstr "Neue Wiederherstellungscodes"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "New rule"
 msgstr ""
 
@@ -15093,6 +15422,10 @@ msgstr ""
 msgid "Next page"
 msgstr "Nächste Seite"
 
+#: src/pages/HealthPage.tsx
+msgid "Next run"
+msgstr ""
+
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
 msgid "Next source"
@@ -15157,6 +15490,10 @@ msgstr ""
 #, fuzzy
 msgid "No better copy found"
 msgstr "Keine bessere Kopie gefunden"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "No blocked groups."
+msgstr ""
 
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 #, fuzzy
@@ -15294,6 +15631,10 @@ msgstr "Noch kein Ersteller erscheint häufig genug."
 
 #: src/components/discover/FollowingRail.tsx
 msgid "No creators followed"
+msgstr ""
+
+#: src/components/settings/DeclinedReleasesModal.tsx
+msgid "No declined releases"
 msgstr ""
 
 #: src/pages/stats/sections/TasteSection.tsx
@@ -15546,6 +15887,10 @@ msgstr "Keine andere Quelle führt es"
 msgid "No outside tools connected. That's fine, sources download on their own."
 msgstr "Keine externen Tools verbunden. Das ist in Ordnung, Quellen laden Inhalte selbst herunter."
 
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "No page to preview yet. The preview uses the tallest page in your library."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "No pages"
@@ -15555,6 +15900,10 @@ msgstr "Keine Seiten"
 #, fuzzy
 msgid "No pending requests"
 msgstr "Keine ausstehenden Anfragen"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "No preferred groups."
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -15632,12 +15981,17 @@ msgstr "Keine Ergebnisse."
 msgid "No root folders yet"
 msgstr "Noch keine Stammordner"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "No rule matches {title}, so it would go to <0>{fallback}</0>."
+msgstr ""
+
 #: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "No rules"
 msgstr "Keine Regeln"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "No rules yet"
 msgstr ""
 
@@ -15654,6 +16008,10 @@ msgstr "Noch keine Regeln. Füge eine hinzu, um Genres und Tags vorauszusetzen o
 #, fuzzy
 msgid "No rules yet. Every file is converted at {stopLabel}."
 msgstr "Noch keine Regeln. Jede Datei wird bei {stopLabel} konvertiert."
+
+#: src/pages/settings/LibraryCards.tsx
+msgid "No rules yet. New series go to the first root folder."
+msgstr ""
 
 #: src/components/RatingImportModal.tsx
 msgid "No scores on {label} differ from your local ratings."
@@ -15673,6 +16031,10 @@ msgstr "Keine Suche"
 #, fuzzy
 msgid "No search found"
 msgstr "Keine Suche gefunden"
+
+#: src/api/queue.ts
+msgid "No seeds or peers connected to the torrent within the stall limit"
+msgstr ""
 
 #: src/components/import/ManualImport.tsx
 msgid "No series found"
@@ -15800,6 +16162,10 @@ msgstr ""
 msgid "No tags yet."
 msgstr "Noch keine Tags."
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "No target"
+msgstr ""
+
 #: src/pages/stats/sections/RhythmSection.tsx
 #, fuzzy
 msgid "No timed reading yet"
@@ -15875,6 +16241,10 @@ msgstr "Keine"
 #, fuzzy
 msgid "None available"
 msgstr "Keine verfügbar"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "None for this series, so the global order applies: {inheritedPreferred}"
+msgstr ""
 
 #: src/pages/NotificationsPage.tsx
 #, fuzzy
@@ -16275,6 +16645,10 @@ msgstr "Noch nicht geprüft. Zum Ersetzen oder Löschen dieser Datei ist zuerst 
 msgid "Not working"
 msgstr "Funktioniert nicht"
 
+#: src/pages/HealthPage.tsx
+msgid "Not yet"
+msgstr ""
+
 #: src/components/SeriesScrobbleSection.tsx
 #, fuzzy
 msgid "not yet synced"
@@ -16488,6 +16862,10 @@ msgstr "Noch nichts in deiner Bibliothek"
 #, fuzzy
 msgid "Nothing is renamed and everything stays in the folder you had."
 msgstr "Es wird nichts umbenannt und alles bleibt in deinem bisherigen Ordner."
+
+#: src/pages/HealthPage.tsx
+msgid "Nothing is running in the background."
+msgstr ""
 
 #: src/components/home/OfflineHome.tsx
 #, fuzzy
@@ -16986,6 +17364,10 @@ msgstr "Ein"
 msgid "On another file"
 msgstr "In einer anderen Datei"
 
+#: src/pages/HealthPage.tsx
+msgid "On demand"
+msgstr ""
+
 #: src/components/series/SeriesHero.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -17149,6 +17531,10 @@ msgstr "Nur sichere Titel"
 msgid "Only series I'm reading"
 msgstr "Nur Serien, die ich lese"
 
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Only strips at least two and a half times as tall as they are wide are split."
+msgstr ""
+
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
 msgid "Only the built-in reader records it."
@@ -17233,6 +17619,10 @@ msgstr "Öffne ein Kapitel, dann erscheint es hier und kann fortgesetzt werden."
 
 #: src/components/import/ManualImport.tsx
 msgid "Open a folder, or click a file in it, then choose the series the comics belong to."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Open activity"
 msgstr ""
 
 #: src/components/ActivityButton.tsx
@@ -17417,6 +17807,14 @@ msgstr ""
 #, fuzzy
 msgid "or"
 msgstr "oder"
+
+#: src/components/settings/RuleConditions.tsx
+msgid "Or all of these"
+msgstr ""
+
+#: src/components/settings/RuleConditions.tsx
+msgid "Or match other conditions"
+msgstr ""
 
 #: src/components/import/ImportMatchFinder.tsx
 #, fuzzy
@@ -17720,6 +18118,10 @@ msgstr "Seiten bleiben so, wie sie heruntergeladen wurden. Schon konvertierte Da
 msgid "Pages stay as they were downloaded."
 msgstr "Seiten bleiben so, wie sie heruntergeladen wurden."
 
+#: src/pages/settings/PageConversionSection.tsx
+msgid "Pages taller than {pixels} px are split."
+msgstr ""
+
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "Pages under 16 KB are always kept as they are."
@@ -17860,9 +18262,19 @@ msgid "Pause"
 msgstr "Pausieren"
 
 #: src/components/QueuePause.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Pause downloads"
 msgstr "Downloads pausieren"
+
+#: src/components/series/SeriesQueuePause.tsx
+#: src/pages/ActivityPage.tsx
+msgid "Pause downloads for this series"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Pause pass"
+msgstr ""
 
 #: src/pages/rewind/RewindIntro.tsx
 #, fuzzy
@@ -17884,9 +18296,14 @@ msgstr "Den laufenden Durchlauf anhalten und mit den neuen Einstellungen neu sta
 msgid "Pause the running pass?"
 msgstr "Den laufenden Durchlauf anhalten?"
 
+#: src/pages/ActivityPage.tsx
+msgid "Pause this series"
+msgstr ""
+
 #: src/components/ActivityButton.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/pages/ActivityPage.tsx
+#: src/pages/HealthPage.tsx
 #: src/pages/settings/IntegrationCards.tsx
 #, fuzzy
 msgid "Paused"
@@ -18008,6 +18425,10 @@ msgstr "Stammordner auswählen"
 msgid "Pick a root folder and scan it"
 msgstr "Wähle einen Stammordner und scanne ihn"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Pick a root folder."
+msgstr ""
+
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid "Pick a source by"
@@ -18034,6 +18455,7 @@ msgid "Pick another page"
 msgstr "Andere Seite wählen"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Pick at least one condition."
 msgstr ""
 
@@ -18072,10 +18494,19 @@ msgstr "Wähle die Ordner aus, aus denen Maki liest und in die es herunterlädt,
 msgid "Pick the one that looks best and Maki downloads it again from there."
 msgstr "Wähle die, die am besten aussieht, und Maki lädt sie von dort erneut herunter."
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "Pick the root folder for a new series by its type, genre, rating or how it came in."
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Pick the source a replacement comes from, or delete the file through a review."
 msgstr "Wähle die Quelle, aus der ein Ersatz kommt, oder lösche die Datei über eine Prüfung."
+
+#: src/components/import/MihonReview.tsx
+#: src/components/ImportListsSection.tsx
+msgid "Picked by the root folder rules"
+msgstr ""
 
 #: src/components/discover/DiscoverLibraryRail.tsx
 msgid "Picked by your content rating rule in Settings."
@@ -18246,6 +18677,10 @@ msgstr "Postet in ein Thema einer Forengruppe."
 msgid "Preferences"
 msgstr "Präferenzen"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Preferred groups"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #, fuzzy
 msgid "Preload"
@@ -18269,6 +18704,10 @@ msgstr ""
 
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Prepared pages are kept until read, apart from the cache size."
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Preparing chapters ahead"
 msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
@@ -18369,6 +18808,10 @@ msgstr ""
 #, fuzzy
 msgid "Private"
 msgstr "Privat"
+
+#: src/pages/HealthPage.tsx
+msgid "Processor"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -18541,6 +18984,10 @@ msgstr ""
 #, fuzzy
 msgid "Put it behind HTTPS, then turn on Settings → System → Network → Require HTTPS."
 msgstr "Stelle es hinter HTTPS und schalte dann unter Einstellungen → System → Netzwerk → HTTPS erzwingen ein."
+
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Put it in"
+msgstr ""
 
 #: src/components/home/ReadingCardMenu.tsx
 msgid "Put on hold"
@@ -18954,6 +19401,10 @@ msgstr "Erstes Kapitel lesen"
 msgid "Read from"
 msgstr "Lesen ab"
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Read from {clientName}"
+msgstr ""
+
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Read in Kavita"
@@ -19016,6 +19467,10 @@ msgstr "Gelesen oder gesehen"
 #, fuzzy
 msgid "Read slowly over a long span"
 msgstr "Langsam über einen längeren Zeitraum gelesen"
+
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Read the seed limits from {clientName}"
+msgstr ""
 
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -19484,6 +19939,14 @@ msgstr "Wird aktualisiert"
 msgid "Refreshing {done} of {total}"
 msgstr "{done} von {total} werden aktualisiert"
 
+#: src/pages/HealthPage.tsx
+msgid "Refreshing series"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Refreshing series metadata"
+msgstr ""
+
 #: src/pages/settings/ReadingCards.tsx
 #, fuzzy
 msgid "Regenerate"
@@ -19576,6 +20039,10 @@ msgstr "Mit deiner Bibliothek verbunden"
 msgid "Related to your seeds"
 msgstr "Mit deinen Ausgangstiteln verbunden"
 
+#: src/components/settings/DeclinedReleasesModal.tsx
+msgid "Release"
+msgstr ""
+
 #: src/pages/reader/NextChapterHint.tsx
 #, fuzzy
 msgctxt "next chapter gesture"
@@ -19622,6 +20089,14 @@ msgstr "Veröffentlicht"
 #, fuzzy
 msgid "Releases too irregularly to estimate."
 msgstr "Erscheint zu unregelmäßig für eine Schätzung."
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Releases with fewer seeders are never grabbed or approved on their own. You can still grab them from the release search."
+msgstr ""
+
+#: src/components/settings/DeclinedReleasesModal.tsx
+msgid "Releases you dismiss, and torrents that stall or disappear, are listed here."
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #, fuzzy
@@ -19696,6 +20171,10 @@ msgstr "{label} entfernen"
 #, fuzzy
 msgid "Remove {label} from this device"
 msgstr "{label} von diesem Gerät entfernen"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Remove {name} from the preferred groups"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
@@ -19900,6 +20379,10 @@ msgstr "Dateien von {seriesTitle} entfernen?"
 msgid "Remove the record"
 msgstr "Datensatz entfernen"
 
+#: src/components/settings/RuleConditions.tsx
+msgid "Remove these conditions"
+msgstr ""
+
 #: src/components/settings/ProgressSection.tsx
 #, fuzzy
 msgid "Remove this reading goal?"
@@ -19925,7 +20408,7 @@ msgstr "Diesen Torrent entfernen?"
 msgid "Remove title"
 msgstr ""
 
-#: src/pages/settings/DownloadCards.tsx
+#: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
 msgid "Remove torrents from the download client after import"
 msgstr "Torrents nach dem Import aus dem Download-Client entfernen"
@@ -20082,6 +20565,10 @@ msgid "Renaming folder"
 msgstr "Ordner wird umbenannt"
 
 #: src/pages/HealthPage.tsx
+msgid "Renaming series"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Reopen"
 msgstr "Erneut öffnen"
@@ -20105,6 +20592,10 @@ msgstr "Reparatur"
 #, fuzzy
 msgid "Repairs"
 msgstr "Reparaturen"
+
+#: src/pages/HealthPage.tsx
+msgid "Repeats"
+msgstr ""
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -20303,6 +20794,10 @@ msgstr "Dateien erneut scannen"
 #, fuzzy
 msgid "Rescanned: {newFiles} new, {relinked} relinked, {removed} removed"
 msgstr "Erneut gescannt: {newFiles} neu, {relinked} erneut verknüpft, {removed} entfernt"
+
+#: src/pages/HealthPage.tsx
+msgid "Rescanning series files"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/pages/DiscoverPage.tsx
@@ -20586,6 +21081,16 @@ msgstr "Weiterlesen: {seriesTitle}, {chapterLabel}"
 msgid "Resume at"
 msgstr "Fortsetzen um"
 
+#: src/components/series/SeriesQueuePause.tsx
+#: src/pages/HealthPage.tsx
+msgid "Resume downloads"
+msgstr ""
+
+#: src/components/series/SeriesQueuePause.tsx
+#: src/pages/ActivityPage.tsx
+msgid "Resume downloads for this series"
+msgstr ""
+
 #: src/pages/rewind/RewindIntro.tsx
 #, fuzzy
 msgid "Resume Rewind"
@@ -20595,6 +21100,10 @@ msgstr "Rewind fortsetzen"
 #, fuzzy
 msgid "Resume rotating picks"
 msgstr "Wechselnde Empfehlungen fortsetzen"
+
+#: src/pages/ActivityPage.tsx
+msgid "Resume this series"
+msgstr ""
 
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
@@ -20799,6 +21308,10 @@ msgstr ""
 msgid "Rhythm"
 msgstr "Rhythmus"
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Right after import"
+msgstr ""
+
 #: src/components/SoFarSyncAskDialog.tsx
 #, fuzzy
 msgid "Right now a \"so far\" score stays in Maki, and only your final rating goes to your trackers. You can change this for each tracker in Settings."
@@ -20850,6 +21363,17 @@ msgstr "Stammordner"
 msgid "Root folder path saved"
 msgstr ""
 
+#: src/components/settings/RootFolderRulesModal.tsx
+#: src/pages/settings/LibraryCards.tsx
+#: src/pages/settings/registry.ts
+msgid "Root folder rules"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "root folder rules, routing, default folder, webtoon folder, adult folder, manhwa, manhua, content rating, where new series go"
+msgstr ""
+
 #: src/components/settings/UsersSection.tsx
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/registry.ts
@@ -20894,9 +21418,14 @@ msgid "Rule {number}"
 msgstr "Regel {number}"
 
 #: src/components/pageconversion/EstimateTable.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #, fuzzy
 msgid "Rule {position}"
 msgstr "Regel {position}"
+
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Rule {position} would put {title} in <0>{path}</0>."
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -20904,6 +21433,7 @@ msgid "Rule editor view"
 msgstr "Ansicht des Regeleditors"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Rule is on"
 msgstr ""
 
@@ -20930,6 +21460,7 @@ msgid "Rules are checked from the top, and the first one a file matches decides 
 msgstr "Regeln werden von oben geprüft, und die erste Regel, auf die eine Datei passt, entscheidet, was mit ihr passiert. Eine Serie, die auf Nie oder auf eine feste Qualität in ihrem Menü steht, ignoriert die Regeln."
 
 #: src/components/ImportListsSection.tsx
+#: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "Run now"
 msgstr "Jetzt ausführen"
@@ -20954,6 +21485,10 @@ msgstr "Läuft"
 #, fuzzy
 msgid "Running late"
 msgstr "Verspätet"
+
+#: src/pages/HealthPage.tsx
+msgid "Running now"
+msgstr ""
 
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/PreferenceCards.tsx
@@ -21036,6 +21571,7 @@ msgstr "Prüft ein paar Seiten aus jeder verknüpften Quelle."
 #: src/components/notes/NoteThread.tsx
 #: src/components/NotificationsSection.tsx
 #: src/components/rails/CustomRailEditor.tsx
+#: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/EditMetadataModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
@@ -21142,6 +21678,7 @@ msgid "Save range"
 msgstr "Bereich speichern"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Save rule"
 msgstr ""
 
@@ -21265,6 +21802,10 @@ msgstr "Gespeicherte Regeln konnten nicht geladen werden; beim Speichern werden 
 msgid "Saved. Leave empty to keep it."
 msgstr "Gespeichert. Leer lassen, um es zu behalten."
 
+#: src/pages/SeriesDetailPage.tsx
+msgid "Saved. Refreshing chapters to pick up the change."
+msgstr ""
+
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
 msgid "Saved. Restart Maki to apply it."
@@ -21376,6 +21917,19 @@ msgstr "scan, API-Schlüssel, Pfadzuordnung, Cover, Bibliotheksserver, Lesen zuo
 #, fuzzy
 msgid "Scanlation group"
 msgstr "Scanlation-Gruppe"
+
+#: src/components/ScanlationGroupsModal.tsx
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Scanlation groups"
+msgstr ""
+
+#: src/pages/settings/ManageSourcesModal.tsx
+msgid "Scanlation groups for {label}"
+msgstr ""
+
+#: src/components/series/SeriesActionsMenu.tsx
+msgid "Scanlation groups..."
+msgstr ""
 
 #: src/api/upgrades.ts
 #: src/pages/settings/ManageSourcesModal.tsx
@@ -21577,6 +22131,7 @@ msgstr "Webtoon-Kapitel scrollen"
 #: src/components/CommandPalette.tsx
 #: src/components/ImportListsSection.tsx
 #: src/components/ReleaseSearchModal.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Search"
@@ -21737,6 +22292,10 @@ msgstr "Tags oder Gruppen wie Charaktereigenschaften durchsuchen"
 msgid "Search the catalogue"
 msgstr "Katalog durchsuchen"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Search the library"
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Search the remaining sources for this title again. Sources already linked are left alone."
@@ -21746,6 +22305,10 @@ msgstr "Die übrigen Quellen erneut nach diesem Titel durchsuchen. Bereits verkn
 #, fuzzy
 msgid "Search titles"
 msgstr "Titel suchen"
+
+#: src/pages/settings/DownloadCards.tsx
+msgid "Search torrents for chapters no source has"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -21801,6 +22364,10 @@ msgstr ""
 msgid "Searching"
 msgstr ""
 
+#: src/pages/HealthPage.tsx
+msgid "Searching for missing chapters"
+msgstr ""
+
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
 msgid "Searching indexers…"
@@ -21842,10 +22409,18 @@ msgstr "Fortschritt ansehen"
 msgid "Seed from"
 msgstr "Ausgangstitel von"
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Seed ratio"
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
 msgid "Seeded from"
 msgstr "Ausgangspunkt"
+
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Seeding time (minutes)"
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 #, fuzzy
@@ -22052,6 +22627,8 @@ msgstr "Fortsetzung von {relatedTo}"
 #: src/components/CatalogueFilters.tsx
 #: src/components/import/ManualImport.tsx
 #: src/components/RatingImportModal.tsx
+#: src/components/settings/DeclinedReleasesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 #: src/nav.ts
 #: src/pages/ActivityPage.tsx
 #: src/pages/LibraryPage.tsx
@@ -22123,6 +22700,10 @@ msgstr "Serienordnerformat"
 msgid "Series has no root folder"
 msgstr "Serie hat keinen Stammordner"
 
+#: src/components/settings/RootFolderRulesModal.tsx
+msgid "Series it already placed stay where they are."
+msgstr ""
+
 #: src/components/settings/AutoTagRulesModal.tsx
 msgid "Series it already tagged keep the tag."
 msgstr ""
@@ -22144,6 +22725,7 @@ msgstr "Serie verschoben"
 msgid "Series not found"
 msgstr "Serie nicht gefunden"
 
+#: src/pages/settings/CustomSourceReport.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #: src/pages/settings/PreferenceCards.tsx
 #: src/pages/settings/registry.ts
@@ -22377,6 +22959,7 @@ msgid "Set up trackers"
 msgstr "Tracker einrichten"
 
 #: src/nav.ts
+#: src/pages/HealthPage.tsx
 #: src/pages/SettingsPage.tsx
 #, fuzzy
 msgid "Settings"
@@ -22958,7 +23541,7 @@ msgstr "Zum Inhalt springen"
 msgid "skipped"
 msgstr "übersprungen"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Skipped"
 msgstr "Übersprungen"
@@ -23070,7 +23653,7 @@ msgstr ""
 msgid "so far, at ch. {soFarChapter}"
 msgstr "vorläufig, bei Kap. {soFarChapter}"
 
-#: src/pages/settings/CustomSourceWizard.tsx
+#: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Some checks failed"
 msgstr "Einige Prüfungen sind fehlgeschlagen"
@@ -23337,6 +23920,10 @@ msgstr "Spin-off von {relatedTo}"
 msgid "Split"
 msgstr "Teilen"
 
+#: src/components/pageconversion/StartStep.tsx
+msgid "Split above {splitHeight} px"
+msgstr ""
+
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Split from the tier above"
@@ -23346,6 +23933,14 @@ msgstr "Von der Stufe darüber trennen"
 #, fuzzy
 msgid "Split into two pages"
 msgstr "In zwei Seiten aufteilen"
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Split pages taller than"
+msgstr ""
+
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Split very tall pages"
+msgstr ""
 
 #: src/components/notes/NoteBody.tsx
 #, fuzzy
@@ -23382,6 +23977,10 @@ msgstr "Bände stärker komprimieren"
 msgid "Stacked height"
 msgstr "Gestapelte Höhe"
 
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "Stalled torrents"
+msgstr ""
+
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
 msgid "Stalled without finishing"
@@ -23408,6 +24007,10 @@ msgstr "Starten"
 #, fuzzy
 msgid "Start {seriesTitle}, {chapterLabel}"
 msgstr "Mit {seriesTitle}, {chapterLabel} starten"
+
+#: src/pages/HealthPage.tsx
+msgid "Start building"
+msgstr ""
 
 #: src/components/home/ContinueHero.tsx
 #, fuzzy
@@ -23444,6 +24047,14 @@ msgstr "Lesen bei Kap. {startReadingAt} beginnen."
 #, fuzzy
 msgid "Started"
 msgstr "Begonnen"
+
+#: src/pages/HealthPage.tsx
+msgid "Started {label}"
+msgstr ""
+
+#: src/pages/HealthPage.tsx
+msgid "Started {time}"
+msgstr ""
 
 #: src/components/pageconversion/ReviewStep.tsx
 #, fuzzy
@@ -23527,6 +24138,10 @@ msgstr "am bisherigen Ort bleiben"
 msgid "stays in the folder, the series folder already has a file with this name"
 msgstr "bleibt im Ordner, der Serienordner hat bereits eine Datei mit diesem Namen"
 
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "Stays one page at this height."
+msgstr ""
+
 #: src/components/QueuePause.tsx
 msgid "Stays paused until you press Resume."
 msgstr ""
@@ -23571,6 +24186,7 @@ msgstr "Läuft noch"
 msgid "Still shown in Discover rails"
 msgstr "Weiterhin in den Entdecken-Reihen gezeigt"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Stop"
@@ -23610,6 +24226,7 @@ msgstr "Zeige ihre neuen Titel nicht mehr auf Start und Entdecken"
 msgid "Stopped before finishing"
 msgstr "Vor dem Abschluss pausiert"
 
+#: src/pages/HealthPage.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
 msgid "Stopping"
@@ -23829,7 +24446,7 @@ msgid "Tag a series from its page, or add one here."
 msgstr ""
 
 #: src/components/settings/AutoTagRulesModal.tsx
-msgid "Tag a series when it is added and matches every condition of a rule."
+msgid "Tag a series when it is added and matches every condition of a rule, or of one of its alternatives."
 msgstr ""
 
 #: src/pages/settings/LibraryCards.tsx
@@ -23880,8 +24497,26 @@ msgstr "Auszuschließende Tags"
 msgid "Tags to include"
 msgstr "Einzuschließende Tags"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Takes effect at each series' next chapter refresh."
+msgstr ""
+
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Takes the colour of the page's edge."
+msgstr ""
+
+#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/StartStep.tsx
+msgid "Tall pages"
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "Tallest page"
+msgstr ""
+
+#: src/components/pageconversion/SplitPreview.tsx
+msgid "Tallest page with its cuts"
 msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
@@ -23903,6 +24538,10 @@ msgstr ""
 #, fuzzy
 msgid "Tap zones"
 msgstr "Tippzonen"
+
+#: src/pages/HealthPage.tsx
+msgid "Tasks"
+msgstr ""
 
 #: src/pages/stats/sectionList.ts
 #, fuzzy
@@ -24067,6 +24706,10 @@ msgstr "Die genehmigte Quelle hat diese Seiten nicht mehr"
 #, fuzzy
 msgid "The archive was deleted."
 msgstr "Das Archiv wurde gelöscht."
+
+#: src/components/settings/DeclinedReleasesModal.tsx
+msgid "The automatic search skips these. Allow one again to let the next search take it."
+msgstr ""
 
 #: src/components/settings/OfflineReadingSection.tsx
 #, fuzzy
@@ -24762,7 +25405,7 @@ msgid "The torrent is no longer in the download client"
 msgstr "Der Torrent ist nicht mehr im Download-Client"
 
 #: src/api/queue.ts
-msgid "The torrent made no progress for an hour"
+msgid "The torrent made no progress within the stall limit"
 msgstr ""
 
 #: src/api/queue.ts
@@ -24789,6 +25432,10 @@ msgstr "Das Update ist heruntergeladen. Maki ist während der Installation etwa 
 #, fuzzy
 msgid "The upgrade scan could not run. The server log has the details."
 msgstr "Der Upgrade-Scan konnte nicht ausgeführt werden. Details stehen im Serverprotokoll."
+
+#: src/pages/SeriesDetailPage.tsx
+msgid "The upgrade scan was stopped."
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -24934,6 +25581,10 @@ msgstr "Dieses Backup enthält keine Kategorien."
 #, fuzzy
 msgid "This browser does not support push notifications."
 msgstr "Dieser Browser unterstützt keine Push-Benachrichtigungen."
+
+#: src/pages/HealthPage.tsx
+msgid "This builds the search index on this server and can keep the processor busy for an hour or more."
+msgstr ""
 
 #: src/pages/reader/ReaderPage.tsx
 #, fuzzy
@@ -25318,6 +25969,10 @@ msgstr "Zeit"
 #, fuzzy
 msgid "Time between requests (ms)"
 msgstr "Zeit zwischen Anfragen (ms)"
+
+#: src/pages/ActivityPage.tsx
+msgid "Time left"
+msgstr ""
 
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
@@ -25857,6 +26512,10 @@ msgstr "Nicht autorisiert"
 msgid "Unavailable"
 msgstr "Nicht verfügbar"
 
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Unblock {name}"
+msgstr ""
+
 #: src/components/ImportReviewModal.tsx
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -25867,6 +26526,10 @@ msgstr "unverändert"
 #, fuzzy
 msgid "Under"
 msgstr "Unter"
+
+#: src/components/ReleaseSearchModal.tsx
+msgid "Under minimum"
+msgstr ""
 
 #: src/components/NamingTokenModal.tsx
 #, fuzzy
@@ -25967,7 +26630,8 @@ msgstr "Unbekannt"
 msgid "Unknown date"
 msgstr "Unbekanntes Datum"
 
-#: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/conditionGroups.ts
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "Unknown folder"
 msgstr ""
 
@@ -25976,7 +26640,7 @@ msgstr ""
 msgid "Unknown source"
 msgstr "Unbekannte Quelle"
 
-#: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/conditionGroups.ts
 msgid "Unknown user"
 msgstr ""
 
@@ -26904,9 +27568,8 @@ msgstr "Band per Upgrade ersetzt"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-#, fuzzy
-msgid "volume, volume packs, volume search, auto-grab, proposals, torrent"
-msgstr "Band, Bandpakete, Bandsuche, automatisch holen, Vorschläge, Torrent"
+msgid "volume, volume packs, volume search, auto-grab, proposals, torrent, missing chapters, licensed, seeders, minimum seeders"
+msgstr ""
 
 #: src/components/discover/DiscoverGlance.tsx
 #: src/components/discover/DiscoverHero.tsx
@@ -26956,6 +27619,11 @@ msgstr "im Vergleich zu {fromLabel} bis {toLabel}"
 #, fuzzy
 msgid "Waiting"
 msgstr "Wartet"
+
+#: src/components/ActivityButton.tsx
+#: src/pages/ActivityPage.tsx
+msgid "Waiting for disk space"
+msgstr ""
 
 #: src/components/ui/status.tsx
 msgid "Waiting for release"
@@ -27085,6 +27753,10 @@ msgstr "WebP"
 msgid "Webtoon"
 msgstr "Webtoon"
 
+#: src/components/pageconversion/FormatStep.tsx
+msgid "Webtoon strips taller than the height below are cut into several pages, in the gaps between panels where there are any. E-readers and KOReader handle these far better. Reading positions, bookmarks and notes move with their page."
+msgstr ""
+
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "Week of {label}: {time}"
 msgstr ""
@@ -27190,6 +27862,7 @@ msgid "When"
 msgstr "Wann"
 
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/RootFolderRulesModal.tsx
 msgid "When a series is added and matches all of these"
 msgstr ""
 
@@ -27206,6 +27879,10 @@ msgstr ""
 #, fuzzy
 msgid "When the screen has room for them"
 msgstr "Wenn der Bildschirm Platz dafür hat"
+
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "When to remove"
+msgstr ""
 
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -27255,6 +27932,10 @@ msgstr "Speicherort deiner Manga"
 #, fuzzy
 msgid "Where your taste has moved"
 msgstr "Wie sich dein Geschmack verändert hat"
+
+#: src/components/ScanlationGroupsModal.tsx
+msgid "Which group's upload Maki takes when a source has several. Applies to every series."
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #, fuzzy
@@ -27370,6 +28051,10 @@ msgstr "Wenn einer der beiden Claims gesetzt ist, ist dein Anbieter für Berecht
 #, fuzzy
 msgid "With every panel off, this section stays empty."
 msgstr "Wenn alle Bereiche deaktiviert sind, bleibt dieser Abschnitt leer."
+
+#: src/components/settings/TorrentLifecycleFields.tsx
+msgid "With no target, torrents stay in the client after import."
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy

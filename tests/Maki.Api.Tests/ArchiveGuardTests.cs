@@ -174,6 +174,19 @@ public sealed class ArchiveGuardTests : IDisposable
     }
 
     [Fact]
+    public async Task MissingCandidates_skips_archived_series()
+    {
+        var (active, archived) = Pair();
+        SeedChapter(active, 1);
+        SeedChapter(archived, 1);
+
+        using var db = _db.NewContext();
+        var service = new TorrentUpgradeService(db, null!, null!, null!, null!, TimeProvider.System, null!,
+            NullLogger<TorrentUpgradeService>.Instance);
+        Assert.Equal([active], await service.MissingCandidatesAsync(CancellationToken.None));
+    }
+
+    [Fact]
     public async Task ReadFileCleanup_skips_archived_series()
     {
         var (active, archived) = Pair(configure: s => s.ReadFileCleanup = ReadFileCleanup.On);
@@ -619,6 +632,16 @@ public sealed class ArchiveGuardTests : IDisposable
         notifications: new RecordingNotifications(),
         locales: new TestUserLocaleResolver(),
         logger: logger ?? NullLogger<SeriesController>.Instance);
+
+    [Fact]
+    public async Task ScanlationGroupsSeries_refuses_archived_series()
+    {
+        var (_, archived) = Pair();
+        var controller = new ScanlationGroupsController(_db.NewContext(), new FakeAppSettings(), null!, null!,
+            new TestLocalizer(), NullLogger<ScanlationGroupsController>.Instance);
+
+        AssertArchived(await controller.GetSeries(archived, default));
+    }
 
     [Fact]
     public async Task SeriesRefresh_refuses_archived_series()

@@ -194,6 +194,10 @@ export interface UpgradeSettings {
   autoApprove: boolean
   /** Bytes on the wire; the settings page shows MB. */
   autoApproveMaxBytes: number
+  /** Search torrents for wanted chapters no source lists, whatever the upgrade switches say. */
+  missingSearch: boolean
+  /** Fewest seeders a release needs before Maki grabs or approves it on its own (1..10000). */
+  torrentMinSeeders: number
 }
 
 /** A file's release tier and archive stats at one point in time, as carried on a queue/history row. */
@@ -629,7 +633,7 @@ export interface ScoutSourceProgress {
 
 /** The latest scan of one series asked for since the server started. */
 export interface SeriesScanStatus {
-  state: 'queued' | 'running' | 'done' | 'busy' | 'failed'
+  state: 'queued' | 'running' | 'done' | 'busy' | 'failed' | 'cancelled'
   queuedAtUtc: string
   finishedAtUtc: string | null
   chaptersChecked: number

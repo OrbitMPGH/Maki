@@ -11,13 +11,15 @@ public static class PageConversionOptions
 {
     private static readonly string[] Keys =
     [
-        SettingKeys.PageConversionFormat, SettingKeys.PageConversionStop, SettingKeys.PageConversionPngLossless
+        SettingKeys.PageConversionFormat, SettingKeys.PageConversionStop, SettingKeys.PageConversionPngLossless,
+        SettingKeys.PageConversionSplitHeight
     ];
 
-    public sealed record Stored(PageConversionFormat? Format, PageConversionStop Stop, bool PngLossless)
+    /// <param name="SplitHeight">Strips taller than this are cut into pages; null leaves them whole.</param>
+    public sealed record Stored(PageConversionFormat? Format, PageConversionStop Stop, bool PngLossless, int? SplitHeight = null)
     {
         public PageConversionSettings? Active => Format is { } format
-            ? new PageConversionSettings(format, Stop, PngLossless)
+            ? new PageConversionSettings(format, Stop, PngLossless, SplitHeight)
             : null;
     }
 
@@ -30,8 +32,18 @@ public static class PageConversionOptions
         return new Stored(
             PageConversionSettings.ParseFormat(values.GetValueOrDefault(SettingKeys.PageConversionFormat)),
             PageConversionSettings.ParseStop(values.GetValueOrDefault(SettingKeys.PageConversionStop)) ?? PageConversionSettings.DefaultStop,
-            string.Equals(values.GetValueOrDefault(SettingKeys.PageConversionPngLossless), "true", StringComparison.OrdinalIgnoreCase));
+            string.Equals(values.GetValueOrDefault(SettingKeys.PageConversionPngLossless), "true", StringComparison.OrdinalIgnoreCase),
+            ParseSplitHeight(values.GetValueOrDefault(SettingKeys.PageConversionSplitHeight)));
     }
+
+    /// <summary>The stored split height, or null for none; a value out of range reads as unset.</summary>
+    public static int? ParseSplitHeight(string? value) =>
+        int.TryParse(value, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var height) &&
+        IsSplitHeight(height)
+            ? height
+            : null;
+
+    public static bool IsSplitHeight(int height) => height is >= TallPageSplitter.MinHeight and <= TallPageSplitter.MaxHeight;
 
     /// <summary>The stored conversion limit, or null for the default; a value out of range reads as unset.</summary>
     public static int? ParseParallel(string? value) =>
@@ -53,7 +65,7 @@ public static class PageConversionOptions
             return null;
         }
 
-        return new PageConversionPlan(format, stored.Stop, stored.PngLossless, await LoadRulesAsync(db, ct));
+        return new PageConversionPlan(format, stored.Stop, stored.PngLossless, await LoadRulesAsync(db, ct), stored.SplitHeight);
     }
 
     /// <summary>The rules in order. One whose conditions no longer parse is left out rather than read as matching everything.</summary>

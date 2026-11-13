@@ -26,6 +26,14 @@ export const Default: Story = {
   },
 }
 
+/** A rule with alternatives reads as either one. */
+export const RuleWithAlternatives: Story = {
+  play: async ({ canvasElement }) => {
+    const dialog = await dialogIn(canvasElement)
+    await expect(await within(dialog).findByText('Content rating: Suggestive or Genre: Romance')).toBeVisible()
+  },
+}
+
 export const Empty: Story = {
   parameters: { msw: settingsMsw(http.get(api('/tags/rules'), () => HttpResponse.json([]))) },
   play: async ({ canvasElement }) => {
@@ -66,7 +74,7 @@ export const AddRule: Story = {
       expect(onSave).toHaveBeenCalledWith({
         tagId: 1,
         enabled: true,
-        conditions: [{ field: 'type', value: 'manhua' }],
+        groups: [[{ field: 'type', value: 'manhua' }]],
       }),
     )
   },

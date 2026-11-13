@@ -8,7 +8,7 @@ import { inboxPrefsQuery, type InboxPush } from './inbox'
 import { refreshNotes } from './notes'
 import type { SourceMatchProgress, SourceMatchState } from './hooks'
 import { createSeriesListRefresher } from './seriesListPatch'
-import type { ChapterDto, QueueHistoryDto, QueueItemDto, QueuePauseDto } from './types'
+import type { ChapterDto, QueueHistoryDto, QueueItemDto } from './types'
 
 let connection: HubConnection | null = null
 let connectionPromise: Promise<HubConnection> | null = null
@@ -362,8 +362,11 @@ export function useLiveEvents() {
         }
       })
 
-      listen(conn, 'queuePauseChanged', (pause: QueuePauseDto) => {
-        queryClient.setQueryData<QueuePauseDto>(['queue-pause'], pause)
+      // Refetched rather than taken from the push: the paused series' titles are filtered to what this
+      // viewer may see, and the push is one payload for every manager.
+      listen(conn, 'queuePauseChanged', () => {
+        void queryClient.invalidateQueries({ queryKey: ['queue-pause'] })
+        void queryClient.invalidateQueries({ queryKey: ['queue-eta'] })
       })
 
       // Rows moved to the front for a reader nearing the end of a series. No row changed state, so
@@ -386,6 +389,7 @@ export function useLiveEvents() {
       listen(conn, 'sourceMatchFinished', ({ seriesId, failedSources }: { seriesId: number; failedSources?: string[] }) => {
         queryClient.setQueryData(['sourcematch-failed', seriesId], failedSources ?? [])
         void queryClient.invalidateQueries({ queryKey: ['sourcemappings', seriesId] })
+        void queryClient.invalidateQueries({ queryKey: ['sourcenearmisses', seriesId] })
         void queryClient.invalidateQueries({ queryKey: ['chapters', seriesId] })
         // The scout-on-match run is registered before this push goes out; the refetch sees it running
         // and starts the source order's progress polling.

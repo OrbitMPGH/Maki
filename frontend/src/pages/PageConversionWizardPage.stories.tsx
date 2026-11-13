@@ -57,6 +57,30 @@ export const Format: Story = {
   },
 }
 
+export const FormatSplitTallPages: Story = {
+  play: async ({ canvas, userEvent }) => {
+    const split = await canvas.findByRole('checkbox', { name: /Split very tall pages/ })
+    await waitFor(() => expect(split).not.toBeChecked())
+    await expect(canvas.queryByRole('textbox', { name: /Split pages taller than/ })).toBeNull()
+
+    await userEvent.click(split)
+    const height = await canvas.findByRole('textbox', { name: /Split pages taller than/ })
+    await waitFor(() => expect(height).toHaveValue('5000 px'))
+    await expect(await canvas.findByText('Tower of the Long Night')).toBeVisible()
+    await expect(await canvas.findByText('Becomes 4 pages. Each dashed line is a cut.')).toBeVisible()
+
+    await userEvent.clear(height)
+    await userEvent.type(height, '13000')
+    await expect(await canvas.findByText('Becomes 2 pages. Each dashed line is a cut.')).toBeVisible()
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Next' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
+    await userEvent.click(await canvas.findByRole('button', { name: 'Next' }))
+    await expect(await canvas.findByText('Split above 13,000 px')).toBeVisible()
+  },
+}
+
 export const FormatOffThenCompare: Story = {
   parameters: { ...atStep(1), msw: withSettings({ format: null, stop: 'high', pngLossless: false }) },
   play: async ({ canvas, userEvent }) => {

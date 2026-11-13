@@ -166,5 +166,111 @@ public sealed class DownloadClientSettingsTests : IDisposable
         public Task AddFileAsync(TorrentClientSettings settings, byte[] torrent, string infoHash, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<IReadOnlyList<ClientTorrent>> ListAsync(TorrentClientSettings settings, CancellationToken ct = default) => throw new NotSupportedException();
         public Task<TorrentRemoval> RemoveAsync(TorrentClientSettings settings, string hash, bool deleteData, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<TorrentSeedLimits> GetSeedLimitsAsync(TorrentClientSettings settings, CancellationToken ct = default) => throw new NotSupportedException();
+    }
+
+    [Fact]
+    public async Task Adding_a_client_imports_its_own_seed_limits()
+    {
+        var settings = new SettingsService(_db.ScopeFactory());
+        var client = new FakeTorrentClient { SeedLimits = new TorrentSeedLimits(1.5, 4320) };
+
+        await Controller(settings, client).SetDownloadClient(Request(), default);
+
+        Assert.Equal(new TorrentSeedTargets(1.5, 4320), await TorrentSeedTargets.LoadAsync(settings));
+    }
+
+    [Fact]
+    public async Task Saving_the_same_client_again_keeps_the_targets_the_user_set()
+    {
+        _db.SetConfig((SettingKeys.DownloadClientKind, "qbittorrent"), (SettingKeys.DownloadClientUrl, "http://qbt:8080"),
+            (SettingKeys.DownloadClientSeedRatio, "3"));
+        var settings = new SettingsService(_db.ScopeFactory());
+        var client = new FakeTorrentClient { SeedLimits = new TorrentSeedLimits(1, null) };
+
+        await Controller(settings, client).SetDownloadClient(Request(url: "http://qbt:8080/"), default);
+
+        Assert.Equal(new TorrentSeedTargets(3, null), await TorrentSeedTargets.LoadAsync(settings));
+    }
+
+    [Fact]
+    public async Task A_new_client_that_cannot_be_asked_leaves_the_targets_empty_rather_than_the_old_clients()
+    {
+        _db.SetConfig((SettingKeys.DownloadClientKind, "qbittorrent"), (SettingKeys.DownloadClientUrl, "http://old:8080"),
+            (SettingKeys.DownloadClientSeedRatio, "3"), (SettingKeys.DownloadClientSeedMinutes, "60"));
+        var settings = new SettingsService(_db.ScopeFactory());
+        var client = new FakeTorrentClient { SeedLimits = null };
+
+        var result = await Controller(settings, client).SetDownloadClient(Request(url: "http://new:8080"), default);
+
+        Assert.IsType<OkObjectResult>(result);
+        Assert.True((await TorrentSeedTargets.LoadAsync(settings)).IsEmpty);
+    }
+
+    [Fact]
+    public async Task The_import_button_replaces_the_targets_and_says_when_the_client_has_none()
+    {
+        _db.SetConfig((SettingKeys.DownloadClientUrl, "http://qbt:8080"), (SettingKeys.DownloadClientSeedRatio, "3"));
+        var settings = new SettingsService(_db.ScopeFactory());
+
+        var result = await Controller(settings, new FakeTorrentClient()).ImportSeedLimits(default);
+
+        var body = Assert.IsType<SettingsController.SeedLimitImport>(Assert.IsType<OkObjectResult>(result).Value);
+        Assert.False(body.Found);
+        Assert.True((await TorrentSeedTargets.LoadAsync(settings)).IsEmpty);
+    }
+
+    [Fact]
+    public async Task The_import_button_answers_502_when_the_client_is_down_and_keeps_the_targets()
+    {
+        _db.SetConfig((SettingKeys.DownloadClientUrl, "http://qbt:8080"), (SettingKeys.DownloadClientSeedRatio, "3"));
+        var settings = new SettingsService(_db.ScopeFactory());
+
+        var result = await Controller(settings, new FakeTorrentClient { SeedLimits = null }).ImportSeedLimits(default);
+
+        Assert.Equal(StatusCodes.Status502BadGateway, Assert.IsType<ObjectResult>(result).StatusCode);
+        Assert.Equal(3, (await TorrentSeedTargets.LoadAsync(settings)).Ratio);
+    }
+
+    [Fact]
+    public async Task Lifecycle_settings_default_to_an_hour_with_no_targets_and_round_trip()
+    {
+        var settings = new SettingsService(_db.ScopeFactory());
+        var controller = Controller(settings);
+
+        var initial = Assert.IsType<SettingsController.TorrentLifecycleSettings>(
+            Assert.IsType<OkObjectResult>(await controller.GetTorrentLifecycle(default)).Value);
+        Assert.Equal(new SettingsController.TorrentLifecycleSettings(1, null, null), initial);
+
+        var saved = await controller.SetTorrentLifecycle(new SettingsController.TorrentLifecycleSettings(0, 2.5, 1440), default);
+
+        Assert.Equal(new SettingsController.TorrentLifecycleSettings(0, 2.5, 1440),
+            Assert.IsType<OkObjectResult>(saved).Value);
+        Assert.Equal("0", await settings.GetAsync(SettingKeys.DownloadClientStallHours));
+    }
+
+    [Theory]
+    [InlineData(-1, null, null)]
+    [InlineData(169, null, null)]
+    [InlineData(1, -0.5, null)]
+    [InlineData(1, 5000.0, null)]
+    [InlineData(1, null, -1)]
+    public async Task Lifecycle_settings_out_of_range_are_refused(int hours, double? ratio, int? minutes)
+    {
+        var settings = new SettingsService(_db.ScopeFactory());
+
+        var result = await Controller(settings).SetTorrentLifecycle(
+            new SettingsController.TorrentLifecycleSettings(hours, ratio, minutes), default);
+
+        Assert.IsNotType<OkObjectResult>(result);
+        Assert.Null(await settings.GetAsync(SettingKeys.DownloadClientStallHours));
+    }
+
+    [Fact]
+    public async Task The_after_seeding_removal_mode_is_accepted()
+    {
+        Assert.Equal(TorrentRemovalModes.AfterSeeding, TorrentRemovalModes.Parse("afterseeding"));
+        Assert.True(TorrentRemovalModes.Removes(TorrentRemovalModes.AfterSeeding));
+        Assert.False(TorrentRemovalModes.Removes(TorrentRemovalModes.Never));
     }
 }

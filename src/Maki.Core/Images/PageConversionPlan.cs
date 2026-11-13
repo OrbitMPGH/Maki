@@ -150,10 +150,10 @@ public abstract record PlanAction
     /// </summary>
     public const string UndoneName = "undone";
 
-    /// <param name="Reason">"override", "rule" or "alreadycompact".</param>
+    /// <param name="Reason">"override", "rule", "alreadycompact" or "converted".</param>
     public sealed record Skip(string Reason) : PlanAction;
 
-    /// <param name="Source">"override", "rule" or "default".</param>
+    /// <param name="Source">"override", "rule", "default", or "split" for a file only its tall pages are cut in.</param>
     public sealed record Convert(PageConversionSettings Settings, string Source) : PlanAction;
 
     /// <summary>What <c>ChapterFile.CheckedWith</c> records: "skip" or the settings name.</summary>
@@ -162,16 +162,23 @@ public abstract record PlanAction
 
 /// <summary>
 /// The one answer to "what happens to this file", for the library pass, the download path and the
-/// wizard. The series override wins, then a file already stored as WebP or AVIF is left alone, then
-/// the first matching rule, then the default stop. Hard skips that need the disk or other rows
-/// (hardlinked, PDF, a download in flight, read-file cleanup due) are the caller's.
+/// wizard. The series override wins, then a file already stored as WebP or AVIF is left alone (or only
+/// has its tall pages split), then the first matching rule, then the default stop. Hard skips that
+/// need the disk or other rows (hardlinked, PDF, a download in flight, read-file cleanup due) are the caller's.
 /// </summary>
+/// <param name="SplitHeight">Strips taller than this are cut into pages (<see cref="TallPageSplitter"/>); null leaves them whole.</param>
 public sealed record PageConversionPlan(
-    PageConversionFormat Format, PageConversionStop DefaultStop, bool PngLossless, IReadOnlyList<PlanRule> Rules)
+    PageConversionFormat Format, PageConversionStop DefaultStop, bool PngLossless, IReadOnlyList<PlanRule> Rules,
+    int? SplitHeight = null)
 {
     /// <summary>A plan with no rules: every file the series allows goes to these settings.</summary>
     public static PageConversionPlan For(PageConversionSettings settings) =>
-        new(settings.Format, settings.Stop, settings.PngLossless, []);
+        new(settings.Format, settings.Stop, settings.PngLossless, [], settings.SplitHeight);
+
+    /// <summary>For a file whose pages stay as they are and only its tall strips are cut.</summary>
+    public PageConversionSettings SplitOnlySettings => new(
+        Format, DefaultStop == PageConversionStop.Lossless ? PageConversionStop.High : DefaultStop, false, SplitHeight,
+        SplitOnly: true);
 
     public PlanAction Resolve(PlanCandidate c)
     {
@@ -187,7 +194,9 @@ public sealed record PageConversionPlan(
 
         if (IsAlreadyCompact(c.ImageFormat))
         {
-            return new PlanAction.Skip("alreadycompact");
+            return SplitHeight is null || MatchingRule(c) is { Skip: true }
+                ? new PlanAction.Skip("alreadycompact")
+                : new PlanAction.Convert(SplitOnlySettings, "split");
         }
 
         if (MatchingRule(c) is { } rule)
@@ -200,13 +209,29 @@ public sealed record PageConversionPlan(
         return new PlanAction.Convert(Settings(DefaultStop), "default");
     }
 
+    /// <summary>
+    /// For a file conversion already rewrote: its pages are never converted again, so the only thing left
+    /// to do is cut its tall strips, when the plan splits and neither the series nor a rule says to skip it.
+    /// </summary>
+    public PlanAction ResolveConverted(PlanCandidate c)
+    {
+        if (c.SeriesOverride == PageConversionOverride.Never)
+        {
+            return new PlanAction.Skip("override");
+        }
+
+        return SplitHeight is null || MatchingRule(c) is { Skip: true }
+            ? new PlanAction.Skip("converted")
+            : new PlanAction.Convert(SplitOnlySettings, "split");
+    }
+
     /// <summary>The first rule in order whose conditions match, whatever the override or format says.</summary>
     public PlanRule? MatchingRule(PlanCandidate c) =>
         Rules.OrderBy(r => r.Order).FirstOrDefault(r => r.Conditions.Matches(c));
 
     public PageConversionSettings Settings(PageConversionStop stop) => stop == PageConversionStop.Lossless
-        ? new PageConversionSettings(PageConversionFormat.Webp, PageConversionStop.Lossless, false)
-        : new PageConversionSettings(Format, stop, PngLossless);
+        ? new PageConversionSettings(PageConversionFormat.Webp, PageConversionStop.Lossless, false, SplitHeight)
+        : new PageConversionSettings(Format, stop, PngLossless, SplitHeight);
 
     public static bool IsAlreadyCompact(string? format) =>
         string.Equals(format, "webp", StringComparison.OrdinalIgnoreCase) ||

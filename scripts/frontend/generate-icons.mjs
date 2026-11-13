@@ -175,6 +175,7 @@ const ICONS = {
   IconPlayerPauseFilled: 'pause:fill',
   IconPlayerPlay: 'play',
   IconPlayerPlayFilled: 'play:fill',
+  IconPlayerStop: 'stop',
   IconPlayerTrackNext: 'skip-forward',
   IconPlugConnected: 'plugs-connected',
   IconPlus: 'plus',

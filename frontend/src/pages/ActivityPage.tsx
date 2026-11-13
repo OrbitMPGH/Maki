@@ -28,6 +28,8 @@ import {
   IconChevronRight,
   IconHistory,
   IconPackage,
+  IconPlayerPause,
+  IconPlayerPlay,
   IconRefresh,
   IconSearch,
   IconCircleArrowUp,
@@ -45,9 +47,12 @@ import {
   useGroupedQueueHistory,
   useQueue,
   useQueueHistory,
+  useQueueEta,
   useQueuePause,
+  usePauseSeriesQueue,
   useRemoveQueueItem,
   useReorderQueue,
+  useResumeSeriesQueue,
   useRetryQueueItem,
 } from '../api/hooks'
 import {
@@ -89,7 +94,15 @@ import { StatusDot } from '../components/ui/StatusDot'
 import { TagChip, TagChips } from '../components/ui/TagChip'
 import { readStored, writeStored } from '../components/ui/viewPrefs'
 import { isQueueActive, needsImportReview, queueStatusVisual, statusToken } from '../components/ui/status'
-import { isHeldByPause, queueErrorMessage, queueItemLabel, queueOriginOrUnknown } from '../api/queue'
+import {
+  isSeriesPaused,
+  queueErrorMessage,
+  queueEtaSpan,
+  queueEtaText,
+  queueHold,
+  queueItemLabel,
+  queueOriginOrUnknown,
+} from '../api/queue'
 import { useLabel } from '../i18n-context'
 import { useSourceLabel } from '../sourceLabels'
 import {
@@ -308,6 +321,11 @@ function QueueSeriesCell({ item, small }: { item: QueueItemDto; small?: boolean 
   )
 }
 
+/** Why a row waits on its root folder: the folder and what it has free. */
+function diskHoldLine(path: string, free: string): string {
+  return now`${path} has ${free} free, less than it keeps for downloads`
+}
+
 function LoadFailed({ query }: { query: { error: unknown; isRefetching: boolean; refetch: () => unknown } }) {
   const { t } = useLingui()
   return (
@@ -328,6 +346,8 @@ export default function ActivityPage() {
   const queueQuery = useQueue()
   const queue = queueQuery.data
   const queuePause = useQueuePause().data
+  const pauseSeries = usePauseSeriesQueue()
+  const resumeSeries = useResumeSeriesQueue()
   const retry = useRetryQueueItem()
   const remove = useRemoveQueueItem()
   const reorder = useReorderQueue()
@@ -626,7 +646,7 @@ export default function ActivityPage() {
     }
     const ids = queueItems.map((q) => q.id)
     ;[ids[index], ids[target]] = [ids[target], ids[index]]
-    reorder.mutate(ids)
+    reorder.mutate({ orderedIds: ids, movedId: queueItems[index].id })
   }
 
   const moveToTop = (index: number) => {
@@ -636,7 +656,31 @@ export default function ActivityPage() {
     const ids = queueItems.map((q) => q.id)
     const [id] = ids.splice(index, 1)
     ids.unshift(id)
-    reorder.mutate(ids)
+    reorder.mutate({ orderedIds: ids, movedId: id })
+  }
+
+  // Only while the queue tab shows rows, since it polls.
+  const eta = useQueueEta(tab === 'queue' && queueItems.length > 0).data
+  const seriesEta = useMemo(() => new Map((eta?.series ?? []).map((s) => [s.seriesId, s])), [eta])
+  // The time left for a series sits on its first row only, so a long run of one series says it once.
+  const firstRowOfSeries = useMemo(() => {
+    const seen = new Set<number>()
+    const first = new Set<number>()
+    for (const q of queueItems) {
+      if (seen.has(q.seriesId)) continue
+      seen.add(q.seriesId)
+      first.add(q.id)
+    }
+    return first
+  }, [queueItems])
+  const toggleSeriesPause = (seriesId: number, paused: boolean) => {
+    const onError = () =>
+      notifications.show({
+        message: paused ? now`Couldn't resume the downloads` : now`Couldn't pause the downloads`,
+        color: 'var(--danger)',
+      })
+    if (paused) resumeSeries.mutate(seriesId, { onError })
+    else pauseSeries.mutate({ seriesId }, { onError })
   }
 
   const stats = useMemo(
@@ -696,6 +740,15 @@ export default function ActivityPage() {
               { label: t`Queued`, value: stats.queued },
               { label: t`Needs review`, value: stats.review, tone: 'warn' },
               { label: t`Failed`, value: stats.failed, tone: 'danger' },
+              ...(eta?.queueSeconds
+                ? [
+                    {
+                      label: t`Time left`,
+                      value: queueEtaSpan(eta.queueSeconds),
+                      tip: t`A rough guess from how fast each source has been downloading lately. Paused and held downloads are left out.`,
+                    },
+                  ]
+                : []),
             ]}
           />
         </FigureStripReveal>
@@ -741,8 +794,16 @@ export default function ActivityPage() {
               <Table.Tbody>
                 {queueItems.map((q, index) => {
                   const visual = queueStatusVisual(q.status)
-                  const held = (q.status === 'Queued' || q.status === 'RateLimited') && isHeldByPause(queuePause, q.sourceName)
+                  const hold =
+                    q.status === 'Queued' || q.status === 'RateLimited' ? queueHold(queuePause, q) : null
+                  const held = hold !== null
+                  const diskHold =
+                    hold === 'disk' ? queuePause?.diskHolds?.find((h) => h.rootFolderId === q.rootFolderId) : undefined
+                  const diskHoldText = diskHold ? diskHoldLine(diskHold.path, formatBytes(diskHold.freeBytes)) : null
                   const reorderable = q.status === 'Queued' || q.status === 'RateLimited'
+                  const scraperRow = q.releaseTitle === null && q.sourceName !== 'torrent'
+                  const seriesPaused = isSeriesPaused(queuePause, q.seriesId)
+                  const etaForSeries = firstRowOfSeries.has(q.id) ? seriesEta.get(q.seriesId) : undefined
                   const { retryCount, nextAttempt } = q
                   const nextAttemptTime = nextAttempt ? formatTime(nextAttempt) : null
                   const retryInfo =
@@ -758,7 +819,7 @@ export default function ActivityPage() {
                         : null
                   const failure = queueErrorMessage(q, renderLabel)
                   const tooltipLabel =
-                    [failure, retryInfo].filter(Boolean).join(' - ') || renderLabel(visual.label)
+                    diskHoldText ?? ([failure, retryInfo].filter(Boolean).join(' - ') || renderLabel(visual.label))
                   const isUpgradeOrigin = queueOriginOrUnknown(q.origin) === 'upgrade'
                   const rejectionText = q.upgrade ? upgradeRejectionText(renderLabel, q.upgrade) : null
                   const transitionText = q.upgrade ? upgradeTransitionLabel(renderLabel, sourceLabel, q.upgrade) : null
@@ -766,6 +827,11 @@ export default function ActivityPage() {
                     <Table.Tr key={q.id}>
                       <Table.Td>
                         <QueueSeriesCell item={q} />
+                        {etaForSeries?.seconds != null && etaForSeries.seconds > 0 && (
+                          <Text size="xs" c="var(--ink-3)" className="series-cell-indent">
+                            {queueEtaText(etaForSeries.seconds)}
+                          </Text>
+                        )}
                       </Table.Td>
                       <Table.Td data-priority="low">
                         {q.status === 'Resolving' ? (
@@ -817,12 +883,21 @@ export default function ActivityPage() {
                         )}
                       </Table.Td>
                       <Table.Td>
-                        <Tooltip label={tooltipLabel} withArrow disabled={!failure && !retryInfo || !!rejectionText}>
+                        <Tooltip
+                          label={tooltipLabel}
+                          withArrow
+                          disabled={(!failure && !retryInfo && !diskHoldText) || !!rejectionText}
+                        >
                           <StatusDot
                             tone={rejectionText || held ? 'warn' : statusToken(visual.color)}
                             live={isQueueActive(q.status)}
                           >
-                            {rejectionText ?? (held ? t`Paused` : renderLabel(visual.label))}
+                            {rejectionText ??
+                              (hold === 'paused'
+                                ? t`Paused`
+                                : hold === 'disk'
+                                  ? t`Waiting for disk space`
+                                  : renderLabel(visual.label))}
                           </StatusDot>
                         </Tooltip>
                         {(q.status === 'Failed' || q.status === 'Waiting') && failure && !rejectionText && (
@@ -869,6 +944,23 @@ export default function ActivityPage() {
                                 </ActionIcon>
                               </Tooltip>
                             </>
+                          )}
+                          {canManageQueue && scraperRow && (reorderable || q.status === 'Resolving') && (
+                            <Tooltip label={seriesPaused ? t`Resume this series` : t`Pause this series`} withArrow>
+                              <ActionIcon
+                                variant="subtle"
+                                color="var(--neutral)"
+                                disabled={pauseSeries.isPending || resumeSeries.isPending}
+                                onClick={() => toggleSeriesPause(q.seriesId, seriesPaused)}
+                                aria-label={
+                                  seriesPaused
+                                    ? t`Resume downloads for this series`
+                                    : t`Pause downloads for this series`
+                                }
+                              >
+                                {seriesPaused ? <IconPlayerPlay size={16} /> : <IconPlayerPause size={16} />}
+                              </ActionIcon>
+                            </Tooltip>
                           )}
                           {needsImportReview(q.status) && canManageQueue && (
                             <Button size="compact-sm" variant="light" color="var(--warn)" onClick={() => setReviewing(q.id)}>

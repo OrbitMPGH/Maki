@@ -140,6 +140,31 @@ public record RestoreFilterRequest(int Id, string Name, LibraryFilterSpec Spec, 
 
 public record AutoTagConditionDto(string Field, string Value);
 
-public record AutoTagRuleDto(int Id, int TagId, bool Enabled, IReadOnlyList<AutoTagConditionDto> Conditions);
+/// <param name="Conditions">The first group alone, for a client that predates groups.</param>
+/// <param name="Groups">Alternatives: the rule matches when every condition of any one group holds.</param>
+public record AutoTagRuleDto(
+    int Id, int TagId, bool Enabled, IReadOnlyList<AutoTagConditionDto> Conditions,
+    IReadOnlyList<IReadOnlyList<AutoTagConditionDto>> Groups);
 
-public record SaveAutoTagRuleRequest(int TagId, bool Enabled, List<AutoTagConditionDto>? Conditions);
+/// <param name="Conditions">One group, read only when <paramref name="Groups"/> is absent.</param>
+public record SaveAutoTagRuleRequest(
+    int TagId, bool Enabled, List<AutoTagConditionDto>? Conditions,
+    List<List<AutoTagConditionDto>>? Groups = null);
+
+/// <summary>Converts rule condition groups between the wire and <c>Maki.Core.Tags.ConditionGroups</c>.</summary>
+public static class RuleConditionDtos
+{
+    /// <summary>The submitted groups, or the flat list as one group when no groups were sent.</summary>
+    public static IEnumerable<IEnumerable<Maki.Core.Tags.AutoTagCondition>?>? Groups(
+        List<List<AutoTagConditionDto>>? groups, List<AutoTagConditionDto>? conditions) =>
+        groups is not null
+            ? groups.Select(g => g?.Select(Condition))
+            : conditions is null ? null : [conditions.Select(Condition)];
+
+    public static List<IReadOnlyList<AutoTagConditionDto>> From(
+        IEnumerable<IReadOnlyList<Maki.Core.Tags.AutoTagCondition>> groups) =>
+        groups.Select(g => (IReadOnlyList<AutoTagConditionDto>)g.Select(c => new AutoTagConditionDto(c.Field, c.Value)).ToList())
+            .ToList();
+
+    private static Maki.Core.Tags.AutoTagCondition Condition(AutoTagConditionDto c) => new(c.Field, c.Value);
+}

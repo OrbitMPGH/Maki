@@ -283,7 +283,7 @@ public class ReaderService(
     /// names. When those markers don't name this chapter the whole archive is served rather than
     /// a guessed range — showing extra pages is recoverable, silently skipping them is not.
     /// </summary>
-    private static (int Start, int Count) SliceBounds(
+    internal static (int Start, int Count) SliceBounds(
         ReaderArchiveCache.ArchiveInfo info, decimal? chapterNumber, bool sharesFile)
     {
         if (!sharesFile || chapterNumber is not { } number || info.Boundaries.Count == 0)
@@ -864,7 +864,7 @@ public class ReaderService(
                 c.Id,
                 c.SeriesId,
                 c.Number,
-                MeasuredPages = c.ChapterFile!.PageCount,
+                MeasuredPages = c.ChapterFile!.SplitPageCount ?? c.ChapterFile.PageCount,
                 SharesFile = db.Chapters.Any(o => o.ChapterFileId == c.ChapterFileId && o.Id != c.Id),
             })
             .ToListAsync(ct);

@@ -48,13 +48,16 @@ export interface AutoTagRule {
   id: number
   tagId: number
   enabled: boolean
+  /** The first group alone, kept for older clients. */
   conditions: AutoTagCondition[]
+  /** Alternatives: the rule matches when every condition of any one group holds. */
+  groups: AutoTagCondition[][]
 }
 
 export interface SaveAutoTagRule {
   tagId: number
   enabled: boolean
-  conditions: AutoTagCondition[]
+  groups: AutoTagCondition[][]
 }
 
 const KEY = ['auto-tag-rules']

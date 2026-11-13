@@ -201,6 +201,7 @@ import { UndoConversionModal } from '../components/series/UndoConversionModal'
 import { useSeriesConversion } from '../api/pageConversion'
 import { RestoreSeriesDialog } from '../components/series/RestoreSeriesDialog'
 import { SeriesActionsMenu } from '../components/series/SeriesActionsMenu'
+import { SeriesPausedButton, SeriesPauseMenuItem } from '../components/series/SeriesQueuePause'
 import { EditMetadataModal, MetadataLock } from '../components/series/EditMetadataModal'
 import { MetadataHistoryModal } from '../components/series/MetadataHistoryModal'
 import { UpgradeNowResultModal } from '../components/series/UpgradeNowResultModal'
@@ -243,6 +244,7 @@ import { useSeriesNotificationOptions } from '../components/ui/seriesNotificatio
 import { scrollBehavior } from '../lib/scrollBehavior'
 import { offersPermanentDelete, useRecycleBinDays } from '../api/recycleBin'
 import { PermanentDeleteFallback } from '../components/PermanentDeleteFallback'
+import { SeriesScanlationGroupsModal } from '../components/ScanlationGroupsModal'
 import { pwaSupported } from '../lib/pwa/serviceWorker'
 import {
   removeChaptersOffline,
@@ -687,6 +689,8 @@ function SeriesDetailBody() {
         color: 'var(--warn)',
         message: staticT`Another upgrade scan was already running, so this one did not run. Try again once it finishes.`,
       })
+    } else if (scanStatus.state === 'cancelled') {
+      notifications.show({ color: 'var(--info)', message: staticT`The upgrade scan was stopped.` })
     } else {
       notifications.show({
         color: 'var(--danger)',
@@ -873,6 +877,10 @@ function SeriesDetailBody() {
   const canManageSources = can('ManageSources')
   const { data: sourceMappings } = useSourceMappings(seriesId, canManageSources)
   const enabledMappings = (sourceMappings ?? []).filter((m) => m.enabled).length
+  const [groupsOpen, setGroupsOpen] = useState(false)
+  const hasGroupSource = (sourceMappings ?? []).some(
+    (m) => m.enabled && sources?.some((s) => s.name === m.sourceName && s.scanlationGroups),
+  )
   /**
    * Read-aware filters, kept separate from `chapterFilters` because they need the progress map.
    * `unread` and `read` only consider downloaded chapters, plus read ones whose file was removed: a
@@ -2274,6 +2282,7 @@ function SeriesDetailBody() {
                       )}
                     </Button>
                 )}
+                <SeriesPausedButton seriesId={seriesId} />
                 {canDownload ? (
                     <>
                       {/* Unticking chapters used to be the only way to download a series a bit at a time,
@@ -2342,6 +2351,7 @@ function SeriesDetailBody() {
                                 </Menu.Item>
                             ))}
                             <Menu.Item onClick={() => setNextCountOpen(true)}><Trans>Next...</Trans></Menu.Item>
+                            <SeriesPauseMenuItem seriesId={seriesId} />
                           </Menu.Dropdown>
                         </Menu>
                         )}
@@ -2524,6 +2534,7 @@ function SeriesDetailBody() {
                       setDeleteSeriesFiles(false)
                       setDeleteSeriesModalOpen(true)
                     }}
+                    onScanlationGroups={hasGroupSource && !archived ? () => setGroupsOpen(true) : undefined}
                     offlineSaved={canSaveOffline ? offlineSaved : undefined}
                     onSaveUnreadOffline={() =>
                         void saveUnreadOffline(seriesId).then(
@@ -3868,6 +3879,18 @@ function SeriesDetailBody() {
         >
           <Trans>This removes "{seriesTitle}" and its chapters from Maki.</Trans>
         </RemoveSeriesDialog>
+
+        {hasGroupSource && (
+          <SeriesScanlationGroupsModal
+            seriesId={seriesId}
+            opened={groupsOpen}
+            onClose={() => setGroupsOpen(false)}
+            onSaved={() => {
+              notify.ok(staticT`Saved. Refreshing chapters to pick up the change.`)
+              refresh.mutate(seriesId)
+            }}
+          />
+        )}
 
         {conversionHistory && (
           <UndoConversionModal

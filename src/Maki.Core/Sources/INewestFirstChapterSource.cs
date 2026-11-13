@@ -17,7 +17,12 @@ public interface INewestFirstChapterSource
 }
 
 /// <summary>A chapter listing, and whether it is the source's whole list or only its newest pages.</summary>
-public sealed record ChapterListing(IReadOnlyList<SourceChapter> Chapters, bool Complete);
+/// <param name="Withheld">
+/// Chapters the source lists only through blocked scanlation groups (<see cref="ScanlationGroupChoice.Withheld"/>).
+/// Left out of <paramref name="Chapters"/>, but still on the site, so not delisted.
+/// </param>
+public sealed record ChapterListing(
+    IReadOnlyList<SourceChapter> Chapters, bool Complete, IReadOnlyList<SourceChapter>? Withheld = null);
 
 /// <summary>
 /// What a mapping already links. A listed chapter is known by its source id, or by number, volume and

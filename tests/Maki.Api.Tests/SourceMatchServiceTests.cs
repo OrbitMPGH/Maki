@@ -1384,4 +1384,138 @@ public class SourceMatchServiceTests : IDisposable
 
         Assert.Equal(1, spanish.SearchCalls);
     }
+
+    private const string NearTitle = "Hajime no Ippo";
+    private const string NearHit = "Hajime Fighter";
+
+    private List<SourceNearMiss> NearMissesOf(int seriesId)
+    {
+        using var context = _db.NewContext();
+        return [.. context.SourceNearMisses.Where(n => n.SeriesId == seriesId).OrderBy(n => n.Id)];
+    }
+
+    [Fact]
+    public void The_near_miss_fixtures_sit_between_the_floor_and_the_threshold()
+    {
+        var score = Maki.Core.Scrobbling.ScrobbleMatching.TitleSimilarity(NearTitle, NearHit);
+        Assert.InRange(score, SourceMatchService.NearMissFloor, 0.5999);
+        Assert.True(Maki.Core.Scrobbling.ScrobbleMatching.TitleSimilarity(NearTitle, "Berserk") < SourceMatchService.NearMissFloor);
+    }
+
+    [Fact]
+    public async Task A_result_just_under_the_threshold_is_kept_as_a_suggestion_and_not_linked()
+    {
+        var seriesId = _db.SeedSeries(NearTitle);
+        var source = new FakeSource
+        {
+            Name = "fake",
+            OnSearch = _ =>
+            [
+                Hit("far", "Berserk"),
+                new SourceSeriesResult("near", NearHit, "https://x.test/near", CoverUrl: "https://x.test/c.jpg",
+                    Description: "A boxer rises.", Author: "Morikawa", Language: "en")
+            ]
+        };
+
+        var mapped = await RunAutoMatch(seriesId, source);
+
+        Assert.Empty(mapped);
+        Assert.Empty(MappingsOf(seriesId));
+        var near = Assert.Single(NearMissesOf(seriesId));
+        Assert.Equal(("fake", "near", NearHit, "https://x.test/c.jpg"), (near.SourceName, near.SourceSeriesId, near.Title, near.CoverUrl));
+        Assert.Equal("A boxer rises.", near.Description);
+        Assert.Null(near.DismissedAt);
+    }
+
+    [Fact]
+    public async Task A_result_with_nothing_in_common_leaves_no_suggestion()
+    {
+        var seriesId = _db.SeedSeries(NearTitle);
+        var source = new FakeSource { Name = "fake", OnSearch = _ => [Hit("far", "Berserk")] };
+
+        await RunAutoMatch(seriesId, source);
+
+        Assert.Empty(NearMissesOf(seriesId));
+    }
+
+    [Fact]
+    public async Task A_dismissed_suggestion_is_not_offered_again_but_a_different_one_is()
+    {
+        var seriesId = _db.SeedSeries(NearTitle);
+        Func<string, IReadOnlyList<SourceSeriesResult>> search = _ => [Hit("near", NearHit)];
+        var source = new FakeSource { Name = "fake", OnSearch = q => search(q) };
+        await RunAutoMatch(seriesId, source);
+        using (var context = _db.NewContext())
+        {
+            (await context.SourceNearMisses.SingleAsync()).DismissedAt = DateTime.UtcNow;
+            await context.SaveChangesAsync();
+        }
+
+        await RunAutoMatch(seriesId, source);
+        var afterSame = Assert.Single(NearMissesOf(seriesId));
+        Assert.NotNull(afterSame.DismissedAt);
+
+        search = _ => [Hit("near", NearHit), Hit("other", "First Ippo")];
+        await RunAutoMatch(seriesId, source);
+
+        var all = NearMissesOf(seriesId);
+        Assert.Equal(2, all.Count);
+        Assert.Equal("other", Assert.Single(all, n => n.DismissedAt is null).SourceSeriesId);
+    }
+
+    [Fact]
+    public async Task A_rematch_replaces_a_stale_suggestion_and_clears_it_when_the_source_now_matches()
+    {
+        var seriesId = _db.SeedSeries(NearTitle);
+        Func<string, IReadOnlyList<SourceSeriesResult>> search = _ => [Hit("near", NearHit)];
+        var source = new FakeSource { Name = "fake", OnSearch = q => search(q) };
+        await RunAutoMatch(seriesId, source);
+        Assert.Single(NearMissesOf(seriesId));
+
+        search = _ => [Hit("gone", "Berserk")];
+        await RunAutoMatch(seriesId, source);
+        Assert.Empty(NearMissesOf(seriesId));
+
+        search = _ => [Hit("near", NearHit)];
+        await RunAutoMatch(seriesId, source);
+        Assert.Single(NearMissesOf(seriesId));
+
+        search = _ => [Hit("hit", NearTitle)];
+        var mapped = await RunAutoMatch(seriesId, source);
+        Assert.Equal(["fake"], mapped);
+        Assert.Empty(NearMissesOf(seriesId));
+    }
+
+    [Fact]
+    public async Task A_dismissal_outlives_the_source_being_matched()
+    {
+        var seriesId = _db.SeedSeries(NearTitle);
+        Func<string, IReadOnlyList<SourceSeriesResult>> search = _ => [Hit("near", NearHit)];
+        var source = new FakeSource { Name = "fake", OnSearch = q => search(q) };
+        await RunAutoMatch(seriesId, source);
+        using (var context = _db.NewContext())
+        {
+            (await context.SourceNearMisses.SingleAsync()).DismissedAt = DateTime.UtcNow;
+            await context.SaveChangesAsync();
+        }
+
+        search = _ => [Hit("hit", NearTitle)];
+        Assert.Equal(["fake"], await RunAutoMatch(seriesId, source));
+
+        Assert.NotNull(Assert.Single(NearMissesOf(seriesId)).DismissedAt);
+    }
+
+    [Fact]
+    public async Task A_failed_search_keeps_the_suggestion_it_already_had()
+    {
+        var seriesId = _db.SeedSeries(NearTitle);
+        Func<string, IReadOnlyList<SourceSeriesResult>> search = _ => [Hit("near", NearHit)];
+        var source = new FakeSource { Name = "fake", OnSearch = q => search(q) };
+        await RunAutoMatch(seriesId, source);
+
+        search = _ => throw new HttpRequestException("down");
+        await RunAutoMatch(seriesId, source);
+
+        Assert.Single(NearMissesOf(seriesId));
+    }
 }

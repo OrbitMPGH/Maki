@@ -1034,6 +1034,11 @@ msgstr "Le modèle d'adresse des chapitres ne reconstruit pas les liens affiché
 msgid "error.customSource.test.sampleChapterNotListed"
 msgstr "L'adresse du chapitre d'exemple ne figure pas dans la liste des chapitres."
 
+#. English: The sample chapter is listed as locked. Pick a free chapter as the sample.
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleChapterLocked"
+msgstr ""
+
 #. English: The first page did not come back as an image.
 #: src/Maki.Api/Services/CustomSourceTester.cs
 #, fuzzy
@@ -1519,6 +1524,10 @@ msgstr "L'une des règles n'est pas valide. Vérifiez ses conditions et ce qu'el
 msgid "error.pageConversion.stopInvalid"
 msgstr "Choisissez Le plus petit, Compact, Équilibré, Élevé ou Sans perte"
 
+#. English: Choose a split height from {min} to {max} pixels
+msgid "error.pageConversion.splitHeightInvalid"
+msgstr ""
+
 #. {max} is the server's core count.
 #. English: Pages converted at once must be between 1 and {max}
 #: src/Maki.Api/Controllers/PageConversionController.cs
@@ -1925,6 +1934,12 @@ msgstr "L'emplacement d'origine est en dehors du dossier racine ou derrière un 
 msgid "error.release.grabFailed"
 msgstr "Impossible d'envoyer la version à qBittorrent. Les détails sont dans le journal du serveur."
 
+#. A torrent grab refused because the series' root folder has less free space than its threshold.
+#. English: The library folder for this series is low on free space, so new downloads into it are on hold. Free some space or lower the threshold in Settings → Library.
+#: src/Maki.Api/Services/DownloadDiskHold.cs
+msgid "error.release.diskLow"
+msgstr ""
+
 #. English: This release has no download link
 #: src/Maki.Api/Services/ReleaseService.cs
 #, fuzzy
@@ -2103,6 +2118,12 @@ msgstr "Utilisateur inconnu"
 msgid "error.requests.unknownKind"
 msgstr "Type de demande inconnu"
 
+#. A root folder's free-space threshold for holding downloads was below zero.
+#. English: The free space to keep must be zero or more
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.minFreeNegative"
+msgstr ""
+
 #. English: Root folder already exists
 #: src/Maki.Api/Controllers/RootFolderController.cs
 #, fuzzy
@@ -2141,6 +2162,16 @@ msgstr "Maki ne peut pas lire ce dossier : {path}"
 #, fuzzy
 msgid "error.rootFolder.pathRequired"
 msgstr "Le chemin est requis"
+
+#. English: A rule needs at least one condition in every group, at most 10 groups and 20 conditions, each with a known field and a valid value
+#: src/Maki.Api/Controllers/RootFolderRulesController.cs
+msgid "error.rootFolderRules.invalidConditions"
+msgstr ""
+
+#. English: That root folder no longer exists
+#: src/Maki.Api/Controllers/RootFolderRulesController.cs
+msgid "error.rootFolderRules.unknownRootFolder"
+msgstr ""
 
 #. English: Set the AniList client id/secret in Settings first
 #: src/Maki.Api/Controllers/ScrobbleController.cs
@@ -3334,6 +3365,24 @@ msgstr "Le délai de téléchargement doit être 0 (aucune limite) ou compris en
 msgid "error.settings.bulkHoldRange"
 msgstr "Le seuil de mise en attente doit être compris entre 0 (désactivé) et {max} chapitres"
 
+#. The stall limit for torrents, in hours. 0 turns stall handling off.
+#. English: The stall limit must be between 0 (off) and {max} hours
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.stallHoursRange"
+msgstr ""
+
+#. The seed ratio a torrent must reach before Maki removes it from the download client.
+#. English: The seed ratio must be between 0 and {max}
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.seedRatioRange"
+msgstr ""
+
+#. The seeding time a torrent must reach before Maki removes it from the download client, in minutes.
+#. English: The seeding time must be between 0 and {max} minutes
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.seedMinutesRange"
+msgstr ""
+
 #. {mode} is the value that was sent and is never translated.
 #. English: Unknown torrent removal mode: {mode}
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -3407,6 +3456,11 @@ msgstr "Le nombre de recherches de volumes par exécution doit être compris ent
 #, fuzzy
 msgid "error.settings.upgradesProposalExpiryDaysRange"
 msgstr "L'expiration des propositions doit être comprise entre {min} et {max} jours"
+
+#. English: Minimum seeders must be between {min} and {max}
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.upgradesTorrentMinSeedersRange"
+msgstr ""
 
 #. English: Backups to keep must be between {min} and {max}
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -3665,11 +3719,21 @@ msgstr "Identifiant de série"
 msgid "naming.token.anilistid.description"
 msgstr "Identifiant AniList ; vide si aucune correspondance"
 
+#. English: Release date as 2024-05-17; blank when the source gives none
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.chapterreleasedate.description"
+msgstr ""
+
 #. English: Scanlation group, e.g. Group Name. Blank when the file has none
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
 msgid "naming.token.chaptergroup.description"
 msgstr "Groupe de scanlation, par exemple Group Name. Vide lorsque le fichier n'en a pas"
+
+#. English: The source the file was downloaded from, e.g. MangaDex. Blank for an imported file
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.chaptersource.description"
+msgstr ""
 
 #. English: BCP-47 language tag, e.g. en
 #: src/Maki.Core/Naming/NamingTokens.cs
@@ -3719,6 +3783,11 @@ msgstr "Identifiant Kitsu ; vide si aucune correspondance"
 msgid "naming.token.malid.description"
 msgstr "Identifiant MyAnimeList ; vide si aucune correspondance"
 
+#. English: Official, Scanlator, Aggregator or Volume; blank when unknown
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.qualitytier.description"
+msgstr ""
+
 #. English: MangaBaka id; blank when unmatched
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
@@ -3737,6 +3806,11 @@ msgstr "UUID MangaDex ; vide si aucune correspondance"
 msgid "naming.token.mangaupdatesid.description"
 msgstr "Identifiant MangaUpdates ; vide si aucune correspondance"
 
+#. English: The story author, or the artist when no author is known. Several are joined with a comma
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriesauthor.description"
+msgstr ""
+
 #. English: Title with punctuation removed: letters, digits and spaces only
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
@@ -3749,11 +3823,21 @@ msgstr "Titre sans ponctuation : uniquement des lettres, chiffres et espaces"
 msgid "naming.token.seriesoriginaltitle.description"
 msgstr "Titre dans la langue d'origine ; vide si le fournisseur n'en indique aucun"
 
+#. English: The original publisher, the first one listed; blank when unknown
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriespublisher.description"
+msgstr ""
+
 #. English: The sort title, e.g. leading article moved to the end
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
 msgid "naming.token.seriessorttitle.description"
 msgstr "Titre de tri, par exemple avec l'article initial déplacé à la fin"
+
+#. English: Ongoing, Completed, Hiatus or Cancelled; blank when unknown
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriesstatus.description"
+msgstr ""
 
 #. English: The series title as Maki has it
 #: src/Maki.Core/Naming/NamingTokens.cs
@@ -5097,11 +5181,19 @@ msgstr "Le torrent est dans le client de téléchargement, mais un autre téléc
 msgid "error.download.torrentRemoved"
 msgstr "Le torrent n'est plus dans qBittorrent"
 
-#. The download client was downloading this torrent but it made no progress for an hour, usually because
-#. nobody is seeding it. Maki takes a torrent it added out of the client and leaves the release out of later searches.
-#. English: The torrent made no progress for an hour
+#. The download client was downloading this torrent but it made no progress for as long as the stall limit in the
+#. download client settings allows (an hour unless changed). Maki takes a torrent it added out of the client, leaves
+#. the release out of later searches and looks for another one.
+#. English: The torrent made no progress within the stall limit
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
 msgid "error.download.torrentStalled"
+msgstr ""
+
+#. The download client was downloading this torrent but no seed or peer was connected to it for as long as the
+#. stall limit allows. Handled like a torrent that made no progress.
+#. English: No seeds or peers connected to the torrent within the stall limit
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "error.download.torrentNoPeers"
 msgstr ""
 
 #. The download client has held this torrent in an error state for half an hour. The client's own message follows.
@@ -5788,6 +5880,11 @@ msgstr "Le contenu du fichier a changé, ou il n'a pas été entièrement analys
 #, fuzzy
 msgid "error.health.operationActive"
 msgstr "Une autre opération sur ce fichier est en cours."
+
+#. English: This job is already running.
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.jobRunning"
+msgstr ""
 
 #. English: Downloads or imports for this series are in progress.
 #: src/Maki.Api/Services/HealthOperationService.cs

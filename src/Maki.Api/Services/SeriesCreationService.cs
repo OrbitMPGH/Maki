@@ -102,7 +102,8 @@ public class SeriesCreationService(
     IMessageCatalog catalog,
     ILocalizer localizer,
     ILogger<SeriesCreationService> logger,
-    AutoTagRuleService? autoTags = null)
+    AutoTagRuleService? autoTags = null,
+    RootFolderRoutingService? routing = null)
 {
     /// <param name="deferSourceMatching">
     /// Hand auto-matching to <see cref="SourceMatchWorkerHostedService"/> instead of awaiting it.
@@ -120,9 +121,13 @@ public class SeriesCreationService(
     /// "decide from the content rating" — see <see cref="IncognitoRatingRules"/>, which is also what
     /// an API client that never heard of the field gets.
     /// </param>
+    /// <param name="rootFolderId">
+    /// The folder the caller chose, or null to let the root folder rules pick one from among
+    /// <paramref name="usableRootFolderIds"/> (null meaning every folder).
+    /// </param>
     public async Task<SeriesCreationResult> CreateAsync(
         string metadataProviderId,
-        int rootFolderId,
+        int? rootFolderId,
         bool monitored,
         string? monitorNewItems,
         CancellationToken ct,
@@ -133,7 +138,8 @@ public class SeriesCreationService(
         string? addedFrom = null,
         Guid? clientMutationId = null,
         SeriesRequest? originatingRequest = null,
-        int? upgradeProfileId = null)
+        int? upgradeProfileId = null,
+        IReadOnlyCollection<int>? usableRootFolderIds = null)
     {
         // The profile joins the hash only when set, so a receipt written before the field existed still matches its retry.
         var payloadHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(
@@ -175,10 +181,14 @@ public class SeriesCreationService(
             return replay;
         }
 
-        var rootFolder = await db.RootFolders.FindAsync([rootFolderId], ct);
-        if (rootFolder is null)
+        RootFolder? rootFolder = null;
+        if (rootFolderId is int chosenFolderId)
         {
-            return SeriesCreationResult.Failed(SeriesCreationError.RootFolderNotFound);
+            rootFolder = await db.RootFolders.FindAsync([chosenFolderId], ct);
+            if (rootFolder is null)
+            {
+                return SeriesCreationResult.Failed(SeriesCreationError.RootFolderNotFound);
+            }
         }
 
         var provider = metadataProviders.First();
@@ -227,6 +237,12 @@ public class SeriesCreationService(
         series.Incognito = Enum.TryParse<IncognitoMode>(incognito, true, out var explicitMode) && Enum.IsDefined(explicitMode)
             ? explicitMode
             : await IncognitoRatingRules.ResolveAsync(appSettings, series.ContentRating, ct);
+        rootFolder ??= await RoutedRootFolderAsync(series, addedFrom, attributedUserId, usableRootFolderIds, ct);
+        if (rootFolder is null)
+        {
+            return SeriesCreationResult.Failed(SeriesCreationError.RootFolderNotFound);
+        }
+
         series.RootFolderId = rootFolder.Id;
         series.UpgradeProfileId = upgradeProfileId;
         // Two series in one folder rescan each other's files and delete them with their own, and a
@@ -385,6 +401,19 @@ public class SeriesCreationService(
         }
 
         return new SeriesCreationResult(series, null, warnings);
+    }
+
+    /// <summary>The folder the root folder rules pick, else the first usable one; null when none is usable.</summary>
+    private async Task<RootFolder?> RoutedRootFolderAsync(
+        Series series, string? addedFrom, int? addedBy, IReadOnlyCollection<int>? usable, CancellationToken ct)
+    {
+        int? folderId = routing is not null
+            ? (await routing.RouteAsync(RootFolderRoutingService.SubjectFor(series, addedFrom, addedBy), usable, ct))?.RootFolderId
+            : (await db.RootFolders.AsNoTracking().OrderBy(f => f.Id).Select(f => f.Id).ToListAsync(ct))
+                .Where(id => usable is null || usable.Contains(id))
+                .Select(id => (int?)id)
+                .FirstOrDefault();
+        return folderId is int id ? await db.RootFolders.FindAsync([id], ct) : null;
     }
 
     /// <summary>

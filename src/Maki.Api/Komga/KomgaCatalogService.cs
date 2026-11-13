@@ -719,7 +719,8 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
             .Where(c => seriesIds.Contains(c.SeriesId) && c.ChapterFileId != null)
             .Select(c => new ChapterRow(
                 c.Id, c.SeriesId, c.Number, c.NumberRaw, c.Volume, c.Title, c.IsOneShot, c.Language, c.ReleaseDate,
-                c.ChapterFile!.RelativePath, c.ChapterFile.Size, c.ChapterFile.DateAdded, c.ChapterFile.PageCount,
+                c.ChapterFile!.RelativePath, c.ChapterFile.Size, c.ChapterFile.DateAdded,
+                c.ChapterFile.SplitPageCount ?? c.ChapterFile.PageCount,
                 db.Chapters.Any(o => o.ChapterFileId == c.ChapterFileId && o.Id != c.Id)))
             .ToListAsync(ct);
 

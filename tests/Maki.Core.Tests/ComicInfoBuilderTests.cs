@@ -1,5 +1,6 @@
 ﻿using Maki.Core.ComicInfo;
 using Maki.Core.Entities;
+using Maki.Core.Quality;
 
 namespace Maki.Core.Tests;
 
@@ -207,5 +208,83 @@ public class ComicInfoBuilderTests
         Assert.Equal("Dark fantasy with \U0001F5E1 and a lone  surrogate.", doc.SelectSingleNode("/ComicInfo/Summary")!.InnerText);
         Assert.Equal("MIURA Kentaro", doc.SelectSingleNode("/ComicInfo/Writer")!.InnerText);
         Assert.Equal("Bad", doc.SelectSingleNode("/ComicInfo/Title")!.InnerText);
+    }
+
+    [Fact]
+    public void Pages_mark_the_cover_and_every_spread()
+    {
+        var info = ComicInfoBuilder.Build(
+            TestSeries(), new Chapter { Number = 1, Language = "en" }, pageCount: 4, widePages: [false, false, true]);
+
+        Assert.Equal(["0", "1", "2", "3"], info.Pages!.Select(p => p.Image));
+        Assert.Equal(["FrontCover", null, null, null], info.Pages!.Select(p => p.Type));
+        Assert.Equal([null, null, "true", null], info.Pages!.Select(p => p.DoublePage));
+    }
+
+    [Fact]
+    public void No_pages_writes_no_pages_block()
+    {
+        var info = ComicInfoBuilder.Build(TestSeries(), new Chapter { Number = 1, Language = "en" }, pageCount: 0);
+
+        Assert.Null(info.Pages);
+        Assert.DoesNotContain("<Pages", ComicInfoBuilder.Serialize(info));
+    }
+
+    [Fact]
+    public void The_group_is_the_translator_and_provenance_fills_the_notes()
+    {
+        var info = ComicInfoBuilder.Build(
+            TestSeries(), new Chapter { Number = 1, Language = "en" }, pageCount: 1, group: " Band of the Hawk ",
+            provenance: new ComicInfoProvenance("MangaDex", "https://mangadex.org/chapter/abc", QualityTier.Scanlator));
+
+        Assert.Equal("Band of the Hawk", info.Translator);
+        Assert.Equal("Band of the Hawk", info.ScanInformation);
+        Assert.Equal("Source: MangaDex; URL: https://mangadex.org/chapter/abc; Quality: Scanlator", info.Notes);
+    }
+
+    [Fact]
+    public void Notes_leave_out_what_is_unknown()
+    {
+        Assert.Null(ComicInfoPages.NotesFor(null));
+        Assert.Null(ComicInfoPages.NotesFor(new ComicInfoProvenance(null, " ", QualityTier.Unknown)));
+        Assert.Equal("Quality: Volume", ComicInfoPages.NotesFor(new ComicInfoProvenance(null, null, QualityTier.Volume)));
+    }
+
+    [Fact]
+    public void Elements_are_written_in_schema_order_with_unmodelled_ones_in_their_place()
+    {
+        var info = ComicInfoBuilder.Build(
+            TestSeries(), new Chapter { Number = 1, Title = "The Black Swordsman", Language = "en", ReleaseDate = new DateTime(1990, 1, 1) },
+            pageCount: 2, group: "Group", userTags: ["Shelf"],
+            provenance: new ComicInfoProvenance("MangaDex", null, QualityTier.Official), widePages: [false, true]);
+        var foreign = new System.Xml.XmlDocument();
+        var characters = foreign.CreateElement("Characters");
+        characters.InnerText = "Guts";
+        var community = foreign.CreateElement("CommunityRating");
+        community.InnerText = "4.5";
+        info.Unmodelled = [community, characters];
+
+        var root = System.Xml.Linq.XDocument.Parse(ComicInfoBuilder.Serialize(info)).Root!;
+        var names = root.Elements().Select(e => e.Name.LocalName).ToList();
+
+        var positions = names.Select(n => Array.IndexOf(ComicInfoBuilder.SchemaOrder, n)).ToList();
+        Assert.DoesNotContain(-1, positions);
+        Assert.Equal(positions.Order(), positions);
+        Assert.True(names.IndexOf("Characters") < names.IndexOf("ScanInformation"));
+        Assert.True(names.IndexOf("Pages") < names.IndexOf("CommunityRating"));
+    }
+
+    [Fact]
+    public void A_written_document_reads_back_with_its_pages()
+    {
+        var info = ComicInfoBuilder.Build(
+            TestSeries(), new Chapter { Number = 1, Language = "en" }, pageCount: 3, widePages: [false, true, false]);
+
+        var xml = ComicInfoBuilder.Serialize(info);
+        var read = ComicInfoBuilder.Deserialize(new StringReader(xml))!;
+
+        Assert.Equal(3, read.Pages!.Count);
+        Assert.Equal("true", read.Pages[1].DoublePage);
+        Assert.Equal(xml, ComicInfoBuilder.Serialize(read));
     }
 }

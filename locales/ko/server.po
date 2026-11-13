@@ -1034,6 +1034,11 @@ msgstr "챕터 URL 템플릿으로 챕터 목록의 링크를 다시 만들 수 
 msgid "error.customSource.test.sampleChapterNotListed"
 msgstr "샘플 챕터 URL이 챕터 목록에 없습니다."
 
+#. English: The sample chapter is listed as locked. Pick a free chapter as the sample.
+#: src/Maki.Api/Services/CustomSourceTester.cs
+msgid "error.customSource.test.sampleChapterLocked"
+msgstr ""
+
 #. English: The first page did not come back as an image.
 #: src/Maki.Api/Services/CustomSourceTester.cs
 #, fuzzy
@@ -1519,6 +1524,10 @@ msgstr "규칙 중 하나가 올바르지 않습니다. 조건과 동작을 확�
 msgid "error.pageConversion.stopInvalid"
 msgstr "Smallest, Compact, Balanced, High 또는 Lossless 중에서 고르세요."
 
+#. English: Choose a split height from {min} to {max} pixels
+msgid "error.pageConversion.splitHeightInvalid"
+msgstr ""
+
 #. {max} is the server's core count.
 #. English: Pages converted at once must be between 1 and {max}
 #: src/Maki.Api/Controllers/PageConversionController.cs
@@ -1925,6 +1934,12 @@ msgstr "원래 위치가 루트 폴더 밖에 있거나 링크 뒤에 있어서 
 msgid "error.release.grabFailed"
 msgstr "릴리스를 qBittorrent에 보내지 못했습니다. 자세한 내용은 서버 로그에 있습니다."
 
+#. A torrent grab refused because the series' root folder has less free space than its threshold.
+#. English: The library folder for this series is low on free space, so new downloads into it are on hold. Free some space or lower the threshold in Settings → Library.
+#: src/Maki.Api/Services/DownloadDiskHold.cs
+msgid "error.release.diskLow"
+msgstr ""
+
 #. English: This release has no download link
 #: src/Maki.Api/Services/ReleaseService.cs
 #, fuzzy
@@ -2103,6 +2118,12 @@ msgstr "알 수 없는 사용자입니다"
 msgid "error.requests.unknownKind"
 msgstr "알 수 없는 요청 종류"
 
+#. A root folder's free-space threshold for holding downloads was below zero.
+#. English: The free space to keep must be zero or more
+#: src/Maki.Api/Controllers/RootFolderController.cs
+msgid "error.rootFolder.minFreeNegative"
+msgstr ""
+
 #. English: Root folder already exists
 #: src/Maki.Api/Controllers/RootFolderController.cs
 #, fuzzy
@@ -2141,6 +2162,16 @@ msgstr "Maki가 이 폴더를 읽을 수 없습니다: {path}"
 #, fuzzy
 msgid "error.rootFolder.pathRequired"
 msgstr "경로가 필요합니다"
+
+#. English: A rule needs at least one condition in every group, at most 10 groups and 20 conditions, each with a known field and a valid value
+#: src/Maki.Api/Controllers/RootFolderRulesController.cs
+msgid "error.rootFolderRules.invalidConditions"
+msgstr ""
+
+#. English: That root folder no longer exists
+#: src/Maki.Api/Controllers/RootFolderRulesController.cs
+msgid "error.rootFolderRules.unknownRootFolder"
+msgstr ""
 
 #. English: Set the AniList client id/secret in Settings first
 #: src/Maki.Api/Controllers/ScrobbleController.cs
@@ -3334,6 +3365,24 @@ msgstr "다운로드 시간 제한은 0(제한 없음)이거나 {min}분에서 {
 msgid "error.settings.bulkHoldRange"
 msgstr "일괄 보류는 0(끄기)에서 {max}챕터 사이여야 합니다"
 
+#. The stall limit for torrents, in hours. 0 turns stall handling off.
+#. English: The stall limit must be between 0 (off) and {max} hours
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.stallHoursRange"
+msgstr ""
+
+#. The seed ratio a torrent must reach before Maki removes it from the download client.
+#. English: The seed ratio must be between 0 and {max}
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.seedRatioRange"
+msgstr ""
+
+#. The seeding time a torrent must reach before Maki removes it from the download client, in minutes.
+#. English: The seeding time must be between 0 and {max} minutes
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.seedMinutesRange"
+msgstr ""
+
 #. {mode} is the value that was sent and is never translated.
 #. English: Unknown torrent removal mode: {mode}
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -3407,6 +3456,11 @@ msgstr "실행당 권 검색 횟수는 {min}~{max} 사이여야 합니다"
 #, fuzzy
 msgid "error.settings.upgradesProposalExpiryDaysRange"
 msgstr "제안 만료는 {min}~{max}일 사이여야 합니다"
+
+#. English: Minimum seeders must be between {min} and {max}
+#: src/Maki.Api/Controllers/SettingsController.cs
+msgid "error.settings.upgradesTorrentMinSeedersRange"
+msgstr ""
 
 #. English: Backups to keep must be between {min} and {max}
 #: src/Maki.Api/Controllers/SettingsController.cs
@@ -3665,11 +3719,21 @@ msgstr "시리즈 ID"
 msgid "naming.token.anilistid.description"
 msgstr "AniList ID. 연결된 항목이 없으면 비어 있음"
 
+#. English: Release date as 2024-05-17; blank when the source gives none
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.chapterreleasedate.description"
+msgstr ""
+
 #. English: Scanlation group, e.g. Group Name. Blank when the file has none
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
 msgid "naming.token.chaptergroup.description"
 msgstr "스캔레이션 그룹입니다. 예: Group Name. 파일에 그룹이 없으면 비어 있습니다"
+
+#. English: The source the file was downloaded from, e.g. MangaDex. Blank for an imported file
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.chaptersource.description"
+msgstr ""
 
 #. English: BCP-47 language tag, e.g. en
 #: src/Maki.Core/Naming/NamingTokens.cs
@@ -3719,6 +3783,11 @@ msgstr "Kitsu ID. 일치 항목이 없으면 비워 둠"
 msgid "naming.token.malid.description"
 msgstr "MyAnimeList ID. 일치 항목이 없으면 비워 둠"
 
+#. English: Official, Scanlator, Aggregator or Volume; blank when unknown
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.qualitytier.description"
+msgstr ""
+
 #. English: MangaBaka id; blank when unmatched
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
@@ -3737,6 +3806,11 @@ msgstr "MangaDex UUID. 일치 항목이 없으면 비워 둠"
 msgid "naming.token.mangaupdatesid.description"
 msgstr "MangaUpdates ID. 일치 항목이 없으면 비워 둠"
 
+#. English: The story author, or the artist when no author is known. Several are joined with a comma
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriesauthor.description"
+msgstr ""
+
 #. English: Title with punctuation removed: letters, digits and spaces only
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
@@ -3749,11 +3823,21 @@ msgstr "문장 부호를 제거한 제목: 문자, 숫자, 공백만 포함"
 msgid "naming.token.seriesoriginaltitle.description"
 msgstr "원어 제목. 제공자가 없으면 비워 둠"
 
+#. English: The original publisher, the first one listed; blank when unknown
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriespublisher.description"
+msgstr ""
+
 #. English: The sort title, e.g. leading article moved to the end
 #: src/Maki.Core/Naming/NamingTokens.cs
 #, fuzzy
 msgid "naming.token.seriessorttitle.description"
 msgstr "정렬용 제목. 예를 들어 앞의 관사를 뒤로 이동"
+
+#. English: Ongoing, Completed, Hiatus or Cancelled; blank when unknown
+#: src/Maki.Core/Naming/NamingTokens.cs
+msgid "naming.token.seriesstatus.description"
+msgstr ""
 
 #. English: The series title as Maki has it
 #: src/Maki.Core/Naming/NamingTokens.cs
@@ -5097,11 +5181,19 @@ msgstr "토렌트는 다운로드 클라이언트에 있지만, {series}의 다�
 msgid "error.download.torrentRemoved"
 msgstr "토렌트가 더 이상 qBittorrent에 없습니다"
 
-#. The download client was downloading this torrent but it made no progress for an hour, usually because
-#. nobody is seeding it. Maki takes a torrent it added out of the client and leaves the release out of later searches.
-#. English: The torrent made no progress for an hour
+#. The download client was downloading this torrent but it made no progress for as long as the stall limit in the
+#. download client settings allows (an hour unless changed). Maki takes a torrent it added out of the client, leaves
+#. the release out of later searches and looks for another one.
+#. English: The torrent made no progress within the stall limit
 #: src/Maki.Api/Jobs/CompletedDownloadJob.cs
 msgid "error.download.torrentStalled"
+msgstr ""
+
+#. The download client was downloading this torrent but no seed or peer was connected to it for as long as the
+#. stall limit allows. Handled like a torrent that made no progress.
+#. English: No seeds or peers connected to the torrent within the stall limit
+#: src/Maki.Api/Jobs/CompletedDownloadJob.cs
+msgid "error.download.torrentNoPeers"
 msgstr ""
 
 #. The download client has held this torrent in an error state for half an hour. The client's own message follows.
@@ -5788,6 +5880,11 @@ msgstr "파일 내용이 바뀌었거나 전체 스캔되지 않았습니다. �
 #, fuzzy
 msgid "error.health.operationActive"
 msgstr "이 파일에 대한 다른 작업이 진행 중입니다."
+
+#. English: This job is already running.
+#: src/Maki.Api/Controllers/HealthController.cs
+msgid "error.health.jobRunning"
+msgstr ""
 
 #. English: Downloads or imports for this series are in progress.
 #: src/Maki.Api/Services/HealthOperationService.cs

@@ -183,6 +183,8 @@ export const settingsHandlers: HttpHandler[] = [
   http.get(api('/settings/sources/languages'), () => HttpResponse.json(d.sourceLanguages)),
   putEcho('/settings/sources/languages'),
   http.get(api('/search/sources'), () => HttpResponse.json(d.sources)),
+  http.get(api('/scanlationgroups'), () => HttpResponse.json(d.scanlationGroups)),
+  putEcho('/scanlationgroups'),
   http.get(api('/custom-sources'), () => HttpResponse.json([])),
   http.get(api('/custom-sources/repositories'), () => HttpResponse.json(d.customRepositories)),
   http.post(api('/custom-sources/repositories'), () => HttpResponse.json(d.customRepositories[0])),
@@ -206,6 +208,13 @@ export const settingsHandlers: HttpHandler[] = [
   http.get(api('/settings/downloadclient'), () => HttpResponse.json(d.downloadClient)),
   putEcho('/settings/downloadclient'),
   http.post(api('/settings/downloadclient/test'), success),
+  http.get(api('/settings/downloadclient/lifecycle'), () => HttpResponse.json(d.torrentLifecycle)),
+  putEcho('/settings/downloadclient/lifecycle'),
+  http.post(api('/settings/downloadclient/lifecycle/import'), () =>
+    HttpResponse.json({ seedRatio: 2, seedMinutes: 4320, found: true })),
+  http.get(api('/upgrades/proposals'), ({ request }) =>
+    HttpResponse.json(new URL(request.url).searchParams.get('status') === 'dismissed' ? d.declinedReleases : [])),
+  http.post(api('/upgrades/proposals/:id/unblock'), ok),
   http.get(api('/settings/indexer'), ({ request }) => {
     const backend = new URL(request.url).searchParams.get('backend')
     return HttpResponse.json(backend === 'jackett' ? d.indexerJackett : d.indexerProwlarr)
@@ -284,6 +293,16 @@ export const settingsHandlers: HttpHandler[] = [
     HttpResponse.json({ id: Number(params.id), ...((await request.json()) as object) }),
   ),
   http.delete(api('/tags/rules/:id'), ok),
+  http.get(api('/rootfolder/rules'), () => HttpResponse.json(d.rootFolderRules)),
+  http.post(api('/rootfolder/rules'), async ({ request }) =>
+    HttpResponse.json({ id: 9, position: 2, ...((await request.json()) as object) }),
+  ),
+  http.put(api('/rootfolder/rules/order'), () => HttpResponse.json(d.rootFolderRules)),
+  http.put(api('/rootfolder/rules/:id'), async ({ request, params }) =>
+    HttpResponse.json({ id: Number(params.id), position: 0, ...((await request.json()) as object) }),
+  ),
+  http.delete(api('/rootfolder/rules/:id'), ok),
+  http.get(api('/rootfolder/rules/test'), () => HttpResponse.json({ rootFolderId: 2, ruleId: 1 })),
   http.get(api('/dropfolder/settings'), () =>
     HttpResponse.json({ enabled: false, path: null, intervalMinutes: 5, placement: 'copy' } satisfies DropFolderSettings),
   ),

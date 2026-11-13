@@ -3,6 +3,7 @@ using System.Text;
 using Maki.Api.Localization;
 using Maki.Core.Entities;
 using Maki.Core.Reading;
+using Maki.Core.Sources;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -74,7 +75,8 @@ public class SeriesRenameService(
     NamingService naming,
     KavitaScanService kavitaScans,
     ILocalizer localizer,
-    ILogger<SeriesRenameService> logger)
+    ILogger<SeriesRenameService> logger,
+    SourceRegistry? sources = null)
 {
     /// <summary>Suffix for the two-step move a case-only rename needs on Windows.</summary>
     private const string TempSuffix = ".maki-rename";
@@ -166,12 +168,14 @@ public class SeriesRenameService(
 
             var through = span[^1];
             var existingExtension = Path.GetExtension(file.RelativePath);
+            var source = sources?.Find(file.SourceName)?.DisplayName;
             var to = Path.Combine(folderTo, ComicFile.IsPdf(existingExtension)
                 ? await naming.BuildChapterFileNameAsync(
                     series, chapter, through, CoversWholeVolumes(ordered, span), existingExtension, ct,
-                    group: file.Group)
+                    group: file.Group, source: source, tier: file.Tier)
                 : await naming.BuildChapterFileNameAsync(
-                    series, chapter, through, CoversWholeVolumes(ordered, span), ct, group: file.Group));
+                    series, chapter, through, CoversWholeVolumes(ordered, span), ct, group: file.Group,
+                    source: source, tier: file.Tier));
 
             if (targets.TryGetValue(to, out var claimedBy))
             {

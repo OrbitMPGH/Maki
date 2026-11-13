@@ -1,3 +1,6 @@
+import type { GlobalScanlationGroups } from '../../../src/api/scanlationGroups'
+import type { TorrentLifecycleSettings } from '../../../src/api/torrentLifecycle'
+import type { TorrentProposalDto } from '../../../src/api/upgrades'
 import type {
   BackupInfo,
   BackupRetentionSettings,
@@ -48,7 +51,8 @@ import type { InboxPrefs } from '../../../src/api/inbox'
 import type { ReaderSettings } from '../../../src/api/reader'
 import type { ReadingProfile } from '../../../src/api/readingProfiles'
 import type { RecycleBin } from '../../../src/api/recycleBin'
-import type { AutoTagRule } from '../../../src/api/autoTagRules'
+import type { AutoTagCondition, AutoTagRule } from '../../../src/api/autoTagRules'
+import type { RootFolderRule } from '../../../src/api/rootFolderRules'
 import type { PageConversionStatus } from '../../../src/api/pageConversion'
 import type { UpscaleCatalogEntry, UpscalingState } from '../../../src/api/upscaling'
 import type { SuwayomiConnection } from '../../../src/api/suwayomi'
@@ -132,18 +136,38 @@ export const tags = [
   { id: 3, label: 'Re-read', color: 'orange', seriesCount: 2 },
 ] satisfies TagDto[]
 
+const weekendRead = [
+  { field: 'type', value: 'manhwa' },
+  { field: 'addedVia', value: 'importList' },
+] satisfies AutoTagCondition[]
+
 export const autoTagRules = [
+  { id: 1, tagId: 2, enabled: true, conditions: weekendRead, groups: [weekendRead] },
+  {
+    id: 2,
+    tagId: 3,
+    enabled: false,
+    conditions: [{ field: 'contentRating', value: 'suggestive' }],
+    groups: [[{ field: 'contentRating', value: 'suggestive' }], [{ field: 'genre', value: 'Romance' }]],
+  },
+] satisfies AutoTagRule[]
+
+export const rootFolderRules = [
   {
     id: 1,
-    tagId: 2,
+    rootFolderId: 2,
+    position: 0,
     enabled: true,
-    conditions: [
-      { field: 'type', value: 'manhwa' },
-      { field: 'addedVia', value: 'importList' },
-    ],
+    groups: [[{ field: 'type', value: 'manhwa' }], [{ field: 'type', value: 'manhua' }]],
   },
-  { id: 2, tagId: 3, enabled: false, conditions: [{ field: 'contentRating', value: 'suggestive' }] },
-] satisfies AutoTagRule[]
+  {
+    id: 2,
+    rootFolderId: 3,
+    position: 1,
+    enabled: false,
+    groups: [[{ field: 'contentRating', value: 'pornographic' }]],
+  },
+] satisfies RootFolderRule[]
 
 const sourceBase = {
   needsFlareSolverr: false,
@@ -160,6 +184,7 @@ export const sources: SourceInfo[] = [
     displayName: 'MangaDex',
     baseUrl: 'https://mangadex.example',
     supportsLanguageFilter: true,
+    scanlationGroups: true,
     supportedLanguages: ['en', 'es', 'pt-br', 'fr', 'ja'],
     kind: 'aggregator',
     content: ['manga', 'manhwa', 'manhua'],
@@ -511,6 +536,8 @@ export const upgradeSettings: UpgradeSettings = {
   proposalExpiryDays: 30,
   autoApprove: false,
   autoApproveMaxBytes: 12884901888,
+  missingSearch: true,
+  torrentMinSeeders: 1,
 }
 
 export const qualityFormats: QualityFormatDto[] = [
@@ -1226,3 +1253,41 @@ export const recycleBin: RecycleBin = {
 export const pushPrefs = {
   types: ['newChapterAvailable', 'downloadFailed', 'requestApproved'],
 }
+
+export const scanlationGroups = {
+  preferred: ['Tidewater Scans'],
+  blocked: [],
+  seen: [
+    { name: 'Tidewater Scans', chapters: 412 },
+    { name: 'Night Owl TL', chapters: 188 },
+  ],
+} satisfies GlobalScanlationGroups
+export const torrentLifecycle: TorrentLifecycleSettings = { stallHours: 1, seedRatio: 2, seedMinutes: 4320 }
+
+const declinedRelease = (id: number, seriesId: number, seriesTitle: string, title: string, resolvedAtUtc: string): TorrentProposalDto => ({
+  id,
+  seriesId,
+  seriesTitle,
+  title,
+  indexer: 'Nyaa',
+  sizeBytes: 0,
+  span: { volumeStart: null, volumeEnd: null, chapters: [], wholeSeries: false },
+  reasons: [],
+  upgradeCount: 0,
+  alreadyMetCount: 0,
+  skippedCount: 0,
+  missingCount: 0,
+  unknownCount: 0,
+  score: 0,
+  tier: 'volume',
+  status: 'dismissed',
+  createdAtUtc: resolvedAtUtc,
+  resolvedAtUtc,
+  queueItemId: null,
+  seriesCoverUrl: null,
+})
+
+export const declinedReleases: TorrentProposalDto[] = [
+  declinedRelease(41, 1, 'Lanterns Over Kasumi', 'Lanterns Over Kasumi v01-10 (2023) (Digital) (Paperlamp)', '2026-11-10T08:12:00Z'),
+  declinedRelease(42, 2, 'The Ninth Kitchen', 'The Ninth Kitchen v14 (2024) (Digital) (Saltcellar)', '2026-11-08T21:40:00Z'),
+]

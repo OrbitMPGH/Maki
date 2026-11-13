@@ -303,10 +303,15 @@ internal sealed class FakeTorrentClient : ITorrentClient
     /// <summary>Thrown by <see cref="ListAsync"/> when set, as a client that is down would.</summary>
     public Exception? ListFailure { get; set; }
 
-    public Task<IReadOnlyList<ClientTorrent>> ListAsync(TorrentClientSettings settings, CancellationToken ct = default) =>
-        ListFailure is { } failure
+    public int ListCalls { get; private set; }
+
+    public Task<IReadOnlyList<ClientTorrent>> ListAsync(TorrentClientSettings settings, CancellationToken ct = default)
+    {
+        ListCalls++;
+        return ListFailure is { } failure
             ? Task.FromException<IReadOnlyList<ClientTorrent>>(failure)
             : Task.FromResult<IReadOnlyList<ClientTorrent>>(Torrents.ToList());
+    }
 
     public List<(string Hash, bool DeleteData)> Removed { get; } = [];
 
@@ -337,6 +342,14 @@ internal sealed class FakeTorrentClient : ITorrentClient
         Removed.Add((hash, deleteData));
         return Task.FromResult(TorrentRemoval.Removed);
     }
+
+    /// <summary>What <see cref="GetSeedLimitsAsync"/> answers; null throws as an unreachable client would.</summary>
+    public TorrentSeedLimits? SeedLimits { get; set; } = TorrentSeedLimits.None;
+
+    public Task<TorrentSeedLimits> GetSeedLimitsAsync(TorrentClientSettings settings, CancellationToken ct = default) =>
+        SeedLimits is { } limits
+            ? Task.FromResult(limits)
+            : Task.FromException<TorrentSeedLimits>(new TorrentClientException(TorrentClientFailure.Unreachable, "down"));
 
     public TorrentClientRegistry Registry() => new([this]);
 }

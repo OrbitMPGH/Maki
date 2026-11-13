@@ -28,9 +28,9 @@ import { TableSkeleton } from './ui/TableSkeleton'
 const INDEXER_SETTINGS = '/settings?tab=downloads&s=indexer'
 const WIDE = 'min(1180px, calc(100vw - 3rem))'
 
-function seedHealth(seeders: number | null): 'ok' | 'warn' | 'danger' {
+function seedHealth(seeders: number | null, belowMinimum: boolean): 'ok' | 'warn' | 'danger' {
   if (!seeders) return 'danger'
-  return seeders < 5 ? 'warn' : 'ok'
+  return belowMinimum || seeders < 5 ? 'warn' : 'ok'
 }
 
 function listText(parts: string[]): string {
@@ -64,6 +64,7 @@ export function ReleaseSearchModal({
   const indexerCount = new Set(releases?.map((r) => r.indexer)).size
   const tried = data?.tried ?? []
   const triedList = listText(tried)
+  const minSeeders = data?.minSeeders ?? 1
 
   // Start each open with an automatic search; mirror whatever query was actually used
   // (the backend may have loosened it) into the input so the user can tweak it.
@@ -195,6 +196,7 @@ export function ReleaseSearchModal({
                       const spanText = parsed ? releaseSpanText(parsed.span) : null
                       const verdictKey = parsed ? spanVerdictKey(parsed) : null
                       const relatedTitle = parsed?.rivalTitle
+                      const belowMinimum = seeders != null && seeders < minSeeders
                       return (
                         <Table.Tr key={r.guid}>
                           <Table.Td>
@@ -224,10 +226,34 @@ export function ReleaseSearchModal({
                             </Text>
                           </Table.Td>
                           <Table.Td>
-                            <Text size="sm" component="span" className="release-search-seeds tnum" data-health={seedHealth(seeders)}>
-                              <IconArrowUp size={16} aria-hidden />
-                              {seeders ?? '?'}
-                            </Text>
+                            <Group gap={6} wrap="nowrap">
+                              <Text
+                                size="sm"
+                                component="span"
+                                className="release-search-seeds tnum"
+                                data-health={seedHealth(seeders, belowMinimum)}
+                              >
+                                <IconArrowUp size={16} aria-hidden />
+                                {seeders ?? '?'}
+                              </Text>
+                              {belowMinimum && (
+                                <Tooltip
+                                  withArrow
+                                  multiline
+                                  maw={260}
+                                  label={
+                                    <Trans>
+                                      Fewer than {minSeeders} seeders, so Maki won't grab it on its own. You can still
+                                      grab it here.
+                                    </Trans>
+                                  }
+                                >
+                                  <Badge size="sm" variant="light" color="var(--warn)" tabIndex={0}>
+                                    <Trans>Under minimum</Trans>
+                                  </Badge>
+                                </Tooltip>
+                              )}
+                            </Group>
                           </Table.Td>
                           <Table.Td>
                             {parsed && verdictKey && (

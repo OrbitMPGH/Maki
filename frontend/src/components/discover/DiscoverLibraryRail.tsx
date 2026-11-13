@@ -14,6 +14,7 @@ import {
 } from '../../api/hooks'
 import { ApiError, archivedExistsSeriesId } from '../../api/client'
 import { useUpgradeProfiles } from '../../api/upgrades'
+import { useRootFolderRoute } from '../../api/rootFolderRules'
 import { useCreateSeriesRequest, useSeriesRequests, type SeriesRequest } from '../../api/requests'
 import { useApplyAnimeResumeAfterAdd } from '../../api/animeResume'
 import { useAuth } from '../../auth/AuthProvider'
@@ -89,6 +90,12 @@ export function DiscoverLibraryRail({
   const { data: myRequests } = useSeriesRequests('all', !canAdd)
 
   const [rootFolderId, setRootFolderId] = useState<string | null>(null)
+  /** Set once the reader picks a folder, so a route that answers late can't overwrite the choice. */
+  const [rootFolderPinned, setRootFolderPinned] = useState(false)
+  const { data: route } = useRootFolderRoute(
+    canAdd && inLibrarySeriesId == null ? item.providerId : null,
+    addedFrom ?? 'library',
+  )
   const [upgradeProfileId, setUpgradeProfileId] = useState<string | null>(null)
   /**
    * Null until the reader picks a mode, and then nothing is sent, so the server applies the
@@ -121,6 +128,14 @@ export function DiscoverLibraryRail({
       setRootFolderId(String(rootFolders[0].id))
     }
   }, [rootFolders, rootFolderId])
+
+  // A root folder rule that matches this series preselects its folder; the reader can still change it.
+  const routedFolderId = route?.rootFolderId
+  useEffect(() => {
+    if (!rootFolderPinned && routedFolderId != null && rootFolders?.some((f) => f.id === routedFolderId)) {
+      setRootFolderId(String(routedFolderId))
+    }
+  }, [routedFolderId, rootFolders, rootFolderPinned])
 
   // Auto-fill from Settings → Library ("Incognito by content rating"). The rating only arrives with
   // the detail response, so this can't be an initial state value.
@@ -397,6 +412,7 @@ export function DiscoverLibraryRail({
                       })}
                       onPick={(value) => {
                         setRootFolderId(value)
+                        setRootFolderPinned(true)
                         pages.back()
                       }}
                     />

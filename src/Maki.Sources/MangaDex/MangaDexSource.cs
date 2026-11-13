@@ -11,7 +11,7 @@ namespace Maki.Sources.MangaDex;
 /// Page URLs come from the at-home network and expire after ~15 minutes,
 /// so GetPagesAsync must be called at download time.
 /// </summary>
-public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, IChapterVolumeSource
+public class MangaDexSource(IHttpClientFactory httpClientFactory) : IScanlationGroupSource, IChapterVolumeSource
 {
     public const string HttpClientName = "source-mangadex";
 
@@ -72,7 +72,15 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
             m.Attributes.Status);
     }
 
+    /// <summary>
+    /// The same chapter number often exists from several scanlation groups; with no group preference
+    /// the earliest-published upload is kept, so the diff stays stable across refreshes.
+    /// </summary>
     public async Task<IReadOnlyList<SourceChapter>> ListChaptersAsync(
+        string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default) =>
+        ScanlationGroupChoice.Pick(await ListUploadsAsync(sourceSeriesId, languageFilter, ct), ScanlationGroupPreference.None);
+
+    public async Task<IReadOnlyList<SourceChapter>> ListUploadsAsync(
         string sourceSeriesId, string? languageFilter = null, CancellationToken ct = default)
     {
         var languages = SiteLanguageCodes.Parse(languageFilter);
@@ -130,10 +138,7 @@ public class MangaDexSource(IHttpClientFactory httpClientFactory) : ISource, ICh
             }
         }
 
-        // The same chapter number often exists from multiple scanlation groups; keep the
-        // earliest-published one so the diff stays stable across refreshes.
-        return SourceChapterList.Normalize(
-            chapters, g => g.OrderBy(c => c.ReleaseDate ?? DateTime.MaxValue).First());
+        return chapters;
     }
 
     /// <summary>

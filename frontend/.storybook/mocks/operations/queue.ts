@@ -3,6 +3,7 @@ import type {
   QueueFailureGroupDto,
   QueueHistoryDto,
   QueueHistoryGroupsDto,
+  QueueEtaDto,
   QueueItemDto,
   QueuePauseDto,
   TorrentImportPlanDto,
@@ -45,6 +46,9 @@ const item = (seriesId: number, over: Partial<QueueItemDto>): QueueItemDto => ({
   origin: 'manual',
   upgrade: null,
   seriesCoverUrl: `/api/v1/mediacover/${seriesId}/cover.jpg`,
+  priority: 'normal',
+  // Series 6 lives on the second root folder, the one the disk hold fixture holds.
+  rootFolderId: seriesId === 6 ? 2 : 1,
   ...over,
 })
 
@@ -286,6 +290,24 @@ export const pausedSources: QueuePauseDto = {
   ],
 }
 
+/** Series 9 paused on its own, and the second root folder short of space. */
+export const pausedSeriesAndDisk: QueuePauseDto = {
+  all: null,
+  sources: [],
+  series: [{ seriesId: 9, title: title(9), until: null }],
+  diskHolds: [{ rootFolderId: 2, path: '/mnt/ssd/manga', freeBytes: 3.2 * 1024 ** 3, minFreeBytes: 5 * 1024 ** 3 }],
+}
+
+export const queueEta: QueueEtaDto = {
+  queueSeconds: 47 * 60,
+  series: [
+    { seriesId: 1, seconds: 12 * 60, held: false },
+    { seriesId: 6, seconds: 47 * 60, held: false },
+    { seriesId: 9, seconds: 31 * 60, held: false },
+  ],
+  held: false,
+}
+
 export const failureGroups: QueueFailureGroupDto[] = [
   { reasonKey: 'error.download.noPages', sourceName: 'mangadex', count: 4 },
   { reasonKey: 'error.download.challengeNotSolved', sourceName: 'comick', count: 2 },
@@ -430,6 +452,8 @@ export const upgradeSettings: UpgradeSettings = {
   proposalExpiryDays: 14,
   autoApprove: false,
   autoApproveMaxBytes: 12884901888,
+  missingSearch: true,
+  torrentMinSeeders: 1,
 }
 
 export const upgradesSummary: UpgradesSummaryDto = {
@@ -553,6 +577,16 @@ export const queueHandlers = [
     )
   }),
   http.delete(api('/queue/pause'), () => HttpResponse.json(noPause)),
+  http.put(api('/queue/pause/series'), async ({ request }) => {
+    const body = (await request.json()) as { seriesId: number }
+    return HttpResponse.json({
+      ...noPause,
+      series: [{ seriesId: body.seriesId, title: title(body.seriesId), until: null }],
+      diskHolds: [],
+    } satisfies QueuePauseDto)
+  }),
+  http.delete(api('/queue/pause/series/:id'), () => HttpResponse.json(noPause)),
+  http.get(api('/queue/eta'), () => HttpResponse.json(queueEta)),
   http.get(api('/queue/failed'), () => HttpResponse.json(failureGroups)),
   http.post(api('/queue/retry-failed'), () => HttpResponse.json({ affected: 6 })),
   http.post(api('/queue/remove-failed'), () => HttpResponse.json({ affected: 6 })),

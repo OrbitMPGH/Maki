@@ -129,6 +129,10 @@ public class ChapterSyncService(
             .Where(m => mappingIds is null || mappingIds.Contains(m.Id))
             .ToList();
         var listedBefore = ListedByDelistingMappings(existing, enabledMappings);
+        var withheld = new HashSet<int>();
+        var groups = liveMappings.Any(m => sourceRegistry.Find(m.SourceName) is IScanlationGroupSource)
+            ? await ScanlationGroupSettings.ForSeriesAsync(appSettings, series, ct)
+            : ScanlationGroupPreference.None;
 
         foreach (var mapping in liveMappings)
         {
@@ -153,7 +157,7 @@ public class ChapterSyncService(
                 // shared cache with the result is what keeps the enqueues that a monitored refresh
                 // fires immediately afterwards from resolving against an older listing, which would
                 // report the chapter this pass just discovered as "not listed".
-                var listing = await ListAsync(source, mapping, depth, firstSnapshot || firstSinceRestore, ct);
+                var listing = await ListAsync(source, mapping, depth, firstSnapshot || firstSinceRestore, groups, ct);
                 var sourceChapters = listing.Chapters
                     .Select(ChapterIdentity.Labelled)
                     .ToList();
@@ -175,7 +179,7 @@ public class ChapterSyncService(
 
                 if (listing.Complete)
                 {
-                    chapterLists.Store(source, mapping.SourceSeriesId, mapping.LanguageFilter, sourceChapters);
+                    chapterLists.Store(source, mapping.SourceSeriesId, mapping.LanguageFilter, sourceChapters, groups);
                     numbersBySource[mapping.SourceName] = sourceChapters.Select(sc => sc.Number).ToList();
                 }
                 else
@@ -187,6 +191,14 @@ public class ChapterSyncService(
                         .Concat(sourceChapters.Select(sc => sc.Number))
                         .ToList();
                 }
+                foreach (var blocked in listing.Withheld ?? [])
+                {
+                    if (existing.FirstOrDefault(c => c.Id != 0 && ChapterIdentity.Matches(c, ChapterIdentity.Labelled(blocked))) is { } kept)
+                    {
+                        withheld.Add(kept.Id);
+                    }
+                }
+
                 var snapshotLinks = new Dictionary<Chapter, SourceChapter>();
 
                 foreach (var sc in sourceChapters)
@@ -290,7 +302,7 @@ public class ChapterSyncService(
         }
 
         await DropUnlistedLockedAsync(seriesId, existing, reads, ct);
-        var delistedWithFiles = MarkDelisted(existing, enabledMappings, listedBefore);
+        var delistedWithFiles = MarkDelisted(existing, enabledMappings, listedBefore, withheld);
 
         // Flag (or clear) cross-source numbering clashes. A clash is always
         // recorded; clearing requires every enabled mapping to have fetched this
@@ -363,7 +375,9 @@ public class ChapterSyncService(
     /// so a chapter one source dropped and another picked up in the same pass is never stamped.
     /// </summary>
     /// <returns>How many chapters it newly stamped that have a file.</returns>
-    private int MarkDelisted(List<Chapter> existing, List<SourceMapping> enabledMappings, HashSet<int> listedBefore)
+    /// <param name="withheld">Chapters a source still lists, but only through blocked scanlation groups.</param>
+    private int MarkDelisted(
+        List<Chapter> existing, List<SourceMapping> enabledMappings, HashSet<int> listedBefore, HashSet<int> withheld)
     {
         var now = DateTime.UtcNow;
         var withFiles = 0;
@@ -376,7 +390,7 @@ public class ChapterSyncService(
             {
                 chapter.DelistedAt = null;
             }
-            else if (chapter.DelistedAt is null && listedBefore.Contains(chapter.Id))
+            else if (chapter.DelistedAt is null && listedBefore.Contains(chapter.Id) && !withheld.Contains(chapter.Id))
             {
                 chapter.DelistedAt = now;
                 if (chapter.ChapterFileId is not null)
@@ -401,8 +415,16 @@ public class ChapterSyncService(
     /// <see cref="ChapterListingSchedule.FullEvery"/>; the whole list otherwise.
     /// </summary>
     private async Task<ChapterListing> ListAsync(
-        ISource source, SourceMapping mapping, ChapterListingDepth depth, bool freshSnapshot, CancellationToken ct)
+        ISource source, SourceMapping mapping, ChapterListingDepth depth, bool freshSnapshot,
+        ScanlationGroupPreference groups, CancellationToken ct)
     {
+        if (source is IScanlationGroupSource multi)
+        {
+            var uploads = await multi.ListUploadsAsync(mapping.SourceSeriesId, mapping.LanguageFilter, ct);
+            return new ChapterListing(ScanlationGroupChoice.Pick(uploads, groups), Complete: true,
+                ScanlationGroupChoice.Withheld(uploads, groups));
+        }
+
         if (source is INewestFirstChapterSource newest && listingSchedule is not null &&
             depth == ChapterListingDepth.NewestFirst && !freshSnapshot && mapping.ChapterLinks.Count > 0 &&
             !listingSchedule.FullDue(mapping.Id))
@@ -508,6 +530,7 @@ public class ChapterSyncService(
             link.Title = sourceChapter.Title;
             link.ReleaseDate = sourceChapter.ReleaseDate;
             link.Group = sourceChapter.Group ?? groupFallback;
+            link.Url = sourceChapter.Url;
             if (chapter.ChapterFileId is { } fileId && link.Group is { } group)
             {
                 fileGroups.TryAdd(fileId, group);
@@ -658,6 +681,7 @@ public class ChapterSyncService(
                             Title = link.Title,
                             ReleaseDate = link.ReleaseDate,
                             Group = link.Group,
+                            Url = link.Url,
                             FirstSeenAt = link.FirstSeenAt
                         };
                         db.ChapterSourceLinks.Add(replacement);

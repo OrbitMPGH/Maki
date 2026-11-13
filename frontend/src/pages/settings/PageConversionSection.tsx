@@ -6,7 +6,7 @@ import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { t as now } from '@lingui/core/macro'
 import { SettingsSection } from './SettingsSection'
 import { useSettingsSummary } from '../../components/pageconversion/labels'
-import { formatBytes, formatDateTime } from '../../format'
+import { formatBytes, formatDateTime, formatNumber } from '../../format'
 import {
   usePageConversion,
   usePausePageConversion,
@@ -38,6 +38,9 @@ export function PageConversionSection() {
                 <Text size="xs" c="var(--ink-3)">
                   <Trans>PNG pages are kept lossless.</Trans>
                 </Text>
+              )}
+              {status.settings.format && status.settings.splitHeight != null && (
+                <SplitLine height={status.settings.splitHeight} />
               )}
               {status.settings.format && status.library.overrideSeries > 0 && (
                 <Text size="xs" c="var(--ink-3)">
@@ -258,6 +261,15 @@ function PassTotals({
         {converted} converted ({saved} saved), {unchanged} left as they were, {hardlinked} hardlinked, {failed} passed
         over for now.
       </Trans>
+    </Text>
+  )
+}
+
+function SplitLine({ height }: { height: number }) {
+  const pixels = formatNumber(height)
+  return (
+    <Text size="xs" c="var(--ink-3)">
+      <Trans>Pages taller than {pixels} px are split.</Trans>
     </Text>
   )
 }

@@ -1,5 +1,6 @@
 using System.Globalization;
 using Maki.Core.Entities;
+using Maki.Core.Quality;
 
 namespace Maki.Core.Naming;
 
@@ -23,9 +24,11 @@ namespace Maki.Core.Naming;
 /// "Vol.1" an honest name for it; a partial volume keeps its chapter range, which is also what
 /// stops two halves of one volume wanting the same name.
 /// </param>
+/// <param name="Source">The display name of the source the file came from, or null for an import.</param>
+/// <param name="Tier">The file's quality tier; <see cref="QualityTier.Unknown"/> renders empty.</param>
 public sealed record NamingContext(
     Series Series, Chapter? Chapter = null, Chapter? Through = null, bool WholeVolumes = false,
-    string? Group = null);
+    string? Group = null, string? Source = null, QualityTier Tier = QualityTier.Unknown);
 
 /// <summary>
 /// Catalogue keys for the group headings the token picker shows. Core has no <c>ILocalizer</c>, so
@@ -87,6 +90,11 @@ public static class NamingTokens
         Token("{Series Year}", NamingTokenCategory.Series,
             (c, _) => c.Series.Year?.ToString(CultureInfo.InvariantCulture)),
         Token("{Series Type}", NamingTokenCategory.Series, (c, _) => c.Series.Type),
+        Token("{Series Status}", NamingTokenCategory.Series,
+            (c, _) => c.Series.Status == SeriesStatus.Unknown ? null : c.Series.Status.ToString()),
+        Token("{Series Author}", NamingTokenCategory.Series,
+            (c, _) => Names(c.Series.AuthorStory) ?? Names(c.Series.AuthorArt)),
+        Token("{Series Publisher}", NamingTokenCategory.Series, (c, _) => FirstName(c.Series.Publisher)),
 
         // ---- Chapter ------------------------------------------------------------------------
         Token("{Chapter VolChap}", NamingTokenCategory.Chapter, (c, _) => VolChap(c)),
@@ -100,6 +108,12 @@ public static class NamingTokens
         Token("{Chapter Language}", NamingTokenCategory.Chapter, (c, _) => c.Chapter?.Language),
         Token("{Chapter Group}", NamingTokenCategory.Chapter,
             (c, _) => string.IsNullOrWhiteSpace(c.Group) ? null : c.Group.Trim()),
+        Token("{Chapter Source}", NamingTokenCategory.Chapter,
+            (c, _) => c.Chapter is null || string.IsNullOrWhiteSpace(c.Source) ? null : c.Source.Trim()),
+        Token("{Chapter ReleaseDate}", NamingTokenCategory.Chapter,
+            (c, _) => c.Chapter?.ReleaseDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
+        Token("{Quality Tier}", NamingTokenCategory.Chapter,
+            (c, _) => c.Chapter is null || c.Tier == QualityTier.Unknown ? null : c.Tier.ToString()),
 
         // ---- Series ID ----------------------------------------------------------------------
         Token("{MangaBakaId}", NamingTokenCategory.SeriesId,
@@ -127,6 +141,24 @@ public static class NamingTokens
         var key = NormalizeKey(display.Trim('{', '}'));
         return new(display, key, category, $"naming.token.{key}.description", padding, resolve);
     }
+
+    /// <summary>A stored comma-separated credit list, each name trimmed, joined with ", ".</summary>
+    private static string? Names(string? joined)
+    {
+        var names = SplitNames(joined);
+        return names.Count == 0 ? null : string.Join(", ", names);
+    }
+
+    /// <summary>
+    /// Only the first publisher: the provider lists every licensee in every country, which would
+    /// turn a folder name into a paragraph. The original publisher comes first.
+    /// </summary>
+    private static string? FirstName(string? joined) => SplitNames(joined).FirstOrDefault();
+
+    private static List<string> SplitNames(string? joined) =>
+        (joined ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(n => n.Length > 0)
+            .ToList();
 
     /// <summary>
     /// A chapter Maki names as a one-shot. A missing number counts as one too: there's nothing to

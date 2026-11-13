@@ -40,8 +40,12 @@ import {
 
 const PAGE_SIZE = 100
 
+/** The folder picker's value for "let the root folder rules decide". */
+const BY_RULES = 'rules'
+
 export interface MihonImportOptions {
-  rootFolderId: number
+  /** Null lets the root folder rules pick a folder per series. */
+  rootFolderId: number | null
   monitored: boolean
   monitorNewItems: string | null
   applyTags: boolean
@@ -75,7 +79,9 @@ export function MihonReview({
   const [finderFor, setFinderFor] = useState<MihonRow | null>(null)
 
   const anyCategories = rows.some((r) => r.manga.categories.length > 0)
-  const effectiveRoot = rootFolderId ?? (rootFolders?.[0] ? String(rootFolders[0].id) : null)
+  // With more than one folder the default is the root folder rules, which fall back to the first.
+  const offerRules = (rootFolders?.length ?? 0) > 1
+  const effectiveRoot = rootFolderId ?? (offerRules ? BY_RULES : rootFolders?.[0] ? String(rootFolders[0].id) : null)
 
   const counts = useMemo(() => {
     const c: Record<MihonFilter, number> = { all: rows.length, matched: 0, needsReview: 0, notFound: 0, inLibrary: 0 }
@@ -121,7 +127,7 @@ export function MihonReview({
   const start = () => {
     if (!effectiveRoot || groups.length === 0) return
     onStart(groups, {
-      rootFolderId: Number(effectiveRoot),
+      rootFolderId: effectiveRoot === BY_RULES ? null : Number(effectiveRoot),
       monitored,
       monitorNewItems,
       applyTags: applyTags && canTag,
@@ -148,7 +154,10 @@ export function MihonReview({
         <Stack gap="sm">
           <Select
             label={t`Root folder`}
-            data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
+            data={[
+              ...(offerRules ? [{ value: BY_RULES, label: t`Picked by the root folder rules` }] : []),
+              ...(rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []),
+            ]}
             value={effectiveRoot}
             onChange={setRootFolderId}
             allowDeselect={false}

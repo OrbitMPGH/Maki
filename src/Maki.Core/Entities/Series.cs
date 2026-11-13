@@ -74,6 +74,15 @@ public class Series
     public int? PrepareChapters { get; set; }
     public UpgradeProfile? UpgradeProfile { get; set; }
 
+    /// <summary>
+    /// Scanlation groups this series prefers, in order, on a source that lists several uploads of a
+    /// chapter. Empty takes the global list from <c>SettingKeys.ScanlationGroups</c>.
+    /// </summary>
+    public List<string> PreferredGroups { get; set; } = [];
+
+    /// <summary>Scanlation groups never taken for this series, on top of the globally blocked ones.</summary>
+    public List<string> BlockedGroups { get; set; } = [];
+
     /// <summary>Which source a download tries first. Null means the instance default from <c>SettingKeys.DownloadSourceOrder</c>.</summary>
     public SourceOrderMode? SourceOrderMode { get; set; }
 

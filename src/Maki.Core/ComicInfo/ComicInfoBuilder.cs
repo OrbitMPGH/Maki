@@ -2,6 +2,7 @@
 using System.Reflection;
 using System.Text;
 using System.Xml;
+using System.Xml.Linq;
 using System.Xml.Serialization;
 using Maki.Core.Entities;
 using Maki.Core.Sources;
@@ -12,8 +13,11 @@ namespace Maki.Core.ComicInfo;
 public static class ComicInfoBuilder
 {
     /// <param name="userTags">The series' user tag labels, written to SeriesGroup, where Kavita and Komga build collections from.</param>
+    /// <param name="provenance">Source, URL and quality tier for Notes.</param>
+    /// <param name="widePages">Per page, whether it is a spread, for the Pages block.</param>
     public static ComicInfo Build(
-        Series series, Chapter chapter, int pageCount, string? group = null, IEnumerable<string>? userTags = null)
+        Series series, Chapter chapter, int pageCount, string? group = null, IEnumerable<string>? userTags = null,
+        ComicInfoProvenance? provenance = null, IReadOnlyList<bool>? widePages = null)
     {
         return new ComicInfo
         {
@@ -31,11 +35,13 @@ public static class ComicInfoBuilder
                 ? series.TotalChapters?.ToString(CultureInfo.InvariantCulture)
                 : null,
             Summary = series.Overview,
+            Notes = ComicInfoPages.NotesFor(provenance),
             Year = chapter.ReleaseDate?.Year.ToString(CultureInfo.InvariantCulture),
             Month = chapter.ReleaseDate?.Month.ToString(CultureInfo.InvariantCulture),
             Day = chapter.ReleaseDate?.Day.ToString(CultureInfo.InvariantCulture),
             Writer = JoinList(series.AuthorStory),
             Penciller = JoinList(series.AuthorArt),
+            Translator = ScanInformationFor(group),
             Publisher = JoinList(series.Publisher),
             Genre = JoinList(series.Genres),
             Tags = JoinList(series.Tags),
@@ -45,7 +51,8 @@ public static class ComicInfoBuilder
             Manga = MangaFor(series.Type) ?? DefaultManga,
             AgeRating = AgeRatingFor(series.ContentRating),
             ScanInformation = ScanInformationFor(group),
-            PageCount = pageCount.ToString(CultureInfo.InvariantCulture)
+            PageCount = pageCount.ToString(CultureInfo.InvariantCulture),
+            Pages = ComicInfoPages.Build(pageCount, widePages)
         };
     }
 
@@ -194,9 +201,56 @@ public static class ComicInfoBuilder
         using var stream = new MemoryStream();
         using (var writer = XmlWriter.Create(stream, settings))
         {
-            serializer.Serialize(writer, info);
+            InSchemaOrder(serializer, info).Save(writer);
         }
 
         return Encoding.UTF8.GetString(stream.ToArray());
+    }
+
+    /// <summary>
+    /// The ComicInfo schema's element sequence (v2.0, plus the v2.1 additions Maki writes in their
+    /// v2.1 places). XmlSerializer writes in declaration order and puts every unmodelled element
+    /// where <see cref="ComicInfo.Unmodelled"/> sits, so the order is restored after it.
+    /// </summary>
+    internal static readonly string[] SchemaOrder =
+    [
+        "Title", "Series", "LocalizedSeries", "Number", "Count", "Volume", "AlternateSeries", "AlternateNumber",
+        "AlternateCount", "Summary", "Notes", "Year", "Month", "Day", "Writer", "Penciller", "Inker",
+        "Colorist", "Letterer", "CoverArtist", "Editor", "Translator", "Publisher", "Imprint", "Genre", "Tags",
+        "Web", "PageCount", "LanguageISO", "Format", "BlackAndWhite", "Manga", "Characters", "Teams",
+        "Locations", "ScanInformation", "StoryArc", "StoryArcNumber", "SeriesGroup", "AgeRating", "Pages",
+        "CommunityRating", "MainCharacterOrTeam", "Review", "GTIN",
+    ];
+
+    private static readonly Dictionary<string, int> SchemaIndex = SchemaOrder
+        .Select((name, i) => (name, i))
+        .ToDictionary(x => x.name, x => x.i, StringComparer.Ordinal);
+
+    /// <summary>
+    /// The document as an <see cref="XDocument"/> with the root's children stably sorted into
+    /// <see cref="SchemaOrder"/>; an element the schema does not name keeps its relative place at the end.
+    /// </summary>
+    private static XDocument InSchemaOrder(XmlSerializer serializer, ComicInfo info)
+    {
+        var document = new XDocument();
+        using (var writer = document.CreateWriter())
+        {
+            serializer.Serialize(writer, info);
+        }
+
+        var root = document.Root!;
+        var ordered = root.Elements()
+            .Select((element, i) => (element, i))
+            .OrderBy(x => SchemaIndex.GetValueOrDefault(x.element.Name.LocalName, int.MaxValue))
+            .ThenBy(x => x.i)
+            .Select(x => x.element)
+            .ToList();
+        foreach (var element in ordered)
+        {
+            element.Remove();
+        }
+
+        root.Add(ordered);
+        return document;
     }
 }

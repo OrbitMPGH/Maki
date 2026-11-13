@@ -30,10 +30,10 @@ export function ScopeStep({
 }) {
   const { t } = useLingui()
   const [settledRules] = useDebouncedValue(rules, COUNT_DEBOUNCE_MS)
-  const { format, stop, pngLossless } = value
+  const { format, stop, pngLossless, splitHeight } = value
 
   const request: PageConversionScopeRequest | null = format
-    ? { format, stop, pngLossless, rules: toRuleDtos(settledRules) }
+    ? { format, stop, pngLossless, splitHeight, rules: toRuleDtos(settledRules) }
     : null
   const counts = usePageConversionScope(
     request,

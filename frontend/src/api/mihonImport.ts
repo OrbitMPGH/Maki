@@ -60,7 +60,8 @@ export interface MihonImportItem {
 
 export interface MihonImportRequest {
   runId: string
-  rootFolderId: number
+  /** Null lets the root folder rules pick a folder per series. */
+  rootFolderId: number | null
   monitored: boolean
   /** Null takes the server's default mode (`monitoring.defaultmode`). */
   monitorNewItems: string | null
