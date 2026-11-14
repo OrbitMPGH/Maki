@@ -4120,6 +4120,10 @@ msgstr "Also match every tag filed under this one"
 msgid "Also needs the daily scan on."
 msgstr "Also needs the daily scan on."
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Also read as {alsoReadAs}"
+msgstr "Also read as {alsoReadAs}"
+
 #: src/components/series/ArchiveSeriesDialog.tsx
 msgid "Also remove the files"
 msgstr "Also remove the files"
@@ -9137,6 +9141,10 @@ msgstr "Find a file in the folder"
 msgid "Find a folder"
 msgstr "Find a folder"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Find a group"
+msgstr "Find a group"
+
 #: src/components/import/ImportMatchFinder.tsx
 msgid "Find a match for {folderName}"
 msgstr "Find a match for {folderName}"
@@ -13463,6 +13471,10 @@ msgstr "No goals set yet."
 #: src/components/settings/CreditGroupsModal.tsx
 msgid "No group"
 msgstr "No group"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "No group by that name."
+msgstr "No group by that name."
 
 #: src/components/settings/CreditGroupsModal.tsx
 msgid "No group name"

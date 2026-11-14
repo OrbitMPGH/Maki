@@ -10,6 +10,21 @@ public sealed record CreditGroupGuess(string? Name, string? Invite)
 }
 
 /// <summary>
+/// One spelling of a group in the groups view, with what it weighs. <see cref="Anchor"/> is a confirmed or
+/// propagated name, which other spellings join but which never joins another.
+/// </summary>
+public sealed record CreditNameWeight(string Name, bool Anchor, int Chapters, int Notices);
+
+/// <summary>
+/// Spellings of one group: <see cref="Name"/> heads it (an anchor, else the heaviest spelling), <see cref="Variants"/>
+/// are the others folded into it, heaviest first, and <see cref="Keys"/> are every member's <see cref="CreditGroupName.Key"/>.
+/// </summary>
+public sealed record CreditNameCluster(string Name, IReadOnlyList<string> Variants, IReadOnlyList<string> Keys)
+{
+    public string Key => CreditGroupName.Key(Name);
+}
+
+/// <summary>
 /// Reads a release group's name off the text OCR read from a credit page or ad. Signals, strongest first: a
 /// "&lt;name&gt; scans/scanlations/translations" phrase on one line or split over lines, "translated by /
 /// scanned by / brought to you by &lt;name&gt;", a web address that is not a generic service, and a handle on
@@ -24,9 +39,13 @@ public sealed record CreditGroupGuess(string? Name, string? Invite)
 public static class CreditGroupName
 {
     /// <summary>Bump when the output changes, so stored suggestions are read again.</summary>
-    public const int Version = 1;
+    public const int Version = 2;
 
-    private const string Kind = @"(scanlations?|scans?|translations?|tls?|comics|toons?|subs|team)";
+    /// <summary>
+    /// The words a group name ends in. "Team" is not one: on the 2026-11-14 scan it named only junk ("Scanlation
+    /// Team", "ORIGINAL RELEASE TEAM", "JOINING QOUR TEAM").
+    /// </summary>
+    private const string Kind = @"(scanlations?|scans?|translations?|tls?|comics|toons?|subs)";
     private const string Tld = @"(?:com|net|org|gg|xyz|to|co|io|me|moe|pm|site|online|fun|club|app|cc|us|info|blog)";
     private const RegexOptions Options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
     private static readonly TimeSpan Timeout = TimeSpan.FromMilliseconds(250);
@@ -49,16 +68,40 @@ public static class CreditGroupName
     private static readonly Regex Blogspot = new(@"([a-z0-9\-]{3,30})\.blogspot", Options, Timeout);
     private static readonly Regex InviteCode = new(@"discord\s*\.\s*gg\s*/\s*\|?\s*([A-Za-z0-9]{6,12})", Options, Timeout);
     private static readonly Regex Edges = new(@"^[^A-Za-z0-9]+|[^A-Za-z0-9!]+$", RegexOptions.CultureInvariant, Timeout);
+    private static readonly Regex Www = new(@"^www[\.\s]+", Options, Timeout);
+    private static readonly Regex KindWord = new("^" + Kind + "$", Options, Timeout);
     private static readonly Regex Spaces = new(@"\s+", RegexOptions.CultureInvariant, Timeout);
 
+    /// <summary>
+    /// Hosts and platforms that name no group: services, socials, donation sites, and the official stores a "support the
+    /// author" card points to. Compared as keys and within a small edit distance (<see cref="IsGeneric"/>), since OCR
+    /// reads "mdiscord", "k0-fi" and "ridib0oks".
+    /// </summary>
     private static readonly HashSet<string> Generic = new(StringComparer.Ordinal)
     {
-        "discord", "patreon", "ko-fi", "kofi", "paypal", "amazon", "bookwalker", "twitter", "x", "instagram", "facebook",
+        "discord", "patreon", "kofi", "paypal", "amazon", "bookwalker", "twitter", "x", "instagram", "facebook",
         "mangadex", "bato", "batoto", "reddit", "youtube", "tumblr", "pixiv", "t", "bit", "booth", "cdjapan", "ebookjapan",
-        "renta", "kobo", "gmail", "google", "dsc", "linktr", "buymeacoffee", "tapas", "webtoons", "naver", "kakao", "comico",
-        "mangaplus", "viz", "shueisha", "kodansha", "pocket", "comic-walker", "www", "https", "http", "co", "amzn", "gumroad",
-        // Not in the prototype, which named "skythewood.blogspot.com" as "blogspot"; the blogspot pass reads the subdomain.
-        "blogspot",
+        "renta", "kobo", "gmail", "google", "dsc", "linktr", "buymeacoffee", "tapas", "webtoon", "webtoons", "naver", "kakao",
+        "comico", "mangaplus", "viz", "shueisha", "kodansha", "pocket", "comicwalker", "www", "https", "http", "co", "amzn",
+        "gumroad", "blogspot", "wordpress", "saweria", "trakteer", "ridibooks", "ridi", "lezhin", "tappytoon", "toomics",
+        "kakaopage", "piccoma", "bilibili", "kuaikan", "fanbox", "comikey", "manta", "inkr", "kindle", "linewebtoon",
+        "pocketcomics", "rights",
+    };
+
+    /// <summary>Words that make no group name: a name made only of them, or containing one of these keys, is dropped.</summary>
+    private static readonly string[] NoNameKeys = ["discord", "patreon", "kofi", "paypal", "gmail"];
+
+    /// <summary>
+    /// A word before "TL" that makes it a staff label or a sentence, not a group: a language, a role, a verb.
+    /// "JAPANESE TL", "I'll TL", "NEED TL" go; "Luminare TL" stays.
+    /// </summary>
+    private static readonly HashSet<string> NotATlGroup = new(StringComparer.Ordinal)
+    {
+        "japanese", "korean", "chinese", "english", "spanish", "french", "german", "thai", "vietnamese", "indonesian",
+        "portuguese", "russian", "italian", "arabic", "turkish", "jp", "jpn", "kr", "kor", "cn", "chn", "eng", "raw",
+        "translator", "cleaner", "redrawer", "typesetter", "proofreader", "editor", "qc", "pr", "ts", "rd", "cl", "clrd", "tl",
+        "ill", "will", "can", "need", "needs", "needed", "want", "wanted", "urgent", "urgently", "seeking", "looking", "hiring",
+        "recruiting", "require", "required",
     };
 
     private static readonly HashSet<string> Stop = new(StringComparer.Ordinal)
@@ -66,12 +109,13 @@ public static class CreditGroupName
         "the", "our", "by", "of", "for", "at", "and", "on", "this", "us", "from", "more", "other", "fan", "official",
         "manga", "english", "is", "are", "join", "read", "support", "credits", "with", "in", "to", "a", "no", "your",
         "my", "new", "all", "these", "their", "quality", "free", "raw", "raws", "we", "you", "presented", "present",
+        "original", "website", "every", "web",
     };
 
     /// <summary>
     /// The best name guess and invite code from every text read for one notice (null and blank texts are
-    /// skipped, repeats count once). <paramref name="known"/> are names already settled elsewhere (groups the
-    /// user confirmed): a guess within a small edit distance of one takes its spelling, so "QMEGA SCANS"
+    /// skipped, repeats count once). <paramref name="known"/> are names already settled elsewhere (groups the user
+    /// confirmed, then propagated ones, first wins): a guess within a small edit distance of one takes its spelling, so "QMEGA SCANS"
     /// becomes "Omega Scans" once someone has confirmed that.
     /// </summary>
     public static CreditGroupGuess Suggest(IEnumerable<string?> texts, IEnumerable<string>? known = null) =>
@@ -166,7 +210,7 @@ public static class CreditGroupName
         foreach (var (score, name) in found)
         {
             var key = Key(name);
-            if (key.Length < 4)
+            if (key.Length < 4 || !CanName(name, key))
             {
                 continue;
             }
@@ -184,6 +228,114 @@ public static class CreditGroupName
 
         // A stable sort, so equal scores keep the order they were found in.
         return best.OrderByDescending(b => b.Score).ToList();
+    }
+
+    /// <summary>
+    /// Whether a found name can be a group's: not one containing a service ("JOIN US ON DISCORD", "devmax1pko-fi"),
+    /// not a generic host or store with or without its group word ("TAPPY toon"), not filler words alone.
+    /// </summary>
+    private static bool CanName(string name, string key)
+    {
+        if (NoNameKeys.Any(key.Contains) || IsGeneric(key))
+        {
+            return false;
+        }
+
+        var words = Spaces.Split(name.Trim()).Where(w => w.Length > 0).ToList();
+        var head = words.Count > 1 && KindWord.IsMatch(words[^1]) ? words[..^1] : words;
+        return head.Count > 0 && !IsGeneric(Key(string.Join(' ', head))) && !head.All(w => Stop.Contains(Key(w)));
+    }
+
+    /// <summary>
+    /// Whether a host or name key is a generic service or store, allowing for OCR: one edit away ("k0fi", "ridib0oks",
+    /// "6mail"), up to two stray characters before or after ("mdiscord", "iikofi"), or the tail of one ("treon").
+    /// Short entries ("x", "t", "co") only match exactly.
+    /// </summary>
+    internal static bool IsGeneric(string key)
+    {
+        key = Ocr(key);
+        if (key.Length == 0 || GenericRead.Contains(key))
+        {
+            return true;
+        }
+
+        foreach (var generic in GenericRead)
+        {
+            if (generic.Length < 4)
+            {
+                continue;
+            }
+
+            if ((key.Length - generic.Length is > 0 and <= 2 && (key.EndsWith(generic, StringComparison.Ordinal) || key.StartsWith(generic, StringComparison.Ordinal))) ||
+                (key.Length >= 5 && generic.Length > key.Length && generic.EndsWith(key, StringComparison.Ordinal)) ||
+                (generic.Length >= 5 && Math.Abs(key.Length - generic.Length) <= 1 && Distance(key, generic) <= 1))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary><see cref="Generic"/> as <see cref="Ocr"/> folds it.</summary>
+    private static readonly HashSet<string> GenericRead = Generic.Select(Ocr).ToHashSet(StringComparer.Ordinal);
+
+    /// <summary>
+    /// A key with the characters OCR confuses folded together ("k0-fi", "ko-fl", "6mail"), so a short service name
+    /// matches its misreads without an edit distance that would also catch real names ("komi" is not "kofi").
+    /// </summary>
+    private static string Ocr(string key) => string.Create(key.Length, key, (span, k) =>
+    {
+        for (var i = 0; i < k.Length; i++)
+        {
+            span[i] = k[i] switch { '0' => 'o', '1' or 'l' => 'i', '5' => 's', '6' => 'g', _ => k[i] };
+        }
+    });
+
+    /// <summary>
+    /// Groups spellings of one group across notices, for the groups view. Anchors (confirmed and propagated names)
+    /// head their own cluster and never join another. Every other spelling joins the first cluster, anchors first and
+    /// then heaviest first, whose head it is close to (<see cref="Close"/>, the rule the research prototype used
+    /// across notices), and otherwise heads a new one. Order is anchors, then chapters, then notices, then key, so the
+    /// same input always gives the same clusters and a tie never flips a head between two requests.
+    /// </summary>
+    public static IReadOnlyList<CreditNameCluster> Cluster(IEnumerable<CreditNameWeight> names)
+    {
+        var buckets = names
+            .Select(n => (Key: Key(n.Name), Weight: n))
+            .Where(n => n.Key.Length > 0)
+            .GroupBy(n => n.Key)
+            .Select(g =>
+            {
+                // The spelling shown: an anchor's, else the one weighing most over all its entries.
+                var head = g.GroupBy(n => n.Weight.Name, StringComparer.Ordinal)
+                    .Select(s => (Name: s.Key, Anchor: s.Any(n => n.Weight.Anchor), Chapters: s.Sum(n => n.Weight.Chapters),
+                        Notices: s.Sum(n => n.Weight.Notices)))
+                    .OrderByDescending(s => s.Anchor).ThenByDescending(s => s.Chapters).ThenByDescending(s => s.Notices)
+                    .ThenBy(s => s.Name, StringComparer.Ordinal).First();
+                return (Key: g.Key, Name: head.Name, Anchor: g.Any(n => n.Weight.Anchor),
+                    Chapters: g.Sum(n => n.Weight.Chapters), Notices: g.Sum(n => n.Weight.Notices));
+            })
+            .OrderByDescending(b => b.Anchor).ThenByDescending(b => b.Chapters).ThenByDescending(b => b.Notices)
+            .ThenBy(b => b.Key, StringComparer.Ordinal)
+            .ToList();
+
+        var clusters = new List<(string Key, string Name, List<string> Variants, List<string> Keys)>();
+        foreach (var bucket in buckets)
+        {
+            var into = bucket.Anchor ? -1 : clusters.FindIndex(c => Close(bucket.Key, c.Key));
+            if (into < 0)
+            {
+                clusters.Add((bucket.Key, bucket.Name, [], [bucket.Key]));
+            }
+            else
+            {
+                clusters[into].Variants.Add(bucket.Name);
+                clusters[into].Keys.Add(bucket.Key);
+            }
+        }
+
+        return clusters.Select(c => new CreditNameCluster(c.Name, c.Variants, c.Keys)).ToList();
     }
 
     /// <summary>The Discord invite code in the text, or null.</summary>
@@ -222,7 +374,8 @@ public static class CreditGroupName
             var match = Phrase.Match(line);
             if (match.Success)
             {
-                var words = Spaces.Split(match.Groups[1].Value.Trim()).Where(w => w.Length > 0).ToList();
+                // "MOSHI.SCANS" reads as "MOSHI." before the group word.
+                var words = Spaces.Split(match.Groups[1].Value.Trim()).Select(w => w.TrimEnd('.', '-')).Where(w => w.Length > 0).ToList();
                 // The trailing words, dropping the sentence words before them.
                 var keep = new List<string>();
                 for (var w = words.Count - 1; w >= 0; w--)
@@ -235,7 +388,7 @@ public static class CreditGroupName
                     keep.Add(words[w]);
                 }
 
-                if (keep.Count > 0)
+                if (keep.Count > 0 && !(match.Groups[2].Value.StartsWith("tl", StringComparison.OrdinalIgnoreCase) && NotTl(keep[0])))
                 {
                     keep.Reverse();
                     added = true;
@@ -269,6 +422,13 @@ public static class CreditGroupName
         }
     }
 
+    /// <summary>Whether the word before "TL" makes it a label or a sentence ("VERYURGEN Tl" included).</summary>
+    private static bool NotTl(string word)
+    {
+        var key = Key(word);
+        return NotATlGroup.Contains(key) || key.Contains("urgen", StringComparison.Ordinal);
+    }
+
     private static IEnumerable<(int, string)> ByLines(string[] lines)
     {
         foreach (Match match in By.Matches(string.Join(" | ", lines)))
@@ -286,9 +446,9 @@ public static class CreditGroupName
         foreach (Match match in Domain.Matches(text))
         {
             var host = match.Groups[1].Value.ToLowerInvariant();
-            if (Generic.Contains(host))
+            if (IsGeneric(Key(host)))
             {
-                if (host is "patreon" or "ko-fi" or "kofi" && match.Groups[2].Success)
+                if (match.Groups[2].Success && Key(host) is var key && (key.Contains("treon", StringComparison.Ordinal) || Distance(key, "kofi") <= 1))
                 {
                     yield return (1, match.Groups[2].Value);
                 }
@@ -305,16 +465,14 @@ public static class CreditGroupName
         }
     }
 
-    private static string Clean(string name) => Spaces.Replace(Edges.Replace(name.Trim(), string.Empty), " ");
+    private static string Clean(string name) => Spaces.Replace(Edges.Replace(Www.Replace(name.Trim(), string.Empty), string.Empty), " ");
 
     /// <summary>Whether two keys are OCR variants of one name: a small edit distance between longer keys.</summary>
-    internal static bool Close(string a, string b)
-    {
-        if (Math.Abs(a.Length - b.Length) > 2 || Math.Min(a.Length, b.Length) < 6)
-        {
-            return false;
-        }
+    internal static bool Close(string a, string b) =>
+        Math.Abs(a.Length - b.Length) <= 2 && Math.Min(a.Length, b.Length) >= 6 && Distance(a, b) <= (a.Length < 9 ? 1 : 2);
 
+    private static int Distance(string a, string b)
+    {
         var previous = Enumerable.Range(0, b.Length + 1).ToArray();
         for (var i = 1; i <= a.Length; i++)
         {
@@ -328,7 +486,7 @@ public static class CreditGroupName
             previous = current;
         }
 
-        return previous[^1] <= (a.Length < 9 ? 1 : 2);
+        return previous[^1];
     }
 
     private static void Bump<T>(List<(T Value, int Count)> counts, T value) where T : notnull

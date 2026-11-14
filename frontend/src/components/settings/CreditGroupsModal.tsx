@@ -330,6 +330,7 @@ function GroupDetail({ group, groups }: { group: CreditGroup; groups: CreditGrou
   const knownNames = groups.filter((g) => g.kind === 'group' && g.name && g.key !== group.key).map((g) => g.name!)
   const groupTitle = titleOf(group)
   const { notices, series, chapters } = group
+  const alsoReadAs = group.variants.join(', ')
 
   return (
     <Stack gap="lg">
@@ -364,6 +365,11 @@ function GroupDetail({ group, groups }: { group: CreditGroup; groups: CreditGrou
             {group.nameSource !== 'none' && (
               <Text size="sm" c="var(--ink-2)">
                 {renderLabel(NAME_SOURCES[group.nameSource].hint)}
+              </Text>
+            )}
+            {alsoReadAs && (
+              <Text size="xs" c="var(--ink-3)" className="credit-group-variants">
+                <Trans>Also read as {alsoReadAs}</Trans>
               </Text>
             )}
             <GroupNameForm key={group.name ?? ''} group={group} />
@@ -456,25 +462,56 @@ function GroupNameForm({ group }: { group: CreditGroup }) {
   )
 }
 
+const nameKey = (name: string) => name.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '')
+
+/** How far apart two group names are, 0 to 1, by edit distance: a misread "QMEGA SCANS" sits next to "Omega Scans". */
+function nameDistance(a: string, b: string): number {
+  const [x, y] = [nameKey(a), nameKey(b)]
+  if (!x.length || !y.length) return 1
+  let row = Array.from({ length: y.length + 1 }, (_, j) => j)
+  for (let i = 1; i <= x.length; i++) {
+    const next = [i]
+    for (let j = 1; j <= y.length; j++) {
+      next[j] = Math.min(row[j] + 1, next[j - 1] + 1, row[j - 1] + (x[i - 1] === y[j - 1] ? 0 : 1))
+    }
+    row = next
+  }
+  return row[y.length] / Math.max(x.length, y.length)
+}
+
+/** Past this many groups the merge list gets a filter field. */
+const MERGE_FILTER_FROM = 8
+
 /**
  * Folds this group into another: every notice of both takes the other's name, confirmed. Chapters are
- * not touched, so one that already carries a group keeps it.
+ * not touched, so one that already carries a group keeps it. The groups whose names are closest to this
+ * one's come first, since most merges fold a misread name into the right one.
  */
 function MergeGroup({ group, groups }: { group: CreditGroup; groups: CreditGroup[] }) {
   const { t } = useLingui()
   const name = useNameCreditNotices()
   const [opened, setOpened] = useState(false)
   const [targetKey, setTargetKey] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
   useLayer(opened)
   const targets = groups.filter((g) => g.key !== group.key && g.key.startsWith('group:') && g.name)
   const from = group.name
   if (!from || targets.length === 0) return null
 
+  const ordered = targets
+    .map((g) => ({ g, distance: nameDistance(from, g.name!) }))
+    .sort((a, b) => a.distance - b.distance || b.g.chapters - a.g.chapters)
+    .map((x) => x.g)
+  const typed = query.trim().toLowerCase()
+  const shown = typed ? ordered.filter((g) => g.name!.toLowerCase().includes(typed)) : ordered
   const target = targets.find((g) => g.key === targetKey) ?? null
   const into = target?.name ?? ''
   const toggle = (next: boolean) => {
     setOpened(next)
-    if (!next) setTargetKey(null)
+    if (!next) {
+      setTargetKey(null)
+      setQuery('')
+    }
   }
   const merge = () => {
     if (!target) return
@@ -508,8 +545,23 @@ function MergeGroup({ group, groups }: { group: CreditGroup; groups: CreditGroup
           <Text size="sm" fw={500} id="credit-merge-title">
             <Trans>Merge {from} into</Trans>
           </Text>
+          {targets.length > MERGE_FILTER_FROM && (
+            <TextInput
+              size="xs"
+              aria-label={t`Find a group`}
+              placeholder={t`Find a group`}
+              value={query}
+              data-autofocus
+              onChange={(e) => setQuery(e.currentTarget.value)}
+            />
+          )}
           <div className="credit-merge-list" role="group" aria-labelledby="credit-merge-title">
-            {targets.map((g) => (
+            {shown.length === 0 && (
+              <Text size="xs" c="var(--ink-3)">
+                <Trans>No group by that name.</Trans>
+              </Text>
+            )}
+            {shown.map((g) => (
               <Button
                 key={g.key}
                 size="xs"

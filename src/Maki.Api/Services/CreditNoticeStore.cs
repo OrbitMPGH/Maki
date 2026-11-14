@@ -352,7 +352,7 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
     /// <summary>
     /// Fills <see cref="CreditNotice.SuggestedName"/> and <see cref="CreditNotice.Invite"/> from every text read
     /// for each notice (its stored reads and its own text), all notices when <paramref name="ids"/> is null.
-    /// Names the user confirmed elsewhere settle the spelling of a close guess.
+    /// Names confirmed or propagated elsewhere settle the spelling of a close guess.
     /// </summary>
     public async Task SuggestAsync(IReadOnlyCollection<int>? ids, CancellationToken ct)
     {
@@ -366,10 +366,21 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
 
     private sealed record NoticeText(int Id, string? Text, string? SuggestedName, string? Invite, int NameVersion);
 
+    /// <summary>
+    /// Names settled elsewhere: confirmed by the user, then propagated from the groups real files carry. Confirmed
+    /// come first, so a guess close to both takes the user's spelling.
+    /// </summary>
     private static async Task<List<string>> KnownNamesAsync(MakiDbContext db, CancellationToken ct) =>
-        await db.CreditNotices.AsNoTracking()
-            .Where(n => n.GroupSource == CreditGroupSource.Confirmed && n.GroupName != null)
-            .Select(n => n.GroupName!).Distinct().ToListAsync(ct);
+        (await db.CreditNotices.AsNoTracking()
+            .Where(n => n.GroupSource != CreditGroupSource.None && n.GroupName != null)
+            .Select(n => new { n.GroupName, n.GroupSource })
+            .Distinct()
+            .ToListAsync(ct))
+        .OrderByDescending(n => n.GroupSource == CreditGroupSource.Confirmed)
+        .ThenBy(n => n.GroupName, StringComparer.Ordinal)
+        .Select(n => n.GroupName!)
+        .Distinct(StringComparer.Ordinal)
+        .ToList();
 
     private static async Task SuggestAsync(MakiDbContext db, List<NoticeText> notices, List<string> known, CancellationToken ct)
     {

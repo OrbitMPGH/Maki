@@ -17,6 +17,8 @@ export interface CreditGroup {
   series: number
   chapters: number
   chaptersWithoutGroup: number
+  /** Other spellings folded into this group, heaviest first: OCR misreads of one name, usually. */
+  variants: string[]
 }
 
 export interface CreditNotice {

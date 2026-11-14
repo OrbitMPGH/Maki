@@ -4860,6 +4860,10 @@ msgstr "이 태그에 속한 태그도 모두 일치시킵니다"
 msgid "Also needs the daily scan on."
 msgstr "일일 스캔도 켜져 있어야 합니다."
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Also read as {alsoReadAs}"
+msgstr ""
+
 #: src/components/series/ArchiveSeriesDialog.tsx
 #, fuzzy
 msgid "Also remove the files"
@@ -10840,6 +10844,10 @@ msgstr ""
 msgid "Find a folder"
 msgstr "폴더 찾기"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Find a group"
+msgstr ""
+
 #: src/components/import/ImportMatchFinder.tsx
 #, fuzzy
 msgid "Find a match for {folderName}"
@@ -15995,6 +16003,10 @@ msgstr "아직 설정한 목표가 없습니다."
 
 #: src/components/settings/CreditGroupsModal.tsx
 msgid "No group"
+msgstr ""
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "No group by that name."
 msgstr ""
 
 #: src/components/settings/CreditGroupsModal.tsx

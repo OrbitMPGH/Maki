@@ -4860,6 +4860,10 @@ msgstr "同时匹配归在此项下的所有标签"
 msgid "Also needs the daily scan on."
 msgstr "同样需要开启每日扫描。"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Also read as {alsoReadAs}"
+msgstr ""
+
 #: src/components/series/ArchiveSeriesDialog.tsx
 #, fuzzy
 msgid "Also remove the files"
@@ -10840,6 +10844,10 @@ msgstr ""
 msgid "Find a folder"
 msgstr "查找文件夹"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Find a group"
+msgstr ""
+
 #: src/components/import/ImportMatchFinder.tsx
 #, fuzzy
 msgid "Find a match for {folderName}"
@@ -15995,6 +16003,10 @@ msgstr "尚未设置目标。"
 
 #: src/components/settings/CreditGroupsModal.tsx
 msgid "No group"
+msgstr ""
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "No group by that name."
 msgstr ""
 
 #: src/components/settings/CreditGroupsModal.tsx

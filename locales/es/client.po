@@ -4860,6 +4860,10 @@ msgstr "Incluir también todas las etiquetas agrupadas bajo esta"
 msgid "Also needs the daily scan on."
 msgstr "También necesita que la búsqueda diaria esté activada."
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Also read as {alsoReadAs}"
+msgstr ""
+
 #: src/components/series/ArchiveSeriesDialog.tsx
 #, fuzzy
 msgid "Also remove the files"
@@ -10840,6 +10844,10 @@ msgstr ""
 msgid "Find a folder"
 msgstr "Buscar una carpeta"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Find a group"
+msgstr ""
+
 #: src/components/import/ImportMatchFinder.tsx
 #, fuzzy
 msgid "Find a match for {folderName}"
@@ -15995,6 +16003,10 @@ msgstr "Aún no has definido ningún objetivo."
 
 #: src/components/settings/CreditGroupsModal.tsx
 msgid "No group"
+msgstr ""
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "No group by that name."
 msgstr ""
 
 #: src/components/settings/CreditGroupsModal.tsx

@@ -8,11 +8,13 @@ public record CreditGroupListDto(IReadOnlyList<CreditGroupDto> Groups);
 /// One release group in the groups view: the notices that name it (or the Site and Unnamed buckets).
 /// <see cref="Key"/> is <c>group:&lt;name key&gt;</c>, <c>site</c> or <c>unnamed</c>. <see cref="NameSource"/> is the
 /// strongest source among its notices: <c>confirmed</c>, <c>propagated</c>, <c>suggested</c> or <c>none</c>.
-/// <see cref="Kind"/> is <c>group</c>, <c>site</c> or <c>unknown</c>.
+/// <see cref="Kind"/> is <c>group</c>, <c>site</c> or <c>unknown</c>. <see cref="Variants"/> are the other spellings folded
+/// into this group as OCR variants of its name, heaviest first, empty when there are none; two real groups with close
+/// names ("Rest Scans", "Reset Scans") can share a bucket, and this is how the view says so.
 /// </summary>
 public record CreditGroupDto(
     string Key, string? Name, string NameSource, string Kind, IReadOnlyList<int> NoticeIds,
-    int Notices, int Series, int Chapters, int ChaptersWithoutGroup);
+    int Notices, int Series, int Chapters, int ChaptersWithoutGroup, IReadOnlyList<string> Variants);
 
 public record CreditGroupDetailDto(IReadOnlyList<CreditNoticeDto> Notices, IReadOnlyList<CreditGroupSeriesDto> Series);
 

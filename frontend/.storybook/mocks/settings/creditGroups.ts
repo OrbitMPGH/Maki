@@ -107,6 +107,7 @@ export const creditGroups: CreditGroup[] = [
     series: 2,
     chapters: 38,
     chaptersWithoutGroup: 12,
+    variants: [],
   },
   {
     key: 'group:kitsune translations',
@@ -118,6 +119,7 @@ export const creditGroups: CreditGroup[] = [
     series: 1,
     chapters: 21,
     chaptersWithoutGroup: 4,
+    variants: [],
   },
   {
     key: 'group:paper crane',
@@ -130,6 +132,7 @@ export const creditGroups: CreditGroup[] = [
     chapters: 14,
     // Only a confirmed or carried name gives chapters a group, so a suggested one changes none yet.
     chaptersWithoutGroup: 0,
+    variants: ['PAPER CRNE', 'Paper Crone'],
   },
   {
     key: 'group:hollow lantern',
@@ -141,6 +144,7 @@ export const creditGroups: CreditGroup[] = [
     series: 1,
     chapters: 9,
     chaptersWithoutGroup: 0,
+    variants: [],
   },
   {
     key: 'site',
@@ -152,6 +156,7 @@ export const creditGroups: CreditGroup[] = [
     series: 3,
     chapters: 52,
     chaptersWithoutGroup: 0,
+    variants: [],
   },
   {
     key: 'unnamed',
@@ -163,6 +168,7 @@ export const creditGroups: CreditGroup[] = [
     series: 1,
     chapters: 6,
     chaptersWithoutGroup: 0,
+    variants: [],
   },
 ]
 
@@ -179,6 +185,7 @@ export const creditGroupsAll: CreditGroup[] = [
     series: 1,
     chapters: 3,
     chaptersWithoutGroup: 0,
+    variants: [],
   },
   creditGroups[5],
 ]

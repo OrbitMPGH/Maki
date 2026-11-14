@@ -77,27 +77,43 @@ public sealed class CreditGroupsService(
         var shown = notices.Where(n => links.Contains(n.Id) &&
             (all || Hidden(n.Override, n.Accepted) || n.Kind != CreditNoticeKind.Unknown || n.GroupSource != CreditGroupSource.None));
 
+        var exact = shown.GroupBy(BucketOf).ToDictionary(b => b.Key, b => b.ToList());
+        int ChaptersOf(IEnumerable<NoticeRow> members) => members.SelectMany(n => links[n.Id]).Select(l => l.ChapterId).Distinct().Count();
+
+        // OCR misreads of one name ("FNLCON SCANS", "SURA SCANS") fold into one group: see CreditGroupName.Cluster.
+        var clusters = CreditGroupName.Cluster(exact
+            .Where(b => b.Key.StartsWith("group:", StringComparison.Ordinal))
+            .Select(b =>
+            {
+                var (name, source) = NameOf(b.Value);
+                return new CreditNameWeight(name!, source is "confirmed" or "propagated", ChaptersOf(b.Value), b.Value.Count);
+            }));
+        var clusterOf = clusters.SelectMany(c => c.Keys.Select(k => (Key: "group:" + k, Cluster: c)))
+            .ToDictionary(c => c.Key, c => c.Cluster);
+
         var groups = new List<CreditGroupDto>();
-        foreach (var bucket in shown.GroupBy(BucketOf))
+        foreach (var bucket in exact.GroupBy(b => clusterOf.TryGetValue(b.Key, out var c) ? "group:" + c.Key : b.Key))
         {
-            var members = bucket.ToList();
+            var members = bucket.SelectMany(b => b.Value).ToList();
+            var cluster = clusterOf.GetValueOrDefault(bucket.First().Key);
             var memberLinks = members.SelectMany(n => links[n.Id]).ToList();
             var chapters = memberLinks.DistinctBy(l => l.ChapterId).ToList();
             // What apply would change for these notices, by the same rule ApplyAsync follows.
             var applies = memberLinks
                 .Where(l => applicable.ContainsKey(l.NoticeId) && l.Ungrouped && !conflicted.Contains(l.FileId!.Value))
                 .Select(l => l.ChapterId).Distinct().Count();
-            var (name, source) = bucket.Key is "site" or "unnamed" ? (null, "none") : NameOf(members);
+            var source = cluster is null ? "none" : NameOf(members).Source;
             var kind = bucket.Key == "site" ? "site" : members.Any(n => n.Kind == CreditNoticeKind.Group) ? "group" : "unknown";
             groups.Add(new CreditGroupDto(
-                bucket.Key, name, source, kind, members.Select(n => n.Id).Order().ToList(), members.Count,
-                chapters.Select(l => l.SeriesId).Distinct().Count(), chapters.Count, applies));
+                bucket.Key, cluster?.Name, source, kind, members.Select(n => n.Id).Order().ToList(), members.Count,
+                chapters.Select(l => l.SeriesId).Distinct().Count(), chapters.Count, applies, cluster?.Variants ?? []));
         }
 
         return new CreditGroupListDto(groups
             .OrderBy(g => g.Key is "site" or "unnamed" ? 1 : 0)
             .ThenByDescending(g => g.Chapters)
             .ThenBy(g => g.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(g => g.Key, StringComparer.Ordinal)
             .ToList());
     }
 

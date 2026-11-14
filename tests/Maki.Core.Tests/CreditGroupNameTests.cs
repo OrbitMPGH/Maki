@@ -111,6 +111,98 @@ public class CreditGroupNameTests
         Assert.Throws<InvalidOperationException>(() => CreditGroupName.Safely<int>(() => throw new InvalidOperationException(), 0));
     }
 
+    private static CreditNameWeight W(string name, int chapters, int notices = 1, bool anchor = false) => new(name, anchor, chapters, notices);
+
+    [Fact]
+    public void The_owners_misreads_fold_into_their_right_neighbours()
+    {
+        var clusters = CreditGroupName.Cluster(
+        [
+            W("FALCON SCANS", 6), W("FNLCON SCANS", 2), W("OMEGA SCANS", 120), W("OMEA SCANS", 3), W("UMEGA SCANS", 2),
+            W("QMEGA SCANS", 40), W("OMEGA SCAN", 5), W("ASURA SCANS", 250), W("SURA SCANS", 25),
+        ]);
+
+        Assert.Equal(["ASURA SCANS", "OMEGA SCANS", "FALCON SCANS"], clusters.Select(c => c.Name));
+        Assert.Equal(["SURA SCANS"], clusters[0].Variants);
+        Assert.Equal(["QMEGA SCANS", "OMEGA SCAN", "OMEA SCANS", "UMEGA SCANS"], clusters[1].Variants);
+        Assert.Equal(["FNLCON SCANS"], clusters[2].Variants);
+        Assert.Equal(["falconscans", "fnlconscans"], clusters[2].Keys);
+    }
+
+    [Fact]
+    public void An_anchor_pulls_close_suggestions_under_its_spelling_and_never_joins_another()
+    {
+        var clusters = CreditGroupName.Cluster(
+            [W("QMEGA SCANS", 195), W("Omega Scans", 3, anchor: true), W("Reset Scans", 1, anchor: true), W("Rest Scans", 1, anchor: true)]);
+
+        var omega = clusters.Single(c => c.Name == "Omega Scans");
+        Assert.Equal(["QMEGA SCANS"], omega.Variants);
+        Assert.Equal("omegascans", omega.Key);
+        // Two names someone settled stay two groups, however close.
+        Assert.Contains(clusters, c => c.Name == "Reset Scans" && c.Variants.Count == 0);
+        Assert.Contains(clusters, c => c.Name == "Rest Scans" && c.Variants.Count == 0);
+    }
+
+    [Fact]
+    public void A_tie_never_flips_the_head_with_the_input_order()
+    {
+        CreditNameWeight[] names = [W("RESET SCANS", 4, 2), W("REST SCANS", 4, 2)];
+
+        var forward = CreditGroupName.Cluster(names).Single();
+        var backward = CreditGroupName.Cluster(names.Reverse()).Single();
+
+        Assert.Equal(forward, backward with { Variants = forward.Variants, Keys = forward.Keys });
+        Assert.Equal(forward.Variants, backward.Variants);
+        Assert.Equal("RESET SCANS", forward.Name);
+    }
+
+    [Fact]
+    public void Variants_come_heaviest_first_and_one_key_shows_its_heaviest_spelling()
+    {
+        var cluster = CreditGroupName.Cluster(
+            [W("omega scans", 1), W("OMEGA SCANS", 30), W("Omega Scans", 6), W("OMECA SCANS", 2, 2), W("WOMEGA SCANS", 2, 1), W("QOMEGA SCANS", 9)]).Single();
+
+        Assert.Equal("OMEGA SCANS", cluster.Name);
+        Assert.Equal(["QOMEGA SCANS", "OMECA SCANS", "WOMEGA SCANS"], cluster.Variants);
+    }
+
+    [Theory]
+    [InlineData("Interested in JOINING QOUR TEAM? | Contact us")]
+    [InlineData("Scanlation Team | THE ORIGINAL RELEASE TEAM")]
+    [InlineData("Support the author | Buy it on ridib0oks.com")]
+    [InlineData("Please support us at k0-fi.com | mdiscord.gg | iiko-fi.com")]
+    [InlineData("WE NEED A JAPANESE TL | I'll TL it | VERYURGEN Tl | NEED TL")]
+    [InlineData("All comics on this website | are just previews of the original comics")]
+    [InlineData("JOIN US ON DISCORD | discord.gg/abcdefg")]
+    [InlineData("Read it officially on TAPPYTOON | and on lezhin.com")]
+    public void Junk_and_store_names_give_no_suggestion(string text) =>
+        Assert.Null(CreditGroupName.Suggest([text]).Name);
+
+    [Fact]
+    public void A_group_ending_in_TL_and_a_leading_www_are_kept()
+    {
+        Assert.Equal("LUMINARE TL", CreditGroupName.Suggest(["Translated with love | LUMINARE TL"]).Name);
+        Assert.Equal("ROKARI COMICS", CreditGroupName.Suggest(["READ AT | WWW.ROKARI COMICS"]).Name);
+        Assert.Equal("MOSHI SCANS", CreditGroupName.Suggest(["MOSHI.SCANS SCANLATES PURELY FOR FUN"]).Name);
+    }
+
+    [Theory]
+    [InlineData("mdiscord")]
+    [InlineData("k0fi")]
+    [InlineData("kofl")]
+    [InlineData("ridib0oks")]
+    [InlineData("6mail")]
+    [InlineData("treon")]
+    [InlineData("tappytoon")]
+    public void OCR_misreads_of_a_service_are_still_generic(string key) => Assert.True(CreditGroupName.IsGeneric(key));
+
+    [Theory]
+    [InlineData("komiscans")]
+    [InlineData("komi")]
+    [InlineData("asurascans")]
+    [InlineData("rinkocomics")]
+    public void Real_group_keys_are_not_generic(string key) => Assert.False(CreditGroupName.IsGeneric(key));
+
     [Fact]
     public void Blank_texts_count_for_nothing() =>
         Assert.Equal(CreditGroupGuess.None, CreditGroupName.Suggest([null, "", "  "]));

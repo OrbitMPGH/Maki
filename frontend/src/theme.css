@@ -14694,6 +14694,9 @@ button.credit-notice-image {
   height: auto;
   border-radius: var(--radius-thumb);
 }
+.credit-group-variants {
+  overflow-wrap: anywhere;
+}
 .credit-group-merge {
   align-self: flex-start;
 }
@@ -14703,6 +14706,10 @@ button.credit-notice-image {
   gap: 4px;
   max-height: 14rem;
   overflow-y: auto;
+}
+/* Rows keep their height and the list scrolls: as shrinkable flex items a long list squeezed to slivers. */
+.credit-merge-list > * {
+  flex: none;
 }
 .credit-notice[data-shape='strip'] .credit-notice-image img {
   max-height: 9rem;

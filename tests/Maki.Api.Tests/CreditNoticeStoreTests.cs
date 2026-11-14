@@ -392,6 +392,18 @@ public sealed class CreditNoticeStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task A_suggestion_close_to_a_propagated_name_takes_its_spelling()
+    {
+        var store = Store();
+        var propagated = await AcceptedNoticeAsync(store, Noise(7));
+        await UpdateNoticeAsync(propagated, n => (n.GroupName, n.GroupSource, n.Kind) = ("Omega Scans", CreditGroupSource.Propagated, CreditNoticeKind.Group));
+
+        var misread = (await store.JudgeAsync(Query(Noise(8), crc: 2), Reads("Thanks for reading | QMEGA SCANS"), default)).NoticeId!.Value;
+
+        Assert.Equal("Omega Scans", Notice(misread).SuggestedName);
+    }
+
+    [Fact]
     public async Task Notices_from_before_the_name_reader_are_named_on_load()
     {
         var id = await SeedAsync(PageTextReader.Version, CreditText.Version, accepted: true, "Thanks for reading | SETSU SCANS", true);

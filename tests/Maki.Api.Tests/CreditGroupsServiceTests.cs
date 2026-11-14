@@ -293,16 +293,42 @@ public sealed class CreditGroupsServiceTests : IDisposable
         Assert.Equal(["group:asurascans", "site", "unnamed"], result.Groups.Select(g => g.Key).Order());
         var asura = result.Groups.Single(g => g.Key == "group:asurascans");
         // Three chapters carry the bucket, but apply changes only chapter one: two has a group and three's notice is a suggestion.
-        Assert.Equal(new CreditGroupDto("group:asurascans", "Asura Scans", "confirmed", "group", [confirmed, suggested], 2, 1, 3, 1),
+        Assert.Equal(new CreditGroupDto("group:asurascans", "Asura Scans", "confirmed", "group", [confirmed, suggested], 2, 1, 3, 1, []),
             asura with { NoticeIds = asura.NoticeIds.ToList() }, new GroupComparer());
         Assert.Equal(("site", "none", 1), result.Groups.Where(g => g.Key == "site").Select(g => (g.Kind, g.NameSource, g.Chapters)).Single());
         Assert.Contains(all.Groups, g => g.Key == "group:titlepage" && g.NameSource == "suggested");
     }
 
+    [Fact]
+    public async Task OCR_misreads_of_one_name_list_as_one_group_under_the_anchor_or_the_heaviest_spelling()
+    {
+        var (one, two, three, four, five) = (AddChapter(1), AddChapter(2), AddChapter(3), AddChapter(4), AddChapter(5));
+        var falcon = AddNotice(suggested: "FALCON SCANS");
+        var fnlcon = AddNotice(suggested: "FNLCON SCANS");
+        var confirmed = AddNotice(kind: CreditNoticeKind.Group, groupName: "Asura Scans", source: CreditGroupSource.Confirmed);
+        var sura = AddNotice(suggested: "SURA SCANS");
+        Link(falcon, one);
+        Link(falcon, two);
+        Link(fnlcon, three);
+        Link(confirmed, four);
+        Link(sura, five);
+
+        await using var db = _db.NewContext();
+        var groups = (await Controller(db).List(all: false, default)).Value!.Groups;
+
+        Assert.Equal(2, groups.Count);
+        Assert.Equal(new CreditGroupDto("group:falconscans", "FALCON SCANS", "suggested", "unknown", [falcon, fnlcon], 2, 1, 3, 0,
+            ["FNLCON SCANS"]), groups.Single(g => g.Key == "group:falconscans"), new GroupComparer());
+        // The anchor heads its bucket even with fewer chapters; only its own chapter is one apply would change.
+        Assert.Equal(new CreditGroupDto("group:asurascans", "Asura Scans", "confirmed", "group", [confirmed, sura], 2, 1, 2, 1,
+            ["SURA SCANS"]), groups.Single(g => g.Key == "group:asurascans"), new GroupComparer());
+    }
+
     private sealed class GroupComparer : IEqualityComparer<CreditGroupDto>
     {
         public bool Equals(CreditGroupDto? x, CreditGroupDto? y) =>
-            x is not null && y is not null && x with { NoticeIds = [] } == y with { NoticeIds = [] } && x.NoticeIds.SequenceEqual(y.NoticeIds);
+            x is not null && y is not null && x with { NoticeIds = [], Variants = [] } == y with { NoticeIds = [], Variants = [] } &&
+            x.NoticeIds.SequenceEqual(y.NoticeIds) && x.Variants.SequenceEqual(y.Variants);
 
         public int GetHashCode(CreditGroupDto obj) => obj.Key.GetHashCode();
     }

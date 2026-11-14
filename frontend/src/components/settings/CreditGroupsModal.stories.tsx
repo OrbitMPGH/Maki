@@ -48,6 +48,7 @@ export const SuggestedName: Story = {
     const dialog = await dialogOf(canvasElement)
     await userEvent.click(await dialog.findByRole('button', { name: /^Paper Crane/ }))
     await expect(await dialog.findByText(/Read off the image text/)).toBeVisible()
+    await expect(await dialog.findByText('Also read as PAPER CRNE, Paper Crone')).toBeVisible()
     const give = await dialog.findByRole('button', { name: 'Give to chapters' })
     await waitFor(() => expect(give).toBeDisabled())
     await expect(await dialog.findByText('Confirm the name before giving it to chapters.')).toBeVisible()
@@ -82,6 +83,67 @@ export const MergeGroups: Story = {
     await userEvent.click(await body.findByRole('button', { name: 'Merge into Moonlit Scans' }))
     await waitFor(() => expect(onMerge).toHaveBeenCalledWith({ noticeIds: [4, 5, 1, 2], name: 'Moonlit Scans' }))
     await expect(await body.findByText('Merged Paper Crane into Moonlit Scans')).toBeVisible()
+  },
+}
+
+const manyGroups = {
+  groups: [
+    {
+      key: 'group:qmega scans',
+      name: 'QMEGA SCANS',
+      nameSource: 'suggested',
+      kind: 'unknown',
+      noticeIds: [4, 5],
+      notices: 2,
+      series: 1,
+      chapters: 40,
+      chaptersWithoutGroup: 0,
+      variants: [],
+    },
+    ...Array.from({ length: 28 }, (_, i) => ({
+      key: `group:team ${i + 1}`,
+      name: `Team ${i + 1}`,
+      nameSource: 'confirmed',
+      kind: 'group',
+      noticeIds: [3],
+      notices: 1,
+      series: 1,
+      chapters: 30 - i,
+      chaptersWithoutGroup: 0,
+      variants: [],
+    })),
+    {
+      key: 'group:omega scans',
+      name: 'Omega Scans',
+      nameSource: 'confirmed',
+      kind: 'group',
+      noticeIds: [1, 2],
+      notices: 2,
+      series: 2,
+      chapters: 2,
+      chaptersWithoutGroup: 0,
+      variants: [],
+    },
+  ],
+}
+
+/** With dozens of groups the list scrolls at full row height, leads with the closest name and can be filtered. */
+export const MergeListWithManyGroups: Story = {
+  parameters: {
+    msw: settingsMsw(http.get(api('/creditgroups'), () => HttpResponse.json(manyGroups))),
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = await dialogOf(canvasElement)
+    await userEvent.click(await dialog.findByRole('button', { name: 'Merge into another group' }))
+    const body = within(canvasElement.ownerDocument.body)
+    const list = await body.findByRole('group', { name: 'Merge QMEGA SCANS into' })
+    const rows = await within(list).findAllByRole('button')
+    await waitFor(() => expect(rows).toHaveLength(29))
+    await expect(rows[0]).toHaveTextContent('Omega Scans')
+    await waitFor(() => expect(rows[0].getBoundingClientRect().height).toBeGreaterThanOrEqual(24))
+    await waitFor(() => expect(list.scrollHeight).toBeGreaterThan(list.clientHeight))
+    await userEvent.type(await body.findByRole('textbox', { name: 'Find a group' }), 'team 2')
+    await waitFor(() => expect(within(list).getAllByRole('button')).toHaveLength(10))
   },
 }
 
