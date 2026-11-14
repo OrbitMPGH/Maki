@@ -29,7 +29,7 @@ export const AfterAPass: Story = {
     await expect(canvas.getByText('PNG pages are kept lossless.')).toBeVisible()
     await expect(canvas.getByRole('link', { name: 'Change settings' })).toHaveAttribute(
       'href',
-      '/settings/page-conversion?step=2',
+      '/settings/page-conversion',
     )
     await expect(canvas.queryByRole('radio')).toBeNull()
     await expect(await canvas.findByText(/412 files converted so far/)).toBeVisible()

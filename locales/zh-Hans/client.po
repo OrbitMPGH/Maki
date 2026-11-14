@@ -13,7 +13,7 @@ msgstr ""
 "Language-Team: \n"
 "Plural-Forms: \n"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #: src/pages/settings/DownloadCards.tsx
 #, fuzzy
 msgid " MB"
@@ -57,7 +57,7 @@ msgid "{0, plural, one {{1} of # file} other {{2} of # files}}"
 msgstr ""
 
 #. placeholder {0}: line.files
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "{0, plural, one {{settings}: # file, {saved} saved} other {{settings}: # files, {saved} saved}}"
 msgstr "{0, plural, other {{settings}：# 个文件，{saved} 已保存}}"
@@ -180,43 +180,41 @@ msgid "{0, plural, one {# file in the root folder moves into a new folder first.
 msgstr ""
 
 #. placeholder {0}: scope.alreadyCompact.files
-#: src/components/pageconversion/ScopeStep.tsx
-#, fuzzy
-msgid "{0, plural, one {# file is already WebP or AVIF and is left as it is ({compactSize}).} other {# files are already WebP or AVIF and are left as they are ({compactSize}).}}"
-msgstr "{0, plural, other {# 个文件已是 WebP 或 AVIF，将保持原样（{compactSize}）。}}"
+#: src/pages/PageConversionWizardPage.tsx
+msgid "{0, plural, one {# file is already WebP, AVIF or JPEG XL and is left as it is ({compactSize}).} other {# files are already WebP, AVIF or JPEG XL and are left as they are ({compactSize}).}}"
+msgstr ""
 
 #. placeholder {0}: passed.alreadyCompact
-#: src/components/pageconversion/ReviewStep.tsx
-#, fuzzy
-msgid "{0, plural, one {# file is already WebP or AVIF} other {# files are already WebP or AVIF}}"
-msgstr "{0, plural, other {# 个文件已是 WebP 或 AVIF}}"
+#: src/components/pageconversion/PlanEstimate.tsx
+msgid "{0, plural, one {# file is already WebP, AVIF or JPEG XL} other {# files are already WebP, AVIF or JPEG XL}}"
+msgstr ""
 
 #. placeholder {0}: passed.cleanupDue
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "{0, plural, one {# file is due for read-file cleanup} other {# files are due for read-file cleanup}}"
 msgstr "{0, plural, other {# 个文件已到读取文件清理的时间}}"
 
 #. placeholder {0}: passed.hardlinkedFiles
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "{0, plural, one {# file is hardlinked to a torrent and stays as it is ({hardlinked})} other {# files are hardlinked to torrents and stay as they are ({hardlinked})}}"
 msgstr "{0, plural, other {# 个文件已硬链接到种子，将保持原样（{hardlinked}）}}"
 
 #. placeholder {0}: passed.neverFiles
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "{0, plural, one {# file is in a series set to Never ({never})} other {# files are in {neverSeries} series set to Never ({never})}}"
 msgstr "{0, plural, other {# 个文件位于 {neverSeries} 个设为「从不」的系列中（{never}）}}"
 
 #. placeholder {0}: passed.downloadInFlight
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "{0, plural, one {# file is in a series with a download in flight} other {# files are in series with a download in flight}}"
 msgstr "{0, plural, other {# 个文件位于有下载正在进行的系列中}}"
 
 #. placeholder {0}: scope.overrides.files
-#: src/components/pageconversion/ScopeStep.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "{0, plural, one {# file is in a series with its own setting, which wins over the rules ({overridesSize}).} other {# files are in series with their own setting, which wins over the rules ({overridesSize}).}}"
 msgstr "{0, plural, other {# 个文件位于有自己设置的系列中，该设置优先于规则（{overridesSize}）。}}"
@@ -228,13 +226,13 @@ msgid "{0, plural, one {# file is left out} other {# files are left out}}"
 msgstr "{0, plural, other {# 个文件将被跳过}}"
 
 #. placeholder {0}: passed.skippedByRule
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "{0, plural, one {# file is skipped by a rule ({skipped})} other {# files are skipped by a rule ({skipped})}}"
 msgstr "{0, plural, other {# 个文件被规则跳过（{skipped}）}}"
 
 #. placeholder {0}: passed.pendingImport
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "{0, plural, one {# file is waiting on an import link} other {# files are waiting on an import link}}"
 msgstr "{0, plural, other {# 个文件正在等待导入链接}}"
@@ -246,25 +244,40 @@ msgid "{0, plural, one {# file kept on disk because another series still uses it
 msgstr "{0, plural, other {# 个文件仍保留在磁盘上，因为另一个系列仍在使用它们}}"
 
 #. placeholder {0}: passed.alreadyChecked
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "{0, plural, one {# file was already checked with these settings ({checked})} other {# files were already checked with these settings ({checked})}}"
 msgstr "{0, plural, other {# 个文件已按这些设置检查过（{checked}）}}"
 
 #. placeholder {0}: scope.convertedEarlier.files
-#: src/components/pageconversion/ScopeStep.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "{0, plural, one {# file was converted earlier and stays as it is ({earlierSize}).} other {# files were converted earlier and stay as they are ({earlierSize}).}}"
 msgstr "{0, plural, other {# 个文件之前已转换，将保持原样（{earlierSize}）。}}"
 
 #. placeholder {0}: passed.undone
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "{0, plural, one {# file was put back by an undo and stays as it is} other {# files were put back by an undo and stay as they are}}"
 msgstr "{0, plural, other {# 个文件已被撤销操作放回，将保持原样}}"
 
+#. placeholder {0}: totals.files
+#: src/pages/PageConversionWizardPage.tsx
+msgid "{0, plural, one {# file, {now} now, {expected} after} other {# files, {now} now, {expected} after}}"
+msgstr ""
+
+#. placeholder {0}: totals.files
+#: src/pages/PageConversionWizardPage.tsx
+msgid "{0, plural, one {# file, {now}} other {# files, {now}}}"
+msgstr ""
+
 #. placeholder {0}: bucket.files
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
+msgid "{0, plural, one {# file, {size}, converted at the quality set in its series menu.} other {# files, {size}, converted at the quality set in their series menus.}}"
+msgstr ""
+
+#. placeholder {0}: bucket.files
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "{0, plural, one {# file, {size}} other {# files, {size}}}"
 msgstr "{0, plural, other {# 个文件，{size}}}"
@@ -362,12 +375,6 @@ msgstr ""
 #: src/components/import/ImportMatchFinder.tsx
 msgid "{0, plural, one {# result} other {# results}}"
 msgstr ""
-
-#. placeholder {0}: rules.length
-#: src/pages/PageConversionWizardPage.tsx
-#, fuzzy
-msgid "{0, plural, one {# rule} other {# rules}}"
-msgstr "{0, plural, other {# 条规则}}"
 
 #. placeholder {0}: entry.animeCount
 #: src/pages/discover/AnimeSignalsSection.tsx
@@ -597,12 +604,6 @@ msgstr ""
 msgid "{0, plural, one {No longer want # chapter} other {No longer want # chapters}}"
 msgstr "{0, plural, other {已将 # 个章节标记为不想要}}"
 
-#. placeholder {0}: status.library.pendingFiles
-#: src/components/pageconversion/StartStep.tsx
-#, fuzzy
-msgid "{0, plural, one {Nothing is saved until you press a button below. The pass will check # file that has not been looked at yet. Files converted earlier are not converted again.} other {Nothing is saved until you press a button below. The pass will check # files that have not been looked at yet. Files converted earlier are not converted again.}}"
-msgstr "{0, plural, other {在你按下下方按钮之前不会保存任何内容。此次处理将检查 # 个尚未查看过的文件。之前已转换的文件不会再次转换。}}"
-
 #. placeholder {0}: stats.timedChapters
 #: src/components/series/SeriesReadingPanel.tsx
 msgid "{0, plural, one {over # chapter} other {over # chapters}}"
@@ -711,12 +712,6 @@ msgstr "{0, plural, other {显示全部 # 条}}"
 #: src/components/settings/RecycleBinModal.tsx
 msgid "{0, plural, one {Showing # of {total} files} other {Showing # of {total} files}}"
 msgstr ""
-
-#. placeholder {0}: bucket.files
-#: src/components/pageconversion/EstimateTable.tsx
-#, fuzzy
-msgid "{0, plural, one {Skipped: # file, {size}} other {Skipped: # files, {size}}}"
-msgstr "{0, plural, other {已跳过：# 个文件，{size}}}"
 
 #. placeholder {0}: spoilers.length
 #: src/components/TagBuckets.tsx
@@ -1003,10 +998,9 @@ msgstr "{cellDate}：{chapters, plural, other {# 个章节}}"
 msgid "{cellDate}: nothing read"
 msgstr "{cellDate}：没有阅读内容"
 
-#: src/components/pageconversion/CompareStep.tsx
-#, fuzzy
-msgid "{chapter}, {reason}"
-msgstr "{chapter}，{reason}"
+#: src/components/pageconversion/TargetSheet.tsx
+msgid "{chapter}, page {page}"
+msgstr ""
 
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
@@ -1600,6 +1594,18 @@ msgstr "剩余 {eta}"
 msgid "{existing, plural, one {# already in the library} other {# already in the library}}"
 msgstr "{existing, plural, other {# 个已在资料库中}}"
 
+#: src/components/pageconversion/PlanTable.tsx
+msgid "{expected} after"
+msgstr ""
+
+#: src/components/pageconversion/PlanEstimate.tsx
+msgid "{expected} after, about {time}."
+msgstr ""
+
+#: src/components/pageconversion/PlanEstimate.tsx
+msgid "{expected} after."
+msgstr ""
+
 #: src/components/settings/RecycleBinModal.tsx
 msgid "{expiringSoon, plural, one {# goes within {SOON_DAYS} days} other {# go within {SOON_DAYS} days}}"
 msgstr ""
@@ -1703,16 +1709,6 @@ msgstr "{folderLabel}：已关联 {linkedCount}，共 {linkTotal, plural, other 
 msgid "{format}, {stop}"
 msgstr "{format}，{stop}"
 
-#: src/components/pageconversion/labels.ts
-#, fuzzy
-msgid "{format}, {stop}, {rules}"
-msgstr "{format}，{stop}，{rules}"
-
-#: src/components/pageconversion/labels.ts
-#, fuzzy
-msgid "{format}, {stop}, PNG lossless"
-msgstr "{format}，{stop}，PNG 无损"
-
 #: src/pages/reader/ChapterEnd.tsx
 #, fuzzy
 msgid "{forwardKey} or Space opens it, Esc goes back to the series."
@@ -1729,7 +1725,7 @@ msgid "{free} free"
 msgstr "{free} 可用"
 
 #: src/components/library/LibraryFilterPanel.tsx
-#: src/components/pageconversion/EstimateTable.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "{from} to {to}"
 msgstr "{from} 至 {to}"
@@ -1754,6 +1750,10 @@ msgstr ""
 
 #: src/components/settings/UsersSection.tsx
 msgid "{grantedCount, plural, one {# permission} other {# permissions}}"
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "{greyLabel} for black-and-white pages, {colourLabel} for colour pages"
 msgstr ""
 
 #: src/components/discover/ScoreFigure.tsx
@@ -1850,7 +1850,7 @@ msgstr "{installed, plural, =0 {尚未安装 Suwayomi 来源。} other {共 # �
 msgid "{intoLevel} / {levelSpan} XP to level {nextLevel}"
 msgstr "距离等级 {nextLevel} 还需 {intoLevel} / {levelSpan} XP"
 
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "{inTrash, plural, one {# of them still has its original in the trash. Undo it from the series page.} other {# of them still have their original in the trash. Undo them from the series page.}}"
 msgstr "{inTrash, plural, other {其中 # 个仍在回收站中保留原件。请在系列页面中撤销这些操作。}}"
@@ -1934,6 +1934,10 @@ msgstr "{label} 令牌"
 msgid "{label}, {0} votes"
 msgstr ""
 
+#: src/components/pageconversion/labels.ts
+msgid "{label}, {rules}"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 msgid "{label}, {source}"
 msgstr ""
@@ -1942,10 +1946,18 @@ msgstr ""
 msgid "{label}, {source}, {time}"
 msgstr ""
 
+#: src/components/pageconversion/labels.ts
+msgid "{label}, PNG lossless"
+msgstr ""
+
 #: src/pages/ActivityPage.tsx
 #, fuzzy
 msgid "{label}: {chapterTitle}"
 msgstr "{label}：{chapterTitle}"
+
+#: src/components/pageconversion/RuleEditor.tsx
+msgid "{label}: {values}"
+msgstr ""
 
 #: src/components/CatalogueRules.tsx
 #, fuzzy
@@ -2683,11 +2695,6 @@ msgstr "{review, plural, other {# 个下载正在等待导入决定}}"
 msgid "{review, plural, one {Activity, # download waiting for an import decision} other {Activity, # downloads waiting for an import decision}}"
 msgstr "{review, plural, other {活动，# 个下载正在等待导入决定}}"
 
-#: src/components/pageconversion/StartStep.tsx
-#, fuzzy
-msgid "{ruleCount, plural, one {# rule, then everything else at the quality above} other {# rules, then everything else at the quality above}}"
-msgstr "{ruleCount, plural, other {# 条规则，其余内容使用上方的质量}}"
-
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "{ruleCount, plural, one {# rule} other {# rules}}"
@@ -2865,6 +2872,10 @@ msgstr "{seriesTotalCount, plural, other {这会为全部 # 个系列重新下�
 msgid "{seriesWantedCount, plural, one {# in series} other {# in series}}"
 msgstr "{seriesWantedCount, plural, other {系列中有 # 个}}"
 
+#: src/components/pageconversion/PlanTable.tsx
+msgid "{sheetKind}, {sheetRow}"
+msgstr ""
+
 #: src/pages/HealthPage.tsx
 #, fuzzy
 msgid "{shown, plural, one {Relink it} other {Relink all #}}"
@@ -2893,10 +2904,9 @@ msgstr "{siteName}的语言"
 msgid "{size, plural, one {# series} other {# series}}"
 msgstr ""
 
-#: src/components/pageconversion/CompareStep.tsx
-#, fuzzy
-msgid "{size}, {percent} of the original"
-msgstr "{size}，为原文件的 {percent}"
+#: src/components/pageconversion/TargetSheet.tsx
+msgid "{size}, {percent}"
+msgstr ""
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -3018,11 +3028,6 @@ msgstr "{statusLabel}，未监控"
 #, fuzzy
 msgid "{statusOnly}. {readTip}"
 msgstr "{statusOnly}。{readTip}"
-
-#: src/components/pageconversion/StartStep.tsx
-#, fuzzy
-msgid "{stop}. {hint}"
-msgstr "{stop}。{hint}"
 
 #: src/pages/stats/sections/HabitsSection.tsx
 #, fuzzy
@@ -3187,7 +3192,7 @@ msgstr "{total, plural, other {重新关联 # 个章节并删除}}"
 msgid "{total, plural, one {Relink # chapter} other {Relink # chapters}}"
 msgstr "{total, plural, other {重新关联 # 个章节}}"
 
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "{total, plural, one {Sampling {done} of # file} other {Sampling {done} of # files}}"
 msgstr "{total, plural, other {正在采样 {done}/# 个文件}}"
@@ -3699,6 +3704,10 @@ msgstr "每页 10 个"
 msgid "100 / page"
 msgstr "每页 100 个"
 
+#: src/components/pageconversion/CompareView.tsx
+msgid "100%"
+msgstr ""
+
 #: src/pages/stats/StatsRange.ts
 #, fuzzy
 msgid "12 months"
@@ -3835,6 +3844,10 @@ msgstr ""
 #, fuzzy
 msgid "A large selection can take a while."
 msgstr "选择内容较多时可能需要一段时间。"
+
+#: src/components/pageconversion/labels.ts
+msgid "A little softening in fine detail. Fine at fit-to-screen."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -4017,11 +4030,6 @@ msgstr "已放弃"
 msgid "About {chapterLeft} left in this chapter"
 msgstr ""
 
-#: src/components/pageconversion/EstimateTable.tsx
-#, fuzzy
-msgid "About {hardlinked} are hardlinked to torrents and stay as they are."
-msgstr "其中约 {hardlinked} 个已硬链接到种子，将保持原样。"
-
 #: src/components/RecommendationModelSwitch.tsx
 #, fuzzy
 msgid "about {hourPhrase} {restPhrase} left"
@@ -4071,6 +4079,10 @@ msgstr "读到约十章时，以及你追上一部仍在连载的系列时。最
 
 #: src/components/library/LibraryFilterPanel.tsx
 msgid "About the series"
+msgstr ""
+
+#: src/components/pageconversion/labels.ts
+msgid "About WebP's size, a little smaller at High, and much faster to convert. Readers that can't show JPEG XL get WebP made on the fly, but a CBZ file you download keeps its JPEG XL pages, which KOReader and most comic apps can't open."
 msgstr ""
 
 #: src/components/AppearancePicker.tsx
@@ -4146,7 +4158,7 @@ msgstr "已确认，已从顶部标记中隐藏"
 msgid "Action"
 msgstr "动作"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Action for rule {number}"
 msgstr "规则 {number} 的操作"
@@ -4257,13 +4269,13 @@ msgstr "添加系列"
 msgid "Add a series and Maki will start tracking chapters for it. This page fills up as you read and download."
 msgstr "添加系列后，Maki 会开始跟踪它的章节。你阅读和下载后，此页面会逐渐填充内容。"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Add condition"
 msgstr "添加条件"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Add condition to rule {number}"
 msgstr "为规则 {number} 添加条件"
@@ -4294,9 +4306,9 @@ msgid "Add rail"
 msgstr "添加推荐栏"
 
 #: src/components/CatalogueRules.tsx
-#: src/components/pageconversion/ScopeStep.tsx
 #: src/components/settings/AutoTagRulesModal.tsx
 #: src/components/settings/RootFolderRulesModal.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Add rule"
 msgstr "添加规则"
@@ -4977,12 +4989,12 @@ msgstr "任意"
 msgid "Any"
 msgstr "任意"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Any format"
 msgstr "任意格式"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Any kind"
 msgstr "任意类型"
@@ -4992,7 +5004,7 @@ msgstr "任意类型"
 msgid "Any series can be set differently from its own page."
 msgstr "每个系列都可以在它自己的页面上单独设置。"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Any tags"
 msgstr "任意标签"
@@ -5001,7 +5013,7 @@ msgstr "任意标签"
 msgid "Any time"
 msgstr ""
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Any type"
 msgstr "任意类型"
@@ -5281,6 +5293,10 @@ msgstr "调整首页显示的内容。"
 msgid "Art"
 msgstr "画作"
 
+#: src/components/pageconversion/TargetSheet.tsx
+msgid "As {label}"
+msgstr ""
+
 #: src/pages/discover/ShortlistTab.tsx
 #, fuzzy
 msgid "As owned"
@@ -5508,7 +5524,6 @@ msgstr "自动化"
 msgid "Average score"
 msgstr "平均评分"
 
-#: src/components/pageconversion/FormatStep.tsx
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "AVIF"
@@ -5524,7 +5539,6 @@ msgstr "已避开"
 #: src/components/SetupWizard.tsx
 #: src/components/ui/DrillPanel.tsx
 #: src/lib/navHistory.tsx
-#: src/pages/PageConversionWizardPage.tsx
 #: src/pages/reader/TapZoneOverlay.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
@@ -5797,20 +5811,32 @@ msgstr "最忙的一天"
 msgid "Biggest on disk"
 msgstr "磁盘占用最大"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Bits per pixel"
 msgstr "每像素位数"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Bits per pixel, over"
 msgstr "每像素位数，高于"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Bits per pixel, under"
 msgstr "每像素位数，低于"
+
+#: src/components/pageconversion/TargetSheet.tsx
+msgid "black-and-white"
+msgstr ""
+
+#: src/components/pageconversion/PlanTable.tsx
+msgid "Black-and-white pages"
+msgstr ""
+
+#: src/components/pageconversion/PlanTable.tsx
+msgid "Black-and-white pages, {rowLabel}"
+msgstr ""
 
 #: src/components/ScanlationGroupsModal.tsx
 msgid "Block a group"
@@ -6100,7 +6126,7 @@ msgstr "无法使用已保存的信息登录。"
 #: src/components/notes/NoteComposer.tsx
 #: src/components/notes/NoteThread.tsx
 #: src/components/NotificationsSection.tsx
-#: src/components/pageconversion/StartStep.tsx
+#: src/components/pageconversion/SaveActions.tsx
 #: src/components/QueueActions.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/RatingImportModal.tsx
@@ -6997,6 +7023,10 @@ msgstr "请先选择根文件夹"
 msgid "Choose how a finished download is imported."
 msgstr ""
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Choose how each kind of file and page is stored, and look at your own pages before anything is rewritten."
+msgstr ""
+
 #. placeholder {0}: plan.seriesTitle
 #: src/components/ImportReviewModal.tsx
 msgid "Choose how this download lands in {0}."
@@ -7207,10 +7237,18 @@ msgstr "关闭预览"
 msgid "Close Rewind"
 msgstr "关闭 Rewind"
 
+#: src/components/pageconversion/PlanTable.tsx
+msgid "Close rule {number}"
+msgstr ""
+
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
 msgid "Close to your taste"
 msgstr "符合你的品味"
+
+#: src/components/pageconversion/TargetSheet.tsx
+msgid "Closer to the original"
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy
@@ -7261,6 +7299,10 @@ msgstr "收起侧边栏"
 msgid "Collection"
 msgstr "收藏"
 
+#: src/components/pageconversion/TargetSheet.tsx
+msgid "colour"
+msgstr ""
+
 #: src/components/TagManagerModal.tsx
 #, fuzzy
 msgid "Colour {c}"
@@ -7276,6 +7318,18 @@ msgstr "颜色滤镜"
 #, fuzzy
 msgid "Colour page"
 msgstr "彩色页面"
+
+#: src/components/pageconversion/PlanTable.tsx
+msgid "Colour pages"
+msgstr ""
+
+#: src/components/pageconversion/TargetSheet.tsx
+msgid "Colour pages are stored like black-and-white pages in this row: {fallbackLabel}."
+msgstr ""
+
+#: src/components/pageconversion/PlanTable.tsx
+msgid "Colour pages, {rowLabel}"
+msgstr ""
 
 #: src/components/series/ChapterViewMenu.tsx
 #: src/pages/LibraryPage.tsx
@@ -7326,7 +7380,6 @@ msgid "Compact"
 msgstr "紧凑"
 
 #: src/components/SourceMappingsSection.tsx
-#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Compare"
 msgstr "比较"
@@ -7345,11 +7398,6 @@ msgstr "比较此页面"
 #, fuzzy
 msgid "Compare with other users on this instance"
 msgstr "与此实例上的其他用户比较"
-
-#: src/pages/PageConversionWizardPage.tsx
-#, fuzzy
-msgid "Compare your own pages at each quality before anything is rewritten."
-msgstr "在改写任何内容之前，先比较你自己的页面在各质量下的效果。"
 
 #: src/components/pageconversion/CompareView.tsx
 #, fuzzy
@@ -7583,7 +7631,6 @@ msgid "contents read"
 msgstr "已读内容"
 
 #: src/components/SetupWizard.tsx
-#: src/pages/PageConversionWizardPage.tsx
 #: src/pages/settings/CustomSourceWizard.tsx
 #, fuzzy
 msgid "Continue"
@@ -7652,37 +7699,30 @@ msgstr ""
 msgid "Continuous, because this chapter's pages are very tall."
 msgstr "因为本章页面很高，使用连续布局。"
 
-#: src/components/pageconversion/ScopeStep.tsx
-#, fuzzy
-msgid "Conversion is off, so there is nothing to choose. Continue to save that choice."
-msgstr "转换已关闭，因此没有可选择的内容。继续即可保存这一选择。"
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Conversion is off. Files converted earlier stay as they are."
+msgstr ""
 
-#: src/components/pageconversion/CompareStep.tsx
-#, fuzzy
-msgid "Conversion is off, so there is nothing to compare. Go back to pick a format."
-msgstr "转换已关闭，因此没有可比较的内容。返回以选择格式。"
-
-#: src/components/pageconversion/ReviewStep.tsx
-#, fuzzy
-msgid "Conversion is off, so there is nothing to estimate. Continue to save that choice."
-msgstr "转换已关闭，因此没有可估算的内容。继续即可保存这一选择。"
-
-#: src/components/pageconversion/RuleCard.tsx
-#, fuzzy
-msgid "Convert at {stopLabel}"
-msgstr "在 {stopLabel} 时转换"
+#: src/components/pageconversion/PlanTable.tsx
+msgid "Conversion plan"
+msgstr ""
 
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "Convert library"
 msgstr "转换资料库"
 
-#: src/components/pageconversion/CompareView.tsx
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Convert pages"
+msgstr ""
+
+#: src/components/pageconversion/RuleEditor.tsx
+#: src/components/pageconversion/TargetSheet.tsx
 #, fuzzy
 msgid "Converted"
 msgstr "已转换"
 
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "Converted earlier"
 msgstr "之前已转换"
@@ -8083,12 +8123,12 @@ msgstr "无法启动扫描"
 msgid "Couldn't start the volume search"
 msgstr "无法启动卷搜索"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Counting files"
 msgstr "正在统计文件"
 
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "Counting the files to sample"
 msgstr "正在统计要采样的文件"
@@ -8830,6 +8870,7 @@ msgstr "详细"
 #: src/components/ErrorMessage.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/HealthPage.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #: src/pages/ScrobblePage.tsx
 #: src/pages/SeriesDetailPage.tsx
 #, fuzzy
@@ -9064,6 +9105,7 @@ msgstr "不想要"
 #: src/components/LanguageAnnouncementModal.tsx
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/NamingTokenModal.tsx
+#: src/components/pageconversion/TargetSheet.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/components/ui/DrillControls.tsx
@@ -9607,6 +9649,10 @@ msgstr "编辑 {title} 的请求"
 msgid "Edit rule"
 msgstr ""
 
+#: src/components/pageconversion/PlanTable.tsx
+msgid "Edit rule {number}"
+msgstr ""
+
 #: src/components/notes/NoteThread.tsx
 #, fuzzy
 msgid "edited"
@@ -9853,7 +9899,7 @@ msgstr "Esc"
 msgid "Esc closes"
 msgstr "按 Esc 关闭"
 
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "Estimate progress"
 msgstr "估算进度"
@@ -9921,6 +9967,10 @@ msgstr "每天"
 msgid "Every enabled source is already linked."
 msgstr "所有已启用的来源都已关联。"
 
+#: src/components/pageconversion/PlanTable.tsx
+msgid "Every file"
+msgstr ""
+
 #: src/api/upgrades.ts
 #, fuzzy
 msgid "Every file already meets the cutoff"
@@ -9940,6 +9990,10 @@ msgstr "所有文件均已检查。"
 #, fuzzy
 msgid "Every file meets its cutoff"
 msgstr "所有文件都已达截止线"
+
+#: src/components/pageconversion/PlanTable.tsx
+msgid "Every file that reaches it"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -10034,17 +10088,12 @@ msgstr "所有能看到此系列的人"
 msgid "Everything"
 msgstr "全部"
 
+#: src/components/pageconversion/PlanTable.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Everything else"
 msgstr "其他所有内容"
-
-#: src/components/pageconversion/EstimateTable.tsx
-#: src/components/pageconversion/ScopeStep.tsx
-#, fuzzy
-msgid "Everything else: {stopLabel}"
-msgstr "其他所有内容：{stopLabel}"
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -10163,11 +10212,6 @@ msgstr "展开 {spanLabel}"
 #: src/components/series/ChapterViewMenu.tsx
 msgid "Expand all"
 msgstr ""
-
-#: src/components/pageconversion/EstimateTable.tsx
-#, fuzzy
-msgid "Expected"
-msgstr "预期"
 
 #: src/components/import/ImportPlanModal.tsx
 #, fuzzy
@@ -10465,23 +10509,23 @@ msgstr "磁盘上未关联的文件"
 msgid "File removed"
 msgstr "文件已移除"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "File size"
 msgstr "文件大小"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "File size in MB, over"
 msgstr "文件大小（MB），大于"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "File size in MB, under"
 msgstr "文件大小（MB），小于"
 
 #: src/components/import/ImportPlanModal.tsx
-#: src/components/pageconversion/EstimateTable.tsx
+#: src/components/pageconversion/PlanTable.tsx
 #: src/components/RenameSeriesModal.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/SeriesFilesSection.tsx
@@ -10519,6 +10563,10 @@ msgstr "此下载中的文件"
 #, fuzzy
 msgid "Files kept"
 msgstr "保留的文件"
+
+#: src/components/pageconversion/PlanTable.tsx
+msgid "Files no rule above matches"
+msgstr ""
 
 #: src/components/SetupWizard.tsx
 #: src/pages/settings/LibraryCards.tsx
@@ -10699,6 +10747,10 @@ msgstr "发现项"
 msgid "Finds missing, new or broken files. Takes seconds."
 msgstr "查找缺失、新增或损坏的文件。只需几秒钟。"
 
+#: src/components/pageconversion/labels.ts
+msgid "Fine detail gets softer. Check dark gradients."
+msgstr ""
+
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Finish"
@@ -10763,6 +10815,7 @@ msgstr "第一页"
 msgid "First page image"
 msgstr "第一页图片"
 
+#: src/components/pageconversion/CompareView.tsx
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "Fit"
@@ -10897,11 +10950,6 @@ msgstr ""
 msgid "Follow someone from their creator page."
 msgstr "从创作者页面关注某人。"
 
-#: src/components/pageconversion/StartStep.tsx
-#, fuzzy
-msgid "Follow the quality"
-msgstr "跟随质量设置"
-
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #, fuzzy
@@ -10964,10 +11012,8 @@ msgstr "适用于 Panels、KOReader 和 Mihon 等阅读应用。"
 msgid "For this series only. Its preferred list replaces the global one; blocked groups add to it."
 msgstr ""
 
-#: src/components/pageconversion/FormatStep.tsx
-#: src/components/pageconversion/StartStep.tsx
+#: src/components/pageconversion/TargetSheet.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
-#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Format"
 msgstr "格式"
@@ -11037,6 +11083,10 @@ msgstr "来自 {previous}"
 #, fuzzy
 msgid "From {source}. You can keep browsing while it downloads."
 msgstr "来自 {source}。下载期间你可以继续浏览。"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "From before your latest changes"
+msgstr ""
 
 #: src/components/RelinkFilesModal.tsx
 #, fuzzy
@@ -11428,6 +11478,10 @@ msgstr "阅读习惯数据"
 msgid "Half of what rating the manga would carry. A show you loved lends its genres and tags to your profile without out-voting a book you actually read."
 msgstr "相当于该漫画评分的一半。你喜欢的动画会将其类型和标签提供给你的个人资料，但不会压过你实际阅读过的书籍。"
 
+#: src/components/pageconversion/labels.ts
+msgid "Hard to tell from the original."
+msgstr ""
+
 #: src/components/settings/TorrentLifecycleFields.tsx
 #, fuzzy
 msgid "Hardlink imported torrents when possible"
@@ -11722,6 +11776,10 @@ msgstr "历史"
 msgid "History"
 msgstr "历史记录"
 
+#: src/components/pageconversion/CompareView.tsx
+msgid "Hold for original"
+msgstr ""
+
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
@@ -11808,7 +11866,7 @@ msgstr "系列阅读停滞时，你读到了哪里。"
 msgid "How far through a series you were when it stalled. Median {stopPointPct}."
 msgstr "系列阅读停滞时，你读到了哪里。中位数：{stopPointPct}。"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "How hard the pages are compressed. A low number means a small, heavily compressed file."
 msgstr "页面的压缩强度。数值越低，文件越小，压缩也越强。"
@@ -12583,6 +12641,10 @@ msgstr "JPEG"
 msgid "JPEG pages are kept as they are at Lossless."
 msgstr "在无损模式下，JPEG 页面保持原样。"
 
+#: src/components/pageconversion/labels.ts
+msgid "JPEG XL"
+msgstr ""
+
 #: src/pages/settings/UpscalingSection.tsx
 msgid "JPEG XL for colour pages"
 msgstr ""
@@ -12684,7 +12746,7 @@ msgstr "继续编辑"
 msgid "Keep manual priority, but renumber it to follow the measured order."
 msgstr "保留手动优先级，但按实测顺序重新编号。"
 
-#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/PlanOptions.tsx
 #, fuzzy
 msgid "Keep PNG pages lossless"
 msgstr "PNG 页面保持无损"
@@ -12779,6 +12841,7 @@ msgid "kept"
 msgstr "已保留"
 
 #: src/components/library/ArchivedList.tsx
+#: src/components/pageconversion/TargetSheet.tsx
 msgid "Kept"
 msgstr ""
 
@@ -12786,11 +12849,6 @@ msgstr ""
 #, fuzzy
 msgid "Kept as linked"
 msgstr "保持现有关联"
-
-#: src/components/pageconversion/StartStep.tsx
-#, fuzzy
-msgid "Kept lossless"
-msgstr "保持无损"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
@@ -12801,10 +12859,6 @@ msgstr "不计入你的追踪器、回顾、统计和阅读历史。"
 #, fuzzy
 msgid "kept where it is"
 msgstr "保持原位"
-
-#: src/components/pageconversion/StartStep.tsx
-msgid "Kept whole"
-msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx
 #: src/pages/reader/ShortcutSheet.tsx
@@ -12823,7 +12877,7 @@ msgstr "键盘快捷键 (?)"
 msgid "Kind"
 msgstr "类型"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Kind of release"
 msgstr "发布类型"
@@ -13707,10 +13761,9 @@ msgstr "关联较松散"
 msgid "Lossless"
 msgstr "无损"
 
-#: src/components/pageconversion/CompareStep.tsx
-#, fuzzy
-msgid "Loupe, 2x"
-msgstr "放大镜，2 倍"
+#: src/components/pageconversion/TargetSheet.tsx
+msgid "Lossless is always stored as lossless WebP."
+msgstr ""
 
 #: src/components/releases/outlookText.ts
 #, fuzzy
@@ -13884,7 +13937,7 @@ msgstr ""
 msgid "Maki checks this folder for comics. Anything that names exactly one series in your library is imported into it; the rest waits in Manual import."
 msgstr ""
 
-#: src/components/pageconversion/CompareStep.tsx
+#: src/components/pageconversion/TargetSheet.tsx
 #, fuzzy
 msgid "Maki could not encode this page. Try another page or another format."
 msgstr "Maki 无法编码此页面。请尝试其他页面或其他格式。"
@@ -13923,10 +13976,9 @@ msgstr ""
 msgid "Maki downloads updates in the background and installs them when you restart it."
 msgstr "Maki 会在后台下载更新，并在你重启时安装。"
 
-#: src/components/pageconversion/CompareStep.tsx
-#, fuzzy
-msgid "Maki found no suitable pages to suggest. Pick one from your library."
-msgstr "Maki 没有找到合适的页面可供推荐。请从你的资料库中选择一个。"
+#: src/components/pageconversion/TargetSheet.tsx
+msgid "Maki found no {kindName} pages in the files this row converts. Pick a page from your library to see the target on."
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -14266,7 +14318,7 @@ msgstr ""
 msgid "Matched comics move into the series folder. Archives that have to be converted are built there and their originals stay."
 msgstr ""
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Matches a series with any of these tags."
 msgstr "匹配带有以下任一标签的系列。"
@@ -14278,6 +14330,10 @@ msgstr "按含义、描述和氛围匹配。在没有推荐索引的实例上会
 
 #: src/components/RenameSeriesModal.tsx
 msgid "Matches your naming formats. Only the highlighted parts change."
+msgstr ""
+
+#: src/components/pageconversion/RuleEditor.tsx
+msgid "Matching files are"
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -14844,12 +14900,12 @@ msgstr ""
 msgid "Move later"
 msgstr ""
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/PlanTable.tsx
 #, fuzzy
 msgid "Move rule {number} down"
 msgstr "将规则 {number} 下移"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/PlanTable.tsx
 #, fuzzy
 msgid "Move rule {number} up"
 msgstr "将规则 {number} 上移"
@@ -14985,6 +15041,7 @@ msgstr "不适用"
 
 #: src/components/DiscoverPresets.tsx
 #: src/components/NotificationsSection.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -15000,7 +15057,7 @@ msgstr "名称"
 msgid "Name not recognised"
 msgstr "无法识别名称"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Name of rule {number}"
 msgstr "规则 {number} 的名称"
@@ -15015,16 +15072,11 @@ msgstr "请先为密钥命名"
 msgid "Name your reverse proxy under Trusted proxies, or rate limiting and the audit log will see the proxy instead of the client."
 msgstr "在受信任代理中为你的反向代理命名，否则限流和审计日志会看到代理而不是客户端。"
 
-#: src/components/pageconversion/RuleCard.tsx
-#, fuzzy
-msgid "Name, optional"
-msgstr "名称（可选）"
-
 #: src/components/import/ManualImport.tsx
 msgid "names more than one series"
 msgstr ""
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Names such as import or mangafire. End with * to match a prefix, like torrent:*."
 msgstr "例如 import 或 mangafire 这样的名称。以 * 结尾可匹配前缀，例如 torrent:*。"
@@ -15584,7 +15636,7 @@ msgstr "已完成的下载中未找到漫画（找到 {census}）"
 msgid "No comics found in the completed download (it is empty)"
 msgstr "已完成的下载中未找到漫画（下载内容为空）"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "No conditions, so this rule matches every file that reaches it."
 msgstr "没有条件，因此此规则会匹配到达它的每个文件。"
@@ -15624,11 +15676,6 @@ msgstr ""
 msgid "No file matches that."
 msgstr ""
 
-#: src/components/pageconversion/EstimateTable.tsx
-#, fuzzy
-msgid "No files"
-msgstr "没有文件"
-
 #: src/components/LinkChaptersModal.tsx
 #, fuzzy
 msgid "No files found in the series folder."
@@ -15639,7 +15686,7 @@ msgstr "系列文件夹中没有找到文件。"
 msgid "No files in the series folder."
 msgstr "系列文件夹中没有文件。"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "No files match"
 msgstr "没有匹配的文件"
@@ -15954,11 +16001,6 @@ msgstr "还没有根文件夹"
 msgid "No rule matches {title}, so it would go to <0>{fallback}</0>."
 msgstr ""
 
-#: src/pages/PageConversionWizardPage.tsx
-#, fuzzy
-msgid "No rules"
-msgstr "没有规则"
-
 #: src/components/settings/AutoTagRulesModal.tsx
 #: src/components/settings/RootFolderRulesModal.tsx
 msgid "No rules yet"
@@ -15972,11 +16014,6 @@ msgstr ""
 #, fuzzy
 msgid "No rules yet. Add one to require or rule out genres and tags. A series has to pass every rule."
 msgstr "尚无规则。添加规则以指定需要或排除的类型和标签。作品必须满足所有规则。"
-
-#: src/components/pageconversion/ScopeStep.tsx
-#, fuzzy
-msgid "No rules yet. Every file is converted at {stopLabel}."
-msgstr "还没有规则。所有文件都将在 {stopLabel} 时转换。"
 
 #: src/pages/settings/LibraryCards.tsx
 msgid "No rules yet. New series go to the first root folder."
@@ -16117,7 +16154,7 @@ msgstr ""
 msgid "No tag data yet"
 msgstr "尚无标签数据"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "No tags"
 msgstr "没有标签"
@@ -16249,11 +16286,6 @@ msgstr "未选择任何项即表示资料库为空。"
 #, fuzzy
 msgid "none yet"
 msgstr "暂无"
-
-#: src/components/pageconversion/StartStep.tsx
-#, fuzzy
-msgid "None, every file uses the quality above"
-msgstr "无，所有文件都使用上方的质量"
 
 #: src/components/rails/CustomRailEditor.tsx
 msgid "None, use the filters below"
@@ -16520,7 +16552,6 @@ msgstr "不再推荐"
 msgid "Not run yet"
 msgstr "尚未运行"
 
-#: src/components/pageconversion/EstimateTable.tsx
 #: src/components/SourceMeasurePanel.tsx
 #, fuzzy
 msgid "Not sampled"
@@ -16851,11 +16882,6 @@ msgstr ""
 msgid "Nothing is saved on this device yet. Once you're back online, save chapters from a series page and they'll be here to read without a connection."
 msgstr "此设备上尚未保存任何内容。恢复联网后，从系列页面保存章节，它们就会出现在这里，无需连接即可阅读。"
 
-#: src/components/pageconversion/StartStep.tsx
-#, fuzzy
-msgid "Nothing is saved until you press the button below. Files converted earlier stay as they are."
-msgstr "在你按下下方按钮之前不会保存任何内容。之前转换的文件将保持原样。"
-
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Nothing is sent to it any more. This can't be undone."
@@ -16970,23 +16996,12 @@ msgid "Nothing to browse yet"
 msgstr "暂无可浏览内容"
 
 #: src/pages/PageConversionWizardPage.tsx
-#, fuzzy
-msgid "Nothing to choose"
-msgstr "没有可选择的内容"
-
-#: src/pages/PageConversionWizardPage.tsx
-#, fuzzy
-msgid "Nothing to compare"
-msgstr "没有可比较的内容"
+msgid "Nothing to convert"
+msgstr ""
 
 #: src/components/series/ChapterTableRows.tsx
 msgid "Nothing to download"
 msgstr ""
-
-#: src/pages/PageConversionWizardPage.tsx
-#, fuzzy
-msgid "Nothing to estimate"
-msgstr "没有可估算的内容"
 
 #: src/components/ImportReviewModal.tsx
 #: src/components/RatingImportModal.tsx
@@ -17140,11 +17155,6 @@ msgstr "通知"
 msgid "Notify this device"
 msgstr "通知此设备"
 
-#: src/components/pageconversion/EstimateTable.tsx
-#, fuzzy
-msgid "Now"
-msgstr "现在"
-
 #: src/pages/RequestsPage.tsx
 #, fuzzy
 msgid "Now {range}"
@@ -17208,16 +17218,13 @@ msgid "of reading time"
 msgstr "阅读时间的"
 
 #: src/components/ImportListsSection.tsx
-#: src/components/pageconversion/FormatStep.tsx
 #: src/components/pageconversion/labels.ts
-#: src/components/pageconversion/StartStep.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/components/settings/SecuritySection.tsx
 #: src/components/ui/incognito.ts
 #: src/pages/discover/AnimeSignalsSection.tsx
 #: src/pages/LibraryPage.tsx
-#: src/pages/PageConversionWizardPage.tsx
 #: src/pages/reader/enhanceMethods.ts
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
@@ -17504,7 +17511,7 @@ msgstr "仅安全标题"
 msgid "Only series I'm reading"
 msgstr "仅我正在阅读的系列"
 
-#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/PlanOptions.tsx
 msgid "Only strips at least two and a half times as tall as they are wide are split."
 msgstr ""
 
@@ -17747,10 +17754,9 @@ msgstr "使用模板创建 GitHub issue。"
 msgid "Opens by default"
 msgstr ""
 
-#: src/components/pageconversion/FormatStep.tsx
-#, fuzzy
-msgid "Opens in every reader Maki works with. Recommended."
-msgstr "可在 Maki 支持的每个阅读器中打开。推荐。"
+#: src/components/pageconversion/labels.ts
+msgid "Opens in every reader Maki works with."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -17762,6 +17768,7 @@ msgstr "操作"
 msgid "Operation details"
 msgstr "操作详情"
 
+#: src/components/pageconversion/RuleEditor.tsx
 #: src/components/SetupWizard.tsx
 #, fuzzy
 msgid "Optional"
@@ -17794,17 +17801,13 @@ msgstr ""
 msgid "or paste an id or link"
 msgstr "或粘贴 ID 或链接"
 
-#: src/components/pageconversion/ScopeStep.tsx
-#, fuzzy
-msgid "Or start from one of these"
-msgstr "或从以下选项之一开始"
-
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
 msgid "Order changed"
 msgstr "顺序已更改"
 
 #: src/components/pageconversion/CompareView.tsx
+#: src/components/pageconversion/TargetSheet.tsx
 #, fuzzy
 msgid "Original"
 msgstr "原图"
@@ -17871,10 +17874,18 @@ msgstr "其他人会看到你的登录名 {loginName}。"
 msgid "out of 10"
 msgstr ""
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Over"
 msgstr "大于"
+
+#: src/components/pageconversion/RuleEditor.tsx
+msgid "over {low}"
+msgstr ""
+
+#: src/components/pageconversion/RuleEditor.tsx
+msgid "over {low}, under {high}"
+msgstr ""
 
 #: src/components/NotificationsSection.tsx
 #, fuzzy
@@ -17921,11 +17932,6 @@ msgstr "页面"
 msgid "Page {0} of {count}"
 msgstr "第 {0}/{count} 页"
 
-#: src/components/pageconversion/CompareStep.tsx
-#, fuzzy
-msgid "Page {page} of {pageCount}"
-msgstr "第 {page}/{pageCount} 页"
-
 #: src/components/series/ChapterTableRows.tsx
 #, fuzzy
 msgid "Page {pageIndex}/{pageCount}"
@@ -17946,16 +17952,12 @@ msgstr "第 {pageNumber}/{pageCount} 页"
 
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
 #: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Page conversion"
 msgstr "页面转换"
-
-#: src/pages/PageConversionWizardPage.tsx
-#, fuzzy
-msgid "Page conversion steps"
-msgstr "页面转换步骤"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
@@ -17973,7 +17975,7 @@ msgstr "向下翻页"
 msgid "Page fit"
 msgstr "页面适应"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Page format"
 msgstr "页面格式"
@@ -18051,9 +18053,8 @@ msgid "Pages 1 to {pageCount}. The suggested page is {suggested}, from the middl
 msgstr "第 1 至 {pageCount} 页。推荐页面为第 {suggested} 页，取自文件中间。"
 
 #: src/components/pageconversion/labels.ts
-#, fuzzy
-msgid "Pages already stored as WebP or AVIF are kept as they are."
-msgstr "已以 WebP 或 AVIF 存储的页面将保持原样。"
+msgid "Pages already stored as WebP, AVIF or JPEG XL are kept as they are."
+msgstr ""
 
 #: src/components/SourceCompareModal.tsx
 #, fuzzy
@@ -18080,7 +18081,7 @@ msgstr "匹配的页面"
 msgid "Pages section"
 msgstr "页面部分"
 
-#: src/components/pageconversion/FormatStep.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Pages stay as they are downloaded. Files already converted stay converted."
 msgstr "页面保持下载时的样子。已转换的文件保持转换后的状态。"
@@ -18130,7 +18131,7 @@ msgstr "已解析"
 msgid "Partial"
 msgstr "部分完成"
 
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "Passed over"
 msgstr "已跳过"
@@ -18260,12 +18261,12 @@ msgstr "暂停 Rewind"
 msgid "Pause rotating picks"
 msgstr "暂停轮换推荐"
 
-#: src/components/pageconversion/StartStep.tsx
+#: src/components/pageconversion/SaveActions.tsx
 #, fuzzy
 msgid "Pause the running pass and restart it with the new settings?"
 msgstr "要暂停正在运行的处理，并使用新设置重新开始吗？"
 
-#: src/components/pageconversion/StartStep.tsx
+#: src/components/pageconversion/SaveActions.tsx
 #, fuzzy
 msgid "Pause the running pass?"
 msgstr "要暂停正在运行的处理吗？"
@@ -18423,7 +18424,7 @@ msgid "Pick another default profile first"
 msgstr "请先选择另一个默认配置"
 
 #: src/components/pageconversion/ComparePicker.tsx
-#: src/components/pageconversion/CompareStep.tsx
+#: src/components/pageconversion/TargetSheet.tsx
 #, fuzzy
 msgid "Pick another page"
 msgstr "选择其他页面"
@@ -18556,21 +18557,14 @@ msgstr "李紫"
 msgid "PNG"
 msgstr "PNG"
 
-#: src/components/pageconversion/FormatStep.tsx
-#: src/components/pageconversion/StartStep.tsx
-#, fuzzy
-msgid "PNG pages"
-msgstr "PNG 页面"
-
 #: src/pages/settings/PageConversionSection.tsx
 #, fuzzy
 msgid "PNG pages are kept lossless."
 msgstr "PNG 页面保持无损。"
 
-#: src/components/pageconversion/FormatStep.tsx
-#, fuzzy
-msgid "PNG pages are stored as lossless WebP at every stop, so no pixel changes. This saves little. Leave it off to let PNG pages follow the quality you choose."
-msgstr "PNG 页面在每个停止点都会以无损 WebP 存储，因此像素不会改变。这样节省的空间很少。关闭此项可让 PNG 页面跟随你选择的质量。"
+#: src/components/pageconversion/PlanOptions.tsx
+msgid "PNG pages are stored as lossless WebP at every quality, so no pixel changes. This saves little. Leave it off to let PNG pages follow their row's quality."
+msgstr ""
 
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
@@ -18977,8 +18971,7 @@ msgstr ""
 msgid "Puts these sources, in this order, at the front of the global priority list used when new series auto-match."
 msgstr "按此顺序将这些来源置于新系列自动匹配时使用的全局优先级列表前端。"
 
-#: src/components/pageconversion/CompareStep.tsx
-#: src/components/pageconversion/StartStep.tsx
+#: src/components/pageconversion/TargetSheet.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/components/SourceMappingsSection.tsx
 #: src/pages/settings/UpscalingSection.tsx
@@ -19240,7 +19233,7 @@ msgstr "评分, 打分, 目前, 暂定, 分数, 提示, 询问, 星星"
 msgid "Re-download {staleChapters} from {winnerDisplayName}"
 msgstr "从 {winnerDisplayName} 重新下载 {staleChapters}"
 
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "Re-estimate"
 msgstr "重新估算"
@@ -20182,7 +20175,7 @@ msgstr "要移除章节吗？"
 msgid "Remove condition"
 msgstr "移除条件"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Remove condition: {conditionLabel}"
 msgstr "移除条件：{conditionLabel}"
@@ -20283,7 +20276,7 @@ msgstr "移除根文件夹"
 msgid "Remove rule"
 msgstr "删除规则"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/PlanTable.tsx
 #, fuzzy
 msgid "Remove rule {number}"
 msgstr "移除规则 {number}"
@@ -20856,7 +20849,7 @@ msgstr "使用模糊标题搜索解决。中等准确度"
 msgid "Resolved using ID. High accuracy"
 msgstr "使用 ID 解决。高准确度"
 
-#: src/components/pageconversion/StartStep.tsx
+#: src/components/pageconversion/SaveActions.tsx
 #, fuzzy
 msgid "Restart"
 msgstr "重启"
@@ -21182,7 +21175,6 @@ msgstr "已由用户还原"
 #: src/pages/ActivityPage.tsx
 #: src/pages/HealthPage.tsx
 #: src/pages/ImportPage.tsx
-#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Review"
 msgstr "审核"
@@ -21363,17 +21355,11 @@ msgstr "第 {zoomRowNumber}/{zoomTotalPages} 行"
 msgid "RTL"
 msgstr "从右到左"
 
-#: src/components/pageconversion/EstimateTable.tsx
-#, fuzzy
-msgid "Rule"
-msgstr "规则"
-
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/PlanTable.tsx
 #, fuzzy
 msgid "Rule {number}"
 msgstr "规则 {number}"
 
-#: src/components/pageconversion/EstimateTable.tsx
 #: src/components/settings/RootFolderRulesModal.tsx
 #, fuzzy
 msgid "Rule {position}"
@@ -21393,24 +21379,18 @@ msgstr "规则编辑器视图"
 msgid "Rule is on"
 msgstr ""
 
-#: src/components/pageconversion/ScopeStep.tsx
-#, fuzzy
-msgid "Rule templates"
-msgstr "规则模板"
-
 #: src/components/CatalogueRules.tsx
 #, fuzzy
 msgid "Rule type"
 msgstr "规则类型"
 
 #: src/components/CatalogueRules.tsx
-#: src/components/pageconversion/StartStep.tsx
 #: src/components/series/SeriesActionsMenu.tsx
 #, fuzzy
 msgid "Rules"
 msgstr "规则"
 
-#: src/components/pageconversion/ScopeStep.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Rules are checked from the top, and the first one a file matches decides what happens to it. A series set to Never or to a fixed quality in its menu ignores the rules."
 msgstr "规则从上到下依次检查，文件匹配的第一条规则决定其处理方式。在菜单中设为「从不」或固定质量的系列会忽略这些规则。"
@@ -21467,6 +21447,14 @@ msgstr "安全"
 #, fuzzy
 msgid "Safe to rerun, it never unmarks anything."
 msgstr "可以安全地重新运行，它永远不会取消任何标记。"
+
+#: src/components/pageconversion/TargetSheet.tsx
+msgid "Same"
+msgstr ""
+
+#: src/components/pageconversion/PlanTable.tsx
+msgid "Same as black-and-white"
+msgstr ""
 
 #: src/components/ui/DiscoverRail.tsx
 #, fuzzy
@@ -21557,17 +21545,12 @@ msgstr "在每个作品文件夹中保存 cover.jpg"
 msgid "Save a cover.jpg into each series' library folder"
 msgstr "将 cover.jpg 保存到每个系列的资料库文件夹"
 
-#: src/pages/PageConversionWizardPage.tsx
-#, fuzzy
-msgid "Save and begin"
-msgstr "保存并开始"
-
-#: src/components/pageconversion/StartStep.tsx
+#: src/components/pageconversion/SaveActions.tsx
 #, fuzzy
 msgid "Save and pause"
 msgstr "保存并暂停"
 
-#: src/components/pageconversion/StartStep.tsx
+#: src/components/pageconversion/SaveActions.tsx
 #, fuzzy
 msgid "Save and start"
 msgstr "保存并开始"
@@ -21614,7 +21597,7 @@ msgstr "保存筛选条件"
 msgid "Save for offline"
 msgstr "保存以供离线阅读"
 
-#: src/components/pageconversion/StartStep.tsx
+#: src/components/pageconversion/SaveActions.tsx
 #, fuzzy
 msgid "Save only"
 msgstr "仅保存"
@@ -21665,7 +21648,7 @@ msgstr "保存你的恢复代码"
 
 #: src/components/ConnectionSettingsCard.tsx
 #: src/components/NotificationsSection.tsx
-#: src/components/pageconversion/StartStep.tsx
+#: src/components/pageconversion/SaveActions.tsx
 #: src/components/settings/RatingPromptsSection.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/ReadingStatusSection.tsx
@@ -21748,7 +21731,7 @@ msgstr "已保存到此设备以供离线阅读"
 msgid "Saved on this device only."
 msgstr "仅保存在此设备上。"
 
-#: src/components/pageconversion/ScopeStep.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Saved rules could not be loaded; saving will replace them."
 msgstr "无法加载已保存的规则；保存时将替换它们。"
@@ -22718,7 +22701,7 @@ msgstr "系列已移除"
 msgid "Series status changed"
 msgstr "系列状态已更改"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Series tags"
 msgstr "系列标签"
@@ -22727,7 +22710,7 @@ msgstr "系列标签"
 msgid "Series that override the default for this"
 msgstr ""
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Series type"
 msgstr "系列类型"
@@ -22757,10 +22740,9 @@ msgstr "有新增章节的作品。"
 msgid "Series with none of your tags"
 msgstr "没有你任何标签的系列"
 
-#: src/components/pageconversion/EstimateTable.tsx
-#, fuzzy
-msgid "Series with their own stop"
-msgstr "有自己停止点的系列"
+#: src/components/pageconversion/PlanEstimate.tsx
+msgid "Series with their own setting"
+msgstr ""
 
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
@@ -22891,11 +22873,6 @@ msgstr "设置转换"
 #, fuzzy
 msgid "Set up in Settings"
 msgstr "在设置中配置"
-
-#: src/pages/PageConversionWizardPage.tsx
-#, fuzzy
-msgid "Set up page conversion"
-msgstr "设置页面转换"
 
 #: src/pages/ActivityPage.tsx
 #, fuzzy
@@ -23416,6 +23393,7 @@ msgstr "位于 <0>{seriesTitle}</0> 中。"
 msgid "Sittings per week"
 msgstr "每周阅读次数"
 
+#: src/components/pageconversion/PlanTable.tsx
 #: src/components/ReleaseSearchModal.tsx
 #: src/components/SeriesFilesSection.tsx
 #: src/pages/HealthPage.tsx
@@ -23435,19 +23413,12 @@ msgid "Size on disk"
 msgstr ""
 
 #: src/pages/PageConversionWizardPage.tsx
-#, fuzzy
-msgid "Sizes and time"
-msgstr "大小与时间"
+msgid "Sizes appear here once Maki has sampled your files."
+msgstr ""
 
-#: src/components/pageconversion/ReviewStep.tsx
-#, fuzzy
-msgid "Sizes come from encoding a sample of the files each rule covers. Nothing is changed. Times depend on how busy this server is."
-msgstr "大小通过对每条规则涵盖的文件样本进行编码得出。不会改动任何内容。耗时取决于此服务器的繁忙程度。"
-
-#: src/components/pageconversion/RuleCard.tsx
-#, fuzzy
-msgid "Skip"
-msgstr "跳过"
+#: src/components/pageconversion/PlanEstimate.tsx
+msgid "Sizes come from encoding a sample of the files each row covers. Nothing is changed. Times depend on how busy this server is."
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
@@ -23496,6 +23467,7 @@ msgstr "跳到内容"
 msgid "skipped"
 msgstr "已跳过"
 
+#: src/components/pageconversion/RuleEditor.tsx
 #: src/pages/settings/CustomSourceReport.tsx
 #, fuzzy
 msgid "Skipped"
@@ -23510,6 +23482,10 @@ msgstr "已跳过（{skippedFilterCount}）"
 #, fuzzy
 msgid "Skipped {latestVersion}"
 msgstr "已跳过 {latestVersion}"
+
+#: src/components/pageconversion/PlanTable.tsx
+msgid "Skipped, left as they are"
+msgstr ""
 
 #: src/components/pageconversion/ruleTemplates.ts
 #, fuzzy
@@ -23541,14 +23517,13 @@ msgstr "慢"
 msgid "Slower ([)"
 msgstr "更慢（[）"
 
+#: src/components/pageconversion/TargetSheet.tsx
+msgid "Smaller"
+msgstr ""
+
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Smaller files and smooth dark gradients where WebP shows blocks. Browsers that can't show JPEG XL, such as Edge, get WebP. Grey pages are always WebP."
 msgstr ""
-
-#: src/components/pageconversion/FormatStep.tsx
-#, fuzzy
-msgid "Smaller than WebP at the same look. KOReader and some e-readers can't open AVIF pages."
-msgstr "在外观相同的情况下，比 WebP 更小。KOReader 和部分电子书阅读器无法打开 AVIF 页面。"
 
 #: src/components/pageconversion/labels.ts
 #, fuzzy
@@ -23684,7 +23659,7 @@ msgstr ""
 msgid "Sort title"
 msgstr ""
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #: src/components/QueueActions.tsx
 #: src/components/series/ChapterViewMenu.tsx
 #: src/components/series/CoverPicker.tsx
@@ -23786,6 +23761,7 @@ msgstr "来源最多到第 {highest} 章，你设置的总数为 {listed}。"
 msgid "Sources that number the same chapters differently"
 msgstr ""
 
+#: src/components/pageconversion/CompareView.tsx
 #: src/pages/reader/ShortcutSheet.tsx
 #, fuzzy
 msgid "Space"
@@ -23876,20 +23852,16 @@ msgstr "{relatedTo} 的衍生作品"
 msgid "Split"
 msgstr "拆分"
 
-#: src/components/pageconversion/StartStep.tsx
-msgid "Split above {splitHeight} px"
-msgstr ""
-
 #: src/components/settings/UpgradeProfilesSection.tsx
 #, fuzzy
 msgid "Split from the tier above"
 msgstr "与上一层级分开"
 
-#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/PlanOptions.tsx
 msgid "Split pages taller than"
 msgstr ""
 
-#: src/components/pageconversion/FormatStep.tsx
+#: src/components/pageconversion/PlanOptions.tsx
 msgid "Split very tall pages"
 msgstr ""
 
@@ -23949,7 +23921,6 @@ msgstr "在 GitHub 上点星"
 
 #: src/components/home/NextUpList.tsx
 #: src/components/home/ReadingRail.tsx
-#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "Start"
 msgstr "开始"
@@ -23967,6 +23938,10 @@ msgstr ""
 #, fuzzy
 msgid "Start chapter"
 msgstr "开始阅读本章"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Start from a template"
+msgstr ""
 
 #: src/components/MetadataDumpProgress.tsx
 #, fuzzy
@@ -24007,7 +23982,7 @@ msgstr ""
 msgid "Started {time}"
 msgstr ""
 
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "Starting the estimate"
 msgstr "正在开始估算"
@@ -24445,17 +24420,16 @@ msgstr "要排除的标签"
 msgid "Tags to include"
 msgstr "要包含的标签"
 
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Takes about <0/> on this server"
+msgstr ""
+
 #: src/components/ScanlationGroupsModal.tsx
 msgid "Takes effect at each series' next chapter refresh."
 msgstr ""
 
 #: src/pages/reader/ReaderSettings.tsx
 msgid "Takes the colour of the page's edge."
-msgstr ""
-
-#: src/components/pageconversion/FormatStep.tsx
-#: src/components/pageconversion/StartStep.tsx
-msgid "Tall pages"
 msgstr ""
 
 #: src/components/pageconversion/labels.ts
@@ -24723,7 +24697,7 @@ msgstr "章节页面未能加载：{0}"
 msgid "The chapters stay in the list with their read history, and Maki won't download them again unless you ask."
 msgstr "章节会保留在列表中并保留阅读记录，除非你要求，Maki 不会再次下载它们。"
 
-#: src/components/pageconversion/ScopeStep.tsx
+#: src/pages/PageConversionWizardPage.tsx
 #, fuzzy
 msgid "The counts could not be loaded. The rules still save as you wrote them."
 msgstr "无法加载计数。规则仍会按你编写的内容保存。"
@@ -24792,22 +24766,26 @@ msgstr "下载尚未开始。"
 msgid "The download is no longer in the download client"
 msgstr "下载客户端中已不存在此下载"
 
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "The estimate could not be started"
 msgstr "无法开始估算"
 
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/pages/PageConversionWizardPage.tsx
+msgid "The estimate did not finish. Open the details to try again."
+msgstr ""
+
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "The estimate failed"
 msgstr "估算失败"
 
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "The estimate failed on this server. Try again, or check the log."
 msgstr "此服务器上的估算失败。请重试，或查看日志。"
 
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "The estimate was cancelled"
 msgstr "估算已取消"
@@ -24996,6 +24974,10 @@ msgstr "MangaBaka 目录中最受欢迎的作品。"
 msgid "The most recently read ones go first."
 msgstr ""
 
+#: src/components/pageconversion/labels.ts
+msgid "The most softening. Check skies, skin and dark gradients."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 #, fuzzy
 msgid "The new password needs at least 10 characters"
@@ -25031,11 +25013,6 @@ msgstr ""
 #, fuzzy
 msgid "The next check is due."
 msgstr "下次检查即将到期。"
-
-#: src/components/pageconversion/FormatStep.tsx
-#, fuzzy
-msgid "The next step shows your own pages in the format you pick here."
-msgstr "下一步会以你在此选择的格式显示你自己的页面。"
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy
@@ -25276,6 +25253,10 @@ msgstr ""
 msgid "The site's address changes."
 msgstr "网站地址已更改。"
 
+#: src/components/pageconversion/labels.ts
+msgid "The smallest files. KOReader and some e-readers can't open AVIF pages."
+msgstr ""
+
 #: src/api/queue.ts
 #, fuzzy
 msgid "The source answered with an error"
@@ -25409,11 +25390,6 @@ msgstr "他们的第二因素已关闭，验证器也已重置，因此在他们
 msgid "theme, dark mode, light mode, accent colour, accent color, colour, match system, auto, follow system, motion, animation, transitions, page transitions, moving covers, faster animations, speed, reduce motion"
 msgstr "主题, 深色模式, 浅色模式, 强调色, 颜色, 跟随系统, 自动, 动效, 动画, 过渡, 页面过渡, 封面动效, 加快动画, 速度, 减少动效"
 
-#: src/components/pageconversion/RuleCard.tsx
-#, fuzzy
-msgid "Then"
-msgstr "然后"
-
 #: src/components/settings/SecuritySection.tsx
 msgid "Then they can try again."
 msgstr ""
@@ -25438,7 +25414,7 @@ msgstr "这些是长条页面，两个发布版本在不同位置进行了裁切
 msgid "These are long-strip pages and the two releases cut them at different points, so page {page} on the left is not page {page} on the right. Stacked height is the comparable number: they differ by {driftPercent}%, so one of them is missing or gaining content."
 msgstr "这些是长条页面，两个发布版本在不同位置进行了裁切，因此左侧的第 {page} 页并不是右侧的第 {page} 页。可比较的数值是叠加高度：两者相差 {driftPercent}%，因此其中一个版本缺少或增加了内容。"
 
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #, fuzzy
 msgid "These are never converted again."
 msgstr "这些内容将不再转换。"
@@ -25622,6 +25598,7 @@ msgid "This needs a sign-in from the last 10 minutes. Sign out and sign in again
 msgstr ""
 
 #: src/components/notes/NotesPanel.tsx
+#: src/components/pageconversion/TargetSheet.tsx
 #, fuzzy
 msgid "This page"
 msgstr "此页面"
@@ -25915,7 +25892,6 @@ msgstr ""
 msgid "Tier order"
 msgstr "层级顺序"
 
-#: src/components/pageconversion/EstimateTable.tsx
 #: src/pages/stats/sections/ReadingSection.tsx
 #, fuzzy
 msgid "Time"
@@ -26297,7 +26273,7 @@ msgstr "尝试更短或不同的查询。"
 #: src/components/home/OfflineHome.tsx
 #: src/components/MetadataDumpProgress.tsx
 #: src/components/notes/NotesPanel.tsx
-#: src/components/pageconversion/ReviewStep.tsx
+#: src/components/pageconversion/PlanEstimate.tsx
 #: src/components/settings/OfflineReadingSection.tsx
 #: src/pages/DiscoverPage.tsx
 #: src/pages/reader/ContinuousView.tsx
@@ -26476,10 +26452,14 @@ msgstr ""
 msgid "unchanged"
 msgstr "未更改"
 
-#: src/components/pageconversion/RuleCard.tsx
+#: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
 msgid "Under"
 msgstr "小于"
+
+#: src/components/pageconversion/RuleEditor.tsx
+msgid "under {high}"
+msgstr ""
 
 #: src/components/ReleaseSearchModal.tsx
 msgid "Under minimum"
@@ -26883,6 +26863,10 @@ msgstr "更新"
 #, fuzzy
 msgid "Updating ComicInfo"
 msgstr "正在更新 ComicInfo"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Updating for your latest changes"
+msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
 #, fuzzy
@@ -27702,7 +27686,6 @@ msgstr "Webhook"
 msgid "Webhook URL"
 msgstr "Webhook URL"
 
-#: src/components/pageconversion/FormatStep.tsx
 #: src/components/pageconversion/labels.ts
 #, fuzzy
 msgid "WebP"
@@ -27714,8 +27697,8 @@ msgstr "WebP"
 msgid "Webtoon"
 msgstr "Webtoon"
 
-#: src/components/pageconversion/FormatStep.tsx
-msgid "Webtoon strips taller than the height below are cut into several pages, in the gaps between panels where there are any. E-readers and KOReader handle these far better. Reading positions, bookmarks and notes move with their page."
+#: src/components/pageconversion/PlanOptions.tsx
+msgid "Webtoon strips taller than a set height are cut into several pages, in the gaps between panels where there are any. E-readers and KOReader handle these far better. Reading positions, bookmarks and notes move with their page."
 msgstr ""
 
 #: src/components/series/SeriesReadingPanel.tsx
@@ -27772,9 +27755,8 @@ msgid "What shapes your recommendations"
 msgstr "哪些因素影响你的推荐"
 
 #: src/pages/PageConversionWizardPage.tsx
-#, fuzzy
-msgid "What to convert"
-msgstr "要转换什么"
+msgid "What the pass would do"
+msgstr ""
 
 #: src/components/series/UndoConversionModal.tsx
 #, fuzzy
@@ -28002,11 +27984,6 @@ msgstr "宽页"
 #, fuzzy
 msgid "With a book open in KOReader, go to Tools, then Progress sync, then Custom sync server, and enter the address above."
 msgstr "在 KOReader 中打开一本书，依次进入「工具」、「进度同步」、「自定义同步服务器」，然后输入上方的地址。"
-
-#: src/components/pageconversion/FormatStep.tsx
-#, fuzzy
-msgid "With conversion off, there is nothing to compare. Continue to save that choice."
-msgstr "转换关闭时没有可比较的内容。继续即可保存这一选择。"
 
 #: src/components/settings/SecuritySection.tsx
 #, fuzzy
@@ -28548,6 +28525,10 @@ msgstr ""
 
 #: src/pages/reader/TapZoneSettings.tsx
 msgid "Zone size ({width}%)"
+msgstr ""
+
+#: src/components/pageconversion/CompareView.tsx
+msgid "Zoom"
 msgstr ""
 
 #: src/pages/reader/ReaderToolbar.tsx

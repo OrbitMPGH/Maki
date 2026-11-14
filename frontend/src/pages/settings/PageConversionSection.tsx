@@ -16,7 +16,7 @@ import {
   type PageConversionStatus,
 } from '../../api/pageConversion'
 
-/** Converts stored pages to WebP or AVIF: the current choice, the pass over the existing library, and the way into the wizard that changes either. */
+/** Converts stored pages to WebP, AVIF or JPEG XL: the current choice, the pass over the existing library, and the way into the wizard that changes either. */
 export function PageConversionSection() {
   const { data: status } = usePageConversion()
   const summarize = useSettingsSummary()
@@ -56,7 +56,7 @@ export function PageConversionSection() {
             {status.settings.format ? (
               <Button
                 component={Link}
-                to="/settings/page-conversion?step=2"
+                to="/settings/page-conversion"
                 variant="default"
                 size="xs"
                 leftSection={<IconSettings size={16} />}
