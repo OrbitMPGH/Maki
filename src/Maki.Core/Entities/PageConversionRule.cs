@@ -20,6 +20,15 @@ public class PageConversionRule
 
     public bool Skip { get; set; }
 
-    /// <summary>The stop a matching file is converted at. Set whenever <see cref="Skip"/> is false.</summary>
+    /// <summary>The stop a matching file's black-and-white pages are converted at. Set whenever <see cref="Skip"/> is false.</summary>
     public PageConversionStop? Stop { get; set; }
+
+    /// <summary>The format of its black-and-white pages. Null takes the plan's.</summary>
+    public PageConversionFormat? Format { get; set; }
+
+    /// <summary>The format of its colour pages. Null, with <see cref="ColourStop"/>, converts them like its black-and-white pages.</summary>
+    public PageConversionFormat? ColourFormat { get; set; }
+
+    /// <summary>The stop of its colour pages, set exactly when <see cref="ColourFormat"/> is.</summary>
+    public PageConversionStop? ColourStop { get; set; }
 }

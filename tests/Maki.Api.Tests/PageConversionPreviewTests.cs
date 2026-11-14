@@ -225,7 +225,7 @@ public sealed class PageConversionPreviewTests : IDisposable
         var controller = Controller();
 
         var result = Assert.IsType<PhysicalFileResult>(
-            await controller.Preview(fileId, 1, "webp", "high", false, false, CancellationToken.None));
+            await controller.Preview(fileId, 1, "webp", "high", false, false, null, null, CancellationToken.None));
 
         Assert.Equal("image/webp", result.ContentType);
         var headers = controller.Response.Headers;
@@ -234,11 +234,11 @@ public sealed class PageConversionPreviewTests : IDisposable
         Assert.Equal("0", headers["X-Maki-Kept"].ToString());
         Assert.NotNull(result.EntityTag);
 
-        Assert.IsType<BadRequestObjectResult>(await Controller().Preview(fileId, 1, "jxl", "high", false, false, CancellationToken.None));
-        Assert.IsType<BadRequestObjectResult>(await Controller().Preview(fileId, 1, "webp", "best", false, false, CancellationToken.None));
-        Assert.IsType<NotFoundResult>(await Controller().Preview(fileId, 9, "webp", "high", false, false, CancellationToken.None));
-        Assert.IsType<PhysicalFileResult>(await Controller().Preview(fileId, 1, null, "lossless", false, false, CancellationToken.None));
-        Assert.IsType<PhysicalFileResult>(await Controller().Preview(fileId, 1, null, null, false, true, CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await Controller().Preview(fileId, 1, "jxl", "high", false, false, null, null, CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await Controller().Preview(fileId, 1, "webp", "best", false, false, null, null, CancellationToken.None));
+        Assert.IsType<NotFoundResult>(await Controller().Preview(fileId, 9, "webp", "high", false, false, null, null, CancellationToken.None));
+        Assert.IsType<PhysicalFileResult>(await Controller().Preview(fileId, 1, null, "lossless", false, false, null, null, CancellationToken.None));
+        Assert.IsType<PhysicalFileResult>(await Controller().Preview(fileId, 1, null, null, false, true, null, null, CancellationToken.None));
     }
 
     [Fact]
@@ -250,17 +250,17 @@ public sealed class PageConversionPreviewTests : IDisposable
         {
             var controller = Controller();
             Assert.IsType<PhysicalFileResult>(
-                await controller.Preview(fileId, 2, "webp", "high", false, false, CancellationToken.None));
+                await controller.Preview(fileId, 2, "webp", "high", false, false, null, null, CancellationToken.None));
             Assert.Equal("1", controller.Response.Headers["X-Maki-Kept"].ToString());
             Assert.Equal("toosmall", controller.Response.Headers["X-Maki-Kept-Reason"].ToString());
         }
 
         var lossless = Controller();
-        await lossless.Preview(fileId, 1, null, "lossless", false, false, CancellationToken.None);
+        await lossless.Preview(fileId, 1, null, "lossless", false, false, null, null, CancellationToken.None);
         Assert.Equal("lossless", lossless.Response.Headers["X-Maki-Kept-Reason"].ToString());
 
         var converted = Controller();
-        await converted.Preview(fileId, 1, "webp", "high", false, false, CancellationToken.None);
+        await converted.Preview(fileId, 1, "webp", "high", false, false, null, null, CancellationToken.None);
         Assert.Equal("0", converted.Response.Headers["X-Maki-Kept"].ToString());
         Assert.False(converted.Response.Headers.ContainsKey("X-Maki-Kept-Reason"));
     }

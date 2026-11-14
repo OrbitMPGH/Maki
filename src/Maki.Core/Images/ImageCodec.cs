@@ -147,7 +147,7 @@ public static class ImageCodec
                 return null;
             }
 
-            using var thumb = VipsImage.ThumbnailBuffer(bytes, ColourThumbWidth);
+            using var thumb = VipsImage.ThumbnailBuffer(bytes, ColourThumbWidth, height: ColourThumbMaxHeight);
             return Colourful(thumb);
         }
         catch (VipsException)
@@ -157,6 +157,12 @@ public static class ImageCodec
     }
 
     private const int ColourThumbWidth = 64;
+
+    /// <summary>
+    /// The thumbnail is sized by width alone. Fitted into a 64 px square, a webtoon strip shrank to a few
+    /// pixels across and its colours averaged out to grey.
+    /// </summary>
+    private const int ColourThumbMaxHeight = 10_000_000;
 
     private static bool Colourful(VipsImage thumb)
     {
@@ -179,7 +185,7 @@ public static class ImageCodec
             return false;
         }
 
-        using var thumb = image.ThumbnailImage(ColourThumbWidth);
+        using var thumb = image.ThumbnailImage(ColourThumbWidth, height: ColourThumbMaxHeight);
         return Colourful(thumb);
     }
 

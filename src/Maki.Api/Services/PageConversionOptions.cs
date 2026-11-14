@@ -12,14 +12,16 @@ public static class PageConversionOptions
     private static readonly string[] Keys =
     [
         SettingKeys.PageConversionFormat, SettingKeys.PageConversionStop, SettingKeys.PageConversionPngLossless,
-        SettingKeys.PageConversionSplitHeight
+        SettingKeys.PageConversionSplitHeight, SettingKeys.PageConversionColour
     ];
 
     /// <param name="SplitHeight">Strips taller than this are cut into pages; null leaves them whole.</param>
-    public sealed record Stored(PageConversionFormat? Format, PageConversionStop Stop, bool PngLossless, int? SplitHeight = null)
+    /// <param name="Colour">The colour pages' target; null converts them like black-and-white pages.</param>
+    public sealed record Stored(PageConversionFormat? Format, PageConversionStop Stop, bool PngLossless, int? SplitHeight = null,
+        PageTarget? Colour = null)
     {
         public PageConversionSettings? Active => Format is { } format
-            ? new PageConversionSettings(format, Stop, PngLossless, SplitHeight)
+            ? new PageConversionPlan(format, Stop, PngLossless, [], SplitHeight, Colour).DefaultSettings
             : null;
     }
 
@@ -33,7 +35,8 @@ public static class PageConversionOptions
             PageConversionSettings.ParseFormat(values.GetValueOrDefault(SettingKeys.PageConversionFormat)),
             PageConversionSettings.ParseStop(values.GetValueOrDefault(SettingKeys.PageConversionStop)) ?? PageConversionSettings.DefaultStop,
             string.Equals(values.GetValueOrDefault(SettingKeys.PageConversionPngLossless), "true", StringComparison.OrdinalIgnoreCase),
-            ParseSplitHeight(values.GetValueOrDefault(SettingKeys.PageConversionSplitHeight)));
+            ParseSplitHeight(values.GetValueOrDefault(SettingKeys.PageConversionSplitHeight)),
+            PageTarget.Parse(values.GetValueOrDefault(SettingKeys.PageConversionColour)));
     }
 
     /// <summary>The stored split height, or null for none; a value out of range reads as unset.</summary>
@@ -65,7 +68,8 @@ public static class PageConversionOptions
             return null;
         }
 
-        return new PageConversionPlan(format, stored.Stop, stored.PngLossless, await LoadRulesAsync(db, ct), stored.SplitHeight);
+        return new PageConversionPlan(format, stored.Stop, stored.PngLossless, await LoadRulesAsync(db, ct), stored.SplitHeight,
+            stored.Colour);
     }
 
     /// <summary>The rules in order. One whose conditions no longer parse is left out rather than read as matching everything.</summary>
@@ -75,7 +79,10 @@ public static class PageConversionOptions
         return rows
             .Where(r => r.Skip || r.Stop is not null)
             .Select(r => PageConversionConditions.TryParse(r.ConditionsJson, out var conditions)
-                ? new PlanRule(r.Order, r.Name, conditions, r.Skip, r.Skip ? null : r.Stop)
+                ? new PlanRule(r.Order, r.Name, conditions, r.Skip, r.Skip ? null : r.Stop, r.Skip ? null : r.Format,
+                    r.Skip || r.ColourFormat is not { } colourFormat || r.ColourStop is not { } colourStop
+                        ? null
+                        : new PageTarget(colourFormat, colourStop))
                 : null)
             .OfType<PlanRule>()
             .ToList();

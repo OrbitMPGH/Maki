@@ -630,4 +630,58 @@ public sealed partial class PageConversionTests
         Assert.Null(await PageConversionOptions.LoadAsync(db, CancellationToken.None));
         Assert.NotNull(Row(fileId).ConversionCheckedAtUtc);
     }
+    [Fact]
+    public async Task Colour_targets_are_saved_with_the_plan_and_read_back()
+    {
+        using var db = _world.Db.NewContext();
+        var controller = Controller(db);
+        var settings = new PageConversionController.SettingsDto("webp", "high", true, ColourFormat: "avif", ColourStop: "balanced");
+        var rules = new[]
+        {
+            new PageConversionController.RuleDto(null, "Scrapes", new PageConversionConditions(Tiers: ["aggregator"]), "convert",
+                "compact", Format: "avif", ColourFormat: "webp", ColourStop: "high"),
+            new PageConversionController.RuleDto(null, "Volumes", new PageConversionConditions(Tiers: ["volume"]), "convert", "high",
+                Format: "webp")
+        };
+
+        var status = Saved(await controller.SavePlan(new PageConversionController.PlanDto(settings, rules), CancellationToken.None));
+
+        Assert.Equal(settings, status.Settings);
+        var plan = (await PageConversionOptions.LoadPlanAsync(db, CancellationToken.None))!;
+        Assert.Equal("webp:high/avif:balanced+png", plan.DefaultSettings.Name());
+        Assert.Equal("avif:compact/webp:high+png", plan.Settings(plan.Rules[0]).Name());
+        Assert.Equal("webp:high+png", plan.Settings(plan.Rules[1]).Name());
+
+        var read = Assert.IsType<PageConversionController.RulesDto>(
+            Assert.IsType<OkObjectResult>(await controller.Rules(CancellationToken.None)).Value);
+        Assert.Equal(("avif", "webp", "high"), (read.Rules![0].Format, read.Rules[0].ColourFormat, read.Rules[0].ColourStop));
+        Assert.Equal(("webp", (string?)null, (string?)null), (read.Rules[1].Format, read.Rules[1].ColourFormat, read.Rules[1].ColourStop));
+    }
+
+    [Fact]
+    public async Task A_colour_target_like_the_other_is_stored_as_none_and_a_broken_one_is_refused()
+    {
+        using var db = _world.Db.NewContext();
+        var controller = Controller(db);
+
+        var status = Saved(await controller.SavePlan(new PageConversionController.PlanDto(
+            new PageConversionController.SettingsDto("avif", "balanced", false, ColourFormat: "avif", ColourStop: "balanced"), []),
+            CancellationToken.None));
+
+        Assert.Equal((null, null), (status.Settings.ColourFormat, status.Settings.ColourStop));
+        Assert.Null(await new SettingsService(_world.Db.ScopeFactory()).GetAsync(SettingKeys.PageConversionColour));
+
+        Assert.IsType<BadRequestObjectResult>(await controller.SavePlan(new PageConversionController.PlanDto(
+            new PageConversionController.SettingsDto("webp", "high", false, ColourFormat: "avif"), []), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await controller.SavePlan(new PageConversionController.PlanDto(
+            new PageConversionController.SettingsDto("webp", "high", false, ColourFormat: "jxl", ColourStop: "high"), []),
+            CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await controller.SavePlan(new PageConversionController.PlanDto(
+            new PageConversionController.SettingsDto("webp", "high", false), [new PageConversionController.RuleDto(null, "Bad", null,
+                "convert", "high", Format: "jxl")]), CancellationToken.None));
+
+        status = Saved(await controller.SavePlan(new PageConversionController.PlanDto(
+            new PageConversionController.SettingsDto("webp", "high", false, ColourStop: "lossless"), []), CancellationToken.None));
+        Assert.Equal(((string?)null, "lossless"), (status.Settings.ColourFormat, status.Settings.ColourStop));
+    }
 }
