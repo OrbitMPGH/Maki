@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { expect, waitFor, within } from 'storybook/test'
-import { http } from 'msw'
+import { http, HttpResponse } from 'msw'
 import { AfterSignIn } from '../../.storybook/AfterSignIn'
 import { settingsMsw } from '../../.storybook/mocks/settings'
 import { api, failWith } from '../../.storybook/mocks/api'
@@ -178,5 +178,59 @@ export const UsersFailedToLoad: Story = {
   },
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('tab', { name: 'Users & security', selected: true })).toBeVisible()
+  },
+}
+
+const upgraded = settingsMsw(
+  http.get(api('/system/status'), () => HttpResponse.json({ version: '0.37.0', upgradedFrom: '0.36.0' })),
+)
+
+export const NewTab: Story = {
+  parameters: { msw: upgraded, router: { path: '/settings', initialEntries: ['/settings?tab=new'] } },
+  play: async ({ canvas, userEvent }) => {
+    await expect(await canvas.findByRole('tab', { name: 'New', selected: true })).toBeVisible()
+    await expect(await canvas.findByRole('heading', { name: 'Reading status New' })).toBeVisible()
+    await expect(await canvas.findByRole('heading', { name: 'Drop folder New' })).toBeVisible()
+    await expect(canvas.queryByRole('heading', { name: /^Sign-in/ })).toBeNull()
+    await expect(await canvas.findByRole('heading', { name: 'Volume releases' })).toBeVisible()
+    await expect(await canvas.findByRole('switch', { name: /Approve volume releases automatically/ })).toHaveAccessibleName(/^Approve volume releases automatically New /)
+    // Volume releases is not new itself, so only its new controls show.
+    await waitFor(() => expect(canvas.getByText('Auto-grab size limit')).not.toBeVisible())
+    await expect(await canvas.findByText(/^New in here: Skip the recap of the previous chapter, Hide credit pages/)).toBeVisible()
+    const inReading = await canvas.findAllByRole('link', { name: 'In Reading' })
+    await userEvent.click(inReading.find((a) => a.getAttribute('href')?.endsWith('s=reading-status'))!)
+    await expect(await canvas.findByRole('tab', { name: 'Reading', selected: true })).toBeVisible()
+    await expect(await canvas.findByRole('heading', { name: 'Reading status New' })).toBeVisible()
+  },
+}
+
+export const NewTabOpensOnAccount: Story = {
+  parameters: { msw: upgraded },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('tab', { name: 'New' })).toBeVisible()
+    await expect(await canvas.findByRole('tab', { name: 'Account', selected: true })).toBeVisible()
+  },
+}
+
+export const NoNewTabOnFreshInstall: Story = {
+  parameters: {
+    msw: settingsMsw(http.get(api('/system/status'), () => HttpResponse.json({ version: '0.37.0', upgradedFrom: null }))),
+  },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('heading', { name: 'Sign-in' })).toBeVisible()
+    await expect(canvas.queryByRole('tab', { name: 'New' })).toBeNull()
+  },
+}
+
+export const NestedSettingDeepLink: Story = {
+  render: () => (
+    <AfterSignIn>
+      <SettingsPage />
+    </AfterSignIn>
+  ),
+  parameters: { msw: upgraded, router: { path: '/settings', initialEntries: ['/settings?s=hide-credit-pages'] } },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByRole('tab', { name: 'Reading', selected: true })).toBeVisible()
+    await waitFor(() => expect(canvas.getByRole('heading', { name: 'Reader profiles' })).toBeVisible())
   },
 }

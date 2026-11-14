@@ -136,6 +136,11 @@ jobs:
       - name: No secure-context-only APIs outside their helpers
         run: npm run check:secure-context
 
+      # A release must not ship a settings entry whose New tab version was never stamped.
+      - name: Settings registry has no unstamped since values
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: npm run settings:stamp-since -- --check
+
       # Catches a new t/<Trans> whose English was never extracted, and a key hand-added to
       # en/server.po but never propagated. Either way the string compiles and renders in English
       # while being absent from thirteen catalogues, with nothing to say so. Diffing the whole tree

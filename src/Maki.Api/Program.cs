@@ -1692,6 +1692,9 @@ try
         db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
         SqliteStartup.KeepAttached(paths);
 
+        VersionHistory.RecordAsync(scope.ServiceProvider.GetRequiredService<IAppSettings>(), VersionInfo.Version, freshDatabase)
+            .GetAwaiter().GetResult();
+
         // Told after the migration, never before: the UserNotifications table is itself created by a
         // migration, so on the upgrade that introduces it there is nowhere to write this yet. Awaited
         // rather than fire-and-forget because the host is still starting and a detached task would

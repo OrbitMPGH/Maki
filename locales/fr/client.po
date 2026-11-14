@@ -5165,6 +5165,7 @@ msgid "Approve request"
 msgstr "Approuver la demande"
 
 #: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
 msgid "Approve volume releases automatically"
 msgstr ""
 
@@ -5387,6 +5388,11 @@ msgstr "Auto (mes valeurs par défaut)"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
+msgid "auto approve, automatic approval, proposals, size ceiling, volume packs"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
 msgid "auto tag, automatic tags, tag rules, rules, tag new series, collections, labels"
 msgstr ""
 
@@ -5599,6 +5605,7 @@ msgstr "Sauvegarder selon un calendrier"
 #: src/components/AppearancePicker.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
+#: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Background"
 msgstr "Arrière-plan"
@@ -8229,6 +8236,11 @@ msgstr ""
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
 msgid "credit pages, hide credits, scanlator, credits, ads, recruitment, background scan, ocr"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "credits, credit pages, scanlator pages, recruitment, donation pages"
 msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
@@ -11002,6 +11014,10 @@ msgstr ""
 msgid "Found"
 msgstr "Trouvé"
 
+#: src/pages/settings/registry.ts
+msgid "Free space to keep"
+msgstr ""
+
 #: src/components/settings/RootFolderMinFreeInput.tsx
 msgid "Free space to keep on {path}"
 msgstr ""
@@ -11624,6 +11640,7 @@ msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
+#: src/pages/settings/registry.ts
 msgid "Hide credit pages"
 msgstr ""
 
@@ -12232,6 +12249,11 @@ msgstr "Import en cours…"
 #, fuzzy
 msgid "Imports can be undone for 30 days."
 msgstr "Les imports peuvent être annulés pendant 30 jours."
+
+#. On the New tab of Settings: links to the tab where this card normally lives.
+#: src/pages/SettingsPage.tsx
+msgid "In {tabName}"
+msgstr ""
 
 #: src/pages/reader/TapZoneSettings.tsx
 msgid "In Continuous a band at the top goes back and one at the bottom goes forward. The layouts apply to Single and Double."
@@ -13381,6 +13403,11 @@ msgstr "Titre de la bibliothèque"
 msgid "Library view"
 msgstr "Affichage de la bibliothèque"
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "licensed, delisted, taken down, missing chapters, no source, torrent search"
+msgstr ""
+
 #: src/components/AppearancePicker.tsx
 #: src/pages/reader/enhanceMethods.ts
 #: src/theme-context.tsx
@@ -13736,6 +13763,11 @@ msgstr "Avertissement d'espace disque faible (%)"
 #, fuzzy
 msgid "Low disk warning (GiB)"
 msgstr "Avertissement d'espace disque faible (Gio)"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "low disk, disk space, free space, drive full, pause downloads"
+msgstr ""
 
 #: src/pages/settings/ManageSourcesModal.tsx
 #, fuzzy
@@ -14534,6 +14566,7 @@ msgid "Minimum score gain"
 msgstr "Gain de score minimum"
 
 #: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
 msgid "Minimum seeders"
 msgstr ""
 
@@ -15194,6 +15227,12 @@ msgstr "nouveau"
 msgid "New"
 msgstr "Nouveau"
 
+#: src/components/settings/NewSettingPill.tsx
+#: src/pages/SettingsPage.tsx
+msgctxt "recently added setting"
+msgid "New"
+msgstr ""
+
 #: src/components/home/ContinueHero.tsx
 #, fuzzy
 msgid "New chapter"
@@ -15252,6 +15291,11 @@ msgstr "Nouveau format"
 msgid "New from creators you follow"
 msgstr "Nouveautés des créateurs que vous suivez"
 
+#. On the New tab of Settings: new settings found inside this card's list or editor.
+#: src/pages/SettingsPage.tsx
+msgid "New in here: {names}."
+msgstr ""
+
 #: src/components/settings/AccountSection.tsx
 msgid "New key"
 msgstr ""
@@ -15301,6 +15345,7 @@ msgid "New rule"
 msgstr ""
 
 #: src/api/inbox.ts
+#: src/pages/settings/registry.ts
 msgid "New sequels and spin-offs"
 msgstr ""
 
@@ -17944,6 +17989,11 @@ msgstr "Page {pageNumber}"
 msgid "Page {pageNumber} of {pageCount}"
 msgstr "Page {pageNumber} sur {pageCount}"
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "page background, white, grey, gray, auto background, page colour"
+msgstr ""
+
 #: src/components/series/SeriesActionsMenu.tsx
 #: src/pages/LibraryPage.tsx
 #: src/pages/settings/PageConversionSection.tsx
@@ -18672,6 +18722,12 @@ msgstr ""
 msgid "Prepare ahead is off for this series"
 msgstr ""
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "prepare ahead, pre-upscale, next chapter, background upscaling, warm up"
+msgstr ""
+
+#: src/pages/settings/registry.ts
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Prepare chapters ahead"
 msgstr ""
@@ -18813,8 +18869,14 @@ msgstr "Progression"
 msgid "Progress & achievements"
 msgstr "Progression et succès"
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "progress bar, scrubber, rail, chapter progress"
+msgstr ""
+
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
+#: src/pages/settings/registry.ts
 msgid "Progress rail"
 msgstr ""
 
@@ -19719,6 +19781,11 @@ msgstr "Reconstruction des affiches, {processedCount} sur {totalCount}"
 msgid "Recap skipped"
 msgstr ""
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "recap, skip recap, previously, webtoon recap"
+msgstr ""
+
 #: src/components/NotificationsSection.tsx
 #, fuzzy
 msgid "Receives a JSON POST for each event."
@@ -20366,6 +20433,10 @@ msgstr "Retirer ce torrent ?"
 
 #: src/components/series/EditMetadataModal.tsx
 msgid "Remove title"
+msgstr ""
+
+#: src/pages/settings/registry.ts
+msgid "Remove torrents after seeding"
 msgstr ""
 
 #: src/components/settings/TorrentLifecycleFields.tsx
@@ -22266,6 +22337,7 @@ msgid "Search titles"
 msgstr "Rechercher des titres"
 
 #: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
 msgid "Search torrents for chapters no source has"
 msgstr ""
 
@@ -22372,10 +22444,20 @@ msgstr "Commencer par"
 msgid "Seed ratio"
 msgstr ""
 
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "seed ratio, seeding time, after seeding, remove torrent, cleanup"
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
 msgid "Seeded from"
 msgstr "Recommandations basées sur"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "seeders, seeds, peers, dead torrent"
+msgstr ""
 
 #: src/components/settings/TorrentLifecycleFields.tsx
 msgid "Seeding time (minutes)"
@@ -22582,6 +22664,11 @@ msgstr "Suite de"
 #, fuzzy
 msgid "Sequel to {relatedTo}"
 msgstr "Suite de {relatedTo}"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "sequel, prequel, spin-off, side story, related works, catalogue"
+msgstr ""
 
 #: src/components/CatalogueFilters.tsx
 #: src/components/import/ManualImport.tsx
@@ -23483,6 +23570,7 @@ msgid "Skip specials on new series"
 msgstr "Ignorer les chapitres spéciaux des nouvelles séries"
 
 #: src/components/settings/ReadingProfilesSection.tsx
+#: src/pages/settings/registry.ts
 msgid "Skip the recap of the previous chapter"
 msgstr ""
 
@@ -23929,6 +24017,7 @@ msgid "Stacked height"
 msgstr "Hauteur empilée"
 
 #: src/components/settings/TorrentLifecycleFields.tsx
+#: src/pages/settings/registry.ts
 msgid "Stalled torrents"
 msgstr ""
 
@@ -23936,6 +24025,11 @@ msgstr ""
 #, fuzzy
 msgid "Stalled without finishing"
 msgstr "Arrêtées avant la fin"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "stalled, stuck, no peers, no seeds, dead torrent, timeout"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -24487,9 +24581,15 @@ msgstr ""
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
+#: src/pages/settings/registry.ts
 #, fuzzy
 msgid "Tap zones"
 msgstr "Zones tactiles"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "tap zones, tap layout, kindle, l-shape, one hand, swap tap sides"
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "Tasks"

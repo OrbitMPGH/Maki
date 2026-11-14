@@ -13166,6 +13166,36 @@ button.import-plan-folder-head:hover {
 .settings-section-actions {
   margin-left: auto;
 }
+.new-setting-pill {
+  margin-left: 8px;
+  vertical-align: 0.2em;
+  letter-spacing: 0.02em;
+}
+.mantine-Group-root > .new-setting-pill {
+  align-self: center;
+  margin-left: 0;
+}
+/* A card on the New tab that is there for new controls inside it shows only those, plus whatever
+   holds them. Components mark them with data-new-control; data-new-keep keeps a header they need. */
+.new-setting-focus
+  .settings-section
+  > :not(.settings-section-head, .settings-section-desc)
+  :not([data-new-control], [data-new-control] *, :has([data-new-control]), [data-new-keep], [data-new-keep] *) {
+  display: none !important;
+}
+.new-setting-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  text-decoration: none;
+  transition: color var(--dur-base) var(--ease);
+}
+.new-setting-home:hover {
+  color: var(--brand);
+}
 .settings-section-actions .mantine-Button-root[data-variant='subtle'] {
   color: var(--ink-2);
 }

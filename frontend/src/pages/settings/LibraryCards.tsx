@@ -58,6 +58,8 @@ import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { FolderBrowserModal } from '../../components/settings/FolderBrowserModal'
 import { RootFolderPathModal } from '../../components/settings/RootFolderPathModal'
 import { RootFolderMinFreeInput } from '../../components/settings/RootFolderMinFreeInput'
+import { NewSettingPill } from '../../components/settings/NewSettingPill'
+import { useNewControlMark } from './newSettings'
 import type { RootFolder } from '../../api/types'
 import { SUPPORTED_LOCALES } from '../../i18n'
 import { MONITOR_HELP, MONITOR_OPTIONS, MONITOR_SHORT } from '../../components/series/SeriesActionsMenu'
@@ -81,6 +83,7 @@ export function RootFoldersSection() {
   const deleteFolder = useDeleteRootFolder()
   const [deleting, setDeleting] = useState<{ id: number; path: string } | null>(null)
   const [editing, setEditing] = useState<RootFolder | null>(null)
+  const lowDiskMark = useNewControlMark('low-disk-hold')
 
   const add = () => {
     if (!newPath.trim()) return
@@ -97,45 +100,48 @@ export function RootFoldersSection() {
       panelProps={{ p: 0 }}
     >
       {rootFolders && rootFolders.length > 0 && (
-        <SettingsRows>
-          {rootFolders.map((f) => (
-            <SettingsRow
-              key={f.id}
-              title={<MonoValue value={f.path} copy minWidth="10rem" />}
-              status={f.accessible ? null : { tone: 'danger', label: t`Inaccessible` }}
-              summary={<Trans>{formatBytes(f.freeSpace)} free</Trans>}
-              aside={
-                <Group gap="xs" wrap="nowrap">
-                  <Tooltip
-                    label={t`Downloads into the folder wait while its drive has less free space than this, and carry on by themselves once there is room. 0 never waits.`}
-                    withArrow
-                    multiline
-                    w={280}
-                  >
-                    <span>
-                      <RootFolderMinFreeInput folder={f} />
-                    </span>
-                  </Tooltip>
-                  <ActionIcon
-                    variant="subtle"
-                    onClick={() => setEditing(f)}
-                    aria-label={t`Change root folder path`}
-                  >
-                    <IconPencil size={16} />
-                  </ActionIcon>
-                  <ActionIcon
-                    variant="subtle"
-                    color="var(--danger)"
-                    onClick={() => setDeleting({ id: f.id, path: f.path })}
-                    aria-label={t`Remove root folder`}
-                  >
-                    <IconTrash size={16} />
-                  </ActionIcon>
-                </Group>
-              }
-            />
-          ))}
-        </SettingsRows>
+        <div {...lowDiskMark}>
+          <SettingsRows>
+            {rootFolders.map((f) => (
+              <SettingsRow
+                key={f.id}
+                title={<MonoValue value={f.path} copy minWidth="10rem" />}
+                status={f.accessible ? null : { tone: 'danger', label: t`Inaccessible` }}
+                summary={<Trans>{formatBytes(f.freeSpace)} free</Trans>}
+                aside={
+                  <Group gap="xs" wrap="nowrap">
+                    <NewSettingPill id="low-disk-hold" />
+                    <Tooltip
+                      label={t`Downloads into the folder wait while its drive has less free space than this, and carry on by themselves once there is room. 0 never waits.`}
+                      withArrow
+                      multiline
+                      w={280}
+                    >
+                      <span>
+                        <RootFolderMinFreeInput folder={f} />
+                      </span>
+                    </Tooltip>
+                    <ActionIcon
+                      variant="subtle"
+                      onClick={() => setEditing(f)}
+                      aria-label={t`Change root folder path`}
+                    >
+                      <IconPencil size={16} />
+                    </ActionIcon>
+                    <ActionIcon
+                      variant="subtle"
+                      color="var(--danger)"
+                      onClick={() => setDeleting({ id: f.id, path: f.path })}
+                      aria-label={t`Remove root folder`}
+                    >
+                      <IconTrash size={16} />
+                    </ActionIcon>
+                  </Group>
+                }
+              />
+            ))}
+          </SettingsRows>
+        </div>
       )}
       <SettingsRowsBlock>
         <Group
