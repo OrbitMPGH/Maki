@@ -165,7 +165,7 @@ public abstract record PlanAction
 
 /// <summary>
 /// The one answer to "what happens to this file", for the library pass, the download path and the
-/// wizard. The series override wins, then a file already stored as WebP or AVIF is left alone (or only
+/// wizard. The series override wins, then a file already stored as WebP, AVIF or JPEG XL is left alone (or only
 /// has its tall pages split), then the first matching rule, then the default stop. Hard skips that
 /// need the disk or other rows (hardlinked, PDF, a download in flight, read-file cleanup due) are the caller's.
 /// </summary>
@@ -266,7 +266,8 @@ public sealed record PageConversionPlan(
 
     public static bool IsAlreadyCompact(string? format) =>
         string.Equals(format, "webp", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(format, "avif", StringComparison.OrdinalIgnoreCase);
+        string.Equals(format, "avif", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(format, "jxl", StringComparison.OrdinalIgnoreCase);
 
     public static PageConversionStop? StopOf(PageConversionOverride mode) => mode switch
     {

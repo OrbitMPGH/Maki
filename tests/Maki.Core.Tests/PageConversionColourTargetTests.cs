@@ -47,7 +47,7 @@ public class PageConversionColourTargetTests
     [Theory]
     [InlineData("webp:high/webp:high")]
     [InlineData("webp:high/")]
-    [InlineData("webp:high/jxl:high")]
+    [InlineData("webp:high/heic:high")]
     [InlineData("lossless/lossless")]
     [InlineData("lossless+png")]
     [InlineData("webp:high/avif:balanced/avif:high")]

@@ -26,9 +26,9 @@ public class PageConversionController(
     private const int MaxRuleName = 200;
 
     private static readonly HashSet<string> FormatNames =
-        new(["jpg", "png", "webp", "avif", "gif", "bmp", "mixed", "unknown"], StringComparer.OrdinalIgnoreCase);
+        new(["jpg", "png", "webp", "avif", "jxl", "gif", "bmp", "mixed", "unknown"], StringComparer.OrdinalIgnoreCase);
 
-    /// <param name="Format">"webp", "avif", or null while conversion is off.</param>
+    /// <param name="Format">"webp", "avif", "jxl", or null while conversion is off.</param>
     /// <param name="Stop">"smallest", "compact", "balanced", "high" or "lossless"; sent while off too.</param>
     /// <param name="SplitHeight">Strips taller than this many pixels are cut into pages; null leaves them whole.</param>
     /// <param name="ColourFormat">The colour pages' format; null with <paramref name="ColourStop"/> converts them like black-and-white pages.</param>
@@ -137,6 +137,11 @@ public class PageConversionController(
             return InvalidSettings(request);
         }
 
+        if (JpegXlRefused(stored, []) is { } refused)
+        {
+            return refused;
+        }
+
         var before = await PageConversionOptions.ReadAsync(db, ct);
         var changed = before.Active != stored.Active;
         if (changed)
@@ -173,6 +178,11 @@ public class PageConversionController(
         if (ParseRules(request.Rules) is not { } parsed)
         {
             return this.Fail(localizer, "error.pageConversion.ruleInvalid");
+        }
+
+        if (JpegXlRefused(null, parsed) is { } refused)
+        {
+            return refused;
         }
 
         var changed = await RulesChangedAsync(parsed, ct);
@@ -213,6 +223,11 @@ public class PageConversionController(
         if (ParseRules(request.Rules) is not { } parsed)
         {
             return this.Fail(localizer, "error.pageConversion.ruleInvalid");
+        }
+
+        if (JpegXlRefused(stored, parsed) is { } refused)
+        {
+            return refused;
         }
 
         var before = await PageConversionOptions.ReadAsync(db, ct);
@@ -335,6 +350,14 @@ public class PageConversionController(
 
     private IActionResult SplitHeightInvalid() => this.Fail(localizer, "error.pageConversion.splitHeightInvalid",
         new { min = TallPageSplitter.MinHeight, max = TallPageSplitter.MaxHeight });
+
+    /// <summary>Refuses a JPEG XL target while libjxl is not loaded; the pass would write WebP instead.</summary>
+    private IActionResult? JpegXlRefused(PageConversionOptions.Stored? stored, IReadOnlyList<PlanRule> rules) =>
+        !JpegXlAvailable() && PageConversionOptions.NeedsJpegXl(stored, rules)
+            ? this.Fail(localizer, "error.pageConversion.jpegXlUnavailable")
+            : null;
+
+    internal static Func<bool> JpegXlAvailable { get; set; } = () => JpegXl.IsAvailable;
 
     private static IEnumerable<(string Key, string? Value)> SettingValues(PageConversionOptions.Stored stored) =>
     [

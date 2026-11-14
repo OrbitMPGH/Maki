@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Maki.Api.Tests;
 
-public sealed class PageConversionPreviewTests : IDisposable
+public sealed partial class PageConversionPreviewTests : IDisposable
 {
     private readonly UpgradeWorld _world = new UpgradeWorld().Seed(series: s => s.Type = SeriesTypes.Manga);
 
@@ -234,7 +234,7 @@ public sealed class PageConversionPreviewTests : IDisposable
         Assert.Equal("0", headers["X-Maki-Kept"].ToString());
         Assert.NotNull(result.EntityTag);
 
-        Assert.IsType<BadRequestObjectResult>(await Controller().Preview(fileId, 1, "jxl", "high", false, false, null, null, CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await Controller().Preview(fileId, 1, "heic", "high", false, false, null, null, CancellationToken.None));
         Assert.IsType<BadRequestObjectResult>(await Controller().Preview(fileId, 1, "webp", "best", false, false, null, null, CancellationToken.None));
         Assert.IsType<NotFoundResult>(await Controller().Preview(fileId, 9, "webp", "high", false, false, null, null, CancellationToken.None));
         Assert.IsType<PhysicalFileResult>(await Controller().Preview(fileId, 1, null, "lossless", false, false, null, null, CancellationToken.None));

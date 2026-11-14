@@ -5,11 +5,15 @@ using NetVips;
 
 namespace Maki.Core.Images;
 
-/// <summary>What stored pages are converted to. JPEG XL is absent because the bundled libvips has no libjxl.</summary>
+/// <summary>
+/// What stored pages are converted to. Stored as its number, so a new format goes at the end. JPEG XL
+/// is written through libjxl (<see cref="JpegXl"/>), since the bundled libvips cannot.
+/// </summary>
 public enum PageConversionFormat
 {
     Webp,
-    Avif
+    Avif,
+    Jxl
 }
 
 /// <summary>How one page is written: lossy in the chosen format, or lossless WebP for a PNG.</summary>
@@ -17,7 +21,8 @@ public enum PageEncoding
 {
     Webp,
     LosslessWebp,
-    Avif
+    Avif,
+    Jxl
 }
 
 /// <summary>Why a page was copied over as it was.</summary>
@@ -82,8 +87,8 @@ public sealed record PageTarget(PageConversionFormat Format, PageConversionStop 
 /// <param name="PngLossless">PNG pages go to lossless WebP whatever the stop.</param>
 /// <param name="SplitHeight">Strips taller than this are cut into several pages (<see cref="TallPageSplitter"/>); null leaves them whole.</param>
 /// <param name="SplitOnly">
-/// Only split: every page that is not a tall strip is kept as it is. For files already stored as WebP or
-/// AVIF, and files converted before. The targets still set the quality of a WebP or AVIF piece.
+/// Only split: every page that is not a tall strip is kept as it is. For files already stored as WebP,
+/// AVIF or JPEG XL, and files converted before. The targets still set the quality of such a piece.
 /// </param>
 /// <param name="Colour">How colour pages are converted; null converts them like black-and-white pages.</param>
 public sealed record PageConversionSettings(
@@ -109,7 +114,7 @@ public sealed record PageConversionSettings(
     private static readonly PageConversionStop[] LossyStops =
         [PageConversionStop.Smallest, PageConversionStop.Compact, PageConversionStop.Balanced, PageConversionStop.High];
 
-    /// <summary>The encoder quality a lossy stop stands for. Lossless has none.</summary>
+    /// <summary>The encoder quality a lossy WebP or AVIF stop stands for. Lossless has none, JPEG XL takes <see cref="Distance"/>.</summary>
     public static int Quality(PageConversionFormat format, PageConversionStop stop) => (format, stop) switch
     {
         (PageConversionFormat.Webp, PageConversionStop.Smallest) => 50,
@@ -120,6 +125,21 @@ public sealed record PageConversionSettings(
         (PageConversionFormat.Avif, PageConversionStop.Compact) => 60,
         (PageConversionFormat.Avif, PageConversionStop.Balanced) => 65,
         (PageConversionFormat.Avif, PageConversionStop.High) => 80,
+        _ => throw new ArgumentOutOfRangeException(nameof(stop), stop, null)
+    };
+
+    /// <summary>
+    /// The JPEG XL distance (effort 3) a lossy stop stands for: the one fixed distance whose mean
+    /// SSIMULACRA2 over the 24-page conversion corpus equals the WebP stop's, which lands JPEG XL at
+    /// 1.02x, 1.01x, 0.99x and 0.89x WebP's bytes from Smallest to High
+    /// (research/image-formats/2026-11-14-jxl-stops).
+    /// </summary>
+    public static float Distance(PageConversionStop stop) => stop switch
+    {
+        PageConversionStop.Smallest => 4.5f,
+        PageConversionStop.Compact => 3.35f,
+        PageConversionStop.Balanced => 2.3f,
+        PageConversionStop.High => 1.35f,
         _ => throw new ArgumentOutOfRangeException(nameof(stop), stop, null)
     };
 
@@ -208,12 +228,18 @@ public sealed record PageConversionSettings(
         return new PageConversionSettings(grey.Format, grey.Stop, png, split, Colour: colour);
     }
 
-    public static string FormatName(PageConversionFormat format) => format == PageConversionFormat.Avif ? "avif" : "webp";
+    public static string FormatName(PageConversionFormat format) => format switch
+    {
+        PageConversionFormat.Avif => "avif",
+        PageConversionFormat.Jxl => "jxl",
+        _ => "webp"
+    };
 
     public static PageConversionFormat? ParseFormat(string? value) => value?.Trim().ToLowerInvariant() switch
     {
         "webp" => PageConversionFormat.Webp,
         "avif" => PageConversionFormat.Avif,
+        "jxl" => PageConversionFormat.Jxl,
         _ => null
     };
 
@@ -231,7 +257,7 @@ public sealed record PageConversionSettings(
 }
 
 /// <summary>
-/// The per-page rules. Only JPEG and PNG are converted: WebP and AVIF pages are already compact and a
+/// The per-page rules. Only JPEG and PNG are converted: WebP, AVIF and JPEG XL pages are already compact and a
 /// second lossy pass only loses detail, GIF and APNG may be animated, and BMP has no decoder here.
 /// At <see cref="PageConversionStop.Lossless"/> a JPEG is kept and a PNG goes to lossless WebP
 /// (lossless AVIF is usually larger than the PNG). At a lossy stop both are encoded in the chosen
@@ -271,8 +297,8 @@ public static class PageConversion
             return new Page(bytes, extension, format, kept, colour);
         }
 
-        var quality = encoding == PageEncoding.LosslessWebp ? 100 : PageConversionSettings.Quality(target.Format, target.Stop);
-        var encoded = ImageCodec.EncodePage(bytes, encoding, quality, out var skipped);
+        var (quality, distance) = LevelOf(encoding, target.Stop);
+        var encoded = ImageCodec.EncodePage(bytes, encoding, quality, out var skipped, distance);
         if (encoded is null)
         {
             return new Page(bytes, extension, format, skipped, colour);
@@ -345,7 +371,29 @@ public static class PageConversion
         };
     }
 
-    public static string ExtensionOf(PageEncoding encoding) => encoding == PageEncoding.Avif ? ".avif" : ".webp";
+    public static string ExtensionOf(PageEncoding encoding) => encoding switch
+    {
+        PageEncoding.Avif => ".avif",
+        PageEncoding.Jxl => ".jxl",
+        _ => ".webp"
+    };
+
+    /// <summary>The encoder quality (WebP, AVIF) or distance (JPEG XL) an encoding takes at a stop.</summary>
+    internal static (int Quality, float Distance) LevelOf(PageEncoding encoding, PageConversionStop stop) => encoding switch
+    {
+        PageEncoding.LosslessWebp => (100, 0),
+        PageEncoding.Jxl => (0, PageConversionSettings.Distance(stop)),
+        PageEncoding.Avif => (PageConversionSettings.Quality(PageConversionFormat.Avif, stop), 0),
+        _ => (PageConversionSettings.Quality(PageConversionFormat.Webp, stop), 0)
+    };
+
+    /// <summary>The lossy encoding of a format. Without libjxl a JPEG XL target is written as WebP at the same stop.</summary>
+    internal static PageEncoding LossyEncoding(PageConversionFormat format) => format switch
+    {
+        PageConversionFormat.Avif => PageEncoding.Avif,
+        PageConversionFormat.Jxl when JpegXl.IsAvailable => PageEncoding.Jxl,
+        _ => PageEncoding.Webp
+    };
 
     /// <summary>A JPEG or PNG that <see cref="Decide"/> would not keep on sight, whatever the target.</summary>
     private static bool Convertible(byte[] bytes, string extension) =>
@@ -368,7 +416,7 @@ public static class PageConversion
 
         return format == "png" && (target.Stop == PageConversionStop.Lossless || pngLossless)
             ? PageEncoding.LosslessWebp
-            : target.Format == PageConversionFormat.Avif ? PageEncoding.Avif : PageEncoding.Webp;
+            : LossyEncoding(target.Format);
     }
 
     /// <summary>The format name <see cref="ChapterFileMeasurer"/> would give these bytes.</summary>
@@ -384,6 +432,7 @@ public static class PageConversion
             _ => null
         };
         if (sniffed is not null) return sniffed;
+        if (JpegXl.HasSignature(bytes)) return "jxl";
         if (bytes.Length > 1 && bytes[0] == 'B' && bytes[1] == 'M') return "bmp";
         return extension.TrimStart('.').ToLower(CultureInfo.InvariantCulture) switch
         {

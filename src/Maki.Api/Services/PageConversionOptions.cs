@@ -25,6 +25,18 @@ public static class PageConversionOptions
             : null;
     }
 
+    /// <summary>Whether any target of these settings or rules writes JPEG XL, which needs libjxl.</summary>
+    public static bool NeedsJpegXl(Stored? stored, IEnumerable<PlanRule> rules)
+    {
+        static bool Jxl(PageTarget? target) =>
+            target is { Format: PageConversionFormat.Jxl, Stop: not PageConversionStop.Lossless };
+
+        return (stored is not null &&
+                ((stored.Format == PageConversionFormat.Jxl && stored.Stop != PageConversionStop.Lossless) || Jxl(stored.Colour))) ||
+               rules.Any(r => !r.Skip &&
+                              ((r.Format == PageConversionFormat.Jxl && r.Stop != PageConversionStop.Lossless) || Jxl(r.Colour)));
+    }
+
     /// <summary>Read straight from the table, so the download processor needs no settings service of its own.</summary>
     public static async Task<Stored> ReadAsync(MakiDbContext db, CancellationToken ct)
     {
