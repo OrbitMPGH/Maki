@@ -1386,7 +1386,7 @@ public class SourceMatchServiceTests : IDisposable
     }
 
     private const string NearTitle = "Hajime no Ippo";
-    private const string NearHit = "Hajime Fighter";
+    private const string NearHit = "Hajime no Ipo";
 
     private List<SourceNearMiss> NearMissesOf(int seriesId)
     {
@@ -1395,11 +1395,47 @@ public class SourceMatchServiceTests : IDisposable
     }
 
     [Fact]
-    public void The_near_miss_fixtures_sit_between_the_floor_and_the_threshold()
+    public void The_near_miss_fixture_is_close_but_not_auto_accepted()
     {
-        var score = Maki.Core.Scrobbling.ScrobbleMatching.TitleSimilarity(NearTitle, NearHit);
-        Assert.InRange(score, SourceMatchService.NearMissFloor, 0.5999);
+        Assert.Equal(0, Maki.Core.Scrobbling.ScrobbleMatching.MatchScore([NearTitle], NearHit, 0.6));
+        Assert.True(SourceMatchService.SharesItsWords(NearTitle, NearHit));
         Assert.True(Maki.Core.Scrobbling.ScrobbleMatching.TitleSimilarity(NearTitle, "Berserk") < SourceMatchService.NearMissFloor);
+    }
+
+    [Theory]
+    [InlineData("Shingeki no Kyojin", "Shingeki no Kyoujin")]
+    [InlineData("Call of the Night", "Call to the Knight")]
+    [InlineData("Boku no Hero Academia", "My Hero Academia")]
+    [InlineData("Mob Psycho 100", "Mob Psycho Hundred")]
+    [InlineData("Kaguya-sama wa Kokurasetai", "Kaguya-sama: Love is War")]
+    [InlineData("Yotsuba&!", "Yotsuba to!")]
+    public void A_spelling_variant_shares_its_words(string ours, string theirs) =>
+        Assert.True(SourceMatchService.SharesItsWords(ours, theirs));
+
+    [Theory]
+    [InlineData("Hajime no Ippo", "Hajime Fighter")]
+    [InlineData("Blue Lock", "Blue Period")]
+    [InlineData("Tokyo Ghoul", "Tokyo Revengers")]
+    [InlineData("Chainsaw Man", "Chain Mail Man")]
+    [InlineData("Sakamoto Days", "Sakamoto desu ga")]
+    [InlineData("A Sign of Affection", "A Sign of Love")]
+    [InlineData("The Apothecary Diaries", "The Duke's Diaries")]
+    [InlineData("Witch Hat Atelier", "Witch Watch")]
+    [InlineData("One Piece", "One Punch Man")]
+    [InlineData("Kingdom", "King of the Hill")]
+    [InlineData("Dandadan", "Dan Machi")]
+    public void A_different_work_with_a_similar_title_does_not_share_its_words(string ours, string theirs) =>
+        Assert.False(SourceMatchService.SharesItsWords(ours, theirs));
+
+    [Fact]
+    public async Task A_result_sharing_only_one_word_leaves_no_suggestion()
+    {
+        var seriesId = _db.SeedSeries("Blue Lock");
+        var source = new FakeSource { Name = "fake", OnSearch = _ => [Hit("other", "Blue Period")] };
+
+        await RunAutoMatch(seriesId, source);
+
+        Assert.Empty(NearMissesOf(seriesId));
     }
 
     [Fact]
@@ -1455,7 +1491,7 @@ public class SourceMatchServiceTests : IDisposable
         var afterSame = Assert.Single(NearMissesOf(seriesId));
         Assert.NotNull(afterSame.DismissedAt);
 
-        search = _ => [Hit("near", NearHit), Hit("other", "First Ippo")];
+        search = _ => [Hit("near", NearHit), Hit("other", "Hajime no Ippou")];
         await RunAutoMatch(seriesId, source);
 
         var all = NearMissesOf(seriesId);

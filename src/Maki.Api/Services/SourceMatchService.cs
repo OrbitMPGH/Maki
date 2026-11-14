@@ -72,11 +72,23 @@ public partial class SourceMatchService(
 
     /// <summary>
     /// The lowest title similarity at which the best leftover result is offered as "Is this it?".
-    /// Ratcliff/Obershelp scores unrelated titles of similar length around 0.2 to 0.35 (they share
-    /// common letters), while odd romanisations of one work land in the 0.4 to 0.6 band. 0.4 keeps
-    /// the suggestion off coincidental overlap; the user still confirms every one.
+    /// The score alone is not enough: "Blue Lock" scores 0.60 against "Blue Period" and "Tokyo Ghoul"
+    /// 0.54 against "Tokyo Revengers", so a suggestion must also pass <see cref="SharesItsWords"/>.
     /// </summary>
     internal const double NearMissFloor = 0.4;
+
+    /// <summary>
+    /// How alike two words must be to count as one word spelt two ways ("Kyojin"/"Kyoujin" 0.92,
+    /// "Ippo"/"Ipo" 0.86), while "Chainsaw"/"Chain" (0.77) and "Days"/"Desu" (0.5) stay apart.
+    /// </summary>
+    private const double NearMissWordSimilarity = 0.8;
+
+    /// <summary>Words that say nothing about which work a title names, in English and romaji.</summary>
+    private static readonly HashSet<string> FillerWords =
+    [
+        "the", "a", "an", "of", "and", "to", "in", "on", "at", "for", "with", "is", "my", "x",
+        "no", "wa", "ga", "wo", "o", "ni", "de", "mo", "na", "e",
+    ];
 
     private const int NearMissDescriptionLength = 280;
 
@@ -537,7 +549,11 @@ public partial class SourceMatchService(
         var turnedDown = target.Dismissed.GetValueOrDefault(source.Name);
         var near = candidates
             .Where(c => turnedDown?.Contains(c.Id) != true)
-            .Select(c => (Candidate: c, Score: queries.Max(q => ScrobbleMatching.TitleSimilarity(q, c.Title))))
+            .Select(c => (Candidate: c, Score: queries
+                .Where(q => SharesItsWords(q, c.Title))
+                .Select(q => ScrobbleMatching.TitleSimilarity(q, c.Title))
+                .DefaultIfEmpty(0)
+                .Max()))
             .Where(x => x.Score >= NearMissFloor)
             .OrderByDescending(x => x.Score)
             .Cast<(ScrobbleCandidate Candidate, double Score)?>()
@@ -545,6 +561,45 @@ public partial class SourceMatchService(
         return new SourceOutcome(source, priority, null, SourceMappingOrigin.TitleSearch, null,
             NearMiss: near is { } n ? usable.First(r => r.SourceSeriesId == n.Candidate.Id) : null,
             NearMissScore: near?.Score ?? 0);
+    }
+
+    /// <summary>
+    /// Whether two titles carry the same meaningful words, allowing each word a small spelling
+    /// difference. At least two thirds of the shorter title's words must have a counterpart, and at
+    /// least half of the longer one's, so "Blue Lock" never suggests "Blue Period" and a lone shared
+    /// word in a long title is not enough.
+    /// </summary>
+    internal static bool SharesItsWords(string a, string b)
+    {
+        var wa = MeaningfulWords(a);
+        var wb = MeaningfulWords(b);
+        if (wa.Count == 0 || wb.Count == 0)
+        {
+            return false;
+        }
+
+        var (fewer, more) = wa.Count <= wb.Count ? (wa, wb) : (wb, wa);
+        // One-to-one, exact pairs first, so "Witch" can't stand in for both "Witch" and "Watch".
+        var unpaired = more.Except(fewer).ToList();
+        var matched = fewer.Count(more.Contains);
+        foreach (var word in fewer.Where(w => !more.Contains(w)))
+        {
+            var partner = unpaired.FirstOrDefault(o => ScrobbleMatching.TitleSimilarity(word, o) >= NearMissWordSimilarity);
+            if (partner is not null)
+            {
+                unpaired.Remove(partner);
+                matched++;
+            }
+        }
+
+        return matched * 3 >= fewer.Count * 2 && matched * 2 >= more.Count;
+    }
+
+    private static List<string> MeaningfulWords(string title)
+    {
+        var words = ScrobbleMatching.NormalizeTitle(title).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var meaningful = words.Where(w => w.Length > 1 && !FillerWords.Contains(w)).Distinct().ToList();
+        return meaningful.Count > 0 ? meaningful : [.. words.Distinct()];
     }
 
     /// <summary>The rival a result's title names strictly better than it names the series, if any.</summary>
