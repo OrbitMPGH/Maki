@@ -74,13 +74,18 @@ public class HostStartupTests : IDisposable
         await db.SaveChangesAsync();
         client.DefaultRequestHeaders.Add("X-Api-Key", secret);
         Assert.Equal(System.Net.HttpStatusCode.OK, (await client.GetAsync("/api/v1/creditgroups")).StatusCode);
+        var ids = Enumerable.Range(1, 600).ToArray();
+        Assert.Equal(System.Net.HttpStatusCode.OK,
+            (await client.PostAsJsonAsync("/api/v1/creditgroups/notices", new { noticeIds = ids })).StatusCode);
 
         // Every permission but Admin, so nothing short of Admin opens it.
         user.Permissions = ~Maki.Core.Security.MakiPermission.Admin;
         await db.SaveChangesAsync();
         factory.Services.GetRequiredService<Maki.Api.Auth.IUserSnapshotCache>().Evict(user.Id);
-        foreach (var path in new[] { "/api/v1/creditgroups", "/api/v1/creditgroups/notices?ids=1", "/api/v1/creditgroups/notices/1/image" })
+        foreach (var path in new[] { "/api/v1/creditgroups", "/api/v1/creditgroups/notices/1/image" })
             Assert.Equal(System.Net.HttpStatusCode.Forbidden, (await client.GetAsync(path)).StatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden,
+            (await client.PostAsJsonAsync("/api/v1/creditgroups/notices", new { noticeIds = ids })).StatusCode);
         Assert.Equal(System.Net.HttpStatusCode.Forbidden,
             (await client.PutAsJsonAsync("/api/v1/creditgroups/notices/1", new { @override = "Keep" })).StatusCode);
         Assert.Equal(System.Net.HttpStatusCode.Forbidden,

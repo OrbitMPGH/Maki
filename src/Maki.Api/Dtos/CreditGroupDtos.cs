@@ -44,7 +44,11 @@ public record UpdateCreditNoticeRequest(
 /// <summary>Confirms one name for several notices at once, such as every notice that suggests it.</summary>
 public record NameCreditNoticesRequest(List<int> NoticeIds, string Name);
 
-public record ApplyCreditGroupsRequest(List<int> NoticeIds);
+/// <summary>
+/// The notices a detail or an apply is for. A body rather than a query string: the Site and Unnamed buckets can
+/// hold hundreds of notices, more than a request line takes.
+/// </summary>
+public record CreditNoticeIdsRequest(List<int> NoticeIds);
 
 /// <summary>
 /// <see cref="ChaptersUpdated"/>: chapters whose file took a group. <see cref="FilesRenamed"/>: files the naming

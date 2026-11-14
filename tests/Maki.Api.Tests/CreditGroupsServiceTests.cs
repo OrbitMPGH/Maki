@@ -176,6 +176,77 @@ public sealed class CreditGroupsServiceTests : IDisposable
         Assert.Equal(("Solo/Solo Ch.1.cbz", "Asura Scans"), FileOf(chapter));
     }
 
+    private void AddInFlightDownload(int chapterId)
+    {
+        using var db = _db.NewContext();
+        db.DownloadQueue.Add(new DownloadQueueItem { SeriesId = _seriesId, ChapterId = chapterId, Status = QueueStatus.Downloading });
+        db.SaveChanges();
+    }
+
+    [Fact]
+    public async Task A_refused_rename_leaves_the_series_ungrouped_and_a_later_apply_does_both()
+    {
+        _settings.Set(SettingKeys.LibraryChapterFormat, GroupFormat);
+        var chapter = AddChapter(1);
+        var notice = AddNotice(kind: CreditNoticeKind.Group, groupName: "Asura Scans", source: CreditGroupSource.Confirmed);
+        Link(notice, chapter);
+        AddInFlightDownload(chapter);
+
+        await using (var db = _db.NewContext())
+        {
+            var refused = await Service(db).ApplyAsync([notice], default);
+            Assert.Equal((0, 0), (refused.ChaptersUpdated, refused.FilesRenamed));
+            Assert.Contains("error.seriesRename.activeDownload", Assert.Single(refused.Warnings));
+        }
+
+        Assert.Equal(("Solo/Solo Ch.1.cbz", (string?)null), FileOf(chapter));
+        await using (var db = _db.NewContext())
+        {
+            await db.DownloadQueue.ExecuteDeleteAsync();
+        }
+
+        await using var again = _db.NewContext();
+        var applied = await Service(again).ApplyAsync([notice], default);
+
+        Assert.Equal((1, 1), (applied.ChaptersUpdated, applied.FilesRenamed));
+        Assert.Equal((Path.Combine("Solo", "Solo Ch.1 (Asura Scans).cbz"), "Asura Scans"), FileOf(chapter));
+    }
+
+    [Fact]
+    public async Task A_file_the_rename_skips_keeps_no_group()
+    {
+        _settings.Set(SettingKeys.LibraryChapterFormat, GroupFormat);
+        var chapter = AddChapter(1);
+        File.WriteAllBytes(Path.Combine(_root, "Solo", "Solo Ch.1 (Asura Scans).cbz"), [9]);
+        var notice = AddNotice(kind: CreditNoticeKind.Group, groupName: "Asura Scans", source: CreditGroupSource.Confirmed);
+        Link(notice, chapter);
+
+        await using var db = _db.NewContext();
+        var result = await Service(db).ApplyAsync([notice], default);
+
+        Assert.Equal((0, 0), (result.ChaptersUpdated, result.FilesRenamed));
+        Assert.NotEmpty(result.Warnings);
+        Assert.Null(FileOf(chapter).Group);
+    }
+
+    [Fact]
+    public async Task A_file_two_notices_name_differently_is_a_conflict_from_either_bucket()
+    {
+        var shared = AddChapter(1);
+        var asura = AddNotice(kind: CreditNoticeKind.Group, groupName: "Asura Scans", source: CreditGroupSource.Confirmed);
+        var flame = AddNotice(kind: CreditNoticeKind.Group, groupName: "Flame Scans", source: CreditGroupSource.Propagated);
+        Link(asura, shared);
+        Link(flame, shared, tail: true);
+
+        await using var db = _db.NewContext();
+        var list = (await Controller(db).List(all: false, default)).Value!;
+        var result = await Service(db).ApplyAsync([asura], default);
+
+        Assert.All(list.Groups, g => Assert.Equal(0, g.ChaptersWithoutGroup));
+        Assert.Equal((0, 1), (result.ChaptersUpdated, result.Conflicts));
+        Assert.Null(FileOf(shared).Group);
+    }
+
     [Fact]
     public async Task A_site_ad_an_unconfirmed_suggestion_or_a_conflict_applies_nothing()
     {
@@ -221,7 +292,8 @@ public sealed class CreditGroupsServiceTests : IDisposable
 
         Assert.Equal(["group:asurascans", "site", "unnamed"], result.Groups.Select(g => g.Key).Order());
         var asura = result.Groups.Single(g => g.Key == "group:asurascans");
-        Assert.Equal(new CreditGroupDto("group:asurascans", "Asura Scans", "confirmed", "group", [confirmed, suggested], 2, 1, 3, 2),
+        // Three chapters carry the bucket, but apply changes only chapter one: two has a group and three's notice is a suggestion.
+        Assert.Equal(new CreditGroupDto("group:asurascans", "Asura Scans", "confirmed", "group", [confirmed, suggested], 2, 1, 3, 1),
             asura with { NoticeIds = asura.NoticeIds.ToList() }, new GroupComparer());
         Assert.Equal(("site", "none", 1), result.Groups.Where(g => g.Key == "site").Select(g => (g.Kind, g.NameSource, g.Chapters)).Single());
         Assert.Contains(all.Groups, g => g.Key == "group:titlepage" && g.NameSource == "suggested");
@@ -245,7 +317,7 @@ public sealed class CreditGroupsServiceTests : IDisposable
         Link(notice, two, tail: true, share: 250);
 
         await using var db = _db.NewContext();
-        var detail = (await Controller(db).Notices([notice], default)).Value!;
+        var detail = (await Controller(db).Notices(new CreditNoticeIdsRequest([notice]), default)).Value!;
 
         var dto = Assert.Single(detail.Notices);
         Assert.Equal(new CreditNoticeDto(notice, true, true, "none", "group", "Asura Scans", "propagated", null, null,

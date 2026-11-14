@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Maki.Core.Images;
 
 namespace Maki.Core.Tests;
@@ -100,6 +101,14 @@ public class CreditGroupNameTests
         Assert.Equal("sleepy tl", CreditGroupName.Suggest(["Support us | patreon.com/sleepytl"]).Name);
         Assert.Equal("moonbeam", CreditGroupName.Suggest(["Support us | ko-fi.com/moonbeam"]).Name);
         Assert.Null(CreditGroupName.Suggest(["Support us | patreon.com"]).Name);
+    }
+
+    [Fact]
+    public void A_pattern_timing_out_gives_no_suggestion_instead_of_throwing()
+    {
+        Assert.Equal(CreditGroupGuess.None,
+            CreditGroupName.Safely<CreditGroupGuess>(() => throw new RegexMatchTimeoutException("x", "y", TimeSpan.Zero), CreditGroupGuess.None));
+        Assert.Throws<InvalidOperationException>(() => CreditGroupName.Safely<int>(() => throw new InvalidOperationException(), 0));
     }
 
     [Fact]

@@ -40,7 +40,24 @@ public sealed class CreditGroupsService(
         int Id, bool Accepted, CreditNoticeOverride Override, CreditNoticeKind Kind, string? GroupName,
         CreditGroupSource GroupSource, string? SuggestedName, string? Invite, string? Text, bool Whole, double Share);
 
-    private sealed record LinkRow(int NoticeId, int ChapterId, int SeriesId, bool Tail, int Page, int Share, bool HasFile, bool Grouped);
+    private sealed record LinkRow(int NoticeId, int ChapterId, int SeriesId, bool Tail, int Page, int Share, int? FileId, string? Group)
+    {
+        public bool Ungrouped => FileId is not null && string.IsNullOrWhiteSpace(Group);
+    }
+
+    /// <summary>Whether apply gives a notice's group to its chapters: a Group notice with a confirmed or propagated name.</summary>
+    private static bool Applicable(CreditNoticeKind kind, CreditGroupSource source, string? name) =>
+        kind == CreditNoticeKind.Group && source != CreditGroupSource.None && !string.IsNullOrWhiteSpace(name);
+
+    /// <summary>
+    /// Files two applicable notices name different groups for, from every applicable notice linked to each file.
+    /// Apply leaves them alone whichever notices it was asked for.
+    /// </summary>
+    private static HashSet<int> Conflicted(IEnumerable<(int FileId, string Name)> named) =>
+        named.GroupBy(n => n.FileId)
+            .Where(g => g.Select(n => n.Name.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).Skip(1).Any())
+            .Select(g => g.Key)
+            .ToHashSet();
 
     private static bool Hidden(CreditNoticeOverride value, bool accepted) =>
         value == CreditNoticeOverride.Hide || (value == CreditNoticeOverride.None && accepted);
@@ -48,7 +65,12 @@ public sealed class CreditGroupsService(
     public async Task<CreditGroupListDto> ListAsync(bool all, CancellationToken ct)
     {
         var notices = await NoticesAsync(null, ct);
-        var links = (await LinksAsync(null, ct)).ToLookup(l => l.NoticeId);
+        var allLinks = await LinksAsync(null, ct);
+        var links = allLinks.ToLookup(l => l.NoticeId);
+        var applicable = notices.Where(n => Applicable(n.Kind, n.GroupSource, n.GroupName)).ToDictionary(n => n.Id);
+        var conflicted = Conflicted(allLinks
+            .Where(l => l.FileId is not null && applicable.ContainsKey(l.NoticeId))
+            .Select(l => (l.FileId!.Value, applicable[l.NoticeId].GroupName!)));
         var shown = notices.Where(n => links.Contains(n.Id) &&
             (all || Hidden(n.Override, n.Accepted) || n.Kind != CreditNoticeKind.Unknown || n.GroupSource != CreditGroupSource.None));
 
@@ -58,11 +80,15 @@ public sealed class CreditGroupsService(
             var members = bucket.ToList();
             var memberLinks = members.SelectMany(n => links[n.Id]).ToList();
             var chapters = memberLinks.DistinctBy(l => l.ChapterId).ToList();
+            // What apply would change for these notices, by the same rule ApplyAsync follows.
+            var applies = memberLinks
+                .Where(l => applicable.ContainsKey(l.NoticeId) && l.Ungrouped && !conflicted.Contains(l.FileId!.Value))
+                .Select(l => l.ChapterId).Distinct().Count();
             var (name, source) = bucket.Key is "site" or "unnamed" ? (null, "none") : NameOf(members);
             var kind = bucket.Key == "site" ? "site" : members.Any(n => n.Kind == CreditNoticeKind.Group) ? "group" : "unknown";
             groups.Add(new CreditGroupDto(
                 bucket.Key, name, source, kind, members.Select(n => n.Id).Order().ToList(), members.Count,
-                chapters.Select(l => l.SeriesId).Distinct().Count(), chapters.Count, chapters.Count(l => l.HasFile && !l.Grouped)));
+                chapters.Select(l => l.SeriesId).Distinct().Count(), chapters.Count, applies));
         }
 
         return new CreditGroupListDto(groups
@@ -283,20 +309,24 @@ public sealed class CreditGroupsService(
     /// <summary>
     /// Gives every chapter linked to the listed notices the notice's group, where the chapter's file has none.
     /// Only Group notices with a confirmed or propagated name apply; a group a file already carries is never
-    /// replaced, and a file two notices name different groups for is left alone. Then renames the files whose
-    /// name the chapter format makes depend on the group, through <see cref="SeriesRenameService.RenameFilesAsync"/>
-    /// (the folder stays, as after an import). ComicInfo is not rewritten: a rewrite swaps a new archive over the
-    /// name and breaks a hardlink to a seeding copy, and nothing else that changes a file's group does it either.
-    /// Safe to repeat: a second run finds every file grouped and changes nothing.
+    /// replaced, and a file two applicable notices name different groups for is left alone, whichever of them
+    /// were asked for. Then renames the files whose name the chapter format makes depend on the group, through
+    /// <see cref="SeriesRenameService.RenameFilesAsync"/> (the folder stays, as after an import). Each series is
+    /// done under its lock in one transaction: when the rename is refused (a download in flight, a name collision,
+    /// no root folder) the series keeps no group and the reason comes back as a warning, and a file the rename had
+    /// to skip loses its group again, so a later apply does both. ComicInfo is not rewritten: a rewrite swaps a new
+    /// archive over the name and breaks a hardlink to a seeding copy, and nothing else that changes a file's group
+    /// does it either. Safe to repeat: a second run finds every file grouped and changes nothing.
     /// </summary>
     public async Task<ApplyCreditGroupsResult> ApplyAsync(IReadOnlyCollection<int> noticeIds, CancellationToken ct)
     {
         var ids = noticeIds.Distinct().ToList();
-        var notices = await db.CreditNotices.AsNoTracking()
-            .Where(n => ids.Contains(n.Id) && n.Kind == CreditNoticeKind.Group && n.GroupName != null && n.GroupName != "" &&
-                n.GroupSource != CreditGroupSource.None)
-            .Select(n => new { n.Id, n.GroupName })
-            .ToDictionaryAsync(n => n.Id, n => n.GroupName!.Trim(), ct);
+        var notices = (await db.CreditNotices.AsNoTracking()
+                .Where(n => ids.Contains(n.Id))
+                .Select(n => new { n.Id, n.Kind, n.GroupSource, n.GroupName })
+                .ToListAsync(ct))
+            .Where(n => Applicable(n.Kind, n.GroupSource, n.GroupName))
+            .ToDictionary(n => n.Id, n => n.GroupName!.Trim());
         if (notices.Count == 0)
         {
             return new ApplyCreditGroupsResult(0, 0, 0, []);
@@ -321,27 +351,18 @@ public sealed class CreditGroupsService(
 
         var fileOf = chapters.ToDictionary(c => c.Id, c => c.FileId);
         var names = new Dictionary<int, string>();
-        var conflicted = new HashSet<int>();
         foreach (var link in links)
         {
-            if (!fileOf.TryGetValue(link.ChapterId, out var fileId))
+            if (fileOf.TryGetValue(link.ChapterId, out var fileId))
             {
-                continue;
+                names.TryAdd(fileId, notices[link.NoticeId]);
             }
-
-            var name = notices[link.NoticeId];
-            if (names.TryGetValue(fileId, out var other) && !string.Equals(other, name, StringComparison.OrdinalIgnoreCase))
-            {
-                conflicted.Add(fileId);
-            }
-
-            names.TryAdd(fileId, name);
         }
 
+        var conflicted = Conflicted(await NamedFilesAsync(names.Keys.ToList(), ct));
         var renameImported = await settings.GetAsync(SettingKeys.LibraryRenameImportedFiles, ct) != "false";
-        var (updated, renamed) = (0, 0);
+        var (updated, renamed, conflicts) = (0, 0, 0);
         var warnings = new List<string>();
-        var conflicts = 0;
         foreach (var series in chapters.GroupBy(c => c.SeriesId))
         {
             var fileIds = series.Select(c => c.FileId).Distinct().ToList();
@@ -356,7 +377,6 @@ public sealed class CreditGroupsService(
                     continue;
                 }
 
-                file.Group = names[file.Id];
                 changed.Add(file);
             }
 
@@ -365,28 +385,80 @@ public sealed class CreditGroupsService(
                 continue;
             }
 
+            await using var transaction = await db.Database.BeginTransactionAsync(ct);
+            foreach (var file in changed)
+            {
+                file.Group = names[file.Id];
+            }
+
             await db.SaveChangesAsync(ct);
+            var rename = await RenameAsync(series.Key, changed.Where(f => renameImported || f.NamedByMaki).ToList(), warnings, ct);
+            if (rename.Refused)
+            {
+                await transaction.RollbackAsync(ct);
+                foreach (var file in changed)
+                {
+                    await db.Entry(file).ReloadAsync(ct);
+                }
+
+                continue;
+            }
+
+            if (rename.Skipped.Count > 0)
+            {
+                foreach (var file in rename.Skipped)
+                {
+                    file.Group = null;
+                }
+
+                await db.SaveChangesAsync(ct);
+                changed.RemoveAll(rename.Skipped.Contains);
+            }
+
+            await transaction.CommitAsync(ct);
             var changedIds = changed.Select(f => f.Id).ToHashSet();
             updated += series.Count(c => changedIds.Contains(c.FileId));
-            renamed += await RenameAsync(series.Key, changed.Where(f => renameImported || f.NamedByMaki).ToList(), warnings, ct);
+            renamed += rename.Renamed;
         }
 
         return new ApplyCreditGroupsResult(updated, renamed, conflicts, warnings);
     }
 
+    /// <summary>The group every applicable notice linked to one of <paramref name="fileIds"/> names for that file.</summary>
+    private async Task<List<(int FileId, string Name)>> NamedFilesAsync(List<int> fileIds, CancellationToken ct)
+    {
+        var named = new List<(int, string)>();
+        foreach (var batch in fileIds.Chunk(500))
+        {
+            var rows = await (
+                    from l in db.ChapterCreditNotices.AsNoTracking()
+                    join c in db.Chapters on l.ChapterId equals c.Id
+                    join n in db.CreditNotices on l.NoticeId equals n.Id
+                    where c.ChapterFileId != null && batch.Contains(c.ChapterFileId.Value) &&
+                        n.Kind == CreditNoticeKind.Group && n.GroupSource != CreditGroupSource.None && n.GroupName != null
+                    select new { FileId = c.ChapterFileId!.Value, n.GroupName })
+                .Distinct()
+                .ToListAsync(ct);
+            named.AddRange(rows.Where(r => !string.IsNullOrWhiteSpace(r.GroupName)).Select(r => (r.FileId, r.GroupName!)));
+        }
+
+        return named;
+    }
+
     /// <summary>
-    /// Renames the files whose name changes with their new group, under the series lock the caller holds.
-    /// Returns how many moved.
+    /// Renames the files whose name changes with their new group, under the series lock and transaction the
+    /// caller holds. Refused when the rename did not run at all; Skipped are files it had to leave where they were.
     /// </summary>
-    private async Task<int> RenameAsync(int seriesId, List<ChapterFile> files, List<string> warnings, CancellationToken ct)
+    private async Task<(int Renamed, bool Refused, List<ChapterFile> Skipped)> RenameAsync(
+        int seriesId, List<ChapterFile> files, List<string> warnings, CancellationToken ct)
     {
         var series = await db.Series.AsNoTracking().FirstOrDefaultAsync(s => s.Id == seriesId, ct);
         if (series is null || files.Count == 0)
         {
-            return 0;
+            return (0, false, []);
         }
 
-        var due = new Dictionary<int, string>();
+        var due = new Dictionary<ChapterFile, string>();
         foreach (var file in files)
         {
             var chapter = await db.Chapters.AsNoTracking().Where(c => c.ChapterFileId == file.Id)
@@ -395,16 +467,16 @@ public sealed class CreditGroupsService(
             if (chapter is not null &&
                 await naming.BuildChapterFileNameAsync(series, chapter, ct, file.Group) != await naming.BuildChapterFileNameAsync(series, chapter, ct))
             {
-                due[file.Id] = file.RelativePath;
+                due[file] = file.RelativePath;
             }
         }
 
         if (due.Count == 0)
         {
-            return 0;
+            return (0, false, []);
         }
 
-        var result = await renames.RenameFilesAsync(seriesId, due.Keys.ToList(), ct);
+        var result = await renames.RenameFilesAsync(seriesId, due.Keys.Select(f => f.Id).ToList(), ct);
         warnings.AddRange(result.Warnings);
         if (!result.Applied)
         {
@@ -413,13 +485,17 @@ public sealed class CreditGroupsService(
                 warnings.Add(error);
             }
 
-            return 0;
+            return (0, true, []);
         }
 
-        var ids = due.Keys.ToList();
-        var now = await db.ChapterFiles.AsNoTracking().Where(f => ids.Contains(f.Id)).Select(f => new { f.Id, f.RelativePath }).ToListAsync(ct);
-        return now.Count(f => !string.Equals(f.RelativePath, due[f.Id], StringComparison.Ordinal));
+        // The rename updates these same tracked rows, so a path that did not move is a file it skipped. A skip can
+        // still rewrite the row with the host's separator, so separators are not a move.
+        var skipped = due.Where(d => string.Equals(Separators(d.Key.RelativePath), Separators(d.Value), StringComparison.Ordinal))
+            .Select(d => d.Key).ToList();
+        return (due.Count - skipped.Count, false, skipped);
     }
+
+    private static string Separators(string path) => path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
 
     /// <summary>
     /// The notice's region as a JPEG at most <see cref="ImageWidth"/> wide, cut from a linked chapter's page (the
@@ -512,11 +588,10 @@ public sealed class CreditGroupsService(
                 join c in db.Chapters on l.ChapterId equals c.Id
                 select new
                 {
-                    l.NoticeId, l.ChapterId, l.SeriesId, l.Tail, l.Page, l.Share,
-                    HasFile = c.ChapterFile != null,
-                    Grouped = c.ChapterFile != null && c.ChapterFile.Group != null && c.ChapterFile.Group != "",
+                    l.NoticeId, l.ChapterId, l.SeriesId, l.Tail, l.Page, l.Share, c.ChapterFileId,
+                    Group = c.ChapterFile != null ? c.ChapterFile.Group : null,
                 })
             .ToListAsync(ct);
-        return rows.Select(r => new LinkRow(r.NoticeId, r.ChapterId, r.SeriesId, r.Tail, r.Page, r.Share, r.HasFile, r.Grouped)).ToList();
+        return rows.Select(r => new LinkRow(r.NoticeId, r.ChapterId, r.SeriesId, r.Tail, r.Page, r.Share, r.ChapterFileId, r.Group)).ToList();
     }
 }

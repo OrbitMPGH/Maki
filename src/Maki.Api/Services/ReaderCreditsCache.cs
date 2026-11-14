@@ -184,6 +184,7 @@ public sealed class ReaderCreditsCache(
         ReaderService.ChapterSlice chapter, IReadOnlyList<ReaderService.ChapterSlice> references, int parallelism)
     {
         var watch = Stopwatch.StartNew();
+        var generation = notices.Generation;
         // The models take a few hundred milliseconds to load; that happens while the edges decode.
         _ = Task.Run(text.PrepareAsync);
         var edges = await Task.WhenAll(references.Prepend(chapter).Select(s => EdgesAsync(s, parallelism)));
@@ -249,6 +250,9 @@ public sealed class ReaderCreditsCache(
         await TryAsync(() => store.SaveAsync(chapter, CreditStore.ReferencesKey(references), found, judge, judged,
             CancellationToken.None, bankSeen: CreditBank.NewestId(entries)), chapter);
         await TryAsync(() => notices.SaveLinksAsync(chapter.Chapter.Id, chapter.Series.Id, judged, CancellationToken.None), chapter);
+        // A notice judged here may have changed verdict since this search started; its own requeue missed this chapter.
+        await TryAsync(() => notices.RequeueIfChangedAsync(chapter.Chapter.Id, generation,
+            judged.Where(j => j.NoticeId is not null).Select(j => j.NoticeId!.Value).ToList(), CancellationToken.None), chapter);
         await TryAsync(() => LearnAsync(chapter, edges[0], candidates, judged, (headBank, head), (tailBank, tail)), chapter);
         return found;
     }
@@ -362,10 +366,22 @@ public sealed class ReaderCreditsCache(
         }
 
         var entry = entries[at];
-        var verdict = await notices.JudgeAsync(
-            new CreditNoticeStore.Query(region.Rows, region.Height, candidate.Share >= 1, candidate.Share, entry.Crc, entry.Length,
-                candidate.Colour, fromBank, slice.Chapter.Id, bottom),
-            ReadTextAsync, CancellationToken.None);
+        CreditNoticeStore.Verdict verdict;
+        try
+        {
+            verdict = await notices.JudgeAsync(
+                new CreditNoticeStore.Query(region.Rows, region.Height, candidate.Share >= 1, candidate.Share, entry.Crc, entry.Length,
+                    candidate.Colour, fromBank, slice.Chapter.Id, bottom),
+                ReadTextAsync, CancellationToken.None);
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            // The store only saves reads; a candidate is judged on its own read as before there was one.
+            logger.LogWarning(e, "The credit notice store failed for chapter {ChapterId}; reading the page instead", slice.Chapter.Id);
+            var read = await ReadTextAsync(CancellationToken.None);
+            return read is null ? (candidate.Colour, null, null) : (CreditText.IsScanlator(read, candidate.Colour), read, null);
+        }
+
         return verdict.Text is null ? (candidate.Colour, null, null) : (verdict.Accepted, verdict.Text, verdict.NoticeId);
     }
 

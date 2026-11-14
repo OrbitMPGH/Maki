@@ -25,10 +25,10 @@ public class CreditGroupsController(CreditGroupsService groups, ILocalizer local
     public async Task<ActionResult<CreditGroupListDto>> List([FromQuery] bool all, CancellationToken ct) =>
         await groups.ListAsync(all, ct);
 
-    /// <summary>The listed notices and the series and chapters that carry them.</summary>
-    [HttpGet("notices")]
-    public async Task<ActionResult<CreditGroupDetailDto>> Notices([FromQuery] List<int> ids, CancellationToken ct) =>
-        await groups.DetailAsync(ids, ct);
+    /// <summary>The listed notices and the series and chapters that carry them. Changes nothing; a POST for the body.</summary>
+    [HttpPost("notices")]
+    public async Task<ActionResult<CreditGroupDetailDto>> Notices([FromBody] CreditNoticeIdsRequest request, CancellationToken ct) =>
+        await groups.DetailAsync(request.NoticeIds ?? [], ct);
 
     /// <summary>The notice's region, cut from the page of a chapter that carries it.</summary>
     [HttpGet("notices/{id:int}/image")]
@@ -72,7 +72,7 @@ public class CreditGroupsController(CreditGroupsService groups, ILocalizer local
 
     /// <summary>Gives the notices' group to every chapter they carry that has none, then renames as the format asks.</summary>
     [HttpPost("apply")]
-    public async Task<IActionResult> Apply([FromBody] ApplyCreditGroupsRequest request, CancellationToken ct)
+    public async Task<IActionResult> Apply([FromBody] CreditNoticeIdsRequest request, CancellationToken ct)
     {
         if (request.NoticeIds is not { Count: > 0 })
         {

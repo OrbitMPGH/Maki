@@ -471,6 +471,129 @@ public sealed class CreditNoticeStoreTests : IDisposable
     }
 
     [Fact]
+    public async Task A_search_whose_notice_is_accepted_under_it_sends_itself_back()
+    {
+        var store = Store();
+        var page = Noise(7);
+        var (searched, other) = (AddChapter(1), AddChapter(2));
+        var since = store.Generation;
+
+        // The search judges the notice while it is rejected; another chapter's read accepts it before the search
+        // saves, and finds no link of the searched chapter to requeue. Then the search saves the old verdict.
+        var judged = await store.JudgeAsync(Query(page, crc: 1, chapterId: searched), Reads(Story), default);
+        await store.JudgeAsync(Query(page, crc: 2, chapterId: other), Reads(Credit), default);
+        await store.SaveLinksAsync(searched, _seriesId,
+            [new JudgedCandidate(false, 0, 1, true, Story, false, NoticeId: judged.NoticeId)], default);
+        Assert.Equal(CreditDetector.Version, DetectorVersionOf(searched));
+
+        Assert.True(await store.RequeueIfChangedAsync(searched, since, [judged.NoticeId!.Value], default));
+        Assert.Equal(0, DetectorVersionOf(searched));
+    }
+
+    [Fact]
+    public async Task A_search_whose_notice_an_admin_overrides_under_it_sends_itself_back()
+    {
+        var store = Store();
+        var page = Noise(7);
+        var searched = AddChapter(1);
+        var id = await AcceptedNoticeAsync(store, page);
+        var since = store.Generation;
+
+        var judged = await store.JudgeAsync(Query(page, crc: 1, chapterId: searched), Reads(Credit), default);
+        await store.SetOverrideAsync(id, CreditNoticeOverride.Keep, default);
+        // The override's own requeue ran before this chapter's links existed.
+        Assert.Equal(CreditDetector.Version, DetectorVersionOf(searched));
+        await store.SaveLinksAsync(searched, _seriesId,
+            [new JudgedCandidate(false, 0, 1, true, Credit, true, NoticeId: judged.NoticeId)], default);
+
+        Assert.True(await store.RequeueIfChangedAsync(searched, since, [id], default));
+        Assert.Equal(0, DetectorVersionOf(searched));
+    }
+
+    [Fact]
+    public async Task A_search_that_saw_the_current_verdicts_or_made_the_change_itself_stays()
+    {
+        var store = Store();
+        var page = Noise(7);
+        var (searched, other) = (AddChapter(1), AddChapter(2));
+        var rejected = (await store.JudgeAsync(Query(page, crc: 1, chapterId: other), Reads(Story), default)).NoticeId!.Value;
+        var since = store.Generation;
+
+        // This search's own read accepts the notice: its answer already carries the new verdict.
+        await store.JudgeAsync(Query(page, crc: 2, chapterId: searched), Reads(Credit), default);
+        Assert.False(await store.RequeueIfChangedAsync(searched, since, [rejected], default));
+
+        // The next search starts after the change, so it does not come back either.
+        Assert.False(await store.RequeueIfChangedAsync(other, store.Generation, [rejected], default));
+        Assert.Equal(CreditDetector.Version, DetectorVersionOf(searched));
+        Assert.Equal(CreditDetector.Version, DetectorVersionOf(other));
+    }
+
+    [Fact]
+    public async Task An_OCR_version_change_keeps_a_notice_the_user_decided_on_and_reads_it_again()
+    {
+        var page = Noise(7);
+        var store = Store();
+        var chapter = AddChapter(1);
+        var site = await AcceptedNoticeAsync(store, page);
+        var plain = (await store.JudgeAsync(Query(Noise(8), crc: 2), Reads(Credit), default)).NoticeId!.Value;
+        await store.SaveLinksAsync(chapter, _seriesId, [new JudgedCandidate(false, 0, 1, true, Credit, true, NoticeId: site)], default);
+        await UpdateNoticeAsync(site, n => (n.Kind, n.OcrVersion) = (CreditNoticeKind.Site, PageTextReader.Version + 1));
+        var readsBefore = _reads;
+
+        var verdict = await Store().JudgeAsync(Query(page, crc: 3), Reads(Credit), default);
+
+        Assert.True(verdict is { Accepted: true, Read: true });
+        Assert.Equal(site, verdict.NoticeId);
+        Assert.Equal(readsBefore + 1, _reads);
+        using var db = _db.NewContext();
+        var kept = db.CreditNotices.AsNoTracking().Single(n => n.Id == site);
+        Assert.True(kept is { Kind: CreditNoticeKind.Site, Reads: 1, Accepted: true, Text: Credit });
+        Assert.Equal(PageTextReader.Version, kept.OcrVersion);
+        Assert.Equal(page, kept.Rows);
+        Assert.False(db.CreditNotices.Any(n => n.Id == plain));
+        Assert.Empty(db.ChapterCreditNotices.IgnoreQueryFilters());
+        Assert.Equal([3u], db.CreditNoticeReads.Select(r => r.Crc).ToList());
+    }
+
+    [Fact]
+    public async Task An_overridden_notice_after_an_OCR_version_change_is_read_once_and_still_answers_the_override()
+    {
+        var page = Noise(7);
+        var id = await AcceptedNoticeAsync(Store(), page);
+        await UpdateNoticeAsync(id, n => (n.Override, n.OcrVersion) = (CreditNoticeOverride.Keep, PageTextReader.Version + 1));
+
+        var store = Store();
+        var first = await store.JudgeAsync(Query(page, crc: 3), Reads(Credit), default);
+        var second = await store.JudgeAsync(Query(page, crc: 4), Reads(Credit), default);
+
+        Assert.True(first is { Accepted: false, ByUser: true, Read: true, Text: Credit });
+        Assert.True(second is { Accepted: false, ByUser: true, Read: false });
+        Assert.Equal(2, _reads);
+        Assert.Equal(CreditNoticeOverride.Keep, Notice(id).Override);
+    }
+
+    [Fact]
+    public async Task Pruning_keeps_an_unlinked_notice_the_user_decided_on()
+    {
+        var store = Store();
+        var confirmed = await AcceptedNoticeAsync(store, Noise(7));
+        var loose = (await store.JudgeAsync(Query(Noise(8), crc: 2), Reads(Credit), default)).NoticeId!.Value;
+        var overridden = (await store.JudgeAsync(Query(Noise(9), crc: 3), Reads(Credit), default)).NoticeId!.Value;
+        await UpdateNoticeAsync(confirmed, n => (n.GroupName, n.GroupSource) = ("Mine", CreditGroupSource.Confirmed));
+        await store.SetOverrideAsync(overridden, CreditNoticeOverride.Hide, default);
+        using (var db = _db.NewContext())
+        {
+            await db.CreditNotices.ExecuteUpdateAsync(u => u.SetProperty(n => n.UpdatedAtUtc, DateTime.UtcNow.AddDays(-2)));
+        }
+
+        Assert.Equal(1, await store.PruneAsync(default));
+        using var after = _db.NewContext();
+        Assert.Equal(new[] { confirmed, overridden }.Order(), after.CreditNotices.Select(n => n.Id).Order().ToList());
+        Assert.NotEqual(loose, confirmed);
+    }
+
+    [Fact]
     public async Task A_notice_readers_keep_takes_no_group()
     {
         var store = Store();

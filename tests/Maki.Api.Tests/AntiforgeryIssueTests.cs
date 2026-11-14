@@ -22,7 +22,7 @@ public class AntiforgeryIssueTests
     [InlineData("/api/v1/auth/me")]
     [InlineData("/api/v1/reader/chapter/5")]
     [InlineData("/api/v1/reader/chapter/5/bookmarks")]
-    [InlineData("/api/v1/creditgroups/notices")]
+    [InlineData("/api/v1/creditgroups")]
     public void JsonGetsKeepReissuing(string path)
     {
         Assert.True(AntiforgeryTokenMiddleware.ShouldIssue(Context(path, IdentityConstants.ApplicationScheme)));

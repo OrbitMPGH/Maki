@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Maki.Api.Services.Ocr;
 using Maki.Core.Entities;
 using Maki.Core.Images;
@@ -85,6 +86,12 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
     private int _generation;
 
     /// <summary>
+    /// Per notice, the <see cref="Generation"/> its verdict last changed at and the chapter whose own search
+    /// changed it (null for a user's override), so a search can tell whether a notice it judged moved under it.
+    /// </summary>
+    private readonly ConcurrentDictionary<int, (int Generation, int? ChapterId)> _changed = new();
+
+    /// <summary>
     /// Moves on whenever a notice turns from rejected to accepted or its override changes, so an in-memory
     /// search result from before it is not served to the chapters that change sends back.
     /// </summary>
@@ -124,7 +131,7 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
             var match = await FindAsync(notices, query, region, fingerprint, ct);
             if (match is not null && Overridden(match) is { } overridden)
             {
-                return overridden;
+                return match.Reads > 0 ? overridden : await RereadAsync(match, query, share, read, ct) ?? overridden;
             }
 
             if (match is { Accepted: true } || match is { Reads: >= TrustedRejection })
@@ -211,7 +218,53 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
         }
     }
 
-    /// <summary>Deletes notices no chapter links to any more, once they are old enough that no search is about to.</summary>
+    /// <summary>
+    /// A user's override on a notice whose reads an OCR version change cleared: its page is read again so its
+    /// text and suggestion come back, and the override still answers. Null when the page could not be read.
+    /// </summary>
+    private async Task<Verdict?> RereadAsync(
+        Notice notice, Query query, int share, Func<CancellationToken, Task<string?>> read, CancellationToken ct)
+    {
+        if (await read(ct) is not { } text)
+        {
+            return null;
+        }
+
+        notice.Accepted = CreditText.IsScanlator(text, query.Colour);
+        notice.Reads = 1;
+        notice.Text = text;
+        await UpdateAsync(notice, ct);
+        await AddReadAsync(query, share, text, notice.Id, ct);
+        await TryAsync(() => SuggestAsync([notice.Id], ct), notice.Id);
+        return Overridden(notice)! with { Read = true };
+    }
+
+    /// <summary>
+    /// Sends <paramref name="chapterId"/> back for a search when a notice its search judged changed its verdict
+    /// after the search started (<paramref name="since"/>, the <see cref="Generation"/> it started at), unless
+    /// that search made the change itself. The change's own requeue only reaches chapters whose links were
+    /// already saved, so without this the stale answer could stay as the stored current one. A search started
+    /// after the change sees the new verdict and does not come back, so nothing loops.
+    /// </summary>
+    public async Task<bool> RequeueIfChangedAsync(int chapterId, int since, IEnumerable<int> noticeIds, CancellationToken ct)
+    {
+        if (!noticeIds.Any(id => _changed.TryGetValue(id, out var change) && change.Generation > since && change.ChapterId != chapterId))
+        {
+            return false;
+        }
+
+        await credits.RequeueAsync(chapterId, ct);
+        CreditScanWorker.Signal();
+        return true;
+    }
+
+    private void MarkChanged(int noticeId, int? chapterId) =>
+        _changed[noticeId] = (Interlocked.Increment(ref _generation), chapterId);
+
+    /// <summary>
+    /// Deletes notices no chapter links to any more, once they are old enough that no search is about to. A notice
+    /// carrying a user's decision (an override, a Site mark, a confirmed group) is kept.
+    /// </summary>
     public async Task<int> PruneAsync(CancellationToken ct)
     {
         await _gate.WaitAsync(ct);
@@ -221,7 +274,8 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
             var cutoff = DateTime.UtcNow - UnlinkedLifetime;
             var gone = await db.CreditNotices
-                .Where(n => n.UpdatedAtUtc < cutoff && !db.ChapterCreditNotices.IgnoreQueryFilters().Any(l => l.NoticeId == n.Id))
+                .Where(n => n.UpdatedAtUtc < cutoff && !db.ChapterCreditNotices.IgnoreQueryFilters().Any(l => l.NoticeId == n.Id) &&
+                    n.Override == CreditNoticeOverride.None && n.Kind != CreditNoticeKind.Site && n.GroupSource != CreditGroupSource.Confirmed)
                 .Select(n => n.Id)
                 .ToListAsync(ct);
             foreach (var batch in gone.Chunk(500))
@@ -266,16 +320,17 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
                     return false;
                 }
 
+                if (notices.TryGetValue(noticeId, out var notice))
+                {
+                    notice.Override = value;
+                }
+
+                // Marked before the links are read: a search saving its links after this read sees the mark instead.
+                MarkChanged(noticeId, null);
                 chapters = await db.ChapterCreditNotices.AsNoTracking().IgnoreQueryFilters()
                     .Where(l => l.NoticeId == noticeId).Select(l => l.ChapterId).Distinct().ToListAsync(ct);
             }
 
-            if (notices.TryGetValue(noticeId, out var notice))
-            {
-                notice.Override = value;
-            }
-
-            Interlocked.Increment(ref _generation);
             foreach (var chapter in chapters)
             {
                 await credits.RequeueAsync(chapter, ct);
@@ -572,7 +627,7 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
             return;
         }
 
-        Interlocked.Increment(ref _generation);
+        MarkChanged(notice.Id, chapterId);
         List<int> chapters;
         using (var scope = scopes.CreateScope())
         {
@@ -607,8 +662,9 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
 
     /// <summary>
     /// The notices in memory. Those read by another OCR version go, with their reads and links (their
-    /// chapters are searched again anyway); those judged under another text rule are judged again from
-    /// their stored reads.
+    /// chapters are searched again anyway), except a notice carrying a user's decision: it keeps its region
+    /// and the user's fields and is read again when a candidate matches it. Those judged under another text
+    /// rule are judged again from their stored reads.
     /// </summary>
     private async Task<Dictionary<int, Notice>> LoadAsync(CancellationToken ct)
     {
@@ -618,8 +674,20 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
         {
             await db.ChapterCreditNotices.IgnoreQueryFilters().ExecuteDeleteAsync(ct);
             await db.CreditNoticeReads.ExecuteDeleteAsync(ct);
-            await db.CreditNotices.ExecuteDeleteAsync(ct);
-            logger.LogInformation("Credit notices were read by another OCR version; cleared");
+            await db.CreditNotices
+                .Where(n => n.Override == CreditNoticeOverride.None && n.Kind != CreditNoticeKind.Site && n.GroupSource != CreditGroupSource.Confirmed)
+                .ExecuteDeleteAsync(ct);
+            var kept = await db.CreditNotices.ExecuteUpdateAsync(u => u
+                .SetProperty(n => n.Accepted, false)
+                .SetProperty(n => n.Reads, 0)
+                .SetProperty(n => n.Text, (string?)null)
+                .SetProperty(n => n.SuggestedName, (string?)null)
+                .SetProperty(n => n.Invite, (string?)null)
+                .SetProperty(n => n.NameVersion, CreditGroupName.Version)
+                .SetProperty(n => n.OcrVersion, PageTextReader.Version)
+                .SetProperty(n => n.TextVersion, CreditText.Version)
+                .SetProperty(n => n.UpdatedAtUtc, DateTime.UtcNow), ct);
+            logger.LogInformation("Credit notices were read by another OCR version; cleared, keeping {Count} a user decided on", kept);
         }
 
         var stale = await db.CreditNotices.Where(n => n.TextVersion != CreditText.Version)
@@ -647,7 +715,15 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
             .Select(n => new NoticeText(n.Id, n.Text, n.SuggestedName, n.Invite, n.NameVersion)).ToListAsync(ct);
         if (unnamed.Count > 0)
         {
-            await SuggestAsync(db, unnamed, await KnownNamesAsync(db, ct), ct);
+            try
+            {
+                await SuggestAsync(db, unnamed, await KnownNamesAsync(db, ct), ct);
+            }
+            catch (Exception e) when (e is not OperationCanceledException)
+            {
+                // Names are for the groups view; the verdicts must load without them.
+                logger.LogWarning(e, "Could not suggest group names for {Count} credit notices", unnamed.Count);
+            }
         }
 
         var rows = await db.CreditNotices.AsNoTracking()

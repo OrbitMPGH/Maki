@@ -74,7 +74,10 @@ public static class CreditGroupName
     /// user confirmed): a guess within a small edit distance of one takes its spelling, so "QMEGA SCANS"
     /// becomes "Omega Scans" once someone has confirmed that.
     /// </summary>
-    public static CreditGroupGuess Suggest(IEnumerable<string?> texts, IEnumerable<string>? known = null)
+    public static CreditGroupGuess Suggest(IEnumerable<string?> texts, IEnumerable<string>? known = null) =>
+        Safely(() => SuggestCore(texts, known), CreditGroupGuess.None);
+
+    private static CreditGroupGuess SuggestCore(IEnumerable<string?> texts, IEnumerable<string>? known)
     {
         var votes = new Dictionary<string, int>(StringComparer.Ordinal);
         var order = new List<string>();
@@ -152,7 +155,9 @@ public static class CreditGroupName
     }
 
     /// <summary>Scored name guesses read off one region's text (lines joined by " | "), best first.</summary>
-    public static IReadOnlyList<(int Score, string Name)> Names(string text)
+    public static IReadOnlyList<(int Score, string Name)> Names(string text) => Safely(() => NamesCore(text), []);
+
+    private static IReadOnlyList<(int Score, string Name)> NamesCore(string text)
     {
         var lines = text.Split(" | ");
         var found = Phrases(lines).Concat(ByLines(lines)).Concat(Domains(text));
@@ -182,10 +187,26 @@ public static class CreditGroupName
     }
 
     /// <summary>The Discord invite code in the text, or null.</summary>
-    public static string? Invite(string text)
+    public static string? Invite(string text) => Safely(() =>
     {
         var match = InviteCode.Match(text);
         return match.Success ? match.Groups[1].Value : null;
+    }, null);
+
+    /// <summary>
+    /// <paramref name="work"/>, or <paramref name="fallback"/> when a pattern ran past its timeout on some
+    /// pathological OCR text: a missing suggestion is better than a failed search or load.
+    /// </summary>
+    internal static T Safely<T>(Func<T> work, T fallback)
+    {
+        try
+        {
+            return work();
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            return fallback;
+        }
     }
 
     /// <summary>A name reduced to lowercase letters and digits, which is how two spellings of one name compare.</summary>

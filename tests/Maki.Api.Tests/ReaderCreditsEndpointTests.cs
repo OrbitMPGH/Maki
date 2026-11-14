@@ -569,6 +569,24 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
     }
 
     [Fact]
+    public async Task A_failing_notice_store_falls_back_to_reading_the_page()
+    {
+        var reader = new CountingTextReader();
+        _credits = Credits(reader);
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        using (var db = _db.NewContext())
+        {
+            // Every store call now throws, as a broken database would.
+            await db.Database.ExecuteSqlRawAsync("DROP TABLE CreditNotices");
+        }
+
+        Assert.Equal(1, (await FoundAsync(chapters[1])).GetProperty("headPages").GetInt32());
+        Assert.False((await RowAsync(chapters[1]))!.Failed);
+        Assert.Equal(1, reader.Reads);
+    }
+
+    [Fact]
     public async Task A_search_that_fails_is_stored_as_failed_and_not_as_no_credits()
     {
         _credits = Credits(new ThrowingTextReader());
