@@ -168,8 +168,10 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
     /// </summary>
     /// <param name="allowWeak">Accept a match on the name alone. Only a reviewer looking at the one
     /// file sets it; a bulk relink never does.</param>
+    /// <param name="userId">Null when a scan relinked it on its own.</param>
+    /// <param name="rescan">Queue a scan of the target. A caller relinking many files queues one for all of them.</param>
     public async Task RelinkMovedAsync(int missingId, string missingVersion, int targetId, string targetVersion,
-        bool allowWeak, int userId, CancellationToken ct)
+        bool allowWeak, int? userId, CancellationToken ct, bool rescan = true)
     {
         await MutationGate.WaitAsync(ct);
         try
@@ -218,7 +220,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                 MessageKey = "health.history.relinkedMoved",
                 ParamsJson = JsonSerializer.Serialize(new { path = oldPath, target = target.RelativePath }),
             });
-            db.HealthScans.Add(new() { FileIdsJson = JsonSerializer.Serialize(new[] { targetId }), Force = true });
+            if (rescan) db.HealthScans.Add(new() { FileIdsJson = JsonSerializer.Serialize(new[] { targetId }), Force = true });
             await db.SaveChangesAsync(ct);
             await FollowFolderAsync(record, oldPath, root, userId, ct);
             HealthWorker.Wake();
@@ -227,10 +229,44 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
     }
 
     /// <summary>
+    /// What a library scan does with missing files it finds again at a new path: relinks the ones
+    /// "Relink all" would take, so a folder renamed outside Maki needs no visit to Health. A match on
+    /// the name alone still waits for a reviewer, and a refusal (a download in flight, a target that
+    /// changed) waits for the next scan.
+    /// </summary>
+    public async Task<int> RelinkFoundMovesAsync(int? rootId, CancellationToken ct)
+    {
+        var missing = await db.HealthFiles.AsNoTracking()
+            .Where(f => !f.Removed && f.Size < 0 && f.ChapterFileId != null && (rootId == null || f.RootFolderId == rootId))
+            .Select(f => new { f.Id, f.Version }).ToListAsync(ct);
+        if (missing.Count == 0) return 0;
+        var found = await HealthMovedFiles.FindAsync(db, missing.Select(m => m.Id).ToList(), ct);
+        var relinked = new List<int>();
+        foreach (var m in missing)
+        {
+            if (!found.TryGetValue(m.Id, out var move) || !HealthMovedFiles.Strong(move.Evidence)) continue;
+            try
+            {
+                await RelinkMovedAsync(m.Id, m.Version, move.TargetId, move.TargetVersion, false, null, ct, rescan: false);
+                relinked.Add(move.TargetId);
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
+            {
+                db.ChangeTracker.Clear();
+            }
+        }
+        if (relinked.Count == 0) return 0;
+        db.HealthScans.Add(new() { FileIdsJson = JsonSerializer.Serialize(relinked), Force = true });
+        await db.SaveChangesAsync(ct);
+        HealthWorker.Wake();
+        return relinked.Count;
+    }
+
+    /// <summary>
     /// Once the last record has left a series folder that no longer exists, the series moves with
     /// it, so new downloads land beside the files instead of recreating the old folder.
     /// </summary>
-    internal async Task FollowFolderAsync(ChapterFile moved, string oldPath, RootFolder root, int userId, CancellationToken ct)
+    internal async Task FollowFolderAsync(ChapterFile moved, string oldPath, RootFolder root, int? userId, CancellationToken ct)
     {
         var series = await db.Series.FindAsync([moved.SeriesId], ct);
         var from = LibraryPaths.TopFolder(oldPath);
