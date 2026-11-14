@@ -997,6 +997,15 @@ public static class SettingKeys
     /// <summary>Latest version already notified about, so the update-available signal fires once per version.</summary>
     public const string UpdatesLastNotifiedVersion = "updates.lastnotifiedversion";
 
+    /// <summary>The version this instance last started as. Written by <c>VersionHistory</c>.</summary>
+    public const string VersionRunning = "version.running";
+
+    /// <summary>
+    /// The version the instance ran before its latest upgrade; the Settings "New" tab lists what
+    /// came after it. Unset on a fresh install, "0.0.0" on an install older than this key.
+    /// </summary>
+    public const string VersionUpgradedFrom = "version.upgradedfrom";
+
     /// <summary>
     /// "true" → serve the library over OPDS. Default off: the catalogue is the whole library
     /// behind a URL-embedded token, so it is opt-in rather than something an upgrade turns on.

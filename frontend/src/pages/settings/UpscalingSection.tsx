@@ -23,6 +23,8 @@ import {
   type UpscalingSettings,
 } from '../../api/upscaling'
 import { MetaList } from '../../components/ui/MetaList'
+import { NewSettingPill } from '../../components/settings/NewSettingPill'
+import { useNewControlMark } from './newSettings'
 
 const NOTICES_URL = 'https://github.com/OrbitMPGH/Maki/blob/main/THIRD_PARTY_NOTICES.md'
 const MB = 1024 ** 2
@@ -62,6 +64,8 @@ export function UpscalingSection() {
   const update = (changes: Partial<UpscalingSettings>) => {
     if (current) setDraft({ ...current, ...changes })
   }
+  // Prepare ahead only appears once upscaling is on, so until then the New tab shows the switch.
+  const prepareMark = useNewControlMark('prepare-ahead')
 
   return (
     <SettingsSection
@@ -83,12 +87,14 @@ export function UpscalingSection() {
     >
       {current && state && (
         <Stack>
-          <Switch
-            label={t`Enable server upscaling`}
-            description={t`Each page takes several seconds of server CPU, and upscaled pages are kept in a disk cache. Nothing runs until a reader turns Enhance on.`}
-            checked={current.enabled}
-            onChange={(e) => update({ enabled: e.currentTarget.checked })}
-          />
+          <div {...(current.enabled ? {} : prepareMark)}>
+            <Switch
+              label={t`Enable server upscaling`}
+              description={t`Each page takes several seconds of server CPU, and upscaled pages are kept in a disk cache. Nothing runs until a reader turns Enhance on.`}
+              checked={current.enabled}
+              onChange={(e) => update({ enabled: e.currentTarget.checked })}
+            />
+          </div>
 
           {current.enabled && (
             <>
@@ -363,53 +369,61 @@ function PrepareAhead({
 }) {
   const { t } = useLingui()
   const set = (changes: Partial<PrepareAheadSettings>) => onChange({ ...value, ...changes })
+  const mark = useNewControlMark('prepare-ahead')
   return (
     <>
       <Divider />
-      <Switch
-        label={t`Prepare chapters ahead`}
-        description={t`Upscales the next chapters of series set to Reading while nobody is reading, so they open sharp. Only series whose reader settings have Enhance on Always and a server model count; Auto depends on the screen, so it is left out.`}
-        checked={value.enabled}
-        onChange={(e) => set({ enabled: e.currentTarget.checked })}
-      />
-      {value.enabled && (
-        <>
-          <Group gap="md" align="flex-start" wrap="wrap">
-            <SettingsNumberInput
-              label={t`Read within (days)`}
-              description={t`Series read longer ago are left alone.`}
-              min={1}
-              max={365}
-              value={value.days}
-              onChange={(days) => set({ days })}
-            />
-            <SettingsNumberInput
-              label={t`Series per reader`}
-              description={t`The most recently read ones go first.`}
-              min={1}
-              max={100}
-              value={value.series}
-              onChange={(series) => set({ series })}
-            />
-            <SettingsNumberInput
-              label={t`Chapters per series`}
-              description={t`From the chapter you would open next.`}
-              min={1}
-              max={3}
-              value={value.chapters}
-              onChange={(chapters) => set({ chapters })}
-            />
-            <SettingsNumberInput
-              label={t`Space (MB)`}
-              description={t`Prepared pages are kept until read, apart from the cache size.`}
-              min={256}
-              value={value.mb}
-              onChange={(mb) => set({ mb })}
-            />
-          </Group>
-          {prepared && <PreparedUsage prepared={prepared} limitMb={value.mb} />}
-        </>
-      )}
+      <Stack id="setting-prepare-ahead" {...mark} gap="md">
+        <Switch
+          label={
+            <>
+              {t`Prepare chapters ahead`}
+              <NewSettingPill id="prepare-ahead" />
+            </>
+          }
+          description={t`Upscales the next chapters of series set to Reading while nobody is reading, so they open sharp. Only series whose reader settings have Enhance on Always and a server model count; Auto depends on the screen, so it is left out.`}
+          checked={value.enabled}
+          onChange={(e) => set({ enabled: e.currentTarget.checked })}
+        />
+        {value.enabled && (
+          <>
+            <Group gap="md" align="flex-start" wrap="wrap">
+              <SettingsNumberInput
+                label={t`Read within (days)`}
+                description={t`Series read longer ago are left alone.`}
+                min={1}
+                max={365}
+                value={value.days}
+                onChange={(days) => set({ days })}
+              />
+              <SettingsNumberInput
+                label={t`Series per reader`}
+                description={t`The most recently read ones go first.`}
+                min={1}
+                max={100}
+                value={value.series}
+                onChange={(series) => set({ series })}
+              />
+              <SettingsNumberInput
+                label={t`Chapters per series`}
+                description={t`From the chapter you would open next.`}
+                min={1}
+                max={3}
+                value={value.chapters}
+                onChange={(chapters) => set({ chapters })}
+              />
+              <SettingsNumberInput
+                label={t`Space (MB)`}
+                description={t`Prepared pages are kept until read, apart from the cache size.`}
+                min={256}
+                value={value.mb}
+                onChange={(mb) => set({ mb })}
+              />
+            </Group>
+            {prepared && <PreparedUsage prepared={prepared} limitMb={value.mb} />}
+          </>
+        )}
+      </Stack>
     </>
   )
 }

@@ -1,12 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { msg } from '@lingui/core/macro'
 import { useLabel } from '../i18n-context'
 import { Trans, Plural, useLingui } from '@lingui/react/macro'
 import { Button, Stack, Tabs } from '@mantine/core'
 import { PageHeader } from '../components/ui/PageHeader'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
 import { useAuth } from '../auth/AuthProvider'
-import { SETTINGS_ENTRY_ALIASES, SETTINGS_TAB_ALIASES, SETTINGS_TABS } from './settings/registry'
+import {
+  SETTINGS_ENTRY_ALIASES,
+  SETTINGS_TAB_ALIASES,
+  SETTINGS_TABS,
+  settingsPath,
+  type SettingsEntry,
+} from './settings/registry'
+import { NewSettingsContext, SettingsFocusContext, useNewSettingIds } from './settings/newSettings'
+import { IconArrowRight } from '../lib/icons'
 import { useVisibleSettingsEntries } from './settings/useVisibleSettingsEntries'
 import { ApiKeysSection, SignInSection } from '../components/settings/AccountSection'
 import { NotificationPrefsSection } from '../components/settings/NotificationPrefsSection'
@@ -150,6 +159,70 @@ function useSectionNodes(): Record<string, ReactNode> {
   )
 }
 
+const NEW_TAB = 'new'
+const NEW_TAB_LABEL = msg({ message: 'New', context: 'recently added setting' })
+
+interface NewCard {
+  /** The entry the card's link jumps to: the card itself, or its first new control. */
+  jumpTo: SettingsEntry
+  /** New controls that sit inside an editor or a row of the card, named under its title. */
+  nested: SettingsEntry[]
+}
+
+/**
+ * The cards the New tab shows. A new control inside an older card brings that card along, once,
+ * and its link jumps to the control rather than the card's top.
+ */
+function newSettingCards(visible: SettingsEntry[], newIds: ReadonlySet<string>) {
+  const cards = new Map<string, NewCard>()
+  for (const entry of visible) {
+    if (!newIds.has(entry.id)) continue
+    const card = entry.within ? visible.find((e) => e.id === entry.within) : entry
+    if (!card) continue
+    const found = cards.get(card.id) ?? { jumpTo: entry, nested: [] }
+    if (entry.nested) found.nested.push(entry)
+    cards.set(card.id, found)
+  }
+  return cards
+}
+
+/**
+ * A card on the New tab that is there only for new controls inside it: just those controls, and
+ * the names of any that are inside an editor or a row rather than on the card itself.
+ */
+function NewSettingFocus({ nested, children }: { nested: SettingsEntry[]; children: ReactNode }) {
+  const { i18n } = useLingui()
+  const renderLabel = useLabel()
+  const names = new Intl.ListFormat(i18n.locale, { type: 'conjunction' }).format(
+    nested.map((e) => renderLabel(e.title)),
+  )
+  const note =
+    nested.length > 0 ? (
+      <Trans comment="On the New tab of Settings: new settings found inside this card's list or editor.">
+        New in here: {names}.
+      </Trans>
+    ) : undefined
+  return (
+    <div className="new-setting-focus">
+      <SettingsFocusContext value={{ note }}>{children}</SettingsFocusContext>
+    </div>
+  )
+}
+
+/** Where a card on the New tab normally lives, as a link that goes there. */
+function NewSettingHome({ card, jumpTo }: { card: SettingsEntry; jumpTo: SettingsEntry }) {
+  const renderLabel = useLabel()
+  const home = SETTINGS_TABS.find((x) => x.key === card.tab)
+  if (!home) return null
+  const tabName = renderLabel(home.label)
+  return (
+    <Link to={settingsPath(jumpTo)} className="new-setting-home">
+      <Trans comment="On the New tab of Settings: links to the tab where this card normally lives.">In {tabName}</Trans>
+      <IconArrowRight size={14} aria-hidden />
+    </Link>
+  )
+}
+
 export default function SettingsPage() {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -160,10 +233,17 @@ export default function SettingsPage() {
   const completeSetup = useCompleteSetup()
   const readerUsedPending = useReaderUsed().isPending
   const visible = useVisibleSettingsEntries()
-  const tabs = useMemo(
+  const newIds = useNewSettingIds(visible)
+  const newCards = useMemo(() => newSettingCards(visible, newIds), [visible, newIds])
+  const realTabs = useMemo(
     () => SETTINGS_TABS.filter((t) => visible.some((e) => e.tab === t.key)),
     [visible],
   )
+  const tabs = useMemo(
+    () => (newCards.size > 0 ? [{ key: NEW_TAB, label: NEW_TAB_LABEL }, ...realTabs] : realTabs),
+    [newCards, realTabs],
+  )
+  const fallbackTab = realTabs[0]?.key ?? 'account'
 
   // The tab lives in the URL rather than in state so a deep link from the command palette lands on
   // the right one, and so the panel holding the target card is mounted by the time the scroll effect
@@ -173,7 +253,7 @@ export default function SettingsPage() {
   const targetTab = target ? visible.find((e) => e.id === target)?.tab : undefined
   const rawTab = searchParams.get('tab')
   const requested = targetTab ?? (rawTab ? (SETTINGS_TAB_ALIASES[rawTab] ?? rawTab) : null)
-  const activeTab = tabs.some((t) => t.key === requested) ? requested! : (tabs[0]?.key ?? 'account')
+  const activeTab = tabs.some((t) => t.key === requested) ? requested! : fallbackTab
 
   const resolveTab = (search: string) => {
     const params = new URLSearchParams(search)
@@ -182,11 +262,14 @@ export default function SettingsPage() {
     const fromTarget = sTarget ? visible.find((e) => e.id === sTarget)?.tab : undefined
     const tabParam = params.get('tab')
     const want = fromTarget ?? (tabParam ? (SETTINGS_TAB_ALIASES[tabParam] ?? tabParam) : null)
-    return tabs.some((x) => x.key === want) ? want! : (tabs[0]?.key ?? 'account')
+    return tabs.some((x) => x.key === want) ? want! : fallbackTab
   }
   const tabEntries = useMemo(
-    () => visible.filter((e) => e.tab === activeTab && !e.within),
-    [visible, activeTab],
+    () =>
+      activeTab === NEW_TAB
+        ? visible.filter((e) => newCards.has(e.id))
+        : visible.filter((e) => e.tab === activeTab && !e.within),
+    [visible, activeTab, newCards],
   )
   // The tab rail scrolls sideways on a phone; the open tab is brought into view, not left off the edge.
   const tabListRef = useRef<HTMLDivElement>(null)
@@ -248,7 +331,9 @@ export default function SettingsPage() {
       { replace: true },
     )
 
-    const el = document.getElementById(`setting-${target}`)
+    // A control inside an editor or a row has no anchor of its own; its card does.
+    const within = visible.find((e) => e.id === target)?.within
+    const el = document.getElementById(`setting-${target}`) ?? (within ? document.getElementById(`setting-${within}`) : null)
     if (!el) return
     const show = () => el.scrollIntoView({ block: 'center', behavior: scrollBehavior() })
     // Cards above the target fill in as their queries resolve (the source table, the indexer list),
@@ -259,7 +344,7 @@ export default function SettingsPage() {
     window.setTimeout(show, 1000)
     el.classList.add('settings-flash')
     window.setTimeout(() => el.classList.remove('settings-flash'), 2200)
-  }, [target, awaitingTarget, activeTab, setSearchParams])
+  }, [target, awaitingTarget, activeTab, setSearchParams, visible])
 
   return (
     <SurfaceFrame pageStyle="operational" className="settings-surface">
@@ -296,21 +381,28 @@ export default function SettingsPage() {
         </Tabs.List>
 
         <UnsavedSettingsContext value={reportUnsaved}>
-          {tabs.map((tab) => (
-            <Tabs.Panel key={tab.key} value={tab.key}>
-              <div className="settings-layout">
-                <SettingsJump entries={tabEntries} />
-                <Stack className="settings-content" gap="xl">
-                  {tabEntries.map((entry) => (
-                    <div key={entry.id} id={`setting-${entry.id}`} className="settings-entry">
-                      {sectionNodes[entry.id]}
-                    </div>
-                  ))}
-                </Stack>
-                <SettingsIndex entries={tabEntries} />
-              </div>
-            </Tabs.Panel>
-          ))}
+          <NewSettingsContext value={newIds}>
+            {tabs.map((tab) => (
+              <Tabs.Panel key={tab.key} value={tab.key}>
+                <div className="settings-layout">
+                  <SettingsJump entries={tabEntries} />
+                  <Stack className="settings-content" gap="xl">
+                    {tabEntries.map((entry) => (
+                      <div key={entry.id} id={`setting-${entry.id}`} className="settings-entry">
+                        {tab.key === NEW_TAB && <NewSettingHome card={entry} jumpTo={newCards.get(entry.id)?.jumpTo ?? entry} />}
+                        {tab.key === NEW_TAB && !newIds.has(entry.id) ? (
+                          <NewSettingFocus nested={newCards.get(entry.id)?.nested ?? []}>{sectionNodes[entry.id]}</NewSettingFocus>
+                        ) : (
+                          sectionNodes[entry.id]
+                        )}
+                      </div>
+                    ))}
+                  </Stack>
+                  <SettingsIndex entries={tabEntries} />
+                </div>
+              </Tabs.Panel>
+            ))}
+          </NewSettingsContext>
         </UnsavedSettingsContext>
       </Tabs>
 

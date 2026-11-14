@@ -204,6 +204,8 @@ export const FitWidthScrollsFirst: Story = {
     drag(surface, { x: centre.x, y: centre.y + 100 }, { x: centre.x, y: centre.y - 100 })
     await waitFor(() => expect(surface.scrollTop).toBeGreaterThan(150))
 
+    // The drag's glide can reach the bottom on a slow runner, and a first wheel there would turn.
+    surface.scrollTop = 0
     wheel(surface, 100)
     surface.scrollTop = surface.scrollHeight
     wheel(surface, 100)

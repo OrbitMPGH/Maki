@@ -3,6 +3,7 @@ using Maki.Api.Configuration;
 using Maki.Api.Jobs;
 using Maki.Api.Localization;
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,7 @@ public class SystemController(
     HostRestarter restarter,
     ConfigFileProvider configFile,
     Maki.Api.Localization.ILocalizer localizer,
+    IAppSettings settings,
     ILogger<SystemController> logger) : ControllerBase
 {
     private const long RestoreUploadLimit = 1_073_741_824; // 1 GiB
@@ -57,8 +59,9 @@ public class SystemController(
     }
 
     [HttpGet("status")]
-    public IActionResult Status()
+    public async Task<IActionResult> Status(CancellationToken ct)
     {
+        var upgradedFrom = await settings.GetAsync(SettingKeys.VersionUpgradedFrom, ct);
         using var process = System.Diagnostics.Process.GetCurrentProcess();
         return Ok(new
         {
@@ -66,6 +69,7 @@ public class SystemController(
             version = VersionInfo.Version,
             commit = VersionInfo.Commit,
             isDevBuild = VersionInfo.IsDevBuild,
+            upgradedFrom,
             osName = Environment.OSVersion.Platform.ToString(),
             // Withheld from non-admins: it is an absolute path on the host, which tells a reader
             // account the deployment layout and nothing it has any use for.
