@@ -73,8 +73,10 @@ function measureStrip(surface: HTMLElement, pages: number[]): StripGeometry | nu
   for (const page of pages) {
     const image = host.querySelector<HTMLElement>(`[data-page="${page}"]`)
     if (!image || image.offsetWidth === 0) continue
-    edge = Math.max(edge, image.offsetLeft + image.offsetWidth)
-    tops.set(page, image.offsetTop)
+    // The strip's last page sits in its own box (ContinuousView's CutPage), which is then its offset parent.
+    const box = image.offsetParent !== host && image.offsetParent instanceof HTMLElement ? image.offsetParent : null
+    edge = Math.max(edge, (box?.offsetLeft ?? 0) + image.offsetLeft + image.offsetWidth)
+    tops.set(page, (box?.offsetTop ?? 0) + image.offsetTop)
   }
   if (tops.size === 0) return null
   const x = host.getBoundingClientRect().left + edge

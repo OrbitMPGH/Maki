@@ -896,9 +896,14 @@ msgstr "{chapters, plural, one {{cellDate}: # chapter} other {{cellDate}: # chap
 msgid "{chapters, plural, one {# chapter held, {used} of {limit}} other {# chapters held, {used} of {limit}}}"
 msgstr "{chapters, plural, one {# chapter held, {used} of {limit}} other {# chapters held, {used} of {limit}}}"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{chapters, plural, one {# chapter in {series} series} other {# chapters in {series} series}}"
+msgstr "{chapters, plural, one {# chapter in {series} series} other {# chapters in {series} series}}"
+
 #: src/components/discover/DiscoverDetailModal.tsx
 #: src/components/discover/DiscoverHero.tsx
 #: src/components/ScanlationGroupsModal.tsx
+#: src/components/settings/CreditGroupsModal.tsx
 msgid "{chapters, plural, one {# chapter} other {# chapters}}"
 msgstr "{chapters, plural, one {# chapter} other {# chapters}}"
 
@@ -1003,6 +1008,10 @@ msgstr "{completeVolumes, plural, one {# volume already complete} other {# volum
 msgid "{conditionCount, plural, one {# condition} other {# conditions}}"
 msgstr "{conditionCount, plural, one {# condition} other {# conditions}}"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{conflicts, plural, one {# file carries notices that name different groups, so it was left without one.} other {# files carry notices that name different groups, so they were left without one.}}"
+msgstr "{conflicts, plural, one {# file carries notices that name different groups, so it was left without one.} other {# files carry notices that name different groups, so they were left without one.}}"
+
 #: src/pages/ScrobblePage.tsx
 msgid "{connected} connected"
 msgstr "{connected} connected"
@@ -1038,6 +1047,10 @@ msgstr "{count, plural, one {# cancelled} other {# cancelled}}"
 #: src/pages/stats/sections/ReadingSection.tsx
 msgid "{count, plural, one {# ch.} other {# ch.}}"
 msgstr "{count, plural, one {# ch.} other {# ch.}}"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{count, plural, one {# chapter carries these notices and has no group yet. It gets {title}.} other {# chapters carry these notices and have no group yet. They get {title}.}}"
+msgstr "{count, plural, one {# chapter carries these notices and has no group yet. It gets {title}.} other {# chapters carry these notices and have no group yet. They get {title}.}}"
 
 #: src/components/series/RestoreSeriesDialog.tsx
 msgid "{count, plural, one {# chapter wanted} other {# chapters wanted}}"
@@ -1163,6 +1176,10 @@ msgstr "{count, plural, one {Delete spare copy} other {Delete # spare copies}}"
 msgid "{count, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
 msgstr "{count, plural, one {Download the # removed chapter again?} other {Download the # removed chapters again?}}"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{count, plural, one {Give to # chapter} other {Give to # chapters}}"
+msgstr "{count, plural, one {Give to # chapter} other {Give to # chapters}}"
+
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "{count, plural, one {Hidden # title} other {Hidden # titles}}"
 msgstr "{count, plural, one {Hidden # title} other {Hidden # titles}}"
@@ -1230,6 +1247,10 @@ msgstr "{coverBytesLabel}, every series has one"
 #: src/components/import/MihonSummary.tsx
 msgid "{created, plural, one {# series added} other {# series added}}"
 msgstr "{created, plural, one {# series added} other {# series added}}"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{currentMissing, plural, =0 {Give to chapters} one {Give to # chapter} other {Give to # chapters}}"
+msgstr "{currentMissing, plural, =0 {Give to chapters} one {Give to # chapter} other {Give to # chapters}}"
 
 #: src/components/home/ReadingWeeks.tsx
 msgid "{currentStreak, plural, one {#-day streak} other {#-day streak}}"
@@ -1505,6 +1526,10 @@ msgstr "{granted, plural, one {# permission} other {# permissions}}"
 #: src/components/settings/UsersSection.tsx
 msgid "{grantedCount, plural, one {# permission} other {# permissions}}"
 msgstr "{grantedCount, plural, one {# permission} other {# permissions}}"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{groupCount, plural, one {# group} other {# groups}}"
+msgstr "{groupCount, plural, one {# group} other {# groups}}"
 
 #: src/components/discover/ScoreFigure.tsx
 msgid "{groupSize, plural, one {Compared with the # most popular series of its type.} other {Compared with the # most popular series of its type.}}"
@@ -1826,6 +1851,14 @@ msgstr "{minutesPerChapter} min / ch."
 msgid "{misses, plural, one {Failing: # miss in a row} other {Failing: # misses in a row}}"
 msgstr "{misses, plural, one {Failing: # miss in a row} other {Failing: # misses in a row}}"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{missing, plural, one {# chapter has no group yet} other {# chapters have no group yet}}"
+msgstr "{missing, plural, one {# chapter has no group yet} other {# chapters have no group yet}}"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{missing, plural, one {# without a group} other {# without a group}}"
+msgstr "{missing, plural, one {# without a group} other {# without a group}}"
+
 #: src/api/upgrades.ts
 msgid "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
 msgstr "{missingCount, plural, one {adds # chapter you don't have} other {adds # chapters you don't have}}"
@@ -1951,6 +1984,10 @@ msgstr "{name}: stopped after {ok}/{total}"
 msgid "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
 msgstr "{name}: stopped, {ok}/{total} succeeded, first error: {firstError}"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{named, plural, one {Named # notice {typed}} other {Named # notices {typed}}}"
+msgstr "{named, plural, one {Named # notice {typed}} other {Named # notices {typed}}}"
+
 #: src/components/home/RecentlyAddedRail.tsx
 #: src/components/ui/CoverCard.tsx
 #: src/components/ui/SeriesRow.tsx
@@ -1970,6 +2007,14 @@ msgstr "{newChapters, plural, one {+# chapter} other {+# chapters}}"
 #: src/components/import/ManualImport.tsx
 msgid "{newCount, plural, one {# new} other {# new}}"
 msgstr "{newCount, plural, one {# new} other {# new}}"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{notices, plural, one {# notice} other {# notices}}"
+msgstr "{notices, plural, one {# notice} other {# notices}}"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{noticeTotal, plural, one {# notice} other {# notices}}"
+msgstr "{noticeTotal, plural, one {# notice} other {# notices}}"
 
 #: src/components/series/SeriesHero.tsx
 msgid "{notWanted, plural, one {# more listed, not wanted} other {# more listed, not wanted}}"
@@ -2398,6 +2443,10 @@ msgstr "{selectedCount} selected"
 msgid "{selectedNoteCount, plural, one {# note on the selected chapters will be deleted.} other {# notes on the selected chapters will be deleted.}}"
 msgstr "{selectedNoteCount, plural, one {# note on the selected chapters will be deleted.} other {# notes on the selected chapters will be deleted.}}"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{series, plural, one {# series} other {# series}}"
+msgstr "{series, plural, one {# series} other {# series}}"
+
 #: src/pages/rewind/slides.tsx
 msgid "{seriesAdded, plural, one {series added} other {series added}}"
 msgstr "{seriesAdded, plural, one {series added} other {series added}}"
@@ -2662,6 +2711,7 @@ msgid "{total, plural, one {# chapter listed, none wanted, nothing will download
 msgstr "{total, plural, one {# chapter listed, none wanted, nothing will download} other {# chapters listed, none wanted, nothing will download}}"
 
 #: src/components/series/ChapterTableRows.tsx
+#: src/components/settings/CreditGroupsModal.tsx
 msgid "{total, plural, one {# chapter} other {# chapters}}"
 msgstr "{total, plural, one {# chapter} other {# chapters}}"
 
@@ -2704,6 +2754,10 @@ msgstr "{total, plural, one {Sampling {done} of # file} other {Sampling {done} o
 #: src/pages/settings/ManageSourcesModal.tsx
 msgid "{total, plural, one {Search # source} other {Search # sources}}"
 msgstr "{total, plural, one {Search # source} other {Search # sources}}"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{total, plural, one {Show all # chapter} other {Show all # chapters}}"
+msgstr "{total, plural, one {Show all # chapter} other {Show all # chapters}}"
 
 #: src/pages/HealthPage.tsx
 msgid "{total, plural, one {Show all # job} other {Show all # jobs}}"
@@ -3173,6 +3227,10 @@ msgstr "A 10/10 anime seeds at {topSeed}, against 1.00 for an unrated book on yo
 msgid "A bulk move, rename or rescan is running."
 msgstr "A bulk move, rename or rescan is running."
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "A change reaches readers once Maki has searched its chapters again in the background."
+msgstr "A change reaches readers once Maki has searched its chapters again in the background."
+
 #: src/components/ScanlationGroupsModal.tsx
 msgid "A chapter is taken from the first group on this list that uploaded it. With none of them, the earliest upload is taken."
 msgstr "A chapter is taken from the first group on this list that uploaded it. With none of them, the earliest upload is taken."
@@ -3252,6 +3310,10 @@ msgstr "A new URL clears the saved password, so enter it again."
 #: src/pages/ActivityPage.tsx
 msgid "A newer upgrade has replaced this file since"
 msgstr "A newer upgrade has replaced this file since"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "A notice appears once Maki finds the same credit page or ad in several chapters, in the background search or when a chapter is opened."
+msgstr "A notice appears once Maki finds the same credit page or ad in several chapters, in the background search or when a chapter is opened."
 
 #: src/api/queue.ts
 msgid "A page the source sent is not a readable image"
@@ -3762,6 +3824,10 @@ msgstr "Administrator, every permission"
 #: src/components/settings/SecuritySection.tsx
 msgid "Administrators keep password sign-in."
 msgstr "Administrators keep password sign-in."
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Ads an aggregator site pastes into chapters. They never name a group, so they never give one to chapters."
+msgstr "Ads an aggregator site pastes into chapters. They never name a group, so they never give one to chapters."
 
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Adult"
@@ -4602,6 +4668,14 @@ msgstr "Automatic"
 msgid "Automatic ({auto})"
 msgstr "Automatic ({auto})"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Automatic (hidden)"
+msgstr "Automatic (hidden)"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Automatic (kept)"
+msgstr "Automatic (kept)"
+
 #: src/components/ui/language.ts
 msgid "Automatic (match my browser)"
 msgstr "Automatic (match my browser)"
@@ -4963,6 +5037,10 @@ msgstr "Bottom {pct} of popular OEL titles"
 msgid "Bottom {pct} of popular series"
 msgstr "Bottom {pct} of popular series"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Bottom {percent}% of a page"
+msgstr "Bottom {percent}% of a page"
+
 #: src/components/CatalogueFilters.tsx
 msgid "Boys Love"
 msgstr "Boys Love"
@@ -5144,6 +5222,7 @@ msgstr "Can't sign in with the saved details."
 #: src/components/series/UndoConversionModal.tsx
 #: src/components/settings/AccountSection.tsx
 #: src/components/settings/AutoTagRulesModal.tsx
+#: src/components/settings/CreditGroupsModal.tsx
 #: src/components/settings/FolderBrowserModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/RootFolderPathModal.tsx
@@ -5381,6 +5460,10 @@ msgstr "Change"
 #: src/components/SourceMappingsSection.tsx
 msgid "Change chapter languages for {sourceName}"
 msgstr "Change chapter languages for {sourceName}"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Change group"
+msgstr "Change group"
 
 #: src/pages/discover/ManageSignalsModal.tsx
 msgid "Change how individual titles affect recommendations."
@@ -5637,6 +5720,10 @@ msgstr "Chapters below are read off the file names until sources are found."
 #: src/api/inbox.ts
 msgid "Chapters downloaded automatically"
 msgstr "Chapters downloaded automatically"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Chapters given the group"
+msgstr "Chapters given the group"
 
 #: src/components/SourceMappingsSection.tsx
 msgid "Chapters last checked {checked}"
@@ -6244,9 +6331,17 @@ msgstr "Config key"
 msgid "Confirm metadata matches"
 msgstr "Confirm metadata matches"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Confirm name"
+msgstr "Confirm name"
+
 #: src/pages/SetupAccountPage.tsx
 msgid "Confirm password"
 msgstr "Confirm password"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Confirm the name before giving it to chapters."
+msgstr "Confirm the name before giving it to chapters."
 
 #: src/components/settings/AccountSection.tsx
 msgid "Confirm your password to link"
@@ -6259,6 +6354,10 @@ msgstr "Confirm your password to turn it off"
 #: src/api/ssoErrors.ts
 msgid "Confirm your password, then start linking single sign-on again"
 msgstr "Confirm your password, then start linking single sign-on again"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Confirmed"
+msgstr "Confirmed"
 
 #: src/pages/ScrobblePage.tsx
 msgid "Connect"
@@ -6705,6 +6804,14 @@ msgstr "Couldn't load the details for this title."
 msgid "Couldn't load the recycle bin"
 msgstr "Couldn't load the recycle bin"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Couldn't load the release groups"
+msgstr "Couldn't load the release groups"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Couldn't load these notices"
+msgstr "Couldn't load these notices"
+
 #: src/components/home/AnimeResumeRail.tsx
 #: src/components/rails/CustomRailSection.tsx
 msgid "Couldn't load this rail"
@@ -6904,8 +7011,8 @@ msgstr "Credit pages"
 
 #. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
 #: src/pages/settings/registry.ts
-msgid "credit pages, hide credits, scanlator, credits, ads, recruitment, background scan, ocr"
-msgstr "credit pages, hide credits, scanlator, credits, ads, recruitment, background scan, ocr"
+msgid "credit pages, hide credits, scanlator, credits, ads, recruitment, background scan, ocr, release groups, scanlation group"
+msgstr "credit pages, hide credits, scanlator, credits, ads, recruitment, background scan, ocr, release groups, scanlation group"
 
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/pages/reader/ReaderSettings.tsx
@@ -7599,6 +7706,7 @@ msgstr "Don't want"
 #: src/components/layout/PageLayoutEditor.tsx
 #: src/components/NamingTokenModal.tsx
 #: src/components/SeriesFilesSection.tsx
+#: src/components/settings/CreditGroupsModal.tsx
 #: src/components/TagBrowserModal.tsx
 #: src/components/ui/DrillControls.tsx
 #: src/pages/LibraryPage.tsx
@@ -8292,6 +8400,10 @@ msgstr "Every chapter"
 msgid "Every chapter after"
 msgstr "Every chapter after"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Every chapter here already has a group."
+msgstr "Every chapter here already has a group."
+
 #: src/components/RelinkFilesModal.tsx
 msgid "Every chapter is already on the best file available."
 msgstr "Every chapter is already on the best file available."
@@ -8349,6 +8461,10 @@ msgstr "Every genre"
 #: src/components/settings/ProgressSection.tsx
 msgid "Every month"
 msgstr "Every month"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Every notice"
+msgstr "Every notice"
 
 #: src/pages/NotificationsPage.tsx
 msgid "Every notification goes, read and unread. This can't be undone."
@@ -8827,6 +8943,10 @@ msgstr "Files on disk are not touched. Every user's access to this folder is rem
 msgid "Files removed"
 msgstr "Files removed"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Files renamed"
+msgstr "Files renamed"
+
 #: src/pages/ActivityPage.tsx
 msgid "Files replaced by the automatic upgrader show up here."
 msgstr "Files replaced by the automatic upgrader show up here."
@@ -9253,6 +9373,10 @@ msgstr "from {previous}"
 msgid "From {source}. You can keep browsing while it downloads."
 msgstr "From {source}. You can keep browsing while it downloads."
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "From chapters"
+msgstr "From chapters"
+
 #: src/components/RelinkFilesModal.tsx
 msgid "From its name"
 msgstr "From its name"
@@ -9380,6 +9504,10 @@ msgstr "Girls Love"
 msgid "GitHub Discussions."
 msgstr "GitHub Discussions."
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Give {title} to chapters"
+msgstr "Give {title} to chapters"
+
 #: src/components/DiscoverPresets.tsx
 #: src/components/rails/CustomRailEditor.tsx
 msgid "Give it a name"
@@ -9396,6 +9524,10 @@ msgstr "Give up after (hours)"
 #: src/pages/ActivityPage.tsx
 msgid "Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here."
 msgstr "Give your series a quality profile and Maki replaces files that fall short of it, then lists every swap here."
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Given to chapters"
+msgstr "Given to chapters"
 
 #: src/pages/settings/CustomRepositoriesPanel.tsx
 msgid "Go ahead anyway"
@@ -9537,6 +9669,14 @@ msgstr "Group chapters"
 msgid "Group matches (regex)"
 msgstr "Group matches (regex)"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Group name"
+msgstr "Group name"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Group name for this notice"
+msgstr "Group name for this notice"
+
 #: src/components/TagManagerModal.tsx
 msgid "Group series in the library and filter by them."
 msgstr "Group series in the library and filter by them."
@@ -9544,6 +9684,14 @@ msgstr "Group series in the library and filter by them."
 #: src/components/settings/UpgradeProfilesSection.tsx
 msgid "Group with the tier above"
 msgstr "Group with the tier above"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Group: {groupName}, from chapters"
+msgstr "Group: {groupName}, from chapters"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Group: {groupName}, set by you"
+msgstr "Group: {groupName}, set by you"
 
 #: src/components/series/ChapterViewMenu.tsx
 msgid "Grouping is off while anime seasons are marked in the table."
@@ -9696,11 +9844,16 @@ msgid "Hid {seriesTitle}. It comes back when you finish a new season."
 msgstr "Hid {seriesTitle}. It comes back when you finish a new season."
 
 #: src/components/layout/PageLayoutEditor.tsx
+#: src/components/settings/CreditGroupsModal.tsx
 #: src/pages/discover/FeedbackLab.tsx
 #: src/pages/discover/ManageSignalsModal.tsx
 #: src/pages/reader/enhanceMethods.ts
 msgid "Hidden"
 msgstr "Hidden"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Hidden and named"
+msgstr "Hidden and named"
 
 #: src/components/DiscoverPresets.tsx
 msgid "Hidden everywhere"
@@ -10695,6 +10848,7 @@ msgid "kept"
 msgstr "kept"
 
 #: src/components/library/ArchivedList.tsx
+#: src/components/settings/CreditGroupsModal.tsx
 msgid "Kept"
 msgstr "Kept"
 
@@ -11084,6 +11238,10 @@ msgstr "Leave scraped chapters alone"
 #: src/pages/MetadataGatePage.tsx
 msgid "Left"
 msgstr "Left"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Left alone"
+msgstr "Left alone"
 
 #: src/components/import/ImportPlanModal.tsx
 #: src/components/ui/DrillControls.tsx
@@ -11635,6 +11793,10 @@ msgstr "Maki could not find the page images on the chapter page. Describe them u
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Maki could not list the sample series under both versions to compare them."
 msgstr "Maki could not list the sample series under both versions to compare them."
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Maki could not read a group name off these. Name each notice below, or mark it as a site ad."
+msgstr "Maki could not read a group name off these. Name each notice below, or mark it as a site ad."
 
 #. placeholder {0}: status.lastError
 #: src/pages/settings/DropFolderSection.tsx
@@ -12548,6 +12710,14 @@ msgstr "n/a"
 msgid "Name"
 msgstr "Name"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Name a notice to give its group to chapters."
+msgstr "Name a notice to give its group to chapters."
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Name group"
+msgstr "Name group"
+
 #: src/pages/HealthPage.tsx
 msgid "Name not recognised"
 msgstr "Name not recognised"
@@ -12961,6 +13131,10 @@ msgstr "No changes yet"
 msgid "No chapter here carries a reading time, so there is no pace to report."
 msgstr "No chapter here carries a reading time, so there is no pace to report."
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "No chapter in the library carries these any more."
+msgstr "No chapter in the library carries these any more."
+
 #: src/components/series/ChapterViewMenu.tsx
 msgid "No chapter in this series has a volume number."
 msgstr "No chapter in this series has a volume number."
@@ -12980,6 +13154,10 @@ msgstr "No chapter reads from it"
 #: src/pages/HealthPage.tsx
 msgid "No chapter reads from this file, so there is nothing to download in its place."
 msgstr "No chapter reads from this file, so there is nothing to download in its place."
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "No chapter that carries it can be read right now."
+msgstr "No chapter that carries it can be read right now."
 
 #: src/api/libraryImport.ts
 msgid "no chapter with this number in the series"
@@ -13116,9 +13294,21 @@ msgstr "No folders in here."
 msgid "No goals set yet."
 msgstr "No goals set yet."
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "No group"
+msgstr "No group"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "No group name"
+msgstr "No group name"
+
 #: src/components/library/libraryGroups.ts
 msgid "No grouping"
 msgstr "No grouping"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "No hidden notices yet"
+msgstr "No hidden notices yet"
 
 #: src/pages/ActivityPage.tsx
 msgid "No history yet"
@@ -13233,6 +13423,10 @@ msgstr "No notes on this chapter yet."
 #: src/components/notes/NotesPanel.tsx
 msgid "No notes on this page."
 msgstr "No notes on this page."
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "No notices yet"
+msgstr "No notices yet"
 
 #: src/pages/NotificationsPage.tsx
 msgid "No notifications yet"
@@ -14279,6 +14473,18 @@ msgstr "Nothing worth grabbing in the results"
 msgid "Nothing yet"
 msgstr "Nothing yet"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Notice {noticeId}"
+msgstr "Notice {noticeId}"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Notices"
+msgstr "Notices"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Notices to list"
+msgstr "Notices to list"
+
 #: src/components/NotificationsSection.tsx
 msgid "Notifiarr posts here through its Discord bot."
 msgstr "Notifiarr posts here through its Discord bot."
@@ -14803,6 +15009,10 @@ msgstr "Open settings"
 msgid "Open source page"
 msgstr "Open source page"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Open the image"
+msgstr "Open the image"
+
 #: src/pages/LibraryPage.tsx
 msgid "Open the Library with this"
 msgstr "Open the Library with this"
@@ -14927,6 +15137,10 @@ msgstr "Other"
 #: src/pages/HealthPage.tsx
 msgid "Other actions"
 msgstr "Other actions"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Other groups"
+msgstr "Other groups"
 
 #: src/components/ui/status.tsx
 msgid "Other list"
@@ -16247,6 +16461,10 @@ msgstr "Read next chapter"
 msgid "Read now"
 msgstr "Read now"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Read off the image text, which gets the name right about two times in three. Confirm or correct it before giving it to chapters."
+msgstr "Read off the image text, which gets the name right about two times in three. Confirm or correct it before giving it to chapters."
+
 #: src/components/home/ReadingWeeks.tsx
 msgid "Read on {daysRead} of the last {daysSoFar} days"
 msgstr "Read on {daysRead} of the last {daysSoFar} days"
@@ -16317,6 +16535,10 @@ msgstr "Reader, OPDS, Komga and KOReader"
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Readers can pick the ticked models. Saving a ticked model that isn't downloaded yet starts its download."
 msgstr "Readers can pick the ticked models. Saving a ticked model that isn't downloaded yet starts its download."
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Readers get it"
+msgstr "Readers get it"
 
 #: src/api/hooks.ts
 msgid "Readers like you"
@@ -16756,6 +16978,11 @@ msgstr "Release date"
 msgid "Release for next chapter"
 msgstr "Release for next chapter"
 
+#: src/components/settings/CreditGroupsModal.tsx
+#: src/pages/settings/LibraryCards.tsx
+msgid "Release groups"
+msgstr "Release groups"
+
 #: src/api/upgrades.ts
 msgid "Release name matches (regex)"
 msgstr "Release name matches (regex)"
@@ -16951,6 +17178,10 @@ msgstr "Remove goal"
 #: src/components/SourceMappingsSection.tsx
 msgid "Remove mapping"
 msgstr "Remove mapping"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Remove name"
+msgstr "Remove name"
 
 #: src/components/series/SeriesActionsMenu.tsx
 msgid "Remove offline copies"
@@ -17644,6 +17875,7 @@ msgstr "Retried {retryCount}x"
 #: src/components/RatingImportModal.tsx
 #: src/components/releases/UpcomingView.tsx
 #: src/components/SectionErrorBoundary.tsx
+#: src/components/settings/CreditGroupsModal.tsx
 #: src/components/settings/RecycleBinModal.tsx
 #: src/pages/ActivityPage.tsx
 #: src/pages/CreatorPage.tsx
@@ -18010,6 +18242,7 @@ msgstr "Samples a few pages from every linked source."
 #: src/components/rails/CustomRailEditor.tsx
 #: src/components/ScanlationGroupsModal.tsx
 #: src/components/series/EditMetadataModal.tsx
+#: src/components/settings/CreditGroupsModal.tsx
 #: src/components/settings/ReadingProfilesSection.tsx
 #: src/components/settings/SaveButton.tsx
 #: src/components/settings/UpgradeProfilesSection.tsx
@@ -18079,6 +18312,10 @@ msgstr "Save filters"
 #: src/components/series/ChapterTableRows.tsx
 msgid "Save for offline"
 msgstr "Save for offline"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Save name"
+msgstr "Save name"
 
 #: src/components/pageconversion/StartStep.tsx
 msgid "Save only"
@@ -18707,6 +18944,10 @@ msgstr "See all notifications"
 msgid "See progress"
 msgstr "See progress"
 
+#: src/pages/settings/LibraryCards.tsx
+msgid "See the release groups behind the credit pages and ads Maki hides, and correct what it read off them."
+msgstr "See the release groups behind the credit pages and ads Maki hides, and correct what it read off them."
+
 #: src/pages/DiscoverPage.tsx
 msgid "Seed from"
 msgstr "Seed from"
@@ -19105,6 +19346,10 @@ msgstr "Set by hand"
 #: src/components/series/EditMetadataModal.tsx
 msgid "Set by hand. Metadata refreshes leave it alone."
 msgstr "Set by hand. Metadata refreshes leave it alone."
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Set by you."
+msgstr "Set by you."
 
 #: src/pages/settings/ReadingCards.tsx
 msgid "Set Document matching method to Binary."
@@ -19566,6 +19811,18 @@ msgstr "Single-user mode"
 #: src/pages/settings/CustomSourceWizard.tsx
 msgid "Site"
 msgstr "Site"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Site ad"
+msgstr "Site ad"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Site ads"
+msgstr "Site ads"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Site ads never give a group to chapters."
+msgstr "Site ads never give a group to chapters."
 
 #: src/pages/HealthPage.tsx
 msgid "Sits in <0>{seriesTitle}</0> and parses to {chapterCount, plural, one {1 chapter} other {# chapters}} in it."
@@ -20276,6 +20533,14 @@ msgstr "Success and wait cover the last 30 days."
 msgid "Success rate"
 msgstr "Success rate"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Suggested"
+msgstr "Suggested"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Suggested name: {suggested}"
+msgstr "Suggested name: {suggested}"
+
 #: src/api/hooks.ts
 #: src/components/ui/status.tsx
 msgid "Suggestive"
@@ -20443,6 +20708,10 @@ msgstr "Tags to exclude"
 #: src/components/CatalogueRules.tsx
 msgid "Tags to include"
 msgstr "Tags to include"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Taken from chapters that already carry this group."
+msgstr "Taken from chapters that already carry this group."
 
 #: src/components/ScanlationGroupsModal.tsx
 msgid "Takes effect at each series' next chapter refresh."
@@ -20684,6 +20953,10 @@ msgstr "The counts could not be loaded. The rules still save as you wrote them."
 #: src/pages/LibraryPage.tsx
 msgid "The cover and title always show. Your choice is kept in this browser."
 msgstr "The cover and title always show. Your choice is kept in this browser."
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "The credit pages and ads Maki found, grouped by the release group they name."
+msgstr "The credit pages and ads Maki found, grouped by the release group they name."
 
 #: src/pages/reader/enhanceMethods.ts
 msgid "The crispest line art; flattens screentone"
@@ -21860,6 +22133,10 @@ msgstr "Top {pct} of popular OEL titles"
 #: src/components/MinRatingSlider.tsx
 msgid "Top {pct} of popular series"
 msgstr "Top {pct} of popular series"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Top {percent}% of a page"
+msgstr "Top {percent}% of a page"
 
 #: src/api/customRails.ts
 #: src/api/hooks.ts
@@ -23268,6 +23545,10 @@ msgstr "When the screen has room for them"
 msgid "When to remove"
 msgstr "When to remove"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Where it appears"
+msgstr "Where it appears"
+
 #: src/components/library/LibraryFilterPanel.tsx
 msgid "Where the files on disk came from, which can outlive the link"
 msgstr "Where the files on disk came from, which can outlive the link"
@@ -23299,6 +23580,10 @@ msgstr "Where you stop"
 #: src/pages/discover/TasteTab.tsx
 msgid "Where you usually stop"
 msgstr "Where you usually stop"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Where your file naming format uses the group, Maki renames these files on disk."
+msgstr "Where your file naming format uses the group, Maki renames these files on disk."
 
 #: src/components/SetupWizard.tsx
 msgid "Where your manga is stored. If you use Kavita, point it at the same place."
@@ -23377,6 +23662,10 @@ msgstr "Whole franchise"
 #: src/pages/StatsPage.tsx
 msgid "Whole library"
 msgstr "Whole library"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Whole page"
+msgstr "Whole page"
 
 #: src/api/upgrades.ts
 msgid "Whole series"

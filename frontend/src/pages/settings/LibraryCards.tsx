@@ -19,7 +19,7 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
-import { IconPencil, IconRoute, IconTrash, IconWand } from '../../lib/icons'
+import { IconPencil, IconRoute, IconTrash, IconUsers, IconWand } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { activeSeries } from '../../lib/series'
@@ -70,6 +70,7 @@ import { RecycleBinModal } from '../../components/settings/RecycleBinModal'
 import { AutoTagRulesModal } from '../../components/settings/AutoTagRulesModal'
 import { useAutoTagRules } from '../../api/autoTagRules'
 import { RootFolderRulesModal } from '../../components/settings/RootFolderRulesModal'
+import { CreditGroupsModal } from '../../components/settings/CreditGroupsModal'
 import { useRootFolderRules } from '../../api/rootFolderRules'
 
 export function RootFoldersSection() {
@@ -428,6 +429,7 @@ export function CreditScanSection() {
   const { t } = useLingui()
   const { data } = useCreditScanSettings()
   const save = useSaveCreditScanSettings()
+  const [groupsOpen, setGroupsOpen] = useState(false)
 
   return (
     <SettingsSection
@@ -448,6 +450,21 @@ export function CreditScanSection() {
         disabled={data == null}
         onChange={(e) => save.mutate({ enabled: e.currentTarget.checked })}
       />
+      <Group justify="space-between" wrap="nowrap" gap="sm" mt="lg" align="flex-start">
+        <Text size="sm" c="var(--ink-3)">
+          <Trans>See the release groups behind the credit pages and ads Maki hides, and correct what it read off them.</Trans>
+        </Text>
+        <Button
+          variant="default"
+          size="xs"
+          leftSection={<IconUsers size={16} />}
+          style={{ flexShrink: 0 }}
+          onClick={() => setGroupsOpen(true)}
+        >
+          <Trans>Release groups</Trans>
+        </Button>
+      </Group>
+      <CreditGroupsModal opened={groupsOpen} onClose={() => setGroupsOpen(false)} />
     </SettingsSection>
   )
 }

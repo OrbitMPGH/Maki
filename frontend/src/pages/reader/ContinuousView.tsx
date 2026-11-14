@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { enhanceBudget } from '../../lib/enhance/budget'
@@ -13,6 +13,7 @@ import { FULL_REGION } from './pageShape'
 import type { ServerEnhance } from './useServerEnhance'
 import { measureStrip, seekStrip } from './stripMeasure'
 import type { StripTracker } from './stripPosition'
+import { cutHeight } from './creditWindow'
 
 const FIT_CLASS: Record<ReaderFit, string> = {
   width: 'reader-fit-width',
@@ -253,6 +254,38 @@ const StripPage = memo(function StripPage({
 })
 
 /**
+ * The last page of the strip, which may end part way down: with `cut` set, the share of the page
+ * below the cut is not laid out, so the strip, its end and the next-chapter meter end there. The
+ * image keeps its full size and URL inside, so positions stay shares of the real page. Always the
+ * wrapper for the last page, so a cut that arrives late does not remount the image.
+ */
+function CutPage({ cut, children }: { cut: number; children: React.ReactNode }) {
+  const box = useRef<HTMLDivElement>(null)
+  const [height, setHeight] = useState<number | null>(null)
+  useLayoutEffect(() => {
+    const image = box.current?.querySelector('img')
+    if (!image || cut <= 0) {
+      setHeight(null)
+      return
+    }
+    const measure = () => {
+      const full = image.getBoundingClientRect().height
+      // A page that failed to load has no height; its retry button is left alone.
+      setHeight(full > 0 ? cutHeight(full, cut) : null)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(image)
+    return () => observer.disconnect()
+  }, [cut])
+  return (
+    <div ref={box} className="reader-cut" data-cut={height != null ? true : undefined} style={height != null ? { height } : undefined}>
+      {children}
+    </div>
+  )
+}
+
+/**
  * The webtoon strip: every page stacked, scrolled continuously. The current page is whichever
  * one owns the middle of the viewport, tracked with an IntersectionObserver rather than a scroll
  * handler so long chapters don't run layout maths on every frame.
@@ -281,6 +314,7 @@ export default function ContinuousView({
   onStretched,
   onEnhanceRange,
   tracker,
+  lastCut = 0,
 }: {
   /** The pages shown: the chapter's from `first` on, past any credit pages left out. */
   urls: string[]
@@ -330,6 +364,8 @@ export default function ContinuousView({
   onEnhanceRange?: (pages: number[], beyond: number, server: number[]) => void
   /** Receives where the strip is scrolled to, and lends it a way to scroll there. */
   tracker?: StripTracker
+  /** The share of the last page, from its bottom, that is left out: a credit banner fused into it. */
+  lastCut?: number
 }) {
   // Inside, pages count from the first one shown.
   const page = chapterPage - first
@@ -824,24 +860,33 @@ export default function ContinuousView({
           }),
         } as React.CSSProperties}
       >
-        {urls.map((src, index) => (
-          <StripPage
-            key={src}
-            index={index}
-            chapterPage={first + index}
-            src={src}
-            label={label}
-            fit={fit}
-            scale={scale}
-            tone={tone}
-            eager={isEager(index)}
-            enhance={pageEnhance && inRange.has(index) ? pageEnhance : null}
-            server={pageEnhance && inRange.has(index) ? server : null}
-            priority={pageEnhance && inRange.has(index) ? (index >= page ? (index - page) * 2 : (page - index) * 2 + 1) : 0}
-            register={registerPage}
-            onSettled={onPageSettled}
-          />
-        ))}
+        {urls.map((src, index) => {
+          const strip = (
+            <StripPage
+              key={src}
+              index={index}
+              chapterPage={first + index}
+              src={src}
+              label={label}
+              fit={fit}
+              scale={scale}
+              tone={tone}
+              eager={isEager(index)}
+              enhance={pageEnhance && inRange.has(index) ? pageEnhance : null}
+              server={pageEnhance && inRange.has(index) ? server : null}
+              priority={pageEnhance && inRange.has(index) ? (index >= page ? (index - page) * 2 : (page - index) * 2 + 1) : 0}
+              register={registerPage}
+              onSettled={onPageSettled}
+            />
+          )
+          return index === urls.length - 1 ? (
+            <CutPage key={src} cut={lastCut}>
+              {strip}
+            </CutPage>
+          ) : (
+            strip
+          )
+        })}
         <div ref={sentinel} style={{ height: 1 }} />
       </div>
       {hintMounted && (

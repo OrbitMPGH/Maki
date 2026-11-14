@@ -9774,6 +9774,20 @@ body.reader-open {
 .reader-continuous[data-zoomed='true'] .reader-fit-original {
   max-width: none;
 }
+/* The strip's last page (ContinuousView's CutPage), laid out as the strip lays out its pages. With
+   data-cut it is shorter than its image, so a credit banner fused into the bottom of the page is
+   neither drawn nor scrollable. `clip` on the one axis keeps a page zoomed wider than the strip
+   pannable, and positions an enhanced overlay inside the clip. */
+.reader-cut {
+  position: relative;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: safe center;
+}
+.reader-cut[data-cut] {
+  overflow-y: clip;
+}
 /* An unloaded page has no intrinsic size, so every lazy image would sit at height 0 inside the
    first viewport and the browser would fetch them all at once. A placeholder gives the strip a
    real length until each page reports its own size (ContinuousView sets data-loaded). */
@@ -14525,6 +14539,239 @@ button.settings-row-head:hover,
   .recycle-bin-row-size,
   .recycle-bin-row-left {
     text-align: left;
+  }
+}
+
+/* --- release groups modal (Settings > Library > Credit pages) --- */
+
+.credit-groups-rail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  margin-bottom: var(--mantine-spacing-sm);
+}
+/* Two panes that scroll on their own, so the group list stays in reach beside a long group. */
+.credit-groups-split {
+  display: grid;
+  grid-template-columns: minmax(0, 16.5rem) minmax(0, 1fr);
+  height: min(64dvh, 640px);
+  border-block: 1px solid var(--hairline);
+}
+.credit-groups-list {
+  overflow-y: auto;
+  padding: 4px 12px 4px 10px;
+  border-inline-end: 1px solid var(--hairline);
+}
+.credit-groups-list .modal-list {
+  border-block: 0;
+}
+.credit-groups-detail {
+  min-width: 0;
+  overflow-y: auto;
+  padding: var(--mantine-spacing-sm) 4px var(--mantine-spacing-md) var(--mantine-spacing-md);
+}
+.credit-group-row {
+  align-items: center;
+}
+.credit-group-row-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.credit-group-row-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.credit-group-row-icon,
+.credit-group-head-icon {
+  flex: none;
+  color: var(--q-aggregator);
+}
+.credit-group-row-chevron {
+  display: none;
+  flex: none;
+  color: var(--ink-3);
+}
+.credit-pill {
+  flex: none;
+}
+.credit-group-missing {
+  color: var(--warn);
+}
+.credit-muted {
+  color: var(--ink-3);
+}
+.credit-group-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.credit-group-title {
+  overflow-wrap: anywhere;
+}
+.credit-group-name-form {
+  margin-top: 4px;
+}
+
+/* A notice keeps its outline: the image, what it says and its controls belong together. */
+.credit-notice {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr);
+  gap: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+}
+.credit-notice[data-shape='strip'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.credit-notice-image {
+  display: flex;
+  align-self: start;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 4rem;
+  overflow: hidden;
+  border-radius: var(--radius-thumb);
+  background: var(--surface-sunken);
+}
+.credit-notice-image img {
+  display: block;
+  max-width: 100%;
+  max-height: 15rem;
+  object-fit: contain;
+}
+.credit-notice[data-shape='strip'] .credit-notice-image img {
+  max-height: 9rem;
+}
+.credit-notice-image[data-empty] {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: var(--mantine-spacing-sm);
+  color: var(--ink-3);
+  text-align: center;
+}
+.credit-notice-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  min-width: 0;
+}
+.credit-notice-excerpt {
+  padding-inline-start: var(--mantine-spacing-xs);
+  border-inline-start: 2px solid var(--hairline);
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.credit-notice-invite {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.credit-notice-name {
+  min-width: 0;
+}
+.credit-notice-name > p {
+  overflow-wrap: anywhere;
+}
+.credit-notice-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
+}
+.credit-name-popover {
+  width: min(20rem, calc(100vw - 32px));
+}
+.credit-series-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px var(--mantine-spacing-sm);
+  margin-bottom: 4px;
+}
+.credit-series-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.credit-chapter-row {
+  justify-content: space-between;
+  min-height: 34px;
+}
+.credit-chapter-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.credit-chapter-group {
+  max-width: 45%;
+}
+.credit-apply-result {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--mantine-spacing-sm);
+  margin: 0;
+}
+.credit-apply-result > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2px;
+}
+.credit-apply-result dt {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.credit-apply-result dd {
+  margin: 0;
+  color: var(--ink-hi);
+  font-size: var(--type-figure);
+  font-weight: var(--fw-semibold);
+}
+
+@media (max-width: 47.9375em) {
+  .credit-groups-split {
+    display: block;
+    height: auto;
+    border-block: 0;
+  }
+  .credit-groups-list {
+    overflow: visible;
+    padding: 0 10px;
+    border-inline-end: 0;
+  }
+  .credit-groups-list .modal-list {
+    border-block: 1px solid var(--hairline);
+  }
+  .credit-group-row-chevron {
+    display: block;
+  }
+  .credit-groups-detail {
+    overflow: visible;
+    padding: 0;
+  }
+  .credit-groups-back {
+    width: 100%;
+    min-height: 36px;
+    margin-bottom: var(--mantine-spacing-sm);
+    padding: 5px 0;
+    color: var(--ink-hi);
+  }
+  .credit-notice {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .credit-notice[data-shape='page'] .credit-notice-image img {
+    max-height: 17rem;
   }
 }
 
