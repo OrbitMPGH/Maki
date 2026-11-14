@@ -506,4 +506,67 @@ public class CreditDetectorTests
         Assert.Equal(Math.Round(only.Share, 4), CreditDetector.Settle(candidates, 1, 0).HeadOffset);
         Assert.Equal(CreditPages.None, CreditDetector.Settle(candidates, 0, 0));
     }
+
+    /// <summary>A webtoon chapter whose last slice ends in <paramref name="banner"/>, with <paramref name="after"/> behind it.</summary>
+    private static CreditPage[] EndingIn(int seed, CreditPage banner, params CreditPage[] after) =>
+        [.. Enumerable.Range(1, 8).Select(n => Story(seed * 100 + n, 600)), Join(Story(seed, 500), banner), .. after];
+
+    [Fact]
+    public void A_banner_fused_into_the_bottom_of_the_last_slice_gives_its_bottom_share()
+    {
+        var banner = Credit(5, 100);
+        var chapter = EndingIn(1, banner);
+
+        var candidates = CreditDetector.Candidates(chapter.Length, Chapter(chapter), [Chapter(EndingIn(2, banner)), Chapter(EndingIn(3, banner))]);
+        var found = Find(chapter, EndingIn(2, banner), EndingIn(3, banner), EndingIn(4, banner));
+
+        var only = Assert.Single(candidates.Tail);
+        Assert.Equal(0, only.Page);
+        Assert.InRange(only.Share, 100 / 600.0 - 0.02, 100 / 600.0 + 0.005);
+        Assert.Empty(candidates.Head);
+        Assert.Equal(0, found.TailPages);
+        Assert.Equal(Math.Round(only.Share, 4), found.TailOffset);
+        Assert.Equal(0, found.HeadOffset);
+    }
+
+    [Fact]
+    public void Whole_tail_pages_come_before_the_bottom_of_the_slice_behind_them()
+    {
+        var (banner, notice) = (Credit(5, 100), Credit(6, 100));
+        var chapter = EndingIn(1, banner, notice);
+
+        var candidates = CreditDetector.Candidates(
+            chapter.Length, Chapter(chapter), [Chapter(EndingIn(2, banner, notice)), Chapter(EndingIn(3, banner, notice))]);
+
+        Assert.Equal(2, candidates.Tail.Count);
+        Assert.Equal(new CreditCandidate(0, 1, true), candidates.Tail[0]);
+        Assert.Equal(1, candidates.Tail[1].Page);
+        Assert.InRange(candidates.Tail[1].Share, 100 / 600.0 - 0.02, 100 / 600.0 + 0.005);
+        Assert.Equal(new CreditPages(0, 0, 1, Math.Round(candidates.Tail[1].Share, 4)), CreditDetector.Settle(candidates, 0, 2));
+        Assert.Equal(new CreditPages(0, 0, 1), CreditDetector.Settle(candidates, 0, 1));
+    }
+
+    [Fact]
+    public void A_bank_entry_proposes_no_bottom_share_of_a_tail()
+    {
+        var banner = Credit(5, 100);
+        var source = Chapter(EndingIn(1, banner));
+        var lone = EndingIn(2, banner);
+
+        Assert.Empty(CreditDetector.BankCandidates(lone.Length, Chapter(lone), source.Tail, tail: true));
+    }
+
+    [Fact]
+    public void Settle_cuts_the_tail_only_behind_every_whole_page_it_keeps()
+    {
+        CreditCandidate Whole(int page) => new(page, 1, true);
+        var tail = new List<CreditCandidate> { Whole(0), Whole(1), Whole(2), new(3, 0.3, true) };
+
+        Assert.Equal(new CreditPages(0, 0, 3, 0.3), CreditDetector.Settle(new CreditCandidates(30, [], tail), 0, 4));
+        // The head takes the third the chapter allows first: the tail loses whole pages, and the cut with them.
+        Assert.Equal(new CreditPages(2, 0, 1), CreditDetector.Settle(new CreditCandidates(9, [Whole(0), Whole(1)], tail), 2, 4));
+        // A cut this close to the bottom is not worth making.
+        Assert.Equal(new CreditPages(0, 0, 0), CreditDetector.Settle(new CreditCandidates(30, [], [new(0, 0.02, true)]), 0, 1));
+        Assert.Equal(new CreditPages(0, 0, 0, 0.3), CreditDetector.Settle(new CreditCandidates(30, [], [new(0, 0.3, true)]), 0, 1));
+    }
 }

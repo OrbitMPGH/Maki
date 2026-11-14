@@ -109,6 +109,9 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
     public DbSet<RecycleBinEntry> RecycleBin => Set<RecycleBinEntry>();
     public DbSet<ChapterCredits> ChapterCredits => Set<ChapterCredits>();
     public DbSet<CreditBankEntry> CreditBank => Set<CreditBankEntry>();
+    public DbSet<CreditNotice> CreditNotices => Set<CreditNotice>();
+    public DbSet<CreditNoticeRead> CreditNoticeReads => Set<CreditNoticeRead>();
+    public DbSet<ChapterCreditNotice> ChapterCreditNotices => Set<ChapterCreditNotice>();
     public DbSet<TorrentProposal> TorrentProposals => Set<TorrentProposal>();
     public DbSet<SeriesMetadataChange> SeriesMetadataChanges => Set<SeriesMetadataChange>();
 
@@ -807,6 +810,31 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
             e.HasQueryFilter(b => _scope.Unrestricted || Series.Any(s => s.Id == b.SeriesId));
             e.HasOne<Series>().WithMany().HasForeignKey(b => b.SeriesId).OnDelete(DeleteBehavior.Cascade);
             e.HasOne<Chapter>().WithMany().HasForeignKey(b => b.SourceChapterId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // Notices and their reads belong to no series: one is shared by every chapter that carries it.
+        modelBuilder.Entity<CreditNotice>(e =>
+        {
+            e.Property(n => n.GroupName).HasMaxLength(CreditNotice.MaxNameLength);
+            e.Property(n => n.SuggestedName).HasMaxLength(CreditNotice.MaxNameLength);
+            e.Property(n => n.Invite).HasMaxLength(32);
+        });
+
+        modelBuilder.Entity<CreditNoticeRead>(e =>
+        {
+            e.HasIndex(r => new { r.Crc, r.Length, r.Share, r.Bottom }).IsUnique();
+            e.HasIndex(r => r.NoticeId);
+            e.HasOne<CreditNotice>().WithMany().HasForeignKey(r => r.NoticeId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ChapterCreditNotice>(e =>
+        {
+            e.HasQueryFilter(c => _scope.Unrestricted || Series.Any(s => s.Id == c.SeriesId));
+            e.HasIndex(c => c.ChapterId);
+            e.HasIndex(c => c.NoticeId);
+            e.HasOne<Chapter>().WithMany().HasForeignKey(c => c.ChapterId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Series>().WithMany().HasForeignKey(c => c.SeriesId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<CreditNotice>().WithMany().HasForeignKey(c => c.NoticeId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<RecycleBinEntry>(e =>

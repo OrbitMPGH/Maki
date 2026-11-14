@@ -154,7 +154,7 @@ export const WhileReading: Story = {
 
 /** Chapters holds what happens as a chapter opens and ends, and says how many credit pages this one left out. */
 export const Chapters: Story = {
-  args: { prefs: { ...mangaPrefs, hideCredits: true }, hiddenCredits: { count: 2, onShow: fn() } },
+  args: { prefs: { ...mangaPrefs, hideCredits: true }, hiddenCredits: { count: 2, cut: false, onShow: fn() } },
   play: async ({ args, canvasElement, userEvent }) => {
     const b = body(canvasElement)
     await userEvent.click(await b.findByRole('button', { name: /^Chapters/ }))
@@ -165,6 +165,29 @@ export const Chapters: Story = {
     await userEvent.click(b.getByRole('button', { name: 'Show' }))
     await waitFor(() => expect(args.hiddenCredits?.onShow).toHaveBeenCalled())
     await expect(b.queryByRole('switch', { name: /Show page number/ })).toBeNull()
+  },
+}
+
+/** A chapter that only cuts the bottom of its last page says so, without counting it as a page, and can still show it. */
+export const ChaptersWithOnlyACut: Story = {
+  args: { prefs: { ...webtoonPrefs, hideCredits: true }, hiddenCredits: { count: 0, cut: true, onShow: fn() } },
+  play: async ({ args, canvasElement, userEvent }) => {
+    const b = body(canvasElement)
+    await userEvent.click(await b.findByRole('button', { name: /^Chapters/ }))
+    const line = await b.findByText('End of the last page hidden in this chapter')
+    await waitFor(() => expect(line).toBeVisible())
+    await userEvent.click(b.getByRole('button', { name: 'Show' }))
+    await waitFor(() => expect(args.hiddenCredits?.onShow).toHaveBeenCalled())
+  },
+}
+
+/** Hidden pages and a cut are named together. */
+export const ChaptersWithPagesAndACut: Story = {
+  args: { prefs: { ...webtoonPrefs, hideCredits: true }, hiddenCredits: { count: 1, cut: true, onShow: fn() } },
+  play: async ({ canvasElement, userEvent }) => {
+    const b = body(canvasElement)
+    await userEvent.click(await b.findByRole('button', { name: /^Chapters/ }))
+    await expect(await b.findByText('1 page and the end of the last page hidden in this chapter')).toBeInTheDocument()
   },
 }
 

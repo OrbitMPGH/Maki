@@ -2,7 +2,7 @@ using Maki.Core.Images;
 
 namespace Maki.Core.Tests;
 
-/// <summary>Invented page texts, joined the way the OCR reader joins its lines.</summary>
+/// <summary>Page texts joined the way the OCR reader joins its lines; invented unless a test says it is a real reading.</summary>
 public class CreditTextTests
 {
     [Theory]
@@ -59,6 +59,29 @@ public class CreditTextTests
     {
         Assert.True(CreditText.IsScanlator("visit example.com", colour: true));
         Assert.False(CreditText.IsScanlator("visit example.com", colour: false));
+    }
+
+    [Theory]
+    // A real reading of an official webtoon's staff block at the bottom of its last page.
+    [InlineData("STAFF | Original: Daily 3 Daughters | Adaptation: Merlin Falcon | Artist: Ottogi | Color: Tomato Curry | "
+        + "Background: Weight | Typesetting: Lihong | Assist: Red Cloak")]
+    // The same block as OCR often reads it.
+    [InlineData("STAFF | Originol:Doily 3Doughters | Adoptotion: Merlin Folcon | Artist:Ottogi | Color: Tomoto Curry | "
+        + "Bockground:Weight | Typesetting: Lihong | Assist:Red Clook")]
+    public void An_official_staff_block_is_a_publishers(string text)
+    {
+        Assert.False(CreditText.IsScanlator(text, colour: true));
+        Assert.False(CreditText.IsScanlator(text, colour: false));
+    }
+
+    [Fact]
+    public void A_scanlator_credit_page_listing_its_staff_is_still_a_scanlators()
+    {
+        const string credits = "LANTERN SCANS | STAFF | Translator: Alder | Typesetter: Cedar | Redrawer: Birch | discord.gg/example";
+
+        Assert.True(CreditText.IsScanlator(credits, colour: true));
+        Assert.True(CreditText.IsScanlator("STAFF | Translator: Alder | Typesetter: Cedar | Redrawer: Birch | Join our Discord", colour: false));
+        Assert.True(CreditText.IsScanlator("Looking for Staff! | TL: Alder | ORIGINAL AUTHOR BY purchasing | discord.gg/example", colour: true));
     }
 
     [Fact]

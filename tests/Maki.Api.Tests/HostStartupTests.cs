@@ -51,6 +51,47 @@ public class HostStartupTests : IDisposable
             Assert.Equal(System.Net.HttpStatusCode.Forbidden, (await client.GetAsync(path)).StatusCode);
         Assert.Equal(System.Net.HttpStatusCode.Forbidden, (await client.PostAsync("/api/v1/health/refresh", null)).StatusCode);
     }
+
+    [Fact]
+    public async Task Credit_groups_are_admin_only()
+    {
+        using var factory = new WebApplicationFactory<Program>();
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        using var scope = factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<Maki.Data.MakiDbContext>();
+        var user = new Maki.Data.Identity.MakiUser
+        {
+            UserName = "groups-admin", NormalizedUserName = "GROUPS-ADMIN", Permissions = Maki.Core.Security.MakiPermission.Admin, AllRootFolders = true,
+        };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+        const string secret = "credit-groups-test-key";
+        db.UserApiKeys.Add(new Maki.Data.Identity.UserApiKey
+        {
+            UserId = user.Id, Name = "groups test", KeyHash = Maki.Api.Auth.ApiKeyCrypto.Hash(secret), Prefix = "groups",
+            Scope = Maki.Data.Identity.UserApiKeyScope.Full, CreatedAt = DateTime.UtcNow,
+        });
+        await db.SaveChangesAsync();
+        client.DefaultRequestHeaders.Add("X-Api-Key", secret);
+        Assert.Equal(System.Net.HttpStatusCode.OK, (await client.GetAsync("/api/v1/creditgroups")).StatusCode);
+        var ids = Enumerable.Range(1, 600).ToArray();
+        Assert.Equal(System.Net.HttpStatusCode.OK,
+            (await client.PostAsJsonAsync("/api/v1/creditgroups/notices", new { noticeIds = ids })).StatusCode);
+
+        // Every permission but Admin, so nothing short of Admin opens it.
+        user.Permissions = ~Maki.Core.Security.MakiPermission.Admin;
+        await db.SaveChangesAsync();
+        factory.Services.GetRequiredService<Maki.Api.Auth.IUserSnapshotCache>().Evict(user.Id);
+        foreach (var path in new[] { "/api/v1/creditgroups", "/api/v1/creditgroups/notices/1/image" })
+            Assert.Equal(System.Net.HttpStatusCode.Forbidden, (await client.GetAsync(path)).StatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden,
+            (await client.PostAsJsonAsync("/api/v1/creditgroups/notices", new { noticeIds = ids })).StatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden,
+            (await client.PutAsJsonAsync("/api/v1/creditgroups/notices/1", new { @override = "Keep" })).StatusCode);
+        Assert.Equal(System.Net.HttpStatusCode.Forbidden,
+            (await client.PostAsJsonAsync("/api/v1/creditgroups/apply", new { noticeIds = new[] { 1 } })).StatusCode);
+    }
+
     [Fact]
     public async Task The_access_log_gets_a_line_per_request_and_the_main_log_none()
     {

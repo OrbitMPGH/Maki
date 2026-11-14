@@ -43,6 +43,9 @@ public class ChapterCredits
     public double HeadOffset { get; set; }
     public int TailPages { get; set; }
 
+    /// <summary>The share of the last page shown that is hidden, from its bottom (<c>CreditPages.TailOffset</c>).</summary>
+    public double TailOffset { get; set; }
+
     /// <summary><c>CreditDetector.Version</c> when found.</summary>
     public int DetectorVersion { get; set; }
 

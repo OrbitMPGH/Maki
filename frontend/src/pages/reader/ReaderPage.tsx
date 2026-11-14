@@ -57,7 +57,7 @@ import { useAutoScroll, useAutoScrollLevel } from './useAutoScroll'
 import ProgressRail from './ProgressRail'
 import { createStripTracker, liveStripOffset, resumeOffsetOf, useStripOffset, type StripResume } from './stripPosition'
 import { usePagedGestures } from './usePagedGestures'
-import { CREDITS_MIN_PAGES, clampToWindow, creditWindow, type PageWindow } from './creditWindow'
+import { CREDITS_MIN_PAGES, clampToCut, clampToWindow, creditWindow, tailCut, type PageWindow } from './creditWindow'
 import { stripTapActionAt, tapActionAt } from './tapZones'
 import TapZoneOverlay from './TapZoneOverlay'
 
@@ -177,9 +177,12 @@ export default function ReaderPage() {
   /**
    * Which edges this visit leaves credit pages out of. The start when they were known before the
    * first render, or arrived while the reader was still on the part they leave out; the end once
-   * known (null until then), unless the reader is already past where it begins.
+   * known (null until then), unless the reader is already past where it begins. `cut` is whether the
+   * end may also cut the last page shown short, false when a late answer found the cut on screen.
    */
-  const [creditsVisit, setCreditsVisit] = useState<{ chapterId: number; head: boolean; tail: boolean | null } | null>(null)
+  const [creditsVisit, setCreditsVisit] = useState<{ chapterId: number; head: boolean; tail: boolean | null; cut?: boolean } | null>(
+    null,
+  )
   /** The chapter whose first render stopped waiting for its credit pages. */
   const [creditsWaited, setCreditsWaited] = useState<number | null>(null)
   /** The chapter whose hidden pages were shown again this visit. */
@@ -268,6 +271,8 @@ export default function ReaderPage() {
   const webtoon = useWebtoonGuess(urls, autoWanted, manifest?.resumePage ?? 0)
   const autoVertical = autoWanted && webtoon === true
   const mode = autoVertical ? 'vertical' : prefs.mode
+  // Only the strip can end part way down a page; the paged layouts show the last page whole.
+  const lastCut = mode === 'vertical' ? tailCut(pageCount, credits, pageWindow, Boolean(visit?.tail && visit.cut !== false)) : 0
   // Fit height squeezes every slice of a strip to one screen; 1:1 is what the Webtoon profile uses.
   const fit = autoVertical && !picked?.fit && prefs.fit === 'height' ? 'original' : prefs.fit
   const view = useMemo<ReaderPrefs>(() => ({ ...prefs, mode, fit }), [prefs, mode, fit])
@@ -613,7 +618,7 @@ export default function ReaderPage() {
     enterAtEndRef.current = false
     // Credit pages known by now are left out from the start; ones that arrive later trim only the end.
     const found = creditsWanted ? creditsFound : undefined
-    setCreditsVisit({ chapterId: manifest.chapterId, head: found !== undefined, tail: found !== undefined ? true : null })
+    setCreditsVisit({ chapterId: manifest.chapterId, head: found !== undefined, tail: found !== undefined ? true : null, cut: true })
     setCreditsShown(null)
     setCreditsWaited(null)
     const shown = creditWindow(manifest.pageCount, found, true, true)
@@ -623,8 +628,10 @@ export default function ReaderPage() {
     const saved = clampToWindow(stored, shown)
     const resumed = !toEnd && saved === queued.resumePage ? queued.resumeOffset : 0
     const fromStart = !toEnd && saved === shown.first && stored <= shown.first && resumed === 0
-    // Opened at its first page shown, the strip starts below a banner fused into the top of it.
-    const offset = fromStart && found ? found.headOffset : resumed
+    // Opened at its first page shown, the strip starts below a banner fused into the top of it. A
+    // position inside a banner cut from the bottom of the last page shown opens at the cut.
+    const cut = !toEnd && found && saved === shown.last ? tailCut(manifest.pageCount, found, shown, true) : 0
+    const offset = clampToCut(fromStart && found ? found.headOffset : resumed, cut)
     seekToPage(toEnd ? shown.last : saved, 0, offset > 0 ? { offset, smooth: false } : PLAIN_SEEK)
     setResumedAt({ chapterId: manifest.chapterId, page: saved, offset })
     setStartedFor(fromStart ? manifest.chapterId : null)
@@ -651,6 +658,22 @@ export default function ReaderPage() {
     seekToPage(page, half, offset > 0 ? { offset, smooth: false } : PLAIN_SEEK)
   }, [stripTracker, mode, page, half, seekToPage])
 
+  /**
+   * Whether the line a late answer would cut the last page shown at is already above the bottom of the
+   * screen: the reader is looking at the banner, so the strip is not shortened under them.
+   */
+  const cutOnScreen = useCallback(
+    (trimmed: PageWindow) => {
+      const cut = mode === 'vertical' ? tailCut(pageCount, credits, trimmed, true) : 0
+      if (cut <= 0 || !surface) return false
+      const image = surface.querySelector<HTMLElement>(`.reader-continuous img[data-page="${trimmed.last - first}"]`)
+      if (!image) return false
+      const box = image.getBoundingClientRect()
+      return box.height > 0 && box.top + box.height * (1 - cut) < surface.getBoundingClientRect().bottom
+    },
+    [mode, pageCount, credits, surface, first],
+  )
+
   // Credit pages that arrive after the chapter opened still skip the start while the reader is on
   // the part it leaves out, landing where an answer known on opening would have. The end is trimmed
   // unless the reader is already past where it begins.
@@ -661,15 +684,16 @@ export default function ReaderPage() {
     const above = place?.page === page ? place.offset : 0
     const inBanner = fromStart && mode === 'vertical' && page === credits.headPages && above < credits.headOffset
     const head = visit.head || page < credits.headPages || inBanner
-    const tail = shownTo <= creditWindow(pageCount, credits, head, true).last
-    setCreditsVisit({ ...visit, head, tail })
+    const trimmed = creditWindow(pageCount, credits, head, true)
+    const tail = shownTo <= trimmed.last
+    setCreditsVisit({ ...visit, head, tail, cut: tail && !cutOnScreen(trimmed) })
     if (head && !visit.head) {
       const offset = fromStart ? credits.headOffset : 0
       rebaseProgress()
       setResumedAt({ chapterId, page: credits.headPages, offset })
       seekToPage(credits.headPages, 0, offset > 0 ? { offset, smooth: false } : PLAIN_SEEK)
     } else if (tail) holdPlace()
-  }, [visit, credits, shownTo, pageCount, holdPlace, startedFor, chapterId, stripTracker, page, mode, rebaseProgress, seekToPage])
+  }, [visit, credits, shownTo, pageCount, holdPlace, startedFor, chapterId, stripTracker, page, mode, rebaseProgress, seekToPage, cutOnScreen])
 
   // Turning the setting back on mid-chapter can leave the reader on a page no longer shown.
   useEffect(() => {
@@ -1324,7 +1348,7 @@ export default function ReaderPage() {
         thumbs={thumbs}
         shownTo={shownTo}
         pageWindow={{ first, count: shownCount }}
-        hiddenCredits={hiddenCount > 0 ? { count: hiddenCount, onShow: showCredits } : null}
+        hiddenCredits={hiddenCount > 0 || lastCut > 0 ? { count: hiddenCount, cut: lastCut > 0, onShow: showCredits } : null}
         autoScroll={{
           on: autoScroll,
           level: autoScrollLevel,
@@ -1397,6 +1421,7 @@ export default function ReaderPage() {
               onStretched={onStretched}
               onEnhanceRange={onEnhanceRange}
               tracker={stripTracker}
+              lastCut={lastCut}
             />
           ) : (
             <PagedView

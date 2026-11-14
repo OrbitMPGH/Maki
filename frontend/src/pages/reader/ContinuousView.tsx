@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Button, Stack, Text } from '@mantine/core'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { enhanceBudget } from '../../lib/enhance/budget'
@@ -13,6 +13,7 @@ import { FULL_REGION } from './pageShape'
 import type { ServerEnhance } from './useServerEnhance'
 import { measureStrip, seekStrip } from './stripMeasure'
 import type { StripTracker } from './stripPosition'
+import { cutHeight } from './creditWindow'
 
 const FIT_CLASS: Record<ReaderFit, string> = {
   width: 'reader-fit-width',
@@ -142,6 +143,8 @@ interface StripPageProps {
   priority: number
   register: (index: number, element: HTMLImageElement | null) => void
   onSettled: (index: number, element: HTMLImageElement) => void
+  /** The share of this page, from its bottom, left out: set on the strip's last page only, else 0. */
+  cut: number
 }
 
 /**
@@ -162,6 +165,7 @@ const StripPage = memo(function StripPage({
   priority,
   register,
   onSettled,
+  cut,
 }: StripPageProps) {
   const { t } = useLingui()
   const image = useRef<HTMLImageElement | null>(null)
@@ -187,9 +191,31 @@ const StripPage = memo(function StripPage({
     setAttempt((n) => n + 1)
   }
 
+  // A cut page's box is shorter than its image, so the strip, its end and the next-chapter meter end
+  // at the cut. The image keeps its full size and URL, so positions stay shares of the real page.
+  const [cutTo, setCutTo] = useState<number | null>(null)
+  useLayoutEffect(() => {
+    const element = image.current
+    if (!element || cut <= 0) {
+      setCutTo(null)
+      return
+    }
+    const measure = () => {
+      const full = element.getBoundingClientRect().height
+      // A page that failed to load has no height; its retry button is left alone.
+      setCutTo(full > 0 ? cutHeight(full, cut) : null)
+    }
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [cut])
+
   const alt = t`${label} - page ${pageNumber}`
+  // Every page renders this same box, so a page that becomes or stops being the last one is never
+  // remounted. It lays nothing out (display: contents) unless the page is cut.
   return (
-    <>
+    <div className="reader-strip-page" data-cut={cutTo != null ? true : undefined} style={cutTo != null ? { height: cutTo } : undefined}>
       <img
         ref={setRef}
         data-page={index}
@@ -248,7 +274,7 @@ const StripPage = memo(function StripPage({
           </Button>
         </Stack>
       )}
-    </>
+    </div>
   )
 })
 
@@ -281,6 +307,7 @@ export default function ContinuousView({
   onStretched,
   onEnhanceRange,
   tracker,
+  lastCut = 0,
 }: {
   /** The pages shown: the chapter's from `first` on, past any credit pages left out. */
   urls: string[]
@@ -330,6 +357,8 @@ export default function ContinuousView({
   onEnhanceRange?: (pages: number[], beyond: number, server: number[]) => void
   /** Receives where the strip is scrolled to, and lends it a way to scroll there. */
   tracker?: StripTracker
+  /** The share of the last page, from its bottom, that is left out: a credit banner fused into it. */
+  lastCut?: number
 }) {
   // Inside, pages count from the first one shown.
   const page = chapterPage - first
@@ -840,6 +869,7 @@ export default function ContinuousView({
             priority={pageEnhance && inRange.has(index) ? (index >= page ? (index - page) * 2 : (page - index) * 2 + 1) : 0}
             register={registerPage}
             onSettled={onPageSettled}
+            cut={index === urls.length - 1 ? lastCut : 0}
           />
         ))}
         <div ref={sentinel} style={{ height: 1 }} />

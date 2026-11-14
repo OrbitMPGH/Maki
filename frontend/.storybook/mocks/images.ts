@@ -122,4 +122,27 @@ export const imageHandlers = (titleFor: (seed: string) => string = (seed) => see
   http.get(api('/reader/chapter/:id/page/:n/enhanced'), ({ params }) => pageSvg(String(params.id), String(params.n), titleFor)),
   // The hub-down poller asks with HEAD whether the upscale is there.
   http.head(api('/reader/chapter/:id/page/:n/enhanced'), () => new HttpResponse(null, { status: 200 })),
+  http.get(api('/creditgroups/notices/:id/image'), ({ params }) => noticeSvg(String(params.id))),
 ]
+
+/** Notice ids the credit group fixtures cut as a strip from a page's top or bottom; the rest are whole pages. */
+const STRIP_NOTICES = new Set(['2', '5', '7'])
+
+/** A credit page or ad: a tinted card with a heading and a few lines of text. Id 99 has no readable chapter. */
+function noticeSvg(id: string) {
+  if (id === '99') return new HttpResponse(null, { status: 404 })
+  const h = hue(`notice-${id}`)
+  const strip = STRIP_NOTICES.has(id)
+  const [w, ht] = strip ? [640, 170] : [640, 920]
+  const lines = (strip ? [96, 128] : [300, 360, 420, 480, 640, 700])
+    .map((y, i) => `<rect x="${strip ? 180 : 120}" y="${y}" width="${(i % 2 ? 300 : 400) - (strip ? 40 : 0)}" height="16" rx="8" fill="hsl(${h},25%,${strip ? 85 : 35}%)"/>`)
+    .join('')
+  const heading = strip
+    ? `<circle cx="90" cy="85" r="50" fill="hsl(${(h + 40) % 360},70%,70%)"/><text x="180" y="70" font-family="sans-serif" font-size="30" font-weight="700" fill="#fff">NOTICE ${escapeXml(id)}</text>`
+    : `<text x="320" y="200" font-family="sans-serif" font-size="56" font-weight="700" text-anchor="middle" fill="hsl(${h},55%,25%)">CREDITS ${escapeXml(id)}</text><circle cx="320" cy="820" r="44" fill="hsl(${(h + 40) % 360},60%,60%)"/>`
+  return svg(
+    `<rect width="${w}" height="${ht}" fill="${strip ? `hsl(${h},45%,30%)` : `hsl(${h},40%,94%)`}"/>${heading}${lines}`,
+    w,
+    ht,
+  )
+}

@@ -192,7 +192,8 @@ export default function ReaderSettings({
   /** Whether the tap zone controls are on screen, so the reader can draw the zones on the page. */
   onTapZonesShown?: (shown: boolean) => void
   /** Credit pages left out of the chapter on screen, and a way to show them for this visit. */
-  hiddenCredits?: { count: number; onShow: () => void } | null
+  /** What credit hiding left out of this chapter: whole pages, and whether the last page shown is cut short. */
+  hiddenCredits?: { count: number; cut: boolean; onShow: () => void } | null
 }) {
   const { t } = useLingui()
   const renderLabel = useLabel()
@@ -359,6 +360,7 @@ export default function ReaderSettings({
       )
     : t`Every quality is enhanced`
   const hiddenCount = prefs.hideCredits ? (hiddenCredits?.count ?? 0) : 0
+  const hiddenCut = prefs.hideCredits && (hiddenCredits?.cut ?? false)
   const onSummary = (toggles: ToggleRow[]) => {
     const togglesOn = toggles.filter((toggle) => prefs[toggle.key]).length
     const togglesTotal = toggles.length
@@ -378,10 +380,20 @@ export default function ReaderSettings({
             onChange={(checked) => onPrefs({ [toggle.key]: checked })}
           />
         </div>
-        {toggle.key === 'hideCredits' && hiddenCredits && hiddenCount > 0 && (
+        {toggle.key === 'hideCredits' && hiddenCredits && (hiddenCount > 0 || hiddenCut) && (
           <Group gap={8} wrap="nowrap" justify="space-between" mt={-6}>
             <Text className="reader-settings-hint" fz="xs">
-              <Plural value={hiddenCount} one="# page hidden in this chapter" other="# pages hidden in this chapter" />
+              {hiddenCount === 0 ? (
+                <Trans>End of the last page hidden in this chapter</Trans>
+              ) : hiddenCut ? (
+                <Plural
+                  value={hiddenCount}
+                  one="# page and the end of the last page hidden in this chapter"
+                  other="# pages and the end of the last page hidden in this chapter"
+                />
+              ) : (
+                <Plural value={hiddenCount} one="# page hidden in this chapter" other="# pages hidden in this chapter" />
+              )}
             </Text>
             <Button size="compact-xs" variant="subtle" onClick={hiddenCredits.onShow}>
               <Trans>Show</Trans>

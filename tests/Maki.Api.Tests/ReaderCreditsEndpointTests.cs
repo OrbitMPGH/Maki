@@ -40,14 +40,16 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
 
     private CreditBank _bank = null!;
     private CreditStrips _strips = null!;
+    private CreditNoticeStore _notices = null!;
 
     private ReaderCreditsCache Credits(IPageTextReader text)
     {
         _store = new CreditStore(_db.ScopeFactory(), text, NullLogger<CreditStore>.Instance);
         _bank = new CreditBank(_db.ScopeFactory(), NullLogger<CreditBank>.Instance);
         _strips = new CreditStrips(new AppPaths(_configDir), NullLogger<CreditStrips>.Instance);
+        _notices = new CreditNoticeStore(_db.ScopeFactory(), _store, NullLogger<CreditNoticeStore>.Instance);
         return new ReaderCreditsCache(
-            new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), text, _store, _strips, _bank,
+            new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), text, _store, _strips, _bank, _notices,
             NullLogger<ReaderCreditsCache>.Instance);
     }
 
@@ -514,7 +516,74 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
 
         public Task<string?> ReadAsync(byte[] image, double share, CancellationToken ct) => throw new IOException("share went away");
 
+        public Task<string?> ReadBottomAsync(byte[] image, double share, CancellationToken ct) => throw new IOException("share went away");
+
         public Task PrepareAsync() => Task.CompletedTask;
+    }
+
+    /// <summary>A reader that reads a scanlator's notice off every page, and counts its reads.</summary>
+    private sealed class CountingTextReader : IPageTextReader
+    {
+        public int Reads;
+
+        /// <summary>The shares read off the bottom of a page.</summary>
+        public readonly List<double> Bottoms = [];
+
+        public bool Available => true;
+
+        public Task<string?> ReadAsync(byte[] image, double share, CancellationToken ct)
+        {
+            Interlocked.Increment(ref Reads);
+            return Task.FromResult<string?>("Join our Discord");
+        }
+
+        public Task<string?> ReadBottomAsync(byte[] image, double share, CancellationToken ct)
+        {
+            Interlocked.Increment(ref Reads);
+            lock (Bottoms)
+            {
+                Bottoms.Add(share);
+            }
+
+            return Task.FromResult<string?>("Join our Discord");
+        }
+
+        public Task PrepareAsync() => Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task Chapters_carrying_the_same_credit_page_read_it_once()
+    {
+        var reader = new CountingTextReader();
+        _credits = Credits(reader);
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+
+        Assert.Equal(1, (await FoundAsync(chapters[1])).GetProperty("headPages").GetInt32());
+        Assert.Equal(1, (await FoundAsync(chapters[2])).GetProperty("headPages").GetInt32());
+
+        Assert.Equal(1, reader.Reads);
+        using var db = _db.NewContext();
+        Assert.Equal(2, db.ChapterCreditNotices.Count());
+        Assert.Single(db.CreditNotices);
+    }
+
+    [Fact]
+    public async Task A_failing_notice_store_falls_back_to_reading_the_page()
+    {
+        var reader = new CountingTextReader();
+        _credits = Credits(reader);
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        using (var db = _db.NewContext())
+        {
+            // Every store call now throws, as a broken database would.
+            await db.Database.ExecuteSqlRawAsync("DROP TABLE CreditNotices");
+        }
+
+        Assert.Equal(1, (await FoundAsync(chapters[1])).GetProperty("headPages").GetInt32());
+        Assert.False((await RowAsync(chapters[1]))!.Failed);
+        Assert.Equal(1, reader.Reads);
     }
 
     [Fact]
@@ -673,6 +742,91 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
 
         Assert.True(HidesTheHead(await FoundAsync(lone)));
         Assert.Equal(0, await worker.RecheckBankAsync(default));
+    }
+
+    /// <summary>A scanlator's notice, the whole last page of one chapter and the bottom of the last slice of its neighbours.</summary>
+    private static readonly byte[] TailNotice = Tinted(Noise(9, 90));
+
+    private const int NoticeRows = 40;
+
+    private static byte[] Png(byte[] pixels)
+    {
+        using var image = NetVips.Image.NewFromMemory(pixels, W, pixels.Length / (W * 3), 3, NetVips.Enums.BandFormat.Uchar);
+        return image.PngsaveBuffer();
+    }
+
+    /// <summary>
+    /// Four chapters of a series ending in the bottom <see cref="NoticeRows"/> rows of <see cref="TailNotice"/>
+    /// under story art, except the second, which ends in the whole notice: repetition finds only that bottom
+    /// share at its tail, where a bank entry of the whole page would find all of it.
+    /// </summary>
+    private List<int> ChaptersEndingInTheNoticesBottom()
+    {
+        var bottom = TailNotice[^(NoticeRows * W * 3)..];
+        return [.. Enumerable.Range(1, 4).Select(n => AddChapter(n,
+            [.. Story(n + 10, 8), n == 2 ? TailNotice : [.. Grey(Noise(n * 7 + 300, 300)), .. bottom]]))];
+    }
+
+    /// <summary>Another series whose chapters end in the whole notice, so its search teaches the bank the page.</summary>
+    private async Task TeachTheWholeNoticeAsync()
+    {
+        var teacher = AddSeries("U");
+        var chapters = Enumerable.Range(1, 4)
+            .Select(n => AddEncodedChapter(n, [.. StoryPngs(50 + n, 8), Png(TailNotice)], seriesId: teacher, folder: "U"))
+            .ToList();
+        Assert.Equal(1, (await FoundAsync(chapters[1])).GetProperty("tailPages").GetInt32());
+        Assert.Equal(1, BankCount());
+    }
+
+    [Fact]
+    public async Task A_banner_repeated_at_the_bottom_of_the_last_slice_is_cut_off_and_read_from_the_bottom()
+    {
+        var reader = new CountingTextReader();
+        _credits = Credits(reader);
+        var chapters = ChaptersEndingInTheNoticesBottom();
+
+        var found = await FoundAsync(chapters[1]);
+
+        Assert.Equal(0, found.GetProperty("tailPages").GetInt32());
+        // Smooth noise lets a few rows above the notice match too.
+        Assert.InRange(found.GetProperty("tailOffset").GetDouble(), NoticeRows / 90.0 - 0.03, NoticeRows / 90.0 + 0.1);
+        Assert.Equal(found.GetProperty("tailOffset").GetDouble(), Assert.Single(reader.Bottoms), 4);
+        // The bank learns nothing from a tail partial: that route was not measured.
+        Assert.Equal(0, BankCount());
+        Assert.Equal(found.GetProperty("tailOffset").GetDouble(), (await RowAsync(chapters[1]))!.TailOffset);
+
+        _db.SetUserConfig(1, (SettingKeys.ReaderPrefs, ReaderPrefsSpec.Serialize(new ReaderPrefsSpec(HideCredits: true))));
+        Assert.Equal(found.GetProperty("tailOffset").GetDouble(),
+            (await ManifestAsync(chapters[1])).GetProperty("credits").GetProperty("tailOffset").GetDouble());
+    }
+
+    [Fact]
+    public async Task A_tail_whose_only_repetition_is_a_bottom_share_still_takes_a_bank_answer_hiding_the_whole_page()
+    {
+        _credits = Credits(new CountingTextReader());
+        await TeachTheWholeNoticeAsync();
+        var chapters = ChaptersEndingInTheNoticesBottom();
+
+        var found = await FoundAsync(chapters[1]);
+
+        Assert.Equal(1, found.GetProperty("tailPages").GetInt32());
+        Assert.Equal(0, found.GetProperty("tailOffset").GetDouble());
+    }
+
+    [Fact]
+    public async Task The_bank_recheck_still_asks_about_a_tail_whose_only_repetition_is_a_bottom_share()
+    {
+        _credits = Credits(new CountingTextReader());
+        var chapters = ChaptersEndingInTheNoticesBottom();
+        Assert.True((await FoundAsync(chapters[1])).GetProperty("tailOffset").GetDouble() > 0);
+        var worker = Worker();
+
+        await TeachTheWholeNoticeAsync();
+        await worker.RecheckBankAsync(default);
+
+        // Sent back, as it was when a partial tail counted as nothing, and searched again against the entry.
+        Assert.Equal(0, (await RowAsync(chapters[1]))!.DetectorVersion);
+        Assert.Equal(1, (await FoundAsync(chapters[1])).GetProperty("tailPages").GetInt32());
     }
 
     [Fact]
