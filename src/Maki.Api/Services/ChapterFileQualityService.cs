@@ -23,7 +23,8 @@ public class ChapterFileQualityService(
     /// <summary>
     /// Where a file came from. The group is the one the chapter's link to the same source recorded,
     /// falling back to <see cref="SiteGroup"/>; for a file with no registered source (an import, a
-    /// torrent, a relink) it is whatever the release name's tags name.
+    /// torrent, a relink) it is whatever the release name's tags name, else the file name's, since a
+    /// pack's title often names no group while every file inside it does.
     /// Expects <paramref name="chapter"/>'s <c>SourceLinks</c> and their <c>SourceMapping</c> loaded.
     /// </summary>
     public (SourceKind? Kind, string? Group) ResolveProvenance(ChapterFile file, Chapter? chapter)
@@ -39,12 +40,14 @@ public class ChapterFileQualityService(
 
         if (source is null)
         {
-            var parsed = ReleaseNameParser.ParseFileName(file.ReleaseName ?? Path.GetFileName(file.RelativePath));
-            return (null, ReleaseTags.Group(parsed.Tags));
+            return (null, TagGroup(file.ReleaseName) ?? TagGroup(Path.GetFileName(file.RelativePath)));
         }
 
         return (source.Kind, SiteGroup(source));
     }
+
+    private static string? TagGroup(string? name) =>
+        string.IsNullOrWhiteSpace(name) ? null : ReleaseTags.Group(ReleaseNameParser.ParseFileName(name).Tags);
 
     /// <summary>
     /// Never downgrades: an Unknown tier or a null group leaves whatever the row already had, so a

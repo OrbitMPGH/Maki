@@ -391,6 +391,36 @@ public class ChapterFileQualityServiceTests : IDisposable
     }
 
     [Fact]
+    public void A_torrent_title_with_no_group_falls_back_to_the_file_name()
+    {
+        var file = new ChapterFile
+        {
+            RelativePath = Path.Combine("Series", "Series v03 (2021) (Digital) (1r0n).cbz"),
+            SourceName = "torrent:nyaasi",
+            ReleaseName = "Series v01-10 (2019-2023) (Digital)"
+        };
+
+        var (_, group) = TestQuality.Create().ResolveProvenance(file, null);
+
+        Assert.Equal("1r0n", group);
+    }
+
+    [Fact]
+    public void A_torrent_title_group_wins_over_the_file_name()
+    {
+        var file = new ChapterFile
+        {
+            RelativePath = Path.Combine("Series", "Series v03 (Digital) (Kobo).cbz"),
+            SourceName = "torrent:nyaasi",
+            ReleaseName = "Series v01-10 (Digital) (1r0n)"
+        };
+
+        var (_, group) = TestQuality.Create().ResolveProvenance(file, null);
+
+        Assert.Equal("1r0n", group);
+    }
+
+    [Fact]
     public void A_scanlator_source_link_with_no_group_falls_back_to_the_site_name()
     {
         var registry = new SourceRegistry([new FakeSource { Name = "nightscans", Kind = SourceKind.Scanlator }]);
