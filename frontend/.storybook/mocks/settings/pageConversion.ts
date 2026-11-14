@@ -121,9 +121,11 @@ const noBucket = {
   files: 0,
   bytes: 0,
   sampledFiles: 0,
+  expected: 0,
   expectedLow: 0,
   expectedHigh: 0,
   hardlinkedBytes: 0,
+  seconds: 0,
   secondsLow: 0,
   secondsHigh: 0,
 } satisfies EstimateBucket
@@ -133,6 +135,9 @@ export const estimateSkipBucket = {
   skip: true,
   files: 1527,
   bytes: Math.round(18.1 * GB),
+  expected: Math.round(18.1 * GB),
+  expectedLow: Math.round(18.1 * GB),
+  expectedHigh: Math.round(18.1 * GB),
 } satisfies EstimateBucket
 
 export const estimateConvertBucket = {
@@ -140,11 +145,13 @@ export const estimateConvertBucket = {
   files: 365,
   bytes: Math.round(73.8 * GB),
   sampledFiles: 12,
-  expectedLow: Math.round(48 * GB),
-  expectedHigh: Math.round(53 * GB),
+  expected: Math.round(50.4 * GB),
+  expectedLow: Math.round(48.6 * GB),
+  expectedHigh: Math.round(52.2 * GB),
   hardlinkedBytes: Math.round(32.9 * GB),
-  secondsLow: 35 * 60,
-  secondsHigh: 70 * 60,
+  seconds: 48 * 60,
+  secondsLow: 41 * 60,
+  secondsHigh: 55 * 60,
 } satisfies EstimateBucket
 
 export const estimateDefaultBucket = {
@@ -152,16 +159,18 @@ export const estimateDefaultBucket = {
   files: 94,
   bytes: Math.round(1.9 * GB),
   sampledFiles: 12,
-  expectedLow: Math.round(1.2 * GB),
-  expectedHigh: Math.round(1.4 * GB),
-  secondsLow: 4 * 60,
-  secondsHigh: 9 * 60,
+  expected: Math.round(1.3 * GB),
+  expectedLow: Math.round(1.24 * GB),
+  expectedHigh: Math.round(1.36 * GB),
+  seconds: 6 * 60,
+  secondsLow: 5 * 60,
+  secondsHigh: 7 * 60,
 } satisfies EstimateBucket
 
 export const estimateResult = {
   rules: [estimateSkipBucket, estimateConvertBucket],
   default: estimateDefaultBucket,
-  overrides: { ...noBucket, files: 18, bytes: Math.round(2.1 * GB), sampledFiles: 6, expectedLow: Math.round(1.1 * GB), expectedHigh: Math.round(1.3 * GB), secondsLow: 90, secondsHigh: 240 },
+  overrides: { ...noBucket, files: 18, bytes: Math.round(2.1 * GB), sampledFiles: 6, expected: Math.round(1.2 * GB), expectedLow: Math.round(1.12 * GB), expectedHigh: Math.round(1.28 * GB), seconds: 150, secondsLow: 120, secondsHigh: 180 },
   passedOver: {
     hardlinkedFiles: 143,
     hardlinkedBytes: Math.round(32.9 * GB),
@@ -185,6 +194,17 @@ export const estimateResult = {
   ],
   convertedWithOriginalInTrash: 37,
   msPerMegapixel: 410,
+  total: {
+    files: 477,
+    bytes: Math.round(77.8 * GB),
+    sampled: true,
+    expected: Math.round(52.9 * GB),
+    expectedLow: Math.round(51.1 * GB),
+    expectedHigh: Math.round(54.7 * GB),
+    seconds: 56 * 60 + 30,
+    secondsLow: 49 * 60,
+    secondsHigh: 64 * 60,
+  },
 } satisfies NonNullable<PageConversionEstimate['result']>
 
 const stamp = '2026-10-19T11:50:00Z'

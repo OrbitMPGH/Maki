@@ -21,9 +21,7 @@ import { PlanTable } from '../components/pageconversion/PlanTable'
 import { PlanOptions } from '../components/pageconversion/PlanOptions'
 import {
   EstimateDetails,
-  Range,
   Sampling,
-  estimateTotals,
   useRangeText,
   usePlanEstimate,
   type PlanEstimate,
@@ -267,7 +265,7 @@ function Plan({
   )
 }
 
-/** "About 76 GB to 50 GB to 56 GB", how long, or how far the estimate has got. */
+/** "477 files, 78 GB now, about 53 GB after", how sure that is and how long, or how far the estimate has got. */
 function FooterSummary({ on, estimate }: { on: boolean; estimate: PlanEstimate }) {
   const range = useRangeText()
   if (!on) {
@@ -278,7 +276,7 @@ function FooterSummary({ on, estimate }: { on: boolean; estimate: PlanEstimate }
     )
   }
 
-  const totals = estimate.result ? estimateTotals(estimate.result) : null
+  const totals = estimate.result?.total ?? null
   if (!totals) {
     if (estimate.running) {
       return (
@@ -299,7 +297,10 @@ function FooterSummary({ on, estimate }: { on: boolean; estimate: PlanEstimate }
   }
 
   const now = formatBytes(totals.bytes)
-  const expected = totals.sampled ? range(totals.expectedLow, totals.expectedHigh, formatBytes) : null
+  const expected = totals.sampled ? formatBytes(totals.expected) : null
+  const likely = range(totals.expectedLow, totals.expectedHigh, formatBytes)
+  const time = formatReadingTime(totals.seconds)
+  const timeRange = range(totals.secondsLow, totals.secondsHigh, formatReadingTime)
   return (
     <Stack gap={2} style={{ opacity: estimate.stale ? 0.6 : 1 }} aria-live="polite">
       <Text fw={600}>
@@ -308,8 +309,8 @@ function FooterSummary({ on, estimate }: { on: boolean; estimate: PlanEstimate }
         ) : expected ? (
           <Plural
             value={totals.files}
-            one={`# file, ${now} now, ${expected} after`}
-            other={`# files, ${now} now, ${expected} after`}
+            one={`# file, ${now} now, about ${expected} after`}
+            other={`# files, ${now} now, about ${expected} after`}
           />
         ) : (
           <Plural value={totals.files} one={`# file, ${now}`} other={`# files, ${now}`} />
@@ -320,11 +321,12 @@ function FooterSummary({ on, estimate }: { on: boolean; estimate: PlanEstimate }
           <Trans>Updating for your latest changes</Trans>
         ) : estimate.stale ? (
           <Trans>From before your latest changes</Trans>
-        ) : totals.secondsHigh > 0 ? (
+        ) : expected && totals.seconds > 0 ? (
           <Trans>
-            Takes about <Range low={totals.secondsLow} high={totals.secondsHigh} format={formatReadingTime} /> on this
-            server
+            Likely {likely}. Takes about {time} on this server ({timeRange}).
           </Trans>
+        ) : expected ? (
+          <Trans>Likely {likely}.</Trans>
         ) : null}
       </Text>
     </Stack>

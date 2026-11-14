@@ -230,8 +230,8 @@ msgstr "{0, plural, one {# file was put back by an undo and stays as it is} othe
 
 #. placeholder {0}: totals.files
 #: src/pages/PageConversionWizardPage.tsx
-msgid "{0, plural, one {# file, {now} now, {expected} after} other {# files, {now} now, {expected} after}}"
-msgstr "{0, plural, one {# file, {now} now, {expected} after} other {# files, {now} now, {expected} after}}"
+msgid "{0, plural, one {# file, {now} now, about {expected} after} other {# files, {now} now, about {expected} after}}"
+msgstr "{0, plural, one {# file, {now} now, about {expected} after} other {# files, {now} now, about {expected} after}}"
 
 #. placeholder {0}: totals.files
 #: src/pages/PageConversionWizardPage.tsx
@@ -1378,18 +1378,6 @@ msgstr "{eta} left"
 #: src/components/import/MihonSummary.tsx
 msgid "{existing, plural, one {# already in the library} other {# already in the library}}"
 msgstr "{existing, plural, one {# already in the library} other {# already in the library}}"
-
-#: src/components/pageconversion/PlanTable.tsx
-msgid "{expected} after"
-msgstr "{expected} after"
-
-#: src/components/pageconversion/PlanEstimate.tsx
-msgid "{expected} after, about {time}."
-msgstr "{expected} after, about {time}."
-
-#: src/components/pageconversion/PlanEstimate.tsx
-msgid "{expected} after."
-msgstr "{expected} after."
 
 #: src/components/settings/RecycleBinModal.tsx
 msgid "{expiringSoon, plural, one {# goes within {SOON_DAYS} days} other {# go within {SOON_DAYS} days}}"
@@ -3414,6 +3402,18 @@ msgstr "Abandoned"
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "About {chapterLeft} left in this chapter"
 msgstr "About {chapterLeft} left in this chapter"
+
+#: src/components/pageconversion/PlanTable.tsx
+msgid "about {expected} after"
+msgstr "about {expected} after"
+
+#: src/components/pageconversion/PlanEstimate.tsx
+msgid "About {expected} after, in about {time}."
+msgstr "About {expected} after, in about {time}."
+
+#: src/components/pageconversion/PlanEstimate.tsx
+msgid "About {expected} after."
+msgstr "About {expected} after."
 
 #: src/components/RecommendationModelSwitch.tsx
 msgid "about {hourPhrase} {restPhrase} left"
@@ -11296,6 +11296,14 @@ msgstr "Liked"
 #: src/components/discover/RecommendationFeedbackMenu.tsx
 msgid "Liked it"
 msgstr "Liked it"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Likely {likely}."
+msgstr "Likely {likely}."
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Likely {likely}. Takes about {time} on this server ({timeRange})."
+msgstr "Likely {likely}. Takes about {time} on this server ({timeRange})."
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx
@@ -20471,10 +20479,6 @@ msgstr "Tags to exclude"
 #: src/components/CatalogueRules.tsx
 msgid "Tags to include"
 msgstr "Tags to include"
-
-#: src/pages/PageConversionWizardPage.tsx
-msgid "Takes about <0/> on this server"
-msgstr "Takes about <0/> on this server"
 
 #: src/components/ScanlationGroupsModal.tsx
 msgid "Takes effect at each series' next chapter refresh."

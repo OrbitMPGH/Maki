@@ -263,7 +263,7 @@ msgstr "{0, plural, other {# 个文件已被撤销操作放回，将保持原样
 
 #. placeholder {0}: totals.files
 #: src/pages/PageConversionWizardPage.tsx
-msgid "{0, plural, one {# file, {now} now, {expected} after} other {# files, {now} now, {expected} after}}"
+msgid "{0, plural, one {# file, {now} now, about {expected} after} other {# files, {now} now, about {expected} after}}"
 msgstr ""
 
 #. placeholder {0}: totals.files
@@ -1597,18 +1597,6 @@ msgstr "剩余 {eta}"
 #, fuzzy
 msgid "{existing, plural, one {# already in the library} other {# already in the library}}"
 msgstr "{existing, plural, other {# 个已在资料库中}}"
-
-#: src/components/pageconversion/PlanTable.tsx
-msgid "{expected} after"
-msgstr ""
-
-#: src/components/pageconversion/PlanEstimate.tsx
-msgid "{expected} after, about {time}."
-msgstr ""
-
-#: src/components/pageconversion/PlanEstimate.tsx
-msgid "{expected} after."
-msgstr ""
 
 #: src/components/settings/RecycleBinModal.tsx
 msgid "{expiringSoon, plural, one {# goes within {SOON_DAYS} days} other {# go within {SOON_DAYS} days}}"
@@ -4032,6 +4020,18 @@ msgstr "已放弃"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "About {chapterLeft} left in this chapter"
+msgstr ""
+
+#: src/components/pageconversion/PlanTable.tsx
+msgid "about {expected} after"
+msgstr ""
+
+#: src/components/pageconversion/PlanEstimate.tsx
+msgid "About {expected} after, in about {time}."
+msgstr ""
+
+#: src/components/pageconversion/PlanEstimate.tsx
+msgid "About {expected} after."
 msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
@@ -13456,6 +13456,14 @@ msgstr "喜欢"
 #, fuzzy
 msgid "Liked it"
 msgstr "喜欢"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Likely {likely}."
+msgstr ""
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Likely {likely}. Takes about {time} on this server ({timeRange})."
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx
@@ -24423,10 +24431,6 @@ msgstr "要排除的标签"
 #, fuzzy
 msgid "Tags to include"
 msgstr "要包含的标签"
-
-#: src/pages/PageConversionWizardPage.tsx
-msgid "Takes about <0/> on this server"
-msgstr ""
 
 #: src/components/ScanlationGroupsModal.tsx
 msgid "Takes effect at each series' next chapter refresh."

@@ -78,9 +78,9 @@ export const Plan: Story = {
 
 export const EstimateInFooter: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await expect(await canvas.findByText(/files, .* now, .* after$/)).toBeVisible()
-    await expect(canvas.getByText(/Takes about/)).toBeVisible()
-    await expect(canvas.getAllByText(/ after$/).length).toBeGreaterThan(0)
+    await expect(await canvas.findByText('477 files, 77.8 GB now, about 52.9 GB after')).toBeVisible()
+    await expect(canvas.getByText(/^Likely 51\.1 GB to 54\.7 GB\. Takes about \S.* on this server \(.+ to .+\)\.$/)).toBeVisible()
+    await expect(canvas.getByText('about 50.4 GB after')).toBeVisible()
 
     await userEvent.click(canvas.getByRole('button', { name: 'Details' }))
     const dialog = within(await body(canvasElement).findByRole('dialog'))

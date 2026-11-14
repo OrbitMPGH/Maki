@@ -263,7 +263,7 @@ msgstr "{0, plural, one {# archivo se restauró al deshacer y se queda como est�
 
 #. placeholder {0}: totals.files
 #: src/pages/PageConversionWizardPage.tsx
-msgid "{0, plural, one {# file, {now} now, {expected} after} other {# files, {now} now, {expected} after}}"
+msgid "{0, plural, one {# file, {now} now, about {expected} after} other {# files, {now} now, about {expected} after}}"
 msgstr ""
 
 #. placeholder {0}: totals.files
@@ -1597,18 +1597,6 @@ msgstr "Queda {eta}"
 #, fuzzy
 msgid "{existing, plural, one {# already in the library} other {# already in the library}}"
 msgstr "{existing, plural, one {# serie ya en la biblioteca} many {# series ya en la biblioteca} other {# series ya en la biblioteca}}"
-
-#: src/components/pageconversion/PlanTable.tsx
-msgid "{expected} after"
-msgstr ""
-
-#: src/components/pageconversion/PlanEstimate.tsx
-msgid "{expected} after, about {time}."
-msgstr ""
-
-#: src/components/pageconversion/PlanEstimate.tsx
-msgid "{expected} after."
-msgstr ""
 
 #: src/components/settings/RecycleBinModal.tsx
 msgid "{expiringSoon, plural, one {# goes within {SOON_DAYS} days} other {# go within {SOON_DAYS} days}}"
@@ -4032,6 +4020,18 @@ msgstr "Abandonada"
 
 #: src/pages/reader/ReaderToolbar.tsx
 msgid "About {chapterLeft} left in this chapter"
+msgstr ""
+
+#: src/components/pageconversion/PlanTable.tsx
+msgid "about {expected} after"
+msgstr ""
+
+#: src/components/pageconversion/PlanEstimate.tsx
+msgid "About {expected} after, in about {time}."
+msgstr ""
+
+#: src/components/pageconversion/PlanEstimate.tsx
+msgid "About {expected} after."
 msgstr ""
 
 #: src/components/RecommendationModelSwitch.tsx
@@ -13456,6 +13456,14 @@ msgstr "Me gusta"
 #, fuzzy
 msgid "Liked it"
 msgstr "Me gustó"
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Likely {likely}."
+msgstr ""
+
+#: src/pages/PageConversionWizardPage.tsx
+msgid "Likely {likely}. Takes about {time} on this server ({timeRange})."
+msgstr ""
 
 #: src/components/releases/ReleaseOutlookSummary.tsx
 #: src/components/releases/UpcomingView.tsx
@@ -24423,10 +24431,6 @@ msgstr "Etiquetas para excluir"
 #, fuzzy
 msgid "Tags to include"
 msgstr "Etiquetas para incluir"
-
-#: src/pages/PageConversionWizardPage.tsx
-msgid "Takes about <0/> on this server"
-msgstr ""
 
 #: src/components/ScanlationGroupsModal.tsx
 msgid "Takes effect at each series' next chapter refresh."

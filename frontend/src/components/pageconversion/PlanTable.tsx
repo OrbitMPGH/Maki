@@ -14,7 +14,7 @@ import {
 } from '../../api/pageConversion'
 import { formatBytes } from '../../format'
 import { FORMAT_LABELS, STOP_LABELS, useTargetLabel } from './labels'
-import { useRangeText, type PlanEstimate } from './PlanEstimate'
+import type { PlanEstimate } from './PlanEstimate'
 import { CountLine, RuleEditor, useConditionsSummary } from './RuleEditor'
 import { toRuleDtos, type RuleDraft } from './ruleTemplates'
 import { TargetSheet } from './TargetSheet'
@@ -376,15 +376,14 @@ function SizeCell({
   estimate: EstimateBucket | undefined
   estimateStale: boolean
 }) {
-  const range = useRangeText()
   const sampled = estimate && estimate.sampledFiles > 0 && estimate.files > 0
-  const expected = sampled ? range(estimate.expectedLow, estimate.expectedHigh, formatBytes) : ''
+  const expected = sampled ? formatBytes(estimate.expected) : ''
   return (
     <div className="pc-plan-size" role="cell">
       <CountLine bucket={bucket} stale={countsStale} />
       {sampled && (
         <Text size="xs" c="var(--ink-2)" style={{ opacity: estimateStale ? 0.55 : 1 }}>
-          <Trans>{expected} after</Trans>
+          <Trans>about {expected} after</Trans>
         </Text>
       )}
     </div>

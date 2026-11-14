@@ -438,11 +438,28 @@ export interface EstimateBucket {
   files: number
   bytes: number
   sampledFiles: number
-  /** Expected size after the pass for the whole bucket: the 25th and 75th percentile of the sampled files. */
+  /** Expected size of the whole bucket after the pass, from the sampled files' size-weighted mean ratio. */
+  expected: number
+  /** A 90% range for `expected`, from the sampling error of the mean (not the spread of single files). */
   expectedLow: number
   expectedHigh: number
   /** Never counted as saving. */
   hardlinkedBytes: number
+  seconds: number
+  secondsLow: number
+  secondsHigh: number
+}
+
+/** Every bucket the pass converts, added up on the server, which combines the buckets' errors properly. */
+export interface EstimateTotal {
+  files: number
+  bytes: number
+  /** At least one bucket was sampled, so the expected figures mean something. */
+  sampled: boolean
+  expected: number
+  expectedLow: number
+  expectedHigh: number
+  seconds: number
   secondsLow: number
   secondsHigh: number
 }
@@ -482,6 +499,7 @@ export interface EstimateResult {
   convertedEarlier: EstimateConvertedEarlier[]
   convertedWithOriginalInTrash: number
   msPerMegapixel: number
+  total: EstimateTotal
 }
 
 export type EstimateState = 'idle' | 'running' | 'done' | 'failed' | 'cancelled'

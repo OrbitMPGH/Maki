@@ -89,21 +89,6 @@ export function usePlanEstimate(value: PageConversionSettings, rules: PageConver
   }
 }
 
-/** The convert buckets added up: everything the pass would rewrite. */
-export function estimateTotals(result: EstimateResult) {
-  const buckets = [...result.rules, result.default, result.overrides].filter((b) => !b.skip && b.files > 0)
-  const sum = (pick: (b: EstimateBucket) => number) => buckets.reduce((n, b) => n + pick(b), 0)
-  return {
-    files: sum((b) => b.files),
-    bytes: sum((b) => b.bytes),
-    expectedLow: sum((b) => b.expectedLow),
-    expectedHigh: sum((b) => b.expectedHigh),
-    secondsLow: sum((b) => b.secondsLow),
-    secondsHigh: sum((b) => b.secondsHigh),
-    sampled: buckets.some((b) => b.sampledFiles > 0),
-  }
-}
-
 /** "48 GB to 53 GB" as text, or one figure when both ends read the same. */
 export function useRangeText() {
   const { t } = useLingui()
@@ -203,11 +188,10 @@ export function Sampling({ estimate, starting }: { estimate: PageConversionEstim
 
 function Overrides({ bucket, stale }: { bucket: EstimateBucket; stale: boolean }) {
   const { t } = useLingui()
-  const range = useRangeText()
   if (bucket.files === 0) return null
   const size = formatBytes(bucket.bytes)
-  const expected = range(bucket.expectedLow, bucket.expectedHigh, formatBytes)
-  const time = range(bucket.secondsLow, bucket.secondsHigh, formatReadingTime)
+  const expected = formatBytes(bucket.expected)
+  const time = formatReadingTime(bucket.seconds)
   return (
     <Stack gap={4} style={{ opacity: stale ? 0.55 : 1 }}>
       <Text size="sm" fw={500}>
@@ -221,7 +205,7 @@ function Overrides({ bucket, stale }: { bucket: EstimateBucket; stale: boolean }
         />
         {bucket.sampledFiles > 0 && ' '}
         {bucket.sampledFiles > 0 &&
-          (bucket.secondsHigh > 0 ? t`${expected} after, about ${time}.` : t`${expected} after.`)}
+          (bucket.seconds > 0 ? t`About ${expected} after, in about ${time}.` : t`About ${expected} after.`)}
       </Text>
     </Stack>
   )
