@@ -199,11 +199,26 @@ public sealed class ReaderCreditsCache(
         async Task<(IReadOnlyList<CreditCandidate> Candidates, int Accepted, CreditBank.Match? Bank)> JudgeEdgeAsync(
             bool tail, IReadOnlyList<CreditCandidate> fromRepetition)
         {
-            if (fromRepetition.Count > 0)
+            // A tail whose only repeated region is part of its last page asks the bank as it did before tails had
+            // partials, and an accepted bank answer wins over the cut: the bank proposes whole tail pages only.
+            var lonePartial = tail && OnlyPartial(fromRepetition);
+            if (fromRepetition.Count > 0 && !lonePartial)
             {
                 return (fromRepetition, await AcceptedAsync(chapter, edges[0], fromRepetition, tail, judged, fromBank: false), null);
             }
 
+            if (await BankAsync(tail) is { } fromBank)
+            {
+                return fromBank;
+            }
+
+            return lonePartial
+                ? (fromRepetition, await AcceptedAsync(chapter, edges[0], fromRepetition, tail, judged, fromBank: false), null)
+                : ([], 0, null);
+        }
+
+        async Task<(IReadOnlyList<CreditCandidate> Candidates, int Accepted, CreditBank.Match? Bank)?> BankAsync(bool tail)
+        {
             // Most proposals are margins the judge turns down, so a few are tried in turn.
             var tried = 0;
             await foreach (var match in bank.MatchesAsync(chapter.PageCount, edges[0], tail, entries, Eligible))
@@ -220,7 +235,7 @@ public sealed class ReaderCreditsCache(
                 }
             }
 
-            return ([], 0, null);
+            return null;
         }
 
         var (headCandidates, head, headBank) = await JudgeEdgeAsync(tail: false, repeated.Head);
@@ -263,13 +278,17 @@ public sealed class ReaderCreditsCache(
             }
 
             var first = (tail ? candidates.Tail : candidates.Head)[0];
-            var read = judged.FirstOrDefault(j => j.Tail == tail && j.Page == first.Page);
-            if (first.Page == 0 && read is { Accepted: true, Text: not null })
+            var read = judged.FirstOrDefault(j => j.Tail == tail && j.Page == first.Page && !j.FromBank);
+            // Tail partials come from repetition only: the bank route was not measured for them, so none is learned.
+            if (first.Page == 0 && (!tail || first.Share >= 1) && read is { Accepted: true, Text: not null })
             {
                 await bank.SeedAsync(chapter, edges, tail, CancellationToken.None);
             }
         }
     }
+
+    /// <summary>Whether an edge's candidates are only a partial region of its outermost page.</summary>
+    internal static bool OnlyPartial(IReadOnlyList<CreditCandidate> edge) => edge is [{ Page: 0, Share: < 1 }];
 
     private async Task TryAsync(Func<Task> write, ReaderService.ChapterSlice chapter)
     {
@@ -321,11 +340,18 @@ public sealed class ReaderCreditsCache(
         }
 
         var at = slice.StartPage + (tail ? slice.PageCount - 1 - candidate.Page : candidate.Page);
+        // A tail's partial region is the bottom of its page.
+        var bottom = tail && candidate.Share < 1;
 
         async Task<string?> ReadTextAsync(CancellationToken ct)
         {
             var bytes = await ReadAsync(slice.ArchivePath, slice.Pages[at], ct);
-            return bytes is null ? null : await text.ReadAsync(bytes, candidate.Share, ct);
+            if (bytes is null)
+            {
+                return null;
+            }
+
+            return bottom ? await text.ReadBottomAsync(bytes, candidate.Share, ct) : await text.ReadAsync(bytes, candidate.Share, ct);
         }
 
         if (CreditNotices.RegionOf(edges, tail, candidate) is not { } region || slice.Entries is not { } entries || at >= entries.Count)
@@ -337,7 +363,7 @@ public sealed class ReaderCreditsCache(
         var entry = entries[at];
         var verdict = await notices.JudgeAsync(
             new CreditNoticeStore.Query(region.Rows, region.Height, candidate.Share >= 1, candidate.Share, entry.Crc, entry.Length,
-                candidate.Colour, fromBank, slice.Chapter.Id),
+                candidate.Colour, fromBank, slice.Chapter.Id, bottom),
             ReadTextAsync, CancellationToken.None);
         return verdict.Text is null ? (candidate.Colour, null, null) : (verdict.Accepted, verdict.Text, verdict.NoticeId);
     }

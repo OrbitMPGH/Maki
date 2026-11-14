@@ -309,6 +309,9 @@ namespace Maki.Data.Migrations
                     b.Property<bool>("Skipped")
                         .HasColumnType("INTEGER");
 
+                    b.Property<double>("TailOffset")
+                        .HasColumnType("REAL");
+
                     b.Property<int>("TailPages")
                         .HasColumnType("INTEGER");
 
@@ -714,6 +717,9 @@ namespace Maki.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("Bottom")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("Colour")
                         .HasColumnType("INTEGER");
 
@@ -740,7 +746,7 @@ namespace Maki.Data.Migrations
 
                     b.HasIndex("NoticeId");
 
-                    b.HasIndex("Crc", "Length", "Share")
+                    b.HasIndex("Crc", "Length", "Share", "Bottom")
                         .IsUnique();
 
                     b.ToTable("CreditNoticeReads");

@@ -41,6 +41,8 @@ public sealed class CreditNoticeStoreTests : IDisposable
 
         public Task<string?> ReadAsync(byte[] image, double share, CancellationToken ct) => Task.FromResult<string?>(null);
 
+        public Task<string?> ReadBottomAsync(byte[] image, double share, CancellationToken ct) => Task.FromResult<string?>(null);
+
         public Task PrepareAsync() => Task.CompletedTask;
     }
 
@@ -171,6 +173,25 @@ public sealed class CreditNoticeStoreTests : IDisposable
 
         using var db = _db.NewContext();
         Assert.Equal(1, db.CreditNotices.Single().Reads);
+    }
+
+    [Fact]
+    public async Task The_top_and_the_bottom_of_one_page_are_different_reads()
+    {
+        var store = Store();
+        CreditNoticeStore.Query Partial(byte[] rows, bool bottom) =>
+            new(rows, rows.Length / W, false, 0.3, 5, 2000, true, false, 1, bottom);
+
+        var top = await store.JudgeAsync(Partial(Noise(7, 30), bottom: false), Reads(Story), default);
+        var bottom = await store.JudgeAsync(Partial(Noise(99, 30), bottom: true), Reads(Credit), default);
+        var again = await store.JudgeAsync(Partial(Noise(98, 30), bottom: true), Reads(Story), default);
+
+        Assert.False(top.Accepted);
+        Assert.True(bottom is { Accepted: true, Read: true, Text: Credit });
+        Assert.NotEqual(top.NoticeId, bottom.NoticeId);
+        Assert.True(again is { Accepted: true, Read: false, Text: Credit });
+        Assert.Equal(bottom.NoticeId, again.NoticeId);
+        Assert.Equal(2, _reads);
     }
 
     [Fact]

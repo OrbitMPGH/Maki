@@ -51,6 +51,18 @@ public sealed class PageTextReaderTests : IDisposable
     }
 
     [Fact]
+    public async Task Reads_only_the_bottom_share_when_asked_for_the_bottom()
+    {
+        var text = await _reader.ReadBottomAsync(Fixture("ocr-credit-page.png"), 0.3, default);
+
+        Assert.NotNull(text);
+        Assert.Contains("recruiting", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("moonlit", text, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("discord", text, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(await _reader.ReadAsync(Fixture("ocr-credit-page.png"), 1, default), await _reader.ReadBottomAsync(Fixture("ocr-credit-page.png"), 1, default));
+    }
+
+    [Fact]
     public async Task A_page_that_is_not_an_image_reads_as_nothing()
     {
         Assert.Null(await _reader.ReadAsync([1, 2, 3, 4], 1, default));

@@ -281,7 +281,7 @@ public class ReaderController(
             pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion),
             credits = credits is null
                 ? null
-                : new { headPages = credits.HeadPages, headOffset = credits.HeadOffset, tailPages = credits.TailPages },
+                : new { headPages = credits.HeadPages, headOffset = credits.HeadOffset, tailPages = credits.TailPages, tailOffset = credits.TailOffset },
             tier = QualitySnapshot.TierName(tier),
             enhanceServer,
             noteCount = notePages.Count,
@@ -728,7 +728,7 @@ public class ReaderController(
 
         return Ok(new
         {
-            headPages = found.HeadPages, headOffset = found.HeadOffset, tailPages = found.TailPages,
+            headPages = found.HeadPages, headOffset = found.HeadOffset, tailPages = found.TailPages, tailOffset = found.TailOffset,
             pageVersion = PageVersion(slice.ChapterFileId, slice.ArchiveVersion),
         });
     }

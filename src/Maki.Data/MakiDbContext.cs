@@ -815,7 +815,7 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         // Notices and their reads belong to no series: one is shared by every chapter that carries it.
         modelBuilder.Entity<CreditNoticeRead>(e =>
         {
-            e.HasIndex(r => new { r.Crc, r.Length, r.Share }).IsUnique();
+            e.HasIndex(r => new { r.Crc, r.Length, r.Share, r.Bottom }).IsUnique();
             e.HasIndex(r => r.NoticeId);
             e.HasOne<CreditNotice>().WithMany().HasForeignKey(r => r.NoticeId).OnDelete(DeleteBehavior.Cascade);
         });

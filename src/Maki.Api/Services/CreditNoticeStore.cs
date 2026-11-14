@@ -10,7 +10,7 @@ namespace Maki.Api.Services;
 /// One verdict per credit notice (<see cref="CreditNotice"/>), so the search reads a credit page once
 /// instead of in every chapter that carries it, and again in every predecessor a new chapter sends back.
 /// <para>
-/// A candidate is the notice it has the same bytes as (zip CRC, length and share of a page read before),
+/// A candidate is the notice it has the same bytes as (zip CRC, length, and share and end of a page read before),
 /// else the notice it matches (<see cref="CreditNotices"/>: same kind, fingerprint within
 /// <see cref="CreditNotices.MaxDistance"/>, then the rows confirmed). An accepted notice stays accepted.
 /// A rejected one is read again on its next member and only then trusted, because OCR is noisy and a
@@ -45,10 +45,12 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
     /// <summary>
     /// One candidate to judge: its region (<see cref="CreditNotices.RegionOf"/>), whether it is a whole
     /// page and what share, the page's zip CRC and length (0 when unknown), the colour rule's verdict,
-    /// whether the bank proposed it, and the chapter it is in.
+    /// whether the bank proposed it, the chapter it is in, and whether the share is read from the bottom
+    /// of the page (a tail's partial region), which makes it a different read of the same bytes.
     /// </summary>
     public sealed record Query(
-        byte[] Rows, int Height, bool Whole, double Share, uint Crc, long Length, bool Colour, bool FromBank, int ChapterId);
+        byte[] Rows, int Height, bool Whole, double Share, uint Crc, long Length, bool Colour, bool FromBank, int ChapterId,
+        bool Bottom = false);
 
     /// <summary>
     /// The verdict on a candidate: whether it is a scanlator's, the text it rests on (null only when there
@@ -96,7 +98,7 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
             var notices = _notices ??= await LoadAsync(ct);
 
             // The same bytes were read before: their text, judged with this candidate's colour, is no new read.
-            if (query.Length > 0 && await ReadOfAsync(query.Crc, query.Length, share, ct) is { } known &&
+            if (query.Length > 0 && await ReadOfAsync(query.Crc, query.Length, share, query.Bottom && !query.Whole, ct) is { } known &&
                 notices.TryGetValue(known.NoticeId, out var twin))
             {
                 if (!twin.Accepted && CreditText.IsScanlator(known.Text, query.Colour))
@@ -272,12 +274,12 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
         _rows[id] = region;
     }
 
-    private async Task<CreditNoticeRead?> ReadOfAsync(uint crc, long length, int share, CancellationToken ct)
+    private async Task<CreditNoticeRead?> ReadOfAsync(uint crc, long length, int share, bool bottom, CancellationToken ct)
     {
         using var scope = scopes.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
         return await db.CreditNoticeReads.AsNoTracking()
-            .FirstOrDefaultAsync(r => r.Crc == crc && r.Length == length && r.Share == share, ct);
+            .FirstOrDefaultAsync(r => r.Crc == crc && r.Length == length && r.Share == share && r.Bottom == bottom, ct);
     }
 
     private async Task<Notice?> CreateAsync(
@@ -325,7 +327,7 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
             db.CreditNoticeReads.Add(new CreditNoticeRead
             {
-                Crc = query.Crc, Length = query.Length, Share = share, Text = text, Colour = query.Colour,
+                Crc = query.Crc, Length = query.Length, Share = share, Bottom = query.Bottom && !query.Whole, Text = text, Colour = query.Colour,
                 NoticeId = noticeId, CreatedAtUtc = DateTime.UtcNow,
             });
             await db.SaveChangesAsync(ct);

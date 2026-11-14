@@ -41,8 +41,9 @@ public class CreditNotice
 }
 
 /// <summary>
-/// A page OCR already read for a notice, keyed by its zip entry's CRC32 and length and the share read, so
-/// the same bytes in another chapter are never read again.
+/// A page OCR already read for a notice, keyed by its zip entry's CRC32 and length and the share read (from
+/// the top, or from the bottom for a tail's partial region), so the same bytes in another chapter are never
+/// read again.
 /// </summary>
 public class CreditNoticeRead
 {
@@ -52,6 +53,9 @@ public class CreditNoticeRead
 
     /// <summary>The share of the page read, in thousandths.</summary>
     public int Share { get; set; }
+
+    /// <summary>Whether <see cref="Share"/> was read from the bottom of the page (a tail's partial region) rather than the top.</summary>
+    public bool Bottom { get; set; }
 
     public string Text { get; set; } = string.Empty;
 
