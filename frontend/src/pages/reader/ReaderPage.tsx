@@ -1348,7 +1348,7 @@ export default function ReaderPage() {
         thumbs={thumbs}
         shownTo={shownTo}
         pageWindow={{ first, count: shownCount }}
-        hiddenCredits={hiddenCount > 0 ? { count: hiddenCount, onShow: showCredits } : null}
+        hiddenCredits={hiddenCount > 0 || lastCut > 0 ? { count: hiddenCount, cut: lastCut > 0, onShow: showCredits } : null}
         autoScroll={{
           on: autoScroll,
           level: autoScrollLevel,

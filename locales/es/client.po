@@ -1807,6 +1807,10 @@ msgid "{haveCount} / {totalCount, plural, one {# wanted} other {# wanted}}"
 msgstr "{haveCount} / {totalCount, plural, one {# solicitado} many {# solicitados} other {# solicitados}}"
 
 #: src/pages/reader/ReaderSettings.tsx
+msgid "{hiddenCount, plural, one {# page and the end of the last page hidden in this chapter} other {# pages and the end of the last page hidden in this chapter}}"
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
 msgid "{hiddenCount, plural, one {# page hidden in this chapter} other {# pages hidden in this chapter}}"
 msgstr ""
 
@@ -9897,6 +9901,10 @@ msgstr "Codificando la página"
 #, fuzzy
 msgid "End"
 msgstr "Final"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "End of the last page hidden in this chapter"
+msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #, fuzzy

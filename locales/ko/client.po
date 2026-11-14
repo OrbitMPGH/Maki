@@ -1807,6 +1807,10 @@ msgid "{haveCount} / {totalCount, plural, one {# wanted} other {# wanted}}"
 msgstr "{haveCount} / {totalCount, plural, other {원함 #개}}"
 
 #: src/pages/reader/ReaderSettings.tsx
+msgid "{hiddenCount, plural, one {# page and the end of the last page hidden in this chapter} other {# pages and the end of the last page hidden in this chapter}}"
+msgstr ""
+
+#: src/pages/reader/ReaderSettings.tsx
 msgid "{hiddenCount, plural, one {# page hidden in this chapter} other {# pages hidden in this chapter}}"
 msgstr ""
 
@@ -9897,6 +9901,10 @@ msgstr "페이지 인코딩 중"
 #, fuzzy
 msgid "End"
 msgstr "끝"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "End of the last page hidden in this chapter"
+msgstr ""
 
 #: src/components/discover/SeriesPreviewReader.tsx
 #, fuzzy

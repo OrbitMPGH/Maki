@@ -1560,6 +1560,10 @@ msgid "{haveCount} / {totalCount, plural, one {# wanted} other {# wanted}}"
 msgstr "{haveCount} / {totalCount, plural, one {# wanted} other {# wanted}}"
 
 #: src/pages/reader/ReaderSettings.tsx
+msgid "{hiddenCount, plural, one {# page and the end of the last page hidden in this chapter} other {# pages and the end of the last page hidden in this chapter}}"
+msgstr "{hiddenCount, plural, one {# page and the end of the last page hidden in this chapter} other {# pages and the end of the last page hidden in this chapter}}"
+
+#: src/pages/reader/ReaderSettings.tsx
 msgid "{hiddenCount, plural, one {# page hidden in this chapter} other {# pages hidden in this chapter}}"
 msgstr "{hiddenCount, plural, one {# page hidden in this chapter} other {# pages hidden in this chapter}}"
 
@@ -8342,6 +8346,10 @@ msgstr "Encoding the page"
 #: src/pages/reader/ShortcutSheet.tsx
 msgid "End"
 msgstr "End"
+
+#: src/pages/reader/ReaderSettings.tsx
+msgid "End of the last page hidden in this chapter"
+msgstr "End of the last page hidden in this chapter"
 
 #: src/components/discover/SeriesPreviewReader.tsx
 msgid "End of the preview"

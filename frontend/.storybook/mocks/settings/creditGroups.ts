@@ -128,7 +128,8 @@ export const creditGroups: CreditGroup[] = [
     notices: 2,
     series: 1,
     chapters: 14,
-    chaptersWithoutGroup: 14,
+    // Only a confirmed or carried name gives chapters a group, so a suggested one changes none yet.
+    chaptersWithoutGroup: 0,
   },
   {
     key: 'group:hollow lantern',
@@ -161,7 +162,7 @@ export const creditGroups: CreditGroup[] = [
     notices: 2,
     series: 1,
     chapters: 6,
-    chaptersWithoutGroup: 6,
+    chaptersWithoutGroup: 0,
   },
 ]
 
@@ -177,7 +178,7 @@ export const creditGroupsAll: CreditGroup[] = [
     notices: 1,
     series: 1,
     chapters: 3,
-    chaptersWithoutGroup: 3,
+    chaptersWithoutGroup: 0,
   },
   creditGroups[5],
 ]
@@ -232,9 +233,9 @@ export const creditGroupsHandlers = (groups = creditGroups, all = creditGroupsAl
   http.get(api('/creditgroups'), ({ request }) =>
     HttpResponse.json({ groups: new URL(request.url).searchParams.get('all') === 'true' ? all : groups }),
   ),
-  http.get(api('/creditgroups/notices'), ({ request }) => {
-    const ids = new URL(request.url).searchParams.getAll('ids').map(Number)
-    return HttpResponse.json(creditDetailFor(ids))
+  http.post(api('/creditgroups/notices'), async ({ request }) => {
+    const { noticeIds } = (await request.json()) as { noticeIds: number[] }
+    return HttpResponse.json(creditDetailFor(noticeIds))
   }),
   http.put(api('/creditgroups/notices/:id'), async ({ params, request }) => {
     const body = (await request.json()) as UpdateCreditNotice

@@ -48,7 +48,7 @@ export const SuggestedName: Story = {
     const dialog = await dialogOf(canvasElement)
     await userEvent.click(await dialog.findByRole('button', { name: /^Paper Crane/ }))
     await expect(await dialog.findByText(/Read off the image text/)).toBeVisible()
-    const give = await dialog.findByRole('button', { name: 'Give to 14 chapters' })
+    const give = await dialog.findByRole('button', { name: 'Give to chapters' })
     await waitFor(() => expect(give).toBeDisabled())
     await expect(await dialog.findByText('Confirm the name before giving it to chapters.')).toBeVisible()
     await userEvent.click(await dialog.findByRole('button', { name: 'Confirm name' }))

@@ -397,7 +397,7 @@ export const ContinuousEndsAtTheTailCut: Story = {
     await canvas.findByRole('img', { name: 'Chapter 40 - page 1' })
     const image = await canvas.findByRole('img', { name: 'Chapter 40 - page 29' })
     await expect(canvas.queryByRole('img', { name: 'Chapter 40 - page 30' })).toBeNull()
-    const box = image.closest<HTMLElement>('.reader-cut')!
+    const box = image.closest<HTMLElement>('.reader-strip-page')!
     await waitFor(() => expect(box).toHaveAttribute('data-cut'))
     await waitFor(() => expect(Math.abs(box.offsetHeight - image.getBoundingClientRect().height * 0.7)).toBeLessThan(2))
     // At the very end of the strip, the cut line is the bottom of the screen: what is below it cannot be reached.
@@ -417,7 +417,39 @@ export const LateAnswerStillCutsTheEnd: Story = {
     await canvas.findByRole('img', { name: 'Chapter 40 - page 30' })
     await waitFor(() => expect(canvas.queryByRole('img', { name: 'Chapter 40 - page 30' })).toBeNull(), { timeout: 5000 })
     const image = await canvas.findByRole('img', { name: 'Chapter 40 - page 29' })
-    await waitFor(() => expect(image.closest('.reader-cut')).toHaveAttribute('data-cut'))
+    await waitFor(() => expect(image.closest('.reader-strip-page')).toHaveAttribute('data-cut'))
+  },
+}
+
+/** A late answer that trims the last page keeps the page that becomes the last one: the same image, never reloaded. */
+export const LateTailTrimKeepsTheImage: Story = {
+  parameters: { ...open(3040), msw: [creditsAt({ headPages: 0, headOffset: 0, tailPages: 1, tailOffset: 0.3 }, 2500), hidingCredits(3040)] },
+  play: async ({ canvas }) => {
+    await canvas.findByRole('img', { name: 'Chapter 40 - page 30' })
+    const before = await canvas.findByRole('img', { name: 'Chapter 40 - page 29' })
+    await waitFor(() => expect(canvas.queryByRole('img', { name: 'Chapter 40 - page 30' })).toBeNull(), { timeout: 5000 })
+    await waitFor(() => expect(before.closest('.reader-strip-page')).toHaveAttribute('data-cut'))
+    await expect(before.isConnected).toBe(true)
+    await expect(canvas.getByRole('img', { name: 'Chapter 40 - page 29' })).toBe(before)
+  },
+}
+
+/** A chapter that only cuts its last page says so in the reading settings, and Show brings the cut back on the same image. */
+export const ACutAloneCanBeShownAgain: Story = {
+  parameters: { ...open(3040), msw: [creditsAt({ headPages: 0, headOffset: 0, tailPages: 0, tailOffset: 0.3 }), hidingCredits(3040)] },
+  play: async ({ canvas, canvasElement, userEvent }) => {
+    const image = await canvas.findByRole('img', { name: 'Chapter 40 - page 30' })
+    await waitFor(() => expect(image.closest('.reader-strip-page')).toHaveAttribute('data-cut'))
+    await summonChrome({ canvasElement, userEvent })
+    await userEvent.click(await canvas.findByRole('button', { name: 'Reader settings' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await userEvent.click(await body.findByRole('button', { name: /^Chapters/ }))
+    const line = await body.findByText('End of the last page hidden in this chapter')
+    await waitFor(() => expect(line).toBeVisible())
+    await userEvent.click(await body.findByRole('button', { name: 'Show' }))
+    await waitFor(() => expect(image.closest('.reader-strip-page')).not.toHaveAttribute('data-cut'))
+    await expect(canvas.getByRole('img', { name: 'Chapter 40 - page 30' })).toBe(image)
+    await expect(body.queryByText('End of the last page hidden in this chapter')).toBeNull()
   },
 }
 
@@ -439,7 +471,7 @@ export const LateAnswerSparesACutOnScreen: Story = {
     surface.scrollTo({ top: surface.scrollHeight })
     await waitFor(() => expect(surface.scrollHeight - surface.scrollTop - surface.clientHeight).toBeLessThan(2))
     await new Promise((resolve) => setTimeout(resolve, 4000))
-    await expect(image.closest('.reader-cut')).not.toHaveAttribute('data-cut')
+    await expect(image.closest('.reader-strip-page')).not.toHaveAttribute('data-cut')
   },
 }
 
@@ -454,7 +486,7 @@ export const PagedShowsTheCutPageWhole: Story = {
     await userEvent.keyboard('{End}')
     await expect(await canvas.findByRole('img', { name: 'Chapter 132 - page 16' })).toBeVisible()
     await expect(await canvas.findByText('Page 15 of 15')).toBeInTheDocument()
-    await expect(canvasElement.querySelector('.reader-cut')).toBeNull()
+    await expect(canvasElement.querySelector('.reader-strip-page[data-cut]')).toBeNull()
   },
 }
 

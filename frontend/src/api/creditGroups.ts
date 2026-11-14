@@ -92,8 +92,9 @@ export function useCreditGroupDetail(noticeIds: number[] | null) {
   const ids = noticeIds ?? []
   return useQuery({
     queryKey: [...KEY, 'notices', ids],
+    // A POST with the ids in the body: a group can hold hundreds of notices, past what a URL carries.
     queryFn: () =>
-      api<CreditGroupDetail>(`/creditgroups/notices?${ids.map((id) => `ids=${id}`).join('&')}`),
+      api<CreditGroupDetail>('/creditgroups/notices', { method: 'POST', body: JSON.stringify({ noticeIds: ids }) }),
     // A group whose notices change keeps showing the old ones until the new answer lands.
     placeholderData: keepPreviousData,
     enabled: ids.length > 0,

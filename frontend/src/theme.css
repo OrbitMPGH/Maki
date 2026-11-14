@@ -9774,18 +9774,21 @@ body.reader-open {
 .reader-continuous[data-zoomed='true'] .reader-fit-original {
   max-width: none;
 }
-/* The strip's last page (ContinuousView's CutPage), laid out as the strip lays out its pages. With
-   data-cut it is shorter than its image, so a credit banner fused into the bottom of the page is
-   neither drawn nor scrollable. `clip` on the one axis keeps a page zoomed wider than the strip
-   pannable, and positions an enhanced overlay inside the clip. */
-.reader-cut {
+/* Each page of the strip sits in its own box (ContinuousView's StripPage), which lays nothing out:
+   its image is a flex item of the strip, as if the box were not there. Only the last page, with a
+   credit banner fused into its bottom, takes a real box shorter than its image (data-cut), laid out
+   as the strip lays out its pages, so the banner is neither drawn nor scrollable. `clip` on the one
+   axis keeps a page zoomed wider than the strip pannable; `relative` places an enhanced overlay
+   inside the clip. */
+.reader-strip-page {
+  display: contents;
+}
+.reader-strip-page[data-cut] {
   position: relative;
   align-self: stretch;
   display: flex;
   flex-direction: column;
   align-items: safe center;
-}
-.reader-cut[data-cut] {
   overflow-y: clip;
 }
 /* An unloaded page has no intrinsic size, so every lazy image would sit at height 0 inside the
