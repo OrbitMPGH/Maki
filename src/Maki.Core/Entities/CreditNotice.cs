@@ -7,6 +7,9 @@ namespace Maki.Core.Entities;
 /// </summary>
 public class CreditNotice
 {
+    /// <summary>Longest group name stored, confirmed or suggested.</summary>
+    public const int MaxNameLength = 100;
+
     public int Id { get; set; }
 
     /// <summary>A whole page, or the top (head) or bottom (tail) <see cref="Share"/> of one.</summary>
@@ -36,8 +39,64 @@ public class CreditNotice
     /// <summary><c>CreditText.Version</c> the verdict was judged under; below it the verdict is judged again from <see cref="CreditNoticeRead"/>s.</summary>
     public int TextVersion { get; set; }
 
+    /// <summary>What the notice is: a release group's credit or ad, an aggregator site's ad, or not known yet.</summary>
+    public CreditNoticeKind Kind { get; set; }
+
+    /// <summary>The release group the notice belongs to, set by propagation or by the user (<see cref="GroupSource"/>).</summary>
+    public string? GroupName { get; set; }
+
+    public CreditGroupSource GroupSource { get; set; }
+
+    /// <summary>
+    /// A group name read off the text (<c>CreditGroupName</c>). Only ever shown to the user to confirm; never
+    /// applied to a chapter by itself.
+    /// </summary>
+    public string? SuggestedName { get; set; }
+
+    /// <summary>A Discord invite code found in the text: a stable id shared by the notices of one group.</summary>
+    public string? Invite { get; set; }
+
+    /// <summary><c>CreditGroupName.Version</c> that filled <see cref="SuggestedName"/> and <see cref="Invite"/>.</summary>
+    public int NameVersion { get; set; }
+
+    /// <summary>The user's decision about the notice, which outranks every read.</summary>
+    public CreditNoticeOverride Override { get; set; }
+
     public DateTime CreatedAtUtc { get; set; }
     public DateTime UpdatedAtUtc { get; set; }
+}
+
+public enum CreditNoticeKind
+{
+    Unknown = 0,
+
+    /// <summary>A release group's credit page or ad.</summary>
+    Group = 1,
+
+    /// <summary>An aggregator or reader site's ad. Never names a chapter's group.</summary>
+    Site = 2,
+}
+
+public enum CreditGroupSource
+{
+    None = 0,
+
+    /// <summary>Taken from the group most of the notice's chapters already carry. Replaced as that changes.</summary>
+    Propagated = 1,
+
+    /// <summary>Set by the user. Never overwritten automatically.</summary>
+    Confirmed = 2,
+}
+
+public enum CreditNoticeOverride
+{
+    None = 0,
+
+    /// <summary>Always hidden, whatever OCR read.</summary>
+    Hide = 1,
+
+    /// <summary>Always kept, whatever OCR read.</summary>
+    Keep = 2,
 }
 
 /// <summary>

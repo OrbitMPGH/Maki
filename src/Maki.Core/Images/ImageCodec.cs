@@ -237,6 +237,24 @@ public static class ImageCodec
     }
 
     /// <summary>
+    /// The top <paramref name="share"/> of the image, or the bottom one when <paramref name="bottom"/>, as a JPEG
+    /// at most <paramref name="width"/> wide (never enlarged). Shrunk before the crop, as
+    /// <see cref="JpegThumbnail"/> does.
+    /// </summary>
+    public static byte[] JpegRegion(byte[] source, double share, bool bottom, int width, int quality)
+    {
+        using var thumb = VipsImage.ThumbnailBuffer(source, width, height: 10_000_000, size: Enums.Size.Down, outputProfile: "srgb");
+        var height = Math.Clamp((int)Math.Round(thumb.Height * Math.Clamp(share, 0, 1)), 1, thumb.Height);
+        if (height == thumb.Height)
+        {
+            return SaveJpeg(thumb, quality);
+        }
+
+        using var region = thumb.Crop(0, bottom ? thumb.Height - height : 0, thumb.Width, height);
+        return SaveJpeg(region, quality);
+    }
+
+    /// <summary>
     /// The whole image re-encoded for a client that cannot decode its format: same size, first frame
     /// of an animation, orientation applied, sRGB. A PNG keeps transparency; a JPEG puts it on white.
     /// Throws <see cref="VipsException"/> when no permitted loader reads the bytes.

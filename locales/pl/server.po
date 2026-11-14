@@ -649,6 +649,36 @@ msgstr "Nazwa jest wymagana"
 msgid "error.discoverFilters.tooMany"
 msgstr "Maksymalna liczba zapisanych filtrów: {max}."
 
+#. English: That credit notice no longer exists
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.noticeNotFound"
+msgstr ""
+
+#. English: A group name can be at most 100 characters
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.nameTooLong"
+msgstr ""
+
+#. English: Enter a group name
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.nameRequired"
+msgstr ""
+
+#. English: A site ad cannot name a release group
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.siteHasNoGroup"
+msgstr ""
+
+#. English: That value is not one Maki knows
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.invalidValue"
+msgstr ""
+
+#. English: Pick at least one credit notice
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.noNotices"
+msgstr ""
+
 #. English: Name is required
 #: src/Maki.Api/Controllers/CustomRailsController.cs
 #, fuzzy

@@ -1109,6 +1109,7 @@ try
     builder.Services.AddSingleton<CreditStrips>();
     builder.Services.AddSingleton<CreditBank>();
     builder.Services.AddSingleton<CreditNoticeStore>();
+    builder.Services.AddScoped<CreditGroupsService>();
     builder.Services.AddSingleton(sp => new Maki.Api.Services.Ocr.PageTextReader(
         sp.GetRequiredService<ILogger<Maki.Api.Services.Ocr.PageTextReader>>()));
     builder.Services.AddSingleton<Maki.Api.Services.Ocr.IPageTextReader>(sp =>

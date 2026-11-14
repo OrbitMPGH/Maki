@@ -56,8 +56,13 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
     /// The verdict on a candidate: whether it is a scanlator's, the text it rests on (null only when there
     /// is none: the page could not be read, and the caller falls back to the colour rule), the notice it
     /// is (null when there is none), and whether a page was read for it.
+    /// <para>
+    /// <paramref name="ByUser"/> is a user's <see cref="CreditNoticeOverride"/> standing in for a read: its
+    /// text is the notice's own (never null), so a Hide satisfies the callers that require read text before
+    /// a bank proposal is hidden. A user's decision is not a colour verdict, which is what that rule keeps out.
+    /// </para>
     /// </summary>
-    public sealed record Verdict(bool Accepted, string? Text, int? NoticeId, bool Read)
+    public sealed record Verdict(bool Accepted, string? Text, int? NoticeId, bool Read, bool ByUser = false)
     {
         public static readonly Verdict Unread = new(false, null, null, true);
     }
@@ -71,6 +76,7 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
         public bool Accepted;
         public int Reads;
         public string? Text;
+        public CreditNoticeOverride Override;
     }
 
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -79,8 +85,8 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
     private int _generation;
 
     /// <summary>
-    /// Moves on whenever a notice turns from rejected to accepted, so an in-memory search result from
-    /// before it is not served to the chapters that change sends back.
+    /// Moves on whenever a notice turns from rejected to accepted or its override changes, so an in-memory
+    /// search result from before it is not served to the chapters that change sends back.
     /// </summary>
     public int Generation => Volatile.Read(ref _generation);
 
@@ -101,6 +107,11 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
             if (query.Length > 0 && await ReadOfAsync(query.Crc, query.Length, share, query.Bottom && !query.Whole, ct) is { } known &&
                 notices.TryGetValue(known.NoticeId, out var twin))
             {
+                if (Overridden(twin) is { } decided)
+                {
+                    return decided;
+                }
+
                 if (!twin.Accepted && CreditText.IsScanlator(known.Text, query.Colour))
                 {
                     await AcceptAsync(twin, known.Text, query.ChapterId, countRead: false, ct);
@@ -111,6 +122,11 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
 
             var fingerprint = CreditNotices.Fingerprint(region);
             var match = await FindAsync(notices, query, region, fingerprint, ct);
+            if (match is not null && Overridden(match) is { } overridden)
+            {
+                return overridden;
+            }
+
             if (match is { Accepted: true } || match is { Reads: >= TrustedRejection })
             {
                 return new Verdict(match.Accepted, match.Text, match.Id, false);
@@ -148,6 +164,7 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
             }
 
             await AddReadAsync(query, share, text, match.Id, ct);
+            await TryAsync(() => SuggestAsync([match.Id], ct), match.Id);
             return new Verdict(match.Accepted, match.Text, match.Id, true);
         }
         finally
@@ -185,6 +202,12 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
         {
             // The chapter went while the search ran, or housekeeping took a notice.
             logger.LogDebug(e, "Could not record the credit notices of chapter {ChapterId}", chapterId);
+            return;
+        }
+
+        if (links.Count > 0)
+        {
+            await PropagateAsync(links.Select(l => l.NoticeId).Distinct().ToList(), ct);
         }
     }
 
@@ -220,6 +243,201 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
             _gate.Release();
         }
     }
+
+    /// <summary>
+    /// Sets the user's decision on a notice. Every chapter that carries it goes back for a search and
+    /// <see cref="Generation"/> moves, as when a notice is accepted. False when there is no such notice.
+    /// </summary>
+    public async Task<bool> SetOverrideAsync(int noticeId, CreditNoticeOverride value, CancellationToken ct)
+    {
+        await _gate.WaitAsync(ct);
+        try
+        {
+            var notices = _notices ??= await LoadAsync(ct);
+            List<int> chapters;
+            using (var scope = scopes.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+                var changed = await db.CreditNotices.Where(n => n.Id == noticeId).ExecuteUpdateAsync(u => u
+                    .SetProperty(n => n.Override, value)
+                    .SetProperty(n => n.UpdatedAtUtc, DateTime.UtcNow), ct);
+                if (changed == 0)
+                {
+                    return false;
+                }
+
+                chapters = await db.ChapterCreditNotices.AsNoTracking().IgnoreQueryFilters()
+                    .Where(l => l.NoticeId == noticeId).Select(l => l.ChapterId).Distinct().ToListAsync(ct);
+            }
+
+            if (notices.TryGetValue(noticeId, out var notice))
+            {
+                notice.Override = value;
+            }
+
+            Interlocked.Increment(ref _generation);
+            foreach (var chapter in chapters)
+            {
+                await credits.RequeueAsync(chapter, ct);
+            }
+
+            if (chapters.Count > 0)
+            {
+                CreditScanWorker.Signal();
+            }
+
+            return true;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    /// <summary>
+    /// Fills <see cref="CreditNotice.SuggestedName"/> and <see cref="CreditNotice.Invite"/> from every text read
+    /// for each notice (its stored reads and its own text), all notices when <paramref name="ids"/> is null.
+    /// Names the user confirmed elsewhere settle the spelling of a close guess.
+    /// </summary>
+    public async Task SuggestAsync(IReadOnlyCollection<int>? ids, CancellationToken ct)
+    {
+        using var scope = scopes.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+        var known = await KnownNamesAsync(db, ct);
+        var notices = ids is null ? db.CreditNotices.AsNoTracking() : db.CreditNotices.AsNoTracking().Where(n => ids.Contains(n.Id));
+        await SuggestAsync(db, await notices.Select(n => new NoticeText(n.Id, n.Text, n.SuggestedName, n.Invite, n.NameVersion))
+            .ToListAsync(ct), known, ct);
+    }
+
+    private sealed record NoticeText(int Id, string? Text, string? SuggestedName, string? Invite, int NameVersion);
+
+    private static async Task<List<string>> KnownNamesAsync(MakiDbContext db, CancellationToken ct) =>
+        await db.CreditNotices.AsNoTracking()
+            .Where(n => n.GroupSource == CreditGroupSource.Confirmed && n.GroupName != null)
+            .Select(n => n.GroupName!).Distinct().ToListAsync(ct);
+
+    private static async Task SuggestAsync(MakiDbContext db, List<NoticeText> notices, List<string> known, CancellationToken ct)
+    {
+        if (notices.Count == 0)
+        {
+            return;
+        }
+
+        var ids = notices.Select(n => n.Id).ToList();
+        var reads = new Dictionary<int, List<string>>();
+        foreach (var batch in ids.Chunk(500))
+        {
+            foreach (var read in await db.CreditNoticeReads.AsNoTracking().Where(r => batch.Contains(r.NoticeId))
+                         .OrderBy(r => r.Id).Select(r => new { r.NoticeId, r.Text }).ToListAsync(ct))
+            {
+                (reads.TryGetValue(read.NoticeId, out var list) ? list : reads[read.NoticeId] = []).Add(read.Text);
+            }
+        }
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        foreach (var notice in notices)
+        {
+            var texts = (reads.TryGetValue(notice.Id, out var list) ? list : []).Prepend(notice.Text);
+            var guess = CreditGroupName.Suggest(texts, known);
+            if (guess.Name == notice.SuggestedName && guess.Invite == notice.Invite && notice.NameVersion == CreditGroupName.Version)
+            {
+                continue;
+            }
+
+            await db.CreditNotices.Where(n => n.Id == notice.Id).ExecuteUpdateAsync(u => u
+                .SetProperty(n => n.SuggestedName, guess.Name)
+                .SetProperty(n => n.Invite, guess.Invite)
+                .SetProperty(n => n.NameVersion, CreditGroupName.Version), ct);
+        }
+
+        await transaction.CommitAsync(ct);
+    }
+
+    /// <summary>
+    /// Gives each hidden notice of kind Unknown or Group whose group the user did not confirm the group most
+    /// of its chapters already carry. A tie, or no chapter carrying one, leaves the notice as it is; a Site
+    /// notice never takes one. On the 2026-11-14 scan this was right for 554 of 554 known chapters.
+    /// </summary>
+    public async Task PropagateAsync(IReadOnlyCollection<int> noticeIds, CancellationToken ct)
+    {
+        try
+        {
+            using var scope = scopes.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+            var notices = await db.CreditNotices.AsNoTracking()
+                .Where(n => noticeIds.Contains(n.Id) && n.Kind != CreditNoticeKind.Site && n.GroupSource != CreditGroupSource.Confirmed &&
+                    (n.Override == CreditNoticeOverride.Hide || (n.Override == CreditNoticeOverride.None && n.Accepted)))
+                .Select(n => new { n.Id, n.GroupName, n.GroupSource, n.Kind })
+                .ToListAsync(ct);
+            if (notices.Count == 0)
+            {
+                return;
+            }
+
+            var ids = notices.Select(n => n.Id).ToList();
+            var carried = await (
+                    from l in db.ChapterCreditNotices.IgnoreQueryFilters()
+                    join c in db.Chapters.IgnoreQueryFilters() on l.ChapterId equals c.Id
+                    join f in db.ChapterFiles.IgnoreQueryFilters() on c.ChapterFileId equals (int?)f.Id
+                    where ids.Contains(l.NoticeId) && f.Group != null && f.Group != ""
+                    select new { l.NoticeId, l.ChapterId, f.Group })
+                .Distinct()
+                .ToListAsync(ct);
+
+            foreach (var notice in notices)
+            {
+                var groups = carried.Where(c => c.NoticeId == notice.Id)
+                    .DistinctBy(c => c.ChapterId)
+                    .Select(c => c.Group!.Trim())
+                    .GroupBy(g => g, StringComparer.OrdinalIgnoreCase)
+                    .Select(g => (Name: g.GroupBy(x => x, StringComparer.Ordinal).OrderByDescending(x => x.Count()).First().Key, Count: g.Count()))
+                    .OrderByDescending(g => g.Count)
+                    .ToList();
+                if (groups.Count == 0 || (groups.Count > 1 && groups[1].Count == groups[0].Count))
+                {
+                    continue;
+                }
+
+                var name = groups[0].Name.Length <= CreditNotice.MaxNameLength ? groups[0].Name : groups[0].Name[..CreditNotice.MaxNameLength];
+                if (name == notice.GroupName && notice.GroupSource == CreditGroupSource.Propagated && notice.Kind == CreditNoticeKind.Group)
+                {
+                    continue;
+                }
+
+                // Re-checked in the update, so a confirmation or a Site mark made meanwhile is never overwritten.
+                await db.CreditNotices
+                    .Where(n => n.Id == notice.Id && n.Kind != CreditNoticeKind.Site && n.GroupSource != CreditGroupSource.Confirmed)
+                    .ExecuteUpdateAsync(u => u
+                        .SetProperty(n => n.GroupName, name)
+                        .SetProperty(n => n.GroupSource, CreditGroupSource.Propagated)
+                        .SetProperty(n => n.Kind, CreditNoticeKind.Group), ct);
+            }
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            logger.LogDebug(e, "Could not propagate release groups onto credit notices");
+        }
+    }
+
+    private async Task TryAsync(Func<Task> write, int noticeId)
+    {
+        try
+        {
+            await write();
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            logger.LogDebug(e, "Could not suggest a group name for credit notice {Id}", noticeId);
+        }
+    }
+
+    /// <summary>The user's decision standing in for a verdict, or null when there is none.</summary>
+    private static Verdict? Overridden(Notice notice) => notice.Override switch
+    {
+        CreditNoticeOverride.Hide => new Verdict(true, notice.Text ?? string.Empty, notice.Id, false, ByUser: true),
+        CreditNoticeOverride.Keep => new Verdict(false, notice.Text ?? string.Empty, notice.Id, false, ByUser: true),
+        _ => null,
+    };
 
     private static int Thousandths(double share) => (int)Math.Round(Math.Min(1, share) * 1000);
 
@@ -424,8 +642,16 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
                 .SetProperty(n => n.TextVersion, CreditText.Version), ct);
         }
 
+        // Suggestions from before this version of the name reader, or from before there was one.
+        var unnamed = await db.CreditNotices.AsNoTracking().Where(n => n.NameVersion != CreditGroupName.Version)
+            .Select(n => new NoticeText(n.Id, n.Text, n.SuggestedName, n.Invite, n.NameVersion)).ToListAsync(ct);
+        if (unnamed.Count > 0)
+        {
+            await SuggestAsync(db, unnamed, await KnownNamesAsync(db, ct), ct);
+        }
+
         var rows = await db.CreditNotices.AsNoTracking()
-            .Select(n => new { n.Id, n.Whole, n.Share, n.Fingerprint, n.Accepted, n.Reads, n.Text })
+            .Select(n => new { n.Id, n.Whole, n.Share, n.Fingerprint, n.Accepted, n.Reads, n.Text, n.Override })
             .ToListAsync(ct);
         var notices = new Dictionary<int, Notice>();
         foreach (var row in rows)
@@ -435,7 +661,7 @@ public sealed class CreditNoticeStore(IServiceScopeFactory scopes, CreditStore c
                 notices[row.Id] = new Notice
                 {
                     Id = row.Id, Whole = row.Whole, Share = row.Share, Fingerprint = fingerprint, Accepted = row.Accepted,
-                    Reads = row.Reads, Text = row.Text,
+                    Reads = row.Reads, Text = row.Text, Override = row.Override,
                 };
             }
         }

@@ -64,10 +64,13 @@ public sealed class CreditNoticeStoreTests : IDisposable
         return Task.FromResult(text);
     };
 
-    private int AddChapter(int number)
+    private int AddChapter(int number, string? group = null)
     {
         using var db = _db.NewContext();
-        var file = new ChapterFile { SeriesId = _seriesId, RelativePath = $"S/c{number}.cbz", SourceName = "test", DateAdded = DateTime.UtcNow };
+        var file = new ChapterFile
+        {
+            SeriesId = _seriesId, RelativePath = $"S/c{number}.cbz", SourceName = "test", DateAdded = DateTime.UtcNow, Group = group,
+        };
         db.ChapterFiles.Add(file);
         db.SaveChanges();
         var chapter = new Chapter { SeriesId = _seriesId, Number = number, ChapterFileId = file.Id };
@@ -289,5 +292,193 @@ public sealed class CreditNoticeStoreTests : IDisposable
         using var after = _db.NewContext();
         Assert.Equal([linked.NoticeId!.Value], after.CreditNotices.Select(n => n.Id).ToList());
         Assert.NotEqual(linked.NoticeId, loose.NoticeId);
+    }
+
+    private async Task<int> AcceptedNoticeAsync(CreditNoticeStore store, byte[] rows, string text = Credit)
+    {
+        var verdict = await store.JudgeAsync(Query(rows, crc: 900), Reads(text), default);
+        return verdict.NoticeId!.Value;
+    }
+
+    private CreditNotice Notice(int id)
+    {
+        using var db = _db.NewContext();
+        return db.CreditNotices.AsNoTracking().Single(n => n.Id == id);
+    }
+
+    private async Task UpdateNoticeAsync(int id, Action<CreditNotice> change)
+    {
+        using var db = _db.NewContext();
+        var notice = await db.CreditNotices.SingleAsync(n => n.Id == id);
+        change(notice);
+        await db.SaveChangesAsync();
+    }
+
+    [Fact]
+    public async Task Keep_rejects_an_accepted_notice_without_a_read()
+    {
+        var store = Store();
+        var page = Noise(7);
+        var id = await AcceptedNoticeAsync(store, page);
+
+        Assert.True(await store.SetOverrideAsync(id, CreditNoticeOverride.Keep, default));
+        var verdict = await store.JudgeAsync(Query(page, crc: 2), Reads(Credit), default);
+        var twin = await store.JudgeAsync(Query(Noise(99), crc: 900), Reads(Credit), default);
+
+        Assert.True(verdict is { Accepted: false, Read: false, ByUser: true, Text: Credit });
+        Assert.Equal(id, verdict.NoticeId);
+        Assert.True(twin is { Accepted: false, ByUser: true });
+        Assert.Equal(1, _reads);
+    }
+
+    [Fact]
+    public async Task Hide_accepts_a_trusted_rejection_and_a_bank_proposal_on_the_notices_text()
+    {
+        var store = Store();
+        var page = Noise(7);
+        await store.JudgeAsync(Query(page, crc: 1), Reads(Story), default);
+        var rejected = await store.JudgeAsync(Query(page, crc: 2), Reads(Story), default);
+        Assert.False(rejected.Accepted);
+
+        await store.SetOverrideAsync(rejected.NoticeId!.Value, CreditNoticeOverride.Hide, default);
+        var proposal = await store.JudgeAsync(Query(page, crc: 3, fromBank: true), Reads(null), default);
+
+        // Text is what ReaderCreditsCache asks of a bank proposal before it hides one.
+        Assert.True(proposal is { Accepted: true, Read: false, ByUser: true, Text: Story });
+        Assert.Equal(2, _reads);
+    }
+
+    [Fact]
+    public async Task An_override_sends_every_linked_chapter_back_and_moves_the_generation()
+    {
+        var store = Store();
+        var (hidden, kept) = (AddChapter(1), AddChapter(2));
+        var id = await AcceptedNoticeAsync(store, Noise(7));
+        await store.SaveLinksAsync(hidden, _seriesId, [new JudgedCandidate(false, 0, 1, true, Credit, true, NoticeId: id)], default);
+        await store.SaveLinksAsync(kept, _seriesId, [new JudgedCandidate(true, 0, 1, true, Credit, false, NoticeId: id)], default);
+        var generation = store.Generation;
+
+        await store.SetOverrideAsync(id, CreditNoticeOverride.Keep, default);
+
+        Assert.Equal(0, DetectorVersionOf(hidden));
+        Assert.Equal(0, DetectorVersionOf(kept));
+        Assert.NotEqual(generation, store.Generation);
+        Assert.Equal(CreditNoticeOverride.Keep, Notice(id).Override);
+        Assert.False(await store.SetOverrideAsync(id + 100, CreditNoticeOverride.Hide, default));
+    }
+
+    [Fact]
+    public async Task An_override_survives_a_restart()
+    {
+        var page = Noise(7);
+        var id = await AcceptedNoticeAsync(Store(), page);
+        await Store().SetOverrideAsync(id, CreditNoticeOverride.Keep, default);
+
+        var verdict = await Store().JudgeAsync(Query(page, crc: 2), Reads(Credit), default);
+
+        Assert.True(verdict is { Accepted: false, ByUser: true });
+    }
+
+    [Fact]
+    public async Task A_new_notice_gets_a_suggested_name_and_invite_from_its_text()
+    {
+        var id = await AcceptedNoticeAsync(Store(), Noise(7), "Join our Discord | SETSU SCANS | discord.gg/abcDEF123");
+
+        var notice = Notice(id);
+        Assert.Equal("SETSU SCANS", notice.SuggestedName);
+        Assert.Equal("abcDEF123", notice.Invite);
+        Assert.Equal(CreditGroupName.Version, notice.NameVersion);
+        Assert.Null(notice.GroupName);
+    }
+
+    [Fact]
+    public async Task Notices_from_before_the_name_reader_are_named_on_load()
+    {
+        var id = await SeedAsync(PageTextReader.Version, CreditText.Version, accepted: true, "Thanks for reading | SETSU SCANS", true);
+
+        await Store().JudgeAsync(Query(Noise(50), crc: 77), Reads(Story), default);
+
+        Assert.Equal("SETSU SCANS", Notice(id).SuggestedName);
+    }
+
+    private async Task<int> LinkedNoticeAsync(CreditNoticeStore store, params string?[] groups)
+    {
+        var id = await AcceptedNoticeAsync(store, Noise(7));
+        var number = 1;
+        foreach (var group in groups)
+        {
+            var chapter = AddChapter(number++, group);
+            await store.SaveLinksAsync(chapter, _seriesId, [new JudgedCandidate(false, 0, 1, true, Credit, true, NoticeId: id)], default);
+        }
+
+        return id;
+    }
+
+    [Fact]
+    public async Task A_notice_takes_the_group_most_of_its_chapters_carry()
+    {
+        var id = await LinkedNoticeAsync(Store(), "Asura Scans", null, "asura scans", "Flame Scans", "Asura Scans");
+
+        var notice = Notice(id);
+        Assert.Equal("Asura Scans", notice.GroupName);
+        Assert.Equal(CreditGroupSource.Propagated, notice.GroupSource);
+        Assert.Equal(CreditNoticeKind.Group, notice.Kind);
+    }
+
+    [Fact]
+    public async Task A_tie_leaves_the_notice_as_it_is()
+    {
+        var store = Store();
+        var tied = await AcceptedNoticeAsync(store, Noise(7));
+        using (var db = _db.NewContext())
+        {
+            foreach (var chapter in new[] { AddChapter(1, "Asura Scans"), AddChapter(2, "Flame Scans") })
+            {
+                db.ChapterCreditNotices.Add(new ChapterCreditNotice
+                {
+                    ChapterId = chapter, SeriesId = _seriesId, Share = 1000, NoticeId = tied, Accepted = true,
+                });
+            }
+
+            await db.SaveChangesAsync();
+        }
+
+        await store.PropagateAsync([tied], default);
+        Assert.Null(Notice(tied).GroupName);
+
+        await UpdateNoticeAsync(tied, n => (n.GroupName, n.GroupSource) = ("Flame Scans", CreditGroupSource.Propagated));
+        await store.PropagateAsync([tied], default);
+        Assert.Equal("Flame Scans", Notice(tied).GroupName);
+    }
+
+    [Fact]
+    public async Task A_confirmed_group_and_a_site_ad_are_never_propagated_onto()
+    {
+        var store = Store();
+        var confirmed = await AcceptedNoticeAsync(store, Noise(7));
+        await UpdateNoticeAsync(confirmed, n => (n.GroupName, n.GroupSource) = ("Mine", CreditGroupSource.Confirmed));
+        var site = (await store.JudgeAsync(Query(Noise(8), crc: 901), Reads(Credit), default)).NoticeId!.Value;
+        await UpdateNoticeAsync(site, n => n.Kind = CreditNoticeKind.Site);
+
+        await store.SaveLinksAsync(AddChapter(1, "Asura Scans"), _seriesId,
+        [
+            new JudgedCandidate(false, 0, 1, true, Credit, true, NoticeId: confirmed),
+            new JudgedCandidate(true, 0, 1, true, Credit, true, NoticeId: site),
+        ], default);
+
+        Assert.True(Notice(confirmed) is { GroupName: "Mine", GroupSource: CreditGroupSource.Confirmed });
+        Assert.True(Notice(site) is { GroupName: null, Kind: CreditNoticeKind.Site });
+    }
+
+    [Fact]
+    public async Task A_notice_readers_keep_takes_no_group()
+    {
+        var store = Store();
+        var id = (await store.JudgeAsync(Query(Noise(7), crc: 1), Reads(Story), default)).NoticeId!.Value;
+
+        await store.SaveLinksAsync(AddChapter(1, "Asura Scans"), _seriesId,
+            [new JudgedCandidate(false, 0, 1, true, Story, false, NoticeId: id)], default);
+
+        Assert.Null(Notice(id).GroupName);
     }
 }

@@ -678,10 +678,30 @@ namespace Maki.Data.Migrations
                         .IsRequired()
                         .HasColumnType("BLOB");
 
+                    b.Property<string>("GroupName")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("GroupSource")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Height")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Invite")
+                        .HasMaxLength(32)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("NameVersion")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("OcrVersion")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("Override")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("Reads")
@@ -693,6 +713,10 @@ namespace Maki.Data.Migrations
 
                     b.Property<double>("Share")
                         .HasColumnType("REAL");
+
+                    b.Property<string>("SuggestedName")
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
 
                     b.Property<string>("Text")
                         .HasColumnType("TEXT");

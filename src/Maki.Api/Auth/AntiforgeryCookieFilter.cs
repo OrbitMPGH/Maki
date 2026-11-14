@@ -131,6 +131,12 @@ public class AntiforgeryTokenMiddleware(RequestDelegate next, IAntiforgery antif
             return false;
         }
 
+        if (path.StartsWithSegments("/api/v1/creditgroups/notices", StringComparison.OrdinalIgnoreCase) &&
+            (path.Value ?? string.Empty).EndsWith("/image", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
         if (path.StartsWithSegments("/api/v1/reader/chapter", StringComparison.OrdinalIgnoreCase))
         {
             var value = path.Value ?? string.Empty;

@@ -813,6 +813,13 @@ public class MakiDbContext(DbContextOptions<MakiDbContext> options, DataScope? s
         });
 
         // Notices and their reads belong to no series: one is shared by every chapter that carries it.
+        modelBuilder.Entity<CreditNotice>(e =>
+        {
+            e.Property(n => n.GroupName).HasMaxLength(CreditNotice.MaxNameLength);
+            e.Property(n => n.SuggestedName).HasMaxLength(CreditNotice.MaxNameLength);
+            e.Property(n => n.Invite).HasMaxLength(32);
+        });
+
         modelBuilder.Entity<CreditNoticeRead>(e =>
         {
             e.HasIndex(r => new { r.Crc, r.Length, r.Share, r.Bottom }).IsUnique();

@@ -315,6 +315,7 @@ public sealed class ReaderCreditsCache(
         for (var c = 0; c < edge.Count; c++)
         {
             var (accepted, read, notice) = await IsScanlatorAsync(slice, edges, edge[c], tail, fromBank);
+            // A user's Hide on the notice carries the notice's text, so it passes: it is a decision, not a colour verdict.
             accepted &= !fromBank || read is not null;
             judged.Add(new JudgedCandidate(tail, edge[c].Page, edge[c].Share, edge[c].Colour, read, accepted, fromBank, notice));
             if (!accepted)
