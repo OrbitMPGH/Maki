@@ -40,14 +40,16 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
 
     private CreditBank _bank = null!;
     private CreditStrips _strips = null!;
+    private CreditNoticeStore _notices = null!;
 
     private ReaderCreditsCache Credits(IPageTextReader text)
     {
         _store = new CreditStore(_db.ScopeFactory(), text, NullLogger<CreditStore>.Instance);
         _bank = new CreditBank(_db.ScopeFactory(), NullLogger<CreditBank>.Instance);
         _strips = new CreditStrips(new AppPaths(_configDir), NullLogger<CreditStrips>.Instance);
+        _notices = new CreditNoticeStore(_db.ScopeFactory(), _store, NullLogger<CreditNoticeStore>.Instance);
         return new ReaderCreditsCache(
-            new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), text, _store, _strips, _bank,
+            new ReaderArchiveCache(NullLogger<ReaderArchiveCache>.Instance), text, _store, _strips, _bank, _notices,
             NullLogger<ReaderCreditsCache>.Instance);
     }
 
@@ -515,6 +517,39 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         public Task<string?> ReadAsync(byte[] image, double share, CancellationToken ct) => throw new IOException("share went away");
 
         public Task PrepareAsync() => Task.CompletedTask;
+    }
+
+    /// <summary>A reader that reads a scanlator's notice off every page, and counts its reads.</summary>
+    private sealed class CountingTextReader : IPageTextReader
+    {
+        public int Reads;
+
+        public bool Available => true;
+
+        public Task<string?> ReadAsync(byte[] image, double share, CancellationToken ct)
+        {
+            Interlocked.Increment(ref Reads);
+            return Task.FromResult<string?>("Join our Discord");
+        }
+
+        public Task PrepareAsync() => Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task Chapters_carrying_the_same_credit_page_read_it_once()
+    {
+        var reader = new CountingTextReader();
+        _credits = Credits(reader);
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 4).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+
+        Assert.Equal(1, (await FoundAsync(chapters[1])).GetProperty("headPages").GetInt32());
+        Assert.Equal(1, (await FoundAsync(chapters[2])).GetProperty("headPages").GetInt32());
+
+        Assert.Equal(1, reader.Reads);
+        using var db = _db.NewContext();
+        Assert.Equal(2, db.ChapterCreditNotices.Count());
+        Assert.Single(db.CreditNotices);
     }
 
     [Fact]

@@ -10,10 +10,11 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>
-/// One credit candidate as it was judged, edge inward, with the text read off it (null when it was not
-/// read), and whether the bank proposed it rather than repetition.
+/// One credit candidate as it was judged, edge inward, with the text its verdict rests on (null when there
+/// is none), whether the bank proposed it rather than repetition, and the <see cref="CreditNotice"/> it is.
 /// </summary>
-public sealed record JudgedCandidate(bool Tail, int Page, double Share, bool Colour, string? Text, bool Accepted, bool FromBank = false);
+public sealed record JudgedCandidate(
+    bool Tail, int Page, double Share, bool Colour, string? Text, bool Accepted, bool FromBank = false, int? NoticeId = null);
 
 /// <summary>
 /// The credit page answers found ahead of time (<see cref="ChapterCredits"/>), read by the reader
