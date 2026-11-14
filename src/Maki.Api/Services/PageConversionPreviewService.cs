@@ -607,7 +607,7 @@ public class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILog
             return new PageConversionPreview(stored, storedType, storedLength, storedLength, false, key);
         }
 
-        foreach (var (extension, type) in new[] { (".webp", "image/webp"), (".avif", "image/avif") })
+        foreach (var (extension, type) in new[] { (".webp", "image/webp"), (".avif", "image/avif"), (".jxl", JpegXlPages.MediaType) })
         {
             var encoded = new FileInfo(Path.Combine(dir, key + extension));
             if (encoded.Exists)

@@ -604,10 +604,22 @@ public class PageConversionController(
         }
 
         Response.Headers.CacheControl = "private, no-cache";
-        var etag = new EntityTagHeaderValue($"\"{preview.Key}\"");
+        // A JPEG XL preview goes out as WebP to a browser without JPEG XL; the size headers stay the JPEG XL ones.
+        var transcode = preview.ContentType == JpegXlPages.MediaType && !JpegXlPages.Accepts(Request);
+        if (preview.ContentType == JpegXlPages.MediaType)
+        {
+            Response.Headers.Vary = "Accept";
+        }
+
+        var etag = new EntityTagHeaderValue($"\"{preview.Key}{(transcode ? "-webp" : "")}\"");
         if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
         {
             return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        if (transcode && await JpegXlPages.TranscodeAsync(await System.IO.File.ReadAllBytesAsync(preview.Path, ct), ct) is var (bytes, type))
+        {
+            return File(bytes, type, lastModified: null, entityTag: etag);
         }
 
         return PhysicalFile(preview.Path, preview.ContentType, lastModified: null, entityTag: etag);

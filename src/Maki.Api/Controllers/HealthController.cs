@@ -1193,6 +1193,12 @@ public class HealthController(MakiDbContext db, HealthMonitor monitor, HealthOpe
         var bytes = output.ToArray();
         if (Convert.ToHexString(SHA256.HashData(bytes)) != page.RawHash) return Conflict();
         Response.Headers.CacheControl = "no-store";
+        if (JpegXlPages.IsJpegXl(page.Name) && !JpegXlPages.Accepts(Request) &&
+            await JpegXlPages.TranscodeAsync(bytes, ct) is var (converted, type))
+        {
+            return File(converted, type);
+        }
+
         return File(bytes, CbzReader.ContentType(page.Name));
     }
 
