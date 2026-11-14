@@ -7,6 +7,7 @@ using Maki.Api.Services.Ocr;
 using Maki.Api.Services.Upscaling;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Images;
 using Maki.Core.Reading;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -671,6 +672,26 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         await worker.ScanSeriesAsync(loneSeries, "en", default);
 
         Assert.True(HidesTheHead(await FoundAsync(lone)));
+        Assert.Equal(0, await worker.RecheckBankAsync(default));
+    }
+
+    [Fact]
+    public async Task A_chapter_too_short_to_search_is_never_sent_back_by_the_bank_recheck()
+    {
+        _credits = Credits(Path.Combine(AppContext.BaseDirectory, PageTextReader.FolderName));
+        var credit = await File.ReadAllBytesAsync(Fixture("ocr-credit-page.png"));
+        var worker = Worker();
+        ChaptersOpeningWith(credit);
+        await worker.ScanSeriesAsync(_seriesId, "en", default);
+        Assert.Equal(1, BankCount());
+
+        var shortSeries = AddSeries("Short");
+        var shortChapter = AddEncodedChapter(1, StoryPngs(60, CreditDetector.MinPages - 2), seriesId: shortSeries, folder: "Short");
+        await worker.ScanSeriesAsync(shortSeries, "en", default);
+        Assert.Equal(CreditDetector.Version, (await RowAsync(shortChapter))!.DetectorVersion);
+
+        await worker.RecheckBankAsync(default);
+        Assert.Equal(CreditDetector.Version, (await RowAsync(shortChapter))!.DetectorVersion);
         Assert.Equal(0, await worker.RecheckBankAsync(default));
     }
 }

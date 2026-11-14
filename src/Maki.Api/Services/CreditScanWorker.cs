@@ -479,8 +479,11 @@ public sealed class CreditScanWorker(
         using (var scope = scopes.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+            // A chapter too short to search is settled without one, so requeueing it would loop forever.
+            // PageCount 0 is a row from before it was stored; one pass writes it.
             rows = await db.ChapterCredits.AsNoTracking().IgnoreQueryFilters()
                 .Where(r => r.BankSeen < newest && !r.Skipped && !r.Failed && r.EdgeKey != "" &&
+                            (r.PageCount == 0 || r.PageCount >= CreditDetector.MinPages) &&
                             r.DetectorVersion == CreditDetector.Version && (r.HeadPages == 0 && r.HeadOffset == 0 || r.TailPages == 0))
                 .OrderBy(r => r.ChapterId)
                 .Take(BankBatch)
