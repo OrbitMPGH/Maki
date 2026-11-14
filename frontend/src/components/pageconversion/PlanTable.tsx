@@ -13,10 +13,10 @@ import {
   type ScopeBucket,
 } from '../../api/pageConversion'
 import { formatBytes } from '../../format'
-import { FORMAT_LABELS, STOP_LABELS } from './labels'
+import { FORMAT_LABELS, STOP_LABELS, useTargetLabel } from './labels'
 import { useRangeText, type PlanEstimate } from './PlanEstimate'
 import { CountLine, RuleEditor, useConditionsSummary } from './RuleEditor'
-import type { RuleDraft } from './ruleTemplates'
+import { toRuleDtos, type RuleDraft } from './ruleTemplates'
 import { TargetSheet } from './TargetSheet'
 
 /**
@@ -98,7 +98,8 @@ export function PlanTable({
   }
 
   const open = (row: RowIndex, kind: SampleKind) => {
-    setSheet({ row, kind, request: { plan: scopeRequest, row, kind } })
+    // The live list, not the debounced one the counts use, so the row index names the same rule.
+    setSheet({ row, kind, request: { plan: { ...scopeRequest, rules: toRuleDtos(rules) }, row, kind } })
     onSheetChange(true)
   }
   const close = () => {
@@ -106,9 +107,9 @@ export function PlanTable({
     onSheetChange(false)
   }
 
-  // A result from before the rules last changed no longer lines up with them by position.
+  // Buckets line up with rows by position, which only holds for an estimate of the plan on screen.
   const result = estimate.result
-  const lined = !!result && result.rules.length === rules.length
+  const lined = !!result && !estimate.stale && result.rules.length === rules.length
   const estimateFor = (row: RowIndex): EstimateBucket | undefined =>
     !lined ? undefined : row < 0 ? result.default : result.rules[row]
 
@@ -295,7 +296,7 @@ function RuleRow({
         </ActionIcon>
       </div>
       {expanded && (
-        <div className="pc-plan-editor">
+        <div className="pc-plan-editor" role="cell">
           <RuleEditor index={index} rule={rule} defaultFormat={defaultFormat} onChange={onChange} />
         </div>
       )}
@@ -340,8 +341,15 @@ function TargetChip({
   onClick: () => void
 }) {
   const { t } = useLingui()
+  const targetLabel = useTargetLabel()
+  const shown = target ? targetLabel(target) : t`Same as black-and-white`
   return (
-    <UnstyledButton className="pc-target-chip" data-same={!target || undefined} onClick={onClick} aria-label={ariaLabel}>
+    <UnstyledButton
+      className="pc-target-chip"
+      data-same={!target || undefined}
+      onClick={onClick}
+      aria-label={t`${ariaLabel}: ${shown}`}
+    >
       {target ? (
         <span className="pc-target-chip-text">
           {target.stop !== 'lossless' && <span className="pc-target-chip-format">{t(FORMAT_LABELS[target.format])}</span>}

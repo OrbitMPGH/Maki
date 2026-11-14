@@ -33,7 +33,7 @@ namespace Maki.Data.Migrations
             migrationBuilder.Sql("""
                 UPDATE "PageConversionRules"
                 SET "Format" = CASE (SELECT LOWER(TRIM("Value")) FROM "AppConfig" WHERE "Key" = 'library.pageconversion.format')
-                    WHEN 'avif' THEN 1 ELSE 0 END
+                    WHEN 'avif' THEN 1 WHEN 'webp' THEN 0 ELSE NULL END
                 WHERE "Skip" = 0 AND "Stop" IS NOT NULL AND "Stop" <> 4;
                 """);
         }

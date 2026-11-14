@@ -156,7 +156,12 @@ function SheetBody({
             })}
           />
         )}
-        {!samples.isLoading && options.length === 0 && (
+        {samples.isError && (
+          <Text size="sm" c="var(--danger-fg)" role="alert">
+            <Trans>The pages for this row could not be found. Pick a page from your library instead.</Trans>
+          </Text>
+        )}
+        {!samples.isLoading && !samples.isError && options.length === 0 && (
           <Text size="sm" c="var(--ink-3)">
             <Trans>
               Maki found no {kindName} pages in the files this row converts. Pick a page from your library to see the

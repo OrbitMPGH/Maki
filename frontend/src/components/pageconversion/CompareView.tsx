@@ -219,10 +219,12 @@ export function CompareView({
           onPointerUp={() => setFlipped(false)}
           onPointerCancel={() => setFlipped(false)}
           onKeyDown={(event) => {
-            if (event.key === 'Enter') setFlipped(true)
+            if (event.key !== 'Enter' && event.key !== ' ') return
+            event.preventDefault()
+            setFlipped(true)
           }}
           onKeyUp={(event) => {
-            if (event.key === 'Enter') setFlipped(false)
+            if (event.key === 'Enter' || event.key === ' ') setFlipped(false)
           }}
         >
           <Trans>Hold for original</Trans>

@@ -154,6 +154,24 @@ public sealed class ReaderJpegXlPageTests : IDisposable
     }
 
     [Fact]
+    public async Task A_page_that_does_not_convert_is_never_cached_under_the_webp_etag()
+    {
+        var chapterId = SeedChapter(("001.jxl", [0xFF, 0x0A, 1, 2, 3, 4]));
+        using var db = _db.NewContext();
+
+        var controller = Controller(db, r =>
+        {
+            r.Headers.Accept = "image/webp,*/*;q=0.8";
+            r.QueryString = new QueryString("?v=ignored");
+        });
+        var sent = Assert.IsType<FileContentResult>(await controller.Page(chapterId, 0, default));
+
+        Assert.Equal("image/jxl", sent.ContentType);
+        Assert.Null(sent.EntityTag);
+        Assert.Equal("no-store", controller.Response.Headers.CacheControl.ToString());
+    }
+
+    [Fact]
     public void Representation_follows_the_entry_and_what_the_client_takes()
     {
         Assert.Equal(("image/jxl", "-jxl"), JpegXlPages.Representation("001.jxl", true));

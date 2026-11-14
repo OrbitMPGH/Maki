@@ -808,6 +808,10 @@ msgctxt "series"
 msgid "{archivedCount, plural, one {Archived (#)} other {Archived (#)}}"
 msgstr "{archivedCount, plural, one {Archived (#)} other {Archived (#)}}"
 
+#: src/components/pageconversion/PlanTable.tsx
+msgid "{ariaLabel}: {shown}"
+msgstr "{ariaLabel}: {shown}"
+
 #: src/pages/reader/ReaderSettings.tsx
 msgid "{backgroundName}, cropped"
 msgstr "{backgroundName}, cropped"
@@ -20997,6 +21001,10 @@ msgstr "The page conversion rules in Settings decide."
 #: src/pages/discover/ShortlistTab.tsx
 msgid "the page for {detail}"
 msgstr "the page for {detail}"
+
+#: src/components/pageconversion/TargetSheet.tsx
+msgid "The pages for this row could not be found. Pick a page from your library instead."
+msgstr "The pages for this row could not be found. Pick a page from your library instead."
 
 #: src/components/discover/PreviewChapterButton.tsx
 msgid "The preview expired. Try again."

@@ -422,6 +422,13 @@ public class ReaderController(
         if (jpegXl && contentType != JpegXlPages.MediaType)
         {
             var (bytes, type) = await JpegXlPages.TranscodeAsync(stream, ct);
+            if (type == JpegXlPages.MediaType)
+            {
+                // The page did not convert, so this is not the WebP the ETag names; never let it be kept.
+                Response.Headers.CacheControl = "no-store";
+                return File(bytes, type);
+            }
+
             return File(bytes, type, lastModified: null, entityTag: etag);
         }
 

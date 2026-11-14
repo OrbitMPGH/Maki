@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, apiBlob } from './client'
 import type { QualityTierName } from './upgrades'
+import { jpegXlAccept } from '../lib/enhance/jpegXl'
 
 export type PageConversionFormat = 'webp' | 'avif' | 'jxl'
 
@@ -361,7 +362,8 @@ const previewKey = (request: PreviewRequest | null) =>
   [...key, 'preview', request?.fileId ?? 0, request?.page ?? 0, request ? previewPath(request) : '']
 
 async function fetchPreview(request: PreviewRequest) {
-  const { blob, headers } = await apiBlob(previewPath(request))
+  // Without it a JPEG XL preview comes back as WebP made from it, which would show JPEG XL worse than it is.
+  const { blob, headers } = await apiBlob(previewPath(request), { headers: await jpegXlAccept() })
   const original = Number(headers.get('X-Maki-Original-Bytes') ?? blob.size)
   const encoded = Number(headers.get('X-Maki-Encoded-Bytes') ?? blob.size)
   return {

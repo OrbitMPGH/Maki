@@ -925,6 +925,10 @@ msgctxt "series"
 msgid "{archivedCount, plural, one {Archived (#)} other {Archived (#)}}"
 msgstr "{archivedCount, plural, one {Archivée (#)} many {Archivées (#)} other {Archivées (#)}}"
 
+#: src/components/pageconversion/PlanTable.tsx
+msgid "{ariaLabel}: {shown}"
+msgstr ""
+
 #: src/pages/reader/ReaderSettings.tsx
 #, fuzzy
 msgid "{backgroundName}, cropped"
@@ -25054,6 +25058,10 @@ msgstr "Ce sont les règles de conversion des pages dans Paramètres qui décide
 #, fuzzy
 msgid "the page for {detail}"
 msgstr "la page de {detail}"
+
+#: src/components/pageconversion/TargetSheet.tsx
+msgid "The pages for this row could not be found. Pick a page from your library instead."
+msgstr ""
 
 #: src/components/discover/PreviewChapterButton.tsx
 #, fuzzy

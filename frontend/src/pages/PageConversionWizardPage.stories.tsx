@@ -44,7 +44,9 @@ const colourAvif: StorySettings = { format: 'webp', stop: 'balanced', pngLossles
 
 const body = (canvasElement: HTMLElement) => within(canvasElement.ownerDocument.body)
 
-const chip = (canvas: ReturnType<typeof within>, name: string) => canvas.getByRole('button', { name })
+/** A target chip by its row and kind; its name goes on with the target it shows. */
+const chipName = (name: string) => (accessibleName: string) => accessibleName.startsWith(`${name}: `)
+const chip = (canvas: ReturnType<typeof within>, name: string) => canvas.getByRole('button', { name: chipName(name) })
 
 const noRules = http.get(api('/pageconversion/rules'), () => HttpResponse.json({ rules: [] }))
 
@@ -121,7 +123,7 @@ export const EstimateFailed: Story = {
 export const ColourTargetSheet: Story = {
   parameters: { msw: settingsMsw(settingsHandler(colourAvif)) },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Colour pages, Everything else' }))
+    await userEvent.click(await canvas.findByRole('button', { name: chipName('Colour pages, Everything else') }))
     const dialog = within(await body(canvasElement).findByRole('dialog', { name: 'Colour pages, Everything else' }))
     await expect(await dialog.findByRole('button', { name: /Ashen Crown Regression.*Ch\.12/ })).toBeVisible()
     await expect(dialog.getByRole('radio', { name: 'AVIF' })).toBeChecked()
@@ -140,7 +142,7 @@ export const ColourTargetSheet: Story = {
 
 export const ColourSameAsBlackAndWhite: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Colour pages, Squeeze volumes harder' }))
+    await userEvent.click(await canvas.findByRole('button', { name: chipName('Colour pages, Squeeze volumes harder') }))
     const dialog = within(await body(canvasElement).findByRole('dialog', { name: 'Colour pages, Squeeze volumes harder' }))
     await expect(dialog.getByRole('radio', { name: 'Same' })).toBeChecked()
     await expect(
@@ -157,7 +159,7 @@ export const ColourSameAsBlackAndWhite: Story = {
 
 export const BlackAndWhiteSheetUsesGreyPages: Story = {
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Black-and-white pages, Everything else' }))
+    await userEvent.click(await canvas.findByRole('button', { name: chipName('Black-and-white pages, Everything else') }))
     const dialog = within(await body(canvasElement).findByRole('dialog'))
     await expect(await dialog.findByRole('button', { name: /Lanterns Over Kasumi/ })).toBeVisible()
     await expect(dialog.queryByRole('radio', { name: 'Same' })).toBeNull()
@@ -171,7 +173,7 @@ export const BlackAndWhiteSheetUsesGreyPages: Story = {
 export const KeptPageSaysWhy: Story = {
   parameters: { msw: settingsMsw(keptPreviewHandler('notsmaller')) },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Black-and-white pages, Everything else' }))
+    await userEvent.click(await canvas.findByRole('button', { name: chipName('Black-and-white pages, Everything else') }))
     const dialog = within(await body(canvasElement).findByRole('dialog'))
     await expect(
       await dialog.findByText('Converting would not make this page at least 5% smaller, so the pass keeps it as it is.'),
@@ -184,7 +186,7 @@ export const NoPagesOfThatKind: Story = {
     msw: settingsMsw(http.post(api('/pageconversion/samples/row'), () => HttpResponse.json({ samples: [] }))),
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
-    await userEvent.click(await canvas.findByRole('button', { name: 'Colour pages, Everything else' }))
+    await userEvent.click(await canvas.findByRole('button', { name: chipName('Colour pages, Everything else') }))
     const dialog = within(await body(canvasElement).findByRole('dialog'))
     await expect(
       await dialog.findByText(
@@ -204,7 +206,7 @@ export const EditRuleConditions: Story = {
     await expect(await canvas.findByRole('combobox', { name: 'Series type' })).toBeVisible()
 
     await userEvent.click(canvas.getByRole('radio', { name: 'Skipped' }))
-    await waitFor(() => expect(canvas.queryByRole('button', { name: 'Black-and-white pages, Squeeze volumes harder' })).toBeNull())
+    await waitFor(() => expect(canvas.queryByRole('button', { name: chipName('Black-and-white pages, Squeeze volumes harder') })).toBeNull())
     await expect(canvas.getAllByText('Skipped, left as they are')).toHaveLength(2)
   },
 }
@@ -225,7 +227,7 @@ export const SaveOnly: Story = {
   parameters: { msw: settingsMsw(recordSave) },
   play: async ({ canvas, canvasElement, userEvent }) => {
     saved = null
-    await userEvent.click(await canvas.findByRole('button', { name: 'Colour pages, Everything else' }))
+    await userEvent.click(await canvas.findByRole('button', { name: chipName('Colour pages, Everything else') }))
     const dialog = within(await body(canvasElement).findByRole('dialog'))
     await userEvent.click(dialog.getByRole('radio', { name: 'AVIF' }))
     await userEvent.click(dialog.getByRole('button', { name: 'Done' }))
@@ -259,7 +261,7 @@ export const SaveWhilePassRunsAsksFirst: Story = {
   },
   play: async ({ canvas, canvasElement, userEvent }) => {
     starts = 0
-    await userEvent.click(await canvas.findByRole('button', { name: 'Black-and-white pages, Everything else' }))
+    await userEvent.click(await canvas.findByRole('button', { name: chipName('Black-and-white pages, Everything else') }))
     const sheet = within(await body(canvasElement).findByRole('dialog'))
     await userEvent.click(sheet.getByRole('radio', { name: 'WebP' }))
     await userEvent.click(sheet.getByRole('button', { name: 'Done' }))

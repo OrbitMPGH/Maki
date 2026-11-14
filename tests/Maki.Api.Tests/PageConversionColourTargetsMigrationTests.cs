@@ -26,8 +26,8 @@ public class PageConversionColourTargetsMigrationTests
     [Theory]
     [InlineData(" AVIF ", PageConversionFormat.Avif)]
     [InlineData("webp", PageConversionFormat.Webp)]
-    [InlineData(null, PageConversionFormat.Webp)]
-    public void Convert_rules_take_the_plans_format(string? planFormat, PageConversionFormat expected)
+    [InlineData(null, null)]
+    public void Convert_rules_take_the_plans_format(string? planFormat, PageConversionFormat? expected)
     {
         using var connection = new SqliteConnection("DataSource=:memory:");
         connection.Open();
