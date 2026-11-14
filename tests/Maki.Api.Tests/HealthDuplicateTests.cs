@@ -687,4 +687,38 @@ public sealed class HealthDuplicateTests : IDisposable
         Assert.Equal(2, copies[0].GetProperty("Chapters").GetArrayLength());
         Assert.Equal(s.Spare.Id, body.GetProperty("relinkTo").GetProperty("Id").GetInt32());
     }
+
+    [Fact]
+    public async Task A_series_scan_retires_the_row_a_rename_left_behind()
+    {
+        using var db = fixture.NewContext();
+        var folder = new RootFolder { Path = root }; db.RootFolders.Add(folder); await db.SaveChangesAsync();
+        var series = new Series { Title = "Series", SortTitle = "series", FolderName = "Series", RootFolderId = folder.Id };
+        db.Series.Add(series); await db.SaveChangesAsync();
+        Directory.CreateDirectory(Path.Combine(root, "Series"));
+        var renamed = Path.Combine("Series", "Series Ch.1.cbz");
+        using (var zip = ZipFile.Open(Path.Combine(root, renamed), ZipArchiveMode.Create))
+        { using var stream = zip.CreateEntry("ComicInfo.xml").Open(); stream.Write("<ComicInfo/>"u8); }
+        var bytes = await File.ReadAllBytesAsync(Path.Combine(root, renamed));
+        var cf = new ChapterFile { SeriesId = series.Id, RelativePath = renamed, Size = bytes.Length };
+        db.ChapterFiles.Add(cf); await db.SaveChangesAsync();
+        db.Chapters.Add(new Chapter { SeriesId = series.Id, ChapterFileId = cf.Id, Number = 1 });
+        var old = new HealthFile
+        {
+            RootFolderId = folder.Id, SeriesId = series.Id, ChapterFileId = cf.Id, RelativePath = Path.Combine("Series", "old name.cbz"),
+            ContentHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)), Size = bytes.Length, Status = "complete",
+        };
+        db.HealthFiles.Add(old);
+        var scan = new HealthScan { SeriesId = series.Id, Verify = true };
+        db.HealthScans.Add(scan);
+        await db.SaveChangesAsync();
+
+        await new HealthScanService(db).RunAsync(scan, default);
+
+        using var check = fixture.NewContext();
+        Assert.True(check.HealthFiles.Single(f => f.Id == old.Id).Removed);
+        var live = check.HealthFiles.Single(f => !f.Removed);
+        Assert.Equal(cf.Id, live.ChapterFileId);
+        Assert.DoesNotContain(check.HealthFindings, f => f.Kind == "duplicate" && f.State != "resolved");
+    }
 }

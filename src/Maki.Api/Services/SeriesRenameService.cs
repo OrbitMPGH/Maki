@@ -423,8 +423,17 @@ public class SeriesRenameService(
             }
         }
 
+        // The health inventory follows in the same save. Left at the old paths, the next series scan
+        // verified each file at its new path and flagged it identical to its own old row.
+        List<string> retiredHashes;
         try
         {
+            var repathed = renamed
+                .Where(f => !string.Equals(f.From, f.To, StringComparison.Ordinal))
+                .GroupBy(f => f.From, StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => g.First().To, StringComparer.Ordinal);
+            retiredHashes = await HealthInventory.RepathAsync(db, series.RootFolderId,
+                repathed, plan.FolderChanged ? plan.FolderFrom : null, plan.FolderChanged ? plan.FolderTo : null, saveToken);
             await db.SaveChangesAsync(saveToken);
         }
         catch (Exception ex)
@@ -433,6 +442,11 @@ public class SeriesRenameService(
                 series.Title, moves.Count);
             UndoMoves(moves, series.Title);
             throw;
+        }
+
+        if (retiredHashes.Count > 0)
+        {
+            await HealthDuplicates.ResolveLonelyAsync(db, retiredHashes, CancellationToken.None);
         }
 
         // ReaderArchiveCache needs no invalidation: it is keyed by ChapterFile id and validated

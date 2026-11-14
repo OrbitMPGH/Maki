@@ -13,6 +13,7 @@ namespace Maki.Api.Services;
 public static class HealthInventory
 {
     private static readonly StringComparer KeyComparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+    private static readonly StringComparison KeyComparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
     public static HealthFileVersion VersionOf(HealthFile file) => new()
     {
@@ -165,6 +166,74 @@ public static class HealthInventory
             .ToListAsync(ct);
         touched.AddRange(lonely);
         foreach (var finding in lonely) finding.State = "resolved";
+    }
+
+    /// <summary>
+    /// Repoints the root's live rows after Maki renamed files inside it, without saving. <paramref name="files"/>
+    /// maps old paths to new ones; with <paramref name="folderFrom"/> and <paramref name="folderTo"/> every
+    /// other row under the old folder follows the folder. A live row already at a target keeps it, takes the
+    /// moving row's link when it has none, and the moving row is retired. Returns the retired rows' hashes,
+    /// for <see cref="HealthDuplicates.ResolveLonelyAsync"/> once the caller has saved.
+    /// </summary>
+    public static async Task<List<string>> RepathAsync(MakiDbContext db, int rootId, IReadOnlyDictionary<string, string> files,
+        string? folderFrom, string? folderTo, CancellationToken ct)
+    {
+        var targets = new Dictionary<string, string>(KeyComparer);
+        foreach (var (from, to) in files) targets[LibraryPaths.ComparisonKey(from)] = LibraryPaths.ComparisonKey(to);
+        var prefix = folderFrom is { Length: > 0 } && folderTo is { Length: > 0 } && !string.Equals(folderFrom, folderTo, StringComparison.Ordinal)
+            ? LibraryPaths.ComparisonKey(folderFrom).TrimEnd('/') + "/"
+            : null;
+        if (targets.Count == 0 && prefix == null) return [];
+
+        var spellings = targets.Keys.SelectMany(k => new[] { k, k.Replace('/', '\\') }).Distinct().ToList();
+        var live = db.HealthFiles.Where(f => f.RootFolderId == rootId && !f.Removed);
+        if (prefix == null) live = live.Where(f => spellings.Contains(f.RelativePath));
+        else
+        {
+            var backslashPrefix = prefix.Replace('/', '\\');
+            live = live.Where(f => spellings.Contains(f.RelativePath) || f.RelativePath.StartsWith(prefix) || f.RelativePath.StartsWith(backslashPrefix));
+        }
+        var touched = new List<object>();
+        var moving = await AttachAsync(db, live, touched, ct);
+
+        var moves = new List<(HealthFile Row, string Target)>();
+        foreach (var row in moving)
+        {
+            var key = LibraryPaths.ComparisonKey(row.RelativePath);
+            if (targets.TryGetValue(key, out var target)) moves.Add((row, target));
+            else if (prefix != null && key.StartsWith(prefix, KeyComparison))
+                moves.Add((row, LibraryPaths.ComparisonKey(folderTo!).TrimEnd('/') + "/" + key[prefix.Length..]));
+        }
+        if (moves.Count == 0) return [];
+
+        var movingIds = moves.Select(m => m.Row.Id).ToHashSet();
+        var targetSpellings = moves.SelectMany(m => new[] { m.Target, m.Target.Replace('/', '\\') }).Distinct().ToList();
+        var occupants = (await AttachAsync(db, db.HealthFiles.Where(f => f.RootFolderId == rootId && !f.Removed
+                && targetSpellings.Contains(f.RelativePath)), touched, ct))
+            .Where(f => !movingIds.Contains(f.Id))
+            .GroupBy(f => LibraryPaths.ComparisonKey(f.RelativePath), KeyComparer)
+            .ToDictionary(g => g.Key, g => g.OrderBy(f => f.Id).First(), KeyComparer);
+
+        var retired = new List<HealthFile>();
+        foreach (var (row, target) in moves)
+        {
+            if (occupants.TryGetValue(target, out var occupant))
+            {
+                occupant.ChapterFileId ??= row.ChapterFileId;
+                occupant.SeriesId ??= row.SeriesId;
+                row.Removed = true;
+                retired.Add(row);
+                continue;
+            }
+
+            row.RelativePath = target.Replace('/', Path.DirectorySeparatorChar);
+        }
+
+        if (retired.Count == 0) return [];
+        var retiredIds = retired.Select(r => r.Id).ToList();
+        foreach (var finding in await db.HealthFindings.Where(f => retiredIds.Contains(f.FileId) && f.State != "resolved").ToListAsync(ct))
+            finding.State = "resolved";
+        return retired.Where(r => r.ContentHash != null).Select(r => r.ContentHash!).Distinct().ToList();
     }
 
     /// <summary>
