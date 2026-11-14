@@ -163,10 +163,71 @@ public class NamingFormatterTests
     [InlineData("Series Title}", "error.naming.unmatchedCloseBrace")]
     [InlineData("{Series Title:000}", "error.naming.noPadding")]
     [InlineData("{Chapter Number:abc}", "error.naming.paddingNotZero")]
+    [InlineData("{Series Title} <({Chapter Group})", "error.naming.unmatchedOpenAngle")]
+    [InlineData("{Series Title} ({Chapter Group})>", "error.naming.unmatchedCloseAngle")]
+    [InlineData("{Series Title} <a <{Chapter Group}>>", "error.naming.nestedOptional")]
+    [InlineData("{Series Title} <(none)>", "error.naming.optionalWithoutToken")]
+    [InlineData("{Series<Title}", "error.naming.angleInsideToken")]
+    [InlineData("<{Series Title}> <{Chapter VolChap}>", "error.naming.allTokensOptional")]
     public void Invalid_formats_are_refused(string format, string expectedKey)
     {
         var errors = NamingFormatter.Validate(format);
         Assert.Contains(errors, e => e.Key == expectedKey);
+    }
+
+    [Fact]
+    public void Optional_block_formats_pass_validation()
+    {
+        Assert.Empty(NamingFormatter.Validate("{Series Title} <({Chapter Group})>"));
+        Assert.Empty(NamingFormatter.Validate(
+            "{Series Title} - <Vol. {Chapter Volume:00} ><Ch. {Chapter Number:0000}><OneShot {Chapter OneShotSuffix}>"));
+    }
+
+    [Fact]
+    public void Optional_block_keeps_its_text_when_every_token_has_a_value()
+    {
+        var context = Context() with { Group = "Band of the Hawk" };
+        Assert.Equal("Berserk (Band of the Hawk)",
+            NamingFormatter.Format("{Series Title} <({Chapter Group})>", context));
+    }
+
+    [Fact]
+    public void Optional_block_drops_whole_when_a_token_is_empty()
+    {
+        Assert.Equal("Berserk", NamingFormatter.Format("{Series Title} <({Chapter Group})>", Context()));
+
+        // One empty token is enough, even beside one that has a value.
+        Assert.Equal("Berserk Ch.24",
+            NamingFormatter.Format("{Series Title} <{Chapter Group} - >Ch.{Chapter Number}", Context()));
+    }
+
+    [Fact]
+    public void Issue_197_example_renders_each_part_only_when_it_has_a_value()
+    {
+        const string format =
+            "{Series Title} - <Vol. {Chapter Volume:00} ><Ch. {Chapter Number:0000}><OneShot{Chapter OneShotSuffix}>";
+
+        Assert.Equal("Berserk - Vol. 03 Ch. 0024", NamingFormatter.Format(format, Context()));
+        Assert.Equal("Berserk - Ch. 0024",
+            NamingFormatter.Format(format, Context(chapter: new Chapter { Number = 24m })));
+        Assert.Equal("Berserk - OneShot - The Prototype",
+            NamingFormatter.Format(format, Context(chapter: new Chapter { IsOneShot = true, Title = "The Prototype" })));
+    }
+
+    [Fact]
+    public void Optional_block_applies_each_token_spelling()
+    {
+        var context = Context() with { Group = "Band of the Hawk" };
+        Assert.Equal("Berserk [band.of.the.hawk]",
+            NamingFormatter.Format("{Series Title} <[{chapter.group}]>", context));
+    }
+
+    [Fact]
+    public void A_value_that_looks_like_a_token_is_not_rendered_again()
+    {
+        var context = Context(new Series { Title = "Berserk" }) with { Group = "{Series Title}" };
+        Assert.Equal("Berserk ({Series Title})",
+            NamingFormatter.Format("{Series Title} <({Chapter Group})>", context));
     }
 
     [Fact]

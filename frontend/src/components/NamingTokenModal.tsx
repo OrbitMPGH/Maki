@@ -77,6 +77,9 @@ export function NamingTokenModal({
   // text itself is never mistaken for a placeholder or handed to a translator to rewrite.
   const yearExampleToken = '{Series TitleYear}'
   const paddingExampleToken = '{Chapter Number:000}'
+  const optionalExample = '<({Chapter Group})>'
+  const openMarker = '<'
+  const closeMarker = '>'
 
   const insert = (token: string) => {
     const element = input.current
@@ -153,6 +156,10 @@ export function NamingTokenModal({
         <Trans>
           Chapter number and volume also take zero-padding: <Code>{paddingExampleToken}</Code>{' '}
           renders 24 as 024.
+        </Trans>{' '}
+        <Trans>
+          Text between {openMarker} and {closeMarker} is kept only when every token inside has a value:{' '}
+          <Code>{optionalExample}</Code> leaves out the brackets too when a chapter has no group.
         </Trans>
       </ModalNote>
 

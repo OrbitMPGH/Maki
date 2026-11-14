@@ -3603,6 +3603,17 @@ msgstr "O FlareSolverr não respondeu"
 msgid "error.nameParsing.unknownLanguage"
 msgstr "O Maki não tem palavras de volume ou capítulo para o idioma \"{language}\""
 
+#. "<" and ">" are the literal optional block markers in a naming format; keep them as is.
+#. English: Format needs at least one token outside a <...> block, or a name could come out empty
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.allTokensOptional"
+msgstr ""
+
+#. English: Format has a "<" or ">" inside a token
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.angleInsideToken"
+msgstr ""
+
 #. {token} is the offending {Token Name} as the caller wrote it, braces included.
 #. English: Format has a "{" inside a token
 #: src/Maki.Core/Naming/NamingFormatter.cs
@@ -3646,6 +3657,12 @@ msgstr "O formato não pode ficar vazio"
 msgid "error.naming.formatInvalid"
 msgstr "{field}: {reason}"
 
+#. "<" and ">" are the literal optional block markers in a naming format; keep them as is.
+#. English: Format has a <...> block inside another one
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.nestedOptional"
+msgstr ""
+
 #. English: {token} does not take a padding pattern
 #: src/Maki.Core/Naming/NamingFormatter.cs
 #, fuzzy
@@ -3657,6 +3674,12 @@ msgstr "{token} não aceita um padrão de zeros à esquerda"
 #, fuzzy
 msgid "error.naming.noTokens"
 msgstr "O formato precisa conter pelo menos um token, ou todas as séries terão o mesmo nome"
+
+#. {block} is the offending optional block as the caller wrote it, markers included, e.g. "<(x)>".
+#. English: {block} has no token in it, so it would always show
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.optionalWithoutToken"
+msgstr ""
 
 #. {token} is the padding pattern's example, e.g. "{Chapter Number:000}", spelled exactly as the
 #. caller wrote the token name.
@@ -3678,11 +3701,21 @@ msgstr "O formato não pode conter separadores de caminho. Os nomes têm apenas 
 msgid "error.naming.unknownToken"
 msgstr "Token desconhecido: {token}"
 
+#. English: Format has a ">" with no matching "<"
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.unmatchedCloseAngle"
+msgstr ""
+
 #. English: Format has a "}" with no matching "{"
 #: src/Maki.Core/Naming/NamingFormatter.cs
 #, fuzzy
 msgid "error.naming.unmatchedCloseBrace"
 msgstr "O formato contém um \"}\" sem um \"{\" correspondente"
+
+#. English: Format has a "<" with no matching ">"
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.unmatchedOpenAngle"
+msgstr ""
 
 #. English: Format has a "{" with no matching "}"
 #: src/Maki.Core/Naming/NamingFormatter.cs

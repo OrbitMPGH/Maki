@@ -24,15 +24,24 @@ public sealed record NamingValidationError(string Key, object? Args = null);
 /// </para>
 ///
 /// <para>
-/// There is no syntax for "drop this bit when the value is missing". Absent values render empty
-/// and the cleanup pass below (collapse whitespace, trim stray joining punctuation) is what keeps
-/// the result tidy — which is why combo tokens like <c>{Series TitleYear}</c> and
-/// <c>{Chapter VolChap}</c> exist: they carry their own punctuation and vanish whole.
+/// Absent values render empty and the cleanup pass below (collapse whitespace, trim stray joining
+/// punctuation, drop empty brackets) keeps the result tidy. For anything else, an optional block
+/// <c>&lt;({Chapter Group})&gt;</c> keeps its text only when every token inside it has a value and
+/// drops whole otherwise. <c>&lt;</c> and <c>&gt;</c> can't appear in a file name, so they need no
+/// escaping. Blocks don't nest.
 /// </para>
 /// </summary>
 public static class NamingFormatter
 {
     private static readonly Regex TokenPattern = new(@"\{([^{}]*)\}", RegexOptions.Compiled);
+
+    /// <summary>
+    /// An optional block or a bare token, matched in one pass so a rendered value is never scanned
+    /// again: a series titled "{Foo}" must not be read back as a token.
+    /// </summary>
+    private static readonly Regex PartPattern = new(@"<([^<>]*)>|\{([^{}]*)\}", RegexOptions.Compiled);
+
+    private static readonly Regex OptionalBlock = new(@"<[^<>]*>", RegexOptions.Compiled);
     private static readonly Regex Whitespace = new(@"\s+", RegexOptions.Compiled);
     private static readonly Regex EmptyBrackets = new(@"\(\s*\)|\[\s*\]", RegexOptions.Compiled);
 
@@ -41,23 +50,43 @@ public static class NamingFormatter
 
     public static string Format(string template, NamingContext context)
     {
-        var rendered = TokenPattern.Replace(template, match =>
+        var rendered = PartPattern.Replace(template, match => match.Groups[2].Success
+            ? RenderToken(match.Groups[2].Value, context) ?? string.Empty
+            : RenderBlock(match.Groups[1].Value, context));
+
+        return FileNameSanitizer.Sanitize(Cleanup(rendered));
+    }
+
+    private static string RenderBlock(string body, NamingContext context)
+    {
+        var tokens = TokenPattern.Matches(body);
+        var values = new string[tokens.Count];
+        for (var i = 0; i < tokens.Count; i++)
         {
-            var (name, padding) = SplitPadding(match.Groups[1].Value);
-            var token = NamingTokens.Find(name);
-            if (token is null)
+            if (RenderToken(tokens[i].Groups[1].Value, context) is not { } value)
             {
-                // Validation refuses unknown tokens at save time, so reaching here means a format
-                // that predates a token being removed. Emitting the raw token text into a filename
-                // would be worse than dropping it.
                 return string.Empty;
             }
 
-            var value = token.Resolve(context, token.SupportsPadding ? padding : null);
-            return string.IsNullOrEmpty(value) ? string.Empty : ApplySpelling(value, name);
-        });
+            values[i] = value;
+        }
 
-        return FileNameSanitizer.Sanitize(Cleanup(rendered));
+        var next = 0;
+        return TokenPattern.Replace(body, _ => values[next++]);
+    }
+
+    /// <summary>The token's value in the spelling it was written with, or null when it has none.</summary>
+    private static string? RenderToken(string body, NamingContext context)
+    {
+        var (name, padding) = SplitPadding(body);
+
+        // Validation refuses unknown tokens at save time, so reaching here means a format that
+        // predates a token being removed. Emitting the raw token text into a filename would be
+        // worse than dropping it.
+        var value = NamingTokens.Find(name) is { } token
+            ? token.Resolve(context, token.SupportsPadding ? padding : null)
+            : null;
+        return string.IsNullOrWhiteSpace(value) ? null : ApplySpelling(value, name);
     }
 
     /// <summary>Whether the template names <paramref name="token"/> in any spelling, e.g. <c>{Chapter.Language}</c>.</summary>
@@ -91,11 +120,17 @@ public static class NamingFormatter
         }
 
         errors.AddRange(BraceErrors(template));
+        var blockErrors = BlockErrors(template).ToList();
+        errors.AddRange(blockErrors);
 
         var matches = TokenPattern.Matches(template);
         if (matches.Count == 0)
         {
             errors.Add(new NamingValidationError("error.naming.noTokens"));
+        }
+        else if (blockErrors.Count == 0 && !TokenPattern.IsMatch(OptionalBlock.Replace(template, string.Empty)))
+        {
+            errors.Add(new NamingValidationError("error.naming.allTokensOptional"));
         }
 
         foreach (Match match in matches)
@@ -185,6 +220,51 @@ public static class NamingFormatter
         if (open)
         {
             yield return new NamingValidationError("error.naming.unmatchedOpenBrace");
+        }
+    }
+
+    private static IEnumerable<NamingValidationError> BlockErrors(string template)
+    {
+        var inToken = false;
+        var blockStart = -1;
+        for (var i = 0; i < template.Length; i++)
+        {
+            switch (template[i])
+            {
+                case '{':
+                    inToken = true;
+                    break;
+                case '}':
+                    inToken = false;
+                    break;
+                case '<' or '>' when inToken:
+                    yield return new NamingValidationError("error.naming.angleInsideToken");
+                    yield break;
+                case '<' when blockStart >= 0:
+                    yield return new NamingValidationError("error.naming.nestedOptional");
+                    yield break;
+                case '<':
+                    blockStart = i;
+                    break;
+                case '>' when blockStart < 0:
+                    yield return new NamingValidationError("error.naming.unmatchedCloseAngle");
+                    yield break;
+                case '>':
+                    if (!TokenPattern.IsMatch(template[blockStart..i]))
+                    {
+                        yield return new NamingValidationError(
+                            "error.naming.optionalWithoutToken", new { block = template[blockStart..(i + 1)] });
+                        yield break;
+                    }
+
+                    blockStart = -1;
+                    break;
+            }
+        }
+
+        if (blockStart >= 0)
+        {
+            yield return new NamingValidationError("error.naming.unmatchedOpenAngle");
         }
     }
 

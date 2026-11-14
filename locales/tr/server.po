@@ -3601,6 +3601,17 @@ msgstr "FlareSolverr yanıt vermedi"
 msgid "error.nameParsing.unknownLanguage"
 msgstr "Maki'de \"{language}\" dili için cilt veya bölüm kelimesi yok"
 
+#. "<" and ">" are the literal optional block markers in a naming format; keep them as is.
+#. English: Format needs at least one token outside a <...> block, or a name could come out empty
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.allTokensOptional"
+msgstr ""
+
+#. English: Format has a "<" or ">" inside a token
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.angleInsideToken"
+msgstr ""
+
 #. {token} is the offending {Token Name} as the caller wrote it, braces included.
 #. English: Format has a "{" inside a token
 #: src/Maki.Core/Naming/NamingFormatter.cs
@@ -3644,6 +3655,12 @@ msgstr "Biçim boş olamaz"
 msgid "error.naming.formatInvalid"
 msgstr "{field}: {reason}"
 
+#. "<" and ">" are the literal optional block markers in a naming format; keep them as is.
+#. English: Format has a <...> block inside another one
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.nestedOptional"
+msgstr ""
+
 #. English: {token} does not take a padding pattern
 #: src/Maki.Core/Naming/NamingFormatter.cs
 #, fuzzy
@@ -3655,6 +3672,12 @@ msgstr "{token} için dolgu deseni kullanılamaz"
 #, fuzzy
 msgid "error.naming.noTokens"
 msgstr "Biçim en az bir belirteç içermeli, yoksa tüm seriler aynı adı alır"
+
+#. {block} is the offending optional block as the caller wrote it, markers included, e.g. "<(x)>".
+#. English: {block} has no token in it, so it would always show
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.optionalWithoutToken"
+msgstr ""
 
 #. {token} is the padding pattern's example, e.g. "{Chapter Number:000}", spelled exactly as the
 #. caller wrote the token name.
@@ -3676,11 +3699,21 @@ msgstr "Biçim yol ayırıcıları içeremez. Adlar yalnızca tek klasör veya d
 msgid "error.naming.unknownToken"
 msgstr "Bilinmeyen belirteç: {token}"
 
+#. English: Format has a ">" with no matching "<"
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.unmatchedCloseAngle"
+msgstr ""
+
 #. English: Format has a "}" with no matching "{"
 #: src/Maki.Core/Naming/NamingFormatter.cs
 #, fuzzy
 msgid "error.naming.unmatchedCloseBrace"
 msgstr "Biçimde eşleşen bir \"{\" olmadan \"}\" var"
+
+#. English: Format has a "<" with no matching ">"
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.unmatchedOpenAngle"
+msgstr ""
 
 #. English: Format has a "{" with no matching "}"
 #: src/Maki.Core/Naming/NamingFormatter.cs

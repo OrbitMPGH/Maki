@@ -24554,6 +24554,10 @@ msgstr "Geschwindigkeit testen"
 msgid "Text"
 msgstr "Text"
 
+#: src/components/NamingTokenModal.tsx
+msgid "Text between {openMarker} and {closeMarker} is kept only when every token inside has a value: <0>{optionalExample}</0> leaves out the brackets too when a chapter has no group."
+msgstr ""
+
 #: src/components/SourceMappingsSection.tsx
 #, fuzzy
 msgid "Thai"

@@ -53,6 +53,19 @@ A file that holds several chapters, such as a volume compilation, is named for t
 
 Empty tokens print nothing, and Maki tidies leftover spaces and empty brackets.
 
+### Optional parts
+
+Wrap part of a format in `<` and `>` to keep it only when every token inside has a value. If any of
+them is empty, the whole part is left out, text included. For example, `{Series Title} <({Chapter Group})>`
+gives `Berserk (Band of the Hawk)` for a chapter with a group and just `Berserk` for one without.
+
+Several optional parts can sit side by side, but they can't be nested, and the format needs at least
+one token outside them so a name never comes out empty:
+
+```
+{Series Title} - <Vol. {Chapter Volume:00} ><Ch. {Chapter Number:0000}>
+```
+
 ## Characters and length
 
 Maki removes `< > : " / \ | ? *` and control characters from every name, and gives Windows reserved

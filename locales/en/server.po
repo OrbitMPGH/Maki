@@ -2523,6 +2523,15 @@ msgstr "FlareSolverr did not respond"
 msgid "error.nameParsing.unknownLanguage"
 msgstr "Maki has no volume or chapter words for the language \"{language}\""
 
+#. "<" and ">" are the literal optional block markers in a naming format; keep them as is.
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.allTokensOptional"
+msgstr "Format needs at least one token outside a <...> block, or a name could come out empty"
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.angleInsideToken"
+msgstr "Format has a \"<\" or \">\" inside a token"
+
 #. {token} is the offending {Token Name} as the caller wrote it, braces included.
 #: src/Maki.Core/Naming/NamingFormatter.cs
 msgid "error.naming.braceInsideToken"
@@ -2554,6 +2563,11 @@ msgstr "Format cannot be empty"
 msgid "error.naming.formatInvalid"
 msgstr "{field}: {reason}"
 
+#. "<" and ">" are the literal optional block markers in a naming format; keep them as is.
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.nestedOptional"
+msgstr "Format has a <...> block inside another one"
+
 #: src/Maki.Core/Naming/NamingFormatter.cs
 msgid "error.naming.noPadding"
 msgstr "{token} does not take a padding pattern"
@@ -2561,6 +2575,11 @@ msgstr "{token} does not take a padding pattern"
 #: src/Maki.Core/Naming/NamingFormatter.cs
 msgid "error.naming.noTokens"
 msgstr "Format must contain at least one token, or every series would get the same name"
+
+#. {block} is the offending optional block as the caller wrote it, markers included, e.g. "<(x)>".
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.optionalWithoutToken"
+msgstr "{block} has no token in it, so it would always show"
 
 #. {token} is the padding pattern's example, e.g. "{Chapter Number:000}", spelled exactly as the
 #. caller wrote the token name.
@@ -2577,8 +2596,16 @@ msgid "error.naming.unknownToken"
 msgstr "Unknown token: {token}"
 
 #: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.unmatchedCloseAngle"
+msgstr "Format has a \">\" with no matching \"<\""
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
 msgid "error.naming.unmatchedCloseBrace"
 msgstr "Format has a \"}\" with no matching \"{\""
+
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.unmatchedOpenAngle"
+msgstr "Format has a \"<\" with no matching \">\""
 
 #: src/Maki.Core/Naming/NamingFormatter.cs
 msgid "error.naming.unmatchedOpenBrace"
