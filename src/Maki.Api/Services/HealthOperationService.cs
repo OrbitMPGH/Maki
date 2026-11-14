@@ -202,6 +202,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
                 record.MeasuredAtUtc = null;
                 record.ResetConversion();
             }
+            record.NamedByMaki &= SameFileName(record.RelativePath, target.RelativePath);
             record.RelativePath = target.RelativePath;
             record.Size = target.Size;
             Invalidate(record.Id);
@@ -572,6 +573,7 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
             // The row moves rather than being rebuilt, so the chapters keep their file id and with it
             // everything keyed on it: quality, conversion state, KOReader documents.
             var kept = oldFiles.First(f => chapters.Any(c => c.ChapterFileId == f.Id));
+            kept.NamedByMaki &= SameFileName(kept.RelativePath, target.RelativePath);
             kept.RelativePath = target.RelativePath;
             // Whether a file is hardlinked belongs to the path, so conversion has to look again.
             if (kept.CheckedWith == PlanAction.HardSkipName) { kept.CheckedWith = null; kept.ConversionCheckedAtUtc = null; }
@@ -774,4 +776,8 @@ public class HealthOperationService(MakiDbContext db, DownloadQueueService queue
         var directory = Path.Combine(paths.ReaderCacheDir, id.ToString());
         if (Directory.Exists(directory)) Directory.Delete(directory, true);
     }
+
+    // A file found under another name was named by whoever moved it, not by Maki.
+    private static bool SameFileName(string from, string to) =>
+        string.Equals(Path.GetFileName(from), Path.GetFileName(to), StringComparison.Ordinal);
 }

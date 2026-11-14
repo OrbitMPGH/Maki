@@ -412,6 +412,13 @@ public class SeriesRenameService(
             var rows = await db.ChapterFiles.Where(f => ids.Contains(f.Id)).ToListAsync(saveToken);
             foreach (var row in rows)
             {
+                // A folder-only move keeps the release's own file name.
+                if (!string.Equals(Path.GetFileName(row.RelativePath), Path.GetFileName(byId[row.Id]),
+                        StringComparison.Ordinal))
+                {
+                    row.NamedByMaki = true;
+                }
+
                 row.RelativePath = byId[row.Id];
             }
         }

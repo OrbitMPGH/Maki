@@ -24,7 +24,8 @@ public class ChapterFileQualityService(
     /// Where a file came from. The group is the one the chapter's link to the same source recorded,
     /// falling back to <see cref="SiteGroup"/>; for a file with no registered source (an import, a
     /// torrent, a relink) it is whatever the release name's tags name, else the file name's, since a
-    /// pack's title often names no group while every file inside it does.
+    /// pack's title often names no group while every file inside it does. A name Maki built is never
+    /// read: its brackets hold a chapter title or a format token, not a group.
     /// Expects <paramref name="chapter"/>'s <c>SourceLinks</c> and their <c>SourceMapping</c> loaded.
     /// </summary>
     public (SourceKind? Kind, string? Group) ResolveProvenance(ChapterFile file, Chapter? chapter)
@@ -40,7 +41,8 @@ public class ChapterFileQualityService(
 
         if (source is null)
         {
-            return (null, TagGroup(file.ReleaseName) ?? TagGroup(Path.GetFileName(file.RelativePath)));
+            return (null, TagGroup(file.ReleaseName)
+                          ?? (file.NamedByMaki ? null : TagGroup(Path.GetFileName(file.RelativePath))));
         }
 
         return (source.Kind, SiteGroup(source));

@@ -406,6 +406,22 @@ public class ChapterFileQualityServiceTests : IDisposable
     }
 
     [Fact]
+    public void A_file_name_maki_built_is_never_read_for_a_group()
+    {
+        var file = new ChapterFile
+        {
+            RelativePath = Path.Combine("Series", "Series Ch.3 (The Return).cbz"),
+            SourceName = "torrent:nyaasi",
+            ReleaseName = "Series v01-10 (Digital)",
+            NamedByMaki = true
+        };
+
+        var (_, group) = TestQuality.Create().ResolveProvenance(file, null);
+
+        Assert.Null(group);
+    }
+
+    [Fact]
     public void A_torrent_title_group_wins_over_the_file_name()
     {
         var file = new ChapterFile

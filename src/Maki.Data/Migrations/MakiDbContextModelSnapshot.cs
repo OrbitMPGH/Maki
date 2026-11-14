@@ -320,6 +320,9 @@ namespace Maki.Data.Migrations
                     b.Property<int?>("MedianWidth")
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("NamedByMaki")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("OriginalImageFormat")
                         .HasColumnType("TEXT");
 

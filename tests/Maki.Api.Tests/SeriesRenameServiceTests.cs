@@ -148,6 +148,7 @@ public class SeriesRenameServiceTests : IDisposable
         Assert.Equal("Berserk (1989)", db.Series.Single(s => s.Id == id).FolderName);
         Assert.All(db.ChapterFiles.Where(f => f.SeriesId == id).ToList(),
             f => Assert.StartsWith("Berserk (1989)", f.RelativePath));
+        Assert.All(db.ChapterFiles.Where(f => f.SeriesId == id).ToList(), f => Assert.False(f.NamedByMaki));
     }
 
     [Fact]
@@ -163,8 +164,9 @@ public class SeriesRenameServiceTests : IDisposable
         Assert.False(File.Exists(Path.Combine(_root, "Berserk (1989)", "Berserk Vol.3 Ch.24.cbz")));
 
         using var db = _db.NewContext();
-        Assert.Equal(Path.Combine("Berserk (1989)", "Berserk - 024.cbz"),
-            db.ChapterFiles.Single(f => f.SeriesId == id).RelativePath);
+        var file = db.ChapterFiles.Single(f => f.SeriesId == id);
+        Assert.Equal(Path.Combine("Berserk (1989)", "Berserk - 024.cbz"), file.RelativePath);
+        Assert.True(file.NamedByMaki);
     }
 
     [Fact]

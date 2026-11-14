@@ -41,6 +41,12 @@ public class ChapterFile
     /// <summary>Scanlation group or release group that produced this file, when known.</summary>
     public string? Group { get; set; }
 
+    /// <summary>
+    /// The file name is one Maki built (a download or a rename), so it says nothing about the
+    /// release and its tags must not be read as a group.
+    /// </summary>
+    public bool NamedByMaki { get; set; }
+
     public int? PageCount { get; set; }
 
     /// <summary>
