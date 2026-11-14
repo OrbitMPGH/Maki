@@ -121,16 +121,20 @@ public class PageConversionEstimateService(
         }
     }
 
-    /// <summary>A stable hash of what decides the estimate: format, default stop, PNG choice and each rule but its name.</summary>
+    /// <summary>
+    /// A stable hash of what decides the estimate: the default settings (formats, stops, PNG choice, split
+    /// height) and each rule but its name.
+    /// </summary>
     public static string Hash(PageConversionPlan plan)
     {
+        // The format is named on its own too: at Lossless the default's name leaves it out, yet series
+        // set to a fixed stop still convert in it.
         var parts = new List<string>
         {
-            PageConversionSettings.FormatName(plan.Format), PageConversionSettings.StopName(plan.DefaultStop),
-            plan.PngLossless ? "png-lossless" : "png"
+            PageConversionSettings.FormatName(plan.Format), plan.DefaultSettings.Name(), plan.PngLossless ? "png-lossless" : "png"
         };
         parts.AddRange(plan.Rules.OrderBy(r => r.Order).Select(r =>
-            $"{r.Conditions.ToJson()}|{(r.Skip || r.Stop is not { } stop ? "skip" : PageConversionSettings.StopName(stop))}"));
+            $"{r.Conditions.ToJson()}|{(r.Skip ? "skip" : plan.Settings(r).Name())}"));
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', parts)));
         return Convert.ToHexString(hash, 0, 8).ToLowerInvariant();
     }

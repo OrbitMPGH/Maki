@@ -349,7 +349,7 @@ public sealed partial class PageConversionTests
         new PageConversionController.RuleDto(null, "", null, "convert", null),
         new PageConversionController.RuleDto(null, "", null, "convert", "best"),
         new PageConversionController.RuleDto(null, "", new PageConversionConditions(Tiers: ["gold"]), "skip", null),
-        new PageConversionController.RuleDto(null, "", new PageConversionConditions(Formats: ["jxl"]), "skip", null),
+        new PageConversionController.RuleDto(null, "", new PageConversionConditions(Formats: ["heic"]), "skip", null),
         new PageConversionController.RuleDto(null, "", new PageConversionConditions(BppUnder: 0), "skip", null),
         new PageConversionController.RuleDto(null, "", new PageConversionConditions(BppOver: -1), "skip", null),
         new PageConversionController.RuleDto(null, "", new PageConversionConditions(SizeOverBytes: 0), "skip", null),
@@ -601,7 +601,7 @@ public sealed partial class PageConversionTests
         Assert.IsType<BadRequestObjectResult>(await controller.SavePlan(new PageConversionController.PlanDto(avif,
             [scrapes, new PageConversionController.RuleDto(null, "", null, "delete", null)]), CancellationToken.None));
         Assert.IsType<BadRequestObjectResult>(await controller.SavePlan(new PageConversionController.PlanDto(
-            new PageConversionController.SettingsDto("jxl", "balanced", false), [scrapes]), CancellationToken.None));
+            new PageConversionController.SettingsDto("heic", "balanced", false), [scrapes]), CancellationToken.None));
         Assert.IsType<BadRequestObjectResult>(await controller.SavePlan(
             new PageConversionController.PlanDto(null, [scrapes]), CancellationToken.None));
         Assert.Empty(_world.Db.NewContext().PageConversionRules);
@@ -629,5 +629,99 @@ public sealed partial class PageConversionTests
         Assert.Equal(0, status.Library.RuleCount);
         Assert.Null(await PageConversionOptions.LoadAsync(db, CancellationToken.None));
         Assert.NotNull(Row(fileId).ConversionCheckedAtUtc);
+    }
+    [Fact]
+    public async Task Colour_targets_are_saved_with_the_plan_and_read_back()
+    {
+        using var db = _world.Db.NewContext();
+        var controller = Controller(db);
+        var settings = new PageConversionController.SettingsDto("webp", "high", true, ColourFormat: "avif", ColourStop: "balanced");
+        var rules = new[]
+        {
+            new PageConversionController.RuleDto(null, "Scrapes", new PageConversionConditions(Tiers: ["aggregator"]), "convert",
+                "compact", Format: "avif", ColourFormat: "webp", ColourStop: "high"),
+            new PageConversionController.RuleDto(null, "Volumes", new PageConversionConditions(Tiers: ["volume"]), "convert", "high",
+                Format: "webp")
+        };
+
+        var status = Saved(await controller.SavePlan(new PageConversionController.PlanDto(settings, rules), CancellationToken.None));
+
+        Assert.Equal(settings, status.Settings);
+        var plan = (await PageConversionOptions.LoadPlanAsync(db, CancellationToken.None))!;
+        Assert.Equal("webp:high/avif:balanced+png", plan.DefaultSettings.Name());
+        Assert.Equal("avif:compact/webp:high+png", plan.Settings(plan.Rules[0]).Name());
+        Assert.Equal("webp:high+png", plan.Settings(plan.Rules[1]).Name());
+
+        var read = Assert.IsType<PageConversionController.RulesDto>(
+            Assert.IsType<OkObjectResult>(await controller.Rules(CancellationToken.None)).Value);
+        Assert.Equal(("avif", "webp", "high"), (read.Rules![0].Format, read.Rules[0].ColourFormat, read.Rules[0].ColourStop));
+        Assert.Equal(("webp", (string?)null, (string?)null), (read.Rules[1].Format, read.Rules[1].ColourFormat, read.Rules[1].ColourStop));
+    }
+
+    [Fact]
+    public async Task A_colour_target_like_the_other_is_stored_as_none_and_a_broken_one_is_refused()
+    {
+        using var db = _world.Db.NewContext();
+        var controller = Controller(db);
+
+        var status = Saved(await controller.SavePlan(new PageConversionController.PlanDto(
+            new PageConversionController.SettingsDto("avif", "balanced", false, ColourFormat: "avif", ColourStop: "balanced"), []),
+            CancellationToken.None));
+
+        Assert.Equal((null, null), (status.Settings.ColourFormat, status.Settings.ColourStop));
+        Assert.Null(await new SettingsService(_world.Db.ScopeFactory()).GetAsync(SettingKeys.PageConversionColour));
+
+        Assert.IsType<BadRequestObjectResult>(await controller.SavePlan(new PageConversionController.PlanDto(
+            new PageConversionController.SettingsDto("webp", "high", false, ColourFormat: "avif"), []), CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await controller.SavePlan(new PageConversionController.PlanDto(
+            new PageConversionController.SettingsDto("webp", "high", false, ColourFormat: "heic", ColourStop: "high"), []),
+            CancellationToken.None));
+        Assert.IsType<BadRequestObjectResult>(await controller.SavePlan(new PageConversionController.PlanDto(
+            new PageConversionController.SettingsDto("webp", "high", false), [new PageConversionController.RuleDto(null, "Bad", null,
+                "convert", "high", Format: "heic")]), CancellationToken.None));
+
+        status = Saved(await controller.SavePlan(new PageConversionController.PlanDto(
+            new PageConversionController.SettingsDto("webp", "high", false, ColourStop: "lossless"), []), CancellationToken.None));
+        Assert.Equal(((string?)null, "lossless"), (status.Settings.ColourFormat, status.Settings.ColourStop));
+    }
+
+    [Fact]
+    public async Task Jpeg_xl_saves_as_a_format_and_is_refused_without_libjxl()
+    {
+        using var db = _world.Db.NewContext();
+        var controller = Controller(db);
+        var available = PageConversionController.JpegXlAvailable;
+        try
+        {
+            PageConversionController.JpegXlAvailable = () => true;
+            var status = Saved(await controller.SavePlan(new PageConversionController.PlanDto(
+                new PageConversionController.SettingsDto("jxl", "balanced", false, ColourFormat: "avif", ColourStop: "high"),
+                [new PageConversionController.RuleDto(null, "Jxl", new PageConversionConditions(Formats: ["jxl"]), "skip", null)]),
+                CancellationToken.None));
+            Assert.Equal(("jxl", "balanced"), (status.Settings.Format, status.Settings.Stop));
+            Assert.Equal("jxl:balanced/avif:high",
+                (await PageConversionOptions.LoadAsync(db, CancellationToken.None))!.Name());
+
+            PageConversionController.JpegXlAvailable = () => false;
+            static string Code(IActionResult result) =>
+                JsonSerializer.SerializeToElement(Assert.IsType<BadRequestObjectResult>(result).Value).GetProperty("code").GetString()!;
+            const string key = "error.pageConversion.jpegXlUnavailable";
+            Assert.Equal(key, Code(await controller.Save(
+                new PageConversionController.SettingsDto("jxl", "high", false), CancellationToken.None)));
+            Assert.Equal(key, Code(await controller.SavePlan(new PageConversionController.PlanDto(
+                new PageConversionController.SettingsDto("webp", "high", false, ColourFormat: "jxl", ColourStop: "high"), []),
+                CancellationToken.None)));
+            Assert.Equal(key, Code(await controller.SaveRules(new PageConversionController.RulesDto(
+                [new PageConversionController.RuleDto(null, "Jxl", null, "convert", "high", Format: "jxl")]), CancellationToken.None)));
+
+            // Lossless is lossless WebP whatever the format said, and a skip rule writes nothing.
+            Saved(await controller.SavePlan(new PageConversionController.PlanDto(
+                new PageConversionController.SettingsDto("webp", "high", false, ColourFormat: "jxl", ColourStop: "lossless"),
+                [new PageConversionController.RuleDto(null, "Jxl", null, "skip", null, Format: "jxl")]), CancellationToken.None));
+        }
+        finally
+        {
+            PageConversionController.JpegXlAvailable = available;
+        }
     }
 }

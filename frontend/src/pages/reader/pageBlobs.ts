@@ -1,3 +1,5 @@
+import { jpegXlAccept } from '../../lib/enhance/jpegXl'
+
 /**
  * Page images the reader holds in memory as object URLs, so a turn to a page in the window (ahead,
  * behind, or the next chapter's first pages) never goes back to the browser's caches. Safari over
@@ -61,7 +63,8 @@ export function holdPage(src: string): Promise<string | null> {
     return known.pending
   }
   const entry: Entry = { objectUrl: null, bytes: 0, pending: Promise.resolve(null) }
-  entry.pending = fetch(src, { credentials: 'same-origin' })
+  entry.pending = jpegXlAccept()
+    .then((headers) => fetch(src, { credentials: 'same-origin', headers }))
     .then((res) => (res.ok && res.headers.get('content-type')?.startsWith('image/') ? res.blob() : null))
     .then((blob) => {
       // A page bigger than the whole cap would be trimmed straight away; it loads from its own URL.

@@ -243,7 +243,7 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
     /// <summary>The page as 8-bit sRGB with alpha flattened on white, cut to its top <paramref name="share"/>.</summary>
     private static Rgb Decode(byte[] image, double share)
     {
-        using var source = VipsImage.NewFromBuffer(image);
+        using var source = ImageCodec.Load(image);
         using var srgb = source.Colourspace(Enums.Interpretation.Srgb);
         using var flat = srgb.HasAlpha() ? srgb.Flatten(background: [255, 255, 255]) : srgb.Copy();
         using var cast = flat.Cast(Enums.BandFormat.Uchar);

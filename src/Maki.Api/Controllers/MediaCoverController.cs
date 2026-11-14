@@ -340,11 +340,12 @@ public class MediaCoverController(
 
     /// <param name="allowAvif">
     /// For a chapter page or a source cover, which only ever reach a browser as the re-encoded JPEG
-    /// poster. Converted chapters store AVIF pages.
+    /// poster. Converted chapters store AVIF and JPEG XL pages, so this lets JPEG XL through too.
     /// </param>
     internal static bool IsAcceptableImage(byte[] bytes, bool allowAvif = false)
     {
-        var mediaType = ImageValidator.SniffMediaType(bytes.AsSpan(0, Math.Min(bytes.Length, 32)));
+        var mediaType = ImageValidator.SniffMediaType(bytes.AsSpan(0, Math.Min(bytes.Length, 32))) ??
+                        (allowAvif && JpegXl.HasSignature(bytes) ? "image/jxl" : null);
         if (mediaType is null || (mediaType == "image/avif" && !allowAvif))
         {
             return false;

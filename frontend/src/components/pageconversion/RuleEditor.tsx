@@ -7,30 +7,24 @@ import {
   Menu,
   MultiSelect,
   NumberInput,
-  Select,
+  SegmentedControl,
   Stack,
   TagsInput,
   Text,
   TextInput,
 } from '@mantine/core'
 import { Note } from '../ui/Note'
-import { Panel } from '../ui/Panel'
-import { IconArrowDown, IconArrowUp, IconPlus, IconX } from '../../lib/icons'
+import { IconPlus, IconX } from '../../lib/icons'
 import { msg } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
-import {
-  PAGE_CONVERSION_STOPS,
-  type PageConversionConditions,
-  type PageConversionStop,
-  type ScopeBucket,
-} from '../../api/pageConversion'
+import type { PageConversionConditions, PageConversionFormat, ScopeBucket } from '../../api/pageConversion'
 import { useTags } from '../../api/hooks'
 import { SERIES_TYPES, SERIES_TYPE_LABELS } from '../../api/readingProfiles'
 import { QUALITY_TIERS, QUALITY_TIER_LABELS, type QualityTierName } from '../../api/upgrades'
 import { formatBytes } from '../../format'
 import { useLabel } from '../../i18n-context'
-import { PAGE_FORMAT_LABELS, RULE_PAGE_FORMATS, STOP_LABELS } from './labels'
+import { PAGE_FORMAT_LABELS, RULE_PAGE_FORMATS } from './labels'
 import { BYTES_PER_MB, hasConditions, type RuleDraft } from './ruleTemplates'
 
 type ConditionKind = 'tiers' | 'sources' | 'formats' | 'seriesTypes' | 'tags' | 'bpp' | 'size'
@@ -117,28 +111,65 @@ function DecimalInput({
   )
 }
 
-/** One rule: its conditions, what happens to the files that match, and how many that is. */
-export function RuleCard({
+/** "Kind of release: Volume; Source: torrent:*", or null for a rule with no conditions. */
+export function useConditionsSummary() {
+  const { t } = useLingui()
+  const renderLabel = useLabel()
+  const range = (over: number | undefined, under: number | undefined, suffix: string): string => {
+    const low = over === undefined ? '' : `${over}${suffix}`
+    const high = under === undefined ? '' : `${under}${suffix}`
+    if (low && high) return t`over ${low}, under ${high}`
+    if (low) return t`over ${low}`
+    return t`under ${high}`
+  }
+  const valuesOf = (kind: ConditionKind, c: PageConversionConditions): string => {
+    switch (kind) {
+      case 'tiers':
+        return (c.tiers ?? []).map((tier) => renderLabel(QUALITY_TIER_LABELS[tier])).join(', ')
+      case 'sources':
+        return (c.sources ?? []).join(', ')
+      case 'formats':
+        return (c.formats ?? [])
+          .map((f) => {
+            const known = PAGE_FORMAT_LABELS[f as keyof typeof PAGE_FORMAT_LABELS]
+            return known ? renderLabel(known) : f
+          })
+          .join(', ')
+      case 'seriesTypes':
+        return (c.seriesTypes ?? [])
+          .map((type) => (SERIES_TYPE_LABELS[type] ? renderLabel(SERIES_TYPE_LABELS[type]) : type))
+          .join(', ')
+      case 'tags':
+        return (c.tags ?? []).join(', ')
+      case 'bpp':
+        return range(c.bppOver, c.bppUnder, '')
+      case 'size':
+        return range(toMb(c.sizeOverBytes), toMb(c.sizeUnderBytes), t` MB`)
+    }
+  }
+  return (c: PageConversionConditions): string | null => {
+    const parts = CONDITION_KINDS.filter((kind) => isSet(kind, c)).map((kind) => {
+      const label = renderLabel(CONDITION_LABELS[kind])
+      const values = valuesOf(kind, c)
+      return t`${label}: ${values}`
+    })
+    return parts.length === 0 ? null : parts.join('; ')
+  }
+}
+
+/** One rule's name, conditions and action. Its targets are set from the plan table. */
+export function RuleEditor({
   index,
-  total,
   rule,
-  bucket,
-  stale,
+  defaultFormat,
   onChange,
-  onMove,
-  onRemove,
 }: {
   /** Zero-based. */
   index: number
-  total: number
   rule: RuleDraft
-  /** Undefined until the first count arrives. */
-  bucket: ScopeBucket | undefined
-  /** The count belongs to an earlier version of the list and is about to be replaced. */
-  stale: boolean
+  /** The plan's format, which a rule saved without one converts in. */
+  defaultFormat: PageConversionFormat
   onChange: (rule: RuleDraft) => void
-  onMove: (delta: -1 | 1) => void
-  onRemove: () => void
 }) {
   const { t } = useLingui()
   const mbSuffix = t` MB`
@@ -160,15 +191,6 @@ export function RuleCard({
   }
 
   const tagLabels = [...new Set([...(tags ?? []).map((tag) => tag.label), ...(c.tags ?? [])])]
-
-  const action = rule.action === 'skip' ? 'skip' : (rule.stop ?? 'high')
-  const actionData = [
-    { value: 'skip', label: t`Skip` },
-    ...PAGE_CONVERSION_STOPS.map((stop) => {
-      const stopLabel = renderLabel(STOP_LABELS[stop])
-      return { value: stop, label: t`Convert at ${stopLabel}` }
-    }),
-  ]
 
   const editor = (kind: ConditionKind) => {
     switch (kind) {
@@ -279,114 +301,87 @@ export function RuleCard({
   }
 
   return (
-    <li style={{ listStyle: 'none' }}>
-    <Panel p="sm">
-      <Stack gap="sm">
-        <Group gap="xs" wrap="nowrap" align="center">
-          <Text fw={600} size="sm" style={{ flexShrink: 0 }}>
-            <Trans>Rule {number}</Trans>
-          </Text>
-          <TextInput
-            aria-label={t`Name of rule ${number}`}
-            placeholder={t`Name, optional`}
-            value={rule.name}
-            onChange={(event) => onChange({ ...rule, name: event.currentTarget.value })}
-            maxLength={80}
-            size="xs"
-            style={{ flex: 1 }}
-          />
-          <ActionIcon
-            variant="subtle"
-            color="var(--neutral)"
-            aria-label={t`Move rule ${number} up`}
-            disabled={index === 0}
-            onClick={() => onMove(-1)}
-          >
-            <IconArrowUp size={16} />
-          </ActionIcon>
-          <ActionIcon
-            variant="subtle"
-            color="var(--neutral)"
-            aria-label={t`Move rule ${number} down`}
-            disabled={index === total - 1}
-            onClick={() => onMove(1)}
-          >
-            <IconArrowDown size={16} />
-          </ActionIcon>
-          <ActionIcon variant="subtle" color="var(--danger)" aria-label={t`Remove rule ${number}`} onClick={onRemove}>
-            <IconX size={16} />
-          </ActionIcon>
-        </Group>
+    <Stack gap="sm" className="pc-rule-editor">
+      <TextInput
+        label={t`Name`}
+        aria-label={t`Name of rule ${number}`}
+        placeholder={t`Optional`}
+        value={rule.name}
+        onChange={(event) => onChange({ ...rule, name: event.currentTarget.value })}
+        maxLength={80}
+        size="xs"
+        maw={420}
+      />
 
-        {visible.length > 0 && (
-          <Stack gap="sm">
-            {visible.map((kind) => {
-              const conditionLabel = renderLabel(CONDITION_LABELS[kind])
-              return (
-                <Group key={kind} gap="xs" wrap="nowrap" align="flex-end">
-                  {editor(kind)}
-                  <ActionIcon
-                    variant="subtle"
-                    color="var(--neutral)"
-                    mb={2}
-                    aria-label={t`Remove condition: ${conditionLabel}`}
-                    onClick={() => removeCondition(kind)}
-                  >
-                    <IconX size={16} />
-                  </ActionIcon>
-                </Group>
-              )
-            })}
-          </Stack>
+      {visible.length > 0 && (
+        <Stack gap="sm">
+          {visible.map((kind) => {
+            const conditionLabel = renderLabel(CONDITION_LABELS[kind])
+            return (
+              <Group key={kind} gap="xs" wrap="nowrap" align="flex-end">
+                {editor(kind)}
+                <ActionIcon
+                  variant="subtle"
+                  color="var(--neutral)"
+                  mb={2}
+                  aria-label={t`Remove condition: ${conditionLabel}`}
+                  onClick={() => removeCondition(kind)}
+                >
+                  <IconX size={16} />
+                </ActionIcon>
+              </Group>
+            )
+          })}
+        </Stack>
+      )}
+
+      <Group gap="sm">
+        <Menu position="bottom-start" withinPortal>
+          <Menu.Target>
+            <Button
+              variant="default"
+              size="xs"
+              leftSection={<IconPlus size={16} />}
+              disabled={addable.length === 0}
+              aria-label={t`Add condition to rule ${number}`}
+            >
+              <Trans>Add condition</Trans>
+            </Button>
+          </Menu.Target>
+          <Menu.Dropdown>
+            {addable.map((kind) => (
+              <Menu.Item key={kind} onClick={() => setOpened((previous) => [...previous, kind])}>
+                {renderLabel(CONDITION_LABELS[kind])}
+              </Menu.Item>
+            ))}
+          </Menu.Dropdown>
+        </Menu>
+        {!hasConditions(c) && (
+          <Note tone="warn">
+            <Trans>No conditions, so this rule matches every file that reaches it.</Trans>
+          </Note>
         )}
+      </Group>
 
-        <Group gap="sm">
-          <Menu position="bottom-start" withinPortal>
-            <Menu.Target>
-              <Button
-                variant="default"
-                size="xs"
-                leftSection={<IconPlus size={16} />}
-                disabled={addable.length === 0}
-                aria-label={t`Add condition to rule ${number}`}
-              >
-                <Trans>Add condition</Trans>
-              </Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              {addable.map((kind) => (
-                <Menu.Item key={kind} onClick={() => setOpened((previous) => [...previous, kind])}>
-                  {renderLabel(CONDITION_LABELS[kind])}
-                </Menu.Item>
-              ))}
-            </Menu.Dropdown>
-          </Menu>
-          {!hasConditions(c) && (
-            <Note tone="warn">
-              <Trans>No conditions, so this rule matches every file that reaches it.</Trans>
-            </Note>
-          )}
-        </Group>
-
-        <Group justify="space-between" align="flex-end" wrap="wrap" gap="sm">
-          <Select
-            label={t`Then`}
-            aria-label={t`Action for rule ${number}`}
-            data={actionData}
-            value={action}
-            allowDeselect={false}
-            onChange={(next) => {
-              if (!next) return
-              if (next === 'skip') onChange({ ...rule, action: 'skip', stop: null })
-              else onChange({ ...rule, action: 'convert', stop: next as PageConversionStop })
-            }}
-            w={220}
-          />
-          <CountLine bucket={bucket} stale={stale} />
-        </Group>
-      </Stack>
-    </Panel>
-    </li>
+      <Group gap="sm" align="center">
+        <Text size="sm" fw={500}>
+          <Trans>Matching files are</Trans>
+        </Text>
+        <SegmentedControl
+          size="xs"
+          aria-label={t`Action for rule ${number}`}
+          value={rule.action}
+          data={[
+            { value: 'convert', label: t`Converted` },
+            { value: 'skip', label: t`Skipped` },
+          ]}
+          onChange={(next) => {
+            if (next === 'skip') onChange({ ...rule, action: 'skip', stop: null })
+            else onChange({ ...rule, action: 'convert', stop: rule.stop ?? 'high', format: rule.format ?? defaultFormat })
+          }}
+        />
+      </Group>
+    </Stack>
   )
 }
 

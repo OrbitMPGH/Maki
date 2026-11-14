@@ -595,7 +595,8 @@ public class KomgaCatalogService(MakiDbContext db, ReaderService reader, Continu
             .Select(i =>
             {
                 var entry = slice.Pages[slice.StartPage + i];
-                return new KomgaPageInfo(i + 1, Path.GetFileName(entry), CbzReader.ContentType(entry), null, null, null);
+                return new KomgaPageInfo(i + 1, Path.GetFileName(entry),
+                    JpegXlPages.Representation(entry, false).ContentType, null, null, null);
             })
             .ToList();
     }

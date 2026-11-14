@@ -202,9 +202,13 @@ screen. It is off until a reader turns it on. Library files are never modified.
   language, and reading direction. Files are written atomically, so a reader never sees a
   half-written CBZ. Maki can also write a `cover.jpg` into each series folder for readers that
   look for one.
-- **Page conversion.** Off by default (Settings, Library, Page conversion). Pick WebP or AVIF and
-  a quality, and new downloads are stored with their JPEG pages in that format and their PNG pages
-  as lossless WebP. A download is placed as it arrived and converted afterwards by a background
+- **Page conversion.** Off by default (Settings, Library, Page conversion). Pick WebP, AVIF or
+  JPEG XL and a quality, and new downloads are stored with their JPEG pages in that format and
+  their PNG pages as lossless WebP. Black-and-white and colour pages can each have their own format
+  and quality, checked page by page, and rules (by kind of release, source, page format, series type
+  or tag, bits per pixel or file size) give matching files their own targets or skip them. The setup
+  page shows each target on your own pages of that kind and estimates what the library would end
+  up at. A download is placed as it arrived and converted afterwards by a background
   queue, so downloading never waits on an encode; torrent imports join the same queue. A chapter
   someone is reading is swapped once nobody has asked for one of its pages for ten minutes. A
   pausable library pass converts the files already on disk, one at a time, and shows what it saved. Several pages of a file are encoded at once; the card sets how many (by
@@ -214,8 +218,9 @@ screen. It is off until a reader turns it on. Library files are never modified.
   original, since the source still has it; other originals wait in the upgrade trash (`.maki-trash/<series id>/conv-*`) for the trash retention period, and the pass pauses
   itself rather than leave less than 1 GB free. WebP opens in every reader Maki works with
   (browsers, Kavita, Komga, KOReader, Mihon, Panels); AVIF does not open in KOReader or on iOS
-  before 16. JPEG XL is not offered: the image library Maki bundles cannot write it, and Kavita
-  and KOReader cannot read it. Upgrades, source quality estimates and the quality shown on the
+  before 16. JPEG XL pages are served as they are only to browsers that support them; other
+  browsers, OPDS, Komga and KOReader get WebP made on the fly, but a downloaded CBZ keeps its
+  JPEG XL pages. Upgrades, source quality estimates and the quality shown on the
   series page keep judging a converted chapter by the size and format it was downloaded in, so
   converting never makes a copy look like a worse release.
 - **Multilingual libraries.** A series' link to a source can hold several languages, each with

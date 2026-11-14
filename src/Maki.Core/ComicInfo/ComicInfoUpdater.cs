@@ -19,7 +19,7 @@ public static class ComicInfoUpdater
 {
     private static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
-        ".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".bmp"
+        ".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".bmp", ".jxl"
     };
 
     /// <summary>

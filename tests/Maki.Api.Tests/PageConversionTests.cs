@@ -642,7 +642,7 @@ public sealed partial class PageConversionTests : IDisposable
         var controller = Controller(db);
 
         Assert.IsType<BadRequestObjectResult>(
-            await controller.Save(new PageConversionController.SettingsDto("jxl", "high", false), CancellationToken.None));
+            await controller.Save(new PageConversionController.SettingsDto("heic", "high", false), CancellationToken.None));
         Assert.IsType<BadRequestObjectResult>(
             await controller.Save(new PageConversionController.SettingsDto("webp", "best", false), CancellationToken.None));
         Assert.IsType<BadRequestObjectResult>(
