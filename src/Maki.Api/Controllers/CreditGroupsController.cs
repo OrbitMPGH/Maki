@@ -30,12 +30,14 @@ public class CreditGroupsController(CreditGroupsService groups, ILocalizer local
     public async Task<ActionResult<CreditGroupDetailDto>> Notices([FromBody] CreditNoticeIdsRequest request, CancellationToken ct) =>
         await groups.DetailAsync(request.NoticeIds ?? [], ct);
 
-    /// <summary>The notice's region, cut from the page of a chapter that carries it.</summary>
+    /// <summary>The notice's region, cut from the page of a chapter that carries it; <paramref name="large"/> for the enlarged view.</summary>
     [HttpGet("notices/{id:int}/image")]
     public async Task<IActionResult> Image(
-        int id, [FromServices] ReaderService reader, [FromServices] ReaderArchiveCache archives, CancellationToken ct)
+        int id, [FromServices] ReaderService reader, [FromServices] ReaderArchiveCache archives, CancellationToken ct,
+        [FromQuery] bool large = false)
     {
-        var image = await groups.ImageAsync(id, reader, archives, ct);
+        var width = large ? CreditGroupsService.LargeImageWidth : CreditGroupsService.ImageWidth;
+        var image = await groups.ImageAsync(id, reader, archives, ct, width);
         if (image is null)
         {
             return NotFound();

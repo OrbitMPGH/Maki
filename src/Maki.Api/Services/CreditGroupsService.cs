@@ -21,8 +21,11 @@ public sealed class CreditGroupsService(
     IAppSettings settings,
     ILogger<CreditGroupsService> logger)
 {
-    /// <summary>Widest notice image served, in pixels.</summary>
+    /// <summary>Widest notice image served in a notice card, in pixels.</summary>
     public const int ImageWidth = 640;
+
+    /// <summary>Widest notice image served for the enlarged view, in pixels.</summary>
+    public const int LargeImageWidth = 1600;
 
     /// <summary>Linked chapters tried for a notice's image before giving up.</summary>
     private const int ImageTries = 5;
@@ -498,11 +501,12 @@ public sealed class CreditGroupsService(
     private static string Separators(string path) => path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
 
     /// <summary>
-    /// The notice's region as a JPEG at most <see cref="ImageWidth"/> wide, cut from a linked chapter's page (the
+    /// The notice's region as a JPEG at most <paramref name="width"/> wide, cut from a linked chapter's page (the
     /// top share for a head, the bottom one for a tail's partial). Null when no linked chapter can be read.
     /// Pages are read unmarked: this is not a reader, and must not hold the file's page conversion.
     /// </summary>
-    public async Task<byte[]?> ImageAsync(int noticeId, ReaderService reader, ReaderArchiveCache archives, CancellationToken ct)
+    public async Task<byte[]?> ImageAsync(
+        int noticeId, ReaderService reader, ReaderArchiveCache archives, CancellationToken ct, int width = ImageWidth)
     {
         var notice = await db.CreditNotices.AsNoTracking().Where(n => n.Id == noticeId)
             .Select(n => new { n.Whole, n.Share }).FirstOrDefaultAsync(ct);
@@ -547,7 +551,7 @@ public sealed class CreditGroupsService(
             try
             {
                 return await ImageWorkGate.RunAsync(
-                    () => Task.FromResult(ImageCodec.JpegRegion(bytes, share, link.Tail && share < 1, ImageWidth, 80)), ct);
+                    () => Task.FromResult(ImageCodec.JpegRegion(bytes, share, link.Tail && share < 1, width, 80)), ct);
             }
             catch (Exception e) when (e is not OperationCanceledException)
             {

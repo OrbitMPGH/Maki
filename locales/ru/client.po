@@ -119,9 +119,10 @@ msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
 msgstr "{0, plural, one {Выбрана # глава} few {Выбраны # главы} many {Выбраны # глав} other {Выбраны # главы}}"
 
 #. placeholder {0}: chapters.length
+#. placeholder {0}: g.chapters
 #. placeholder {0}: goal.target
-#. placeholder {0}: removed.length
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/settings/CreditGroupsModal.tsx
 #: src/components/settings/ProgressSection.tsx
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -8383,6 +8384,10 @@ msgstr "Авторы, к которым ты возвращаешься"
 msgid "Creators, type, status, content rating"
 msgstr "Создатели, тип, статус, рейтинг содержимого"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Credit notice"
+msgstr ""
+
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/registry.ts
 msgid "Credit pages"
@@ -9971,6 +9976,10 @@ msgstr ""
 
 #: src/pages/HealthPage.tsx
 msgid "Enhancing pages for readers"
+msgstr ""
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Enlarge the image"
 msgstr ""
 
 #: src/pages/LoginPage.tsx
@@ -14679,6 +14688,26 @@ msgstr ""
 msgid "Menu"
 msgstr "Меню"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Merge"
+msgstr ""
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Merge {from} into"
+msgstr ""
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Merge into {into}"
+msgstr ""
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Merge into another group"
+msgstr ""
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Merged {from} into {into}"
+msgstr ""
+
 #: src/pages/ImportPage.tsx
 #, fuzzy
 msgid "Merging folder"
@@ -17346,6 +17375,10 @@ msgid "Nothing yet"
 msgstr "Ничего ещё нет."
 
 #: src/components/settings/CreditGroupsModal.tsx
+msgid "Notice"
+msgstr ""
+
+#: src/components/settings/CreditGroupsModal.tsx
 msgid "Notice {noticeId}"
 msgstr ""
 
@@ -17972,10 +18005,6 @@ msgstr "Открыть настройки"
 #, fuzzy
 msgid "Open source page"
 msgstr "Открыть страницу источника"
-
-#: src/components/settings/CreditGroupsModal.tsx
-msgid "Open the image"
-msgstr ""
 
 #: src/pages/LibraryPage.tsx
 msgid "Open the Library with this"
@@ -25402,6 +25431,10 @@ msgstr ""
 #, fuzzy
 msgid "The next check is due."
 msgstr "Пора следующей проверки."
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "The notices of both groups take that name, set by you. Chapters that already carry a group keep it."
+msgstr ""
 
 #: src/pages/discover/TasteTab.tsx
 #, fuzzy

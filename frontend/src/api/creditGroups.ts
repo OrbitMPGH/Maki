@@ -101,9 +101,12 @@ export function useCreditGroupDetail(noticeIds: number[] | null) {
   })
 }
 
-/** Where a notice's image is served from: the region cut from one chapter's page, at most 640 px wide. */
-export function creditNoticeImageUrl(id: number): string {
-  return `${apiRootNow() ?? '/api/v1'}/creditgroups/notices/${id}/image`
+/**
+ * Where a notice's image is served from: the region cut from one chapter's page, at most 640 px wide,
+ * or 1600 with `large` for the enlarged view.
+ */
+export function creditNoticeImageUrl(id: number, large = false): string {
+  return `${apiRootNow() ?? '/api/v1'}/creditgroups/notices/${id}/image${large ? '?large=true' : ''}`
 }
 
 export function useUpdateCreditNotice() {

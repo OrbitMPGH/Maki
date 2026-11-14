@@ -56,6 +56,66 @@ export const SuggestedName: Story = {
   },
 }
 
+const onMerge = fn()
+
+/** Two groups that are one: every notice of both takes the name of the group merged into. */
+export const MergeGroups: Story = {
+  parameters: {
+    msw: settingsMsw(
+      http.put(api('/creditgroups/name'), async ({ request }) => {
+        const body = (await request.json()) as { noticeIds: number[]; name: string }
+        onMerge(body)
+        return HttpResponse.json({ named: body.noticeIds.length })
+      }),
+    ),
+  },
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = await dialogOf(canvasElement)
+    await userEvent.click(await dialog.findByRole('button', { name: /^Paper Crane/ }))
+    await userEvent.click(await dialog.findByRole('button', { name: 'Merge into another group' }))
+    const body = within(canvasElement.ownerDocument.body)
+    const targets = within(await body.findByRole('group', { name: 'Merge Paper Crane into' }))
+    await expect(targets.queryByRole('button', { name: /^Paper Crane/ })).toBeNull()
+    const merge = await body.findByRole('button', { name: 'Merge' })
+    await waitFor(() => expect(merge).toBeDisabled())
+    await userEvent.click(await targets.findByRole('button', { name: /^Moonlit Scans/ }))
+    await userEvent.click(await body.findByRole('button', { name: 'Merge into Moonlit Scans' }))
+    await waitFor(() => expect(onMerge).toHaveBeenCalledWith({ noticeIds: [4, 5, 1, 2], name: 'Moonlit Scans' }))
+    await expect(await body.findByText('Merged Paper Crane into Moonlit Scans')).toBeVisible()
+  },
+}
+
+/** A notice's image opens larger in place, from the wider rendition. */
+export const EnlargedImage: Story = {
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = await dialogOf(canvasElement)
+    await userEvent.click((await dialog.findAllByRole('button', { name: 'Enlarge the image' }))[0])
+    const large = within(await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'Notice' }))
+    const image = await large.findByRole('img')
+    await waitFor(() =>
+      expect(image).toHaveAttribute('src', expect.stringContaining('/creditgroups/notices/1/image?large=true')),
+    )
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() =>
+      expect(within(canvasElement.ownerDocument.body).queryByRole('dialog', { name: 'Notice' })).toBeNull(),
+    )
+    await expect(await dialog.findByRole('region', { name: 'Moonlit Scans' })).toBeVisible()
+  },
+}
+
+/** Escape closes a popover on top of the modal, not the modal under it. */
+export const EscapeClosesOnlyThePopover: Story = {
+  play: async ({ canvasElement, userEvent }) => {
+    const dialog = await dialogOf(canvasElement)
+    await userEvent.click(await dialog.findByRole('button', { name: 'Merge into another group' }))
+    const body = within(canvasElement.ownerDocument.body)
+    await expect(await body.findByRole('group', { name: 'Merge Moonlit Scans into' })).toBeVisible()
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(body.queryByRole('group', { name: 'Merge Moonlit Scans into' })).toBeNull())
+    await expect(await dialog.findByRole('region', { name: 'Moonlit Scans' })).toBeVisible()
+  },
+}
+
 const onUpdate = fn()
 
 /** Hide, keep or leave it to Maki, per notice. */

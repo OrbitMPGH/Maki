@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState, type FormEvent } from 'react'
 import {
   Badge,
   Button,
@@ -18,6 +18,7 @@ import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { msg, plural } from '@lingui/core/macro'
 import type { MessageDescriptor } from '@lingui/core'
 import {
+  IconArrowsMerge,
   IconBrandDiscord,
   IconChevronRight,
   IconEye,
@@ -70,6 +71,21 @@ const NAME_SOURCES: Record<Exclude<CreditNameSource, 'none'>, { label: MessageDe
 
 const OVERRIDE_TO_WIRE = { none: 'None', hide: 'Hide', keep: 'Keep' } as const
 
+/**
+ * Popovers and the enlarged image open on top of the modal. Each reports itself while open, so Escape
+ * closes that layer and not the whole modal with it.
+ */
+const LayerContext = createContext<(open: boolean) => void>(() => {})
+
+function useLayer(open: boolean) {
+  const report = useContext(LayerContext)
+  useEffect(() => {
+    if (!open) return
+    report(true)
+    return () => report(false)
+  }, [open, report])
+}
+
 function useGroupTitle() {
   const { t } = useLingui()
   return (group: CreditGroup) =>
@@ -94,6 +110,8 @@ export function CreditGroupsModal({ opened, onClose }: { opened: boolean; onClos
   const [all, setAll] = useState(false)
   const [selected, setSelected] = useState<{ key: string; ids: number[] } | null>(null)
   const [applying, setApplying] = useState<CreditGroup | null>(null)
+  const [layers, setLayers] = useState(0)
+  const reportLayer = useCallback((open: boolean) => setLayers((n) => Math.max(0, n + (open ? 1 : -1))), [])
   const { data: groups, isLoading, isError, refetch } = useCreditGroups(all, opened)
   const titleOf = useGroupTitle()
 
@@ -121,6 +139,7 @@ export function CreditGroupsModal({ opened, onClose }: { opened: boolean; onClos
     <Modal
       opened={opened}
       onClose={close}
+      closeOnEscape={layers === 0 && applying == null}
       size={MODAL_SIZE.wide}
       title={
         <ModalHeading
@@ -172,7 +191,9 @@ export function CreditGroupsModal({ opened, onClose }: { opened: boolean; onClos
               {phone && (
                 <DrillBack title={<Trans>Release groups</Trans>} onBack={() => select(null)} className="credit-groups-back" />
               )}
-              <GroupDetail key={current.key} group={current} groups={groups ?? []} />
+              <LayerContext.Provider value={reportLayer}>
+                <GroupDetail key={current.key} group={current} groups={groups ?? []} />
+              </LayerContext.Provider>
             </div>
           )}
         </div>
@@ -346,6 +367,7 @@ function GroupDetail({ group, groups }: { group: CreditGroup; groups: CreditGrou
               </Text>
             )}
             <GroupNameForm key={group.name ?? ''} group={group} />
+            <MergeGroup group={group} groups={groups} />
           </>
         )}
       </section>
@@ -434,9 +456,100 @@ function GroupNameForm({ group }: { group: CreditGroup }) {
   )
 }
 
+/**
+ * Folds this group into another: every notice of both takes the other's name, confirmed. Chapters are
+ * not touched, so one that already carries a group keeps it.
+ */
+function MergeGroup({ group, groups }: { group: CreditGroup; groups: CreditGroup[] }) {
+  const { t } = useLingui()
+  const name = useNameCreditNotices()
+  const [opened, setOpened] = useState(false)
+  const [targetKey, setTargetKey] = useState<string | null>(null)
+  useLayer(opened)
+  const targets = groups.filter((g) => g.key !== group.key && g.key.startsWith('group:') && g.name)
+  const from = group.name
+  if (!from || targets.length === 0) return null
+
+  const target = targets.find((g) => g.key === targetKey) ?? null
+  const into = target?.name ?? ''
+  const toggle = (next: boolean) => {
+    setOpened(next)
+    if (!next) setTargetKey(null)
+  }
+  const merge = () => {
+    if (!target) return
+    name.mutate(
+      { noticeIds: [...group.noticeIds, ...target.noticeIds], name: into },
+      {
+        onSuccess: () => {
+          toggle(false)
+          notifications.show({ message: t`Merged ${from} into ${into}`, color: 'var(--ok)' })
+        },
+        onError: (error) => notifications.show({ message: error.message, color: 'var(--danger)' }),
+      },
+    )
+  }
+
+  return (
+    <Popover opened={opened} onChange={toggle} position="bottom-start" width={320} withinPortal trapFocus>
+      <Popover.Target>
+        <Button
+          size="compact-xs"
+          variant="subtle"
+          className="credit-group-merge"
+          leftSection={<IconArrowsMerge size={14} />}
+          onClick={() => toggle(!opened)}
+        >
+          <Trans>Merge into another group</Trans>
+        </Button>
+      </Popover.Target>
+      <Popover.Dropdown className="credit-name-popover">
+        <Stack gap="xs">
+          <Text size="sm" fw={500} id="credit-merge-title">
+            <Trans>Merge {from} into</Trans>
+          </Text>
+          <div className="credit-merge-list" role="group" aria-labelledby="credit-merge-title">
+            {targets.map((g) => (
+              <Button
+                key={g.key}
+                size="xs"
+                fullWidth
+                justify="space-between"
+                variant={g.key === targetKey ? 'light' : 'default'}
+                aria-pressed={g.key === targetKey}
+                onClick={() => setTargetKey(g.key)}
+                rightSection={
+                  <Text size="xs" c="var(--ink-3)" span>
+                    <Plural value={g.chapters} one="# chapter" other="# chapters" />
+                  </Text>
+                }
+              >
+                {g.name}
+              </Button>
+            ))}
+          </div>
+          <Text size="xs" c="var(--ink-3)">
+            <Trans>
+              The notices of both groups take that name, set by you. Chapters that already carry a group keep it.
+            </Trans>
+          </Text>
+          <Group justify="flex-end">
+            <Button size="xs" disabled={!target} loading={name.isPending} onClick={merge}>
+              {target ? <Trans>Merge into {into}</Trans> : <Trans>Merge</Trans>}
+            </Button>
+          </Group>
+        </Stack>
+      </Popover.Dropdown>
+    </Popover>
+  )
+}
+
 function NoticeImage({ notice }: { notice: CreditNotice }) {
   const { t } = useLingui()
+  const phone = useMediaQuery(PHONE) ?? false
   const [failed, setFailed] = useState(false)
+  const [enlarged, setEnlarged] = useState(false)
+  useLayer(enlarged)
   if (failed) {
     return (
       <div className="credit-notice-image" data-empty>
@@ -449,9 +562,23 @@ function NoticeImage({ notice }: { notice: CreditNotice }) {
   }
   const url = creditNoticeImageUrl(notice.id)
   return (
-    <a className="credit-notice-image" href={url} target="_blank" rel="noreferrer" aria-label={t`Open the image`}>
-      <img src={url} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} />
-    </a>
+    <>
+      <UnstyledButton className="credit-notice-image" onClick={() => setEnlarged(true)} aria-label={t`Enlarge the image`}>
+        <img src={url} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} />
+      </UnstyledButton>
+      <Modal
+        opened={enlarged}
+        onClose={() => setEnlarged(false)}
+        centered
+        size="auto"
+        fullScreen={phone}
+        title={<ModalHeading title={t`Notice`} description={notice.excerpt ?? undefined} />}
+      >
+        <div className="credit-notice-large">
+          <img src={creditNoticeImageUrl(notice.id, true)} alt={notice.excerpt ?? t`Credit notice`} decoding="async" />
+        </div>
+      </Modal>
+    </>
   )
 }
 
@@ -570,6 +697,7 @@ function NoticeName({
   const { t } = useLingui()
   const [opened, setOpened] = useState(false)
   const [draft, setDraft] = useState('')
+  useLayer(opened)
   if (notice.kind === 'site') return null
 
   const groupName = notice.groupName

@@ -14680,6 +14680,30 @@ button.settings-row-head:hover,
   max-height: 15rem;
   object-fit: contain;
 }
+button.credit-notice-image {
+  cursor: zoom-in;
+}
+.credit-notice-large {
+  display: flex;
+  justify-content: center;
+  min-height: 8rem;
+}
+.credit-notice-large img {
+  display: block;
+  max-width: min(100%, 64rem);
+  height: auto;
+  border-radius: var(--radius-thumb);
+}
+.credit-group-merge {
+  align-self: flex-start;
+}
+.credit-merge-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 14rem;
+  overflow-y: auto;
+}
 .credit-notice[data-shape='strip'] .credit-notice-image img {
   max-height: 9rem;
 }

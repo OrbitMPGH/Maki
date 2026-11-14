@@ -105,9 +105,10 @@ msgid "{0, plural, one {# chapter selected} other {# chapters selected}}"
 msgstr "{0, plural, one {# chapter selected} other {# chapters selected}}"
 
 #. placeholder {0}: chapters.length
+#. placeholder {0}: g.chapters
 #. placeholder {0}: goal.target
-#. placeholder {0}: removed.length
 #: src/components/LinkFileToChaptersModal.tsx
+#: src/components/settings/CreditGroupsModal.tsx
 #: src/components/settings/ProgressSection.tsx
 #: src/pages/HealthPage.tsx
 msgid "{0, plural, one {# chapter} other {# chapters}}"
@@ -7076,6 +7077,10 @@ msgstr "Creators you return to"
 msgid "Creators, type, status, content rating"
 msgstr "Creators, type, status, content rating"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Credit notice"
+msgstr "Credit notice"
+
 #: src/pages/settings/LibraryCards.tsx
 #: src/pages/settings/registry.ts
 msgid "Credit pages"
@@ -8411,6 +8416,10 @@ msgstr "Enhance: Off"
 #: src/pages/HealthPage.tsx
 msgid "Enhancing pages for readers"
 msgstr "Enhancing pages for readers"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Enlarge the image"
+msgstr "Enlarge the image"
 
 #: src/pages/LoginPage.tsx
 msgid "Enter one of your recovery codes"
@@ -12353,6 +12362,26 @@ msgstr "Memory"
 msgid "Menu"
 msgstr "Menu"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Merge"
+msgstr "Merge"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Merge {from} into"
+msgstr "Merge {from} into"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Merge into {into}"
+msgstr "Merge into {into}"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Merge into another group"
+msgstr "Merge into another group"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Merged {from} into {into}"
+msgstr "Merged {from} into {into}"
+
 #: src/pages/ImportPage.tsx
 msgid "Merging folder"
 msgstr "Merging folder"
@@ -14586,6 +14615,10 @@ msgid "Nothing yet"
 msgstr "Nothing yet"
 
 #: src/components/settings/CreditGroupsModal.tsx
+msgid "Notice"
+msgstr "Notice"
+
+#: src/components/settings/CreditGroupsModal.tsx
 msgid "Notice {noticeId}"
 msgstr "Notice {noticeId}"
 
@@ -15113,10 +15146,6 @@ msgstr "Open settings"
 #: src/components/SourceMappingsSection.tsx
 msgid "Open source page"
 msgstr "Open source page"
-
-#: src/components/settings/CreditGroupsModal.tsx
-msgid "Open the image"
-msgstr "Open the image"
 
 #: src/pages/LibraryPage.tsx
 msgid "Open the Library with this"
@@ -21353,6 +21382,10 @@ msgstr "The next chapter usually comes within {within}"
 #: src/components/releases/ReleaseOutlookSummary.tsx
 msgid "The next check is due."
 msgstr "The next check is due."
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "The notices of both groups take that name, set by you. Chapters that already carry a group keep it."
+msgstr "The notices of both groups take that name, set by you. Chapters that already carry a group keep it."
 
 #: src/pages/discover/TasteTab.tsx
 msgid "The odd one out"

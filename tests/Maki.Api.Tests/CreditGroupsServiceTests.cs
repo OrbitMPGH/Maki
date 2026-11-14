@@ -413,6 +413,31 @@ public sealed class CreditGroupsServiceTests : IDisposable
         return buffer.ToArray();
     }
 
+    [Fact]
+    public async Task The_enlarged_notice_image_is_wider_than_the_card_one()
+    {
+        using var page = NetVips.Image.NewFromMemory(new byte[2000 * 400], 2000, 400, 1, NetVips.Enums.BandFormat.Uchar);
+        using var buffer = new MemoryStream();
+        using (var zip = new ZipArchive(buffer, ZipArchiveMode.Create, true))
+        {
+            using var entry = zip.CreateEntry("001.png").Open();
+            entry.Write(page.PngsaveBuffer());
+        }
+
+        var chapter = AddChapter(1, content: buffer.ToArray());
+        var notice = AddNotice();
+        Link(notice, chapter);
+
+        await using var db = _db.NewContext();
+        var reader = new ReaderService(db, _archives, null!, null!, new ReadingSessionService(db), NullLogger<ReaderService>.Instance);
+        var controller = Controller(db);
+        var card = Assert.IsType<FileContentResult>(await controller.Image(notice, reader, _archives, default));
+        var large = Assert.IsType<FileContentResult>(await controller.Image(notice, reader, _archives, default, large: true));
+
+        Assert.Equal(CreditGroupsService.ImageWidth, Measure(card.FileContents).Width);
+        Assert.Equal(CreditGroupsService.LargeImageWidth, Measure(large.FileContents).Width);
+    }
+
     private static (int Width, int Height, double Mean) Measure(byte[] jpeg)
     {
         using var image = NetVips.Image.NewFromBuffer(jpeg);
