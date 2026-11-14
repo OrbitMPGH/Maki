@@ -13,6 +13,7 @@ public enum ImageFormat
     Gif,
     Avif,
     Bmp,
+    Jxl,
 }
 
 public enum TranscodeFormat
@@ -82,6 +83,12 @@ public static class ImageCodec
     public static ImageHeader Identify(ReadOnlySpan<byte> bytes)
     {
         if (TryBmp(bytes, out var bmp)) return bmp;
+        if (JpegXl.HasSignature(bytes))
+        {
+            var (width, height, _) = JpegXlHeader(bytes.ToArray());
+            return new ImageHeader(width, height, ImageFormat.Jxl);
+        }
+
         using var image = VipsImage.NewFromBuffer(bytes, access: Enums.Access.Sequential);
         return Header(image, bytes);
     }
@@ -89,11 +96,16 @@ public static class ImageCodec
     /// <inheritdoc cref="Identify(byte[])"/>
     public static ImageHeader IdentifyFile(string path)
     {
-        var start = new byte[BmpHeaderBytes];
+        var start = new byte[JpegXlHeaderBytes];
         using (var stream = File.OpenRead(path))
         {
             var read = stream.ReadAtLeast(start, start.Length, throwOnEndOfStream: false);
             if (TryBmp(start.AsSpan(0, read), out var bmp)) return bmp;
+            if (JpegXl.HasSignature(start.AsSpan(0, read)))
+            {
+                var (width, height, _) = JpegXlHeader(start[..read]);
+                return new ImageHeader(width, height, ImageFormat.Jxl);
+            }
         }
 
         using var image = VipsImage.NewFromFile(path, access: Enums.Access.Sequential);
@@ -105,6 +117,11 @@ public static class ImageCodec
     {
         try
         {
+            if (JpegXl.HasSignature(bytes))
+            {
+                return JpegXlHeader(bytes);
+            }
+
             using var image = VipsImage.NewFromBuffer(bytes, access: Enums.Access.Sequential);
             return (image.Width, image.Height, image.Bands);
         }
@@ -136,6 +153,16 @@ public static class ImageCodec
     {
         try
         {
+            if (JpegXl.HasSignature(bytes))
+            {
+                var (width, height, bands) = JpegXlHeader(bytes);
+                if (bands < 3) return false;
+                if ((long)width * height > Reading.ArchiveHealthAnalyzer.MaxPixels) return null;
+                using var decoded = DecodeJpegXl(bytes);
+                using var small = decoded.ThumbnailImage(ColourThumbWidth, height: ColourThumbMaxHeight);
+                return Colourful(small);
+            }
+
             using var header = VipsImage.NewFromBuffer(bytes, access: Enums.Access.Sequential);
             if (header.Bands < 3 || header.Interpretation is Enums.Interpretation.Bw or Enums.Interpretation.Grey16)
             {
@@ -147,7 +174,7 @@ public static class ImageCodec
                 return null;
             }
 
-            using var thumb = VipsImage.ThumbnailBuffer(bytes, ColourThumbWidth);
+            using var thumb = VipsImage.ThumbnailBuffer(bytes, ColourThumbWidth, height: ColourThumbMaxHeight);
             return Colourful(thumb);
         }
         catch (VipsException)
@@ -157,6 +184,12 @@ public static class ImageCodec
     }
 
     private const int ColourThumbWidth = 64;
+
+    /// <summary>
+    /// The thumbnail is sized by width alone. Fitted into a 64 px square, a webtoon strip shrank to a few
+    /// pixels across and its colours averaged out to grey.
+    /// </summary>
+    private const int ColourThumbMaxHeight = 10_000_000;
 
     private static bool Colourful(VipsImage thumb)
     {
@@ -179,7 +212,7 @@ public static class ImageCodec
             return false;
         }
 
-        using var thumb = image.ThumbnailImage(ColourThumbWidth);
+        using var thumb = image.ThumbnailImage(ColourThumbWidth, height: ColourThumbMaxHeight);
         return Colourful(thumb);
     }
 
@@ -218,6 +251,7 @@ public static class ImageCodec
     public static ImageFormat? DetectFormat(ReadOnlySpan<byte> bytes)
     {
         if (TryBmp(bytes, out _)) return ImageFormat.Bmp;
+        if (JpegXl.HasSignature(bytes)) return ImageFormat.Jxl;
         var loader = VipsImage.FindLoadBuffer(bytes);
         return loader is null ? null : FormatOf(loader, bytes);
     }
@@ -231,8 +265,7 @@ public static class ImageCodec
     /// </summary>
     public static byte[] JpegThumbnail(byte[] source, int width, int quality, bool enlarge)
     {
-        using var thumb = VipsImage.ThumbnailBuffer(source, width, height: 10_000_000,
-            size: enlarge ? Enums.Size.Both : Enums.Size.Down, outputProfile: "srgb");
+        using var thumb = Thumbnail(source, width, 10_000_000, enlarge ? Enums.Size.Both : Enums.Size.Down, "srgb");
         return SaveJpeg(thumb, quality);
     }
 
@@ -243,8 +276,7 @@ public static class ImageCodec
     /// </summary>
     public static byte[] Transcode(byte[] source, TranscodeFormat format)
     {
-        using var image = VipsImage.ThumbnailBuffer(source, MaxTranscodeEdge, height: MaxTranscodeEdge,
-            size: Enums.Size.Down, outputProfile: "srgb");
+        using var image = Thumbnail(source, MaxTranscodeEdge, MaxTranscodeEdge, Enums.Size.Down, "srgb");
         return format == TranscodeFormat.Png
             ? image.PngsaveBuffer(keep: Enums.ForeignKeep.None)
             : SaveJpeg(image, 90);
@@ -281,10 +313,10 @@ public static class ImageCodec
     /// <see cref="VipsException"/> when the bytes do not decode cleanly: libvips would otherwise fill
     /// a truncated JPEG with grey and the damage would be baked into a page that looks whole.
     /// </summary>
-    public static byte[]? EncodePage(byte[] source, PageEncoding target, int quality, out PageSkip? skipped)
+    public static byte[]? EncodePage(byte[] source, PageEncoding target, int quality, out PageSkip? skipped, float distance = 0)
     {
         skipped = null;
-        using var loaded = VipsImage.NewFromBuffer(source, failOn: Enums.FailOn.Error);
+        using var loaded = Load(source, failOn: Enums.FailOn.Error);
         if (loaded.Format != Enums.BandFormat.Uchar)
         {
             skipped = PageSkip.HighBitDepth;
@@ -308,8 +340,35 @@ public static class ImageCodec
             PageEncoding.Webp => image.WebpsaveBuffer(q: quality, effort: 4, smartSubsample: SharpYuvHelps(image), keep: Enums.ForeignKeep.Icc),
             PageEncoding.Avif => image.HeifsaveBuffer(q: quality, bitdepth: 8, compression: Enums.ForeignHeifCompression.Av1,
                 effort: AvifEffort, keep: Enums.ForeignKeep.Icc),
+            PageEncoding.Jxl => EncodeJpegXl(image, distance),
             _ => throw new ArgumentOutOfRangeException(nameof(target), target, null)
         };
+    }
+
+    /// <summary>
+    /// Effort 3, as for upscaled pages: 5 and 7 were slower and did not close the gap to AVIF
+    /// (research/image-formats/2026-11-14-avif10). At 3 a page encodes in about a quarter of WebP's time.
+    /// </summary>
+    public const int PageJpegXlEffort = 3;
+
+    /// <summary>
+    /// A page or piece as JPEG XL at <paramref name="distance"/>, on one thread. libjxl is handed sRGB or
+    /// grey, so an embedded profile is converted to sRGB first (a grey page keeps one band), and
+    /// transparency lands on white. Throws <see cref="JpegXlException"/> when libjxl is missing or fails.
+    /// </summary>
+    internal static byte[] EncodeJpegXl(VipsImage image, float distance)
+    {
+        var grey = image.Bands < 3;
+        using var flat = image.HasAlpha()
+            ? image.Flatten(background: Enumerable.Repeat(255.0, image.Bands - 1).ToArray())
+            : image.Copy();
+        using var srgb = Raster.ToSrgb(flat);
+        var bands = grey ? 1 : 3;
+        using var shaped = srgb.Bands == bands ? srgb.Copy()
+            : grey ? srgb.ExtractBand(1)
+            : srgb.ExtractBand(0, n: 3);
+        using var bytes = shaped.Format == Enums.BandFormat.Uchar ? shaped.Copy() : shaped.Cast(Enums.BandFormat.Uchar);
+        return JpegXl.Encode(bytes.WriteToMemory<byte>(), bytes.Width, bytes.Height, bands, distance, PageJpegXlEffort);
     }
 
     /// <summary>
@@ -331,7 +390,16 @@ public static class ImageCodec
     {
         try
         {
-            using var loaded = VipsImage.NewFromBuffer(source, failOn: Enums.FailOn.Error);
+            if (JpegXl.HasSignature(source))
+            {
+                var (width, height, _) = JpegXlHeader(source);
+                if (Math.Max(width, height) > PageConversion.MaxEdge || (long)width * height > MaxUpscalePixels)
+                {
+                    return (null, UpscaleReasons.TooLarge);
+                }
+            }
+
+            using var loaded = Load(source, failOn: Enums.FailOn.Error);
             if (loaded.Format != Enums.BandFormat.Uchar)
             {
                 return (null, UpscaleReasons.HighBitDepth);
@@ -465,9 +533,16 @@ public static class ImageCodec
     /// A cached JPEG XL page as the WebP or JPEG <see cref="EncodeUpscaled"/> would have written, for a
     /// browser that cannot decode JPEG XL. Throws <see cref="JpegXlException"/> when it does not decode.
     /// </summary>
-    public static UpscaledImage TranscodeUpscaledJpegXl(byte[] jxl)
+    public static UpscaledImage TranscodeUpscaledJpegXl(byte[] jxl) => TranscodeJpegXl(jxl, MaxJpegXlPixels);
+
+    /// <summary>
+    /// A JPEG XL image as WebP (JPEG past <see cref="MaxWebpEdge"/>) at the upscaler's settings, for a
+    /// client that cannot decode JPEG XL. Throws <see cref="JpegXlException"/> when it does not decode or
+    /// is over <paramref name="maxPixels"/>.
+    /// </summary>
+    public static UpscaledImage TranscodeJpegXl(byte[] jxl, long maxPixels)
     {
-        var (pixels, width, height, bands) = JpegXl.Decode(jxl, MaxJpegXlPixels);
+        var (pixels, width, height, bands) = JpegXl.Decode(jxl, maxPixels);
         return EncodeBands(pixels, width, height, bands);
     }
 
@@ -494,7 +569,7 @@ public static class ImageCodec
     /// </summary>
     internal static VipsImage? LoadForSplit(byte[] source)
     {
-        using var loaded = VipsImage.NewFromBuffer(source, failOn: Enums.FailOn.Error);
+        using var loaded = Load(source, failOn: Enums.FailOn.Error);
         if (loaded.Format != Enums.BandFormat.Uchar ||
             (long)loaded.Width * loaded.Height > Reading.ArchiveHealthAnalyzer.MaxPixels ||
             (loaded.Contains("n-pages") && loaded.Get("n-pages") is int frames && frames > 1))
@@ -536,8 +611,11 @@ public static class ImageCodec
         return rows;
     }
 
-    /// <summary>One piece of a split page. ICC is kept, everything else in the metadata dropped.</summary>
-    internal static byte[] EncodePiece(VipsImage piece, SplitEncoding encoding, int quality, bool sharpYuv)
+    /// <summary>
+    /// One piece of a split page. ICC is kept, everything else in the metadata dropped; a JPEG XL piece
+    /// (at <paramref name="distance"/>) is converted to sRGB instead.
+    /// </summary>
+    internal static byte[] EncodePiece(VipsImage piece, SplitEncoding encoding, int quality, bool sharpYuv, float distance = 0)
     {
         switch (encoding)
         {
@@ -555,15 +633,88 @@ public static class ImageCodec
             case SplitEncoding.Avif:
                 return piece.HeifsaveBuffer(q: quality, bitdepth: 8, compression: Enums.ForeignHeifCompression.Av1,
                     effort: AvifEffort, keep: Enums.ForeignKeep.Icc);
+            case SplitEncoding.Jxl:
+                return EncodeJpegXl(piece, distance);
             default:
                 throw new ArgumentOutOfRangeException(nameof(encoding), encoding, null);
         }
     }
 
-    internal static VipsImage Open(byte[] bytes) => VipsImage.NewFromBuffer(bytes, access: Enums.Access.Sequential);
+    internal static VipsImage Open(byte[] bytes) => Load(bytes, access: Enums.Access.Sequential);
 
-    internal static VipsImage ThumbnailFile(string path, int width, int height) =>
-        VipsImage.Thumbnail(path, width, height: height, size: Enums.Size.Force, noRotate: true);
+    internal static VipsImage ThumbnailFile(string path, int width, int height)
+    {
+        var start = new byte[JpegXlHeaderBytes];
+        int read;
+        using (var stream = File.OpenRead(path))
+        {
+            read = stream.ReadAtLeast(start, start.Length, throwOnEndOfStream: false);
+        }
+
+        if (!JpegXl.HasSignature(start.AsSpan(0, read)))
+        {
+            return VipsImage.Thumbnail(path, width, height: height, size: Enums.Size.Force, noRotate: true);
+        }
+
+        using var decoded = DecodeJpegXl(File.ReadAllBytes(path));
+        return decoded.ThumbnailImage(width, height: height, size: Enums.Size.Force, noRotate: true);
+    }
+
+    /// <summary>
+    /// Opens a page from memory: libvips for every permitted format, libjxl for JPEG XL, which the
+    /// bundled libvips has no loader for. A JPEG XL page is decoded whole, so access does not apply.
+    /// </summary>
+    public static VipsImage Load(byte[] bytes, Enums.Access? access = null, Enums.FailOn? failOn = null) =>
+        JpegXl.HasSignature(bytes)
+            ? DecodeJpegXl(bytes)
+            : VipsImage.NewFromBuffer(bytes, access: access, failOn: failOn);
+
+    /// <summary><see cref="VipsImage.ThumbnailBuffer"/>, or the decoded JPEG XL page shrunk the same way.</summary>
+    internal static VipsImage Thumbnail(byte[] bytes, int width, int height, Enums.Size size, string? outputProfile = null)
+    {
+        if (!JpegXl.HasSignature(bytes))
+        {
+            return VipsImage.ThumbnailBuffer(bytes, width, height: height, size: size, outputProfile: outputProfile);
+        }
+
+        using var decoded = DecodeJpegXl(bytes);
+        return decoded.ThumbnailImage(width, height: height, size: size, outputProfile: outputProfile);
+    }
+
+    /// <summary>Enough of a file for the JPEG XL header, which comes before any ICC profile or pixels.</summary>
+    private const int JpegXlHeaderBytes = 64 * 1024;
+
+    /// <summary>
+    /// A JPEG XL image decoded into libvips memory, at most the health scan's pixel limit. A libjxl failure
+    /// is rethrown as <see cref="VipsException"/>, so every caller that reads that as "does not decode"
+    /// (the health scan, conversion, the colour check) treats a broken or unreadable JPEG XL page alike.
+    /// </summary>
+    internal static VipsImage DecodeJpegXl(byte[] bytes)
+    {
+        try
+        {
+            var (pixels, width, height, bands) = JpegXl.Decode(bytes, Reading.ArchiveHealthAnalyzer.MaxPixels);
+            using var raw = FromMemory(pixels, width, height, bands);
+            return raw.Copy(interpretation: bands == 1 ? Enums.Interpretation.Bw : Enums.Interpretation.Srgb);
+        }
+        catch (JpegXlException ex)
+        {
+            throw new VipsException($"JPEG XL: {ex.Message}");
+        }
+    }
+
+    /// <inheritdoc cref="DecodeJpegXl"/>
+    private static (int Width, int Height, int Bands) JpegXlHeader(byte[] bytes)
+    {
+        try
+        {
+            return JpegXl.ReadHeader(bytes);
+        }
+        catch (JpegXlException ex)
+        {
+            throw new VipsException($"JPEG XL: {ex.Message}");
+        }
+    }
 
     internal static VipsImage FromMemory(byte[] pixels, int width, int height, int bands) =>
         VipsImage.NewFromMemory(pixels, width, height, bands, Enums.BandFormat.Uchar);

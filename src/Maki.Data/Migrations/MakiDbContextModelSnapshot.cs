@@ -1430,9 +1430,18 @@ namespace Maki.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("ColourFormat")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ColourStop")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ConditionsJson")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("Format")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()

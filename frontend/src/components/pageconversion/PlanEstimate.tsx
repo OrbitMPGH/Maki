@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Button, Group, Progress, Skeleton, Stack, Text } from '@mantine/core'
+import { Button, Group, Progress, Stack, Text } from '@mantine/core'
+import { useDebouncedValue } from '@mantine/hooks'
 import { Callout } from '../ui/Callout'
 import { IconRefresh } from '../../lib/icons'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
@@ -8,23 +9,42 @@ import {
   useEstimateMark,
   usePageConversionEstimate,
   useStartPageConversionEstimate,
+  type EstimateBucket,
   type EstimateConvertedEarlier,
   type EstimatePassedOver,
+  type EstimateResult,
   type PageConversionEstimate,
   type PageConversionPlanRequest,
   type PageConversionRule,
   type PageConversionSettings,
 } from '../../api/pageConversion'
-import { formatBytes } from '../../format'
-import { EstimateTable } from './EstimateTable'
+import { formatBytes, formatReadingTime } from '../../format'
 import { useCheckedWithLabel } from './labels'
 import { toRuleDtos } from './ruleTemplates'
 
+/** How long the plan has to stay unchanged before a new estimate starts. */
+const ESTIMATE_DEBOUNCE_MS = 1500
+
+export interface PlanEstimate {
+  estimate: PageConversionEstimate | undefined
+  /** The last finished result, kept up while a newer one runs. */
+  result: EstimateResult | null
+  running: boolean
+  starting: boolean
+  /** The estimate failed or was cancelled. */
+  broken: boolean
+  /** The estimate could not be started or read. */
+  startFailed: boolean
+  /** The result is from another plan or another run than the one on screen. */
+  stale: boolean
+  restart: () => void
+}
+
 /**
- * Step 4: what the pass would do to the library, estimated by encoding a sample of the files each
- * rule covers. Starts on its own, and again whenever the choices behind it changed since the last run.
+ * What the plan on screen would do to the library, estimated on the server by encoding a sample of
+ * each row's files. A new estimate starts once the plan has settled, unless `paused`.
  */
-export function ReviewStep({ value, rules }: { value: PageConversionSettings; rules: PageConversionRule[] }) {
+export function usePlanEstimate(value: PageConversionSettings, rules: PageConversionRule[], paused: boolean): PlanEstimate {
   const { data: estimate, isSuccess, isError, refetch } = usePageConversionEstimate()
   const { data: mark } = useEstimateMark()
   const start = useStartPageConversionEstimate()
@@ -33,55 +53,90 @@ export function ReviewStep({ value, rules }: { value: PageConversionSettings; ru
 
   const plan: PageConversionPlanRequest = { settings: value, rules: toRuleDtos(rules) }
   const requestKey = estimateRequestKey(plan)
+  const [settledKey] = useDebouncedValue(requestKey, ESTIMATE_DEBOUNCE_MS)
   // The estimate on the server is ours when this tab started it for this very request.
   const forThisPlan = !!estimate && mark?.requestKey === requestKey && mark.planHash === estimate.planHash
 
   const { mutate: startEstimate } = start
   useEffect(() => {
-    if (!value.format || !isSuccess || startedFor.current === requestKey) return
+    if (!value.format || !isSuccess || paused || settledKey !== requestKey || startedFor.current === requestKey) return
     startedFor.current = requestKey
     if (!forThisPlan) startEstimate({ settings: value, rules: toRuleDtos(rules) })
-  }, [value, rules, requestKey, isSuccess, forThisPlan, startEstimate])
+  }, [value, rules, requestKey, settledKey, isSuccess, paused, forThisPlan, startEstimate])
 
   // A re-estimate answers without a result until it finishes; the last one stays up until then.
   if (estimate?.result && estimate !== shown) setShown(estimate)
 
-  const restart = () => {
-    startedFor.current = requestKey
-    startEstimate(plan)
-  }
-
-  if (!value.format) {
-    return (
-      <Text size="sm" c="var(--ink-3)">
-        <Trans>Conversion is off, so there is nothing to estimate. Continue to save that choice.</Trans>
-      </Text>
-    )
-  }
-
   const running = estimate?.state === 'running' || start.isPending
   const broken = estimate?.state === 'failed' || estimate?.state === 'cancelled'
   const result = shown?.result ?? null
-  const stale = !!result && (running || !forThisPlan || broken)
-  const startFailed = isError || start.isError
+  return {
+    estimate,
+    result,
+    running,
+    starting: start.isPending,
+    broken,
+    startFailed: isError || start.isError,
+    stale: !!result && (running || !forThisPlan || broken),
+    restart: () => {
+      if (isError && !start.isError) {
+        void refetch()
+        return
+      }
+      startedFor.current = requestKey
+      startEstimate(plan)
+    },
+  }
+}
+
+/** The convert buckets added up: everything the pass would rewrite. */
+export function estimateTotals(result: EstimateResult) {
+  const buckets = [...result.rules, result.default, result.overrides].filter((b) => !b.skip && b.files > 0)
+  const sum = (pick: (b: EstimateBucket) => number) => buckets.reduce((n, b) => n + pick(b), 0)
+  return {
+    files: sum((b) => b.files),
+    bytes: sum((b) => b.bytes),
+    expectedLow: sum((b) => b.expectedLow),
+    expectedHigh: sum((b) => b.expectedHigh),
+    secondsLow: sum((b) => b.secondsLow),
+    secondsHigh: sum((b) => b.secondsHigh),
+    sampled: buckets.some((b) => b.sampledFiles > 0),
+  }
+}
+
+/** "48 GB to 53 GB" as text, or one figure when both ends read the same. */
+export function useRangeText() {
+  const { t } = useLingui()
+  return (low: number, high: number, format: (n: number) => string): string => {
+    const from = format(low)
+    const to = format(high)
+    return from === to ? from : t`${from} to ${to}`
+  }
+}
+
+/** "48 GB to 53 GB", or one figure when both ends read the same. */
+export function Range({ low, high, format }: { low: number; high: number; format: (n: number) => string }) {
+  const from = format(low)
+  const to = format(high)
+  return <>{from === to ? from : <Trans>{from} to {to}</Trans>}</>
+}
+
+/** What the pass passes over and what was converted earlier, with errors and a way to run it again. */
+export function EstimateDetails({ plan }: { plan: PlanEstimate }) {
+  const { estimate, result, running, broken, startFailed, stale, starting, restart } = plan
 
   return (
     <Stack gap="md">
       <Text size="sm" c="var(--ink-3)">
         <Trans>
-          Sizes come from encoding a sample of the files each rule covers. Nothing is changed. Times depend on how busy
+          Sizes come from encoding a sample of the files each row covers. Nothing is changed. Times depend on how busy
           this server is.
         </Trans>
       </Text>
 
       {startFailed && !running && (
         <Callout tone="danger" role="alert" title={<Trans>The estimate could not be started</Trans>}>
-          <Button
-            variant="default"
-            size="xs"
-            leftSection={<IconRefresh size={16} />}
-            onClick={() => (start.isError ? restart() : void refetch())}
-          >
+          <Button variant="default" size="xs" leftSection={<IconRefresh size={16} />} onClick={restart}>
             <Trans>Try again</Trans>
           </Button>
         </Callout>
@@ -108,32 +163,25 @@ export function ReviewStep({ value, rules }: { value: PageConversionSettings; ru
         </Callout>
       )}
 
-      {running && <Sampling estimate={estimate} starting={start.isPending} />}
-
-      {!result && !running && !broken && !startFailed && (
-        <Stack gap="sm">
-          <Skeleton height={20} width="50%" />
-          <Skeleton height={120} />
-        </Stack>
-      )}
+      {running && <Sampling estimate={estimate} starting={starting} />}
 
       {result && (
         <>
-          <EstimateTable result={result} rules={rules} stop={value.stop} stale={stale} />
+          <Overrides bucket={result.overrides} stale={stale} />
+          <PassedOver passed={result.passedOver} stale={stale} />
+          <ConvertedEarlier lines={result.convertedEarlier} inTrash={result.convertedWithOriginalInTrash} stale={stale} />
           <Group>
             <Button variant="default" size="xs" leftSection={<IconRefresh size={16} />} disabled={running} onClick={restart}>
               <Trans>Re-estimate</Trans>
             </Button>
           </Group>
-          <PassedOver passed={result.passedOver} stale={stale} />
-          <ConvertedEarlier lines={result.convertedEarlier} inTrash={result.convertedWithOriginalInTrash} stale={stale} />
         </>
       )}
     </Stack>
   )
 }
 
-function Sampling({ estimate, starting }: { estimate: PageConversionEstimate | undefined; starting: boolean }) {
+export function Sampling({ estimate, starting }: { estimate: PageConversionEstimate | undefined; starting: boolean }) {
   const { t } = useLingui()
   const done = starting ? 0 : (estimate?.done ?? 0)
   const total = starting ? 0 : (estimate?.total ?? 0)
@@ -148,11 +196,33 @@ function Sampling({ estimate, starting }: { estimate: PageConversionEstimate | u
           <Trans>Counting the files to sample</Trans>
         )}
       </Text>
-      <Progress
-        value={total > 0 ? (done / total) * 100 : 0}
-        aria-label={t`Estimate progress`}
-        animated={total === 0}
-      />
+      <Progress value={total > 0 ? (done / total) * 100 : 0} aria-label={t`Estimate progress`} animated={total === 0} />
+    </Stack>
+  )
+}
+
+function Overrides({ bucket, stale }: { bucket: EstimateBucket; stale: boolean }) {
+  const { t } = useLingui()
+  const range = useRangeText()
+  if (bucket.files === 0) return null
+  const size = formatBytes(bucket.bytes)
+  const expected = range(bucket.expectedLow, bucket.expectedHigh, formatBytes)
+  const time = range(bucket.secondsLow, bucket.secondsHigh, formatReadingTime)
+  return (
+    <Stack gap={4} style={{ opacity: stale ? 0.55 : 1 }}>
+      <Text size="sm" fw={500}>
+        <Trans>Series with their own setting</Trans>
+      </Text>
+      <Text size="sm">
+        <Plural
+          value={bucket.files}
+          one={`# file, ${size}, converted at the quality set in its series menu.`}
+          other={`# files, ${size}, converted at the quality set in their series menus.`}
+        />
+        {bucket.sampledFiles > 0 && ' '}
+        {bucket.sampledFiles > 0 &&
+          (bucket.secondsHigh > 0 ? t`${expected} after, about ${time}.` : t`${expected} after.`)}
+      </Text>
     </Stack>
   )
 }
@@ -204,8 +274,8 @@ function PassedOver({ passed, stale }: { passed: EstimatePassedOver; stale: bool
           <Line>
             <Plural
               value={passed.alreadyCompact}
-              one="# file is already WebP or AVIF"
-              other="# files are already WebP or AVIF"
+              one="# file is already WebP, AVIF or JPEG XL"
+              other="# files are already WebP, AVIF or JPEG XL"
             />
           </Line>
         )}

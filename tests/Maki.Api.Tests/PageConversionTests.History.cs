@@ -698,4 +698,14 @@ public sealed partial class PageConversionTests
         await Undo(db).Undo.UndoAsync(_world.SeriesId, false, false, CancellationToken.None);
         Assert.Equal((0L, 0), await UpgradeTrashService.SizeAsync(db, CancellationToken.None));
     }
+
+    [Fact]
+    public void A_lossless_plan_in_another_format_is_another_estimate()
+    {
+        // Series set to a fixed stop convert in the plan's format, which a Lossless default's name leaves out.
+        var webp = new PageConversionPlan(PageConversionFormat.Webp, PageConversionStop.Lossless, false, []);
+        var avif = new PageConversionPlan(PageConversionFormat.Avif, PageConversionStop.Lossless, false, []);
+
+        Assert.NotEqual(PageConversionEstimateService.Hash(webp), PageConversionEstimateService.Hash(avif));
+    }
 }

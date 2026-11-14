@@ -5,7 +5,8 @@ namespace Maki.Core.Images;
 
 /// <summary>
 /// libjxl, called directly: the libvips Maki bundles has no JPEG XL. The server upscaler writes colour
-/// pages with it and reads them back only to serve WebP to a browser that cannot decode JPEG XL.
+/// pages with it, page conversion can store pages in it, and <see cref="ImageCodec"/> decodes it
+/// wherever a page is read.
 /// The library ships beside the app (<c>distribution/libjxl</c>); without it <see cref="IsAvailable"/>
 /// is false and every caller stays on WebP.
 /// </summary>
@@ -156,8 +157,23 @@ public static class JpegXl
         }
     }
 
+    /// <summary>A bare JPEG XL codestream or the ISO container that wraps one.</summary>
+    public static bool HasSignature(ReadOnlySpan<byte> bytes) =>
+        bytes.StartsWith(CodestreamSignature) || bytes.StartsWith(ContainerSignature);
+
+    private static ReadOnlySpan<byte> CodestreamSignature => [0xFF, 0x0A];
+
+    private static ReadOnlySpan<byte> ContainerSignature => [0, 0, 0, 0x0C, (byte)'J', (byte)'X', (byte)'L', (byte)' ', 0x0D, 0x0A, 0x87, 0x0A];
+
     /// <summary>Width and height from the header, without decoding pixels.</summary>
     public static (int Width, int Height) ReadSize(byte[] data)
+    {
+        var (width, height, _) = ReadHeader(data);
+        return (width, height);
+    }
+
+    /// <summary>Width, height and colour channels (1 or 3) from the header, without decoding pixels.</summary>
+    public static (int Width, int Height, int Bands) ReadHeader(byte[] data)
     {
         EnsureAvailable();
         var decoder = JxlDecoderCreate(IntPtr.Zero);
@@ -172,7 +188,7 @@ public static class JpegXl
             if (status != DecBasicInfo) throw new JpegXlException($"JxlDecoderProcessInput returned {status}");
             var info = new int[BasicInfoInts];
             CheckDec(JxlDecoderGetBasicInfo(decoder, info), "JxlDecoderGetBasicInfo");
-            return (info[InfoXSize], info[InfoYSize]);
+            return (info[InfoXSize], info[InfoYSize], info[InfoColorChannels] == 1 ? 1 : 3);
         }
         finally
         {
