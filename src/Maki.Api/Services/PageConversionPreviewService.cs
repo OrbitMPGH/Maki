@@ -37,7 +37,7 @@ public sealed record PageConversionPreview(
 /// <see cref="PageConversion.Convert"/> call as the library pass, so what the wizard shows is what
 /// the pass would write.
 /// </summary>
-public class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILogger<PageConversionPreviewService> logger)
+public partial class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILogger<PageConversionPreviewService> logger)
 {
     /// <summary>Archives one samples call may open.</summary>
     private const int MaxProbes = 24;

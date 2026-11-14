@@ -18,7 +18,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/pageconversion")]
 [Authorize(Policy = Policies.Admin)]
-public class PageConversionController(
+public partial class PageConversionController(
     MakiDbContext db, IAppSettings settings, PageConversionWorker worker, PageConversionPreviewService previews,
     PageConversionPlanService plans, ILocalizer localizer) : ControllerBase
 {
@@ -392,8 +392,13 @@ public class PageConversionController(
 
     /// <summary>Where the library's files would land under a plan the wizard has not saved, for its live counts.</summary>
     [HttpPost("scope")]
-    public async Task<IActionResult> Scope([FromBody] ScopeRequest request, CancellationToken ct)
+    public async Task<IActionResult> Scope([FromBody] ScopeRequest request, CancellationToken ct) =>
+        UnsavedPlan(request, out var plan) is { } refused ? refused : Ok(await plans.ScopeAsync(plan!, ct));
+
+    /// <summary>The plan a <see cref="ScopeRequest"/> describes, or the refusal when it does not parse.</summary>
+    private IActionResult? UnsavedPlan(ScopeRequest request, out PageConversionPlan? plan)
     {
+        plan = null;
         var format = PageConversionFormat.Webp;
         if (request.Format is not null && !string.Equals(request.Format, "off", StringComparison.OrdinalIgnoreCase))
         {
@@ -421,8 +426,8 @@ public class PageConversionController(
             return SplitHeightInvalid();
         }
 
-        return Ok(await plans.ScopeAsync(
-            new PageConversionPlan(format, stop, request.PngLossless, rules, request.SplitHeight, Same(colour, format, stop)), ct));
+        plan = new PageConversionPlan(format, stop, request.PngLossless, rules, request.SplitHeight, Same(colour, format, stop));
+        return null;
     }
 
     /// <summary>
