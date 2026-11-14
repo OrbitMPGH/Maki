@@ -754,4 +754,28 @@ public class SeriesRenameServiceTests : IDisposable
         Assert.Equal(fileId, check.HealthFiles.Single(f => f.Id == occupantId).ChapterFileId);
         Assert.All(check.HealthFindings.ToList(), f => Assert.Equal("resolved", f.State));
     }
+
+    [Fact]
+    public async Task A_folder_rename_carries_files_that_back_no_chapter()
+    {
+        var id = SeedSeries("Berserk", "Berserk", chapters: (24m, 3, "en"));
+        File.WriteAllText(Path.Combine(_root, "Berserk", "Berserk - Extra 1.cbz"), "cbz");
+        int looseId;
+        using (var db = _db.NewContext())
+        {
+            var loose = new ChapterFile { SeriesId = id, RelativePath = Path.Combine("Berserk", "Berserk - Extra 1.cbz"), Size = 3, SourceName = "import" };
+            db.ChapterFiles.Add(loose);
+            db.SaveChanges();
+            looseId = loose.Id;
+        }
+
+        var result = await Service().RenameAsync(id, CancellationToken.None);
+
+        Assert.True(result.Applied);
+        Assert.True(File.Exists(Path.Combine(_root, "Berserk (1989)", "Berserk - Extra 1.cbz")));
+        using var check = _db.NewContext();
+        var row = check.ChapterFiles.Single(f => f.Id == looseId);
+        Assert.Equal(Path.Combine("Berserk (1989)", "Berserk - Extra 1.cbz"), row.RelativePath);
+        Assert.False(row.NamedByMaki);
+    }
 }

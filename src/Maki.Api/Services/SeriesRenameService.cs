@@ -406,6 +406,27 @@ public class SeriesRenameService(
         var byId = renamed
             .Where(f => !string.Equals(f.From, f.To, StringComparison.Ordinal))
             .ToDictionary(f => f.ChapterFileId, f => f.To);
+        if (plan.FolderChanged)
+        {
+            // The folder move carried every file in it, including the ones the plan leaves alone
+            // (no chapter to name them after). Their rows follow, or they read as missing beside an
+            // unlinked copy of themselves.
+            var planned = plan.Files.Select(f => f.ChapterFileId).ToList();
+            var unplanned = await db.ChapterFiles.AsNoTracking()
+                .Where(f => f.SeriesId == series.Id && !planned.Contains(f.Id))
+                .Select(f => new { f.Id, f.RelativePath })
+                .ToListAsync(saveToken);
+            foreach (var file in unplanned)
+            {
+                if (TailUnder(plan.FolderFrom, file.RelativePath) is { } tail)
+                {
+                    var to = Path.Combine(plan.FolderTo, tail);
+                    byId[file.Id] = to;
+                    renamed.Add(new SeriesRenameFile(file.Id, file.RelativePath, to));
+                }
+            }
+        }
+
         if (byId.Count > 0)
         {
             var ids = byId.Keys.ToList();
