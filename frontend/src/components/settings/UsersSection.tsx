@@ -19,8 +19,6 @@ import {
   VisuallyHidden,
 } from '@mantine/core'
 import { notifications } from '../../lib/toast'
-import { NewSettingPill } from './NewSettingPill'
-import { useNewControlMark } from '../../pages/settings/newSettings'
 import {
   IconBan,
   IconDownload,
@@ -165,22 +163,16 @@ function LoginNamesSwitch() {
   const save = useSetLoginNames()
 
   const checked = save.isPending && save.variables !== undefined ? save.variables : setting?.visible
-  const mark = useNewControlMark('login-names')
 
   return (
-    <div id="setting-login-names" {...mark} className="settings-inline-target users-switch-row">
+    <div id="setting-login-names" className="settings-inline-target users-switch-row">
       {setting && (
         <Switch
           checked={checked}
           disabled={save.isPending}
           onChange={(e) => save.mutate(e.currentTarget.checked)}
           labelPosition="left"
-          label={
-            <>
-              {t`Show login names to everyone`}
-              <NewSettingPill id="login-names" />
-            </>
-          }
+          label={t`Show login names to everyone`}
           description={t`Readers without a display name appear under their login name on shared notes, the leaderboard and edit history, instead of "Another reader". Anyone who can sign in then sees every username.`}
         />
       )}

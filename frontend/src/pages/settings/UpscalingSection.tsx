@@ -64,6 +64,8 @@ export function UpscalingSection() {
   const update = (changes: Partial<UpscalingSettings>) => {
     if (current) setDraft({ ...current, ...changes })
   }
+  // Prepare ahead only appears once upscaling is on, so until then the New tab shows the switch.
+  const prepareMark = useNewControlMark('prepare-ahead')
 
   return (
     <SettingsSection
@@ -85,12 +87,14 @@ export function UpscalingSection() {
     >
       {current && state && (
         <Stack>
-          <Switch
-            label={t`Enable server upscaling`}
-            description={t`Each page takes several seconds of server CPU, and upscaled pages are kept in a disk cache. Nothing runs until a reader turns Enhance on.`}
-            checked={current.enabled}
-            onChange={(e) => update({ enabled: e.currentTarget.checked })}
-          />
+          <div {...(current.enabled ? {} : prepareMark)}>
+            <Switch
+              label={t`Enable server upscaling`}
+              description={t`Each page takes several seconds of server CPU, and upscaled pages are kept in a disk cache. Nothing runs until a reader turns Enhance on.`}
+              checked={current.enabled}
+              onChange={(e) => update({ enabled: e.currentTarget.checked })}
+            />
+          </div>
 
           {current.enabled && (
             <>

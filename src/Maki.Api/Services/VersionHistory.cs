@@ -19,10 +19,33 @@ public static class VersionHistory
             return;
         }
 
-        // No record on a database that already had data means an install from before this key
-        // existed: everything tagged is new to it. A fresh database has nothing to compare against.
-        var upgradedFrom = running ?? (freshDatabase ? null : BeforeTracking);
-        await settings.SetAsync(SettingKeys.VersionUpgradedFrom, upgradedFrom, ct);
+        if (running is null)
+        {
+            // No record on a database that already had data means an install from before this key
+            // existed: everything tagged is new to it. A fresh database has nothing to compare against.
+            await settings.SetAsync(SettingKeys.VersionUpgradedFrom, freshDatabase ? null : BeforeTracking, ct);
+        }
+        else if (IsUpgrade(running, current))
+        {
+            await settings.SetAsync(SettingKeys.VersionUpgradedFrom, running, ct);
+        }
+
         await settings.SetAsync(SettingKeys.VersionRunning, current, ct);
+    }
+
+    /// <summary>
+    /// A local build ("-dev") says nothing about which release came before, and going back to an
+    /// older version is not an upgrade; both keep the previous answer.
+    /// </summary>
+    private static bool IsUpgrade(string from, string to)
+    {
+        if (from.EndsWith("-dev", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return !Version.TryParse(from.Split('-', '+')[0], out var a)
+            || !Version.TryParse(to.Split('-', '+')[0], out var b)
+            || b >= a;
     }
 }

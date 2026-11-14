@@ -212,11 +212,22 @@ export const NewTabOpensOnAccount: Story = {
   },
 }
 
+let freshStatusServed = false
+
 export const NoNewTabOnFreshInstall: Story = {
   parameters: {
-    msw: settingsMsw(http.get(api('/system/status'), () => HttpResponse.json({ version: '0.37.0', upgradedFrom: null }))),
+    msw: settingsMsw(
+      http.get(api('/system/status'), () => {
+        freshStatusServed = true
+        return HttpResponse.json({ version: '0.37.0', upgradedFrom: null })
+      }),
+    ),
+  },
+  beforeEach: () => {
+    freshStatusServed = false
   },
   play: async ({ canvas }) => {
+    await waitFor(() => expect(freshStatusServed).toBe(true))
     await expect(await canvas.findByRole('heading', { name: 'Sign-in' })).toBeVisible()
     await expect(canvas.queryByRole('tab', { name: 'New' })).toBeNull()
   },

@@ -143,30 +143,33 @@ export function RootFoldersSection() {
           </SettingsRows>
         </div>
       )}
-      <SettingsRowsBlock>
-        <Group
-          component="form"
-          align="flex-end"
-          onSubmit={(e: FormEvent) => {
-            e.preventDefault()
-            add()
-          }}
-        >
-          <TextInput
-            label={t`Path`}
-            placeholder={t`C:\\Manga or /library`}
-            value={newPath}
-            onChange={(e) => setNewPath(e.currentTarget.value)}
-            style={{ flex: '1 1 16rem' }}
-          />
-          <Button variant="default" onClick={() => setBrowsing(true)}>
-            <Trans>Browse</Trans>
-          </Button>
-          <Button type="submit" loading={addFolder.isPending}>
-            <Trans>Add</Trans>
-          </Button>
-        </Group>
-      </SettingsRowsBlock>
+      {/* With no root folder yet, the New tab shows where to add one. */}
+      <div {...(rootFolders && rootFolders.length > 0 ? {} : lowDiskMark)}>
+        <SettingsRowsBlock>
+          <Group
+            component="form"
+            align="flex-end"
+            onSubmit={(e: FormEvent) => {
+              e.preventDefault()
+              add()
+            }}
+          >
+            <TextInput
+              label={t`Path`}
+              placeholder={t`C:\\Manga or /library`}
+              value={newPath}
+              onChange={(e) => setNewPath(e.currentTarget.value)}
+              style={{ flex: '1 1 16rem' }}
+            />
+            <Button variant="default" onClick={() => setBrowsing(true)}>
+              <Trans>Browse</Trans>
+            </Button>
+            <Button type="submit" loading={addFolder.isPending}>
+              <Trans>Add</Trans>
+            </Button>
+          </Group>
+        </SettingsRowsBlock>
+      </div>
 
       <FolderBrowserModal
         opened={browsing}

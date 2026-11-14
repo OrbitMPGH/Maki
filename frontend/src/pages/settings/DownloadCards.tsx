@@ -759,13 +759,15 @@ export function VolumeReleasesSection() {
         )
       }
     >
-      <Switch
-        label={t`Search torrents for volume releases`}
-        description={t`Also needs the daily scan on.`}
-        checked={volumeSearch}
-        onChange={(e) => setVolumeSearch(e.currentTarget.checked)}
-        mb="md"
-      />
+      <div {...autoApproveMark}>
+        <Switch
+          label={t`Search torrents for volume releases`}
+          description={t`Also needs the daily scan on.`}
+          checked={volumeSearch}
+          onChange={(e) => setVolumeSearch(e.currentTarget.checked)}
+          mb="md"
+        />
+      </div>
       <div id="setting-missing-chapter-search" {...missingMark}>
         <Switch
           label={

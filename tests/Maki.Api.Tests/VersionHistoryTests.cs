@@ -54,4 +54,37 @@ public sealed class VersionHistoryTests
 
         Assert.Equal("0.37.0", await settings.GetAsync(SettingKeys.VersionUpgradedFrom));
     }
+
+    [Fact]
+    public async Task Leaving_a_dev_build_keeps_the_previous_version()
+    {
+        var settings = new FakeAppSettings()
+            .Set(SettingKeys.VersionRunning, "0.0.0-dev")
+            .Set(SettingKeys.VersionUpgradedFrom, "0.36.0");
+        await VersionHistory.RecordAsync(settings, "0.37.0", freshDatabase: false);
+
+        Assert.Equal("0.36.0", await settings.GetAsync(SettingKeys.VersionUpgradedFrom));
+        Assert.Equal("0.37.0", await settings.GetAsync(SettingKeys.VersionRunning));
+    }
+
+    [Fact]
+    public async Task Downgrade_keeps_the_previous_version()
+    {
+        var settings = new FakeAppSettings()
+            .Set(SettingKeys.VersionRunning, "0.37.0")
+            .Set(SettingKeys.VersionUpgradedFrom, "0.36.0");
+        await VersionHistory.RecordAsync(settings, "0.36.1", freshDatabase: false);
+
+        Assert.Equal("0.36.0", await settings.GetAsync(SettingKeys.VersionUpgradedFrom));
+        Assert.Equal("0.36.1", await settings.GetAsync(SettingKeys.VersionRunning));
+    }
+
+    [Fact]
+    public async Task Prerelease_to_its_release_counts_as_an_upgrade()
+    {
+        var settings = new FakeAppSettings().Set(SettingKeys.VersionRunning, "0.37.0-beta.1");
+        await VersionHistory.RecordAsync(settings, "0.37.0", freshDatabase: false);
+
+        Assert.Equal("0.37.0-beta.1", await settings.GetAsync(SettingKeys.VersionUpgradedFrom));
+    }
 }

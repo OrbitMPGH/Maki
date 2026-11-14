@@ -778,7 +778,6 @@ export const SETTINGS_ENTRIES: SettingsEntry[] = [
   {
     id: 'login-names',
     tab: 'users',
-    since: 'next',
     title: msg`Show login names to everyone`,
     admin: true,
     within: 'users',
