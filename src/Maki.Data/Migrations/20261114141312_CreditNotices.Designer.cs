@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maki.Data.Migrations
 {
     [DbContext(typeof(MakiDbContext))]
-    [Migration("20261114123830_CreditNoticeGroups")]
-    partial class CreditNoticeGroups
+    [Migration("20261114141312_CreditNotices")]
+    partial class CreditNotices
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -1588,9 +1588,18 @@ namespace Maki.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("ColourFormat")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int?>("ColourStop")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("ConditionsJson")
                         .IsRequired()
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("Format")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Name")
                         .IsRequired()

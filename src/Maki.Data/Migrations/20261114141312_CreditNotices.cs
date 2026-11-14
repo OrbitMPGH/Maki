@@ -11,6 +11,13 @@ namespace Maki.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AddColumn<double>(
+                name: "TailOffset",
+                table: "ChapterCredits",
+                type: "REAL",
+                nullable: false,
+                defaultValue: 0.0);
+
             migrationBuilder.CreateTable(
                 name: "CreditNotices",
                 columns: table => new
@@ -27,6 +34,13 @@ namespace Maki.Data.Migrations
                     Text = table.Column<string>(type: "TEXT", nullable: true),
                     OcrVersion = table.Column<int>(type: "INTEGER", nullable: false),
                     TextVersion = table.Column<int>(type: "INTEGER", nullable: false),
+                    Kind = table.Column<int>(type: "INTEGER", nullable: false),
+                    GroupName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    GroupSource = table.Column<int>(type: "INTEGER", nullable: false),
+                    SuggestedName = table.Column<string>(type: "TEXT", maxLength: 100, nullable: true),
+                    Invite = table.Column<string>(type: "TEXT", maxLength: 32, nullable: true),
+                    NameVersion = table.Column<int>(type: "INTEGER", nullable: false),
+                    Override = table.Column<int>(type: "INTEGER", nullable: false),
                     CreatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false),
                     UpdatedAtUtc = table.Column<DateTime>(type: "TEXT", nullable: false)
                 },
@@ -81,6 +95,7 @@ namespace Maki.Data.Migrations
                     Crc = table.Column<uint>(type: "INTEGER", nullable: false),
                     Length = table.Column<long>(type: "INTEGER", nullable: false),
                     Share = table.Column<int>(type: "INTEGER", nullable: false),
+                    Bottom = table.Column<bool>(type: "INTEGER", nullable: false),
                     Text = table.Column<string>(type: "TEXT", nullable: false),
                     Colour = table.Column<bool>(type: "INTEGER", nullable: false),
                     NoticeId = table.Column<int>(type: "INTEGER", nullable: false),
@@ -113,9 +128,9 @@ namespace Maki.Data.Migrations
                 column: "SeriesId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CreditNoticeReads_Crc_Length_Share",
+                name: "IX_CreditNoticeReads_Crc_Length_Share_Bottom",
                 table: "CreditNoticeReads",
-                columns: new[] { "Crc", "Length", "Share" },
+                columns: new[] { "Crc", "Length", "Share", "Bottom" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -135,6 +150,10 @@ namespace Maki.Data.Migrations
 
             migrationBuilder.DropTable(
                 name: "CreditNotices");
+
+            migrationBuilder.DropColumn(
+                name: "TailOffset",
+                table: "ChapterCredits");
         }
     }
 }
