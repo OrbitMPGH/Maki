@@ -14955,11 +14955,21 @@ button.settings-row-head:hover,
   border-top: 1px solid var(--hairline);
   background-color: var(--surface-raised);
 }
+/* A dialog with no body (a ConfirmDialog with only a description): the footer sits right under the
+   header's hairline instead of leaving an empty band between two lines. */
+.modal-footer:first-child {
+  margin-top: calc(var(--mb-padding, var(--mantine-spacing-md)) * -1);
+  border-top: 0;
+}
 .modal-footer-status {
   flex: 1 1 14rem;
   min-width: 0;
   font-size: var(--type-meta);
   color: var(--ink-3);
+}
+/* Without a status, its 14rem basis wraps the buttons onto a second row in a narrow dialog. */
+.modal-footer-status:empty {
+  display: none;
 }
 .modal-footer-actions {
   display: flex;
