@@ -13,7 +13,7 @@ namespace Maki.Api.Jobs;
 [DisallowConcurrentExecution]
 public class HousekeepingJob(
     MakiDbContext db, AppPaths paths, UpgradeTrashService upgradeTrash, UpscaleCache upscaleCache,
-    ILogger<HousekeepingJob> logger) : IJob
+    ILogger<HousekeepingJob> logger, CreditNoticeStore? creditNotices = null) : IJob
 {
     /// <summary>Most in-app notifications kept per user, read or not. Well past what anyone scrolls.</summary>
     private const int InboxCap = 200;
@@ -234,6 +234,19 @@ public class HousekeepingJob(
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 logger.LogDebug(ex, "Could not clean the credit strips");
+            }
+        }
+
+        // Credit notices no chapter links to any more.
+        if (creditNotices is not null)
+        {
+            try
+            {
+                await creditNotices.PruneAsync(ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogDebug(ex, "Could not prune the credit notices");
             }
         }
 

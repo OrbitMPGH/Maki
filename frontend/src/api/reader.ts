@@ -279,13 +279,15 @@ export const readerRecapQuery = (chapterId: number) =>
 
 /**
  * The credit, recruitment and notice pages the reader leaves out: whole pages at the chapter's start
- * and end, and how far down the first page shown (0 to 1) a banner fused into it ends. All zero when
- * nothing repeats. `pageVersion` is the manifest's for the file the answer was found in.
+ * and end, how far down the first page shown (0 to 1) a banner fused into it ends, and what share of
+ * the last page shown (0 to 1, from its bottom) a banner fused into it takes. All zero when nothing
+ * repeats. `pageVersion` is the manifest's for the file the answer was found in.
  */
 export interface ReaderCredits {
   headPages: number
   headOffset: number
   tailPages: number
+  tailOffset: number
   pageVersion: string
 }
 

@@ -32,7 +32,8 @@ public class ReaderService(
         int StartPage,
         int PageCount,
         long ArchiveStamp = 0,
-        string? EdgeKey = null)
+        string? EdgeKey = null,
+        IReadOnlyList<Maki.Core.Reading.PageEntry>? Entries = null)
     {
         public string ArchiveVersion => ArchiveVersionOf(ArchiveSize, ArchiveStamp);
     }
@@ -118,7 +119,8 @@ public class ReaderService(
         var (start, count) = SliceBounds(info, row.Chapter.Number, row.SharesFile);
 
         return new ChapterSlice(
-            row.Chapter, row.Series, file.Id, absolute, file.Size, info.Pages, start, count, stamp, EdgeKeyOf(info, start, count));
+            row.Chapter, row.Series, file.Id, absolute, file.Size, info.Pages, start, count, stamp, EdgeKeyOf(info, start, count),
+            info.Entries);
     }
 
     /// <summary>Just what serving one page or thumbnail needs: no Chapter or Series entity.</summary>
@@ -237,7 +239,7 @@ public class ReaderService(
             var (start, count) = SliceBounds(info, row.Chapter.Number, row.SharesFile);
             slices[row.Chapter.Id] = new ChapterSlice(
                 row.Chapter, row.Series, row.File.Id, absolute, row.File.Size, info.Pages, start, count, stamp,
-                EdgeKeyOf(info, start, count));
+                EdgeKeyOf(info, start, count), info.Entries);
         }
 
         return slices;

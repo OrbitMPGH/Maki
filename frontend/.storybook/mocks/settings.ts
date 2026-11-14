@@ -2,6 +2,7 @@ import { http, HttpResponse, type HttpHandler } from 'msw'
 import { api } from './api'
 import * as d from './settings/data'
 import { pageConversionHandlers } from './settings/pageConversion'
+import { creditGroupsHandlers } from './settings/creditGroups'
 import { browseFoldersHandler } from './settings/folders'
 import { healthOptions } from './operations/health'
 import type { DropFolderSettings, DropFolderStatus } from '../../src/api/dropFolder'
@@ -123,6 +124,7 @@ export const settingsHandlers: HttpHandler[] = [
   putEcho('/settings/library'),
   http.get(api('/settings/creditscan'), () => HttpResponse.json({ enabled: false })),
   putEcho('/settings/creditscan'),
+  ...creditGroupsHandlers(),
   http.get(api('/settings/monitoring'), () => HttpResponse.json(d.monitoring)),
   putEcho('/settings/monitoring'),
   http.get(api('/settings/nameparsing'), () => HttpResponse.json(d.nameParsing)),

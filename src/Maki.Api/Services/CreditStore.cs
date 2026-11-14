@@ -10,10 +10,11 @@ using Microsoft.EntityFrameworkCore;
 namespace Maki.Api.Services;
 
 /// <summary>
-/// One credit candidate as it was judged, edge inward, with the text read off it (null when it was not
-/// read), and whether the bank proposed it rather than repetition.
+/// One credit candidate as it was judged, edge inward, with the text its verdict rests on (null when there
+/// is none), whether the bank proposed it rather than repetition, and the <see cref="CreditNotice"/> it is.
 /// </summary>
-public sealed record JudgedCandidate(bool Tail, int Page, double Share, bool Colour, string? Text, bool Accepted, bool FromBank = false);
+public sealed record JudgedCandidate(
+    bool Tail, int Page, double Share, bool Colour, string? Text, bool Accepted, bool FromBank = false, int? NoticeId = null);
 
 /// <summary>
 /// The credit page answers found ahead of time (<see cref="ChapterCredits"/>), read by the reader
@@ -46,7 +47,7 @@ public sealed class CreditStore(IServiceScopeFactory scopes, IPageTextReader tex
     /// <summary>Whether answers the colour rule gave alone are due again: the OCR models can be read.</summary>
     public bool OcrAvailable => text.Available;
 
-    public static CreditPages Answer(ChapterCredits row) => new(row.HeadPages, row.HeadOffset, row.TailPages);
+    public static CreditPages Answer(ChapterCredits row) => new(row.HeadPages, row.HeadOffset, row.TailPages, row.TailOffset);
 
     /// <summary>The stored answer for <paramref name="slice"/>, or null when there is none it can trust.</summary>
     public async Task<CreditPages?> GetAsync(ReaderService.ChapterSlice slice, CancellationToken ct)
@@ -106,6 +107,7 @@ public sealed class CreditStore(IServiceScopeFactory scopes, IPageTextReader tex
             row.HeadPages = found.HeadPages;
             row.HeadOffset = found.HeadOffset;
             row.TailPages = found.TailPages;
+            row.TailOffset = found.TailOffset;
             row.Judge = judge;
             row.CandidatesJson = judged.Count == 0 ? null : JsonSerializer.Serialize(judged, Json);
             row.Skipped = false;
@@ -123,6 +125,7 @@ public sealed class CreditStore(IServiceScopeFactory scopes, IPageTextReader tex
             row.HeadPages = 0;
             row.HeadOffset = 0;
             row.TailPages = 0;
+            row.TailOffset = 0;
             row.Judge = text.Available ? CreditJudge.Ocr : CreditJudge.Colour;
             row.CandidatesJson = null;
             row.Skipped = true;
@@ -137,6 +140,7 @@ public sealed class CreditStore(IServiceScopeFactory scopes, IPageTextReader tex
             row.HeadPages = 0;
             row.HeadOffset = 0;
             row.TailPages = 0;
+            row.TailOffset = 0;
             row.Failed = true;
         }, ct);
 
@@ -217,6 +221,7 @@ public sealed class CreditStore(IServiceScopeFactory scopes, IPageTextReader tex
         row.HeadPages = 0;
         row.HeadOffset = 0;
         row.TailPages = 0;
+        row.TailOffset = 0;
         row.Failed = true;
         row.ScannedAtUtc = DateTime.UtcNow;
         try

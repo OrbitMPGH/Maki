@@ -1,22 +1,24 @@
+using System.Numerics;
 using NetVips;
 using VipsImage = NetVips.Image;
 
 namespace Maki.Core.Images;
 
 /// <summary>
-/// What the reader leaves out of a chapter: whole pages at its start and end, and how far down the
-/// first page it shows (0 to 1) a banner fused into that page ends.
+/// What the reader leaves out of a chapter: whole pages at its start and end, how far down the first
+/// page it shows (0 to 1) a banner fused into that page ends, and what share of the last page it shows
+/// (0 to 1, from its bottom) a banner fused into the bottom of that page takes.
 /// </summary>
-public sealed record CreditPages(int HeadPages, double HeadOffset, int TailPages)
+public sealed record CreditPages(int HeadPages, double HeadOffset, int TailPages, double TailOffset = 0)
 {
-    public static readonly CreditPages None = new(0, 0, 0);
+    public static readonly CreditPages None = new(0, 0, 0, 0);
 }
 
 /// <summary>
 /// A repeated page at one edge of a chapter that may be hidden: <paramref name="Page"/> pages from the
-/// edge (0 is the first page of a head, the last of a tail), the share of it from the top that repeats
-/// (1 for a whole page, less for a banner fused into the top of a slice), and whether the colour rule
-/// takes it for a scanlator's.
+/// edge (0 is the first page of a head, the last of a tail), the share of it that repeats from the edge
+/// (1 for a whole page, less for a banner fused into the top of a head's slice or the bottom of a tail's),
+/// and whether the colour rule takes it for a scanlator's.
 /// </summary>
 public sealed record CreditCandidate(int Page, double Share, bool Colour);
 
@@ -73,7 +75,7 @@ public static class CreditDetector
     public const int Width = RecapDetector.Width;
 
     /// <summary>Bumped whenever a change to matching or settling could change an answer; stored answers below it are found again.</summary>
-    public const int Version = 1;
+    public const int Version = 2;
 
     /// <summary>Bumped whenever <see cref="Shrink"/> or <see cref="Edge.Of"/> would produce different strips; stored strips below it are decoded again.</summary>
     public const int StripVersion = 1;
@@ -390,8 +392,8 @@ public static class CreditDetector
         var limit = Math.Min(MaxPagesPerEdge, pageCount / 3);
         return new CreditCandidates(
             pageCount,
-            EdgeCandidates(chapter.Head, head, grey, limit, banner: true),
-            EdgeCandidates(chapter.Tail, tail, grey, limit, banner: false));
+            EdgeCandidates(chapter.Head, head, grey, limit),
+            EdgeCandidates(chapter.Tail, tail, grey, limit));
     }
 
     /// <summary>
@@ -407,7 +409,8 @@ public static class CreditDetector
             ? new Edges(Edge.Of([], tail: false), entry)
             : new Edges(entry, Edge.Of([], tail: true));
         var found = Candidates(pageCount, chapter, [pair, pair]);
-        return tail ? found.Tail : found.Head;
+        // Tail partials come from repetition only: the bank route was not measured for them.
+        return tail ? [.. found.Tail.Where(c => c.Share >= 1)] : found.Head;
     }
 
     /// <summary>Rows a <see cref="BankSignature"/> holds, from the first informative one.</summary>
@@ -497,12 +500,13 @@ public static class CreditDetector
     /// <summary>
     /// What to hide once <paramref name="headAccepted"/> candidates from the head and
     /// <paramref name="tailAccepted"/> from the tail are known to be a scanlator's: the run from each
-    /// edge stops at the first that is not, and the caps apply after.
+    /// edge stops at the first that is not, and the caps apply after. A partial page at either edge counts
+    /// only when the whole pages before it were all kept.
     /// </summary>
     public static CreditPages Settle(CreditCandidates candidates, int headAccepted, int tailAccepted)
     {
         var (headPages, headShare) = Accepted(candidates.Head, headAccepted);
-        var (tailPages, _) = Accepted(candidates.Tail, tailAccepted);
+        var (tailPages, tailShare) = Accepted(candidates.Tail, tailAccepted);
 
         if (headPages > MaxPagesPerEdge)
         {
@@ -517,13 +521,24 @@ public static class CreditDetector
             headShare = 0;
         }
 
-        tailPages = Math.Max(0, Math.Min(Math.Min(tailPages, MaxPagesPerEdge), allowed - headPages));
+        var cappedTail = Math.Max(0, Math.Min(Math.Min(tailPages, MaxPagesPerEdge), allowed - headPages));
+        if (cappedTail != tailPages)
+        {
+            tailPages = cappedTail;
+            tailShare = 0;
+        }
+
         if (headShare < MinOffset)
         {
             headShare = 0;
         }
 
-        return new CreditPages(headPages, Math.Round(headShare, 4), tailPages);
+        if (tailShare < MinOffset)
+        {
+            tailShare = 0;
+        }
+
+        return new CreditPages(headPages, Math.Round(headShare, 4), tailPages, Math.Round(tailShare, 4));
     }
 
     private static (int Pages, double Share) Accepted(IReadOnlyList<CreditCandidate> edge, int accepted)
@@ -598,11 +613,11 @@ public static class CreditDetector
 
     /// <summary>
     /// The whole pages inside the repeated region at this edge, then the page the region ends part way
-    /// down (a head's only, and only when the region covers enough of it to move for), at most
+    /// into (only when the region covers enough of it to move for), at most
     /// <paramref name="limit"/> whole pages. A page cut by the row budget was never seen whole, so it is
     /// never a whole candidate.
     /// </summary>
-    private static List<CreditCandidate> EdgeCandidates(Edge edge, int covered, bool grey, int limit, bool banner)
+    private static List<CreditCandidate> EdgeCandidates(Edge edge, int covered, bool grey, int limit)
     {
         var found = new List<CreditCandidate>();
         if (covered == 0)
@@ -623,7 +638,7 @@ public static class CreditDetector
             if (!whole)
             {
                 var share = (double)count / edge.Full(p);
-                if (banner && share >= MinOffset)
+                if (share >= MinOffset)
                 {
                     found.Add(new CreditCandidate(p, share, Scanlator(edge, start, count, grey)));
                 }
@@ -747,7 +762,7 @@ public static class CreditDetector
             {
                 var matched = false;
                 var counts = false;
-                if (i < a.Count && j < b.Count && a.Informative(i) == b.Informative(j) && Close(a.Row(i), b.Row(j)))
+                if (i < a.Count && j < b.Count && a.Informative(i) == b.Informative(j) && a.Close(i, b, j))
                 {
                     matched = true;
                     counts = a.Informative(i);
@@ -798,11 +813,49 @@ public static class CreditDetector
         return (cover, duplicate);
     }
 
-    private static bool Close(ReadOnlySpan<float> a, ReadOnlySpan<float> b)
+    /// <summary>Columns summed into each of a strip row's <see cref="Blocks"/> block sums.</summary>
+    private const int BlockWidth = Width / Blocks;
+
+    /// <summary>Blocks of columns a strip row is summed over for <see cref="Close"/>'s second bound.</summary>
+    internal const int Blocks = 8;
+
+    /// <summary>
+    /// Whether two strip rows match: their summed absolute difference is under the tolerance. Two exact
+    /// lower bounds on that sum reject most pairs first: the difference of the rows' sums, then the summed
+    /// differences of their <see cref="Blocks"/> block sums. Strip values are multiples of 1/16 below 256,
+    /// so every sum here is exact in a float and the answer equals the plain scalar loop's.
+    /// </summary>
+    internal static bool Close(
+        ReadOnlySpan<float> a, float sumA, ReadOnlySpan<float> blocksA,
+        ReadOnlySpan<float> b, float sumB, ReadOnlySpan<float> blocksB)
     {
         const float limit = MatchTolerance * Width;
-        var sum = 0f;
-        for (var x = 0; x < Width && sum < limit; x++)
+        if (MathF.Abs(sumA - sumB) >= limit)
+        {
+            return false;
+        }
+
+        var bound = 0f;
+        for (var k = 0; k < Blocks; k++)
+        {
+            bound += MathF.Abs(blocksA[k] - blocksB[k]);
+        }
+
+        if (bound >= limit)
+        {
+            return false;
+        }
+
+        var width = Vector<float>.Count;
+        var acc = Vector<float>.Zero;
+        var x = 0;
+        for (; x + width <= Width; x += width)
+        {
+            acc += Vector.Abs(new Vector<float>(a.Slice(x, width)) - new Vector<float>(b.Slice(x, width)));
+        }
+
+        var sum = Vector.Sum(acc);
+        for (; x < Width; x++)
         {
             sum += MathF.Abs(a[x] - b[x]);
         }
@@ -810,16 +863,43 @@ public static class CreditDetector
         return sum < limit;
     }
 
+    /// <summary>A strip row's sum, with its <see cref="Blocks"/> block sums written to <paramref name="blocks"/>.</summary>
+    internal static float RowSums(ReadOnlySpan<float> row, Span<float> blocks)
+    {
+        var total = 0f;
+        for (var k = 0; k < Blocks; k++)
+        {
+            var block = 0f;
+            for (var x = 0; x < BlockWidth; x++)
+            {
+                block += row[k * BlockWidth + x];
+            }
+
+            blocks[k] = block;
+            total += block;
+        }
+
+        return total;
+    }
+
     /// <summary>An edge's rows averaged in pairs, with which of them say something.</summary>
     private sealed class Strip
     {
         private readonly float[] _rows;
         private readonly bool[] _informative;
+        private readonly float[] _sums;
+        private readonly float[] _blocks;
 
         private Strip(float[] rows, bool[] informative)
         {
             _rows = rows;
             _informative = informative;
+            _sums = new float[informative.Length];
+            _blocks = new float[informative.Length * Blocks];
+            for (var i = 0; i < informative.Length; i++)
+            {
+                _sums[i] = RowSums(Row(i), _blocks.AsSpan(i * Blocks, Blocks));
+            }
         }
 
         public int Count => _informative.Length;
@@ -827,6 +907,10 @@ public static class CreditDetector
         public ReadOnlySpan<float> Row(int i) => _rows.AsSpan(i * Width, Width);
 
         public bool Informative(int i) => _informative[i];
+
+        public bool Close(int i, Strip other, int j) => CreditDetector.Close(
+            Row(i), _sums[i], _blocks.AsSpan(i * Blocks, Blocks),
+            other.Row(j), other._sums[j], other._blocks.AsSpan(j * Blocks, Blocks));
 
         /// <summary>
         /// The edge's rows paired from <paramref name="down"/> half rows in, each moved

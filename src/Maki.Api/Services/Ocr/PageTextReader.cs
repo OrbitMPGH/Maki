@@ -20,6 +20,12 @@ public interface IPageTextReader
     /// </summary>
     Task<string?> ReadAsync(byte[] image, double share, CancellationToken ct);
 
+    /// <summary>
+    /// <see cref="ReadAsync"/> on the bottom <paramref name="share"/> of the page instead of the top: a
+    /// banner fused into the bottom of a chapter's last page.
+    /// </summary>
+    Task<string?> ReadBottomAsync(byte[] image, double share, CancellationToken ct);
+
     /// <summary>Loads the models now, so a read that follows does not wait for them. Never throws.</summary>
     Task PrepareAsync();
 }
@@ -119,7 +125,11 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
         }
     }
 
-    public async Task<string?> ReadAsync(byte[] image, double share, CancellationToken ct)
+    public Task<string?> ReadAsync(byte[] image, double share, CancellationToken ct) => ReadAsync(image, share, bottom: false, ct);
+
+    public Task<string?> ReadBottomAsync(byte[] image, double share, CancellationToken ct) => ReadAsync(image, share, bottom: true, ct);
+
+    private async Task<string?> ReadAsync(byte[] image, double share, bool bottom, CancellationToken ct)
     {
         if (_failed)
         {
@@ -140,7 +150,7 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
             {
                 // Only the decode holds an image permit; inference runs outside the gate.
                 var page = await ImageWorkGate.RunAsync(
-                    () => Task.FromResult(Decode(image, share)), ImageWorkGate.Weigh(image), ct);
+                    () => Task.FromResult(Decode(image, share, bottom)), ImageWorkGate.Weigh(image), ct);
                 return Read(models, page);
             }
             catch (Exception e) when (e is not OperationCanceledException)
@@ -240,20 +250,26 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
         }
     }
 
-    /// <summary>The page as 8-bit sRGB with alpha flattened on white, cut to its top <paramref name="share"/>.</summary>
-    private static Rgb Decode(byte[] image, double share)
+    /// <summary>
+    /// The page as 8-bit sRGB with alpha flattened on white, cut to its top <paramref name="share"/>, or its
+    /// bottom one. Like the top, the bottom is cut from the stored orientation (no EXIF rotation) and is at
+    /// least 8 rows tall.
+    /// </summary>
+    private static Rgb Decode(byte[] image, double share, bool bottom)
     {
         using var source = ImageCodec.Load(image);
         using var srgb = source.Colourspace(Enums.Interpretation.Srgb);
         using var flat = srgb.HasAlpha() ? srgb.Flatten(background: [255, 255, 255]) : srgb.Copy();
         using var cast = flat.Cast(Enums.BandFormat.Uchar);
-        var height = share >= 1 ? cast.Height : Math.Clamp((int)(cast.Height * share), Math.Min(8, cast.Height), cast.Height);
-        using var top = height == cast.Height ? cast.Copy() : cast.Crop(0, 0, cast.Width, height);
-        using var rgb = top.Bands switch
+        // The bottom rounds its top edge down, as the research read it, so it never starts inside the region.
+        var rows = bottom ? cast.Height - (int)Math.Floor(cast.Height * (1 - share)) : (int)(cast.Height * share);
+        var height = share >= 1 ? cast.Height : Math.Clamp(rows, Math.Min(8, cast.Height), cast.Height);
+        using var cut = height == cast.Height ? cast.Copy() : cast.Crop(0, bottom ? cast.Height - height : 0, cast.Width, height);
+        using var rgb = cut.Bands switch
         {
-            3 => top.Copy(),
-            > 3 => top.ExtractBand(0, 3),
-            _ => top.Bandjoin(top, top),
+            3 => cut.Copy(),
+            > 3 => cut.ExtractBand(0, 3),
+            _ => cut.Bandjoin(cut, cut),
         };
         return new Rgb(rgb.WriteToMemory<byte>(), rgb.Width, rgb.Height);
     }
