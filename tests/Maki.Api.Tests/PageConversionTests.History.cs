@@ -219,8 +219,12 @@ public sealed partial class PageConversionTests
         var volume = result.Rules[1];
         Assert.False(volume.Skip);
         Assert.Equal((2, 2, 0L), (volume.Files, volume.SampledFiles, volume.HardlinkedBytes));
-        Assert.True(volume.ExpectedLow <= volume.ExpectedHigh && volume.ExpectedHigh < volume.Bytes);
-        Assert.True(volume.SecondsLow <= volume.SecondsHigh && volume.SecondsHigh > 0);
+        Assert.InRange(volume.Expected, volume.ExpectedLow, volume.ExpectedHigh);
+        Assert.True(volume.ExpectedHigh < volume.Bytes);
+        Assert.InRange(volume.Seconds, volume.SecondsLow, volume.SecondsHigh);
+        Assert.True(volume.SecondsLow > 0);
+        // Every file of the rule was sampled, so only the floor for sampling three pages a file is left.
+        Assert.Equal(volume.Expected * PageConversionEstimateService.MinSizeSpread, volume.Expected - volume.ExpectedLow, 1.0);
         long real = 0;
         foreach (var (_, _, path) in volumes)
         {
@@ -234,9 +238,18 @@ public sealed partial class PageConversionTests
 
         var fallthrough = result.Default;
         Assert.Equal((2, 2), (fallthrough.Files, fallthrough.SampledFiles));
-        Assert.Equal(fallthrough.Bytes, fallthrough.ExpectedHigh);
+        Assert.True(fallthrough.Expected > fallthrough.HardlinkedBytes && fallthrough.ExpectedHigh <= fallthrough.Bytes);
         Assert.InRange(fallthrough.HardlinkedBytes, fallthrough.Bytes / 3, fallthrough.Bytes * 2 / 3);
         Assert.Equal((0, 0, 0L), (result.Overrides.Files, result.Overrides.SampledFiles, result.Overrides.ExpectedLow));
+
+        var total = result.Total;
+        Assert.Equal((volume.Files + fallthrough.Files, volume.Bytes + fallthrough.Bytes, true),
+            (total.Files, total.Bytes, total.Sampled));
+        Assert.Equal(volume.Expected + fallthrough.Expected, total.Expected, 1.0);
+        // Independent errors add in quadrature, so the total's range is narrower than the rows' ranges laid end to end.
+        Assert.True(total.ExpectedHigh - total.ExpectedLow <
+                    volume.ExpectedHigh - volume.ExpectedLow + fallthrough.ExpectedHigh - fallthrough.ExpectedLow);
+        Assert.InRange(total.Seconds, total.SecondsLow, total.SecondsHigh);
 
         var over = result.PassedOver;
         Assert.Equal((1, fallthrough.HardlinkedBytes), (over.HardlinkedFiles, over.HardlinkedBytes));
@@ -697,5 +710,15 @@ public sealed partial class PageConversionTests
 
         await Undo(db).Undo.UndoAsync(_world.SeriesId, false, false, CancellationToken.None);
         Assert.Equal((0L, 0), await UpgradeTrashService.SizeAsync(db, CancellationToken.None));
+    }
+
+    [Fact]
+    public void A_lossless_plan_in_another_format_is_another_estimate()
+    {
+        // Series set to a fixed stop convert in the plan's format, which a Lossless default's name leaves out.
+        var webp = new PageConversionPlan(PageConversionFormat.Webp, PageConversionStop.Lossless, false, []);
+        var avif = new PageConversionPlan(PageConversionFormat.Avif, PageConversionStop.Lossless, false, []);
+
+        Assert.NotEqual(PageConversionEstimateService.Hash(webp), PageConversionEstimateService.Hash(avif));
     }
 }

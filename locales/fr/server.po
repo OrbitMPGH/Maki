@@ -1528,11 +1528,17 @@ msgstr "L'URL doit être une adresse complète en http:// ou https://"
 msgid "error.notifications.webhookUrlRequired"
 msgstr "L'URL du webhook est requise"
 
-#. English: Choose WebP, AVIF or off
+#. English: Choose WebP, AVIF, JPEG XL or off
 #: src/Maki.Api/Controllers/PageConversionController.cs
 #, fuzzy
 msgid "error.pageConversion.formatInvalid"
 msgstr "Choisissez WebP, AVIF ou désactivé"
+
+#. A plan or rule picked JPEG XL, but libjxl did not load beside Maki (missing or older than 0.11).
+#. English: JPEG XL needs libjxl, which this install does not have. Choose WebP or AVIF
+#: src/Maki.Api/Controllers/PageConversionController.cs
+msgid "error.pageConversion.jpegXlUnavailable"
+msgstr ""
 
 #. Starting the library pass while page conversion is switched off.
 #. English: Choose a format for page conversion first

@@ -310,11 +310,12 @@ public static class CreditDetector
     /// <summary>
     /// Shrinks a page image for <see cref="Edge.Of"/> in one decode: <see cref="Width"/> columns of grey,
     /// as <see cref="RecapDetector.Shrink"/> makes them, and each row's colour and white pixels counted
-    /// on the sRGB thumbnail with any alpha flattened onto white. Throws when libvips cannot read it.
+    /// on the sRGB thumbnail with any alpha flattened onto white. Throws when libvips (or libjxl, for a
+    /// JPEG XL page) cannot read it.
     /// </summary>
     public static CreditPage Shrink(byte[] image)
     {
-        using var thumb = VipsImage.ThumbnailBuffer(image, Width, height: 10_000_000, size: Enums.Size.Both);
+        using var thumb = ImageCodec.Thumbnail(image, Width, 10_000_000, Enums.Size.Both);
         using var srgb = thumb.Colourspace(Enums.Interpretation.Srgb);
         using var flat = srgb.HasAlpha() ? srgb.Flatten(background: [255, 255, 255]) : srgb.Copy();
         using var exact = flat.Width == Width ? flat.Copy() : flat.Resize((double)Width / flat.Width, vscale: 1.0);

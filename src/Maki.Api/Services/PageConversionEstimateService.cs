@@ -34,16 +34,42 @@ public class PageConversionEstimateService(
 
     /// <param name="Rules">One per rule, in order.</param>
     /// <param name="Overrides">Series with a fixed stop of their own; Never series are passed over.</param>
+    /// <param name="Total">Every bucket the pass converts, added up.</param>
     public sealed record EstimateResult(
         IReadOnlyList<EstimateBucket> Rules, EstimateBucket Default, EstimateBucket Overrides, PassedOver PassedOver,
-        IReadOnlyList<ConvertedEarlier> ConvertedEarlier, int ConvertedWithOriginalInTrash, double MsPerMegapixel);
+        IReadOnlyList<ConvertedEarlier> ConvertedEarlier, int ConvertedWithOriginalInTrash, double MsPerMegapixel,
+        EstimateTotal Total);
 
-    /// <param name="ExpectedLow">Bytes after the pass, 25th percentile.</param>
-    /// <param name="ExpectedHigh">Bytes after the pass, 75th percentile.</param>
+    /// <summary>
+    /// What the pass would do to one bucket. <c>Expected</c> is the bucket's bytes times the sampled files'
+    /// size-weighted mean ratio; the low and high ends are a 90% range for that total, from the sampling error
+    /// of the mean. They are never the spread of single files, which is far wider and says nothing about a
+    /// total over thousands of them. Seconds work the same way from the sampled pages' encode rate.
+    /// </summary>
     /// <param name="HardlinkedBytes">Extrapolated from the sampled files; never counted as saving.</param>
     public sealed record EstimateBucket(
         bool Skip, int Files, long Bytes, int SampledFiles, long ExpectedLow, long ExpectedHigh, long HardlinkedBytes,
+        double SecondsLow, double SecondsHigh, long Expected, double Seconds);
+
+    /// <summary>The converting buckets added up; the ranges combine the buckets' sampling errors, which are independent.</summary>
+    public sealed record EstimateTotal(
+        int Files, long Bytes, bool Sampled, long Expected, long ExpectedLow, long ExpectedHigh, double Seconds,
         double SecondsLow, double SecondsHigh);
+
+    /// <summary>z for a two-sided 90% range.</summary>
+    private const double Z90 = 1.645;
+
+    /// <summary>The narrowest size range, as a share of the expected size: only three pages of each file are encoded.</summary>
+    internal const double MinSizeSpread = 0.03;
+
+    /// <summary>The narrowest time range, as a share of the expected time: how busy the server is moves it more than sampling.</summary>
+    internal const double MinTimeSpread = 0.15;
+
+    /// <summary>A sampled estimate and the half width of its 90% range.</summary>
+    private readonly record struct Figure(double Value, double Half)
+    {
+        public static readonly Figure None = new(0, 0);
+    }
 
     /// <param name="Undone">Files an undo put back, which the pass leaves alone.</param>
     /// <param name="AlreadyChecked">
@@ -121,16 +147,20 @@ public class PageConversionEstimateService(
         }
     }
 
-    /// <summary>A stable hash of what decides the estimate: format, default stop, PNG choice and each rule but its name.</summary>
+    /// <summary>
+    /// A stable hash of what decides the estimate: the default settings (formats, stops, PNG choice, split
+    /// height) and each rule but its name.
+    /// </summary>
     public static string Hash(PageConversionPlan plan)
     {
+        // The format is named on its own too: at Lossless the default's name leaves it out, yet series
+        // set to a fixed stop still convert in it.
         var parts = new List<string>
         {
-            PageConversionSettings.FormatName(plan.Format), PageConversionSettings.StopName(plan.DefaultStop),
-            plan.PngLossless ? "png-lossless" : "png"
+            PageConversionSettings.FormatName(plan.Format), plan.DefaultSettings.Name(), plan.PngLossless ? "png-lossless" : "png"
         };
         parts.AddRange(plan.Rules.OrderBy(r => r.Order).Select(r =>
-            $"{r.Conditions.ToJson()}|{(r.Skip || r.Stop is not { } stop ? "skip" : PageConversionSettings.StopName(stop))}"));
+            $"{r.Conditions.ToJson()}|{(r.Skip ? "skip" : plan.Settings(r).Name())}"));
         var hash = SHA256.HashData(Encoding.UTF8.GetBytes(string.Join('\n', parts)));
         return Convert.ToHexString(hash, 0, 8).ToLowerInvariant();
     }
@@ -306,7 +336,7 @@ public class PageConversionEstimateService(
         }
 
         var allPages = converting.SelectMany(g => g.Samples).SelectMany(s => s.Pages).ToList();
-        var buckets = new Dictionary<Group, (EstimateBucket Bucket, int HardlinkedFiles)>();
+        var buckets = new Dictionary<Group, (EstimateBucket Bucket, int HardlinkedFiles, Figure Size, Figure Time)>();
         foreach (var group in groups.Append(fallthrough).Append(overrides))
         {
             buckets[group] = Bucket(group, allPages);
@@ -330,7 +360,23 @@ public class PageConversionEstimateService(
                 .OrderByDescending(c => c.Files)
                 .ThenBy(c => c.CheckedWith, StringComparer.Ordinal)],
             trashed,
-            totalMegapixels > 0 ? totalMs / totalMegapixels : 0);
+            totalMegapixels > 0 ? totalMs / totalMegapixels : 0,
+            Total([.. buckets.Values.Where(b => !b.Bucket.Skip && b.Bucket.Files > 0)]));
+    }
+
+    private static EstimateTotal Total(IReadOnlyList<(EstimateBucket Bucket, int HardlinkedFiles, Figure Size, Figure Time)> buckets)
+    {
+        var bytes = buckets.Sum(b => b.Bucket.Bytes);
+        var expected = buckets.Sum(b => b.Size.Value);
+        var sizeHalf = Math.Sqrt(buckets.Sum(b => b.Size.Half * b.Size.Half));
+        var seconds = buckets.Sum(b => b.Time.Value);
+        var timeHalf = Math.Sqrt(buckets.Sum(b => b.Time.Half * b.Time.Half));
+        return new EstimateTotal(
+            buckets.Sum(b => b.Bucket.Files), bytes, buckets.Any(b => b.Bucket.SampledFiles > 0),
+            (long)Math.Round(expected),
+            (long)Math.Round(Math.Max(0, expected - sizeHalf)),
+            (long)Math.Round(Math.Min(bytes, expected + sizeHalf)),
+            seconds, Math.Max(0, seconds - timeHalf), seconds + timeHalf);
     }
 
     /// <summary>Up to <see cref="FilesPerBucket"/> files evenly spaced by raw bits per pixel, unmeasured ones last.</summary>
@@ -471,57 +517,74 @@ public class PageConversionEstimateService(
         }
     }
 
-    private static (EstimateBucket Bucket, int HardlinkedFiles) Bucket(Group group, List<PageTime> allPages)
+    private static (EstimateBucket Bucket, int HardlinkedFiles, Figure Size, Figure Time) Bucket(Group group, List<PageTime> allPages)
     {
         var files = group.Files.Count;
         var bytes = group.Bytes;
         var samples = group.Samples;
         if (group.Skip || samples.Count == 0)
         {
-            return (new EstimateBucket(group.Skip, files, bytes, 0, bytes, bytes, 0,
-                group.Skip ? 0 : Seconds(group, 0, allPages, 0.25), group.Skip ? 0 : Seconds(group, 0, allPages, 0.75)), 0);
+            var time = group.Skip ? Figure.None : Seconds(group, 0, allPages);
+            var whole = new Figure(bytes, 0);
+            return (Make(group.Skip, 0, whole, 0, time), 0, group.Skip ? Figure.None : whole, time);
         }
 
         var sampledBytes = samples.Sum(s => s.Size);
         var hardShare = sampledBytes == 0 ? 0 : (double)samples.Where(s => s.Hardlinked).Sum(s => s.Size) / sampledBytes;
         var hardFiles = (int)Math.Round(files * (double)samples.Count(s => s.Hardlinked) / samples.Count);
         var pages = samples.SelectMany(s => s.Pages).ToList();
-        return (new EstimateBucket(false, files, bytes, samples.Count,
-            (long)Math.Round(bytes * WeightedPercentile(samples, 0.25)),
-            (long)Math.Round(bytes * WeightedPercentile(samples, 0.75)),
-            (long)Math.Round(bytes * hardShare),
-            Seconds(group, hardShare, pages.Count > 0 ? pages : allPages, 0.25),
-            Seconds(group, hardShare, pages.Count > 0 ? pages : allPages, 0.75)), hardFiles);
+
+        var ratio = MeanOf([.. samples.Select(s => (s.Ratio, (double)Math.Max(1, s.Size)))], files);
+        var expected = bytes * ratio.Value;
+        var size = new Figure(expected, Math.Max(Z90 * ratio.Half * bytes, MinSizeSpread * expected));
+        var seconds = Seconds(group, hardShare, pages.Count > 0 ? pages : allPages);
+        return (Make(false, samples.Count, size, (long)Math.Round(bytes * hardShare), seconds), hardFiles, size, seconds);
+
+        EstimateBucket Make(bool skip, int sampled, Figure size, long hardlinked, Figure time) => new(
+            skip, files, bytes, sampled,
+            (long)Math.Round(Math.Max(0, size.Value - size.Half)),
+            (long)Math.Round(Math.Min(bytes, size.Value + size.Half)),
+            hardlinked,
+            Math.Max(0, time.Value - time.Half), time.Value + time.Half,
+            (long)Math.Round(size.Value), time.Value);
     }
 
-    /// <summary>The ratio at <paramref name="p"/>, each file weighted by its size.</summary>
-    private static double WeightedPercentile(List<FileSample> samples, double p)
+    /// <summary>
+    /// The weighted mean of the samples and its standard error (as <see cref="Figure.Half"/>, not yet scaled
+    /// by z), with the finite population correction when <paramref name="population"/> items exist in all:
+    /// a bucket whose every file was sampled has no sampling error left.
+    /// </summary>
+    private static Figure MeanOf(IReadOnlyList<(double Value, double Weight)> samples, int population)
     {
-        var sorted = samples.OrderBy(s => s.Ratio).ToList();
-        var total = sorted.Sum(s => (double)Math.Max(1, s.Size));
-        var running = 0d;
-        foreach (var sample in sorted)
+        var weight = samples.Sum(s => s.Weight);
+        if (weight <= 0)
         {
-            running += Math.Max(1, sample.Size);
-            if (running >= p * total)
-            {
-                return sample.Ratio;
-            }
+            return Figure.None;
         }
 
-        return sorted[^1].Ratio;
+        var mean = samples.Sum(s => s.Value * s.Weight) / weight;
+        var n = samples.Count;
+        if (n < 2)
+        {
+            return new Figure(mean, 0);
+        }
+
+        var se = Math.Sqrt(n / (n - 1.0) * samples.Sum(s => s.Weight * s.Weight * (s.Value - mean) * (s.Value - mean))) / weight;
+        var correction = population > 0 ? Math.Sqrt(Math.Max(0, 1 - (double)n / population)) : 1;
+        return new Figure(mean, se * correction);
     }
 
     /// <summary>
     /// Measured files count their pages times the median page; unmeasured ones are extrapolated by
     /// bytes. Hardlinked files are never encoded, so their share is left out. Each sample is lane time,
-    /// and the pass encodes <see cref="PageTime.InFlight"/> pages like it at once.
+    /// and the pass encodes <see cref="PageTime.InFlight"/> pages like it at once. The rate is the sampled
+    /// pages' megapixel-weighted mean, with its sampling error.
     /// </summary>
-    private static double Seconds(Group group, double hardShare, List<PageTime> pages, double p)
+    private static Figure Seconds(Group group, double hardShare, List<PageTime> pages)
     {
         if (pages.Count == 0 || group.Files.Count == 0)
         {
-            return 0;
+            return Figure.None;
         }
 
         var measured = group.Files.Select(f => f.File)
@@ -539,13 +602,9 @@ public class PageConversionEstimateService(
             megapixels += unmeasuredBytes * perByte;
         }
 
-        var rates = pages.Where(x => x.Megapixels > 0).Select(x => x.Ms / x.Megapixels / x.InFlight).Order().ToList();
-        if (rates.Count == 0)
-        {
-            return 0;
-        }
-
-        var rate = rates[(int)Math.Clamp(Math.Round(p * (rates.Count - 1)), 0, rates.Count - 1)];
-        return megapixels * (1 - hardShare) * rate / 1000;
+        var rate = MeanOf([.. pages.Where(x => x.Megapixels > 0).Select(x => (x.Ms / x.Megapixels / x.InFlight, x.Megapixels))], 0);
+        var scale = megapixels * (1 - hardShare) / 1000;
+        var seconds = scale * rate.Value;
+        return new Figure(seconds, Math.Max(Z90 * rate.Half * scale, MinTimeSpread * seconds));
     }
 }

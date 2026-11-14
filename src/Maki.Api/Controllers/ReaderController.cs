@@ -387,8 +387,14 @@ public class ReaderController(
         }
 
         var entry = slice.Pages[slice.StartPage + page];
+        var jpegXl = JpegXlPages.IsJpegXl(entry);
+        var (contentType, representation) = JpegXlPages.Representation(entry, jpegXl && JpegXlPages.Accepts(Request));
+        if (jpegXl)
+        {
+            Response.Headers.Vary = "Accept";
+        }
 
-        var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-{slice.StartPage + page}\"");
+        var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-{slice.StartPage + page}{representation}\"");
         if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
         {
             return StatusCode(StatusCodes.Status304NotModified);
@@ -413,7 +419,20 @@ public class ReaderController(
         }
 
         SetPageCacheControl(slice);
-        return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
+        if (jpegXl && contentType != JpegXlPages.MediaType)
+        {
+            var (bytes, type) = await JpegXlPages.TranscodeAsync(stream, ct);
+            if (type == JpegXlPages.MediaType)
+            {
+                // The page did not convert, so this is not the WebP the ETag names; never let it be kept.
+                Response.Headers.CacheControl = "no-store";
+                return File(bytes, type);
+            }
+
+            return File(bytes, type, lastModified: null, entityTag: etag);
+        }
+
+        return File(stream, contentType, lastModified: null, entityTag: etag);
     }
 
     private static string PageVersion(int chapterFileId, string archiveVersion) => $"{chapterFileId}-{archiveVersion}";

@@ -1,134 +1,372 @@
 import { useMemo, useState } from 'react'
-import { Button, Group, Skeleton, Stack } from '@mantine/core'
-import { IconArrowLeft, IconArrowRight } from '../lib/icons'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { plural } from '@lingui/core/macro'
-import { Trans, useLingui } from '@lingui/react/macro'
-import { usePageConversion, usePageConversionRules, type PageConversionSettings } from '../api/pageConversion'
-import { StepStrip, type Step } from '../components/ui/StepStrip'
-import { CompareStep } from '../components/pageconversion/CompareStep'
-import { emptyCompareChoice, type CompareChoice } from '../components/pageconversion/compareChoice'
-import { FormatStep } from '../components/pageconversion/FormatStep'
-import { toRuleDraft, type RuleDraft } from '../components/pageconversion/ruleTemplates'
-import { ReviewStep } from '../components/pageconversion/ReviewStep'
-import { ScopeStep } from '../components/pageconversion/ScopeStep'
-import { StartStep } from '../components/pageconversion/StartStep'
-import { FORMAT_LABELS, STOP_LABELS } from '../components/pageconversion/labels'
+import { Button, Group, Menu, Modal, Skeleton, Stack, Switch, Text } from '@mantine/core'
+import { useDebouncedValue } from '@mantine/hooks'
+import { IconArrowLeft, IconChevronDown, IconPlus } from '../lib/icons'
+import { Link, useNavigate } from 'react-router-dom'
+import { Plural, Trans, useLingui } from '@lingui/react/macro'
+import {
+  MAX_PAGE_CONVERSION_RULES,
+  usePageConversion,
+  usePageConversionRules,
+  usePageConversionScope,
+  type PageConversionFormat,
+  type PageConversionRule,
+  type PageConversionScopeRequest,
+  type PageConversionSettings,
+  type PageConversionStatus,
+  type ScopeBucket,
+} from '../api/pageConversion'
+import { formatBytes, formatReadingTime } from '../format'
+import { PlanTable } from '../components/pageconversion/PlanTable'
+import { PlanOptions } from '../components/pageconversion/PlanOptions'
+import {
+  EstimateDetails,
+  Sampling,
+  useRangeText,
+  usePlanEstimate,
+  type PlanEstimate,
+} from '../components/pageconversion/PlanEstimate'
+import { SaveActions, planChanged } from '../components/pageconversion/SaveActions'
+import { RULE_TEMPLATES, newRuleDraft, toRuleDraft, toRuleDtos, type RuleDraft } from '../components/pageconversion/ruleTemplates'
 import { PageHeader } from '../components/ui/PageHeader'
 import { Panel } from '../components/ui/Panel'
 import { SurfaceFrame } from '../components/ui/SurfaceFrame'
+import { MODAL_SIZE } from '../components/ui/modalSizes'
 
 const SETTINGS_URL = '/settings?tab=library&s=page-conversion'
 
-type StepId = 'format' | 'compare' | 'scope' | 'review' | 'start'
-
-const STEP_IDS: readonly StepId[] = ['format', 'compare', 'scope', 'review', 'start']
+const COUNT_DEBOUNCE_MS = 400
 
 /**
- * Sets up page conversion: the format, then one of the admin's own pages before and after at each
- * quality stop, then the only step that writes anything. Choices live in this component until Start.
+ * Page conversion on one page: the rules and the default as a table of targets, each opening on
+ * the admin's own pages of that kind, with live counts, an estimate, and the only buttons that write.
+ * Choices live here until saved.
  */
 export default function PageConversionWizardPage() {
-  const { t } = useLingui()
-  const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const { data: status } = usePageConversion()
   const [edits, setEdits] = useState<Partial<PageConversionSettings>>({})
-  const [compare, setCompare] = useState<CompareChoice>(emptyCompareChoice)
   const { data: savedRules, isError: rulesFailed } = usePageConversionRules()
   const [ruleEdits, setRuleEdits] = useState<RuleDraft[] | null>(null)
   const loadedRules = useMemo(() => (savedRules?.rules ?? []).map(toRuleDraft), [savedRules])
   const rulesReady = savedRules !== undefined || rulesFailed
   const rules = ruleEdits ?? loadedRules
 
-  const requested = Number(params.get('step'))
-  const index = Number.isInteger(requested) ? Math.min(Math.max(requested, 1), STEP_IDS.length) - 1 : 0
-  const current = STEP_IDS[index]
-  const goTo = (next: number) => setParams({ step: String(next + 1) })
-
-  const draft: PageConversionSettings | null = status && rulesReady
-    ? { ...status.settings, format: status.settings.format ?? 'webp', ...edits }
-    : null
-
-  const hints: Record<StepId, string> = {
-    format: draft?.format ? t(FORMAT_LABELS[draft.format]) : t`Off`,
-    compare: draft?.format ? t(STOP_LABELS[draft.stop]) : t`Nothing to compare`,
-    scope: !draft?.format
-      ? t`Nothing to choose`
-      : rules.length === 0
-        ? t`No rules`
-        : plural(rules.length, { one: '# rule', other: '# rules' }),
-    review: draft?.format ? t`Sizes and time` : t`Nothing to estimate`,
-    start: t`Save and begin`,
-  }
-  const labels: Record<StepId, string> = {
-    format: t`Format`,
-    compare: t`Compare`,
-    scope: t`What to convert`,
-    review: t`Review`,
-    start: t`Start`,
-  }
-  const steps: Step[] = STEP_IDS.map((id, i) => ({
-    label: labels[id],
-    hint: hints[id],
-    state: i < index ? 'done' : i === index ? 'current' : 'todo',
-  }))
-
-  const change = (changes: Partial<PageConversionSettings>) => setEdits((previous) => ({ ...previous, ...changes }))
+  const draft: PageConversionSettings | null = status && rulesReady ? { ...status.settings, ...edits } : null
 
   return (
     <SurfaceFrame pageStyle="operational">
       <PageHeader
         compact
-        title={<Trans>Set up page conversion</Trans>}
-        description={<Trans>Compare your own pages at each quality before anything is rewritten.</Trans>}
+        title={<Trans>Page conversion</Trans>}
+        description={
+          <Trans>Choose how each kind of file and page is stored, and look at your own pages before anything is rewritten.</Trans>
+        }
         actions={
           <Button component={Link} to={SETTINGS_URL} variant="default" leftSection={<IconArrowLeft size={16} />}>
             <Trans>Back to settings</Trans>
           </Button>
         }
       />
-      <Panel p="sm">
-        <StepStrip steps={steps} label={t`Page conversion steps`} />
-        {!draft || !status ? (
+      {!draft || !status ? (
+        <Panel p="md">
           <Stack gap="sm">
             <Skeleton height={28} width="40%" />
             <Skeleton height={220} />
           </Stack>
-        ) : (
-          <Stack gap="lg" pt="xs">
-            {current === 'format' && <FormatStep value={draft} onChange={change} />}
-            {current === 'compare' && (
-              <CompareStep value={draft} onChange={change} choice={compare} onChoiceChange={setCompare} />
-            )}
-            {current === 'scope' && <ScopeStep value={draft} rules={rules} onRulesChange={setRuleEdits} rulesFailed={rulesFailed} />}
-            {current === 'review' && <ReviewStep value={draft} rules={rules} />}
-            {current === 'start' && (
-              <StartStep
-                value={draft}
-                rules={rules}
-                savedRules={savedRules?.rules ?? []}
-                status={status}
-                onDone={() => navigate(SETTINGS_URL)}
-              />
-            )}
-            <Group justify="space-between">
-              {index > 0 ? (
-                <Button variant="default" leftSection={<IconArrowLeft size={16} />} onClick={() => goTo(index - 1)}>
-                  <Trans>Back</Trans>
-                </Button>
-              ) : (
-                <span />
-              )}
-              {index < STEP_IDS.length - 1 && (
-                <Button rightSection={<IconArrowRight size={16} />} onClick={() => goTo(index + 1)}>
-                  <Trans>Continue</Trans>
-                </Button>
-              )}
-            </Group>
-          </Stack>
-        )}
-      </Panel>
+        </Panel>
+      ) : (
+        <Plan
+          value={draft}
+          onChange={(changes) => setEdits((previous) => ({ ...previous, ...changes }))}
+          rules={rules}
+          savedRules={savedRules?.rules ?? []}
+          onRulesChange={setRuleEdits}
+          rulesFailed={rulesFailed}
+          status={status}
+          onDone={() => navigate(SETTINGS_URL)}
+        />
+      )}
     </SurfaceFrame>
+  )
+}
+
+function Plan({
+  value,
+  onChange,
+  rules,
+  savedRules,
+  onRulesChange,
+  rulesFailed,
+  status,
+  onDone,
+}: {
+  value: PageConversionSettings
+  onChange: (changes: Partial<PageConversionSettings>) => void
+  rules: RuleDraft[]
+  savedRules: PageConversionRule[]
+  onRulesChange: (rules: RuleDraft[]) => void
+  rulesFailed: boolean
+  status: PageConversionStatus
+  onDone: () => void
+}) {
+  const { t } = useLingui()
+  const [lastFormat, setLastFormat] = useState<PageConversionFormat>(value.format ?? 'webp')
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const estimate = usePlanEstimate(value, rules, sheetOpen)
+
+  const [settledRules] = useDebouncedValue(rules, COUNT_DEBOUNCE_MS)
+  const { format, stop, pngLossless, splitHeight, colourFormat, colourStop } = value
+  const scopeRequest: PageConversionScopeRequest | null = format
+    ? { format, stop, pngLossless, splitHeight, colourFormat, colourStop, rules: toRuleDtos(settledRules) }
+    : null
+  const counts = usePageConversionScope(
+    scopeRequest,
+    settledRules.map((rule) => rule.key),
+  )
+  const scope = counts.data
+  const countsStale = settledRules !== rules || counts.isFetching
+  const ruleBucket = (rule: RuleDraft): ScopeBucket | undefined => {
+    const at = scope?.ruleKeys.indexOf(rule.key) ?? -1
+    return at >= 0 ? scope?.rules[at] : undefined
+  }
+
+  const atLimit = rules.length >= MAX_PAGE_CONVERSION_RULES
+  const addRule = (rule: RuleDraft) => onRulesChange([...rules, rule])
+  const changed = planChanged(value, status.settings, rules, savedRules)
+
+  return (
+    <Stack gap="md">
+      <Panel p="md">
+        <Stack gap="md">
+          <Group justify="space-between" align="flex-start" wrap="nowrap" gap="md">
+            <Stack gap={2}>
+              <Text fw={600}>
+                <Trans>Convert pages</Trans>
+              </Text>
+              <Text size="sm" c="var(--ink-3)">
+                {format ? (
+                  <Trans>
+                    Rules are checked from the top, and the first one a file matches decides what happens to it. A
+                    series set to Never or to a fixed quality in its menu ignores the rules.
+                  </Trans>
+                ) : (
+                  <Trans>Pages stay as they are downloaded. Files already converted stay converted.</Trans>
+                )}
+              </Text>
+            </Stack>
+            <Switch
+              size="md"
+              aria-label={t`Convert pages`}
+              checked={!!format}
+              onChange={(event) => {
+                if (event.currentTarget.checked) onChange({ format: lastFormat })
+                else {
+                  if (format) setLastFormat(format)
+                  onChange({ format: null })
+                }
+              }}
+            />
+          </Group>
+
+          {rulesFailed && (
+            <Text size="sm" c="var(--warn)" role="alert">
+              <Trans>Saved rules could not be loaded; saving will replace them.</Trans>
+            </Text>
+          )}
+
+          {format && scopeRequest && (
+            <>
+              <PlanTable
+                value={{ ...value, format }}
+                onChange={onChange}
+                rules={rules}
+                onRulesChange={onRulesChange}
+                scopeRequest={scopeRequest}
+                ruleBucket={ruleBucket}
+                defaultBucket={scope?.default}
+                countsStale={countsStale}
+                estimate={estimate}
+                onSheetChange={setSheetOpen}
+              />
+
+              <Group gap="sm">
+                <Button
+                  variant="default"
+                  size="xs"
+                  leftSection={<IconPlus size={16} />}
+                  disabled={atLimit}
+                  onClick={() => addRule(newRuleDraft({ stop }, value))}
+                >
+                  <Trans>Add rule</Trans>
+                </Button>
+                <Menu position="bottom-start" withinPortal>
+                  <Menu.Target>
+                    <Button variant="subtle" size="xs" rightSection={<IconChevronDown size={14} />} disabled={atLimit}>
+                      <Trans>Start from a template</Trans>
+                    </Button>
+                  </Menu.Target>
+                  <Menu.Dropdown>
+                    {RULE_TEMPLATES.map((template) => (
+                      <Menu.Item
+                        key={template.id}
+                        onClick={() => addRule(newRuleDraft({ name: t(template.title), ...template.rule }, value))}
+                      >
+                        <Text size="sm">{t(template.title)}</Text>
+                        <Text size="xs" c="var(--ink-3)">
+                          {t(template.hint)}
+                        </Text>
+                      </Menu.Item>
+                    ))}
+                  </Menu.Dropdown>
+                </Menu>
+              </Group>
+
+              <ScopeNotes scope={scope} />
+              {counts.isError && (
+                <Text size="sm" c="var(--danger-fg)">
+                  <Trans>The counts could not be loaded. The rules still save as you wrote them.</Trans>
+                </Text>
+              )}
+            </>
+          )}
+        </Stack>
+      </Panel>
+
+      {format && (
+        <Panel p="md">
+          <PlanOptions value={value} onChange={onChange} />
+        </Panel>
+      )}
+
+      <div className="pc-plan-footer">
+        <FooterSummary on={!!format} estimate={estimate} />
+        <Group gap="sm" wrap="nowrap">
+          {format && (estimate.result || estimate.broken || estimate.startFailed) && (
+            <Button variant="subtle" onClick={() => setDetailsOpen(true)}>
+              <Trans>Details</Trans>
+            </Button>
+          )}
+          <SaveActions value={value} rules={rules} changed={changed} status={status} onDone={onDone} />
+        </Group>
+      </div>
+
+      <Modal
+        opened={detailsOpen}
+        onClose={() => setDetailsOpen(false)}
+        title={<Trans>What the pass would do</Trans>}
+        size={MODAL_SIZE.wide}
+        centered
+      >
+        <EstimateDetails plan={estimate} />
+      </Modal>
+    </Stack>
+  )
+}
+
+/** "477 files, 78 GB now, about 53 GB after", how sure that is and how long, or how far the estimate has got. */
+function FooterSummary({ on, estimate }: { on: boolean; estimate: PlanEstimate }) {
+  const range = useRangeText()
+  if (!on) {
+    return (
+      <Text size="sm" c="var(--ink-3)">
+        <Trans>Conversion is off. Files converted earlier stay as they are.</Trans>
+      </Text>
+    )
+  }
+
+  const totals = estimate.result?.total ?? null
+  if (!totals) {
+    if (estimate.running) {
+      return (
+        <div className="pc-plan-footer-sampling">
+          <Sampling estimate={estimate.estimate} starting={estimate.starting} />
+        </div>
+      )
+    }
+    return (
+      <Text size="sm" c="var(--ink-3)">
+        {estimate.broken || estimate.startFailed ? (
+          <Trans>The estimate did not finish. Open the details to try again.</Trans>
+        ) : (
+          <Trans>Sizes appear here once Maki has sampled your files.</Trans>
+        )}
+      </Text>
+    )
+  }
+
+  const now = formatBytes(totals.bytes)
+  const expected = totals.sampled ? formatBytes(totals.expected) : null
+  const likely = range(totals.expectedLow, totals.expectedHigh, formatBytes)
+  const time = formatReadingTime(totals.seconds)
+  const timeRange = range(totals.secondsLow, totals.secondsHigh, formatReadingTime)
+  return (
+    <Stack gap={2} style={{ opacity: estimate.stale ? 0.6 : 1 }} aria-live="polite">
+      <Text fw={600}>
+        {totals.files === 0 ? (
+          <Trans>Nothing to convert</Trans>
+        ) : expected ? (
+          <Plural
+            value={totals.files}
+            one={`# file, ${now} now, about ${expected} after`}
+            other={`# files, ${now} now, about ${expected} after`}
+          />
+        ) : (
+          <Plural value={totals.files} one={`# file, ${now}`} other={`# files, ${now}`} />
+        )}
+      </Text>
+      <Text size="xs" c="var(--ink-3)">
+        {estimate.running ? (
+          <Trans>Updating for your latest changes</Trans>
+        ) : estimate.stale ? (
+          <Trans>From before your latest changes</Trans>
+        ) : expected && totals.seconds > 0 ? (
+          <Trans>
+            Likely {likely}. Takes about {time} on this server ({timeRange}).
+          </Trans>
+        ) : expected ? (
+          <Trans>Likely {likely}.</Trans>
+        ) : null}
+      </Text>
+    </Stack>
+  )
+}
+
+function ScopeNotes({ scope }: { scope: ReturnType<typeof usePageConversionScope>['data'] }) {
+  if (!scope) return null
+  const overridesSize = formatBytes(scope.overrides.bytes)
+  const compactSize = formatBytes(scope.alreadyCompact.bytes)
+  const earlierSize = formatBytes(scope.convertedEarlier.bytes)
+  return (
+    <Stack gap={4} aria-live="polite">
+      {scope.overrides.files > 0 && (
+        <Text size="sm" c="var(--ink-3)">
+          <Plural
+            value={scope.overrides.files}
+            one={`# file is in a series with its own setting, which wins over the rules (${overridesSize}).`}
+            other={`# files are in series with their own setting, which wins over the rules (${overridesSize}).`}
+          />
+        </Text>
+      )}
+      {scope.alreadyCompact.files > 0 && (
+        <Text size="sm" c="var(--ink-3)">
+          <Plural
+            value={scope.alreadyCompact.files}
+            one={`# file is already WebP, AVIF or JPEG XL and is left as it is (${compactSize}).`}
+            other={`# files are already WebP, AVIF or JPEG XL and are left as they are (${compactSize}).`}
+          />
+        </Text>
+      )}
+      {scope.convertedEarlier.files > 0 && (
+        <Text size="sm" c="var(--ink-3)">
+          <Plural
+            value={scope.convertedEarlier.files}
+            one={`# file was converted earlier and stays as it is (${earlierSize}).`}
+            other={`# files were converted earlier and stay as they are (${earlierSize}).`}
+          />
+        </Text>
+      )}
+    </Stack>
   )
 }

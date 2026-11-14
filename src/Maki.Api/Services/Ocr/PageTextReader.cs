@@ -257,7 +257,7 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
     /// </summary>
     private static Rgb Decode(byte[] image, double share, bool bottom)
     {
-        using var source = VipsImage.NewFromBuffer(image);
+        using var source = ImageCodec.Load(image);
         using var srgb = source.Colourspace(Enums.Interpretation.Srgb);
         using var flat = srgb.HasAlpha() ? srgb.Flatten(background: [255, 255, 255]) : srgb.Copy();
         using var cast = flat.Cast(Enums.BandFormat.Uchar);

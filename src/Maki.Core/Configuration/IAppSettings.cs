@@ -547,6 +547,12 @@ public static class SettingKeys
     public const string PageConversionPngLossless = "library.pageconversion.pnglossless";
 
     /// <summary>
+    /// The colour pages' target as a <c>PageTarget</c> name ("avif:balanced", "lossless"). Unset converts
+    /// them like black-and-white pages, in <see cref="PageConversionFormat"/> at <see cref="PageConversionStop"/>.
+    /// </summary>
+    public const string PageConversionColour = "library.pageconversion.colour";
+
+    /// <summary>
     /// A height in pixels: strips taller than it are cut into several pages while conversion is on
     /// (<c>TallPageSplitter</c>, <c>MinHeight</c> to <c>MaxHeight</c>). Unset leaves them whole.
     /// </summary>
