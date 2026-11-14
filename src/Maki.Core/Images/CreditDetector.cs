@@ -1,3 +1,4 @@
+using System.Numerics;
 using NetVips;
 using VipsImage = NetVips.Image;
 
@@ -746,7 +747,7 @@ public static class CreditDetector
             {
                 var matched = false;
                 var counts = false;
-                if (i < a.Count && j < b.Count && a.Informative(i) == b.Informative(j) && Close(a.Row(i), b.Row(j)))
+                if (i < a.Count && j < b.Count && a.Informative(i) == b.Informative(j) && a.Close(i, b, j))
                 {
                     matched = true;
                     counts = a.Informative(i);
@@ -797,11 +798,49 @@ public static class CreditDetector
         return (cover, duplicate);
     }
 
-    private static bool Close(ReadOnlySpan<float> a, ReadOnlySpan<float> b)
+    /// <summary>Columns summed into each of a strip row's <see cref="Blocks"/> block sums.</summary>
+    private const int BlockWidth = Width / Blocks;
+
+    /// <summary>Blocks of columns a strip row is summed over for <see cref="Close"/>'s second bound.</summary>
+    internal const int Blocks = 8;
+
+    /// <summary>
+    /// Whether two strip rows match: their summed absolute difference is under the tolerance. Two exact
+    /// lower bounds on that sum reject most pairs first: the difference of the rows' sums, then the summed
+    /// differences of their <see cref="Blocks"/> block sums. Strip values are multiples of 1/16 below 256,
+    /// so every sum here is exact in a float and the answer equals the plain scalar loop's.
+    /// </summary>
+    internal static bool Close(
+        ReadOnlySpan<float> a, float sumA, ReadOnlySpan<float> blocksA,
+        ReadOnlySpan<float> b, float sumB, ReadOnlySpan<float> blocksB)
     {
         const float limit = MatchTolerance * Width;
-        var sum = 0f;
-        for (var x = 0; x < Width && sum < limit; x++)
+        if (MathF.Abs(sumA - sumB) >= limit)
+        {
+            return false;
+        }
+
+        var bound = 0f;
+        for (var k = 0; k < Blocks; k++)
+        {
+            bound += MathF.Abs(blocksA[k] - blocksB[k]);
+        }
+
+        if (bound >= limit)
+        {
+            return false;
+        }
+
+        var width = Vector<float>.Count;
+        var acc = Vector<float>.Zero;
+        var x = 0;
+        for (; x + width <= Width; x += width)
+        {
+            acc += Vector.Abs(new Vector<float>(a.Slice(x, width)) - new Vector<float>(b.Slice(x, width)));
+        }
+
+        var sum = Vector.Sum(acc);
+        for (; x < Width; x++)
         {
             sum += MathF.Abs(a[x] - b[x]);
         }
@@ -809,16 +848,43 @@ public static class CreditDetector
         return sum < limit;
     }
 
+    /// <summary>A strip row's sum, with its <see cref="Blocks"/> block sums written to <paramref name="blocks"/>.</summary>
+    internal static float RowSums(ReadOnlySpan<float> row, Span<float> blocks)
+    {
+        var total = 0f;
+        for (var k = 0; k < Blocks; k++)
+        {
+            var block = 0f;
+            for (var x = 0; x < BlockWidth; x++)
+            {
+                block += row[k * BlockWidth + x];
+            }
+
+            blocks[k] = block;
+            total += block;
+        }
+
+        return total;
+    }
+
     /// <summary>An edge's rows averaged in pairs, with which of them say something.</summary>
     private sealed class Strip
     {
         private readonly float[] _rows;
         private readonly bool[] _informative;
+        private readonly float[] _sums;
+        private readonly float[] _blocks;
 
         private Strip(float[] rows, bool[] informative)
         {
             _rows = rows;
             _informative = informative;
+            _sums = new float[informative.Length];
+            _blocks = new float[informative.Length * Blocks];
+            for (var i = 0; i < informative.Length; i++)
+            {
+                _sums[i] = RowSums(Row(i), _blocks.AsSpan(i * Blocks, Blocks));
+            }
         }
 
         public int Count => _informative.Length;
@@ -826,6 +892,10 @@ public static class CreditDetector
         public ReadOnlySpan<float> Row(int i) => _rows.AsSpan(i * Width, Width);
 
         public bool Informative(int i) => _informative[i];
+
+        public bool Close(int i, Strip other, int j) => CreditDetector.Close(
+            Row(i), _sums[i], _blocks.AsSpan(i * Blocks, Blocks),
+            other.Row(j), other._sums[j], other._blocks.AsSpan(j * Blocks, Blocks));
 
         /// <summary>
         /// The edge's rows paired from <paramref name="down"/> half rows in, each moved
