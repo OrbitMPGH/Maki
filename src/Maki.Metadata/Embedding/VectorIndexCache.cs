@@ -69,6 +69,7 @@ public sealed class VectorIndexCache(
     internal Action? AfterBuildForTest { get; set; }
     private readonly SharedBuild<Loaded> _builds = new();
     private int _warming;
+    private volatile bool _scanning;
 
     /// <summary>Whether the search vectors are in memory, for the memory diagnostics.</summary>
     public bool IsLoaded => _loaded is not null;
@@ -84,6 +85,12 @@ public sealed class VectorIndexCache(
     /// than a full build. Only likely: one written by another build or for another dump is rebuilt.
     /// </summary>
     public bool HasSnapshot => File.Exists(SnapshotPath);
+
+    /// <summary>
+    /// True while a build is reading every vector because no snapshot matched: seconds, where a
+    /// reload from the snapshot is a fraction of one.
+    /// </summary>
+    public bool IsBuildingFromScratch => _scanning;
 
     /// <summary>Whether an index is loaded and was built from the dump on disk now.</summary>
     public bool IsCurrent => _loaded is { } loaded && MatchesDump(loaded);
@@ -459,6 +466,8 @@ public sealed class VectorIndexCache(
         }
         finally
         {
+            _scanning = false;
+
             // The build reads every vector BLOB in the file end to end; none of those pages is
             // wanted again until the next rebuild.
             PageCache.DropAfterScan(options.VectorDbPath);
@@ -519,6 +528,8 @@ public sealed class VectorIndexCache(
                 saved.Ids.Length, saved.Dimensions, (DateTime.UtcNow - started).TotalSeconds);
             return (Assemble(saved, conn), null, key);
         }
+
+        _scanning = true;
 
         // Size from the small vector table, then trim excluded rows after the scan. Joining the
         // dump just to count candidates can walk its multi-GB rows through a title index, costing

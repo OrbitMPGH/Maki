@@ -121,16 +121,23 @@ public class SemanticSearcher(
     /// model are unloaded rather than missing. Both come back in a fraction of a second from the
     /// snapshot and the model file (about 0.1 s each), so a query that arrives after an idle unload
     /// is answered by meaning instead of by titles and a poll two seconds later. An index that has
-    /// to be built from scratch (no snapshot, or one from another build) is not waited on.
+    /// to be built from scratch (no snapshot, or one whose key no longer matches) is not waited
+    /// on: the wait ends as soon as the cache starts reading every vector.
     /// </summary>
     public virtual async Task<bool> IsReadyWithinAsync(TimeSpan budget, CancellationToken ct = default)
     {
+        if (!IsAvailable())
+        {
+            return false;
+        }
+
         if (IsReady())
         {
             return true;
         }
 
-        if (budget <= TimeSpan.Zero || !embedder.CanLoad || !(cache.IsCurrent || cache.HasSnapshot))
+        if (budget <= TimeSpan.Zero || !embedder.CanLoad || !(cache.IsCurrent || cache.HasSnapshot)
+            || cache.IsBuildingFromScratch)
         {
             return false;
         }
@@ -143,6 +150,11 @@ public class SemanticSearcher(
             if (cache.IsCurrent && embedder.IsReady)
             {
                 return true;
+            }
+
+            if (cache.IsBuildingFromScratch)
+            {
+                return false;
             }
         }
 
