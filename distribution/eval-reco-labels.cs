@@ -287,6 +287,20 @@ if (split is not ("dev" or "confirm" or "all"))
     return 2;
 }
 
+// The split and --fold-users hash the same id the same way, so five folds line up with the split's
+// five buckets: fold 4 is exactly the confirm set and every other fold is empty inside it.
+if (foldCount == 5 && split != "all")
+{
+    Console.WriteLine("error: --fold-users k/5 selects the same buckets --split does. Use another fold count, or --split all.");
+    return 2;
+}
+
+if (panelPath is not null && depth > limit)
+{
+    Console.WriteLine($"error: --depth {depth} is deeper than the {limit} picks each request asks for (--limit).");
+    return 2;
+}
+
 if (panelPath is not null)
 {
     if (mode != "single")
@@ -1090,6 +1104,9 @@ async Task<ResultRow> Score(Variant variant)
     // Named rr-<variant>-<suffix>.csv, not rr-<suffix>-<variant>.csv: eval-compare.py builds its
     // paths as rr-<candidate>-<mode>.csv, so this layout is what lets it read these files
     // unmodified. Headerless for the same reason — it int-parses the first column of every line.
+    // That column is the request's identity (RequestKeys), not its position: two files from
+    // different splits or panel sets then share no key and eval-compare.py refuses to pair them,
+    // where a row index paired request 7 of one seed set with request 7 of another.
     // The suffix carries the label set, not the literal string "reco". It used to be "reco" for
     // every run, so grading the same variant against two label sets silently overwrote the first
     // file and the paired test compared a run against itself.
@@ -1105,10 +1122,11 @@ async Task<ResultRow> Score(Variant variant)
         _ => reciprocal,
     };
 
+    var keys = RequestKeys.Of(requests);
     var csv = new StringBuilder();
     for (var i = 0; i < series.Length; i++)
     {
-        csv.Append(i).Append(',').Append(series[i].ToString("R", CultureInfo.InvariantCulture)).Append('\n');
+        csv.Append(keys[i]).Append(',').Append(series[i].ToString("R", CultureInfo.InvariantCulture)).Append('\n');
     }
 
     File.WriteAllText(Path.Combine(artifactsDir, "eval", $"rr-{variant.Name}-{csvSuffix}.csv"), csv.ToString());
@@ -1122,7 +1140,7 @@ async Task<ResultRow> Score(Variant variant)
         var negCsv = new StringBuilder();
         for (var i = 0; i < negativeHit.Length; i++)
         {
-            negCsv.Append(i).Append(',')
+            negCsv.Append(keys[i]).Append(',')
                 .Append(negativeHit[i].ToString("R", CultureInfo.InvariantCulture)).Append('\n');
         }
 
@@ -1263,16 +1281,17 @@ async Task<JudgedRow> ScoreJudged(
         {
             enjoy[i] = gains.Average(g => g.Enjoy);
             feel[i] = gains.Average(g => g.Feel);
-            good[i] = (double)gains.Count(g => g.Enjoy >= 2) / gains.Count;
-            poor[i] = (double)gains.Count(g => g.Enjoy == 0) / gains.Count;
+            // feel is the scale the judge is trusted on, so the shares and nDCG are taken on it.
+            good[i] = (double)gains.Count(g => g.Feel >= 2) / gains.Count;
+            poor[i] = (double)gains.Count(g => g.Feel == 0) / gains.Count;
 
             // Condensed: unjudged picks are removed and the rest close ranks. The ideal is the best
             // ordering of everything judged for this seed, whichever variant returned it, so a
             // variant is measured against the pool rather than against its own picks.
-            var dcg = gains.Select((g, rank) => g.Enjoy / Math.Log2(rank + 2)).Sum();
+            var dcg = gains.Select((g, rank) => g.Feel / Math.Log2(rank + 2)).Sum();
             var ideal = judgements
                 .Where(kv => kv.Key.Seed == seed && !kv.Value.Insufficient)
-                .Select(kv => (double)kv.Value.Enjoy)
+                .Select(kv => (double)kv.Value.Feel)
                 .OrderByDescending(g => g)
                 .Take(gains.Count)
                 .Select((g, rank) => g / Math.Log2(rank + 2))
@@ -1319,6 +1338,7 @@ async Task<JudgedRow> ScoreJudged(
 
     // Same layout eval-compare.py reads. A seed with nothing judged is left out rather than written
     // as zero, and the comparison runs on the seeds both variants have.
+    var keys = RequestKeys.Of(requests);
     foreach (var (suffix, series) in new[] { ("judged", enjoy), ("judged-feel", feel) })
     {
         var csv = new StringBuilder();
@@ -1326,7 +1346,7 @@ async Task<JudgedRow> ScoreJudged(
         {
             if (!double.IsNaN(series[i]))
             {
-                csv.Append(i).Append(',').Append(Csv(series[i])).Append('\n');
+                csv.Append(keys[i]).Append(',').Append(Csv(series[i])).Append('\n');
             }
         }
 
@@ -1455,9 +1475,10 @@ void ReportJudged(List<JudgedRow> judgedRows, SortedSet<(long Seed, long Candida
     Console.WriteLine("  enjoy   : mean 0 to 3 score for \"a reader who liked the seed would enjoy this\",");
     Console.WriteLine("            over judged picks only. This judge scores it close to feel.");
     Console.WriteLine("  feel    : the same for \"similar story, tone and feel\".");
-    Console.WriteLine("  good    : share of judged picks scored 2 or 3 on enjoy; poor is the share scored 0.");
-    Console.WriteLine("  nDCG    : rank-aware, on enjoy, with unjudged picks removed and the ideal taken");
-    Console.WriteLine("            from everything judged for the seed across all variants.");
+    Console.WriteLine("  good    : share of judged picks scored 2 or 3 on feel; poor is the share scored 0.");
+    Console.WriteLine("  nDCG    : rank-aware, on feel, with unjudged picks removed and the ideal taken");
+    Console.WriteLine("            from everything judged for the seed across all variants, so it moves");
+    Console.WriteLine("            as more pairs are judged and does not compare across dates.");
     Console.WriteLine("  thin    : share of picks the judge could not score for lack of information.");
     Console.WriteLine($"  pop     : median popularity rank of the top {depth}; top1k is the share inside the top 1,000.");
     Console.WriteLine("  franch  : share of picks in the seed's own same-work component.");
@@ -1532,8 +1553,8 @@ void ReportJudged(List<JudgedRow> judgedRows, SortedSet<(long Seed, long Candida
     if (judgedRows.Count > 1)
     {
         Console.WriteLine(
-            $"  paired stats: python distribution/eval-compare.py {judgedRows[1].Name} {judgedRows[0].Name} judged enjoy@{depth}");
-        Console.WriteLine("                (judged-feel for the feel scale)");
+            $"  paired stats: python distribution/eval-compare.py {judgedRows[1].Name} {judgedRows[0].Name} judged-feel feel@{depth}");
+        Console.WriteLine($"                (judged enjoy@{depth} for the enjoy scale)");
     }
 }
 
@@ -2246,6 +2267,47 @@ file sealed class FeelIndex
 /// Titles from this reader's HELD-OUT slice that they scored the same way: what a working avoid
 /// channel should push out of the top 40. Empty unless --negatives.
 /// </param>
+file static class RequestKeys
+{
+    /// <summary>
+    /// One stable number per request: the seed id for a single seed, an FNV-1a hash of the seed
+    /// list otherwise. A repeat inside one run takes the next free number, so every row keeps a
+    /// distinct key and the same request list always produces the same keys.
+    /// </summary>
+    public static long[] Of(IReadOnlyList<Request> requests)
+    {
+        var taken = new HashSet<long>();
+        var keys = new long[requests.Count];
+        for (var i = 0; i < requests.Count; i++)
+        {
+            var seeds = requests[i].Seeds;
+            var key = seeds.Count == 1 ? seeds[0] : Hash(seeds);
+            while (!taken.Add(key))
+            {
+                key++;
+            }
+
+            keys[i] = key;
+        }
+
+        return keys;
+    }
+
+    private static long Hash(IReadOnlyList<long> seeds)
+    {
+        var hash = 14695981039346656037UL;
+        foreach (var seed in seeds.Order())
+        {
+            for (var shift = 0; shift < 64; shift += 8)
+            {
+                hash = (hash ^ (byte)(seed >> shift)) * 1099511628211UL;
+            }
+        }
+
+        return (long)(hash >> 1);
+    }
+}
+
 file record Request(
     IReadOnlyList<long> Seeds,
     IReadOnlyDictionary<long, double>? Scores,

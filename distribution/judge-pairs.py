@@ -47,7 +47,8 @@ Two checks need nobody to score anything, and they gate the pool:
             random series. No control is a pair any crowd links. `known-report` says how often
             the judge scores the human pick above each control, also for the pairs where it does
             not recognise the titles, which is where it has only the text to go on.
-  repeat    `run --tag repeat` judges pairs a second time as its own judge, and
+  repeat    `run --tag repeat` judges a sample of already-scored pairs (150, or --limit) a
+            second time as its own judge, or the pairs in --queue when one is given, and
             `agreement --against <judge>+repeat` says whether the judge agrees with itself.
 Neither says whether a 2 should have been a 3. For that a person who has read both series has to
 score pairs: `calibrate` writes a page of them, `import-labels` stores the scores and `agreement`
@@ -213,10 +214,13 @@ def read_queue(path: Path) -> list[tuple[int, int]]:
 
 
 def write_queue(path: Path, pairs: list[tuple[int, int]]) -> None:
-    with path.open("w", encoding="utf-8", newline="\n") as fh:
+    # Written beside the queue and moved over it, so a crash cannot leave half a queue.
+    scratch = path.with_name(path.name + ".tmp")
+    with scratch.open("w", encoding="utf-8", newline="\n") as fh:
         fh.write("seed_id\tcand_id\n")
         for seed, cand in sorted(set(pairs)):
             fh.write(f"{seed}\t{cand}\n")
+    os.replace(scratch, path)
 
 
 def judged_pairs(conn: sqlite3.Connection, judge: str) -> set[tuple[int, int]]:
@@ -412,7 +416,15 @@ def cmd_run(args) -> int:
     judge = f"{args.model}/{args.effort}" + (f"+{args.tag}" if args.tag else "")
     conn = open_store()
     queue_path = Path(args.queue) if args.queue else artifacts_dir() / "eval" / "judge-queue.tsv"
-    pairs, cards = pending(conn, judge, queue_path, args.limit)
+    if args.tag and not args.queue:
+        # The queue only ever holds unjudged pairs, so a repeat draws from what is already scored.
+        done = judged_pairs(conn, judge)
+        scored = sorted(judged_pairs(conn, f"{args.model}/{args.effort}") - done)
+        pairs = random.Random(20261115).sample(scored, min(args.limit or 150, len(scored)))
+        cards = load_cards({sid for pair in pairs for sid in pair})
+        pairs = [pair for pair in pairs if pair[0] in cards and pair[1] in cards]
+    else:
+        pairs, cards = pending(conn, judge, queue_path, args.limit)
     if not pairs:
         print(f"nothing to judge for {judge} at rubric {RUBRIC_VERSION}")
         return 0
@@ -426,18 +438,22 @@ def cmd_run(args) -> int:
         for number, (seed, cand) in enumerate(pairs, 1):
             prompt = render_pair(cards[seed], cards[cand])
             try:
-                message = client.messages.create(**request_params(args.model, args.effort, prompt))
+                try:
+                    message = client.messages.create(**request_params(args.model, args.effort, prompt))
+                except anthropic.RateLimitError as error:
+                    try:
+                        delay = int(float(error.response.headers.get("retry-after", "60")))
+                    except ValueError:
+                        delay = 60
+                    print(f"  rate limited, waiting {delay}s")
+                    time.sleep(delay)
+                    message = client.messages.create(**request_params(args.model, args.effort, prompt))
             except anthropic.AuthenticationError:
                 print("error: no valid credentials. Set ANTHROPIC_API_KEY or run `ant auth login`.")
                 return 1
             except anthropic.BadRequestError as error:
                 print(f"error: the request was rejected, nothing more was sent: {error.message}")
                 return 1
-            except anthropic.RateLimitError as error:
-                delay = int(error.response.headers.get("retry-after", "60"))
-                print(f"  rate limited, waiting {delay}s")
-                time.sleep(delay)
-                continue
             except anthropic.APIStatusError as error:
                 print(f"  {seed}-{cand}: API error {error.status_code}, left in the queue")
                 continue
@@ -485,7 +501,8 @@ def cmd_run(args) -> int:
         return cmd_resume(args)
 
     report_cost(conn, judge, batch_price=False)
-    prune_queue(conn, queue_path)
+    if not args.tag:
+        prune_queue(conn, queue_path)
     return 0
 
 
@@ -502,13 +519,17 @@ def cmd_resume(args) -> int:
         wait_for(client, batch_id)
         print(f"  {batch_id}: {ingest_batch(client, conn, batch_id, judge)}")
         report_cost(conn, judge, batch_price=True)
-    queue_path = Path(args.queue) if args.queue else artifacts_dir() / "eval" / "judge-queue.tsv"
-    prune_queue(conn, queue_path)
+    # A tagged pass repeats pairs on purpose; pruning after it would empty the list it was given.
+    if not all("+" in judge for _, judge in waiting):
+        queue_path = Path(args.queue) if args.queue else artifacts_dir() / "eval" / "judge-queue.tsv"
+        prune_queue(conn, queue_path)
     return 0
 
 
 def prune_queue(conn: sqlite3.Connection, queue_path: Path) -> None:
     """Drops pairs any judge has scored at this rubric, so the queue is what is still unjudged."""
+    if not queue_path.exists():
+        return
     done = {
         (seed, cand)
         for seed, cand in conn.execute(
@@ -1109,7 +1130,7 @@ def main() -> int:
     common(run)
     run.add_argument("--limit", type=int, help="judge only the first N pairs")
     run.add_argument("--sync", action="store_true", help="one request at a time at list price, for a small check")
-    run.add_argument("--tag", help="store this pass as its own judge, for a repeat of pairs already judged")
+    run.add_argument("--tag", help="store this pass as its own judge and repeat pairs already judged")
     run.set_defaults(handler=cmd_run)
 
     resume = sub.add_parser("resume", help="collect batches that were submitted earlier")

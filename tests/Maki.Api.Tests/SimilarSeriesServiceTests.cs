@@ -78,7 +78,7 @@ public class SimilarSeriesServiceTests
     {
         // The pair graphs answer "who else read this" and stay off. The taste vectors were off too
         // until the rail was graded on its own: the content-only list scored lower on story and feel
-        // and carried three times the poor picks.
+        // and carried more than twice the unrelated picks.
         var recommender = new CountingRecommender();
 
         await Service(recommender).GetAsync(1, ["safe"]);

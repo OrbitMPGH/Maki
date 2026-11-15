@@ -44,8 +44,9 @@
   story and feel. Picks with no judgement yet are written to .artifacts/eval/judge-queue.tsv for
   distribution/judge-pairs.py.
 
-  `rail` is the series-page "More like this" rail as it ships: every crowd channel off, diversity
-  0.15. It is a default variant so the cost of that choice is printed on every run.
+  `rail` is the series-page "More like this" rail as it ships: both pair graphs off, the taste
+  vectors on, diversity 0.15. It is a default variant so the cost of that choice is printed on
+  every run. `railcontent` is the rail before v7, with the taste vectors off as well.
 
 .PARAMETER Split
   dev (default), confirm or all. Sweeps and fits run on dev. A default changes only after one

@@ -28,8 +28,9 @@ namespace Maki.Api.Services;
 /// "who else read this", which is the question Discover's rails and the reader-cohort rail exist
 /// for, and they are off here whatever the instance settings say. The behavioural taste vectors
 /// were off as well until the rail was graded on its own. On a judged panel of 300 seeds the
-/// content-only list was the less story-alike one: 1.45 against 1.56 for "similar story, tone and
-/// feel" on a 0 to 3 scale, with 7% poor picks against 2% (<c>distribution/CLAUDE.md</c>, "v7").
+/// content-only list was the less story-alike one: 1.45 against 1.57 with the vectors on, for
+/// "similar story, tone and feel" on a 0 to 3 scale, and 8% of its picks were unrelated against
+/// 3% (<c>distribution/CLAUDE.md</c>, "v7").
 /// A series' description and tags say less about how it reads than what its readers went on to
 /// read, so the vectors stay on and follow the instance's <c>recommendations.tastevectors</c>
 /// switch.
