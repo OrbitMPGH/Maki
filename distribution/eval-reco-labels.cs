@@ -10,6 +10,23 @@
 //   dotnet run distribution/eval-reco-labels.cs -- single --labels coread --strata
 //   dotnet run distribution/eval-reco-labels.cs -- single "cw0.5:coreadweight=0.5" --strata
 //   dotnet run distribution/eval-reco-labels.cs -- library "old:genrerawsum=true" default
+//   dotnet run distribution/eval-reco-labels.cs -- single --labels mu-human --split confirm default rail
+//   dotnet run distribution/eval-reco-labels.cs -- single --panel distribution/eval-panel.tsv default rail
+//
+// SPLITS
+// Requests come from the `dev` split unless told otherwise: four buckets of five, by a stable hash
+// of the seed (pair modes) or the reader (library). Sweep and fit there. `--split confirm` is the
+// fifth bucket and is for one look per decision. `--split all` is the request set every number
+// recorded before v7 was scored on.
+//
+// THE JUDGED PANEL
+// `--panel` swaps the label graph for a fixed list of seeds and grades each variant's top --depth
+// picks against judgements stored in <artifacts>/judgements.db by distribution/judge-pairs.py.
+// A pick with no judgement is reported as unjudged and queued, never counted as wrong, and the
+// table carries two scales the label graphs cannot: `enjoy` and `feel`.
+//
+// MAKI_ARTIFACTS_DIR names the folder the label artifacts, the judgement store and the per-request
+// CSVs live in (default .artifacts), so the tool can run from a worktree.
 //
 // Then, for an interval rather than a difference:
 //   python distribution/eval-compare.py default old reco
@@ -94,6 +111,10 @@ Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 var configDir = Environment.GetEnvironmentVariable("MAKI_CONFIG_DIR")
     ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Maki");
 
+// Where the label artifacts, the judgement store and the per-request CSVs live. They are git-ignored
+// and sit in the main checkout, so a run from a worktree has to be able to point at them.
+var artifactsDir = Environment.GetEnvironmentVariable("MAKI_ARTIFACTS_DIR") ?? ".artifacts";
+
 var mode = "single";
 var labelKind = "reco";
 var requestCount = 500;
@@ -103,7 +124,7 @@ var minLabels = 5;
 var holdout = 0.2;
 var minLibrary = 20;
 var maxLibrary = 300;
-var workPath = Path.Combine(".artifacts", "coread-graph.db");
+var workPath = Path.Combine(artifactsDir, "coread-graph.db");
 string? muPathOverride = null;
 var rngSeed = 20260827;
 var strata = false;
@@ -117,6 +138,12 @@ var facetPassage = false;
 string? modelOverride = null;
 var quantBits = 0;
 var quantTaste = false;
+var split = "dev";
+string? panelPath = null;
+var panelSet = "dev";
+var depth = 10;
+string? judge = null;
+var rubric = "v1";
 var variantArgs = new List<string>();
 
 for (var i = 0; i < args.Length; i++)
@@ -217,6 +244,29 @@ for (var i = 0; i < args.Length; i++)
         case "--quant-taste":
             quantTaste = true;
             break;
+        // Which slice of the seeds (pair modes) or readers (library) a run may draw requests from.
+        // `dev` is four buckets of five and is what every sweep and fit uses; `confirm` is the
+        // fifth, looked at once per decision; `all` is the request set every row before v7 used.
+        case "--split":
+            split = args[++i].ToLowerInvariant();
+            break;
+        // Judged mode: the seeds come from a fixed panel file instead of a label graph, and the
+        // top --depth picks are graded against stored judgements rather than against edges.
+        case "--panel":
+            panelPath = args[++i];
+            break;
+        case "--panel-set":
+            panelSet = args[++i].ToLowerInvariant();
+            break;
+        case "--depth":
+            depth = int.Parse(args[++i], CultureInfo.InvariantCulture);
+            break;
+        case "--judge":
+            judge = args[++i];
+            break;
+        case "--rubric":
+            rubric = args[++i];
+            break;
         // An unrecognised flag is an error, never a variant. Variant names are free-form (they
         // become CSV filenames), so a mistyped or borrowed flag used to be accepted silently as
         // one: `--libraries 300` scored two variants called "--libraries" and "300", each at the
@@ -231,7 +281,42 @@ for (var i = 0; i < args.Length; i++)
     }
 }
 
-if (labelKind is not ("reco" or "coread" or "mu" or "mu-human"))
+if (split is not ("dev" or "confirm" or "all"))
+{
+    Console.WriteLine($"error: --split wants 'dev', 'confirm' or 'all', not '{split}'.");
+    return 2;
+}
+
+if (panelPath is not null)
+{
+    if (mode != "single")
+    {
+        Console.WriteLine("error: --panel is single-seed only. The panel is a list of seeds, one request each.");
+        return 2;
+    }
+
+    if (panelSet is not ("dev" or "holdout" or "all"))
+    {
+        Console.WriteLine($"error: --panel-set wants 'dev', 'holdout' or 'all', not '{panelSet}'.");
+        return 2;
+    }
+
+    if (!File.Exists(panelPath))
+    {
+        Console.WriteLine($"error: no panel at {panelPath}. Build it: python distribution/build-eval-panel.py");
+        return 2;
+    }
+
+    labelKind = "judged";
+}
+
+if (labelKind == "judged" && panelPath is null)
+{
+    Console.WriteLine("error: --labels judged needs --panel. Judgements only exist for the panel's seeds.");
+    return 2;
+}
+
+if (labelKind is not ("reco" or "coread" or "mu" or "mu-human" or "judged"))
 {
     Console.WriteLine($"error: --labels wants 'reco', 'coread', 'mu' or 'mu-human', not '{labelKind}'.");
     return 2;
@@ -270,7 +355,7 @@ var coReadPath = Path.Combine(configDir, "coread-edges.db");
 // is not part of an install, so it defaults to .artifacts/ like the co-read working database does.
 // Prefer an installed copy if one exists, so this keeps working once an MU channel ships.
 var muInstalled = Path.Combine(configDir, "mu-edges.db");
-var muPath = muPathOverride ?? (File.Exists(muInstalled) ? muInstalled : Path.Combine(".artifacts", "mu-edges.db"));
+var muPath = muPathOverride ?? (File.Exists(muInstalled) ? muInstalled : Path.Combine(artifactsDir, "mu-edges.db"));
 // Behavioural vectors. Declared beside the other artifacts because the fold guard below has to see
 // it: this is the one artifact actually TRAINED on readers, so it is the one the guard exists for.
 var tastePath = Path.Combine(configDir, "taste-vectors.db");
@@ -291,7 +376,7 @@ var labelPath = labelKind switch
     _ => muPath,
 };
 
-if (mode != "library" && !File.Exists(labelPath))
+if (mode != "library" && panelPath is null && !File.Exists(labelPath))
 {
     Console.WriteLine($"error: no {labelKind} graph at {labelPath} - that file IS the label set here.");
     if (labelKind.StartsWith("mu", StringComparison.Ordinal))
@@ -348,6 +433,19 @@ Console.WriteLine($"config   : {configDir}");
 Console.WriteLine($"model    : {modelKind} ({options.Model.Version}, {options.Dimensions} dims)");
 Console.WriteLine($"mode     : {mode}");
 Console.WriteLine($"limit    : top {limit} per request");
+if (panelPath is not null)
+{
+    Console.WriteLine($"panel    : {panelPath}, set '{panelSet}', judged at depth {depth}");
+}
+else
+{
+    Console.WriteLine(split switch
+    {
+        "dev" => "split    : dev (four buckets of five). Sweep and fit here; confirm once with --split confirm.",
+        "confirm" => "split    : CONFIRM (the held-back fifth). One look per decision, never a sweep.",
+        _ => "split    : all (the request sets every row before v7 was scored on)",
+    });
+}
 
 var store = new EmbeddingStore(options);
 // One cache across every variant: tuning changes scoring, never the index, and a rebuild per
@@ -490,13 +588,17 @@ if (labelKind == "reco" && variants.Any(v => v.Taste.Weight > 0))
 // reading lists, not against any label artifact, so its runs must not land in a label set's file.
 var csvSuffix = mode == "library" ? "library" : labelKind;
 
-var rng = new Random(rngSeed);
+// The confirmation set draws from its own stream, so it is not the dev sample with rows removed.
+var rng = new Random(split == "confirm" ? rngSeed + 7919 : rngSeed);
 /// <summary>
 /// Scored entries a reader needs before their own mean is worth subtracting from. Below this the
 /// mean is one or two numbers and "well under it" is noise, which would hand the avoid channel
 /// titles nobody disliked.
 /// </summary>
 const int MinScoredForMean = 5;
+
+/// <summary>Upper popularity ranks of the three label bands the strata report splits recall by.</summary>
+long[] TargetBounds = [1_000L, 20_000L, long.MaxValue];
 
 /// <summary>
 /// How hard a held-out dislike pushes, from how far under the reader's own mean it sits.
@@ -510,9 +612,11 @@ const int MinScoredForMean = 5;
 /// </summary>
 static double AvoidStrength(double gap) => Math.Clamp(0.25 + (0.75 * (gap - 15.0) / 25.0), 0.25, 1.0);
 
-var requests = mode == "library"
-    ? BuildLibraryRequests()
-    : BuildPairRequests();
+var requests = panelPath is not null
+    ? BuildPanelRequests()
+    : mode == "library"
+        ? BuildLibraryRequests()
+        : BuildPairRequests();
 
 if (requests.Count == 0)
 {
@@ -523,9 +627,28 @@ if (requests.Count == 0)
 Console.WriteLine($"requests : {requests.Count}");
 Console.WriteLine();
 
-Directory.CreateDirectory(Path.Combine(".artifacts", "eval"));
+Directory.CreateDirectory(Path.Combine(artifactsDir, "eval"));
 
 var rows = new List<ResultRow>();
+if (panelPath is not null)
+{
+    var judgements = Judgements.Load(Path.Combine(artifactsDir, "judgements.db"), rubric, ref judge);
+    Console.WriteLine(judgements.Count == 0
+        ? "judge    : no judgements stored yet. This run only builds the judging queue."
+        : $"judge    : {judge}, rubric {rubric}, {judgements.Count} judged pairs");
+    Console.WriteLine();
+
+    var judgedRows = new List<JudgedRow>();
+    var queue = new SortedSet<(long Seed, long Candidate)>();
+    foreach (var variant in variants)
+    {
+        judgedRows.Add(await ScoreJudged(variant, judgements, queue));
+    }
+
+    ReportJudged(judgedRows, queue);
+    return 0;
+}
+
 foreach (var variant in variants)
 {
     rows.Add(await Score(variant));
@@ -598,12 +721,15 @@ List<Request> BuildPairRequests()
         }
     }
 
-    var eligible = labels
+    var labelled = labels
         .Where(kv => kv.Value.Count >= minLabels && index.TryGetRow(kv.Key, out _))
         .Select(kv => kv.Key)
         .Order()
         .ToList();
-    Console.WriteLine($"labels   : {labelKind}, {eligible.Count} seeds with >= {minLabels} in-index neighbours");
+    var eligible = labelled.Where(InSplit).ToList();
+    Console.WriteLine(
+        $"labels   : {labelKind}, {labelled.Count} seeds with >= {minLabels} in-index neighbours" +
+        (split == "all" ? string.Empty : $", {eligible.Count} in the {split} split"));
 
     var shuffled = eligible.OrderBy(_ => rng.Next()).ToList();
     var built = new List<Request>();
@@ -633,6 +759,59 @@ List<Request> BuildPairRequests()
         }
     }
 
+    return built;
+}
+
+/// <summary>
+/// Whether a seed (pair modes) or a reader (library) belongs to the split this run may use. The
+/// confirmation bucket is one of five by the same stable hash the reader folds use, so it is the
+/// same set on every machine and in every run.
+/// </summary>
+bool InSplit(long id) => split switch
+{
+    "confirm" => UserFold.Of(id, 5) == 4,
+    "dev" => UserFold.Of(id, 5) != 4,
+    _ => true,
+};
+
+/// <summary>
+/// One request per panel seed. No positives: a panel request is graded against stored judgements
+/// of what the variants actually returned, not against a label graph.
+/// </summary>
+List<Request> BuildPanelRequests()
+{
+    var lines = File.ReadAllLines(panelPath!);
+    var header = lines[0].Split('	');
+    var idColumn = Array.IndexOf(header, "id");
+    var setColumn = Array.IndexOf(header, "set");
+    if (idColumn < 0 || setColumn < 0)
+    {
+        throw new InvalidOperationException("The panel file needs 'id' and 'set' columns in its header row.");
+    }
+
+    var built = new List<Request>();
+    var missing = 0;
+    foreach (var line in lines.Skip(1))
+    {
+        var cells = line.Split('	');
+        if (cells.Length <= Math.Max(idColumn, setColumn)
+            || (panelSet != "all" && cells[setColumn] != panelSet))
+        {
+            continue;
+        }
+
+        var id = long.Parse(cells[idColumn], CultureInfo.InvariantCulture);
+        if (!index.TryGetRow(id, out _))
+        {
+            missing++;
+            continue;
+        }
+
+        built.Add(new Request([id], null, []));
+    }
+
+    Console.WriteLine(
+        $"panel    : {built.Count} seeds" + (missing > 0 ? $", {missing} not in this index and skipped" : string.Empty));
     return built;
 }
 
@@ -687,9 +866,11 @@ List<Request> BuildLibraryRequests()
         }
     }
 
-    var usable = byUser.Where(kv => kv.Value.Count >= minLibrary).ToList();
+    var listed = byUser.Where(kv => kv.Value.Count >= minLibrary).ToList();
+    var usable = listed.Where(kv => InSplit(kv.Key)).ToList();
     Console.WriteLine(
-        $"libraries: {usable.Count} of {byUser.Count} reading lists have >= {minLibrary} in-index completed titles");
+        $"libraries: {listed.Count} of {byUser.Count} reading lists have >= {minLibrary} in-index completed titles" +
+        (split == "all" ? string.Empty : $", {usable.Count} in the {split} split"));
 
     var built = new List<Request>();
     var unscored = 0;
@@ -800,6 +981,13 @@ async Task<ResultRow> Score(Variant variant)
     var ndcg = new double[requests.Count];
     var named = new double[requests.Count];
     var negativeHit = new double[requests.Count];
+    var top1k = new double[requests.Count];
+    var targetRecall = new double[TargetBounds.Length][];
+    for (var t = 0; t < targetRecall.Length; t++)
+    {
+        targetRecall[t] = new double[requests.Count];
+    }
+
     var popularity = new List<double>();
     var feelRows = new List<FeelRow>();
     var hits = 0;
@@ -872,6 +1060,20 @@ async Task<ResultRow> Score(Variant variant)
             popularity.Add(median);
         }
 
+        top1k[i] = ids.Count == 0 ? 0 : (double)ids.Count(id => RankOf(id) is > 0 and <= 1000) / ids.Count;
+
+        // Recall split by how famous the LABEL is. A variant that wins only on top-1k targets is
+        // returning famous titles; one that wins past rank 20,000 is finding something.
+        for (var t = 0; t < TargetBounds.Length; t++)
+        {
+            var low = t == 0 ? 0 : TargetBounds[t - 1];
+            var high = TargetBounds[t];
+            var inBand = request.Positives.Keys.Where(id => RankOf(id) is var r && r > low && r <= high).ToHashSet();
+            targetRecall[t][i] = inBand.Count == 0
+                ? double.NaN
+                : (double)ids.Take(limit).Count(inBand.Contains) / Math.Min(limit, inBand.Count);
+        }
+
         if (feelIndex is not null)
         {
             feelRows.Add(feelIndex.Measure(request.Seeds, ids));
@@ -909,7 +1111,7 @@ async Task<ResultRow> Score(Variant variant)
         csv.Append(i).Append(',').Append(series[i].ToString("R", CultureInfo.InvariantCulture)).Append('\n');
     }
 
-    File.WriteAllText(Path.Combine(".artifacts", "eval", $"rr-{variant.Name}-{csvSuffix}.csv"), csv.ToString());
+    File.WriteAllText(Path.Combine(artifactsDir, "eval", $"rr-{variant.Name}-{csvSuffix}.csv"), csv.ToString());
 
     // The negative hit rate gets its own file whenever it exists, under the suffix `library-neg`,
     // so one run answers both questions the avoid channel has to pass: the drop has to be real AND
@@ -925,7 +1127,7 @@ async Task<ResultRow> Score(Variant variant)
         }
 
         File.WriteAllText(
-            Path.Combine(".artifacts", "eval", $"rr-{variant.Name}-library-neg.csv"), negCsv.ToString());
+            Path.Combine(artifactsDir, "eval", $"rr-{variant.Name}-library-neg.csv"), negCsv.ToString());
     }
 
     if (dumping is not null)
@@ -935,7 +1137,7 @@ async Task<ResultRow> Score(Variant variant)
     }
 
     return new ResultRow(
-        variant.Name, r10, r20, r40, ndcg, reciprocal, named, negativeHit,
+        variant.Name, r10, r20, r40, ndcg, reciprocal, named, negativeHit, targetRecall, top1k.Average(),
         (double)hits / requests.Count,
         popularity.Count == 0 ? double.NaN : Median(popularity),
         clock.Elapsed.TotalMilliseconds / Math.Max(1, requests.Count),
@@ -970,6 +1172,10 @@ static double MeanDefined(List<FeelRow> rows, Func<FeelRow, double> select)
     return n == 0 ? double.NaN : sum / n;
 }
 
+/// <summary>Popularity rank of a series, or <c>long.MaxValue</c> when the dump has none.</summary>
+long RankOf(long id) =>
+    index.TryGetRow(id, out var row) && index.PopularityAt(row) is var rank and > 0 ? rank : long.MaxValue;
+
 double? MedianPopularity(List<long> ids)
 {
     var ranks = new List<double>(ids.Count);
@@ -988,6 +1194,150 @@ double? MedianPopularity(List<long> ids)
     return ranks.Count == 0 ? null : Median(ranks);
 }
 
+/// <summary>
+/// Grades the top <c>--depth</c> picks for each panel seed against stored judgements. A pick with
+/// no judgement is counted as unjudged and queued, never scored as wrong: the whole point of the
+/// panel is that an unlabelled pick is not a miss.
+/// </summary>
+async Task<JudgedRow> ScoreJudged(
+    Variant variant, Dictionary<(long Seed, long Candidate), Judgement> judgements,
+    SortedSet<(long Seed, long Candidate)> queue)
+{
+    var recommender = RecommenderFor(variant.Graph, variant.CoReadTuning, variant.Recommender, variant.Taste);
+    var n = requests.Count;
+    var enjoy = new double[n];
+    var feel = new double[n];
+    var good = new double[n];
+    var poor = new double[n];
+    var ndcg = new double[n];
+    var judgedShare = new double[n];
+    var insufficient = new double[n];
+    var top1k = new double[n];
+    var franchise = new double[n];
+    var popularity = new List<double>();
+    var clock = Stopwatch.StartNew();
+
+    for (var i = 0; i < n; i++)
+    {
+        var seed = requests[i].Seeds[0];
+        var picks = await recommender.GetSimilarAsync(
+            requests[i].Seeds,
+            requests[i].Seeds,
+            limit,
+            RecommendationFilters.None,
+            obscurity: 0,
+            diversity: variant.Diversity,
+            weights: variant.Weights,
+            coGraph: variant.CoGraph,
+            coRead: variant.CoRead);
+        var ids = picks
+            .Select(p => long.Parse(p.ProviderId, CultureInfo.InvariantCulture))
+            .Take(depth)
+            .ToList();
+
+        var gains = new List<(double Enjoy, double Feel)>();
+        var thin = 0;
+        foreach (var id in ids)
+        {
+            if (!judgements.TryGetValue((seed, id), out var j))
+            {
+                queue.Add((seed, id));
+            }
+            else if (j.Insufficient)
+            {
+                thin++;
+            }
+            else
+            {
+                gains.Add((j.Enjoy, j.Feel));
+            }
+        }
+
+        judgedShare[i] = ids.Count == 0 ? 0 : (double)(gains.Count + thin) / ids.Count;
+        insufficient[i] = ids.Count == 0 ? 0 : (double)thin / ids.Count;
+        if (gains.Count == 0)
+        {
+            enjoy[i] = feel[i] = good[i] = poor[i] = ndcg[i] = double.NaN;
+        }
+        else
+        {
+            enjoy[i] = gains.Average(g => g.Enjoy);
+            feel[i] = gains.Average(g => g.Feel);
+            good[i] = (double)gains.Count(g => g.Enjoy >= 2) / gains.Count;
+            poor[i] = (double)gains.Count(g => g.Enjoy == 0) / gains.Count;
+
+            // Condensed: unjudged picks are removed and the rest close ranks. The ideal is the best
+            // ordering of everything judged for this seed, whichever variant returned it, so a
+            // variant is measured against the pool rather than against its own picks.
+            var dcg = gains.Select((g, rank) => g.Enjoy / Math.Log2(rank + 2)).Sum();
+            var ideal = judgements
+                .Where(kv => kv.Key.Seed == seed && !kv.Value.Insufficient)
+                .Select(kv => (double)kv.Value.Enjoy)
+                .OrderByDescending(g => g)
+                .Take(gains.Count)
+                .Select((g, rank) => g / Math.Log2(rank + 2))
+                .Sum();
+            ndcg[i] = ideal > 0 ? dcg / ideal : 0;
+        }
+
+        var seedFranchise = index.TryGetRow(seed, out var seedRow) ? index.FranchiseAt(seedRow) : VectorIndex.Unknown;
+        var famous = 0;
+        var related = 0;
+        foreach (var id in ids)
+        {
+            if (!index.TryGetRow(id, out var row))
+            {
+                continue;
+            }
+
+            var rank = index.PopularityAt(row);
+            if (rank != VectorIndex.Unknown && rank > 0 && rank <= 1000)
+            {
+                famous++;
+            }
+
+            if (seedFranchise != VectorIndex.Unknown && index.FranchiseAt(row) == seedFranchise)
+            {
+                related++;
+            }
+        }
+
+        top1k[i] = ids.Count == 0 ? 0 : (double)famous / ids.Count;
+        franchise[i] = ids.Count == 0 ? 0 : (double)related / ids.Count;
+        if (MedianPopularity(ids) is { } median)
+        {
+            popularity.Add(median);
+        }
+
+        if (i % 20 == 0 || i == n - 1)
+        {
+            Console.Write($"\r  {variant.Name}: {i + 1}/{n}, {clock.Elapsed.TotalSeconds:F0}s   ");
+        }
+    }
+
+    Console.Write("\r".PadRight(72) + "\r");
+
+    // Same layout eval-compare.py reads. A seed with nothing judged is left out rather than written
+    // as zero, and the comparison runs on the seeds both variants have.
+    foreach (var (suffix, series) in new[] { ("judged", enjoy), ("judged-feel", feel) })
+    {
+        var csv = new StringBuilder();
+        for (var i = 0; i < n; i++)
+        {
+            if (!double.IsNaN(series[i]))
+            {
+                csv.Append(i).Append(',').Append(Csv(series[i])).Append('\n');
+            }
+        }
+
+        File.WriteAllText(Path.Combine(artifactsDir, "eval", $"rr-{variant.Name}-{suffix}.csv"), csv.ToString());
+    }
+
+    return new JudgedRow(
+        variant.Name, enjoy, feel, good, poor, ndcg, judgedShare, insufficient, top1k, franchise,
+        popularity.Count == 0 ? double.NaN : Median(popularity));
+}
+
 // -------------------------------------------------------------------------------------------------
 // Reporting
 // -------------------------------------------------------------------------------------------------
@@ -996,8 +1346,8 @@ void Report()
 {
     Console.WriteLine(
         $"{"variant",-24}{"R@10",8}{"R@20",8}{$"R@{limit}",8}{$"nDCG@{limit}",10}{"MRR",8}{"hit",8}" +
-        $"{"named",8}{(negatives ? $"{"neg",8}" : string.Empty)}{"pop",9}{"ms",8}");
-    Console.WriteLine(new string('-', negatives ? 105 : 97));
+        $"{"named",8}{(negatives ? $"{"neg",8}" : string.Empty)}{"pop",9}{"top1k",8}{"ms",8}");
+    Console.WriteLine(new string('-', negatives ? 113 : 105));
     foreach (var row in rows)
     {
         var pop = double.IsNaN(row.Popularity) ? "-" : row.Popularity.ToString("F0", CultureInfo.InvariantCulture);
@@ -1006,7 +1356,7 @@ void Report()
             $"{row.Ndcg.Average(),10:F3}{row.Rr.Average(),8:F3}{row.Hit,8:P0}" +
             $"{row.Named.Average(),8:P0}"
             + (negatives ? $"{row.NegativeHit.Average(),8:P0}" : string.Empty)
-            + $"{pop,9}{row.MillisecondsPerRequest,8:F0}");
+            + $"{pop,9}{row.Top1k,8:P0}{row.MillisecondsPerRequest,8:F0}");
     }
 
     Console.WriteLine();
@@ -1025,6 +1375,8 @@ void Report()
     Console.WriteLine("  pop     : median popularity rank of the picks; LOWER means more famous. A label set");
     Console.WriteLine("            skewed toward famous titles rewards a variant that simply returns them, and");
     Console.WriteLine("            no relevance column here can see that. Read the two together.");
+    Console.WriteLine("  top1k   : share of picks inside the 1,000 most popular series. The same warning as");
+    Console.WriteLine("            pop, as a share instead of a median.");
     Console.WriteLine("  named   : share of picks carrying a BecauseOfTitle, i.e. ones the UI can label");
     Console.WriteLine("            \"Feels like X\" instead of leaving unattributed. Not a quality measure -");
     Console.WriteLine("            read it against nDCG, never on its own.");
@@ -1068,6 +1420,120 @@ void Report()
         Console.WriteLine(
             $"  paired stats: python distribution/eval-compare.py {rows[1].Name} {rows[0].Name} {csvSuffix}" +
             $"{(csvMetric == "rr" ? string.Empty : $" {csvMetric}")}");
+    }
+}
+
+void ReportJudged(List<JudgedRow> judgedRows, SortedSet<(long Seed, long Candidate)> queue)
+{
+    static double Mean(double[] values)
+    {
+        var defined = values.Where(v => !double.IsNaN(v)).ToList();
+        return defined.Count == 0 ? double.NaN : defined.Average();
+    }
+
+    static string Num(double v) => double.IsNaN(v) ? "-" : v.ToString("F3", CultureInfo.InvariantCulture);
+    static string Pct(double v) => double.IsNaN(v) ? "-" : v.ToString("P0", CultureInfo.InvariantCulture);
+
+    Console.WriteLine(
+        $"{"variant",-24}{"seeds",7}{"judged",8}{$"enjoy@{depth}",10}{$"feel@{depth}",9}{"good",7}{"poor",7}" +
+        $"{"nDCG",8}{"thin",7}{"pop",8}{"top1k",7}{"franch",8}");
+    Console.WriteLine(new string('-', 110));
+    foreach (var row in judgedRows)
+    {
+        Console.WriteLine(
+            $"{row.Name,-24}{row.Enjoy.Count(v => !double.IsNaN(v)),7}{Pct(row.Judged.Average()),8}" +
+            $"{Num(Mean(row.Enjoy)),10}{Num(Mean(row.Feel)),9}{Pct(Mean(row.Good)),7}{Pct(Mean(row.Poor)),7}" +
+            $"{Num(Mean(row.Ndcg)),8}{Pct(row.Insufficient.Average()),7}" +
+            $"{(double.IsNaN(row.Popularity) ? "-" : row.Popularity.ToString("F0", CultureInfo.InvariantCulture)),8}" +
+            $"{Pct(row.Top1k.Average()),7}{Pct(row.Franchise.Average()),8}");
+    }
+
+    Console.WriteLine();
+    Console.WriteLine($"  seeds   : panel seeds with at least one usable judgement in this variant's top {depth}.");
+    Console.WriteLine($"  judged  : share of the top {depth} that has a stored judgement. Below 100% the other");
+    Console.WriteLine("            columns describe only the judged part; judge the queue and run again.");
+    Console.WriteLine("  enjoy   : mean 0 to 3 score for \"a reader who liked the seed would enjoy this\",");
+    Console.WriteLine("            over judged picks only. The primary number for the series-page rail.");
+    Console.WriteLine("  feel    : the same for \"similar story, tone and feel\".");
+    Console.WriteLine("  good    : share of judged picks scored 2 or 3 on enjoy; poor is the share scored 0.");
+    Console.WriteLine("  nDCG    : rank-aware, on enjoy, with unjudged picks removed and the ideal taken");
+    Console.WriteLine("            from everything judged for the seed across all variants.");
+    Console.WriteLine("  thin    : share of picks the judge could not score for lack of information.");
+    Console.WriteLine($"  pop     : median popularity rank of the top {depth}; top1k is the share inside the top 1,000.");
+    Console.WriteLine("  franch  : share of picks in the seed's own same-work component.");
+
+    var bounds = new[] { 1_000L, 5_000L, 20_000L, long.MaxValue };
+    var names = new[] { "top 1k", "1k-5k", "5k-20k", "20k+" };
+    var bucketOf = new int[requests.Count];
+    for (var i = 0; i < requests.Count; i++)
+    {
+        var rank = index.TryGetRow(requests[i].Seeds[0], out var row) ? index.PopularityAt(row) : VectorIndex.Unknown;
+        bucketOf[i] = rank == VectorIndex.Unknown || rank <= 0
+            ? bounds.Length - 1
+            : Array.FindIndex(bounds, b => rank <= b);
+    }
+
+    Console.WriteLine();
+    Console.WriteLine($"{"seed popularity",-18}{"variant",-24}{"n",6}{"judged",8}{$"enjoy@{depth}",10}{$"feel@{depth}",9}{"poor",7}");
+    Console.WriteLine(new string('-', 82));
+    for (var b = 0; b < bounds.Length; b++)
+    {
+        var members = Enumerable.Range(0, requests.Count).Where(i => bucketOf[i] == b).ToList();
+        if (members.Count == 0)
+        {
+            continue;
+        }
+
+        foreach (var row in judgedRows)
+        {
+            Console.WriteLine(
+                $"{names[b],-18}{row.Name,-24}{members.Count,6}{Pct(members.Average(i => row.Judged[i])),8}" +
+                $"{Num(Mean(members.Select(i => row.Enjoy[i]).ToArray())),10}" +
+                $"{Num(Mean(members.Select(i => row.Feel[i]).ToArray())),9}" +
+                $"{Pct(Mean(members.Select(i => row.Poor[i]).ToArray())),7}");
+        }
+    }
+
+    Console.WriteLine();
+    var queuePath = Path.Combine(artifactsDir, "eval", "judge-queue.tsv");
+    if (queue.Count == 0)
+    {
+        Console.WriteLine("  every pick in this run is judged.");
+    }
+    else
+    {
+        // Merged with what is already waiting, so two runs over different variants build one queue.
+        var waiting = new SortedSet<(long Seed, long Candidate)>(queue);
+        if (File.Exists(queuePath))
+        {
+            foreach (var line in File.ReadLines(queuePath).Skip(1))
+            {
+                var cells = line.Split('\t');
+                if (cells.Length >= 2
+                    && long.TryParse(cells[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var s)
+                    && long.TryParse(cells[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var c))
+                {
+                    waiting.Add((s, c));
+                }
+            }
+        }
+
+        var text = new StringBuilder("seed_id\tcand_id\n");
+        foreach (var (s, c) in waiting)
+        {
+            text.Append(s).Append('\t').Append(c).Append('\n');
+        }
+
+        File.WriteAllText(queuePath, text.ToString());
+        Console.WriteLine($"  {queue.Count} unjudged pairs from this run; {waiting.Count} waiting in {queuePath}");
+        Console.WriteLine("  judge them: python distribution/judge-pairs.py run");
+    }
+
+    if (judgedRows.Count > 1)
+    {
+        Console.WriteLine(
+            $"  paired stats: python distribution/eval-compare.py {judgedRows[1].Name} {judgedRows[0].Name} judged enjoy@{depth}");
+        Console.WriteLine("                (judged-feel for the feel scale)");
     }
 }
 
@@ -1166,6 +1632,25 @@ void ReportStrata()
                 $"{members.Average(i => row.Rr[i]),8:F3}");
         }
     }
+
+    Console.WriteLine();
+    Console.WriteLine($"{"label popularity",-18}{"variant",-24}{"n",6}{$"R@{limit}",8}");
+    Console.WriteLine(new string('-', 56));
+    var targetNames = new[] { "top 1k", "1k-20k", "20k+" };
+    for (var t = 0; t < TargetBounds.Length; t++)
+    {
+        foreach (var row in rows)
+        {
+            var defined = row.TargetRecall[t].Where(v => !double.IsNaN(v)).ToList();
+            Console.WriteLine(
+                $"{targetNames[t],-18}{row.Name,-24}{defined.Count,6}" +
+                $"{(defined.Count == 0 ? "-" : defined.Average().ToString("F3", CultureInfo.InvariantCulture)),8}");
+        }
+    }
+
+    Console.WriteLine();
+    Console.WriteLine("  label popularity: recall of the labels in each popularity band, over the requests");
+    Console.WriteLine("  that have a label there. A gain confined to the top band is fame, not relevance.");
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -1773,10 +2258,72 @@ file record Request(
 /// CPU-cost knob - every extra query is another dot product per catalogue row - and a relevance
 /// table with no price on it makes "more is better" look free.
 /// </param>
+/// <param name="TargetRecall">
+/// Recall of the labels in each popularity band of <c>TargetBounds</c>, per request; NaN where a
+/// request has no label in the band.
+/// </param>
+/// <param name="Top1k">Mean share of picks inside the catalogue's 1,000 most popular series.</param>
 file record ResultRow(
     string Name, double[] R10, double[] R20, double[] R40, double[] Ndcg, double[] Rr, double[] Named,
-    double[] NegativeHit,
+    double[] NegativeHit, double[][] TargetRecall, double Top1k,
     double Hit, double Popularity, double MillisecondsPerRequest, FeelRow? Feel);
+
+/// <param name="Judged">Share of the top picks with a stored judgement, usable or not.</param>
+/// <param name="Insufficient">Share the judge declined to score for lack of information.</param>
+file record JudgedRow(
+    string Name, double[] Enjoy, double[] Feel, double[] Good, double[] Poor, double[] Ndcg,
+    double[] Judged, double[] Insufficient, double[] Top1k, double[] Franchise, double Popularity);
+
+file readonly record struct Judgement(int Feel, int Enjoy, bool Insufficient);
+
+/// <summary>
+/// The judgement store written by <c>distribution/judge-pairs.py</c>: one row per (seed, candidate,
+/// judge, rubric). Scores from two judges or two rubric versions are never mixed in one number.
+/// </summary>
+file static class Judgements
+{
+    public static Dictionary<(long Seed, long Candidate), Judgement> Load(string path, string rubric, ref string? judge)
+    {
+        var found = new Dictionary<(long, long), Judgement>();
+        if (!File.Exists(path))
+        {
+            return found;
+        }
+
+        using var conn = new SqliteConnection($"Data Source={path};Mode=ReadOnly;Pooling=False");
+        conn.Open();
+        if (judge is null)
+        {
+            // The judge with the most rows at this rubric, so a bare run reads the main judge and a
+            // second judge has to be asked for by name.
+            using var pick = conn.CreateCommand();
+            pick.CommandText =
+                "SELECT judge FROM judgement WHERE rubric = $rubric GROUP BY judge ORDER BY COUNT(*) DESC LIMIT 1";
+            pick.Parameters.AddWithValue("$rubric", rubric);
+            judge = pick.ExecuteScalar() as string;
+            if (judge is null)
+            {
+                return found;
+            }
+        }
+
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText =
+            "SELECT seed_id, cand_id, feel, enjoy, insufficient FROM judgement WHERE judge = $judge AND rubric = $rubric";
+        cmd.Parameters.AddWithValue("$judge", judge);
+        cmd.Parameters.AddWithValue("$rubric", rubric);
+        using var reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            found[(reader.GetInt64(0), reader.GetInt64(1))] = new Judgement(
+                reader.IsDBNull(2) ? 0 : reader.GetInt32(2),
+                reader.IsDBNull(3) ? 0 : reader.GetInt32(3),
+                reader.GetInt32(4) != 0);
+        }
+
+        return found;
+    }
+}
 
 /// <summary>
 /// Variant syntax: <c>name:key=value,key=value</c>.
@@ -1850,8 +2397,8 @@ file record ResultRow(
 /// <para>
 /// Shorthand names: <c>default</c> is what ships; <c>nograph</c>, <c>nocoread</c> and <c>nocrowd</c>
 /// switch one or both crowd channels off, which are the baselines those features have to be read
-/// against; <c>noavoid</c> is the same for the avoid channel; <c>rail</c> is the reduced-weight, slightly-diversified configuration
-/// <c>SimilarSeriesService</c> uses for a single seed.
+/// against; <c>noavoid</c> is the same for the avoid channel; <c>rail</c> is the series-page rail as
+/// <c>SimilarSeriesService</c> ships it: content channels only, diversity 0.15.
 /// </para>
 /// </summary>
 file static class Variants
@@ -1882,9 +2429,14 @@ file static class Variants
             weights = new EmbeddingMath.Weights() with { Avoid = 0 };
         }
 
+        // What SimilarSeriesService asks for: every crowd channel off and a small MMR nudge. It
+        // used to stand for a reduced weight vector that service dropped long ago, so the shipped
+        // rail went ungraded while a row called `rail` sat in the table.
         if (lower == "rail")
         {
-            weights = new EmbeddingMath.Weights(Genre: 0.15, Author: 0.25);
+            coGraph = false;
+            coRead = false;
+            taste = TasteVectorTuning.Default with { Weight = 0 };
             diversity = 0.15;
         }
 
