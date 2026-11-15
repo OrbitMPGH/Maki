@@ -175,11 +175,10 @@ public sealed class VectorIndexCache(
     /// </para>
     ///
     /// <para>
-    /// The original reasoning survives in the window rather than in an exemption: this one is
-    /// deliberately longer than the graphs' (<c>MAKI_VECTOR_IDLE_MINUTES</c>, default 15),
-    /// because the rebuild is about eight seconds of reading every vector BLOB and a person who
-    /// searches once tends to search again. No lock, for the same reason as the other caches: the
-    /// index is immutable and a reader holds its own reference.
+    /// Its window (<c>MAKI_VECTOR_IDLE_MINUTES</c>, default 1) was once longer than the graphs',
+    /// when a reload meant reading every vector BLOB for eight seconds. A reload from the snapshot
+    /// takes about 0.1 s. No lock, for the same reason as the other caches: the index is immutable
+    /// and a reader holds its own reference.
     /// </para>
     /// </summary>
     public bool ReleaseIfIdle(TimeSpan idleFor)

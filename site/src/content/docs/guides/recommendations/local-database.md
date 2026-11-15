@@ -38,7 +38,7 @@ Toggle it in **Settings → Library → Semantic search & recommendations**. It 
 database first. Turning it on starts a model switch that downloads the model and index, with progress
 on the status line. Maki tries the prebuilt vectors first, about 42 MB to download and 65 MB on disk.
 If none are available, it builds the index on your machine, which takes a long time on a CPU. Search
-and the rails that need the index are empty until it is in place. While loaded, it uses about 140 MB of RAM. It unloads after 5 idle minutes by default.
+and the rails that need the index are empty until it is in place. While loaded, it uses about 140 MB of RAM. It unloads after 1 idle minute by default.
 
 With the switch off, search falls back to title matching, and rails that need the index are left out.
 Side interests, for example, have no rows without it.
@@ -50,9 +50,9 @@ control how long each dataset stays in memory after last use.
 
 | Variable | Default | What it controls |
 | --- | --- | --- |
-| `MAKI_EMBED_IDLE_MINUTES` | 5 | Minutes before the embedding model is unloaded. `0` keeps it loaded. |
-| `MAKI_VECTOR_IDLE_MINUTES` | 15 | Minutes before the search vectors are unloaded. |
-| `MAKI_ARTIFACT_IDLE_MINUTES` | 10 | Minutes before the catalogue, co-read, graph and cohort data are unloaded. `0` turns unloading off. |
+| `MAKI_EMBED_IDLE_MINUTES` | 1 | Minutes before the embedding model is unloaded. `0` keeps it loaded. |
+| `MAKI_VECTOR_IDLE_MINUTES` | 1 | Minutes before the search vectors are unloaded. |
+| `MAKI_ARTIFACT_IDLE_MINUTES` | 1 | Minutes before the catalogue, co-read, graph and cohort data are unloaded. `0` turns unloading off. |
 | `MAKI_SNAPSHOT_MMAP` | On | Reads the vectors, catalogue and co-read data in place from their snapshot files. `0` copies them into memory instead. |
 
 Unloading saves memory at the cost of a short reload (a second or two for the embedding model) on the
