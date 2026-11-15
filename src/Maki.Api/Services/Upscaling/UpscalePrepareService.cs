@@ -153,6 +153,7 @@ public sealed class UpscalePrepareService(
         var (_, _, average) = cache.HeldStats();
         var guess = average > 0 ? average : FallbackPageBytes;
         var held = new HashSet<UpscaleWorkKey>();
+        var owners = new Dictionary<UpscaleWorkKey, HashSet<int>>();
         var missing = new List<(UpscaleWorkKey Key, ReaderService.PageSlice Slice)>();
         long used = 0;
         var chapters = 0;
@@ -168,10 +169,10 @@ public sealed class UpscalePrepareService(
                 }
 
                 var from = Math.Clamp(target.FromPage, 0, slice.PageCount - 1);
-                var keys = Enumerable.Range(from, slice.PageCount - from)
+                var all = Enumerable.Range(from, slice.PageCount - from)
                     .Select(page => new UpscaleWorkKey(slice.ChapterFileId, slice.ArchiveVersion, slice.StartPage + page, target.Model))
-                    .Where(key => !held.Contains(key))
                     .ToList();
+                var keys = all.Where(key => !held.Contains(key)).ToList();
                 var sizes = keys.Select(key => cache.SizeOf(key)).ToList();
                 var size = sizes.Sum(s => s ?? guess);
                 if (used > 0 && used + size > budget)
@@ -181,6 +182,16 @@ public sealed class UpscalePrepareService(
 
                 used += size;
                 chapters++;
+                foreach (var key in all)
+                {
+                    if (!owners.TryGetValue(key, out var planned))
+                    {
+                        owners[key] = planned = [];
+                    }
+
+                    planned.Add(target.UserId);
+                }
+
                 for (var i = 0; i < keys.Count; i++)
                 {
                     held.Add(keys[i]);
@@ -193,7 +204,7 @@ public sealed class UpscalePrepareService(
         }
 
         cache.Hold(held);
-        queue.SetBackground(missing);
+        queue.SetBackground(missing, owners.ToDictionary(o => o.Key, IReadOnlySet<int> (o) => o.Value));
         await cache.EnforceCapAsync(ct);
         _planned = true;
         return Last = new PrepareSnapshot(chapters, held.Count, missing.Count);

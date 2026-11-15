@@ -222,6 +222,27 @@ public class VectorIndexCacheTests : IDisposable
     }
 
     [Fact]
+    public async Task Only_a_build_that_reads_every_vector_reports_itself_as_from_scratch()
+    {
+        var store = Store();
+        store.UpsertBatch([(1L, "h", [1f, 0f, 0f, 0f])]);
+        var cache = Cache(dimensions: 4);
+        bool? duringBuild = null;
+        cache.AfterBuildForTest = () => duringBuild = cache.IsBuildingFromScratch;
+
+        Assert.NotNull(await cache.GetAsync());
+        await cache.SnapshotSavedForTest;
+        Assert.True(duringBuild);
+        Assert.False(cache.IsBuildingFromScratch);
+
+        var reloaded = Cache(dimensions: 4);
+        bool? duringReload = null;
+        reloaded.AfterBuildForTest = () => duringReload = reloaded.IsBuildingFromScratch;
+        Assert.NotNull(await reloaded.GetAsync());
+        Assert.False(duringReload);
+    }
+
+    [Fact]
     public async Task Invalidate_ForcesARebuild()
     {
         var store = Store();
@@ -487,6 +508,9 @@ public class VectorIndexCacheTests : IDisposable
 
         Assert.DoesNotContain(logger.Messages, m => m.Contains("replacing the file instead"));
         Assert.Equal(["new", "new"], Store().GetHashes().OrderBy(kv => kv.Key).Select(kv => kv.Value));
+        // The staged file's own count comes across with it, still valid under its content version.
+        Assert.Equal(2, EmbeddingStoreTests.StoredCount(_vectorPath));
+        Assert.Equal(2, Store().Count());
         Assert.True(!File.Exists(_vectorPath + "-wal") || new FileInfo(_vectorPath + "-wal").Length == 0);
     }
 

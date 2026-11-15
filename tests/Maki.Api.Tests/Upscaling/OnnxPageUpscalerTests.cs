@@ -158,6 +158,41 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
+    public void A_narrow_run_takes_half_the_workers_and_gives_the_same_pixels()
+    {
+        using var upscaler = NewUpscaler();
+        var source = Pattern(900, 1300);
+        var info = _catalog.Get(UpscaleModelId.SpanS);
+        var workers = 0;
+        upscaler.WorkerStarted = _ => workers++;
+
+        var full = upscaler.Run(source, info, threads: 6, luma: false, CancellationToken.None);
+        var fullWorkers = workers;
+        workers = 0;
+        var narrow = upscaler.Run(source, info, threads: 6, luma: false, CancellationToken.None, new UpscaleRun { Narrow = true });
+
+        Assert.Equal((6, 3), (fullWorkers, workers));
+        Assert.Equal(full.Pixels, narrow.Pixels);
+    }
+
+    [Fact]
+    public void A_narrow_run_starts_the_other_workers_once_widened()
+    {
+        using var upscaler = NewUpscaler();
+        using var widen = new CancellationTokenSource();
+        var source = Pattern(900, 1300);
+        var workers = 0;
+        upscaler.WorkerStarted = _ => workers++;
+        upscaler.TileCompleted = _ => widen.Cancel();
+
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.SpanS), threads: 6, luma: false, CancellationToken.None,
+            new UpscaleRun { Narrow = true, Widen = widen.Token });
+
+        Assert.Equal(6, workers);
+        AssertNearest2x(source, page);
+    }
+
+    [Fact]
     public void Flat_tiles_are_filled_without_inference_and_match_the_model()
     {
         using var upscaler = NewUpscaler("identity-2x-fp16.onnx");
@@ -315,13 +350,30 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_colour_page_nobody_can_show_as_jpeg_xl_is_encoded_as_webp_asked_at_the_encode()
+    {
+        using var upscaler = NewUpscaler();
+        var png = Pattern(400, 500).EncodePng();
+        var asked = 0;
+
+        var pending = await upscaler.StartAsync(png, UpscaleModelId.SpanS,
+            new UpscaleRun { JpegXl = () => ++asked < 0 }, CancellationToken.None);
+        Assert.Equal(0, asked);
+        var result = await pending.FinishAsync(CancellationToken.None);
+
+        Assert.Equal(1, asked);
+        Assert.Equal((UpscaleOutcome.Ready, "webp"), (result.Outcome, result.Extension));
+        Assert.Equal(ImageFormat.Webp, ImageCodec.DetectFormat(result.Bytes!));
+    }
+
+    [Fact]
     public async Task Two_stages_give_the_same_bytes_as_one_call_and_the_session_is_free_in_between()
     {
         using var upscaler = NewUpscaler();
         var png = Pattern(400, 500).EncodePng();
 
         var whole = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None);
-        var pending = await ((IPageUpscaler)upscaler).StartAsync(png, "span-s", CancellationToken.None);
+        var pending = await ((IPageUpscaler)upscaler).StartAsync(png, "span-s", UpscaleRun.Default, CancellationToken.None);
         upscaler.ReleaseModel(UpscaleModelId.SpanS);
         Assert.False(upscaler.IsLoaded(UpscaleModelId.SpanS));
         var staged = await pending.FinishAsync(CancellationToken.None);

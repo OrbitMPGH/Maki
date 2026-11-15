@@ -26,6 +26,19 @@ public enum TranscodeFormat
 public readonly record struct ImageHeader(int Width, int Height, ImageFormat? Format);
 
 /// <summary>
+/// libvips' tracked memory for the diagnostics, read without starting libvips: touching any member
+/// of <see cref="ImageCodec"/> runs its static constructor, which loads and initialises the library
+/// (6 MB of mapped pages) on an instance that has not opened an image.
+/// </summary>
+public static class ImageCodecMemory
+{
+    internal static volatile bool Started;
+
+    /// <summary>Zero until something has opened an image.</summary>
+    public static long TrackedBytes => Started ? ImageCodec.TrackedMemoryBytes : 0;
+}
+
+/// <summary>
 /// Every libvips call in Maki goes through here or <see cref="Raster"/>, so the process-wide setup in
 /// the static constructor is guaranteed to run before the first image is opened.
 /// </summary>
@@ -68,6 +81,8 @@ public static class ImageCodec
         {
             Operation.Block(loader, false);
         }
+
+        ImageCodecMemory.Started = true;
     }
 
     /// <summary>The libvips worker threads of one pipeline, which an AVIF encode uses in full.</summary>

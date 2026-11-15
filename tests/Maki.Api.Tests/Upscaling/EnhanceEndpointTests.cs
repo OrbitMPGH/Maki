@@ -135,6 +135,21 @@ public sealed class EnhanceEndpointTests : IDisposable
     }
 
     [Fact]
+    public async Task A_browser_without_jpeg_xl_says_so_and_an_older_client_that_says_nothing_keeps_it()
+    {
+        using var db = _db.NewContext(1);
+
+        await Reader(db, 1).Enhance(_chapterId, new EnhancePagesRequest("span-s", [0], Session: "edge", JpegXl: false),
+            _store, _queue, _cache, default);
+        var edge = _queue.TryDequeue()!;
+        await Post(db, 1, "span-s", 1);
+        var older = _queue.TryDequeue()!;
+
+        Assert.False(_queue.DecodesJpegXl(edge));
+        Assert.True(_queue.DecodesJpegXl(older));
+    }
+
+    [Fact]
     public async Task A_next_chapter_whose_tier_is_skipped_is_not_queued()
     {
         var next = AddVolumeChapter(2);

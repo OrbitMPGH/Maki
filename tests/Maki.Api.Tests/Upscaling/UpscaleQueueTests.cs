@@ -43,6 +43,62 @@ public class UpscaleQueueTests
         (new UpscaleWorkKey(fileId, "1000-5", page, "span-s"), Slice(fileId, fileId));
 
     [Fact]
+    public void A_page_is_webp_only_when_every_waiting_tab_says_its_browser_cannot_show_jpeg_xl()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(0)], session: "edge", jpegXl: false);
+        _queue.Replace(2, 1, "span-s", [Item(1)], session: "old");
+        _queue.Replace(3, 1, "span-s", [Item(2)], session: "a", jpegXl: false);
+        _queue.Replace(4, 1, "span-s", [Item(2)], session: "b", jpegXl: true);
+
+        var edgeOnly = _queue.TryDequeue()!;
+        var unknown = _queue.TryDequeue()!;
+        var mixed = _queue.TryDequeue()!;
+
+        Assert.False(_queue.DecodesJpegXl(edgeOnly));
+        Assert.True(_queue.DecodesJpegXl(unknown));
+        Assert.True(_queue.DecodesJpegXl(mixed));
+    }
+
+    [Fact]
+    public void A_tab_that_stops_saying_counts_as_able_again()
+    {
+        _queue.Replace(1, 1, "span-s", [Item(0)], session: "t", jpegXl: false);
+        _queue.Replace(1, 1, "span-s", [Item(0)], session: "t");
+
+        Assert.True(_queue.DecodesJpegXl(_queue.TryDequeue()!));
+    }
+
+    [Fact]
+    public void A_prepared_page_follows_the_last_request_of_the_users_it_was_planned_for()
+    {
+        _queue.Replace(1, 1, "span-s", [], session: "edge", jpegXl: false);
+        _queue.Replace(2, 1, "span-s", [], session: "chrome", jpegXl: true);
+        var owners = new Dictionary<UpscaleWorkKey, IReadOnlySet<int>>
+        {
+            [Ahead(50).Key] = new HashSet<int> { 1 },
+            [Ahead(51).Key] = new HashSet<int> { 1, 2 },
+            [Ahead(52).Key] = new HashSet<int> { 3 },
+        };
+        _queue.SetBackground([Ahead(50), Ahead(51), Ahead(52), Ahead(53)], owners);
+
+        Assert.False(_queue.DecodesJpegXl(_queue.TryDequeue()!));
+        Assert.True(_queue.DecodesJpegXl(_queue.TryDequeue()!));
+        Assert.True(_queue.DecodesJpegXl(_queue.TryDequeue()!));
+        Assert.True(_queue.DecodesJpegXl(_queue.TryDequeue()!));
+    }
+
+    [Fact]
+    public void An_abandoned_prepared_page_keeps_its_owners_when_put_back()
+    {
+        _queue.Replace(1, 1, "span-s", [], session: "edge", jpegXl: false);
+        _queue.SetBackground([Ahead(50)], new Dictionary<UpscaleWorkKey, IReadOnlySet<int>> { [Ahead(50).Key] = new HashSet<int> { 1 } });
+        var job = _queue.TryDequeue()!;
+        _queue.Complete(job, UpscaleOutcome.Failed, UpscaleReasons.Abandoned);
+
+        Assert.False(_queue.DecodesJpegXl(_queue.TryDequeue()!));
+    }
+
+    [Fact]
     public void Prepared_pages_run_only_once_readers_have_nothing_pending()
     {
         _queue.SetBackground([Ahead(50), Ahead(51)]);

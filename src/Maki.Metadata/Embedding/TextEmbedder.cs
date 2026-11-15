@@ -86,6 +86,7 @@ public sealed class TextEmbedder(
         }
 
         await _initLock.WaitAsync(ct);
+        InferenceSession? loading = null;
         try
         {
             if (_session is not null)
@@ -103,10 +104,14 @@ public sealed class TextEmbedder(
             await modelStore.EnsureAsync(ct);
             _tokenizer = await CreateTokenizerAsync();
             using var sessionOptions = CreateSessionOptions(out var provider);
-            InferenceSession session;
+            var mapped = provider == EmbeddingProvider.Cpu && options.MapWeights && options.Model.ModelDataUrl is null
+                ? new MappedEmbeddingModel(options.ModelPath)
+                : null;
+            var session = loading = mapped is null ? null : TryLoadMapped(mapped);
             try
             {
-                session = new InferenceSession(options.ModelPath, sessionOptions);
+                session ??= new InferenceSession(options.ModelPath, sessionOptions);
+                loading = session;
             }
             catch (OnnxRuntimeException ex) when (IsCorruptModel(ex) &&
                                                   !DeletedCorruptModels.ContainsKey(options.ModelPath))
@@ -123,10 +128,18 @@ public sealed class TextEmbedder(
                 throw;
             }
 
-            // The session holds its own copy of the weights, so the file's pages would only sit in
-            // the container's page cache (about 110 MB) until the next load.
-            PageCache.DropAfterScan(options.ModelPath);
-            PageCache.DropAfterScan(options.ModelDataPath);
+            if (_mappedDataPath is null)
+            {
+                // The session holds its own copy of the weights, so the file's pages would only sit
+                // in the container's page cache (about 110 MB) until the next load. A mapped
+                // session's pages ARE its weights, and go when it unloads (DropMappedPages).
+                PageCache.DropAfterScan(options.ModelPath);
+                PageCache.DropAfterScan(options.ModelDataPath);
+                if (mapped is not null)
+                {
+                    ScheduleMappedBuild(mapped);
+                }
+            }
 
             // Read the graph rather than assume it. token_type_ids is a BERT-family input that the
             // Gemma export simply does not declare, and ONNX Runtime rejects a run that feeds an
@@ -138,12 +151,20 @@ public sealed class TextEmbedder(
             _session = session;
             Interlocked.Exchange(ref _lastUsedTicks, DateTime.UtcNow.Ticks);
             logger.LogInformation(
-                "Text embedder ready ({Dim}-dim, model {Version}, {Precision} on {Provider})",
-                Dimensions, options.ModelVersion, options.Precision, provider);
+                "Text embedder ready ({Dim}-dim, model {Version}, {Precision} on {Provider}, weights {Weights})",
+                Dimensions, options.ModelVersion, options.Precision, provider,
+                _mappedDataPath is null ? "loaded" : "mapped");
             return true;
         }
         catch (Exception ex)
         {
+            // Nothing was published, so a later plain load must not read as mapped.
+            if (loading is not null && !ReferenceEquals(_session, loading))
+            {
+                loading.Dispose();
+                _mappedDataPath = null;
+            }
+
             if (ct.IsCancellationRequested)
             {
                 logger.LogDebug(ex, "Text embedder initialization cancelled");
@@ -181,6 +202,112 @@ public sealed class TextEmbedder(
 
     private bool InFailureBackoff() => DateTime.UtcNow.Ticks < Interlocked.Read(ref _failedUntilTicks);
 
+    /// <summary>The weights file the loaded session maps, or null for a session holding its own copy.</summary>
+    private string? _mappedDataPath;
+
+    private Task? _mappedBuild;
+
+    /// <summary>The background conversion started by the last load, for tests to await.</summary>
+    internal Task MappedBuildForTest => _mappedBuild ?? Task.CompletedTask;
+
+    internal bool WeightsMapped => _mappedDataPath is not null;
+
+    /// <summary>
+    /// Pairs that failed to convert or to load in this process, keyed by path and source identity so
+    /// a re-downloaded model gets a fresh attempt. Each failure is logged once and then skipped.
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, byte> MappedFailures = new(StringComparer.OrdinalIgnoreCase);
+
+    private static string FailureKey(MappedEmbeddingModel mapped)
+    {
+        try
+        {
+            var source = new FileInfo(mapped.SourcePath);
+            return $"{mapped.SourcePath}|{source.Length}|{source.LastWriteTimeUtc.Ticks}";
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return mapped.SourcePath;
+        }
+    }
+
+    /// <summary>
+    /// Loads the mapped pair when a current one is on disk. Prepacking is off for this session only:
+    /// a prepacked kernel copies the weights it reads into its own buffers, which is the copy mapping
+    /// exists to avoid. The upscaler keeps it, where it was measured to matter.
+    /// Any failure falls back to the plain model; search must never depend on the pair.
+    /// </summary>
+    private InferenceSession? TryLoadMapped(MappedEmbeddingModel mapped)
+    {
+        if (!mapped.IsCurrent() || MappedFailures.ContainsKey(FailureKey(mapped)))
+        {
+            return null;
+        }
+
+        try
+        {
+            using var sessionOptions = CpuSessionOptions();
+            sessionOptions.AddSessionConfigEntry("session.disable_prepacking", "1");
+            var session = new InferenceSession(mapped.GraphPath, sessionOptions);
+            _mappedDataPath = mapped.DataPath;
+            PageCache.DropAfterScan(mapped.GraphPath);
+            return session;
+        }
+        catch (Exception ex) when (ex is OnnxRuntimeException or IOException or UnauthorizedAccessException)
+        {
+            MappedFailures.TryAdd(FailureKey(mapped), 0);
+            mapped.Delete();
+            logger.LogWarning(ex, "Could not load the memory-mapped embedding model; using {Path}", mapped.SourcePath);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Converts the plain model in the background after it loaded, so the first search after an
+    /// upgrade waits for nothing new and the next load maps the weights.
+    /// </summary>
+    private void ScheduleMappedBuild(MappedEmbeddingModel mapped)
+    {
+        if (_mappedBuild is { IsCompleted: false } || mapped.IsCurrent() || MappedFailures.ContainsKey(FailureKey(mapped)))
+        {
+            return;
+        }
+
+        _mappedBuild = Task.Run(() =>
+        {
+            var key = FailureKey(mapped);
+            try
+            {
+                var started = System.Diagnostics.Stopwatch.StartNew();
+                mapped.Build();
+                logger.LogInformation(
+                    "Prepared the memory-mapped copy of the embedding model in {Ms} ms ({Bytes} bytes); it is used from the next load",
+                    started.ElapsedMilliseconds, new FileInfo(mapped.DataPath).Length);
+            }
+            catch (Exception ex)
+            {
+                MappedFailures.TryAdd(key, 0);
+                logger.LogInformation(
+                    "Could not prepare the memory-mapped copy of the embedding model; the plain model stays in use: {Reason}",
+                    ex.Message);
+            }
+        });
+    }
+
+    /// <summary>
+    /// After a mapped session is disposed its weights are clean page cache nothing maps any more,
+    /// so they go like any other scanned file's. Must never run while the session is alive: the
+    /// kernel skips mapped pages anyway, but the next pass would fault them straight back in.
+    /// </summary>
+    private void DropMappedPages()
+    {
+        if (_mappedDataPath is { } path)
+        {
+            _mappedDataPath = null;
+            PageCache.DropAfterScan(path);
+        }
+    }
+
     /// <summary>
     /// Drops the loaded session and tokenizer so the next <see cref="EnsureReadyAsync"/> reloads
     /// from the currently-configured model. Called after a live model switch, where
@@ -201,6 +328,7 @@ public sealed class TextEmbedder(
                 _session = null;
                 _tokenizer = null;
                 ActiveProvider = null;
+                DropMappedPages();
                 Interlocked.Exchange(ref _failedUntilTicks, 0);
                 logger.LogInformation("Text embedder reset; will reload on next use");
             }
@@ -268,6 +396,7 @@ public sealed class TextEmbedder(
                 _session = null;
                 _tokenizer = null;
                 ActiveProvider = null;
+                DropMappedPages();
                 logger.LogInformation(
                     "Unloaded the text embedder after {Minutes:F0} idle minute(s); it reloads on next use",
                     idle.TotalMinutes);

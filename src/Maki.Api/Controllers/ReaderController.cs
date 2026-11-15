@@ -65,7 +65,9 @@ public record SetChaptersStateRequest(int[] ChapterIds, string State);
 /// whatever an earlier request queued. <c>Session</c> names the reader tab, so two tabs on one account
 /// keep separate queues. <c>Window</c> is how many leading <c>Pages</c> are the reading window (the rest
 /// is the whole chapter's backlog), and <c>Visible</c> false marks a request from a hidden tab, which
-/// does not make that tab active; absent means visible. See <see cref="ReaderController.Enhance"/>.
+/// does not make that tab active; absent means visible. <c>JpegXl</c> is whether the tab's browser decodes
+/// JPEG XL: false lets pages nobody else wants be encoded as WebP straight away; absent (an older client)
+/// counts as true. See <see cref="ReaderController.Enhance"/>.
 /// </summary>
 public record EnhancePagesRequest(
     string? Model,
@@ -76,7 +78,8 @@ public record EnhancePagesRequest(
     int[]? NotWanted = null,
     string? Session = null,
     int? Window = null,
-    bool? Visible = null);
+    bool? Visible = null,
+    bool? JpegXl = null);
 
 /// <summary>Chapters a device holds offline copies of. See <see cref="ReaderController.ChapterVersions"/>.</summary>
 public record ChapterVersionsRequest(int[]? Ids);
@@ -537,7 +540,8 @@ public class ReaderController(
             .ToHashSet();
         int? window = request.WholeChapter && request.Window is { } shown ? wanted.Count(w => w.Index < shown) : null;
         var queued = queue.Replace(
-            currentUser.UserId, id, model.Value, items, cap, plain, EnhanceSession(request.Session), window, request.Visible ?? true);
+            currentUser.UserId, id, model.Value, items, cap, plain, EnhanceSession(request.Session), window, request.Visible ?? true,
+            request.JpegXl);
         for (var i = 0; i < wanted.Count; i++)
         {
             states[wanted[i].Index] = queued[i] == UpscaleJobState.Working ? "working" : "queued";

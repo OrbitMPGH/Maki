@@ -49,13 +49,15 @@ public class IdleUnloadJobTests
     }
 
     /// <summary>
-    /// The vectors have their own window, defaulting well above the other artifacts' because they
-    /// are the most expensive thing in the set to rebuild.
+    /// Everything that reloads from a snapshot in a fraction of a second unloads after one idle
+    /// minute. The vectors keep their own variable but no longer a longer default.
     /// </summary>
     [Fact]
-    public void The_vector_window_defaults_above_the_other_artifacts()
+    public void The_windows_default_to_one_minute()
     {
-        Assert.True(ArtifactIdleUnloadJob.ResolveVector(null) > ArtifactIdleUnloadJob.Resolve(null));
+        Assert.Equal(1, ArtifactIdleUnloadJob.Resolve(null));
+        Assert.Equal(1, ArtifactIdleUnloadJob.ResolveVector(null));
+        Assert.Equal(1, EmbedderIdleUnloadJob.Resolve(null));
     }
 
     private sealed class FakeBrowser(string name, bool throws) : IIdleBrowser
@@ -117,5 +119,13 @@ public class IdleUnloadJobTests
         Assert.Equal(0, EmbedderIdleUnloadJob.Resolve("0"));
         Assert.Equal(0, BrowserIdleShutdownJob.Resolve("0"));
         Assert.Equal(0, ArtifactIdleUnloadJob.ResolveVector("0"));
+    }
+
+    /// <summary>One minute, matching the job's one-minute tick, so a browser goes one to two minutes after its last call.</summary>
+    [Fact]
+    public void Browsers_close_after_one_idle_minute_unless_overridden()
+    {
+        Assert.Equal(1, BrowserIdleShutdownJob.Resolve(null));
+        Assert.Equal(3, BrowserIdleShutdownJob.Resolve("3"));
     }
 }

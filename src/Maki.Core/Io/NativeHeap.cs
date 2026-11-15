@@ -52,6 +52,20 @@ public static class NativeHeap
     }
 
     /// <summary>
+    /// A blocking, compacting collect of every generation and the large object heap, then
+    /// <see cref="Trim"/>. Aggressive, so the freed regions are decommitted rather than kept for the
+    /// next burst. It stalls every thread for the length of the collect, so call it only once a
+    /// burst of work is over and nothing is waiting.
+    /// </summary>
+    public static void CollectAndTrim()
+    {
+        System.Runtime.GCSettings.LargeObjectHeapCompactionMode =
+            System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+        GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+        Trim();
+    }
+
+    /// <summary>
     /// glibc's own accounting, summed over every arena: what is in use, what is free but still
     /// mapped (the part a trim can return), and what sits in separate mappings. Null off Linux or on
     /// a glibc older than 2.33.

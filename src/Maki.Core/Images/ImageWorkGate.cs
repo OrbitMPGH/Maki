@@ -63,6 +63,17 @@ public static class ImageWorkGate
     private static readonly WeightedGate ConversionMemory = new(ConversionBudgetMegabytes);
 
     /// <summary>
+    /// How much of <see cref="ConversionBudgetMegabytes"/> the queue and the library pass may hold at
+    /// once. Two 12 MP colour WebP strips fit, three do not: a tall-strip file's peak goes from about
+    /// 710 to 495 MB and it converts about 40% slower, while paged chapters still run as many pages as
+    /// before. A cap on the background side rather than a smaller budget, so the setup page's previews
+    /// and estimate, which someone is watching, never wait longer than they did.
+    /// </summary>
+    public static readonly int BackgroundConversionBudgetMegabytes = Math.Min(640, ConversionBudgetMegabytes);
+
+    private static readonly WeightedGate BackgroundConversionMemory = new(BackgroundConversionBudgetMegabytes);
+
+    /// <summary>
     /// An AVIF encode runs on <see cref="ImageCodec.EncoderThreads"/> threads, so AVIF pages also take
     /// one of half the limit, rounded up. WebP is single-threaded and keeps one page per permit.
     /// </summary>
@@ -93,14 +104,24 @@ public static class ImageWorkGate
     /// <summary>
     /// A page conversion encode: one of <see cref="ConversionLimit"/>, for an AVIF page also one of
     /// <see cref="ConversionsInFlight"/>, plus its encoder memory. A page heavier than the whole budget
-    /// runs alone.
+    /// runs alone. <paramref name="background"/> work (the queue and the library pass) also takes its
+    /// memory from <see cref="BackgroundConversionBudgetMegabytes"/>, first, so a page waiting there holds
+    /// none of the permits a preview needs.
     /// </summary>
-    public static async Task<T> RunConversionAsync<T>(Func<T> work, ConversionWeight weight, CancellationToken ct)
+    public static async Task<T> RunConversionAsync<T>(
+        Func<T> work, ConversionWeight weight, CancellationToken ct, bool background = false)
     {
         var megabytes = Math.Clamp(weight.Megabytes, 1, ConversionBudgetMegabytes);
-        var taken = new List<(WeightedGate Gate, int Weight)>(3);
+        var taken = new List<(WeightedGate Gate, int Weight)>(4);
         try
         {
+            if (background)
+            {
+                var share = Math.Min(megabytes, BackgroundConversionBudgetMegabytes);
+                await BackgroundConversionMemory.WaitAsync(share, ct);
+                taken.Add((BackgroundConversionMemory, share));
+            }
+
             if (weight.Avif)
             {
                 await AvifConversions.WaitAsync(1, ct);

@@ -99,8 +99,10 @@ public class DownloadPollTests : IDisposable
             db.SaveChanges();
         }
 
+        Assert.Equal(0, _queue.HandedOut);
         Assert.NotNull(await _queue.ClaimNextAsync());
         Assert.True(wake.IsCompleted);
+        Assert.Equal(1, _queue.HandedOut);
         Assert.Equal(TimeSpan.FromSeconds(5), await _worker.NextPollDelayAsync(CancellationToken.None));
     }
 

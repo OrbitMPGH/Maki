@@ -241,6 +241,49 @@ public sealed class ReaderArchiveCacheTests : IDisposable
         Assert.Equal(2, cache.Loads);
     }
 
+    // The capacity sweep sorted the live dictionary; another thread adding or removing an entry
+    // mid-sort threw ArgumentException or NullReferenceException out of a page read.
+    [Fact]
+    public async Task The_capacity_sweep_survives_reads_and_invalidations_from_many_threads()
+    {
+        var handles = new ReaderArchiveHandles();
+        // Mostly missing files: they still take a handle and run the sweep, without the file IO
+        // that would otherwise keep the threads too slow to meet inside it.
+        var real = WriteZip("race/real.cbz", ("001.jpg", "page"));
+        var paths = Enumerable.Range(0, ReaderArchiveHandles.Capacity * 4)
+            .Select(i => Path.Combine(_root, "race", $"missing-{i}.cbz"))
+            .Append(real)
+            .ToArray();
+        using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+        var reads = 0;
+
+        var readers = Enumerable.Range(0, 16).Select(seed => Task.Run(async () =>
+        {
+            var random = new Random(seed);
+            while (!stop.IsCancellationRequested)
+            {
+                var path = paths[random.Next(paths.Length)];
+                using var page = await handles.ReadPageAsync(path, "001.jpg", CancellationToken.None);
+                Assert.Equal(path == real, page is not null);
+                Interlocked.Increment(ref reads);
+            }
+        }));
+        var invalidator = Task.Run(async () =>
+        {
+            var random = new Random(100);
+            while (!stop.IsCancellationRequested)
+            {
+                handles.Invalidate(paths[random.Next(paths.Length)]);
+                await Task.Yield();
+            }
+        });
+
+        await Task.WhenAll(readers.Append(invalidator));
+
+        Assert.True(reads > 0);
+        Assert.True(handles.Count <= ReaderArchiveHandles.Capacity + 16);
+    }
+
     [Fact]
     public async Task A_page_of_a_file_that_vanished_is_unreadable_not_an_error()
     {

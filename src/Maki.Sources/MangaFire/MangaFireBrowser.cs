@@ -431,7 +431,7 @@ public sealed class MangaFireBrowser(
         {
             // Use the ~100 MB headless shell, not full Chromium — we never render headed, and it
             // keeps the Docker image far smaller. The Dockerfile installs only this browser.
-            var args = new List<string> { "--disable-blink-features=AutomationControlled" };
+            var args = new List<string>(BrowserSupport.LaunchArgs);
             var resolverRules = await settings.GetAsync(SettingKeys.MangaFireBrowserHostResolverRules, ct);
             if (!string.IsNullOrWhiteSpace(resolverRules))
             {

@@ -32,12 +32,15 @@ public sealed class DiscoverSearchFallbackTests : IDisposable
         }
     }
 
-    private sealed class StubSearcher(bool canEmbed, SemanticSearchOutcome outcome) : SemanticSearcher(
+    private sealed class StubSearcher(bool canEmbed, SemanticSearchOutcome outcome, bool readyWithin = false) : SemanticSearcher(
         null!, null!, null!, null!, null!, null!, null!, null!, NullLogger<SemanticSearcher>.Instance)
     {
         public int Searches { get; private set; }
 
         public override bool IsReady() => false;
+
+        public override Task<bool> IsReadyWithinAsync(TimeSpan budget, CancellationToken ct = default) =>
+            Task.FromResult(readyWithin);
 
         public override bool IsAvailable() => true;
 
@@ -125,6 +128,20 @@ public sealed class DiscoverSearchFallbackTests : IDisposable
 
         Assert.Equal("semantic", response.Mode);
         Assert.Empty(response.Items);
+    }
+
+    [Fact]
+    public async Task A_quick_reload_is_waited_for_instead_of_answering_from_titles()
+    {
+        // Not narrowed, so before the wait this went to the title index while the engine warmed.
+        var item = new MangaBakaRecommendation(
+            "1", "Berserk", null, null, null, Maki.Core.Entities.SeriesStatus.Completed, 80, null, [], [], false, null, null);
+        var searcher = new StubSearcher(canEmbed: true, new SemanticSearchOutcome([item], null, []), readyWithin: true);
+
+        var response = await Service(searcher).SearchAsync(new DiscoverSearchRequest("a lonely knight", null));
+
+        Assert.Equal(1, searcher.Searches);
+        Assert.Equal("semantic", response.Mode);
     }
 
     [Fact]

@@ -268,7 +268,7 @@ public sealed class TopManhuaImageBrowser(
                 Headless = true,
                 // ~100 MB headless shell — we never render headed, and it keeps the image far smaller.
                 Channel = "chromium-headless-shell",
-                Args = ["--disable-blink-features=AutomationControlled"],
+                Args = BrowserSupport.LaunchArgs,
             });
         }
         catch (PlaywrightException)

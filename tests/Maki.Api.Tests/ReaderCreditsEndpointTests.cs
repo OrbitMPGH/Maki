@@ -441,7 +441,7 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         return JsonSerializer.SerializeToElement(Assert.IsType<OkObjectResult>(result).Value, Web);
     }
 
-    private CreditScanWorker Worker()
+    private CreditScanWorker Worker(Maki.Api.Jobs.ArtifactBuildGate? buildGate = null)
     {
         var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
         services.AddScoped(_ => _db.NewContext());
@@ -451,7 +451,7 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         var settings = new FakeAppSettings();
         return new CreditScanWorker(scopes, settings, _credits, _store, _archives,
             new PageConversionWorker(scopes, settings, NullLogger<PageConversionWorker>.Instance), _bank, _strips,
-            NullLogger<CreditScanWorker>.Instance);
+            NullLogger<CreditScanWorker>.Instance, buildGate);
     }
 
     [Fact]
@@ -470,6 +470,47 @@ public sealed class ReaderCreditsEndpointTests : IDisposable
         }
 
         Assert.Null(await worker.NextSeriesAsync(default));
+    }
+
+    // Every chapter's head and tail decoding side by side stacked tall progressive JPEGs, so the
+    // background scan loads them in turn.
+    [Fact]
+    public async Task The_scan_decodes_one_edge_page_at_a_time_and_finds_the_same_pages()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var recruit = Tinted(Noise(8, 120));
+        var chapters = Enumerable.Range(1, 7).Select(n => AddChapter(n, [credit, .. Story(n, 8), recruit])).ToList();
+
+        await Worker().ScanSeriesAsync(_seriesId, "en", default);
+
+        Assert.Equal(1, _credits.PeakDecoding);
+        foreach (var chapter in chapters)
+        {
+            var row = (await RowAsync(chapter))!;
+            Assert.Equal((1, 1), (row.HeadPages, row.TailPages));
+        }
+    }
+
+    [Fact]
+    public async Task The_scan_waits_while_an_artifact_build_holds_the_gate()
+    {
+        var credit = Tinted(Noise(7, 90));
+        var chapters = Enumerable.Range(1, 3).Select(n => AddChapter(n, [credit, .. Story(n, 8)])).ToList();
+        var gate = new Maki.Api.Jobs.ArtifactBuildGate(NullLogger<Maki.Api.Jobs.ArtifactBuildGate>.Instance);
+        var lease = await gate.EnterAsync("test build", default);
+
+        var scan = Worker(gate).ScanSeriesAsync(_seriesId, "en", default);
+        await Task.Delay(500);
+
+        Assert.False(scan.IsCompleted);
+        Assert.Null(await RowAsync(chapters[0]));
+
+        lease.Dispose();
+        await scan.WaitAsync(TimeSpan.FromSeconds(30));
+        foreach (var chapter in chapters)
+        {
+            Assert.NotNull(await RowAsync(chapter));
+        }
     }
 
     [Fact]

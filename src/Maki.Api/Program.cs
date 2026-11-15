@@ -1484,15 +1484,17 @@ try
             // a second one cannot overlap an index build.
             .WithSimpleSchedule(s => s.WithIntervalInHours(12).RepeatForever().WithMisfireHandlingInstructionFireNow()));
 
-        // Frees the embedding session when nothing has used it. Five minutes is the tick, not the
+        // Frees the embedding session when nothing has used it. One minute is the tick, not the
         // idle window - the job reads that itself - so the window can change without rescheduling.
+        // The job only compares a timestamp, and a five-minute tick held the session up to five
+        // minutes past its window.
         q.AddJob<Maki.Api.Jobs.EmbedderIdleUnloadJob>(j => j
             .WithIdentity(Maki.Api.Jobs.EmbedderIdleUnloadJob.Key));
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.EmbedderIdleUnloadJob.Key)
             .WithIdentity("embedder-idle-unload-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(8))
-            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         q.AddJob<Maki.Api.Jobs.UpscalerIdleUnloadJob>(j => j
             .WithIdentity(Maki.Api.Jobs.UpscalerIdleUnloadJob.Key));
@@ -1503,20 +1505,20 @@ try
             .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         // The same for the discovery artifacts, which are ~72 MB between them. Started well after
-        // the warm-up job so a fresh instance is not unloading what it is still building, and the
-        // tick is the same five minutes for the same reason.
+        // the warm-up job so a fresh instance is not unloading what it is still building, and
+        // ticking every minute for the same reason as the embedder's.
         q.AddJob<Maki.Api.Jobs.ArtifactIdleUnloadJob>(j => j
             .WithIdentity(Maki.Api.Jobs.ArtifactIdleUnloadJob.Key));
         q.AddTrigger(t => t
             .ForJob(Maki.Api.Jobs.ArtifactIdleUnloadJob.Key)
             .WithIdentity("artifact-idle-unload-trigger")
             .StartAt(DateTimeOffset.UtcNow.AddMinutes(12))
-            .WithSimpleSchedule(s => s.WithIntervalInMinutes(5).RepeatForever()));
+            .WithSimpleSchedule(s => s.WithIntervalInMinutes(1).RepeatForever()));
 
         // And the headless browsers, which are ~160 MB of native memory between the Playwright
         // driver and the shell's processes. Nothing launches one at startup, so this can start
         // early; it does nothing until a scrape has actually happened. Every minute, since the idle
-        // window is three: a five-minute tick held a browser up to eight. The check is in memory.
+        // window is one: a browser goes one to two minutes after its last call. The check is in memory.
         q.AddJob<Maki.Api.Jobs.BrowserIdleShutdownJob>(j => j
             .WithIdentity(Maki.Api.Jobs.BrowserIdleShutdownJob.Key));
         q.AddTrigger(t => t
