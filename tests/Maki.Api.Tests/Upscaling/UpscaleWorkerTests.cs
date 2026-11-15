@@ -225,6 +225,31 @@ public sealed class UpscaleWorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_page_abandoned_during_its_tiles_does_not_wait_for_the_previous_page_to_finish()
+    {
+        var upscaler = new StagedUpscaler { BlockStartOf = 1 };
+        _queue.Replace(2, 7, "span-s", [Item(0)]);
+        var worker = NewWorker(upscaler);
+        Assert.True(await worker.RunOnceAsync(default));
+        await upscaler.Finishing(0).Task.WaitAsync(Wait);
+
+        _queue.Replace(1, 7, "span-s", [Item(1)]);
+        var run = worker.RunOnceAsync(default);
+        await upscaler.Started(1).Task.WaitAsync(Wait);
+        _queue.Replace(1, 8, "span-s", []);
+
+        Assert.True(await run.WaitAsync(Wait));
+        Assert.False(worker.Finishing.IsCompleted);
+        Assert.Null(_queue.RecentOutcome(Item(1).Key));
+
+        upscaler.Release(0);
+        await worker.Finishing.WaitAsync(Wait);
+        Assert.NotNull(_cache.TryGet(Item(0).Key));
+        Assert.Null(_cache.TryGet(Item(1).Key));
+        Assert.Equal(0, _queue.Snapshot().Pending + _queue.Snapshot().Working);
+    }
+
+    [Fact]
     public async Task A_page_already_in_the_cache_is_answered_ready_without_running()
     {
         await _cache.WriteAsync(Item(1).Key, [1, 2, 3], "webp", default);
@@ -481,7 +506,10 @@ public sealed class UpscaleWorkerTests : IDisposable
 
         public List<UpscaleRun> Runs { get; } = [];
 
-        public Task<PendingUpscale> StartAsync(byte[] page, string modelId, UpscaleRun run, CancellationToken ct)
+        /// <summary>This call's start waits until it is cancelled, as tiles do when their page is abandoned.</summary>
+        public int? BlockStartOf { get; init; }
+
+        public async Task<PendingUpscale> StartAsync(byte[] page, string modelId, UpscaleRun run, CancellationToken ct)
         {
             var call = Interlocked.Increment(ref Calls) - 1;
             lock (Runs)
@@ -490,7 +518,12 @@ public sealed class UpscaleWorkerTests : IDisposable
             }
 
             Started(call).TrySetResult();
-            return Task.FromResult(new PendingUpscale(async finish =>
+            if (BlockStartOf == call)
+            {
+                await Task.Delay(Timeout.Infinite, ct);
+            }
+
+            return new PendingUpscale(async finish =>
             {
                 var now = Interlocked.Increment(ref _inFinish);
                 InterlockedMax(ref _maxFinishing, now);
@@ -510,7 +543,7 @@ public sealed class UpscaleWorkerTests : IDisposable
                 {
                     Interlocked.Decrement(ref _inFinish);
                 }
-            }));
+            });
         }
 
         private static void InterlockedMax(ref int target, int value)

@@ -48,7 +48,10 @@ public sealed record UpscaleRun
 /// <summary>A page past inference whose colour pass and encode may still be left to do.</summary>
 public sealed class PendingUpscale(Func<CancellationToken, Task<UpscaleResult>> finish)
 {
-    public static PendingUpscale Done(UpscaleResult result) => new(_ => Task.FromResult(result));
+    public static PendingUpscale Done(UpscaleResult result) => new(_ => Task.FromResult(result)) { Result = result };
+
+    /// <summary>The result when nothing is left to finish (made by <see cref="Done"/>), else null.</summary>
+    public UpscaleResult? Result { get; private init; }
 
     /// <summary>Call once. Never throws for a failing encode; throws when <paramref name="ct"/> is cancelled.</summary>
     public Task<UpscaleResult> FinishAsync(CancellationToken ct) => finish(ct);

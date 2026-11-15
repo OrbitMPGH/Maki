@@ -148,6 +148,14 @@ public sealed class UpscaleWorker(
         // A prepare-ahead page nobody waits for runs on half the workers, so a reader beside it keeps its speed.
         var run = new UpscaleRun { Narrow = job.Background && waiters.Count == 0, Widen = job.Widen };
         var started = await StartAsync(job, run, ct);
+        // Abandoned during its tiles: nothing to finish and nobody to tell, so the next page need not wait for
+        // the previous one's encode. Read off the result, not job.Abandoned, which a page past its tiles can see too.
+        if (started.Result is { Reason: UpscaleReasons.Abandoned })
+        {
+            await CompleteAsync(job, UpscaleOutcome.Failed, UpscaleReasons.Abandoned);
+            return true;
+        }
+
         await _finishing;
         _finishingKey = job.Key;
         _finishing = Task.Run(() => FinishAsync(job, model, started, ct), CancellationToken.None);
