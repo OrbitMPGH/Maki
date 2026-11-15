@@ -102,8 +102,18 @@ public sealed class ReaderCreditsCache(
         // A tall progressive JPEG holds its whole coefficient buffer while it decodes (about 40 MB for
         // a 12 MP webtoon slice). Seven chapters' heads and tails decoding side by side stacked four of
         // those, so the background scan loads them in turn; the reader, which waits, does not.
-        var run = _results.GetOrAdd(key, _ => new Lazy<Task<CreditPages>>(() =>
-            RunAsync(chapter, usable, parallelism > 0 ? parallelism : ImageWorkGate.Parallelism, sequential: parallelism == 1)));
+        var run = _results.GetOrAdd(key, _ =>
+        {
+            var pace = new Pace { Sequential = parallelism == 1 };
+            return new PacedRun(pace, () =>
+                RunAsync(chapter, usable, parallelism > 0 ? parallelism : ImageWorkGate.Parallelism, pace));
+        });
+        // A reader that joins the scan's run is waiting on it, so the edges still to load go side by side.
+        if (parallelism != 1 && run is PacedRun joined)
+        {
+            joined.Pace.Sequential = false;
+        }
+
         try
         {
             return (await run.Value.WaitAsync(ct), false);
@@ -190,28 +200,35 @@ public sealed class ReaderCreditsCache(
 
     private static string Key(ReaderService.ChapterSlice slice) => slice.EdgeKey ?? ReaderRecapCache.Key(slice);
 
+    private sealed class Pace
+    {
+        public volatile bool Sequential;
+    }
+
+    private sealed class PacedRun(Pace pace, Func<Task<CreditPages>> run) : Lazy<Task<CreditPages>>(run)
+    {
+        public Pace Pace => pace;
+    }
+
     private async Task<CreditPages> RunAsync(
         ReaderService.ChapterSlice chapter, IReadOnlyList<ReaderService.ChapterSlice> references, int parallelism,
-        bool sequential)
+        Pace pace)
     {
         var watch = Stopwatch.StartNew();
         var generation = notices.Generation;
         // The models take a few hundred milliseconds to load; that happens while the edges decode.
         _ = Task.Run(text.PrepareAsync);
         var slices = references.Prepend(chapter).ToList();
-        CreditDetector.Edges[] edges;
-        if (sequential)
+        var edges = new CreditDetector.Edges[slices.Count];
+        var next = 0;
+        while (next < slices.Count && pace.Sequential)
         {
-            edges = new CreditDetector.Edges[slices.Count];
-            for (var i = 0; i < slices.Count; i++)
-            {
-                edges[i] = await EdgesAsync(slices[i], parallelism, sequential);
-            }
+            edges[next] = await EdgesAsync(slices[next], parallelism, pace);
+            next++;
         }
-        else
-        {
-            edges = await Task.WhenAll(slices.Select(s => EdgesAsync(s, parallelism, sequential)));
-        }
+
+        var rest = await Task.WhenAll(slices.Skip(next).Select(s => EdgesAsync(s, parallelism, pace)));
+        rest.CopyTo(edges, next);
 
         var repeated = CreditDetector.Candidates(chapter.PageCount, edges[0], edges[1..]);
 
@@ -432,12 +449,12 @@ public sealed class ReaderCreditsCache(
         return copy.ToArray();
     }
 
-    private async Task<CreditDetector.Edges> EdgesAsync(ReaderService.ChapterSlice slice, int parallelism, bool sequential)
+    private async Task<CreditDetector.Edges> EdgesAsync(ReaderService.ChapterSlice slice, int parallelism, Pace pace)
     {
         var key = Key(slice);
         if (!_strips.TryGetValue(key, out var strip))
         {
-            var fresh = new Lazy<Task<CreditDetector.Edges>>(() => LoadEdgesAsync(slice, parallelism, sequential));
+            var fresh = new Lazy<Task<CreditDetector.Edges>>(() => LoadEdgesAsync(slice, parallelism, pace));
             strip = _strips.GetOrAdd(key, fresh);
             if (ReferenceEquals(strip, fresh))
             {
@@ -461,7 +478,7 @@ public sealed class ReaderCreditsCache(
     }
 
     /// <summary>The strips stored on disk for the slice's edge key, else decoded and stored.</summary>
-    private async Task<CreditDetector.Edges> LoadEdgesAsync(ReaderService.ChapterSlice slice, int parallelism, bool sequential)
+    private async Task<CreditDetector.Edges> LoadEdgesAsync(ReaderService.ChapterSlice slice, int parallelism, Pace pace)
     {
         if (slice.EdgeKey is { } edgeKey && strips.Read(edgeKey) is { } stored)
         {
@@ -469,7 +486,7 @@ public sealed class ReaderCreditsCache(
         }
 
         CreditDetector.Edges edges;
-        if (sequential)
+        if (pace.Sequential)
         {
             var first = await ShrinkEdgeAsync(slice, tail: false, parallelism);
             edges = new CreditDetector.Edges(first, await ShrinkEdgeAsync(slice, tail: true, parallelism));
