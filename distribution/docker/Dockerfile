@@ -202,6 +202,11 @@ ENV MALLOC_ARENA_MAX=2
 ENV MALLOC_MMAP_THRESHOLD_=131072
 ENV MALLOC_TRIM_THRESHOLD_=131072
 
+# The runtime loads its LTTng tracing provider in every process, which maps liblttng-ust and starts
+# two idle dotnet-ust threads (about 1 MB). Nothing in this image uses LTTng; EventPipe tools
+# (dotnet-trace, dotnet-counters, dotnet-gcdump) still work without it.
+ENV DOTNET_LTTng=0
+
 ENV MAKI_CONFIG_DIR=/config
 ENV MAKI_RUNTIME=docker
 VOLUME /config
