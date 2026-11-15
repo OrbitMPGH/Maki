@@ -418,6 +418,15 @@ public sealed class ReaderCreditsCache(
             return null;
         }
 
+        // The page arrives as a pooled stream of known length; copying it through a growing MemoryStream
+        // and ToArray made two more large-object copies of every 3 to 5 MB webtoon slice.
+        if (source.CanSeek && source.Length - source.Position is var left && left >= 0 && left <= Array.MaxLength)
+        {
+            var exact = new byte[left];
+            await source.ReadExactlyAsync(exact, ct);
+            return exact;
+        }
+
         using var copy = new MemoryStream();
         await source.CopyToAsync(copy, ct);
         return copy.ToArray();
