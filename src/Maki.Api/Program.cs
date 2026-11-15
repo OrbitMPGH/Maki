@@ -1516,7 +1516,7 @@ try
         // And the headless browsers, which are ~160 MB of native memory between the Playwright
         // driver and the shell's processes. Nothing launches one at startup, so this can start
         // early; it does nothing until a scrape has actually happened. Every minute, since the idle
-        // window is three: a five-minute tick held a browser up to eight. The check is in memory.
+        // window is one: a browser goes one to two minutes after its last call. The check is in memory.
         q.AddJob<Maki.Api.Jobs.BrowserIdleShutdownJob>(j => j
             .WithIdentity(Maki.Api.Jobs.BrowserIdleShutdownJob.Key));
         q.AddTrigger(t => t
