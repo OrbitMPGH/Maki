@@ -38,6 +38,12 @@ public sealed record UpscaleRun
     /// <summary>Cancelled when a reader starts waiting on a narrow page: the rest of it runs at full width.</summary>
     public CancellationToken Widen { get; init; }
 
+    /// <summary>
+    /// Asked just before the encode. False when nobody who will see the page can decode JPEG XL, so a
+    /// colour page is encoded as WebP at once instead of being converted on every request. Null allows it.
+    /// </summary>
+    public Func<bool>? JpegXl { get; init; }
+
     /// <summary>Whether the page should run narrow at this moment.</summary>
     public bool NarrowNow => Narrow && !Widen.IsCancellationRequested;
 

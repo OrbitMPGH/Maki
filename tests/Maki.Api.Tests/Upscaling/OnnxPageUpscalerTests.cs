@@ -350,6 +350,23 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_colour_page_nobody_can_show_as_jpeg_xl_is_encoded_as_webp_asked_at_the_encode()
+    {
+        using var upscaler = NewUpscaler();
+        var png = Pattern(400, 500).EncodePng();
+        var asked = 0;
+
+        var pending = await upscaler.StartAsync(png, UpscaleModelId.SpanS,
+            new UpscaleRun { JpegXl = () => ++asked < 0 }, CancellationToken.None);
+        Assert.Equal(0, asked);
+        var result = await pending.FinishAsync(CancellationToken.None);
+
+        Assert.Equal(1, asked);
+        Assert.Equal((UpscaleOutcome.Ready, "webp"), (result.Outcome, result.Extension));
+        Assert.Equal(ImageFormat.Webp, ImageCodec.DetectFormat(result.Bytes!));
+    }
+
+    [Fact]
     public async Task Two_stages_give_the_same_bytes_as_one_call_and_the_session_is_free_in_between()
     {
         using var upscaler = NewUpscaler();

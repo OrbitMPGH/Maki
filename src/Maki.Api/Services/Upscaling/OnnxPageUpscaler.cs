@@ -144,6 +144,7 @@ public sealed class OnnxPageUpscaler(
 
             UpscalePixels.TakeColourFrom(stitched.Pixels, stitched.Width, stitched.Height, source.Pixels, source.Width,
                 source.Height, threads);
+            jpegXl = jpegXl && (run.JpegXl?.Invoke() ?? true);
             var encoded = await ImageWorkGate.RunAsync(
                 () => Task.FromResult(ImageCodec.EncodeUpscaled(stitched.Pixels, stitched.Width, stitched.Height, grey, jpegXl)),
                 outputWeight, ct);

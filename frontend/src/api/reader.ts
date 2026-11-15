@@ -183,9 +183,11 @@ const ENHANCE_SESSION = randomUUID()
  * with `wholeChapter`; `next` fills whatever room is left with the next chapter's pages, which are
  * not answered here. `notWanted` names this chapter's pages to drop from what is still queued.
  * `window` is how many leading `pages` are the reading window, ahead of the whole chapter's rest. A
- * hidden tab says so, and the server does not count its request as reading.
+ * hidden tab says so, and the server does not count its request as reading. `jpegXl` lets the server
+ * encode pages only this browser wants as WebP when it cannot show JPEG XL; the probe is awaited so a
+ * tab's first request never says no only because the probe had not answered yet.
  */
-export function requestServerEnhance(
+export async function requestServerEnhance(
   chapterId: number,
   model: string,
   pages: number[],
@@ -194,6 +196,7 @@ export function requestServerEnhance(
   notWanted: number[] = [],
   window = pages.length,
 ) {
+  const jpegXl = await jpegXlSupported()
   return api<{ pages: { page: number; state: ServerPageState }[] }>(`/reader/chapter/${chapterId}/enhance`, {
     method: 'POST',
     body: JSON.stringify({
@@ -204,6 +207,7 @@ export function requestServerEnhance(
       ...(notWanted.length > 0 && { notWanted }),
       session: ENHANCE_SESSION,
       visible: document.visibilityState === 'visible',
+      jpegXl,
     }),
   })
 }

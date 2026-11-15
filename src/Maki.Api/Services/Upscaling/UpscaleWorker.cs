@@ -146,7 +146,12 @@ public sealed class UpscaleWorker(
         var waiters = queue.WaitersOf(job);
         await TellAsync(waiters, job.Key.Model, "working");
         // A prepare-ahead page nobody waits for runs on half the workers, so a reader beside it keeps its speed.
-        var run = new UpscaleRun { Narrow = job.Background && waiters.Count == 0, Widen = job.Widen };
+        var run = new UpscaleRun
+        {
+            Narrow = job.Background && waiters.Count == 0,
+            Widen = job.Widen,
+            JpegXl = () => queue.DecodesJpegXl(job),
+        };
         var started = await StartAsync(job, run, ct);
         // Abandoned during its tiles: nothing to finish and nobody to tell, so the next page need not wait for
         // the previous one's encode. Read off the result, not job.Abandoned, which a page past its tiles can see too.
