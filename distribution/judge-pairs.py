@@ -9,6 +9,8 @@
     python distribution/judge-pairs.py calibrate --n 150
     python distribution/judge-pairs.py import-labels calibration-labels.json
     python distribution/judge-pairs.py agreement
+    python distribution/judge-pairs.py known
+    python distribution/judge-pairs.py known-report
 
 WHY THIS EXISTS
 Every label set eval-reco-labels.cs grades against is a crowd's list of pairs. None of them says
@@ -38,10 +40,18 @@ rubric versions are never averaged. Change RUBRIC and bump RUBRIC_VERSION togeth
 A refusal is stored as its own status and counts as "thin", not as a score. No fallback model is
 configured: a second model answering in place of the first would put two judges under one name.
 
-CALIBRATION
-`calibrate` writes a self-contained page with a sample of pairs for the owner to score on the same
-rubric, blind to the judge. `import-labels` stores them and `agreement` reports weighted kappa and
-rank correlation per scale. If agreement on enjoy is poor, fix the rubric before judging the pool.
+CHECKING THE JUDGE
+Two checks need nobody to score anything, and they gate the pool:
+  known     takes pairs MangaUpdates readers recommended by hand and gives each seed two controls
+            of the candidate's type and popularity: `near` shares the seed's genres, `far` is a
+            random series. No control is a pair any crowd links. `known-report` says how often
+            the judge scores the human pick above each control, also for the pairs where it does
+            not recognise the titles, which is where it has only the text to go on.
+  repeat    `run --tag repeat` judges pairs a second time as its own judge, and
+            `agreement --against <judge>+repeat` says whether the judge agrees with itself.
+Neither says whether a 2 should have been a 3. For that a person who has read both series has to
+score pairs: `calibrate` writes a page of them, `import-labels` stores the scores and `agreement`
+reports weighted kappa and rank correlation. That is only worth doing for series the scorer knows.
 
 Credentials come from the environment (ANTHROPIC_API_KEY, or an `ant auth login` profile). Only
 public catalogue text is sent. Nothing from a library or a reading list goes into a request.
@@ -398,7 +408,8 @@ def cmd_run(args) -> int:
     from anthropic.types.message_create_params import MessageCreateParamsNonStreaming
     from anthropic.types.messages.batch_create_params import Request
 
-    judge = f"{args.model}/{args.effort}"
+    # A tag makes a second pass by the same model its own judge, which is how a repeat is stored.
+    judge = f"{args.model}/{args.effort}" + (f"+{args.tag}" if args.tag else "")
     conn = open_store()
     queue_path = Path(args.queue) if args.queue else artifacts_dir() / "eval" / "judge-queue.tsv"
     pairs, cards = pending(conn, judge, queue_path, args.limit)
@@ -713,6 +724,27 @@ def cmd_agreement(args) -> int:
     if not judges:
         print("no judgements stored")
         return 0
+    if args.against:
+        rows = conn.execute(
+            "SELECT a.feel, b.feel, a.enjoy, b.enjoy FROM judgement a JOIN judgement b "
+            "ON b.seed_id = a.seed_id AND b.cand_id = a.cand_id AND b.rubric = a.rubric "
+            "WHERE a.rubric = ? AND a.judge = ? AND b.judge = ? AND a.status = 'ok' AND b.status = 'ok' "
+            "AND NOT a.insufficient AND NOT b.insufficient",
+            (RUBRIC_VERSION, judges[0], args.against),
+        ).fetchall()
+        print(f"{judges[0]} against {args.against}: {len(rows)} pairs scored by both")
+        if len(rows) < 20:
+            print("  too few to report agreement")
+            return 0
+        for name, a, b in (("feel", 0, 1), ("enjoy", 2, 3)):
+            pairs = [(row[a], row[b]) for row in rows]
+            print(
+                f"  {name:6} weighted kappa {weighted_kappa(pairs):.2f}, "
+                f"same score {sum(x == y for x, y in pairs) / len(pairs):.0%}, "
+                f"within one {sum(abs(x - y) <= 1 for x, y in pairs) / len(pairs):.0%}, "
+                f"same side of the 1|2 line {sum((x >= 2) == (y >= 2) for x, y in pairs) / len(pairs):.0%}"
+            )
+        return 0
     for judge in judges:
         rows = conn.execute(
             "SELECT o.feel, j.feel, o.enjoy, j.enjoy, o.insufficient, j.insufficient "
@@ -737,6 +769,185 @@ def cmd_agreement(args) -> int:
         thin_judge = sum(1 for row in rows if row[5])
         print(f"  could not judge: owner {thin_owner}, judge {thin_judge}")
     print("Target before judging the whole pool: weighted kappa of 0.5 or more on enjoy.")
+    return 0
+
+
+# --------------------------------------------------------------------------------------------------
+# Checks that need no human scorer
+# --------------------------------------------------------------------------------------------------
+
+BANDS = [("top1k", 1_000), ("1k-5k", 5_000), ("5k-20k", 20_000), ("20k-60k", 60_000)]
+KINDS = ("human", "near", "far")
+
+
+def load_judgeable() -> dict[int, dict]:
+    """Series the judge has enough text for: the same bar the panel's seeds have to clear."""
+    dump = sqlite3.connect(f"file:{config_dir() / 'mangabaka.db'}?mode=ro", uri=True)
+    rows = dump.execute(
+        "SELECT id, type, popularity_global_current, content_rating, description, tags_v2, genres, authors, artists "
+        "FROM series WHERE state = 'active' AND merged_with IS NULL "
+        "AND type IN ('manga', 'manhwa', 'manhua', 'oel') AND popularity_global_current BETWEEN 1 AND 60000"
+    )
+    series: dict[int, dict] = {}
+    for sid, kind, rank, rating, text, tags, genres, authors, artists in rows:
+        if rating == "pornographic" or len(clean_synopsis(text, limit=10**6)) < 200:
+            continue
+        if sum(1 for tag in json.loads(tags or "[]") if not tag.get("is_spoiler")) < 3:
+            continue
+        series[sid] = {
+            "type": kind if kind in ("manga", "manhwa") else "manhua",
+            "band": next(name for name, upper in BANDS if rank <= upper),
+            "genres": set(names(genres)),
+            "creators": set(names(authors) + names(artists)),
+        }
+    return series
+
+
+def cmd_known(args) -> int:
+    """Writes pairs with a known answer: human recommendations, each with two controls."""
+    series = load_judgeable()
+    rng = random.Random(args.seed)
+    mu = sqlite3.connect(f"file:{artifacts_dir() / 'mu-edges.db'}?mode=ro", uri=True)
+    candidates = [
+        row for row in mu.execute("SELECT a_id, b_id, human_weight FROM pair WHERE human_weight > 0 ORDER BY 1, 2")
+        if row[0] in series and row[1] in series and not series[row[0]]["creators"] & series[row[1]]["creators"]
+    ]
+    rng.shuffle(candidates)
+    quota = {name: args.n // len(BANDS) for name, _ in BANDS}
+    positives, seeds = [], set()
+    for a, b, weight in candidates:
+        seed, cand = (a, b) if rng.random() < 0.5 else (b, a)
+        band = series[seed]["band"]
+        if seed in seeds or not quota[band]:
+            continue
+        quota[band] -= 1
+        seeds.add(seed)
+        positives.append((seed, cand, weight))
+
+    # A control must not be a pair any crowd already links, or it is not a control.
+    linked: dict[int, set[int]] = {seed: set() for seed in seeds}
+    for path in (artifacts_dir() / "mu-edges.db", config_dir() / "reco-edges.db", config_dir() / "coread-edges.db"):
+        if not path.exists():
+            continue
+        for a, b in sqlite3.connect(f"file:{path}?mode=ro", uri=True).execute("SELECT a_id, b_id FROM pair"):
+            if a in linked:
+                linked[a].add(b)
+            if b in linked:
+                linked[b].add(a)
+
+    pools: dict[tuple, list[int]] = {}
+    for sid in sorted(series):
+        pools.setdefault((series[sid]["type"], series[sid]["band"]), []).append(sid)
+
+    rows = []
+    for group, (seed, cand, weight) in enumerate(positives):
+        info = series[seed]
+        pool = [
+            sid for sid in pools[(series[cand]["type"], series[cand]["band"])]
+            if sid not in (seed, cand) and sid not in linked[seed] and not series[sid]["creators"] & info["creators"]
+        ]
+        need = min(2, len(info["genres"]))
+        near = [sid for sid in pool if len(series[sid]["genres"] & info["genres"]) >= need]
+        if not pool or not near:
+            continue
+        rows.append((seed, cand, "human", weight, group))
+        rows.append((seed, rng.choice(near), "near", 0, group))
+        rows.append((seed, rng.choice(pool), "far", 0, group))
+
+    out = artifacts_dir() / "eval" / "known-pairs.tsv"
+    with out.open("w", encoding="utf-8", newline="\n") as fh:
+        fh.write("seed_id\tcand_id\tkind\tweight\tgroup\n")
+        for row in rows:
+            fh.write("\t".join(str(cell) for cell in row) + "\n")
+    queue = artifacts_dir() / "eval" / "known-queue.tsv"
+    write_queue(queue, [(row[0], row[1]) for row in rows])
+    print(f"{len(rows) // 3} human pairs, each with a near and a far control, written to {out}")
+    print(f"Judge them with: python distribution/judge-pairs.py run --queue {queue}")
+    return 0
+
+
+def auc(high: list[int], low: list[int]) -> float:
+    """Chance that a value from `high` beats one from `low`, a tie counting half."""
+    if not high or not low:
+        return float("nan")
+    wins = sum((h > l) + 0.5 * (h == l) for h in high for l in low)
+    return wins / (len(high) * len(low))
+
+
+def cmd_known_report(args) -> int:
+    conn = open_store()
+    judge = args.judge or f"{DEFAULT_MODEL}/{DEFAULT_EFFORT}"
+    path = artifacts_dir() / "eval" / "known-pairs.tsv"
+    if not path.exists():
+        print("error: no known-pairs.tsv. Run `known` first.")
+        return 1
+    stored = {
+        (seed, cand): (feel, enjoy, thin, franchise, known_seed, known_cand)
+        for seed, cand, feel, enjoy, thin, franchise, known_seed, known_cand in conn.execute(
+            "SELECT seed_id, cand_id, feel, enjoy, insufficient, same_franchise, recognise_seed, recognise_cand "
+            "FROM judgement WHERE judge = ? AND rubric = ? AND status = 'ok'",
+            (judge, RUBRIC_VERSION),
+        )
+    }
+    by_kind: dict[str, list] = {kind: [] for kind in KINDS}
+    groups: dict[int, dict] = {}
+    total = 0
+    with path.open(encoding="utf-8") as fh:
+        next(fh)
+        for line in fh:
+            seed, cand, kind, weight, group = line.rstrip("\n").split("\t")
+            total += 1
+            row = stored.get((int(seed), int(cand)))
+            if row is None or row[2]:
+                continue
+            by_kind[kind].append((*row, int(weight)))
+            groups.setdefault(int(group), {})[kind] = row
+
+    judged = sum(len(rows) for rows in by_kind.values())
+    print(f"{judge}, rubric {RUBRIC_VERSION}: {judged} of {total} pairs have a usable score")
+    if judged < 60:
+        print("  too few to report")
+        return 0
+    print(f"  {'kind':8}{'n':>5}{'feel':>7}{'enjoy':>7}{'enjoy>=2':>10}{'franchise':>11}")
+    for kind in KINDS:
+        rows = by_kind[kind]
+        if not rows:
+            continue
+        print(
+            f"  {kind:8}{len(rows):>5}{sum(r[0] for r in rows) / len(rows):>7.2f}"
+            f"{sum(r[1] for r in rows) / len(rows):>7.2f}{sum(r[1] >= 2 for r in rows) / len(rows):>10.0%}"
+            f"{sum(bool(r[3]) for r in rows) / len(rows):>11.0%}"
+        )
+
+    def separation(label: str, keep) -> None:
+        kept = {kind: [row for row in by_kind[kind] if keep(row)] for kind in KINDS}
+        sizes = "/".join(str(len(kept[kind])) for kind in KINDS)
+        for name, column in (("enjoy", 1), ("feel", 0)):
+            values = {kind: [row[column] for row in kept[kind]] for kind in KINDS}
+            print(
+                f"  {label:26}{name:6} human over far {auc(values['human'], values['far']):.2f}, "
+                f"human over near {auc(values['human'], values['near']):.2f}, "
+                f"near over far {auc(values['near'], values['far']):.2f}  (n {sizes})"
+            )
+
+    print("Separation, as the chance the first kind outscores the second (0.5 is a coin flip):")
+    separation("all pairs", lambda row: True)
+    separation("candidate not recognised", lambda row: not row[5])
+    separation("neither title recognised", lambda row: not row[4] and not row[5])
+
+    for other in ("near", "far"):
+        full = [group for group in groups.values() if "human" in group and other in group]
+        if not full:
+            continue
+        above = sum(group["human"][1] > group[other][1] for group in full)
+        level = sum(group["human"][1] == group[other][1] for group in full)
+        print(
+            f"  same seed, enjoy: human above {other} in {above / len(full):.0%}, "
+            f"level in {level / len(full):.0%}, below in {(len(full) - above - level) / len(full):.0%} of {len(full)}"
+        )
+    human = by_kind["human"]
+    print(f"  enjoy against the number of people who made the recommendation: Spearman "
+          f"{spearman([(row[6], row[1]) for row in human]):.2f}")
     return 0
 
 
@@ -898,6 +1109,7 @@ def main() -> int:
     common(run)
     run.add_argument("--limit", type=int, help="judge only the first N pairs")
     run.add_argument("--sync", action="store_true", help="one request at a time at list price, for a small check")
+    run.add_argument("--tag", help="store this pass as its own judge, for a repeat of pairs already judged")
     run.set_defaults(handler=cmd_run)
 
     resume = sub.add_parser("resume", help="collect batches that were submitted earlier")
@@ -930,7 +1142,17 @@ def main() -> int:
 
     agreement = sub.add_parser("agreement", help="owner against judge")
     agreement.add_argument("--judge")
+    agreement.add_argument("--against", help="a second judge to compare with, instead of the owner")
     agreement.set_defaults(handler=cmd_agreement)
+
+    known = sub.add_parser("known", help="write pairs with a known answer: human picks and controls")
+    known.add_argument("--n", type=int, default=160)
+    known.add_argument("--seed", type=int, default=20261115)
+    known.set_defaults(handler=cmd_known)
+
+    known_report = sub.add_parser("known-report", help="does the judge tell human picks from controls")
+    known_report.add_argument("--judge")
+    known_report.set_defaults(handler=cmd_known_report)
 
     args = parser.parse_args()
     return args.handler(args)
