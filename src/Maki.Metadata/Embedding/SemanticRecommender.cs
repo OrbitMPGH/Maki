@@ -1377,7 +1377,10 @@ public class SemanticRecommender(
         }
 
         var queries = new List<SeedQuery>(tuning.MaxSeedQueries + 1);
-        if (EmbeddingMath.WeightedMean(vectors) is { } centroid)
+        var centre = tuning.UserSolve
+            ? TasteFoldIn.Solve(index, vectors, tuning.UserSolveLambda, tuning.UserSolveAlpha)
+            : EmbeddingMath.WeightedMean(vectors);
+        if (centre is { } centroid)
         {
             queries.Add(Pack(centroid));
             if (vectors.Count == 1)

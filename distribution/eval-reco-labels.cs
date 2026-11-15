@@ -2690,6 +2690,18 @@ file static class Variants
             {
                 taste = taste with { MaxInjected = int.Parse(value, CultureInfo.InvariantCulture) };
             }
+            else if (key == "tasteusersolve")
+            {
+                taste = taste with { UserSolve = bool.Parse(value) };
+            }
+            else if (key == "tastesolvelambda")
+            {
+                taste = taste with { UserSolveLambda = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "tastesolvealpha")
+            {
+                taste = taste with { UserSolveAlpha = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
             else if (key == "tasteseedqueries")
             {
                 taste = taste with { MaxSeedQueries = int.Parse(value, CultureInfo.InvariantCulture) };

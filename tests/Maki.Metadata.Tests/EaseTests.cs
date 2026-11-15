@@ -1,4 +1,5 @@
 using Maki.Metadata.Ease;
+using Maki.Metadata.Taste;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -74,6 +75,22 @@ public class EaseTests : IDisposable
 
         Assert.Null(await new EaseCache(new EaseOptions(Path.Combine(_dir, "absent.db")), NullLogger<EaseCache>.Instance).GetAsync());
         Assert.Null(await new EaseCache(new EaseOptions(corrupt), NullLogger<EaseCache>.Instance).GetAsync());
+    }
+
+    [Fact]
+    public void TheFoldInSolver_SolvesASymmetricPositiveDefiniteSystem()
+    {
+        double[] a = [4, 2, 0, 2, 5, 1, 0, 1, 3];
+        double[] b = [2, 1, 1];
+
+        Assert.True(TasteFoldIn.CholeskySolve(a, b, 3));
+
+        double[] original = [4, 2, 0, 2, 5, 1, 0, 1, 3];
+        for (var i = 0; i < 3; i++)
+        {
+            var row = (original[i * 3] * b[0]) + (original[(i * 3) + 1] * b[1]) + (original[(i * 3) + 2] * b[2]);
+            Assert.Equal(new[] { 2.0, 1, 1 }[i], row, 9);
+        }
     }
 
     public void Dispose()
