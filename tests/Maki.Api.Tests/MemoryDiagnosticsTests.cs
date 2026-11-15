@@ -21,4 +21,18 @@ public class MemoryDiagnosticsTests
             Convert.ToInt64(GC.GetConfigurationVariables()["GCGen0MaxBudget"]),
             budget.GetInt64());
     }
+
+    /// <summary>
+    /// The test host runs under its own runtime config, so this pins the one Maki.Api ships with:
+    /// a 6 MB gen0 budget, which the runtime honours from runtimeconfig.json.
+    /// </summary>
+    [Fact]
+    public void The_shipped_runtime_config_caps_the_gen0_budget()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "Maki.Api.runtimeconfig.json");
+        using var config = JsonDocument.Parse(File.ReadAllText(path));
+        var properties = config.RootElement.GetProperty("runtimeOptions").GetProperty("configProperties");
+
+        Assert.Equal(6 * 1024 * 1024, properties.GetProperty("System.GC.Gen0MaxBudget").GetInt64());
+    }
 }
