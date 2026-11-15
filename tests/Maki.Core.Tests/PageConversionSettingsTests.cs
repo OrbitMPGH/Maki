@@ -27,7 +27,7 @@ public class PageConversionSettingsTests
     [Theory]
     [InlineData("")]
     [InlineData("webp")]
-    [InlineData("jxl:high")]
+    [InlineData("heic:high")]
     [InlineData("webp:best")]
     [InlineData("webp:lossless")]
     [InlineData(null)]

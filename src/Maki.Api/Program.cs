@@ -1108,6 +1108,8 @@ try
     builder.Services.AddSingleton<CreditStore>();
     builder.Services.AddSingleton<CreditStrips>();
     builder.Services.AddSingleton<CreditBank>();
+    builder.Services.AddSingleton<CreditNoticeStore>();
+    builder.Services.AddScoped<CreditGroupsService>();
     builder.Services.AddSingleton(sp => new Maki.Api.Services.Ocr.PageTextReader(
         sp.GetRequiredService<ILogger<Maki.Api.Services.Ocr.PageTextReader>>()));
     builder.Services.AddSingleton<Maki.Api.Services.Ocr.IPageTextReader>(sp =>
@@ -1691,6 +1693,9 @@ try
         scope.ServiceProvider.GetRequiredService<HealthOperationService>().RecoverAsync(CancellationToken.None).GetAwaiter().GetResult();
         db.Database.ExecuteSqlRaw("PRAGMA journal_mode=WAL;");
         SqliteStartup.KeepAttached(paths);
+
+        VersionHistory.RecordAsync(scope.ServiceProvider.GetRequiredService<IAppSettings>(), VersionInfo.Version, freshDatabase)
+            .GetAwaiter().GetResult();
 
         // Told after the migration, never before: the UserNotifications table is itself created by a
         // migration, so on the upgrade that introduces it there is nowhere to write this yet. Awaited

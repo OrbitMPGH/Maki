@@ -189,6 +189,19 @@ public class DownloadQueuePriorityTests : IDisposable
     }
 
     [Fact]
+    public async Task A_parked_import_above_a_moved_row_does_not_lend_it_its_class()
+    {
+        var parked = SeedItem(QueuePriority.Low, sortOrder: 0, QueueStatus.AwaitingImport);
+        var first = SeedItem(QueuePriority.High, sortOrder: 1);
+        var second = SeedItem(QueuePriority.High, sortOrder: 2);
+
+        await _queue.ReorderAsync([parked, second, first], movedId: second);
+
+        Assert.Equal(QueuePriority.High, Row(second).Priority);
+        Assert.Equal(second, await _queue.ClaimNextAsync());
+    }
+
+    [Fact]
     public async Task A_reorder_without_a_moved_row_keeps_every_class()
     {
         var high = SeedItem(QueuePriority.High, sortOrder: 0);

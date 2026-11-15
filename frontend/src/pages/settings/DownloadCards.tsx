@@ -39,6 +39,8 @@ import { IndexerFieldRow } from '../../components/settings/IndexerForm'
 import { indexerBackendName, useIndexerForm } from '../../components/settings/useIndexerForm'
 import { useDownloadClientFields } from '../../components/settings/downloadClientFields'
 import { TorrentLifecycleFields } from '../../components/settings/TorrentLifecycleFields'
+import { NewSettingPill } from '../../components/settings/NewSettingPill'
+import { useNewControlMark } from './newSettings'
 import { useTorrentLifecycleForm } from '../../components/settings/useTorrentLifecycleForm'
 import { SettingsNumberInput } from '../../components/settings/SettingsNumberInput'
 import { languageName } from '../../api/titles'
@@ -686,6 +688,9 @@ export function VolumeReleasesSection() {
   const [autoApproveMb, setAutoApproveMb] = useState<number>(12288)
   const [missingSearch, setMissingSearch] = useState(true)
   const [minSeeders, setMinSeeders] = useState<number>(1)
+  const missingMark = useNewControlMark('missing-chapter-search')
+  const seedersMark = useNewControlMark('minimum-seeders')
+  const autoApproveMark = useNewControlMark('auto-approve-volumes')
   const [discarded, discard] = useReducer((n: number) => n + 1, 0)
 
   useSliceSync(
@@ -754,30 +759,46 @@ export function VolumeReleasesSection() {
         )
       }
     >
-      <Switch
-        label={t`Search torrents for volume releases`}
-        description={t`Also needs the daily scan on.`}
-        checked={volumeSearch}
-        onChange={(e) => setVolumeSearch(e.currentTarget.checked)}
-        mb="md"
-      />
-      <Switch
-        label={t`Search torrents for chapters no source has`}
-        description={t`For monitored series with wanted chapters no source lists (licensed titles, series with no source). Each series is searched at most once a week. Works with the daily scan off.`}
-        checked={missingSearch}
-        onChange={(e) => setMissingSearch(e.currentTarget.checked)}
-        mb="md"
-      />
-      <SettingsNumberInput
-        label={t`Minimum seeders`}
-        description={t`Releases with fewer seeders are never grabbed or approved on their own. You can still grab them from the release search.`}
-        min={1}
-        max={10000}
-        decimalScale={0}
-        value={minSeeders}
-        onChange={setMinSeeders}
-        mb="md"
-      />
+      <div {...autoApproveMark}>
+        <Switch
+          label={t`Search torrents for volume releases`}
+          description={t`Also needs the daily scan on.`}
+          checked={volumeSearch}
+          onChange={(e) => setVolumeSearch(e.currentTarget.checked)}
+          mb="md"
+        />
+      </div>
+      <div id="setting-missing-chapter-search" {...missingMark}>
+        <Switch
+          label={
+            <>
+              {t`Search torrents for chapters no source has`}
+              <NewSettingPill id="missing-chapter-search" />
+            </>
+          }
+          description={t`For monitored series with wanted chapters no source lists (licensed titles, series with no source). Each series is searched at most once a week. Works with the daily scan off.`}
+          checked={missingSearch}
+          onChange={(e) => setMissingSearch(e.currentTarget.checked)}
+          mb="md"
+        />
+      </div>
+      <div id="setting-minimum-seeders" {...seedersMark}>
+        <SettingsNumberInput
+          label={
+            <>
+              {t`Minimum seeders`}
+              <NewSettingPill id="minimum-seeders" />
+            </>
+          }
+          description={t`Releases with fewer seeders are never grabbed or approved on their own. You can still grab them from the release search.`}
+          min={1}
+          max={10000}
+          decimalScale={0}
+          value={minSeeders}
+          onChange={setMinSeeders}
+          mb="md"
+        />
+      </div>
       <Group grow mb="md" align="flex-start">
         <SettingsNumberInput
           label={t`Auto-grab size limit`}
@@ -818,25 +839,32 @@ export function VolumeReleasesSection() {
           disabled={!volumeSearch}
         />
       </Group>
-      <Switch
-        label={t`Approve volume releases automatically`}
-        description={t`Grabs a proposed digital release within the size ceiling on its own when the only reasons to wait are a missing volume range, chapters you don't have, or the auto-grab size. Anything Maki is unsure about still waits for you. Replaced files go to the trash. Checked on the next daily run or Search now.`}
-        checked={autoApprove}
-        onChange={(e) => setAutoApprove(e.currentTarget.checked)}
-        disabled={!volumeSearch}
-        mt="md"
-        mb="sm"
-      />
-      <SettingsNumberInput
-        label={t`Automatic approval size ceiling (MB)`}
-        description={t`Never approve a release larger than this on your behalf. The 12288 MB default is about 50 digital volumes.`}
-        min={100}
-        max={204800}
-        decimalScale={0}
-        value={autoApproveMb}
-        onChange={setAutoApproveMb}
-        disabled={!volumeSearch || !autoApprove}
-      />
+      <div id="setting-auto-approve-volumes" {...autoApproveMark}>
+        <Switch
+          label={
+            <>
+              {t`Approve volume releases automatically`}
+              <NewSettingPill id="auto-approve-volumes" />
+            </>
+          }
+          description={t`Grabs a proposed digital release within the size ceiling on its own when the only reasons to wait are a missing volume range, chapters you don't have, or the auto-grab size. Anything Maki is unsure about still waits for you. Replaced files go to the trash. Checked on the next daily run or Search now.`}
+          checked={autoApprove}
+          onChange={(e) => setAutoApprove(e.currentTarget.checked)}
+          disabled={!volumeSearch}
+          mt="md"
+          mb="sm"
+        />
+        <SettingsNumberInput
+          label={t`Automatic approval size ceiling (MB)`}
+          description={t`Never approve a release larger than this on your behalf. The 12288 MB default is about 50 digital volumes.`}
+          min={100}
+          max={204800}
+          decimalScale={0}
+          value={autoApproveMb}
+          onChange={setAutoApproveMb}
+          disabled={!volumeSearch || !autoApprove}
+        />
+      </div>
     </SettingsSection>
   )
 }

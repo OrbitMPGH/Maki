@@ -649,6 +649,36 @@ msgstr "이름이 필요합니다"
 msgid "error.discoverFilters.tooMany"
 msgstr "저장된 필터는 최대 {max}개까지 만들 수 있습니다"
 
+#. English: That credit notice no longer exists
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.noticeNotFound"
+msgstr ""
+
+#. English: A group name can be at most 100 characters
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.nameTooLong"
+msgstr ""
+
+#. English: Enter a group name
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.nameRequired"
+msgstr ""
+
+#. English: A site ad cannot name a release group
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.siteHasNoGroup"
+msgstr ""
+
+#. English: That value is not one Maki knows
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.invalidValue"
+msgstr ""
+
+#. English: Pick at least one credit notice
+#: src/Maki.Api/Services/CreditGroupsService.cs
+msgid "error.creditGroups.noNotices"
+msgstr ""
+
 #. English: Name is required
 #: src/Maki.Api/Controllers/CustomRailsController.cs
 #, fuzzy
@@ -1498,11 +1528,17 @@ msgstr "URL은 전체 http:// 또는 https:// 주소여야 합니다"
 msgid "error.notifications.webhookUrlRequired"
 msgstr "웹훅 URL이 필요합니다"
 
-#. English: Choose WebP, AVIF or off
+#. English: Choose WebP, AVIF, JPEG XL or off
 #: src/Maki.Api/Controllers/PageConversionController.cs
 #, fuzzy
 msgid "error.pageConversion.formatInvalid"
 msgstr "WebP, AVIF 또는 끄기 중에서 고르세요"
+
+#. A plan or rule picked JPEG XL, but libjxl did not load beside Maki (missing or older than 0.11).
+#. English: JPEG XL needs libjxl, which this install does not have. Choose WebP or AVIF
+#: src/Maki.Api/Controllers/PageConversionController.cs
+msgid "error.pageConversion.jpegXlUnavailable"
+msgstr ""
 
 #. Starting the library pass while page conversion is switched off.
 #. English: Choose a format for page conversion first
@@ -3603,6 +3639,17 @@ msgstr "FlareSolverr가 응답하지 않았습니다"
 msgid "error.nameParsing.unknownLanguage"
 msgstr "Maki에 \"{language}\" 언어의 권 또는 챕터 표기가 없습니다"
 
+#. "<" and ">" are the literal optional block markers in a naming format; keep them as is.
+#. English: Format needs at least one token outside a <...> block, or a name could come out empty
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.allTokensOptional"
+msgstr ""
+
+#. English: Format has a "<" or ">" inside a token
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.angleInsideToken"
+msgstr ""
+
 #. {token} is the offending {Token Name} as the caller wrote it, braces included.
 #. English: Format has a "{" inside a token
 #: src/Maki.Core/Naming/NamingFormatter.cs
@@ -3646,6 +3693,12 @@ msgstr "형식은 비워 둘 수 없습니다"
 msgid "error.naming.formatInvalid"
 msgstr "{field}: {reason}"
 
+#. "<" and ">" are the literal optional block markers in a naming format; keep them as is.
+#. English: Format has a <...> block inside another one
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.nestedOptional"
+msgstr ""
+
 #. English: {token} does not take a padding pattern
 #: src/Maki.Core/Naming/NamingFormatter.cs
 #, fuzzy
@@ -3657,6 +3710,12 @@ msgstr "{token}에는 자릿수 채우기 패턴을 사용할 수 없습니다"
 #, fuzzy
 msgid "error.naming.noTokens"
 msgstr "형식에 토큰을 하나 이상 포함해야 합니다. 그렇지 않으면 모든 시리즈의 이름이 같아집니다"
+
+#. {block} is the offending optional block as the caller wrote it, markers included, e.g. "<(x)>".
+#. English: {block} has no token in it, so it would always show
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.optionalWithoutToken"
+msgstr ""
 
 #. {token} is the padding pattern's example, e.g. "{Chapter Number:000}", spelled exactly as the
 #. caller wrote the token name.
@@ -3678,11 +3737,21 @@ msgstr "형식에 경로 구분자를 사용할 수 없습니다. 이름은 폴�
 msgid "error.naming.unknownToken"
 msgstr "알 수 없는 토큰: {token}"
 
+#. English: Format has a ">" with no matching "<"
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.unmatchedCloseAngle"
+msgstr ""
+
 #. English: Format has a "}" with no matching "{"
 #: src/Maki.Core/Naming/NamingFormatter.cs
 #, fuzzy
 msgid "error.naming.unmatchedCloseBrace"
 msgstr "형식에 짝이 맞는 \"{\"가 없는 \"}\"가 있습니다"
+
+#. English: Format has a "<" with no matching ">"
+#: src/Maki.Core/Naming/NamingFormatter.cs
+msgid "error.naming.unmatchedOpenAngle"
+msgstr ""
 
 #. English: Format has a "{" with no matching "}"
 #: src/Maki.Core/Naming/NamingFormatter.cs

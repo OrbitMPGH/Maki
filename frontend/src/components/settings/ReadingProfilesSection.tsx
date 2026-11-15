@@ -19,6 +19,8 @@ import { ConfirmDialog } from '../ui/ConfirmDialog'
 import { TagChip } from '../ui/TagChip'
 import { SettingsRow, SettingsRows, SettingsRowsBlock } from './SettingsRow'
 import { SettingsSection } from '../../pages/settings/SettingsSection'
+import { useNewControlMark } from '../../pages/settings/newSettings'
+import { NewSettingPill } from './NewSettingPill'
 import { useLabel } from '../../i18n-context'
 import { Trans, useLingui } from '@lingui/react/macro'
 import { msg, t as now } from '@lingui/core/macro'
@@ -85,6 +87,7 @@ export function ReadingProfilesSection() {
   const { data: profiles } = useReadingProfiles()
   const create = useCreateReadingProfile()
   const [creating, setCreating] = useState(false)
+  const mark = useNewControlMark('skip-recap', 'hide-credit-pages', 'progress-rail', 'page-backgrounds', 'tap-zone-layouts')
 
   return (
     <SettingsSection
@@ -127,12 +130,14 @@ export function ReadingProfilesSection() {
         </SettingsRowsBlock>
       )}
 
-      <SettingsRows>
-        <DefaultRow />
-        {(profiles ?? []).map((profile) => (
-          <ProfileRow key={profile.id} profile={profile} all={profiles ?? []} />
-        ))}
-      </SettingsRows>
+      <div {...mark}>
+        <SettingsRows>
+          <DefaultRow />
+          {(profiles ?? []).map((profile) => (
+            <ProfileRow key={profile.id} profile={profile} all={profiles ?? []} />
+          ))}
+        </SettingsRows>
+      </div>
     </SettingsSection>
   )
 }
@@ -395,7 +400,12 @@ function ProfileEditor({
 
       <Group grow align="flex-start">
         <Select
-          label={t`Background`}
+          label={
+            <>
+              {t`Background`}
+              <NewSettingPill id="page-backgrounds" />
+            </>
+          }
           allowDeselect={false}
           value={backgroundChoice(prefs.background)}
           onChange={(value) => set({ background: BACKGROUNDS[(value as BackgroundChoice | null) ?? 'dark'] })}
@@ -549,28 +559,48 @@ function ProfileEditor({
       />
       <Switch
         size="sm"
-        label={t`Skip the recap of the previous chapter`}
+        label={
+          <>
+            {t`Skip the recap of the previous chapter`}
+            <NewSettingPill id="skip-recap" />
+          </>
+        }
         description={t`Continuous layout only. Off shows a Skip recap button instead.`}
         checked={prefs.autoSkipRecap}
         onChange={(e) => set({ autoSkipRecap: e.currentTarget.checked })}
       />
       <Switch
         size="sm"
-        label={t`Hide credit pages`}
+        label={
+          <>
+            {t`Hide credit pages`}
+            <NewSettingPill id="hide-credit-pages" />
+          </>
+        }
         description={t`Leave out credit and recruitment pages that repeat at the start or end of chapters.`}
         checked={prefs.hideCredits}
         onChange={(e) => set({ hideCredits: e.currentTarget.checked })}
       />
       <Switch
         size="sm"
-        label={t`Progress rail`}
+        label={
+          <>
+            {t`Progress rail`}
+            <NewSettingPill id="progress-rail" />
+          </>
+        }
         description={t`Continuous layout only. A bar down the right edge you can drag to move through the chapter.`}
         checked={prefs.progressRail}
         onChange={(e) => set({ progressRail: e.currentTarget.checked })}
       />
       <Switch
         size="sm"
-        label={t`Tap zones`}
+        label={
+          <>
+            {t`Tap zones`}
+            <NewSettingPill id="tap-zone-layouts" />
+          </>
+        }
         description={t`Paged layouts turn the page from the left and right edges. Continuous scrolls from the top and bottom.`}
         checked={prefs.tapZones}
         onChange={(e) => set({ tapZones: e.currentTarget.checked })}

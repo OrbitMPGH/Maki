@@ -289,6 +289,32 @@ public sealed class KomgaControllerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_jpeg_xl_page_is_listed_and_served_as_webp()
+    {
+        if (!Maki.Core.Images.JpegXl.IsAvailable && Environment.GetEnvironmentVariable("MAKI_REQUIRE_LIBJXL") != "1")
+        {
+            return;
+        }
+
+        var seeded = SeedImageSeries("Jxl", ("001.jxl", ReaderJpegXlPageTests.JxlPage(64, 48)));
+        var (userId, _) = SeedReader();
+        var controller = Controller(userId);
+        var book = seeded.ChapterId.ToString();
+
+        var pages = Assert.IsType<List<KomgaPageInfo>>(Ok(await controller.Pages(book, default)));
+        Assert.Equal("image/webp", Assert.Single(pages).MediaType);
+
+        var page = Assert.IsType<FileContentResult>(await controller.Page(book, 1, null, default));
+        Assert.Equal("image/webp", page.ContentType);
+        Assert.Equal((64, 48, Maki.Core.Images.ImageFormat.Webp), Header(page.FileContents));
+        Assert.EndsWith("-webp\"", page.EntityTag!.Tag.ToString());
+
+        var jpeg = Assert.IsType<FileContentResult>(await controller.Page(book, 1, "jpeg", default));
+        Assert.Equal((64, 48, Maki.Core.Images.ImageFormat.Jpeg), Header(jpeg.FileContents));
+        Assert.EndsWith("-jpeg\"", jpeg.EntityTag!.Tag.ToString());
+    }
+
+    [Fact]
     public async Task An_unknown_conversion_is_refused_and_one_maki_cannot_decode_is_a_415()
     {
         var seeded = SeedSeries("Unconvertible", 1m);

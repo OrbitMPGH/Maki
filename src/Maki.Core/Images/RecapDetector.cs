@@ -72,10 +72,10 @@ public static class RecapDetector
     /// <summary>Matching rows a recap needs. Chapters without one scored at most 16.</summary>
     private const int MinScore = 20;
 
-    /// <summary>Shrinks a page image to <see cref="Width"/> columns of grey. Throws when libvips cannot read it.</summary>
+    /// <summary>Shrinks a page image to <see cref="Width"/> columns of grey. Throws when it does not decode.</summary>
     public static GreyPage Shrink(byte[] image)
     {
-        using var thumb = VipsImage.ThumbnailBuffer(image, Width, height: 10_000_000, size: Enums.Size.Both);
+        using var thumb = ImageCodec.Thumbnail(image, Width, 10_000_000, Enums.Size.Both);
         using var srgb = thumb.Colourspace(Enums.Interpretation.Srgb);
         using var grey = srgb.Colourspace(Enums.Interpretation.Bw);
         using var flat = grey.HasAlpha() ? grey.Flatten(background: [255]) : grey.Copy();

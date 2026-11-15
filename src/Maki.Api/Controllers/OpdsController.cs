@@ -287,7 +287,10 @@ public class OpdsController(
         }
 
         var entry = slice.Pages[slice.StartPage + page];
-        var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-{slice.StartPage + page}\"");
+        // OPDS readers (KOReader, Panels, Chunky) mostly cannot decode JPEG XL and never say, so it always goes out as WebP.
+        var jpegXl = JpegXlPages.IsJpegXl(entry);
+        var etag = new EntityTagHeaderValue(
+            $"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-{slice.StartPage + page}{JpegXlPages.Representation(entry, false).ETagSuffix}\"");
         if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
         {
             return StatusCode(StatusCodes.Status304NotModified);
@@ -314,6 +317,12 @@ public class OpdsController(
         // Revalidated rather than immutable: the page URL stays the same across a re-download, so
         // only the ETag can tell a reader its cached copy is stale. The 304 above keeps that cheap.
         Response.Headers.CacheControl = "private, no-cache";
+
+        if (jpegXl)
+        {
+            var (bytes, type) = await JpegXlPages.TranscodeAsync(stream, ct);
+            return File(bytes, type, lastModified: null, entityTag: etag);
+        }
 
         return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
     }

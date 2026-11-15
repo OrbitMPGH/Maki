@@ -218,8 +218,10 @@ public static class ArchiveHealthAnalyzer
                     catch (Exception ex) when (ex is not (OperationCanceledException or OutOfMemoryException))
                     {
                         // libheif does not cover every AVIF a browser shows, so an unreadable one
-                        // says more about the decoder than about the file.
-                        if (Path.GetExtension(name).Equals(".avif", StringComparison.OrdinalIgnoreCase))
+                        // says more about the decoder than about the file; so does a JPEG XL page on
+                        // an install without libjxl.
+                        if (Path.GetExtension(name).Equals(".avif", StringComparison.OrdinalIgnoreCase) ||
+                            (!JpegXl.IsAvailable && JpegXl.HasSignature(bytes)))
                             incomplete.Add("health.finding.unsupportedDecoder");
                         else problems.Add(new("damagedImage", "error", "health.finding.cannotRead", Params(new { name })));
                         fingerprints.Add(new(name, rawHash, 0, 0));

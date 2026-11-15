@@ -126,21 +126,25 @@ public class HealthScanService(MakiDbContext db)
                     }
                     if (trackedFile == null && trackedFullPaths.Any(t => t.Key != root.Id && t.Value.Contains(absolute))) continue;
                     if (!seen.Add(absolute)) continue;
-                    if (scan.SeriesId != null && trackedFile?.SeriesId != scan.SeriesId) continue;
                     var sameFile = knownByKey.GetValueOrDefault(key);
                     var file = sameFile?[0];
-                    // A row stored with the other host's separator is one this host cannot open.
-                    if (sameFile is [var only] && !OperatingSystem.IsWindows() && only.RelativePath.Contains('\\'))
-                        only.RelativePath = relative;
-                    if (selected.Length > 0 && (file == null || !selected.Contains(file.Id))) continue;
-                    // Gone from disk with no record pointing at it: Maki deleted it itself (relink,
-                    // chapter delete, rename) or the owner did. There is nothing left to report on.
-                    if (trackedFile == null && file != null && !File.Exists(absolute))
+                    // Gone from disk with no record pointing at it: Maki deleted or renamed it itself
+                    // (relink, chapter delete, rename) or the owner did. There is nothing left to report
+                    // on. A series scan retires its own such rows too, or the file verified at its new
+                    // path read as a duplicate of its old row.
+                    if (trackedFile == null && file != null && !File.Exists(absolute)
+                        && (scan.SeriesId == null || file.SeriesId == scan.SeriesId)
+                        && (selected.Length == 0 || selected.Contains(file.Id)))
                     {
                         file.Removed = true;
                         retired.Add(file.Id);
                         continue;
                     }
+                    if (scan.SeriesId != null && trackedFile?.SeriesId != scan.SeriesId) continue;
+                    // A row stored with the other host's separator is one this host cannot open.
+                    if (sameFile is [var only] && !OperatingSystem.IsWindows() && only.RelativePath.Contains('\\'))
+                        only.RelativePath = relative;
+                    if (selected.Length > 0 && (file == null || !selected.Contains(file.Id))) continue;
                     if (file == null)
                     {
                         file = new HealthFile { RootFolderId = root.Id, RelativePath = relative };

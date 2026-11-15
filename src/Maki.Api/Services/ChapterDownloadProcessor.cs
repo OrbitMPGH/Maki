@@ -406,13 +406,15 @@ public class ChapterDownloadProcessor(
                     RelativePath = relativePath,
                     Size = new FileInfo(finalPath).Length,
                     SourceName = mapping.SourceName,
-                    DateAdded = DateTime.UtcNow
+                    DateAdded = DateTime.UtcNow,
+                    NamedByMaki = true
                 };
                 db.ChapterFiles.Add(chapterFile);
             }
             else
             {
                 chapterFile.RelativePath = relativePath;
+                chapterFile.NamedByMaki = true;
                 chapterFile.Size = new FileInfo(finalPath).Length;
                 chapterFile.SourceName = mapping.SourceName;
                 chapterFile.DateAdded = DateTime.UtcNow;

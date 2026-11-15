@@ -35,6 +35,15 @@ export const Loading: Story = {
   args: { loading: true },
 }
 
+export const DescriptionOnly: Story = {
+  args: {
+    title: 'Rename every series',
+    description: 'Renames the folders and files of all 124 series on disk to match the formats above. This can take a while.',
+    children: undefined,
+    confirmLabel: 'Rename all',
+  },
+}
+
 export const WithDetails: Story = {
   args: {
     description: 'Removes "Favourites" from 14 series. The series themselves stay in your library.',

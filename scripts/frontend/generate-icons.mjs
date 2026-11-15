@@ -38,6 +38,7 @@ const ICONS = {
   IconArrowUp: 'arrow-up',
   IconArrowUpRight: 'arrow-up-right',
   IconArrowsMaximize: 'arrows-out',
+  IconArrowsMerge: 'arrows-merge',
   IconArrowsShuffle: 'shuffle',
   IconBan: 'prohibit',
   IconBell: 'bell',

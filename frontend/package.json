@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "check:secure-context": "node ../scripts/frontend/check-secure-context.mjs",
+    "settings:stamp-since": "node ../scripts/frontend/stamp-settings-since.mjs",
     "icons": "node ../scripts/frontend/generate-icons.mjs",
     "preview": "vite preview",
     "postinstall": "patch-package",

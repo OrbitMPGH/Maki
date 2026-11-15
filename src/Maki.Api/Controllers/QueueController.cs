@@ -52,8 +52,11 @@ public class QueueController(
         if (seriesId is { } onlySeries) query = query.Where(q => q.SeriesId == onlySeries);
 
         var total = await query.CountAsync(ct);
+        // A parked import sorts first: nothing settles it but the user, and past the first page its
+        // row (and the review it opens) would never be drawn while the badge still counts it.
         var rows = await Rows(query
-                .OrderBy(q => q.Priority)
+                .OrderBy(q => q.Status == QueueStatus.AwaitingImport ? 0 : 1)
+                .ThenBy(q => q.Priority)
                 .ThenBy(q => q.SortOrder)
                 .ThenBy(q => q.QueuedAt)
                 .Skip((page - 1) * pageSize)

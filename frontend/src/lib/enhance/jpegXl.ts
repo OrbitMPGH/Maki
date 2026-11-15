@@ -25,6 +25,14 @@ export function jpegXlSupported(): Promise<boolean> {
   return pending
 }
 
+/**
+ * An Accept header asking for JPEG XL where this browser decodes it. A bare `fetch()` accepts anything, which
+ * the server answers for a stored JPEG XL page with WebP made on the fly, as it does for Edge.
+ */
+export async function jpegXlAccept(): Promise<Record<string, string>> {
+  return (await jpegXlSupported()) ? { Accept: 'image/jxl,image/avif,image/webp,image/*;q=0.9,*/*;q=0.8' } : {}
+}
+
 /** The answer once the probe has settled, or null before that. */
 export function jpegXlSupportedNow(): boolean | null {
   return known

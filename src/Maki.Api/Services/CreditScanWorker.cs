@@ -479,8 +479,11 @@ public sealed class CreditScanWorker(
         using (var scope = scopes.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<MakiDbContext>();
+            // A chapter too short to search is settled without one, so requeueing it would loop forever.
+            // PageCount 0 is a row from before it was stored; one pass writes it.
             rows = await db.ChapterCredits.AsNoTracking().IgnoreQueryFilters()
                 .Where(r => r.BankSeen < newest && !r.Skipped && !r.Failed && r.EdgeKey != "" &&
+                            (r.PageCount == 0 || r.PageCount >= CreditDetector.MinPages) &&
                             r.DetectorVersion == CreditDetector.Version && (r.HeadPages == 0 && r.HeadOffset == 0 || r.TailPages == 0))
                 .OrderBy(r => r.ChapterId)
                 .Take(BankBatch)
@@ -502,11 +505,20 @@ public sealed class CreditScanWorker(
                 continue;
             }
 
-            // Only edges the bank would be asked about: nothing hidden and nothing repetition proposed. An
-            // entry from the chapter's own neighbours may match here; the full search leaves those out.
+            // Only edges the bank would be asked about: nothing hidden and nothing repetition proposed. A tail
+            // whose only repeated region is part of its last page still asks the bank (ReaderCreditsCache), so it
+            // stays open as it was before tails had partials, cut or not. An entry from the chapter's own
+            // neighbours may match here; the full search leaves those out.
             var pageCount = row.PageCount > 0 ? row.PageCount : CreditDetector.MinPages * 3;
             var repeated = CreditStore.Candidates(row).Where(c => !c.FromBank).ToList();
-            bool Open(bool tail) => !repeated.Any(c => c.Tail == tail) && (tail ? row.TailPages == 0 : row is { HeadPages: 0, HeadOffset: 0 });
+            bool Open(bool tail)
+            {
+                var edge = repeated.Where(c => c.Tail == tail).Select(c => new CreditCandidate(c.Page, c.Share, c.Colour)).ToList();
+                return tail
+                    ? row.TailPages == 0 && (edge.Count == 0 || ReaderCreditsCache.OnlyPartial(edge))
+                    : edge.Count == 0 && row is { HeadPages: 0, HeadOffset: 0 };
+            }
+
             bool Eligible(CreditBank.Entry e) => e.SourceChapterId != row.ChapterId;
             var matched =
                 (Open(false) && await bank.FindAsync(pageCount, edges, tail: false, entries, Eligible, row.BankSeen, ct) is not null) ||

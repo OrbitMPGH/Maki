@@ -157,7 +157,7 @@ export default function ReaderToolbar({
   /** The pages the reader shows when credit pages are left out: the first one's index and how many. */
   pageWindow?: { first: number; count: number }
   /** Credit pages left out of this chapter, and a way to show them, for the settings panel. */
-  hiddenCredits?: { count: number; onShow: () => void } | null
+  hiddenCredits?: { count: number; cut: boolean; onShow: () => void } | null
 }) {
   const { t } = useLingui()
 

@@ -148,6 +148,7 @@ public class SeriesRenameServiceTests : IDisposable
         Assert.Equal("Berserk (1989)", db.Series.Single(s => s.Id == id).FolderName);
         Assert.All(db.ChapterFiles.Where(f => f.SeriesId == id).ToList(),
             f => Assert.StartsWith("Berserk (1989)", f.RelativePath));
+        Assert.All(db.ChapterFiles.Where(f => f.SeriesId == id).ToList(), f => Assert.False(f.NamedByMaki));
     }
 
     [Fact]
@@ -163,8 +164,9 @@ public class SeriesRenameServiceTests : IDisposable
         Assert.False(File.Exists(Path.Combine(_root, "Berserk (1989)", "Berserk Vol.3 Ch.24.cbz")));
 
         using var db = _db.NewContext();
-        Assert.Equal(Path.Combine("Berserk (1989)", "Berserk - 024.cbz"),
-            db.ChapterFiles.Single(f => f.SeriesId == id).RelativePath);
+        var file = db.ChapterFiles.Single(f => f.SeriesId == id);
+        Assert.Equal(Path.Combine("Berserk (1989)", "Berserk - 024.cbz"), file.RelativePath);
+        Assert.True(file.NamedByMaki);
     }
 
     [Fact]
@@ -694,5 +696,86 @@ public class SeriesRenameServiceTests : IDisposable
         Assert.NotNull(plan);
         var file = Assert.Single(plan!.Files);
         Assert.EndsWith(".pdf", file.To);
+    }
+
+    [Fact]
+    public async Task Rename_carries_the_health_inventory_to_the_new_paths()
+    {
+        var id = SeedSeries("Berserk", "Berserk", chapters: (24m, 3, "en"));
+        File.WriteAllText(Path.Combine(_root, "Berserk", "extra.cbz"), "cbz");
+        int linkedId, extraId;
+        using (var db = _db.NewContext())
+        {
+            var file = db.ChapterFiles.Single(f => f.SeriesId == id);
+            var rootId = db.Series.Single(s => s.Id == id).RootFolderId;
+            var linked = new HealthFile { RootFolderId = rootId, SeriesId = id, ChapterFileId = file.Id, RelativePath = file.RelativePath, ContentHash = "H" };
+            var extra = new HealthFile { RootFolderId = rootId, RelativePath = Path.Combine("Berserk", "extra.cbz"), ContentHash = "E" };
+            db.HealthFiles.AddRange(linked, extra);
+            db.SaveChanges();
+            (linkedId, extraId) = (linked.Id, extra.Id);
+        }
+
+        var result = await Service().RenameAsync(id, CancellationToken.None);
+
+        Assert.True(result.Applied);
+        using var check = _db.NewContext();
+        Assert.Equal(check.ChapterFiles.Single(f => f.SeriesId == id).RelativePath,
+            check.HealthFiles.Single(f => f.Id == linkedId).RelativePath);
+        Assert.Equal(Path.Combine("Berserk (1989)", "extra.cbz"), check.HealthFiles.Single(f => f.Id == extraId).RelativePath);
+        Assert.DoesNotContain(check.HealthFiles, f => f.Removed);
+    }
+
+    [Fact]
+    public async Task Rename_retires_the_old_row_when_the_new_path_already_has_one()
+    {
+        var id = SeedSeries("Berserk", "Berserk", chapters: (24m, 3, "en"));
+        int oldId, occupantId, fileId;
+        using (var db = _db.NewContext())
+        {
+            var file = db.ChapterFiles.Single(f => f.SeriesId == id);
+            fileId = file.Id;
+            var rootId = db.Series.Single(s => s.Id == id).RootFolderId;
+            var old = new HealthFile { RootFolderId = rootId, SeriesId = id, ChapterFileId = file.Id, RelativePath = file.RelativePath, ContentHash = "H" };
+            var occupant = new HealthFile { RootFolderId = rootId, RelativePath = Path.Combine("Berserk (1989)", "Berserk Vol.3 Ch.24.cbz"), ContentHash = "H" };
+            db.HealthFiles.AddRange(old, occupant);
+            db.SaveChanges();
+            db.HealthFindings.AddRange(
+                new HealthFinding { FileId = old.Id, Version = old.Version, Kind = "duplicate" },
+                new HealthFinding { FileId = occupant.Id, Version = occupant.Version, Kind = "duplicate" });
+            db.SaveChanges();
+            (oldId, occupantId) = (old.Id, occupant.Id);
+        }
+
+        var result = await Service().RenameAsync(id, CancellationToken.None);
+
+        Assert.True(result.Applied);
+        using var check = _db.NewContext();
+        Assert.True(check.HealthFiles.Single(f => f.Id == oldId).Removed);
+        Assert.Equal(fileId, check.HealthFiles.Single(f => f.Id == occupantId).ChapterFileId);
+        Assert.All(check.HealthFindings.ToList(), f => Assert.Equal("resolved", f.State));
+    }
+
+    [Fact]
+    public async Task A_folder_rename_carries_files_that_back_no_chapter()
+    {
+        var id = SeedSeries("Berserk", "Berserk", chapters: (24m, 3, "en"));
+        File.WriteAllText(Path.Combine(_root, "Berserk", "Berserk - Extra 1.cbz"), "cbz");
+        int looseId;
+        using (var db = _db.NewContext())
+        {
+            var loose = new ChapterFile { SeriesId = id, RelativePath = Path.Combine("Berserk", "Berserk - Extra 1.cbz"), Size = 3, SourceName = "import" };
+            db.ChapterFiles.Add(loose);
+            db.SaveChanges();
+            looseId = loose.Id;
+        }
+
+        var result = await Service().RenameAsync(id, CancellationToken.None);
+
+        Assert.True(result.Applied);
+        Assert.True(File.Exists(Path.Combine(_root, "Berserk (1989)", "Berserk - Extra 1.cbz")));
+        using var check = _db.NewContext();
+        var row = check.ChapterFiles.Single(f => f.Id == looseId);
+        Assert.Equal(Path.Combine("Berserk (1989)", "Berserk - Extra 1.cbz"), row.RelativePath);
+        Assert.False(row.NamedByMaki);
     }
 }

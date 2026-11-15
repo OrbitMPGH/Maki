@@ -24,7 +24,7 @@ public static class CbzReader
 {
     public static readonly IReadOnlySet<string> ImageExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
-        ".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".bmp"
+        ".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".bmp", ".jxl"
     };
 
     /// <summary>An image page, by extension, unless <see cref="IsMacMetadata"/> says it is a stub.</summary>
@@ -247,6 +247,7 @@ public static class CbzReader
         ".gif" => "image/gif",
         ".avif" => "image/avif",
         ".bmp" => "image/bmp",
+        ".jxl" => "image/jxl",
         _ => "image/jpeg"
     };
 

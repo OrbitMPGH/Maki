@@ -458,7 +458,12 @@ public class KomgaController(
         }
 
         var entry = slice.Pages[slice.StartPage + index];
-        var suffix = target switch { TranscodeFormat.Jpeg => "-jpeg", TranscodeFormat.Png => "-png", _ => "" };
+        var suffix = target switch
+        {
+            TranscodeFormat.Jpeg => "-jpeg",
+            TranscodeFormat.Png => "-png",
+            _ => JpegXlPages.Representation(entry, false).ETagSuffix
+        };
         var etag = new EntityTagHeaderValue($"\"{slice.ChapterFileId}-{slice.ArchiveVersion}-{slice.StartPage + index}{suffix}\"");
         if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
         {
@@ -489,6 +494,13 @@ public class KomgaController(
 
         if (target is not { } format)
         {
+            // Pages lists a JPEG XL page as WebP: most Komga clients cannot decode JPEG XL.
+            if (JpegXlPages.IsJpegXl(entry))
+            {
+                var (bytes, type) = await JpegXlPages.TranscodeAsync(stream, ct);
+                return File(bytes, type, lastModified: null, entityTag: etag);
+            }
+
             return File(stream, CbzReader.ContentType(entry), lastModified: null, entityTag: etag);
         }
 

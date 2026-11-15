@@ -7,7 +7,8 @@ public enum SplitEncoding
     Png,
     Webp,
     LosslessWebp,
-    Avif
+    Avif,
+    Jxl
 }
 
 /// <summary>
@@ -150,9 +151,9 @@ public static class TallPageSplitter
     /// The pieces of a strip taller than the settings' split height, top to bottom, or null when the page
     /// stays whole. Where the plan would convert the page the pieces are in that format, unless together
     /// they come out larger than the page; otherwise, and then, each piece is in the page's own format:
-    /// JPEG at <see cref="JpegQuality"/>, PNG, lossless WebP for a lossless WebP, lossy WebP and AVIF at
-    /// the plan's stop (High when the plan is Lossless). Throws <see cref="NetVips.VipsException"/> when
-    /// the page does not decode cleanly.
+    /// JPEG at <see cref="JpegQuality"/>, PNG, lossless WebP for a lossless WebP, lossy WebP, AVIF and
+    /// JPEG XL at the plan's stop (High when the plan is Lossless). Throws <see cref="NetVips.VipsException"/>
+    /// when the page does not decode cleanly.
     /// </summary>
     public static IReadOnlyList<PageConversion.Page>? Split(byte[] bytes, string extension, PageConversionSettings settings)
     {
@@ -162,7 +163,7 @@ public static class TallPageSplitter
         }
 
         var format = PageConversion.FormatOf(bytes, extension);
-        if (format is not ("jpg" or "png" or "webp" or "avif") ||
+        if (format is not ("jpg" or "png" or "webp" or "avif" or "jxl") ||
             (format == "png" && PageConversion.IsAnimatedPng(bytes)) ||
             ImageCodec.TryShape(bytes) is not { } shape || !IsTall(shape.Width, shape.Height, maxHeight))
         {
@@ -181,61 +182,70 @@ public static class TallPageSplitter
             return null;
         }
 
+        // The same check that decides sharp YUV decides whether the page takes the colour target.
         var sharpYuv = ImageCodec.SharpYuvHelps(image);
-        List<PageConversion.Page> Encode(SplitEncoding encoding, int quality, string pieceExtension)
+        var colour = settings.ByColour && sharpYuv;
+        var target = settings.Target(colour);
+        List<PageConversion.Page> Encode(SplitEncoding encoding, int quality, float distance, string pieceExtension)
         {
             var pieces = new List<PageConversion.Page>(cuts.Count + 1);
             var top = 0;
             foreach (var bottom in cuts.Append(image.Height))
             {
                 using var piece = image.Crop(0, top, image.Width, bottom - top);
-                pieces.Add(new PageConversion.Page(ImageCodec.EncodePiece(piece, encoding, quality, sharpYuv),
-                    pieceExtension, format, null));
+                pieces.Add(new PageConversion.Page(ImageCodec.EncodePiece(piece, encoding, quality, sharpYuv, distance),
+                    pieceExtension, format, null, colour));
                 top = bottom;
             }
 
             return pieces;
         }
 
-        if (!settings.SplitOnly && PageConversion.EncodingFor(bytes, extension, settings) is { } converted)
+        if (!settings.SplitOnly && PageConversion.EncodingFor(bytes, extension, settings, colour) is { } converted)
         {
-            var quality = converted == PageEncoding.LosslessWebp ? 100 : PageConversionSettings.Quality(settings.Format, settings.Stop);
+            var (quality, distance) = PageConversion.LevelOf(converted, target.Stop);
             var pieces = Encode(converted switch
             {
                 PageEncoding.Avif => SplitEncoding.Avif,
                 PageEncoding.LosslessWebp => SplitEncoding.LosslessWebp,
+                PageEncoding.Jxl => SplitEncoding.Jxl,
                 _ => SplitEncoding.Webp
-            }, quality, converted == PageEncoding.Avif ? ".avif" : ".webp");
+            }, quality, distance, PageConversion.ExtensionOf(converted));
             if (pieces.Sum(p => (long)p.Bytes.Length) <= bytes.Length)
             {
                 return pieces;
             }
         }
 
-        var (own, ownQuality) = OwnEncoding(format, bytes, settings);
-        return Encode(own, ownQuality, extension);
+        var (own, ownQuality, ownDistance) = OwnEncoding(format, bytes, target);
+        return Encode(own, ownQuality, ownDistance, extension);
     }
 
-    /// <summary>How a piece is written in the page's own format.</summary>
-    internal static (SplitEncoding Encoding, int Quality) OwnEncoding(string format, byte[] bytes, PageConversionSettings settings)
+    /// <summary>
+    /// How a piece is written in the page's own format, at the stop of the target the page takes. A JPEG XL
+    /// page's pieces stay JPEG XL even without libjxl: the page did not decode then, so it is never split.
+    /// </summary>
+    internal static (SplitEncoding Encoding, int Quality, float Distance) OwnEncoding(string format, byte[] bytes, PageTarget target)
     {
-        var stop = settings.Stop == PageConversionStop.Lossless ? PageConversionStop.High : settings.Stop;
+        var stop = target.Stop == PageConversionStop.Lossless ? PageConversionStop.High : target.Stop;
         return format switch
         {
-            "jpg" => (SplitEncoding.Jpeg, JpegQuality),
-            "png" => (SplitEncoding.Png, 100),
-            "webp" when IsLosslessWebp(bytes) => (SplitEncoding.LosslessWebp, 100),
-            "webp" => (SplitEncoding.Webp, PageConversionSettings.Quality(PageConversionFormat.Webp, stop)),
-            _ => (SplitEncoding.Avif, PageConversionSettings.Quality(PageConversionFormat.Avif, stop))
+            "jpg" => (SplitEncoding.Jpeg, JpegQuality, 0),
+            "png" => (SplitEncoding.Png, 100, 0),
+            "webp" when IsLosslessWebp(bytes) => (SplitEncoding.LosslessWebp, 100, 0),
+            "webp" => (SplitEncoding.Webp, PageConversionSettings.Quality(PageConversionFormat.Webp, stop), 0),
+            "jxl" => (SplitEncoding.Jxl, 0, PageConversionSettings.Distance(stop)),
+            _ => (SplitEncoding.Avif, PageConversionSettings.Quality(PageConversionFormat.Avif, stop), 0)
         };
     }
 
     /// <summary>What a split of this page weighs on the conversion gate: the encoding its pieces most likely take.</summary>
-    internal static PageEncoding WeightEncoding(byte[] bytes, string extension, PageConversionSettings settings) =>
-        (settings.SplitOnly ? null : PageConversion.EncodingFor(bytes, extension, settings)) ??
-        OwnEncoding(PageConversion.FormatOf(bytes, extension), bytes, settings).Encoding switch
+    internal static PageEncoding WeightEncoding(byte[] bytes, string extension, PageConversionSettings settings, bool colour) =>
+        (settings.SplitOnly ? null : PageConversion.EncodingFor(bytes, extension, settings, colour)) ??
+        OwnEncoding(PageConversion.FormatOf(bytes, extension), bytes, settings.Target(colour)).Encoding switch
         {
             SplitEncoding.Avif => PageEncoding.Avif,
+            SplitEncoding.Jxl => PageEncoding.Jxl,
             SplitEncoding.Png or SplitEncoding.LosslessWebp => PageEncoding.LosslessWebp,
             _ => PageEncoding.Webp
         };

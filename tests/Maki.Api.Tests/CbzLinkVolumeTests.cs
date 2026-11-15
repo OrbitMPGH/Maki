@@ -407,4 +407,85 @@ public class CbzLinkVolumeTests : IDisposable
         Assert.All(chapters.Where(c => c.Number is 1 or 2 or 3), c => Assert.NotNull(c.ChapterFileId));
         Assert.Equal(released, chapters.Single(c => c.Number == 2.1m).ChapterFileId is null);
     }
+
+    // Issue 198: the files hold 1-4, 5-8 and 9-12, while the source puts 1-6 in volume 1 and 7-12 in
+    // volume 2. Linking by range gave v01 chapters 5-6, v02 chapters 9-12, and left v03 with nothing.
+    private Series SeedShiftedVolumes()
+    {
+        var series = SeedSeries(chapterCount: 12);
+        using (var seed = _db.NewContext())
+        {
+            foreach (var chapter in seed.Chapters.Where(c => c.SeriesId == series.Id))
+            {
+                chapter.Volume = chapter.Number <= 6 ? 1 : 2;
+            }
+
+            seed.SaveChanges();
+        }
+
+        return series;
+    }
+
+    private void AssertEachVolumeHoldsItsMarkers(Series series)
+    {
+        using var db = _db.NewContext();
+        var files = db.ChapterFiles.Where(f => f.SeriesId == series.Id).ToList();
+        int FileOf(int volume) => files.Single(f => f.RelativePath.Contains($"v0{volume}")).Id;
+        foreach (var chapter in db.Chapters.Where(c => c.SeriesId == series.Id).ToList())
+        {
+            Assert.Equal(FileOf((int)Math.Ceiling(chapter.Number!.Value / 4)), chapter.ChapterFileId);
+        }
+    }
+
+    [Fact]
+    public async Task Volumes_whose_source_boundaries_are_shifted_link_by_their_markers()
+    {
+        var series = SeedShiftedVolumes();
+        string[] paths =
+        [
+            WriteVolume("Berserk v01 (Digital) (Oak).cbz", 1, 2, 3, 4),
+            WriteVolume("Berserk v02 (Digital) (Oak).cbz", 5, 6, 7, 8),
+            WriteVolume("Berserk v03 (Digital) (Oak).cbz", 9, 10, 11, 12)
+        ];
+
+        using (var db = _db.NewContext())
+        {
+            await Service(db).LinkFilesAsync(db.Series.Single(s => s.Id == series.Id), Path.Combine(_root, "Berserk"),
+                paths, "torrent", updateComicInfo: false, ct: CancellationToken.None);
+        }
+
+        AssertEachVolumeHoldsItsMarkers(series);
+    }
+
+    [Fact]
+    public async Task A_rescan_moves_chapters_an_older_build_linked_by_shifted_ranges()
+    {
+        var series = SeedShiftedVolumes();
+        using (var seed = _db.NewContext())
+        {
+            var files = new[] { (1, new[] { 1, 2, 3, 4 }), (2, [5, 6, 7, 8]), (3, [9, 10, 11, 12]) }
+                .Select(v => new ChapterFile
+                {
+                    SeriesId = series.Id, SourceName = "torrent", DateAdded = DateTime.UtcNow,
+                    RelativePath = Path.Combine("Berserk",
+                        Path.GetFileName(WriteVolume($"Berserk v0{v.Item1} (Digital) (Oak).cbz", v.Item2)))
+                })
+                .ToList();
+            seed.ChapterFiles.AddRange(files);
+            seed.SaveChanges();
+            foreach (var chapter in seed.Chapters.Where(c => c.SeriesId == series.Id))
+            {
+                chapter.ChapterFileId = files[chapter.Volume!.Value - 1].Id;
+            }
+
+            seed.SaveChanges();
+        }
+
+        using (var db = _db.NewContext())
+        {
+            await Service(db).RescanSeriesAsync(db.Series.Include(s => s.RootFolder).Single(s => s.Id == series.Id));
+        }
+
+        AssertEachVolumeHoldsItsMarkers(series);
+    }
 }

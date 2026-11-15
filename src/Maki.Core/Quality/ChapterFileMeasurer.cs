@@ -57,6 +57,24 @@ public static class ChapterFileMeasurer
                 return;
             }
 
+            if (JpegXl.HasSignature(bytes))
+            {
+                // The header is at the start, so a page cut short at HeaderBytes still gives its size,
+                // but only with libjxl; the signature names the format either way.
+                _formats.Add("jxl");
+                try
+                {
+                    var (width, height) = JpegXl.ReadSize(bytes.ToArray());
+                    _widths.Add(width);
+                    _heights.Add(height);
+                }
+                catch (JpegXlException)
+                {
+                }
+
+                return;
+            }
+
             ImageFormat? format = null;
             try
             {
@@ -254,6 +272,7 @@ public static class ChapterFileMeasurer
         ImageFormat.Gif => "gif",
         ImageFormat.Avif => "avif",
         ImageFormat.Bmp => "bmp",
+        ImageFormat.Jxl => "jxl",
         _ => null
     };
 
@@ -264,6 +283,7 @@ public static class ChapterFileMeasurer
         ".webp" => "webp",
         ".gif" => "gif",
         ".avif" => "avif",
+        ".jxl" => "jxl",
         ".pdf" => "pdf",
         _ => "unknown"
     };

@@ -8,6 +8,8 @@ import { SettingsHelp } from './SettingsHelp'
 import { SettingsNumberInput } from './SettingsNumberInput'
 import { DeclinedReleasesModal } from './DeclinedReleasesModal'
 import { targetOf, type TorrentLifecycleForm } from './useTorrentLifecycleForm'
+import { NewSettingPill } from './NewSettingPill'
+import { useNewControlMark } from '../../pages/settings/newSettings'
 import {
   useConnectionSettings,
   useDownloadClientKinds,
@@ -124,6 +126,8 @@ export function TorrentLifecycleFields({ form }: { form: TorrentLifecycleForm })
   const save = useSaveDownloadSettings()
   const client = useClientName()
   const [declinedOpen, setDeclinedOpen] = useState(false)
+  const removalMark = useNewControlMark('remove-after-seeding')
+  const stalledMark = useNewControlMark('stalled-torrents')
   const [lastMode, setLastMode] = useState<TorrentRemovalMode>('afterimport')
   const pending = save.isPending ? save.variables : undefined
   const useHardlinks = pending?.useHardlinks ?? settings?.useHardlinks ?? true
@@ -153,47 +157,51 @@ export function TorrentLifecycleFields({ form }: { form: TorrentLifecycleForm })
             save.mutate({ useHardlinks: e.currentTarget.checked }, { onSuccess: savedToast })
           }}
         />
-        <Switch
-          mt="md"
-          label={t`Remove torrents from the download client after import`}
-          checked={removing}
-          disabled={!settings}
-          onChange={(e) => setMode(e.currentTarget.checked ? lastMode : 'never')}
-        />
-        <Group gap={8} wrap="nowrap" align="flex-start" mt={10}>
-          <Elbow />
-          <SegmentedControl
-            size="xs"
-            aria-label={t`When to remove`}
-            disabled={!settings || !removing}
-            value={removing ? mode : lastMode}
-            onChange={(value) => setMode(value as TorrentRemovalMode)}
-            data={[
-              { value: 'afterimport', label: t`Right after import` },
-              { value: 'afterseeding', label: t`After seeding` },
-            ]}
-          />
-        </Group>
-        {removing && mode === 'afterseeding' && (
-          <SeedTargetFields form={form} clientName={client.name} clientKind={client.kind} />
-        )}
-        <Group gap={8} wrap="nowrap" align="flex-start">
-          <Elbow />
+        <div id="setting-remove-after-seeding" {...removalMark}>
           <Switch
-            mt={10}
-            label={t`Also delete the downloaded files`}
-            checked={removeData}
-            disabled={!settings || !removing}
-            onChange={(e) => {
-              save.mutate({ removeData: e.currentTarget.checked }, { onSuccess: savedToast })
-            }}
+            mt="md"
+            label={t`Remove torrents from the download client after import`}
+            checked={removing}
+            disabled={!settings}
+            onChange={(e) => setMode(e.currentTarget.checked ? lastMode : 'never')}
           />
-        </Group>
+          <Group gap={8} wrap="nowrap" align="flex-start" mt={10}>
+            <Elbow />
+            <SegmentedControl
+              size="xs"
+              aria-label={t`When to remove`}
+              disabled={!settings || !removing}
+              value={removing ? mode : lastMode}
+              onChange={(value) => setMode(value as TorrentRemovalMode)}
+              data={[
+                { value: 'afterimport', label: t`Right after import` },
+                { value: 'afterseeding', label: t`After seeding` },
+              ]}
+            />
+            <NewSettingPill id="remove-after-seeding" />
+          </Group>
+          {removing && mode === 'afterseeding' && (
+            <SeedTargetFields form={form} clientName={client.name} clientKind={client.kind} />
+          )}
+          <Group gap={8} wrap="nowrap" align="flex-start">
+            <Elbow />
+            <Switch
+              mt={10}
+              label={t`Also delete the downloaded files`}
+              checked={removeData}
+              disabled={!settings || !removing}
+              onChange={(e) => {
+                save.mutate({ removeData: e.currentTarget.checked }, { onSuccess: savedToast })
+              }}
+            />
+          </Group>
+        </div>
       </Stack>
 
-      <Stack gap={0} mt="lg">
+      <Stack id="setting-stalled-torrents" {...stalledMark} gap={0} mt="lg">
         <SettingsGroupTitle mb={4}>
           <Trans>Stalled torrents</Trans>
+          <NewSettingPill id="stalled-torrents" />
         </SettingsGroupTitle>
         <SettingsHelp mb="xs">
           <Trans>

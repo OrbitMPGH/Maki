@@ -4804,12 +4804,25 @@ export interface ScrobbleStatus {
   log: ScrobbleLogRow[]
 }
 
+export interface SystemStatus {
+  version: string
+  isDevBuild?: boolean
+  /** The version run before the latest upgrade; null on a fresh install. */
+  upgradedFrom?: string | null
+}
+
+const systemStatusQuery = {
+  queryKey: ['system-status'],
+  queryFn: () => api<SystemStatus>('/system/status'),
+  staleTime: Infinity,
+}
+
+export function useSystemStatus() {
+  return useQuery(systemStatusQuery)
+}
+
 export function useAppVersion() {
-  return useQuery({
-    queryKey: ['app-version'],
-    queryFn: async () => (await api<{ version: string }>('/system/status')).version,
-    staleTime: Infinity,
-  })
+  return useQuery({ ...systemStatusQuery, select: (s: SystemStatus) => s.version })
 }
 
 export function useScrobbleStatus(refetchInterval = 5000) {

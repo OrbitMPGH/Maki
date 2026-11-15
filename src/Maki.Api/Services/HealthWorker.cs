@@ -174,6 +174,15 @@ public class HealthWorker(IServiceScopeFactory scopes, ILogger<HealthWorker> log
                     try { await scope.ServiceProvider.GetRequiredService<HealthScanService>().RunAsync(scan, scanCancellation.Token, options.ScanWorkers); }
                     catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested) { db.ChangeTracker.Clear(); }
                     finally { HealthScanService.Running.TryRemove(scan.Id, out _); }
+                    // Before the count below, so the files it relinks are not reported as missing.
+                    if (scan.Status is "completed" or "partial" && scan.FileIdsJson == "[]")
+                    {
+                        var rootId = scan.RootFolderId
+                            ?? await db.Series.Where(s => s.Id == scan.SeriesId).Select(s => (int?)s.RootFolderId).FirstOrDefaultAsync(stoppingToken);
+                        var relinked = scan.SeriesId != null && rootId == null ? 0
+                            : await scope.ServiceProvider.GetRequiredService<HealthOperationService>().RelinkFoundMovesAsync(rootId, stoppingToken);
+                        if (relinked > 0) logger.LogInformation("Relinked {Count} missing files found at a new path", relinked);
+                    }
                     var found = await db.HealthFindings.CountAsync(f => f.Id > before && f.State == "open", stoppingToken);
                     if (found > 0)
                     {

@@ -1302,9 +1302,10 @@ public class DownloadQueueService(
 
         if (movedId is { } moved && items.TryGetValue(moved, out var movedItem))
         {
+            // Parked imports list first whatever their class (QueueController.List), so they say nothing about it.
             var above = orderedIds.TakeWhile(id => id != moved)
                 .Select(id => items.GetValueOrDefault(id))
-                .LastOrDefault(item => item is not null);
+                .LastOrDefault(item => item is not null && item.Status != QueueStatus.AwaitingImport);
             movedItem.Priority = above?.Priority ?? QueuePriority.High;
         }
 

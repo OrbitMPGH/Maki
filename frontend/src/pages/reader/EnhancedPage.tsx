@@ -154,15 +154,18 @@ export default function EnhancedPage({
 
   const [serverImage, setServerImage] = useState<HTMLImageElement | null>(null)
 
-  // In the strip the canvas sits over the page image, which moves whenever a page above it loads.
+  // In the strip the canvas sits over the page image, which moves whenever a page above it loads. It
+  // is placed in its containing block: the strip, or the box of a last page cut short. The strip's
+  // size changes with either, so watching it re-places the canvas when a cut comes or goes.
   useEffect(() => {
     const elements = [canvas.current, serverImage].filter((element) => element !== null)
-    const parent = box?.parentElement
-    if (!overlay || !box || !parent || elements.length === 0) return
+    const host = box?.closest<HTMLElement>('.reader-continuous') ?? box?.parentElement
+    if (!overlay || !box || !host || elements.length === 0) return
     const place = () => {
       const at = box.getBoundingClientRect()
-      const origin = parent.getBoundingClientRect()
       for (const element of elements) {
+        const parent = element.offsetParent instanceof HTMLElement ? element.offsetParent : host
+        const origin = parent.getBoundingClientRect()
         element.style.left = `${at.left - origin.left - parent.clientLeft}px`
         element.style.top = `${at.top - origin.top - parent.clientTop}px`
         element.style.width = `${at.width}px`
@@ -172,7 +175,7 @@ export default function EnhancedPage({
     place()
     const observer = new ResizeObserver(place)
     observer.observe(box)
-    observer.observe(parent)
+    observer.observe(host)
     return () => observer.disconnect()
   }, [overlay, box, serverImage])
 

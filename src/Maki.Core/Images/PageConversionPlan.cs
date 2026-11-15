@@ -130,8 +130,11 @@ public sealed record PageConversionConditions(
     }
 }
 
-/// <param name="Stop">The stop a matching file is converted at; unused when <paramref name="Skip"/> is true.</param>
-public sealed record PlanRule(int Order, string Name, PageConversionConditions Conditions, bool Skip, PageConversionStop? Stop);
+/// <param name="Stop">The stop a matching file's black-and-white pages are converted at; unused when <paramref name="Skip"/> is true.</param>
+/// <param name="Format">The format of its black-and-white pages; null takes the plan's.</param>
+/// <param name="Colour">How its colour pages are converted; null converts them like its black-and-white pages.</param>
+public sealed record PlanRule(int Order, string Name, PageConversionConditions Conditions, bool Skip, PageConversionStop? Stop,
+    PageConversionFormat? Format = null, PageTarget? Colour = null);
 
 /// <summary>What happens to one file: left as it is, or converted with these settings.</summary>
 public abstract record PlanAction
@@ -162,23 +165,28 @@ public abstract record PlanAction
 
 /// <summary>
 /// The one answer to "what happens to this file", for the library pass, the download path and the
-/// wizard. The series override wins, then a file already stored as WebP or AVIF is left alone (or only
+/// wizard. The series override wins, then a file already stored as WebP, AVIF or JPEG XL is left alone (or only
 /// has its tall pages split), then the first matching rule, then the default stop. Hard skips that
 /// need the disk or other rows (hardlinked, PDF, a download in flight, read-file cleanup due) are the caller's.
 /// </summary>
+/// <param name="Format">The default format of black-and-white pages, and of colour pages while <paramref name="DefaultColour"/> is unset.</param>
 /// <param name="SplitHeight">Strips taller than this are cut into pages (<see cref="TallPageSplitter"/>); null leaves them whole.</param>
+/// <param name="DefaultColour">How colour pages are converted by default; null converts them like black-and-white pages.</param>
 public sealed record PageConversionPlan(
     PageConversionFormat Format, PageConversionStop DefaultStop, bool PngLossless, IReadOnlyList<PlanRule> Rules,
-    int? SplitHeight = null)
+    int? SplitHeight = null, PageTarget? DefaultColour = null)
 {
     /// <summary>A plan with no rules: every file the series allows goes to these settings.</summary>
     public static PageConversionPlan For(PageConversionSettings settings) =>
-        new(settings.Format, settings.Stop, settings.PngLossless, [], settings.SplitHeight);
+        new(settings.Format, settings.Stop, settings.PngLossless, [], settings.SplitHeight, settings.Colour);
 
     /// <summary>For a file whose pages stay as they are and only its tall strips are cut.</summary>
     public PageConversionSettings SplitOnlySettings => new(
-        Format, DefaultStop == PageConversionStop.Lossless ? PageConversionStop.High : DefaultStop, false, SplitHeight,
-        SplitOnly: true);
+        Format, Lossy(DefaultStop), false, SplitHeight, SplitOnly: true,
+        Colour: DefaultColour is { } colour ? colour with { Stop = Lossy(colour.Stop) } : null);
+
+    private static PageConversionStop Lossy(PageConversionStop stop) =>
+        stop == PageConversionStop.Lossless ? PageConversionStop.High : stop;
 
     public PlanAction Resolve(PlanCandidate c)
     {
@@ -203,10 +211,10 @@ public sealed record PageConversionPlan(
         {
             return rule.Skip
                 ? new PlanAction.Skip("rule")
-                : new PlanAction.Convert(Settings(rule.Stop ?? DefaultStop), "rule");
+                : new PlanAction.Convert(Settings(rule), "rule");
         }
 
-        return new PlanAction.Convert(Settings(DefaultStop), "default");
+        return new PlanAction.Convert(DefaultSettings, "default");
     }
 
     /// <summary>
@@ -229,13 +237,37 @@ public sealed record PageConversionPlan(
     public PlanRule? MatchingRule(PlanCandidate c) =>
         Rules.OrderBy(r => r.Order).FirstOrDefault(r => r.Conditions.Matches(c));
 
-    public PageConversionSettings Settings(PageConversionStop stop) => stop == PageConversionStop.Lossless
-        ? new PageConversionSettings(PageConversionFormat.Webp, PageConversionStop.Lossless, false, SplitHeight)
-        : new PageConversionSettings(Format, stop, PngLossless, SplitHeight);
+    /// <summary>The default formats at one stop, for the default and for a series override.</summary>
+    public PageConversionSettings Settings(PageConversionStop stop) =>
+        Settings(new PageTarget(Format, stop), DefaultColour is { } colour ? colour with { Stop = stop } : null);
+
+    /// <summary>What a file no rule matches is converted with.</summary>
+    public PageConversionSettings DefaultSettings => Settings(new PageTarget(Format, DefaultStop), DefaultColour);
+
+    public PageConversionSettings Settings(PlanRule rule) =>
+        Settings(new PageTarget(rule.Format ?? Format, rule.Stop ?? DefaultStop), rule.Colour);
+
+    /// <summary>
+    /// A colour target equal to the black-and-white one is dropped, so the settings name stays the one a
+    /// plan without colour targets had. PNG pages only follow <see cref="PngLossless"/> while a target is lossy.
+    /// </summary>
+    private PageConversionSettings Settings(PageTarget grey, PageTarget? colour)
+    {
+        grey = grey.Normalised();
+        colour = colour?.Normalised();
+        if (colour == grey)
+        {
+            colour = null;
+        }
+
+        var lossy = grey.Stop != PageConversionStop.Lossless || colour is { Stop: not PageConversionStop.Lossless };
+        return new PageConversionSettings(grey.Format, grey.Stop, lossy && PngLossless, SplitHeight, Colour: colour);
+    }
 
     public static bool IsAlreadyCompact(string? format) =>
         string.Equals(format, "webp", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(format, "avif", StringComparison.OrdinalIgnoreCase);
+        string.Equals(format, "avif", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(format, "jxl", StringComparison.OrdinalIgnoreCase);
 
     public static PageConversionStop? StopOf(PageConversionOverride mode) => mode switch
     {

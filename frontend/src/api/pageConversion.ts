@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, apiBlob } from './client'
 import type { QualityTierName } from './upgrades'
+import { jpegXlAccept } from '../lib/enhance/jpegXl'
 
-export type PageConversionFormat = 'webp' | 'avif'
+export type PageConversionFormat = 'webp' | 'avif' | 'jxl'
 
 /** Smallest keeps the least detail; Lossless re-encodes PNG pages losslessly and leaves JPEG pages as they are. */
 export type PageConversionStop = 'smallest' | 'compact' | 'balanced' | 'high' | 'lossless'
@@ -18,13 +19,40 @@ export const MIN_SPLIT_HEIGHT = 1000
 export const MAX_SPLIT_HEIGHT = 13000
 
 export interface PageConversionSettings {
-  /** Null while conversion is off. */
+  /** Black-and-white pages, and colour pages while no colour target is set. Null while conversion is off. */
   format: PageConversionFormat | null
   stop: PageConversionStop
   /** PNG pages go to lossless WebP at every stop, as they did before stops existed. */
   pngLossless: boolean
   /** Strips taller than this many pixels are cut into several pages. Null or absent leaves them whole. */
   splitHeight?: number | null
+  /** Colour pages' format. Null or absent, with `colourStop`, converts them like black-and-white pages. */
+  colourFormat?: PageConversionFormat | null
+  /** Colour pages' stop. `lossless` needs no format. */
+  colourStop?: PageConversionStop | null
+}
+
+/** One kind of page's format and stop. A Lossless target is lossless WebP whatever the format says. */
+export interface PageTarget {
+  format: PageConversionFormat
+  stop: PageConversionStop
+}
+
+/** The colour pages' own target, or null when they convert like black-and-white pages. */
+export function colourTargetOf(value: {
+  format?: PageConversionFormat | null
+  stop: PageConversionStop | null
+  colourFormat?: PageConversionFormat | null
+  colourStop?: PageConversionStop | null
+}): PageTarget | null {
+  if (!value.colourStop) return null
+  const colour: PageTarget = { format: value.colourFormat ?? 'webp', stop: value.colourStop }
+  const grey = value.format && value.stop ? { format: value.format, stop: value.stop } : null
+  return grey && sameTarget(colour, grey) ? null : colour
+}
+
+export function sameTarget(a: PageTarget, b: PageTarget): boolean {
+  return a.stop === b.stop && (a.stop === 'lossless' || a.format === b.format)
 }
 
 export interface PageConversionSample {
@@ -144,8 +172,13 @@ export interface PageConversionRule {
   name: string
   conditions: PageConversionConditions
   action: 'skip' | 'convert'
-  /** Required when the action is convert, null for skip. */
+  /** Black-and-white pages' stop. Required when the action is convert, null for skip. */
   stop: PageConversionStop | null
+  /** Black-and-white pages' format. Null or absent takes the plan's. */
+  format?: PageConversionFormat | null
+  /** Colour pages' format. Null or absent, with `colourStop`, converts them like black-and-white pages. */
+  colourFormat?: PageConversionFormat | null
+  colourStop?: PageConversionStop | null
 }
 
 export interface PageConversionRules {
@@ -158,6 +191,8 @@ export interface PageConversionScopeRequest {
   pngLossless: boolean
   rules: PageConversionRule[]
   splitHeight?: number | null
+  colourFormat?: PageConversionFormat | null
+  colourStop?: PageConversionStop | null
 }
 
 export interface ScopeBucket {
@@ -236,6 +271,27 @@ export function usePageConversionSamples() {
   })
 }
 
+export type SampleKind = 'greyscale' | 'colour'
+
+/** Pages of one kind from the files one row of an unsaved plan converts. Row -1 is everything else. */
+export interface RowSamplesRequest {
+  plan: PageConversionScopeRequest
+  row: number
+  kind: SampleKind
+}
+
+export function useRowSamples(request: RowSamplesRequest | null) {
+  const body = JSON.stringify(request)
+  return useQuery({
+    queryKey: [...key, 'samples', 'row', body],
+    queryFn: () => api<PageConversionSamples>('/pageconversion/samples/row', { method: 'POST', body }),
+    enabled: request !== null,
+    staleTime: 5 * 60_000,
+    retry: false,
+    meta: { silent: true },
+  })
+}
+
 /** The suggested page of a file the admin chose themselves. A 404 means it is not a cbz or zip. */
 export function usePageConversionSample(fileId: number | null) {
   return useQuery({
@@ -276,6 +332,8 @@ export interface PreviewRequest {
   format: PageConversionFormat
   stop: PageConversionStop
   pngLossless: boolean
+  /** The colour pages' own target, when they convert differently. */
+  colour?: PageTarget | null
   /** The stored page as it is, ignoring format and stop. */
   original?: boolean
 }
@@ -289,12 +347,47 @@ export interface PreviewPage {
   kept: boolean
   /** Why the page was kept, as the server names it. Null when it was not kept or the server gave no reason. */
   keptReason: string | null
+  /** The page is in colour, so it takes the colour pages' target. */
+  colour: boolean
 }
 
 function previewPath(r: PreviewRequest): string {
   const base = `/pageconversion/preview/${r.fileId}/${r.page}`
   if (r.original) return `${base}?original=true`
-  return `${base}?format=${r.format}&stop=${r.stop}&pngLossless=${r.pngLossless}`
+  const colour = r.colour ? `&colourFormat=${r.colour.format}&colourStop=${r.colour.stop}` : ''
+  return `${base}?format=${r.format}&stop=${r.stop}&pngLossless=${r.pngLossless}${colour}`
+}
+
+const previewKey = (request: PreviewRequest | null) =>
+  [...key, 'preview', request?.fileId ?? 0, request?.page ?? 0, request ? previewPath(request) : '']
+
+async function fetchPreview(request: PreviewRequest) {
+  // Without it a JPEG XL preview comes back as WebP made from it, which would show JPEG XL worse than it is.
+  const { blob, headers } = await apiBlob(previewPath(request), { headers: await jpegXlAccept() })
+  const original = Number(headers.get('X-Maki-Original-Bytes') ?? blob.size)
+  const encoded = Number(headers.get('X-Maki-Encoded-Bytes') ?? blob.size)
+  return {
+    blob,
+    originalBytes: original,
+    encodedBytes: encoded,
+    kept: headers.get('X-Maki-Kept') === '1',
+    keptReason: headers.get('X-Maki-Kept-Reason'),
+    colour: headers.get('X-Maki-Colour') === '1',
+  }
+}
+
+/** One page's encoded size, from the same cache as `usePreviewPage`, so switching to it later is instant. Null when kept. */
+export function usePreviewSize(request: PreviewRequest | null) {
+  return useQuery({
+    queryKey: previewKey(request),
+    queryFn: () => fetchPreview(request!),
+    enabled: request !== null,
+    select: (answer) => (answer.kept ? null : answer.encodedBytes),
+    staleTime: Infinity,
+    gcTime: 60_000,
+    retry: false,
+    meta: { silent: true },
+  })
 }
 
 /**
@@ -302,21 +395,9 @@ function previewPath(r: PreviewRequest): string {
  * next one loads, so moving the slider never blanks the image. The caller debounces what it passes in.
  */
 export function usePreviewPage(request: PreviewRequest | null) {
-  const path = request ? previewPath(request) : ''
   const query = useQuery({
-    queryKey: [...key, 'preview', request?.fileId ?? 0, request?.page ?? 0, path],
-    queryFn: async () => {
-      const { blob, headers } = await apiBlob(path)
-      const original = Number(headers.get('X-Maki-Original-Bytes') ?? blob.size)
-      const encoded = Number(headers.get('X-Maki-Encoded-Bytes') ?? blob.size)
-      return {
-        blob,
-        originalBytes: original,
-        encodedBytes: encoded,
-        kept: headers.get('X-Maki-Kept') === '1',
-        keptReason: headers.get('X-Maki-Kept-Reason'),
-      }
-    },
+    queryKey: previewKey(request),
+    queryFn: () => fetchPreview(request!),
     enabled: request !== null,
     // Only a change of format or stop keeps the old image up; another page starts from nothing, so
     // the wipe never lays one page's pixels over another's.
@@ -344,6 +425,7 @@ export function usePreviewPage(request: PreviewRequest | null) {
       encodedBytes: answer.encodedBytes,
       kept: answer.kept,
       keptReason: answer.keptReason,
+      colour: answer.colour,
     })
     return () => URL.revokeObjectURL(url)
   }, [answer])
@@ -356,11 +438,28 @@ export interface EstimateBucket {
   files: number
   bytes: number
   sampledFiles: number
-  /** Expected size after the pass for the whole bucket: the 25th and 75th percentile of the sampled files. */
+  /** Expected size of the whole bucket after the pass, from the sampled files' size-weighted mean ratio. */
+  expected: number
+  /** A 90% range for `expected`, from the sampling error of the mean (not the spread of single files). */
   expectedLow: number
   expectedHigh: number
   /** Never counted as saving. */
   hardlinkedBytes: number
+  seconds: number
+  secondsLow: number
+  secondsHigh: number
+}
+
+/** Every bucket the pass converts, added up on the server, which combines the buckets' errors properly. */
+export interface EstimateTotal {
+  files: number
+  bytes: number
+  /** At least one bucket was sampled, so the expected figures mean something. */
+  sampled: boolean
+  expected: number
+  expectedLow: number
+  expectedHigh: number
+  seconds: number
   secondsLow: number
   secondsHigh: number
 }
@@ -400,6 +499,7 @@ export interface EstimateResult {
   convertedEarlier: EstimateConvertedEarlier[]
   convertedWithOriginalInTrash: number
   msPerMegapixel: number
+  total: EstimateTotal
 }
 
 export type EstimateState = 'idle' | 'running' | 'done' | 'failed' | 'cancelled'
@@ -447,7 +547,14 @@ const estimateMarkKey = [...estimateKey, 'mark']
 export function estimateRequestKey(plan: PageConversionPlanRequest): string {
   return JSON.stringify({
     settings: plan.settings,
-    rules: plan.rules.map((r) => ({ conditions: r.conditions, action: r.action, stop: r.stop })),
+    rules: plan.rules.map((r) => ({
+      conditions: r.conditions,
+      action: r.action,
+      stop: r.stop,
+      format: r.format ?? null,
+      colourFormat: r.colourFormat ?? null,
+      colourStop: r.colourStop ?? null,
+    })),
   })
 }
 

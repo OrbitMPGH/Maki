@@ -406,18 +406,55 @@ public class SeriesRenameService(
         var byId = renamed
             .Where(f => !string.Equals(f.From, f.To, StringComparison.Ordinal))
             .ToDictionary(f => f.ChapterFileId, f => f.To);
+        if (plan.FolderChanged)
+        {
+            // The folder move carried every file in it, including the ones the plan leaves alone
+            // (no chapter to name them after). Their rows follow, or they read as missing beside an
+            // unlinked copy of themselves.
+            var planned = plan.Files.Select(f => f.ChapterFileId).ToList();
+            var unplanned = await db.ChapterFiles.AsNoTracking()
+                .Where(f => f.SeriesId == series.Id && !planned.Contains(f.Id))
+                .Select(f => new { f.Id, f.RelativePath })
+                .ToListAsync(saveToken);
+            foreach (var file in unplanned)
+            {
+                if (TailUnder(plan.FolderFrom, file.RelativePath) is { } tail)
+                {
+                    var to = Path.Combine(plan.FolderTo, tail);
+                    byId[file.Id] = to;
+                    renamed.Add(new SeriesRenameFile(file.Id, file.RelativePath, to));
+                }
+            }
+        }
+
         if (byId.Count > 0)
         {
             var ids = byId.Keys.ToList();
             var rows = await db.ChapterFiles.Where(f => ids.Contains(f.Id)).ToListAsync(saveToken);
             foreach (var row in rows)
             {
+                // A folder-only move keeps the release's own file name.
+                if (!string.Equals(Path.GetFileName(row.RelativePath), Path.GetFileName(byId[row.Id]),
+                        StringComparison.Ordinal))
+                {
+                    row.NamedByMaki = true;
+                }
+
                 row.RelativePath = byId[row.Id];
             }
         }
 
+        // The health inventory follows in the same save. Left at the old paths, the next series scan
+        // verified each file at its new path and flagged it identical to its own old row.
+        List<string> retiredHashes;
         try
         {
+            var repathed = renamed
+                .Where(f => !string.Equals(f.From, f.To, StringComparison.Ordinal))
+                .GroupBy(f => f.From, StringComparer.Ordinal)
+                .ToDictionary(g => g.Key, g => g.First().To, StringComparer.Ordinal);
+            retiredHashes = await HealthInventory.RepathAsync(db, series.RootFolderId,
+                repathed, plan.FolderChanged ? plan.FolderFrom : null, plan.FolderChanged ? plan.FolderTo : null, saveToken);
             await db.SaveChangesAsync(saveToken);
         }
         catch (Exception ex)
@@ -426,6 +463,11 @@ public class SeriesRenameService(
                 series.Title, moves.Count);
             UndoMoves(moves, series.Title);
             throw;
+        }
+
+        if (retiredHashes.Count > 0)
+        {
+            await HealthDuplicates.ResolveLonelyAsync(db, retiredHashes, CancellationToken.None);
         }
 
         // ReaderArchiveCache needs no invalidation: it is keyed by ChapterFile id and validated

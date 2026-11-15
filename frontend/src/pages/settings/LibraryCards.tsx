@@ -19,7 +19,7 @@ import {
   TextInput,
   Tooltip,
 } from '@mantine/core'
-import { IconPencil, IconRoute, IconTrash, IconWand } from '../../lib/icons'
+import { IconPencil, IconRoute, IconTrash, IconUsers, IconWand } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import { SettingsSection } from './SettingsSection'
 import { activeSeries } from '../../lib/series'
@@ -58,6 +58,8 @@ import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { FolderBrowserModal } from '../../components/settings/FolderBrowserModal'
 import { RootFolderPathModal } from '../../components/settings/RootFolderPathModal'
 import { RootFolderMinFreeInput } from '../../components/settings/RootFolderMinFreeInput'
+import { NewSettingPill } from '../../components/settings/NewSettingPill'
+import { useNewControlMark } from './newSettings'
 import type { RootFolder } from '../../api/types'
 import { SUPPORTED_LOCALES } from '../../i18n'
 import { MONITOR_HELP, MONITOR_OPTIONS, MONITOR_SHORT } from '../../components/series/SeriesActionsMenu'
@@ -70,6 +72,7 @@ import { RecycleBinModal } from '../../components/settings/RecycleBinModal'
 import { AutoTagRulesModal } from '../../components/settings/AutoTagRulesModal'
 import { useAutoTagRules } from '../../api/autoTagRules'
 import { RootFolderRulesModal } from '../../components/settings/RootFolderRulesModal'
+import { CreditGroupsModal } from '../../components/settings/CreditGroupsModal'
 import { useRootFolderRules } from '../../api/rootFolderRules'
 
 export function RootFoldersSection() {
@@ -81,6 +84,7 @@ export function RootFoldersSection() {
   const deleteFolder = useDeleteRootFolder()
   const [deleting, setDeleting] = useState<{ id: number; path: string } | null>(null)
   const [editing, setEditing] = useState<RootFolder | null>(null)
+  const lowDiskMark = useNewControlMark('low-disk-hold')
 
   const add = () => {
     if (!newPath.trim()) return
@@ -96,70 +100,76 @@ export function RootFoldersSection() {
       panelProps={{ p: 0 }}
     >
       {rootFolders && rootFolders.length > 0 && (
-        <SettingsRows>
-          {rootFolders.map((f) => (
-            <SettingsRow
-              key={f.id}
-              title={<MonoValue value={f.path} copy minWidth="10rem" />}
-              status={f.accessible ? null : { tone: 'danger', label: t`Inaccessible` }}
-              summary={<Trans>{formatBytes(f.freeSpace)} free</Trans>}
-              aside={
-                <Group gap="xs" wrap="nowrap">
-                  <Tooltip
-                    label={t`Downloads into the folder wait while its drive has less free space than this, and carry on by themselves once there is room. 0 never waits.`}
-                    withArrow
-                    multiline
-                    w={280}
-                  >
-                    <span>
-                      <RootFolderMinFreeInput folder={f} />
-                    </span>
-                  </Tooltip>
-                  <ActionIcon
-                    variant="subtle"
-                    onClick={() => setEditing(f)}
-                    aria-label={t`Change root folder path`}
-                  >
-                    <IconPencil size={16} />
-                  </ActionIcon>
-                  <ActionIcon
-                    variant="subtle"
-                    color="var(--danger)"
-                    onClick={() => setDeleting({ id: f.id, path: f.path })}
-                    aria-label={t`Remove root folder`}
-                  >
-                    <IconTrash size={16} />
-                  </ActionIcon>
-                </Group>
-              }
-            />
-          ))}
-        </SettingsRows>
+        <div {...lowDiskMark}>
+          <SettingsRows>
+            {rootFolders.map((f) => (
+              <SettingsRow
+                key={f.id}
+                title={<MonoValue value={f.path} copy minWidth="10rem" />}
+                status={f.accessible ? null : { tone: 'danger', label: t`Inaccessible` }}
+                summary={<Trans>{formatBytes(f.freeSpace)} free</Trans>}
+                aside={
+                  <Group gap="xs" wrap="nowrap">
+                    <NewSettingPill id="low-disk-hold" />
+                    <Tooltip
+                      label={t`Downloads into the folder wait while its drive has less free space than this, and carry on by themselves once there is room. 0 never waits.`}
+                      withArrow
+                      multiline
+                      w={280}
+                    >
+                      <span>
+                        <RootFolderMinFreeInput folder={f} />
+                      </span>
+                    </Tooltip>
+                    <ActionIcon
+                      variant="subtle"
+                      onClick={() => setEditing(f)}
+                      aria-label={t`Change root folder path`}
+                    >
+                      <IconPencil size={16} />
+                    </ActionIcon>
+                    <ActionIcon
+                      variant="subtle"
+                      color="var(--danger)"
+                      onClick={() => setDeleting({ id: f.id, path: f.path })}
+                      aria-label={t`Remove root folder`}
+                    >
+                      <IconTrash size={16} />
+                    </ActionIcon>
+                  </Group>
+                }
+              />
+            ))}
+          </SettingsRows>
+        </div>
       )}
-      <SettingsRowsBlock>
-        <Group
-          component="form"
-          align="flex-end"
-          onSubmit={(e: FormEvent) => {
-            e.preventDefault()
-            add()
-          }}
-        >
-          <TextInput
-            label={t`Path`}
-            placeholder={t`C:\\Manga or /library`}
-            value={newPath}
-            onChange={(e) => setNewPath(e.currentTarget.value)}
-            style={{ flex: '1 1 16rem' }}
-          />
-          <Button variant="default" onClick={() => setBrowsing(true)}>
-            <Trans>Browse</Trans>
-          </Button>
-          <Button type="submit" loading={addFolder.isPending}>
-            <Trans>Add</Trans>
-          </Button>
-        </Group>
-      </SettingsRowsBlock>
+      {/* With no root folder yet, the New tab shows where to add one. */}
+      <div {...(rootFolders && rootFolders.length > 0 ? {} : lowDiskMark)}>
+        <SettingsRowsBlock>
+          <Group
+            component="form"
+            align="flex-end"
+            onSubmit={(e: FormEvent) => {
+              e.preventDefault()
+              add()
+            }}
+          >
+            <TextInput
+              label={t`Path`}
+              placeholder={t`C:\\Manga or /library`}
+              value={newPath}
+              onChange={(e) => setNewPath(e.currentTarget.value)}
+              style={{ flex: '1 1 16rem' }}
+            />
+            <Button variant="default" onClick={() => setBrowsing(true)}>
+              <Trans>Browse</Trans>
+            </Button>
+            <Button type="submit" loading={addFolder.isPending}>
+              <Trans>Add</Trans>
+            </Button>
+          </Group>
+        </SettingsRowsBlock>
+      </div>
 
       <FolderBrowserModal
         opened={browsing}
@@ -427,6 +437,7 @@ export function CreditScanSection() {
   const { t } = useLingui()
   const { data } = useCreditScanSettings()
   const save = useSaveCreditScanSettings()
+  const [groupsOpen, setGroupsOpen] = useState(false)
 
   return (
     <SettingsSection
@@ -446,6 +457,21 @@ export function CreditScanSection() {
         disabled={data == null}
         onChange={(e) => save.mutate({ enabled: e.currentTarget.checked })}
       />
+      <Group justify="space-between" wrap="nowrap" gap="sm" mt="lg" align="flex-start">
+        <Text size="sm" c="var(--ink-3)">
+          <Trans>See the release groups behind the credit pages and ads Maki hides, and correct what it read off them.</Trans>
+        </Text>
+        <Button
+          variant="default"
+          size="xs"
+          leftSection={<IconUsers size={16} />}
+          style={{ flexShrink: 0 }}
+          onClick={() => setGroupsOpen(true)}
+        >
+          <Trans>Release groups</Trans>
+        </Button>
+      </Group>
+      <CreditGroupsModal opened={groupsOpen} onClose={() => setGroupsOpen(false)} />
     </SettingsSection>
   )
 }

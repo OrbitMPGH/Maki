@@ -18,7 +18,7 @@ namespace Maki.Api.Controllers;
 [ApiController]
 [Route("api/v1/pageconversion")]
 [Authorize(Policy = Policies.Admin)]
-public class PageConversionController(
+public partial class PageConversionController(
     MakiDbContext db, IAppSettings settings, PageConversionWorker worker, PageConversionPreviewService previews,
     PageConversionPlanService plans, ILocalizer localizer) : ControllerBase
 {
@@ -26,12 +26,15 @@ public class PageConversionController(
     private const int MaxRuleName = 200;
 
     private static readonly HashSet<string> FormatNames =
-        new(["jpg", "png", "webp", "avif", "gif", "bmp", "mixed", "unknown"], StringComparer.OrdinalIgnoreCase);
+        new(["jpg", "png", "webp", "avif", "jxl", "gif", "bmp", "mixed", "unknown"], StringComparer.OrdinalIgnoreCase);
 
-    /// <param name="Format">"webp", "avif", or null while conversion is off.</param>
+    /// <param name="Format">"webp", "avif", "jxl", or null while conversion is off.</param>
     /// <param name="Stop">"smallest", "compact", "balanced", "high" or "lossless"; sent while off too.</param>
     /// <param name="SplitHeight">Strips taller than this many pixels are cut into pages; null leaves them whole.</param>
-    public record SettingsDto(string? Format, string Stop, bool PngLossless, int? SplitHeight = null);
+    /// <param name="ColourFormat">The colour pages' format; null with <paramref name="ColourStop"/> converts them like black-and-white pages.</param>
+    /// <param name="ColourStop">The colour pages' stop; "lossless" needs no format.</param>
+    public record SettingsDto(string? Format, string Stop, bool PngLossless, int? SplitHeight = null, string? ColourFormat = null,
+        string? ColourStop = null);
 
     public record SamplesDto(IReadOnlyList<PageConversionSample> Samples);
 
@@ -44,8 +47,11 @@ public class PageConversionController(
         int TrashDays, int RuleCount, int OverrideSeries);
 
     /// <param name="Action">"skip" or "convert".</param>
-    /// <param name="Stop">The stop a matching file is converted at, lowercase; required with "convert".</param>
-    public record RuleDto(int? Id, string? Name, PageConversionConditions? Conditions, string Action, string? Stop);
+    /// <param name="Stop">The stop a matching file's black-and-white pages are converted at, lowercase; required with "convert".</param>
+    /// <param name="Format">Their format; null takes the plan's.</param>
+    /// <param name="ColourFormat">The colour pages' format; null with <paramref name="ColourStop"/> converts them like black-and-white pages.</param>
+    public record RuleDto(int? Id, string? Name, PageConversionConditions? Conditions, string Action, string? Stop,
+        string? Format = null, string? ColourFormat = null, string? ColourStop = null);
 
     public record RulesDto(IReadOnlyList<RuleDto>? Rules);
 
@@ -53,7 +59,8 @@ public class PageConversionController(
     public record PlanDto(SettingsDto? Settings, IReadOnlyList<RuleDto>? Rules);
 
     /// <summary>A plan the wizard has not saved yet, to count against the library.</summary>
-    public record ScopeRequest(string? Format, string Stop, bool PngLossless, IReadOnlyList<RuleDto>? Rules, int? SplitHeight = null);
+    public record ScopeRequest(string? Format, string Stop, bool PngLossless, IReadOnlyList<RuleDto>? Rules, int? SplitHeight = null,
+        string? ColourFormat = null, string? ColourStop = null);
 
     /// <param name="State">"idle", "running" or "paused".</param>
     /// <param name="Hold">Why a pass paused itself: "lowDisk", "conversionOff" or "settingsChanged"; null otherwise.</param>
@@ -130,6 +137,11 @@ public class PageConversionController(
             return InvalidSettings(request);
         }
 
+        if (JpegXlRefused(stored, []) is { } refused)
+        {
+            return refused;
+        }
+
         var before = await PageConversionOptions.ReadAsync(db, ct);
         var changed = before.Active != stored.Active;
         if (changed)
@@ -166,6 +178,11 @@ public class PageConversionController(
         if (ParseRules(request.Rules) is not { } parsed)
         {
             return this.Fail(localizer, "error.pageConversion.ruleInvalid");
+        }
+
+        if (JpegXlRefused(null, parsed) is { } refused)
+        {
+            return refused;
         }
 
         var changed = await RulesChangedAsync(parsed, ct);
@@ -206,6 +223,11 @@ public class PageConversionController(
         if (ParseRules(request.Rules) is not { } parsed)
         {
             return this.Fail(localizer, "error.pageConversion.ruleInvalid");
+        }
+
+        if (JpegXlRefused(stored, parsed) is { } refused)
+        {
+            return refused;
         }
 
         var before = await PageConversionOptions.ReadAsync(db, ct);
@@ -274,14 +296,53 @@ public class PageConversionController(
             return null;
         }
 
-        return PageConversionSettings.ParseStop(request.Stop) is { } stop
-            ? new PageConversionOptions.Stored(format, stop, request.PngLossless, request.SplitHeight)
+        return PageConversionSettings.ParseStop(request.Stop) is { } stop &&
+               ParseTarget(request.ColourFormat, request.ColourStop, out var colour)
+            ? new PageConversionOptions.Stored(format, stop, request.PngLossless, request.SplitHeight,
+                Same(colour, format ?? PageConversionFormat.Webp, stop))
             : null;
     }
 
+    /// <summary>
+    /// A colour target from its two fields: both empty is none, "lossless" needs no format, anything else
+    /// needs both. False when they do not parse.
+    /// </summary>
+    private static bool ParseTarget(string? format, string? stop, out PageTarget? target)
+    {
+        target = null;
+        if (format is null && stop is null)
+        {
+            return true;
+        }
+
+        if (PageConversionSettings.ParseStop(stop) is not { } parsedStop)
+        {
+            return false;
+        }
+
+        if (parsedStop == PageConversionStop.Lossless)
+        {
+            target = new PageTarget(PageConversionFormat.Webp, parsedStop);
+            return format is null || PageConversionSettings.ParseFormat(format) is not null;
+        }
+
+        if (PageConversionSettings.ParseFormat(format) is not { } parsedFormat)
+        {
+            return false;
+        }
+
+        target = new PageTarget(parsedFormat, parsedStop);
+        return true;
+    }
+
+    /// <summary>A colour target that converts like the black-and-white one is stored as none.</summary>
+    private static PageTarget? Same(PageTarget? colour, PageConversionFormat format, PageConversionStop stop) =>
+        colour?.Normalised() == new PageTarget(format, stop).Normalised() ? null : colour?.Normalised();
+
     private IActionResult InvalidSettings(SettingsDto? request) =>
         request?.Format is not null && !string.Equals(request.Format, "off", StringComparison.OrdinalIgnoreCase) &&
-        PageConversionSettings.ParseFormat(request.Format) is null
+        (PageConversionSettings.ParseFormat(request.Format) is null ||
+         (request.ColourFormat is not null && PageConversionSettings.ParseFormat(request.ColourFormat) is null))
             ? this.Fail(localizer, "error.pageConversion.formatInvalid")
             : request?.SplitHeight is { } height && !PageConversionOptions.IsSplitHeight(height)
                 ? SplitHeightInvalid()
@@ -290,12 +351,21 @@ public class PageConversionController(
     private IActionResult SplitHeightInvalid() => this.Fail(localizer, "error.pageConversion.splitHeightInvalid",
         new { min = TallPageSplitter.MinHeight, max = TallPageSplitter.MaxHeight });
 
+    /// <summary>Refuses a JPEG XL target while libjxl is not loaded; the pass would write WebP instead.</summary>
+    private IActionResult? JpegXlRefused(PageConversionOptions.Stored? stored, IReadOnlyList<PlanRule> rules) =>
+        !JpegXlAvailable() && PageConversionOptions.NeedsJpegXl(stored, rules)
+            ? this.Fail(localizer, "error.pageConversion.jpegXlUnavailable")
+            : null;
+
+    internal static Func<bool> JpegXlAvailable { get; set; } = () => JpegXl.IsAvailable;
+
     private static IEnumerable<(string Key, string? Value)> SettingValues(PageConversionOptions.Stored stored) =>
     [
         (SettingKeys.PageConversionFormat, stored.Format is { } f ? PageConversionSettings.FormatName(f) : null),
         (SettingKeys.PageConversionStop, PageConversionSettings.StopName(stored.Stop)),
         (SettingKeys.PageConversionPngLossless, stored.PngLossless ? "true" : null),
-        (SettingKeys.PageConversionSplitHeight, stored.SplitHeight?.ToString(CultureInfo.InvariantCulture))
+        (SettingKeys.PageConversionSplitHeight, stored.SplitHeight?.ToString(CultureInfo.InvariantCulture)),
+        (SettingKeys.PageConversionColour, stored.Colour?.Name())
     ];
 
     private static PageConversionHold HoldFor(PageConversionOptions.Stored stored) =>
@@ -313,14 +383,22 @@ public class PageConversionController(
             Name = r.Name,
             ConditionsJson = r.Conditions.ToJson(),
             Skip = r.Skip,
-            Stop = r.Stop
+            Stop = r.Stop,
+            Format = r.Format,
+            ColourFormat = r.Colour?.Format,
+            ColourStop = r.Colour?.Stop
         }));
     }
 
     /// <summary>Where the library's files would land under a plan the wizard has not saved, for its live counts.</summary>
     [HttpPost("scope")]
-    public async Task<IActionResult> Scope([FromBody] ScopeRequest request, CancellationToken ct)
+    public async Task<IActionResult> Scope([FromBody] ScopeRequest request, CancellationToken ct) =>
+        UnsavedPlan(request, out var plan) is { } refused ? refused : Ok(await plans.ScopeAsync(plan!, ct));
+
+    /// <summary>The plan a <see cref="ScopeRequest"/> describes, or the refusal when it does not parse.</summary>
+    private IActionResult? UnsavedPlan(ScopeRequest request, out PageConversionPlan? plan)
     {
+        plan = null;
         var format = PageConversionFormat.Webp;
         if (request.Format is not null && !string.Equals(request.Format, "off", StringComparison.OrdinalIgnoreCase))
         {
@@ -332,7 +410,8 @@ public class PageConversionController(
             format = parsedFormat;
         }
 
-        if (PageConversionSettings.ParseStop(request.Stop) is not { } stop)
+        if (PageConversionSettings.ParseStop(request.Stop) is not { } stop ||
+            !ParseTarget(request.ColourFormat, request.ColourStop, out var colour))
         {
             return this.Fail(localizer, "error.pageConversion.stopInvalid");
         }
@@ -347,7 +426,8 @@ public class PageConversionController(
             return SplitHeightInvalid();
         }
 
-        return Ok(await plans.ScopeAsync(new PageConversionPlan(format, stop, request.PngLossless, rules, request.SplitHeight), ct));
+        plan = new PageConversionPlan(format, stop, request.PngLossless, rules, request.SplitHeight, Same(colour, format, stop));
+        return null;
     }
 
     /// <summary>
@@ -369,7 +449,7 @@ public class PageConversionController(
 
         return Ok(estimates.Start(
             new PageConversionPlan(stored.Format ?? PageConversionFormat.Webp, stored.Stop, stored.PngLossless, parsed,
-                stored.SplitHeight)));
+                stored.SplitHeight, stored.Colour)));
     }
 
     [HttpGet("estimate")]
@@ -380,13 +460,17 @@ public class PageConversionController(
         var rows = await db.PageConversionRules.AsNoTracking().OrderBy(r => r.Order).ThenBy(r => r.Id).ToListAsync(ct);
         return new RulesDto(rows.Select(r => new RuleDto(r.Id, r.Name,
                 PageConversionConditions.TryParse(r.ConditionsJson, out var conditions) ? conditions : new PageConversionConditions(),
-                r.Skip ? "skip" : "convert", r.Skip || r.Stop is not { } stop ? null : PageConversionSettings.StopName(stop)))
+                r.Skip ? "skip" : "convert", r.Skip || r.Stop is not { } stop ? null : PageConversionSettings.StopName(stop),
+                r.Skip || r.Format is not { } format ? null : PageConversionSettings.FormatName(format),
+                r.Skip || r.ColourStop is null || r.ColourFormat is not { } colourFormat ? null : PageConversionSettings.FormatName(colourFormat),
+                r.Skip || r.ColourFormat is null || r.ColourStop is not { } colourStop ? null : PageConversionSettings.StopName(colourStop)))
             .ToList());
     }
 
     /// <summary>What makes a rule decide a file, leaving out its name.</summary>
-    private static (int, string, bool, PageConversionStop?) Decides(PlanRule rule) =>
-        (rule.Order, rule.Conditions.ToJson(), rule.Skip, rule.Skip ? null : rule.Stop);
+    private static (int, string, bool, PageConversionStop?, PageConversionFormat?, PageTarget?) Decides(PlanRule rule) =>
+        (rule.Order, rule.Conditions.ToJson(), rule.Skip, rule.Skip ? null : rule.Stop, rule.Skip ? null : rule.Format,
+            rule.Skip ? null : rule.Colour);
 
     /// <summary>Null when any rule is invalid: an unknown action, tier or format, a convert without a stop, a bound that is not positive, or too many rules.</summary>
     private static List<PlanRule>? ParseRules(IReadOnlyList<RuleDto>? rules)
@@ -417,6 +501,27 @@ public class PageConversionController(
                 return null;
             }
 
+            PageConversionFormat? format = null;
+            PageTarget? colour = null;
+            if (!skip)
+            {
+                if (rule.Format is not null && (format = PageConversionSettings.ParseFormat(rule.Format)) is null)
+                {
+                    return null;
+                }
+
+                if (!ParseTarget(rule.ColourFormat, rule.ColourStop, out colour))
+                {
+                    return null;
+                }
+
+                // Lossless is lossless WebP, so its format says nothing; storing none keeps two equal rules equal.
+                if (stop == PageConversionStop.Lossless)
+                {
+                    format = null;
+                }
+            }
+
             var name = rule.Name?.Trim() ?? "";
             var conditions = (rule.Conditions ?? new PageConversionConditions()).Normalised();
             if (name.Length > MaxRuleName ||
@@ -428,7 +533,7 @@ public class PageConversionController(
                 return null;
             }
 
-            parsed.Add(new PlanRule(parsed.Count, name, conditions, skip, skip ? null : stop));
+            parsed.Add(new PlanRule(parsed.Count, name, conditions, skip, skip ? null : stop, format, colour?.Normalised()));
         }
 
         return parsed;
@@ -456,7 +561,8 @@ public class PageConversionController(
     /// </summary>
     [HttpGet("preview/{fileId:int}/{page:int}")]
     public async Task<IActionResult> Preview(int fileId, int page, [FromQuery] string? format, [FromQuery] string? stop,
-        [FromQuery] bool pngLossless, [FromQuery] bool original, CancellationToken ct)
+        [FromQuery] bool pngLossless, [FromQuery] bool original, [FromQuery] string? colourFormat, [FromQuery] string? colourStop,
+        CancellationToken ct)
     {
         PageConversionSettings? wanted = null;
         if (!original)
@@ -474,7 +580,12 @@ public class PageConversionController(
                 return this.Fail(localizer, "error.pageConversion.formatInvalid");
             }
 
-            wanted = new PageConversionSettings(f, parsedStop, pngLossless);
+            if (!ParseTarget(colourFormat, colourStop, out var colour))
+            {
+                return this.Fail(localizer, "error.pageConversion.stopInvalid");
+            }
+
+            wanted = new PageConversionPlan(f, parsedStop, pngLossless, [], DefaultColour: colour).DefaultSettings;
         }
 
         var preview = await previews.PreviewAsync(fileId, page, wanted, ct);
@@ -491,16 +602,29 @@ public class PageConversionController(
         Response.Headers["X-Maki-Original-Bytes"] = preview.OriginalBytes.ToString(CultureInfo.InvariantCulture);
         Response.Headers["X-Maki-Encoded-Bytes"] = preview.EncodedBytes.ToString(CultureInfo.InvariantCulture);
         Response.Headers["X-Maki-Kept"] = preview.Kept ? "1" : "0";
+        Response.Headers["X-Maki-Colour"] = preview.Colour ? "1" : "0";
         if (preview.Kept && preview.KeptReason is { } reason)
         {
             Response.Headers["X-Maki-Kept-Reason"] = reason;
         }
 
         Response.Headers.CacheControl = "private, no-cache";
-        var etag = new EntityTagHeaderValue($"\"{preview.Key}\"");
+        // A JPEG XL preview goes out as WebP to a browser without JPEG XL; the size headers stay the JPEG XL ones.
+        var transcode = preview.ContentType == JpegXlPages.MediaType && !JpegXlPages.Accepts(Request);
+        if (preview.ContentType == JpegXlPages.MediaType)
+        {
+            Response.Headers.Vary = "Accept";
+        }
+
+        var etag = new EntityTagHeaderValue($"\"{preview.Key}{(transcode ? "-webp" : "")}\"");
         if (Request.GetTypedHeaders().IfNoneMatch?.Any(t => t.Compare(etag, useStrongComparison: false)) == true)
         {
             return StatusCode(StatusCodes.Status304NotModified);
+        }
+
+        if (transcode && await JpegXlPages.TranscodeAsync(await System.IO.File.ReadAllBytesAsync(preview.Path, ct), ct) is var (bytes, type))
+        {
+            return File(bytes, type, lastModified: null, entityTag: etag);
         }
 
         return PhysicalFile(preview.Path, preview.ContentType, lastModified: null, entityTag: etag);
@@ -544,7 +668,9 @@ public class PageConversionController(
 
     private static SettingsDto ToDto(PageConversionOptions.Stored stored) => new(
         stored.Format is { } f ? PageConversionSettings.FormatName(f) : null, PageConversionSettings.StopName(stored.Stop),
-        stored.PngLossless, stored.SplitHeight);
+        stored.PngLossless, stored.SplitHeight,
+        stored.Colour is { Stop: not PageConversionStop.Lossless } colour ? PageConversionSettings.FormatName(colour.Format) : null,
+        stored.Colour is { } target ? PageConversionSettings.StopName(target.Stop) : null);
 
     private static string Name(PageConversionPassState state) => state switch
     {

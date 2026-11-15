@@ -5,11 +5,15 @@ using NetVips;
 
 namespace Maki.Core.Images;
 
-/// <summary>What stored pages are converted to. JPEG XL is absent because the bundled libvips has no libjxl.</summary>
+/// <summary>
+/// What stored pages are converted to. Stored as its number, so a new format goes at the end. JPEG XL
+/// is written through libjxl (<see cref="JpegXl"/>), since the bundled libvips cannot.
+/// </summary>
 public enum PageConversionFormat
 {
     Webp,
-    Avif
+    Avif,
+    Jxl
 }
 
 /// <summary>How one page is written: lossy in the chosen format, or lossless WebP for a PNG.</summary>
@@ -17,7 +21,8 @@ public enum PageEncoding
 {
     Webp,
     LosslessWebp,
-    Avif
+    Avif,
+    Jxl
 }
 
 /// <summary>Why a page was copied over as it was.</summary>
@@ -50,22 +55,66 @@ public enum PageConversionStop
     Lossless
 }
 
+/// <summary>How one kind of page is converted: a format at a stop. A Lossless target is always lossless WebP.</summary>
+public sealed record PageTarget(PageConversionFormat Format, PageConversionStop Stop)
+{
+    public PageTarget Normalised() =>
+        Stop == PageConversionStop.Lossless ? this with { Format = PageConversionFormat.Webp } : this;
+
+    /// <summary>"webp:high" or "lossless".</summary>
+    public string Name() => Stop == PageConversionStop.Lossless
+        ? PageConversionSettings.StopName(Stop)
+        : $"{PageConversionSettings.FormatName(Format)}:{PageConversionSettings.StopName(Stop)}";
+
+    public static PageTarget? Parse(string? name)
+    {
+        var value = name?.Trim().ToLowerInvariant();
+        if (value == PageConversionSettings.StopName(PageConversionStop.Lossless))
+        {
+            return new PageTarget(PageConversionFormat.Webp, PageConversionStop.Lossless);
+        }
+
+        var parts = value?.Split(':');
+        return parts is { Length: 2 } && PageConversionSettings.ParseFormat(parts[0]) is { } format &&
+               PageConversionSettings.ParseStop(parts[1]) is { } stop && stop != PageConversionStop.Lossless
+            ? new PageTarget(format, stop)
+            : null;
+    }
+}
+
+/// <param name="Format">The format of black-and-white pages, and of colour pages while <paramref name="Colour"/> is unset.</param>
+/// <param name="Stop">The stop of black-and-white pages, and of colour pages while <paramref name="Colour"/> is unset.</param>
 /// <param name="PngLossless">PNG pages go to lossless WebP whatever the stop.</param>
 /// <param name="SplitHeight">Strips taller than this are cut into several pages (<see cref="TallPageSplitter"/>); null leaves them whole.</param>
 /// <param name="SplitOnly">
-/// Only split: every page that is not a tall strip is kept as it is. For files already stored as WebP or
-/// AVIF, and files converted before. <paramref name="Format"/> and <paramref name="Stop"/> still set the
-/// quality of a WebP or AVIF piece.
+/// Only split: every page that is not a tall strip is kept as it is. For files already stored as WebP,
+/// AVIF or JPEG XL, and files converted before. The targets still set the quality of such a piece.
 /// </param>
+/// <param name="Colour">How colour pages are converted; null converts them like black-and-white pages.</param>
 public sealed record PageConversionSettings(
-    PageConversionFormat Format, PageConversionStop Stop, bool PngLossless, int? SplitHeight = null, bool SplitOnly = false)
+    PageConversionFormat Format, PageConversionStop Stop, bool PngLossless, int? SplitHeight = null, bool SplitOnly = false,
+    PageTarget? Colour = null)
 {
+    public PageTarget Grey => new PageTarget(Format, Stop).Normalised();
+
+    public PageTarget ColourTarget => (Colour ?? Grey).Normalised();
+
+    /// <summary>Colour and black-and-white pages are converted differently, so each page is checked for colour first.</summary>
+    public bool ByColour => ColourTarget != Grey;
+
+    public PageTarget Target(bool colour) => colour ? ColourTarget : Grey;
+
+    /// <summary>Every format a page of this file may be written in.</summary>
+    public bool UsesFormat(PageConversionFormat format) =>
+        (Grey.Stop != PageConversionStop.Lossless && Grey.Format == format) ||
+        (ColourTarget.Stop != PageConversionStop.Lossless && ColourTarget.Format == format);
+
     public static PageConversionStop DefaultStop => PageConversionStop.High;
 
     private static readonly PageConversionStop[] LossyStops =
         [PageConversionStop.Smallest, PageConversionStop.Compact, PageConversionStop.Balanced, PageConversionStop.High];
 
-    /// <summary>The encoder quality a lossy stop stands for. Lossless has none.</summary>
+    /// <summary>The encoder quality a lossy WebP or AVIF stop stands for. Lossless has none, JPEG XL takes <see cref="Distance"/>.</summary>
     public static int Quality(PageConversionFormat format, PageConversionStop stop) => (format, stop) switch
     {
         (PageConversionFormat.Webp, PageConversionStop.Smallest) => 50,
@@ -76,6 +125,21 @@ public sealed record PageConversionSettings(
         (PageConversionFormat.Avif, PageConversionStop.Compact) => 60,
         (PageConversionFormat.Avif, PageConversionStop.Balanced) => 65,
         (PageConversionFormat.Avif, PageConversionStop.High) => 80,
+        _ => throw new ArgumentOutOfRangeException(nameof(stop), stop, null)
+    };
+
+    /// <summary>
+    /// The JPEG XL distance (effort 3) a lossy stop stands for: the one fixed distance whose mean
+    /// SSIMULACRA2 over the 24-page conversion corpus equals the WebP stop's, which lands JPEG XL at
+    /// 1.02x, 1.01x, 0.99x and 0.89x WebP's bytes from Smallest to High
+    /// (research/image-formats/2026-11-14-jxl-stops).
+    /// </summary>
+    public static float Distance(PageConversionStop stop) => stop switch
+    {
+        PageConversionStop.Smallest => 4.5f,
+        PageConversionStop.Compact => 3.35f,
+        PageConversionStop.Balanced => 2.3f,
+        PageConversionStop.High => 1.35f,
         _ => throw new ArgumentOutOfRangeException(nameof(stop), stop, null)
     };
 
@@ -94,7 +158,10 @@ public sealed record PageConversionSettings(
         return nearest;
     }
 
-    /// <summary>"webp:high", "avif:balanced+png", "lossless", "webp:high+split5000" or, split only, "split5000".</summary>
+    /// <summary>
+    /// "webp:high", "avif:balanced+png", "lossless", "webp:high+split5000" or, split only, "split5000".
+    /// Colour pages that convert differently follow a slash: "webp:high/avif:balanced+png".
+    /// </summary>
     public string Name()
     {
         var split = SplitHeight is { } height ? SplitName(height) : null;
@@ -103,9 +170,10 @@ public sealed record PageConversionSettings(
             return split;
         }
 
-        var name = Stop == PageConversionStop.Lossless
-            ? StopName(Stop)
-            : $"{FormatName(Format)}:{StopName(Stop)}{(PngLossless ? "+png" : "")}";
+        var grey = Grey;
+        var colour = ColourTarget;
+        var lossy = grey.Stop != PageConversionStop.Lossless || (ByColour && colour.Stop != PageConversionStop.Lossless);
+        var name = (ByColour ? $"{grey.Name()}/{colour.Name()}" : grey.Name()) + (lossy && PngLossless ? "+png" : "");
         return split is null ? name : $"{name}+{split}";
     }
 
@@ -138,25 +206,40 @@ public sealed record PageConversionSettings(
             value = value[..plus];
         }
 
-        if (value == StopName(PageConversionStop.Lossless))
+        var png = value.EndsWith("+png", StringComparison.Ordinal);
+        var targets = (png ? value[..^4] : value).Split('/');
+        if (targets.Length is not (1 or 2) || PageTarget.Parse(targets[0]) is not { } grey)
         {
-            return new PageConversionSettings(PageConversionFormat.Webp, PageConversionStop.Lossless, false, split);
+            return null;
         }
 
-        var png = value.EndsWith("+png", StringComparison.Ordinal);
-        var parts = (png ? value[..^4] : value).Split(':');
-        return parts.Length == 2 && ParseFormat(parts[0]) is { } format && ParseStop(parts[1]) is { } stop &&
-               stop != PageConversionStop.Lossless
-            ? new PageConversionSettings(format, stop, png, split)
-            : null;
+        PageTarget? colour = null;
+        if (targets.Length == 2 && (PageTarget.Parse(targets[1]) is not { } parsed || (colour = parsed) == grey))
+        {
+            return null;
+        }
+
+        var lossy = grey.Stop != PageConversionStop.Lossless || colour is { Stop: not PageConversionStop.Lossless };
+        if (png && !lossy)
+        {
+            return null;
+        }
+
+        return new PageConversionSettings(grey.Format, grey.Stop, png, split, Colour: colour);
     }
 
-    public static string FormatName(PageConversionFormat format) => format == PageConversionFormat.Avif ? "avif" : "webp";
+    public static string FormatName(PageConversionFormat format) => format switch
+    {
+        PageConversionFormat.Avif => "avif",
+        PageConversionFormat.Jxl => "jxl",
+        _ => "webp"
+    };
 
     public static PageConversionFormat? ParseFormat(string? value) => value?.Trim().ToLowerInvariant() switch
     {
         "webp" => PageConversionFormat.Webp,
         "avif" => PageConversionFormat.Avif,
+        "jxl" => PageConversionFormat.Jxl,
         _ => null
     };
 
@@ -174,7 +257,7 @@ public sealed record PageConversionSettings(
 }
 
 /// <summary>
-/// The per-page rules. Only JPEG and PNG are converted: WebP and AVIF pages are already compact and a
+/// The per-page rules. Only JPEG and PNG are converted: WebP, AVIF and JPEG XL pages are already compact and a
 /// second lossy pass only loses detail, GIF and APNG may be animated, and BMP has no decoder here.
 /// At <see cref="PageConversionStop.Lossless"/> a JPEG is kept and a PNG goes to lossless WebP
 /// (lossless AVIF is usually larger than the PNG). At a lossy stop both are encoded in the chosen
@@ -194,7 +277,8 @@ public static class PageConversion
     /// <summary>A file is replaced only when the whole archive shrinks by at least this much.</summary>
     public const double MinFileSaving = 0.05;
 
-    public readonly record struct Page(byte[] Bytes, string Extension, string SourceFormat, PageSkip? Skipped)
+    /// <param name="Colour">The page was checked for colour and found in colour; false when it was grey or never checked.</param>
+    public readonly record struct Page(byte[] Bytes, string Extension, string SourceFormat, PageSkip? Skipped, bool Colour = false)
     {
         public bool Converted => Skipped is null;
     }
@@ -206,24 +290,26 @@ public static class PageConversion
     /// </summary>
     public static Page Convert(byte[] bytes, string extension, PageConversionSettings settings)
     {
-        if (Decide(bytes, extension, settings, out var format, out var kept) is not { } encoding)
+        var colour = settings.ByColour && Convertible(bytes, extension) && ImageCodec.IsColour(bytes) == true;
+        var target = settings.Target(colour);
+        if (Decide(bytes, extension, target, settings.PngLossless, out var format, out var kept) is not { } encoding)
         {
-            return new Page(bytes, extension, format, kept);
+            return new Page(bytes, extension, format, kept, colour);
         }
 
-        var quality = encoding == PageEncoding.LosslessWebp ? 100 : PageConversionSettings.Quality(settings.Format, settings.Stop);
-        var encoded = ImageCodec.EncodePage(bytes, encoding, quality, out var skipped);
+        var (quality, distance) = LevelOf(encoding, target.Stop);
+        var encoded = ImageCodec.EncodePage(bytes, encoding, quality, out var skipped, distance);
         if (encoded is null)
         {
-            return new Page(bytes, extension, format, skipped);
+            return new Page(bytes, extension, format, skipped, colour);
         }
 
         if (encoded.Length > bytes.Length * (1 - MinPageSaving))
         {
-            return new Page(bytes, extension, format, PageSkip.NotSmaller);
+            return new Page(bytes, extension, format, PageSkip.NotSmaller, colour);
         }
 
-        return new Page(encoded, encoding == PageEncoding.Avif ? ".avif" : ".webp", format, null);
+        return new Page(encoded, ExtensionOf(encoding), format, null, colour);
     }
 
     /// <summary>
@@ -242,32 +328,84 @@ public static class PageConversion
             : [Convert(bytes, extension, settings)];
     }
 
-    /// <summary>How <see cref="Convert"/> encodes the page, or null when it keeps the page without decoding it.</summary>
-    public static PageEncoding? EncodingFor(byte[] bytes, string extension, PageConversionSettings settings) =>
-        Decide(bytes, extension, settings, out _, out _);
+    /// <summary>
+    /// How <see cref="Convert"/> encodes the page when it is in colour or not, or null when it keeps the
+    /// page without decoding it.
+    /// </summary>
+    public static PageEncoding? EncodingFor(byte[] bytes, string extension, PageConversionSettings settings, bool colour) =>
+        Decide(bytes, extension, settings.Target(colour), settings.PngLossless, out _, out _);
 
-    /// <summary>What encoding the page takes from the conversion gate, read from its header before any decode.</summary>
+    /// <summary>
+    /// What encoding the page takes from the conversion gate, read from its header before any decode.
+    /// When colour and black-and-white pages convert differently the heavier of the two is taken, since
+    /// which one applies is only known once the page is decoded.
+    /// </summary>
     public static ConversionWeight WeightOf(byte[] bytes, string extension, PageConversionSettings settings)
     {
-        if (settings.SplitHeight is { } height && ImageCodec.TryShape(bytes) is { } tall &&
-            TallPageSplitter.IsTall(tall.Width, tall.Height, height))
+        if (ImageCodec.TryShape(bytes) is not { } shape)
         {
-            return ImageWorkGate.WeighConversion(tall.Width, tall.Height, tall.Bands,
-                TallPageSplitter.WeightEncoding(bytes, extension, settings));
+            return ImageWorkGate.LightConversion;
         }
 
-        return !settings.SplitOnly && EncodingFor(bytes, extension, settings) is { } encoding &&
-               ImageCodec.TryShape(bytes) is { } shape
-            ? ImageWorkGate.WeighConversion(shape.Width, shape.Height, shape.Bands, encoding)
-            : ImageWorkGate.LightConversion;
+        ConversionWeight? Weigh(bool colour)
+        {
+            if (settings.SplitHeight is { } height && TallPageSplitter.IsTall(shape.Width, shape.Height, height))
+            {
+                return ImageWorkGate.WeighConversion(shape.Width, shape.Height, shape.Bands,
+                    TallPageSplitter.WeightEncoding(bytes, extension, settings, colour));
+            }
+
+            return !settings.SplitOnly && EncodingFor(bytes, extension, settings, colour) is { } encoding
+                ? ImageWorkGate.WeighConversion(shape.Width, shape.Height, shape.Bands, encoding)
+                : null;
+        }
+
+        var grey = Weigh(false);
+        var colour = settings.ByColour && shape.Bands >= 3 ? Weigh(true) : grey;
+        return (grey, colour) switch
+        {
+            (null, null) => ImageWorkGate.LightConversion,
+            ({ } g, null) => g,
+            (null, { } c) => c,
+            ({ } g, { } c) => new ConversionWeight(Math.Max(g.Megabytes, c.Megabytes), g.Avif || c.Avif)
+        };
     }
 
-    private static PageEncoding? Decide(byte[] bytes, string extension, PageConversionSettings settings,
+    public static string ExtensionOf(PageEncoding encoding) => encoding switch
+    {
+        PageEncoding.Avif => ".avif",
+        PageEncoding.Jxl => ".jxl",
+        _ => ".webp"
+    };
+
+    /// <summary>The encoder quality (WebP, AVIF) or distance (JPEG XL) an encoding takes at a stop.</summary>
+    internal static (int Quality, float Distance) LevelOf(PageEncoding encoding, PageConversionStop stop) => encoding switch
+    {
+        PageEncoding.LosslessWebp => (100, 0),
+        PageEncoding.Jxl => (0, PageConversionSettings.Distance(stop)),
+        PageEncoding.Avif => (PageConversionSettings.Quality(PageConversionFormat.Avif, stop), 0),
+        _ => (PageConversionSettings.Quality(PageConversionFormat.Webp, stop), 0)
+    };
+
+    /// <summary>The lossy encoding of a format. Without libjxl a JPEG XL target is written as WebP at the same stop.</summary>
+    internal static PageEncoding LossyEncoding(PageConversionFormat format) => format switch
+    {
+        PageConversionFormat.Avif => PageEncoding.Avif,
+        PageConversionFormat.Jxl when JpegXl.IsAvailable => PageEncoding.Jxl,
+        _ => PageEncoding.Webp
+    };
+
+    /// <summary>A JPEG or PNG that <see cref="Decide"/> would not keep on sight, whatever the target.</summary>
+    private static bool Convertible(byte[] bytes, string extension) =>
+        FormatOf(bytes, extension) is var format && (format == "jpg" || (format == "png" && !IsAnimatedPng(bytes))) &&
+        bytes.Length >= MinPageBytes;
+
+    private static PageEncoding? Decide(byte[] bytes, string extension, PageTarget target, bool pngLossless,
         out string format, out PageSkip? kept)
     {
         format = FormatOf(bytes, extension);
         kept = format is not ("jpg" or "png") ? PageSkip.AlreadyCompact
-            : format == "jpg" && settings.Stop == PageConversionStop.Lossless ? PageSkip.Lossless
+            : format == "jpg" && target.Stop == PageConversionStop.Lossless ? PageSkip.Lossless
             : bytes.Length < MinPageBytes ? PageSkip.TooSmall
             : format == "png" && IsAnimatedPng(bytes) ? PageSkip.Animated
             : null;
@@ -276,9 +414,9 @@ public static class PageConversion
             return null;
         }
 
-        return format == "png" && (settings.Stop == PageConversionStop.Lossless || settings.PngLossless)
+        return format == "png" && (target.Stop == PageConversionStop.Lossless || pngLossless)
             ? PageEncoding.LosslessWebp
-            : settings.Format == PageConversionFormat.Avif ? PageEncoding.Avif : PageEncoding.Webp;
+            : LossyEncoding(target.Format);
     }
 
     /// <summary>The format name <see cref="ChapterFileMeasurer"/> would give these bytes.</summary>
@@ -294,6 +432,7 @@ public static class PageConversion
             _ => null
         };
         if (sniffed is not null) return sniffed;
+        if (JpegXl.HasSignature(bytes)) return "jxl";
         if (bytes.Length > 1 && bytes[0] == 'B' && bytes[1] == 'M') return "bmp";
         return extension.TrimStart('.').ToLower(CultureInfo.InvariantCulture) switch
         {

@@ -9756,6 +9756,23 @@ body.reader-open {
 .reader-continuous[data-zoomed='true'] .reader-fit-original {
   max-width: none;
 }
+/* Each page of the strip sits in its own box (ContinuousView's StripPage), which lays nothing out:
+   its image is a flex item of the strip, as if the box were not there. Only the last page, with a
+   credit banner fused into its bottom, takes a real box shorter than its image (data-cut), laid out
+   as the strip lays out its pages, so the banner is neither drawn nor scrollable. `clip` on the one
+   axis keeps a page zoomed wider than the strip pannable; `relative` places an enhanced overlay
+   inside the clip. */
+.reader-strip-page {
+  display: contents;
+}
+.reader-strip-page[data-cut] {
+  position: relative;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: safe center;
+  overflow-y: clip;
+}
 /* An unloaded page has no intrinsic size, so every lazy image would sit at height 0 inside the
    first viewport and the browser would fetch them all at once. A placeholder gives the strip a
    real length until each page reports its own size (ContinuousView sets data-loaded). */
@@ -13148,6 +13165,36 @@ button.import-plan-folder-head:hover {
 .settings-section-actions {
   margin-left: auto;
 }
+.new-setting-pill {
+  margin-left: 8px;
+  vertical-align: 0.2em;
+  letter-spacing: 0.02em;
+}
+.mantine-Group-root > .new-setting-pill {
+  align-self: center;
+  margin-left: 0;
+}
+/* A card on the New tab that is there for new controls inside it shows only those, plus whatever
+   holds them. Components mark them with data-new-control; data-new-keep keeps a header they need. */
+.new-setting-focus
+  .settings-section
+  > :not(.settings-section-head, .settings-section-desc)
+  :not([data-new-control], [data-new-control] *, :has([data-new-control]), [data-new-keep], [data-new-keep] *) {
+  display: none !important;
+}
+.new-setting-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+  text-decoration: none;
+  transition: color var(--dur-base) var(--ease);
+}
+.new-setting-home:hover {
+  color: var(--brand);
+}
 .settings-section-actions .mantine-Button-root[data-variant='subtle'] {
   color: var(--ink-2);
 }
@@ -14510,6 +14557,270 @@ button.settings-row-head:hover,
   }
 }
 
+/* --- release groups modal (Settings > Library > Credit pages) --- */
+
+.credit-groups-rail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+  margin-bottom: var(--mantine-spacing-sm);
+}
+/* Two panes that scroll on their own, so the group list stays in reach beside a long group. */
+.credit-groups-split {
+  display: grid;
+  grid-template-columns: minmax(0, 16.5rem) minmax(0, 1fr);
+  height: min(64dvh, 640px);
+  border-block: 1px solid var(--hairline);
+}
+.credit-groups-list {
+  overflow-y: auto;
+  padding: 4px 12px 4px 10px;
+  border-inline-end: 1px solid var(--hairline);
+}
+.credit-groups-list .modal-list {
+  border-block: 0;
+}
+.credit-groups-detail {
+  min-width: 0;
+  overflow-y: auto;
+  padding: var(--mantine-spacing-sm) 4px var(--mantine-spacing-md) var(--mantine-spacing-md);
+}
+.credit-group-row {
+  align-items: center;
+}
+.credit-group-row-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.credit-group-row-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.credit-group-row-icon,
+.credit-group-head-icon {
+  flex: none;
+  color: var(--q-aggregator);
+}
+.credit-group-row-chevron {
+  display: none;
+  flex: none;
+  color: var(--ink-3);
+}
+.credit-pill {
+  flex: none;
+}
+.credit-group-missing {
+  color: var(--warn);
+}
+.credit-muted {
+  color: var(--ink-3);
+}
+.credit-group-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.credit-group-title {
+  overflow-wrap: anywhere;
+}
+.credit-group-name-form {
+  margin-top: 4px;
+}
+
+/* A notice keeps its outline: the image, what it says and its controls belong together. */
+.credit-notice {
+  display: grid;
+  grid-template-columns: 9.5rem minmax(0, 1fr);
+  gap: var(--mantine-spacing-sm) var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+}
+.credit-notice[data-shape='strip'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.credit-notice-image {
+  display: flex;
+  align-self: start;
+  align-items: flex-start;
+  justify-content: center;
+  min-height: 4rem;
+  overflow: hidden;
+  border-radius: var(--radius-thumb);
+  background: var(--surface-sunken);
+}
+.credit-notice-image img {
+  display: block;
+  max-width: 100%;
+  max-height: 15rem;
+  object-fit: contain;
+}
+button.credit-notice-image {
+  cursor: zoom-in;
+}
+.credit-notice-large {
+  display: flex;
+  justify-content: center;
+  min-height: 8rem;
+}
+.credit-notice-large img {
+  display: block;
+  max-width: min(100%, 64rem);
+  height: auto;
+  border-radius: var(--radius-thumb);
+}
+.credit-group-variants {
+  overflow-wrap: anywhere;
+}
+.credit-group-merge {
+  align-self: flex-start;
+}
+.credit-merge-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 14rem;
+  overflow-y: auto;
+}
+/* Rows keep their height and the list scrolls: as shrinkable flex items a long list squeezed to slivers. */
+.credit-merge-list > * {
+  flex: none;
+}
+.credit-notice[data-shape='strip'] .credit-notice-image img {
+  max-height: 9rem;
+}
+.credit-notice-image[data-empty] {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: var(--mantine-spacing-sm);
+  color: var(--ink-3);
+  text-align: center;
+}
+.credit-notice-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+  min-width: 0;
+}
+.credit-notice-excerpt {
+  padding-inline-start: var(--mantine-spacing-xs);
+  border-inline-start: 2px solid var(--hairline);
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.credit-notice-invite {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.credit-notice-name {
+  min-width: 0;
+}
+.credit-notice-name > p {
+  overflow-wrap: anywhere;
+}
+.credit-notice-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--mantine-spacing-xs) var(--mantine-spacing-lg);
+}
+.credit-name-popover {
+  width: min(20rem, calc(100vw - 32px));
+}
+.credit-series-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px var(--mantine-spacing-sm);
+  margin-bottom: 4px;
+}
+.credit-series-title {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.credit-chapter-row {
+  justify-content: space-between;
+  min-height: 34px;
+}
+.credit-chapter-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.credit-chapter-group {
+  max-width: 45%;
+}
+.credit-apply-result {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--mantine-spacing-sm);
+  margin: 0;
+}
+.credit-apply-result > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2px;
+}
+.credit-apply-result dt {
+  color: var(--ink-3);
+  font-size: var(--type-meta);
+}
+.credit-apply-result dd {
+  margin: 0;
+  color: var(--ink-hi);
+  font-size: var(--type-figure);
+  font-weight: var(--fw-semibold);
+}
+
+@media (max-width: 47.9375em) {
+  .credit-groups-split {
+    display: block;
+    height: auto;
+    border-block: 0;
+  }
+  .credit-groups-list {
+    overflow: visible;
+    padding: 0 10px;
+    border-inline-end: 0;
+  }
+  .credit-groups-list .modal-list {
+    border-block: 1px solid var(--hairline);
+  }
+  .credit-group-row-chevron {
+    display: block;
+  }
+  .credit-groups-detail {
+    overflow: visible;
+    padding: 0;
+  }
+  .credit-groups-back {
+    width: 100%;
+    min-height: 36px;
+    margin-bottom: var(--mantine-spacing-sm);
+    padding: 5px 0;
+    color: var(--ink-hi);
+  }
+  .credit-notice {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .credit-notice[data-shape='page'] .credit-notice-image img {
+    max-height: 17rem;
+  }
+}
+
 /* --- home page (ported from redesignv2) --- */
 
 /* ── Home: Continue reading hero ──────────────────────────────────────────────
@@ -14937,11 +15248,21 @@ button.settings-row-head:hover,
   border-top: 1px solid var(--hairline);
   background-color: var(--surface-raised);
 }
+/* A dialog with no body (a ConfirmDialog with only a description): the footer sits right under the
+   header's hairline instead of leaving an empty band between two lines. */
+.modal-footer:first-child {
+  margin-top: calc(var(--mb-padding, var(--mantine-spacing-md)) * -1);
+  border-top: 0;
+}
 .modal-footer-status {
   flex: 1 1 14rem;
   min-width: 0;
   font-size: var(--type-meta);
   color: var(--ink-3);
+}
+/* Without a status, its 14rem basis wraps the buttons onto a second row in a narrow dialog. */
+.modal-footer-status:empty {
+  display: none;
 }
 .modal-footer-actions {
   display: flex;
@@ -17363,7 +17684,7 @@ button.series-title:hover {
   border-radius: var(--radius-surface);
   background: var(--surface-2);
 }
-.pc-compare[data-loupe] .pc-compare-viewport {
+.pc-compare-viewport {
   cursor: crosshair;
 }
 .pc-compare-viewport {
@@ -17435,23 +17756,47 @@ button.series-title:hover {
 .pc-compare-tag[data-side='right'] {
   right: 22px;
 }
-.pc-compare-lens {
+.pc-compare-tools {
   position: absolute;
-  top: 0;
-  left: 0;
-  display: none;
-  width: 176px;
-  height: 176px;
-  border: 2px solid var(--brand);
-  border-radius: var(--radius-surface);
-  background: var(--surface);
-  box-shadow: var(--shadow-object);
-  pointer-events: none;
+  bottom: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pc-compare-flip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--type-micro);
+  font-weight: var(--fw-strong);
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+}
+.pc-compare-flip[aria-pressed='true'] {
+  border-color: var(--brand);
+  color: var(--ink);
+}
+.pc-compare-kbd {
+  padding: 0 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 10px;
+  color: var(--ink-3);
 }
 .pc-compare-busy {
   position: absolute;
   bottom: 8px;
-  left: 50%;
+  right: 8px;
   display: grid;
   place-items: center;
   width: 28px;
@@ -17461,6 +17806,174 @@ button.series-title:hover {
   border-radius: 50%;
   background: color-mix(in srgb, var(--surface) 90%, transparent);
   pointer-events: none;
+}
+.pc-plan {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  overflow: hidden;
+}
+.pc-plan-head,
+.pc-plan-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.9fr) 112px;
+  column-gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+}
+.pc-plan-head {
+  padding-block: 8px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--type-micro);
+  font-weight: var(--fw-strong);
+  color: var(--ink-3);
+}
+.pc-plan-row + .pc-plan-row {
+  border-top: 1px solid var(--border);
+}
+.pc-plan-row[data-default] {
+  background: color-mix(in srgb, var(--ink) 3%, transparent);
+}
+.pc-plan-row[data-expanded] {
+  background: var(--surface-hover);
+}
+.pc-plan-name-button {
+  display: block;
+  width: 100%;
+  border-radius: var(--radius-control);
+  text-align: left;
+}
+.pc-plan-name-button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.pc-plan-skip {
+  grid-column: span 2;
+}
+.pc-plan-size {
+  text-align: right;
+}
+.pc-plan-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+.pc-plan-editor {
+  grid-column: 1 / -1;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: var(--surface);
+}
+.pc-target-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  font-size: var(--type-meta);
+  color: var(--ink);
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.pc-target-chip:hover {
+  border-color: var(--brand);
+}
+.pc-target-chip:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.pc-target-chip[data-same] {
+  border-style: dashed;
+  color: var(--ink-3);
+}
+.pc-target-chip-text {
+  display: inline-flex;
+  flex-wrap: wrap;
+  column-gap: 5px;
+  min-width: 0;
+  text-align: left;
+}
+.pc-target-chip-format {
+  font-weight: var(--fw-strong);
+}
+.pc-target-chip-icon {
+  flex-shrink: 0;
+  color: var(--ink-3);
+}
+.pc-plan-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-surface);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: var(--shadow-object);
+}
+.pc-plan-footer-sampling {
+  flex: 1;
+  min-width: 220px;
+  max-width: 420px;
+}
+.pc-sheet {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 20px;
+}
+.pc-sheet-controls {
+  min-width: 0;
+}
+@media (max-width: 62em) {
+  .pc-sheet {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 48em) {
+  .pc-plan-head {
+    display: none;
+  }
+  .pc-plan-head,
+  .pc-plan-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    row-gap: 10px;
+  }
+  .pc-plan-name {
+    grid-column: 1 / -1;
+  }
+  .pc-plan-target::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 4px;
+    font-size: var(--type-micro);
+    color: var(--ink-3);
+  }
+  .pc-plan-size {
+    text-align: left;
+  }
+  .pc-plan-name {
+    grid-row: 1;
+  }
+  .pc-plan-actions {
+    grid-row: 1;
+    grid-column: 2;
+    align-self: start;
+  }
+  .pc-plan-row:has(.pc-plan-actions) .pc-plan-name {
+    grid-column: 1;
+  }
 }
 .pc-pick-list {
   max-height: 320px;

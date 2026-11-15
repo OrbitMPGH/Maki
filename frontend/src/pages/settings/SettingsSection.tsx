@@ -4,6 +4,8 @@ import { Trans } from '@lingui/react/macro'
 import { Panel, type PanelProps } from '../../components/ui/Panel'
 import { SettingsHelp } from '../../components/settings/SettingsHelp'
 import { UnsavedSettingsContext } from '../../components/settings/SaveButton'
+import { NewSettingPill } from '../../components/settings/NewSettingPill'
+import { SettingsFocusContext } from './newSettings'
 
 /**
  * Inside a card every field reads label, input, hint. With the hint above the input, fields side by
@@ -52,6 +54,10 @@ export function SettingsSection({
 }: SettingsSectionProps) {
   const reportId = useId()
   const report = useContext(UnsavedSettingsContext)
+  // On the New tab a card shown for one new control keeps Save and Discard, not its own buttons.
+  const focus = useContext(SettingsFocusContext)
+  const shownActions = focus ? null : actions
+  const shownDescription = focus ? focus.note : description
   const unsaved = Boolean(dirty && onSave)
   const titleId = `setting-${id}-title`
 
@@ -65,10 +71,11 @@ export function SettingsSection({
       <div className="settings-section-head">
         <h2 id={titleId} className="settings-section-title">
           {title}
+          <NewSettingPill id={id} />
         </h2>
-        {(actions || unsaved) && (
+        {(shownActions || unsaved) && (
           <Group gap="xs" wrap="nowrap" className="settings-section-actions">
-            {actions}
+            {shownActions}
             {unsaved && (
               <>
                 <span className="save-control-hint">
@@ -87,9 +94,9 @@ export function SettingsSection({
           </Group>
         )}
       </div>
-      {description && (
+      {shownDescription && (
         <div className="settings-section-desc">
-          <SettingsHelp>{description}</SettingsHelp>
+          <SettingsHelp>{shownDescription}</SettingsHelp>
         </div>
       )}
       <Panel {...panelProps}>

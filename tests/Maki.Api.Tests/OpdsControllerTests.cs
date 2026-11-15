@@ -214,14 +214,45 @@ public sealed class OpdsControllerTests : IDisposable
         }
     }
 
-    private int SeedCbzChapter(string root, int pages, byte[]? page = null)
+    [Fact]
+    public async Task AJpegXlPageAlwaysGoesOutAsWebp()
+    {
+        if (!JpegXl.IsAvailable && Environment.GetEnvironmentVariable("MAKI_REQUIRE_LIBJXL") != "1")
+        {
+            return;
+        }
+
+        var user = _db.SeedUser("jxl", MakiPermission.UseOpds, allRootFolders: true);
+        EnableCatalogue(user);
+        var token = _db.SeedApiKey(user, UserApiKeyScope.Opds);
+        var root = Path.Combine(Path.GetTempPath(), "maki-opds-jxl-" + Guid.NewGuid().ToString("N")[..8]);
+        Directory.CreateDirectory(root);
+        try
+        {
+            var chapterId = SeedCbzChapter(root, pages: 1, page: ReaderJpegXlPageTests.JxlPage(80, 120), extension: "jxl");
+            var controller = Controller(withReader: true);
+            controller.Request.Headers.Accept = "image/jxl";
+
+            var page = Assert.IsType<FileContentResult>(await controller.Page(token, chapterId, 0, default));
+
+            Assert.Equal("image/webp", page.ContentType);
+            Assert.Equal(new ImageHeader(80, 120, ImageFormat.Webp), ImageCodec.Identify(page.FileContents));
+            Assert.EndsWith("-webp\"", page.EntityTag!.Tag.ToString());
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private int SeedCbzChapter(string root, int pages, byte[]? page = null, string extension = "png")
     {
         var cbz = Path.Combine(root, "Chapter.cbz");
         using (var archive = ZipFile.Open(cbz, ZipArchiveMode.Create))
         {
             for (var i = 1; i <= pages; i++)
             {
-                using var stream = archive.CreateEntry($"{i:000}.png").Open();
+                using var stream = archive.CreateEntry($"{i:000}.{extension}").Open();
                 stream.Write(page ?? new Raster(150, 300).EncodePng());
             }
         }

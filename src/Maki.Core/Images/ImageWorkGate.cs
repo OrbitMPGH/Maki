@@ -134,12 +134,13 @@ public static class ImageWorkGate
     /// Peak encoder memory per pixel, measured on 1.8 to 16 MP pages at one thread and rounded up:
     /// AVIF 24 to 49, lossless WebP 23 to 37, lossy WebP 12 to 24 with sharp YUV and about two thirds
     /// of that without. A page of fewer than three bands never gets sharp YUV; whether an RGB page is
-    /// grey is only known after the decode, so it is charged as colour.
+    /// grey is only known after the decode, so it is charged as colour. JPEG XL at effort 3 measured 32
+    /// to 34 on upscaled colour pages (research/image-formats/2026-11-12-jpegxl), on one thread like WebP.
     /// </summary>
     public static int BytesPerPixel(PageEncoding encoding, bool sharpYuv) => encoding switch
     {
         PageEncoding.Avif => 50,
-        PageEncoding.LosslessWebp => 36,
+        PageEncoding.LosslessWebp or PageEncoding.Jxl => 36,
         _ => sharpYuv ? 24 : 16
     };
 

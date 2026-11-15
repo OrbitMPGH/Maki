@@ -547,6 +547,12 @@ public static class SettingKeys
     public const string PageConversionPngLossless = "library.pageconversion.pnglossless";
 
     /// <summary>
+    /// The colour pages' target as a <c>PageTarget</c> name ("avif:balanced", "lossless"). Unset converts
+    /// them like black-and-white pages, in <see cref="PageConversionFormat"/> at <see cref="PageConversionStop"/>.
+    /// </summary>
+    public const string PageConversionColour = "library.pageconversion.colour";
+
+    /// <summary>
     /// A height in pixels: strips taller than it are cut into several pages while conversion is on
     /// (<c>TallPageSplitter</c>, <c>MinHeight</c> to <c>MaxHeight</c>). Unset leaves them whole.
     /// </summary>
@@ -990,6 +996,15 @@ public static class SettingKeys
 
     /// <summary>Latest version already notified about, so the update-available signal fires once per version.</summary>
     public const string UpdatesLastNotifiedVersion = "updates.lastnotifiedversion";
+
+    /// <summary>The version this instance last started as. Written by <c>VersionHistory</c>.</summary>
+    public const string VersionRunning = "version.running";
+
+    /// <summary>
+    /// The version the instance ran before its latest upgrade; the Settings "New" tab lists what
+    /// came after it. Unset on a fresh install, "0.0.0" on an install older than this key.
+    /// </summary>
+    public const string VersionUpgradedFrom = "version.upgradedfrom";
 
     /// <summary>
     /// "true" → serve the library over OPDS. Default off: the catalogue is the whole library

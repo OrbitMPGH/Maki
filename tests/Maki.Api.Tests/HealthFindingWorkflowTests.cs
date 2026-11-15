@@ -185,6 +185,45 @@ public sealed class HealthFindingWorkflowTests : IDisposable
     }
 
     [Fact]
+    public async Task A_scan_relinks_a_renamed_folder_by_itself()
+    {
+        using var db = fixture.NewContext();
+        var lib = await SeedLinked(db);
+        var moved = await MoveFolder(db, lib, "Series (2024)");
+
+        Assert.Equal(1, await Operations(db).RelinkFoundMovesAsync(null, default));
+
+        Assert.Equal(moved.RelativePath, db.ChapterFiles.AsNoTracking().Single().RelativePath);
+        Assert.True(db.HealthFiles.AsNoTracking().Single(f => f.Id == lib.File.Id).Removed);
+        Assert.Equal("Series (2024)", db.Series.AsNoTracking().Single().FolderName);
+        Assert.Null(db.HealthHistory.AsNoTracking().Single(h => h.MessageKey == "health.history.relinkedMoved").UserId);
+        // One scan for everything it relinked, not one per file.
+        Assert.Equal($"[{moved.Id}]", db.HealthScans.AsNoTracking().Single().FileIdsJson);
+    }
+
+    [Fact]
+    public async Task A_scan_leaves_a_name_only_match_for_a_reviewer()
+    {
+        using var db = fixture.NewContext();
+        var lib = await SeedLinked(db);
+        File.Delete(Path.Combine(root, lib.File.RelativePath));
+        var scan = new HealthScanService(db);
+        await scan.AnalyzeAsync(lib.File, root, true, default);
+        var relative = Path.Combine("Elsewhere", Path.GetFileName(lib.File.RelativePath));
+        Directory.CreateDirectory(Path.Combine(root, "Elsewhere"));
+        using (var zip = ZipFile.Open(Path.Combine(root, relative), ZipArchiveMode.Create))
+        { using var s = zip.CreateEntry("001.png").Open(); s.Write(new Raster(4, 4).EncodePng()); }
+        var other = new HealthFile { RootFolderId = lib.Root.Id, RelativePath = relative };
+        db.HealthFiles.Add(other); await db.SaveChangesAsync();
+        await scan.AnalyzeAsync(other, root, true, default, 0, true);
+
+        Assert.Equal(0, await Operations(db).RelinkFoundMovesAsync(null, default));
+
+        Assert.Equal(lib.File.RelativePath, db.ChapterFiles.AsNoTracking().Single().RelativePath);
+        Assert.Empty(db.HealthScans.AsNoTracking());
+    }
+
+    [Fact]
     public async Task A_copy_inside_another_series_folder_is_never_offered()
     {
         using var db = fixture.NewContext();

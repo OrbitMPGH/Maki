@@ -26,16 +26,18 @@ public sealed record PageSplitPreview(PageConversionSample Sample, int Width, in
 /// <summary>
 /// A preview page on disk. When <see cref="Kept"/>, <see cref="Path"/> is the stored page as it is
 /// and <see cref="KeptReason"/> is the lowercase <see cref="PageSkip"/> name, or "unreadable".
+/// <see cref="Colour"/> says the page takes the colour target, so the wizard knows which quality it is showing.
 /// </summary>
 public sealed record PageConversionPreview(
-    string Path, string ContentType, long OriginalBytes, long EncodedBytes, bool Kept, string Key, string? KeptReason = null);
+    string Path, string ContentType, long OriginalBytes, long EncodedBytes, bool Kept, string Key, string? KeptReason = null,
+    bool Colour = false);
 
 /// <summary>
 /// The page conversion wizard's sample pages and previews. A preview goes through the same
 /// <see cref="PageConversion.Convert"/> call as the library pass, so what the wizard shows is what
 /// the pass would write.
 /// </summary>
-public class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILogger<PageConversionPreviewService> logger)
+public partial class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILogger<PageConversionPreviewService> logger)
 {
     /// <summary>Archives one samples call may open.</summary>
     private const int MaxProbes = 24;
@@ -61,7 +63,7 @@ public class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILog
 
     private enum PageKind { Any, Colour, Grey }
 
-    private sealed record Encoded(byte[]? Bytes, string Extension, string? KeptReason);
+    private sealed record Encoded(byte[]? Bytes, string Extension, string? KeptReason, bool Colour = false);
 
     /// <summary>
     /// Up to three pages that show what a stop does: a greyscale manga page, a colour page and one
@@ -531,9 +533,11 @@ public class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILog
         try
         {
             var result = PageConversion.Convert(bytes, extension, settings);
+            // Convert only looks for colour when the two targets differ; the wizard needs to know either way.
+            var colour = settings.ByColour ? result.Colour : ImageCodec.IsColour(bytes) == true;
             return result.Converted
-                ? new Encoded(result.Bytes, result.Extension, null)
-                : new Encoded(null, extension, result.Skipped.ToString()!.ToLowerInvariant());
+                ? new Encoded(result.Bytes, result.Extension, null, colour)
+                : new Encoded(null, extension, result.Skipped.ToString()!.ToLowerInvariant(), colour);
         }
         catch (VipsException ex)
         {
@@ -557,9 +561,17 @@ public class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILog
             return;
         }
 
+        if (encoded.Colour)
+        {
+            WriteAtomic(Path.Combine(dir, key + ColourMarker), []);
+        }
+
         WriteAtomic(Path.Combine(dir, key + (encoded.Bytes is null ? ".kept" : encoded.Extension)),
             encoded.Bytes ?? System.Text.Encoding.UTF8.GetBytes(encoded.KeptReason!));
     }
+
+    /// <summary>An empty file beside an encoded page that took the colour target. Written before the page, so a page found has its marker.</summary>
+    private const string ColourMarker = ".colour";
 
     /// <summary>
     /// A hit renews the stored page and the file it returns, so the housekeeping sweep, which goes by
@@ -595,14 +607,15 @@ public class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILog
             return new PageConversionPreview(stored, storedType, storedLength, storedLength, false, key);
         }
 
-        foreach (var (extension, type) in new[] { (".webp", "image/webp"), (".avif", "image/avif") })
+        foreach (var (extension, type) in new[] { (".webp", "image/webp"), (".avif", "image/avif"), (".jxl", JpegXlPages.MediaType) })
         {
             var encoded = new FileInfo(Path.Combine(dir, key + extension));
             if (encoded.Exists)
             {
                 var length = encoded.Length;
+                var colour = TouchColour(dir, key);
                 Touch(stored, encoded.FullName);
-                return new PageConversionPreview(encoded.FullName, type, storedLength, length, false, key);
+                return new PageConversionPreview(encoded.FullName, type, storedLength, length, false, key, Colour: colour);
             }
         }
 
@@ -613,9 +626,22 @@ public class PageConversionPreviewService(MakiDbContext db, AppPaths paths, ILog
         }
 
         var reason = File.ReadAllText(kept).Trim();
+        var keptColour = TouchColour(dir, key);
         Touch(stored, kept);
         return new PageConversionPreview(stored, storedType, storedLength, storedLength, true, key,
-            reason.Length == 0 ? PageSkip.NotSmaller.ToString().ToLowerInvariant() : reason);
+            reason.Length == 0 ? PageSkip.NotSmaller.ToString().ToLowerInvariant() : reason, keptColour);
+    }
+
+    private static bool TouchColour(string dir, string key)
+    {
+        var marker = Path.Combine(dir, key + ColourMarker);
+        if (!File.Exists(marker))
+        {
+            return false;
+        }
+
+        Touch(marker);
+        return true;
     }
 
     private static void Touch(params string[] files)
