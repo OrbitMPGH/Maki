@@ -38,7 +38,10 @@ public class EmbedderIdleUnloadJob(TextEmbedder embedder) : IJob
         var minutes = Resolve(Environment.GetEnvironmentVariable(IdleMinutesVariable));
         if (minutes > 0 && embedder.ReleaseIfIdle(TimeSpan.FromMinutes(minutes)))
         {
-            NativeHeap.Trim();
+            // The session going means the typed searches or the indexing pass that used it have
+            // stopped, so the heap their tensors churned is collected now. The artifact unload does
+            // the same, but nothing else would after an indexing pass, or with artifact unloading off.
+            NativeHeap.CollectAndTrim();
         }
 
         return Task.CompletedTask;

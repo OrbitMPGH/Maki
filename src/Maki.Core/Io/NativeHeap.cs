@@ -52,6 +52,21 @@ public static class NativeHeap
     }
 
     /// <summary>
+    /// After an idle unload: a blocking, compacting, aggressive collect of every generation and the
+    /// large object heap, then <see cref="Trim"/>. Aggressive decommits the freed regions instead of
+    /// keeping them as allocation space, which is the part a dashboard sees. Only for a moment that
+    /// follows a quiet window, since it stalls every thread for the length of a full compaction
+    /// (tens of milliseconds on an idle instance's heap).
+    /// </summary>
+    public static void CollectAndTrim()
+    {
+        System.Runtime.GCSettings.LargeObjectHeapCompactionMode =
+            System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
+        GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+        Trim();
+    }
+
+    /// <summary>
     /// glibc's own accounting, summed over every arena: what is in use, what is free but still
     /// mapped (the part a trim can return), and what sits in separate mappings. Null off Linux or on
     /// a glibc older than 2.33.

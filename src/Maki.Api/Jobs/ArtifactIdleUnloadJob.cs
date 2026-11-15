@@ -106,10 +106,7 @@ public class ArtifactIdleUnloadJob(
             // is not compacted by default, and these artifacts are mostly large arrays. Aggressive
             // also decommits the freed regions instead of keeping them for reuse: 127 MB less RSS
             // right after an unload than Forced, measured on WSL2, back to the fresh-start level.
-            System.Runtime.GCSettings.LargeObjectHeapCompactionMode =
-                System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
-            GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
-            NativeHeap.Trim();
+            NativeHeap.CollectAndTrim();
             logger.LogDebug("Released {Count} idle discovery artifact(s)", released);
         }
 
