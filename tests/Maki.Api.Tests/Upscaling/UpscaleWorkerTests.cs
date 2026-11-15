@@ -85,6 +85,32 @@ public sealed class UpscaleWorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task The_model_session_is_released_once_the_queue_drains()
+    {
+        using var upscaler = new OnnxPageUpscaler(_catalog, _store, _settings, NullLogger<OnnxPageUpscaler>.Instance);
+        _queue.Replace(1, 7, "span-s", [Item(0), Item(1)]);
+        var worker = NewWorker(upscaler);
+
+        await worker.StartAsync(default);
+        try
+        {
+            await WaitForSentAsync(4);
+            var deadline = DateTime.UtcNow + Wait;
+            while (upscaler.IsLoaded(UpscaleModelId.SpanS) && DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(10);
+            }
+        }
+        finally
+        {
+            await worker.StopAsync(default);
+        }
+
+        Assert.False(upscaler.IsLoaded(UpscaleModelId.SpanS));
+        Assert.NotNull(_cache.TryGet(Item(1).Key));
+    }
+
+    [Fact]
     public async Task A_throwing_upscaler_fails_that_page_and_the_loop_keeps_going()
     {
         var upscaler = new FakeUpscaler();

@@ -17,6 +17,11 @@ public interface IPageUpscaler
     /// </summary>
     async Task<PendingUpscale> StartAsync(byte[] page, string modelId, UpscaleRun run, CancellationToken ct) =>
         PendingUpscale.Done(await UpscaleAsync(page, modelId, ct));
+
+    /// <summary>Drops model sessions nothing is using right now. The worker calls it when its queue drains.</summary>
+    void ReleaseIdleSessions()
+    {
+    }
 }
 
 /// <summary>How the worker wants one page run.</summary>

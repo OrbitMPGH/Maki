@@ -156,8 +156,11 @@ public sealed class OnnxPageUpscaler(
         }
     }
 
+    /// <summary>Disposes every session not in use, once the worker's queue drains: the arena holds the burst's peak.</summary>
+    public void ReleaseIdleSessions() => ReleaseIfIdle(TimeSpan.Zero, quiet: true);
+
     /// <summary>Disposes every session nothing has used for <paramref name="idleFor"/>. Returns how many went.</summary>
-    public int ReleaseIfIdle(TimeSpan idleFor)
+    public int ReleaseIfIdle(TimeSpan idleFor, bool quiet = false)
     {
         var released = 0;
         lock (_gate)
@@ -173,7 +176,7 @@ public sealed class OnnxPageUpscaler(
                 _sessions.Remove(id);
                 loaded.Session.Dispose();
                 released++;
-                logger.LogInformation("Unloaded upscale model {Model} after {Minutes:F0} idle minute(s)",
+                logger.Log(quiet ? LogLevel.Debug : LogLevel.Information, "Unloaded upscale model {Model} after {Minutes:F0} idle minute(s)",
                     id, (now - loaded.LastUsedUtc).TotalMinutes);
             }
         }
@@ -724,13 +727,19 @@ public sealed class OnnxPageUpscaler(
         }
     }
 
-    /// <summary>One intra-op thread: the workers of <see cref="RunTiles"/> are the parallelism.</summary>
+    /// <summary>
+    /// One intra-op thread: the workers of <see cref="RunTiles"/> are the parallelism. The CPU arena is
+    /// on here, unlike the embedder: without it every tile's activations were fresh mmaps under the
+    /// image's fixed malloc threshold, 11 to 15% of upscaler CPU in kernel page faults. The arena keeps
+    /// the burst's peak until the session goes, which the worker does when its queue drains.
+    /// </summary>
     private LoadedModel Load(UpscaleModelInfo info)
     {
         InferenceSession? session = null;
         try
         {
             using var options = OnnxMemoryOptions.Create(intraOpThreads: 1, fixedShapes: true);
+            options.EnableCpuMemArena = true;
             session = new InferenceSession(store.PathOf(info.Id), options);
             var output = session.OutputNames[0];
             var inputType = ElementType(session.InputMetadata[info.InputName]);
