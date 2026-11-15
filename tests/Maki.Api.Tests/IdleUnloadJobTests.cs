@@ -118,4 +118,12 @@ public class IdleUnloadJobTests
         Assert.Equal(0, BrowserIdleShutdownJob.Resolve("0"));
         Assert.Equal(0, ArtifactIdleUnloadJob.ResolveVector("0"));
     }
+
+    /// <summary>One minute, matching the job's one-minute tick, so a browser goes one to two minutes after its last call.</summary>
+    [Fact]
+    public void Browsers_close_after_one_idle_minute_unless_overridden()
+    {
+        Assert.Equal(1, BrowserIdleShutdownJob.Resolve(null));
+        Assert.Equal(3, BrowserIdleShutdownJob.Resolve("3"));
+    }
 }

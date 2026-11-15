@@ -26,9 +26,10 @@ namespace Maki.Api.Jobs;
 /// </para>
 ///
 /// <para>
-/// Three minutes. It started at fifteen and went to ten after a reading at sixteen minutes still
-/// found a browser up holding 123 MB; with the clearance surviving a relaunch, the only cost of a
-/// shorter window is those couple of seconds, against ~160 MB held in the meantime.
+/// One minute. It started at fifteen, went to ten and then three; with the clearance surviving a
+/// relaunch, the only cost of a shorter window is the relaunch (0.3 to 0.7 s measured, likely 1 to
+/// 2 s from a hard disk), against 300 to 460 MB of browser held after a burst. A scrape holds the
+/// browser's gate for its whole length, so the window only ever falls between two calls.
 /// </para>
 /// </summary>
 [DisallowConcurrentExecution]
@@ -40,7 +41,7 @@ public class BrowserIdleShutdownJob(
 
     public const string IdleMinutesVariable = "MAKI_BROWSER_IDLE_MINUTES";
 
-    private const int DefaultIdleMinutes = 3;
+    private const int DefaultIdleMinutes = 1;
 
     public async Task Execute(IJobExecutionContext context)
     {

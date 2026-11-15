@@ -122,6 +122,55 @@ public class ImageWorkGateTests
     }
 
     [Fact]
+    public async Task Background_encodes_hold_only_their_share_and_leave_the_rest_to_a_preview()
+    {
+        ImageWorkGate.SetConversionLimit(Math.Min(4, ImageWorkGate.MaxConversionLimit));
+        try
+        {
+            Assert.Equal(Math.Min(640, ImageWorkGate.ConversionBudgetMegabytes), ImageWorkGate.BackgroundConversionBudgetMegabytes);
+            var running = 0;
+            var peak = 0;
+            var half = new ConversionWeight(ImageWorkGate.BackgroundConversionBudgetMegabytes / 2, false);
+            var spare = ImageWorkGate.ConversionBudgetMegabytes - 2 * half.Megabytes;
+            var checkPreview = spare > 0 && ImageWorkGate.ConversionLimit >= 3;
+            using var previewDone = new ManualResetEventSlim(!checkPreview);
+            var background = Enumerable.Range(0, 5).Select(_ => Task.Run(() => ImageWorkGate.RunConversionAsync(() =>
+            {
+                var now = Interlocked.Increment(ref running);
+                lock (this)
+                {
+                    peak = Math.Max(peak, now);
+                }
+
+                previewDone.Wait(TimeSpan.FromSeconds(10));
+                Thread.Sleep(20);
+                Interlocked.Decrement(ref running);
+                return 0;
+            }, half, CancellationToken.None, background: true))).ToList();
+
+            if (checkPreview)
+            {
+                while (Volatile.Read(ref running) < 2)
+                {
+                    await Task.Delay(5);
+                }
+
+                // Two background pages hold their whole share; a preview still gets the rest at once.
+                var preview = ImageWorkGate.RunConversionAsync(() => 1, new ConversionWeight(spare, false), CancellationToken.None);
+                Assert.Same(preview, await Task.WhenAny(preview, Task.Delay(TimeSpan.FromSeconds(5))));
+                previewDone.Set();
+            }
+
+            await Task.WhenAll(background);
+            Assert.Equal(Math.Min(2, ImageWorkGate.ConversionLimit), peak);
+        }
+        finally
+        {
+            ImageWorkGate.SetConversionLimit(null);
+        }
+    }
+
+    [Fact]
     public void An_encode_is_weighed_by_its_encoder_memory()
     {
         Assert.InRange(ImageWorkGate.ConversionBudgetMegabytes, 64, 1024);

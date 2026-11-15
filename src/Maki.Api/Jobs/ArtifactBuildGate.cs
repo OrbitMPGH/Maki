@@ -1,4 +1,3 @@
-using System.Runtime;
 using Maki.Core.Io;
 
 namespace Maki.Api.Jobs;
@@ -130,10 +129,7 @@ public sealed class ArtifactBuildGate(ILogger<ArtifactBuildGate> logger)
     {
         if (Volatile.Read(ref _waiting) == 0 && Interlocked.Exchange(ref _built, 0) == 1)
         {
-            GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
-            // Aggressive, so the freed regions are decommitted rather than kept for the next build.
-            GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
-            NativeHeap.Trim();
+            NativeHeap.CollectAndTrim();
             Interlocked.Increment(ref _collections);
         }
 

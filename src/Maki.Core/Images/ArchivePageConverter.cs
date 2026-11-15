@@ -185,7 +185,8 @@ public static class ArchivePageConverter
                         var extension = Path.GetExtension(entry.FullName);
                         page = Task.Run(() => ImageWorkGate.RunConversionAsync(
                             () => PageConversion.ConvertPage(bytes, extension, settings),
-                            PageConversion.WeightOf(bytes, extension, settings), encodes.Token), encodes.Token);
+                            PageConversion.WeightOf(bytes, extension, settings), encodes.Token, background: true),
+                            encodes.Token);
                     }
 
                     pending.Enqueue(new Pending(entry, bytes, page));
@@ -448,7 +449,8 @@ public static class ArchivePageConverter
             var pending = picked
                 .Select(p => Task.Run(() => ImageWorkGate.RunConversionAsync(
                     () => PageConversion.Convert(p.Bytes, p.Extension, settings),
-                    PageConversion.WeightOf(p.Bytes, p.Extension, settings), probes.Token), probes.Token))
+                    PageConversion.WeightOf(p.Bytes, p.Extension, settings), probes.Token, background: true),
+                    probes.Token))
                 .ToList();
             try
             {
