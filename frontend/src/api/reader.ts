@@ -187,7 +187,7 @@ const ENHANCE_SESSION = randomUUID()
  * encode pages only this browser wants as WebP when it cannot show JPEG XL; the probe is awaited so a
  * tab's first request never says no only because the probe had not answered yet.
  */
-export async function requestServerEnhance(
+export function requestServerEnhance(
   chapterId: number,
   model: string,
   pages: number[],
@@ -195,25 +195,34 @@ export async function requestServerEnhance(
   wholeChapter = false,
   notWanted: number[] = [],
   window = pages.length,
-) {
-  const jpegXl = await jpegXlSupported()
-  return api<{ pages: { page: number; state: ServerPageState }[] }>(`/reader/chapter/${chapterId}/enhance`, {
-    method: 'POST',
-    body: JSON.stringify({
-      model,
-      pages,
-      ...(next && { nextChapterId: next.chapterId, nextPages: next.pages }),
-      ...(wholeChapter && { wholeChapter, window }),
-      ...(notWanted.length > 0 && { notWanted }),
-      session: ENHANCE_SESSION,
-      visible: document.visibilityState === 'visible',
-      jpegXl,
-    }),
-  })
+): Promise<{ pages: { page: number; state: ServerPageState }[] }> {
+  const post = (jpegXl: boolean) =>
+    api<{ pages: { page: number; state: ServerPageState }[] }>(`/reader/chapter/${chapterId}/enhance`, {
+      method: 'POST',
+      body: JSON.stringify({
+        model,
+        pages,
+        ...(next && { nextChapterId: next.chapterId, nextPages: next.pages }),
+        ...(wholeChapter && { wholeChapter, window }),
+        ...(notWanted.length > 0 && { notWanted }),
+        session: ENHANCE_SESSION,
+        visible: document.visibilityState === 'visible',
+        jpegXl,
+      }),
+    })
+  // Sent in the same tick once the probe has settled, so a cancel issued after it stays behind it.
+  const known = jpegXlSupportedNow()
+  if (known !== null) return post(known)
+  // A cancel that arrives while the probe is still out must not be overtaken by this request.
+  const cancelsBefore = enhanceCancels
+  return jpegXlSupported().then((jpegXl) => (cancelsBefore === enhanceCancels ? post(jpegXl) : { pages: [] }))
 }
+
+let enhanceCancels = 0
 
 /** Drops this tab's pending server upscales. `keepalive` lets it go out while the tab closes. */
 export function cancelServerEnhance() {
+  enhanceCancels++
   return api<void>(`/reader/enhance?session=${encodeURIComponent(ENHANCE_SESSION)}`, { method: 'DELETE', keepalive: true })
 }
 
