@@ -614,7 +614,15 @@ SemanticRecommender RecommenderFor(
 // point of them. THIS MUST CHANGE THE DAY AN MU CHANNEL SHIPS, or that channel will be graded
 // against its own input and look spectacular.
 var forbidGraph = mode == "library" ? false : labelKind == "reco";
-var forbidCoRead = mode == "library" || labelKind == "coread";
+// A co-read graph built with `fetch-coread-graph.cs build --fold-out` is the exception in `library`
+// mode: the fold guard above has already refused one that saw the graded fold.
+var coReadFoldLimited = mode == "library" && foldCount > 0
+    && ReadTrainingFolds(coReadPath) is { Count: > 0 } coReadFolds && !coReadFolds.Contains(foldIndex);
+var forbidCoRead = (mode == "library" && !coReadFoldLimited) || labelKind == "coread";
+if (coReadFoldLimited)
+{
+    Console.WriteLine("note     : the co-read graph was built without the graded fold, so it stays on.");
+}
 
 // THE BEHAVIOURAL CHANNEL IS NOT THE CO-READ CHANNEL, BUT IT IS THE SAME DATA.
 // coread-edges.db and taste-vectors.db are both folded out of coread-graph.db - one as a pair
