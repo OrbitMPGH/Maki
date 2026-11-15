@@ -114,8 +114,7 @@ export function EstimateDetails({ plan }: { plan: PlanEstimate }) {
     <Stack gap="md">
       <Text size="sm" c="var(--ink-3)">
         <Trans>
-          Sizes come from encoding a sample of the files each row covers. Nothing is changed. Times depend on how busy
-          this server is.
+          Sizes come from encoding a sample of each row's files. Nothing is changed.
         </Trans>
       </Text>
 

@@ -96,7 +96,6 @@ function NotFoundPage() {
       art="missing"
       headingOrder={1}
       title={t`Page not found`}
-      description={t`Nothing lives at this address. The link may be old or mistyped.`}
       actionLabel={t`Go to start page`}
       actionTo="/"
       actionIcon={<IconArrowLeft size={16} />}

@@ -70,9 +70,9 @@ export function QueuePauseButton() {
     [sources, sourceLabel, t],
   )
 
-  const resumeHint = (option: ResumeChoice): string => {
+  const resumeHint = (option: ResumeChoice): string | undefined => {
     if (option === 'manual') return t`Stays paused until you press Resume.`
-    if (option === 'custom') return t`Pick the date and time below.`
+    if (option === 'custom') return undefined
     const at = resumeTime(option, '')
     const time = at ? untilText(at.toISOString()) : ''
     return t`Resumes at ${time}.`
@@ -141,8 +141,8 @@ export function QueuePauseButton() {
             <>
               <Text size="xs" c="var(--ink-3)" px={10} pt={4} pb={6}>
                 <Trans>
-                  Maki stops starting new downloads. Chapters already downloading finish, and nothing is removed from the
-                  queue. Torrents already handed to the download client keep downloading.
+                  Chapters already downloading finish, and so do torrents already with the download client. Nothing
+                  leaves the queue.
                 </Trans>
               </Text>
               <DrillRow

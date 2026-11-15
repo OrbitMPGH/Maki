@@ -188,7 +188,7 @@ function LibraryStep() {
           <Trans>Library folders</Trans>
         </Text>
         <Text className="setup-section-description">
-          <Trans>Where your manga is stored. If you use Kavita, point it at the same place.</Trans>
+          <Trans>If you use Kavita, point it at the same place.</Trans>
         </Text>
         <SetupPanel>
           {rootFolders?.map((f) => {
@@ -478,7 +478,7 @@ function DownloadsStep() {
 interface ServiceSpec {
   name: ConnectionName
   title: string
-  description: string
+  description?: string
   /** Left out for the indexer, which has its own form. */
   fields?: ConnectionFields
 }
@@ -501,7 +501,6 @@ function useServices(): ServiceSpec[] {
     {
       name: 'downloadclient',
       title: t`Download client`,
-      description: t`Downloads what the indexer finds.`,
       fields: downloadClientFields,
     },
     {
@@ -551,7 +550,7 @@ function ServiceRow({ service }: { service: ServiceSpec }) {
       >
         <div className="setup-service-text">
           <Text className="setup-row-label">{service.title}</Text>
-          <Text className="setup-row-description">{service.description}</Text>
+          {service.description && <Text className="setup-row-description">{service.description}</Text>}
         </div>
         <StatusDot tone={connected ? 'ok' : 'neutral'}>
           {connected ? <Trans>Saved</Trans> : <Trans>Not set</Trans>}
@@ -669,9 +668,6 @@ function FinishStep({
           <Text className="setup-row-label">
             <Trans>Add a series</Trans>
           </Text>
-          <Text className="setup-row-description">
-            <Trans>Search MangaBaka and start downloading.</Trans>
-          </Text>
         </UnstyledButton>
         <UnstyledButton className="setup-next-card" disabled={!ready} onClick={() => finishTo('/import')}>
           <Text className="setup-row-label">
@@ -698,7 +694,7 @@ function FinishStep({
             <Trans>Invite people</Trans>
           </Text>
           <Text className="setup-row-description">
-            <Trans>Give others their own account, library access and reading history.</Trans>
+            <Trans>Each person gets their own account and reading history.</Trans>
           </Text>
         </UnstyledButton>
       </div>
@@ -710,7 +706,7 @@ interface StepMeta {
   id: StepId
   label: string
   title: string
-  lead: string
+  lead?: string
   hint?: string
   tone?: Tone
 }
@@ -735,14 +731,13 @@ function useSteps(): StepMeta[] {
       id: 'welcome',
       label: t`Welcome`,
       title: t`Welcome to Maki`,
-      lead: t`A few choices to get your library running. Everything saves as you go, and all of it is in Settings afterwards.`,
+      lead: t`Everything saves as you go.`,
       hint: locales.find((l) => l.code === locale)?.label,
     },
     {
       id: 'library',
       label: t`Library`,
       title: t`Where your manga lives`,
-      lead: t`Pick the folders Maki reads from and downloads into, and how it treats the files it finds there.`,
       hint: rootFolders
         ? folderCount > 0
           ? plural(folderCount, { one: '# folder', other: '# folders' })
@@ -754,7 +749,7 @@ function useSteps(): StepMeta[] {
       id: 'discovery',
       label: t`Discover`,
       title: t`Metadata and Discover`,
-      lead: t`Series details come from a local copy of the MangaBaka database. Choose what Discover may show you.`,
+      lead: t`Series details come from a local copy of the MangaBaka database.`,
       hint: metadata
         ? metadata.dumpPresent
           ? t`Database ready`
@@ -768,14 +763,13 @@ function useSteps(): StepMeta[] {
       id: 'downloads',
       label: t`Downloads`,
       title: t`What to download`,
-      lead: t`Which languages Maki looks for, and which chapters it leaves alone.`,
       hint: topLanguages || undefined,
     },
     {
       id: 'connections',
       label: t`Connections`,
       title: t`Tools you already run`,
-      lead: t`All optional. Maki downloads from its own sources without any of these. Open one to fill it in.`,
+      lead: t`All optional. Maki downloads from its own sources without them.`,
       hint:
         connectedCount > 0
           ? plural(connectedCount, { one: '# connected', other: '# connected' })
@@ -785,7 +779,7 @@ function useSteps(): StepMeta[] {
       id: 'finish',
       label: t`Finish`,
       title: t`You're set`,
-      lead: t`Here is what Maki starts with. You can come back to this guide from the top of Settings.`,
+      lead: t`You can come back to this guide from the top of Settings.`,
     },
   ]
 }
@@ -967,15 +961,10 @@ function SetupGuide() {
 
             <div className="setup-stage" ref={stageRef}>
               <div className="setup-stage-inner" key={step.id}>
-                <Text className="setup-eyebrow">
-                  <Trans>
-                    Step {stepNumber} of {stepTotal}
-                  </Trans>
-                </Text>
                 <h2 className="setup-title" ref={titleRef} tabIndex={-1}>
                   {step.title}
                 </h2>
-                <Text className="setup-lead">{step.lead}</Text>
+                {step.lead && <Text className="setup-lead">{step.lead}</Text>}
 
                 <div className="setup-content">
                   {step.id === 'welcome' && <WelcomeStep />}
@@ -1014,9 +1003,7 @@ function SetupGuide() {
                     <Trans>Waiting for the metadata database.</Trans>
                   </Text>
                 ) : (
-                  <Text className="setup-footer-note">
-                    <Trans>Nothing here is final. Every option is also in Settings.</Trans>
-                  </Text>
+                  <span className="setup-footer-note" aria-hidden />
                 )}
                 {active > 0 && (
                   <Button

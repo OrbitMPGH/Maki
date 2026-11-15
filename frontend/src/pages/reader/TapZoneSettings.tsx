@@ -64,14 +64,12 @@ export default function TapZoneSettings({
   onPrefs,
   vertical,
   preview = false,
-  hintClassName,
   bleed = false,
 }: {
   prefs: TapPrefs
   onPrefs: (patch: Partial<ReaderPrefs>) => void
   vertical: boolean
   preview?: boolean
-  hintClassName?: string
   /** Pull the fields out to the edges of a drill panel, as its rows are. */
   bleed?: boolean
 }) {
@@ -130,10 +128,9 @@ export default function TapZoneSettings({
         size="xs"
         labelPosition="left"
         label={t`Swap back and forward`}
-        description={t`Puts the back zones where the forward ones were, for the other hand.`}
         checked={prefs.tapInvert}
         onChange={(event) => onPrefs({ tapInvert: event.currentTarget.checked })}
-        classNames={{ body: 'reader-settings-switch', description: hintClassName }}
+        classNames={{ body: 'reader-settings-switch' }}
       />
     </Stack>
   )

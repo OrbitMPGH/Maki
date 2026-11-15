@@ -53,10 +53,7 @@ export function TagManagerModal({ opened, onClose }: { opened: boolean; onClose:
       onClose={onClose}
       size={MODAL_SIZE.narrow}
       title={
-        <ModalHeading
-          title={<Trans>Manage tags</Trans>}
-          description={<Trans>Group series in the library and filter by them.</Trans>}
-        />
+        <ModalHeading title={<Trans>Manage tags</Trans>} />
       }
     >
       <Stack gap="sm">

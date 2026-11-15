@@ -75,7 +75,6 @@ export function UndoConversionModal({
       title={
         <ModalHeading
           title={<Trans>Undo conversion</Trans>}
-          description={<Trans>Put back the files as they were downloaded.</Trans>}
         />
       }
     >

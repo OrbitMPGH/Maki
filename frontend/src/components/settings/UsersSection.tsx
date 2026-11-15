@@ -414,13 +414,6 @@ function UserModal({ target, onClose }: { target: UserSummary | 'new'; onClose: 
       title={
         <ModalHeading
           title={isNew ? t`Add user` : t`Edit ${editName}`}
-          description={
-            isNew ? (
-              <Trans>They sign in with these details and see only what you grant here.</Trans>
-            ) : (
-              <Trans>Change the sign-in, permissions or library access for this account.</Trans>
-            )
-          }
         />
       }
       size={MODAL_SIZE.default}

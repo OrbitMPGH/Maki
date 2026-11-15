@@ -216,7 +216,6 @@ export function RecycleBinModal({ opened, onClose }: { opened: boolean; onClose:
           compact
           mood="pleased"
           title={t`The recycle bin is empty`}
-          description={t`Files you delete from the library or a series page land here first, so a slip can be undone.`}
         />
       ) : (
         <>

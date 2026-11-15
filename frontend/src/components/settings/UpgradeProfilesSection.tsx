@@ -571,7 +571,7 @@ function ProfileEditor({
         </SettingsHelp>
         {formats.length === 0 ? (
           <Text size="sm" c="var(--ink-3)">
-            <Trans>No quality formats defined yet. Add one below to score files by it.</Trans>
+            <Trans>No quality formats yet.</Trans>
           </Text>
         ) : (
           <div className="hair-table-wrap">

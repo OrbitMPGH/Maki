@@ -73,8 +73,9 @@ export const RunningWork: Story = {
 }
 
 export const NothingRunning: Story = {
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Nothing is running in the background.')).toBeVisible()
+  play: async ({ canvas, canvasElement }) => {
+    await expect(await canvas.findByText('Running now')).toBeVisible()
+    await expect(canvasElement.querySelector('.health-running-row')).toBeNull()
   },
 }
 
@@ -177,7 +178,7 @@ export const PartialScanError: Story = {
 export const NoChecksYet: Story = {
   parameters: { msw: [withOverview({ checks: [], files: 0 })] },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('No checks have run yet. Use Check now.')).toBeVisible()
+    await expect(await canvas.findByText('No checks yet')).toBeVisible()
   },
 }
 
@@ -229,7 +230,7 @@ export const FilesSearch: Story = {
 export const FilesEmpty: Story = {
   parameters: { ...tab('files'), msw: [http.get(api('/health/files'), () => HttpResponse.json(emptyList))] },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('No files match these filters. Run a scan to inventory the library.')).toBeVisible()
+    await expect(await canvas.findByText('No files match. Run a scan to inventory the library.')).toBeVisible()
   },
 }
 

@@ -84,7 +84,7 @@ export function CustomSourceUpdateDialog({ id, opened, onClose, onApplied }: {
       opened={opened}
       onClose={onClose}
       size={MODAL_SIZE.default}
-      title={<ModalHeading title={<Trans>Update {id}</Trans>} description={<Trans>Review what changes before it is applied.</Trans>} />}
+      title={<ModalHeading title={<Trans>Update {id}</Trans>} />}
       closeButtonProps={{ 'aria-label': t`Close` }}
     >
       <Stack gap="sm">
@@ -311,7 +311,6 @@ export function CustomRepositoriesPanel({ opened, onClose }: { opened: boolean; 
       title={
         <ModalHeading
           title={<Trans>Repositories</Trans>}
-          description={<Trans>Lists of custom source definitions that Maki can install and keep up to date.</Trans>}
         />
       }
       closeButtonProps={{ 'aria-label': t`Close` }}
@@ -319,8 +318,7 @@ export function CustomRepositoriesPanel({ opened, onClose }: { opened: boolean; 
       <Stack gap="md">
         <ModalNote tone="info">
           <Trans>
-            A repository is a list of custom source definitions someone publishes. Maki installs from it, and can
-            keep what it installed up to date. Only add repositories you trust: a definition decides which site Maki reads.
+            Only add repositories you trust: a definition decides which site Maki reads.
           </Trans>
         </ModalNote>
         <Group align="flex-end" gap="xs" wrap="nowrap">

@@ -78,7 +78,6 @@ export function UpgradeNowResultModal({
       title={
         <ModalHeading
           title={<Trans>Upgrade now</Trans>}
-          description={<Trans>Looked for a better copy of this chapter.</Trans>}
         />
       }
     >

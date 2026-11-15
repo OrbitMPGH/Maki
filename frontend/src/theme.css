@@ -4699,11 +4699,6 @@ button.site-chip:hover {
   gap: 10px;
   flex-wrap: wrap;
 }
-.discover-taste-lead {
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-  color: var(--ink-3);
-}
 .discover-taste-chips {
   display: flex;
   flex: 0 1 auto;
@@ -5289,13 +5284,8 @@ button.site-chip:hover {
   margin-inline: auto;
   animation: setup-stage-in var(--dur-slow) var(--ease) both;
 }
-.setup-eyebrow {
-  font-size: var(--type-meta);
-  font-weight: var(--fw-semibold);
-  color: var(--brand-fg, var(--brand));
-}
 .setup-title {
-  margin: 10px 0 0;
+  margin: 0;
   font-family: var(--font-display);
   font-size: var(--type-route);
   font-weight: var(--fw-bold);
@@ -5809,9 +5799,6 @@ button.site-chip:hover {
   }
   .setup-stage {
     padding: 24px 16px 32px;
-  }
-  .setup-eyebrow {
-    display: none;
   }
   .setup-footer {
     padding: 12px 16px;
@@ -7316,11 +7303,6 @@ button.site-chip:hover {
   font-weight: var(--fw-bold);
   line-height: 1.15;
   letter-spacing: -0.025em;
-}
-.home-zone-sub {
-  margin: 4px 0 0;
-  color: var(--ink-3);
-  font-size: var(--type-body);
 }
 .home-zone-action {
   flex-shrink: 0;

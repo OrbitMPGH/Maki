@@ -112,7 +112,7 @@ export function NamingTokenModal({
       title={
         <ModalHeading
           title={t`Naming tokens`}
-          description={<Trans>Build the file name from these tokens. Click one to insert it.</Trans>}
+          description={<Trans>Click a token to insert it.</Trans>}
         />
       }
     >

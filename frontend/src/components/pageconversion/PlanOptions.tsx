@@ -26,13 +26,13 @@ export function PlanOptions({
       <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
         <Checkbox
           label={t`Keep PNG pages lossless`}
-          description={t`PNG pages are stored as lossless WebP at every quality, so no pixel changes. This saves little. Leave it off to let PNG pages follow their row's quality.`}
+          description={t`PNG pages become lossless WebP at every quality, so no pixel changes. This saves little.`}
           checked={value.pngLossless}
           onChange={(event) => onChange({ pngLossless: event.currentTarget.checked })}
         />
         <Checkbox
           label={t`Split very tall pages`}
-          description={t`Webtoon strips taller than a set height are cut into several pages, in the gaps between panels where there are any. E-readers and KOReader handle these far better. Reading positions, bookmarks and notes move with their page.`}
+          description={t`Tall webtoon strips are cut into several pages, between panels where possible. Reading positions, bookmarks and notes move with their page.`}
           checked={splitting}
           onChange={(event) => onChange({ splitHeight: event.currentTarget.checked ? lastHeight : null })}
         />

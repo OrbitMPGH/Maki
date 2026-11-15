@@ -491,7 +491,6 @@ export function SourceCompareModal({
                 size="xs"
                 checked={blind}
                 label={t`Hide source names`}
-                description={t`Judge the scans, not the site`}
                 onChange={(e) => setBlind(e.currentTarget.checked)}
               />
             </Group>

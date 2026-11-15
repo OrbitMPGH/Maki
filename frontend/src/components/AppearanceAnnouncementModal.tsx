@@ -46,9 +46,8 @@ export default function AppearanceAnnouncementModal() {
           title={t`More ways to make Maki yours`}
           description={
             <Trans>
-              Background and accent colour are now picked separately, with new backgrounds to choose
-              from. Tinted black is the new default. To keep the old look, pick Night. You can
-              change this any time under Settings, Appearance.
+              Background and accent colour are now picked separately. Tinted black is the new default;
+              pick Night to keep the old look. Both are under Settings, Appearance.
             </Trans>
           }
         />

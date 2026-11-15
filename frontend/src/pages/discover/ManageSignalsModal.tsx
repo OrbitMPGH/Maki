@@ -214,9 +214,6 @@ export function ManageSignalsModal({ opened, onClose, initialTab = 'titles' }: {
       title={
         <div>
           <Text fw={600}><Trans>Manage signals</Trans></Text>
-          <Text size="sm" c="var(--ink-3)">
-            <Trans>Change how individual titles affect recommendations.</Trans>
-          </Text>
         </div>
       }
     >

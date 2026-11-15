@@ -45,7 +45,6 @@ export const Downloading: Story = {
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(await canvas.findByRole('button', { name: 'Preview first chapter' }))
     await expect(await canvas.findByText(/Downloading, 3 of 8 pages/)).toBeVisible()
-    await expect(await canvas.findByText(/keep browsing while it downloads/)).toBeVisible()
   },
 }
 

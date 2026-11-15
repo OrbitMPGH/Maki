@@ -528,11 +528,7 @@ export function LibraryFilterPanel({
           <DrillSliderRange
             icon={IconBook}
             title={t`Read`}
-            help={
-              <>
-                {t`Share of the series you've read.`} {t`Leave at 0–100% to ignore.`}
-              </>
-            }
+            help={t`Leave at 0–100% to ignore.`}
             min={0}
             max={100}
             step={5}
@@ -578,7 +574,6 @@ export function LibraryFilterPanel({
           <DrillNumberRange
             icon={IconFileText}
             title={t`Chapters`}
-            help={t`Leave both boxes empty to ignore.`}
             from={{ label: t`Minimum chapters`, placeholder: t`Min`, value: v.chapterMin, onChange: set.chapterMin }}
             to={{ label: t`Maximum chapters`, placeholder: t`Max`, value: v.chapterMax, onChange: set.chapterMax }}
             inputProps={{ min: 0, allowDecimal: false }}
@@ -600,7 +595,7 @@ export function LibraryFilterPanel({
           <DrillNumberRange
             icon={IconCalendar}
             title={t`Year`}
-            help={t`Leave both boxes empty to ignore. Series without a year drop out once one is set.`}
+            help={t`Series without a year drop out once one is set.`}
             from={{ label: t`Earliest year`, placeholder: t`From`, value: v.yearMin, onChange: set.yearMin }}
             to={{ label: t`Latest year`, placeholder: t`To`, value: v.yearMax, onChange: set.yearMax }}
             inputProps={{ min: 0, max: 9999, allowDecimal: false, allowNegative: false, thousandSeparator: false }}
@@ -742,7 +737,6 @@ export function LibraryFilterPanel({
             before={
               <DrillSwitch
                 label={t`Untagged only`}
-                hint={t`Series with none of your tags`}
                 checked={v.untaggedOnly}
                 onChange={set.untaggedOnly}
               />

@@ -451,7 +451,6 @@ export default function HealthPage() {
       <PageHeader
         compact
         title={t`Health`}
-        description={t`Checks on the server and the library, and the repairs they found.`}
         actions={
           <>
             <Button
@@ -968,7 +967,7 @@ export default function HealthPage() {
                 </Panel>
                 {files.data?.items.length === 0 && (
                   <Text c="var(--ink-3)">
-                    <Trans>No files match these filters. Run a scan to inventory the library.</Trans>
+                    <Trans>No files match. Run a scan to inventory the library.</Trans>
                   </Text>
                 )}
                 <Pagination
@@ -1577,7 +1576,6 @@ function ChecksPanel({
                 compact
                 mood="asleep"
                 title={t`No checks yet`}
-                description={t`No checks have run yet. Use Check now.`}
               />
             )}
             {checks.length > 0 && rest.length === 0 && (
@@ -2178,11 +2176,7 @@ function FileReview({
                 </Button>
                 <Text size="xs" c="var(--ink-4)" mt="sm">
                   {mapping === AUTOMATIC ? (
-                    <Trans>
-                      Tries {sourceNames} in priority order and takes the first that has the chapter. Naming a
-                      source instead pins it: no fallback, so you only ever get a candidate from where you
-                      chose.
-                    </Trans>
+                    <Trans>Tries {sourceNames} in priority order. Choosing one source pins it, with no fallback.</Trans>
                   ) : (
                     <Trans>
                       Only this source is tried. Nothing falls back to another one, so the request fails rather
@@ -3830,11 +3824,7 @@ function RunningPanel() {
           <Note tone="danger" role="alert" mt>
             {running.error.message}
           </Note>
-        ) : running.data && items.length === 0 ? (
-          <Text size="sm" c="var(--ink-3)" mt="md">
-            <Trans>Nothing is running in the background.</Trans>
-          </Text>
-        ) : (
+        ) : items.length === 0 ? null : (
           <div className="health-running-list">
             {items.map((item, i) => (
               <RunningRow key={item.stopId ?? `${item.kind}-${item.label ?? item.detail ?? ''}-${i}`} item={item} />

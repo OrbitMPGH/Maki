@@ -579,9 +579,8 @@ export default function ScrobblePage() {
       description={
         <>
           <Trans>
-            Sends what you read to your trackers every{' '}
-            <Plural value={intervalMinutes} one="# minute" other="# minutes" />. Progress on a tracker is never
-            lowered.
+            Syncs every <Plural value={intervalMinutes} one="# minute" other="# minutes" />. Progress on a tracker is
+            never lowered.
           </Trans>
           {showNoTrackerHint && (
             <>

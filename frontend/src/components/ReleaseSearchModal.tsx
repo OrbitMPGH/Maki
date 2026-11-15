@@ -99,7 +99,7 @@ export function ReleaseSearchModal({
       title={
         <ModalHeading
           title={<Trans>Search releases</Trans>}
-          description={<Trans>Searches your indexers. Grab sends a release to your download client.</Trans>}
+          description={<Trans>Grab sends a release to your download client.</Trans>}
         />
       }
     >

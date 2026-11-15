@@ -23,7 +23,7 @@ export function RecommenderDials({
 
   return (
     <>
-      <div>
+      <div style={{ marginBottom: 'var(--mantine-spacing-xl)' }}>
         <Text size="sm" fw={500} mb={4}>
           {obscurity === 0 ? (
             <Trans>Obscurity: balanced</Trans>
@@ -49,7 +49,7 @@ export function RecommenderDials({
           color="var(--brand)"
         />
       </div>
-      <div>
+      <div style={{ marginBottom: 'var(--mantine-spacing-xl)' }}>
         <Text size="sm" fw={500} mb={4}>
           {diversity === 0 ? (
             <Trans>Variety: closest matches</Trans>
@@ -72,11 +72,6 @@ export function RecommenderDials({
           ]}
           color="var(--brand)"
         />
-        {/* Mark labels are absolutely positioned, so they take no layout space — this has
-            to clear them by hand or the caption lands on top of "closest"/"varied". */}
-        <Text size="xs" c="var(--ink-3)" mt={26}>
-          <Trans>Trades a little similarity for picks that aren't near-copies of each other.</Trans>
-        </Text>
       </div>
     </>
   )

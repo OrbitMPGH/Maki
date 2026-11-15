@@ -342,7 +342,7 @@ export default function CreatorPage() {
           title={t`Nothing to show`}
           description={
             appliedCount > 0
-              ? t`None of their titles match these filters. Try loosening one of them.`
+              ? t`None of their titles match these filters.`
               : t`Nothing of theirs is in the searchable part of the catalogue.`
           }
         />

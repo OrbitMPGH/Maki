@@ -367,13 +367,7 @@ export function OpdsSection() {
         title={
           <ModalHeading
             title={t`Enable the OPDS catalogue`}
-            description={
-              mint.needsPassword ? (
-                <Trans>Enabling it creates the feed URL. Confirm your password to continue.</Trans>
-              ) : (
-                <Trans>Enabling it creates the feed URL.</Trans>
-              )
-            }
+            description={mint.needsPassword ? <Trans>Confirm your password to continue.</Trans> : undefined}
           />
         }
       >

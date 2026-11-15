@@ -33,9 +33,6 @@ export function DiscoverZone({
           <Title order={2} id={titleId} className="home-zone-title">
             <Trans>Not in your library yet</Trans>
           </Title>
-          <p className="home-zone-sub">
-            <Trans>Picks from the catalogue. Open one to read more about it or add it.</Trans>
-          </p>
         </div>
         {discoverLink && (
           <Button

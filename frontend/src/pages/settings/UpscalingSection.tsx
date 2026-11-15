@@ -381,7 +381,7 @@ function PrepareAhead({
               <NewSettingPill id="prepare-ahead" />
             </>
           }
-          description={t`Upscales the next chapters of series set to Reading while nobody is reading, so they open sharp. Only series whose reader settings have Enhance on Always and a server model count; Auto depends on the screen, so it is left out.`}
+          description={t`Upscales the next chapters of series set to Reading while nobody is reading. Only series with Enhance on Always and a server model count; Auto is left out.`}
           checked={value.enabled}
           onChange={(e) => set({ enabled: e.currentTarget.checked })}
         />

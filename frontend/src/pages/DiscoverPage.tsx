@@ -640,7 +640,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
           <Stack gap="md">
             <MultiSelect
               label={t`Seed from`}
-              description={t`Base recommendations on these titles. Search adds any title from MangaBaka. Empty = your whole library.`}
+              description={t`Empty uses your whole library.`}
               placeholder={seedIds.length ? undefined : t`Whole library`}
               data={seedOptions}
               value={seedIds}
@@ -791,9 +791,6 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
       )}
       {isFetching && !data && (
         <>
-          <Text c="var(--ink-3)" size="sm" mb="sm">
-            <Trans>Scanning the MangaBaka database for matches…</Trans>
-          </Text>
           <PosterSkeletons density={density} viewMode={viewMode} />
         </>
       )}
@@ -801,11 +798,7 @@ function RecommendedTab({ prefs, toolsTarget }: { prefs: ViewPrefs; toolsTarget:
       {data && related.length === 0 && similar.length === 0 && (
         <EmptyState
           title={isCustomized ? t`No matches` : t`Nothing to recommend yet`}
-          description={
-            isCustomized
-              ? t`No matches for these seeds and filters. Try loosening them.`
-              : t`Add some series to your library first and Maki will suggest more like them.`
-          }
+          description={isCustomized ? undefined : t`Add some series to your library first and Maki will suggest more like them.`}
           actionLabel={isCustomized ? undefined : t`Go to library`}
           actionTo={isCustomized ? undefined : '/library'}
         />
@@ -1072,7 +1065,6 @@ function FeedExpandModal({
       {items && items.length === 0 && (
         <EmptyState
           title={t`No matches`}
-          description={t`No titles match these filters. Try loosening them.`}
         />
       )}
 
@@ -1523,9 +1515,6 @@ function DiscoverBrowseTab({
         {catalogueStatus ??
           (isFetching && !rails ? (
             <>
-              <Text c="var(--ink-3)" size="sm" mb="sm">
-                <Trans>Scanning the MangaBaka catalogue…</Trans>
-              </Text>
               <DiscoverCatalogueSkeleton density={density.density} />
             </>
           ) : catalogueRails.length > 0 ? (

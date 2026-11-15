@@ -187,13 +187,6 @@ export default function ImportPage() {
       <PageHeader
         compact
         title={t`Import`}
-        description={
-          mihonMode
-            ? t`Adds the manga in your Mihon library to Maki.`
-            : manualMode
-              ? t`Import comics from any folder on the server into a series you pick.`
-              : t`Add series folders that Maki does not know about yet.`
-        }
       />
       <Tabs
         value={tab}
@@ -671,7 +664,7 @@ function FolderImport() {
           framed
           mood="asking"
           title={t`No root folders yet`}
-          description={t`Add a root folder in Settings, then come back to scan it for series to import.`}
+          description={t`Scanning needs a root folder.`}
           actionLabel={t`Open settings`}
           actionTo="/settings?tab=library&s=root-folders"
         />
@@ -682,7 +675,6 @@ function FolderImport() {
             framed
             mood="asking"
             title={t`Choose a root folder`}
-            description={t`Scanning finds the series folders Maki doesn't know yet.`}
           />
         )
       )}

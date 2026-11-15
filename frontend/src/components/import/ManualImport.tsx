@@ -245,7 +245,7 @@ export function ManualImport({ initialPath = null }: { initialPath?: string | nu
           framed
           mood="asking"
           title={t`Pick a path and a series`}
-          description={t`Open a folder, or click a file in it, then choose the series the comics belong to.`}
+          description={t`Click a file to import just that one.`}
         />
       ) : plan.isLoading ? (
         <Loader size="sm" />

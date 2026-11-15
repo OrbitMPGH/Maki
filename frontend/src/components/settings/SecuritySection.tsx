@@ -11,7 +11,7 @@ import {
   Text,
   TextInput,
 } from '@mantine/core'
-import { IconCheck, IconCopy, IconLock, IconRefresh } from '../../lib/icons'
+import { IconCheck, IconCopy, IconLock } from '../../lib/icons'
 import { notifications } from '../../lib/toast'
 import {
   useOidcSettings,
@@ -416,16 +416,9 @@ export function OidcSection() {
           status={draft.enabled ? { tone: 'ok', label: t`On` } : { tone: 'neutral', label: t`Off` }}
           summary={
             data?.authority.trim() ? (
-              <>
-                {data.displayName.trim() || data.authority}.{' '}
-                {data.autoProvision ? (
-                  <Trans>Anyone your provider signs in gets an account, with no library access.</Trans>
-                ) : (
-                  <Trans>Open to edit the issuer, client, claims and who gets an account.</Trans>
-                )}
-              </>
+              data.displayName.trim() || data.authority
             ) : (
-              <Trans>Not set up. Open to add an issuer, client and claims.</Trans>
+              <Trans>Not set up.</Trans>
             )
           }
           opened={open}
@@ -560,12 +553,6 @@ export function OidcSection() {
         )}
         </SsoGroup>
       </Stack>
-          <div className="settings-row-foot">
-            <span className="policy-foot">
-              <IconRefresh size={14} aria-hidden />
-              <Trans>Applies after Maki restarts</Trans>
-            </span>
-          </div>
         </SettingsRow>
       </SettingsRows>
 

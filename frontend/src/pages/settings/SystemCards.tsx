@@ -553,7 +553,6 @@ export function ImageCacheSection() {
     <SettingsSection
       id="image-cache"
       title={<Trans>Image cache</Trans>}
-      description={<Trans>Posters and reader thumbnails Maki keeps on disk.</Trans>}
     >
       <FigureStrip
         loading={!usage}

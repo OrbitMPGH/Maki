@@ -25,7 +25,7 @@ const SLIDES: (string | RegExp)[] = [
   'was what you kept coming back to',
   'series added',
   /series finished/,
-  'Maybe next year.',
+  /series dropped/,
   'That was your 2026',
 ]
 

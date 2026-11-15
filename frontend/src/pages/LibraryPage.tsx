@@ -2627,7 +2627,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             title={t`Save this filter`}
             description={
               <>
-                <Trans>Saves the current search, sort and every filter in the panel as a named preset.</Trans>{' '}
+                <Trans>Includes the search, sort and every filter.</Trans>{' '}
                 <Trans>Reusing the name of the active preset overwrites it.</Trans>
               </>
             }
@@ -2719,12 +2719,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         title={
           <ModalHeading
             title={plural(selectedCount, { one: 'Tag # series', other: 'Tag # series' })}
-            description={
-              <>
-                <Trans>Adds and removes run in one pass over the selection.</Trans>{' '}
-                <Trans>Create new tags from "Manage tags".</Trans>
-              </>
-            }
+            description={<Trans>Create new tags from "Manage tags".</Trans>}
           />
         }
       >
@@ -2789,13 +2784,10 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         title={
           <ModalHeading
             title={plural(selectedCount, { one: 'Auto-match sources for # series', other: 'Auto-match sources for # series' })}
-            description={<Trans>Searches every source that isn't linked yet. Linked sources stay as they are.</Trans>}
+            description={<Trans>Only sources that aren't linked yet are searched.</Trans>}
           />
         }
       >
-        <Text size="sm" c="var(--ink-3)" mb="lg">
-          <Trans>A large selection can take a while.</Trans>
-        </Text>
         <ModalFooter>
           <Button variant="default" onClick={() => setAutoMatchModalOpen(false)}>
             <Trans>Cancel</Trans>
@@ -3030,7 +3022,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
             description={
               <>
                 <Trans>Applies to chapters released later.</Trans>{' '}
-                <Trans>Chapters already listed keep whatever you set on them.</Trans>{' '}
+                <Trans>Chapters already listed keep their own setting.</Trans>{' '}
                 <Trans>
                   "Main" skips specials (decimal chapters like 10.5); "Smart" downloads a few at a time as you
                   read.
@@ -3142,7 +3134,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         title={
           <ModalHeading
             title={plural(selectedCount, { one: 'Set reading status for # series', other: 'Set reading status for # series' })}
-            description={<Trans>Yours alone. Trackers you have connected are updated too.</Trans>}
+            description={<Trans>Trackers you have connected are updated too.</Trans>}
           />
         }
       >
@@ -3197,7 +3189,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         title={
           <ModalHeading
             title={plural(selectedCount, { one: 'Set notifications for # series', other: 'Set notifications for # series' })}
-            description={<Trans>Yours alone. This changes what lands in your bell, not anybody else's.</Trans>}
+            description={<Trans>This only changes your own bell.</Trans>}
           />
         }
       >
@@ -3339,7 +3331,7 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
         <EmptyState
           art="shelf"
           title={t`Your library is empty`}
-          description={t`Search MangaBaka and add your first series. Maki will monitor for new chapters and download them automatically.`}
+          description={t`Search MangaBaka and add your first series.`}
           actionLabel={can('AddSeries') ? t`Add a series` : t`Request series`}
           actionTo="/add"
           actionIcon={<IconPlus size={16} />}
@@ -3351,7 +3343,6 @@ function LibraryBody({ scope }: { scope: LibraryScope }) {
       {series && series.length > 0 && visible.length === 0 && (
         <EmptyState
           title={t`No matches`}
-          description={t`No series match your filters. Try clearing the search or a filter.`}
           actionLabel={t`Clear all filters`}
           onAction={() => {
             applySpec(DEFAULT_SPEC, null)
@@ -3420,7 +3411,7 @@ function LibraryColumnsModal({
       title={
         <ModalHeading
           title={t`Columns`}
-          description={<Trans>The cover and title always show. Your choice is kept in this browser.</Trans>}
+          description={<Trans>The cover and title always show.</Trans>}
         />
       }
       closeButtonProps={{ 'aria-label': t`Close` }}

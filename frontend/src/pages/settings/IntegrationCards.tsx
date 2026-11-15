@@ -85,9 +85,6 @@ export function ScrobbleSection() {
     <SettingsSection
       id="scrobbling"
       title={<Trans>Trackers</Trans>}
-      description={
-        <Trans>Connect accounts on the Scrobble page.</Trans>
-      }
       dirty={dirty}
       saving={save.isPending}
       onDiscard={() => setForm(data ?? null)}
@@ -428,7 +425,7 @@ function ImportListSettingsCard({ form }: { form?: ReturnType<typeof useImportLi
       id="import-lists"
       title={<Trans>Import lists</Trans>}
       description={
-        <Trans>Adds series from your tracker lists. Connect trackers on the Scrobble page first.</Trans>
+        <Trans>Adds series from your tracker lists.</Trans>
       }
       dirty={form?.dirty}
       saving={form?.saving}

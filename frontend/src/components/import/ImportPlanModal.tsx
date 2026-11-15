@@ -478,10 +478,7 @@ function PlanList({ plans }: { plans: ImportPlan[] }) {
       </Group>
       {filter === 'look' && (
         <Text size="xs" c="var(--ink-3)">
-          <Trans>
-            Folders with files that may not link, files left out, or files Maki changes. Everything else is registered
-            as it is.
-          </Trans>
+          <Trans>Folders that need a look. The rest are registered as they are.</Trans>
         </Text>
       )}
       {shown.length === 0 ? (
@@ -527,7 +524,7 @@ export function ImportPlanModal({
       title={
         <ModalHeading
           title={t`Import preview`}
-          description={<Trans>Nothing has been changed. This is what importing would do.</Trans>}
+          description={<Trans>Nothing has been changed yet.</Trans>}
         />
       }
       size={MODAL_SIZE.wide}

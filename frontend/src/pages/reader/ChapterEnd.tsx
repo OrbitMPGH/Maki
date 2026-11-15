@@ -28,7 +28,7 @@ function skipped(current: number | null, next: number | null): [number, number] 
 
 /**
  * Every chapter the reader kept is read and the series has ended, and only chapters the reader switched
- * off are unread. Shown under "That's the whole series." too: the read mark can reach the last chapter
+ * off are unread. Shown under "You finished the series" too: the read mark can reach the last chapter
  * while a switched-off one below it keeps the series from completing. The server never asks while
  * another chapter is expected.
  */
@@ -204,17 +204,17 @@ export default function ChapterEnd({
             <img className="reader-end-cover" src={manifest.seriesCoverUrl} alt="" />
           )}
           <div className="reader-end-heading">
-            <span className="reader-end-eyebrow">
-              {hasNext ? (
-                <Trans>Finished</Trans>
-              ) : finished ? (
-                <Trans>You finished the series</Trans>
-              ) : unread === 0 ? (
-                <Trans>You're caught up</Trans>
-              ) : (
-                <Trans>Last chapter on disk</Trans>
-              )}
-            </span>
+            {!hasNext && (
+              <span className="reader-end-eyebrow">
+                {finished ? (
+                  <Trans>You finished the series</Trans>
+                ) : unread === 0 ? (
+                  <Trans>You're caught up</Trans>
+                ) : (
+                  <Trans>Last chapter on disk</Trans>
+                )}
+              </span>
+            )}
             <h1 ref={heading} tabIndex={-1} className="reader-end-title" style={{ outline: 'none' }}>
               {chapterLabel}
             </h1>
@@ -274,25 +274,24 @@ export default function ChapterEnd({
             {downloading ? (
               <ChapterEndDownloads items={queue.data?.items ?? []} />
             ) : (
-              <span className="reader-end-note">
-                {finished ? (
-                  <Trans>That's the whole series.</Trans>
-                ) : pending > 0 ? (
-                  <Plural
-                    value={pending}
-                    one="# more chapter is wanted. It shows up here once it downloads."
-                    other="# more chapters are wanted. They show up here once they download."
-                  />
-                ) : unread > 0 ? (
-                  <Plural
-                    value={unread}
-                    one="# earlier chapter is still unread."
-                    other="# earlier chapters are still unread."
-                  />
-                ) : (
-                  <Trans>That's every chapter on disk.</Trans>
-                )}
-              </span>
+              !finished &&
+              (pending > 0 || unread > 0) && (
+                <span className="reader-end-note">
+                  {pending > 0 ? (
+                    <Plural
+                      value={pending}
+                      one="# more chapter is wanted. It shows up here once it downloads."
+                      other="# more chapters are wanted. They show up here once they download."
+                    />
+                  ) : (
+                    <Plural
+                      value={unread}
+                      one="# earlier chapter is still unread."
+                      other="# earlier chapters are still unread."
+                    />
+                  )}
+                </span>
+              )
             )}
             {!finished && !downloading && unread === 0 && pending === 0 && (
               <ChapterEndOutlook seriesId={manifest.seriesId} />

@@ -58,7 +58,6 @@ function Demo() {
       <DrillNumberRange
         icon={IconCalendar}
         title="Year"
-        help="Leave both boxes empty to ignore."
         from={{ label: 'Earliest year', placeholder: 'From', value: from, onChange: setFrom }}
         to={{ label: 'Latest year', placeholder: 'To', value: to, onChange: setTo }}
         inputProps={{ min: 0, max: 9999, allowDecimal: false, thousandSeparator: false }}
@@ -76,7 +75,7 @@ function Demo() {
         toLabel="Read to"
         format={(n) => `${n}%`}
       />
-      <DrillSwitch label="Untagged only" hint="Series with none of your tags" checked={untagged} onChange={setUntagged} />
+      <DrillSwitch label="Untagged only" checked={untagged} onChange={setUntagged} />
       <DrillFooter onReset={onReset} status="128 series" onDone={onDone} />
     </Paper>
   )

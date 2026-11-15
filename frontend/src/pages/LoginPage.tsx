@@ -127,13 +127,6 @@ export function LoginPage() {
     <AuthFrame
       mood={entering ? 'pleased' : error || ssoError ? 'asking' : 'awake'}
       title={needsCode ? t`Two-factor code` : t`Sign in`}
-      subtitle={
-        needsCode
-          ? useRecovery
-            ? <Trans>Enter one of your recovery codes</Trans>
-            : <Trans>Enter your authenticator code</Trans>
-          : undefined
-      }
     >
       {needsCode ? (
         <form onSubmit={submitCode}>

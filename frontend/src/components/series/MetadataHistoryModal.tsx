@@ -70,7 +70,6 @@ export function MetadataHistoryModal({
       title={
         <ModalHeading
           title={t`Metadata history`}
-          description={<Trans>Every change to this series' details, newest first.</Trans>}
         />
       }
     >

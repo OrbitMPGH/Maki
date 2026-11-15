@@ -317,22 +317,22 @@ export default function ReaderSettings({
   type ToggleRow = { key: Toggle; label: string; hint?: string }
   // Chapters: what happens as a chapter opens and ends. While reading: what is on screen meanwhile.
   const chapterToggles: ToggleRow[] = [
-    { key: 'chapterBanner', label: t`Show the chapter name`, hint: t`Briefly, when a new chapter opens` },
+    { key: 'chapterBanner', label: t`Show the chapter name` },
     { key: 'autoNextChapter', label: t`Auto-advance to next chapter` },
-    { key: 'autoSkipRecap', label: t`Skip recaps`, hint: t`In Continuous, jump past the end of the previous chapter when a chapter repeats it` },
-    { key: 'hideCredits', label: t`Hide credit pages`, hint: t`Leave out credit and recruitment pages that repeat at the start or end of chapters` },
-    { key: 'autoWebtoon', label: t`Scroll webtoon chapters`, hint: t`Chapters of very tall pages open in Continuous` },
+    { key: 'autoSkipRecap', label: t`Skip recaps`, hint: t`In Continuous, jumps past the part of the previous chapter that this one repeats.` },
+    { key: 'hideCredits', label: t`Hide credit pages`, hint: t`Skips scanlator credit and recruitment pages at the start and end.` },
+    { key: 'autoWebtoon', label: t`Scroll webtoon chapters` },
   ]
   const readingToggles: ToggleRow[] = [
     { key: 'showPageNumber', label: t`Show page number` },
     { key: 'notesBeside', label: t`Notes beside the page`, hint: t`When the screen has room for them` },
-    { key: 'progressRail', label: t`Progress rail`, hint: t`In Continuous, a bar down the right edge you can drag to move through the chapter` },
+    { key: 'progressRail', label: t`Progress rail`, hint: t`In Continuous. Drag the bar on the right edge.` },
     ...(wakeLockSupported() ? [{ key: 'keepAwake' as const, label: t`Keep the screen awake` }] : []),
   ]
   const tapToggle: ToggleRow = {
     key: 'tapZones',
     label: t`Tap zones`,
-    hint: t`Tap the page edges to turn pages. In Continuous, tap the top or bottom to move a screen`,
+    hint: t`In Continuous, the top and bottom move a screen.`,
   }
 
   const wideLabel = { off: t`Whole`, split: t`Split`, rotate: t`Rotate` }[prefs.splitWide]
@@ -838,7 +838,6 @@ export default function ReaderSettings({
                       prefs={prefs}
                       onPrefs={onPrefs}
                       vertical={prefs.mode === 'vertical'}
-                      hintClassName="reader-settings-hint"
                       bleed
                     />
                   )}
