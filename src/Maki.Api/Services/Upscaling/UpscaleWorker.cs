@@ -93,13 +93,12 @@ public sealed class UpscaleWorker(
     }
 
     /// <summary>
-    /// Hands back what a burst of pages left behind once the queue drains: the model session, whose
-    /// arena holds the burst's peak, tens to hundreds of MB of large-object garbage the GC would
-    /// otherwise keep committed until the next page, and the native heap ORT and libvips freed.
+    /// Hands back what a burst of pages left behind once the queue drains: tens to hundreds of MB of
+    /// large-object garbage the GC would otherwise keep committed until the next page, and the native
+    /// heap ORT and libvips freed.
     /// </summary>
-    private void ReleaseMemory()
+    private static void ReleaseMemory()
     {
-        upscaler.ReleaseIdleSessions();
         NativeHeap.CollectAndTrim();
     }
 
