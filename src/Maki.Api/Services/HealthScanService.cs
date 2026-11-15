@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Security.Cryptography;
 using Maki.Core.Entities;
+using Maki.Core.Io;
 using Maki.Core.Paths;
 using Maki.Core.Reading;
 using Maki.Data;
@@ -339,7 +340,13 @@ public class HealthScanService(MakiDbContext db)
                 await using var stream = File.OpenRead(path);
                 hash = Convert.ToHexString(await SHA256.HashDataAsync(stream, ct));
                 var cached = await db.HealthAnalyses.FindAsync([$"{hash}:{ArchiveHealthAnalyzer.VerifyVersion}"], ct);
-                if (cached != null) analysis = JsonSerializer.Deserialize<ArchiveAnalysis>(cached.AnalysisJson, Json);
+                if (cached != null)
+                {
+                    analysis = JsonSerializer.Deserialize<ArchiveAnalysis>(cached.AnalysisJson, Json);
+                    // The hash read the whole file and the analyzer, which drops it after its own
+                    // read, will not run. A miss keeps the pages: the analyzer reads them next.
+                    PageCache.DropAfterScan(path);
+                }
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {

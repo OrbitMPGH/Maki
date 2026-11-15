@@ -224,8 +224,10 @@ public sealed class PageTextReader : IPageTextReader, IDisposable
         InferenceSession? rec = null;
         try
         {
+            // Two threads cost 20% less CPU than four for 12% longer reads (identical text); almost
+            // every read is the background scan's, and a reader's cold search does at most a few.
             using var options = OnnxMemoryOptions.Create(
-                intraOpThreads: Math.Clamp(Environment.ProcessorCount / 2, 1, 4), fixedShapes: false);
+                intraOpThreads: Math.Clamp(Environment.ProcessorCount / 2, 1, 2), fixedShapes: false);
             // Unlike the embedder and the upscaler, these models run about 2.5 times faster with the
             // arena; ShrinkAfterRun hands its memory back after every run, so nothing is held between reads.
             options.EnableCpuMemArena = true;

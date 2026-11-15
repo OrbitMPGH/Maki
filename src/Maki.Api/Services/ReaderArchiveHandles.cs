@@ -87,7 +87,9 @@ public sealed class ReaderArchiveHandles(TimeProvider? time = null)
         var excess = _handles.Count - Capacity;
         if (excess <= 0) return;
 
-        foreach (var entry in _handles.OrderBy(kv => kv.Value.LastUsed).Take(excess).ToList())
+        // ToArray copies under the dictionary's locks. Sorting the live dictionary sized its buffer
+        // from one Count and filled it later, so a concurrent add or remove threw out of a page read.
+        foreach (var entry in _handles.ToArray().OrderBy(kv => kv.Value.LastUsed).Take(excess))
         {
             _handles.TryRemove(entry);
         }
