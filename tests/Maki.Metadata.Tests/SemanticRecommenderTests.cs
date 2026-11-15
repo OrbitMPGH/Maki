@@ -1,6 +1,7 @@
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.CoRead;
+using Maki.Metadata.Ease;
 using Maki.Metadata.RecoGraph;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -772,6 +773,59 @@ public class SemanticRecommenderTests : IDisposable
     }
 
     [Fact]
+    public async Task TheEaseChannel_ChangesNothing_WithoutATableOrAtTheDefaultWeight()
+    {
+        Add(1, "Seed");
+        Add(2, "Second seed");
+        Add(10, "Closer by feel");
+        Add(11, "Weighted by EASE");
+        Add(12, "Weighted down by EASE");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (2L, "h", Nudge(Axis(0), 1, 0.2f)),
+            (10L, "h", Nudge(Axis(0), 2, 0.5f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.7f)),
+            (12L, "h", Nudge(Axis(0), 4, 0.6f)),
+        ]);
+        var table = WriteEase((1, 11, 0.08f), (2, 11, 0.02f), (1, 12, -0.05f));
+        static string Json(IReadOnlyList<MangaBakaRecommendation> picks) => System.Text.Json.JsonSerializer.Serialize(picks);
+
+        var baseline = Json(await Recommender().GetSimilarAsync([1, 2], [], limit: 5));
+        var absent = Json(await Recommender(
+                easePath: Path.Combine(_dir, "absent-ease.db"), easeTuning: EaseTuning.Default with { Weight = 2 })
+            .GetSimilarAsync([1, 2], [], limit: 5));
+        var defaultWeight = Json(await Recommender(easePath: table).GetSimilarAsync([1, 2], [], limit: 5));
+
+        Assert.Equal(baseline, absent);
+        Assert.Equal(baseline, defaultWeight);
+    }
+
+    [Fact]
+    public async Task TheEaseChannel_ReordersByTheTablesSignedWeights_WhenSwitchedOn()
+    {
+        Add(1, "Seed");
+        Add(10, "Closer by feel");
+        Add(11, "Weighted by EASE");
+        Add(12, "Weighted down by EASE");
+        WriteDump();
+        Store().UpsertBatch([
+            (1L, "h", Axis(0)),
+            (10L, "h", Nudge(Axis(0), 2, 0.5f)),
+            (11L, "h", Nudge(Axis(0), 3, 0.7f)),
+            (12L, "h", Nudge(Axis(0), 4, 0.3f)),
+        ]);
+        var table = WriteEase((1, 11, 0.08f), (1, 12, -0.08f));
+
+        var off = await Recommender().GetSimilarAsync([1], [], limit: 5);
+        var on = await Recommender(easePath: table, easeTuning: EaseTuning.Default with { Weight = 2 })
+            .GetSimilarAsync([1], [], limit: 5);
+
+        Assert.Equal(["12", "10", "11"], off.Select(p => p.ProviderId));
+        Assert.Equal(["11", "10", "12"], on.Select(p => p.ProviderId));
+    }
+
+    [Fact]
     public async Task MatchedTags_hide_per_series_spoilers_even_when_vocabulary_marks_them_safe()
     {
         Add(1, "Seed");
@@ -1356,7 +1410,9 @@ public class SemanticRecommenderTests : IDisposable
         RecoGraphTuning? graphTuning = null,
         string? coReadPath = null,
         CoReadTuning? coReadTuning = null,
-        RecommenderTuning? tuning = null)
+        RecommenderTuning? tuning = null,
+        string? easePath = null,
+        EaseTuning? easeTuning = null)
     {
         var dump = new MangaBakaDumpOptions(_dumpPath, _dir);
         var graph = new RecoGraphOptions(graphPath ?? Path.Combine(_dir, "absent-reco-edges.db"), _dir);
@@ -1371,7 +1427,29 @@ public class SemanticRecommenderTests : IDisposable
             new CoReadCache(coRead, NullLogger<CoReadCache>.Instance),
             coReadTuning ?? CoReadTuning.Default,
             NullLogger<SemanticRecommender>.Instance,
-            tuning);
+            tuning,
+            easeCache: easePath is null ? null : new EaseCache(new EaseOptions(easePath), NullLogger<EaseCache>.Instance),
+            easeTuning: easeTuning);
+    }
+
+    /// <summary>Writes an EASE table in the shape <c>distribution/build-ease-table.py</c> exports.</summary>
+    private string WriteEase(params (long Seed, long Item, float Weight)[] rows)
+    {
+        var path = Path.Combine(_dir, "ease-weights.db");
+        using var conn = new SqliteConnection($"Data Source={path};Pooling=False");
+        conn.Open();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = """
+            CREATE TABLE weight (
+                seed_id INTEGER NOT NULL, item_id INTEGER NOT NULL, weight REAL NOT NULL,
+                PRIMARY KEY (seed_id, item_id)) WITHOUT ROWID;
+            CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+            """ + $"""
+            INSERT INTO weight VALUES
+            {string.Join(",", rows.Select(r => FormattableString.Invariant($"({r.Seed}, {r.Item}, {r.Weight})")))};
+            """;
+        cmd.ExecuteNonQuery();
+        return path;
     }
 
     /// <summary>

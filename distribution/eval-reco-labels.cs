@@ -93,6 +93,7 @@ using System.Text.Json;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
 using Maki.Metadata.CoRead;
+using Maki.Metadata.Ease;
 using Maki.Metadata.RecoGraph;
 using Maki.Metadata.Taste;
 using Microsoft.Data.Sqlite;
@@ -126,6 +127,7 @@ var minLibrary = 20;
 var maxLibrary = 300;
 var workPath = Path.Combine(artifactsDir, "coread-graph.db");
 string? muPathOverride = null;
+string? tastePathOverride = null;
 var rngSeed = 20260827;
 var strata = false;
 var negatives = false;
@@ -182,6 +184,11 @@ for (var i = 0; i < args.Length; i++)
             break;
         case "--mu":
             muPathOverride = args[++i];
+            break;
+        // A taste artifact other than the installed one, so `library --fold-users` can grade a
+        // fold-limited build without copying it into the config dir.
+        case "--taste":
+            tastePathOverride = args[++i];
             break;
         case "--rng":
             rngSeed = int.Parse(args[++i], CultureInfo.InvariantCulture);
@@ -372,7 +379,7 @@ var muInstalled = Path.Combine(configDir, "mu-edges.db");
 var muPath = muPathOverride ?? (File.Exists(muInstalled) ? muInstalled : Path.Combine(artifactsDir, "mu-edges.db"));
 // Behavioural vectors. Declared beside the other artifacts because the fold guard below has to see
 // it: this is the one artifact actually TRAINED on readers, so it is the one the guard exists for.
-var tastePath = Path.Combine(configDir, "taste-vectors.db");
+var tastePath = tastePathOverride ?? Path.Combine(configDir, "taste-vectors.db");
 
 foreach (var (name, path) in new[] { ("dump", dumpPath), ("vector index", vectorPath) })
 {
@@ -529,24 +536,72 @@ if (foldCount > 0)
         Console.WriteLine($"       Rebuild it excluding fold {foldIndex}, or evaluate on a fold it did not see.");
         return 2;
     }
+
+    // The artifacts TRAINED on readers must also say which folds they saw: one that says "all", or
+    // nothing, learned from the readers being graded too. The check above lets that through, which
+    // is right for the pair graphs and wrong for these.
+    var readerTrained = new List<(string Name, string Path)>();
+    if (variants.Any(v => v.Taste.Weight > 0))
+    {
+        readerTrained.Add(("taste", tastePath));
+    }
+
+    readerTrained.AddRange(variants
+        .Where(v => v.EasePath is not null && v.Ease.Weight > 0)
+        .Select(v => v.EasePath!).Distinct().Select(p => ("ease", p)));
+    foreach (var (name, path) in readerTrained)
+    {
+        if (!File.Exists(path))
+        {
+            continue;
+        }
+
+        if (ReadTrainingFolds(path) is not { Count: > 0 } trained)
+        {
+            Console.WriteLine($"error: {name} artifact at {path} records no training fold, so it learned from every reader.");
+            Console.WriteLine($"       Build it with fold {foldIndex} held out{(name == "taste" ? " and pass it with --taste" : string.Empty)}.");
+            return 2;
+        }
+
+        if (trained.Contains(foldIndex))
+        {
+            Console.WriteLine($"error: {name} artifact at {path} was trained on fold {foldIndex}.");
+            Console.WriteLine("       Grading it against readers it learned from is not a held-out test.");
+            return 2;
+        }
+    }
 }
 
 var feelIndex = feel ? FeelIndex.Build(dumpPath, index) : null;
 
 // A recommender per distinct tuning triple. Near-free to construct: the expensive state (the vector
 // index, both graphs) lives in the caches and is shared across all of them.
-var recommenders =
-    new Dictionary<(RecoGraphTuning, CoReadTuning, RecommenderTuning, TasteVectorTuning), SemanticRecommender>();
+var recommenders = new Dictionary<
+    (RecoGraphTuning, CoReadTuning, RecommenderTuning, TasteVectorTuning, EaseTuning, string?), SemanticRecommender>();
+var easeCaches = new Dictionary<string, EaseCache>(StringComparer.OrdinalIgnoreCase);
 SemanticRecommender RecommenderFor(
     RecoGraphTuning graphTuning, CoReadTuning coReadTuning, RecommenderTuning recoTuning,
-    TasteVectorTuning tasteTuning)
+    TasteVectorTuning tasteTuning, EaseTuning? easeTuning = null, string? easePath = null)
 {
-    if (!recommenders.TryGetValue((graphTuning, coReadTuning, recoTuning, tasteTuning), out var found))
+    easeTuning ??= EaseTuning.Default;
+    if (easeTuning.Weight <= 0)
     {
+        easePath = null;
+    }
+
+    var key = (graphTuning, coReadTuning, recoTuning, tasteTuning, easeTuning, easePath);
+    if (!recommenders.TryGetValue(key, out var found))
+    {
+        EaseCache? easeCache = null;
+        if (easePath is not null && !easeCaches.TryGetValue(easePath, out easeCache))
+        {
+            easeCache = easeCaches[easePath] = new EaseCache(new EaseOptions(easePath), new Quiet<EaseCache>());
+        }
+
         found = new SemanticRecommender(
             options, dumpOptions, store, cache, graphCache, graphTuning, coReadCache, coReadTuning,
-            new Quiet<SemanticRecommender>(), recoTuning, tasteTuning);
-        recommenders[(graphTuning, coReadTuning, recoTuning, tasteTuning)] = found;
+            new Quiet<SemanticRecommender>(), recoTuning, tasteTuning, easeCache, easeTuning);
+        recommenders[key] = found;
     }
 
     return found;
@@ -577,6 +632,25 @@ foreach (var v in variants)
     {
         var which = forbidGraph && v.CoGraph ? "vote" : "co-read";
         Console.WriteLine($"note     : forcing the {which} channel off for '{v.Name}' — it provides the labels.");
+    }
+
+    if (v.Ease.Weight > 0 && v.EasePath is null)
+    {
+        Console.WriteLine($"error: '{v.Name}' sets an EASE weight but no easepath.");
+        return 2;
+    }
+
+    if (v.EasePath is not null && !File.Exists(v.EasePath))
+    {
+        Console.WriteLine($"error: no EASE table at {v.EasePath}.");
+        return 2;
+    }
+
+    if (forbidTaste && v.Ease.Weight > 0)
+    {
+        Console.WriteLine(
+            $"note     : forcing the EASE channel off for '{v.Name}': it is trained on the "
+            + "reading lists these labels come from.");
     }
 
     if (forbidTaste && v.Taste.Weight > 0)
@@ -979,8 +1053,9 @@ async Task<ResultRow> Score(Variant variant)
     var coGraph = variant.CoGraph && !forbidGraph;
     var coRead = variant.CoRead && !forbidCoRead;
     var tasteTuning = forbidTaste ? variant.Taste with { Weight = 0 } : variant.Taste;
+    var easeTuning = forbidTaste ? variant.Ease with { Weight = 0 } : variant.Ease;
     var recommender = RecommenderFor(
-        variant.Graph, variant.CoReadTuning, variant.Recommender, tasteTuning);
+        variant.Graph, variant.CoReadTuning, variant.Recommender, tasteTuning, easeTuning, variant.EasePath);
 
     // Only the first variant in a run is dumped. Two pools would interleave under one requestId and
     // the fit would pair candidates that never competed.
@@ -1221,7 +1296,8 @@ async Task<JudgedRow> ScoreJudged(
     Variant variant, Dictionary<(long Seed, long Candidate), Judgement> judgements,
     SortedSet<(long Seed, long Candidate)> queue)
 {
-    var recommender = RecommenderFor(variant.Graph, variant.CoReadTuning, variant.Recommender, variant.Taste);
+    var recommender = RecommenderFor(
+        variant.Graph, variant.CoReadTuning, variant.Recommender, variant.Taste, variant.Ease, variant.EasePath);
     var n = requests.Count;
     var enjoy = new double[n];
     var feel = new double[n];
@@ -2457,6 +2533,12 @@ file static class Judgements
 /// </para>
 ///
 /// <para>
+/// <c>easepath</c> names an EASE table (<c>distribution/build-ease-table.py</c>) and <c>easeweight</c>
+/// switches its channel on; <c>easenegative</c>, <c>easemaxinjected</c> and <c>easemininjected</c> are
+/// the rest of <see cref="EaseTuning"/>. The channel ships off, so no shorthand turns it on.
+/// </para>
+///
+/// <para>
 /// Shorthand names: <c>default</c> is what ships; <c>nograph</c>, <c>nocoread</c> and <c>nocrowd</c>
 /// switch one or both crowd channels off, which are the baselines those features have to be read
 /// against; <c>noavoid</c> is the same for the avoid channel; <c>rail</c> is the series-page rail as
@@ -2483,6 +2565,8 @@ file static class Variants
         var weights = (EmbeddingMath.Weights?)null;
         var diversity = 0.0;
         var scoreWeights = false;
+        var ease = EaseTuning.Default;
+        string? easePath = null;
 
         // The baseline the avoid channel has to be read against, the same way `nocrowd` and
         // `notaste` are for the other channels. A bare `avoid` would be a variant NAME rather than
@@ -2744,6 +2828,27 @@ file static class Variants
                     AttributionScale = Enum.Parse<AttributionScale>(value, ignoreCase: true),
                 };
             }
+            // The EASE channel: `easepath` names the table and `easeweight` switches it on.
+            else if (key == "easepath")
+            {
+                easePath = value;
+            }
+            else if (key == "easeweight")
+            {
+                ease = ease with { Weight = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "easenegative")
+            {
+                ease = ease with { KeepNegative = bool.Parse(value) };
+            }
+            else if (key == "easemaxinjected")
+            {
+                ease = ease with { MaxInjected = int.Parse(value, CultureInfo.InvariantCulture) };
+            }
+            else if (key == "easemininjected")
+            {
+                ease = ease with { MinInjectedScore = double.Parse(value, CultureInfo.InvariantCulture) };
+            }
             else if (key.StartsWith("coread", StringComparison.Ordinal) && key.Length > 6)
             {
                 coReadTuning = ApplyCoRead(coReadTuning, key[6..], value);
@@ -2764,7 +2869,7 @@ file static class Variants
 
         return new Variant(
             name, weights, diversity, graph, coGraph, coReadTuning, coRead, recommender, scoreWeights,
-            taste);
+            taste, ease, easePath);
     }
 
     private static EmbeddingMath.Weights ApplyWeight(EmbeddingMath.Weights w, string key, string value)
@@ -2821,7 +2926,9 @@ file sealed record Variant(
     bool CoRead,
     RecommenderTuning Recommender,
     bool ScoreWeights,
-    TasteVectorTuning Taste);
+    TasteVectorTuning Taste,
+    EaseTuning Ease,
+    string? EasePath);
 
 /// <summary>Reads the one setting that decides which model's vectors are in the index.</summary>
 file static class Settings
