@@ -11,7 +11,7 @@ namespace Maki.Api.Services;
 /// Finds every chapter's credit pages ahead of time, so the reader opens with them already left out
 /// (<see cref="CreditStore"/>). Nothing here holds up an import or a read: it runs one chapter at a
 /// time with one decode, after downloads and imports have finished, and waits while anyone is being
-/// served pages.
+/// served pages or a heavy artifact build runs.
 /// <para>
 /// The unit is a series in one language, in reading order, so each chapter's neighbours were just
 /// decoded. A series is due when a chapter with a file has no current answer (a new or replaced file,
@@ -34,7 +34,7 @@ namespace Maki.Api.Services;
 public sealed class CreditScanWorker(
     IServiceScopeFactory scopes, IAppSettings settings, ReaderCreditsCache credits, CreditStore store,
     ReaderArchiveCache archives, PageConversionWorker conversion, CreditBank bank, CreditStrips strips,
-    ILogger<CreditScanWorker> logger) : BackgroundService
+    ILogger<CreditScanWorker> logger, Maki.Api.Jobs.ArtifactBuildGate? buildGate = null) : BackgroundService
 {
     /// <summary>Chapters one bank recheck looks at before the worker looks for due series again.</summary>
     private const int BankBatch = 200;
@@ -556,12 +556,23 @@ public sealed class CreditScanWorker(
             ? Task.CompletedTask
             : store.RestampAsync(row.ChapterId, slice.ChapterFileId, slice.ArchiveSize, ct);
 
-    /// <summary>Waits while a reader is being served pages, or the scan is paused.</summary>
+    /// <summary>
+    /// Waits while a reader is being served pages, the scan is paused, or an artifact build holds the
+    /// gate: the scan starts in the same minutes as the startup builds, and its decode and OCR bursts
+    /// would stack on whichever one is running.
+    /// </summary>
     private async Task QuietAsync(CancellationToken ct)
     {
-        while (archives.SinceLastServed < ReadingQuiet || Paused)
+        while (archives.SinceLastServed < ReadingQuiet || Paused || buildGate is { IsIdle: false })
         {
-            await Task.Delay(TimeSpan.FromSeconds(2), ct);
+            if (buildGate is { IsIdle: false })
+            {
+                await buildGate.WaitUntilIdleAsync(ct);
+            }
+            else
+            {
+                await Task.Delay(TimeSpan.FromSeconds(2), ct);
+            }
         }
     }
 
