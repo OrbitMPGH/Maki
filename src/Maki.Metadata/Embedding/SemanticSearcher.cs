@@ -117,6 +117,39 @@ public class SemanticSearcher(
     }
 
     /// <summary>
+    /// <see cref="IsReady"/>, waiting up to <paramref name="budget"/> when the index and the query
+    /// model are unloaded rather than missing. Both come back in a fraction of a second from the
+    /// snapshot and the model file (about 0.1 s each), so a query that arrives after an idle unload
+    /// is answered by meaning instead of by titles and a poll two seconds later. An index that has
+    /// to be built from scratch (no snapshot, or one from another build) is not waited on.
+    /// </summary>
+    public virtual async Task<bool> IsReadyWithinAsync(TimeSpan budget, CancellationToken ct = default)
+    {
+        if (IsReady())
+        {
+            return true;
+        }
+
+        if (budget <= TimeSpan.Zero || !embedder.CanLoad || !(cache.IsCurrent || cache.HasSnapshot))
+        {
+            return false;
+        }
+
+        // IsReady has started both loads; this only watches them.
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        while (clock.Elapsed < budget)
+        {
+            await Task.Delay(20, ct);
+            if (cache.IsCurrent && embedder.IsReady)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// True when embeddings are on and the index holds enough vectors, loaded or not. A caller that
     /// cannot accept the title fallback searches anyway and waits out the warm-up.
     /// </summary>

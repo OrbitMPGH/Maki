@@ -79,6 +79,12 @@ public sealed class VectorIndexCache(
     /// </summary>
     public string? Stamp => _loaded is { } loaded ? $"{loaded.DumpTicks}:{loaded.DumpLength}:{loaded.Generation}" : null;
 
+    /// <summary>
+    /// Whether a snapshot is on disk, so a reload is likely to take a fraction of a second rather
+    /// than a full build. Only likely: one written by another build or for another dump is rebuilt.
+    /// </summary>
+    public bool HasSnapshot => File.Exists(SnapshotPath);
+
     /// <summary>Whether an index is loaded and was built from the dump on disk now.</summary>
     public bool IsCurrent => _loaded is { } loaded && MatchesDump(loaded);
 
