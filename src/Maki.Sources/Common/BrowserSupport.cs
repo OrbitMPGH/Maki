@@ -6,6 +6,20 @@ namespace Maki.Sources.Common;
 internal static class BrowserSupport
 {
     /// <summary>
+    /// Launch flags both headless shells share. Without a GPU the shell still starts a GPU process
+    /// running SwiftShader, 72 MB of it at launch; <c>--disable-software-rasterizer</c> stops that
+    /// (12 MB), about 60 MB less at every stage. It also removes WebGL, which Cloudflare's bot
+    /// script can read, so it was kept only after a live run against both sites showed no extra
+    /// challenge or block.
+    /// </summary>
+    public static readonly string[] LaunchArgs =
+    [
+        "--disable-blink-features=AutomationControlled",
+        "--disable-gpu",
+        "--disable-software-rasterizer",
+    ];
+
+    /// <summary>
     /// Analytics, share-button and web-font hosts the scrapers' pages load and nothing they read
     /// needs. Recorded from live MangaFire and TopManhua sessions on 2026-10-26. A denylist rather
     /// than an allowlist on purpose: an allowlist breaks the source the day a site moves its CDN.
