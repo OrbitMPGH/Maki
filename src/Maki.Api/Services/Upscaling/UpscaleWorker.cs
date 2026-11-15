@@ -97,13 +97,7 @@ public sealed class UpscaleWorker(
     /// large-object garbage the GC would otherwise keep committed until the next page, and the native
     /// heap ORT and libvips freed.
     /// </summary>
-    private static void ReleaseMemory()
-    {
-        System.Runtime.GCSettings.LargeObjectHeapCompactionMode =
-            System.Runtime.GCLargeObjectHeapCompactionMode.CompactOnce;
-        GC.Collect(2, GCCollectionMode.Aggressive, blocking: true, compacting: true);
-        NativeHeap.Trim();
-    }
+    private static void ReleaseMemory() => NativeHeap.CollectAndTrim();
 
     /// <summary>
     /// Runs the next job's tiles, waits for the previous page's finish, then starts this one's in the

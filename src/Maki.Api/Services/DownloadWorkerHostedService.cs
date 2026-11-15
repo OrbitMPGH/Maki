@@ -2,6 +2,7 @@ using Maki.Api.Dtos;
 using Maki.Api.Hubs;
 using Maki.Core.Configuration;
 using Maki.Core.Entities;
+using Maki.Core.Io;
 using Maki.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -35,6 +36,8 @@ public class DownloadWorkerHostedService(
     private const int MaxRecoveryAttempts = 6;
 
     private volatile int _concurrency = DefaultConcurrentChapters;
+
+    private readonly DownloadIdleRelease _idleRelease = new();
 
     private TaskCompletionSource _concurrencyChanged = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -125,6 +128,11 @@ public class DownloadWorkerHostedService(
             await RefreshSettingsAsync(ct);
             await LiftElapsedPausesAsync(ct);
             await RefreshDiskHoldsAsync(ct);
+            if (_idleRelease.Due(queue.HandedOut, queue.Busy, queue.UtcNow))
+            {
+                NativeHeap.CollectAndTrim();
+            }
+
             await queue.SignalAsync(0, ct);
         }
     }

@@ -99,6 +99,11 @@ public class DownloadQueueService(
     /// </summary>
     public bool Busy => !_lastClaimEmpty || !_inFlight.IsEmpty || !_resolving.IsEmpty;
 
+    private long _handedOut;
+
+    /// <summary>How many items <see cref="ClaimNextAsync"/> has handed to a worker since startup.</summary>
+    public long HandedOut => Interlocked.Read(ref _handedOut);
+
     /// <summary>Completes the next time <see cref="WakePoll"/> runs.</summary>
     public Task PollWake => Volatile.Read(ref _pollWake).Task;
 
@@ -1128,6 +1133,7 @@ public class DownloadQueueService(
 
             if (claimed == 1)
             {
+                Interlocked.Increment(ref _handedOut);
                 if (wasIdle)
                 {
                     WakePoll();
