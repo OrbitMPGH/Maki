@@ -287,7 +287,9 @@ public class EmbeddingStore(EmbeddingOptions options)
         }
 
         var value = stored ?? CountAndStore();
-        _count = new CachedCount(StampOf(DbPath) ?? stamp, value);
+        // A stored count is cached under the stamp read before it, so a write landing in between
+        // reads as stale next time. CountAndStore wrote, which moved the stamp.
+        _count = new CachedCount(stored is null ? StampOf(DbPath) ?? stamp : stamp, value);
         return value;
     }
 

@@ -86,6 +86,7 @@ public sealed class TextEmbedder(
         }
 
         await _initLock.WaitAsync(ct);
+        InferenceSession? loading = null;
         try
         {
             if (_session is not null)
@@ -106,10 +107,11 @@ public sealed class TextEmbedder(
             var mapped = provider == EmbeddingProvider.Cpu && options.MapWeights && options.Model.ModelDataUrl is null
                 ? new MappedEmbeddingModel(options.ModelPath)
                 : null;
-            var session = mapped is null ? null : TryLoadMapped(mapped);
+            var session = loading = mapped is null ? null : TryLoadMapped(mapped);
             try
             {
                 session ??= new InferenceSession(options.ModelPath, sessionOptions);
+                loading = session;
             }
             catch (OnnxRuntimeException ex) when (IsCorruptModel(ex) &&
                                                   !DeletedCorruptModels.ContainsKey(options.ModelPath))
@@ -156,6 +158,13 @@ public sealed class TextEmbedder(
         }
         catch (Exception ex)
         {
+            // Nothing was published, so a later plain load must not read as mapped.
+            if (loading is not null && !ReferenceEquals(_session, loading))
+            {
+                loading.Dispose();
+                _mappedDataPath = null;
+            }
+
             if (ct.IsCancellationRequested)
             {
                 logger.LogDebug(ex, "Text embedder initialization cancelled");
