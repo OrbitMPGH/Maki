@@ -79,6 +79,12 @@ public sealed class VectorIndexCache(
     /// </summary>
     public string? Stamp => _loaded is { } loaded ? $"{loaded.DumpTicks}:{loaded.DumpLength}:{loaded.Generation}" : null;
 
+    /// <summary>
+    /// Whether a snapshot is on disk, so a reload is likely to take a fraction of a second rather
+    /// than a full build. Only likely: one written by another build or for another dump is rebuilt.
+    /// </summary>
+    public bool HasSnapshot => File.Exists(SnapshotPath);
+
     /// <summary>Whether an index is loaded and was built from the dump on disk now.</summary>
     public bool IsCurrent => _loaded is { } loaded && MatchesDump(loaded);
 
@@ -175,11 +181,10 @@ public sealed class VectorIndexCache(
     /// </para>
     ///
     /// <para>
-    /// The original reasoning survives in the window rather than in an exemption: this one is
-    /// deliberately longer than the graphs' (<c>MAKI_VECTOR_IDLE_MINUTES</c>, default 15),
-    /// because the rebuild is about eight seconds of reading every vector BLOB and a person who
-    /// searches once tends to search again. No lock, for the same reason as the other caches: the
-    /// index is immutable and a reader holds its own reference.
+    /// Its window (<c>MAKI_VECTOR_IDLE_MINUTES</c>, default 1) was once longer than the graphs',
+    /// when a reload meant reading every vector BLOB for eight seconds. A reload from the snapshot
+    /// takes about 0.1 s. No lock, for the same reason as the other caches: the index is immutable
+    /// and a reader holds its own reference.
     /// </para>
     /// </summary>
     public bool ReleaseIfIdle(TimeSpan idleFor)
@@ -487,20 +492,11 @@ public sealed class VectorIndexCache(
             attach.ExecuteNonQuery();
         }
 
-        // Size from the small vector table, then trim excluded rows after the scan. Joining the
-        // dump just to count candidates can walk its multi-GB rows through a title index, costing
-        // more than the entire build. The vector count is an upper bound on eligible candidates.
-        int total;
-        using (var count = conn.CreateCommand())
+        // The stored count answers "anything embedded?" without walking the table, which is all a
+        // reload from the snapshot needs; a real build still counts below for its sizing.
+        if (EmbeddingStore.StoredVectorCount(conn) == 0)
         {
-            count.CommandText = "SELECT COUNT(*) FROM series_vectors";
-            count.CommandTimeout = 600;
-            total = Convert.ToInt32(count.ExecuteScalar(), CultureInfo.InvariantCulture);
-        }
-
-        if (total == 0)
-        {
-            logger.LogInformation("Search vector index empty — nothing embedded yet");
+            logger.LogInformation("Search vector index empty: nothing embedded yet");
             return (null, null, string.Empty);
         }
 
@@ -522,6 +518,23 @@ public sealed class VectorIndexCache(
                 "Loaded the search vector index from its snapshot: {Rows} series × {Dim} dims in {Elapsed:F1}s",
                 saved.Ids.Length, saved.Dimensions, (DateTime.UtcNow - started).TotalSeconds);
             return (Assemble(saved, conn), null, key);
+        }
+
+        // Size from the small vector table, then trim excluded rows after the scan. Joining the
+        // dump just to count candidates can walk its multi-GB rows through a title index, costing
+        // more than the entire build. The vector count is an upper bound on eligible candidates.
+        int total;
+        using (var count = conn.CreateCommand())
+        {
+            count.CommandText = "SELECT COUNT(*) FROM series_vectors";
+            count.CommandTimeout = 600;
+            total = Convert.ToInt32(count.ExecuteScalar(), CultureInfo.InvariantCulture);
+        }
+
+        if (total == 0)
+        {
+            logger.LogInformation("Search vector index empty: nothing embedded yet");
+            return (null, null, key);
         }
 
         var ids = new long[total];
@@ -1018,6 +1031,11 @@ public sealed class VectorIndexCache(
             // Any failure here costs only the behavioural channel; it must never take the whole index with it.
             logger.LogWarning(ex, "Could not read taste vectors at {Path}; the channel stays off", path);
             return null;
+        }
+        finally
+        {
+            // Read end to end; the snapshot carries the layer from here until the file is replaced.
+            PageCache.DropAfterScan(path);
         }
     }
 

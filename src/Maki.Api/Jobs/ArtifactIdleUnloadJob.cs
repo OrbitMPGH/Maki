@@ -28,22 +28,20 @@ namespace Maki.Api.Jobs;
 /// </para>
 ///
 /// <para>
-/// The price is the rebuild on the next read: about nine seconds for the catalogue indexes, a
-/// second or two for the graphs. The window was thirty minutes, sized to catch an instance idle
-/// overnight. It is ten because the process never handed the memory of a visit back afterwards,
-/// so every minute at the loaded peak was a minute the dashboard read 700 MB; ten still covers one
-/// browsing session. <c>MAKI_ARTIFACT_IDLE_MINUTES=0</c> keeps everything loaded forever, which is
-/// what a machine with RAM to spare wants.
+/// The price is the reload on the next read. The window was thirty minutes when that meant nine
+/// seconds of rebuilding the catalogue indexes, then ten. It is one minute since the vector index,
+/// the catalogue indexes and the co-read graph reload from mapped snapshots: measured on the real
+/// catalogue, 0.04 to 0.17 s per artifact, against an instance holding a visit's memory for ten
+/// minutes or more after it. <c>MAKI_ARTIFACT_IDLE_MINUTES=0</c> keeps everything loaded forever,
+/// which is what a machine with RAM to spare wants.
 /// </para>
 ///
 /// <para>
-/// The search vectors go too, on their own longer window (<c>MAKI_VECTOR_IDLE_MINUTES</c>, default
-/// 15). They were originally left out of this on the grounds that every recommendation and every
-/// search needs them, so they are the likeliest to be wanted again straight after being dropped and
-/// the most expensive thing here to rebuild. Measuring a real instance is what changed that: at 16
-/// minutes it held 104 MB of large-object heap with the vectors the largest single part, and nobody
-/// was searching. The original reasoning is now expressed as the longer window rather than as an
-/// exemption.
+/// The search vectors go too, on their own window (<c>MAKI_VECTOR_IDLE_MINUTES</c>, default 1). They
+/// were originally left out on the grounds that every recommendation and every search needs them,
+/// and later given a longer window because a rebuild read every vector BLOB. The snapshot reload
+/// (about 0.1 s) took that reason away; the separate variable stays so a search-heavy install can
+/// keep them longer than the rest.
 /// </para>
 /// </summary>
 [DisallowConcurrentExecution]
@@ -62,9 +60,9 @@ public class ArtifactIdleUnloadJob(
 
     public const string VectorIdleMinutesVariable = "MAKI_VECTOR_IDLE_MINUTES";
 
-    private const int DefaultIdleMinutes = 10;
+    private const int DefaultIdleMinutes = 1;
 
-    private const int DefaultVectorIdleMinutes = 15;
+    private const int DefaultVectorIdleMinutes = 1;
 
     public Task Execute(IJobExecutionContext context)
     {
@@ -122,9 +120,6 @@ public class ArtifactIdleUnloadJob(
     /// </summary>
     internal static int Resolve(string? value) => IdleWindow.Resolve(value, DefaultIdleMinutes);
 
-    /// <summary>
-    /// The same for the search vectors, which get their own longer window because they are the
-    /// most expensive thing here to rebuild.
-    /// </summary>
+    /// <summary>The same for the search vectors, which keep their own variable.</summary>
     internal static int ResolveVector(string? value) => IdleWindow.Resolve(value, DefaultVectorIdleMinutes);
 }

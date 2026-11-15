@@ -67,7 +67,21 @@
     (compact more, trade a little CPU) keep steady state in the 200–300 MB target range.
     ConserveMemory was 5 until a container measurement at 9 held 39 MB less after a collect and
     spent a second less CPU on the warm-up, not more.
+    Gen0MaxBudget caps the gen0 allocation budget at 6 MB. The runtime sizes it from the L3 cache
+    and keeps that much committed between collections: 12 MB on a 24 MB-L3 NAS, 48 MB on a 96 MB-L3
+    desktop. Capped, a desktop measured 25 MB less RSS idle and 45 to 60 MB less after a collect,
+    with no request slower and no more CPU; the gain on the NAS is a few MB.
   -->
+  <!--
+    TieredPGO off: the instrumented tier between tier0 and tier1 is extra JIT work and code that is
+    never freed. Measured in paired runs: about 20% less CPU over cold artifact builds, recommendation
+    pools and searches, no step slower beyond noise (the vector index build within 2%), the same
+    credit scan time, and 20 to 25 MB less anonymous memory after a scan.
+  -->
+  <PropertyGroup>
+    <TieredPGO>false</TieredPGO>
+  </PropertyGroup>
+
   <PropertyGroup>
     <ServerGarbageCollection>false</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
@@ -76,6 +90,7 @@
 
   <ItemGroup>
     <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="9" Trim="false" />
+    <RuntimeHostConfigurationOption Include="System.GC.Gen0MaxBudget" Value="6291456" Trim="false" />
   </ItemGroup>
 
   <!--
