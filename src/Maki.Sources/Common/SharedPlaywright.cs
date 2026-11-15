@@ -26,7 +26,14 @@ public sealed class SharedPlaywright(BrowserInstaller? installer = null) : IDisp
         await _lock.WaitAsync(ct);
         try
         {
-            _current ??= await Playwright.CreateAsync();
+            if (_current is null)
+            {
+                using (DriverHeapCap.Apply())
+                {
+                    _current = await Playwright.CreateAsync();
+                }
+            }
+
             _holders++;
             return _current;
         }
