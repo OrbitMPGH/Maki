@@ -1453,7 +1453,7 @@ void ReportJudged(List<JudgedRow> judgedRows, SortedSet<(long Seed, long Candida
     Console.WriteLine($"  judged  : share of the top {depth} that has a stored judgement. Below 100% the other");
     Console.WriteLine("            columns describe only the judged part; judge the queue and run again.");
     Console.WriteLine("  enjoy   : mean 0 to 3 score for \"a reader who liked the seed would enjoy this\",");
-    Console.WriteLine("            over judged picks only. The primary number for the series-page rail.");
+    Console.WriteLine("            over judged picks only. This judge scores it close to feel.");
     Console.WriteLine("  feel    : the same for \"similar story, tone and feel\".");
     Console.WriteLine("  good    : share of judged picks scored 2 or 3 on enjoy; poor is the share scored 0.");
     Console.WriteLine("  nDCG    : rank-aware, on enjoy, with unjudged picks removed and the ideal taken");
@@ -2398,7 +2398,8 @@ file static class Judgements
 /// Shorthand names: <c>default</c> is what ships; <c>nograph</c>, <c>nocoread</c> and <c>nocrowd</c>
 /// switch one or both crowd channels off, which are the baselines those features have to be read
 /// against; <c>noavoid</c> is the same for the avoid channel; <c>rail</c> is the series-page rail as
-/// <c>SimilarSeriesService</c> ships it: content channels only, diversity 0.15.
+/// <c>SimilarSeriesService</c> ships it: no pair graph, taste vectors on, diversity 0.15, and
+/// <c>railcontent</c> is that with the taste vectors off, which is what shipped before v7.
 /// </para>
 /// </summary>
 file static class Variants
@@ -2429,15 +2430,19 @@ file static class Variants
             weights = new EmbeddingMath.Weights() with { Avoid = 0 };
         }
 
-        // What SimilarSeriesService asks for: every crowd channel off and a small MMR nudge. It
-        // used to stand for a reduced weight vector that service dropped long ago, so the shipped
-        // rail went ungraded while a row called `rail` sat in the table.
-        if (lower == "rail")
+        // What SimilarSeriesService asks for: both pair graphs off, the taste vectors on and a
+        // small MMR nudge. It used to stand for a reduced weight vector that service dropped long
+        // ago, so the shipped rail went ungraded while a row called `rail` sat in the table.
+        // `railcontent` is the rail as it shipped until v7, with the taste vectors off as well.
+        if (lower is "rail" or "railcontent")
         {
             coGraph = false;
             coRead = false;
-            taste = TasteVectorTuning.Default with { Weight = 0 };
             diversity = 0.15;
+            if (lower == "railcontent")
+            {
+                taste = TasteVectorTuning.Default with { Weight = 0 };
+            }
         }
 
         foreach (var pair in overrides.Split(',', StringSplitOptions.RemoveEmptyEntries))
