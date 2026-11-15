@@ -72,6 +72,16 @@
     desktop. Capped, a desktop measured 25 MB less RSS idle and 45 to 60 MB less after a collect,
     with no request slower and no more CPU; the gain on the NAS is a few MB.
   -->
+  <!--
+    TieredPGO off: the instrumented tier between tier0 and tier1 is extra JIT work and code that is
+    never freed. Measured in paired runs: about 20% less CPU over cold artifact builds, recommendation
+    pools and searches, no step slower beyond noise (the vector index build within 2%), the same
+    credit scan time, and 20 to 25 MB less anonymous memory after a scan.
+  -->
+  <PropertyGroup>
+    <TieredPGO>false</TieredPGO>
+  </PropertyGroup>
+
   <PropertyGroup>
     <ServerGarbageCollection>false</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
