@@ -33,6 +33,7 @@ public sealed class UpscaleJob(UpscaleWorkKey key, ReaderService.PageSlice slice
     public ReaderService.PageSlice Slice { get; } = slice;
 
     private readonly CancellationTokenSource _abandon = new();
+    private readonly CancellationTokenSource _widen = new();
 
     internal Dictionary<UpscaleReader, UpscaleTarget> Waiters { get; } = [];
 
@@ -45,6 +46,11 @@ public sealed class UpscaleJob(UpscaleWorkKey key, ReaderService.PageSlice slice
     public CancellationToken Abandoned => _abandon.Token;
 
     internal void Abandon() => _abandon.Cancel();
+
+    /// <summary>Cancelled when a reader starts waiting on this job while it runs from the prepare-ahead list.</summary>
+    public CancellationToken Widen => _widen.Token;
+
+    internal void WidenNow() => _widen.Cancel();
 }
 
 /// <summary>
@@ -158,6 +164,7 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
         var taken = items.Take(cap).ToList();
         var states = new UpscaleJobState[taken.Count];
         var added = false;
+        var widen = new List<UpscaleJob>();
         lock (_gate)
         {
             var reader = ReaderFor(userId, session);
@@ -202,6 +209,11 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
                 job.Waiters[reader] = item.Target;
                 if (job.Working)
                 {
+                    if (job.Background)
+                    {
+                        widen.Add(job);
+                    }
+
                     states[i] = UpscaleJobState.Working;
                     continue;
                 }
@@ -273,6 +285,12 @@ public sealed class UpscaleQueue(TimeProvider? time = null)
                     _turns.Enqueue(userId);
                 }
             }
+        }
+
+        // Outside the lock: widening starts the page's remaining tile workers from the callback.
+        foreach (var job in widen)
+        {
+            job.WidenNow();
         }
 
         if (added)

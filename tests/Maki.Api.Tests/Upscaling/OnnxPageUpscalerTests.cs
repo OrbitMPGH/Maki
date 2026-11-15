@@ -158,6 +158,41 @@ public class OnnxPageUpscalerTests : IDisposable
     }
 
     [Fact]
+    public void A_narrow_run_takes_half_the_workers_and_gives_the_same_pixels()
+    {
+        using var upscaler = NewUpscaler();
+        var source = Pattern(900, 1300);
+        var info = _catalog.Get(UpscaleModelId.SpanS);
+        var workers = 0;
+        upscaler.WorkerStarted = _ => workers++;
+
+        var full = upscaler.Run(source, info, threads: 6, luma: false, CancellationToken.None);
+        var fullWorkers = workers;
+        workers = 0;
+        var narrow = upscaler.Run(source, info, threads: 6, luma: false, CancellationToken.None, new UpscaleRun { Narrow = true });
+
+        Assert.Equal((6, 3), (fullWorkers, workers));
+        Assert.Equal(full.Pixels, narrow.Pixels);
+    }
+
+    [Fact]
+    public void A_narrow_run_starts_the_other_workers_once_widened()
+    {
+        using var upscaler = NewUpscaler();
+        using var widen = new CancellationTokenSource();
+        var source = Pattern(900, 1300);
+        var workers = 0;
+        upscaler.WorkerStarted = _ => workers++;
+        upscaler.TileCompleted = _ => widen.Cancel();
+
+        var page = upscaler.Run(source, _catalog.Get(UpscaleModelId.SpanS), threads: 6, luma: false, CancellationToken.None,
+            new UpscaleRun { Narrow = true, Widen = widen.Token });
+
+        Assert.Equal(6, workers);
+        AssertNearest2x(source, page);
+    }
+
+    [Fact]
     public void Flat_tiles_are_filled_without_inference_and_match_the_model()
     {
         using var upscaler = NewUpscaler("identity-2x-fp16.onnx");
@@ -321,7 +356,7 @@ public class OnnxPageUpscalerTests : IDisposable
         var png = Pattern(400, 500).EncodePng();
 
         var whole = await upscaler.UpscaleAsync(png, "span-s", CancellationToken.None);
-        var pending = await ((IPageUpscaler)upscaler).StartAsync(png, "span-s", CancellationToken.None);
+        var pending = await ((IPageUpscaler)upscaler).StartAsync(png, "span-s", UpscaleRun.Default, CancellationToken.None);
         upscaler.ReleaseModel(UpscaleModelId.SpanS);
         Assert.False(upscaler.IsLoaded(UpscaleModelId.SpanS));
         var staged = await pending.FinishAsync(CancellationToken.None);

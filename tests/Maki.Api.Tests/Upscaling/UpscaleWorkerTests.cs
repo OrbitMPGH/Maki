@@ -292,6 +292,28 @@ public sealed class UpscaleWorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_prepare_ahead_page_runs_narrow_until_a_reader_waits_on_it_and_a_reader_page_never_does()
+    {
+        var upscaler = new StagedUpscaler();
+        upscaler.Release(1);
+        _queue.SetBackground([(Item(0).Key, Item(0).Slice)]);
+        var worker = NewWorker(upscaler);
+
+        Assert.True(await worker.RunOnceAsync(default));
+        var background = upscaler.Runs.Single();
+        Assert.True(background.NarrowNow);
+
+        _queue.Replace(1, 7, "span-s", [Item(0)]);
+        Assert.False(background.NarrowNow);
+        upscaler.Release(0);
+        await worker.Finishing.WaitAsync(Wait);
+
+        _queue.Replace(1, 7, "span-s", [Item(1)]);
+        Assert.True(await RunJobAsync(worker));
+        Assert.False(upscaler.Runs[1].Narrow);
+    }
+
+    [Fact]
     public async Task A_page_abandoned_while_it_finishes_is_still_cached()
     {
         var upscaler = new StagedUpscaler();
@@ -431,9 +453,16 @@ public sealed class UpscaleWorkerTests : IDisposable
         public Task<UpscaleResult> UpscaleAsync(byte[] page, string modelId, CancellationToken ct) =>
             throw new NotSupportedException();
 
-        public Task<PendingUpscale> StartAsync(byte[] page, string modelId, CancellationToken ct)
+        public List<UpscaleRun> Runs { get; } = [];
+
+        public Task<PendingUpscale> StartAsync(byte[] page, string modelId, UpscaleRun run, CancellationToken ct)
         {
             var call = Interlocked.Increment(ref Calls) - 1;
+            lock (Runs)
+            {
+                Runs.Add(run);
+            }
+
             Started(call).TrySetResult();
             return Task.FromResult(new PendingUpscale(async finish =>
             {

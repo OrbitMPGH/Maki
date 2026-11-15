@@ -142,8 +142,11 @@ public sealed class UpscaleWorker(
             return true;
         }
 
-        await TellAsync(queue.WaitersOf(job), job.Key.Model, "working");
-        var started = await StartAsync(job, ct);
+        var waiters = queue.WaitersOf(job);
+        await TellAsync(waiters, job.Key.Model, "working");
+        // A prepare-ahead page nobody waits for runs on half the workers, so a reader beside it keeps its speed.
+        var run = new UpscaleRun { Narrow = job.Background && waiters.Count == 0, Widen = job.Widen };
+        var started = await StartAsync(job, run, ct);
         await _finishing;
         _finishingKey = job.Key;
         _finishing = Task.Run(() => FinishAsync(job, model, started, ct), CancellationToken.None);
@@ -177,18 +180,18 @@ public sealed class UpscaleWorker(
     }
 
     /// <summary>Reads the page and runs its tiles; abandoning the job cancels this stage.</summary>
-    private async Task<PendingUpscale> StartAsync(UpscaleJob job, CancellationToken ct)
+    private async Task<PendingUpscale> StartAsync(UpscaleJob job, UpscaleRun run, CancellationToken ct)
     {
-        using var run = CancellationTokenSource.CreateLinkedTokenSource(ct, job.Abandoned);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, job.Abandoned);
         try
         {
-            var page = await ReaderPageCache.ReadPageBytesAsync(paths, archives, job.Slice, job.Key.AbsIndex, run.Token);
+            var page = await ReaderPageCache.ReadPageBytesAsync(paths, archives, job.Slice, job.Key.AbsIndex, linked.Token);
             if (page is null)
             {
                 return PendingUpscale.Done(UpscaleResult.Skipped(UpscaleReasons.Unreadable));
             }
 
-            return await upscaler.StartAsync(page, job.Key.Model, run.Token);
+            return await upscaler.StartAsync(page, job.Key.Model, run, linked.Token);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {

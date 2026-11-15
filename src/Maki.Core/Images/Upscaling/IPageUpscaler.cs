@@ -15,8 +15,29 @@ public interface IPageUpscaler
     /// <see cref="PendingUpscale.FinishAsync"/> the rest, so a caller can start the next page while
     /// this one finishes. Same errors and cancellation as <see cref="UpscaleAsync"/>.
     /// </summary>
-    async Task<PendingUpscale> StartAsync(byte[] page, string modelId, CancellationToken ct) =>
+    async Task<PendingUpscale> StartAsync(byte[] page, string modelId, UpscaleRun run, CancellationToken ct) =>
         PendingUpscale.Done(await UpscaleAsync(page, modelId, ct));
+}
+
+/// <summary>How the worker wants one page run.</summary>
+public sealed record UpscaleRun
+{
+    public static readonly UpscaleRun Default = new();
+
+    /// <summary>
+    /// Nobody waits on the page (prepare-ahead): its tiles and colour pass take half the workers, so a
+    /// reader's page beside it is not slowed, until <see cref="Widen"/> fires.
+    /// </summary>
+    public bool Narrow { get; init; }
+
+    /// <summary>Cancelled when a reader starts waiting on a narrow page: the rest of it runs at full width.</summary>
+    public CancellationToken Widen { get; init; }
+
+    /// <summary>Whether the page should run narrow at this moment.</summary>
+    public bool NarrowNow => Narrow && !Widen.IsCancellationRequested;
+
+    /// <summary>The worker count a narrow page gets out of <paramref name="threads"/>.</summary>
+    public static int NarrowWorkers(int threads) => Math.Max(1, threads / 2);
 }
 
 /// <summary>A page past inference whose colour pass and encode may still be left to do.</summary>
