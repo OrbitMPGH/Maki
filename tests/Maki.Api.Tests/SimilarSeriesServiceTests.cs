@@ -1,4 +1,5 @@
 using Maki.Api.Services;
+using Maki.Core.Configuration;
 using Maki.Core.Entities;
 using Maki.Metadata.Embedding;
 using Maki.Metadata.MangaBaka;
@@ -62,45 +63,70 @@ public class SimilarSeriesServiceTests
                 await Gate.Task;
             }
 
-            return [Recommendation("77")];
+            return [Recommendation("77") with { TasteMatch = taste }];
         }
     }
 
     private static MangaBakaRecommendation Recommendation(string providerId) =>
         new(providerId, "Title", null, null, null, SeriesStatus.Completed, 80, null, [], [], false, null, null);
 
-    private static SimilarSeriesService Service(SemanticRecommender recommender) =>
-        new(recommender, NullLogger<SimilarSeriesService>.Instance);
+    private static SimilarSeriesService Service(SemanticRecommender recommender, FakeAppSettings? settings = null) =>
+        new(recommender, settings ?? new FakeAppSettings(), NullLogger<SimilarSeriesService>.Instance);
 
     [Fact]
-    public async Task The_rail_asks_for_content_channels_only()
+    public async Task The_rail_runs_the_taste_vectors_and_neither_pair_graph()
     {
-        // "More like this" is a claim about the two works, so the three crowd channels are off and
-        // stay off. With them on the pool carried picks whose only link to the seed was that readers
-        // paired them, and the card said so out loud: "Readers like you also finished this" under a
-        // heading promising titles that read alike.
+        // The pair graphs answer "who else read this" and stay off. The taste vectors were off too
+        // until the rail was graded on its own: the content-only list scored lower on story and feel
+        // and carried more than twice the unrelated picks.
         var recommender = new CountingRecommender();
 
         await Service(recommender).GetAsync(1, ["safe"]);
 
         Assert.False(recommender.LastCoGraph);
         Assert.False(recommender.LastCoRead);
+        Assert.True(recommender.LastTaste);
+    }
+
+    [Fact]
+    public async Task The_instance_switch_turns_the_taste_vectors_off_and_is_its_own_pool()
+    {
+        var recommender = new CountingRecommender();
+        var settings = new FakeAppSettings();
+        var service = Service(recommender, settings);
+
+        await service.GetAsync(1, ["safe"]);
+        await settings.SetAsync(SettingKeys.RecommendationsTasteVectors, "false");
+        await service.GetAsync(1, ["safe"]);
+
+        Assert.Equal(2, recommender.Calls);
         Assert.False(recommender.LastTaste);
     }
 
     [Fact]
-    public async Task The_instance_channel_settings_do_not_reach_this_rail()
+    public async Task The_pair_graph_settings_do_not_reach_this_rail()
     {
-        // They gate Discover, where the crowd channels are the point. Here they have nothing to
-        // switch, so they must not fragment the cache either: two visits are still one scan.
         var recommender = new CountingRecommender();
-        var service = Service(recommender);
+        var settings = new FakeAppSettings();
+        var service = Service(recommender, settings);
 
         await service.GetAsync(1, ["safe"]);
+        await settings.SetAsync(SettingKeys.RecommendationsCoRead, "true");
+        await settings.SetAsync(SettingKeys.RecommendationsCoGraph, "true");
         await service.GetAsync(1, ["safe"]);
 
         Assert.Equal(1, recommender.Calls);
         Assert.False(recommender.LastCoRead);
+        Assert.False(recommender.LastCoGraph);
+    }
+
+    [Fact]
+    public async Task No_card_on_the_rail_claims_to_be_close_to_the_viewers_taste()
+    {
+        // The pool is shared by everyone and is about the seed, not about a reader.
+        var picks = await Service(new CountingRecommender()).GetAsync(1, ["safe"]);
+
+        Assert.All(picks, p => Assert.False(p.TasteMatch));
     }
 
     [Fact]

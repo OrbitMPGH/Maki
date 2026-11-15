@@ -38,6 +38,21 @@
   decided v5.2 was `pop` and nDCG; the `dial` gate was NOT met, so read `eval-reco.cs dial` beside
   these rows rather than assuming this table covers it.
 
+  The same variants then run over the judged panel (distribution/eval-panel.tsv): 300 fixed seeds
+  whose top 10 picks are graded against stored judgements instead of a label graph. That table is
+  the only one here that can see a good pick nobody labelled, and the only one with a column for
+  story and feel. Picks with no judgement yet are written to .artifacts/eval/judge-queue.tsv for
+  distribution/judge-pairs.py.
+
+  `rail` is the series-page "More like this" rail as it ships: both pair graphs off, the taste
+  vectors on, diversity 0.15. It is a default variant so the cost of that choice is printed on
+  every run. `railcontent` is the rail before v7, with the taste vectors off as well.
+
+.PARAMETER Split
+  dev (default), confirm or all. Sweeps and fits run on dev. A default changes only after one
+  confirming run on `confirm` agrees in sign with an interval that excludes zero. `all` is the
+  request set every row before v7 was scored on.
+
 .PARAMETER Variants
   Which variants to score. Defaults to the shipped configuration against the no-crowd baseline.
   Later phases pass their own, e.g. -Variants default,"anc:tagancestordecay=0.5".
@@ -60,7 +75,7 @@
 [CmdletBinding()]
 param(
   [string[]]$Variants = @(
-    "nocrowd", "default", "noavoid",
+    "nocrowd", "default", "rail", "noavoid",
     "avoidnone12:avoidneutralize=none,avoidweight=12"),
   [string]$Config = "",
   [int]$Requests = 500,
@@ -68,6 +83,9 @@ param(
   [switch]$Quick,
   [switch]$NoFeel,
   [string]$LibraryFold = "",
+  [ValidateSet("dev", "confirm", "all")]
+  [string]$Split = "dev",
+  [switch]$NoPanel,
   [string]$Log = ""
 )
 
@@ -79,10 +97,16 @@ Set-Location $repoRoot
 # does), so "-Variants a,b" arrives as one string. Split here so both invocation styles work.
 $Variants = @($Variants | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 
-if (-not $Config) { $Config = Join-Path $repoRoot ".simulated" }
+# Both directories are git-ignored and live in the main checkout, so a run from a worktree names
+# them through the environment instead of finding them beside the script.
+if (-not $Config) {
+  $Config = if ($env:MAKI_CONFIG_DIR) { $env:MAKI_CONFIG_DIR } else { Join-Path $repoRoot ".simulated" }
+}
 $env:MAKI_CONFIG_DIR = $Config
+$artifacts = if ($env:MAKI_ARTIFACTS_DIR) { $env:MAKI_ARTIFACTS_DIR } else { Join-Path $repoRoot ".artifacts" }
+$env:MAKI_ARTIFACTS_DIR = $artifacts
 
-$resultsDir = Join-Path $repoRoot ".artifacts\eval"
+$resultsDir = Join-Path $artifacts "eval"
 New-Item -ItemType Directory -Path $resultsDir -Force | Out-Null
 if (-not $Log) { $Log = Join-Path $resultsDir "suite-$(Get-Date -Format 'yyyyMMdd-HHmmss').log" }
 
@@ -93,7 +117,7 @@ foreach ($f in @("mangabaka.db", "embeddings.db", "reco-edges.db", "coread-edges
     Write-Warning "$f is missing from $Config. A missing graph reads as 'the channel did nothing'."
   }
 }
-if (-not (Test-Path (Join-Path $repoRoot ".artifacts\mu-edges.db"))) {
+if (-not (Test-Path (Join-Path $artifacts "mu-edges.db"))) {
   throw "No .artifacts/mu-edges.db. Build it: dotnet run distribution/build-mu-graph.cs"
 }
 
@@ -105,7 +129,7 @@ if (Test-Path $runfileCache) { Remove-Item -Recurse -Force $runfileCache }
 Write-Host ""
 Write-Host "config   : $Config"
 Write-Host "variants : $($Variants -join ', ')"
-Write-Host "requests : $Requests pair-mode, $Libraries libraries"
+Write-Host "requests : $Requests pair-mode, $Libraries libraries, split $Split"
 Write-Host "log      : $Log"
 Write-Host ""
 
@@ -133,9 +157,16 @@ $feel = if ($NoFeel) { @() } else { @("--feel") }
 
 foreach ($labels in @("reco", "coread", "mu", "mu-human")) {
   Invoke-Suite -Title "single / $labels" -EvalArgs (@(
-    "single", "--labels", $labels, "--requests", "$Requests", "--strata") + $feel)
+    "single", "--labels", $labels, "--requests", "$Requests", "--split", $Split, "--strata") + $feel)
   Invoke-Suite -Title "small / $labels" -EvalArgs (@(
-    "small", "--labels", $labels, "--requests", "$Requests", "--per-request", "3") + $feel)
+    "small", "--labels", $labels, "--requests", "$Requests", "--split", $Split, "--per-request", "3") + $feel)
+}
+
+# The judged panel. Its dev set is for comparing variants; the holdout set is judged once per
+# release and is deliberately not part of this script.
+$panel = Join-Path $PSScriptRoot "eval-panel.tsv"
+if (-not $NoPanel -and (Test-Path $panel)) {
+  Invoke-Suite -Title "panel / judged" -EvalArgs @("single", "--panel", $panel)
 }
 
 # `library` ignores --labels entirely: it holds out a slice of a real reading list and asks for it
@@ -147,7 +178,7 @@ foreach ($labels in @("reco", "coread", "mu", "mu-human")) {
 # run outright if the installed artifact was trained on the fold being graded. Without it, library
 # mode grades a model against readers it learned from and the number is meaningless.
 $libraryArgs = @(
-  "library", "--requests", "$Libraries", "--holdout", "0.2", "--strata", "--negatives") + $feel
+  "library", "--requests", "$Libraries", "--holdout", "0.2", "--split", $Split, "--strata", "--negatives") + $feel
 if ($LibraryFold) {
   $libraryArgs += @("--fold-users", $LibraryFold)
 } elseif (Test-Path (Join-Path $Config "taste-vectors.db")) {
