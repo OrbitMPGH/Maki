@@ -85,6 +85,32 @@ public sealed class UpscaleWorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task The_model_session_is_released_once_the_queue_drains()
+    {
+        using var upscaler = new OnnxPageUpscaler(_catalog, _store, _settings, NullLogger<OnnxPageUpscaler>.Instance);
+        _queue.Replace(1, 7, "span-s", [Item(0), Item(1)]);
+        var worker = NewWorker(upscaler);
+
+        await worker.StartAsync(default);
+        try
+        {
+            await WaitForSentAsync(4);
+            var deadline = DateTime.UtcNow + Wait;
+            while (upscaler.IsLoaded(UpscaleModelId.SpanS) && DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(10);
+            }
+        }
+        finally
+        {
+            await worker.StopAsync(default);
+        }
+
+        Assert.False(upscaler.IsLoaded(UpscaleModelId.SpanS));
+        Assert.NotNull(_cache.TryGet(Item(1).Key));
+    }
+
+    [Fact]
     public async Task A_throwing_upscaler_fails_that_page_and_the_loop_keeps_going()
     {
         var upscaler = new FakeUpscaler();
@@ -199,6 +225,31 @@ public sealed class UpscaleWorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task A_page_abandoned_during_its_tiles_does_not_wait_for_the_previous_page_to_finish()
+    {
+        var upscaler = new StagedUpscaler { BlockStartOf = 1 };
+        _queue.Replace(2, 7, "span-s", [Item(0)]);
+        var worker = NewWorker(upscaler);
+        Assert.True(await worker.RunOnceAsync(default));
+        await upscaler.Finishing(0).Task.WaitAsync(Wait);
+
+        _queue.Replace(1, 7, "span-s", [Item(1)]);
+        var run = worker.RunOnceAsync(default);
+        await upscaler.Started(1).Task.WaitAsync(Wait);
+        _queue.Replace(1, 8, "span-s", []);
+
+        Assert.True(await run.WaitAsync(Wait));
+        Assert.False(worker.Finishing.IsCompleted);
+        Assert.Null(_queue.RecentOutcome(Item(1).Key));
+
+        upscaler.Release(0);
+        await worker.Finishing.WaitAsync(Wait);
+        Assert.NotNull(_cache.TryGet(Item(0).Key));
+        Assert.Null(_cache.TryGet(Item(1).Key));
+        Assert.Equal(0, _queue.Snapshot().Pending + _queue.Snapshot().Working);
+    }
+
+    [Fact]
     public async Task A_page_already_in_the_cache_is_answered_ready_without_running()
     {
         await _cache.WriteAsync(Item(1).Key, [1, 2, 3], "webp", default);
@@ -289,6 +340,28 @@ public sealed class UpscaleWorkerTests : IDisposable
         Assert.Equal(1, upscaler.MaxFinishing);
         Assert.Equal([0, 1, 2, 3, 4], _broadcaster.Sent.Where(s => s.State == "ready").Select(s => s.Page));
         Assert.All(Enumerable.Range(0, 5), p => Assert.NotNull(_cache.TryGet(Item(p).Key)));
+    }
+
+    [Fact]
+    public async Task A_prepare_ahead_page_runs_narrow_until_a_reader_waits_on_it_and_a_reader_page_never_does()
+    {
+        var upscaler = new StagedUpscaler();
+        upscaler.Release(1);
+        _queue.SetBackground([(Item(0).Key, Item(0).Slice)]);
+        var worker = NewWorker(upscaler);
+
+        Assert.True(await worker.RunOnceAsync(default));
+        var background = upscaler.Runs.Single();
+        Assert.True(background.NarrowNow);
+
+        _queue.Replace(1, 7, "span-s", [Item(0)]);
+        Assert.False(background.NarrowNow);
+        upscaler.Release(0);
+        await worker.Finishing.WaitAsync(Wait);
+
+        _queue.Replace(1, 7, "span-s", [Item(1)]);
+        Assert.True(await RunJobAsync(worker));
+        Assert.False(upscaler.Runs[1].Narrow);
     }
 
     [Fact]
@@ -431,11 +504,26 @@ public sealed class UpscaleWorkerTests : IDisposable
         public Task<UpscaleResult> UpscaleAsync(byte[] page, string modelId, CancellationToken ct) =>
             throw new NotSupportedException();
 
-        public Task<PendingUpscale> StartAsync(byte[] page, string modelId, CancellationToken ct)
+        public List<UpscaleRun> Runs { get; } = [];
+
+        /// <summary>This call's start waits until it is cancelled, as tiles do when their page is abandoned.</summary>
+        public int? BlockStartOf { get; init; }
+
+        public async Task<PendingUpscale> StartAsync(byte[] page, string modelId, UpscaleRun run, CancellationToken ct)
         {
             var call = Interlocked.Increment(ref Calls) - 1;
+            lock (Runs)
+            {
+                Runs.Add(run);
+            }
+
             Started(call).TrySetResult();
-            return Task.FromResult(new PendingUpscale(async finish =>
+            if (BlockStartOf == call)
+            {
+                await Task.Delay(Timeout.Infinite, ct);
+            }
+
+            return new PendingUpscale(async finish =>
             {
                 var now = Interlocked.Increment(ref _inFinish);
                 InterlockedMax(ref _maxFinishing, now);
@@ -455,7 +543,7 @@ public sealed class UpscaleWorkerTests : IDisposable
                 {
                     Interlocked.Decrement(ref _inFinish);
                 }
-            }));
+            });
         }
 
         private static void InterlockedMax(ref int target, int value)

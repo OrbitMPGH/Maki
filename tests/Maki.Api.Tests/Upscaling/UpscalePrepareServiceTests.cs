@@ -177,6 +177,20 @@ public sealed class UpscalePrepareServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task A_prepared_page_knows_whose_browser_will_see_it()
+    {
+        var series = AddSeries("Read");
+        var first = AddChapter(series, 1);
+        AddChapter(series, 2);
+        Read(series, first, Now.AddDays(-1));
+        _queue.Replace(_user, first, "span-s", [], session: "edge", jpegXl: false);
+
+        await Service().PlanAsync(default);
+
+        Assert.False(_queue.DecodesJpegXl(_queue.TryDequeue()!));
+    }
+
+    [Fact]
     public async Task A_part_read_chapter_is_prepared_from_the_page_reached()
     {
         var series = AddSeries("Part");

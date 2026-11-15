@@ -55,6 +55,9 @@ public sealed class OnnxPageUpscaler(
     /// <summary>Called with the index of each tile filled without inference. Tests only.</summary>
     internal Action<int>? TileSkipped { get; set; }
 
+    /// <summary>Called as each tile worker of a run starts. Tests only.</summary>
+    internal Action<int>? WorkerStarted { get; set; }
+
     public Task<UpscaleResult> UpscaleAsync(byte[] page, string modelId, CancellationToken ct) =>
         UpscaleModelId.TryParse(modelId, out var id)
             ? UpscaleAsync(page, id, ct)
@@ -63,13 +66,16 @@ public sealed class OnnxPageUpscaler(
     public async Task<UpscaleResult> UpscaleAsync(byte[] page, UpscaleModelId model, CancellationToken ct) =>
         await (await StartAsync(page, model, ct)).FinishAsync(ct);
 
-    public Task<PendingUpscale> StartAsync(byte[] page, string modelId, CancellationToken ct) =>
+    public Task<PendingUpscale> StartAsync(byte[] page, string modelId, UpscaleRun run, CancellationToken ct) =>
         UpscaleModelId.TryParse(modelId, out var id)
-            ? StartAsync(page, id, ct)
+            ? StartAsync(page, id, run, ct)
             : Task.FromResult(PendingUpscale.Done(UpscaleResult.Failed(UpscaleReasons.UnknownModel)));
 
+    public Task<PendingUpscale> StartAsync(byte[] page, UpscaleModelId model, CancellationToken ct) =>
+        StartAsync(page, model, UpscaleRun.Default, ct);
+
     /// <summary>Decode and inference. The colour pass and encode wait for <see cref="PendingUpscale.FinishAsync"/>.</summary>
-    public async Task<PendingUpscale> StartAsync(byte[] page, UpscaleModelId model, CancellationToken ct)
+    public async Task<PendingUpscale> StartAsync(byte[] page, UpscaleModelId model, UpscaleRun run, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
         if (!catalog.TryGet(model, out var info))
@@ -97,7 +103,7 @@ public sealed class OnnxPageUpscaler(
         StitchedPage stitched;
         try
         {
-            stitched = await Task.Run(() => Run(source, info, threads, luma, ct), ct);
+            stitched = await Task.Run(() => Run(source, info, threads, luma, ct, run), ct);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -114,13 +120,18 @@ public sealed class OnnxPageUpscaler(
             return PendingUpscale.Done(UpscaleResult.Failed(UpscaleReasons.InferenceFailed));
         }
 
-        return new PendingUpscale(finish => FinishAsync(source, stitched, grey, luma, threads, options.JpegXl, model, finish));
+        return new PendingUpscale(finish => FinishAsync(source, stitched, grey, luma, threads, options.JpegXl, model, run, finish));
     }
 
     private async Task<UpscaleResult> FinishAsync(
         Raster source, StitchedPage stitched, bool grey, bool luma, int threads, bool jpegXl, UpscaleModelId model,
-        CancellationToken ct)
+        UpscaleRun run, CancellationToken ct)
     {
+        if (run.NarrowNow)
+        {
+            threads = UpscaleRun.NarrowWorkers(threads);
+        }
+
         try
         {
             var outputWeight = ImageWorkGate.Weigh(stitched.Width, stitched.Height);
@@ -133,6 +144,7 @@ public sealed class OnnxPageUpscaler(
 
             UpscalePixels.TakeColourFrom(stitched.Pixels, stitched.Width, stitched.Height, source.Pixels, source.Width,
                 source.Height, threads);
+            jpegXl = jpegXl && (run.JpegXl?.Invoke() ?? true);
             var encoded = await ImageWorkGate.RunAsync(
                 () => Task.FromResult(ImageCodec.EncodeUpscaled(stitched.Pixels, stitched.Width, stitched.Height, grey, jpegXl)),
                 outputWeight, ct);
@@ -145,8 +157,11 @@ public sealed class OnnxPageUpscaler(
         }
     }
 
+    /// <summary>Disposes every session not in use, once the worker's queue drains: the arena holds the burst's peak.</summary>
+    public void ReleaseIdleSessions() => ReleaseIfIdle(TimeSpan.Zero, quiet: true);
+
     /// <summary>Disposes every session nothing has used for <paramref name="idleFor"/>. Returns how many went.</summary>
-    public int ReleaseIfIdle(TimeSpan idleFor)
+    public int ReleaseIfIdle(TimeSpan idleFor, bool quiet = false)
     {
         var released = 0;
         lock (_gate)
@@ -162,7 +177,7 @@ public sealed class OnnxPageUpscaler(
                 _sessions.Remove(id);
                 loaded.Session.Dispose();
                 released++;
-                logger.LogInformation("Unloaded upscale model {Model} after {Minutes:F0} idle minute(s)",
+                logger.Log(quiet ? LogLevel.Debug : LogLevel.Information, "Unloaded upscale model {Model} after {Minutes:F0} idle minute(s)",
                     id, (now - loaded.LastUsedUtc).TotalMinutes);
             }
         }
@@ -210,12 +225,13 @@ public sealed class OnnxPageUpscaler(
     /// Stitch one band, the luma of the model output, instead of RGB. Only for an exact-grey source
     /// (<see cref="UpscalePixels.IsExactGrey"/>), where it equals the colour pass and band average.
     /// </param>
-    internal StitchedPage Run(Raster source, UpscaleModelInfo info, int threads, bool luma, CancellationToken ct)
+    internal StitchedPage Run(Raster source, UpscaleModelInfo info, int threads, bool luma, CancellationToken ct,
+        UpscaleRun? run = null)
     {
         var loaded = Acquire(info);
         try
         {
-            return RunTiles(loaded, source, info, threads, luma, ct);
+            return RunTiles(loaded, source, info, threads, luma, run ?? UpscaleRun.Default, ct);
         }
         finally
         {
@@ -224,7 +240,7 @@ public sealed class OnnxPageUpscaler(
     }
 
     private StitchedPage RunTiles(
-        LoadedModel loaded, Raster source, UpscaleModelInfo info, int threads, bool luma, CancellationToken ct)
+        LoadedModel loaded, Raster source, UpscaleModelInfo info, int threads, bool luma, UpscaleRun run, CancellationToken ct)
     {
         var tiles = UpscaleTiling.Plan(source.Width, source.Height,
             multiple: info.Adapter == UpscaleAdapter.Plain4xThenHalve ? 1 : 4);
@@ -254,11 +270,13 @@ public sealed class OnnxPageUpscaler(
             }
         }
 
-        var workers = Math.Min(Math.Min(threads, MaxWorkers(tiles[0], info)), pending.Count);
-        if (workers == 0)
+        var full = Math.Min(Math.Min(threads, MaxWorkers(tiles[0], info)), pending.Count);
+        if (full == 0)
         {
             return page;
         }
+
+        var workers = run.NarrowNow ? Math.Min(full, UpscaleRun.NarrowWorkers(threads)) : full;
 
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var next = -1;
@@ -268,6 +286,7 @@ public sealed class OnnxPageUpscaler(
         {
             try
             {
+                Report(WorkerStarted, 0);
                 using var buffers = new TileBuffers(loaded, tiles, info.ModelScale, scale);
                 using var runOptions = new RunOptions();
                 using var terminate = stop.Token.Register(() => runOptions.Terminate = true);
@@ -290,14 +309,30 @@ public sealed class OnnxPageUpscaler(
             }
         }
 
-        var helpers = new Task[workers - 1];
-        for (var i = 0; i < helpers.Length; i++)
+        // The calling thread is the first worker. A narrow page gets the rest once a reader waits on it.
+        var helpers = new List<Task>(full - 1);
+        void StartHelpers(int upTo)
         {
-            helpers[i] = Task.Factory.StartNew(Work, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default);
+            lock (helpers)
+            {
+                while (helpers.Count < upTo - 1)
+                {
+                    helpers.Add(Task.Factory.StartNew(Work, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default));
+                }
+            }
         }
 
+        StartHelpers(workers);
+        var widen = workers < full ? run.Widen.Register(() => StartHelpers(full)) : default;
         Work();
-        Task.WaitAll(helpers);
+        widen.Dispose();
+        Task[] started;
+        lock (helpers)
+        {
+            started = [.. helpers];
+        }
+
+        Task.WaitAll(started);
         ct.ThrowIfCancellationRequested();
         if (failure is not null)
         {
@@ -693,13 +728,19 @@ public sealed class OnnxPageUpscaler(
         }
     }
 
-    /// <summary>One intra-op thread: the workers of <see cref="RunTiles"/> are the parallelism.</summary>
+    /// <summary>
+    /// One intra-op thread: the workers of <see cref="RunTiles"/> are the parallelism. The CPU arena is
+    /// on here, unlike the embedder: without it every tile's activations were fresh mmaps under the
+    /// image's fixed malloc threshold, 11 to 15% of upscaler CPU in kernel page faults. The arena keeps
+    /// the burst's peak until the session goes, which the worker does when its queue drains.
+    /// </summary>
     private LoadedModel Load(UpscaleModelInfo info)
     {
         InferenceSession? session = null;
         try
         {
             using var options = OnnxMemoryOptions.Create(intraOpThreads: 1, fixedShapes: true);
+            options.EnableCpuMemArena = true;
             session = new InferenceSession(store.PathOf(info.Id), options);
             var output = session.OutputNames[0];
             var inputType = ElementType(session.InputMetadata[info.InputName]);
