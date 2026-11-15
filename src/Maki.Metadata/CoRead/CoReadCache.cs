@@ -1,4 +1,5 @@
 using Maki.Core;
+using Maki.Core.Io;
 using System.Globalization;
 using Maki.Metadata.RecoGraph;
 using Microsoft.Data.Sqlite;
@@ -270,6 +271,11 @@ public sealed class CoReadCache(CoReadOptions options, ILogger<CoReadCache> logg
             // whole channel is an optional bonus on top of a working content-based recommender.
             logger.LogWarning(ex, "Could not read the co-read graph at {Path}", options.DatabasePath);
             return null;
+        }
+        finally
+        {
+            // Every pair was read; the snapshot serves reloads until the artifact is replaced.
+            PageCache.DropAfterScan(options.DatabasePath);
         }
     }
 

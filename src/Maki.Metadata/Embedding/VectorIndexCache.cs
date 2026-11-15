@@ -487,20 +487,11 @@ public sealed class VectorIndexCache(
             attach.ExecuteNonQuery();
         }
 
-        // Size from the small vector table, then trim excluded rows after the scan. Joining the
-        // dump just to count candidates can walk its multi-GB rows through a title index, costing
-        // more than the entire build. The vector count is an upper bound on eligible candidates.
-        int total;
-        using (var count = conn.CreateCommand())
+        // The stored count answers "anything embedded?" without walking the table, which is all a
+        // reload from the snapshot needs; a real build still counts below for its sizing.
+        if (EmbeddingStore.StoredVectorCount(conn) == 0)
         {
-            count.CommandText = "SELECT COUNT(*) FROM series_vectors";
-            count.CommandTimeout = 600;
-            total = Convert.ToInt32(count.ExecuteScalar(), CultureInfo.InvariantCulture);
-        }
-
-        if (total == 0)
-        {
-            logger.LogInformation("Search vector index empty — nothing embedded yet");
+            logger.LogInformation("Search vector index empty: nothing embedded yet");
             return (null, null, string.Empty);
         }
 
@@ -522,6 +513,23 @@ public sealed class VectorIndexCache(
                 "Loaded the search vector index from its snapshot: {Rows} series × {Dim} dims in {Elapsed:F1}s",
                 saved.Ids.Length, saved.Dimensions, (DateTime.UtcNow - started).TotalSeconds);
             return (Assemble(saved, conn), null, key);
+        }
+
+        // Size from the small vector table, then trim excluded rows after the scan. Joining the
+        // dump just to count candidates can walk its multi-GB rows through a title index, costing
+        // more than the entire build. The vector count is an upper bound on eligible candidates.
+        int total;
+        using (var count = conn.CreateCommand())
+        {
+            count.CommandText = "SELECT COUNT(*) FROM series_vectors";
+            count.CommandTimeout = 600;
+            total = Convert.ToInt32(count.ExecuteScalar(), CultureInfo.InvariantCulture);
+        }
+
+        if (total == 0)
+        {
+            logger.LogInformation("Search vector index empty: nothing embedded yet");
+            return (null, null, key);
         }
 
         var ids = new long[total];
@@ -1018,6 +1026,11 @@ public sealed class VectorIndexCache(
             // Any failure here costs only the behavioural channel; it must never take the whole index with it.
             logger.LogWarning(ex, "Could not read taste vectors at {Path}; the channel stays off", path);
             return null;
+        }
+        finally
+        {
+            // Read end to end; the snapshot carries the layer from here until the file is replaced.
+            PageCache.DropAfterScan(path);
         }
     }
 

@@ -487,6 +487,9 @@ public class VectorIndexCacheTests : IDisposable
 
         Assert.DoesNotContain(logger.Messages, m => m.Contains("replacing the file instead"));
         Assert.Equal(["new", "new"], Store().GetHashes().OrderBy(kv => kv.Key).Select(kv => kv.Value));
+        // The staged file's own count comes across with it, still valid under its content version.
+        Assert.Equal(2, EmbeddingStoreTests.StoredCount(_vectorPath));
+        Assert.Equal(2, Store().Count());
         Assert.True(!File.Exists(_vectorPath + "-wal") || new FileInfo(_vectorPath + "-wal").Length == 0);
     }
 

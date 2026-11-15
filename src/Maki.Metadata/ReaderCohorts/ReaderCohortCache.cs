@@ -1,4 +1,5 @@
 using Maki.Core;
+using Maki.Core.Io;
 using System.Globalization;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -207,6 +208,11 @@ public sealed class ReaderCohortCache(ReaderCohortOptions options, ILogger<Reade
             // the feature existed.
             logger.LogWarning(ex, "Could not read reader cohorts at {Path}", options.DatabasePath);
             return null;
+        }
+        finally
+        {
+            // Read whole onto the heap; the file is not touched again until the next reload.
+            PageCache.DropAfterScan(options.DatabasePath);
         }
     }
 
