@@ -12,6 +12,8 @@ Subsystem gotchas live in `.claude/rules/*.md` and load automatically when you t
 
 No em dashes, anywhere. Avoid "AI writing" tells: no "it's not just X, it's Y", no rule-of-three lists, no "leverage"/"seamless"/"robust"/"delve" filler, no over-hedged "note that"/"it's worth mentioning" throat-clearing. Write plain, direct sentences like a developer explaining something to a teammate.
 
+**Secondary text is opt-in.** An eyebrow, kicker, page or section description, field hint, modal description or empty-state description has to tell the user something the heading, label or control doesn't. Leave it out when it restates the title in more words, describes what the control visibly does, or points at a button that is already on screen ("Try clearing the filters"). Keep it for a consequence (permanent removal, what the switch changes elsewhere), a requirement or limit ("Needs Prowlarr or Jackett", "0 turns retry off"), or the only explanation of a term. When it earns a place, write the one fact in one short sentence. `description` on `ModalHeading`, `EmptyState` and `PageHeader` is optional for this reason, and most call sites should not pass it.
+
 ## Release notes
 
 **A commit that changes something a user of the last release would notice adds or edits a file in `changes/`.** See [changes/README.md](changes/README.md) for the format. Fixes and tweaks to unreleased work add nothing (edit that feature's entry if its final form changed); reworking or removing an unreleased feature means rewriting or deleting its entry. Contributor PRs merged without one: add it at merge.
