@@ -47,7 +47,6 @@ export function RestoreSeriesDialog({
       title={
         <ModalHeading
           title={<Trans context="series">Restore to the library?</Trans>}
-          description={<Trans>The series comes back to your library.</Trans>}
         />
       }
     >
@@ -78,7 +77,6 @@ export function RestoreSeriesDialog({
               <Radio
                 value="only"
                 label={<Trans context="series">Restore only</Trans>}
-                description={<Trans>Keeps the series as it is. Nothing is downloaded.</Trans>}
               />
             </div>
           </Radio.Group>

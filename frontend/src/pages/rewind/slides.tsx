@@ -143,16 +143,11 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
               <IconBrandMark />
             </span>
           </Reveal>
-          <Reveal>{eyebrow('Maki Rewind')}</Reveal>
+          <Reveal>{eyebrow(<Trans>Maki Rewind</Trans>)}</Reveal>
           <Reveal delay={0.25}>
             <h2 className="auth-wordmark">
               <Trans>Your {label}</Trans>
             </h2>
-          </Reveal>
-          <Reveal delay={0.55}>
-            <Text className="auth-tagline rewind-sub">
-              <Trans>Let's look back at what you read.</Trans>
-            </Text>
           </Reveal>
         </div>
       </div>
@@ -415,9 +410,6 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
             <Text className="rewind-title">
               <Plural value={droppedCount} one="# series dropped" other="# series dropped" />
             </Text>
-            <Text className="rewind-caption">
-              <Trans>Maybe next year.</Trans>
-            </Text>
           </Reveal>
           <Reveal delay={0.65}>
             <Stack gap={4} align="center">
@@ -477,11 +469,6 @@ export function buildSlides(stats: ActivityStats, label: string): RewindSlide[] 
                 </div>
               ))}
           </SimpleGrid>
-        </Reveal>
-        <Reveal delay={0.7}>
-          <Text className="rewind-sub">
-            <Trans>The full breakdown is waiting behind this slide.</Trans>
-          </Text>
         </Reveal>
       </Stack>
     ),

@@ -165,7 +165,7 @@ export function LinkFileToChaptersModal({
         <ModalHeading
           title={t`Link chapters to this file`}
           description={
-            <Trans>Tick the chapters this file contains. Shift-click for a range. Unticking one unlinks it.</Trans>
+            <Trans>Shift-click for a range. Unticking a chapter unlinks it.</Trans>
           }
         />
       }

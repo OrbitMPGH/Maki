@@ -14,7 +14,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByRole('heading', { name: "You're offline" })).toBeVisible()
-    await expect(await canvas.findByText(/Maki can't reach the server/)).toBeVisible()
+    await expect(await canvas.findByText(/Nothing is saved on this device yet/)).toBeVisible()
   },
 }
 

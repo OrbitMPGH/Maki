@@ -25,7 +25,6 @@ export function PageConversionSection() {
     <SettingsSection
       id="page-conversion"
       title={<Trans>Page conversion</Trans>}
-      description={<Trans>Stores chapter pages in a smaller image format.</Trans>}
     >
       {status && (
         <Stack>

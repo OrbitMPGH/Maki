@@ -281,7 +281,7 @@ export function RelinkFilesModal({
           </ModalNote>
         ) : nothingToDo ? (
           <Text size="sm" c="var(--ink-3)" py="sm">
-            <Trans>Every chapter is already on the best file available. Nothing to change.</Trans>
+            <Trans>Every chapter is already on the best file available.</Trans>
             {unmatched > 0 && (
               <>
                 {' '}
@@ -296,10 +296,7 @@ export function RelinkFilesModal({
         ) : (
           <>
             <Text size="sm" c="var(--ink-3)">
-              <Trans>
-                Maki checked the folder against the chapter list. Tick what to trust and watch the map.
-                Nothing changes until you press Relink.
-              </Trans>
+              <Trans>Tick what to trust. Nothing changes until you press Relink.</Trans>
             </Text>
 
             <Stack gap={6}>

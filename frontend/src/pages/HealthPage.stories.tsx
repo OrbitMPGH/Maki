@@ -72,11 +72,7 @@ export const RunningWork: Story = {
   },
 }
 
-export const NothingRunning: Story = {
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Nothing is running in the background.')).toBeVisible()
-  },
-}
+export const NothingRunning: Story = {}
 
 export const ScheduledJobs: Story = {
   play: async ({ canvas, userEvent }) => {
@@ -177,7 +173,7 @@ export const PartialScanError: Story = {
 export const NoChecksYet: Story = {
   parameters: { msw: [withOverview({ checks: [], files: 0 })] },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('No checks have run yet. Use Check now.')).toBeVisible()
+    await expect(await canvas.findByText('No checks yet')).toBeVisible()
   },
 }
 
@@ -229,7 +225,7 @@ export const FilesSearch: Story = {
 export const FilesEmpty: Story = {
   parameters: { ...tab('files'), msw: [http.get(api('/health/files'), () => HttpResponse.json(emptyList))] },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('No files match these filters. Run a scan to inventory the library.')).toBeVisible()
+    await expect(await canvas.findByText('No files match. Run a scan to inventory the library.')).toBeVisible()
   },
 }
 
@@ -597,9 +593,6 @@ export const RepairsManyFailures: Story = {
 
 export const RepairsEmpty: Story = {
   parameters: { ...tab('repairs'), msw: [http.get(api('/health/operations'), () => HttpResponse.json(emptyList))] },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText('No repairs or deletions requested.')).toBeVisible()
-  },
 }
 
 export const ReviewReplacement: Story = {
@@ -653,7 +646,4 @@ export const HistoryTab: Story = {
 
 export const HistoryEmpty: Story = {
   parameters: { ...tab('history'), msw: [http.get(api('/health/history'), () => HttpResponse.json(emptyList))] },
-  play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Nothing in the history yet.')).toBeVisible()
-  },
 }

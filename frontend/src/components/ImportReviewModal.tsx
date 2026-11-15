@@ -159,13 +159,7 @@ export function ImportReviewModal({ queueItemId, onClose }: { queueItemId: numbe
       title={
         <ModalHeading
           title={t`Review import`}
-          description={
-            plan && !plan.error ? (
-              <Trans>Choose how this download lands in {plan.seriesTitle}.</Trans>
-            ) : (
-              <Trans>Choose how a finished download is imported.</Trans>
-            )
-          }
+          description={plan && !plan.error ? plan.seriesTitle : undefined}
         />
       }
       size={MODAL_SIZE.wide}

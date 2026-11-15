@@ -230,7 +230,6 @@ export function EditMetadataModal({
       title={
         <ModalHeading
           title={<Trans>Edit metadata</Trans>}
-          description={<Trans>Values you set here win over the provider until you reset them.</Trans>}
         />
       }
     >
@@ -259,7 +258,7 @@ export function EditMetadataModal({
             </Text>
             {locked('cover') && (
               <Text size="sm" c="var(--ink-2)">
-                <Trans>Set by hand. Metadata refreshes leave it alone.</Trans>
+                <Trans>Set by hand.</Trans>
               </Text>
             )}
             <Group gap="xs">
@@ -443,7 +442,6 @@ export function EditMetadataModal({
           'genres',
           <TagsInput
             label={fieldLabel('genres', <Trans>Genres</Trans>)}
-            description={t`Press Enter to add a genre`}
             data={GENRE_SUGGESTIONS}
             value={value('genres')}
             onChange={(next) => set('genres', next)}

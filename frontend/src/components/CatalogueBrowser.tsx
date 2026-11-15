@@ -420,17 +420,13 @@ export function CatalogueBrowser({
         <>
           <Group gap="xs" mb="sm" justify="space-between" wrap="wrap">
             <Group gap="xs">
-              {searching ? (
-                !loading && <Text c="var(--ink-3)" size="sm">
+              {searching && !loading && (
+                <Text c="var(--ink-3)" size="sm">
                   {items.length >= PAGE_SIZE ? (
                     <Trans>{matchCount}+ matches</Trans>
                   ) : (
                     <Plural value={items.length} one="# match" other="# matches" />
                   )}
-                </Text>
-              ) : (
-                <Text c="var(--ink-3)" size="sm">
-                  <Trans>Browsing the catalogue</Trans>
                 </Text>
               )}
               {filterSummary.length > 0 && (
@@ -483,7 +479,7 @@ export function CatalogueBrowser({
               title={searching ? t`No matches` : t`Nothing here`}
               description={
                 appliedCount > 0
-                  ? t`Nothing matches these filters. Try loosening one of them.`
+                  ? undefined
                   : searching
                     ? t`Nothing close enough. Try describing it differently, or use fewer words.`
                     : t`The catalogue needs the local MangaBaka database (Settings, then Metadata).`

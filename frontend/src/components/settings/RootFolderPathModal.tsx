@@ -211,13 +211,6 @@ export function RootFolderPathModal({ folder, onClose }: { folder: RootFolder | 
           )}
 
           <ModalFooter
-            status={
-              !result && !error ? (
-                <Text size="xs" c="var(--ink-3)">
-                  <Trans>Check the new path before saving.</Trans>
-                </Text>
-              ) : undefined
-            }
           >
             <Button variant="default" onClick={close}>
               <Trans>Cancel</Trans>

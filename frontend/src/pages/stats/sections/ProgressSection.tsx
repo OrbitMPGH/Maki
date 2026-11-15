@@ -176,9 +176,8 @@ export default function ProgressSection({ userId }: StatsSectionProps) {
     return (
       <Callout tone="neutral" role="alert" icon={IconInfoCircle}>
         <Trans>
-          Progress tracking is switched off. Turn it back on under Settings to see levels,
-          achievements and streaks. Nothing was lost while it was off: all of it is worked out from
-          your reading history whenever it is asked for.
+          Progress tracking is switched off. Turn it on under Settings to see levels, achievements
+          and streaks. Nothing is lost while it is off.
         </Trans>
       </Callout>
     )

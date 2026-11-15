@@ -93,7 +93,6 @@ export function RootFoldersSection() {
     <SettingsSection
       id="root-folders"
       title={<Trans>Root folders</Trans>}
-      description={<Trans>Where the library lives on disk. Each series is stored in one of these.</Trans>}
       panelProps={{ p: 0 }}
     >
       {rootFolders && rootFolders.length > 0 && (
@@ -435,9 +434,8 @@ export function CreditScanSection() {
       title={<Trans>Credit pages</Trans>}
       description={
         <Trans>
-          Readers turn on Hide credit pages in their reading settings. With this on, Maki finds every chapter's credit
-          pages in the background, series being read and new downloads first, so chapters open with them already left
-          out. It never holds up a download or an import and pauses while anyone reads.
+          Finds credit pages ahead of time so chapters open with them already hidden for readers who turned on Hide
+          credit pages. Never delays a download or import, pauses while anyone reads.
         </Trans>
       }
     >
@@ -666,7 +664,6 @@ export function RecycleBinSection() {
     <SettingsSection
       id="recycle-bin"
       title={<Trans>Recycle bin</Trans>}
-      description={<Trans>Deleted files wait here before they are removed for good.</Trans>}
       dirty={dirty}
       saving={setRetention.isPending}
       onSave={() => {
@@ -725,7 +722,7 @@ export function AutoTagRulesSection() {
     <SettingsSection
       id="auto-tag-rules"
       title={<Trans>Auto-tag rules</Trans>}
-      description={<Trans>Tag series as they are added, by genre, type, rating, folder or how they came in.</Trans>}
+      description={<Trans>Tag new series by genre, type, rating, folder or source.</Trans>}
     >
       <Group justify="space-between" wrap="wrap" gap="sm">
         <Text size="sm" c={count === 0 ? 'var(--ink-3)' : undefined}>
@@ -755,7 +752,6 @@ export function RootFolderRulesSection() {
     <SettingsSection
       id="root-folder-rules"
       title={<Trans>Root folder rules</Trans>}
-      description={<Trans>Pick the root folder for a new series by its type, genre, rating or how it came in.</Trans>}
     >
       <Group justify="space-between" wrap="wrap" gap="sm">
         <Text size="sm" c={count === 0 ? 'var(--ink-3)' : undefined}>

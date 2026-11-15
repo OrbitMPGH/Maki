@@ -322,7 +322,7 @@ function RuleBuilder({
     <Stack gap="xs">
       {rules.length === 0 && (
         <Text size="sm" c="var(--ink-3)">
-          <Trans>No rules yet. Add one to require or rule out genres and tags. A series has to pass every rule.</Trans>
+          <Trans>No rules yet. A series has to pass every rule.</Trans>
         </Text>
       )}
       {rules.map((rule, i) => (

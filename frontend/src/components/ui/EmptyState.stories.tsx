@@ -62,7 +62,6 @@ export const NotFound: Story = {
     headingOrder: 1,
     code: '/series/4040',
     title: 'Page not found',
-    description: 'Nothing lives at this address. The link may be old or mistyped.',
     actionLabel: 'Go to start page',
     actionTo: '/',
     actionIcon: <IconArrowLeft size={16} />,

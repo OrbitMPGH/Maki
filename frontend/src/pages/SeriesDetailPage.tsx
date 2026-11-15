@@ -1676,7 +1676,6 @@ function SeriesDetailBody() {
               headingOrder={1}
               code={`#${id}`}
               title={t`Series not found`}
-              description={t`It may have been removed from the library.`}
               actionLabel={t`Back to library`}
               actionTo="/library"
               actionIcon={<IconArrowLeft size={16} />}
@@ -2662,7 +2661,7 @@ function SeriesDetailBody() {
                     </>
                 ) : (
                     <Text size="sm" mt="sm" c="var(--ink-3)">
-                      <Trans>No synopsis yet.</Trans> <Trans>Refresh metadata to fetch one.</Trans>
+                      <Trans>Refresh metadata to fetch one.</Trans>
                     </Text>
                 )}
 
@@ -2994,10 +2993,6 @@ function SeriesDetailBody() {
                     one: 'Download # wanted chapter?',
                     other: 'Download # wanted chapters?',
                   })}
-                  description={plural(missingWanted, {
-                    one: 'This will add # chapter to the download queue.',
-                    other: 'This will add # chapters to the download queue.',
-                  })}
               />
             }
         >
@@ -3321,7 +3316,7 @@ function SeriesDetailBody() {
                         other="# files in the series folder aren't linked to any chapter."
                     />{' '}
                     <Text span inherit c="var(--ink-3)">
-                      <Trans>Relink reads each volume file to find the chapters inside it. Anything it can't place you can link by hand.</Trans>
+                      <Trans>Anything Relink can't place you can link by hand.</Trans>
                     </Text>
                   </Text>
                 </Callout>
@@ -3378,7 +3373,6 @@ function SeriesDetailBody() {
                     one="Backing files go to the recycle bin for # day."
                     other="Backing files go to the recycle bin for # days."
                   />{' '}
-                  <Trans>Use this to clean up chapters pulled in by a wrong source match.</Trans>{' '}
                   <Trans>Fix or remove the source mapping first, or a refresh will bring them right back.</Trans>
                 </Text>
                 {selectedNoteCount > 0 && (
@@ -3390,9 +3384,6 @@ function SeriesDetailBody() {
                     />
                   </Text>
                 )}
-                <Text size="sm" c="var(--danger)">
-                  <Trans>Removed chapter rows and their read history cannot be restored.</Trans>
-                </Text>
                 {binRefused === 'chapters' && (
                     <PermanentDeleteFallback loading={deleteChapters.isPending} onConfirm={() => removeChapters(true)} />
                 )}

@@ -184,10 +184,7 @@ export function RatingImportModal({
       onClose={onClose}
       size={MODAL_SIZE.default}
       title={
-        <ModalHeading
-          title={t`Import ratings from ${label}`}
-          description={<Trans>Scores on {label} that differ from your local ratings.</Trans>}
-        />
+        <ModalHeading title={t`Import ratings from ${label}`} />
       }
     >
       {body}

@@ -193,7 +193,7 @@ export function MihonReview({
           )}
           <Switch
             label={t`Mark chapters read in Mihon as read`}
-            description={t`Read ticks show in the chapter list. Series read counts only include downloaded chapters.`}
+            description={t`Series read counts only include downloaded chapters.`}
             checked={applyReadState}
             onChange={(e) => setApplyReadState(e.currentTarget.checked)}
           />
@@ -249,11 +249,7 @@ export function MihonReview({
         </Text>
       )}
 
-      {filtered.length === 0 ? (
-        <Text size="sm" c="var(--ink-3)">
-          <Trans>Nothing in this view.</Trans>
-        </Text>
-      ) : (
+      {filtered.length === 0 ? null : (
         <Panel p={0} className="table-panel">
           <Table.ScrollContainer minWidth={760}>
             <Table className="panel-table ops-table import-table">

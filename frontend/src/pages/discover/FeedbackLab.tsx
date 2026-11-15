@@ -179,12 +179,6 @@ export function SignalsCard() {
         }
       />
       <Stack gap="md">
-        <Text size="sm" c="var(--ink-3)">
-          <Trans>
-            Your shelf, ratings, reading and thumbs decide what gets recommended. Hide, dismiss and
-            seen elsewhere only take that one title out.
-          </Trans>
-        </Text>
         <DiscoverTasteStrip />
 
         <Collapse expanded={howItWorks}>

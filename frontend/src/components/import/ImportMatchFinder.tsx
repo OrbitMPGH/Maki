@@ -60,10 +60,7 @@ export function ImportMatchFinder({
       opened
       onClose={onClose}
       title={
-        <ModalHeading
-          title={t`Find a match for ${folderName}`}
-          description={<Trans>Search by title, or paste an id or link.</Trans>}
-        />
+        <ModalHeading title={t`Find a match for ${folderName}`} />
       }
       size={MODAL_SIZE.default}
     >

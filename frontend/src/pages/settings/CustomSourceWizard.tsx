@@ -729,20 +729,13 @@ export function CustomSourceWizard({ opened, onClose, mode, editingId, initial, 
   const title = mode === 'edit' ? <Trans>Edit custom source</Trans> : mode === 'import' ? <Trans>Import a custom source</Trans> : <Trans>Set up a site</Trans>
 
   const stepsDone = (i: number) => (i < step ? 'done' : i === step ? 'current' : 'todo')
-  const description =
-    mode === 'edit'
-      ? <Trans>Change how Maki reads this site, then test it.</Trans>
-      : mode === 'import'
-        ? <Trans>Paste or open a definition, then test it.</Trans>
-        : <Trans>Five short steps. Maki reads the site and guesses the rest.</Trans>
-
   return (
     <Modal
       opened={opened}
       onClose={onClose}
       size={MODAL_SIZE.wide}
       closeButtonProps={{ 'aria-label': t`Close` }}
-      title={<ModalHeading title={title} description={description} />}
+      title={<ModalHeading title={title} />}
     >
       <Stack gap="md">
         <StepStrip

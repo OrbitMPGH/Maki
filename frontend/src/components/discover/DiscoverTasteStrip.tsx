@@ -1,5 +1,4 @@
-import { Skeleton, Text } from '@mantine/core'
-import { Trans } from '@lingui/react/macro'
+import { Skeleton } from '@mantine/core'
 import { useTasteProfile } from '../../api/hooks'
 
 /** Facets named on the strip. Past five it stops being a summary and starts being the Taste tab. */
@@ -16,7 +15,6 @@ export function DiscoverTasteStrip() {
   if (isLoading) {
     return (
       <div className="discover-taste-strip" aria-hidden>
-        <Skeleton h={12} w={120} />
         <div className="discover-taste-chips">
           {Array.from({ length: SHOWN }, (_, i) => (
             <Skeleton key={i} h={30} w={88 + (i % 3) * 14} radius="md" />
@@ -29,9 +27,6 @@ export function DiscoverTasteStrip() {
 
   return (
     <div className="discover-taste-strip">
-      <Text className="discover-taste-lead">
-        <Trans>Steering your picks</Trans>
-      </Text>
       <div className="discover-taste-chips">
         {facets.map((facet) => {
           const percent = seriesCount > 0 ? Math.round((facet.support / seriesCount) * 100) : 0

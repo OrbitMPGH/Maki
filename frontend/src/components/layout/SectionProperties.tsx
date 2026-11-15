@@ -50,7 +50,6 @@ export function SectionProperties({
   const renderLabel = useLabel()
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const allPanelsOff = section?.panels?.every((p) => !p.enabled) ?? false
 
   return (
     <>
@@ -125,11 +124,6 @@ export function SectionProperties({
                     />
                   )
                 })}
-                {allPanelsOff && (
-                  <Text size="xs" c="var(--ink-3)">
-                    <Trans>With every panel off, this section stays empty.</Trans>
-                  </Text>
-                )}
               </Stack>
             )}
 

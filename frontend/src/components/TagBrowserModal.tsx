@@ -188,13 +188,7 @@ export function TagBrowserModal({
       title={
         <ModalHeading
           title={tone === 'include' ? t`Browse tags to include` : t`Browse tags to exclude`}
-          description={
-            tone === 'include' ? (
-              <Trans>Pick tags to require. Open a group to see its subtags.</Trans>
-            ) : (
-              <Trans>Pick tags to leave out. Open a group to see its subtags.</Trans>
-            )
-          }
+          description={<Trans>Open a group to see its subtags.</Trans>}
         />
       }
       closeButtonProps={{ 'aria-label': t`Close` }}

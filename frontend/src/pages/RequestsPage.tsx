@@ -212,11 +212,7 @@ export default function RequestsPage() {
       <PageHeader
         compact
         title={t`Requests`}
-        description={
-          isAdmin
-            ? t`Approving adds the series and queues the chapters.`
-            : t`Series and chapters you have asked an admin for.`
-        }
+        description={isAdmin ? t`Approving adds the series and queues the chapters.` : undefined}
       />
 
       <Tabs
@@ -267,8 +263,8 @@ export default function RequestsPage() {
           title={filter === 'pending' ? t`No pending requests` : t`Nothing here`}
           description={
             isAdmin
-              ? t`Requests filed from the Request series page and from series pages show up here.`
-              : t`Search for a series and request it. It shows up here once you do.`
+              ? t`Requests from users show up here.`
+              : t`Search for a series and request it.`
           }
         />
       ) : (
@@ -441,7 +437,7 @@ export default function RequestsPage() {
           {needsRootFolder && (
             <Select
               label={t`Root folder`}
-              description={t`Where the series will live. The requester doesn't choose this.`}
+              description={t`The requester doesn't choose this.`}
               data={rootFolders?.map((f) => ({ value: String(f.id), label: f.path })) ?? []}
               value={rootFolderId}
               onChange={(value) => {

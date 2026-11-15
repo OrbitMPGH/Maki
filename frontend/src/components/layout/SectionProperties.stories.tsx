@@ -33,7 +33,7 @@ export const HeroSection: Story = {
   play: async ({ canvasElement }) => {
     const panel = await drawer(canvasElement)
     await waitFor(() => expect(within(panel).getByRole('switch', { name: /Lead with a hero/ })).toBeChecked())
-    await expect(await within(panel).findByText('The series you read most recently, part-way through a chapter or ready for the next one.')).toBeVisible()
+    await expect(await within(panel).findByText('Series you read most recently.')).toBeVisible()
   },
 }
 
@@ -157,8 +157,7 @@ export const AllPanelsOff: Story = {
     def: panelledDef,
   },
   play: async ({ canvasElement }) => {
-    const panel = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'At a glance' })
-    await expect(await within(panel).findByText('With every panel off, this section stays empty.')).toBeVisible()
+    await expect(await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'At a glance' })).toBeVisible()
   },
 }
 

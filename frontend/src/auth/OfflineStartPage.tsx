@@ -31,10 +31,7 @@ export function OfflineStartPage() {
     <AuthFrame title={t`You're offline`} mood="asleep">
       <Stack>
         <Text size="sm" c="var(--ink-2)">
-          <Trans>
-            Maki can't reach the server, and nothing is saved on this device yet. Once the connection
-            is back, sign in and save chapters for offline reading.
-          </Trans>
+          <Trans>Nothing is saved on this device yet.</Trans>
         </Text>
         <div className="auth-retry-line">
           <IconCloudOff size={14} aria-hidden />

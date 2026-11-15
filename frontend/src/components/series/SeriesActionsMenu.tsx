@@ -679,7 +679,7 @@ export function SeriesActionsMenu({
                             label: <Trans>Follow Settings</Trans>,
                             hint: <Trans>{defaultChapters} for each reader who read it in the last {days} days.</Trans>,
                         },
-                        { value: '0', label: <Trans>Off</Trans>, hint: <Trans>Never prepared ahead.</Trans> },
+                        { value: '0', label: <Trans>Off</Trans> },
                         ...counts.map((n) => ({ value: String(n), label: chaptersLabel(n) })),
                     ],
                     onPick: (v) => onSetPrepareAhead(v === 'default' ? null : Number(v)),
@@ -720,7 +720,7 @@ export function SeriesActionsMenu({
                             label: <Trans>On for this series</Trans>,
                             hint: <Trans>Each chapter's file is deleted for good some days after everyone has read it.</Trans>,
                         },
-                        { value: 'Off', label: <Trans>Off for this series</Trans>, hint: <Trans>Read files stay on disk.</Trans> },
+                        { value: 'Off', label: <Trans>Off for this series</Trans> },
                     ],
                     onPick: onSetReadFileCleanup,
                 })
@@ -734,7 +734,7 @@ export function SeriesActionsMenu({
                             label: <Trans>Follow the rules</Trans>,
                             hint: <Trans>The page conversion rules in Settings decide.</Trans>,
                         },
-                        { value: 'Never', label: <Trans>Never</Trans>, hint: <Trans>Pages stay as they were downloaded.</Trans> },
+                        { value: 'Never', label: <Trans>Never</Trans> },
                         ...PAGE_CONVERSION_STOPS.map((stop) => ({
                             value: stopMode(stop),
                             label: renderLabel(STOP_LABELS[stop]),

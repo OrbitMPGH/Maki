@@ -197,10 +197,7 @@ export default function TasteSection({ userId, range }: StatsSectionProps) {
         <Panel p="md">
           <PanelTitle><Trans>Lean</Trans></PanelTitle>
           <p className="stats-panel-sub">
-            <Trans>
-              Share of chapters read minus share of the library. Right means you read more of it
-              than you own.
-            </Trans>
+            <Trans>Share of chapters read minus share of the library.</Trans>
           </p>
           {!taste ? (
             <ChartSkeleton h={200} />

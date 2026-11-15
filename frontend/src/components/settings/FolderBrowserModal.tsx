@@ -68,7 +68,6 @@ export function FolderBrowserModal({
       title={
         <ModalHeading
           title={t`Choose a folder`}
-          description={<Trans>Browse the server to pick a root folder.</Trans>}
         />
       }
       size={MODAL_SIZE.default}
@@ -114,7 +113,6 @@ export function FolderBrowserModal({
                 compact
                 mood="asleep"
                 title={t`No folders in here.`}
-                description={<Trans>Use this folder, or go up a level.</Trans>}
               />
             </div>
           ) : (

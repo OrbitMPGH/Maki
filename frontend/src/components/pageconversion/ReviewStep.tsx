@@ -69,8 +69,7 @@ export function ReviewStep({ value, rules }: { value: PageConversionSettings; ru
     <Stack gap="md">
       <Text size="sm" c="var(--ink-3)">
         <Trans>
-          Sizes come from encoding a sample of the files each rule covers. Nothing is changed. Times depend on how busy
-          this server is.
+          Sizes come from encoding a sample of each rule's files. Nothing is changed.
         </Trans>
       </Text>
 

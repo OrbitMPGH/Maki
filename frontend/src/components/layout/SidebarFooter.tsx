@@ -164,7 +164,6 @@ function HelpMenu({ version }: { version: string | null }) {
           `${REPO_URL}/issues/new/choose`,
           <IconBug size={16} />,
           <Trans>Report a bug</Trans>,
-          <Trans>Opens a GitHub issue with the template.</Trans>,
         )}
         {menuItem(
           `${REPO_URL}/discussions`,

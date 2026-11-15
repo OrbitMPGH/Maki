@@ -83,7 +83,6 @@ const EVENT_GROUPS: { title: MessageDescriptor; fields: EventField[]; multiUserO
       {
         key: 'seriesArchived',
         label: msg`Series archived`,
-        description: msg`A series was archived.`,
       },
       { key: 'manualMatchNeeded', label: msg`Manual match needed` },
       { key: 'seriesStatusChanged', label: msg`Series status changed` },
@@ -173,8 +172,8 @@ const FIELD_COPY: Record<string, FieldCopy> = {
   'Ntfy.priority': { label: msg`Priority`, description: msg`1 (lowest) to 5 (highest).` },
   'Gotify.appToken': { label: msg`Application token`, description: msg`Created under Apps in Gotify.` },
   'Gotify.priority': { label: msg`Priority`, description: msg`Higher numbers are more intrusive.` },
-  'Pushover.appToken': { label: msg`Application token`, description: msg`The API token of your Pushover application.` },
-  'Pushover.userKey': { label: msg`User key`, description: msg`Your user or group key.` },
+  'Pushover.appToken': { label: msg`Application token` },
+  'Pushover.userKey': { label: msg`User key` },
   'Pushover.priority': { label: msg`Priority`, description: msg`-2 (lowest) to 2 (emergency).` },
 }
 

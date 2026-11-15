@@ -75,11 +75,11 @@ export function StartStep({
         {value.format ? (
           <Plural
             value={status.library.pendingFiles}
-            one="Nothing is saved until you press a button below. The pass will check # file that has not been looked at yet. Files converted earlier are not converted again."
-            other="Nothing is saved until you press a button below. The pass will check # files that have not been looked at yet. Files converted earlier are not converted again."
+            one="The pass will check # file that has not been looked at yet. Files converted earlier are not converted again."
+            other="The pass will check # files that have not been looked at yet. Files converted earlier are not converted again."
           />
         ) : (
-          <Trans>Nothing is saved until you press the button below. Files converted earlier stay as they are.</Trans>
+          <Trans>Files converted earlier stay as they are.</Trans>
         )}
       </Text>
 

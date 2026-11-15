@@ -191,7 +191,7 @@ export const OpdsEnableWithRecentSso: Story = {
     const body = within(canvasElement.ownerDocument.body)
     await userEvent.click(await canvas.findByRole('switch', { name: /^Enable the OPDS catalogue/ }))
     const dialog = within(await body.findByRole('dialog'))
-    await expect(await dialog.findByText('Enabling it creates the feed URL.')).toBeVisible()
+    await expect(await dialog.findByRole('button', { name: 'Enable' })).toBeVisible()
     await expect(dialog.queryByLabelText('Your password')).toBeNull()
     await waitFor(() => expect(dialog.getByRole('button', { name: 'Enable' })).toBeEnabled())
     await userEvent.click(dialog.getByRole('button', { name: 'Enable' }))

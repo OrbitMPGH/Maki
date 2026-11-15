@@ -49,9 +49,6 @@ export function SignInSection() {
     <SettingsSection
       id="sign-in"
       title={<Trans>Sign-in</Trans>}
-      description={
-        <Trans>How you sign in, and the devices that stay signed in.</Trans>
-      }
       panelProps={{ p: 0 }}
     >
       <div className="account-identity">
@@ -406,7 +403,7 @@ function TwoFactorRow() {
   ) : status && !status.available ? (
     <Trans>This account has no password login for two-factor to protect.</Trans>
   ) : (
-    <Trans>The single biggest improvement if Maki is reachable from the internet.</Trans>
+    undefined
   )
 
   return (
@@ -610,7 +607,7 @@ function TwoFactorRow() {
         title={
           <ModalHeading
             title={<Trans>Save your recovery codes</Trans>}
-            description={<Trans>Each code works once if you lose your authenticator.</Trans>}
+            description={<Trans>Each code works once.</Trans>}
           />
         }
         closeOnClickOutside={false}
@@ -768,7 +765,7 @@ function ApiKeysCard({ creating, onCloseCreate }: { creating: boolean; onCloseCr
             <EmptyState
               compact
               title={t`No keys yet`}
-              description={t`New key makes one for a script or an app.`}
+              description={t`Use one for a script or an app.`}
             />
           </SettingsRowsBlock>
         )

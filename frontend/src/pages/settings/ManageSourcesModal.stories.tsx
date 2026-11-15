@@ -60,7 +60,7 @@ export const SearchWithNoMatches: Story = {
     const dialog = await openDialog(canvasElement)
     await dialog.findByRole('switch', { name: 'Enable MangaDex' })
     await userEvent.type(await dialog.findByRole('textbox', { name: 'Search sources' }), 'zzzz')
-    await expect(await dialog.findByText('No sources match. Clear a filter or try another name.')).toBeVisible()
+    await expect(await dialog.findByText('No sources match.')).toBeVisible()
   },
 }
 
@@ -157,7 +157,7 @@ export const NothingEnabled: Story = {
   },
   play: async ({ canvasElement }) => {
     const dialog = await openDialog(canvasElement)
-    await expect(await dialog.findByText('Nothing enabled. Turn a source on to rank it.')).toBeVisible()
+    await expect(await dialog.findByText('Nothing enabled.')).toBeVisible()
   },
 }
 

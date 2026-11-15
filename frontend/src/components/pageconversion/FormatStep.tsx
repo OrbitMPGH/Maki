@@ -29,7 +29,6 @@ export function FormatStep({
     <Stack gap="lg">
       <Radio.Group
         label={t`Format`}
-        description={t`The next step shows your own pages in the format you pick here.`}
         value={choice}
         onChange={(next) => onChange({ format: next === 'off' ? null : (next as PageConversionFormat) })}
       >
@@ -59,7 +58,7 @@ export function FormatStep({
             <Checkbox
               mt="sm"
               label={t`Keep PNG pages lossless`}
-              description={t`PNG pages are stored as lossless WebP at every stop, so no pixel changes. This saves little. Leave it off to let PNG pages follow the quality you choose.`}
+              description={t`PNG pages become lossless WebP at every quality, so no pixel changes. This saves little.`}
               checked={value.pngLossless}
               onChange={(event) => onChange({ pngLossless: event.currentTarget.checked })}
             />
@@ -69,7 +68,7 @@ export function FormatStep({
             <Stack gap="sm" mt="sm">
               <Checkbox
                 label={t`Split very tall pages`}
-                description={t`Webtoon strips taller than the height below are cut into several pages, in the gaps between panels where there are any. E-readers and KOReader handle these far better. Reading positions, bookmarks and notes move with their page.`}
+                description={t`Tall webtoon strips are cut into several pages, between panels where possible. Reading positions, bookmarks and notes move with their page.`}
                 checked={splitting}
                 onChange={(event) => onChange({ splitHeight: event.currentTarget.checked ? lastHeight : null })}
               />

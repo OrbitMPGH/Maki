@@ -126,10 +126,7 @@ function FollowingManager({
       opened={opened}
       onClose={onClose}
       title={
-        <ModalHeading
-          title={t`Creators you follow`}
-          description={<Trans>New series from them show up on Discover.</Trans>}
-        />
+        <ModalHeading title={t`Creators you follow`} />
       }
     >
       <Stack gap="sm">

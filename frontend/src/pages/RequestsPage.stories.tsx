@@ -173,7 +173,6 @@ export const LoadFailed: Story = {
 export const ReaderOwnRequests: Story = {
   parameters: { auth: 'reader', msw: [readerRequests] },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Series and chapters you have asked an admin for.')).toBeVisible()
     await expect(await canvas.findByText('Starlit Ferry')).toBeVisible()
     await expect(canvas.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument()
     await expect(canvas.queryByRole('button', { name: /Edit request for/ })).not.toBeInTheDocument()
@@ -193,6 +192,6 @@ export const ReaderResolvedRequests: Story = {
 export const ReaderNoRequests: Story = {
   parameters: { auth: 'reader', msw: [noRequests] },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText('Search for a series and request it. It shows up here once you do.')).toBeVisible()
+    await expect(await canvas.findByText('Search for a series and request it.')).toBeVisible()
   },
 }

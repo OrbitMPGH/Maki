@@ -161,7 +161,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
               figures={[
                 { label: t`Finished`, value: seriesFinished },
                 { label: t`Still going`, value: stillGoing },
-                { label: t`Abandoned`, value: abandonedCount, hint: t`Stalled without finishing` },
+                { label: t`Abandoned`, value: abandonedCount },
                 {
                   label: t`Fully read owned`,
                   value: library
@@ -175,11 +175,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
 
           <Panel p="md">
             <PanelTitle icon={IconChartHistogram}>{t`Where you stop`}</PanelTitle>
-            <p className="stats-panel-sub">
-              {stopPointPct
-                ? t`How far through a series you were when it stalled. Median ${stopPointPct}.`
-                : t`How far through a series you were when it stalled.`}
-            </p>
+            {stopPointPct && <p className="stats-panel-sub">{t`Median ${stopPointPct} of the way through.`}</p>}
             {stopPointHistogram.some((n) => n > 0) ? (
               <StopHistogram buckets={stopPointHistogram} medianFraction={medianStopPoint} />
             ) : (
@@ -238,7 +234,6 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
 
             <Panel p="md">
               <PanelTitle icon={IconArchive}>{t`Abandoned`}</PanelTitle>
-              <p className="stats-panel-sub">{t`Stopped before finishing`}</p>
               {behaviour.abandoned.length === 0 ? (
                 <Text c="var(--ink-3)" size="sm">
                   {t`You haven't dropped any series.`}

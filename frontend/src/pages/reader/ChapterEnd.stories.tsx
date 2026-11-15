@@ -124,7 +124,7 @@ export const MoreChaptersWanted: Story = {
 export const EveryChapterRead: Story = {
   args: { manifest: chapters[2096] },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("That's every chapter on disk.")).toBeVisible()
+    await expect(await canvas.findByText("You're caught up")).toBeVisible()
   },
 }
 
@@ -211,7 +211,6 @@ export const FinishedAsksForTheFinalRating: Story = {
   play: async ({ canvas }) => {
     await expect(await canvas.findByText('You finished the series')).toBeVisible()
     await expect(await canvas.findByText("You've finished this. How was it?")).toBeVisible()
-    await expect(await canvas.findByText("That's the whole series.")).toBeVisible()
     await expect(canvas.queryByText(/About .* left in the series/)).toBeNull()
   },
 }
@@ -253,7 +252,7 @@ export const FinishedIncognitoAsksNothing: Story = {
   args: { manifest: finalChapter, readingCounted: false },
   parameters: { msw: [withEnding(ending({ seriesReadCount: 96 }))] },
   play: async ({ canvas }) => {
-    await expect(await canvas.findByText("That's every chapter on disk.")).toBeVisible()
+    await expect(await canvas.findByText("You're caught up")).toBeVisible()
     await expect(canvas.queryByText('You finished the series')).toBeNull()
   },
 }

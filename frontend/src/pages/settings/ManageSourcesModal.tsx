@@ -288,7 +288,7 @@ function PriorityRail({ items, onChange, labelOf }: {
   if (items.length === 0) {
     return (
       <div className="source-manager-empty">
-        <Trans>Nothing enabled. Turn a source on to rank it.</Trans>
+        <Trans>Nothing enabled.</Trans>
       </div>
     )
   }
@@ -1188,7 +1188,7 @@ export function ManageSourcesModal({
         )}
         {ready && visible.length === 0 && sources && (
           <div className="source-manager-empty">
-            <Trans>No sources match. Clear a filter or try another name.</Trans>
+            <Trans>No sources match.</Trans>
           </div>
         )}
       </div>

@@ -161,10 +161,7 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
     return (
       <>
         <StatsInsight>
-          <Trans>Nothing in the library yet.</Trans>{' '}
-          <span className="stats-insight-dim">
-            <Trans>Growth, composition and sources fill in once you add a series.</Trans>
-          </span>
+          <Trans>Nothing in the library yet.</Trans>
         </StatsInsight>
         <TotalsTiles totals={stats.totals} />
       </>
@@ -208,7 +205,7 @@ export default function LibrarySection({ range, windowLabel }: StatsSectionProps
                 ]}
               />
             </Group>
-            <p className="stats-panel-sub">{t`Follows ${windowLabel}. The rest of this tab covers the whole library.`}</p>
+            <p className="stats-panel-sub">{t`Follows ${windowLabel}.`}</p>
             {growthLoading && !growth ? (
               <ChartSkeleton h={240} />
             ) : growthData.length > 0 ? (

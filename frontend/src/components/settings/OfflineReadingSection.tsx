@@ -39,7 +39,6 @@ export function OfflineReadingSection() {
     <SettingsSection
       id="offline-reading"
       title={<Trans>Offline reading</Trans>}
-      description={<Trans>Chapters saved on this device, to read without a connection.</Trans>}
     >
       {pwaSupported() ? <OfflineControls /> : <SecureContextNote />}
     </SettingsSection>

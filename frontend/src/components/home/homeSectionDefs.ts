@@ -28,7 +28,7 @@ export const HOME_SECTION_DEFS: SectionRegistry = {
   continue: {
     icon: IconPlayerPlay,
     label: HOME_SECTION_LABELS.continue,
-    description: msg`The series you read most recently, part-way through a chapter or ready for the next one.`,
+    description: msg`Series you read most recently.`,
     hero: true,
     options: [
       {
@@ -47,7 +47,6 @@ export const HOME_SECTION_DEFS: SectionRegistry = {
   recent: {
     icon: IconBookmarks,
     label: HOME_SECTION_LABELS.recent,
-    description: msg`Series with newly added chapters.`,
   },
   following: {
     icon: IconBell,
@@ -62,6 +61,5 @@ export const HOME_SECTION_DEFS: SectionRegistry = {
   popular: {
     icon: IconFlame,
     label: HOME_SECTION_LABELS.popular,
-    description: msg`The most popular titles in the MangaBaka catalogue.`,
   },
 }

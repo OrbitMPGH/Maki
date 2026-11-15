@@ -115,11 +115,10 @@ export function PreviewChapterButton({
         })}
       </>
     )
-    caption = source ? <Trans>From {source}. You can keep browsing while it downloads.</Trans> : null
+    caption = source ? <Trans>From {source}.</Trans> : null
     progress = donePages / pageCount
   } else if (working) {
     label = <Trans>Finding a source…</Trans>
-    caption = <Trans>You can keep browsing while it looks.</Trans>
   } else {
     label = <Trans>Preview first chapter</Trans>
   }

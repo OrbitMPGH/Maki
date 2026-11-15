@@ -40,8 +40,7 @@ export function SetupAccountPage() {
       title={t`Create your account`}
       subtitle={
         <Trans>
-          Create the administrator account. Your library and reading history, if you have any, are
-          already attached to it.
+          This becomes the administrator account. Any existing library and history attach to it.
         </Trans>
       }
       cardFooter={
@@ -79,7 +78,7 @@ export function SetupAccountPage() {
           />
           <PasswordInput
             label={t`Password`}
-            description={t`At least ${MIN_PASSWORD_LENGTH} characters. Length is what matters, no symbol requirements.`}
+            description={t`At least ${MIN_PASSWORD_LENGTH} characters. No symbol rules.`}
             autoComplete="new-password"
             required
             error={tooShort ? t`Use at least ${MIN_PASSWORD_LENGTH} characters` : null}

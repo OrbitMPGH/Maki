@@ -93,7 +93,7 @@ function RuleList({ onAdd, onEdit }: { onAdd: () => void; onEdit: (rule: AutoTag
         <EmptyState
           compact
           title={t`No rules yet`}
-          description={t`A rule tags new series that match it, for example every manhwa from an import list.`}
+          description={t`For example, tag every manhwa from an import list.`}
         />
       ) : (
         (rules ?? []).map((rule) => {
