@@ -157,7 +157,11 @@ export const AllPanelsOff: Story = {
     def: panelledDef,
   },
   play: async ({ canvasElement }) => {
-    await expect(await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'At a glance' })).toBeVisible()
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole('dialog', { name: 'At a glance' })
+    await expect(dialog).toBeVisible()
+    for (const name of ['Library counts', 'Your progress', 'Waiting to read']) {
+      await expect(await within(dialog).findByRole('switch', { name })).not.toBeChecked()
+    }
   },
 }
 

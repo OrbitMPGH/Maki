@@ -175,7 +175,7 @@ export default function HabitsSection({ userId, range }: StatsSectionProps) {
 
           <Panel p="md">
             <PanelTitle icon={IconChartHistogram}>{t`Where you stop`}</PanelTitle>
-            {stopPointPct && <p className="stats-panel-sub">{t`Median ${stopPointPct} of the way through.`}</p>}
+            {stopPointPct && <p className="stats-panel-sub">{t`How far through a series you were when it stalled.`}</p>}
             {stopPointHistogram.some((n) => n > 0) ? (
               <StopHistogram buckets={stopPointHistogram} medianFraction={medianStopPoint} />
             ) : (

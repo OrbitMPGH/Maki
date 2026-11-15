@@ -1002,7 +1002,9 @@ function SetupGuide() {
                   <Text className="setup-footer-note" data-tone="warn" role="status">
                     <Trans>Waiting for the metadata database.</Trans>
                   </Text>
-                ) : null}
+                ) : (
+                  <span className="setup-footer-note" aria-hidden />
+                )}
                 {active > 0 && (
                   <Button
                     variant="default"

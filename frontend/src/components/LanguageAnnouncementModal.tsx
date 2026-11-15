@@ -53,7 +53,7 @@ export default function LanguageAnnouncementModal() {
           title={t`Maki speaks your language`}
           description={
             <Trans>
-              Maki is now translated into {languageCount} languages. You can change it any time under
+              Maki is now translated into {languageCount} languages. You can change the language any time under
               Settings, Language.
             </Trans>
           }

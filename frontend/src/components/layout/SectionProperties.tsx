@@ -50,7 +50,6 @@ export function SectionProperties({
   const renderLabel = useLabel()
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-
   return (
     <>
       <Drawer

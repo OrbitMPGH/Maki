@@ -446,7 +446,7 @@ export function CreditScanSection() {
       description={
         <Trans>
           Finds credit pages ahead of time so chapters open with them already hidden for readers who turned on Hide
-          credit pages. Never delays a download or import, pauses while anyone reads.
+          credit pages. Never delays a download or import, and pauses while anyone reads.
         </Trans>
       }
     >

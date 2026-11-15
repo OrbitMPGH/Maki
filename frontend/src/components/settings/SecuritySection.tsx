@@ -510,6 +510,7 @@ export function OidcSection() {
 
         <Switch
           label={t`Create accounts on first sign-in`}
+          description={t`Anyone your provider signs in gets an account, with no library access.`}
           checked={draft.autoProvision}
           onChange={(e) => setDraft({ ...draft, autoProvision: e.currentTarget.checked })}
         />

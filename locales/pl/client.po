@@ -5045,6 +5045,10 @@ msgstr "Dowolny typ"
 msgid "Anyone with the feed URL can read everything your account can."
 msgstr "Każdy, kto ma adres kanału, może czytać wszystko, co może Twoje konto."
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Anyone your provider signs in gets an account, with no library access."
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
 msgid "Anything in the MangaBaka catalogue that matches these filters."
@@ -5762,7 +5766,7 @@ msgid "becomes readable"
 msgstr "staje się dostępny do czytania"
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Before downloading from sources, a new series asks your indexers for a volume release first (held up to 48 h for approval, 72 h for download). Needs Prowlarr or Jackett and a quality profile that upgrades to volumes. Downloads you start yourself are never held."
+msgid "Before downloading from sources, a new series asks your indexers for a volume release. While it waits for approval (up to 48 hours) or downloads (up to 72 hours), sources skip the chapters it covers. Needs Prowlarr or Jackett and a quality profile that upgrades to volumes. Downloads you start yourself are never held."
 msgstr ""
 
 #: src/pages/SetupAccountPage.tsx
@@ -6719,6 +6723,10 @@ msgstr "Rozdziały, których {winnerDisplayName} nie ma, pozostają bez zmian, p
 
 #: src/components/QueuePause.tsx
 msgid "Chapters already downloading finish, and so do torrents already with the download client. Nothing leaves the queue."
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Chapters already downloading finish. Torrents already handed to the download client keep downloading."
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -9911,10 +9919,6 @@ msgstr "Zdarzenie"
 msgid "Events"
 msgstr "Zdarzenia"
 
-#: src/pages/ScrobblePage.tsx
-msgid "Every {intervalMinutes, plural, one {# minute} other {# minutes}}. Progress on a tracker is never lowered."
-msgstr ""
-
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "Every chapter"
@@ -10742,7 +10746,7 @@ msgid "Findings"
 msgstr "Znaleziska"
 
 #: src/pages/settings/LibraryCards.tsx
-msgid "Finds credit pages ahead of time so chapters open with them already hidden for readers who turned on Hide credit pages. Never delays a download or import, pauses while anyone reads."
+msgid "Finds credit pages ahead of time so chapters open with them already hidden for readers who turned on Hide credit pages. Never delays a download or import, and pauses while anyone reads."
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -11384,7 +11388,7 @@ msgid "Grabbed from {indexer}: {releaseName}"
 msgstr "Pobrano z {indexer}: {releaseName}"
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Grabs a proposed digital release within the size ceiling on its own when the only reasons to wait are a missing volume range, chapters you don't have, or the auto-grab size. Anything Maki is unsure about still waits for you. Replaced files go to the trash. Checked on the next daily run or Search now."
+msgid "Grabs a proposed digital release within the size ceiling on its own when the only reasons to wait are a missing volume range, chapters you don't have, or the auto-grab size. Anything Maki is unsure about still waits for you. It only replaces files the release is at least as good as, and they go to the trash. Checked on the next daily run or Search now."
 msgstr ""
 
 #: src/components/settings/UsersSection.tsx
@@ -11871,6 +11875,10 @@ msgstr "Jak blisko każdy kwartał był punktu startowego."
 #, fuzzy
 msgid "How far into a series you get before you stop reading it, for the series you did not finish."
 msgstr "Jak daleko w serii zwykle dochodzisz, zanim przestaniesz czytać, w seriach, których nie skończyłeś."
+
+#: src/pages/stats/sections/HabitsSection.tsx
+msgid "How far through a series you were when it stalled."
+msgstr ""
 
 #: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
@@ -13974,7 +13982,7 @@ msgid "Maki found no {kindName} pages in the files this row converts. Pick a pag
 msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
-msgid "Maki is now translated into {languageCount} languages. You can change it any time under Settings, Language."
+msgid "Maki is now translated into {languageCount} languages. You can change the language any time under Settings, Language."
 msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
@@ -14427,10 +14435,6 @@ msgstr "mediana"
 #, fuzzy
 msgid "Median"
 msgstr "Mediana"
-
-#: src/pages/stats/sections/HabitsSection.tsx
-msgid "Median {stopPointPct} of the way through."
-msgstr ""
 
 #: src/pages/stats/SourceReliability.tsx
 #, fuzzy
@@ -16000,6 +16004,10 @@ msgstr "Brak jeszcze danych o roku wydania"
 msgid "No releases found"
 msgstr "Nie znaleziono wydań"
 
+#: src/pages/HealthPage.tsx
+msgid "No repairs or deletions requested."
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "No repeat creators yet"
@@ -16820,6 +16828,10 @@ msgstr "Nic w nim nie jest lepsze od tego, co masz"
 #, fuzzy
 msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
 msgstr "Plik nie zawiera informacji o tych rozdziałach, więc obecne powiązanie pozostaje."
+
+#: src/pages/HealthPage.tsx
+msgid "Nothing in the history yet."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -24268,6 +24280,10 @@ msgstr "Synchronizacja trwa"
 msgid "Syncing…"
 msgstr "Synchronizacja…"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Syncs every {intervalMinutes, plural, one {# minute} other {# minutes}}. Progress on a tracker is never lowered."
+msgstr ""
+
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Syncs ratings"
 msgstr ""
@@ -27189,6 +27205,10 @@ msgstr "Wartość"
 #, fuzzy
 msgid "Values name permissions, e.g. <0>DownloadChapters</0>."
 msgstr "Wartości nazywają uprawnienia, np. <0>DownloadChapters</0>."
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Values you set here win over the provider until you reset them."
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy

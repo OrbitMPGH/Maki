@@ -5,8 +5,8 @@ import { useTasteProfile } from '../../api/hooks'
 const SHOWN = 5
 
 /**
- * One line saying what is steering the picks, at the top of the Your taste tab. Tags stay ordered
- * by weighted taste strength, while the percentage says how many of the reader's series carry the tag.
+ * The tags steering the picks, at the top of the Your taste tab. Tags stay ordered by weighted
+ * taste strength, while the percentage says how many of the reader's series carry the tag.
  */
 export function DiscoverTasteStrip() {
   const { data, isLoading } = useTasteProfile('read')

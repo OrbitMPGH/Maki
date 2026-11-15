@@ -5045,6 +5045,10 @@ msgstr "모든 유형"
 msgid "Anyone with the feed URL can read everything your account can."
 msgstr "피드 URL을 가진 사람은 계정이 볼 수 있는 모든 것을 읽을 수 있습니다."
 
+#: src/components/settings/SecuritySection.tsx
+msgid "Anyone your provider signs in gets an account, with no library access."
+msgstr ""
+
 #: src/components/rails/CustomRailEditor.tsx
 #, fuzzy
 msgid "Anything in the MangaBaka catalogue that matches these filters."
@@ -5762,7 +5766,7 @@ msgid "becomes readable"
 msgstr "읽을 수 있게 됨"
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Before downloading from sources, a new series asks your indexers for a volume release first (held up to 48 h for approval, 72 h for download). Needs Prowlarr or Jackett and a quality profile that upgrades to volumes. Downloads you start yourself are never held."
+msgid "Before downloading from sources, a new series asks your indexers for a volume release. While it waits for approval (up to 48 hours) or downloads (up to 72 hours), sources skip the chapters it covers. Needs Prowlarr or Jackett and a quality profile that upgrades to volumes. Downloads you start yourself are never held."
 msgstr ""
 
 #: src/pages/SetupAccountPage.tsx
@@ -6719,6 +6723,10 @@ msgstr "{winnerDisplayName}에 없는 챕터는 그대로 두며, 디스크에�
 
 #: src/components/QueuePause.tsx
 msgid "Chapters already downloading finish, and so do torrents already with the download client. Nothing leaves the queue."
+msgstr ""
+
+#: src/components/QueuePause.tsx
+msgid "Chapters already downloading finish. Torrents already handed to the download client keep downloading."
 msgstr ""
 
 #: src/pages/LibraryPage.tsx
@@ -9911,10 +9919,6 @@ msgstr "이벤트"
 msgid "Events"
 msgstr "이벤트"
 
-#: src/pages/ScrobblePage.tsx
-msgid "Every {intervalMinutes, plural, one {# minute} other {# minutes}}. Progress on a tracker is never lowered."
-msgstr ""
-
 #: src/components/ui/seriesNotifications.ts
 #, fuzzy
 msgid "Every chapter"
@@ -10742,7 +10746,7 @@ msgid "Findings"
 msgstr "발견 항목"
 
 #: src/pages/settings/LibraryCards.tsx
-msgid "Finds credit pages ahead of time so chapters open with them already hidden for readers who turned on Hide credit pages. Never delays a download or import, pauses while anyone reads."
+msgid "Finds credit pages ahead of time so chapters open with them already hidden for readers who turned on Hide credit pages. Never delays a download or import, and pauses while anyone reads."
 msgstr ""
 
 #: src/pages/HealthPage.tsx
@@ -11384,7 +11388,7 @@ msgid "Grabbed from {indexer}: {releaseName}"
 msgstr "{indexer}에서 가져옴: {releaseName}"
 
 #: src/pages/settings/DownloadCards.tsx
-msgid "Grabs a proposed digital release within the size ceiling on its own when the only reasons to wait are a missing volume range, chapters you don't have, or the auto-grab size. Anything Maki is unsure about still waits for you. Replaced files go to the trash. Checked on the next daily run or Search now."
+msgid "Grabs a proposed digital release within the size ceiling on its own when the only reasons to wait are a missing volume range, chapters you don't have, or the auto-grab size. Anything Maki is unsure about still waits for you. It only replaces files the release is at least as good as, and they go to the trash. Checked on the next daily run or Search now."
 msgstr ""
 
 #: src/components/settings/UsersSection.tsx
@@ -11871,6 +11875,10 @@ msgstr "각 분기가 시작 지점에 얼마나 가까웠는지."
 #, fuzzy
 msgid "How far into a series you get before you stop reading it, for the series you did not finish."
 msgstr "끝까지 읽지 않은 시리즈에서, 읽기를 멈추기까지 어디까지 읽는지 보여 줍니다."
+
+#: src/pages/stats/sections/HabitsSection.tsx
+msgid "How far through a series you were when it stalled."
+msgstr ""
 
 #: src/components/pageconversion/RuleEditor.tsx
 #, fuzzy
@@ -13974,7 +13982,7 @@ msgid "Maki found no {kindName} pages in the files this row converts. Pick a pag
 msgstr ""
 
 #: src/components/LanguageAnnouncementModal.tsx
-msgid "Maki is now translated into {languageCount} languages. You can change it any time under Settings, Language."
+msgid "Maki is now translated into {languageCount} languages. You can change the language any time under Settings, Language."
 msgstr ""
 
 #: src/pages/settings/SystemCards.tsx
@@ -14427,10 +14435,6 @@ msgstr "중앙값"
 #, fuzzy
 msgid "Median"
 msgstr "중앙값"
-
-#: src/pages/stats/sections/HabitsSection.tsx
-msgid "Median {stopPointPct} of the way through."
-msgstr ""
 
 #: src/pages/stats/SourceReliability.tsx
 #, fuzzy
@@ -16000,6 +16004,10 @@ msgstr "아직 발행 연도 데이터가 없습니다"
 msgid "No releases found"
 msgstr "릴리스를 찾지 못했습니다"
 
+#: src/pages/HealthPage.tsx
+msgid "No repairs or deletions requested."
+msgstr ""
+
 #: src/pages/stats/sections/TasteSection.tsx
 #, fuzzy
 msgid "No repeat creators yet"
@@ -16820,6 +16828,10 @@ msgstr "현재 가진 것보다 나은 항목이 없습니다"
 #, fuzzy
 msgid "Nothing in the file explains these chapters, so the link you have today is trusted."
 msgstr "파일에서 이 챕터를 확인할 수 없어 현재 연결을 신뢰합니다."
+
+#: src/pages/HealthPage.tsx
+msgid "Nothing in the history yet."
+msgstr ""
 
 #: src/pages/HealthPage.tsx
 #, fuzzy
@@ -24268,6 +24280,10 @@ msgstr "지금 동기화 중"
 msgid "Syncing…"
 msgstr "동기화 중…"
 
+#: src/pages/ScrobblePage.tsx
+msgid "Syncs every {intervalMinutes, plural, one {# minute} other {# minutes}}. Progress on a tracker is never lowered."
+msgstr ""
+
 #: src/pages/settings/IntegrationCards.tsx
 msgid "Syncs ratings"
 msgstr ""
@@ -27189,6 +27205,10 @@ msgstr "값"
 #, fuzzy
 msgid "Values name permissions, e.g. <0>DownloadChapters</0>."
 msgstr "값은 권한 이름입니다. 예: <0>DownloadChapters</0>."
+
+#: src/components/series/EditMetadataModal.tsx
+msgid "Values you set here win over the provider until you reset them."
+msgstr ""
 
 #: src/components/discover/RecommenderDials.tsx
 #, fuzzy

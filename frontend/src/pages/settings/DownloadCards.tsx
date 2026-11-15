@@ -208,7 +208,7 @@ export function SourcePrioritySection() {
       />
       <Switch
         label={t`Look for volume releases first`}
-        description={t`Before downloading from sources, a new series asks your indexers for a volume release first (held up to 48 h for approval, 72 h for download). Needs Prowlarr or Jackett and a quality profile that upgrades to volumes. Downloads you start yourself are never held.`}
+        description={t`Before downloading from sources, a new series asks your indexers for a volume release. While it waits for approval (up to 48 hours) or downloads (up to 72 hours), sources skip the chapters it covers. Needs Prowlarr or Jackett and a quality profile that upgrades to volumes. Downloads you start yourself are never held.`}
         checked={volumeFirst}
         onChange={(e) => setVolumeFirst(e.currentTarget.checked)}
         mb="lg"
@@ -847,7 +847,7 @@ export function VolumeReleasesSection() {
               <NewSettingPill id="auto-approve-volumes" />
             </>
           }
-          description={t`Grabs a proposed digital release within the size ceiling on its own when the only reasons to wait are a missing volume range, chapters you don't have, or the auto-grab size. Anything Maki is unsure about still waits for you. Replaced files go to the trash. Checked on the next daily run or Search now.`}
+          description={t`Grabs a proposed digital release within the size ceiling on its own when the only reasons to wait are a missing volume range, chapters you don't have, or the auto-grab size. Anything Maki is unsure about still waits for you. It only replaces files the release is at least as good as, and they go to the trash. Checked on the next daily run or Search now.`}
           checked={autoApprove}
           onChange={(e) => setAutoApprove(e.currentTarget.checked)}
           disabled={!volumeSearch}

@@ -230,6 +230,7 @@ export function EditMetadataModal({
       title={
         <ModalHeading
           title={<Trans>Edit metadata</Trans>}
+          description={<Trans>Values you set here win over the provider until you reset them.</Trans>}
         />
       }
     >

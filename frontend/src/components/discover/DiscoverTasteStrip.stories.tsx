@@ -28,7 +28,7 @@ export const NoTagsYet: Story = {
   parameters: {
     msw: discoverPage(http.get(api('/recommendations/taste-profile'), () => HttpResponse.json(tasteProfileEmpty))),
   },
-  play: async ({ canvas }) => {
-    await waitFor(() => expect(canvas.queryByText(/%$/)).toBeNull())
+  play: async ({ canvasElement }) => {
+    await waitFor(() => expect(canvasElement.querySelector('.discover-taste-strip')).toBeNull())
   },
 }

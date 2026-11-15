@@ -23,7 +23,7 @@ export function RecommenderDials({
 
   return (
     <>
-      <div>
+      <div style={{ marginBottom: 'var(--mantine-spacing-xl)' }}>
         <Text size="sm" fw={500} mb={4}>
           {obscurity === 0 ? (
             <Trans>Obscurity: balanced</Trans>
@@ -49,7 +49,7 @@ export function RecommenderDials({
           color="var(--brand)"
         />
       </div>
-      <div>
+      <div style={{ marginBottom: 'var(--mantine-spacing-xl)' }}>
         <Text size="sm" fw={500} mb={4}>
           {diversity === 0 ? (
             <Trans>Variety: closest matches</Trans>

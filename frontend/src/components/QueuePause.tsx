@@ -291,6 +291,11 @@ export function QueuePauseBanner({ canManage }: { canManage: boolean }) {
             )}
           </Group>
         ))}
+        <Text size="xs" c="var(--ink-3)">
+          <Trans>
+            Chapters already downloading finish. Torrents already handed to the download client keep downloading.
+          </Trans>
+        </Text>
         {diskHolds.length > 0 && (
           <Text size="xs" c="var(--ink-3)">
             <Trans>

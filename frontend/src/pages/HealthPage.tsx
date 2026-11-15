@@ -985,6 +985,11 @@ export default function HealthPage() {
             {operations.data?.items.map((group) => (
               <OperationGroup key={group.key} group={group} onReview={setOperationId} />
             ))}
+            {operations.data?.items.length === 0 && (
+              <Text c="var(--ink-3)">
+                <Trans>No repairs or deletions requested.</Trans>
+              </Text>
+            )}
             <Pagination
               value={repairPage}
               onChange={setRepairPage}
@@ -997,6 +1002,11 @@ export default function HealthPage() {
           <Stack>
             {history.isLoading && <TableSkeleton columns={2} />}
             {!!history.data?.items.length && <HistoryTimeline entries={history.data.items} />}
+            {history.data?.items.length === 0 && (
+              <Text c="var(--ink-3)">
+                <Trans>Nothing in the history yet.</Trans>
+              </Text>
+            )}
             <Pagination
               value={historyPage}
               onChange={setHistoryPage}

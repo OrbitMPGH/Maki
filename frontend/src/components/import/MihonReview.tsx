@@ -249,7 +249,7 @@ export function MihonReview({
         </Text>
       )}
 
-      {filtered.length === 0 ? null : (
+      {filtered.length > 0 && (
         <Panel p={0} className="table-panel">
           <Table.ScrollContainer minWidth={760}>
             <Table className="panel-table ops-table import-table">

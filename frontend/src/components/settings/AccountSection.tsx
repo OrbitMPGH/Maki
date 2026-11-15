@@ -402,9 +402,7 @@ function TwoFactorRow() {
     </Trans>
   ) : status && !status.available ? (
     <Trans>This account has no password login for two-factor to protect.</Trans>
-  ) : (
-    undefined
-  )
+  ) : undefined
 
   return (
     <>

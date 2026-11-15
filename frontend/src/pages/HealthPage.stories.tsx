@@ -72,7 +72,12 @@ export const RunningWork: Story = {
   },
 }
 
-export const NothingRunning: Story = {}
+export const NothingRunning: Story = {
+  play: async ({ canvas, canvasElement }) => {
+    await expect(await canvas.findByText('Running now')).toBeVisible()
+    await expect(canvasElement.querySelector('.health-running-row')).toBeNull()
+  },
+}
 
 export const ScheduledJobs: Story = {
   play: async ({ canvas, userEvent }) => {
@@ -593,6 +598,9 @@ export const RepairsManyFailures: Story = {
 
 export const RepairsEmpty: Story = {
   parameters: { ...tab('repairs'), msw: [http.get(api('/health/operations'), () => HttpResponse.json(emptyList))] },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('No repairs or deletions requested.')).toBeVisible()
+  },
 }
 
 export const ReviewReplacement: Story = {
@@ -646,4 +654,7 @@ export const HistoryTab: Story = {
 
 export const HistoryEmpty: Story = {
   parameters: { ...tab('history'), msw: [http.get(api('/health/history'), () => HttpResponse.json(emptyList))] },
+  play: async ({ canvas }) => {
+    await expect(await canvas.findByText('Nothing in the history yet.')).toBeVisible()
+  },
 }
