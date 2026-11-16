@@ -246,7 +246,8 @@ public sealed class CreditScanWorker(
             .Where(c => c.Series!.PendingImportLink == PendingImportLink.None)
             .Where(c => !db.Chapters.IgnoreQueryFilters().Any(o =>
                 o.SeriesId == c.SeriesId && o.ChapterFile != null && o.ChapterFile.ConversionQueuedAtUtc != null))
-            .Where(c => !db.DownloadQueue.Any(q => q.SeriesId == c.SeriesId && q.ActiveChapterId != null))
+            .Where(c => !db.DownloadQueue.Any(q => q.SeriesId == c.SeriesId && q.ActiveChapterId != null
+                && q.Status != QueueStatus.Waiting))
             .Where(c => !held.Contains(c.SeriesId + "|" + c.Language));
 
         var readSince = now - ReadRecently;
