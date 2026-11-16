@@ -222,6 +222,7 @@ public sealed class CreditStore(IServiceScopeFactory scopes, IPageTextReader tex
         row.HeadOffset = 0;
         row.TailPages = 0;
         row.TailOffset = 0;
+        row.Judge = text.Available ? CreditJudge.Ocr : CreditJudge.Colour;
         row.Failed = true;
         row.ScannedAtUtc = DateTime.UtcNow;
         try
