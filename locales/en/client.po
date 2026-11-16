@@ -386,6 +386,11 @@ msgstr "{0, plural, one {# spoiler tag} other {# spoiler tags}}"
 msgid "{0, plural, one {# title} other {# titles}}"
 msgstr "{0, plural, one {# title} other {# titles}}"
 
+#. placeholder {0}: group.unconfirmed
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{0, plural, one {# to confirm} other {# to confirm}}"
+msgstr "{0, plural, one {# to confirm} other {# to confirm}}"
+
 #. placeholder {0}: dirty.length
 #: src/components/series/EditMetadataModal.tsx
 msgid "{0, plural, one {# unsaved change} other {# unsaved changes}}"
@@ -6315,6 +6320,10 @@ msgstr "Conditions"
 #: src/components/NotificationsSection.tsx
 msgid "Config key"
 msgstr "Config key"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Confirm"
+msgstr "Confirm"
 
 #: src/pages/ImportPage.tsx
 msgid "Confirm metadata matches"
@@ -16531,6 +16540,10 @@ msgstr "Reading your ratings from {label}…"
 msgid "Reads every byte to catch rotted files. About half an hour per 100 GB."
 msgstr "Reads every byte to catch rotted files. About half an hour per 100 GB."
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Reads like {likeGroup}"
+msgstr "Reads like {likeGroup}"
+
 #: src/pages/settings/UpscalingSection.tsx
 msgid "Ready"
 msgstr "Ready"
@@ -22372,6 +22385,10 @@ msgstr "Unmonitored"
 #: src/components/ui/CoverCardMenu.tsx
 msgid "Unmute notifications"
 msgstr "Unmute notifications"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Unnamed group"
+msgstr "Unnamed group"
 
 #: src/components/layout/SidebarFooter.tsx
 msgid "Unofficial build (not a tagged release)"

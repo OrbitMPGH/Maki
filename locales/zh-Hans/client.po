@@ -457,6 +457,11 @@ msgstr "{0, plural, other {# 个剧透标签}}"
 msgid "{0, plural, one {# title} other {# titles}}"
 msgstr "{0, plural, other {# 个标题}}"
 
+#. placeholder {0}: group.unconfirmed
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{0, plural, one {# to confirm} other {# to confirm}}"
+msgstr ""
+
 #. placeholder {0}: dirty.length
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -7769,6 +7774,10 @@ msgstr "条件"
 #, fuzzy
 msgid "Config key"
 msgstr "配置密钥"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Confirm"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -20338,6 +20347,10 @@ msgstr "正在读取你在 {label} 上的评分……"
 msgid "Reads every byte to catch rotted files. About half an hour per 100 GB."
 msgstr "读取每个字节以发现损坏的文件。每 100 GB 约需半小时。"
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Reads like {likeGroup}"
+msgstr ""
+
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Ready"
@@ -27522,6 +27535,10 @@ msgstr "未监控"
 #, fuzzy
 msgid "Unmute notifications"
 msgstr "取消静音通知"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Unnamed group"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy

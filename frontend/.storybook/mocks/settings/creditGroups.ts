@@ -92,6 +92,19 @@ export const creditNotices: CreditNotice[] = [
   }),
   notice(8, { kind: 'site', excerpt: 'Just previews, buy the volumes', chapters: 12, series: 2 }),
   notice(9, { kind: 'unknown', excerpt: 'Thank you for reading! | See you next chapter', chapters: 4 }),
+  // Read no name off, but its text matches Moonlit Scans' notices, so it is listed there.
+  notice(11, {
+    kind: 'unknown',
+    suggestedName: 'Es TL',
+    excerpt: 'Es TL: Hana | Cl: Ivo | Have a good one, see you next moon',
+    whole: false,
+    share: 0.64,
+    tail: true,
+    chapters: 3,
+  }),
+  // Two notices with no name that read alike.
+  notice(12, { kind: 'unknown', excerpt: 'tl: rook | ts: wren | thanks for readin', chapters: 4 }),
+  notice(13, { kind: 'unknown', excerpt: 'tl: rook | ts: wren | see ya', chapters: 2 }),
   // No chapter that carries it can be read: the image route answers 404.
   notice(99, { kind: 'unknown', excerpt: null, chapters: 2 }),
 ]
@@ -102,12 +115,14 @@ export const creditGroups: CreditGroup[] = [
     name: 'Moonlit Scans',
     nameSource: 'confirmed',
     kind: 'group',
-    noticeIds: [1, 2],
-    notices: 2,
+    noticeIds: [1, 2, 11],
+    notices: 3,
     series: 2,
-    chapters: 38,
+    chapters: 41,
     chaptersWithoutGroup: 12,
-    variants: [],
+    variants: ['Es TL'],
+    joinedNoticeIds: [11],
+    unconfirmed: 1,
   },
   {
     key: 'group:kitsune translations',
@@ -120,6 +135,8 @@ export const creditGroups: CreditGroup[] = [
     chapters: 21,
     chaptersWithoutGroup: 4,
     variants: [],
+    joinedNoticeIds: [],
+    unconfirmed: 0,
   },
   {
     key: 'group:paper crane',
@@ -133,6 +150,8 @@ export const creditGroups: CreditGroup[] = [
     // Only a confirmed or carried name gives chapters a group, so a suggested one changes none yet.
     chaptersWithoutGroup: 0,
     variants: ['PAPER CRNE', 'Paper Crone'],
+    joinedNoticeIds: [],
+    unconfirmed: 2,
   },
   {
     key: 'group:hollow lantern',
@@ -145,6 +164,22 @@ export const creditGroups: CreditGroup[] = [
     chapters: 9,
     chaptersWithoutGroup: 0,
     variants: [],
+    joinedNoticeIds: [],
+    unconfirmed: 0,
+  },
+  {
+    key: 'alike:12',
+    name: null,
+    nameSource: 'none',
+    kind: 'unknown',
+    noticeIds: [12, 13],
+    notices: 2,
+    series: 1,
+    chapters: 6,
+    chaptersWithoutGroup: 0,
+    variants: [],
+    joinedNoticeIds: [13],
+    unconfirmed: 2,
   },
   {
     key: 'site',
@@ -157,6 +192,8 @@ export const creditGroups: CreditGroup[] = [
     chapters: 52,
     chaptersWithoutGroup: 0,
     variants: [],
+    joinedNoticeIds: [],
+    unconfirmed: 0,
   },
   {
     key: 'unnamed',
@@ -169,12 +206,14 @@ export const creditGroups: CreditGroup[] = [
     chapters: 6,
     chaptersWithoutGroup: 0,
     variants: [],
+    joinedNoticeIds: [],
+    unconfirmed: 2,
   },
 ]
 
 /** `?all=true` adds a notice readers keep, which the default list leaves out. */
 export const creditGroupsAll: CreditGroup[] = [
-  ...creditGroups.slice(0, 5),
+  ...creditGroups.slice(0, 6),
   {
     key: 'group:night owl',
     name: 'Night Owl',
@@ -186,8 +225,10 @@ export const creditGroupsAll: CreditGroup[] = [
     chapters: 3,
     chaptersWithoutGroup: 0,
     variants: [],
+    joinedNoticeIds: [],
+    unconfirmed: 1,
   },
-  creditGroups[5],
+  creditGroups[6],
 ]
 
 const SERIES = [

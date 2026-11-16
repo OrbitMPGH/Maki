@@ -7,7 +7,7 @@ export type CreditNoticeKind = 'unknown' | 'group' | 'site'
 export type CreditNoticeOverride = 'none' | 'hide' | 'keep'
 
 export interface CreditGroup {
-  /** `group:<normalized name>`, `site` or `unnamed`. */
+  /** `group:<normalized name>`, `site`, `unnamed`, or `alike:<lowest notice id>` for unnamed notices that read alike. */
   key: string
   name: string | null
   nameSource: CreditNameSource
@@ -19,6 +19,10 @@ export interface CreditGroup {
   chaptersWithoutGroup: number
   /** Other spellings folded into this group, heaviest first: OCR misreads of one name, usually. */
   variants: string[]
+  /** Notices listed here because their text reads like the others', not because of their name. */
+  joinedNoticeIds: number[]
+  /** Notices whose name the admin has not confirmed; confirming the group's name confirms them. */
+  unconfirmed: number
 }
 
 export interface CreditNotice {

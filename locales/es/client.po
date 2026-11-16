@@ -458,6 +458,11 @@ msgstr "{0, plural, one {# etiqueta de spoiler} many {# etiquetas de spoiler} ot
 msgid "{0, plural, one {# title} other {# titles}}"
 msgstr "{0, plural, one {# título} many {# títulos} other {# títulos}}"
 
+#. placeholder {0}: group.unconfirmed
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "{0, plural, one {# to confirm} other {# to confirm}}"
+msgstr ""
+
 #. placeholder {0}: dirty.length
 #: src/components/series/EditMetadataModal.tsx
 #, fuzzy
@@ -7770,6 +7775,10 @@ msgstr "Condiciones"
 #, fuzzy
 msgid "Config key"
 msgstr "Clave de configuración"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Confirm"
+msgstr ""
 
 #: src/pages/ImportPage.tsx
 #, fuzzy
@@ -20339,6 +20348,10 @@ msgstr "Leyendo tus valoraciones de {label}…"
 msgid "Reads every byte to catch rotted files. About half an hour per 100 GB."
 msgstr "Lee cada byte para detectar archivos dañados. Unos 30 minutos por cada 100 GB."
 
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Reads like {likeGroup}"
+msgstr ""
+
 #: src/pages/settings/UpscalingSection.tsx
 #, fuzzy
 msgid "Ready"
@@ -27524,6 +27537,10 @@ msgstr "Sin supervisión"
 #, fuzzy
 msgid "Unmute notifications"
 msgstr "Reactivar notificaciones"
+
+#: src/components/settings/CreditGroupsModal.tsx
+msgid "Unnamed group"
+msgstr ""
 
 #: src/components/layout/SidebarFooter.tsx
 #, fuzzy
