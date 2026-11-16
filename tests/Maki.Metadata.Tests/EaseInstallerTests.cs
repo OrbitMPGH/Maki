@@ -160,8 +160,18 @@ public class EaseInstallerTests : IDisposable
             () => EaseInstaller.ValidateStaged(Build(rows: 10))).Message);
         Assert.Contains("self-weights", Assert.Throws<InvalidOperationException>(
             () => EaseInstaller.ValidateStaged(Build(selfRows: 2))).Message);
-        Assert.Contains("missing or zero", Assert.Throws<InvalidOperationException>(
+        Assert.Contains("missing, zero or non-finite", Assert.Throws<InvalidOperationException>(
             () => EaseInstaller.ValidateStaged(Build(zeroRows: 2))).Message);
+    }
+
+    [Theory]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    [InlineData(1e300)]
+    public void ValidateStaged_RefusesWeightsTheTableWouldDrop(double bad)
+    {
+        Assert.Contains("non-finite", Assert.Throws<InvalidOperationException>(
+            () => EaseInstaller.ValidateStaged(Build(badRows: 2, badWeight: bad))).Message);
     }
 
     [Fact]
@@ -188,7 +198,7 @@ public class EaseInstallerTests : IDisposable
 
     private string Build(
         long rows = EaseInstaller.MinWeights, string trainingFold = "all", string? extraTable = null,
-        int selfRows = 0, int zeroRows = 0)
+        int selfRows = 0, int zeroRows = 0, int badRows = 0, double badWeight = 0)
     {
         var path = Path.Combine(_dir, Guid.NewGuid().ToString("N") + ".db");
         using (var conn = new SqliteConnection($"Data Source={path};Pooling=False"))
@@ -217,7 +227,7 @@ public class EaseInstallerTests : IDisposable
                 {
                     s.Value = (i / 100) + 1;
                     t.Value = 1_000_000 + (i % 100);
-                    w.Value = i < zeroRows ? 0.0 : (i % 2 == 0 ? 0.01 : -0.01);
+                    w.Value = i < zeroRows ? 0.0 : i < zeroRows + badRows ? badWeight : (i % 2 == 0 ? 0.01 : -0.01);
                     cmd.ExecuteNonQuery();
                 }
 

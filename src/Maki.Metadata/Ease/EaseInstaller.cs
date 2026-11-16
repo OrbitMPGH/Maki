@@ -276,12 +276,14 @@ public class EaseInstaller(
         }
 
         // `weight IS NULL OR weight = 0`: SQLite has no NaN and stores one as NULL, and a
-        // comparison against NULL would let exactly that row through.
+        // comparison against NULL would let exactly that row through. The ABS bound catches an
+        // infinity and any double the float read in EaseCache would turn into one; EaseTable.Build
+        // drops all of these, so a table made of them would install and serve nothing.
         using var stats = conn.CreateCommand();
         stats.CommandText = """
             SELECT COUNT(*),
                    COALESCE(SUM(CASE WHEN seed_id = item_id THEN 1 ELSE 0 END), 0),
-                   COALESCE(SUM(CASE WHEN weight IS NULL OR weight = 0 THEN 1 ELSE 0 END), 0)
+                   COALESCE(SUM(CASE WHEN weight IS NULL OR weight = 0 OR ABS(weight) > 3.4028234663852886e38 THEN 1 ELSE 0 END), 0)
             FROM weight
             """;
         stats.CommandTimeout = 600;
@@ -303,7 +305,7 @@ public class EaseInstaller(
 
         if (empty > 0)
         {
-            throw new InvalidOperationException($"downloaded table has {empty} missing or zero weights");
+            throw new InvalidOperationException($"downloaded table has {empty} missing, zero or non-finite weights");
         }
 
         if (advertisedWeights > 0 && weights < advertisedWeights * 0.95)

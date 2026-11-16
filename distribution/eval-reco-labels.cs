@@ -557,14 +557,15 @@ if (foldCount > 0)
                  ("reco", graphPath), ("coread", coReadPath), ("mu", muPath), ("taste", tastePath),
              })
     {
-        if (ReadTrainingFolds(path) is not { Count: > 0 } trained || !trained.Contains(foldIndex))
+        if (ReadTrainingFolds(path) is not { Count: > 0 } trained || HoldsOut(trained, foldIndex, foldCount))
         {
             continue;
         }
 
-        Console.WriteLine($"error: {name} artifact at {path} was trained on fold {foldIndex}.");
-        Console.WriteLine("       Grading it against readers it learned from is not a held-out test.");
-        Console.WriteLine($"       Rebuild it excluding fold {foldIndex}, or evaluate on a fold it did not see.");
+        Console.WriteLine($"error: {name} artifact at {path} was trained on folds {string.Join(',', trained.Order())}, "
+            + $"not every fold of {foldCount} but {foldIndex}.");
+        Console.WriteLine("       A different split or a fold it saw puts graded readers in its training data.");
+        Console.WriteLine($"       Rebuild it with --fold-out {foldIndex}/{foldCount}.");
         return 2;
     }
 
@@ -594,10 +595,11 @@ if (foldCount > 0)
             return 2;
         }
 
-        if (trained.Contains(foldIndex))
+        if (!HoldsOut(trained, foldIndex, foldCount))
         {
-            Console.WriteLine($"error: {name} artifact at {path} was trained on fold {foldIndex}.");
-            Console.WriteLine("       Grading it against readers it learned from is not a held-out test.");
+            Console.WriteLine($"error: {name} artifact at {path} was trained on folds {string.Join(',', trained.Order())}, "
+                + $"not every fold of {foldCount} but {foldIndex}.");
+            Console.WriteLine($"       Rebuild it with --fold-out {foldIndex}/{foldCount}.");
             return 2;
         }
     }
@@ -648,7 +650,7 @@ var forbidGraph = mode == "library" ? false : labelKind == "reco";
 // A co-read graph built with `fetch-coread-graph.cs build --fold-out` is the exception in `library`
 // mode: the fold guard above has already refused one that saw the graded fold.
 var coReadFoldLimited = mode == "library" && foldCount > 0
-    && ReadTrainingFolds(coReadPath) is { Count: > 0 } coReadFolds && !coReadFolds.Contains(foldIndex);
+    && ReadTrainingFolds(coReadPath) is { Count: > 0 } coReadFolds && HoldsOut(coReadFolds, foldIndex, foldCount);
 var forbidCoRead = (mode == "library" && !coReadFoldLimited) || labelKind == "coread";
 if (coReadFoldLimited)
 {
@@ -1838,6 +1840,12 @@ static double Median(List<double> values)
 /// Which folds an artifact was trained on, from its <c>meta.trainingFold</c> ("0,2,3" or "all").
 /// Absent or "all" means it saw every reader, which is what every shipped artifact says today.
 /// </summary>
+// The builders record every fold but the held-out one, so the same k/n split recorded is exactly
+// the other n-1 folds. A list from a different n can still hold graded readers: 1,2,3,4 from
+// --fold-out 0/5 trains on readers that --fold-users 0/4 grades.
+static bool HoldsOut(HashSet<int> trained, int foldIndex, int foldCount) =>
+    trained.SetEquals(Enumerable.Range(0, foldCount).Where(f => f != foldIndex));
+
 static HashSet<int>? ReadTrainingFolds(string path)
 {
     if (!File.Exists(path))

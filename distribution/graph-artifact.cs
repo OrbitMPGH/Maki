@@ -344,10 +344,11 @@ else if (isEase)
     }
 
     // `weight IS NULL OR weight = 0`, never `weight = 0` alone: SQLite stores a NaN as NULL, and a
-    // comparison against NULL lets exactly that row through. A zero carries nothing either.
-    if (Count("SELECT COUNT(*) FROM weight WHERE weight IS NULL OR weight = 0") > 0)
+    // comparison against NULL lets exactly that row through. A zero carries nothing either, and the
+    // ABS bound catches an infinity or a double that would read back as one in float.
+    if (Count("SELECT COUNT(*) FROM weight WHERE weight IS NULL OR weight = 0 OR ABS(weight) > 3.4028234663852886e38") > 0)
     {
-        problems.Add("some weights are missing or zero, so the export did not drop what it should have");
+        problems.Add("some weights are missing, zero or non-finite, so the export did not drop what it should have");
     }
 
     // AN EVALUATION BUILD MUST NEVER BE PUBLISHED: build-ease-table.py --fold-out holds a quarter of
