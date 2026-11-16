@@ -27,6 +27,7 @@ public class MangaUpdatesTracker(
     private static readonly MediaTypeWithQualityHeaderValue JsonAccept = new("application/json");
 
     public string Name => "mangaupdates";
+    public double ScoreStep => 0.1;
     public string Label => "MangaUpdates";
     public bool UsesOAuth => false;
 
@@ -540,7 +541,7 @@ public class MangaUpdatesTracker(
             Status: StatusOf(listId.Value),
             TotalChapters: TotalChapters(info),
             Title: info.Title,
-            Score: score is double rating and > 0 ? Math.Clamp((int)Math.Round(rating, MidpointRounding.AwayFromZero), 1, 10) : null,
+            Score: score is double rating and > 0 ? TrackerScore.Tenths(rating) : null,
             Releasing: !info.Completed);
     }
 
@@ -813,8 +814,7 @@ public class MangaUpdatesTracker(
     public async Task UpdateRatingAsync(int userId, string remoteId, double score, CancellationToken ct = default)
     {
         var seriesId = SeriesIdOf(remoteId);
-        var whole = TrackerScore.Whole(score);
-        if (whole <= 0)
+        if (score <= 0)
         {
             await RequestAsync(userId, HttpMethod.Delete, $"/series/{seriesId}/rating",
                 auth: true, relogin: Relogin.IfStale, ct: ct);
@@ -822,7 +822,7 @@ public class MangaUpdatesTracker(
         else
         {
             await RequestAsync(userId, HttpMethod.Put, $"/series/{seriesId}/rating",
-                new JsonObject { ["rating"] = Math.Clamp(whole, 1, 10) },
+                new JsonObject { ["rating"] = TrackerScore.Tenths(score) },
                 auth: true, relogin: Relogin.IfStale, ct: ct);
         }
 

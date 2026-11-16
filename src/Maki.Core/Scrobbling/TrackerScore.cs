@@ -7,9 +7,19 @@ namespace Maki.Core.Scrobbling;
 /// </summary>
 public static class TrackerScore
 {
-    /// <summary>AniList's <c>scoreRaw</c>, always 0-100 whatever the user's display format.</summary>
-    public static int AniListRaw(double score) =>
+    /// <summary>
+    /// A 0-100 score in whole points, which keeps the decimal (7.8 is 78): AniList's <c>scoreRaw</c>,
+    /// whatever the user's display format, and MangaBaka's library rating.
+    /// </summary>
+    public static int Hundred(double score) =>
         Math.Clamp((int)Math.Round(score * 10, MidpointRounding.AwayFromZero), 0, 100);
+
+    /// <summary>A 0-100 score read back onto Maki's 1-10 scale, or null for 0 (not rated).</summary>
+    public static double? FromHundred(double raw) =>
+        raw > 0 ? RatingScale.Round(Math.Clamp(raw / 10, 1, 10)) : null;
+
+    /// <summary>A 1-10 score to one decimal, for trackers that store any number (MangaUpdates).</summary>
+    public static double Tenths(double score) => RatingScale.Round(Math.Clamp(score, 1, 10));
 
     /// <summary>Kitsu's <c>ratingTwenty</c> (2-20 in half points), or null to clear.</summary>
     public static int? KitsuTwenty(double score) =>

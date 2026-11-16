@@ -308,7 +308,7 @@ public class AniListTracker(
     {
         // scoreRaw is always on AniList's 100-point scale regardless of the user's display format.
         // Creates the list entry if one doesn't exist yet.
-        var raw = TrackerScore.AniListRaw(score);
+        var raw = TrackerScore.Hundred(score);
         await QueryAsync(
             userId,
             "mutation($mediaId:Int,$scoreRaw:Int){ SaveMediaListEntry(mediaId:$mediaId,scoreRaw:$scoreRaw){ id } }",

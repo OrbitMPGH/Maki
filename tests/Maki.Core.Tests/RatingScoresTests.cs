@@ -150,7 +150,7 @@ public class RatingScoresTests
     [InlineData(1, 10)]
     [InlineData(0, 0)]
     public void AniList_takes_a_hundred_point_score(double score, int raw) =>
-        Assert.Equal(raw, TrackerScore.AniListRaw(score));
+        Assert.Equal(raw, TrackerScore.Hundred(score));
 
     [Theory]
     [InlineData(7.8, 16)]
@@ -163,6 +163,25 @@ public class RatingScoresTests
 
     [Fact]
     public void Kitsu_clears_on_zero() => Assert.Null(TrackerScore.KitsuTwenty(0));
+
+    [Theory]
+    [InlineData(78, 7.8)]
+    [InlineData(80, 8.0)]
+    [InlineData(5, 1.0)]
+    [InlineData(100, 10.0)]
+    public void A_hundred_point_score_reads_back_to_one_decimal(double raw, double score) =>
+        Assert.Equal(score, TrackerScore.FromHundred(raw));
+
+    [Fact]
+    public void A_hundred_point_zero_is_unrated() => Assert.Null(TrackerScore.FromHundred(0));
+
+    [Theory]
+    [InlineData(7.84, 7.8)]
+    [InlineData(7.86, 7.9)]
+    [InlineData(0.3, 1.0)]
+    [InlineData(10, 10.0)]
+    public void Decimal_trackers_get_one_decimal_within_one_to_ten(double score, double sent) =>
+        Assert.Equal(sent, TrackerScore.Tenths(score));
 
     [Theory]
     [InlineData(7.5, 8)]
