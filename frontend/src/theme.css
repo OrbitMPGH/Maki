@@ -2750,11 +2750,23 @@ html[data-scroll='inner'] .mantine-AppShell-main.app-main-hero::before {
 .reading-weeks-bar > span[data-done] {
   background: var(--ok);
 }
-/* The narrow hero column on a laptop with the sidebar open: the streak goes under the heading. */
+/* The narrow hero column on a laptop with the sidebar open: the streak goes under the heading, and
+   the figures take a row each, since "26h 42m" ran into its neighbour three abreast. */
 @container reading-weeks (max-width: 17rem) {
   .reading-weeks-head {
     flex-direction: column;
     gap: 8px;
+  }
+  .reading-weeks-figures {
+    grid-template-columns: none;
+    gap: 6px;
+  }
+  .reading-weeks-fig {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 0;
+    border-left: 0;
   }
 }
 /* The hero's right column: square days at a fixed size, the figures stacked beside them. */
@@ -15038,8 +15050,10 @@ button.credit-notice-image {
     display: none;
   }
 }
-/* Laptop with the sidebar open: a narrower glance column, so the hero's right half isn't bare art. */
-@container continue-lead (min-width: 44rem) and (max-width: 61.99rem) {
+/* Laptop with the sidebar open: a narrower glance column, so the hero's right half isn't bare art.
+   Narrower than this (a tablet held upright) the column squeezed the copy and the figures, so the
+   glance goes under the lead. */
+@container continue-lead (min-width: 54rem) and (max-width: 61.99rem) {
   .continue-lead:not([data-queue='beside']) {
     --glance-w: 15.5rem;
   }
@@ -15054,6 +15068,13 @@ button.credit-notice-image {
   }
   .continue-section:not([data-queue='beside']) > .continue-glance-below {
     display: none;
+  }
+}
+/* A tablet held upright: the copy has the hero's width to itself, and a bigger poster fills the
+   height the copy takes, where the vw clamp left it a thumbnail under bare art. */
+@container continue-lead (min-width: 36rem) and (max-width: 53.99rem) {
+  .continue-hero-poster {
+    width: 168px;
   }
 }
 @container continue-lead (min-width: 84rem) {
