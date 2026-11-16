@@ -12,6 +12,7 @@ import {
   Text,
   UnstyledButton,
 } from '@mantine/core'
+import { t as staticT } from '@lingui/core/macro'
 import { Plural, Trans, useLingui } from '@lingui/react/macro'
 import { useSeries } from '../../api/hooks'
 import { useAuth } from '../../auth/AuthProvider'
@@ -81,7 +82,10 @@ function DropFolderWaiting({ onOpen }: { onOpen: (entry: DropFolderPending) => v
 function fileLabel(f: ManualImportFile) {
   const volume =
     f.volume === null ? null : f.volumeEnd !== null && f.volumeEnd !== f.volume ? `${f.volume}-${f.volumeEnd}` : `${f.volume}`
-  return [volume && `Vol.${volume}`, f.chapter && `Ch.${f.chapter}`].filter(Boolean).join(' ')
+  const chapterNumber = f.chapter
+  if (volume && chapterNumber) return staticT`Vol. ${volume} Ch. ${chapterNumber}`
+  if (volume) return staticT`Vol. ${volume}`
+  return chapterNumber ? staticT`Ch. ${chapterNumber}` : ''
 }
 
 /**

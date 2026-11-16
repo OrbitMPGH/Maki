@@ -6312,6 +6312,7 @@ msgstr "Гл. {chapter}"
 msgid "Ch. {chapterLabel}"
 msgstr "Гл. {chapterLabel}"
 
+#: src/components/import/ManualImport.tsx
 #: src/format.ts
 #, fuzzy
 msgid "Ch. {chapterNumber}"
@@ -27368,6 +27369,7 @@ msgstr ""
 msgid "Vol. {fileVolume}"
 msgstr "Т. {fileVolume}"
 
+#: src/components/import/ManualImport.tsx
 #: src/components/series/chapterTable.ts
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -27375,6 +27377,7 @@ msgstr "Т. {fileVolume}"
 msgid "Vol. {volume}"
 msgstr "Том {volume}"
 
+#: src/components/import/ManualImport.tsx
 #: src/format.ts
 #, fuzzy
 msgid "Vol. {volume} Ch. {chapterNumber}"

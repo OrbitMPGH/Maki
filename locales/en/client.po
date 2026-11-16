@@ -5349,6 +5349,7 @@ msgstr "Ch. {chapter}"
 msgid "Ch. {chapterLabel}"
 msgstr "Ch. {chapterLabel}"
 
+#: src/components/import/ManualImport.tsx
 #: src/format.ts
 msgid "Ch. {chapterNumber}"
 msgstr "Ch. {chapterNumber}"
@@ -23023,12 +23024,14 @@ msgstr "Vol. {0}"
 msgid "Vol. {fileVolume}"
 msgstr "Vol. {fileVolume}"
 
+#: src/components/import/ManualImport.tsx
 #: src/components/series/chapterTable.ts
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesScrobbleSection.tsx
 msgid "Vol. {volume}"
 msgstr "Vol. {volume}"
 
+#: src/components/import/ManualImport.tsx
 #: src/format.ts
 msgid "Vol. {volume} Ch. {chapterNumber}"
 msgstr "Vol. {volume} Ch. {chapterNumber}"

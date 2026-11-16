@@ -6312,6 +6312,7 @@ msgstr "第 {chapter} 章"
 msgid "Ch. {chapterLabel}"
 msgstr "第 {chapterLabel} 章"
 
+#: src/components/import/ManualImport.tsx
 #: src/format.ts
 #, fuzzy
 msgid "Ch. {chapterNumber}"
@@ -27368,6 +27369,7 @@ msgstr ""
 msgid "Vol. {fileVolume}"
 msgstr "卷 {fileVolume}"
 
+#: src/components/import/ManualImport.tsx
 #: src/components/series/chapterTable.ts
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -27375,6 +27377,7 @@ msgstr "卷 {fileVolume}"
 msgid "Vol. {volume}"
 msgstr "第 {volume} 卷"
 
+#: src/components/import/ManualImport.tsx
 #: src/format.ts
 #, fuzzy
 msgid "Vol. {volume} Ch. {chapterNumber}"

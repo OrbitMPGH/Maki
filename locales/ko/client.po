@@ -6312,6 +6312,7 @@ msgstr "챕터 {chapter}"
 msgid "Ch. {chapterLabel}"
 msgstr "챕터 {chapterLabel}"
 
+#: src/components/import/ManualImport.tsx
 #: src/format.ts
 #, fuzzy
 msgid "Ch. {chapterNumber}"
@@ -27368,6 +27369,7 @@ msgstr ""
 msgid "Vol. {fileVolume}"
 msgstr "{fileVolume}권"
 
+#: src/components/import/ManualImport.tsx
 #: src/components/series/chapterTable.ts
 #: src/components/series/ChapterTableRows.tsx
 #: src/components/SeriesScrobbleSection.tsx
@@ -27375,6 +27377,7 @@ msgstr "{fileVolume}권"
 msgid "Vol. {volume}"
 msgstr "{volume}권"
 
+#: src/components/import/ManualImport.tsx
 #: src/format.ts
 #, fuzzy
 msgid "Vol. {volume} Ch. {chapterNumber}"
