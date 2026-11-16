@@ -10681,9 +10681,15 @@ msgstr "JPEG pages are kept as they are at Lossless."
 msgid "JPEG XL"
 msgstr "JPEG XL"
 
+#: src/pages/settings/registry.ts
 #: src/pages/settings/UpscalingSection.tsx
 msgid "JPEG XL for colour pages"
 msgstr "JPEG XL for colour pages"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "jpeg xl, jxl, colour pages, color pages, banding, gradients, webp"
+msgstr "jpeg xl, jxl, colour pages, color pages, banding, gradients, webp"
 
 #: src/components/series/EditMetadataModal.tsx
 msgid "JPEG, PNG, GIF or WebP, up to 10 MB."
@@ -11567,6 +11573,7 @@ msgid "longest {longestSitting}"
 msgstr "longest {longestSitting}"
 
 #: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
 msgid "Look for volume releases first"
 msgstr "Look for volume releases first"
 
@@ -23071,6 +23078,11 @@ msgstr "Volume {number}"
 #: src/api/upgrades.ts
 msgid "Volume {range}"
 msgstr "Volume {range}"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "volume first, volume release, new series, torrent, indexer, hold sources"
+msgstr "volume first, volume release, new series, torrent, indexer, hold sources"
 
 #: src/api/inbox.ts
 msgid "Volume release proposed"

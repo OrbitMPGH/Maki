@@ -12664,8 +12664,14 @@ msgstr "Страницы JPEG при режиме «Без потерь» ост
 msgid "JPEG XL"
 msgstr ""
 
+#: src/pages/settings/registry.ts
 #: src/pages/settings/UpscalingSection.tsx
 msgid "JPEG XL for colour pages"
+msgstr ""
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "jpeg xl, jxl, colour pages, color pages, banding, gradients, webp"
 msgstr ""
 
 #: src/components/series/EditMetadataModal.tsx
@@ -13726,6 +13732,7 @@ msgid "longest {longestSitting}"
 msgstr "самый долгий сеанс {longestSitting}"
 
 #: src/pages/settings/DownloadCards.tsx
+#: src/pages/settings/registry.ts
 msgid "Look for volume releases first"
 msgstr ""
 
@@ -27426,6 +27433,11 @@ msgstr "Том {number}"
 #, fuzzy
 msgid "Volume {range}"
 msgstr "Том {range}"
+
+#. Search terms for the settings command palette, not prose. Translate each term as the word someone would actually type in this language, keep them comma-separated, and add or drop terms freely: the list does not have to match English item for item.
+#: src/pages/settings/registry.ts
+msgid "volume first, volume release, new series, torrent, indexer, hold sources"
+msgstr ""
 
 #: src/api/inbox.ts
 #, fuzzy
