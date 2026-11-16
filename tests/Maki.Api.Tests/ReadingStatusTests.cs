@@ -286,6 +286,22 @@ public class ReadingStatusTests : IDisposable
         Assert.Empty(dropped);
     }
 
+    [Fact]
+    public async Task An_auto_hold_keeps_counting_from_the_change_made_by_hand_before_it()
+    {
+        // Files and last read 100 days before Reading was set by hand; the hold paused each 30 days after that.
+        var heldYesterday = SeedIdle("Yesterday", Now.AddDays(-131), Now.AddDays(-132));
+        var heldLongAgo = SeedIdle("Long ago", Now.AddDays(-191), Now.AddDays(-192));
+        SetStatus(heldYesterday, ReadingStatus.OnHold, auto: true, changedAt: Now.AddDays(-1));
+        SetStatus(heldLongAgo, ReadingStatus.OnHold, auto: true, changedAt: Now.AddDays(-61));
+        var (rules, _) = Rules();
+
+        var (_, dropped) = await rules.RunForUserAsync(User, holdDays: 30, dropDays: 90, CancellationToken.None);
+
+        Assert.Equal([heldLongAgo], dropped);
+        Assert.Equal(ReadingStatus.OnHold, State(heldYesterday)!.Status);
+    }
+
     // ---- Home's reading rail ----
 
     [Fact]
